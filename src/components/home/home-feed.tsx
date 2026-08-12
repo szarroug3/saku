@@ -335,11 +335,14 @@ export function HomeFeed() {
       {/* What "I already know this" means, said once for the whole page. */}
       <ClaimExplainer />
 
-      {/* THE TRACK CARDS — one card per track with a lesson, two columns on wide
-          screens. Each carries its own position header ("Item 3–8 of …"), its own
+      {/* THE TRACK CARDS — one card per track with a lesson, stacked in a single
+          column. Each carries its own position header ("Item 3–8 of …"), its own
           "why", and Start / Quiz me / Continue / I-already-know, all off the one
-          NextLessonPreview. */}
-      <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-2">
+          NextLessonPreview. The cards are borderless glass panes.
+
+          A small horizontal inset (px-2) keeps the panes off the two edges so the
+          left glass rim doesn't read as a hard cut against the bright sidebar. */}
+      <div className="flex flex-col gap-y-3.5 px-2">
         {visible.map(({ track, order, run, lesson }) => (
           <NextLessonPreview
             key={track.id}

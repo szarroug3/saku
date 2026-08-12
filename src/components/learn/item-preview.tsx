@@ -46,7 +46,7 @@ export function ItemPreview({ item }: { item: ContentItem }) {
   const ghost = watermarkChar(item);
   return (
     <div
-      className="relative flex h-[104px] flex-col overflow-hidden rounded-2xl border border-white/10 p-3"
+      className="relative flex h-[104px] w-[104px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 p-3"
       style={
         {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
@@ -71,18 +71,15 @@ export function ItemPreview({ item }: { item: ContentItem }) {
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
 
-      {/* Glyph centered in the flexible area — same vertical position on every card. */}
-      <div className="flex flex-1 items-center justify-center">
+      {/* Glyph + type label as one group, centered in the tile — so the pair sits
+          in the middle rather than the glyph riding high with the label low. */}
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
         <span
-          className={`font-kana text-balance px-0.5 text-center leading-tight text-text [overflow-wrap:break-word] ${glyphSize(item.glyph)}`}
+          className={`font-kana text-balance px-0.5 leading-tight text-text [overflow-wrap:break-word] ${glyphSize(item.glyph)}`}
           lang="ja"
         >
           {item.glyph}
         </span>
-      </div>
-      {/* Type label in a fixed band, top-aligned — so a 2-line label (人) lines up
-          with a 1-line one (三) across cards. */}
-      <div className="flex h-7 items-start justify-center text-center">
         <span className="text-[9px] font-medium uppercase leading-tight tracking-[0.05em] text-accent">
           {item.typeLabel}
         </span>

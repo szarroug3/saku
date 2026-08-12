@@ -15,7 +15,6 @@
 
 import { Btn, Lbl } from "@/components/ui";
 import { ItemPreview } from "@/components/learn/item-preview";
-import { WhyDisclosure } from "@/components/lesson/why";
 import { WHY_TRACK } from "@/data/why";
 import type { Why } from "@/data/why";
 import type { ContentItem } from "@/lib/content/item";
@@ -36,12 +35,18 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
   return items;
 }
 
-/** A lighter frosted panel than the item cards, so the ItemPreview tiles (card at
- * 72%) lift off it. Same soft shadow, no backdrop-filter. */
+/** The whole "Up next" card as a frosted-GLASS panel, so a stacked lesson reads as
+ * a distinct pane rather than a slab of the page.
+ *
+ * NO BORDER. What sets one lesson off from the next is the shadowing, not an
+ * outline: a top inset highlight glints the upper edge like a glow of light
+ * catching glass, while inset shades down the left, right and bottom darken those
+ * rims so the pane reads as a raised piece of glass. A deep lift shadow floats it,
+ * and a real backdrop blur frosts it (one filter per card, a handful on screen). */
 const panel =
-  "rounded-2xl border border-border/70 p-5 " +
-  "bg-[color-mix(in_srgb,var(--card)_46%,transparent)] " +
-  "shadow-[0_1px_3px_rgba(0,0,0,0.05),0_22px_48px_-28px_rgba(0,0,0,0.40)]";
+  "rounded-2xl px-5 py-5 backdrop-blur-xl " +
+  "bg-[color-mix(in_srgb,var(--card)_52%,transparent)] " +
+  "shadow-[0_22px_50px_-29px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.13),inset_0_-20px_32px_-20px_rgba(0,0,0,0.54),inset_15px_0_26px_-20px_rgba(0,0,0,0.43),inset_-15px_0_26px_-20px_rgba(0,0,0,0.43)]";
 
 export function NextLessonPreview({
   lesson,
@@ -75,33 +80,53 @@ export function NextLessonPreview({
     <div className={panel}>
       <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
 
-      {/* Five to a row — a lesson is ~5–7 items, so the sixth and seventh wrap to
-          a second row at the same tile size. */}
-      <div className="mt-4 grid grid-cols-5 gap-3">
-        {items.map((item) => (
-          <ItemPreview key={String(item.entry)} item={item} />
-        ))}
-      </div>
+      {/* TWO COLUMNS ON A WIDE PANE. A lesson is a few fixed-size tiles and three
+          controls — narrow content in a wide card, which left everything shoved
+          left. So the interactive column (tiles + the routes in) sits on the left,
+          capped to the tile row's width so the buttons stay UNDER the tiles rather
+          than spreading across the whole pane, and the one-line reason fills the
+          space to its right. Below `lg` the two stack, top-to-bottom on a phone. */}
+      <div className="mt-4 flex flex-col gap-x-10 gap-y-4 lg:flex-row lg:items-start">
+        {/* Left: the tiles and the routes in, capped to the tile row (five 104px
+            squares = 568px) so the controls sit directly beneath them. */}
+        <div className="w-full max-w-[568px] lg:shrink-0">
+          <div className="flex flex-wrap gap-3">
+            {items.map((item) => (
+              <ItemPreview key={String(item.entry)} item={item} />
+            ))}
+          </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-        <Btn onClick={onClaim && (() => onClaim(facts))}>
-          I already know {items.length === 1 ? "this" : `these ${items.length}`}
-        </Btn>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
-          {onContinue ? (
-            <Btn go onClick={onContinue}>
-              Continue session
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
+            <Btn onClick={onClaim && (() => onClaim(facts))}>
+              I already know {items.length === 1 ? "this" : `these ${items.length}`}
             </Btn>
-          ) : (
-            <Btn go onClick={onStart && (() => onStart(facts))}>
-              Start
-            </Btn>
-          )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
+              {onContinue ? (
+                <Btn go onClick={onContinue}>
+                  Continue session
+                </Btn>
+              ) : (
+                <Btn go onClick={onStart && (() => onStart(facts))}>
+                  Start
+                </Btn>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
-      <WhyDisclosure why={why} />
+        {/* Right: the one-line reason, filling the space beside the tiles. Just the
+            lede — no "Why?" disclosure, no folded paragraphs — set at the same size
+            as the rest. Given the tile row's height (104px) and centered within it,
+            so the text sits on the tiles' centre line rather than the taller
+            tiles-plus-buttons column. */}
+        <p className="max-w-prose text-[13px] leading-relaxed text-text-muted lg:flex lg:h-[104px] lg:flex-1 lg:items-center">
+          <span>
+            {why.lede.strong}
+            {why.lede.rest ? ` ${why.lede.rest}` : ""}
+          </span>
+        </p>
+      </div>
     </div>
   );
 }
