@@ -88,7 +88,7 @@ export function TeachWalk({
   if (!current) return null;
 
   return (
-    <div className="mx-auto max-w-[920px] px-3 pt-2">
+    <div className="px-3 pt-2">
       {/* The quiet "seen before" note when the budget re-surfaced material you'd
           already met. Rendered ONLY when present — no reserved height — so a fresh
           step sits tight under the frozen bar instead of behind a standing gap.

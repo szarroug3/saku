@@ -71,6 +71,42 @@ const RoundComplete = dynamic(
   },
 );
 
+/** Left / right arrow keys drive the teach walk's Back / forward, so paging
+ * through a lesson needs no mouse. Rendered only in the teach phase, so the keys
+ * are live exactly while the walk is — never over a drill or a text field (it
+ * ignores keydowns whose target is an input/textarea/select, and lets modified
+ * chords through so browser shortcuts still work). Its own component so its
+ * effect can sit below the phase's early returns without breaking hook order. */
+function TeachKeys({
+  onBack,
+  onForward,
+  canBack,
+}: {
+  onBack: () => void;
+  onForward: () => void;
+  canBack: boolean;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && /^(input|textarea|select)$/i.test(t.tagName)) return;
+      if (t?.isContentEditable) return;
+      if (e.key === "ArrowLeft") {
+        if (!canBack) return;
+        e.preventDefault();
+        onBack();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        onForward();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onBack, onForward, canBack]);
+  return null;
+}
+
 export default function SessionPage() {
   const router = useRouter();
   const {
@@ -369,8 +405,15 @@ export default function SessionPage() {
             this group only, or everything in the script so far). The round's
             config shows just above it on that last card, the moment the drill is
             one click away. */}
+        {/* Left / right arrow keys page the walk, so you never have to reach for
+            the mouse — same two actions as the footer buttons. */}
+        <TeachKeys
+          onBack={() => setTeachStep(at - 1)}
+          onForward={onLast ? toDrill : () => setTeachStep(at + 1)}
+          canBack={at > 0}
+        />
         <div className="shrink-0 border-t border-border">
-          <div className="mx-auto max-w-[920px] px-3 py-3">
+          <div className="px-3 py-3">
             {onLast ? (
               <div className="mb-3 rounded-lg border border-border bg-panel px-3 py-2">
                 <ConfigPreview />

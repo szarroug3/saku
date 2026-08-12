@@ -1000,7 +1000,7 @@ export function SentenceOrderingTeachWalk({
   const lesson = onIntro ? null : lessons[at - 1];
 
   return (
-    <div className="mx-auto max-w-230 px-3">
+    <div className="px-3">
       <div className="flex min-h-5 items-center gap-3" />
 
       <div className="mt-2">
