@@ -136,12 +136,13 @@ test("a radical entry page renders the kanji built with it", async ({ page }) =>
   const response = await page.goto("/library/radical/一");
   expect(response!.status()).toBeLessThan(400);
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("one");
-  await expect(page.getByText("Used as a part in")).toBeVisible();
-  // The count sentence the table closes with, whatever the exact number.
-  await expect(
-    page.getByText(/\d[\d,]* kanji are written with this shape\./),
-  ).toBeVisible();
+  // The glyph heads the page (CharacterEntryView), and the kanji written with it
+  // list under "Used as a part in" — a capped row of linked kanji with a "· N
+  // more" tail.
+  await expect(page.locator("body")).toContainText("一");
+  const usedAsPart = page.getByText("Used as a part in", { exact: true }).locator("..");
+  await expect(usedAsPart).toBeVisible();
+  await expect(usedAsPart.getByRole("link").first()).toBeVisible();
 });
 
 /**
@@ -156,7 +157,9 @@ test("a glossary term page renders its definition", async ({ page }) => {
   const response = await page.goto("/library/term/romaji");
   expect(response!.status()).toBeLessThan(400);
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Romaji");
+  // The term's name heads the page (glyph-less header), and its definition prose
+  // follows.
+  await expect(page.getByText("Romaji", { exact: true }).first()).toBeVisible();
   // A distinctive phrase from the term's body prose.
   await expect(page.locator("body")).toContainText("Latin letters");
   await expect(page.locator("body")).not.toContainText(
