@@ -26,6 +26,7 @@ import { SETS, kanaFact, noteFor } from "../data/characters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
 import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
+import { termEntry } from "../data/terms.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
 import { packLessons } from "./kanji-lesson.ts";
@@ -484,13 +485,21 @@ describe("々 and rendaku each ride the first word that shows them", () => {
     );
   });
 
-  test("仕事 opens the rendaku card alone (no 々)", () => {
+  test("仕事 opens the rendaku term page alone (no 々)", () => {
+    // Rendaku is taught on its term page now, so its step reads out as the
+    // rendaku entry id rather than the old intro id.
     const steps = lessonSteps([wordReadingFactId("仕事")]);
     assert.deepEqual(
       steps.map((s) =>
-        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+        s.type === "intro"
+          ? s.intro.id
+          : s.type === "term"
+            ? String(s.entry)
+            : s.type === "item"
+              ? s.item.glyph
+              : s.type,
       ),
-      ["intro-rendaku", "仕事"],
+      [String(termEntry("rendaku")), "仕事"],
     );
   });
 
@@ -515,9 +524,15 @@ describe("々 and rendaku each ride the first word that shows them", () => {
     ]);
     assert.deepEqual(
       steps.map((s) =>
-        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+        s.type === "intro"
+          ? s.intro.id
+          : s.type === "term"
+            ? String(s.entry)
+            : s.type === "item"
+              ? s.item.glyph
+              : s.type,
       ),
-      ["intro-iteration-mark", "時々", "intro-rendaku", "様々", "我々"],
+      ["intro-iteration-mark", "時々", String(termEntry("rendaku")), "様々", "我々"],
     );
   });
 });

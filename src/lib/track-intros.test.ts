@@ -145,10 +145,16 @@ describe("every track that can unlock has exactly one intro", () => {
   });
 });
 
-// The two kana scripts open on TERM PAGES now (the redesign's "intros are the
-// term pages" model): hiragana on kana then hiragana, katakana on katakana. Every
-// other subject track keeps its single track-intro card.
-const TERM_FIRST: Readonly<Record<string, string>> = { hiragana: "kana", katakana: "katakana" };
+// Subject tracks that open on TERM PAGES now (the redesign's "intros are the term
+// pages" model): hiragana on kana then hiragana, katakana on katakana, counters
+// on the counter page, keigo on the keigo page. Grammar still opens on its own
+// authored first page, so it keeps a card and is absent here.
+const TERM_FIRST: Readonly<Record<string, string>> = {
+  hiragana: "kana",
+  katakana: "katakana",
+  counters: "counter",
+  keigo: "keigo",
+};
 
 describe("a track intro comes before that track's first lesson", () => {
   for (const track of SUBJECT_TRACKS) {

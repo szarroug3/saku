@@ -37,6 +37,7 @@ import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId, wordUnitReadingFactId } from "../data/vocab.ts";
 import { COUNTER_SOUND_CHANGE, NUMBERS_BIG, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
+import { termEntry } from "../data/terms.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import {
@@ -234,13 +235,15 @@ describe("the schedule", () => {
 });
 
 describe("the track opens with exactly one intro", () => {
-  test("the first counters lesson fires one track-counters card and no spine card", () => {
+  test("the first counters lesson fires one counter term page and no spine card", () => {
     const lesson = nextCounterLesson(history(), RANGE)!;
     const steps = lessonSteps(lesson.facts, history());
-    const intros = steps.filter(
-      (s) => s.type === "intro" && s.intro.id === "track-counters",
+    // The counters track opens on its term page now (the same page the Library
+    // shows), not the old track-counters intro card.
+    const opener = steps.filter(
+      (s) => s.type === "term" && String(s.entry) === String(termEntry("counter")),
     );
-    assert.equal(intros.length, 1, "exactly one track-counters intro");
+    assert.equal(opener.length, 1, "exactly one counter term page");
     // A phase-1 〜つ lesson is all kana forms: no prereq kanji, so no sound-change
     // card and no spine (radical/kanji/word) card fires here.
     assert.ok(

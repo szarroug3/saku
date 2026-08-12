@@ -240,7 +240,17 @@ export default function SessionPage() {
     const leavingWalk = (go: () => void) => () => {
       markConceptCardsShown(
         browserStore(),
-        teachItems.filter((s) => s.type === "intro").map((s) => s.key),
+        // Intro steps record by their own key; a term step that stands in for a
+        // once-ever concept card (on'yomi, pitch, the kanji/radical spine cards)
+        // records that concept's id, so a concept moved onto a term page is still
+        // marked shown and never returns. See LessonStep.conceptId in lesson-steps.ts.
+        teachItems.flatMap((s) =>
+          s.type === "intro"
+            ? [s.key]
+            : s.type === "term" && s.conceptId
+              ? [s.conceptId]
+              : [],
+        ),
       );
       go();
     };

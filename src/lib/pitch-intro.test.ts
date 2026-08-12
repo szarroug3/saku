@@ -21,10 +21,18 @@ import type { HistoryFile } from "../types/index.ts";
 
 const HISTORY: HistoryFile = { sessions: [], facts: {} };
 
-/** The intro/item ids of a walk, flattened for `includes`. */
+/** The intro/item ids of a walk, flattened for `includes`. The pitch card is a
+ * term page now, so a term step reads out under its `conceptId` (intro-pitch)
+ * when it stands in for a concept card, else its entry id. */
 function ids(steps: ReturnType<typeof lessonSteps>): string[] {
   return steps.map((s) =>
-    s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+    s.type === "intro"
+      ? s.intro.id
+      : s.type === "term"
+        ? (s.conceptId ?? String(s.entry))
+        : s.type === "item"
+          ? s.item.glyph
+          : s.type,
   );
 }
 

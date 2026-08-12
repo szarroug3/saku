@@ -46,9 +46,10 @@ import {
   INTRO_AFTER,
   INTRO_BEFORE,
   ITERATION_MARK,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
   ONYOMI_INTRO,
   PITCH_INTRO,
-  RENDAKU,
   TRANSITIVITY_INTRO,
   type PhaseIntro,
 } from "@/data/phase-intros";
@@ -80,9 +81,24 @@ const SPINE_TRACKS: ReadonlySet<TrackId> = new Set<TrackId>(["radical", "kanji",
  * concept to read. */
 export type LessonStep =
   | { type: "intro"; key: string; intro: PhaseIntro }
-  | { type: "term"; key: string; entry: EntryId }
+  // `conceptId` carries the stable id of the concept card this term page stands
+  // in for, when the term step REPLACES a once-ever concept intro (on'yomi,
+  // pitch, the kanji/radical spine cards). The walk gates re-showing on that id
+  // (`shownIntros.has(...)`), and session/page.tsx records it as shown on the way
+  // out — so a concept moved onto a term page is still shown exactly once. Absent
+  // for term steps that are not once-ever (the kana openers, counter/keigo track
+  // pages, rendaku, okurigana): those are gated by track history or per-lesson
+  // and record nothing. See src/lib/intro-shown.ts.
+  | { type: "term"; key: string; entry: EntryId; conceptId?: string }
   | { type: "conversion"; key: string; row: DakutenRow }
   | { type: "item"; key: string; item: LessonItem };
+
+/** A term-page step, optionally standing in for a once-ever concept card
+ * (`conceptId`). The one place a term step is built, so its key shape stays
+ * uniform. */
+function termStep(termId: string, conceptId?: string): LessonStep {
+  return { type: "term", key: `term:${termId}`, entry: termEntry(termId), conceptId };
+}
 
 /**
  * Tracks whose opening intro is one or more TERM PAGES rather than the single
@@ -96,6 +112,35 @@ const TRACK_TERM_INTROS: Partial<Record<TrackId, readonly string[]>> = {
   // in, so it is defined before the learner first has to type one.
   hiragana: ["kana", "hiragana", "romaji"],
   katakana: ["katakana"],
+  // Counters and keigo open on their term page too: the same page the Library
+  // shows, rendered where the word is first used. Their once-per-track gate is
+  // still track history (`started`), so no `conceptId` is threaded — meeting the
+  // track again would re-show it exactly as the old track-intro card did.
+  counters: ["counter"],
+  keigo: ["keigo"],
+};
+
+/**
+ * The two spine concept cards that are now shown as their TERM page — kanji and
+ * radical — by the id spine-intros.ts plans them under. The variant-forms card
+ * (also planned there) has no term and stays a plain intro, so it is absent.
+ * Both are once-ever, so the term step carries the intro id as its `conceptId`.
+ */
+const SPINE_TERM: Readonly<Record<string, string>> = {
+  [TRACK_INTROS.kanji.id]: "kanji",
+  [TRACK_INTROS.radical.id]: "radical",
+};
+
+/**
+ * The grammar-lesson teach cards shown as a TERM page instead of an intro card.
+ * Okurigana is taught over two consecutive cards (the idea, then the moving
+ * tail); its term page renders both, so the two collapse into ONE okurigana term
+ * step. Not once-ever — gated by the grammar lesson that teaches it — so no
+ * `conceptId`.
+ */
+const GRAMMAR_CARD_TERM: Readonly<Record<string, string>> = {
+  [OKURIGANA_INTRO.id]: "okurigana",
+  [OKURIGANA_MOVING.id]: "okurigana",
 };
 
 /** The kana section a step's glyph belongs to, or null for anything that isn't
@@ -234,7 +279,20 @@ export function lessonSteps(
     for (const grammarLesson of grammarLessons) {
       for (const page of grammarLesson.pages) {
         if (page.kind === "teach") {
-          grammarSteps.push({ type: "intro", key: page.card.id, intro: page.card });
+          const termId = GRAMMAR_CARD_TERM[page.card.id];
+          if (termId) {
+            // A teach card whose home is a term page. Okurigana's two cards both
+            // map here; the term page shows both, so a second consecutive card
+            // for the same term folds into the step already pushed rather than
+            // showing the page twice.
+            const key = `term:${termId}`;
+            const last = grammarSteps[grammarSteps.length - 1];
+            if (!(last && last.type === "term" && last.key === key)) {
+              grammarSteps.push(termStep(termId));
+            }
+          } else {
+            grammarSteps.push({ type: "intro", key: page.card.id, intro: page.card });
+          }
         } else {
           for (const item of itemsFromFacts([...page.facts])) {
             grammarSteps.push({ type: "item", key: item.entry, item });
@@ -322,7 +380,12 @@ export function lessonSteps(
     // radical), so the second reads as one level deeper and not as an unrelated
     // second announcement.
     for (const intro of spinePlan.get(index) ?? []) {
-      steps.push({ type: "intro", key: intro.id, intro });
+      // The kanji and radical spine cards are shown as their term page now; the
+      // variant-forms card (no term) stays a plain intro. The term step carries
+      // the intro id as `conceptId`, so the once-ever record still fires for it.
+      const termId = SPINE_TERM[intro.id];
+      if (termId) steps.push(termStep(termId, intro.id));
+      else steps.push({ type: "intro", key: intro.id, intro });
     }
     // Then the remaining TRACK cards, still opened by subject: kana's two
     // scripts, grammar, counters and keigo are each their own track with their
@@ -359,7 +422,9 @@ export function lessonSteps(
     }
     if (!markedRendaku && item.kind === "word" && hasRendaku(item.glyph)) {
       markedRendaku = true;
-      steps.push({ type: "intro", key: RENDAKU.id, intro: RENDAKU });
+      // Rendaku is taught on its term page (cards: [RENDAKU]). Per-lesson gated
+      // by `markedRendaku`, not once-ever, so no conceptId.
+      steps.push(termStep("rendaku"));
     }
     if (!markedTransitivity && item.kind === "transitivity") {
       markedTransitivity = true;
@@ -381,7 +446,12 @@ export function lessonSteps(
       item.facts.includes(wordReadingFactId(item.glyph))
     ) {
       markedPitch = true;
-      steps.push({ type: "intro", key: PITCH_INTRO.id, intro: PITCH_INTRO });
+      // The word track opens the pitch idea on its term page, then the mora term
+      // (a pitch is drawn over a word's morae, so mora is defined right after).
+      // Pitch is once-ever (its id is in CONCEPT_CARD_IDS), so its term step
+      // carries the conceptId; mora rides the same gate and needs no record.
+      steps.push(termStep("pitch-accent", PITCH_INTRO.id));
+      steps.push(termStep("mora"));
     }
     // The on'yomi card, ahead of the first kanji taught here that has one. Gated
     // on the step actually TEACHING the kanji (its meaning fact is in the step),
@@ -391,7 +461,9 @@ export function lessonSteps(
     // just named.
     if (!markedOnyomi && item.facts.includes(meaningFactId(item.glyph)) && hasOnyomi(item.glyph)) {
       markedOnyomi = true;
-      steps.push({ type: "intro", key: ONYOMI_INTRO.id, intro: ONYOMI_INTRO });
+      // On'yomi is taught on the kun'yomi/on'yomi term page (cards: [ONYOMI_INTRO]).
+      // Once-ever, so the term step carries the intro id as its conceptId.
+      steps.push(termStep("kunyomi-onyomi", ONYOMI_INTRO.id));
     }
     // The "how a kanji is built" card, ahead of the first kanji whose Built-from
     // box has semantic/phonetic pieces to point at, so the distinction lands with

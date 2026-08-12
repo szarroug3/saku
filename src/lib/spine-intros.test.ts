@@ -94,16 +94,27 @@ function anchorFor(role: "radical" | "kanji") {
   return anchor;
 }
 
-/** The intro ids a walk of this lesson emits, in order. `shown` is the record of
- * cards already read, which is what the once-ever guarantee now rests on. */
+/** The concept a step introduces, by its stable id: an intro step's own key, or
+ * the `conceptId` a term step carries when it stands in for a once-ever concept
+ * card (the kanji and radical spine cards are term pages now). Anything else has
+ * none. So a spine card reads out under its intro id whichever step type carries
+ * it. */
+function conceptKey(s: ReturnType<typeof lessonSteps>[number]): string | undefined {
+  if (s.type === "intro") return s.key;
+  if (s.type === "term") return s.conceptId;
+  return undefined;
+}
+
+/** The concept ids a walk of this lesson emits, in order. `shown` is the record
+ * of cards already read, which is what the once-ever guarantee now rests on. */
 function introsOf(
   facts: readonly FactId[],
   history: HistoryFile,
   shown: ReadonlySet<string> = new Set(),
 ): string[] {
   return lessonSteps(facts, history, shown)
-    .filter((s) => s.type === "intro")
-    .map((s) => s.key);
+    .map(conceptKey)
+    .filter((id): id is string => id !== undefined);
 }
 
 /**
@@ -252,18 +263,17 @@ describe("each card lands in its anchor's lesson, ahead of the anchor", () => {
 
       test("the card fires in that lesson, immediately ahead of the anchor item", () => {
         const steps = lessonSteps(GROUPS[at].facts, historyAt());
-        const cardAt = steps.findIndex(
-          (s) => s.type === "intro" && s.key === anchor.intro.id,
-        );
+        const cardAt = steps.findIndex((s) => conceptKey(s) === anchor.intro.id);
         assert.ok(cardAt >= 0, `${anchor.role} card never fired`);
         const itemAt = steps.findIndex(
           (s) => s.type === "item" && s.item.glyph === anchor.glyph,
         );
         assert.ok(itemAt > cardAt, `${anchor.role} card lands after its anchor`);
-        // Nothing but another card sits between the two: the explanation runs
-        // straight into the thing it explains.
+        // Nothing but another concept card sits between the two: the explanation
+        // (a term page now for kanji/radical) runs straight into the thing it
+        // explains, never split off by an item.
         for (let i = cardAt + 1; i < itemAt; i++) {
-          assert.equal(steps[i].type, "intro", `an item splits ${anchor.role}'s card off`);
+          assert.notEqual(steps[i].type, "item", `an item splits ${anchor.role}'s card off`);
         }
       });
 
@@ -323,7 +333,8 @@ describe("the kanji card comes before the radical card", () => {
   test("the kanji card is the very first thing in that lesson", () => {
     const at = GROUPS.findIndex((g) => g.items.some((it) => it.glyph === kanji.glyph));
     const steps = lessonSteps(GROUPS[at].facts, met(factsWrittenOnStart(GROUPS[at])));
-    assert.equal(steps[0].type === "intro" ? steps[0].key : "", kanji.intro.id);
+    // It leads as a term page now, carrying the kanji card's id as its conceptId.
+    assert.equal(conceptKey(steps[0]) ?? "", kanji.intro.id);
   });
 });
 
@@ -523,13 +534,11 @@ describe("a learner carrying progress from the old separate tracks", () => {
       ...startFacts(lesson.facts, lesson.cards),
     ]);
     const steps = lessonSteps(lesson.facts, history, new Set());
-    const ids = steps.filter((s) => s.type === "intro").map((s) => s.key);
-    assert.ok(ids.includes("track-radical"), "the radical card is still missing");
+    // The radical card is a term page now, so it reads out by its conceptId.
+    const stepAt = steps.findIndex((s) => conceptKey(s) === "track-radical");
+    assert.ok(stepAt >= 0, "the radical card is still missing");
     // And ahead of an item that plays the radical role, so the label the card
     // explains is on the screen right after it.
-    const cardAt = ids.indexOf("track-radical");
-    const stepAt = steps.findIndex((s) => s.type === "intro" && s.key === "track-radical");
-    assert.ok(cardAt >= 0 && stepAt >= 0);
     const after = steps.slice(stepAt + 1).find((s) => s.type === "item");
     assert.ok(after && after.type === "item");
     assert.ok(
