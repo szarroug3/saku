@@ -7,6 +7,7 @@
 
 import type { ReactNode } from "react";
 
+import { Dock } from "@/components/dock";
 import { SmallBtn } from "@/components/ui";
 
 export function SessionHud({
@@ -16,6 +17,7 @@ export function SessionHud({
   pct,
   tone = "accent",
   float,
+  hideBar,
   onDone,
   onEnd,
   doneLabel = "Done for now",
@@ -30,6 +32,9 @@ export function SessionHud({
   sublabel?: string;
   /** Where you are — "round 1 · done", "resting", "complete". */
   where: string;
+  /** Drop the progress bar entirely — the teach phase conveys position with its
+   * "N of M" pill, so the always-zero bar was just a faint extra line. */
+  hideBar?: boolean;
   /** Bar fill, 0–100. */
   pct: number;
   /** The bar's colour. The rest's bar is deliberately grey: it is elapsing,
@@ -76,15 +81,8 @@ export function SessionHud({
   endLabel?: string;
   children?: ReactNode;
 }) {
-  return (
-    <div
-      className={`px-3 py-1.5 ${
-        // Frozen where it is, with a SOLID app-background so nothing scrolls into
-        // view behind it — a plain sticky strip, not the translucent kq-band that
-        // let content roll up under it. Same treatment on every session phase.
-        float ? "sticky top-0 z-10 border-b border-border bg-bg" : ""
-      }`}
-    >
+  const body = (
+    <div className={`px-3 py-1.5 ${float ? "border-b border-border" : ""}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
         <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
           {label}
@@ -101,18 +99,26 @@ export function SessionHud({
           {onDone ? <SmallBtn onClick={onDone}>{doneLabel}</SmallBtn> : null}
         </span>
       </div>
-      <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
-        <div
-          className={`h-full rounded-full transition-[width] duration-200 ${
-            tone === "muted"
-              ? "bg-text-muted"
-              : tone === "success"
-                ? "bg-success"
-                : "bg-accent"
-          }`}
-          style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-        />
-      </div>
+      {hideBar ? null : (
+        <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
+          <div
+            className={`h-full rounded-full transition-[width] duration-200 ${
+              tone === "muted"
+                ? "bg-text-muted"
+                : tone === "success"
+                  ? "bg-success"
+                  : "bg-accent"
+            }`}
+            style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+          />
+        </div>
+      )}
     </div>
   );
+
+  // When it floats, the bar lifts OUT of the scrolling page into the top dock —
+  // the same frozen slot the Library docks its header into. Content then scrolls
+  // BELOW it (never behind), so the bar needs no occluding fill of its own and
+  // stays visually clear over the page's fixed backdrop. In place otherwise.
+  return float ? <Dock slot="top">{body}</Dock> : body;
 }

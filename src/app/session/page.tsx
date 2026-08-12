@@ -308,6 +308,7 @@ export default function SessionPage() {
           where=""
           pct={0}
           float
+          hideBar
           onDone={pauseSession}
           onEnd={endSession}
         >
