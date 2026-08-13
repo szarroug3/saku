@@ -67,7 +67,11 @@ const panel =
   // card only showed while the glow was on). A flat rgba fill is a single alpha
   // blend per pixel — no blur — so it sets the card off from the mesh and keeps
   // the scroll smooth.
-  "bg-[rgba(0,0,0,0.18)]";
+  "bg-[rgba(0,0,0,0.18)] " +
+  // A very, very slight white halo on top of the flat fill — just enough to catch
+  // a rim of light off the mesh. Small radius, low alpha: still one cheap raster
+  // on the promoted layer, no re-blur on scroll.
+  "shadow-[0_0_14px_rgba(255,255,255,0.05)]";
 
 export function NextLessonPreview({
   lesson,
