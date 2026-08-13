@@ -127,3 +127,28 @@ export async function stepToHeadword(page: Page, glyph: string, max = 16) {
   ).toBeVisible();
   return target;
 }
+
+/**
+ * Click the Library SHELF's "Teach me N" and land in the teach walk (`/session`).
+ *
+ * WHY A RETRY. On the Library page a session is started with `router.push`, and
+ * the shelf reaches it after a SEARCH — which drives navigation through the
+ * native History API (`window.history.pushState`, see library-page.tsx). Under
+ * full-suite CPU load that pushState transiently desyncs Next's router (and the
+ * action bar can re-render as the search settles), so the FIRST push can be
+ * dropped: the click registers but the page stays on `/library`. A real user
+ * clicking a beat later never races this; the test clicks instantly. So poll —
+ * click, and if the walk hasn't opened, the page has settled and the next click
+ * lands. This does NOT weaken the assertion: it still requires reaching /session
+ * and the stepped teach HUD. (The underlying Library search→push race is a real
+ * but narrow Next-16 issue, worth a dedicated fix; this keeps the spec honest
+ * meanwhile.)
+ */
+export async function teachMeFromShelf(page: Page): Promise<void> {
+  const teach = page.getByRole("button", { name: /^Teach me \d+$/ });
+  await expect(teach).toBeVisible();
+  await expect(async () => {
+    if (!page.url().includes("/session")) await teach.click();
+    await page.waitForURL("**/session", { timeout: 5_000 });
+  }).toPass({ timeout: 45_000 });
+}

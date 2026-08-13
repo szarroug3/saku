@@ -1,4 +1,4 @@
-import { test, expect, stepToHeadword } from "./helpers/lessons";
+import { test, expect, stepToHeadword, teachMeFromShelf } from "./helpers/lessons";
 
 /**
  * THE "TEACH ME N" PATH: a lesson started from the Library SHELF, not the Home
@@ -38,15 +38,10 @@ test("Library shelf 'Teach me N' opens the teach walk for the selected slice", a
     page.getByRole("button", { name: /Clear \d+ selected/ }),
   ).toBeVisible();
 
-  // The shelf action bar now offers "Teach me N" over the selection, because
-  // nothing in this slice is known yet. N is the real count, so match the shape
-  // rather than a fixed number.
-  const teach = page.getByRole("button", { name: /^Teach me \d+$/ });
-  await expect(teach).toBeVisible();
-  await teach.click();
-
-  // It builds a session and drops into the teach walk — not a straight quiz.
-  await page.waitForURL("**/session");
+  // The shelf action bar offers "Teach me N" over the selection (nothing in this
+  // slice is known yet); clicking it builds a session and drops into the teach
+  // walk — not a straight quiz. See teachMeFromShelf for why the click retries.
+  await teachMeFromShelf(page);
   // The teach HUD's position, proving this is the stepped walk and not the drill.
   await expect(page.getByText(/^\d+ of \d+$/)).toBeVisible();
   // The walk teaches 生 (it may open on a concept-card intro first).

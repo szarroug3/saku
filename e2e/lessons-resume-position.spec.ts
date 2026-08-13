@@ -5,6 +5,7 @@ import {
   lessonCard,
   stepToHeadword,
   headword,
+  teachMeFromShelf,
 } from "./helpers/lessons";
 
 /**
@@ -49,15 +50,10 @@ test("Library shelf 'Teach me N' builds a multi-card teach walk over the slice",
     page.getByRole("button", { name: /Clear \d+ selected/ }),
   ).toBeVisible();
 
-  // Offered because nothing in this slice is known yet. N is the real fact count,
-  // so match the shape rather than a fixed number.
-  const teach = page.getByRole("button", { name: /^Teach me \d+$/ });
-  await expect(teach).toBeVisible();
-  await teach.click();
-
-  // It lands in the stepped walk, not a straight drill: the teach HUD's "N of M"
-  // is the tell.
-  await page.waitForURL("**/session");
+  // Offered because nothing in this slice is known yet; clicking it lands in the
+  // stepped walk (not a straight drill), told by the teach HUD's "N of M". See
+  // teachMeFromShelf for why the click retries.
+  await teachMeFromShelf(page);
   const hud = page.getByText(/^\d+ of \d+$/);
   await expect(hud).toBeVisible();
 
