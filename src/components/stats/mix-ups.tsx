@@ -42,7 +42,7 @@
 
 import { useMemo } from "react";
 
-import { Card, Lbl } from "@/components/ui";
+import { Lbl } from "@/components/ui";
 import { directionOf, pairRecords, type PairRecord } from "@/lib/confusions";
 import { entryOf, glyphOf } from "@/lib/facts";
 import type { HistoryFile } from "@/types";
@@ -124,7 +124,7 @@ export function MixUps({
   }, [history, graduateRuns]);
 
   return (
-    <Card>
+    <section>
       <Lbl>Things you mix up{rows.length ? ` · ${rows.length}` : ""}</Lbl>
 
       {rows.length === 0 ? (
@@ -144,9 +144,7 @@ export function MixUps({
               {rows.map((r) => (
                 <tr
                   key={r.key}
-                  className={`border-b border-border last:border-b-0 ${
-                    r.stage === "sorted" ? "opacity-45" : ""
-                  }`}
+                  className={r.stage === "sorted" ? "opacity-45" : ""}
                 >
                   <td className="py-2 pr-2 font-kana text-base">{r.glyphs}</td>
                   <td className="w-[116px] py-2">
@@ -171,7 +169,7 @@ export function MixUps({
           </table>
         </div>
       )}
-    </Card>
+    </section>
   );
 }
 

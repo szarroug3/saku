@@ -16,7 +16,7 @@
 // study app can put on a page called Progress, and it needs no caption saying so:
 // you will see it drop, once, and understand it forever.
 
-import { Card, Lbl } from "@/components/ui";
+import { Lbl } from "@/components/ui";
 import {
   BUCKETS,
   BUCKET_LABEL,
@@ -30,7 +30,7 @@ export function KnowledgeBase({ tally }: { tally: Tally }) {
   const total = held(tally);
 
   return (
-    <Card>
+    <section>
       <Lbl>What you know</Lbl>
 
       {total === 0 ? (
@@ -77,6 +77,6 @@ export function KnowledgeBase({ tally }: { tally: Tally }) {
           </div>
         </>
       )}
-    </Card>
+    </section>
   );
 }
