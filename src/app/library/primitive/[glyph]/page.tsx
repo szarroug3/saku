@@ -87,6 +87,7 @@ function PrimitiveView({ glyph }: { glyph: string }) {
       <EntryLinks mixups={{ confused: [], lookalike: [] }} />
 
       <SliceBar
+        variant="entry"
         slice={{ label: glyph, entries: [id] }}
         showLabel={false}
         facts={history.facts}

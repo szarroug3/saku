@@ -75,13 +75,15 @@ test("every library kind mints a working href", async ({ page }) => {
       response!.status(),
       `kind ${kind} minted ${href}, which did not serve`,
     ).toBeLessThan(400);
-    // No entry kind uses an h1 anymore. The shared action bar (SliceBar) is the one
-    // piece of furniture every kind carries — both the redesigned [...entry] views
-    // and the standalone /library/primitive page render it — so its "Add to list"
-    // is the uniform "rendered, not 404" signal across all kinds.
+    // No entry kind uses an h1 anymore, and the entry pages no longer carry the
+    // Add-to-list action bar (that verb moved to the shelf; an entry page shows at
+    // most a lone "Quiz me"). The uniform "rendered, not 404" signal every kind
+    // still carries is the data-sources attribution link at the foot of the entry
+    // surface — both the redesigned [...entry] views and the /library/primitive
+    // page render it.
     await expect(
-      page.getByRole("button", { name: /Add to list/ }),
-      `kind ${kind} at ${href} rendered no action bar`,
+      page.getByRole("link", { name: /Data sources/ }),
+      `kind ${kind} at ${href} rendered no entry surface`,
     ).toBeVisible();
   }
 });

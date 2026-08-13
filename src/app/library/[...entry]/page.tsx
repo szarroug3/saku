@@ -135,6 +135,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
       <EntryBody entry={entry} mark={mark} />
 
       <SliceBar
+        variant="entry"
         slice={{ label: entryName(entry), entries: [entry.id] }}
         showLabel={false}
         // The committed aggregate on purpose: the bar plans a drill, which is a

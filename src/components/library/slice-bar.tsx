@@ -68,6 +68,7 @@ export function SliceBar({
   quizMode,
   teachPlan,
   progressReady = true,
+  variant = "bar",
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -110,6 +111,13 @@ export function SliceBar({
   /** False when this browser's signed-out history cannot be read until the
    * client starts. Never present actions calculated from a fake empty history. */
   progressReady?: boolean;
+  /** "bar" (default) is the full action band — Add to list, I-know-this, Quiz,
+   * Teach — shown on the main Library shelf. "entry" is the pared-down entry-page
+   * treatment: NO band, NO Add to list (that verb belongs to the shelf), NO
+   * claim/teach. It renders NOTHING unless the entry is quizzable on its own, and
+   * when it is, only a lone "Quiz me" button — a reference page shows the answer,
+   * so the one thing it may still offer is a deliberate self-test. */
+  variant?: "bar" | "entry";
 }) {
   const { startSession, startQuiz, startQuizInMode } = useQuizSession();
   const [adding, setAdding] = useState(false);
@@ -177,6 +185,45 @@ export function SliceBar({
   // this bar hasn't already shown — so hide Drill (only Drill) on single-fact
   // slices. Add-to-list and I-know-this stay: you may still file か or claim it.
   const canDrill = sliceIsDrillable(slice);
+
+  // ENTRY-PAGE TREATMENT. A Library entry page is reference, not a shelf: no
+  // filing (Add to list is the shelf's verb), no claim/teach. The only action it
+  // may still offer is a deliberate self-test, and only when the entry is
+  // quizzable on its own (a lone kana IS the answer printed above — nothing to
+  // ask). So render nothing unless canQuiz, and then just the Quiz me button,
+  // lesson-style, with no band around it.
+  if (variant === "entry") {
+    if (!canQuiz) return null;
+    return (
+      <>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Btn sel onClick={() => setQuizzing(true)}>
+            Quiz me {quizCount}
+          </Btn>
+        </div>
+        <QuizPreStart
+          open={quizzing}
+          onOpenChange={setQuizzing}
+          label={slice.label}
+          count={quizCount}
+          generator={hasGenerator}
+          onStart={() => {
+            if (hasGenerator) {
+              startQuiz(effectiveQuizOrder, {
+                what: slice.label,
+                mode: "drill",
+                coverage: true,
+              });
+            } else if (quizMode) {
+              startQuizInMode(effectiveQuizOrder, quizMode, { what: slice.label });
+            } else {
+              startQuiz(effectiveQuizOrder, { what: slice.label });
+            }
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <>
