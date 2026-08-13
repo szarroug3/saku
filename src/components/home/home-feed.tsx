@@ -30,7 +30,6 @@ import { startTransition, useMemo } from "react";
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
-import { PageTitle } from "@/components/ui";
 
 import { UNIT_TRACKS } from "@/lib/content/unit-tracks";
 import { nextTrackLesson } from "@/lib/content/unit-scheduler";
@@ -400,13 +399,11 @@ export function HomeFeed() {
 
   // Until history has loaded, the frontiers are computed from EMPTY history — the
   // day-one lesson. Rendering that for a returning learner flashes the wrong card,
-  // so hold the feed until the real history lands; the title still prints.
-  if (!loaded) return <PageTitle title="Saku" />;
+  // so hold the feed until the real history lands.
+  if (!loaded) return null;
 
   return (
     <>
-      <PageTitle title="Saku" />
-
       {/* What "I already know this" means, said once for the whole page. */}
       <ClaimExplainer />
 
