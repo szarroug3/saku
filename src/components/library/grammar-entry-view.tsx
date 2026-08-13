@@ -21,6 +21,7 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { LinkSlot } from "@/components/grammar/link-slot";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach } from "@/components/library/pattern-teach";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
@@ -97,6 +98,17 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
             current={pattern}
             feel={familyCluster.feel}
           />
+        </Section>
+      ) : null}
+
+      {/* READ ABOUT IT — the family's external reference. It used to live on the
+          cluster's own /grammar page; those word-cluster pages are gone, so the
+          reference (a verified outside link, when one covers the whole family)
+          rides here on each member instead of being lost. Only when the pattern's
+          cluster carries a link. */}
+      {familyCluster?.link ? (
+        <Section title="Read about it" tone="accent">
+          <LinkSlot link={familyCluster.link} />
         </Section>
       ) : null}
     </EntrySurface>

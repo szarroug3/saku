@@ -11,11 +11,9 @@ import { entryHref } from "@/lib/library/href";
  *
  *  1. the family's `feel` note is surfaced under the comparison table, as the
  *     "Which one?" answer to "there are several, which do I use?";
- *  2. the family's EXTERNAL reference (Tae Kim on conditionals) is NOT repeated
- *     here — it is family-level material that lives on the cluster page, one hop
- *     from the "Family →" row;
- *  3. the Links box is the LAST thing on the page, under the "Ways to say this"
- *     table, not wedged between the teaching and it.
+ *  2. the family's EXTERNAL reference (Tae Kim on conditionals) now rides the
+ *     member page under "Read about it" — it used to live on the word-cluster's
+ *     own page, but those were removed, so it moved here rather than being lost.
  *
  * All three were changed together and none had coverage; a future edit could
  * silently undo any of them.
@@ -39,16 +37,16 @@ test("a member page answers 'which one?' with the family's feel note", async ({
   await expect(page.getByText(/overlap is large and real/)).toBeVisible();
 });
 
-test("a member page does not carry the family's external reference", async ({
+test("a member page carries the family's external reference", async ({
   page,
 }) => {
-  // The redesigned member page (GrammarEntryView) carries no Links/reference card.
-  // The family's external reference (Tae Kim on conditionals) used to live on the
-  // word-cluster's side-by-side page, which has since been removed (only the
-  // map-only families keep a /grammar page), so it is not surfaced on the member
-  // page either — the reference data stays in clusters.ts, just unshown.
+  // The family's external reference (Tae Kim on conditionals) USED to live on the
+  // word-cluster's side-by-side page. Those word-cluster pages were removed, so the
+  // reference now rides each member page under a "Read about it" section instead of
+  // being lost. 〜ば is in the conditionals family, which carries a link.
   await page.goto(BA);
-  await expect(page.getByRole("link", { name: /Tae Kim/ })).toHaveCount(0);
+  await expect(page.getByText("Read about it", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Tae Kim/ })).toBeVisible();
 });
 
 // REMOVED: "the Links box sits below the 'Ways to say this' table". The redesigned
