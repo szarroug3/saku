@@ -1,48 +1,75 @@
 "use client";
 
-// DEV-ONLY, used only by /dev/library. The REDESIGNED, de-boxed Library shelf —
-// the same tiles and rows the shipped Shelf draws, but with the per-section
-// <Card> taken off. This is the last box holdout in an app that went boxless
-// everywhere else (the Learn feed, the Library entry pages), so the redesign
-// sits the sections straight on the mesh: a quiet uppercase eyebrow for the
-// section name, its count beside it, a hairline border-top between groups, then
-// the tile grid or row list. No Card, no fill, no rounded panel, and — the hard,
-// learned rule — NO shadow/blur/glow on tiles or sections, because a kanji shelf
-// is thousands of tiles and any blurred shadow on scrolling content reintroduces
-// severe scroll jank. Separation is hairline borders + whitespace only.
+// DEV-ONLY, used only by /dev/library. The REDESIGNED, de-boxed Library shelf.
 //
-// THE TILE IS THE BOX. De-boxing the SECTIONS changed almost nothing in kiri: a
-// <Card> there is already a transparent hole with a faint 1px border, so removing
-// it is invisible. What actually reads as "boxy" is each TILE — a rounded,
-// outlined bg-card cell with a ✓ corner and two always-on 🔊/↗ buttons crammed
-// inside. So the redesigned tile (DeboxedTile below) drops the border and fill
-// entirely: just the glyph and its romaji sitting on the mesh, a flat hover tint
-// for the select target (no shadow — the density rule), an accent wash when
-// selected, and the 🔊/↗ actions revealed only on hover so the resting shelf is
-// clean glyphs, not a grid of boxes. Rows keep the shipped EntryRow (a list is
-// honestly a list; its hairlines were never the problem). Standings run through
-// the same entryStanding the live shelf uses.
+// THE TILE IS THE BOX. De-boxing the section <Card> was near-invisible in kiri (a
+// Card there is already a transparent hole with a faint border), so what actually
+// reads as "boxy" is each TILE — a rounded, outlined bg-card cell with a ✓ corner
+// and two always-on 🔊/↗ buttons crammed inside. So the redesigned tile
+// (DeboxedTile) drops the border and fill entirely: glyph + romaji on the mesh, a
+// flat hover tint for the select target (no shadow — the density rule), an accent
+// wash when selected, and the actions revealed only on hover. The row kinds
+// (grammar) get the SAME treatment via DeboxedRow: hairline-separated list, but
+// the select checkbox and ↗ are hover-revealed, not always-on furniture.
+//
+// COLLAPSIBLE, like the shipped shelf. Kana keeps its two-level structure —
+// collapsible Hiragana / Katakana script headers, and a collapse chevron on every
+// section — because a 46-kana shelf you can fold is easier to navigate than one
+// long scroll. Section ids start with "hiragana"/"katakana", the same grouping
+// key shelves.tsx uses.
 
+import { useState } from "react";
 import Link from "next/link";
 
-import { EntryRow } from "@/components/library/entry-tile";
 import { HearButton } from "@/components/lesson/hear-button";
-import { Hint } from "@/components/ui";
-import { entryHref } from "@/lib/library/href";
-import { japaneseFontClass } from "@/lib/japanese-text";
-import { subLabel } from "@/lib/library/sub-label";
+import { Hint, Lbl } from "@/components/ui";
+import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { entryName, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import {
+  entryName,
+  SENTENCE_RULE_KIND,
+  type Kind,
+  type LibEntry,
+} from "@/lib/library/entries";
+import { entryHref } from "@/lib/library/href";
+import { japaneseFontClass } from "@/lib/japanese-text";
+import { subLabel } from "@/lib/library/sub-label";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import type { ShelfSection } from "@/lib/library/shelf-view";
-import { entryStanding } from "@/lib/library/standing";
-import { factsOf } from "@/lib/facts";
-import type { AccuracyMetric, EntryId, FactAggregate } from "@/types";
+import type { EntryId } from "@/types";
+
+/** A collapse/expand chevron, matching the shipped shelf's affordance. */
+function Chevron({
+  expanded,
+  onClick,
+  label,
+}: {
+  expanded: boolean;
+  onClick(): void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-label={label}
+      onClick={onClick}
+      className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <span
+        aria-hidden
+        className={`block transition-transform ${expanded ? "rotate-90" : ""}`}
+      >
+        ›
+      </span>
+    </button>
+  );
+}
 
 export function DeboxedShelf({
   kind,
@@ -50,10 +77,6 @@ export function DeboxedShelf({
   selected,
   onToggleEntry,
   onToggleSection,
-  facts,
-  claims,
-  metric,
-  now,
   voice,
 }: {
   kind: Kind;
@@ -61,12 +84,25 @@ export function DeboxedShelf({
   selected: Selection;
   onToggleEntry(id: EntryId, shiftKey: boolean): void;
   onToggleSection(ids: readonly EntryId[]): void;
-  facts: Record<EntryId | string, FactAggregate>;
-  claims: Record<string, number>;
-  metric: AccuracyMetric;
-  now: number;
   voice: string;
 }) {
+  const [collapsedSections, setCollapsedSections] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const [collapsedScripts, setCollapsedScripts] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const toggle = (
+    set: ReadonlySet<string>,
+    apply: (s: ReadonlySet<string>) => void,
+    id: string,
+  ) => {
+    const next = new Set(set);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    apply(next);
+  };
+
   // Same kind → rows decision the shipped shelf makes (see shelves.tsx `asRows`).
   const asRows =
     kind === GRAMMAR_SUBJECT ||
@@ -77,95 +113,129 @@ export function DeboxedShelf({
     kind === TERM_SUBJECT ||
     kind === GRAMMAR_CONCEPT_SUBJECT;
 
-  const tile = (entry: LibEntry) => (
-    <DeboxedTile
-      key={entry.id}
-      entry={entry}
-      voice={voice}
-      selected={selected.has(entry.id)}
-      onToggle={(shift) => onToggleEntry(entry.id, shift)}
-    />
-  );
+  /** One de-boxed section: a quiet header (collapse chevron + select-all eyebrow +
+   * count), then — unless collapsed — the tile grid or the row list. `first`
+   * drops the top hairline so groups butt cleanly against a script header. */
+  const sectionBlock = (section: ShelfSection, first: boolean) => {
+    const ids = section.entries.map((e) => e.id);
+    const state = sectionState(selected, ids);
+    const expanded = !collapsedSections.has(section.id);
+    const sectionAsRows =
+      asRows || section.asRows || section.entries.every((e) => !e.glyph);
+    return (
+      <section
+        key={section.id}
+        className={first ? "" : "mt-4 border-t border-white/[0.08] pt-4"}
+      >
+        <div className="mb-2 flex items-center gap-1.5">
+          <Chevron
+            expanded={expanded}
+            onClick={() =>
+              toggle(collapsedSections, setCollapsedSections, section.id)
+            }
+            label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
+          />
+          <button
+            type="button"
+            onClick={() => onToggleSection(ids)}
+            aria-pressed={state === "all"}
+            className={`cursor-pointer text-[11px] font-medium uppercase tracking-[0.08em] ${
+              state === "all"
+                ? "text-accent"
+                : state === "some"
+                  ? "text-warning"
+                  : "text-text-muted hover:text-text"
+            }`}
+          >
+            {section.label}
+          </button>
+          <Hint>{section.entries.length}</Hint>
+        </div>
+        {expanded ? (
+          sectionAsRows ? (
+            kind === GRAMMAR_SUBJECT ? (
+              <div className="grid grid-cols-[max-content_max-content_minmax(0,1fr)_auto] gap-x-4">
+                {section.entries.map((entry) => (
+                  <DeboxedRow
+                    key={entry.id}
+                    entry={entry}
+                    grid
+                    selected={selected.has(entry.id)}
+                    onToggle={(shift) => onToggleEntry(entry.id, shift)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {section.entries.map((entry) => (
+                  <DeboxedRow
+                    key={entry.id}
+                    entry={entry}
+                    selected={selected.has(entry.id)}
+                    onToggle={(shift) => onToggleEntry(entry.id, shift)}
+                  />
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+              {section.entries.map((entry) => (
+                <DeboxedTile
+                  key={entry.id}
+                  entry={entry}
+                  voice={voice}
+                  selected={selected.has(entry.id)}
+                  onToggle={(shift) => onToggleEntry(entry.id, shift)}
+                />
+              ))}
+            </div>
+          )
+        ) : null}
+      </section>
+    );
+  };
 
-  const row = (entry: LibEntry, grid = false) => (
-    <EntryRow
-      key={entry.id}
-      entry={entry}
-      voice={voice}
-      note={entry.sub}
-      grid={grid}
-      standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
-      showStatus={false}
-      selected={selected.has(entry.id)}
-      onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
-    />
-  );
+  // Kana keeps its collapsible Hiragana / Katakana script headers; every other
+  // kind is a flat list of sections.
+  if (kind === KANA_SUBJECT) {
+    return (
+      <div>
+        {(["hiragana", "katakana"] as const).map((script, scriptIdx) => {
+          const scriptSections = sections.filter((s) => s.id.startsWith(script));
+          if (!scriptSections.length) return null;
+          const expanded = !collapsedScripts.has(script);
+          return (
+            <div key={script} className={scriptIdx === 0 ? "" : "mt-5"}>
+              <div className="flex items-center gap-1.5 pb-1">
+                <Chevron
+                  expanded={expanded}
+                  onClick={() =>
+                    toggle(collapsedScripts, setCollapsedScripts, script)
+                  }
+                  label={`${expanded ? "Collapse" : "Expand"} ${script}`}
+                />
+                <Lbl>{script === "hiragana" ? "Hiragana" : "Katakana"}</Lbl>
+              </div>
+              {expanded
+                ? scriptSections.map((section, i) => sectionBlock(section, i === 0))
+                : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {sections.map((section, index) => {
-        const ids = section.entries.map((e) => e.id);
-        const state = sectionState(selected, ids);
-        const sectionAsRows =
-          asRows || section.asRows || section.entries.every((e) => !e.glyph);
-        return (
-          // A REAL CSS hairline border-top separates groups; the first has none.
-          // No Card, no fill, no rounded panel, no shadow.
-          <section
-            key={section.id}
-            className={
-              index === 0 ? "" : "mt-4 border-t border-white/[0.08] pt-4"
-            }
-          >
-            {/* The quiet section-head: name as a small uppercase eyebrow (which
-                doubles as the select-all toggle the shipped shelf's header is),
-                the count beside it as a Hint. */}
-            <div className="mb-2 flex items-baseline gap-2">
-              <button
-                type="button"
-                onClick={() => onToggleSection(ids)}
-                aria-pressed={state === "all"}
-                className={`cursor-pointer text-[11px] font-medium uppercase tracking-[0.08em] ${
-                  state === "all"
-                    ? "text-accent"
-                    : state === "some"
-                      ? "text-warning"
-                      : "text-text-muted hover:text-text"
-                }`}
-              >
-                {section.label}
-              </button>
-              <Hint>{section.entries.length}</Hint>
-            </div>
-            {sectionAsRows ? (
-              kind === GRAMMAR_SUBJECT ? (
-                <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                  {section.entries.map((entry) => row(entry, true))}
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  {section.entries.map((entry) => row(entry))}
-                </div>
-              )
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-                {section.entries.map(tile)}
-              </div>
-            )}
-          </section>
-        );
-      })}
-    </div>
+    <div>{sections.map((section, i) => sectionBlock(section, i === 0))}</div>
   );
 }
 
-/** The redesigned, BORDERLESS tile — the actual subject of this comparison. No
- * outline, no fill: the glyph and its romaji sit straight on the mesh. The whole
- * cell is still the SELECT target, signalled by a flat hover tint (never a
- * shadow) and an accent wash when on. The 🔊 / ↗ actions are hidden at rest and
- * revealed on hover/focus, so a resting shelf reads as clean glyphs rather than a
- * grid of boxes. Glyph shrink-to-fit is copied from EntryTile so the sizing
- * matches the boxed side exactly — only the container changes. */
+/** The redesigned, BORDERLESS tile — the subject of this comparison. No outline,
+ * no fill: glyph + romaji sit straight on the mesh. The whole cell is the SELECT
+ * target, signalled by a flat hover tint (never a shadow) and an accent wash when
+ * on. The 🔊 / ↗ actions are hidden at rest and revealed on hover/focus. Glyph
+ * shrink-to-fit is copied from EntryTile so sizing matches the boxed side. */
 function DeboxedTile({
   entry,
   voice,
@@ -223,6 +293,73 @@ function DeboxedTile({
           ↗
         </Link>
       </div>
+    </div>
+  );
+}
+
+/** The row twin of DeboxedTile, for the kinds that read as a list (grammar). A
+ * hairline-separated line — the list separator was never the box — but the select
+ * checkbox and the ↗ are hover-revealed, and the whole row carries the same flat
+ * hover tint / accent-on-select as the tiles, so a row shelf and a tile shelf feel
+ * like one system. `grid` opts into the parent's subgrid so the pattern column
+ * aligns down the list. */
+function DeboxedRow({
+  entry,
+  selected,
+  grid = false,
+  onToggle,
+}: {
+  entry: LibEntry;
+  selected: boolean;
+  grid?: boolean;
+  onToggle(shiftKey: boolean): void;
+}) {
+  const meaning = entry.meanings.slice(0, 3).join(", ") || entry.sub;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={(e) => onToggle(e.shiftKey)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle(e.shiftKey);
+        }
+      }}
+      className={`group cursor-pointer select-none items-center border-b border-white/[0.06] py-2 text-text transition-colors last:border-b-0 ${
+        grid ? "col-span-full grid grid-cols-subgrid" : "flex gap-3 px-1"
+      } ${selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"}`}
+    >
+      {/* Select box — hover/selected reveal, so at rest the row is just its text. */}
+      <span
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
+          selected
+            ? "bg-accent text-bg opacity-100"
+            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+        }`}
+        aria-hidden
+      >
+        ✓
+      </span>
+      {entry.glyph ? (
+        <span
+          className={`whitespace-nowrap text-[19px] ${
+            grid ? "" : "max-w-[150px] flex-none truncate"
+          } ${japaneseFontClass(entry.glyph)}`}
+        >
+          {entry.glyph}
+        </span>
+      ) : null}
+      <span className="min-w-0 flex-1 truncate text-[13px]">{meaning}</span>
+      <Link
+        href={entryHref(entry.id)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label={`Open ${entryName(entry)}`}
+        className="inline-flex size-5 flex-none items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
+      >
+        ↗
+      </Link>
     </div>
   );
 }

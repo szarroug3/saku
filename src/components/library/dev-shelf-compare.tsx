@@ -73,10 +73,6 @@ export function DevShelfCompare({
           selected={selected}
           onToggleEntry={onToggleEntry}
           onToggleSection={onToggleSection}
-          facts={NO_FACTS}
-          claims={NO_CLAIMS}
-          metric="firstTry"
-          now={now}
           voice=""
         />
       </div>
