@@ -45,10 +45,12 @@ test("a new learner can take the first lesson through to its quiz", async ({
   await seed({ seen: [], cfg: CFG });
 
   await page.goto("/learn");
-  // The content-model feed's kana card is headed "Up next · Hiragana 1–5 of 107"
-  // — the kana track split by script and counted in ITEMS (see home-feed.tsx /
-  // lesson-position.ts), not the old "hiragana group 1 of 27".
-  await expect(page.locator("body")).toContainText("Up next");
+  // The content-model feed's kana card is the "Kana" track, its position line
+  // "Hiragana 1–5 of 107" — the kana track split by script and counted in ITEMS
+  // (see home-feed.tsx / lesson-position.ts), not the old "hiragana group 1 of
+  // 27". (The de-box redesign dropped the "Up next" eyebrow; the heading is now
+  // the track title.)
+  await expect(page.locator("body")).toContainText("Kana");
   await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
 
   await page.getByRole("button", { name: "Start", exact: true }).click();

@@ -55,7 +55,9 @@ test("a finished session can be saved as a list", async ({ page, seed }) => {
   await expect(page.getByRole("button", { name: /Saved as a list/i })).toBeVisible();
 
   await page.goto("/lists");
+  // The saved session is a list card whose title is now a button (the de-boxed
+  // /lists renders each list's name as a clickable title, not a heading).
   await expect(
-    page.getByRole("heading", { name: /^Session / }),
+    page.getByRole("button", { name: /^Session / }),
   ).toBeVisible();
 });

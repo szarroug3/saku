@@ -110,7 +110,10 @@ export function StartBar({
   const reason = getStartButtonReason(cfg, count, plannedCount, reachability);
 
   return (
+    // data-start-bar is the stable hook the e2e suite finds the bar by — the
+    // styling classes are not a contract (the de-box dropped the old kq-band).
     <div
+      data-start-bar
       className={cx(
         "mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 pt-6",
         "border-t",

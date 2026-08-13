@@ -81,16 +81,16 @@ export function seenToReachKana(kanaGlyph: string): FactId[] {
 
 /**
  * The lesson CARD on `/learn` for a track, found by a label fragment it renders.
- * On the content-model feed every track's card is the `NextLessonPreview` glass
- * panel — a `[data-learn-card]` (a class unique to that component) whose
- * eyebrow starts "Up next". The label fragment (the target glyph in a curriculum
- * tile, "grammar" in a tile's type label, "Counter"/"Hiragana" in the eyebrow) is
- * what tells them apart once several tracks are unlocked at once.
+ * On the content-model feed every track's card is the `NextLessonPreview`
+ * component — a `[data-learn-card]` (the stable e2e hook). The de-box redesign
+ * dropped the literal "Up next" eyebrow (the heading is now the track title and
+ * the eyebrow a position line), so the card is disambiguated by the label
+ * fragment alone — the target glyph in a curriculum tile, "grammar" in a tile's
+ * type label, "Counter"/"Hiragana" in the eyebrow/position line.
  */
 export function lessonCard(page: Page, labelFragment: string) {
   return page
     .locator("[data-learn-card]")
-    .filter({ hasText: "Up next" })
     .filter({ hasText: labelFragment });
 }
 

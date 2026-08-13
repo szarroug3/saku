@@ -35,8 +35,10 @@ test("claiming the first group advances AND leaves the items claimed, not solid"
   // drilled, so there is no solid bucket at all — the "What you know" card shows a
   // claimed count and never the word "solid".
   await page.goto("/stats");
+  // The de-boxed "What you know" card is now a bare <section> (its Lbl heading +
+  // the bucket counts), no kq-material wrapper. Anchor to that section.
   const knowledge = page
-    .locator("div.kq-material")
+    .locator("section")
     .filter({ hasText: "What you know" });
   await expect(knowledge).toContainText("claimed");
   await expect(knowledge).not.toContainText("solid");

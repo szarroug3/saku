@@ -36,19 +36,18 @@ test("counters prep lesson shows Numbers label and resumes from counters card", 
 
   await page.goto("/learn");
 
-  // On the content-model feed each track's card is a NextLessonPreview glass panel
-  // ([data-learn-card]) headed "Up next · <noun> …": the counters card counts in
-  // "Counter", the curriculum spine (radicals/kanji/words) counts in the neutral
-  // "Item". Those nouns tell the two apart.
+  // On the content-model feed each track's card is a NextLessonPreview
+  // ([data-learn-card]) with a position line and a track-title heading (the
+  // de-box redesign dropped the old "Up next" eyebrow). The counters card's
+  // position line counts in "Counter"; the curriculum spine is the "Vocabulary"
+  // track. Those tell the two apart.
   const countersCard = page
     .locator("[data-learn-card]")
-    .filter({ hasText: "Up next" })
     .filter({ hasText: "Counter" })
     .first();
   const spineCard = page
     .locator("[data-learn-card]")
-    .filter({ hasText: "Up next" })
-    .filter({ hasText: "Item" })
+    .filter({ hasText: "Vocabulary" })
     .first();
 
   await expect(countersCard).toBeVisible();
