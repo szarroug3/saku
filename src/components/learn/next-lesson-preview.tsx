@@ -43,13 +43,19 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
  * catching glass, while inset shades down the left, right and bottom darken those
  * rims so the pane reads as a raised piece of glass. A deep lift shadow floats it,
  * and a real backdrop blur frosts it (one filter per card, a handful on screen). */
-// NO BACKDROP BLUR. A blur per card is a backdrop-filter root re-snapshotted every
-// scroll frame — the same jank the Library frost had, ×7 cards here — so it is gone.
-// The card is a plain translucent panel (cheap alpha compositing) with a SMALL EDGE
-// GLOW: a 1px light ring and an inset top highlight, both box-shadow (free), no
-// filter. That is the whole "texture" now.
+// NO BACKDROP BLUR (a filter root re-snapshotted every frame), and — the real
+// scroll fix — each card is PROMOTED TO ITS OWN COMPOSITOR LAYER (translateZ(0)).
+//
+// The page mesh is a position:fixed layer that never repaints; the whole design
+// relies on the scrolling content riding OVER it as a cached texture (see
+// globals.css, the .kq-stage note). A card that is NOT promoted is re-rasterised
+// every scroll frame — its translucent fill, its shadow and its tiles' gradients
+// all repainting — which is the crawl. translateZ(0) rasterises the card once and
+// then only TRANSLATES it on scroll (GPU), so the translucent look stays and the
+// per-frame paint goes away. The edge glow is a 1px ring + inset highlight, both
+// box-shadow (free), baked into that one texture.
 const panel =
-  "@container rounded-2xl px-5 py-5 " +
+  "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
   "bg-[color-mix(in_srgb,var(--card)_58%,transparent)] " +
   "shadow-[0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.10)]";
 
