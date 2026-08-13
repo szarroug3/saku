@@ -93,6 +93,64 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
   );
 }
 
+/** The trailing-↗ reveal, shared by every table shelf row. The ↗ opens the
+ * entry; it appears on ROW hover or the arrow's OWN keyboard focus — NEVER on the
+ * row's select-focus (clicking to select focuses the row, and `group-focus-within`
+ * left the ↗ stuck on the last-selected row). Appended to `ViewLink`'s className. */
+export const ROW_ARROW_REVEAL =
+  "flex-none opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100";
+
+/** THE one selectable-row shell every table shelf wears — grammar, marks,
+ * sentence rules, terms, grammar concepts, search results, keigo and verb pairs.
+ * It carries the shared behaviour and LOOK: the whole row is the select target
+ * (role=button, Enter/Space, aria-pressed) with NO visible checkbox, selection
+ * and hover both painted as the accent wash (`bg-accent-bg`), a hairline between
+ * rows, and `group` so the trailing ↗ can reveal on hover. Each shelf passes its
+ * own column layout + horizontal padding via `className` and its own cells as
+ * children, so one shell fits the simple lead+gloss rows AND the multi-column
+ * keigo / verb-pair rows. A `href` with no `onToggleSelect` makes it a plain link
+ * row instead (the map-only grammar clusters), same hover, no select. */
+export function ShelfRow({
+  selected = false,
+  onToggleSelect,
+  href,
+  className = "",
+  children,
+}: {
+  selected?: boolean;
+  onToggleSelect?: (shiftKey: boolean) => void;
+  /** Link-only mode: the whole row navigates instead of selecting. */
+  href?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const shell = `group cursor-pointer select-none border-b border-white/[0.06] text-text transition-colors last:border-b-0 ${className}`;
+  if (onToggleSelect) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={(e) => onToggleSelect(e.shiftKey)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggleSelect(e.shiftKey);
+          }
+        }}
+        className={`${shell} ${selected ? "bg-accent-bg" : "hover:bg-accent-bg"}`}
+      >
+        {children}
+      </div>
+    );
+  }
+  return (
+    <Link href={href ?? "#"} className={`${shell} no-underline hover:bg-accent-bg`}>
+      {children}
+    </Link>
+  );
+}
+
 export function EntryTile({
   entry,
   mnemonic,
@@ -228,42 +286,22 @@ export function EntryRow({
           : rowTitle;
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={(e) => onToggleSelect(e.shiftKey)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggleSelect(e.shiftKey);
-        }
-      }}
-      className={`group cursor-pointer select-none items-center border-b border-white/[0.06] py-2 text-text transition-colors last:border-b-0 ${
-        // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
-        // and column gap; the default row is a self-contained flex line with its
-        // own gap and edge padding.
-        grid
-          ? "col-span-full grid grid-cols-subgrid"
-          : "flex gap-3 px-1"
-      } ${selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"}`}
+    <ShelfRow
+      selected={selected}
+      onToggleSelect={onToggleSelect}
+      // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
+      // and column gap; the default row is a self-contained flex line with its
+      // own gap and horizontal padding so its text and ↗ sit inset from the
+      // accent wash's edges rather than flush against them.
+      className={`items-center py-2 ${
+        grid ? "col-span-full grid grid-cols-subgrid" : "flex gap-3 px-3"
+      }`}
     >
-      {/* The select box — leading, checkbox-shaped, so the row reads as a thing
-          you tick. Hover/selected reveal, so at rest the row is just its text;
-          filled accent when on. */}
-      <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
-          selected
-            ? "bg-accent text-bg opacity-100"
-            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-        }`}
-        aria-hidden
-      >
-        ✓
-      </span>
+      {/* NO visible checkbox — the whole row is the select target and its accent
+          wash IS the selected state. */}
       {/* Reserve a glyph column only when there is a glyph to show. Sentence
           rules, keigo sets and terms are named concepts, so an empty 64px cell
-          only pushes their useful text away from the checkbox. */}
+          only pushes their useful text away from the row's leading edge. */}
       {entry.glyph && !inlineMarkGlyph ? (
         <span
           // A grammar pattern is a PHRASE, not a character — 〜てください,
@@ -332,11 +370,8 @@ export function EntryRow({
           className="flex-none"
         />
       ) : null}
-      <ViewLink
-        entry={entry}
-        className="flex-none opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-      />
-    </div>
+      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+    </ShelfRow>
   );
 }
 
@@ -377,8 +412,7 @@ function KeigoCell({
 
 export function KeigoSetHeader() {
   return (
-    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-1 pb-1.5 pt-1">
-      <span className="h-4 w-4 flex-none" aria-hidden />
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-3 pb-1.5 pt-1">
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         Honorific · for what they do
       </span>
@@ -409,36 +443,16 @@ export function KeigoSetRow({
   const honorific = set.words.filter((w) => w.register === "honorific");
   const humble = set.words.filter((w) => w.register === "humble");
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={(e) => onToggleSelect(e.shiftKey)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggleSelect(e.shiftKey);
-        }
-      }}
-      className={`group grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] cursor-pointer select-none items-center gap-3 border-b border-white/[0.06] px-1 py-2 text-text transition-colors last:border-b-0 ${
-        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
-      }`}
+    <ShelfRow
+      selected={selected}
+      onToggleSelect={onToggleSelect}
+      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
-      <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
-          selected
-            ? "bg-accent text-bg opacity-100"
-            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-        }`}
-        aria-hidden
-      >
-        ✓
-      </span>
       <KeigoCell words={honorific} meaning={set.meaning} voice={voice} />
       <KeigoCell words={humble.slice(0, 1)} voice={voice} />
       <KeigoCell words={humble.slice(1, 2)} voice={voice} />
-      <ViewLink entry={entry} className="flex-none" />
-    </div>
+      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+    </ShelfRow>
   );
 }
 
@@ -474,12 +488,11 @@ function PairCell({
 
 /** The column headings for the verb-pairs shelf, once above the rows so the two
  * cells of every row read as the two sides of one contrast instead of two
- * verbs in a list. The leading spacer matches the row's checkbox + gap so the
- * headings sit over the columns they name. */
+ * verbs in a list. Same column tracks and horizontal padding as the row (see
+ * VerbPairRow's ShelfRow) so the headings sit over the columns they name. */
 export function VerbPairHeader() {
   return (
-    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-1 pb-1.5 pt-1">
-      <span className="h-4 w-4 flex-none" aria-hidden />
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-3 pb-1.5 pt-1">
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         It happens on its own
       </span>
@@ -511,34 +524,14 @@ export function VerbPairRow({
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={(e) => onToggleSelect(e.shiftKey)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggleSelect(e.shiftKey);
-        }
-      }}
-      className={`group grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] cursor-pointer select-none items-center gap-3 border-b border-white/[0.06] px-1 py-2 text-text transition-colors last:border-b-0 ${
-        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
-      }`}
+    <ShelfRow
+      selected={selected}
+      onToggleSelect={onToggleSelect}
+      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
-      <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
-          selected
-            ? "bg-accent text-bg opacity-100"
-            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-        }`}
-        aria-hidden
-      >
-        ✓
-      </span>
       <PairCell side={pair.happens} voice={voice} />
       <PairCell side={pair.doIt} voice={voice} />
-      <ViewLink entry={entry} className="flex-none" />
-    </div>
+      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+    </ShelfRow>
   );
 }
