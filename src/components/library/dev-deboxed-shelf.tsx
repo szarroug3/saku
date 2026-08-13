@@ -11,23 +11,33 @@
 // is thousands of tiles and any blurred shadow on scrolling content reintroduces
 // severe scroll jank. Separation is hairline borders + whitespace only.
 //
-// TILES STAY FLAT AND SHIPPED. The tiles and rows are the unchanged EntryTile /
-// EntryRow from entry-tile.tsx, and their standing runs through the SAME
-// entryStanding the live shelf uses (see shelves.tsx) — so this is a faithful
-// density comparison, not a re-skin.
+// THE TILE IS THE BOX. De-boxing the SECTIONS changed almost nothing in kiri: a
+// <Card> there is already a transparent hole with a faint 1px border, so removing
+// it is invisible. What actually reads as "boxy" is each TILE — a rounded,
+// outlined bg-card cell with a ✓ corner and two always-on 🔊/↗ buttons crammed
+// inside. So the redesigned tile (DeboxedTile below) drops the border and fill
+// entirely: just the glyph and its romaji sitting on the mesh, a flat hover tint
+// for the select target (no shadow — the density rule), an accent wash when
+// selected, and the 🔊/↗ actions revealed only on hover so the resting shelf is
+// clean glyphs, not a grid of boxes. Rows keep the shipped EntryRow (a list is
+// honestly a list; its hairlines were never the problem). Standings run through
+// the same entryStanding the live shelf uses.
 
-import {
-  EntryRow,
-  EntryTile,
-} from "@/components/library/entry-tile";
+import Link from "next/link";
+
+import { EntryRow } from "@/components/library/entry-tile";
+import { HearButton } from "@/components/lesson/hear-button";
 import { Hint } from "@/components/ui";
+import { entryHref } from "@/lib/library/href";
+import { japaneseFontClass } from "@/lib/japanese-text";
+import { subLabel } from "@/lib/library/sub-label";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import { entryName, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import { entryStanding } from "@/lib/library/standing";
@@ -68,14 +78,12 @@ export function DeboxedShelf({
     kind === GRAMMAR_CONCEPT_SUBJECT;
 
   const tile = (entry: LibEntry) => (
-    <EntryTile
+    <DeboxedTile
       key={entry.id}
       entry={entry}
       voice={voice}
-      standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
-      showStatus={false}
       selected={selected.has(entry.id)}
-      onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
+      onToggle={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
 
@@ -147,6 +155,74 @@ export function DeboxedShelf({
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/** The redesigned, BORDERLESS tile — the actual subject of this comparison. No
+ * outline, no fill: the glyph and its romaji sit straight on the mesh. The whole
+ * cell is still the SELECT target, signalled by a flat hover tint (never a
+ * shadow) and an accent wash when on. The 🔊 / ↗ actions are hidden at rest and
+ * revealed on hover/focus, so a resting shelf reads as clean glyphs rather than a
+ * grid of boxes. Glyph shrink-to-fit is copied from EntryTile so the sizing
+ * matches the boxed side exactly — only the container changes. */
+function DeboxedTile({
+  entry,
+  voice,
+  selected,
+  onToggle,
+}: {
+  entry: LibEntry;
+  voice: string;
+  selected: boolean;
+  onToggle(shiftKey: boolean): void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={(e) => onToggle(e.shiftKey)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle(e.shiftKey);
+        }
+      }}
+      className={`group relative cursor-pointer select-none rounded-[10px] px-1.5 pb-1.5 pt-2 text-center [container-type:inline-size] transition-colors ${
+        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
+      }`}
+    >
+      <div
+        className={`select-none whitespace-nowrap leading-[1.25] ${
+          selected ? "text-accent" : "text-text"
+        } ${japaneseFontClass(entry.glyph)}`}
+        style={{
+          ["--chars" as string]: [...entry.glyph].length,
+          fontSize: "clamp(12px, calc(90cqi / var(--chars)), 26px)",
+        }}
+      >
+        {entry.glyph}
+      </div>
+      <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
+      {/* Actions occupy layout at all times (so hovering doesn't reflow the grid)
+          but are invisible until hover/focus — the resting shelf stays clean. */}
+      <div className="mt-1 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <HearButton
+          glyph={entry.glyph}
+          voiceName={voice}
+          stopPropagation
+          label={`Hear ${entryName(entry)}`}
+        />
+        <Link
+          href={entryHref(entry.id)}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Open ${entryName(entry)}`}
+          className="inline-flex size-5 items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline hover:text-text"
+        >
+          ↗
+        </Link>
+      </div>
     </div>
   );
 }
