@@ -62,7 +62,12 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
 const panel =
   "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
   "[content-visibility:auto] [contain-intrinsic-size:auto_260px] " +
-  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)]";
+  // An explicit translucent-black fill, NOT color-mix(var(--card) …): in kiri
+  // --card is transparent, so a --card mix resolves to nothing (that is why the
+  // card only showed while the glow was on). A flat rgba fill is a single alpha
+  // blend per pixel — no blur — so it sets the card off from the mesh and keeps
+  // the scroll smooth.
+  "bg-[rgba(0,0,0,0.18)]";
 
 export function NextLessonPreview({
   lesson,
