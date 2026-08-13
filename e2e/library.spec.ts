@@ -75,14 +75,18 @@ test("every library kind mints a working href", async ({ page }) => {
       response!.status(),
       `kind ${kind} minted ${href}, which did not serve`,
     ).toBeLessThan(400);
-    // No entry kind uses an h1 anymore, and the entry pages no longer carry the
-    // Add-to-list action bar (that verb moved to the shelf; an entry page shows at
-    // most a lone "Quiz me"). The uniform "rendered, not 404" signal every kind
-    // still carries is the data-sources attribution link at the foot of the entry
-    // surface — both the redesigned [...entry] views and the /library/primitive
-    // page render it.
+    // No entry kind uses an h1 anymore, and the redesign REMOVED the per-page
+    // "Data sources" attribution (it now lives once in the global sidebar as
+    // "About the data"). The uniform "rendered entry page, not a 404 shell"
+    // signal every kind still carries is the entry breadcrumb — a "Library" link
+    // that every resolved entry page renders inside <main> as its first element
+    // (both the [...entry] article views and the /library/primitive page). It is
+    // present iff the route RESOLVED to a real entry page and absent on a
+    // notFound, which is exactly what this test guards. It is scoped to <main> so
+    // it is the breadcrumb link, not the sidebar's own "Library" nav link (that
+    // lives in the navigation landmark, outside main).
     await expect(
-      page.getByRole("link", { name: /Data sources/ }),
+      page.getByRole("main").getByRole("link", { name: "Library", exact: true }).first(),
       `kind ${kind} at ${href} rendered no entry surface`,
     ).toBeVisible();
   }

@@ -38,12 +38,12 @@ const HIRAGANA_FACTS = HIRAGANA.map((c) => kanaFact(c));
 // A kanji meaning fact, to give the Kind row a SECOND lit type to narrow with.
 const KANJI_FACT = "kanji:亜/meaning";
 
-// The Start bar carries its own material class; it is the only .kq-band on the
-// page, so the last one is always the StartBar. howSentence renders inside it
-// only while Start is ENABLED (a disabled bar shows the reason instead), so a
-// test that reads howSentence must first put the page in a startable state.
+// The Start bar carries the stable [data-start-bar] hook (de-box dropped the old
+// kq-band class). howSentence renders inside it only while Start is ENABLED (a
+// disabled bar shows the reason instead), so a test that reads howSentence must
+// first put the page in a startable state.
 function startBar(page: import("@playwright/test").Page) {
-  return page.locator(".kq-band").last();
+  return page.locator("[data-start-bar]");
 }
 
 // ---------------------------------------------------------------------------

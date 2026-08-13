@@ -41,7 +41,7 @@ test("audio-only with kana makes no questions, not 'solid'", async ({
   });
   await page.goto("/practice");
 
-  const bar = page.locator(".kq-band").last();
+  const bar = page.locator("[data-start-bar]");
   await expect(bar).toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
@@ -63,7 +63,7 @@ test("audio-only with kanji reading makes no questions, not 'solid'", async ({
 
   // A kanji reading has no audio question, so audio-only makes zero cards. The
   // bar must report the empty run, never falsely claim the material is solid.
-  const bar = page.locator(".kq-band").last();
+  const bar = page.locator("[data-start-bar]");
   await expect(bar).toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
@@ -85,7 +85,7 @@ test("audio-only with grammar fact makes no questions, not 'solid'", async ({
 
   // A grammar meaning has no audio question either, so audio-only makes zero
   // cards and the bar reports the empty run rather than a false "solid".
-  const bar = page.locator(".kq-band").last();
+  const bar = page.locator("[data-start-bar]");
   await expect(bar).toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
