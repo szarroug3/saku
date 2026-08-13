@@ -29,7 +29,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { use, useState } from "react";
 
-import { AttributionLink } from "@/components/library/attribution-link";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
@@ -148,8 +147,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
         claimFacts={sentenceClaimFacts}
         progressReady={historyLoaded}
       />
-
-      <AttributionLink />
     </FlatSurfaceProvider>
   );
 }

@@ -19,7 +19,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { use, useState } from "react";
 
-import { AttributionLink } from "@/components/library/attribution-link";
 import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks } from "@/components/library/entry-links";
@@ -97,8 +96,6 @@ function PrimitiveView({ glyph }: { glyph: string }) {
         onClaim={claim}
         progressReady={historyLoaded}
       />
-
-      <AttributionLink />
     </>
   );
 }

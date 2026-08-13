@@ -327,13 +327,14 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
       {/* NO INLINE CREDIT HERE, AND THAT IS NOT AN OVERSIGHT.
           The stroke data is KanjiVG's (© Ulrich Apel and contributors, CC BY-SA
           3.0) and MUST be credited. It is — on /about/data, which every screen
-          that renders this component reaches through the AttributionLink in its
-          footer. CC BY-SA 3.0 asks for credit "in any reasonable manner", and a
-          credits screen one click away from the diagram is that; a line of 10px
-          legalese under every character was not the only way to satisfy it.
-          If you add a screen that renders this component, it needs an
-          AttributionLink in its footer too — src/data/attribution.test.ts fails
-          if it doesn't, and that failure is a licence violation, not a lint. */}
+          reaches through the "About the data" link in the global sidebar (see
+          src/components/sidebar.tsx). CC BY-SA 3.0 asks for credit "in any
+          reasonable manner", and a credits screen one click away from the diagram
+          is that; a line of 10px legalese under every character was not the only
+          way to satisfy it. The link is global chrome now, not per-screen, so a
+          new screen that renders this component inherits it automatically —
+          src/data/attribution.test.ts guards that the sidebar keeps carrying it,
+          and that failure is a licence violation, not a lint. */}
     </div>
   );
 }
