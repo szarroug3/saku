@@ -62,7 +62,11 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
 const panel =
   "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
   "[content-visibility:auto] [contain-intrinsic-size:auto_260px] " +
-  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)]";
+  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)] " +
+  // A very light GLOW around the card (not a blurred drop shadow) to set it off
+  // from the mesh — a white halo reads as a rim of light on the dark ground. The
+  // radius is modest so it stays cheap to raster on the promoted layer.
+  "shadow-[0_0_16px_rgba(255,255,255,0.10)]";
 
 export function NextLessonPreview({
   lesson,
