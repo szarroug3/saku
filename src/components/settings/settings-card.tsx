@@ -46,7 +46,7 @@ import {
   AppearancePicker,
   ThemePicker,
 } from "@/components/settings/theme-picker";
-import { Btn, Card, Chip, Hint, Lbl, Row, SmallBtn } from "@/components/ui";
+import { Btn, Chip, Hint, Lbl, Row, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { askFromAudioPrompts } from "@/lib/ask-config";
 import { clearAllDismissedHints } from "@/lib/claim-hint";
@@ -228,7 +228,7 @@ function ResetProgress() {
   };
 
   return (
-    <div className="kq-material mb-3.5 rounded-xl border border-danger bg-card p-[18px]">
+    <section className="mt-8">
       <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-danger">
         Start over
       </p>
@@ -251,7 +251,7 @@ function ResetProgress() {
           {busy ? "Clearing…" : "Start over"}
         </Btn>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -339,7 +339,7 @@ export function SettingsCard() {
 
   return (
     <>
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>Appearance</Lbl>
         <Row label="Theme">
           <ThemePicker />
@@ -353,7 +353,7 @@ export function SettingsCard() {
         >
           <AccentPicker />
         </Row>
-      </Card>
+      </section>
 
       {/* The lesson length, in new material not minutes. Two steppers, and the
           ONE constraint that matters is enforced in the buttons themselves: the
@@ -364,7 +364,7 @@ export function SettingsCard() {
           radicals, kanji, words and counters — not kanji alone. Cost is not
           shown as a raw number — "6" means nothing to the person doing it — so
           the labels talk in items, which is what the number roughly buys. */}
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>How much new material per lesson</Lbl>
         <Row
           label="Shortest lesson"
@@ -407,7 +407,7 @@ export function SettingsCard() {
             +
           </SmallBtn>
         </Row>
-      </Card>
+      </section>
 
       {/* THE WORDS-PER-LESSON STEPPER IS GONE. There is one lesson size now,
           because there is one track: radicals, kanji and words come off a single
@@ -417,7 +417,7 @@ export function SettingsCard() {
           src/lib/difficulty.ts), so a second control would have been a second
           answer to a question the first one already answers. */}
 
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>The drill</Lbl>
 
         <Row
@@ -583,14 +583,14 @@ export function SettingsCard() {
             <Hint>No Japanese voices found</Hint>
           )}
         </Row>
-      </Card>
+      </section>
 
       {/* TWO NUMBERS, NOT A RULE. Not "first break × 2", not a curve, not a
           spacing strategy with a slider on it — two boxes you type into. The
           user does not want to configure an algorithm; they want to type 5 and
           10. If they'd rather have 5 and 5, they type that, and no part of the
           app has an opinion about it. */}
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>Breaks between rounds</Lbl>
         <Row
           label="First break"
@@ -614,9 +614,9 @@ export function SettingsCard() {
           />
           <Hint>minutes</Hint>
         </Row>
-      </Card>
+      </section>
 
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>What the numbers mean</Lbl>
 
         <Row
@@ -660,7 +660,7 @@ export function SettingsCard() {
           </SmallBtn>
         </Row>
 
-      </Card>
+      </section>
 
       <ResetProgress />
     </>
