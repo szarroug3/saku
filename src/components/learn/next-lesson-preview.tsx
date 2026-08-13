@@ -68,10 +68,12 @@ const panel =
   // blend per pixel — no blur — so it sets the card off from the mesh and keeps
   // the scroll smooth.
   "bg-[rgba(0,0,0,0.18)] " +
-  // A very, very slight white halo on top of the flat fill — just enough to catch
-  // a rim of light off the mesh. Small radius, low alpha: still one cheap raster
-  // on the promoted layer, no re-blur on scroll.
-  "shadow-[0_0_14px_rgba(255,255,255,0.05)]";
+  // FAKE the glow with a hairline ring, not a blur. Any blurred shadow re-rasters
+  // on the promoted layer every scroll frame (the jank); a 0-blur box-shadow ring
+  // is just a 1px band of colour — free. Kept at a low alpha so it reads as a soft
+  // lifted edge catching light, not an obvious outline. (box-shadow, not `border`,
+  // so it adds no layout box and can't shift the content.)
+  "shadow-[0_0_0_1px_rgba(255,255,255,0.08)]";
 
 export function NextLessonPreview({
   lesson,
