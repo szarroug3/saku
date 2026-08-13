@@ -18,7 +18,7 @@
 
 import { useRef, useState } from "react";
 
-import { Btn, Card, Hint, Lbl, PageTitle } from "@/components/ui";
+import { Btn, Hint, Lbl, PageTitle } from "@/components/ui";
 import { factsOf, glyphOf } from "@/lib/facts";
 import { KIND_LABEL, libEntry } from "@/lib/library/entries";
 import { applySuggestion, readList, type ImportReport } from "@/lib/import";
@@ -125,14 +125,14 @@ export default function ImportPage() {
     : 0;
 
   return (
-    <>
+    <div className="max-w-3xl">
       <PageTitle
         title="Import a list"
         sub="A file you already have. Nothing is uploaded anywhere."
       />
 
       {done ? (
-        <Card>
+        <div className="mb-8">
           <span className="block text-[15px] font-semibold">
             “{done}” is now one of your lists.
           </span>
@@ -146,7 +146,7 @@ export default function ImportPage() {
               Go and drill it
             </Btn>
           </span>
-        </Card>
+        </div>
       ) : null}
 
       {!report ? (
@@ -193,16 +193,16 @@ export default function ImportPage() {
           {error ? (
             <span className="mt-2.5 block text-[13px] text-danger">{error}</span>
           ) : null}
-          <Card className="mt-3.5">
+          <p className="mt-8 border-t border-white/[0.08] pt-6">
             <Hint>
               You can also build a list without a file: search the Library and
               add what you find to a list.
             </Hint>
-          </Card>
+          </p>
         </>
       ) : (
         <>
-          <Card>
+          <section>
             <span className="text-[15px] font-semibold">{filename}</span>
             <Hint>
               {" · "}
@@ -232,12 +232,12 @@ export default function ImportPage() {
                 {" didn’t match"}
               </span>
             </span>
-          </Card>
+          </section>
 
           {report.unmatched.length ? (
-            <>
+            <section className="mt-8 border-t border-white/[0.08] pt-6">
               <Lbl>The {report.unmatched.length} that didn&apos;t match</Lbl>
-              <Card>
+              <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
                   <thead>
                     <tr className="text-text-muted">
@@ -297,14 +297,14 @@ export default function ImportPage() {
                     · anything left alone is simply not imported.
                   </span>
                 ) : null}
-              </Card>
-            </>
+              </div>
+            </section>
           ) : null}
 
           {report.entries.length ? (
-            <>
+            <section className="mt-8 border-t border-white/[0.08] pt-6">
               <Lbl>What&apos;s going in</Lbl>
-              <Card>
+              <div>
                 {/* One grid for the whole list so every row's columns line up:
                     glyph, reading, type, then meaning. Each row is a
                     display:contents label, so its five cells land on the shared
@@ -351,17 +351,19 @@ export default function ImportPage() {
                     ? ` · ${report.matched.length - report.entries.length} duplicate ${report.matched.length - report.entries.length === 1 ? "row" : "rows"} folded`
                     : ""}
                 </Hint>
-              </Card>
-            </>
+              </div>
+            </section>
           ) : null}
 
-          <Lbl>Name</Lbl>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={nameFromFile(filename)}
-            className="kq-material w-[280px] rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
-          />
+          <section className="mt-8 border-t border-white/[0.08] pt-6">
+            <Lbl>Name</Lbl>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={nameFromFile(filename)}
+              className="w-[280px] rounded-(--radius) border border-border bg-transparent px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
+            />
+          </section>
 
           <div className="kq-band sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-accent px-3 py-2.5">
             <span className="text-[13px] text-text-muted">
@@ -384,9 +386,9 @@ export default function ImportPage() {
       )}
 
       {lists.length ? (
-        <>
+        <section className="mt-8 border-t border-white/[0.08] pt-6">
           <Lbl>Your lists</Lbl>
-          <Card>
+          <div>
             {lists.map((l) => (
               <span key={l.id} className="block py-1 text-[13px]">
                 {l.name}{" "}
@@ -398,9 +400,9 @@ export default function ImportPage() {
                 </span>
               </span>
             ))}
-          </Card>
-        </>
+          </div>
+        </section>
       ) : null}
-    </>
+    </div>
   );
 }

@@ -5,20 +5,20 @@
 // A Server Component: it renders three constants and has no state, so there is
 // nothing here that needs the client.
 
-import { Card, Hint, Lbl, PageTitle } from "@/components/ui";
+import { Hint, Lbl, PageTitle } from "@/components/ui";
 import { LICENCE_HREF, LICENCE_NOTE, SOURCES } from "@/data/attribution";
 
 export const metadata = { title: "Dictionary data · Saku" };
 
 export default function AboutDataPage() {
   return (
-    <>
+    <div className="max-w-2xl">
       <PageTitle
         title="Where the data comes from"
         sub="Every kanji, reading, meaning and word in this app is somebody else's work."
       />
 
-      <Card>
+      <section className="mt-8 first:mt-0">
         <Lbl>Acknowledgement</Lbl>
         <p className="text-[13px] leading-relaxed">{LICENCE_NOTE}</p>
         <p className="mt-3">
@@ -28,28 +28,30 @@ export default function AboutDataPage() {
             </a>
           </Hint>
         </p>
-      </Card>
+      </section>
 
-      <Card>
+      <section className="mt-8 border-t border-white/[0.08] pt-6">
         <Lbl>The files</Lbl>
-        {SOURCES.map((s) => (
-          <div key={s.name} className="border-t border-border py-3 first:border-t-0 first:pt-0">
-            <p className="text-[13px] font-semibold">
-              <a href={s.href} target="_blank" rel="noopener" className="text-accent no-underline">
-                {s.name} ↗
-              </a>
-            </p>
-            <p className="mt-0.5 text-[13px] text-text-muted">{s.what}</p>
-            <p className="mt-0.5">
-              <Hint>
-                {s.holder} · {s.licence}
-              </Hint>
-            </p>
-          </div>
-        ))}
-      </Card>
+        <div className="space-y-3">
+          {SOURCES.map((s) => (
+            <div key={s.name}>
+              <p className="text-[13px] font-semibold">
+                <a href={s.href} target="_blank" rel="noopener" className="text-accent no-underline">
+                  {s.name} ↗
+                </a>
+              </p>
+              <p className="mt-0.5 text-[13px] text-text-muted">{s.what}</p>
+              <p className="mt-0.5">
+                <Hint>
+                  {s.holder} · {s.licence}
+                </Hint>
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <Card>
+      <section className="mt-8 border-t border-white/[0.08] pt-6">
         <Lbl>Share-alike</Lbl>
         <p className="text-[13px] leading-relaxed text-text-muted">
           CC BY-SA is share-alike. The dictionary files this app reads are
@@ -76,7 +78,7 @@ export default function AboutDataPage() {
           a reading at or below 5% of usage moves to the Library&rsquo;s Other
           dictionary readings section instead of the teaching table.
         </p>
-      </Card>
-    </>
+      </section>
+    </div>
   );
 }

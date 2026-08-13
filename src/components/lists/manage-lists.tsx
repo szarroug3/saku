@@ -19,7 +19,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { Btn, Card, Hint, PageTitle, SmallBtn } from "@/components/ui";
+import { Btn, Hint, PageTitle, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { japaneseFontClass } from "@/lib/japanese-text";
@@ -124,7 +124,7 @@ export function ManageLists() {
   };
 
   return (
-    <>
+    <div className="max-w-3xl">
       <PageTitle
         title="Lists"
         sub="Every list you have: decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
@@ -132,14 +132,14 @@ export function ManageLists() {
 
       {/* Where lists come from lives with the lists: the import screen is a
           click away from the shelf it fills, not buried in Settings. */}
-      <p className="mb-3.5">
+      <p className="mb-8">
         <Link href="/lists/import">
           <Btn>Import a list →</Btn>
         </Link>
       </p>
 
       {!loaded ? null : lists.length === 0 ? (
-        <Card>
+        <div>
           <p className="text-[13px]">You don&rsquo;t have any lists yet.</p>
           <p className="mt-1.5">
             <Hint>
@@ -153,12 +153,13 @@ export function ManageLists() {
               and add it to a list, or import a deck. They&rsquo;ll show up here.
             </Hint>
           </p>
-        </Card>
+        </div>
       ) : (
-        lists.map((list) => (
+        lists.map((list, i) => (
           <ListCard
             key={list.id}
             list={list}
+            first={i === 0}
             entries={entriesByList.get(list.id) ?? []}
             voice={cfg.voiceName}
             onDrill={() => drill(list)}
@@ -168,12 +169,13 @@ export function ManageLists() {
           />
         ))
       )}
-    </>
+    </div>
   );
 }
 
 function ListCard({
   list,
+  first,
   entries,
   onDrill,
   onDelete,
@@ -181,6 +183,7 @@ function ListCard({
   onRemoveEntry,
 }: {
   list: SavedList;
+  first: boolean;
   entries: EntryId[];
   voice: string;
   onDrill(): void;
@@ -206,7 +209,9 @@ function ListCard({
   };
 
   return (
-    <Card>
+    <section
+      className={first ? "" : "mt-8 border-t border-white/[0.08] pt-8"}
+    >
       <div className="flex flex-wrap items-center gap-2">
         {editing ? (
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -273,7 +278,7 @@ function ListCard({
             return (
               <div
                 key={id}
-                className="relative rounded-[10px] border border-border bg-card px-1.5 pb-2 pt-2.5 text-center [container-type:inline-size]"
+                className="group relative rounded-[10px] px-1.5 pb-2 pt-2.5 text-center transition-colors [container-type:inline-size] hover:bg-white/[0.04]"
               >
                 {writable ? (
                   <button
@@ -317,7 +322,7 @@ function ListCard({
         </p>
       ) : null}
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
         <Btn sel onClick={onDrill} disabled={entries.length === 0}>
           Drill
         </Btn>
@@ -325,6 +330,6 @@ function ListCard({
           Delete
         </Btn>
       </div>
-    </Card>
+    </section>
   );
 }
