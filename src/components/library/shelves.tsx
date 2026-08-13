@@ -632,13 +632,14 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
  * the maps that exist costs none of that. */
 // ONE row for every GRAMMAR-shelf table piece — the cluster families AND the
 // form patterns — so the whole shelf reads as a single table. A compact line,
-// tabbed in under its section header (the leading tick column + pl gutter), whose
-// columns (tick · lead · gloss · open-↗) line up down the list. `select` wires
-// the same tick-to-drill the form rows have always carried; a cluster omits it,
-// so the whole row is the link to its map instead. The trailing ↗ — the open
-// control, revealed on hover — is where a per-row count used to be.
+// tabbed in under its section header (the pl gutter), whose columns
+// (lead · gloss · open-↗) line up down the list. NO visible tick: the whole row
+// is the select target and its accent highlight is the state, so `select` still
+// wires tick-to-drill without a checkbox. A cluster with no members omits it, so
+// the whole row is the link to its map instead. The trailing ↗ — the open
+// control — is revealed on hover only.
 const GRAMMAR_ROWS =
-  "grid grid-cols-[1rem_max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-5";
+  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-6";
 
 function GrammarShelfRow({
   lead,
@@ -655,24 +656,13 @@ function GrammarShelfRow({
 }) {
   const base =
     "group col-span-full grid grid-cols-subgrid items-baseline border-b border-white/[0.06] py-1.5 transition-colors last:border-b-0";
+  // ↗ reveals on ROW hover, or on the arrow's OWN keyboard focus — never on the
+  // row's focus (clicking to select focuses the row, and group-focus-within kept
+  // the ↗ stuck on the last-selected row).
   const arrowCls =
-    "inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 group-focus-within:opacity-100";
+    "inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 focus-visible:opacity-100";
   const cells = (
     <>
-      {select ? (
-        <span
-          className={`flex h-4 w-4 flex-none items-center justify-center self-center rounded text-[10px] leading-none transition-opacity ${
-            select.selected
-              ? "bg-accent text-bg opacity-100"
-              : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-          }`}
-          aria-hidden
-        >
-          ✓
-        </span>
-      ) : (
-        <span aria-hidden />
-      )}
       <span
         className={`whitespace-nowrap text-[15px] font-medium text-text group-hover:text-accent ${japaneseFontClass(lead)}`}
       >
