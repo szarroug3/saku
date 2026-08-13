@@ -28,9 +28,9 @@
 // act on "N4", and three vendors disagree about it by 3.4x. The sub line says
 // what the family MEANS instead.
 //
-// WHY /grammar/obligation AND NOT /grammar/must
+// WHY /grammar/wa-ga AND NOT /grammar/は-vs-が
 // =============================================
-// The plate mocks the URL as /grammar/must — the cluster's TITLE. The title is
+// The URL is the cluster's id, never its TITLE. The title is
 // display text: "は vs が" is a title, and it is not going in a path. The id is
 // the stable handle (recipes.ts: "Stable id. Never parsed"), it is ASCII by
 // construction, and so this route sidesteps the decoding bug that 404'd every
