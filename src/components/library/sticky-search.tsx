@@ -64,17 +64,36 @@ export function StickySearch({
 }) {
   const [sentinel, stuck] = useStuck();
   if (bare) {
+    // DE-BOXED FIELD. Not a bordered pill-box (a second box inside the dock, the
+    // last of the library's chrome) but an underline field: a magnifier, the
+    // query, and a single hairline beneath that lights to the accent on focus.
+    // Bigger type than a row control, because searching IS the library's primary
+    // verb. The filter chips sit under it with a little more air.
     return (
       <div className="w-full">
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full rounded-(--radius) border border-border bg-transparent px-2.5 py-2 text-[15px] text-text"
-        />
+        <div className="relative flex items-center border-b border-border transition-colors focus-within:border-accent">
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden
+            className="pointer-events-none size-[18px] shrink-0 text-text-muted"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" />
+          </svg>
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full bg-transparent py-2.5 pl-2.5 pr-2 text-[16px] text-text placeholder:text-text-muted focus:outline-none"
+          />
+        </div>
         {children ? (
-          <div className="flex flex-wrap items-center gap-1.5 pt-2.5">
+          <div className="flex flex-wrap items-center gap-1.5 pt-3.5">
             {children}
           </div>
         ) : null}
