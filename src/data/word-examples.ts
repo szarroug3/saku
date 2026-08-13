@@ -15,9 +15,9 @@
 //
 // ATTRIBUTION: Tatoeba, CC BY 2.0 FR. `id` is the Tatoeba sentence id and the
 // permalink, kept so any sentence on screen traces back to the human who wrote
-// it. The acknowledgement itself is the AttributionLink at the foot of the
-// page, whose label already names sentence data and Tatoeba by name; see
-// src/data/attribution.ts.
+// it. The acknowledgement itself is the "About the data" link in the global
+// sidebar (src/components/sidebar.tsx), reachable from every screen; /about/data
+// names Tatoeba and the sentence data in full. See src/data/attribution.ts.
 
 import examplesJson from "./generated/word-examples.json" with { type: "json" };
 

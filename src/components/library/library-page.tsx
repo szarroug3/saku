@@ -18,7 +18,6 @@ import {
   useState,
 } from "react";
 
-import { AttributionLink } from "@/components/library/attribution-link";
 import { EntryRow } from "@/components/library/entry-tile";
 import { Shelf, shelfSections } from "@/components/library/shelves";
 import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
@@ -856,10 +855,6 @@ export function LibraryPageClient({
             );
           })()
         )}
-        {/* The attribution credit rides at the END of the scrolling content, so
-            it sits below the last shelf/result instead of being pinned chrome —
-            the licence just needs it reachable on this screen, and here it is. */}
-        <AttributionLink />
       </div>
 
       {/* THE FROZEN SLICE BAR. The last row of the frame, `shrink-0` so it keeps

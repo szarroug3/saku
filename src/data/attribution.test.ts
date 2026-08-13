@@ -6,34 +6,33 @@
 //
 // WHAT CHANGED, AND WHY THAT NEEDS A TEST
 // =======================================
-// KanjiVG's stroke-order data is CC BY-SA 3.0 and must be credited. It used to
-// credit itself: StrokeOrder rendered a line of small print under every diagram,
-// so the obligation travelled WITH the component and any new screen got it for
-// free. That line is gone — the credit now lives on /about/data, reached from
-// each screen through <AttributionLink /> — which is a legitimate way to satisfy
-// "in any reasonable manner", but it moves the obligation OFF the component and
-// onto the screen. A future page can now render a stroke diagram, forget the
-// link, look completely fine, and be infringing.
+// The dictionary data (EDRDG: KANJIDIC2, JMdict, KRADFILE) and the stroke-order
+// data (KanjiVG, CC BY-SA 3.0) must both be credited on, or reachable from,
+// every screen that shows them. README / About-box / startup-screen are ruled
+// out by name in the EDRDG licence, which is the stricter of the two.
 //
-// The same holds for EDRDG, whose licence is the stricter of the two: the
-// acknowledgement must appear on each screen showing the data or be REACHABLE
-// from it, and README/About-box/startup-screen are excluded by name.
+// The acknowledgement USED to ride each screen as a per-page <AttributionLink />
+// dropped in the footer, and this test walked the component graph to prove every
+// stroke-drawing page reached one. That mechanism is gone. The link now lives
+// ONCE, as "About the data" in the global sidebar (src/components/sidebar.tsx),
+// which src/app/layout.tsx mounts alongside {children} for every route — so it is
+// reachable from every screen the way the licence's own "menu item" example is.
 //
-// So: every page that draws stroke order must be able to reach the credits. Not
-// "should" — the test fails, loudly, and the failure message says what to add.
+// So the obligation moved OFF the page and INTO the chrome, and the thing that
+// can now break it is different: someone removes the sidebar entry, or unmounts
+// the sidebar from the layout, and every screen silently loses its only route to
+// the credits. This test guards THAT: the global chrome carries a link to
+// ATTRIBUTION_HREF, and the chrome is mounted on every route.
 //
 // HOW IT CHECKS
 // =============
-// Source-level, on the JSX. It builds a file graph over src/**/*.tsx — an edge
-// A→B when A imports a component from B and renders it as a tag — then, for
-// every src/app/**/page.tsx, walks that graph. If the walk reaches a file
-// rendering <HowItsWritten> or <StrokeOrder>, it must also reach a file
-// rendering <AttributionLink>.
-//
-// Static and approximate on purpose: it cannot follow a component passed as a
-// prop or picked out of a map. That is the right trade — a grep-shaped check
-// that catches the realistic mistake (someone adds a page, imports the section,
-// ships) beats a render harness this repo would otherwise have no reason to own.
+// Source-level and textual, on purpose. It reads src/components/sidebar.tsx and
+// src/app/layout.tsx directly rather than rendering them: the check that catches
+// the realistic mistake (someone deletes the nav entry, or drops <Sidebar> from
+// the shell) is a grep-shaped one, and a render harness is machinery this repo
+// would otherwise have no reason to own. It stays honest by also asserting the
+// data it depends on is still there (stroke order is still drawn somewhere, so
+// the obligation still applies) — a guard that can pass vacuously is no guard.
 
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -62,96 +61,69 @@ function tsxFiles(dir: string): string[] {
 const FILES = tsxFiles(SRC);
 const TEXT = new Map(FILES.map((f) => [f, readFileSync(f, "utf-8")]));
 
-/** Resolve an `@/…` specifier to a file we actually have. */
-function resolveAlias(spec: string): string | null {
-  if (!spec.startsWith("@/")) return null;
-  const base = join(SRC, spec.slice(2));
-  for (const candidate of [`${base}.tsx`, join(base, "index.tsx")]) {
-    if (TEXT.has(candidate)) return candidate;
-  }
-  return null;
-}
-
 /** Does this file render <Tag …> anywhere? */
 function renders(file: string, tag: string): boolean {
   return new RegExp(`<${tag}[\\s/>]`).test(TEXT.get(file) ?? "");
 }
 
-/** The files each file can render INTO: an aliased import whose imported name is
- * used as a JSX tag in the importing file. */
-function childrenOf(file: string): string[] {
-  const text = TEXT.get(file) ?? "";
-  const out = new Set<string>();
-  const importRe = /import\s+\{([^}]+)\}\s+from\s+"(@\/[^"]+)"/g;
-  for (const m of text.matchAll(importRe)) {
-    const target = resolveAlias(m[2]);
-    if (!target) continue;
-    for (const raw of m[1].split(",")) {
-      const name = raw.trim().split(/\s+as\s+/).pop()?.trim() ?? "";
-      if (/^[A-Z]/.test(name) && renders(file, name)) out.add(target);
-    }
-  }
-  return [...out];
-}
-
-/** Every file reachable from `start` through rendered components, including it. */
-function reachable(start: string): Set<string> {
-  const seen = new Set<string>([start]);
-  const stack = [start];
-  while (stack.length) {
-    for (const next of childrenOf(stack.pop()!)) {
-      if (!seen.has(next)) {
-        seen.add(next);
-        stack.push(next);
-      }
-    }
-  }
-  return seen;
-}
-
-const APP = join(SRC, "app");
-const PAGES = FILES.filter((f) => f.startsWith(APP) && f.endsWith(`${sep}page.tsx`));
+const SIDEBAR = join(SRC, "components", "sidebar.tsx");
+const LAYOUT = join(SRC, "app", "layout.tsx");
 const DRAWS_STROKES = (f: string) => renders(f, "HowItsWritten") || renders(f, "StrokeOrder");
-const CREDITS = (f: string) => renders(f, "AttributionLink");
 const rel = (f: string) => f.slice(SRC.length + 1);
 
-describe("stroke-order attribution is reachable", () => {
-  test("the graph found something to check", () => {
-    // A guard on the guard. If the walk stops finding stroke order at all —
-    // renamed component, changed import style — every assertion below passes
-    // vacuously and the licence check silently stops existing.
-    assert.ok(PAGES.length > 0, "no app pages found; the file walk is broken");
+/** Does `text` declare a link (a Next <Link> or a plain <a>) pointing at `href`?
+ * Matches both the JSX-attribute form (href="/about/data") and the data form the
+ * sidebar actually uses, where the route is a value in its NAV array
+ * ({ href: "/about/data", … }). Escaped so a route with regex-special chars is
+ * matched literally. */
+function linksTo(text: string, href: string): boolean {
+  const h = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`href\\s*[:=]\\s*"${h}"`).test(text);
+}
+
+describe("the credits link is carried by the global chrome", () => {
+  test("the guard has something real to guard", () => {
+    // If the data this obligation is about stops being rendered, the check below
+    // would still pass but would be protecting nothing. Pin that stroke order is
+    // still drawn (KanjiVG, the CC BY-SA source) and the sidebar/layout files are
+    // where this test thinks they are, so a rename can't quietly void the guard.
     assert.ok(
       FILES.some(DRAWS_STROKES),
       "no file renders <HowItsWritten>/<StrokeOrder> — did they get renamed? Update this test.",
     );
-    assert.ok(FILES.some(CREDITS), "no file renders <AttributionLink>");
+    assert.ok(TEXT.has(SIDEBAR), "src/components/sidebar.tsx moved; repoint this test");
+    assert.ok(TEXT.has(LAYOUT), "src/app/layout.tsx moved; repoint this test");
   });
 
-  test("every page that draws stroke order can reach the credits", () => {
-    for (const page of PAGES) {
-      const tree = [...reachable(page)];
-      if (!tree.some(DRAWS_STROKES)) continue;
-      assert.ok(
-        tree.some(CREDITS),
-        `${rel(page)} renders stroke-order data (KanjiVG, CC BY-SA 3.0) but no ` +
-          `<AttributionLink /> is reachable from it. The inline credit under the ` +
-          `diagram is gone on purpose; /about/data is the credit now, and this ` +
-          `page has no route to it. Add <AttributionLink /> — this is a licence ` +
-          `violation, not a style nit.`,
-      );
-    }
+  test("the sidebar links to the credits page", () => {
+    // The whole compliance mechanism in one line: the global nav carries a link
+    // whose href is the acknowledgement page. Remove the "About the data" entry
+    // and this fails — that is a licence violation, not a nav tidy-up.
+    assert.ok(
+      linksTo(TEXT.get(SIDEBAR) ?? "", ATTRIBUTION_HREF),
+      `src/components/sidebar.tsx has no link to ${ATTRIBUTION_HREF}. The data ` +
+        `acknowledgement (EDRDG dictionaries + KanjiVG stroke order) is reachable ` +
+        `from every screen ONLY through the global "About the data" sidebar entry. ` +
+        `Restore it — this is a licence violation, not a style nit.`,
+    );
   });
 
-  test("the stepped lesson, which draws stroke order, carries the link", () => {
-    // Named outright rather than left to the sweep above: the session screen is
-    // the one that reaches stroke order through three hops of components, so it
-    // is the one a refactor is most likely to quietly disconnect. The link lives
-    // in the session frame's frozen footer now (src/app/session/page.tsx), pinned
-    // at the very bottom of the lesson, rather than in the teach-walk content.
-    const page = join(SRC, "app", "session", "page.tsx");
-    assert.ok(TEXT.has(page), "session/page.tsx moved; repoint this assertion");
-    assert.ok(CREDITS(page), "the stepped lesson lost its <AttributionLink />");
+  test("the sidebar is mounted in the root layout, alongside every page", () => {
+    // The link is only "reachable from every screen" if the sidebar is actually
+    // in the shell that wraps every route. The root layout renders <Sidebar> and
+    // {children} in the same tree; drop the sidebar and the reachable-menu-item
+    // mechanism the licence relies on is gone from the whole app at once.
+    const layout = TEXT.get(LAYOUT) ?? "";
+    assert.ok(
+      renders(LAYOUT, "Sidebar"),
+      "src/app/layout.tsx no longer renders <Sidebar> — the credits link is no " +
+        "longer global chrome, so no screen is guaranteed a route to /about/data.",
+    );
+    assert.ok(
+      layout.includes("{children}"),
+      "src/app/layout.tsx no longer wraps {children} — confirm the sidebar and " +
+        "the page still share one shell so the menu item is reachable from each page.",
+    );
   });
 
   test("no component credits KanjiVG inline any more", () => {
@@ -185,9 +157,9 @@ describe("the credits page names every borrowed source", () => {
     assert.match(LICENCE_NOTE, /Electronic Dictionary Research and Development Group/);
   });
 
-  test("the footer label is a non-empty link to the credits page", () => {
-    // The obligation is satisfied by REACHABILITY: a persistent link, on every
-    // screen that shows the data, pointing at the page that acknowledges in full.
+  test("the link label is a non-empty pointer to the credits page", () => {
+    // The obligation is satisfied by REACHABILITY: a persistent link, in the
+    // global chrome of every screen, pointing at the page that acknowledges in full.
     assert.ok(SHORT.trim().length > 0);
     assert.equal(ATTRIBUTION_HREF, "/about/data");
   });
