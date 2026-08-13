@@ -22,8 +22,9 @@
 //  - the family grid / "appears in" / "seen
 //    as a part of" grids                      → dropped with the redesign
 //
-// WHAT STAYED: the breadcrumb, the SliceBar action bar (the drill/add-to-list the
-// library has always offered), and the attribution link.
+// WHAT STAYED: the breadcrumb and the SliceBar action (now the entry variant — a
+// lone "Quiz me" when the entry is quizzable, nothing otherwise). The data-sources
+// acknowledgement is no longer per-page; it lives in the global sidebar.
 
 import Link from "next/link";
 import { notFound } from "next/navigation";

@@ -426,7 +426,7 @@ export function HomeFeed() {
           Each card carries its own position header ("Item 3–8 of …"), its own
           "why", and Start / Quiz me / Continue / I-already-know, all off the one
           NextLessonPreview. */}
-      <div className="grid grid-cols-1 gap-x-10 gap-y-8 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2">
         {visible.map(({ track, order, run, lesson }) => (
           <NextLessonPreview
             key={track.id}
