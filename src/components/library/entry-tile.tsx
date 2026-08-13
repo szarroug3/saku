@@ -22,15 +22,15 @@
 // 生 feeds the SAME global selection a toggled hiragana row does. Searching and
 // shelving are two ways into one drill, not two drills.
 //
-// BOTH SHAPES TAKE AN `EntryStanding`, NOT A `Standing`. A kanji has no adjective
-// (see standing.ts — an entry's standing is a refusal, not an average), so these
-// components say a COUNT: "4 of 9". Not a fallback for a missing chip — a better
-// sentence, and the only one that is true.
+// NEITHER SHAPE PAINTS STANDING. The shelf is de-boxed — glyphs on the mesh, no
+// per-tile status colour or count — because standing on thousands of scrolling
+// tiles was a heat-map of your own memory the design keeps throwing out. Status
+// now lives only on the Practice page's filters; the Library knowledge FILTER
+// still selects by standing under the hood, it just no longer shows on the tile.
 
 import Link from "next/link";
 
 import { HearButton } from "@/components/lesson/hear-button";
-import { StandingChip } from "@/components/library/standing-chip";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT, type KeigoSet, type KeigoWord } from "@/data/keigo";
@@ -42,7 +42,6 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
-import type { EntryStanding } from "@/lib/library/standing";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
 // it has a reading" property is testable (the runner cannot load JSX).
 import { japaneseFontClass } from "@/lib/japanese-text";
@@ -75,38 +74,10 @@ function speakable(entry: LibEntry): boolean {
   );
 }
 
-/** The border a tile wears when it is NOT selected, so a shelf reads at a glance
- * without every tile carrying a chip. Border only — a filled tile at this
- * density is a heat-map of your own memory, which the design keeps throwing out.
- *
- * A multi-fact entry gets the neutral border: there is no colour for "four of
- * nine", and inventing a fourth tone to mean "mixed" would be the average again
- * in a costume. */
-function toneClass(s: EntryStanding): string {
-  // Solid, no alpha: a half-transparent border over kiri's frosted frame is a
-  // partial-alpha edge that re-blends every scroll frame (the exact cost the
-  // frame design removes everywhere else). The hue still reads the standing; it
-  // just no longer bleeds the frost through its own outline.
-  switch (s.standing) {
-    case "solid":
-      return "border-success";
-    case "getting-there":
-    case "slipping":
-      return "border-warning";
-    case "shaky":
-      return "border-danger";
-    default:
-      return "border-border";
-  }
-}
-
-function neutralToneClass(): string {
-  return "border-border";
-}
-
 /** The small ↗ target — opens the entry page. A `Link`, so it is a real
  * navigation (middle-click, cmd-click work); `stopPropagation` keeps the click
- * off SELECT. */
+ * off SELECT. Borderless (no frame, no `bg-card`) to match the de-boxed shelf:
+ * it sits on the mesh like the glyph does, revealed on hover by its container. */
 function ViewLink({ entry, className }: { entry: LibEntry; className?: string }) {
   return (
     <Link
@@ -115,7 +86,7 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
       // `entryName`, not the glyph: the long-vowel mark has no glyph, and this
       // read "Open " — a control a screen reader announces with no name.
       aria-label={`Open ${entryName(entry)}`}
-      className={`inline-flex size-5 items-center justify-center cursor-pointer rounded-md border border-border bg-card p-0 text-[11px] leading-none text-text-muted no-underline hover:bg-panel hover:text-text ${className ?? ""}`}
+      className={`inline-flex size-5 items-center justify-center cursor-pointer rounded-md p-0 text-[11px] leading-none text-text-muted no-underline hover:text-text ${className ?? ""}`}
     >
       ↗
     </Link>
@@ -124,19 +95,15 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
 
 export function EntryTile({
   entry,
-  standing,
   mnemonic,
   voice,
   selected,
-  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
-  standing: EntryStanding;
   mnemonic?: string;
   voice: string;
   selected: boolean;
-  showStatus?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
@@ -151,26 +118,17 @@ export function EntryTile({
           onToggleSelect(e.shiftKey);
         }
       }}
-      // Selected owns BOTH border and fill so it beats the tone border and is
-      // unmissable; unselected keeps the standing tone. `cursor-pointer` +
-      // `select-none` because the whole body is the toggle.
-      className={`relative cursor-pointer select-none rounded-[10px] border px-1.5 pb-2 pt-2.5 text-center [container-type:inline-size] ${
-        selected
-          ? "border-accent bg-accent-bg"
-          : `bg-card ${showStatus ? toneClass(standing) : neutralToneClass()}`
+      // BORDERLESS — no outline, no `bg-card` fill: glyph + reading sit straight
+      // on the mesh. The whole cell is the SELECT target, signalled by a FLAT
+      // hover tint (never a shadow — a shelf is thousands of tiles and any
+      // blurred shadow on scrolling content reintroduces jank) and an accent
+      // wash + accent glyph when on. `cursor-pointer` + `select-none` because the
+      // whole body is the toggle.
+      className={`group relative cursor-pointer select-none rounded-[10px] px-1.5 pb-1.5 pt-2 text-center [container-type:inline-size] transition-colors ${
+        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
       title={mnemonic}
     >
-      {/* The check corner — the second, redundant signal that this is on, for
-          the density where a border alone is easy to miss. */}
-      <span
-        className={`absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] leading-none ${
-          selected ? "bg-accent text-bg" : "border border-border text-transparent"
-        }`}
-        aria-hidden
-      >
-        ✓
-      </span>
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
           "glyph" is an English name. */}
@@ -181,9 +139,9 @@ export function EntryTile({
           two-line spill a long word (アパート, おまわりさん) used to make — it
           shrinks to one line instead of wrapping past the border. */}
       <div
-        className={`select-none whitespace-nowrap leading-[1.25] text-text ${japaneseFontClass(
-          entry.glyph,
-        )}`}
+        className={`select-none whitespace-nowrap leading-[1.25] ${
+          selected ? "text-accent" : "text-text"
+        } ${japaneseFontClass(entry.glyph)}`}
         style={{
           ["--chars" as string]: [...entry.glyph].length,
           fontSize: "clamp(12px, calc(90cqi / var(--chars)), 26px)",
@@ -192,7 +150,9 @@ export function EntryTile({
         {entry.glyph}
       </div>
       <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
-      <div className="mt-1.5 flex items-center justify-center gap-1.5">
+      {/* Actions occupy layout at all times (so hovering doesn't reflow the grid)
+          but are invisible until hover/focus — the resting shelf stays clean. */}
+      <div className="mt-1 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         {speakable(entry) ? (
           <HearButton
             glyph={entry.glyph}
@@ -207,40 +167,6 @@ export function EntryTile({
   );
 }
 
-/** How an entry's standing reads when it has no adjective. */
-export function StandingCell({ standing }: { standing: EntryStanding }) {
-  // NOTHING TO KNOW, NOTHING TO SAY. Every branch below is a claim about your
-  // memory, and with no facts they all reduce to the last one — which rendered
-  // "all 0 solid" on all five marks: the app reporting a clean sweep of an entry
-  // it has never asked you about and never will. An entry with no facts has no
-  // standing, so this says nothing at all, matching the entry page's header and
-  // the slice bar, which stays silent on an empty slice too.
-  if (standing.total === 0) return null;
-  if (standing.standing) return <StandingChip standing={standing.standing} />;
-  const unseen = standing.total - standing.seen;
-  const activeNeedWork = standing.needWork - unseen;
-  if (activeNeedWork > 0 && unseen > 0) {
-    return (
-      <span className="whitespace-nowrap text-xs text-text-muted">
-        <b className="font-medium text-warning">{activeNeedWork}</b> need work ·{" "}
-        not seen
-      </span>
-    );
-  }
-  if (unseen > 0) {
-    return <StandingChip standing="not-seen" />;
-  }
-  if (standing.needWork === 0) {
-    return <span className="text-xs text-text-muted">all {standing.total} solid</span>;
-  }
-  return (
-    <span className="whitespace-nowrap text-xs text-text-muted">
-      <b className="font-medium text-warning">{standing.needWork}</b> of{" "}
-      {standing.total} need work
-    </span>
-  );
-}
-
 /** The search-result shape: glyph, what it is, how it's going — and the same
  * three actions the tile has, laid along the row instead of stacked.
  *
@@ -252,21 +178,17 @@ export function StandingCell({ standing }: { standing: EntryStanding }) {
  * study it) gets an explicit target. */
 export function EntryRow({
   entry,
-  standing,
   note,
   voice,
   selected,
   grid = false,
-  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
-  standing: EntryStanding;
   /** Why this row is here, when the section header doesn't already say it. */
   note?: string;
   voice: string;
   selected: boolean;
-  showStatus?: boolean;
   /** Lay the row out as a `grid-cols-subgrid` band of a shared parent grid,
    * instead of a self-contained flex row. The grammar shelf turns this on so
    * every pattern column sizes to the WIDEST pattern and the explanations align
@@ -310,20 +232,23 @@ export function EntryRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`cursor-pointer select-none items-center border-b border-border py-2 text-text last:border-b-0 ${
+      className={`group cursor-pointer select-none items-center border-b border-white/[0.06] py-2 text-text transition-colors last:border-b-0 ${
         // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
         // and column gap; the default row is a self-contained flex line with its
         // own gap and edge padding.
         grid
           ? "col-span-full grid grid-cols-subgrid"
           : "flex gap-3 px-1"
-      } ${selected ? "bg-accent-bg" : "hover:bg-panel"}`}
+      } ${selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"}`}
     >
       {/* The select box — leading, checkbox-shaped, so the row reads as a thing
-          you tick. Filled accent when on. */}
+          you tick. Hover/selected reveal, so at rest the row is just its text;
+          filled accent when on. */}
       <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none ${
-          selected ? "bg-accent text-bg" : "border border-border text-transparent"
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
+          selected
+            ? "bg-accent text-bg opacity-100"
+            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         }`}
         aria-hidden
       >
@@ -400,12 +325,10 @@ export function EntryRow({
           className="flex-none"
         />
       ) : null}
-      <ViewLink entry={entry} className="flex-none" />
-      {showStatus ? (
-        <span className="flex-none max-[600px]:hidden">
-          <StandingCell standing={standing} />
-        </span>
-      ) : null}
+      <ViewLink
+        entry={entry}
+        className="flex-none opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+      />
     </div>
   );
 }
@@ -447,7 +370,7 @@ function KeigoCell({
 
 export function KeigoSetHeader() {
   return (
-    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px]">
+    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-1 pb-1.5 pt-1">
       <span className="h-4 w-4 flex-none" aria-hidden />
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         Honorific · for what they do
@@ -459,7 +382,6 @@ export function KeigoSetHeader() {
         Humble · variant
       </span>
       <span aria-hidden />
-      <span className="max-[600px]:hidden" aria-hidden />
     </div>
   );
 }
@@ -467,18 +389,14 @@ export function KeigoSetHeader() {
 export function KeigoSetRow({
   entry,
   set,
-  standing,
   voice,
   selected,
-  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
   set: KeigoSet;
-  standing: EntryStanding;
   voice: string;
   selected: boolean;
-  showStatus?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const honorific = set.words.filter((w) => w.register === "honorific");
@@ -495,13 +413,15 @@ export function KeigoSetRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] ${
-        selected ? "bg-accent-bg" : "hover:bg-panel"
+      className={`group grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] cursor-pointer select-none items-center gap-3 border-b border-white/[0.06] px-1 py-2 text-text transition-colors last:border-b-0 ${
+        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
     >
       <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none ${
-          selected ? "bg-accent text-bg" : "border border-border text-transparent"
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
+          selected
+            ? "bg-accent text-bg opacity-100"
+            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         }`}
         aria-hidden
       >
@@ -511,11 +431,6 @@ export function KeigoSetRow({
       <KeigoCell words={humble.slice(0, 1)} voice={voice} />
       <KeigoCell words={humble.slice(1, 2)} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
-      {showStatus ? (
-        <span className="flex-none max-[600px]:hidden">
-          <StandingCell standing={standing} />
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -556,7 +471,7 @@ function PairCell({
  * headings sit over the columns they name. */
 export function VerbPairHeader() {
   return (
-    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1">
+    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 border-b border-white/[0.06] px-1 pb-1.5 pt-1">
       <span className="h-4 w-4 flex-none" aria-hidden />
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         It happens on its own
@@ -564,7 +479,6 @@ export function VerbPairHeader() {
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         Someone does it
       </span>
-      <span aria-hidden />
       <span aria-hidden />
     </div>
   );
@@ -579,18 +493,14 @@ export function VerbPairHeader() {
 export function VerbPairRow({
   entry,
   pair,
-  standing,
   voice,
   selected,
-  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
   pair: VerbPair;
-  standing: EntryStanding;
   voice: string;
   selected: boolean;
-  showStatus?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
@@ -605,13 +515,15 @@ export function VerbPairRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] ${
-        selected ? "bg-accent-bg" : "hover:bg-panel"
+      className={`group grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] cursor-pointer select-none items-center gap-3 border-b border-white/[0.06] px-1 py-2 text-text transition-colors last:border-b-0 ${
+        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
     >
       <span
-        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none ${
-          selected ? "bg-accent text-bg" : "border border-border text-transparent"
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none transition-opacity ${
+          selected
+            ? "bg-accent text-bg opacity-100"
+            : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         }`}
         aria-hidden
       >
@@ -620,11 +532,6 @@ export function VerbPairRow({
       <PairCell side={pair.happens} voice={voice} />
       <PairCell side={pair.doIt} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
-      {showStatus ? (
-        <span className="flex-none max-[600px]:hidden">
-          <StandingCell standing={standing} />
-        </span>
-      ) : null}
     </div>
   );
 }

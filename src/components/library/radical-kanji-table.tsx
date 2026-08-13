@@ -17,31 +17,29 @@
 
 import Link from "next/link";
 
-import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl } from "@/components/ui";
-import { kanjiEntry, kanjiRow, meaningFactId, orderRow } from "@/data/kanji";
+import { kanjiEntry, kanjiRow, orderRow } from "@/data/kanji";
 import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
-import { standingOf } from "@/lib/library/standing";
 import type { Claims } from "@/lib/claims";
 import type { AccuracyMetric, HistoryFile } from "@/types";
 
 export function RadicalKanjiTable({
   component,
   cap,
-  facts,
-  claims,
-  metric,
-  now,
 }: {
   /** The radical glyph whose kanji this table lists. */
   component: string;
   /** How many rows to show before the overflow line. */
   cap: number;
-  facts: HistoryFile["facts"];
-  claims: Claims;
-  metric: AccuracyMetric;
-  now: number;
+  // The table no longer paints per-kanji standing (status now lives only on the
+  // Practice page), so these are accepted but unused. They stay on the interface
+  // so the shared caller (ComponentUses, which also feeds WordsWith) needn't be
+  // rewired; drop them if that caller stops passing standing data.
+  facts?: HistoryFile["facts"];
+  claims?: Claims;
+  metric?: AccuracyMetric;
+  now?: number;
 }) {
   const kanji = usedAsPartIn(component);
   if (kanji.length === 0) return null;
@@ -60,12 +58,6 @@ export function RadicalKanjiTable({
       <div className="flex flex-col gap-1.5">
         {shown.map((c) => {
           const meaning = kanjiRow(c)?.meanings.slice(0, 2).join(", ") ?? "";
-          const s = standingOf(
-            facts[meaningFactId(c)],
-            claims[meaningFactId(c)],
-            metric,
-            now,
-          );
           return (
             <div key={c} className="flex flex-wrap items-baseline gap-2 text-[13px]">
               <Link
@@ -75,7 +67,6 @@ export function RadicalKanjiTable({
                 {c}
               </Link>
               <span className="min-w-0 flex-1 truncate text-text-muted">{meaning}</span>
-              <StandingChip standing={s.standing} />
             </div>
           );
         })}

@@ -96,10 +96,6 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
             members={familyMembers}
             current={pattern}
             feel={familyCluster.feel}
-            facts={{}}
-            claims={{}}
-            metric="attempt"
-            now={Date.now()}
           />
         </Section>
       ) : null}
