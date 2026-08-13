@@ -62,8 +62,7 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
 const panel =
   "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
   "[content-visibility:auto] [contain-intrinsic-size:auto_260px] " +
-  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)] " +
-  "shadow-[0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.10)]";
+  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)]";
 
 export function NextLessonPreview({
   lesson,
