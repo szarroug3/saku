@@ -196,7 +196,9 @@ export function SliceBar({
     if (!canQuiz) return null;
     return (
       <>
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Bottom-RIGHT, like the lesson walk's "Quiz me" in its footer — a
+            reference page's one action sits at the trailing edge, not the left. */}
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
           <Btn sel onClick={() => setQuizzing(true)}>
             Quiz me {quizCount}
           </Btn>
