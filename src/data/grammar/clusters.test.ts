@@ -105,19 +105,34 @@ describe("links are bets, and each is written down", () => {
   });
 });
 
-describe("map-only clusters carry no members", () => {
-  test("は/が is a map and never a quiz", () => {
+describe("は/が and に/で: quizzable MEANING, never a choice", () => {
+  test("は/が now carries its two particle members", () => {
     const c = cluster("wa-ga");
     assert.ok(c);
-    // If this ever gains members, something is generating は/が questions.
-    // It must not. See selection.ts and this file's header.
-    assert.equal(c.members.length, 0);
-    assert.ok(c.link, "は/が is the one cluster that MUST link out — we can't teach it");
+    // Each particle became its own MEANING recipe (wa/ga), so the cluster gained
+    // members and its standalone map page retired — the comparison rides on each
+    // member's entry page. Gaining members is exactly the intended change now.
+    assert.deepEqual([...c.members], ["wa", "ga"]);
+    assert.ok(c.link, "は/が still links out to the fuller comparison");
   });
 
-  test("no recipe exists for は or が at all", () => {
-    for (const r of RECIPES) {
-      assert.ok(r.pattern !== "は" && r.pattern !== "が", `${r.id} would be quizzable`);
+  test("に/で now carries its two particle members", () => {
+    const c = cluster("ni-de");
+    assert.ok(c);
+    assert.deepEqual([...c.members], ["ni", "de"]);
+    assert.ok(c.link, "に/で still links out to the fuller comparison");
+  });
+
+  test("は/が/に/で recipes exist but are MEANING-ONLY — never produced or chosen", () => {
+    // The safety invariant the old "no recipe for は/が" test guarded, restated
+    // for the new reality: the particles are teachable as meanings ("what does は
+    // mark?") but must never mint a production question (there is no "build the は
+    // form of 私" — that is typing) or a choice drill (は-vs-が cloze is dead; see
+    // selection.ts). Every one of them is vacuous, so isProducible is false.
+    for (const id of ["wa", "ga", "ni", "de"]) {
+      const r = recipe(id);
+      assert.ok(r, `particle recipe '${id}' must exist`);
+      assert.ok(isVacuous(r), `${id} must be vacuous, so no production fact is minted`);
     }
   });
 });

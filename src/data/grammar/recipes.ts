@@ -1296,6 +1296,47 @@ export const RECIPES: readonly Recipe[] = [
   // the whole safety mechanism. See selection.ts for the argument; the short
   // version is that は/が cloze was verified dead across 660,343 particle
   // slots and is not here, and never will be.
+  // The four core case particles, each a MEANING fact and nothing more. They
+  // attach a bare particle to a noun, so isVacuous → isProducible is false: no
+  // production question is ever minted (there is no "build the は form of 私" —
+  // that is typing), and the CHOICE between them is never asked either (は-vs-が
+  // cloze is dead; see selection.ts and this block's header). Each carries a
+  // `cluster` so its entry page shows the sibling it is paired with — は↔が,
+  // に↔で — and the cluster's feel note ("no rule; which fits comes with time").
+  // The standalone /grammar/wa-ga and /grammar/ni-de map pages retire once the
+  // clusters gain these members; the comparison moves onto each particle's page.
+  {
+    id: "wa",
+    pattern: "は",
+    gloss: "marks the topic",
+    level: "N5",
+    cluster: "wa-ga",
+    attach: [{ host: "noun", form: null, add: "は" }],
+  },
+  {
+    id: "ga",
+    pattern: "が",
+    gloss: "marks the subject",
+    level: "N5",
+    cluster: "wa-ga",
+    attach: [{ host: "noun", form: null, add: "が" }],
+  },
+  {
+    id: "ni",
+    pattern: "に",
+    gloss: "marks where something is or is going",
+    level: "N5",
+    cluster: "ni-de",
+    attach: [{ host: "noun", form: null, add: "に" }],
+  },
+  {
+    id: "de",
+    pattern: "で",
+    gloss: "marks where an action happens",
+    level: "N5",
+    cluster: "ni-de",
+    attach: [{ host: "noun", form: null, add: "で" }],
+  },
   {
     id: "wo",
     pattern: "を",

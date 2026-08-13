@@ -141,8 +141,9 @@ describe("the two shapes that do NOT hold it yet", () => {
     // `accepts`, which matches the fact's baked answers — the gloss. Structural,
     // like the kana one, and the same fix shape would serve it.
     // The full grammar recipe table, including the standalone adjective noun
-    // form, carries one meaning card per recipe.
-    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 101);
+    // form and the four core case particles は/が/に/で, carries one meaning card
+    // per recipe.
+    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 105);
   });
 });
 

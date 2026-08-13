@@ -269,21 +269,27 @@ export const CLUSTERS: readonly Cluster[] = [
     noLinkReason: "No verified link compares the two.",
   },
 
-  // --- MAP-ONLY CLUSTERS ---------------------------------------------------
-  // These have no `members`, because they are not built from recipes: they are
-  // choices between two particles in a frame, which is exactly the thing the
-  // app has proven it must not quiz. They exist because they are what a
-  // beginner asks about first, and a map can answer honestly where a quiz
-  // cannot. See the は/が note in this file's header.
+  // --- は/が and に/で — now member-bearing, no longer map-only ------------
+  // These once had no `members` and rendered as standalone /grammar map pages,
+  // because a CHOICE between two particles is the thing the app must not quiz.
+  // That is still true — the choice is never asked. What changed is that each
+  // particle now ships as its own MEANING recipe (wa/ga/ni/de in recipes.ts):
+  // "what does は mark?" is a safe, gradeable question, and once each has an
+  // entry page the comparison rides on it (the sibling under "Ways to say this"
+  // plus the feel note and the Tofugu link), so the standalone map pages retire.
+  // The recipes are meaning-only (isProducible === false), so listing them here
+  // mints no production or choice drill. See the は/が note in this file's header.
   {
     id: "wa-ga",
     title: "は vs が",
     gloss: "は marks the topic, が marks the subject",
-    members: [],
+    members: ["wa", "ga"],
     feel:
       "は marks what the sentence is about; が marks who or what is doing the " +
-      "verb. Plenty of sentences take either one, and the difference between " +
-      "them often doesn't survive into English.",
+      "verb. There is no rule for choosing between them: plenty of sentences " +
+      "take either one, the difference often doesn't survive into English, and " +
+      "which one fits a given sentence is something that comes with time and " +
+      "exposure, not from a lesson.",
     link: {
       url: "https://www.tofugu.com/japanese/wa-and-ga/",
       label: "Tofugu: は vs が",
@@ -294,14 +300,21 @@ export const CLUSTERS: readonly Cluster[] = [
     id: "ni-de",
     title: "に vs で",
     gloss: "where something is vs where something happens",
-    members: [],
-    feel: "Roughly: に marks existence and destination, で marks the site of an action.",
+    members: ["ni", "de"],
+    feel:
+      "Roughly: に marks existence and destination, で marks the site of an " +
+      "action. There is no rule for choosing between them: which one a sentence " +
+      "wants comes with time and exposure, not from a lesson.",
     link: {
       url: "https://www.tofugu.com/japanese/ni-vs-de/",
       label: "Tofugu: に vs で",
       lastVerified: "2026-07-17",
     },
   },
+  // --- THE LAST MAP-ONLY CLUSTER -------------------------------------------
+  // transitivity has no `members`: it is a choice between two verbs (開ける/開く)
+  // that the app must not quiz, and there is no single recipe to attach it to.
+  // It keeps its standalone /grammar/transitivity map page. See the header.
   {
     id: "transitivity",
     // NAMED BY ITS OWN JAPANESE, not by the grammar words for it. "transitive"

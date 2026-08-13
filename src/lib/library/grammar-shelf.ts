@@ -37,18 +37,52 @@ import type { Form } from "@/lib/conjugate";
 /** The trailing bucket's key — the plain-form patterns (which build no shape) and
  * every pattern with no verb host at all. */
 const OTHER = "other";
-type SectionKey = Form | typeof OTHER;
+/** The LEADING section's key — the case/binding particles, hoisted out of the
+ * "Other patterns" bucket into a section of their own at the top of the shelf. */
+const PARTICLES = "particles";
+type SectionKey = Form | typeof OTHER | typeof PARTICLES;
 
 /**
- * The section a pattern belongs in: its verb attach form when that form is a real
+ * The PARTICLES section's membership, by recipe id.
+ *
+ * These are the case- and binding-particle patterns — a noun plus a bare
+ * particle, conjugating nothing — that a beginner meets and selects as a group,
+ * before any verb form. They otherwise scatter into "Other patterns" alongside
+ * the plain-form clause patterns, which buries them; a named section at the top
+ * matches where the shelf used to show は/が and に/で and gives every particle a
+ * selectable, quizzable (meaning) row like any other pattern.
+ *
+ * An explicit set rather than a computed marker: "is this a particle" is a
+ * curatorial call (は/が/に/で/を/へ/まで/までに/だけ/しか are in; a plain-form
+ * clause pattern like 〜ので is not), so it is listed by hand and read here. If
+ * the set drifts from the recipe table a test would not catch it — keep it in
+ * sync with the particles ALLOWLIST block in recipes.ts.
+ */
+const PARTICLE_IDS: ReadonlySet<string> = new Set([
+  "wa", // は — topic
+  "ga", // が — subject
+  "ni", // に — location / destination
+  "de", // で — site of an action
+  "wo", // を — direct object
+  "e", // へ — direction
+  "made", // まで — until / as far as
+  "made-ni", // までに — by (a deadline)
+  "dake", // だけ — only
+  "shika-nai", // しか〜ない — only (nothing but)
+]);
+
+/**
+ * The section a pattern belongs in: the leading "Particles" section for a case/
+ * binding particle, else its verb attach form when that form is a real
  * conjugation shape, else the trailing "Other patterns" bucket.
  *
  * The plain (dictionary) form joins the bucket on purpose — it is the one verb
  * form that builds nothing, so it heads no section, the same reason it gets no
- * form lesson. A pattern with no verb host (a noun/particle pattern) has no form
- * and joins it too.
+ * form lesson. A non-particle pattern with no verb host (a noun/clause pattern)
+ * has no form and joins it too.
  */
 function sectionKeyOf(r: Recipe): SectionKey {
+  if (PARTICLE_IDS.has(r.id)) return PARTICLES;
   const f = verbAttachForm(r);
   if (f && f !== "dictionary") return f;
   const adjectiveForm = r.attach.find(
@@ -96,8 +130,22 @@ export function grammarShelfSections(): ShelfSection[] {
   }
 
   const sections: ShelfSection[] = [];
+
+  // PARTICLES lead the shelf — particles are taught before any verb form, and
+  // this is where は/が and に/で used to sit as bespoke links. Now they are real
+  // selectable rows (through the shared sectionCard/GrammarShelfRow), so the
+  // header is a select-all and each row ticks to drill its meaning.
+  const particles = groups.get(PARTICLES);
+  if (particles?.length) {
+    sections.push({
+      id: "particles",
+      label: "Particles",
+      entries: particles.flatMap((r) => resolve(patternEntry(r.id))),
+    });
+  }
+
   for (const [key, recipes] of groups) {
-    if (key === OTHER) continue; // trailing — appended last, below
+    if (key === OTHER || key === PARTICLES) continue; // handled separately
     sections.push({
       id: `form-${key}`,
       label: sectionLabel(key),

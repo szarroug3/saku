@@ -46,10 +46,13 @@ import { CLUSTERS, cluster, membersOf } from "@/data/grammar/clusters";
 import { glyphLines } from "@/lib/grammar/cluster-view";
 
 export function generateStaticParams() {
-  // Only the MAP-ONLY families (は/が, に/で, 開ける/開く) get a standalone page now.
-  // The word-clusters' side-by-side pages were removed; their data still powers
-  // the "Ways to say this" family on each member's pattern page and the
-  // search-by-English-meaning, so the clusters themselves stay — just not a page.
+  // Only the MAP-ONLY family (開ける/開く, i.e. transitivity) gets a standalone
+  // page now. は/が and に/で used to be here too, but each particle now ships as
+  // its own MEANING recipe with an entry page, so those clusters gained members
+  // and their standalone maps retired — the comparison rides on each member's
+  // pattern page ("Ways to say this") instead. The word-clusters' side-by-side
+  // pages were removed the same way; their data still powers that family view
+  // and the search-by-English-meaning, so the clusters stay — just not a page.
   return CLUSTERS.filter((c) => c.members.length === 0).map((c) => ({
     cluster: c.id,
   }));
@@ -103,8 +106,8 @@ export default async function ClusterPage({
       <div className="mt-5 border-t border-white/[0.08]" aria-hidden />
 
       {/* The feel note — shown, never asked, never scored (clusters.ts keeps that
-          fence). A plain paragraph now, not a boxed aside; on the map-only
-          clusters (は/が, に/で, 開ける/開く) it is the whole content. */}
+          fence). A plain paragraph now, not a boxed aside; on the one remaining
+          map-only cluster (開ける/開く, transitivity) it is the whole content. */}
       {c.feel ? (
         <p className="mt-6 max-w-prose text-[13px] leading-relaxed text-text-muted">
           {c.feel}
