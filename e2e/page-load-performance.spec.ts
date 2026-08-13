@@ -125,7 +125,7 @@ const TEST_PAGES: PageLoadTest[] = [
   // Grammar cluster page
   {
     name: "Grammar cluster page",
-    url: "/grammar/obligation",
+    url: "/grammar/wa-ga",
     maxLoadTimeMs: 3000,
   },
 

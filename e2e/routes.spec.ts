@@ -104,8 +104,8 @@ for (const route of routes.static) {
  * app's own data and are asserted to render real content, not just to 200.
  */
 const dynamicSamples: Array<{ route: string; url: string; expect: string }> = [
-  // Cluster ids come from src/data/grammar/clusters; "obligation" is the first.
-  { route: "/grammar/[cluster]", url: "/grammar/obligation", expect: "" },
+  // Only the map-only families keep a /grammar page; the word-cluster pages were removed.
+  { route: "/grammar/[cluster]", url: "/grammar/wa-ga", expect: "" },
   { route: "/library/[...entry]", url: "/library/hiragana/a", expect: "あ" },
   // /library/primitive/[glyph] serves the shapes that appear in kanji decompositions
   // but have no kanji or radical entry of their own (氵, 亻, 艹, ...). A component

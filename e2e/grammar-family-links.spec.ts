@@ -39,17 +39,16 @@ test("a member page answers 'which one?' with the family's feel note", async ({
   await expect(page.getByText(/overlap is large and real/)).toBeVisible();
 });
 
-test("the family's external reference lives on the cluster page, not the member page", async ({
+test("a member page does not carry the family's external reference", async ({
   page,
 }) => {
-  // Absent here: the redesigned member page (GrammarEntryView) does not repeat the
-  // family's external reference — it carries no Links/reference card at all…
+  // The redesigned member page (GrammarEntryView) carries no Links/reference card.
+  // The family's external reference (Tae Kim on conditionals) used to live on the
+  // word-cluster's side-by-side page, which has since been removed (only the
+  // map-only families keep a /grammar page), so it is not surfaced on the member
+  // page either — the reference data stays in clusters.ts, just unshown.
   await page.goto(BA);
   await expect(page.getByRole("link", { name: /Tae Kim/ })).toHaveCount(0);
-  // …it lives on the cluster page's own reference card, so the reference was moved,
-  // not lost.
-  await page.goto("/grammar/conditionals");
-  await expect(page.getByRole("link", { name: /Tae Kim/ })).toBeVisible();
 });
 
 // REMOVED: "the Links box sits below the 'Ways to say this' table". The redesigned

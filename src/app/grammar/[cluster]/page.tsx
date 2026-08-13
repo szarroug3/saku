@@ -49,7 +49,13 @@ import { buildRows } from "@/lib/grammar/build";
 import { glyphLines } from "@/lib/grammar/cluster-view";
 
 export function generateStaticParams() {
-  return CLUSTERS.map((c) => ({ cluster: c.id }));
+  // Only the MAP-ONLY families (は/が, に/で, 開ける/開く) get a standalone page now.
+  // The word-clusters' side-by-side pages were removed; their data still powers
+  // the "Ways to say this" family on each member's pattern page and the
+  // search-by-English-meaning, so the clusters themselves stay — just not a page.
+  return CLUSTERS.filter((c) => c.members.length === 0).map((c) => ({
+    cluster: c.id,
+  }));
 }
 
 export async function generateMetadata({
@@ -70,6 +76,9 @@ export default async function ClusterPage({
   // for a stranger, so a typo is a 404 rather than an empty page.
   const c = cluster((await params).cluster);
   if (!c) notFound();
+  // The word-clusters' standalone side-by-side pages were removed — only the
+  // map-only families (no members) still have a page. A word-cluster URL 404s.
+  if (c.members.length > 0) notFound();
 
   const members = membersOf(c);
   const rows = buildRows(members);
