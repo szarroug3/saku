@@ -287,7 +287,10 @@ export default function PracticePage() {
     set((prev) => ({ ...prev, selection }));
 
   return (
-    <>
+    // Reading-width column, like Settings and the Learn feed: the setup rows are
+    // label-left / control-right, so on a wide monitor an uncapped column strands
+    // each control a screen away from its label. Cap it so they stay together.
+    <div className="max-w-3xl">
       <PageTitle
         title="Practice"
         sub="Pick a pool and how it should ask, then drill."
@@ -342,6 +345,6 @@ export default function PracticePage() {
         reachability={reachability}
         onStart={start}
       />
-    </>
+    </div>
   );
 }

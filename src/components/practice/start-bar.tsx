@@ -21,11 +21,13 @@
 // so it just ends the page. Start still sits directly under everything it acts
 // on, because that setup is the last thing above it.
 //
-// `kq-band` gives the bar its own material (a per-theme ground: the opaque
-// themes lay down the page's ground, kiri a blur, because a flat --bg would
-// punch an opaque rectangle through its mesh). It no longer needs to OCCLUDE a
-// scroll — nothing passes under a static footer — but the band still reads as a
-// distinct footer, which is what we want. See CARD MATERIAL in globals.css.
+// DE-BOXED to match the rest of Practice: no `kq-band` material, no edge-to-edge
+// bleed. The bar is now just the page's last block — a top hairline (the same
+// major-section rule the setup groups separate by) and the Start button. The
+// hairline goes accent when a run is startable and border-muted when it isn't,
+// so the footer still reads as the live "ready / not ready" cue it always was.
+// Nothing scrolls under it (a static footer, not sticky), so it needs no
+// occluding material.
 //
 // Still load-bearing and NOT taste: momentum shelves the primary button off
 // `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
@@ -110,7 +112,7 @@ export function StartBar({
   return (
     <div
       className={cx(
-        "kq-band -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
+        "mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 pt-6",
         "border-t",
         disabled ? "border-border" : "border-accent",
       )}

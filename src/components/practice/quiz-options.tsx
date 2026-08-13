@@ -9,14 +9,14 @@
 // lesson. The prompt-format and requeue toggles moved to Settings because they
 // are environmental preferences, not per-run choices.
 
-import { Card, Chip, Row, SmallBtn } from "@/components/ui";
+import { Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 
 export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
 
   return (
-    <Card>
+    <div className="mb-6">
       <Row label="Mode">
         <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
           Drill
@@ -86,6 +86,6 @@ export function QuizOptionsFields() {
           </Row>
         </>
       ) : null}
-    </Card>
+    </div>
   );
 }
