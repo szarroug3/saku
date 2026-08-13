@@ -8,14 +8,14 @@
 // A Server Component: it renders constants and has no state.
 
 import { RESOURCE_SECTIONS, type Resource } from "@/data/resources";
-import { Card, Hint, Lbl, PageTitle } from "@/components/ui";
+import { Hint, Lbl, PageTitle } from "@/components/ui";
 
 export const metadata = { title: "Resources · Saku" };
 
 /** One entry. target=_blank + rel is spelled here, once, so no caller gets it wrong. */
 function Entry({ item }: { item: Resource }) {
   return (
-    <li className="border-b border-border py-2.5 last:border-0 first:pt-0 last:pb-0">
+    <li>
       <a
         href={item.url}
         target="_blank"
@@ -33,31 +33,29 @@ function Entry({ item }: { item: Resource }) {
 
 export default function ResourcesPage() {
   return (
-    <>
+    <div className="max-w-2xl">
       <PageTitle
         title="Resources"
         sub="Other people's tools, for the Japanese this app doesn't cover."
       />
 
       {RESOURCE_SECTIONS.map((section) => (
-        <div key={section.id}>
+        <section key={section.id} className="mt-8 first:mt-0">
           <Lbl>{section.title}</Lbl>
-          <Card>
-            <ul className="list-none">
-              {section.items.map((item) => (
-                <Entry key={item.url} item={item} />
-              ))}
-            </ul>
-          </Card>
-        </div>
+          <ul className="list-none space-y-3.5">
+            {section.items.map((item) => (
+              <Entry key={item.url} item={item} />
+            ))}
+          </ul>
+        </section>
       ))}
 
-      <Card>
+      <p className="mt-8 border-t border-white/[0.08] pt-6">
         <Hint>
           Tofugu is where this app&rsquo;s author learned kana, and its
           story-per-shape approach is the one taught here.
         </Hint>
-      </Card>
-    </>
+      </p>
+    </div>
   );
 }
