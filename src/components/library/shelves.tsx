@@ -58,6 +58,7 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
+import { CLUSTERS } from "@/data/grammar/clusters";
 import { entryHref } from "@/lib/library/href";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
@@ -509,6 +510,15 @@ export function Shelf({
             {sectionAsRows ? (
               kind === TRANSITIVITY_SUBJECT ? (
                 <div className="flex flex-col">
+                  {/* The transitivity concept map (開ける/開く) lives here, on the
+                      Verb pairs shelf that lists the pairs it explains — not as a
+                      row on the grammar shelf. */}
+                  <Link
+                    href="/grammar/transitivity"
+                    className="mb-2 self-start text-[13px] text-accent no-underline hover:underline"
+                  >
+                    How verb pairs work: 開ける vs 開く →
+                  </Link>
                   <VerbPairHeader />
                   {shown.map(pairRow)}
                 </div>
@@ -579,6 +589,11 @@ export function Shelf({
             </div>
           );
         })
+      ) : kind === GRAMMAR_SUBJECT ? (
+        <>
+          <GrammarParticlesSection />
+          {shownSections.map((section, index) => sectionCard(section, index))}
+        </>
       ) : (
         shownSections.map((section, index) => sectionCard(section, index))
       )}
@@ -708,6 +723,57 @@ function GrammarShelfRow({
     <ShelfRow href={href} className={layout}>
       {cells}
     </ShelfRow>
+  );
+}
+
+/** PARTICLES — a small reference section at the TOP of the grammar shelf (particles
+ * are taught before any verb form), holding the two particle-choice maps は/が and
+ * に/で. They are not recipes and never quizzed (a particle choice is the judgement
+ * the app refuses to grade), so these are plain links to their /grammar/<id> maps,
+ * not select targets. Collapsible + labelled like a form section. The transitivity
+ * map (開ける/開く) lives on the Verb pairs shelf instead — see the TRANSITIVITY
+ * branch of sectionCard. */
+function GrammarParticlesSection() {
+  const [collapsed, setCollapsed] = useState(false);
+  const particles = CLUSTERS.filter(
+    (c) => c.id === "wa-ga" || c.id === "ni-de",
+  );
+  if (!particles.length) return null;
+  return (
+    <section className="mb-3 border-b border-white/[0.08] pb-3">
+      <div className="mb-2 flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          aria-label={`${collapsed ? "Expand" : "Collapse"} particles`}
+          onClick={() => setCollapsed((v) => !v)}
+          className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            aria-hidden
+            className={`block transition-transform ${collapsed ? "" : "rotate-90"}`}
+          >
+            ›
+          </span>
+        </button>
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
+          Particles
+        </span>
+        <Hint>{particles.length}</Hint>
+      </div>
+      {!collapsed ? (
+        <div className={GRAMMAR_ROWS}>
+          {particles.map((c) => (
+            <GrammarShelfRow
+              key={c.id}
+              lead={c.title}
+              gloss={c.gloss}
+              href={`/grammar/${c.id}`}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
