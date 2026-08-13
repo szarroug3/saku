@@ -8,8 +8,7 @@
 import assert from "node:assert/strict";
 import test, { describe } from "node:test";
 
-import { buildRows } from "./build.ts";
-import { glyphLines, hostGroups } from "./cluster-view.ts";
+import { glyphLines } from "./cluster-view.ts";
 import { CLUSTERS, cluster, membersOf } from "../../data/grammar/clusters.ts";
 
 function must(id: string) {
@@ -86,93 +85,6 @@ describe("glyphLines — the header's big slot", () => {
           `${c.id} showed "${line}", which is neither its title nor a member's pattern`,
         );
       }
-    }
-  });
-});
-
-describe("hostGroups — the table's headings", () => {
-  test("every row lands in exactly one group, for every cluster", () => {
-    for (const c of CLUSTERS) {
-      const rows = buildRows(membersOf(c));
-      const groups = hostGroups(rows);
-      const flat = groups.flatMap((g) => [...g.rows]);
-      // Same rows, same order, no duplicates, nothing dropped.
-      assert.equal(flat.length, rows.length, `${c.id} lost or duplicated rows`);
-      assert.deepEqual(new Set(flat).size, rows.length, `${c.id} repeated a row`);
-      for (const row of rows) assert.ok(flat.includes(row), `${c.id} dropped a row`);
-    }
-  });
-
-  test("a group holds only its own host, and each host appears once", () => {
-    for (const c of CLUSTERS) {
-      const groups = hostGroups(buildRows(membersOf(c)));
-      const hosts = groups.map((g) => g.host);
-      assert.equal(new Set(hosts).size, hosts.length, `${c.id} split a host in two`);
-      for (const g of groups) {
-        for (const row of g.rows) assert.equal(row.host, g.host);
-        assert.ok(g.rows.length > 0, "an empty group would print a heading over nothing");
-      }
-    }
-  });
-
-  test("seems is thirteen rows in four groups", () => {
-    const rows = buildRows(membersOf(must("seems")));
-    assert.equal(rows.length, 13);
-    const groups = hostGroups(rows);
-    assert.deepEqual(
-      groups.map((g) => `${g.label} · ${g.word}`),
-      [
-        "On a verb · 行く",
-        "On an い-adjective · 高い",
-        "On a な-adjective · 静か",
-        "On a noun · 本",
-      ],
-    );
-    assert.equal(
-      groups.reduce((n, g) => n + g.rows.length, 0),
-      13,
-    );
-  });
-
-  test("nine of the twelve clusters are a single group, and that is intended", () => {
-    const single = CLUSTERS.filter((c) => {
-      const rows = buildRows(membersOf(c));
-      return rows.length > 0 && hostGroups(rows).length === 1;
-    });
-    // obligation, after, just-happened, ability, hard-to-do, comparison — six
-    // with a table and one heading; the three map-only clusters have no table at
-    // all, so "nine of twelve" counts the clusters that are NOT multi-group.
-    assert.deepEqual(
-      single.map((c) => c.id),
-      ["obligation", "after", "just-happened", "ability", "hard-to-do", "comparison"],
-    );
-    const multi = CLUSTERS.filter((c) => hostGroups(buildRows(membersOf(c))).length > 1);
-    assert.deepEqual(
-      multi.map((c) => c.id),
-      ["seems", "conditionals", "because"],
-    );
-    assert.equal(single.length + multi.length + 3, CLUSTERS.length);
-  });
-
-  test("obligation is seven rows under one heading on 行く", () => {
-    const groups = hostGroups(buildRows(membersOf(must("obligation"))));
-    assert.equal(groups.length, 1);
-    assert.equal(groups[0]?.rows.length, 7);
-    assert.equal(groups[0]?.label, "On a verb");
-    assert.equal(groups[0]?.word, "行く");
-  });
-
-  test("a wrap's heading names the OPENING word, not both slots", () => {
-    // 〜は〜より builds on 本 and 車. The heading is about the host it opens on.
-    const groups = hostGroups(buildRows(membersOf(must("comparison"))));
-    assert.equal(groups.length, 1);
-    assert.equal(groups[0]?.word, "本");
-    assert.ok(groups[0]?.rows.every((r) => r.on.length === 2));
-  });
-
-  test("no rows, no groups — the map-only clusters print no table", () => {
-    for (const id of ["wa-ga", "ni-de", "transitivity"]) {
-      assert.deepEqual(hostGroups(buildRows(membersOf(must(id)))), []);
     }
   });
 });

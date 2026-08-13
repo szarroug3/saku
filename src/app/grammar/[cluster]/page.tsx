@@ -42,10 +42,7 @@ import Link from "next/link";
 
 import { ClusterHeader } from "@/components/grammar/cluster-header";
 import { ClusterLinks } from "@/components/grammar/cluster-links";
-import { ClusterTable } from "@/components/grammar/cluster-table";
-import { Lbl } from "@/components/ui";
 import { CLUSTERS, cluster, membersOf } from "@/data/grammar/clusters";
-import { buildRows } from "@/lib/grammar/build";
 import { glyphLines } from "@/lib/grammar/cluster-view";
 
 export function generateStaticParams() {
@@ -83,7 +80,6 @@ export default async function ClusterPage({
   if (c.members.length > 0) notFound();
 
   const members = membersOf(c);
-  const rows = buildRows(members);
   const lines = glyphLines(c, members);
 
   return (
@@ -105,13 +101,6 @@ export default async function ClusterPage({
       <ClusterHeader lines={lines} title={c.title} sub={c.gloss} />
 
       <div className="mt-5 border-t border-white/[0.08]" aria-hidden />
-
-      {rows.length > 0 ? (
-        <section className="mt-6">
-          <Lbl>Forms grouped by what they attach to</Lbl>
-          <ClusterTable rows={rows} />
-        </section>
-      ) : null}
 
       {/* The feel note — shown, never asked, never scored (clusters.ts keeps that
           fence). A plain paragraph now, not a boxed aside; on the map-only
