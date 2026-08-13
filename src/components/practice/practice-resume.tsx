@@ -23,7 +23,7 @@
 // NO CONFIRM DIALOG, EVER — every answer is already on disk, so leaving costs
 // nothing and Discard needs no "are you sure".
 
-import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
+import { Btn, Hint, SmallBtn } from "@/components/ui";
 import type { QuizProgress } from "@/lib/quiz-session";
 
 /** "2 hours ago". Coarse on purpose — this is a nudge, not a stopwatch. */
@@ -72,7 +72,7 @@ export function PracticeResume({
       : null;
 
   return (
-    <Card>
+    <div className="mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3.5">
         <div className="min-w-0">
           <p className="mb-1.5 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
@@ -99,11 +99,11 @@ export function PracticeResume({
           </Btn>
         </div>
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] pt-2.5">
         <Hint>Everything you answered is saved.</Hint>
         {/* One click, no dialog — see the header. */}
         <SmallBtn onClick={onDiscard}>Discard this {noun} ✕</SmallBtn>
       </div>
-    </Card>
+    </div>
   );
 }

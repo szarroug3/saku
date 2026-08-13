@@ -21,7 +21,7 @@
 // scope (fewer hiragana are "shaky" than are "known").
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { readableAssemblyForTiers } from "@/data/assembly";
@@ -61,6 +61,17 @@ import type {
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
+}
+
+/** A minor sub-group heading inside the de-boxed selector — one grain finer than
+ * the page's <Lbl>. The scope/status/date/kind groups separate by this label and
+ * whitespace now, not by boxes or divider rules. */
+function SubLbl({ children }: { children: ReactNode }) {
+  return (
+    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+      {children}
+    </p>
+  );
 }
 
 const GLYPH_BY_TYPE = new Map(PRACTICE_TYPES.map((t) => [t.id, t.glyph]));
@@ -202,7 +213,7 @@ function ListTile({
       type="button"
       onClick={onClick}
       className={cx(
-        "kq-material flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-[13px]",
+        "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-[13px]",
         on
           ? "border-accent bg-accent-bg text-accent"
           : "border-border bg-card text-text hover:bg-panel",
@@ -444,23 +455,24 @@ export function PracticeSelector({
   );
 
   return (
-    <div className="kq-material mb-3.5 rounded-xl border border-border bg-card p-3.5">
+    <div className="mb-6">
       {/* SCOPE — which slice of what you know. */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {SCOPES.map((s) => (
-          <ScopeButton
-            key={s.id}
-            label={s.label}
-            on={scope === s.id}
-            onClick={() => changeScope(s.id)}
-          />
-        ))}
+      <div>
+        <SubLbl>Scope</SubLbl>
+        <div className="flex flex-wrap gap-2">
+          {SCOPES.map((s) => (
+            <ScopeButton
+              key={s.id}
+              label={s.label}
+              on={scope === s.id}
+              onClick={() => changeScope(s.id)}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="border-t border-border pt-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
-          Status
-        </p>
+      <div className="mt-6">
+        <SubLbl>Status</SubLbl>
         <div className="flex flex-wrap gap-2">
           {STATUSES.map(({ id, label }) => (
             <StatusChip
@@ -491,10 +503,8 @@ export function PracticeSelector({
         </p>
       </div>
 
-      <div className="mt-3 border-t border-border pt-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
-          When you learned it
-        </p>
+      <div className="mt-6">
+        <SubLbl>When you learned it</SubLbl>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -615,10 +625,8 @@ export function PracticeSelector({
       </div>
 
       {scope === "everything" ? (
-        <div className="mt-3 border-t border-border pt-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
-            Kind
-          </p>
+        <div className="mt-6">
+          <SubLbl>Kind</SubLbl>
           <div className="mb-1.5 flex flex-wrap gap-2">
             {types.map((id) => (
               <TypeChip
@@ -639,10 +647,8 @@ export function PracticeSelector({
       ) : null}
 
       {scope === "lists" ? (
-        <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
-            List
-          </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <SubLbl>List</SubLbl>
           {lists.map((l) => (
             <ListTile
               key={l.id}
@@ -672,7 +678,7 @@ export function PracticeSelector({
       ) : null}
 
       {scope === "custom" ? (
-        <div className="mt-3 border-t border-border pt-3">
+        <div className="mt-6">
           <Link
             href="/library"
             className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-left text-[13px] text-text no-underline hover:bg-panel"
