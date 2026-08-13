@@ -71,16 +71,25 @@ export default function StatsPage() {
   const tally = tallyFacts(recorded, history.facts, claims, cfg.accuracyMetric, now);
 
   return (
-    <>
+    // A contained column, not full bleed. The three groups are counts and narrow
+    // tables, not a dashboard that wants 1400px; capping keeps each bar next to
+    // the number it belongs to, the same rule Settings and the Learn feed follow.
+    <div className="max-w-4xl">
       <PageTitle title="Progress" sub="How much you have covered so far." />
 
       <KnowledgeBase tally={tally} />
 
-      {/* Two columns on a wide screen, stacked on a narrow one. The mix-ups
-       * board is the taller of the two and the one you came for; it goes second
-       * so that a stacked phone reads By subject → mix-ups, which is the same
-       * order as the wide screen's left → right. */}
-      <div className="grid gap-3 md:grid-cols-2">
+      {/* The one hairline on the page: What-you-know is the whole knowledge base
+       * summed; below it the same facts are broken out by subject, beside the
+       * mix-ups board. That is the one major seam, so it gets the rule — the
+       * groups within it separate by their heading and their whitespace, not by
+       * more lines (the boxless language's rule; see the Row primitive).
+       *
+       * Two columns on a wide screen, stacked on a narrow one. The mix-ups board
+       * is the taller of the two and the one you came for; it goes second so a
+       * stacked phone reads By subject → mix-ups, the same order as the wide
+       * screen's left → right. */}
+      <div className="mt-6 grid gap-x-10 gap-y-8 border-t border-white/[0.08] pt-6 md:grid-cols-2">
         <BySubject
           facts={history.facts}
           claims={claims}
@@ -90,6 +99,6 @@ export default function StatsPage() {
         />
         <MixUps history={history} graduateRuns={cfg.graduateRuns} />
       </div>
-    </>
+    </div>
   );
 }

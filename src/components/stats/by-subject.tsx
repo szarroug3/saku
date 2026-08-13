@@ -35,7 +35,7 @@
 // average with the arithmetic filed off, and it would put 生 in a bucket that no
 // fact of 生 is in. `met` counts entries, and counting is all it does.
 
-import { Card, Lbl } from "@/components/ui";
+import { Lbl } from "@/components/ui";
 import { BUCKETS, fillFor, tallyFacts } from "@/components/stats/tally";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
@@ -112,7 +112,7 @@ export function BySubject({
 }) {
   const learnedSentenceCount = learnedSentenceTierIds(history).length;
   return (
-    <Card>
+    <section>
       <Lbl>By subject</Lbl>
       <table className="w-full border-collapse text-[13px]">
         <tbody>
@@ -129,14 +129,14 @@ export function BySubject({
           <SentenceSubjectRow learned={learnedSentenceCount} />
         </tbody>
       </table>
-    </Card>
+    </section>
   );
 }
 
 function SentenceSubjectRow({ learned }: { learned: number }) {
   const total = SENTENCE_ORDERING_TIERS.length;
   return (
-    <tr className="border-b border-border last:border-b-0">
+    <tr>
       <th scope="row" className="py-2 pr-2 text-left font-normal">
         Sentences
       </th>
@@ -181,7 +181,7 @@ function SubjectRow({
   ).length;
 
   return (
-    <tr className="border-b border-border last:border-b-0">
+    <tr>
       <th
         scope="row"
         className="py-2 pr-2 text-left font-normal"
