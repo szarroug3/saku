@@ -239,47 +239,6 @@ export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   };
 }
 
-/**
- * Every member that can be shown, in the cluster's order — ONE ROW PER HOST.
- *
- * A pattern that takes a verb and an adjective takes up two lines, and that is
- * the page telling the truth rather than the page getting longer. The repetition
- * argument in cluster-table.tsx applies here too: 高すぎる sitting under
- * 行きすぎる is the content, because "the same ending, a different stem" is the
- * thing an い-adjective row teaches and no gloss can say it.
- *
- * Hosts come out in the recipe's own attach order, which is verb-first
- * throughout the table — so the verb line still leads every pattern that has
- * one, and the column reads down as it always did.
- */
-export function buildRows(members: readonly Recipe[]): BuiltRow[] {
-  return members.flatMap((r) =>
-    r.attach.flatMap((a) => {
-      const row = buildRow(r, a.host);
-      return row ? [row] : [];
-    }),
-  );
-}
-
-/**
- * How many PATTERNS a set of rows covers — not how many rows there are.
- *
- * The card above the table says "The seven · built on 行く", and the seven is a
- * claim about the language: English has one word for seven Japanese patterns,
- * which is the entire reason the page exists. Rows stopped being patterns when a
- * multi-host pattern started printing one per host, and the 'seems' cluster
- * immediately began announcing "The 13" over seven patterns — a true count of
- * the wrong thing, on the page that promises it cannot be wrong.
- */
-export function patternsShown(rows: readonly BuiltRow[]): number {
-  return new Set(rows.map((r) => r.recipe.id)).size;
-}
-
-/** The distinct words a set of rows is built on, in first-seen order. */
-export function wordsUsed(rows: readonly BuiltRow[]): string[] {
-  return [...new Set(rows.flatMap((r) => r.on))];
-}
-
 const COUNT_WORD = [
   "",
   "The one",
