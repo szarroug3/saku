@@ -18,19 +18,15 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { PitchReading } from "@/components/library/pitch-mark";
-import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import {
   legacyUnqualifiedReading,
   VOCAB_SUBJECT,
   vocabRow,
-  wordMeaningFactId,
-  wordUnitFacts,
 } from "@/data/vocab";
 import { entryForGlyph } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
-import { standingOf } from "@/lib/library/standing";
 import type { Claims } from "@/lib/claims";
 import type { AccuracyMetric, HistoryFile } from "@/types";
 
@@ -39,11 +35,6 @@ const VISIBLE = 8;
 export function WordsWith({
   words,
   label = "Words with this character",
-  facts,
-  claims,
-  seen,
-  metric,
-  now,
 }: {
   /** Every everyday word written with this character, in vocab order. */
   words: readonly string[];
@@ -51,18 +42,19 @@ export function WordsWith({
    * The heading. A prop and not a constant because the component page passes a
    * DIFFERENT LIST with the same rows: "words you know that use it", which is
    * the user's own vocabulary filtered through a shape rather than every word
-   * containing a character. The rows — link, reading, gloss, standing dot — are
-   * identical, and reimplementing them beside a different heading is how two
-   * lists start disagreeing about what a standing dot means.
+   * containing a character. The rows — link, reading, gloss — are identical, and
+   * reimplementing them beside a different heading is how two lists drift apart.
    */
   label?: string;
-  facts: HistoryFile["facts"];
-  claims: Claims;
-  /** Lesson exposure markers. A word can have been taught before it has a
-   * completed quiz aggregate; that is "seen", not "not seen". */
-  seen: NonNullable<HistoryFile["seen"]>;
-  metric: AccuracyMetric;
-  now: number;
+  // The list no longer paints per-word standing (status now lives only on the
+  // Practice page), so these are accepted but unused. They stay on the interface
+  // so the shared caller (ComponentUses, which also feeds RadicalKanjiTable)
+  // needn't be rewired; drop them if that caller stops passing standing data.
+  facts?: HistoryFile["facts"];
+  claims?: Claims;
+  seen?: NonNullable<HistoryFile["seen"]>;
+  metric?: AccuracyMetric;
+  now?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
 
@@ -83,16 +75,6 @@ export function WordsWith({
           // here — display only, and only where a pitch is verified; a word with
           // none shows the plain reading, unchanged. See pitch-mark.tsx.
           const pitch = wordPitch(w);
-          const leadingMeaning = wordUnitFacts(w)[0]?.meaning ?? wordMeaningFactId(w);
-          // A STANDING DOT, not the word's score copied here. The word is its
-          // own entry with its own page; this row is a pointer to it.
-          const s = standingOf(
-            facts[leadingMeaning],
-            claims[leadingMeaning],
-            metric,
-            now,
-          );
-          const taught = !!seen[leadingMeaning];
           return (
             <div key={w} className="flex flex-wrap items-baseline gap-2 text-[13px]">
               {id ? (
@@ -110,13 +92,6 @@ export function WordsWith({
               <span className="min-w-0 flex-1 truncate text-text-muted">
                 {row?.glosses.slice(0, 2).join(", ")}
               </span>
-              {s.standing === "not-seen" && taught ? (
-                <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
-                  seen
-                </span>
-              ) : (
-                <StandingChip standing={s.standing} />
-              )}
             </div>
           );
         })}

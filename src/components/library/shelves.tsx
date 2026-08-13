@@ -69,13 +69,11 @@ import {
   KeigoSetRow,
 } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
-import type { Claims } from "@/lib/claims";
 import {
   COUNTER_KIND,
   NUMBER_CONSTRUCTION_KIND,
   SENTENCE_RULE_KIND,
   entryForGlyph,
-  knownFactsOf,
   libEntry,
   LIB_ENTRIES_BY_KIND,
   type Kind,
@@ -88,11 +86,9 @@ import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import { filterSections, type ShelfSection } from "@/lib/library/shelf-view";
 import { curriculumRank, rangedGroups, wordClimbRank } from "@/lib/library/ranged-groups";
 import { sectionState, type Selection } from "@/lib/library/selection";
-import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
 
-import { factsOf } from "@/lib/facts";
-import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
+import type { EntryId, NewKanjiOrder } from "@/types";
 
 /** One cut of a shelf: a name and the entries under it. Its type and the view
  * math that reads it live in @/lib/library/shelf-view so they can be unit-tested;
@@ -261,10 +257,6 @@ export function Shelf({
   selected,
   onToggleEntry,
   onToggleSection,
-  facts,
-  claims,
-  metric,
-  now,
   voice,
   keep,
   filter = "all",
@@ -275,14 +267,11 @@ export function Shelf({
   selected: Selection;
   onToggleEntry(id: EntryId, shiftKey: boolean): void;
   onToggleSection(ids: readonly EntryId[]): void;
-  facts: Record<EntryId | string, FactAggregate>;
-  claims: Claims;
-  metric: AccuracyMetric;
-  now: number;
   voice: string;
   /** The knowledge filter, as a predicate. Undefined is All — the shelf shows
    * every entry, which is what it did before this existed. Known / Not known
-   * pass a test that runs over the SAME `entryStanding` the tiles already use. */
+   * pass a test built from `entryStanding` upstream (see library-page): the shelf
+   * itself no longer paints standing, but it is still what the filter selects by. */
   keep?: (entry: LibEntry) => boolean;
   /** Which filter is active, for the empty-state copy. The predicate above does
    * the work; this only picks the words when it removes everything. */
@@ -316,8 +305,6 @@ export function Shelf({
       entry={entry}
       voice={voice}
       mnemonic={mnemonicOf(kind, entry)}
-      standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
-      showStatus={false}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
@@ -338,8 +325,6 @@ export function Shelf({
       voice={voice}
       note={entry.sub}
       grid={grid}
-      standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
-      showStatus={false}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
@@ -347,10 +332,7 @@ export function Shelf({
 
   // A verb pair is neither a glyph nor a phrase but a CONTRAST — two verbs and
   // one event — so it gets its own row, two cells wide, each verb with its own
-  // reading, speaker and English cue. Standing runs over knownFactsOf, not every
-  // fact: a pair mints a fact per side but only quizzes the askable ones, so the
-  // count must ignore the distractor-only side or a fully-learned pair would read
-  // "1 of 2" forever (see entries.ts).
+  // reading, speaker and English cue.
   const pairRow = (entry: LibEntry) => {
     const pair = pairForEntry(entry.id);
     if (!pair) return null;
@@ -360,8 +342,6 @@ export function Shelf({
         entry={entry}
         pair={pair}
         voice={voice}
-        standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
-        showStatus={false}
         selected={selected.has(entry.id)}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
       />
@@ -377,8 +357,6 @@ export function Shelf({
         entry={entry}
         set={set}
         voice={voice}
-        standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
-        showStatus={false}
         selected={selected.has(entry.id)}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
       />
@@ -453,9 +431,12 @@ export function Shelf({
   const sectionCard = (section: ShelfSection, index: number) => {
     const ids = section.entries.map((e) => e.id);
     const state = sectionState(selected, ids);
-    const onCount = ids.filter((id) => selected.has(id)).length;
     const shown = section.entries;
     const expanded = !collapsed.has(section.id);
+    // `first` drops the top hairline so a section butts cleanly against the top
+    // of its group (the shelf, or a kana script header). `index` is per-group at
+    // both call sites, so `index === 0` is the first section in that group.
+    const first = index === 0;
     // A tile is a 100px box built around a glyph. A section whose entries have no
     // glyph would tile as empty boxes with a caption, so it reads as ROWS even on
     // a tile shelf, the same honest shape a mark or a term takes. A section can
@@ -465,14 +446,20 @@ export function Shelf({
     const sectionAsRows =
       asRows || section.asRows || section.entries.every((e) => !e.glyph);
     return (
-      <Card key={section.id} className="kq-defer">
-        <div className="mb-2 flex items-center gap-2">
+      // NO Card — de-boxed. A quiet header (collapse chevron + plain-eyebrow
+      // select-all + count) over a real hairline between sections; the first in a
+      // group has none. The tile grid / row list carries the shelf now, not a box.
+      <section
+        key={section.id}
+        className={`kq-defer ${first ? "" : "mt-4 border-t border-white/[0.08] pt-4"}`}
+      >
+        <div className="mb-2 flex items-center gap-1.5">
           <button
             type="button"
             aria-expanded={expanded}
             aria-label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
             onClick={() => toggleCollapsed(section.id)}
-            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <span
               aria-hidden
@@ -485,24 +472,17 @@ export function Shelf({
             type="button"
             onClick={() => onToggleSection(ids)}
             aria-pressed={state === "all"}
-            className={`cursor-pointer rounded-(--radius) border px-2 py-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] ${
+            className={`cursor-pointer text-[11px] font-medium uppercase tracking-[0.08em] ${
               state === "all"
-                ? "border-accent bg-accent-bg text-accent"
+                ? "text-accent"
                 : state === "some"
-                  ? "border-warning bg-warning-bg text-warning"
-                  : "border-transparent text-text-muted hover:border-border"
+                  ? "text-warning"
+                  : "text-text-muted hover:text-text"
             }`}
           >
             {section.label}
           </button>
-          <span className="text-xs text-text-muted">
-            {section.entries.length}
-          </span>
-          {state !== "none" ? (
-            <Hint>
-              · {onCount} selected{state === "all" ? " (all)" : ""}
-            </Hint>
-          ) : null}
+          <Hint>{section.entries.length}</Hint>
         </div>
         {expanded ? (
           <DeferredSectionBody eager={index < 2}>
@@ -533,7 +513,7 @@ export function Shelf({
             )}
           </DeferredSectionBody>
         ) : null}
-      </Card>
+      </section>
     );
   };
 

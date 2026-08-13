@@ -29,7 +29,7 @@ import {
   tierAssemblyFacts,
 } from "@/data/assembly";
 import { markFor } from "@/data/marks";
-import { entryOf, factsOf } from "@/lib/facts";
+import { entryOf } from "@/lib/facts";
 import { activeWeaknessPairs } from "@/lib/confusions";
 import {
   KIND_LABEL,
@@ -610,9 +610,6 @@ export function LibraryPageClient({
     };
   }, [slice.entries, history, claims]);
 
-  const standingOfEntry = (entry: LibEntry) =>
-    entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);
-
   const claim = async (facts: FactId[]) => {
     // postClaim, not a raw fetch: a signed-out claim (401) is saved to this
     // browser instead of vanishing, and the refresh() below reads it back.
@@ -766,7 +763,6 @@ export function LibraryPageClient({
                   <EntryRow
                     key={h.entry.id}
                     entry={h.entry}
-                    standing={standingOfEntry(h.entry)}
                     note={h.entry.sub}
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
@@ -821,10 +817,6 @@ export function LibraryPageClient({
                   selected={selected}
                   onToggleEntry={onToggleEntry}
                   onToggleSection={onToggleSection}
-                  facts={liveFacts}
-                  claims={claims}
-                  metric={cfg.accuracyMetric}
-                  now={now}
                   voice={cfg.voiceName}
                   keep={keep}
                   filter={stateFilter}
@@ -844,10 +836,6 @@ export function LibraryPageClient({
                 selected={selected}
                 onToggleEntry={onToggleEntry}
                 onToggleSection={onToggleSection}
-                facts={liveFacts}
-                claims={claims}
-                metric={cfg.accuracyMetric}
-                now={now}
                 voice={cfg.voiceName}
                 keep={keep}
                 filter={stateFilter}

@@ -37,25 +37,17 @@
 
 import Link from "next/link";
 
-import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
-import { patternEntry, patternMeaningFactId } from "@/data/grammar";
+import { patternEntry } from "@/data/grammar";
 import type { Recipe } from "@/data/grammar/recipes";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { entryHref } from "@/lib/library/href";
-import { standingOf } from "@/lib/library/standing";
-import type { Claims } from "@/lib/claims";
-import type { AccuracyMetric, HistoryFile } from "@/types";
 
 export function PatternFamily({
   members,
   current,
   feel,
-  facts,
-  claims,
-  metric,
-  now,
 }: {
   members: readonly Recipe[];
   /** The recipe whose page this is. Marked, not filtered out: a family with the
@@ -64,10 +56,6 @@ export function PatternFamily({
   /** The family's `feel` note — how the members differ, so the reader knows which
    * to reach for. Shown under the table. */
   feel?: string;
-  facts: HistoryFile["facts"];
-  claims: Claims;
-  metric: AccuracyMetric;
-  now: number;
 }) {
   return (
     <Card>
@@ -82,8 +70,7 @@ export function PatternFamily({
             <tr className="border-b border-border text-xs font-medium text-text-muted">
               <th className="py-1.5 pr-2 font-medium">Pattern</th>
               <th className="py-1.5 pr-2 font-medium">How it&rsquo;s built</th>
-              <th className="py-1.5 pr-2 font-medium">What it means</th>
-              <th className="py-1.5 font-medium">How you&rsquo;re doing</th>
+              <th className="py-1.5 font-medium">What it means</th>
             </tr>
           </thead>
           <tbody>
@@ -96,8 +83,6 @@ export function PatternFamily({
               // which is the first host that actually transforms its word — see
               // primaryHost, and the 〜ので item it was written for.
               const row = buildRow(r, primaryHost(r) ?? undefined);
-              const fact = patternMeaningFactId(r.id);
-              const s = standingOf(facts[fact], claims[fact], metric, now);
               const here = r.id === current.id;
               return (
                 <tr key={r.id} className="border-b border-border last:border-b-0">
@@ -131,10 +116,7 @@ export function PatternFamily({
                       one word for seven Japanese patterns, and a reader who
                       gets to the bottom of this column and thinks "wait, these
                       are all the same?" has learned the thing the table is for. */}
-                  <td className="py-2 pr-2 align-middle">{r.gloss}</td>
-                  <td className="py-2 align-middle">
-                    <StandingChip standing={s.standing} />
-                  </td>
+                  <td className="py-2 align-middle">{r.gloss}</td>
                 </tr>
               );
             })}
