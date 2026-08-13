@@ -322,45 +322,6 @@ export function Chip({
   );
 }
 
-/** A standalone stat tile: Sessions / Characters practised / Overall accuracy.
- *
- * `bg-card` + border + shadow-card, i.e. the Card's own material — not the
- * `bg-panel` it used to be. --panel is the RECESSED tone: a progress track, a
- * hover wash, a bar behind a bar. It is what a card contains, not what sits on
- * the page beside one. These three tiles stand on the page ground as peers of
- * the trend Card above them and the deck cards below, and both of those are
- * bg-card — so the tile wearing a recess tone read, correctly, as the wrong
- * material. In kiri that is loudest, because there --card is frosted glass and
- * --panel is a bare 7% wash with no blur at all: 4.6 dE, and the "boxes look
- * off" in the report.
- *
- * rounded-[10px] rather than the kit's rounded-xl for the reason deck-card
- * documents: rounded-xl is the hook aizome uses to dissolve a card into
- * hairline rules, which suits a full-width Card and not a 3-up tile grid.
- *
- * Opting out of that radius no longer costs anything, and `kq-material` is why.
- * The material used to be granted by radius+fill class pairs, so a tile that
- * chose its own geometry silently chose its own SUBSTANCE too — and the fix was
- * to keep adding radii to a list in globals.css, i.e. to fix the casualties you
- * had found. This tile now asks for the theme's card material by name, and its
- * radius is nobody's business but its own. */
-export function Metric({ k, v }: { k: ReactNode; v: ReactNode }) {
-  return (
-    <div className="kq-material rounded-[10px] border border-border bg-card px-3.5 py-3 shadow-card">
-      <p className="mb-0.5 text-xs text-text-muted">{k}</p>
-      <p className="text-2xl font-semibold">{v}</p>
-    </div>
-  );
-}
-
-export function MetricsGrid({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-3.5 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
-      {children}
-    </div>
-  );
-}
-
 /** Thin progress bar; pct=null renders full (endless mode). */
 export function ProgressBar({ pct }: { pct: number | null }) {
   return (
