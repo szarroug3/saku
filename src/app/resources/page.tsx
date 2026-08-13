@@ -8,7 +8,7 @@
 // A Server Component: it renders constants and has no state.
 
 import { RESOURCE_SECTIONS, type Resource } from "@/data/resources";
-import { Hint, Lbl, PageTitle } from "@/components/ui";
+import { Lbl, PageTitle } from "@/components/ui";
 
 export const metadata = { title: "Resources · Saku" };
 
@@ -49,13 +49,6 @@ export default function ResourcesPage() {
           </ul>
         </section>
       ))}
-
-      <p className="mt-8 border-t border-white/[0.08] pt-6">
-        <Hint>
-          Tofugu is where this app&rsquo;s author learned kana, and its
-          story-per-shape approach is the one taught here.
-        </Hint>
-      </p>
     </div>
   );
 }
