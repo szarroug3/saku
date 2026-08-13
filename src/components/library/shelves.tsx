@@ -58,7 +58,8 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { CLUSTERS } from "@/data/grammar/clusters";
+import { CLUSTERS, membersOf } from "@/data/grammar/clusters";
+import { patternEntry } from "@/data/grammar";
 import { entryHref } from "@/lib/library/href";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
@@ -471,7 +472,7 @@ export function Shelf({
       // group has none. The tile grid / row list carries the shelf now, not a box.
       <section
         key={section.id}
-        className={`kq-defer ${first ? "" : "mt-4 border-t border-white/[0.08] pt-4"}`}
+        className={`kq-defer ${first ? "" : "mt-3 border-t border-white/[0.08] pt-3"}`}
       >
         <div className="mb-2 flex items-center gap-1.5">
           <button
@@ -525,7 +526,7 @@ export function Shelf({
                 </div>
               )
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-2 gap-y-1">
                 {shown.map(tile)}
               </div>
             )}
@@ -537,7 +538,9 @@ export function Shelf({
 
   return (
     <>
-      {kind === GRAMMAR_SUBJECT ? <GrammarClustersSection /> : null}
+      {kind === GRAMMAR_SUBJECT ? (
+        <GrammarClustersSection selected={selected} onToggleSection={onToggleSection} />
+      ) : null}
       {shelfEmpty ? (
         <Card>
           <FilterEmpty filter={filter} />
@@ -730,7 +733,13 @@ function GrammarShelfRow({
 // /grammar/<id>. This USED to be a promo <Card> with pill links and an "All N
 // side by side" hop to a separate /grammar index; the box was the last chrome on
 // the shelf and the index just duplicated this list, so both are gone.
-function GrammarClustersSection() {
+function GrammarClustersSection({
+  selected,
+  onToggleSection,
+}: {
+  selected: Selection;
+  onToggleSection(ids: readonly EntryId[]): void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <section className="mb-4 border-b border-white/[0.08] pb-4">
@@ -756,19 +765,34 @@ function GrammarClustersSection() {
         </span>
         <Hint>{CLUSTERS.length}</Hint>
       </div>
-      {/* Rows in the SAME aligned subgrid as the grammar FORM rows: the title
-          column sizes to the widest family so every gloss lines up, a hairline
-          between rows, the member count trailing. Each links to its map. */}
+      {/* Rows in the SAME aligned subgrid as the grammar FORM rows, and SELECTABLE
+          the same way: a family with member recipes ticks all of them into the
+          drill at once (its members are the very patterns listed below), so the
+          row is a select target with the ↗ opening its map. A MAP-ONLY family
+          (は/が, に/で, 開ける/開く) has no members to drill, so it stays a plain
+          link to its map. */}
       {!collapsed ? (
         <div className={GRAMMAR_ROWS}>
-          {CLUSTERS.map((c) => (
-            <GrammarShelfRow
-              key={c.id}
-              lead={c.title}
-              gloss={c.gloss}
-              href={`/grammar/${c.id}`}
-            />
-          ))}
+          {CLUSTERS.map((c) => {
+            const ids = membersOf(c).map((r) => patternEntry(r.id));
+            const state = ids.length ? sectionState(selected, ids) : "none";
+            return (
+              <GrammarShelfRow
+                key={c.id}
+                lead={c.title}
+                gloss={c.gloss}
+                href={`/grammar/${c.id}`}
+                select={
+                  ids.length
+                    ? {
+                        selected: state === "all",
+                        onToggle: () => onToggleSection(ids),
+                      }
+                    : undefined
+                }
+              />
+            );
+          })}
         </div>
       ) : null}
     </section>
