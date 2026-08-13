@@ -616,35 +616,60 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
 // the shelf and the index just duplicated this list, so both are gone and the
 // families live here as normal table items (their maps at /grammar/<id> stay).
 function GrammarClustersSection() {
+  const [collapsed, setCollapsed] = useState(false);
   return (
     <section className="mb-4 border-b border-white/[0.08] pb-4">
+      {/* Header matches the form sections below: collapse chevron, label eyebrow,
+          count. */}
       <div className="mb-2 flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          aria-label={`${collapsed ? "Expand" : "Collapse"} patterns that mean the same thing`}
+          onClick={() => setCollapsed((v) => !v)}
+          className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            aria-hidden
+            className={`block transition-transform ${collapsed ? "" : "rotate-90"}`}
+          >
+            ›
+          </span>
+        </button>
         <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
           Patterns that mean the same thing
         </span>
         <Hint>{CLUSTERS.length}</Hint>
       </div>
-      <div className="flex flex-col">
-        {CLUSTERS.map((c) => {
-          const n = membersOf(c).length;
-          return (
-            <Link
-              key={c.id}
-              href={`/grammar/${c.id}`}
-              className="group flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b border-white/[0.06] py-2 no-underline transition-colors last:border-b-0 hover:bg-white/[0.04]"
-            >
-              <span className="text-[13px] font-semibold text-text group-hover:text-accent">
-                {c.title}
-              </span>
-              <span className="min-w-0 flex-1 text-[13px] text-text-muted">{c.gloss}</span>
-              {/* Count is of MEMBERS; map-only families (は/が) have none, so no 0. */}
-              {n > 0 ? (
-                <span className="flex-none text-[11px] tabular-nums text-text-muted">{n}</span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </div>
+      {/* Rows in the SAME aligned subgrid as the grammar FORM rows: the title
+          column sizes to the widest family so every gloss lines up, a hairline
+          between rows, the member count trailing. Each links to its map. */}
+      {!collapsed ? (
+        <div className="grid grid-cols-[max-content_minmax(0,1fr)_auto] gap-x-3">
+          {CLUSTERS.map((c) => {
+            const n = membersOf(c).length;
+            return (
+              <Link
+                key={c.id}
+                href={`/grammar/${c.id}`}
+                className="group col-span-full grid grid-cols-subgrid items-baseline border-b border-white/[0.06] py-2 no-underline transition-colors last:border-b-0 hover:bg-white/[0.04]"
+              >
+                <span className="whitespace-nowrap text-[15px] font-medium text-text group-hover:text-accent">
+                  {c.title}
+                </span>
+                <span className="min-w-0 text-[13px] text-text-muted">{c.gloss}</span>
+                {/* Count is of MEMBERS; map-only families (は/が) have none, so the
+                    cell stays empty rather than showing a 0. */}
+                {n > 0 ? (
+                  <span className="text-[11px] tabular-nums text-text-muted">{n}</span>
+                ) : (
+                  <span aria-hidden />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -124,7 +124,7 @@ export function EntryTile({
       // blurred shadow on scrolling content reintroduces jank) and an accent
       // wash + accent glyph when on. `cursor-pointer` + `select-none` because the
       // whole body is the toggle.
-      className={`group relative cursor-pointer select-none rounded-[10px] px-1.5 pb-1.5 pt-2 text-center [container-type:inline-size] transition-colors ${
+      className={`group relative cursor-pointer select-none rounded-[10px] px-1.5 pb-1 pt-1.5 text-center [container-type:inline-size] transition-colors ${
         selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
       title={mnemonic}
@@ -154,7 +154,7 @@ export function EntryTile({
           fades out and the 🔊/↗ fade in over the same line. Sharing the slot keeps
           the tile compact — no empty reserved action row under every glyph — and,
           because the slot is a fixed height, hovering never reflows the grid. */}
-      <div className="relative mt-1 flex h-5 items-center justify-center">
+      <div className="relative mt-0.5 flex h-[18px] items-center justify-center">
         <span className="truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
           {subLabel(entry)}
         </span>
