@@ -7,6 +7,8 @@ import { HomeFeed } from "@/components/home/home-feed";
 // shows depends on the session's history.
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Learn" };
+
 export default function LearnPage() {
   return <HomeFeed />;
 }

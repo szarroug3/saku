@@ -8,6 +8,8 @@ function first(value: string | string[] | undefined): string | undefined {
 
 /** Server wrapper: resolve the URL before rendering the interactive Library so
  * the title, controls, and shelves all ship in the first response. */
+export const metadata = { title: "Library" };
+
 export default async function LibraryPage({
   searchParams,
 }: {

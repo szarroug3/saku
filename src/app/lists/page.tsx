@@ -5,6 +5,8 @@
 
 import { ManageLists } from "@/components/lists/manage-lists";
 
+export const metadata = { title: "Lists" };
+
 export default function ListsPage() {
   return <ManageLists />;
 }

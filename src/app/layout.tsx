@@ -25,7 +25,13 @@ import type * as Theme from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Saku",
+  // One title shape for the whole app: "Saku · <page>". A route sets only its
+  // own fragment (`title: "Learn"`) and Next composes it through this template;
+  // a route that sets nothing falls back to the bare app name.
+  title: {
+    default: "Saku",
+    template: "Saku · %s",
+  },
   description:
     "Learn Japanese from the ground up: kana, kanji, vocabulary, grammar, and more.",
 };

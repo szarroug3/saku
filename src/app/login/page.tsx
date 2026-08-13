@@ -5,6 +5,8 @@
 import { GoogleSignIn } from "@/components/auth/google-sign-in";
 import Image from "next/image";
 
+export const metadata = { title: "Sign in" };
+
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-[80vh] max-w-sm flex-col items-center justify-center px-6 text-center">

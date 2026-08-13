@@ -8,7 +8,7 @@
 import { Hint, Lbl, PageTitle } from "@/components/ui";
 import { LICENCE_HREF, LICENCE_NOTE, SOURCES } from "@/data/attribution";
 
-export const metadata = { title: "Dictionary data · Saku" };
+export const metadata = { title: "Dictionary data" };
 
 export default function AboutDataPage() {
   return (

@@ -64,7 +64,9 @@ export async function generateMetadata({
   params: Promise<{ cluster: string }>;
 }) {
   const c = cluster((await params).cluster);
-  return { title: c ? `${c.title} · Saku` : "Saku" };
+  // Bare fragment; the root layout's template prefixes "Saku · ". A miss falls
+  // through to the app default rather than composing "Saku · Saku".
+  return c ? { title: c.title } : {};
 }
 
 export default async function ClusterPage({

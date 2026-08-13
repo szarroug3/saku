@@ -10,7 +10,7 @@
 import { RESOURCE_SECTIONS, type Resource } from "@/data/resources";
 import { Lbl, PageTitle } from "@/components/ui";
 
-export const metadata = { title: "Resources · Saku" };
+export const metadata = { title: "Resources" };
 
 /** One entry. target=_blank + rel is spelled here, once, so no caller gets it wrong. */
 function Entry({ item }: { item: Resource }) {

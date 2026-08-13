@@ -1,6 +1,8 @@
 import { SettingsCard } from "@/components/settings/settings-card";
 import { PageTitle } from "@/components/ui";
 
+export const metadata = { title: "Settings" };
+
 export default function SettingsPage() {
   return (
     // Settings is a READING-WIDTH column, not full bleed. On a wide monitor the
