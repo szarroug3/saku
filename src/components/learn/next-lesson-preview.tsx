@@ -1,19 +1,28 @@
-// REDESIGNED Learn "Up next" card — the next lesson, on the NEW content model.
+// Learn "Up next" card — the next lesson, on the unified content model.
 //
-// The redesign target, written against the unified model (a UnitLesson of
-// TeachingUnits) rather than the old CurriculumLesson. A NEW component, kept out
-// of the shipped tree until the app moves onto the content model — then it drops
-// in where next-curriculum-lesson.tsx is now.
+// EDITORIAL / BOXLESS layout. No panel, no fill, no rounded rectangle: the card
+// sits straight on the page mesh and builds hierarchy from type alone, like a
+// magazine section head — a small accent eyebrow (the position line) over a
+// larger track title, the "why" as a subhead, then the lesson's tiles and the
+// routes in. Stacked tracks are set apart by a single flat border-top hairline
+// (and whitespace), never a box.
 //
-// Each tile IS the shared unit card, `ItemPreview` — the exact component the Learn
-// "next-lesson preview" gallery shows, so the accented type line and frosted body
-// are reused verbatim, not re-styled. The card arranges the lesson's items (its
-// units, deduped to items in teach order) as a row of those cards, over a lighter
-// frosted panel so the item cards lift, plus the three routes in (Btn) and the
-// one-climb note (WhyDisclosure). Handlers are optional so the dev gallery can
-// render it inert.
+// PERFORMANCE RULE — the whole reason for this layout. The Learn page scrolls
+// over a position:fixed mesh that must stay a cached compositor layer. ANY
+// blurred box-shadow / glow on these scrolling cards — even a 0-blur `0 0 0 1px`
+// ring — re-rasterises the card every scroll frame and reintroduces the crawl.
+// So there is NO box-shadow anywhere here: separation comes ONLY from the flat
+// `border-top` hairline and whitespace. There is also no translucent fill and no
+// translateZ(0) promotion — with nothing to cache, a compositor layer would just
+// be a needless extra surface. The one free win kept is content-visibility:auto
+// (with contain-intrinsic-size reserving ~the card's height), which lets the
+// browser skip layout+paint for cards scrolled off-screen in a long feed.
+//
+// Each tile IS the shared unit card, `ItemPreview`, reused verbatim (liked as-is,
+// never restyled). Handlers are optional so a dev preview can render it inert;
+// when present they carry the real Start / Quiz / claim behaviour.
 
-import { Btn, Lbl } from "@/components/ui";
+import { Btn } from "@/components/ui";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { WHY_TRACK } from "@/data/why";
 import type { Why } from "@/data/why";
@@ -35,44 +44,18 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
   return items;
 }
 
-/** The whole "Up next" card as a frosted-GLASS panel, so a stacked lesson reads as
- * a distinct pane rather than a slab of the page.
- *
- * NO BORDER. What sets one lesson off from the next is the shadowing, not an
- * outline: a top inset highlight glints the upper edge like a glow of light
- * catching glass, while inset shades down the left, right and bottom darken those
- * rims so the pane reads as a raised piece of glass. A deep lift shadow floats it,
- * and a real backdrop blur frosts it (one filter per card, a handful on screen). */
-// NO BACKDROP BLUR (a filter root re-snapshotted every frame), and — the real
-// scroll fix — each card is PROMOTED TO ITS OWN COMPOSITOR LAYER (translateZ(0)).
-//
-// The page mesh is a position:fixed layer that never repaints; the whole design
-// relies on the scrolling content riding OVER it as a cached texture (see
-// globals.css, the .kq-stage note). A card that is NOT promoted is re-rasterised
-// every scroll frame — its translucent fill, its shadow and its tiles' gradients
-// all repainting — which is the crawl. translateZ(0) rasterises the card once and
-// then only TRANSLATES it on scroll (GPU), so the translucent look stays and the
-// per-frame paint goes away. The edge glow is a 1px ring + inset highlight, both
-// box-shadow (free), baked into that one texture.
-// content-visibility:auto lets the browser SKIP layout+paint for any card not on
+// The hairline that separates one stacked track from the next — a REAL CSS border
+// in a low-alpha white, not a shadow. `first:` drops it on the top track.
+const RULE = "border-t border-white/[0.08] first:border-t-0";
+
+// content-visibility:auto lets the browser skip layout+paint for any card not on
 // screen (contain-intrinsic-size reserves ~its height so the scrollbar doesn't
-// jump) — the "stop rendering content far down the page" lever. translateZ(0)
-// keeps the on-screen cards on their own compositor layer so they translate
-// rather than repaint.
-const panel =
-  "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
-  "[content-visibility:auto] [contain-intrinsic-size:auto_260px] " +
-  // An explicit translucent-black fill, NOT color-mix(var(--card) …): in kiri
-  // --card is transparent, so a --card mix resolves to nothing (that is why the
-  // card only showed while the glow was on). A flat rgba fill is a single alpha
-  // blend per pixel — no blur — so it sets the card off from the mesh and keeps
-  // the scroll smooth.
-  // NO box-shadow of any kind — even a 0-blur ring reintroduced the scroll jank
-  // on this promoted layer. The card is set off by its flat translucent fill only.
-  "bg-[rgba(0,0,0,0.18)]";
+// jump). Free, and it helps a long feed — no fill, no shadow, no layer promotion.
+const CARD = `${RULE} pt-7 first:pt-0 [content-visibility:auto] [contain-intrinsic-size:auto_260px]`;
 
 export function NextLessonPreview({
   lesson,
+  title = "Up next",
   positionLabel,
   why = WHY_TRACK.curriculum,
   onStart,
@@ -82,10 +65,13 @@ export function NextLessonPreview({
 }: {
   /** The next lesson, in the new content model. */
   lesson: UnitLesson;
-  /** Optional "Radical 1 of 90 · Kanji 2–3 of 2,136" position line. Omitted until
-   * the content model exposes a track position. */
+  /** The editorial heading — the track's title ("Kana", "Vocabulary"). Defaults
+   * to "Up next" for an inert preview that has no track to name. */
+  title?: string;
+  /** Optional "Radical 1 of 90 · Kanji 2–3 of 2,136" position line, shown as the
+   * accent eyebrow. Omitted until the content model exposes a track position. */
   positionLabel?: string;
-  /** The "why this track, why now" pull shown under the buttons. Defaults to the
+  /** The "why this track, why now" pull shown under the heading. Defaults to the
    * one-climb curriculum reason; each track passes its own (WHY_TRACK.keigo, …). */
   why?: Why;
   /** Start the lesson (teach then drill); `teach:false` drills now. Omit for an
@@ -106,64 +92,44 @@ export function NextLessonPreview({
   const facts = lesson.units.flatMap((u) => u.facts);
   return (
     // data-learn-card is the stable hook the e2e suite finds a lesson card by —
-    // the styling classes (once backdrop-blur-xl) are not a contract.
-    <div className={panel} data-learn-card>
-      <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
-
-      {/* TWO COLUMNS ON A WIDE PANE. A lesson is a few fixed-size tiles and three
-          controls — narrow content in a wide card, which left everything shoved
-          left. So the interactive column (tiles + the routes in) sits on the left,
-          capped to the tile row's width so the buttons stay UNDER the tiles rather
-          than spreading across the whole pane, and the one-line reason fills the
-          space to its right. The split is a CONTAINER query on the pane's own width
-          (not the viewport), so it only goes two-column when the CARD is actually
-          wide enough — a narrow host (a dev-gallery slot, a phone) stacks instead
-          of forcing the reason into an overflowing sliver. */}
-      <div className="mt-4 flex flex-col gap-x-10 gap-y-4 @4xl:flex-row @4xl:items-start">
-        {/* Left: the tiles and the routes in, capped to the tile row (five 104px
-            squares = 568px) so the controls sit directly beneath them. */}
-        <div className="w-full max-w-[568px] @4xl:shrink-0">
-          <div className="flex flex-wrap gap-3">
-            {items.map((item) => (
-              <ItemPreview key={String(item.entry)} item={item} />
-            ))}
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Btn onClick={onClaim && (() => onClaim(facts))}>
-                I already know {items.length === 1 ? "this" : `these ${items.length}`}
-              </Btn>
-              {claimAll ? (
-                <Btn onClick={claimAll.onClaim}>I already know {claimAll.label}</Btn>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
-              {onContinue ? (
-                <Btn go onClick={onContinue}>
-                  Continue session
-                </Btn>
-              ) : (
-                <Btn go onClick={onStart && (() => onStart(facts))}>
-                  Start
-                </Btn>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: the one-line reason, filling the space beside the tiles. Just the
-            lede — no "Why?" disclosure, no folded paragraphs — set at the same size
-            as the rest. Given the tile row's height (104px) and centered within it,
-            so the text sits on the tiles' centre line rather than the taller
-            tiles-plus-buttons column. */}
-        <p className="min-w-0 max-w-prose text-[13px] leading-relaxed text-text-muted @4xl:flex @4xl:h-[104px] @4xl:flex-1 @4xl:items-center">
-          <span>
-            {why.lede.strong}
-            {why.lede.rest ? ` ${why.lede.rest}` : ""}
-          </span>
+    // the styling classes are not a contract.
+    <div className={CARD} data-learn-card>
+      {positionLabel ? (
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-accent/80">
+          {positionLabel}
         </p>
+      ) : null}
+      <h3 className="mt-1 text-[22px] font-semibold leading-tight text-text">{title}</h3>
+      <p className="mt-1.5 max-w-prose text-[13px] leading-relaxed text-text-muted">
+        {why.lede.strong}
+        {why.lede.rest ? ` ${why.lede.rest}` : ""}
+      </p>
+
+      <div className="mt-4">
+        <div className="flex flex-wrap gap-3">
+          {items.map((item) => (
+            <ItemPreview key={String(item.entry)} item={item} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Btn onClick={onClaim && (() => onClaim(facts))}>
+          I already know {items.length === 1 ? "this" : `these ${items.length}`}
+        </Btn>
+        {claimAll ? (
+          <Btn onClick={claimAll.onClaim}>I already know {claimAll.label}</Btn>
+        ) : null}
+        <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
+        {onContinue ? (
+          <Btn go onClick={onContinue}>
+            Continue session
+          </Btn>
+        ) : (
+          <Btn go onClick={onStart && (() => onStart(facts))}>
+            Start
+          </Btn>
+        )}
       </div>
     </div>
   );

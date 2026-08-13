@@ -119,6 +119,18 @@ const TRACK_NOUN: Record<string, string> = {
   sentence: "Structure",
 };
 
+/** The editorial heading each track's card shows — the track's proper name, larger
+ * and plainer than the counting noun in TRACK_NOUN. */
+const TRACK_TITLE: Record<string, string> = {
+  kana: "Kana",
+  vocab: "Vocabulary",
+  numbers: "Counting",
+  keigo: "Keigo",
+  grammar: "Grammar",
+  transitivity: "Transitivity",
+  sentence: "Sentences",
+};
+
 /** The one-line reason on each card. Deliberately a PAYOFF — why you'd want this
  * track — not a definition: the concept itself is taught by the lesson's own intro
  * card, and repeating that teaching here read as saying the same thing twice.
@@ -408,6 +420,7 @@ export function HomeFeed() {
           <NextLessonPreview
             key={track.id}
             lesson={lesson!}
+            title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
             positionLabel={
               track.id === "kana"
                 ? kanaPositionLabel(order, lesson!)
