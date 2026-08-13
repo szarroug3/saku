@@ -169,8 +169,11 @@ export function Row({
   return (
     <div
       className={cx(
-        "flex flex-wrap items-center justify-between gap-2.5 py-2",
-        "border-t border-border first:border-t-0",
+        // No divider line between rows any more — the ruled-list look was the
+        // last of the boxed chrome, and it read as "unchanged" against the old
+        // Card version. Rows separate by their own vertical space now; the
+        // section heading + whitespace group them.
+        "flex flex-wrap items-center justify-between gap-2.5 py-2.5",
         dim && "pointer-events-none opacity-45",
       )}
     >
