@@ -7,10 +7,11 @@
 // not by JLPT level. Four things have to hold, and the renderer (a .tsx the
 // runner cannot load) trusts this function to deliver them:
 //
-//   1. The four form sections lead, in teaching order (て/で, ない, た, stem), each
-//      labelled by its form and HEADED by its own form recipe.
+//   1. A "Particles" section leads (particles are taught first), then the form
+//      sections in teaching order (〜な, て/で, ない, た, stem), each labelled by
+//      its form and HEADED by its own form recipe.
 //   2. "Other patterns" trails, holding the plain-form and no-verb-form patterns
-//      and nothing that belongs to a real form section.
+//      and nothing that belongs to a real form section or the Particles section.
 //   3. Every pattern lands in exactly one section — the cut tiles the whole shelf
 //      with no gap, overlap or duplicate.
 //   4. Within a section the patterns run in teaching order (grammarRank up), so
@@ -33,13 +34,16 @@ import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 const RECIPE_OF_ENTRY = new Map(RECIPES.map((r) => [patternEntry(r.id), r]));
 
 describe("the grammar shelf is cut by form", () => {
-  test("the foundational form sections lead in teaching order, headed by their recipe", () => {
+  test("the Particles section leads, then the foundational form sections in teaching order", () => {
     const sections = grammarShelfSections();
-    const lead = sections.slice(0, 5);
+    // Particles come first — they are taught before any verb form, and this is
+    // where は/が and に/で used to sit as bespoke links.
+    assert.equal(sections[0].label, "Particles");
+    const lead = sections.slice(1, 6);
     assert.deepEqual(
       lead.map((s) => s.label),
       ["〜な form", "て/で-form", "ない-form", "た-form", "stem"],
-      "the foundational forms lead in teaching order",
+      "the foundational forms follow the Particles section in teaching order",
     );
     assert.deepEqual(
       lead.map((s) => s.entries[0].id),
@@ -48,9 +52,30 @@ describe("the grammar shelf is cut by form", () => {
     );
   });
 
+  test("the Particles section holds exactly the case/binding particles", () => {
+    const particles = grammarShelfSections().find((s) => s.label === "Particles")!;
+    assert.ok(particles, "a Particles section exists");
+    const ids = particles.entries.map((e) => RECIPE_OF_ENTRY.get(e.id)!.id).sort();
+    // は/が/に/で plus the pre-existing を/へ/まで/までに/だけ/しか. Order within the
+    // section is teaching order (asserted rank-ascending elsewhere); membership is
+    // the point here — these ten and nothing else.
+    assert.deepEqual(ids, [
+      "dake",
+      "de",
+      "e",
+      "ga",
+      "made",
+      "made-ni",
+      "ni",
+      "shika-nai",
+      "wa",
+      "wo",
+    ]);
+  });
+
   test("every form section holds only patterns built on that form", () => {
     for (const section of grammarShelfSections()) {
-      if (section.id === "form-other") continue;
+      if (section.id === "form-other" || section.id === "particles") continue;
       const form = section.id.replace(/^form-/, "");
       for (const entry of section.entries) {
         const r = RECIPE_OF_ENTRY.get(entry.id);
@@ -81,9 +106,13 @@ describe("the grammar shelf is cut by form", () => {
     const ids = new Set(
       other.entries.map((e) => RECIPE_OF_ENTRY.get(e.id)?.id),
     );
-    // A plain-form verb pattern and a bare noun/particle pattern both belong here.
+    // A plain-form verb pattern and a bare noun pattern both belong here.
     assert.ok(ids.has("koto-ga-dekiru"), "〜ことができる (plain form) is in Other");
-    assert.ok(ids.has("wo"), "を (a particle, no verb host) is in Other");
+    assert.ok(ids.has("nara"), "〜なら (bare noun, no verb host) is in Other");
+    // The case/binding particles are NOT here any more — they lead the shelf in
+    // their own Particles section.
+    assert.ok(!ids.has("wo"), "を moved to the Particles section");
+    assert.ok(!ids.has("wa"), "は is a Particles-section pattern, not Other");
     // And nothing built on a real conjugation form leaks in.
     for (const e of other.entries) {
       const f = verbAttachForm(RECIPE_OF_ENTRY.get(e.id)!);

@@ -30,7 +30,11 @@ describe("glyphLines — the header's big slot", () => {
     assert.deepEqual(glyphLines(c, m), ["〜てから", "〜たあとで"]);
   });
 
-  test("all six two-member clusters land in that branch", () => {
+  test("all eight two-member clusters land in that branch", () => {
+    // は/が and に/で joined this branch when each particle became a MEANING
+    // recipe: the clusters gained two members apiece, so their header glyph slot
+    // now stacks the two particle patterns (は / が, に / で) like every other
+    // two-member family, rather than falling to the member-less title branch.
     const two = CLUSTERS.filter((c) => membersOf(c).length === 2).map((c) => c.id);
     assert.deepEqual(two, [
       "because",
@@ -39,6 +43,8 @@ describe("glyphLines — the header's big slot", () => {
       "ability",
       "hard-to-do",
       "comparison",
+      "wa-ga",
+      "ni-de",
     ]);
     for (const id of two) {
       const c = must(id);
@@ -46,12 +52,13 @@ describe("glyphLines — the header's big slot", () => {
     }
   });
 
-  test("a member-less cluster with a Japanese title shows the title", () => {
-    for (const id of ["wa-ga", "ni-de", "transitivity"]) {
-      const c = must(id);
-      assert.equal(membersOf(c).length, 0);
-      assert.deepEqual(glyphLines(c, []), [c.title]);
-    }
+  test("the member-less cluster with a Japanese title shows the title", () => {
+    // transitivity is the ONLY map-only cluster left (開ける/開く is a verb-pair
+    // choice with no single recipe to attach). は/が and に/で used to be here too
+    // but now carry members. A member-less Japanese-titled cluster shows its title.
+    const c = must("transitivity");
+    assert.equal(membersOf(c).length, 0);
+    assert.deepEqual(glyphLines(c, []), [c.title]);
   });
 
   test("transitivity is retitled, so it reaches that branch at all", () => {

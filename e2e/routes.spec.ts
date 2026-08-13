@@ -104,8 +104,9 @@ for (const route of routes.static) {
  * app's own data and are asserted to render real content, not just to 200.
  */
 const dynamicSamples: Array<{ route: string; url: string; expect: string }> = [
-  // Only the map-only families keep a /grammar page; the word-cluster pages were removed.
-  { route: "/grammar/[cluster]", url: "/grammar/wa-ga", expect: "" },
+  // Only the map-only family (transitivity) keeps a /grammar page; は/が and に/で
+  // gained members and their maps retired, and the word-cluster pages were removed.
+  { route: "/grammar/[cluster]", url: "/grammar/transitivity", expect: "" },
   { route: "/library/[...entry]", url: "/library/hiragana/a", expect: "あ" },
   // /library/primitive/[glyph] serves the shapes that appear in kanji decompositions
   // but have no kanji or radical entry of their own (氵, 亻, 艹, ...). A component

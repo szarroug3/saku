@@ -132,15 +132,25 @@ describe("SELECTION — the distractor rules are the safety argument", () => {
     assert.equal(isValidDistractor(recipe("wo")!, recipe("shika-nai")!), false);
   });
 
-  test("は and が cannot reach a selection item because they do not exist", () => {
-    // The strongest form of the guarantee: not a filter, an absence. Nothing
-    // downstream can generate what has no row.
-    for (const r of RECIPES) {
-      assert.ok(r.pattern !== "は" && r.pattern !== "が");
+  test("は and が exist as MEANING recipes but can never reach a selection item", () => {
+    // は/が (and に/で) now ship as meaning-only recipes so their meaning is
+    // quizzable — but a particle CHOICE is the thing selection must never pose.
+    // The guarantee is now a filter, not an absence: each is a particle NOT on
+    // the allowlist, so isValidDistractor rejects it in either role, and no
+    // generated cloze item can offer it as a choice.
+    for (const id of ["wa", "ga", "ni", "de"]) {
+      const r = recipe(id)!;
+      for (const other of RECIPES) {
+        assert.equal(isValidDistractor(r, other), false, `${id} must never take a distractor`);
+        assert.equal(isValidDistractor(other, r), false, `${id} must never be a distractor`);
+      }
     }
     for (const q of CORPUS.slice(0, 2000).flatMap((ex) => ex.p.map((p) => selection(ex, p)))) {
       if (!q) continue;
-      for (const c of q.choices) assert.ok(c.pattern !== "は" && c.pattern !== "が");
+      for (const c of q.choices) {
+        assert.ok(c.pattern !== "は" && c.pattern !== "が");
+        assert.ok(c.pattern !== "に" && c.pattern !== "で");
+      }
     }
   });
 });

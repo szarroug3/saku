@@ -122,10 +122,11 @@ const TEST_PAGES: PageLoadTest[] = [
     maxLoadTimeMs: 2500,
   },
 
-  // Grammar cluster page
+  // Grammar cluster page (transitivity is the one remaining map-only cluster;
+  // は/が and に/で gained members and their standalone maps now 404)
   {
     name: "Grammar cluster page",
-    url: "/grammar/wa-ga",
+    url: "/grammar/transitivity",
     maxLoadTimeMs: 3000,
   },
 

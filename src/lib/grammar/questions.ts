@@ -171,8 +171,15 @@ export function variedProduction(
  */
 const PARTICLE_ALLOWLIST: ReadonlySet<string> = new Set(["wo", "e", "made", "made-ni", "dake"]);
 
-/** Recipe ids that are particles at all (allowed or not). */
+/** Recipe ids that are particles at all (allowed or not). は/が/に/で are here so
+ * the allowlist gate rejects them in BOTH roles: they now exist as MEANING recipes
+ * (see recipes.ts), but a particle CHOICE is exactly what selection must never
+ * pose, and being particles-not-on-the-allowlist is what guarantees that. */
 const PARTICLE_IDS: ReadonlySet<string> = new Set([
+  "wa",
+  "ga",
+  "ni",
+  "de",
   "wo",
   "e",
   "made",
