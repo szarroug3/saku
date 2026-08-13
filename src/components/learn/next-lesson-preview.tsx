@@ -67,13 +67,9 @@ const panel =
   // card only showed while the glow was on). A flat rgba fill is a single alpha
   // blend per pixel — no blur — so it sets the card off from the mesh and keeps
   // the scroll smooth.
-  "bg-[rgba(0,0,0,0.18)] " +
-  // FAKE the glow with a hairline ring, not a blur. Any blurred shadow re-rasters
-  // on the promoted layer every scroll frame (the jank); a 0-blur box-shadow ring
-  // is just a 1px band of colour — free. Kept at a low alpha so it reads as a soft
-  // lifted edge catching light, not an obvious outline. (box-shadow, not `border`,
-  // so it adds no layout box and can't shift the content.)
-  "shadow-[0_0_0_1px_rgba(255,255,255,0.08)]";
+  // NO box-shadow of any kind — even a 0-blur ring reintroduced the scroll jank
+  // on this promoted layer. The card is set off by its flat translucent fill only.
+  "bg-[rgba(0,0,0,0.18)]";
 
 export function NextLessonPreview({
   lesson,
