@@ -82,14 +82,14 @@ export function seenToReachKana(kanaGlyph: string): FactId[] {
 /**
  * The lesson CARD on `/learn` for a track, found by a label fragment it renders.
  * On the content-model feed every track's card is the `NextLessonPreview` glass
- * panel — a `div.backdrop-blur-xl` (a class unique to that component) whose
+ * panel — a `[data-learn-card]` (a class unique to that component) whose
  * eyebrow starts "Up next". The label fragment (the target glyph in a curriculum
  * tile, "grammar" in a tile's type label, "Counter"/"Hiragana" in the eyebrow) is
  * what tells them apart once several tracks are unlocked at once.
  */
 export function lessonCard(page: Page, labelFragment: string) {
   return page
-    .locator("div.backdrop-blur-xl")
+    .locator("[data-learn-card]")
     .filter({ hasText: "Up next" })
     .filter({ hasText: labelFragment });
 }

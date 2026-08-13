@@ -37,16 +37,16 @@ test("counters prep lesson shows Numbers label and resumes from counters card", 
   await page.goto("/learn");
 
   // On the content-model feed each track's card is a NextLessonPreview glass panel
-  // (div.backdrop-blur-xl) headed "Up next · <noun> …": the counters card counts in
+  // ([data-learn-card]) headed "Up next · <noun> …": the counters card counts in
   // "Counter", the curriculum spine (radicals/kanji/words) counts in the neutral
   // "Item". Those nouns tell the two apart.
   const countersCard = page
-    .locator("div.backdrop-blur-xl")
+    .locator("[data-learn-card]")
     .filter({ hasText: "Up next" })
     .filter({ hasText: "Counter" })
     .first();
   const spineCard = page
-    .locator("div.backdrop-blur-xl")
+    .locator("[data-learn-card]")
     .filter({ hasText: "Up next" })
     .filter({ hasText: "Item" })
     .first();

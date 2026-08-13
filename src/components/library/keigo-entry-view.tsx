@@ -52,6 +52,26 @@ export function KeigoEntryView({ item }: { item: ContentItem }) {
     <EntrySurface>
       <ContentEntryHeader item={item} />
 
+      {/* THE FORMULAIC SET is the odd one out: いらっしゃいませ has no plain verb it
+          politens (that is why it is `blockedBy` nothing and opens on its own).
+          Without this note a learner meets it beside the verb sets and reasonably
+          asks "the polite form of WHAT?" — so it is named for what it actually is:
+          a fixed phrase you hear rather than conjugate. */}
+      {set.formulaic ? (
+        <Section title="Where you'll hear it" tone="accent">
+          <p className="text-[15px] leading-relaxed text-text">
+            This one is different. It isn&rsquo;t the polite version of a verb you
+            already know — it&rsquo;s a fixed phrase. It&rsquo;s the greeting shop
+            and restaurant staff call out to welcome a customer in:{" "}
+            <span lang="ja" className="font-kana">
+              いらっしゃいませ
+            </span>
+            , roughly &ldquo;welcome, come in!&rdquo; You&rsquo;ll hear it, not say
+            it, so learn it by ear.
+          </p>
+        </Section>
+      ) : null}
+
       {/* THE POLITE FORMS — the honorific verb (for the OTHER person's action) and
           the humble verb (for YOUR own). Each is a boxless row: its register in
           accent with the "when to use it" note in a tooltip, then the form + its

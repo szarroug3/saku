@@ -13,11 +13,14 @@
 // answers undefined (no facts) renders nothing, the refusal the builders make.
 
 import { CharacterEntryView } from "@/components/library/character-entry-view";
+import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { GrammarEntryView } from "@/components/library/grammar-entry-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { KeigoEntryView } from "@/components/library/keigo-entry-view";
 import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
+import { numberConstructionFor } from "@/data/number-construction";
+import { COUNTER_ENTRIES } from "@/data/counters";
 import type { LessonItem } from "@/lib/lesson-items";
 
 export function TeachItemView({ item }: { item: LessonItem }) {
@@ -35,6 +38,19 @@ export function TeachItemView({ item }: { item: LessonItem }) {
       return built ? <CharacterEntryView item={built} lesson /> : null;
     }
     case "word": {
+      // A COUNTER shares the `word` fact subject but is a different page — the
+      // numbers track teaches 〜つ natives (ひとつ) and generative rules (11–99,
+      // 〜本), and rendering them as a plain word shows an empty page. Dispatch to
+      // CounterEntryView the same way the Library route does (a generative rule
+      // resolves before a plain counter form). Everything else is a real word.
+      if (numberConstructionFor(item.entry)) {
+        const built = buildItem(item.entry, "generative-rule");
+        return built ? <CounterEntryView item={built} /> : null;
+      }
+      if (COUNTER_ENTRIES.has(item.entry)) {
+        const built = buildItem(item.entry, "counter");
+        return built ? <CounterEntryView item={built} /> : null;
+      }
       const built = buildItem(item.entry, "word");
       return built ? <CharacterEntryView item={built} lesson /> : null;
     }

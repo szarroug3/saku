@@ -87,7 +87,9 @@ export function NextLessonPreview({
   const items = lessonItems(lesson);
   const facts = lesson.units.flatMap((u) => u.facts);
   return (
-    <div className={panel}>
+    // data-learn-card is the stable hook the e2e suite finds a lesson card by —
+    // the styling classes (once backdrop-blur-xl) are not a contract.
+    <div className={panel} data-learn-card>
       <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
 
       {/* TWO COLUMNS ON A WIDE PANE. A lesson is a few fixed-size tiles and three

@@ -37,6 +37,7 @@ import { nextTrackLesson } from "@/lib/content/unit-scheduler";
 import type { TeachingUnit, UnitLesson } from "@/lib/content/teach-unit";
 import { positionLabel, type LessonPosition } from "@/lib/lesson-position";
 import { resumeLesson } from "@/lib/lesson-resume";
+import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
 
 import type { Why } from "@/data/why";
 import { VOCAB_SUBJECT } from "@/data/vocab";
@@ -202,6 +203,28 @@ function kanaScriptFacts(
     if (kanaScript(u.item.glyph) === script) facts.push(...u.facts);
   }
   return facts;
+}
+
+/** Curriculum position of every vocab glyph — the prereq-respecting teaching order
+ * (a component sits just before what it builds), NOT the frequency order the vocab
+ * track schedules its reading UNITS in. */
+const CURRICULUM_INDEX = new Map(CURRICULUM_SEQUENCE.map((it, i) => [it.glyph, i]));
+
+/** The vocab card's position, counted in CURRICULUM order. The vocab track is
+ * ordered by spoken frequency, so a lesson pulls a due glyph plus its prerequisites
+ * from all over that order — counting first-unit appearances there spread a 5-item
+ * lesson across "1–459". Curriculum order keeps a lesson's items contiguous (人 口
+ * 可 何 一 → a tight span), which is the position a learner actually feels. */
+function vocabPositionLabel(lesson: UnitLesson): string {
+  const idxs = [...new Set(lesson.units.map((u) => u.item.glyph))]
+    .map((g) => CURRICULUM_INDEX.get(g))
+    .filter((x): x is number => x !== undefined);
+  if (idxs.length === 0) return "Vocab";
+  return positionLabel("Vocab", {
+    from: Math.min(...idxs) + 1,
+    to: Math.max(...idxs) + 1,
+    total: CURRICULUM_SEQUENCE.length,
+  });
 }
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
@@ -388,7 +411,9 @@ export function HomeFeed() {
             positionLabel={
               track.id === "kana"
                 ? kanaPositionLabel(order, lesson!)
-                : positionLabel(TRACK_NOUN[track.id] ?? "Item", positionFor(order, lesson!))
+                : track.id === "vocab"
+                  ? vocabPositionLabel(lesson!)
+                  : positionLabel(TRACK_NOUN[track.id] ?? "Item", positionFor(order, lesson!))
             }
             why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
             onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}
