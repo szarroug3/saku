@@ -51,13 +51,22 @@ const RULE = "border-t border-white/[0.08] first:border-t-0";
 // content-visibility:auto lets the browser skip layout+paint for any card not on
 // screen (contain-intrinsic-size reserves ~its height so the scrollbar doesn't
 // jump). Free, and it helps a long feed — no fill, no shadow, no layer promotion.
-const CARD = `${RULE} pt-7 first:pt-0 [content-visibility:auto] [contain-intrinsic-size:auto_260px]`;
+const CV = "[content-visibility:auto] [contain-intrinsic-size:auto_260px]";
+// Single-column (default): a top-hairline + top padding sets each stacked track
+// apart from the one above it, `first:` clearing both on the top card.
+const CARD_SEPARATED = `${RULE} pt-7 first:pt-0 ${CV}`;
+// Two-column grid: the grid `gap` provides the separation, so the card drops the
+// hairline and top padding (which would mis-fire per-column: `first:` only clears
+// the very first grid item, leaving the second column's top card wrongly ruled).
+// Still NO box-shadow — separation stays whitespace + gap only.
+const CARD_FLUSH = CV;
 
 export function NextLessonPreview({
   lesson,
   title = "Up next",
   positionLabel,
   why = WHY_TRACK.curriculum,
+  separated = true,
   onStart,
   onClaim,
   claimAll,
@@ -74,6 +83,12 @@ export function NextLessonPreview({
   /** The "why this track, why now" pull shown under the heading. Defaults to the
    * one-climb curriculum reason; each track passes its own (WHY_TRACK.keigo, …). */
   why?: Why;
+  /** How this card is set apart from its neighbours. `true` (default) keeps the
+   * shipped single-column look — a top-hairline + top padding, cleared on the
+   * first card. `false` drops both for a grid, where the grid `gap` separates the
+   * cards instead (a per-column `first:` reset can't; see CARD_FLUSH). Never a
+   * shadow either way — that reintroduces scroll jank on the fixed mesh. */
+  separated?: boolean;
   /** Start the lesson (teach then drill); `teach:false` drills now. Omit for an
    * inert preview. */
   onStart?: (facts: FactId[], opts?: { teach?: boolean }) => void;
@@ -93,7 +108,7 @@ export function NextLessonPreview({
   return (
     // data-learn-card is the stable hook the e2e suite finds a lesson card by —
     // the styling classes are not a contract.
-    <div className={CARD} data-learn-card>
+    <div className={separated ? CARD_SEPARATED : CARD_FLUSH} data-learn-card>
       {positionLabel ? (
         <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-accent/80">
           {positionLabel}

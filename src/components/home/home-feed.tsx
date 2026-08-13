@@ -407,16 +407,31 @@ export function HomeFeed() {
       {/* What "I already know this" means, said once for the whole page. */}
       <ClaimExplainer />
 
-      {/* THE TRACK CARDS — one card per track with a lesson, stacked in a single
-          column. Each carries its own position header ("Item 3–8 of …"), its own
+      {/* THE TRACK CARDS — one card per track with a lesson, laid out in a
+          RESPONSIVE TWO-COLUMN GRID: one column on narrow screens, two once the
+          main column is wide enough for two comfortable card widths (xl — see
+          below). Every visible track (kana included, when it's the sole card the
+          gate allows) flows through the SAME grid in render order, so a single
+          `visible.map` keeps them ordered top-to-bottom / left-to-right.
+
+          Two columns kick in at `xl` (viewport ≥ 1280px), NOT `lg`. The main
+          column is `max-w-[1400px]` beside a flush-left sidebar, so its content is
+          well under viewport width: at `lg` (1024px) two columns would each be
+          ~350px and squash the 5-tile row; `xl` gives each column enough room that
+          only a full 5-tile card wraps its tiles (fine — the tiles flex-wrap and
+          are never shrunk). `gap-x-10 gap-y-8` supplies the separation the cards
+          used to get from a top-hairline (they're passed `separated={false}`); no
+          shadow anywhere, which would reintroduce scroll jank on the fixed mesh.
+
+          Each card carries its own position header ("Item 3–8 of …"), its own
           "why", and Start / Quiz me / Continue / I-already-know, all off the one
-          NextLessonPreview. The cards are borderless glass panes, full width so
-          they line up with the claim-explainer box above them. */}
-      <div className="flex flex-col gap-y-3.5">
+          NextLessonPreview. */}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 xl:grid-cols-2">
         {visible.map(({ track, order, run, lesson }) => (
           <NextLessonPreview
             key={track.id}
             lesson={lesson!}
+            separated={false}
             title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
             positionLabel={
               track.id === "kana"
