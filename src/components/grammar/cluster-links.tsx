@@ -25,12 +25,14 @@
 // no link, and a card whose only row is missing is furniture. See clusters.ts.
 
 import { LinkSlot } from "@/components/grammar/link-slot";
-import { Card, Lbl } from "@/components/ui";
+import { Lbl } from "@/components/ui";
 import type { Link } from "@/data/grammar/clusters";
 
+// De-boxed: a plain Lbl + definition list on the mesh (the page wraps it in a
+// <section>), matching the Library entry pages.
 export function ClusterLinks({ link }: { link: Link }) {
   return (
-    <Card>
+    <>
       <Lbl>Links</Lbl>
       <dl className="grid grid-cols-[150px_1fr] gap-x-3 gap-y-1.5 text-[13px] max-[700px]:grid-cols-1">
         <dt className="text-text-muted">Read about it</dt>
@@ -41,6 +43,6 @@ export function ClusterLinks({ link }: { link: Link }) {
           <LinkSlot link={link} />
         </dd>
       </dl>
-    </Card>
+    </>
   );
 }

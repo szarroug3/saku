@@ -43,7 +43,7 @@ import Link from "next/link";
 import { ClusterHeader } from "@/components/grammar/cluster-header";
 import { ClusterLinks } from "@/components/grammar/cluster-links";
 import { ClusterTable } from "@/components/grammar/cluster-table";
-import { Card, Lbl } from "@/components/ui";
+import { Lbl } from "@/components/ui";
 import { CLUSTERS, cluster, membersOf } from "@/data/grammar/clusters";
 import { buildRows } from "@/lib/grammar/build";
 import { glyphLines } from "@/lib/grammar/cluster-view";
@@ -75,41 +75,6 @@ export default async function ClusterPage({
   const rows = buildRows(members);
   const lines = glyphLines(c, members);
 
-  // The paired row, spelled once. The Forms table takes the wider half exactly
-  // where a kanji puts its strokes and a pattern its recipe; Links takes the
-  // narrow one. Below 860px the grid is one column, so each item is its own row
-  // and stretching means nothing — heights go back to content. The Card's own
-  // `mb-3.5` is zeroed inside the grid, or a stretched item would end short of
-  // its neighbour.
-  const PAIR =
-    "mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full";
-
-  // "Forms grouped by what they attach to" — a DESCRIPTION of the table, which
-  // is the one thing a label over it can be without risking being wrong. It used
-  // to spell a count ("The seven") and then the words the rows were built on,
-  // and both were claims: `seems` has six members and thirteen rows, so that
-  // page announced "The six" over thirteen lines, and the "built on 行く · 高い ·
-  // 静か · 本" half was a list the table now says properly, once per group, in
-  // the row that is actually about that word.
-  const forms = (
-    <Card>
-      <Lbl>Forms grouped by what they attach to</Lbl>
-      <ClusterTable rows={rows} />
-    </Card>
-  );
-
-  // THE FEEL NOTE HAS NO LABEL ANY MORE. It used to carry "Feel · shown, never
-  // asked, never scored", which was the app explaining its own scoring model to
-  // a reader who had not asked and could not act on it. The fence is real and it
-  // is still enforced — nothing here reaches the scheduler, and clusters.ts says
-  // so at length — it has simply stopped being announced on screen. A note reads
-  // as a note.
-  const feel = c.feel ? (
-    <Card>
-      <p className="text-[13px] leading-relaxed text-text-muted">{c.feel}</p>
-    </Card>
-  ) : null;
-
   return (
     <>
       <p className="mb-3 text-[11.5px] text-text-muted">
@@ -122,54 +87,35 @@ export default async function ClusterPage({
         › {c.title}
       </p>
 
-      <Card>
-        {/* The glyph slot is filled from the members' own `pattern` strings and
-            is EMPTY on the three biggest clusters, which is the honest answer
-            rather than a gap. See glyphLines in lib/grammar/cluster-view.ts. */}
-        <ClusterHeader lines={lines} title={c.title} sub={c.gloss} />
-      </Card>
+      {/* De-boxed, like the Library entry pages: the header sits on the mesh over
+          a hairline, then each part is a plain section — no Cards, single column.
+          The glyph slot is EMPTY on the three biggest clusters, the honest answer
+          rather than a gap (glyphLines in lib/grammar/cluster-view.ts). */}
+      <ClusterHeader lines={lines} title={c.title} sub={c.gloss} />
 
-      {/* NO LINK, NO ROW AND NO CARD. The link slot used to render even when
-          empty, showing a "No link" chip and the cluster's `noLinkReason`. 7 of
-          the 12 clusters have no link, so that message was on most of the shelf,
-          and a notice that appears almost everywhere is furniture rather than a
-          finding. It is gone from the screen; the reason strings stay in
-          clusters.ts as data. See that file's header.
+      <div className="mt-5 border-t border-white/[0.08]" aria-hidden />
 
-          Which is why there are three arrangements and not one. With a table and
-          a link, they pair. With a table and no link, the table is the page and
-          takes the width — an empty right-hand column would be the absence drawn
-          in negative space, which is the same message in a different font. */}
       {rows.length > 0 ? (
-        c.link ? (
-          <div className={PAIR}>
-            {forms}
-            <ClusterLinks link={c.link} />
-          </div>
-        ) : (
-          forms
-        )
+        <section className="mt-6">
+          <Lbl>Forms grouped by what they attach to</Lbl>
+          <ClusterTable rows={rows} />
+        </section>
       ) : null}
 
-      {/* THE MAP-ONLY CLUSTERS — は/が, に/で, 開ける/開く — have no table, because
-          they are not built from recipes at all: they are choices between two
-          particles in a frame, which is exactly the thing this app has proven it
-          must not quiz. On those three the feel note IS the content, so it pairs
-          with the Links card in the same row the table would have had. A single
-          paragraph alone on a page under a header reads as a page that failed to
-          load; beside the link it reads as what it is, which is a short honest
-          answer and a pointer at someone who writes prose for a living. */}
-      {rows.length === 0 && feel && c.link ? (
-        <div className={PAIR}>
-          {feel}
+      {/* The feel note — shown, never asked, never scored (clusters.ts keeps that
+          fence). A plain paragraph now, not a boxed aside; on the map-only
+          clusters (は/が, に/で, 開ける/開く) it is the whole content. */}
+      {c.feel ? (
+        <p className="mt-6 max-w-prose text-[13px] leading-relaxed text-text-muted">
+          {c.feel}
+        </p>
+      ) : null}
+
+      {c.link ? (
+        <section className="mt-6">
           <ClusterLinks link={c.link} />
-        </div>
-      ) : (
-        <>
-          {feel}
-          {rows.length === 0 && c.link ? <ClusterLinks link={c.link} /> : null}
-        </>
-      )}
+        </section>
+      ) : null}
     </>
   );
 }

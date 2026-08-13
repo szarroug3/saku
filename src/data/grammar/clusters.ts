@@ -278,7 +278,7 @@ export const CLUSTERS: readonly Cluster[] = [
   {
     id: "wa-ga",
     title: "は vs が",
-    gloss: "the topic/subject pair: read about it, never drilled",
+    gloss: "は marks the topic, が marks the subject",
     members: [],
     feel:
       "は marks what the sentence is about; が marks who or what is doing the " +

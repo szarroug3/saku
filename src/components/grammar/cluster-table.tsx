@@ -46,7 +46,7 @@ export function ClusterTable({ rows }: { rows: readonly BuiltRow[] }) {
             {["Form", "How it's built", "What it means"].map((h) => (
               <th
                 key={h}
-                className="border-b border-border pb-2 pr-2.5 text-[9.5px] font-medium uppercase tracking-[0.11em] text-text-muted"
+                className="border-b border-white/[0.08] pb-2 pr-2.5 text-[9.5px] font-medium uppercase tracking-[0.11em] text-text-muted"
               >
                 {h}
               </th>
@@ -77,7 +77,7 @@ export function ClusterTable({ rows }: { rows: readonly BuiltRow[] }) {
                 〜すぎる is a verb pattern. The id alone stopped being unique with
                 it. */}
             {g.rows.map(({ recipe, host, built, how }) => (
-              <tr key={`${recipe.id}/${host}`} className="border-b border-border last:border-b-0">
+              <tr key={`${recipe.id}/${host}`} className="border-b border-white/[0.06] last:border-b-0">
                 {/* Always the worked example, now that every row has one. This
                     cell used to fall back to the bare pattern for 〜は〜より,
                     because a one-suffix recipe could only reach 本は and printing
