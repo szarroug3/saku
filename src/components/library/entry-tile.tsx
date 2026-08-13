@@ -149,19 +149,26 @@ export function EntryTile({
       >
         {entry.glyph}
       </div>
-      <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
-      {/* Actions occupy layout at all times (so hovering doesn't reflow the grid)
-          but are invisible until hover/focus — the resting shelf stays clean. */}
-      <div className="mt-1 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        {speakable(entry) ? (
-          <HearButton
-            glyph={entry.glyph}
-            voiceName={voice}
-            stopPropagation
-            label={`Hear ${entryName(entry)}`}
-          />
-        ) : null}
-        <ViewLink entry={entry} />
+      {/* ONE bottom slot for BOTH the romaji and the hover actions, not two
+          stacked rows. At rest it shows the reading; on hover/focus the reading
+          fades out and the 🔊/↗ fade in over the same line. Sharing the slot keeps
+          the tile compact — no empty reserved action row under every glyph — and,
+          because the slot is a fixed height, hovering never reflows the grid. */}
+      <div className="relative mt-1 flex h-5 items-center justify-center">
+        <span className="truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+          {subLabel(entry)}
+        </span>
+        <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          {speakable(entry) ? (
+            <HearButton
+              glyph={entry.glyph}
+              voiceName={voice}
+              stopPropagation
+              label={`Hear ${entryName(entry)}`}
+            />
+          ) : null}
+          <ViewLink entry={entry} />
+        </span>
       </div>
     </div>
   );

@@ -536,12 +536,15 @@ export function Shelf({
           const label = script === "hiragana" ? "Hiragana" : "Katakana";
           return (
             <div key={script}>
-              <div className="flex items-center gap-2 px-1 pb-1 pt-2">
+              {/* SAME chevron size + gap + left edge as the section header below
+                  (size-5 / gap-1.5 / no px), so the script label lines up with its
+                  sections instead of sitting indented to their right. */}
+              <div className="flex items-center gap-1.5 pb-1 pt-2">
                 <button
                   type="button"
                   aria-expanded={scriptExpanded}
                   onClick={() => toggleScript(script)}
-                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <span
                     aria-hidden
