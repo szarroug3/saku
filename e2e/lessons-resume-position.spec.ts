@@ -8,15 +8,18 @@ import {
 } from "./helpers/lessons";
 
 /**
- * TWO PROPERTIES OF THE TEACH WALK: it can be BUILT from the Library over a
+ * TWO PROPERTIES OF THE TEACH WALK: it can be BUILT from the Library SHELF over a
  * chosen slice, and once entered it REMEMBERS where you left it.
  *
- * "Teach me N" (slice-bar.tsx) is the Library door into a teaching session: it
- * builds a normal teach walk over the slice's material, the same walk the Home
- * cards reach through Start. lessons-teach-more.spec.ts proves the door opens the
- * walk; this adds that a MULTI-fact slice actually stacks its material into the
- * session (the HUD's "N of M" reports more than one card), which is the whole
- * reason a "Teach me N" over a folded character is not just a single card.
+ * "Teach me N" (slice-bar.tsx, variant="bar") is the Library door into a teaching
+ * session: SELECTING one or more shelf rows builds a selection slice, and the
+ * shelf action bar offers "Teach me N" over it — the same walk the Home cards
+ * reach through Start. (The redesign moved this verb off the entry page, which
+ * now offers only "Quiz me"; see lessons-teach-more.spec.ts.) That spec proves
+ * the door opens the walk; this adds that a MULTI-fact slice actually stacks its
+ * material into the session (the HUD's "N of M" reports more than one card),
+ * which is the whole reason a "Teach me N" over a folded character is not just a
+ * single card.
  *
  * The second test is the resume property. The walk's position lives on the
  * session (session.teachStep) in localStorage, so leaving and returning must land
@@ -31,12 +34,20 @@ import {
  * one card. Mirrors lessons-teach-more.spec.ts's target. */
 const MULTI_FACT_KANJI = "生";
 
-test("Library 'Teach me N' builds a multi-card teach walk over the slice", async ({
+test("Library shelf 'Teach me N' builds a multi-card teach walk over the slice", async ({
   page,
   seed,
 }) => {
   await seed({ seen: [], cfg: {} });
-  await page.goto(`/library/kanji/${MULTI_FACT_KANJI}`);
+  await page.goto("/library?kind=kanji");
+
+  // Select the kanji row on the shelf (reached through search — the browse shelf
+  // mounts distant sections lazily). Selecting builds the slice the bar acts on.
+  await page.getByPlaceholder(/Search anything/).fill(MULTI_FACT_KANJI);
+  await page.getByText(MULTI_FACT_KANJI, { exact: true }).first().click();
+  await expect(
+    page.getByRole("button", { name: /Clear \d+ selected/ }),
+  ).toBeVisible();
 
   // Offered because nothing in this slice is known yet. N is the real fact count,
   // so match the shape rather than a fixed number.
