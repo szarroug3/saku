@@ -54,8 +54,14 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
 // then only TRANSLATES it on scroll (GPU), so the translucent look stays and the
 // per-frame paint goes away. The edge glow is a 1px ring + inset highlight, both
 // box-shadow (free), baked into that one texture.
+// content-visibility:auto lets the browser SKIP layout+paint for any card not on
+// screen (contain-intrinsic-size reserves ~its height so the scrollbar doesn't
+// jump) — the "stop rendering content far down the page" lever. translateZ(0)
+// keeps the on-screen cards on their own compositor layer so they translate
+// rather than repaint.
 const panel =
   "@container rounded-2xl px-5 py-5 [transform:translateZ(0)] " +
+  "[content-visibility:auto] [contain-intrinsic-size:auto_260px] " +
   "bg-[color-mix(in_srgb,var(--card)_58%,transparent)] " +
   "shadow-[0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.10)]";
 

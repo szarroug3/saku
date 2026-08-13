@@ -50,7 +50,7 @@ export function ItemPreview({ item }: { item: ContentItem }) {
       style={
         {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
-          boxShadow: "0 22px 44px -26px rgba(0,0,0,0.72)",
+          boxShadow: "0 8px 18px -12px rgba(0,0,0,0.6)",
         } as CSSProperties
       }
     >
