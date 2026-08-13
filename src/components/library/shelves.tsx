@@ -58,7 +58,9 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { CLUSTERS, membersOf } from "@/data/grammar/clusters";
+import { CLUSTERS } from "@/data/grammar/clusters";
+import { entryHref } from "@/lib/library/href";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 import {
   EntryRow,
@@ -330,6 +332,24 @@ export function Shelf({
     />
   );
 
+  // The grammar shelf uses the shared GrammarShelfRow (the same row the cluster
+  // families use), not EntryRow — the pattern, its gloss, the tick-to-drill and
+  // the open ↗, compact and column-aligned. `note` (entry.sub) rides a sub-line
+  // only when it differs from the gloss.
+  const grammarRow = (entry: LibEntry) => (
+    <GrammarShelfRow
+      key={entry.id}
+      lead={entry.glyph}
+      gloss={entry.meanings.slice(0, 3).join(", ") || entry.sub}
+      note={entry.sub}
+      href={entryHref(entry.id)}
+      select={{
+        selected: selected.has(entry.id),
+        onToggle: (shift) => onToggleEntry(entry.id, shift),
+      }}
+    />
+  );
+
   // A verb pair is neither a glyph nor a phrase but a CONTRAST — two verbs and
   // one event — so it gets its own row, two cells wide, each verb with its own
   // reading, speaker and English cue.
@@ -498,9 +518,7 @@ export function Shelf({
                   {shown.map(keigoRow)}
                 </div>
               ) : kind === GRAMMAR_SUBJECT ? (
-                <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                  {shown.map((entry) => row(entry, true))}
-                </div>
+                <div className={GRAMMAR_ROWS}>{shown.map(grammarRow)}</div>
               ) : (
                 <div className="flex flex-col">
                   {shown.map((entry) => row(entry))}
@@ -609,12 +627,109 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
  * sixth kind would need `entryHref` to carry a per-kind escape hatch for the one
  * kind whose pages are not where every other kind's pages are. A row of links to
  * the maps that exist costs none of that. */
-// The cluster families, as a plain de-boxed section of rows at the top of the
-// grammar shelf — one row per family, each a link to its side-by-side map at
+// ONE row for every GRAMMAR-shelf table piece — the cluster families AND the
+// form patterns — so the whole shelf reads as a single table. A compact line,
+// tabbed in under its section header (the leading tick column + pl gutter), whose
+// columns (tick · lead · gloss · open-↗) line up down the list. `select` wires
+// the same tick-to-drill the form rows have always carried; a cluster omits it,
+// so the whole row is the link to its map instead. The trailing ↗ — the open
+// control, revealed on hover — is where a per-row count used to be.
+const GRAMMAR_ROWS =
+  "grid grid-cols-[1rem_max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-5";
+
+function GrammarShelfRow({
+  lead,
+  gloss,
+  note,
+  href,
+  select,
+}: {
+  lead: string;
+  gloss: string;
+  note?: string;
+  href: string;
+  select?: { selected: boolean; onToggle: (shiftKey: boolean) => void };
+}) {
+  const base =
+    "group col-span-full grid grid-cols-subgrid items-baseline border-b border-white/[0.06] py-1.5 transition-colors last:border-b-0";
+  const arrowCls =
+    "inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 group-focus-within:opacity-100";
+  const cells = (
+    <>
+      {select ? (
+        <span
+          className={`flex h-4 w-4 flex-none items-center justify-center self-center rounded text-[10px] leading-none transition-opacity ${
+            select.selected
+              ? "bg-accent text-bg opacity-100"
+              : "border border-border text-transparent opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+          }`}
+          aria-hidden
+        >
+          ✓
+        </span>
+      ) : (
+        <span aria-hidden />
+      )}
+      <span
+        className={`whitespace-nowrap text-[15px] font-medium text-text group-hover:text-accent ${japaneseFontClass(lead)}`}
+      >
+        {lead}
+      </span>
+      <span className="min-w-0 text-[13px] text-text-muted">
+        <span className="block truncate">{gloss}</span>
+        {note && note !== gloss ? (
+          <span className="block truncate text-text-muted/70">{note}</span>
+        ) : null}
+      </span>
+      {select ? (
+        <Link
+          href={href}
+          aria-label="Open"
+          onClick={(e) => e.stopPropagation()}
+          className={arrowCls}
+        >
+          ↗
+        </Link>
+      ) : (
+        <span aria-hidden className={arrowCls}>
+          ↗
+        </span>
+      )}
+    </>
+  );
+  if (select) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={select.selected}
+        onClick={(e) => select.onToggle(e.shiftKey)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            select.onToggle(e.shiftKey);
+          }
+        }}
+        className={`${base} cursor-pointer select-none ${
+          select.selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
+        }`}
+      >
+        {cells}
+      </div>
+    );
+  }
+  return (
+    <Link href={href} className={`${base} no-underline hover:bg-white/[0.04]`}>
+      {cells}
+    </Link>
+  );
+}
+
+// The cluster families, as rows of that shared component at the top of the
+// grammar shelf — one per family, each linking to its side-by-side map at
 // /grammar/<id>. This USED to be a promo <Card> with pill links and an "All N
 // side by side" hop to a separate /grammar index; the box was the last chrome on
-// the shelf and the index just duplicated this list, so both are gone and the
-// families live here as normal table items (their maps at /grammar/<id> stay).
+// the shelf and the index just duplicated this list, so both are gone.
 function GrammarClustersSection() {
   const [collapsed, setCollapsed] = useState(false);
   return (
@@ -645,29 +760,15 @@ function GrammarClustersSection() {
           column sizes to the widest family so every gloss lines up, a hairline
           between rows, the member count trailing. Each links to its map. */}
       {!collapsed ? (
-        <div className="grid grid-cols-[max-content_minmax(0,1fr)_auto] gap-x-3">
-          {CLUSTERS.map((c) => {
-            const n = membersOf(c).length;
-            return (
-              <Link
-                key={c.id}
-                href={`/grammar/${c.id}`}
-                className="group col-span-full grid grid-cols-subgrid items-baseline border-b border-white/[0.06] py-2 no-underline transition-colors last:border-b-0 hover:bg-white/[0.04]"
-              >
-                <span className="whitespace-nowrap text-[15px] font-medium text-text group-hover:text-accent">
-                  {c.title}
-                </span>
-                <span className="min-w-0 text-[13px] text-text-muted">{c.gloss}</span>
-                {/* Count is of MEMBERS; map-only families (は/が) have none, so the
-                    cell stays empty rather than showing a 0. */}
-                {n > 0 ? (
-                  <span className="text-[11px] tabular-nums text-text-muted">{n}</span>
-                ) : (
-                  <span aria-hidden />
-                )}
-              </Link>
-            );
-          })}
+        <div className={GRAMMAR_ROWS}>
+          {CLUSTERS.map((c) => (
+            <GrammarShelfRow
+              key={c.id}
+              lead={c.title}
+              gloss={c.gloss}
+              href={`/grammar/${c.id}`}
+            />
+          ))}
         </div>
       ) : null}
     </section>
