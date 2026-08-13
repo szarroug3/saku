@@ -113,7 +113,10 @@ export default async function ClusterPage({
   return (
     <>
       <p className="mb-3 text-[11.5px] text-text-muted">
-        <Link href="/grammar" className="text-text-muted no-underline hover:text-text">
+        <Link
+          href="/library?kind=grammar"
+          className="text-text-muted no-underline hover:text-text"
+        >
           Grammar
         </Link>{" "}
         › {c.title}

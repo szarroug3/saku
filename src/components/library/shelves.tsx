@@ -58,7 +58,7 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { CLUSTERS } from "@/data/grammar/clusters";
+import { CLUSTERS, membersOf } from "@/data/grammar/clusters";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 import {
   EntryRow,
@@ -519,7 +519,7 @@ export function Shelf({
 
   return (
     <>
-      {kind === GRAMMAR_SUBJECT ? <GrammarClustersCard /> : null}
+      {kind === GRAMMAR_SUBJECT ? <GrammarClustersSection /> : null}
       {shelfEmpty ? (
         <Card>
           <FilterEmpty filter={filter} />
@@ -609,33 +609,43 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
  * sixth kind would need `entryHref` to carry a per-kind escape hatch for the one
  * kind whose pages are not where every other kind's pages are. A row of links to
  * the maps that exist costs none of that. */
-function GrammarClustersCard() {
+// The cluster families, as a plain de-boxed section of rows at the top of the
+// grammar shelf — one row per family, each a link to its side-by-side map at
+// /grammar/<id>. This USED to be a promo <Card> with pill links and an "All N
+// side by side" hop to a separate /grammar index; the box was the last chrome on
+// the shelf and the index just duplicated this list, so both are gone and the
+// families live here as normal table items (their maps at /grammar/<id> stay).
+function GrammarClustersSection() {
   return (
-    <Card>
-      <Lbl>Patterns that mean the same thing</Lbl>
-      <p className="mb-2.5 text-[13px] text-text-muted">
-        Some patterns come out as the same English: seven ways to say{" "}
-        <b className="font-medium text-text">must</b>, four ways to say{" "}
-        <b className="font-medium text-text">if</b>. Each family is laid out side
-        by side on a map of its own.
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {CLUSTERS.map((c) => (
-          <Link
-            key={c.id}
-            href={`/grammar/${c.id}`}
-            className="rounded-full border border-border px-2.5 py-0.5 text-[12.5px] text-text no-underline hover:border-accent hover:text-accent"
-          >
-            {c.title}
-          </Link>
-        ))}
+    <section className="mb-4 border-b border-white/[0.08] pb-4">
+      <div className="mb-2 flex items-center gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
+          Patterns that mean the same thing
+        </span>
+        <Hint>{CLUSTERS.length}</Hint>
       </div>
-      <p className="pt-2.5">
-        <Link href="/grammar" className="text-[13px] text-accent no-underline">
-          All {CLUSTERS.length} side by side →
-        </Link>
-      </p>
-    </Card>
+      <div className="flex flex-col">
+        {CLUSTERS.map((c) => {
+          const n = membersOf(c).length;
+          return (
+            <Link
+              key={c.id}
+              href={`/grammar/${c.id}`}
+              className="group flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b border-white/[0.06] py-2 no-underline transition-colors last:border-b-0 hover:bg-white/[0.04]"
+            >
+              <span className="text-[13px] font-semibold text-text group-hover:text-accent">
+                {c.title}
+              </span>
+              <span className="min-w-0 flex-1 text-[13px] text-text-muted">{c.gloss}</span>
+              {/* Count is of MEMBERS; map-only families (は/が) have none, so no 0. */}
+              {n > 0 ? (
+                <span className="flex-none text-[11px] tabular-nums text-text-muted">{n}</span>
+              ) : null}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
