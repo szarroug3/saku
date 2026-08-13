@@ -19,7 +19,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { Btn, Hint, PageTitle, SmallBtn } from "@/components/ui";
+import { Btn, Hint, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { japaneseFontClass } from "@/lib/japanese-text";
@@ -37,15 +37,6 @@ import type { EntryId, HistoryFile, SavedList } from "@/types";
  * deck can be thousands of entries; the point of this screen is to SEE a list,
  * not to paint all of it, and the count in the header already tells the truth. */
 const TILE_CAP = 80;
-
-/** A word for where a list came from, for the little tag by its name. Says what
- * a person would say — "imported deck", "saved search" — never `origin`/`kind`. */
-function sourceWord(list: SavedList): string {
-  if (list.kind === "fixed") {
-    return list.origin === "import" ? "imported deck" : "your list";
-  }
-  return list.origin === "search" ? "saved search" : "past session";
-}
 
 /** The entries a list points at, for BOTH kinds. A fixed list carries its set;
  * a derived one is a rule, so it is resolved to facts and folded back to the
@@ -214,45 +205,47 @@ function ListCard({
     >
       <div className="flex flex-wrap items-center gap-2">
         {editing ? (
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <input
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commit();
-                if (e.key === "Escape") cancel();
-              }}
-              aria-label={`Rename ${list.name}`}
-              className="min-w-0 flex-1 rounded-(--radius) border border-border bg-transparent px-2.5 py-1 text-[15px] font-semibold text-text"
-            />
-            <SmallBtn onClick={commit} disabled={!draft.trim()}>
-              Save
-            </SmallBtn>
-            <SmallBtn onClick={cancel}>Cancel</SmallBtn>
-          </div>
+          // Inline rename with NO buttons: click the title, type, then click away
+          // (blur) or press Enter to save; Escape reverts.
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") cancel();
+            }}
+            aria-label={`Rename ${list.name}`}
+            className="min-w-0 flex-1 rounded-(--radius) border border-border bg-transparent px-2.5 py-1 text-[15px] font-semibold text-text"
+          />
         ) : (
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h2 className="min-w-0 truncate text-[15px] font-semibold text-text">
-              {list.name}
-            </h2>
-            {/* Rename works on every list, derived included: renaming only
-                changes the label, never the rule that fills a derived list. */}
-            <SmallBtn
-              onClick={() => {
+          // The title IS the rename control — an I-beam cursor on hover invites a
+          // click straight into editing. Works on every list, derived included:
+          // it only changes the label, never the rule that fills a derived list.
+          <h2
+            role="button"
+            tabIndex={0}
+            title="Click to rename"
+            onClick={() => {
+              setDraft(list.name);
+              setEditing(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 setDraft(list.name);
                 setEditing(true);
-              }}
-              aria-label={`Rename ${list.name}`}
-            >
-              Rename
-            </SmallBtn>
-          </div>
+              }
+            }}
+            className="min-w-0 flex-1 cursor-text truncate text-[15px] font-semibold text-text hover:text-accent"
+          >
+            {list.name}
+          </h2>
         )}
-        <span className="flex-none text-xs text-text-muted">
-          {sourceWord(list)} · {entries.length}{" "}
-          {entries.length === 1 ? "entry" : "entries"}
-        </span>
+        <Hint>
+          {entries.length} {entries.length === 1 ? "entry" : "entries"}
+        </Hint>
       </div>
 
       {/* Derived lists say why they can't be edited, once — the same line the
@@ -260,17 +253,14 @@ function ListCard({
       {!writable ? (
         <p className="mt-1">
           <Hint>
-            This one builds itself from a rule, so you can&rsquo;t pick its items
-            by hand. You can still rename it, drill it, or clear it out.
+            {list.origin === "search"
+              ? "This one is built from a saved search."
+              : "This one is built from a previous quiz or session."}
           </Hint>
         </p>
       ) : null}
 
-      {entries.length === 0 ? (
-        <p className="mt-3">
-          <Hint>Nothing in here yet.</Hint>
-        </p>
-      ) : (
+      {entries.length > 0 ? (
         <div className="mt-3 grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(74px,1fr))]">
           {shown.map((id) => {
             const entry = libEntry(id);
@@ -315,7 +305,14 @@ function ListCard({
             );
           })}
         </div>
-      )}
+      ) : writable ? (
+        // Only a hand-curated list can be "empty" in a way you'd fix. A derived
+        // list resolves from its rule, so a session or search that yields nothing
+        // just shows nothing — the line above already says where it comes from.
+        <p className="mt-3">
+          <Hint>Nothing in here yet.</Hint>
+        </p>
+      ) : null}
       {overflow > 0 ? (
         <p className="mt-2">
           <Hint>＋ {overflow} more not shown</Hint>
