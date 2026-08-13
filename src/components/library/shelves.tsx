@@ -58,8 +58,6 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { CLUSTERS, membersOf } from "@/data/grammar/clusters";
-import { patternEntry } from "@/data/grammar";
 import { entryHref } from "@/lib/library/href";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
@@ -539,9 +537,6 @@ export function Shelf({
 
   return (
     <>
-      {kind === GRAMMAR_SUBJECT ? (
-        <GrammarClustersSection selected={selected} onToggleSection={onToggleSection} />
-      ) : null}
       {shelfEmpty ? (
         <Card>
           <FilterEmpty filter={filter} />
@@ -639,8 +634,12 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
 // wires tick-to-drill without a checkbox. A cluster with no members omits it, so
 // the whole row is the link to its map instead. The trailing ↗ — the open
 // control — is revealed on hover only.
+// No px on the grid itself — that insets the row's accent wash too, leaving the
+// text/↗ flush to the highlight edges. Instead the wash spans full width and the
+// FIRST cell (lead) and LAST cell (↗) carry the inset, so content sits off the
+// highlight's sides. pl-6 on the lead keeps the tab-in under the section header.
 const GRAMMAR_ROWS =
-  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-6 pr-3";
+  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5";
 
 function GrammarShelfRow({
   lead,
@@ -664,11 +663,11 @@ function GrammarShelfRow({
   // row's focus (clicking to select focuses the row, and group-focus-within kept
   // the ↗ stuck on the last-selected row).
   const arrowCls =
-    "inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 focus-visible:opacity-100";
+    "mr-4 inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 focus-visible:opacity-100";
   const cells = (
     <>
       <span
-        className={`whitespace-nowrap text-[15px] font-medium text-text group-hover:text-accent ${japaneseFontClass(lead)}`}
+        className={`whitespace-nowrap pl-6 text-[15px] font-medium text-text group-hover:text-accent ${japaneseFontClass(lead)}`}
       >
         {lead}
       </span>
@@ -709,77 +708,6 @@ function GrammarShelfRow({
     <ShelfRow href={href} className={layout}>
       {cells}
     </ShelfRow>
-  );
-}
-
-// The cluster families, as rows of that shared component at the top of the
-// grammar shelf — one per family, each linking to its side-by-side map at
-// /grammar/<id>. This USED to be a promo <Card> with pill links and an "All N
-// side by side" hop to a separate /grammar index; the box was the last chrome on
-// the shelf and the index just duplicated this list, so both are gone.
-function GrammarClustersSection({
-  selected,
-  onToggleSection,
-}: {
-  selected: Selection;
-  onToggleSection(ids: readonly EntryId[]): void;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-  return (
-    <section className="mb-4 border-b border-white/[0.08] pb-4">
-      {/* Header matches the form sections below: collapse chevron, label eyebrow,
-          count. */}
-      <div className="mb-2 flex items-center gap-1.5">
-        <button
-          type="button"
-          aria-expanded={!collapsed}
-          aria-label={`${collapsed ? "Expand" : "Collapse"} patterns that mean the same thing`}
-          onClick={() => setCollapsed((v) => !v)}
-          className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          <span
-            aria-hidden
-            className={`block transition-transform ${collapsed ? "" : "rotate-90"}`}
-          >
-            ›
-          </span>
-        </button>
-        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-muted">
-          Patterns that mean the same thing
-        </span>
-        <Hint>{CLUSTERS.length}</Hint>
-      </div>
-      {/* Rows in the SAME aligned subgrid as the grammar FORM rows, and SELECTABLE
-          the same way: a family with member recipes ticks all of them into the
-          drill at once (its members are the very patterns listed below), so the
-          row is a select target with the ↗ opening its map. A MAP-ONLY family
-          (は/が, に/で, 開ける/開く) has no members to drill, so it stays a plain
-          link to its map. */}
-      {!collapsed ? (
-        <div className={GRAMMAR_ROWS}>
-          {CLUSTERS.map((c) => {
-            const ids = membersOf(c).map((r) => patternEntry(r.id));
-            const state = ids.length ? sectionState(selected, ids) : "none";
-            return (
-              <GrammarShelfRow
-                key={c.id}
-                lead={c.title}
-                gloss={c.gloss}
-                href={`/grammar/${c.id}`}
-                select={
-                  ids.length
-                    ? {
-                        selected: state === "all",
-                        onToggle: () => onToggleSection(ids),
-                      }
-                    : undefined
-                }
-              />
-            );
-          })}
-        </div>
-      ) : null}
-    </section>
   );
 }
 
