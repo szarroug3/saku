@@ -50,6 +50,10 @@ export function ItemPreview({ item }: { item: ContentItem }) {
       style={
         {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
+          // A very light, small-radius GLOW (not a 44px drop shadow) to lift the
+          // tile off the mesh. A 10px blur is ~a fifth the radius of the old
+          // shadow — blur cost scales with radius, so this rasterises cheaply.
+          boxShadow: "0 0 10px -2px rgba(0,0,0,0.22)",
         } as CSSProperties
       }
     >
