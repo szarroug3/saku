@@ -1,3 +1,5 @@
+"use client";
+
 // DEV gallery for the Library shelf redesign — a few representative shelves, each
 // rendered TWO ways stacked with labelled headings: the CURRENT boxed version
 // (the shipped <Shelf>, one <Card> per section) and the REDESIGNED de-boxed
