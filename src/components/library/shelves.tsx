@@ -66,6 +66,7 @@ import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 import {
   EntryRow,
   EntryTile,
+  ShelfRow,
   VerbPairHeader,
   VerbPairRow,
   KeigoSetHeader,
@@ -639,7 +640,7 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
 // the whole row is the link to its map instead. The trailing ↗ — the open
 // control — is revealed on hover only.
 const GRAMMAR_ROWS =
-  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-6";
+  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5 pl-6 pr-3";
 
 function GrammarShelfRow({
   lead,
@@ -654,8 +655,11 @@ function GrammarShelfRow({
   href: string;
   select?: { selected: boolean; onToggle: (shiftKey: boolean) => void };
 }) {
-  const base =
-    "group col-span-full grid grid-cols-subgrid items-baseline border-b border-white/[0.06] py-1.5 transition-colors last:border-b-0";
+  // The row's own layout — a subgrid band of the shared GRAMMAR_ROWS grid — on
+  // top of the shared ShelfRow shell (accent hover + selected wash, hairline, the
+  // whole-row select target with no checkbox). The pl-6/pr-3 horizontal inset
+  // lives on the parent GRAMMAR_ROWS grid, so the lead and ↗ sit off the edges.
+  const layout = "col-span-full grid grid-cols-subgrid items-baseline py-1.5";
   // ↗ reveals on ROW hover, or on the arrow's OWN keyboard focus — never on the
   // row's focus (clicking to select focuses the row, and group-focus-within kept
   // the ↗ stuck on the last-selected row).
@@ -692,29 +696,19 @@ function GrammarShelfRow({
   );
   if (select) {
     return (
-      <div
-        role="button"
-        tabIndex={0}
-        aria-pressed={select.selected}
-        onClick={(e) => select.onToggle(e.shiftKey)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            select.onToggle(e.shiftKey);
-          }
-        }}
-        className={`${base} cursor-pointer select-none ${
-          select.selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
-        }`}
+      <ShelfRow
+        selected={select.selected}
+        onToggleSelect={select.onToggle}
+        className={layout}
       >
         {cells}
-      </div>
+      </ShelfRow>
     );
   }
   return (
-    <Link href={href} className={`${base} no-underline hover:bg-white/[0.04]`}>
+    <ShelfRow href={href} className={layout}>
       {cells}
-    </Link>
+    </ShelfRow>
   );
 }
 
