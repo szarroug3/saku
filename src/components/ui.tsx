@@ -112,9 +112,23 @@ export function Card({
 }
 
 /** Uppercase section label ("QUIZ", "MISSED CHARACTERS", …). */
-export function Lbl({ children }: { children: ReactNode }) {
+export function Lbl({
+  children,
+  tone = "muted",
+}: {
+  children: ReactNode;
+  /** "muted" (default) is the quiet section eyebrow every screen uses; "accent"
+   * lifts a top-level group header, as the Practice page does over its
+   * sub-labelled sections. */
+  tone?: "muted" | "accent";
+}) {
   return (
-    <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
+    <p
+      className={cx(
+        "mb-2 text-[13px] font-semibold uppercase tracking-[0.04em]",
+        tone === "accent" ? "text-accent" : "text-text-muted",
+      )}
+    >
       {children}
     </p>
   );

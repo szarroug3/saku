@@ -323,7 +323,7 @@ export default function PracticePage() {
         </>
       ) : null}
 
-      <Lbl>What to practice</Lbl>
+      <Lbl tone="accent">What to practice</Lbl>
       <PracticeSelector
         sel={cfg.selection}
         lists={lists}
@@ -334,7 +334,7 @@ export default function PracticePage() {
         onChange={setSelection}
       />
 
-      <Lbl>How to ask</Lbl>
+      <Lbl tone="accent">How to ask</Lbl>
       <QuizOptionsFields />
 
       <StartBar

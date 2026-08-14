@@ -68,7 +68,7 @@ function cx(...parts: Array<string | false | null | undefined>): string {
  * whitespace now, not by boxes or divider rules. */
 function SubLbl({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text">
       {children}
     </p>
   );
