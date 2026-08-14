@@ -31,6 +31,7 @@
 import Link from "next/link";
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT, type KeigoSet, type KeigoWord } from "@/data/keigo";
@@ -180,9 +181,13 @@ export function EntryTile({
       // blurred shadow on scrolling content reintroduces jank) and an accent
       // wash + accent glyph when on. `cursor-pointer` + `select-none` because the
       // whole body is the toggle.
-      className={`group relative flex aspect-square flex-col items-center justify-center rounded-[10px] px-1 text-center [container-type:inline-size] cursor-pointer select-none transition-colors ${
+      className={`group relative flex aspect-square flex-col justify-center rounded-[10px] px-1 text-center [container-type:inline-size] cursor-pointer select-none transition-colors ${
         selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
+      // Full label on hover for the meaning-bearing kinds (words, kanji…) whose
+      // sub-line truncates; kana show only their romaji, which never truncates,
+      // so they get no tooltip (that speaker-hint text was removed on purpose).
+      title={entry.kind === KANA_SUBJECT ? undefined : subLabel(entry)}
     >
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
