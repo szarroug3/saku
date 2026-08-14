@@ -252,6 +252,56 @@ function resolve(id: EntryId | null): LibEntry[] {
   return e ? [e] : [];
 }
 
+/**
+ * Defer a heavy section body until it is near the viewport, then mount it ONCE.
+ *
+ * MODULE SCOPE, deliberately — NOT nested in Shelf. A component declared inside
+ * its parent is a fresh function every render, so React unmounts and remounts it
+ * each time: a selection, filter or search would reset every deferred section to
+ * its placeholder and re-mount it, flickering the whole table exactly like a
+ * fresh page load. Hoisted, it keeps its `mounted` state across the parent's
+ * re-renders, so a section mounts once and stays.
+ *
+ * `reserve` is the section's estimated height, held by the placeholder so the
+ * real mount does not resize the document — the layout shift that made the
+ * deferral so obvious. `eager` mounts immediately and skips the observer.
+ */
+function DeferredSectionBody({
+  eager,
+  reserve,
+  children,
+}: {
+  eager: boolean;
+  reserve: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [mounted, setMounted] = useState(eager);
+
+  useEffect(() => {
+    if (mounted) return;
+    const node = ref.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setMounted(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "700px 0px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [mounted]);
+
+  return (
+    <div ref={ref}>
+      {mounted ? children : <div style={{ height: reserve }} aria-hidden="true" />}
+    </div>
+  );
+}
+
 export function Shelf({
   kind,
   sections,
@@ -408,43 +458,15 @@ export function Shelf({
   // needs to say why it is empty rather than show nothing.
   const shelfEmpty = shownSections.length === 0;
 
-  /**
-   * Defer heavy section-body mount until the section is near viewport.
-   * Keep the first two sections eager so the top of the shelf paints instantly.
-   */
-  function DeferredSectionBody({
-    eager,
-    children,
-  }: {
-    eager: boolean;
-    children: React.ReactNode;
-  }) {
-    const ref = useRef<HTMLDivElement | null>(null);
-    const [mounted, setMounted] = useState(eager);
-
-    useEffect(() => {
-      if (mounted) return;
-      const node = ref.current;
-      if (!node) return;
-      const io = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) {
-            setMounted(true);
-            io.disconnect();
-          }
-        },
-        { rootMargin: "700px 0px" },
-      );
-      io.observe(node);
-      return () => io.disconnect();
-    }, [mounted]);
-
-    return (
-      <div ref={ref}>
-        {mounted ? children : <div className="h-10" aria-hidden="true" />}
-      </div>
-    );
-  }
+  // The whole shelf renders up front UNLESS it is genuinely huge. Every subject
+  // but vocab — kana, kanji (~2k), radicals, counters, keigo, grammar, marks,
+  // terms — is at most a couple thousand entries, small enough to mount in one
+  // pass, so the shelf appears COMPLETE with no on-scroll pop-in (the visible
+  // jank the deferral used to cause). Only the ~30k-word vocab shelf keeps
+  // deferring off-screen sections; even it mounts enough to fill the first screen
+  // and reserves each deferred section's real height so nothing shifts.
+  const shelfEntryTotal = shownSections.reduce((n, s) => n + s.entries.length, 0);
+  const eagerAll = shelfEntryTotal <= 3000;
 
   const sectionCard = (section: ShelfSection, index: number) => {
     const ids = section.entries.map((e) => e.id);
@@ -463,6 +485,12 @@ export function Shelf({
     // reference, whose pages wear a 十〜 / 〜本 plate but are named references.
     const sectionAsRows =
       asRows || section.asRows || section.entries.every((e) => !e.glyph);
+    // A rough height for the deferred placeholder, so mounting the real body does
+    // not resize the page. Rows run ~44px each; tiles pack ~8 to a wide row at
+    // ~92px tall. Plus the header. Only read when this section actually defers.
+    const reserve = sectionAsRows
+      ? section.entries.length * 44 + 40
+      : Math.ceil(section.entries.length / 8) * 92 + 40;
     return (
       // NO Card — de-boxed. A quiet header (collapse chevron + plain-eyebrow
       // select-all + count) over a real hairline between sections; the first in a
@@ -503,7 +531,7 @@ export function Shelf({
           <Hint>{section.entries.length}</Hint>
         </div>
         {expanded ? (
-          <DeferredSectionBody eager={index < 2}>
+          <DeferredSectionBody eager={eagerAll || index < 3} reserve={reserve}>
             {sectionAsRows ? (
               kind === TRANSITIVITY_SUBJECT ? (
                 <div className="flex flex-col">
