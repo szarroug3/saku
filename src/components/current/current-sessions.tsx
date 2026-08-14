@@ -100,9 +100,12 @@ function RunRow({
   return (
     <div
       className={cx(
+        // De-boxed to the editorial language: no card, no border, no fill on the
+        // mesh — rows sit apart by whitespace and the selected one takes a flat
+        // accent wash (no shadow/blur, so scrolling stays a cached layer).
         "flex flex-wrap items-center justify-between gap-x-3 gap-y-2",
-        "kq-material rounded-[12px] border p-3 text-[13px]",
-        selected ? "border-accent/40 bg-accent-bg" : "border-border bg-card",
+        "rounded-lg px-2.5 py-2.5 text-[13px] transition-colors",
+        selected ? "bg-accent-bg" : "",
       )}
     >
       <span className="flex min-w-0 items-center gap-2.5">
@@ -156,7 +159,7 @@ function RunRow({
  * than a screen that failed to load. */
 function NoRuns() {
   return (
-    <div className="kq-material flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-border bg-card p-6 text-center">
+    <div className="flex min-h-[140px] flex-col items-center justify-center gap-1 p-6 text-center">
       <span
         aria-hidden="true"
         className="mb-0.5 font-kana text-[26px] font-extralight opacity-70"
