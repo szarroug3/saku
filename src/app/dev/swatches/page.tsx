@@ -28,6 +28,32 @@ const GROUPS: ReadonlyArray<{ label: string; vars: readonly string[] }> = [
 
 const ALL_VARS = GROUPS.flatMap((g) => g.vars);
 
+/** The foreground tokens, shown as coloured type so a colour can be read the way
+ * it actually ships — as words, not a chip. */
+const TEXT_TOKENS: ReadonlyArray<{ var: string; label: string }> = [
+  { var: "--text", label: "text" },
+  { var: "--text-muted", label: "text-muted" },
+  { var: "--accent", label: "accent" },
+  { var: "--danger", label: "danger" },
+  { var: "--success", label: "success" },
+  { var: "--warning", label: "warning" },
+  { var: "--sentence-topic", label: "sentence-topic" },
+  { var: "--sentence-core", label: "sentence-core" },
+  { var: "--sentence-ending", label: "sentence-ending" },
+];
+
+/** The semantic fill pairs — a token's text on its own tinted background, the way
+ * a selected row / badge / callout actually renders. */
+const FILL_PAIRS: ReadonlyArray<{ fg: string; bg: string; label: string }> = [
+  { fg: "--accent", bg: "--accent-bg", label: "accent on accent-bg" },
+  { fg: "--danger", bg: "--danger-bg", label: "danger on danger-bg" },
+  { fg: "--success", bg: "--success-bg", label: "success on success-bg" },
+  { fg: "--warning", bg: "--warning-bg", label: "warning on warning-bg" },
+];
+
+const LOREM =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
 /** Read every token's resolved value off <html>, re-reading whenever the theme
  * attributes change. Empty until mounted (values are client-only). */
 function useResolvedTokens(): Record<string, string> {
@@ -164,6 +190,40 @@ export default function SwatchesPage() {
             </div>
           </section>
         ))}
+
+        <section>
+          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Type samples
+          </h2>
+          <div className="flex flex-col gap-3">
+            {TEXT_TOKENS.map((t) => (
+              <div key={t.var}>
+                <span className="font-mono text-[11px] text-text-muted">{t.label}</span>
+                <p className="max-w-prose text-[15px] leading-relaxed" style={{ color: `var(${t.var})` }}>
+                  {LOREM}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Text on fill
+          </h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+            {FILL_PAIRS.map((p) => (
+              <div
+                key={p.label}
+                className="rounded-lg p-3"
+                style={{ background: `var(${p.bg})`, color: `var(${p.fg})` }}
+              >
+                <span className="font-mono text-[11px] opacity-70">{p.label}</span>
+                <p className="mt-1 text-[13px] leading-relaxed">{LOREM}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );
