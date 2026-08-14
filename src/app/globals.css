@@ -74,7 +74,7 @@
   --dark-danger-bg: #46231e;
   --dark-success: #86bf9c;
   --dark-success-bg: #22392c;
-  --dark-warning: #01889f;
+  --dark-warning: #56cad8;
   --dark-warning-bg: #0c313a;
   /* --dark-accent is a pastel (#8fa8d8) because it's mostly TEXT; as a filled
    * arc it washes out. Saturated indigo instead — still bright enough on the
@@ -135,7 +135,7 @@
   --dark-danger-bg: #2b1419;
   --dark-success: #4ade80;
   --dark-success-bg: #0d2818;
-  --dark-warning: #01889f;
+  --dark-warning: #56cad8;
   --dark-warning-bg: #0c313a;
   --dark-arc: #5d61f0;
   --dark-arc-track: #272a34;
@@ -199,7 +199,7 @@
   --dark-danger-bg: #3d1a16;
   --dark-success: #34d76d;
   --dark-success-bg: #123726;
-  --dark-warning: #01889f;
+  --dark-warning: #56cad8;
   --dark-warning-bg: #0c313a;
   --dark-arc: #22a95a;
   --dark-arc-track: #22384a;
@@ -295,7 +295,7 @@
   --dark-danger-bg: rgba(255, 138, 148, 0.13);
   --dark-success: #4ade80;
   --dark-success-bg: rgba(74, 222, 128, 0.13);
-  --dark-warning: #01889f;
+  --dark-warning: #56cad8;
   --dark-warning-bg: rgba(1, 136, 159, 0.2);
   /* --dark-accent (#67d4f5) is the luminous cyan the theme signs with, but as
    * a filled band it's the "too light" read — it dissolves into the mesh.
