@@ -104,6 +104,7 @@ const DEV_PAGES: Array<{ href: string; label: string }> = [
   { href: "/dev/library", label: "Library" },
   { href: "/dev/scheduling", label: "Scheduling" },
   { href: "/dev/numbers", label: "Numbers" },
+  { href: "/dev/swatches", label: "Swatches" },
 ];
 
 export function Sidebar({
