@@ -214,7 +214,7 @@ export function EntryTile({
           fades out and the 🔊/↗ fade in over the same line. Sharing the slot keeps
           the tile compact — no empty reserved action row under every glyph — and,
           because the slot is a fixed height, hovering never reflows the grid. */}
-      <div className="relative mt-px flex h-[13px] items-center justify-center">
+      <div className="relative mt-1 flex h-[13px] items-center justify-center">
         <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
           {subLabel(entry)}
         </span>
