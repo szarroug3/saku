@@ -15,6 +15,14 @@
 // mount, so the reference and the lesson cannot draw a set two different ways.
 // `showLead={false}` drops the view's own plain-verb/meaning lead — the header
 // and the "Everyday verb" section carry those, so a lead here would repeat them.
+//
+// keigoSetForEntry (data/keigo.ts) stays a LIVE read: a small, self-contained
+// file with no dictionary dependency. FETCHED BY ID by default (the Library
+// route) is itemHeadline's {text, speak}, seeded per set along with `glyph`
+// (buildItem's, the plain verb) — library-index.ts's `libEntry` carries an
+// EMPTY glyph for this kind (checked directly, same as transitivity), so it
+// isn't a substitute. The teach walk / /dev/views pass a live `item` instead,
+// same dual-mode pattern as KanaEntryView.
 
 import Link from "next/link";
 
@@ -24,7 +32,18 @@ import { SoundButton } from "@/components/ui/sound-button";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, grammarConceptRow } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
+import { useContentEntry } from "@/lib/library/content-entries";
+import { itemHeadline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
+
+/** itemHeadline's output plus the set's glyph, seeded together — see
+ * scripts/seed-content-entries.mjs's keigo section. */
+interface KeigoPayload {
+  readonly text: string;
+  readonly speak: string | null;
+  readonly glyph: string;
+}
 
 // Per-register label (accent) + the "when do I use this" line, shown as text
 // under the label and leading into the form.
@@ -42,15 +61,20 @@ const REGISTER: Record<string, { label: string; desc: string }> = {
 const KEIGO_HELP =
   "Keigo doesn't change the original everyday version of the word. These are entirely new words.";
 
-export function KeigoEntryView({ item }: { item: ContentItem }) {
-  const set = keigoSetForEntry(item.entry);
-  if (!set) return null;
+export function KeigoEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+  const fetched = useContentEntry<KeigoPayload>(item ? null : (entry ?? null));
+  const headline = item ? itemHeadline(item) : fetched;
+  const resolvedEntry = item ? item.entry : entry!;
+  const glyph = item ? item.glyph : fetched?.glyph;
+  const set = keigoSetForEntry(resolvedEntry);
+
+  if (headline === undefined || headline === null || !glyph || !set) return null;
 
   const registers = grammarConceptRow("keigo-registers");
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="keigo" />
 
       {/* THE FORMULAIC SET is the odd one out: いらっしゃいませ has no plain verb it
           politens (that is why it is `blockedBy` nothing and opens on its own).

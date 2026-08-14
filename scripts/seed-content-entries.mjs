@@ -38,6 +38,7 @@ import { TRANSITIVITY_SUBJECT, pairEntry } from "@/data/transitivity-facts";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { NUMBER_CONSTRUCTIONS, numberConstructionEntry } from "@/data/number-construction";
 import { COUNTER_KIND, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/library-index";
+import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry } from "@/data/keigo";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -160,6 +161,20 @@ const constructionRows = NUMBER_CONSTRUCTIONS.map((c) => {
   return row(entry, NUMBER_CONSTRUCTION_KIND, itemHeadline(item));
 }).filter((r) => r != null);
 
+// ---- keigo -----------------------------------------------------------------
+// Same shape as transitivity: keigoSetForEntry (data/keigo.ts, self-contained,
+// no dictionary dependency) stays a live read. library-index.ts's `libEntry`
+// carries an EMPTY glyph for this kind too (checked directly — same as
+// transitivity, this shelf displays a set by name, not glyph), so `glyph`
+// (buildItem's, the plain verb) is seeded alongside the headline.
+const keigoRows = KEIGO_SETS.map((set) => {
+  const entry = keigoSetEntry(set);
+  const item = buildItem(entry, "keigo");
+  if (!item) return null;
+  const { text, speak } = itemHeadline(item);
+  return row(entry, KEIGO_SUBJECT, { text, speak, glyph: item.glyph });
+}).filter((r) => r != null);
+
 const rows = [
   ...termRows,
   ...markRows,
@@ -168,6 +183,7 @@ const rows = [
   ...verbPairRows,
   ...counterRows,
   ...constructionRows,
+  ...keigoRows,
 ];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
@@ -180,5 +196,6 @@ console.log(
   `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
     `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
     `${verbPairRows.length} transitivity, ${counterRows.length} counter, ` +
-    `${constructionRows.length} generative-rule rows (${rows.length} total)`,
+    `${constructionRows.length} generative-rule, ${keigoRows.length} keigo rows ` +
+    `(${rows.length} total)`,
 );

@@ -196,10 +196,8 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
     }
     case COUNTER_KIND:
       return <CounterEntryView entry={entry.id} />;
-    case KEIGO_SUBJECT: {
-      const item = buildItem(entry.id, "keigo");
-      return item ? <KeigoEntryView item={item} /> : null;
-    }
+    case KEIGO_SUBJECT:
+      return <KeigoEntryView entry={entry.id} />;
     case TRANSITIVITY_SUBJECT:
       return <VerbPairEntryView entry={entry.id} />;
     case GRAMMAR_SUBJECT: {
