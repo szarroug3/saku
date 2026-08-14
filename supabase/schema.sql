@@ -54,3 +54,33 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.seed_progress();
+
+-- Library entry DETAIL content, fetched by id — see docs/perf-library-list-bundle.md
+-- ("What's still deferred"). A generic one-row-per-entry table: `payload` is
+-- whatever that entry's detail VIEW needs (a precomputed view-model, not raw
+-- dictionary rows), seeded by scripts/seed-content-entries.mjs and read by the
+-- app on demand instead of being bundled into the client for every visitor.
+--
+-- Content, not progress: the SAME payload for every reader, so unlike `progress`
+-- there is no per-user row and no auth-scoped RLS — anyone (including signed-out)
+-- can read; only the service role (used server-side by the seed script) writes.
+create table if not exists public.content_entries (
+  entry_id           text primary key,
+  kind               text not null,
+  payload            jsonb not null,
+  content_version    text not null,
+  updated_at         timestamptz not null default now()
+);
+
+create index if not exists content_entries_kind_idx on public.content_entries (kind);
+
+alter table public.content_entries enable row level security;
+
+drop policy if exists "content_entries_select_all" on public.content_entries;
+create policy "content_entries_select_all"
+  on public.content_entries for select
+  using (true);
+
+-- No insert/update/delete policy for anon/authenticated: RLS denies both by
+-- default once enabled, so only the service-role key (which bypasses RLS
+-- entirely) can write — exactly the seed script's own access, never the browser's.

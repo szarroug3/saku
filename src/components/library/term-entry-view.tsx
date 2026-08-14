@@ -12,27 +12,51 @@
 //
 // A term with no card is the definition and nothing else — that is what the data
 // supports, and it is not padded. See src/data/terms.ts and term-view.tsx.
+//
+// FETCHED BY ID, not imported live — the PROOF OF CONCEPT for
+// docs/perf-library-list-bundle.md's deferred entry-detail work. The payload
+// (name/summary/body/cards/cardMark/relatedLinks) is exactly what this page
+// renders, precomputed once by scripts/seed-content-entries.mjs (calling the
+// real termFor/termRow/termEntry/entryHref, `related` already resolved to
+// links) and read from Supabase's `content_entries` table — see
+// src/lib/library/content-entries.ts. Nothing here imports data/terms.ts.
+
+import { useEffect, useState } from "react";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { RelatedSection } from "@/components/library/related-section";
 import { TermView } from "@/components/library/term-view";
-import { termEntry, termFor, termRow } from "@/data/terms";
-import { entryHref } from "@/lib/library/href";
+import { fetchContentEntry } from "@/lib/library/content-entries";
+import type { PhaseIntro } from "@/data/phase-intros";
 import type { EntryId } from "@/types";
 
-export function TermEntryView({ entry }: { entry: EntryId }) {
-  const term = termFor(entry);
-  if (!term) return null;
+interface TermPayload {
+  readonly name: string;
+  readonly summary: string;
+  readonly body: readonly string[];
+  readonly cards?: readonly PhaseIntro[];
+  readonly cardMark?: string;
+  readonly relatedLinks: readonly { label: string; href: string }[];
+}
 
-  // Resolve each related term id to a name + Library link, dropping any that no
-  // longer name a real term so a typo can't render a dead chip.
-  const related = (term.related ?? [])
-    .map((id) => {
-      const row = termRow(id);
-      return row ? { label: row.name, href: entryHref(termEntry(id)) } : null;
-    })
-    .filter((l): l is { label: string; href: string } => l != null);
+export function TermEntryView({ entry }: { entry: EntryId }) {
+  const [term, setTerm] = useState<TermPayload | null | undefined>(undefined);
+
+  useEffect(() => {
+    let alive = true;
+    setTerm(undefined);
+    void fetchContentEntry<TermPayload>(entry).then((payload) => {
+      if (alive) setTerm(payload);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [entry]);
+
+  // undefined = still loading, null = no such term (matches the live
+  // component's `if (!term) return null` for an unresolved id).
+  if (term === undefined || term === null) return null;
 
   return (
     <EntrySurface>
@@ -44,7 +68,7 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
         <TermView term={term} />
       </Section>
 
-      <RelatedSection links={related} />
+      <RelatedSection links={term.relatedLinks} />
     </EntrySurface>
   );
 }

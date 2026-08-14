@@ -45,9 +45,18 @@ import {
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { bodyFor, scriptLabel } from "@/data/marks";
-import type { Term } from "@/data/terms";
+import type { PhaseIntro } from "@/data/phase-intros";
 
-export function TermView({ term }: { term: Term }) {
+/** What this view actually reads off a Term — narrower than the full `Term`
+ * interface (no `id`, `searchAlso`, `related`) so both the live Term object and
+ * the fetched TermEntryView payload satisfy it structurally. */
+export interface TermViewData {
+  readonly body: readonly string[];
+  readonly cards?: readonly PhaseIntro[];
+  readonly cardMark?: string;
+}
+
+export function TermView({ term }: { term: TermViewData }) {
   return (
     <>
       {/* The short answer, and ONLY when nothing better follows it. The entry
