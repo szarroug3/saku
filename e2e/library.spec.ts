@@ -248,17 +248,16 @@ test("the complete library and current-session nav are present before hydration"
       const { x, y, width, height } = node.getBoundingClientRect();
       return { x, y, width, height };
     });
-  const hydratedBar = await hydratedPage
-    .getByRole("button", { name: /Add to list/ })
-    .evaluate((node) => {
-      const bar = node.closest(".kq-band");
-      if (!bar) throw new Error("Library action bar is missing its band");
-      const { x, y, width, height } = bar.getBoundingClientRect();
-      return { x, y, width, height };
-    });
   expect(hydratedY).toBe(serverY);
   expect(hydratedSearch).toEqual(serverSearch);
-  expect(hydratedBar.height).toBeGreaterThan(0);
+  // The action bar is now gated on a hand selection (and de-boxed — no `kq-band`):
+  // with nothing picked it stays absent after hydration too, where it used to
+  // render for the whole shelf. So the stability this test guards is the SHELF's
+  // — the kana and the search box do not move server → hydrated — and no bar
+  // appears at all until rows are selected.
+  await expect(
+    hydratedPage.getByRole("button", { name: /Add to list/ }),
+  ).toHaveCount(0);
 
   await context.close();
   await hydratedContext.close();
