@@ -32,16 +32,17 @@ import Link from "next/link";
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
-import { KEIGO_SUBJECT, type KeigoSet, type KeigoWord } from "@/data/keigo";
+import { KEIGO_SUBJECT } from "@/lib/keigo-ids";
+import type { KeigoSet, KeigoWord } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import {
+  GRAMMAR_CONCEPT_SUBJECT,
+  GRAMMAR_SUBJECT,
   SENTENCE_RULE_KIND,
   entryName,
-  type LibEntry,
-} from "@/lib/library/entries";
+} from "@/lib/library/library-index";
+import type { LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
 // it has a reading" property is testable (the runner cannot load JSX).

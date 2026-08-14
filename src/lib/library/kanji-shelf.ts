@@ -9,8 +9,7 @@
 // THE CUT FOLLOWS THE READER'S ORDER, NOT THE DATA'S. See the header of
 // components/library/shelves.tsx for the argument.
 
-import { KANJI, kanjiTeachOrder } from "@/data/kanji";
-import { curriculumPosition } from "@/lib/curriculum-order";
+import { curriculumPosition, kanjiGrade, kanjiTeachOrder } from "@/lib/library/library-index";
 import type { NewKanjiOrder } from "@/types";
 
 /** One cut of the kanji shelf, as glyphs. The shelf turns these into entries. */
@@ -89,12 +88,11 @@ export function kanjiCuts(mode: NewKanjiOrder): KanjiCut[] {
  * and the wording matches the setting that chose this mode, which already says
  * "School grade order". */
 function gradeCuts(order: readonly string[]): KanjiCut[] {
-  const gradeOf = new Map(KANJI.map((k) => [k.c, k.grade]));
   const byGrade = new Map<number, string[]>();
   // Walking the ORDER, not KANJI, is what puts the tiles in study order: each
   // grade's bucket fills in the sequence you will meet them in.
   for (const c of order) {
-    const g = gradeOf.get(c);
+    const g = kanjiGrade(c);
     if (g === undefined) continue;
     const bucket = byGrade.get(g);
     if (bucket) bucket.push(c);

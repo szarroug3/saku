@@ -22,7 +22,7 @@
 // beginner most needs told, to "—". They are told now.
 
 import { KANA_SUBJECT } from "@/data/characters";
-import { VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB_SUBJECT } from "@/lib/vocab-ids";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import type { LibEntry } from "@/lib/library/entries";
 

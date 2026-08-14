@@ -27,10 +27,14 @@
 // recipe.
 
 import { RECIPES, isTrivialAttachment, type Recipe } from "@/data/grammar/recipes";
-import { patternEntry, verbAttachForm } from "@/data/grammar";
-import { FORM_LABEL } from "@/lib/grammar/formula";
-import { grammarRank } from "@/lib/library/grammar-order";
-import { libEntry, type LibEntry } from "@/lib/library/entries";
+import {
+  FORM_LABEL,
+  grammarRank,
+  libEntry,
+  patternEntry,
+  verbAttachForm,
+} from "@/lib/library/library-index";
+import type { LibEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import type { Form } from "@/lib/conjugate";
 

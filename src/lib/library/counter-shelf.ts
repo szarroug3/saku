@@ -21,8 +21,8 @@ import {
   numberConstructionEntry,
 } from "@/data/number-construction";
 import { NUMBER_KANJI } from "@/data/number-kanji";
-import { wordEntry } from "@/data/vocab";
-import { libEntry } from "@/lib/library/entries";
+import { wordEntry } from "@/lib/vocab-ids";
+import { libEntry } from "@/lib/library/library-index";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
 // The Sino numbers 1-10, in counting order (NUMBER_KANJI, shared with the prereq

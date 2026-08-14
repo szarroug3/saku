@@ -22,7 +22,8 @@
 // fallback rules below can be tested without a browser — a URL bar can say
 // `?kind=banana`, and what that does is a property of this file.
 
-import { KINDS, type Kind } from "@/lib/library/entries";
+import { KINDS } from "@/lib/library/library-index";
+import type { Kind } from "@/lib/library/entries";
 import { KANA_SUBJECT } from "@/data/characters";
 
 /** The shelf you are browsing. */

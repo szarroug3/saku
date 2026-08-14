@@ -22,7 +22,7 @@
 
 import { effectiveState, type Claims } from "@/lib/claims";
 import { constructionConfigForFact } from "@/data/counter-categories";
-import { factsOf } from "@/lib/facts";
+import { factsOf } from "@/lib/library/library-index";
 import { rank, status, type RankCandidate } from "@/lib/scoring";
 import { transitivitySide } from "@/data/transitivity-facts";
 import type { EntryId, FactAggregate, FactId } from "@/types";

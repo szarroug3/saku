@@ -64,8 +64,8 @@
 // whole ordered list with no gap, no overlap and no duplicate, and the order is
 // the teaching order it claims to be.
 
-import { CURRICULUM_SEQUENCE, curriculumPosition } from "@/lib/curriculum-order";
-import { vocabRow } from "@/data/vocab";
+import { CURRICULUM_GLYPHS, curriculumPosition } from "@/lib/library/library-index";
+import { wordBeginnerRank } from "@/lib/word-rank";
 import type { LibEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
@@ -87,7 +87,7 @@ const UNRANKED = Number.POSITIVE_INFINITY;
  * spine word (see `wordClimbRank`) without a magic number: a spine position is
  * always < SPINE_SIZE, so SPINE_SIZE + anything can never slip in front of one.
  */
-const SPINE_SIZE = CURRICULUM_SEQUENCE.length;
+const SPINE_SIZE = CURRICULUM_GLYPHS.length;
 
 /**
  * Where a radical or kanji sits in the curriculum spine — its
@@ -105,7 +105,7 @@ export function curriculumRank(entry: LibEntry): number {
  * the words' order). Unranked words sort last.
  */
 export function wordRank(entry: LibEntry): number {
-  return vocabRow(entry.glyph)?.beginnerRank ?? UNRANKED;
+  return wordBeginnerRank(entry.glyph) ?? UNRANKED;
 }
 
 /**

@@ -55,18 +55,19 @@
 import type { EntryId } from "@/types";
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { MARKS, markEntry } from "@/data/marks";
-import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
+import { GRAMMAR_CONCEPT_IDS, grammarConceptEntry } from "@/lib/library/library-index";
 import {
   NUMBER_CONSTRUCTIONS,
   numberConstructionEntry,
 } from "@/data/number-construction";
 import { TERMS, termEntry } from "@/data/terms";
-import { patternEntry } from "@/data/grammar";
+import { patternEntry } from "@/lib/library/library-index";
 import { RECIPES, primaryPatternRecipe } from "@/data/grammar/recipes";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { pairEntry } from "@/data/transitivity-facts";
 import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
-import { LIB_ENTRIES, type LibEntry } from "@/lib/library/entries";
+import { LIB_ENTRIES } from "@/lib/library/library-index";
+import type { LibEntry } from "@/lib/library/entries";
 
 const ENTRY_PATH = new Map<EntryId, string>();
 const SLUG_TO_ENTRY = new Map<string, EntryId>();
@@ -252,7 +253,7 @@ function buildSlugKeys(): Map<EntryId, string> {
   // A grammar concept has no glyph (its LibEntry.glyph is the empty string), so
   // its URL is its own stable id — /library/grammar-concept/te-form — the same
   // treatment a mark and a term get.
-  for (const c of GRAMMAR_CONCEPTS) map.set(grammarConceptEntry(c.id), c.id);
+  for (const id of GRAMMAR_CONCEPT_IDS) map.set(grammarConceptEntry(id), id);
   // A construction page's glyph is a plate (十〜, 〜本), not a slug-safe unique
   // key, so its URL is its own stable id — /library/numbers/tens, /library/
   // numbers/hon — the same treatment a concept and a term get.

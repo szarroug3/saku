@@ -11,7 +11,9 @@
   "scripts": {
     "dev": "next dev",
     "build:learn-index": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs",
-    "prebuild": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs",
+    "build:library-index": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs",
+    "build:word-rank": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs",
+    "prebuild": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

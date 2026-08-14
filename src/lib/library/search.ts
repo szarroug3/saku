@@ -34,13 +34,8 @@
 // page) before it is a data structure.
 
 import { CHAR_INDEX } from "@/data/characters";
-import {
-  KIND_LABEL,
-  KINDS,
-  LIB_ENTRIES,
-  type Kind,
-  type LibEntry,
-} from "@/lib/library/entries";
+import { KIND_LABEL, KINDS, LIB_ENTRIES } from "@/lib/library/library-index";
+import type { Kind, LibEntry } from "@/lib/library/entries";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
 
 /** Why a row is in the list. The section IS the ranking's explanation. */

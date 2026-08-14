@@ -1,0 +1,203 @@
+// THE SAFETY NET for the Library list/search precompute (docs — Phase 2a).
+//
+// The precomputed index must be byte-identical to what the LIVE derivation in
+// library/entries.ts (and facts.ts's entryOf, and assembly's tier list) would
+// produce — the list/search page, "known" filtering, and the mix-up resolver all
+// read through it, so a drift here would misfile entries or silently change what
+// counts as "known". This test asserts equality directly, not by re-deriving.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph } from "@/lib/library/entries";
+import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
+import { COUNTER_KIND as LIVE_COUNTER_KIND, NUMBER_CONSTRUCTION_KIND as LIVE_NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
+import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiTeachOrder as liveKanjiTeachOrder } from "@/data/kanji";
+import { GRAMMAR_SUBJECT as LIVE_GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT as LIVE_GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry as liveGrammarConceptEntry } from "@/data/grammar-concepts";
+import { FORM_LABEL as LIVE_FORM_LABEL } from "@/lib/grammar/formula";
+import { GRAMMAR_TEACHING_ORDER, grammarRank as liveGrammarRank } from "@/lib/library/grammar-order";
+import {
+  LIB_ENTRIES,
+  LIB_ENTRIES_BY_KIND,
+  KINDS,
+  KIND_LABEL,
+  libEntry,
+  knownFactsOf as precomputedKnownFactsOf,
+  factEntryOf,
+  factsOf,
+  SENTENCE_TIERS,
+  entryForGlyph,
+  KANJI_SUBJECT,
+  kanjiGrade,
+  kanjiTeachOrder,
+  GRAMMAR_CONCEPT_SUBJECT,
+  grammarConceptEntry,
+  GRAMMAR_CONCEPT_IDS,
+  FORM_LABEL,
+  grammarRank,
+  COUNTER_KIND,
+  NUMBER_CONSTRUCTION_KIND,
+  GRAMMAR_SUBJECT,
+} from "@/lib/library/library-index";
+
+test("KINDS matches live KINDS, in order", () => {
+  assert.deepEqual(KINDS, LIVE_KINDS);
+});
+
+test("KIND_LABEL matches live KIND_LABEL", () => {
+  assert.deepEqual(KIND_LABEL, LIVE_KIND_LABEL);
+});
+
+test("LIB_ENTRIES matches live LIB_ENTRIES — same entries, same order, same fields", () => {
+  assert.equal(LIB_ENTRIES.length, LIVE_ENTRIES.length);
+  for (let i = 0; i < LIVE_ENTRIES.length; i++) {
+    const live = LIVE_ENTRIES[i];
+    const pre = LIB_ENTRIES[i];
+    assert.deepEqual(
+      { ...pre },
+      {
+        id: live.id,
+        kind: live.kind,
+        glyph: live.glyph,
+        ...(live.name !== undefined ? { name: live.name } : {}),
+        readings: [...live.readings],
+        meanings: [...live.meanings],
+        ...(live.searchAlso !== undefined ? { searchAlso: [...live.searchAlso] } : {}),
+        sub: live.sub,
+        weight: live.weight,
+      },
+      `entry ${i} (${live.id}) mismatch`,
+    );
+  }
+});
+
+test("LIB_ENTRIES_BY_KIND buckets match live LIB_ENTRIES_BY_KIND per kind, in order", () => {
+  for (const kind of LIVE_KINDS) {
+    const live = LIVE_ENTRIES.filter((e) => e.kind === kind).map((e) => e.id);
+    const pre = (LIB_ENTRIES_BY_KIND.get(kind) ?? []).map((e) => e.id);
+    assert.deepEqual(pre, live, `kind ${kind} bucket mismatch`);
+  }
+});
+
+test("libEntry(id) matches live libEntry-equivalent lookup for a sample of entries", () => {
+  // Sample spread across the list rather than every entry (15k+), since the
+  // whole-array test above already proves full equivalence; this exercises the
+  // by-id lookup path specifically.
+  const sample = [0, 1, 100, 5000, LIVE_ENTRIES.length - 1].filter(
+    (i) => i < LIVE_ENTRIES.length,
+  );
+  for (const i of sample) {
+    const live = LIVE_ENTRIES[i];
+    const pre = libEntry(live.id);
+    assert.ok(pre, `libEntry(${live.id}) missing from precomputed index`);
+    assert.equal(pre!.glyph, live.glyph);
+    assert.deepEqual([...pre!.meanings], [...live.meanings]);
+  }
+});
+
+test("knownFactsOf matches live knownFactsOf for every entry", () => {
+  for (const live of LIVE_ENTRIES) {
+    const liveFacts = knownFactsOf(live);
+    const preFacts = precomputedKnownFactsOf(live.id);
+    assert.deepEqual([...preFacts], [...liveFacts], `entry ${live.id} known-facts mismatch`);
+  }
+});
+
+test("factEntryOf matches live entryOf for every fact in the app", () => {
+  for (const fact of ALL_FACTS) {
+    assert.equal(factEntryOf(fact), entryOf(fact), `fact ${fact} entry mismatch`);
+  }
+});
+
+test("factEntryOf falls back like entryOf for an id the data doesn't have", () => {
+  const bogus = "kanji:not-a-real-fact" as Parameters<typeof entryOf>[0];
+  assert.equal(factEntryOf(bogus), entryOf(bogus));
+});
+
+test("SENTENCE_TIERS ids/labels match live SENTENCE_ORDERING_TIERS, in order", () => {
+  assert.deepEqual(
+    SENTENCE_TIERS,
+    SENTENCE_ORDERING_TIERS.map((t) => ({ id: t.id, label: t.label })),
+  );
+});
+
+test("entryForGlyph matches live entryForGlyph for every kind, sampled across entries", () => {
+  // Every kind that resolves by glyph, plus one kind that never does (control).
+  const kindsToCheck = [...new Set(LIVE_ENTRIES.map((e) => e.kind))];
+  for (const kind of kindsToCheck) {
+    const sample = LIVE_ENTRIES.filter((e) => e.kind === kind).slice(0, 25);
+    for (const e of sample) {
+      assert.equal(
+        entryForGlyph(kind, e.glyph),
+        liveEntryForGlyph(kind, e.glyph),
+        `kind ${kind} glyph ${e.glyph}`,
+      );
+    }
+  }
+});
+
+test("entryForGlyph returns null for a glyph no kind resolves", () => {
+  assert.equal(entryForGlyph("kana", "not-a-glyph"), liveEntryForGlyph("kana", "not-a-glyph"));
+});
+
+test("KANJI_SUBJECT matches live KANJI_SUBJECT", () => {
+  assert.equal(KANJI_SUBJECT, LIVE_KANJI_SUBJECT);
+});
+
+test("COUNTER_KIND / NUMBER_CONSTRUCTION_KIND match live values", () => {
+  assert.equal(COUNTER_KIND, LIVE_COUNTER_KIND);
+  assert.equal(NUMBER_CONSTRUCTION_KIND, LIVE_NUMBER_CONSTRUCTION_KIND);
+});
+
+test("GRAMMAR_SUBJECT matches live GRAMMAR_SUBJECT", () => {
+  assert.equal(GRAMMAR_SUBJECT, LIVE_GRAMMAR_SUBJECT);
+});
+
+test("factsOf matches live factsOf for every entry in the app", () => {
+  for (const entry of ALL_ENTRIES) {
+    assert.deepEqual(factsOf(entry), liveFactsOf(entry), `entry ${entry}`);
+  }
+});
+
+test("factsOf is empty for an unknown entry", () => {
+  const bogus = "kanji:not-a-real-entry" as Parameters<typeof liveFactsOf>[0];
+  assert.deepEqual(factsOf(bogus), liveFactsOf(bogus));
+});
+
+test("kanjiGrade matches live KANJI grade for every kanji", () => {
+  for (const k of KANJI) {
+    assert.equal(kanjiGrade(k.c), k.grade, `kanji ${k.c}`);
+  }
+});
+
+test("kanjiTeachOrder matches live kanjiTeachOrder for every mode", () => {
+  const modes = ["everyday", "grade", "newspaper"] as const;
+  for (const mode of modes) {
+    assert.deepEqual(
+      kanjiTeachOrder(mode),
+      liveKanjiTeachOrder(mode),
+      `mode ${mode}`,
+    );
+  }
+});
+
+test("GRAMMAR_CONCEPT_SUBJECT / grammarConceptEntry / GRAMMAR_CONCEPT_IDS match live values", () => {
+  assert.equal(GRAMMAR_CONCEPT_SUBJECT, LIVE_GRAMMAR_CONCEPT_SUBJECT);
+  for (const c of GRAMMAR_CONCEPTS) {
+    assert.equal(grammarConceptEntry(c.id), liveGrammarConceptEntry(c.id), `id ${c.id}`);
+  }
+  assert.deepEqual(GRAMMAR_CONCEPT_IDS, GRAMMAR_CONCEPTS.map((c) => c.id));
+});
+
+test("FORM_LABEL matches live FORM_LABEL", () => {
+  assert.deepEqual(FORM_LABEL, LIVE_FORM_LABEL);
+});
+
+test("grammarRank matches live grammarRank for every taught recipe, plus an unranked one", () => {
+  for (const r of GRAMMAR_TEACHING_ORDER) {
+    assert.equal(grammarRank(r.id), liveGrammarRank(r.id), `recipe ${r.id}`);
+  }
+  assert.equal(grammarRank("not-a-real-recipe"), liveGrammarRank("not-a-real-recipe"));
+});

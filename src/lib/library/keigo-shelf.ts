@@ -10,7 +10,7 @@
 // entry, exactly once, resolved to a real Library page.
 
 import { KEIGO_SETS, keigoSetEntry, type KeigoSet } from "@/data/keigo";
-import { libEntry } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/library-index";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
 /** One section of the shelf: a name and the predicate that fills it. In teaching

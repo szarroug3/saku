@@ -25,8 +25,7 @@
 import { DevShelfCompare } from "@/components/library/dev-shelf-compare";
 import { shelfSections } from "@/components/library/shelves";
 import { KANA_SUBJECT } from "@/data/characters";
-import { KANJI_SUBJECT } from "@/data/kanji";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_SUBJECT, KANJI_SUBJECT } from "@/lib/library/library-index";
 
 const KANA_SECTIONS = shelfSections(KANA_SUBJECT, "everyday");
 // CAP: the first 2 sections of the 22-section kanji shelf (~200 tiles), so this

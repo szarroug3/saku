@@ -22,7 +22,8 @@
 // lives in a .tsx (JSX the test runner cannot strip); handed the cut, this file
 // is pure array work and the properties above are unit-tested in all-tab.test.ts.
 
-import { KINDS, type Kind, type LibEntry } from "@/lib/library/entries";
+import { KINDS } from "@/lib/library/library-index";
+import type { Kind, LibEntry } from "@/lib/library/entries";
 import { shownSectionsOf, type ShelfSection } from "@/lib/library/shelf-view";
 
 /**

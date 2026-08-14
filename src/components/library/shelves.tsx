@@ -42,17 +42,21 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { KANJI_SUBJECT } from "@/data/kanji";
+import {
+  COUNTER_KIND,
+  entryForGlyph,
+  GRAMMAR_CONCEPT_SUBJECT,
+  KANJI_SUBJECT,
+  libEntry,
+  LIB_ENTRIES_BY_KIND,
+  NUMBER_CONSTRUCTION_KIND,
+  SENTENCE_RULE_KIND,
+  VOCAB_SUBJECT,
+} from "@/lib/library/library-index";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
-import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_SUBJECT } from "@/lib/library/library-index";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
-import {
-  GRAMMAR_CONCEPT_SUBJECT,
-  GRAMMAR_CONCEPTS,
-  grammarConceptEntry,
-} from "@/data/grammar-concepts";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
@@ -70,16 +74,7 @@ import {
   KeigoSetRow,
 } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
-import {
-  COUNTER_KIND,
-  NUMBER_CONSTRUCTION_KIND,
-  SENTENCE_RULE_KIND,
-  entryForGlyph,
-  libEntry,
-  LIB_ENTRIES_BY_KIND,
-  type Kind,
-  type LibEntry,
-} from "@/lib/library/entries";
+import type { Kind, LibEntry } from "@/lib/library/entries";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
@@ -185,13 +180,14 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     // worth inventing. Rendered as rows (see asRows) because a concept has no
     // glyph to tile: its name and its one-line summary read across a line.
     case GRAMMAR_CONCEPT_SUBJECT:
+      // Equivalent to GRAMMAR_CONCEPTS.flatMap((c) => resolve(grammarConceptEntry(c.id))):
+      // entries.ts's concept loop is unfiltered, one row per GRAMMAR_CONCEPTS
+      // item, in order — see library-index.equiv.test.ts.
       return [
         {
           id: "grammar-concepts",
           label: "Grammar concepts",
-          entries: GRAMMAR_CONCEPTS.flatMap((c) =>
-            resolve(grammarConceptEntry(c.id)),
-          ),
+          entries: [...(LIB_ENTRIES_BY_KIND.get(GRAMMAR_CONCEPT_SUBJECT) ?? [])],
         },
       ];
     // EVERY word, in the curriculum CLIMB — the order the Learn feed teaches, so
@@ -202,8 +198,13 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     // render below and inherit its select-all header. See ranged-groups.ts for
     // the climb rank (spine order first, beginnerRank tail) and chunking.
     case VOCAB_SUBJECT:
+      // Equivalent to VOCAB.flatMap((w) => resolve(wordEntry(w.keb))): build()
+      // creates exactly one LIB_ENTRIES row per VOCAB row (entries.ts's word
+      // loop, unfiltered, in VOCAB's own order), so the precomputed per-kind
+      // bucket already IS that same list, same order — see
+      // library-index.equiv.test.ts's LIB_ENTRIES_BY_KIND assertion.
       return rangedGroups(
-        VOCAB.flatMap((w) => resolve(wordEntry(w.keb))),
+        [...(LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? [])],
         wordClimbRank,
       );
     // Numbers and counters, cut into the groups the track teaches (see

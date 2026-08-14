@@ -24,12 +24,7 @@ import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
-import {
-  SENTENCE_ORDERING_TIERS,
-  tierAssemblyFacts,
-} from "@/data/assembly";
 import { markFor } from "@/data/marks";
-import { entryOf } from "@/lib/facts";
 import { activeWeaknessPairs } from "@/lib/confusions";
 import {
   KIND_LABEL,
@@ -37,9 +32,9 @@ import {
   knownFactsOf,
   LIB_ENTRIES,
   LIB_ENTRIES_BY_KIND,
-  type Kind,
-  type LibEntry,
-} from "@/lib/library/entries";
+  factEntryOf,
+} from "@/lib/library/library-index";
+import type { Kind, LibEntry } from "@/lib/library/entries";
 import { search, searchAll, searchByType } from "@/lib/library/search";
 import { allTabBrowseKinds } from "@/lib/library/all-tab";
 import {
@@ -331,7 +326,7 @@ export function LibraryPageClient({
     for (const pair of activeWeaknessPairs(
       history,
       cfg.graduateRuns,
-      entryOf,
+      factEntryOf,
     )) {
       entries.add(pair.a);
       entries.add(pair.b);
@@ -535,34 +530,65 @@ export function LibraryPageClient({
     };
   }, [selected, q, tab, keep, allHits]);
 
+  // Sentence rules are the ONE place this page needs the assembly corpus
+  // (`tierAssemblyFacts` resolves a tier's readable-sentence facts against LIVE
+  // history — not precomputable, unlike the rest of the page's list/search
+  // data). Loading it eagerly would put the ~9.5MB dictionary back on every
+  // /library visit for a feature only a sentence-rule-mark selection ever
+  // touches. So it is DYNAMICALLY IMPORTED, and only once the current slice
+  // actually contains a sentence-rule mark — `hasSentenceMark` below is a cheap
+  // check (marks.ts is a small fixed table) that gates the import.
+  const hasSentenceMark = useMemo(
+    () => slice.entries.some((id) => markFor(id)?.shelf === "sentence"),
+    [slice.entries],
+  );
+  const [sentenceAssembly, setSentenceAssembly] = useState<
+    typeof import("@/data/assembly") | null
+  >(null);
+  useEffect(() => {
+    if (!hasSentenceMark || sentenceAssembly) return;
+    let alive = true;
+    void import("@/data/assembly").then((m) => {
+      if (alive) setSentenceAssembly(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [hasSentenceMark, sentenceAssembly]);
+
   // Sentence rules are reference entries backed by a learn-track completion
   // marker rather than ordinary entry facts. Add those markers (and the same
   // readable assembly facts the Learn card claims) for whichever sentence-rule
   // rows the current shelf/search/selection slice contains. This keeps the
   // standard shelf-wide “I know these” action without making writing marks
-  // pretend to be quiz facts.
+  // pretend to be quiz facts. Empty until `sentenceAssembly` lands — a one-frame
+  // gap the first time a learner ever selects a sentence-rule mark.
   const sentenceRuleClaimFacts = useMemo(() => {
+    if (!sentenceAssembly) return [];
     const out = new Set<FactId>();
     for (const entryId of slice.entries) {
       const mark = markFor(entryId);
       if (mark?.shelf !== "sentence") continue;
-      const tier = SENTENCE_ORDERING_TIERS.find(
+      const tier = sentenceAssembly.SENTENCE_ORDERING_TIERS.find(
         (candidate) =>
           candidate.id === mark.id.replace("sentence-rule-", ""),
       );
       if (!tier) continue;
-      for (const fact of tierAssemblyFacts(tier, history)) out.add(fact);
+      for (const fact of sentenceAssembly.tierAssemblyFacts(tier, history)) {
+        out.add(fact);
+      }
       out.add(sentenceTierMarkerFact(tier.id));
     }
     return [...out];
-  }, [slice.entries, history]);
+  }, [slice.entries, history, sentenceAssembly]);
 
   const sentenceRuleActions = useMemo(() => {
     if (slice.entries.length === 0) return null;
+    if (!sentenceAssembly) return null;
     const tiers = slice.entries.map((entryId) => {
       const mark = markFor(entryId);
       if (mark?.shelf !== "sentence") return null;
-      return SENTENCE_ORDERING_TIERS.find(
+      return sentenceAssembly.SENTENCE_ORDERING_TIERS.find(
         (candidate) =>
           candidate.id === mark.id.replace("sentence-rule-", ""),
       ) ?? null;
@@ -574,7 +600,7 @@ export function LibraryPageClient({
 
     const tierFacts = tiers.map((tier) => ({
       tier: tier!,
-      facts: tierAssemblyFacts(tier!, history),
+      facts: sentenceAssembly.tierAssemblyFacts(tier!, history),
     }));
     const quizFacts = [
       ...new Set(
@@ -608,7 +634,7 @@ export function LibraryPageClient({
           }
         : undefined,
     };
-  }, [slice.entries, history, claims]);
+  }, [slice.entries, history, claims, sentenceAssembly]);
 
   const claim = async (facts: FactId[]) => {
     // postClaim, not a raw fetch: a signed-out claim (401) is saved to this

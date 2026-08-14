@@ -39,7 +39,7 @@
 // src/data/vocab.ts.
 
 import { entryId, factId } from "../lib/fact-id.ts";
-import { vocabRow } from "./vocab.ts";
+import { wordBeginnerRank } from "../lib/word-rank.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
 /**
@@ -241,7 +241,7 @@ export const KEIGO_SETS: readonly KeigoSet[] = ([
   if (a.gate.length === 0) return -1;
   if (b.gate.length === 0) return 1;
   const rank = (set: KeigoSet) =>
-    Math.min(...set.gate.map((keb) => vocabRow(keb)?.beginnerRank ?? Infinity));
+    Math.min(...set.gate.map((keb) => wordBeginnerRank(keb) ?? Infinity));
   return rank(a) - rank(b);
 });
 
