@@ -1,6 +1,5 @@
 // DEV view for SCHEDULING — each track's lesson order, as the shared unit
-// scheduler actually produces it (unit-tracks.ts → simulateLessons). Not shipped
-// UI. Route: /dev/scheduling
+// scheduler actually produces it. Not shipped UI. Route: /dev/scheduling
 //
 // One track at a time (tabs), its lessons numbered and paginated. Each lesson
 // shows the units the scheduler chose, in teach order — so a prerequisite pulled
@@ -8,28 +7,31 @@
 // shows up inline, ahead of the unit that owes it. The same piece can therefore
 // appear in more than one track's lessons; that's the cross-track prereq graph,
 // not a bug.
+//
+// Reads the precomputed scheduling-preview.json (the real simulateLessons
+// output, serialized — see scheduling-preview.equiv.test.ts) rather than calling
+// the live scheduler: this page's whole point is showing the actual lesson
+// order, and the precompute IS that order, just without recomputing ~477
+// vocab-track lessons on every visit.
 
 "use client";
 
 import { useMemo, useState } from "react";
 
-import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
-import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
+import { SCHEDULING_PREVIEW_TRACKS } from "@/lib/content/scheduling-preview";
 import { frostCard } from "@/components/ui/frost";
 import type { TeachingUnit } from "@/lib/content/teach-unit";
 
-const MAX_LESSONS = 5000; // a runaway guard, not a real cap — vocab is ~480 lessons
 const PER_PAGE = 20;
+const MAX_LESSONS = 5000; // matches scripts/build-scheduling-preview.mjs's own guard
 
 export default function SchedulingDevPage() {
-  const [trackId, setTrackId] = useState(UNIT_TRACKS[0].id);
+  const [trackId, setTrackId] = useState(SCHEDULING_PREVIEW_TRACKS[0].id);
   const [page, setPage] = useState(0);
 
-  const track = UNIT_TRACKS.find((t) => t.id === trackId) ?? UNIT_TRACKS[0];
-  const lessons = useMemo(
-    () => simulateLessons(track, LESSON_RANGE_DEFAULT, MAX_LESSONS),
-    [track],
-  );
+  const track =
+    SCHEDULING_PREVIEW_TRACKS.find((t) => t.id === trackId) ?? SCHEDULING_PREVIEW_TRACKS[0];
+  const lessons = useMemo(() => track.lessons, [track]);
 
   const pageCount = Math.max(1, Math.ceil(lessons.length / PER_PAGE));
   const current = Math.min(page, pageCount - 1);
@@ -50,7 +52,7 @@ export default function SchedulingDevPage() {
 
       {/* Track tabs */}
       <div className="mt-6 flex flex-wrap gap-2">
-        {UNIT_TRACKS.map((t) => (
+        {SCHEDULING_PREVIEW_TRACKS.map((t) => (
           <button
             key={t.id}
             onClick={() => pick(t.id)}
