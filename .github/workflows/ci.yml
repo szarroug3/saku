@@ -66,3 +66,36 @@ jobs:
       # them are a failed build.
       - name: Build
         run: pnpm run build
+
+  # content_entries (Supabase) holds the fetch-by-id Library entry payloads —
+  # term/mark/grammar-concept/kana, and more kinds over time (see
+  # scripts/seed-content-entries.mjs). Its source data ships in the SAME commit
+  # as the code that reads it, but the table itself only updates when this
+  # script runs — a source edit merged to main with no reseed is a silent no-op:
+  # tsc/tests/build all pass, the live page still serves the OLD row. Running
+  # the (idempotent, upsert-only) seed on every push to main removes that gap —
+  # no one has to remember to reseed.
+  reseed-content:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Reseed content_entries
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-content-entries.mjs
