@@ -203,10 +203,8 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
       const item = buildItem(entry.id, "keigo");
       return item ? <KeigoEntryView item={item} /> : null;
     }
-    case TRANSITIVITY_SUBJECT: {
-      const item = buildItem(entry.id, "transitivity");
-      return item ? <VerbPairEntryView item={item} /> : null;
-    }
+    case TRANSITIVITY_SUBJECT:
+      return <VerbPairEntryView entry={entry.id} />;
     case GRAMMAR_SUBJECT: {
       const item = buildItem(entry.id, "grammar");
       return item ? <GrammarEntryView item={item} /> : null;

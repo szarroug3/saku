@@ -31,6 +31,8 @@ import { entryHref } from "@/lib/library/href";
 import { CHAR_INDEX, KANA_SUBJECT, kanaEntry } from "@/data/characters";
 import { buildItem } from "@/lib/content/build-item";
 import { itemHeadline } from "@/lib/content/headline";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { TRANSITIVITY_SUBJECT, pairEntry } from "@/data/transitivity-facts";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -114,7 +116,25 @@ const kanaRows = Object.keys(CHAR_INDEX)
   })
   .filter((r) => r != null);
 
-const rows = [...termRows, ...markRows, ...grammarConceptRows, ...kanaRows];
+// ---- transitivity (verb pair) ---------------------------------------------
+// Same shape as kana: the actual pair data (VERB_PAIRS/pairForEntry) is a
+// small, self-contained ~27KB file, not entangled with the big dictionary —
+// VerbPairEntryView keeps reading it live. itemHeadline's {text, speak}
+// (kanjiMeaning → kanji.ts) is the heavy thing seeded; typeLabel is the
+// constant "verb pair" (contentTypeLabel's transitivity branch). `glyph` is
+// ALSO seeded here (buildItem's, the pair's shared kanji) rather than read off
+// library-index.ts's `libEntry` — a "transitivity" LIB_ENTRIES row's `glyph`
+// field is empty (that list/search index displays this kind by name, not
+// glyph), so it is not the same value the live ContentItem carried.
+const verbPairRows = VERB_PAIRS.map((pair) => {
+  const entry = pairEntry(pair);
+  const item = buildItem(entry, "transitivity");
+  if (!item) return null;
+  const { text, speak } = itemHeadline(item);
+  return row(entry, TRANSITIVITY_SUBJECT, { text, speak, glyph: item.glyph });
+}).filter((r) => r != null);
+
+const rows = [...termRows, ...markRows, ...grammarConceptRows, ...kanaRows, ...verbPairRows];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
 if (error) {
@@ -124,5 +144,6 @@ if (error) {
 
 console.log(
   `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
-    `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana rows (${rows.length} total)`,
+    `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
+    `${verbPairRows.length} transitivity rows (${rows.length} total)`,
 );

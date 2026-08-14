@@ -10,15 +10,39 @@
 //   header
 //   It happens, or someone does it  (accent) — the two verbs, keigo-style
 //
-// Reference data only, read off the pair (pairForEntry). No stroke section: a
-// pair has no single drawing.
+// pairForEntry reads data/transitivity.ts LIVE — a small, self-contained ~27KB
+// file with no dictionary dependency, so there's nothing to gain fetching it.
+// The one heavy thing this page reads is itemHeadline's {text, speak}
+// (kanjiMeaning → kanji.ts), FETCHED BY ID by default (the Library route) —
+// seeded per pair by scripts/seed-content-entries.mjs, along with the pair's
+// glyph (buildItem's, the shared kanji — library-index.ts's own `libEntry`
+// carries an EMPTY glyph for this kind, since its list/search index displays
+// a pair by name, not glyph, so it isn't a substitute). typeLabel is the
+// constant "verb pair" (contentTypeLabel's transitivity branch).
+//
+// The teach walk (TeachItemView) and /dev/views already build a live
+// ContentItem for every kind they show, so this also accepts an `item` prop
+// that skips the fetch and reads the headline straight off it — same pattern
+// as KanaEntryView.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface } from "@/components/library/entry-section";
 import { Info } from "@/components/ui";
 import { SoundButton } from "@/components/ui/sound-button";
 import { pairForEntry } from "@/data/transitivity-facts";
+import { useContentEntry } from "@/lib/library/content-entries";
+import { itemHeadline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
+
+/** itemHeadline's output plus the pair's glyph, seeded together — see
+ * scripts/seed-content-entries.mjs's transitivity section for why glyph rides
+ * along here instead of coming from library-index.ts. */
+interface VerbPairPayload {
+  readonly text: string;
+  readonly speak: string | null;
+  readonly glyph: string;
+}
 
 /** The leading run of characters two strings share (開 for 開く / 開ける). */
 function sharedStem(a: string, b: string): string {
@@ -27,9 +51,14 @@ function sharedStem(a: string, b: string): string {
   return a.slice(0, i);
 }
 
-export function VerbPairEntryView({ item }: { item: ContentItem }) {
-  const pair = pairForEntry(item.entry);
-  if (!pair) return null;
+export function VerbPairEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+  const fetched = useContentEntry<VerbPairPayload>(item ? null : (entry ?? null));
+  const headline = item ? itemHeadline(item) : fetched;
+  const resolvedEntry = item ? item.entry : entry!;
+  const glyph = item ? item.glyph : fetched?.glyph;
+  const pair = pairForEntry(resolvedEntry);
+
+  if (headline === undefined || headline === null || !glyph || !pair) return null;
 
   const sides = [
     {
@@ -47,7 +76,7 @@ export function VerbPairEntryView({ item }: { item: ContentItem }) {
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="verb pair" />
 
       {/* No section title or lead: the two accent role labels (It happens on its
           own / Someone does it) are the structure, and each carries its own
