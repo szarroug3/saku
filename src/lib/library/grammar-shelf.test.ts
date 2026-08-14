@@ -29,6 +29,7 @@ import { patternEntry, verbAttachForm } from "@/data/grammar";
 import { cluster } from "@/data/grammar/clusters";
 import { grammarRank } from "@/lib/library/grammar-order";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
+import { COMPARISON_CLUSTER_IDS } from "@/lib/library/entries";
 
 /** entry id → its recipe, so a section's entries can be read back as patterns. */
 const RECIPE_OF_ENTRY = new Map(RECIPES.map((r) => [patternEntry(r.id), r]));
@@ -132,10 +133,15 @@ describe("the shelf cut tiles the whole shelf", () => {
     for (const recipe of RECIPES.filter(isPrimaryPatternRecipe)) {
       const entry = byId.get(patternEntry(recipe.id));
       assert.ok(entry, `${recipe.id} appears on the shelf`);
+      // The sub is the CONCEPT-cluster titles ("must", "after") — a family cue —
+      // and never the JLPT label. The particle-pair comparison clusters (は vs が,
+      // に vs で) are excluded: their title just names the glyphs being contrasted,
+      // redundant under a member whose glyph is the lead, so those rows show no sub.
       const titles = [
         ...new Set(
           patternGroup(recipe.id).flatMap((sense) => {
-            const title = sense.cluster ? cluster(sense.cluster)?.title : undefined;
+            if (!sense.cluster || COMPARISON_CLUSTER_IDS.has(sense.cluster)) return [];
+            const title = cluster(sense.cluster)?.title;
             return title ? [title] : [];
           }),
         ),

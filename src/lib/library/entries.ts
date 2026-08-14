@@ -107,6 +107,11 @@ import {
   patternLabel,
   type Recipe,
 } from "@/data/grammar/recipes";
+
+/** The particle-pair clusters — comparisons ("は vs が", "に vs で") whose title
+ * is redundant as a member's sub-line (see the grammar-entry `sub` below). Their
+ * titles still ride `searchAlso`, so the family stays findable by name. */
+export const COMPARISON_CLUSTER_IDS: ReadonlySet<string> = new Set(["wa-ga", "ni-de"]);
 import { VERB_PAIRS } from "@/data/transitivity";
 import {
   TRANSITIVITY_SUBJECT,
@@ -702,6 +707,21 @@ function build(): LibEntry[] {
         }),
       ),
     ];
+    // The particle-pair clusters (は vs が, に vs で) are COMPARISONS, not family
+    // concepts: the title just names the two glyphs being contrasted, so it is
+    // redundant as the sub-line under a member whose own glyph is the lead
+    // (は · "marks the topic" needs no "は vs が" beneath it). It stays in
+    // searchAlso — findable — but drops out of the shown `sub`. Concept clusters
+    // ("must", "after") keep theirs as a genuine family cue.
+    const subTitles = [
+      ...new Set(
+        senses.flatMap((sense) => {
+          if (!sense.cluster || COMPARISON_CLUSTER_IDS.has(sense.cluster)) return [];
+          const title = cluster(sense.cluster)?.title;
+          return title ? [title] : [];
+        }),
+      ),
+    ];
     out.push({
       id: patternEntry(r.id),
       kind: GRAMMAR_SUBJECT,
@@ -715,7 +735,7 @@ function build(): LibEntry[] {
       // JLPT level is internal curriculum metadata, not a useful explanation
       // of what the row is. Keep a meaningful family cue ("after", "must",
       // and so on) where one exists; otherwise the sub-line is simply absent.
-      sub: clusterTitles.join(" · "),
+      sub: subTitles.join(" · "),
       // A LOW weight, below kanji — the one kind that outranks it. This is the
       // owner's "make sure search surfaces grammar properly" as a number: when
       // you type "must", the seven obligation PATTERNS are the answer, and a
