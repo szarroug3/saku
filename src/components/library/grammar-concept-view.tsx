@@ -20,13 +20,22 @@ import {
   IntroExamples,
 } from "@/components/lesson/phase-intro-view";
 import { Card } from "@/components/ui";
-import type { GrammarConcept } from "@/data/grammar-concepts";
+import type { PhaseIntro } from "@/data/phase-intros";
+
+/** What this view actually reads off a GrammarConcept — narrower than the full
+ * interface (no `id`, `searchAlso`, `related`) so both the live object and the
+ * fetched GrammarConceptEntryView payload satisfy it structurally. */
+export interface GrammarConceptViewData {
+  readonly name: string;
+  readonly body: readonly string[];
+  readonly cards: readonly PhaseIntro[];
+}
 
 export function GrammarConceptView({
   concept,
   hideTitles = false,
 }: {
-  concept: GrammarConcept;
+  concept: GrammarConceptViewData;
   /** Drop each card's h2 title — the redesigned concept ENTRY page carries the
    * concept name in its own header, so a card title like "Godan and Ichidan."
    * beneath it just reads as a second heading. Default false (the router keeps

@@ -1,18 +1,20 @@
 // SEED content_entries — Library entry DETAIL payloads, by id.
 //
-// PROOF OF CONCEPT: only the "term" kind is seeded so far (19 rows, no
-// dictionary dependency — a good first slice to prove schema + seed + fetch +
-// loading-state UX before tackling a harder kind like "character"). See
+// Kinds seeded so far: term, mark, grammar-concept — all three have NO glyph
+// (id-only entries) and no `item: ContentItem` prop, so their payload is simply
+// the source object's own fields, resolved once at seed time. See
 // docs/perf-library-list-bundle.md.
 //
-// BYTE-CORRECTNESS. The payload for each term is the real `Term` object itself
-// (termFor/TERMS), never re-derived or hand-copied — same discipline as every
-// other precompute in this app.
+// BYTE-CORRECTNESS. Every payload is the real object the live component would
+// have used (TERMS/MARKS/GRAMMAR_CONCEPTS), never re-derived or hand-copied —
+// same discipline as every other precompute in this app. Any resolved cross-
+// reference (a term's `related`) is resolved by calling the real
+// resolver functions, not reimplemented.
 //
 // REQUIRES the content_entries table to already exist (supabase/schema.sql,
-// run once in the Supabase SQL editor — this script cannot create it: the
-// service-role REST API has no DDL endpoint). Writes with the SERVICE ROLE key,
-// which bypasses RLS (content_entries' own policy only allows public SELECT).
+// run once via psql/the SQL editor — the service-role REST API has no DDL
+// endpoint). Writes with the SERVICE ROLE key, which bypasses RLS
+// (content_entries' own policy only allows public SELECT).
 //
 // Run with the test harness's loader so Node resolves `@/` and extensionless
 // imports, and with .env.local's Supabase vars loaded:
@@ -22,6 +24,8 @@ import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 import { TERMS, TERM_SUBJECT, termEntry, termRow } from "@/data/terms";
+import { MARKS, MARK_SUBJECT, markEntry } from "@/data/marks";
+import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,17 +42,20 @@ function versionOf(payload) {
   return createHash("sha256").update(JSON.stringify(payload)).digest("hex").slice(0, 16);
 }
 
-// The payload is the view-model TermEntryView actually renders: `related`
-// resolved to {label, href} pairs at seed time (calling the real
-// termRow/termEntry/entryHref — never re-derived), so the fetched row needs no
-// further lookups and the reader makes exactly one request. Dropping any
-// related id that no longer names a real term, same guard the live component
-// made.
-const rows = TERMS.map((term) => {
+function row(entryId, kind, payload) {
+  return { entry_id: entryId, kind, payload, content_version: versionOf(payload) };
+}
+
+// ---- term ------------------------------------------------------------------
+// The payload is the view-model TermEntryView renders: `related` resolved to
+// {label, href} pairs at seed time (the real termRow/termEntry/entryHref), so
+// the reader makes exactly one request. Drops any related id that no longer
+// names a real term, same guard the live component made.
+const termRows = TERMS.map((term) => {
   const relatedLinks = (term.related ?? [])
     .map((id) => {
-      const row = termRow(id);
-      return row ? { label: row.name, href: entryHref(termEntry(id)) } : null;
+      const r = termRow(id);
+      return r ? { label: r.name, href: entryHref(termEntry(id)) } : null;
     })
     .filter((l) => l != null);
   const payload = {
@@ -59,13 +66,34 @@ const rows = TERMS.map((term) => {
     ...(term.cardMark !== undefined ? { cardMark: term.cardMark } : {}),
     relatedLinks,
   };
-  return {
-    entry_id: termEntry(term.id),
-    kind: TERM_SUBJECT,
-    payload,
-    content_version: versionOf(payload),
-  };
+  return row(termEntry(term.id), TERM_SUBJECT, payload);
 });
+
+// ---- mark --------------------------------------------------------------
+// The payload is the full Mark object as-is: MarkView/DakutenConversionView
+// read it directly and are UNCHANGED (same as TermView) — the only thing that
+// moves is where MarkEntryView gets the object from. Sentence-shelf marks
+// (mark.shelf === "sentence") are seeded too, even though the live dispatcher
+// currently routes those to SentenceEntryView instead of MarkEntryView — the
+// row does no harm unseeded to, and keeps this script kind-complete for
+// data/marks.ts.
+const markRows = MARKS.map((mark) => row(markEntry(mark.id), MARK_SUBJECT, mark));
+
+// ---- grammar-concept ---------------------------------------------------
+// Same shape as term, minus `related` (GrammarConceptEntryView never renders
+// it — no RelatedSection on that page today, so it is dropped rather than
+// resolved for nothing).
+const grammarConceptRows = GRAMMAR_CONCEPTS.map((concept) => {
+  const payload = {
+    name: concept.name,
+    summary: concept.summary,
+    body: concept.body,
+    cards: concept.cards,
+  };
+  return row(grammarConceptEntry(concept.id), GRAMMAR_CONCEPT_SUBJECT, payload);
+});
+
+const rows = [...termRows, ...markRows, ...grammarConceptRows];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
 if (error) {
@@ -73,4 +101,7 @@ if (error) {
   process.exit(1);
 }
 
-console.log(`content_entries seeded: ${rows.length} term rows`);
+console.log(
+  `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
+    `${grammarConceptRows.length} grammar-concept rows (${rows.length} total)`,
+);

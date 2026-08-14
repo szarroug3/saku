@@ -13,26 +13,27 @@
 // renders the lesson's own PhaseIntro cards through the lesson's IntroBody — so
 // the reference page and the lesson say one set of words and cannot drift.
 //
-// NOTES FOR WIRING (nothing is fabricated here):
-//  - There is no buildItem path for a concept (ContentKind has no
-//    "grammar-concept"), so a caller constructs the item by hand, e.g.
-//    { entry: grammarConceptEntry("verb-classes"), kind: "grammar", glyph: "",
-//      facts: [], roles: [], prereqs: [], blockedBy: [], typeLabel: "grammar concept" }.
-//    This view reads the concept straight off item.entry and needs only a valid
-//    entry id; it does not touch glyph/facts/roles.
-//  - The て-form is NO LONGER a grammar concept — that page was removed once the
-//    te-sequence FORM recipe grew its own entry carrying the full teaching (it is
-//    a GrammarEntryView now, not a concept). The live concepts are verb-classes,
-//    adjective-types and keigo-registers.
+// FETCHED BY ID — name/summary/body/cards only (this page never renders
+// `related`, so the seed script drops it rather than resolving it for nothing).
+// GrammarConceptView is UNCHANGED — it only ever needed these fields. See
+// scripts/seed-content-entries.mjs and src/lib/library/content-entries.ts.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { GrammarConceptView } from "@/components/library/grammar-concept-view";
-import { grammarConceptFor } from "@/data/grammar-concepts";
+import { useContentEntry } from "@/lib/library/content-entries";
+import type { PhaseIntro } from "@/data/phase-intros";
 import type { EntryId } from "@/types";
 
+interface GrammarConceptPayload {
+  readonly name: string;
+  readonly summary: string;
+  readonly body: readonly string[];
+  readonly cards: readonly PhaseIntro[];
+}
+
 export function GrammarConceptEntryView({ entry }: { entry: EntryId }) {
-  const concept = grammarConceptFor(entry);
+  const concept = useContentEntry<GrammarConceptPayload>(entry);
   if (!concept) return null;
 
   return (

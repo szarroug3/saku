@@ -13,6 +13,7 @@
 // the server client under RLS") — progress is per-user and RLS-gated by
 // auth.uid(), content is neither.
 
+import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { EntryId } from "@/types";
 
@@ -49,4 +50,26 @@ export async function fetchContentEntry<T>(entryId: EntryId): Promise<T | null> 
     return null;
   }
   return (data?.payload as T | undefined) ?? null;
+}
+
+/**
+ * The shared fetch-and-render pattern every entry-detail view built on
+ * `content_entries` uses: `undefined` while loading, then the payload or
+ * `null` (no such entry — the caller's `if (!x) return null` reads the same
+ * whether that's "still loading" or "genuinely missing", matching how the
+ * live components already treated a missing live lookup).
+ */
+export function useContentEntry<T>(entryId: EntryId): T | null | undefined {
+  const [payload, setPayload] = useState<T | null | undefined>(undefined);
+  useEffect(() => {
+    let alive = true;
+    setPayload(undefined);
+    void fetchContentEntry<T>(entryId).then((p) => {
+      if (alive) setPayload(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [entryId]);
+  return payload;
 }

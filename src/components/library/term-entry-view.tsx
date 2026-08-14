@@ -21,13 +21,11 @@
 // links) and read from Supabase's `content_entries` table — see
 // src/lib/library/content-entries.ts. Nothing here imports data/terms.ts.
 
-import { useEffect, useState } from "react";
-
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { RelatedSection } from "@/components/library/related-section";
 import { TermView } from "@/components/library/term-view";
-import { fetchContentEntry } from "@/lib/library/content-entries";
+import { useContentEntry } from "@/lib/library/content-entries";
 import type { PhaseIntro } from "@/data/phase-intros";
 import type { EntryId } from "@/types";
 
@@ -41,18 +39,7 @@ interface TermPayload {
 }
 
 export function TermEntryView({ entry }: { entry: EntryId }) {
-  const [term, setTerm] = useState<TermPayload | null | undefined>(undefined);
-
-  useEffect(() => {
-    let alive = true;
-    setTerm(undefined);
-    void fetchContentEntry<TermPayload>(entry).then((payload) => {
-      if (alive) setTerm(payload);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [entry]);
+  const term = useContentEntry<TermPayload>(entry);
 
   // undefined = still loading, null = no such term (matches the live
   // component's `if (!term) return null` for an unresolved id).

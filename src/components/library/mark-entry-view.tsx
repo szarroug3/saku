@@ -13,12 +13,18 @@
 // and drops the "in hiragana" / "in katakana" labels, so the hiragana lesson
 // shows only the hiragana strips and the katakana lesson only the katakana ones —
 // otherwise the same page.
+//
+// FETCHED BY ID — the full `Mark` object, unmodified (mirrors TermEntryView's
+// approach): MarkView/DakutenConversionView are UNCHANGED, since they only ever
+// needed the mark object itself, not a live import of data/marks.ts. See
+// scripts/seed-content-entries.mjs and src/lib/library/content-entries.ts.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { DakutenConversionView, isConversionMark } from "@/components/library/conversion-view";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { MarkView } from "@/components/library/mark-view";
-import { markFor } from "@/data/marks";
+import { useContentEntry } from "@/lib/library/content-entries";
+import type { Mark } from "@/data/marks";
 import type { EntryId } from "@/types";
 
 export function MarkEntryView({
@@ -29,7 +35,7 @@ export function MarkEntryView({
   /** Lesson mode: show only this script's strips, without the script labels. */
   set?: "hiragana" | "katakana";
 }) {
-  const mark = markFor(entry);
+  const mark = useContentEntry<Mark>(entry);
   if (!mark) return null;
 
   const conversion = isConversionMark(mark);
