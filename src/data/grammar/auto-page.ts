@@ -212,7 +212,7 @@ function hostBuild(r: Recipe, host: Host): {
 }
 
 /** The representative verbs an ending-change rule is shown across: one per godan
- * sound-change group, an る-verb, and the two irregulars, so the rule is seen to
+ * sound-change group, a る-verb, and the two irregulars, so the rule is seen to
  * hold class by class. Same spread the hand-authored form intros use. */
 const RULE_VERBS: { label: string; word: string; cls: WordClass }[] = [
   { label: "う", word: "かう", cls: "v5u" },

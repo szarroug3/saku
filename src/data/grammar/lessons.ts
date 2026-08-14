@@ -139,7 +139,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "Godan and Ichidan.",
     body: [
       {
-        text: "Before you conjugate a verb, you need to figure out what group it's in. Every Japanese verb is an う-verb, an る-verb, or one of two irregulars, and the group decides how the verb changes.",
+        text: "Before you conjugate a verb, you need to figure out what group it's in. Every Japanese verb is an う-verb, a る-verb, or one of two irregulars, and the group decides how the verb changes.",
       },
       {
         lead: "う-verbs",
@@ -151,7 +151,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
       {
         heading: "Exceptions",
-        text: "The spelling alone does not always tell them apart. Some verbs that end in る are う-verbs in disguise. かえる (to return) is an う-verb, while たべる (to eat) is an る-verb. You learn which are which with experience and time.",
+        text: "The spelling alone does not always tell them apart. Some verbs that end in る are う-verbs in disguise. かえる (to return) is an う-verb, while たべる (to eat) is a る-verb. You learn which are which with experience and time.",
       },
       {
         lead: "する and くる",

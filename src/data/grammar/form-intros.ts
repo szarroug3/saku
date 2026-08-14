@@ -245,7 +245,7 @@ export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("volitional-form", [{
-      text: "An う-verb shifts its last kana to the お-row and adds う; an る-verb adds よう.",
+      text: "An う-verb shifts its last kana to the お-row and adds う; a る-verb adds よう.",
     }]),
   },
 ];
@@ -284,7 +284,7 @@ export const PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("passive", [{
-      text: "An う-verb shifts its last kana to the あ-row and adds れる; an る-verb adds られる. する and くる are irregular.",
+      text: "An う-verb shifts its last kana to the あ-row and adds れる; a る-verb adds られる. する and くる are irregular.",
     }]),
   },
 ];
@@ -302,7 +302,7 @@ export const POTENTIAL_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("potential", [{
-      text: "An う-verb shifts its last kana to the え-row and adds る; an る-verb adds られる. する becomes できる, くる becomes こられる.",
+      text: "An う-verb shifts its last kana to the え-row and adds る; a る-verb adds られる. する becomes できる, くる becomes こられる.",
     }]),
   },
 ];
@@ -320,7 +320,7 @@ export const CAUSATIVE_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("causative", [{
-      text: "An う-verb shifts its last kana to the あ-row and adds せる; an る-verb adds させる. する and くる are irregular.",
+      text: "An う-verb shifts its last kana to the あ-row and adds せる; a る-verb adds させる. する and くる are irregular.",
     }]),
   },
 ];
@@ -338,7 +338,7 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("causative-passive", [{
-      text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
+      text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; a る-verb in 〜させられる.",
     }]),
   },
 ];
@@ -358,7 +358,7 @@ export const BA_FORM_PAGES: readonly PhaseIntro[] = [
     buildSections: formBuildSections(
       "ba",
       [{
-        text: "An う-verb shifts its last kana to the え-row and adds ば; an る-verb drops る and adds れば.",
+        text: "An う-verb shifts its last kana to the え-row and adds ば; a る-verb drops る and adds れば.",
       }],
       [{
         text: "An い-adjective changes its final い to ければ. いい changes to よければ.",
