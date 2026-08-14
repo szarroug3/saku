@@ -69,6 +69,7 @@ export function SliceBar({
   teachPlan,
   progressReady = true,
   variant = "bar",
+  hasSelection = false,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -118,6 +119,10 @@ export function SliceBar({
    * when it is, only a lone "Quiz me" button — a reference page shows the answer,
    * so the one thing it may still offer is a deliberate self-test. */
   variant?: "bar" | "entry";
+  /** The shelf bar only appears once the reader has SELECTED rows by hand — the
+   * actions act on that selection, so with nothing picked there is nothing to
+   * offer and the bar renders nothing. Ignored by the entry variant. */
+  hasSelection?: boolean;
 }) {
   const { startSession, startQuiz, startQuizInMode } = useQuizSession();
   const [adding, setAdding] = useState(false);
@@ -133,6 +138,11 @@ export function SliceBar({
   // “Teach me” to someone who already knows the whole slice). Render the bar
   // once, from real data, instead of rendering and then correcting it.
   if (!progressReady) return null;
+  // The shelf bar's actions all operate on a hand-picked selection; with nothing
+  // selected there is nothing to add, claim, quiz or teach, so it shows nothing
+  // at all rather than a whole-shelf "Everything" band. (The entry variant has
+  // its own gate below and never sets hasSelection.)
+  if (variant === "bar" && !hasSelection) return null;
 
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is
@@ -236,21 +246,14 @@ export function SliceBar({
           onDone={() => setAdding(false)}
         />
       ) : null}
-      {/* `kq-band`, not `kq-material`: this is a sticky band over the page's
-          ground and it MUST occlude — the table has to vanish under it, not
-          show through it. kq-material would give it the card's frost, which in
-          the three opaque themes is nothing at all and in kiri is a 5.5% wash
-          the rows read straight through.
-
-          `rounded-(--radius)` rather than `rounded-xl`: the radius+fill recipes
-          in globals.css are a real hazard (rounded-xl + bg-card IS the Card),
-          and this asks for its material by name instead, so its geometry is
-          nobody's business but its own. */}
-      {/* No `sticky bottom-0` / `mt-3.5` any more: the bar lives in the shell's
-          frozen bottom dock (see components/dock.tsx), so it is already frozen in
-          place and the gap above it is the dock row's gap alone — the same gap the
-          top dock has, which is what keeps the three boxes evenly spaced. */}
-      <div className="kq-band flex flex-wrap items-center gap-3 rounded-(--radius) border border-border p-3 shadow-card">
+      {/* DE-BOXED: no band, border, fill or shadow. The bar is a layout sibling
+          BELOW the scroll box (nothing scrolls behind it), so it needs no
+          occluding material — it sits on the page mesh like every other de-boxed
+          surface, set off from the shelf above by a single flat hairline. It is
+          only mounted at all while rows are selected (see the hasSelection gate),
+          so this row IS the "you have a selection, here's what you can do with
+          it" state. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.08] pt-3">
         <div className="min-w-0 flex-1 text-[13px] text-text-muted">
           {/* An empty slice has no sentence (see sliceSentence): show nothing
               here at all rather than a lone label with a trailing comma and no

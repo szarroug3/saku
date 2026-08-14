@@ -860,6 +860,7 @@ export function LibraryPageClient({
           history={history}
           now={now}
           onClaim={claim}
+          hasSelection={selected.size > 0}
           includeSolid={selected.size > 0}
           claimFacts={sentenceRuleClaimFacts}
           quizFacts={sentenceRuleActions?.quizFacts}
