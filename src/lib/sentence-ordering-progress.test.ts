@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
-  learnedSentenceTierIds,
   sentenceTierDone,
   sentenceTierMarkerFact,
 } from "./sentence-ordering-progress.ts";
+import { learnedSentenceTierIds } from "./sentence-ordering-learned.ts";
 import type { FactId, HistoryFile, QuizSessionRecord } from "../types/index.ts";
 
 const A = "grammar:te-request:meaning" as FactId;

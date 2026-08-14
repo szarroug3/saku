@@ -25,7 +25,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { readableAssemblyForTiers } from "@/data/assembly";
-import { learnedSentenceTierIds } from "@/lib/sentence-ordering-progress";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import { resolve } from "@/lib/selection";
 import { emptySelection } from "@/lib/selection-empty";
 import {

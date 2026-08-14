@@ -53,7 +53,7 @@
 // arithmetic: finish a drill, press "Redrill the misses", answer thirty seconds
 // later, and the second session folds at p ≈ 1 → ×1.0. See scoring.review().
 
-import { EMPTY_COUNTS } from "@/lib/accuracy";
+import { EMPTY_COUNTS } from "@/lib/fact-counts";
 import { review, UNMET } from "@/lib/scoring";
 import type {
   FactAggregate,

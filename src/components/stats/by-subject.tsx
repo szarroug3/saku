@@ -43,7 +43,7 @@ import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import type { Claims } from "@/lib/claims";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { KIND_LABEL } from "@/lib/library/entries";
-import { learnedSentenceTierIds } from "@/lib/sentence-ordering-progress";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type {
   AccuracyMetric,
   EntryId,

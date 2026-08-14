@@ -48,7 +48,7 @@ import {
 import {
   learnedSentenceTierFacts,
   learnedSentenceTierIds,
-} from "@/lib/sentence-ordering-progress";
+} from "@/lib/sentence-ordering-learned";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import type { Selection } from "@/types";

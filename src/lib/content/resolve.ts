@@ -47,3 +47,12 @@ function corpus(): Map<EntryId, ContentItem> {
 export function resolveItem(entry: EntryId): ContentItem | undefined {
   return corpus().get(entry);
 }
+
+/** Every entry `resolveItem` can resolve — the corpus keys. The /learn index
+ * build serializes a resolve node for each so the precomputed frontier can pull a
+ * prereq's primary unit without the dictionary. A superset of the entries any
+ * `item.prereqs` names, which is what matters: nothing a chain can reach is left
+ * unresolvable. */
+export function resolvableEntries(): EntryId[] {
+  return [...corpus().keys()];
+}

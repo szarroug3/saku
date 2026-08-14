@@ -26,15 +26,14 @@ import { Btn } from "@/components/ui";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { WHY_TRACK } from "@/data/why";
 import type { Why } from "@/data/why";
-import type { ContentItem } from "@/lib/content/item";
-import type { UnitLesson } from "@/lib/content/teach-unit";
+import type { PreviewItem, PreviewLesson } from "@/lib/content/preview-item";
 import type { FactId } from "@/types";
 
 /** The distinct items of a lesson, in teach order — a glyph shown more than once
  * (a word across two pronunciation units) is one tile, at its first appearance. */
-function lessonItems(lesson: UnitLesson): ContentItem[] {
+function lessonItems(lesson: PreviewLesson): PreviewItem[] {
   const seen = new Set<string>();
-  const items: ContentItem[] = [];
+  const items: PreviewItem[] = [];
   for (const unit of lesson.units) {
     const key = String(unit.item.entry);
     if (seen.has(key)) continue;
@@ -73,7 +72,7 @@ export function NextLessonPreview({
   onContinue,
 }: {
   /** The next lesson, in the new content model. */
-  lesson: UnitLesson;
+  lesson: PreviewLesson;
   /** The editorial heading — the track's title ("Kana", "Vocabulary"). Defaults
    * to "Up next" for an inert preview that has no track to name. */
   title?: string;

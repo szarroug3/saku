@@ -10,6 +10,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "build:learn-index": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs",
+    "prebuild": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -13,14 +13,14 @@
 
 import type { CSSProperties } from "react";
 
-import type { ContentItem } from "@/lib/content/item";
+import type { PreviewItem } from "@/lib/content/preview-item";
 
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 /** The ghost-watermark char: the first Japanese glyph in the item, SKIPPING a
  * leading 〜 or other mark (so 〜たい → た), or 文 ("writing / sentence") for a
  * building-sentences tier whose label is Latin. Null when there's nothing to show. */
-function watermarkChar(item: ContentItem): string | null {
+function watermarkChar(item: PreviewItem): string | null {
   for (const c of item.glyph) if (CJK.test(c)) return c;
   if (item.kind === "sentence-ordering") return "文";
   return null;
@@ -42,7 +42,7 @@ function glyphSize(glyph: string): string {
   return "text-[16px]";
 }
 
-export function ItemPreview({ item }: { item: ContentItem }) {
+export function ItemPreview({ item }: { item: PreviewItem }) {
   const ghost = watermarkChar(item);
   return (
     <div

@@ -1,8 +1,13 @@
+// CONTENT-FREE. This module holds the sentence-ordering PROGRESS primitives — the
+// tier marker fact-id and completion checks — that read only history, so it does
+// NOT import the assembly corpus (and, through it, the ~8.6 MB dictionary). That
+// matters because quiz-session.tsx imports `isSentenceTierMarkerFact` and is mounted
+// GLOBALLY (QuizSessionProvider in the root layout), so any dictionary edge here
+// would land the dictionary on every route. The functions that DO need the corpus —
+// `learnedSentenceTierIds`/`learnedSentenceTierFacts` — live in
+// sentence-ordering-learned.ts for exactly that reason.
+
 import type { FactId, HistoryFile } from "@/types";
-import {
-  SENTENCE_ORDERING_TIERS,
-  tierAssemblyFacts,
-} from "@/data/assembly";
 
 /** Track-local completion marker. It is intentionally not a registered quiz
  * fact: it records an explicit "I already know this tier" action without
@@ -39,16 +44,4 @@ export function sentenceTierDone(
         ([fact, counts]) => tierFacts.has(fact as FactId) && counts.seen > 0,
       ),
   );
-}
-
-/** Sentence types the learner has explicitly claimed or completed in assembly. */
-export function learnedSentenceTierIds(history: HistoryFile): string[] {
-  return SENTENCE_ORDERING_TIERS.filter((tier) =>
-    sentenceTierDone(tier.id, tierAssemblyFacts(tier, history), history),
-  ).map((tier) => tier.id);
-}
-
-/** Non-drill markers that carry learned sentence-type scope into assembly. */
-export function learnedSentenceTierFacts(history: HistoryFile): FactId[] {
-  return learnedSentenceTierIds(history).map(sentenceTierMarkerFact);
 }

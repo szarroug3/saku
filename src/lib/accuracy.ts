@@ -47,15 +47,15 @@
 // legible act, spelled out at the call site, rather than the thing that
 // happens by default when you reach for the obvious function.
 
-import { factsOf } from "@/lib/facts";
-import type { AccuracyMetric, EntryId, FactCounts, FactId } from "@/types";
+import { EMPTY_COUNTS } from "@/lib/fact-counts";
+import type { AccuracyMetric, FactCounts, FactId } from "@/types";
 
-export const EMPTY_COUNTS: FactCounts = {
-  seen: 0,
-  missed: 0,
-  firstTry: 0,
-  correct: 0,
-};
+// This module is CONTENT-FREE (no fact registry, no dictionary), so any history-
+// touching route can do accuracy math without pulling the ~8.6 MB curriculum
+// content. The one function that needed `factsOf` — `summaryOfEntry` — lives in
+// entry-summary.ts for exactly that reason; `EMPTY_COUNTS` likewise moved to
+// fact-counts.ts and is re-exported here so accuracy.ts's own callers are unchanged.
+export { EMPTY_COUNTS };
 
 /**
  * The least a thing must be for an accuracy to be read off it: counts, per
@@ -147,26 +147,9 @@ export interface EntrySummary {
   readonly seen: number;
 }
 
-/** An entry's summary accuracy, or null when none of its facts is practised. */
-export function summaryOfEntry(
-  history: CountsByFact,
-  entry: EntryId,
-  metric: AccuracyMetric,
-): EntrySummary | null {
-  let sum = 0;
-  let facts = 0;
-  let seen = 0;
-  for (const f of factsOf(entry)) {
-    const agg = history.facts[f];
-    const pct = agg ? accuracyOf(agg, metric) : null;
-    if (pct === null) continue; // never practised — unknown, not zero
-    sum += pct;
-    facts++;
-    seen += agg!.seen;
-  }
-  if (!facts) return null;
-  return { meanPct: Math.round(sum / facts), facts, seen };
-}
+// `summaryOfEntry` (an entry's mean accuracy across its facts) lived here but
+// needed `factsOf`; it now lives in entry-summary.ts so this module stays content-
+// free. `EntrySummary` (its result shape) stays here beside `formatSummary`.
 
 /** "88%" — always carries the unit so the ring can't be misread as a count. */
 export function formatAccuracy(pct: number | null): string {

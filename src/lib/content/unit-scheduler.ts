@@ -11,11 +11,14 @@
 // (`orderedUnits`), every other track supplies its curriculum sequence. The
 // scheduler never orders; it fills, gates, and dedupes.
 //
-// It does NOT re-derive anything. Cost, dueness and the unit split come from
-// teach-unit.ts; the prereq graph and corpus lookup from build-item and resolve;
-// the budget/depth SEMANTICS mirror planLesson exactly (fill toward the floor,
-// never past the ceiling save a lone oversized bundle; defer a unit whose
-// untaught-prereq chain runs past MAX_PREREQ_DEPTH).
+// THE WALK ITSELF LIVES IN unit-scheduler-core.ts, content-free. This module is
+// the CONTENT-BACKED BINDING of it: it supplies the three touch-points the walk
+// needs — dueness (`isFactFresh`), a prereq's primary unit (`resolveItem` +
+// `primaryUnit`), and whether a blocker is learned (`factsOf`) — from the live
+// dictionary. The /learn loader binds the SAME core to a precomputed index instead
+// (learn-index.ts), so /learn runs this exact walk without the dictionary. Keeping
+// one core means the two can never disagree; `contentResolvePrereq` here is also
+// what the build script serializes, so the precomputed resolve IS this one's output.
 //
 // PREREQUISITES ACROSS THE UNIT GRAIN. A prerequisite lives on the ITEM
 // (`ContentItem.prereqs`) — 何 is built on 人 and 可 regardless of which reading is
@@ -26,19 +29,23 @@
 // primary unit, in dependency order. (A prereq the corpus can't yet resolve — a
 // word, until the word track migrates `resolveItem` — is skipped, not a gate.)
 
-import { MAX_PREREQ_DEPTH, isFactFresh } from "./scheduler";
 import { factsOf } from "@/lib/facts";
 import { buildGlyphItem } from "./build-item";
 import { resolveItem } from "./resolve";
 import {
   orderedUnits,
   pronunciationUnitsOf,
-  unitCost,
-  isUnitDue,
   byFrequencyDesc,
 } from "./teach-unit";
+import {
+  MAX_PREREQ_DEPTH,
+  isFactFresh,
+  planUnitLessonCore,
+  nextTrackLessonCore,
+  type SchedulerDeps,
+  type ResolvedPrereq,
+} from "./unit-scheduler-core";
 import type { PronunciationUnit, TeachingUnit, UnitLesson } from "./teach-unit";
-import type { ContentItem } from "./item";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { EntryId, HistoryFile } from "@/types";
 
@@ -59,47 +66,31 @@ function primaryUnit(glyph: string): PronunciationUnit | undefined {
   return [...pronunciationUnitsOf(item)].sort(byFrequencyDesc)[0];
 }
 
-/** The dedupe identity of a unit within one lesson. A pronunciation unit is one
- * reading of its item (entry + reading); every other kind is one unit per item,
- * so its entry is enough. A reading-null (meaning-only) unit gets a stable key. */
-function unitKey(unit: TeachingUnit): string {
-  const entry = String(unit.item.entry);
-  return unit.kind === "pronunciation" ? `${entry}␟${unit.reading ?? ""}` : entry;
+/**
+ * Resolve a prereq entry to its primary unit — the content-backed binding the
+ * walk's `deps.resolvePrereq` needs, and the exact thing the build script
+ * serializes into the /learn index (so the precomputed resolve is byte-for-byte
+ * this function's output). Mirrors the original inline `prereqChain` step:
+ * `resolveItem(p)?.glyph` → `primaryUnit(pg)` → recurse on `buildGlyphItem(pg).prereqs`
+ * (carried here as `item.prereqs`, which IS that).
+ */
+export function contentResolvePrereq(
+  entry: EntryId,
+): ResolvedPrereq<TeachingUnit> | undefined {
+  const item = resolveItem(entry);
+  if (!item) return undefined;
+  const pu = primaryUnit(item.glyph);
+  if (!pu) return undefined;
+  return { glyph: item.glyph, prereqs: item.prereqs, unit: pu };
 }
 
-/**
- * An item's still-untaught prerequisite PRIMARY units, in dependency order
- * (prereqs first), or null if any untaught branch runs deeper than `maxDepth`.
- * Mirrors `untaughtChain` in scheduler.ts: a learned component stops the walk (it
- * doesn't extend the chain), so an item's effective depth shrinks as its
- * components are learned and the gate lifts on its own. The item's OWN unit is not
- * included — the caller appends the specific due unit it is scheduling.
- */
-function prereqChain(
-  item: ContentItem,
-  history: HistoryFile,
-  maxDepth: number,
-): PronunciationUnit[] | null {
-  const chain: PronunciationUnit[] = [];
-  const seen = new Set<string>();
-  if (item.glyph) seen.add(item.glyph); // the item itself never re-enters as a prereq
-  const visit = (prereqs: readonly EntryId[], depth: number): boolean => {
-    for (const p of prereqs) {
-      const pg = resolveItem(p)?.glyph;
-      if (pg == null) continue; // not in the corpus we can reach → not a gate
-      const pu = primaryUnit(pg);
-      if (!pu || !isUnitDue(pu, history)) continue; // unknown, or already learned
-      if (seen.has(pg)) continue;
-      seen.add(pg);
-      if (depth + 1 > maxDepth) return false; // this component sits too deep
-      const pit = buildGlyphItem(pg);
-      if (pit && !visit(pit.prereqs, depth + 1)) return false; // its own prereqs first…
-      chain.push(pu); //                                          …then the component's primary unit
-    }
-    return true;
-  };
-  return visit(item.prereqs, 0) ? chain : null;
-}
+/** The content-backed deps: the live dictionary behind every touch-point the
+ * lesson walk needs. */
+const CONTENT_DEPS: SchedulerDeps<TeachingUnit> = {
+  isFactFresh,
+  resolvePrereq: contentResolvePrereq,
+  isLearned,
+};
 
 /**
  * The pure core, factored out like `planLesson` so the depth gate is testable at
@@ -117,40 +108,7 @@ export function planUnitLesson(
   maxDepth: number = MAX_PREREQ_DEPTH,
   start: number = 0,
 ): TeachingUnit[] {
-  const out: TeachingUnit[] = [];
-  const emitted = new Set<string>();
-  let spent = 0;
-  // `start` skips a fully-learned leading prefix — a caller walking the same track
-  // forward advances it past units already taught, so the scan stays near the
-  // front instead of re-checking the whole (learned) history each lesson.
-  for (let i = start; i < order.length; i++) {
-    const unit = order[i];
-    if (!isUnitDue(unit, history)) continue;
-    // BLOCKING gate: a unit whose item is blocked by an unlearned dependency is
-    // deferred and its blockers are NOT pulled in — if the block never lifts, it
-    // is never taught (a transitivity pair whose verb the curriculum never teaches).
-    if (unit.item.blockedBy.some((e) => !isLearned(e, history))) continue;
-    // A "unit"-scheduled unit IS a whole lesson: never combined with others. If a
-    // lesson is already forming, stop here and let it start the next one.
-    const soloLesson = unit.scheduling === "unit";
-    if (soloLesson && out.length > 0) break;
-    const chain = prereqChain(unit.item, history, maxDepth);
-    if (!chain) continue; // untaught-prereq chain too deep → defer this unit
-    const bundle: TeachingUnit[] = [...chain, unit];
-    const fresh = bundle.filter((u) => !emitted.has(unitKey(u)));
-    const add = fresh.reduce((n, u) => n + unitCost(u), 0);
-    // Never cross the ceiling — but a lone bundle bigger than the whole range is
-    // taught anyway, so a due unit can't yield an empty lesson.
-    if (out.length > 0 && spent + add > range.max) break;
-    for (const u of fresh) {
-      out.push(u);
-      emitted.add(unitKey(u));
-    }
-    spent += add;
-    if (soloLesson) break; // this unit is the entire lesson
-    if (spent >= range.min) break; // floor reached → stop
-  }
-  return out;
+  return planUnitLessonCore(order, history, range, CONTENT_DEPS, maxDepth, start);
 }
 
 /**
@@ -166,8 +124,7 @@ export function nextTrackLesson(
   range: LessonRange,
   start: number = 0,
 ): UnitLesson | null {
-  const units = planUnitLesson(order, history, range, MAX_PREREQ_DEPTH, start);
-  return units.length ? { units } : null;
+  return nextTrackLessonCore(order, history, range, CONTENT_DEPS, start);
 }
 
 /**

@@ -49,9 +49,9 @@ import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import {
-  learnedSentenceTierIds,
   sentenceTierMarkerFact,
 } from "@/lib/sentence-ordering-progress";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type { HistoryFile, SessionStats } from "@/types";
 import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
 

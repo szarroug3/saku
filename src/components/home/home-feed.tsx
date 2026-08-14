@@ -25,84 +25,67 @@
 // left mid-session is resumed from its own track's card (Continue), which lights
 // when an in-progress run belongs to that track (trackKeyForRun below).
 
-import { startTransition, useMemo } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 
-import { UNIT_TRACKS } from "@/lib/content/unit-tracks";
-import { nextTrackLesson } from "@/lib/content/unit-scheduler";
-import type { TeachingUnit, UnitLesson } from "@/lib/content/teach-unit";
+// /learn schedules over a PRECOMPUTED index, not the live curriculum content: the
+// ~8.6 MB dictionary is derived at build time into learn-index.json and this page
+// carries only the tiny scheduling shape (glyph, typeLabel, fact-ids, prereqs).
+// See docs/perf-learn-bundle.md and src/lib/content/learn-index.ts.
+import {
+  LEARN_TRACKS,
+  nextLearnLesson,
+  trackIdOfFact,
+  CURRICULUM_GLYPHS,
+} from "@/lib/content/learn-index";
+import type { IndexUnit } from "@/lib/content/learn-index-types";
+import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import { positionLabel, type LessonPosition } from "@/lib/lesson-position";
 import { resumeLesson } from "@/lib/lesson-resume";
-import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
 
 import type { Why } from "@/data/why";
-import { VOCAB_SUBJECT } from "@/data/vocab";
-import { COUNTER_ENTRIES } from "@/data/counters";
-import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
-import {
-  nextSentenceOrderingLesson,
-  sentenceLessonFacts,
-} from "@/lib/sentence-ordering-plan";
-import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
-import { entryOf, factInfo } from "@/lib/facts";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import type { FactId } from "@/types";
 
-// The track keys a curriculum run can belong to, read from its FACTS. This is the
-// same resolver the old feed used, still needed because a run's facts name a
-// SUBJECT, not a UNIT_TRACK id, and counters share the `word` subject with vocab.
-type FactTrackKey =
-  | "kana"
-  | "kanji"
-  | "radical"
-  | "word"
-  | "counter"
-  | "grammar"
-  | "transitivity"
-  | "keigo"
-  | "sentence-ordering";
+/** A /learn lesson: the units the frontier chose, in teach order. */
+type LearnLesson = UnitLessonOf<IndexUnit>;
 
-/** Which fact-track an in-progress run belongs to, read from its facts (not a
- * cursor). A prep/assembly session may prepend prerequisite facts, so this scans
- * all facts before falling back to the first. Returns null for a run whose fact
- * isn't in the registry. Mirrors the old trackOfRun. */
-function factTrackOfRun(run: RunInfo): FactTrackKey | null {
-  if (run.mode === "assembly") return "sentence-ordering";
-  if (/^Counters\b/i.test(run.what)) return "counter";
-  for (const fact of run.facts) {
-    if (COUNTER_ENTRIES.has(entryOf(fact))) return "counter";
-    const subject = factInfo(fact)?.subject;
-    if (subject === "keigo") return "keigo";
-    if (subject === "grammar") return "grammar";
-    if (subject === "transitivity") return "transitivity";
-    if (subject === "kana") return "kana";
-  }
-  const fact = run.facts[0];
-  if (!fact) return null;
-  const subject = factInfo(fact)?.subject;
-  if (subject === undefined) return null;
-  if (subject === VOCAB_SUBJECT) {
-    return COUNTER_ENTRIES.has(entryOf(fact)) ? "counter" : "word";
-  }
-  return subject as FactTrackKey;
-}
+/** The sentence-ordering track's helpers pull the curriculum dictionary (they read
+ * the assembly corpus + fact registry), so they are LAZY-LOADED — kept off the
+ * initial /learn bundle and fetched only when needed: the drill facts on launch
+ * (startSentence), the readable-gate for the "curriculum complete" check via an
+ * effect below. The precomputed sentence units still drive the CARD; only these
+ * two content-dependent extras are deferred. */
+type SentencePlan = typeof import("@/lib/sentence-ordering-plan");
 
-/** The UNIT_TRACK id a run belongs to — the fact-track folded onto the content
- * model's track set (radical/kanji/word are one `vocab` climb; counter is the
- * `numbers` track; sentence-ordering is `sentence`). */
+/** The /learn track id an in-progress run belongs to, read from its FACTS via the
+ * precomputed index's fact→track map (`trackIdOfFact`) — no fact registry, no
+ * dictionary. The map already folds facts onto the content model's tracks (a
+ * counter fact → `numbers`, a word fact → `vocab`, …), so this reproduces the old
+ * fact-subject resolver's output content-free.
+ *
+ * Two runs the index can't classify keep their own shortcut: an ASSEMBLY run
+ * drills readable sentence facts (not the tier marker the index carries), so it is
+ * the `sentence` track by mode; a Counters run is named as such. Otherwise this
+ * mirrors the old priority scan: a prep session may prepend vocab prerequisite
+ * facts before, say, a keigo lesson, so the first NON-vocab fact wins (the old
+ * scan likewise skipped word facts), falling back to the first fact's track. */
 function trackKeyForRun(run: RunInfo): string | null {
-  const t = factTrackOfRun(run);
-  if (!t) return null;
-  if (t === "kanji" || t === "radical" || t === "word") return "vocab";
-  if (t === "counter") return "numbers";
-  if (t === "sentence-ordering") return "sentence";
-  return t; // kana, keigo, grammar, transitivity map through unchanged
+  if (run.mode === "assembly") return "sentence";
+  if (/^Counters\b/i.test(run.what)) return "numbers";
+  for (const fact of run.facts) {
+    const t = trackIdOfFact(fact);
+    if (t && t !== "vocab") return t;
+  }
+  const first = run.facts[0];
+  if (!first) return null;
+  return trackIdOfFact(first) ?? null;
 }
 
 /** The noun each track counts its position in — "Word 3–8 of 6,213". Vocab mixes
@@ -157,8 +140,8 @@ const TRACK_WHY: Record<string, Why> = {
  * the total is a property of the material, not the lesson-length slider.
  */
 function positionFor(
-  order: readonly TeachingUnit[],
-  lesson: UnitLesson,
+  order: readonly IndexUnit[],
+  lesson: LearnLesson,
 ): LessonPosition {
   const firstIdx = new Map<string, number>();
   let total = 0;
@@ -184,7 +167,7 @@ function kanaScript(glyph: string): "Hiragana" | "Katakana" {
  * hiragana, then "Katakana 1–5 of 46" once katakana opens — not one running "Kana
  * 6–10 of 214" spanning both. The position and its denominator are scoped to the
  * lesson's own script (hiragana and katakana are contiguous blocks in the order). */
-function kanaPositionLabel(order: readonly TeachingUnit[], lesson: UnitLesson): string {
+function kanaPositionLabel(order: readonly IndexUnit[], lesson: LearnLesson): string {
   const script = kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
   const firstIdx = new Map<string, number>();
   let total = 0;
@@ -206,7 +189,7 @@ function kanaPositionLabel(order: readonly TeachingUnit[], lesson: UnitLesson): 
 /** Every fact of one script's kana in the track order — what "I already know all
  * hiragana" claims. */
 function kanaScriptFacts(
-  order: readonly TeachingUnit[],
+  order: readonly IndexUnit[],
   script: "Hiragana" | "Katakana",
 ): FactId[] {
   const facts: FactId[] = [];
@@ -219,14 +202,14 @@ function kanaScriptFacts(
 /** Curriculum position of every vocab glyph — the prereq-respecting teaching order
  * (a component sits just before what it builds), NOT the frequency order the vocab
  * track schedules its reading UNITS in. */
-const CURRICULUM_INDEX = new Map(CURRICULUM_SEQUENCE.map((it, i) => [it.glyph, i]));
+const CURRICULUM_INDEX = new Map(CURRICULUM_GLYPHS.map((glyph, i) => [glyph, i]));
 
 /** The vocab card's position, counted in CURRICULUM order. The vocab track is
  * ordered by spoken frequency, so a lesson pulls a due glyph plus its prerequisites
  * from all over that order — counting first-unit appearances there spread a 5-item
  * lesson across "1–459". Curriculum order keeps a lesson's items contiguous (人 口
  * 可 何 一 → a tight span), which is the position a learner actually feels. */
-function vocabPositionLabel(lesson: UnitLesson): string {
+function vocabPositionLabel(lesson: LearnLesson): string {
   const idxs = [...new Set(lesson.units.map((u) => u.item.glyph))]
     .map((g) => CURRICULUM_INDEX.get(g))
     .filter((x): x is number => x !== undefined);
@@ -234,13 +217,13 @@ function vocabPositionLabel(lesson: UnitLesson): string {
   return positionLabel("Vocab", {
     from: Math.min(...idxs) + 1,
     to: Math.max(...idxs) + 1,
-    total: CURRICULUM_SEQUENCE.length,
+    total: CURRICULUM_GLYPHS.length,
   });
 }
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
  * `sentence-ordering:<id>` (sentence-track.ts). */
-function sentenceTierId(lesson: UnitLesson): string | null {
+function sentenceTierId(lesson: LearnLesson): string | null {
   const entry = String(lesson.units[0]?.item.entry ?? "");
   const prefix = "sentence-ordering:";
   return entry.startsWith(prefix) ? entry.slice(prefix.length) : null;
@@ -257,13 +240,17 @@ export function HomeFeed() {
     [cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
-  // Each track's order (computed once — vocab interleaves the whole curriculum by
-  // frequency, so it is the one worth memoizing) and its live next lesson.
+  // The sentence-ordering readable-gate is loaded lazily and ONLY when it can
+  // matter — see the effect below. Held in state so the render sees it once it lands.
+  const [sentencePlan, setSentencePlan] = useState<SentencePlan | null>(null);
+
+  // Each track's precomputed order (units are history-independent) and its live
+  // next lesson, computed over the index by the content-free scheduler.
   const frontiers = useMemo(
     () =>
-      UNIT_TRACKS.map((track) => {
-        const order = track.units(history);
-        return { track, order, frontier: nextTrackLesson(order, history, range) };
+      LEARN_TRACKS.map((track) => {
+        const order = track.units;
+        return { track, order, frontier: nextLearnLesson(order, history, range) };
       }),
     [history, range],
   );
@@ -283,7 +270,7 @@ export function HomeFeed() {
   const shown = frontiers.map(({ track, order, frontier }) => {
     const run = lessonRuns.find((r) => trackKeyForRun(r) === track.id);
     const lesson = resumeLesson(history, frontier, run, (h) =>
-      nextTrackLesson(track.units(h), h, range),
+      nextLearnLesson(track.units, h, range),
     );
     return { track, order, run, lesson };
   });
@@ -306,7 +293,7 @@ export function HomeFeed() {
   const newlySeen = (facts: FactId[]) =>
     facts.filter((f) => history.seen?.[f] === undefined);
 
-  const factsOfLesson = (lesson: UnitLesson): FactId[] =>
+  const factsOfLesson = (lesson: LearnLesson): FactId[] =>
     lesson.units.flatMap((u) => u.facts);
 
   // Start a track's lesson — teach-then-drill (Start) or drill-now (Quiz me). The
@@ -324,11 +311,11 @@ export function HomeFeed() {
   //     "assembly" mode. Handled entirely by startSentence below.
   const startTrack = (
     trackId: string,
-    lesson: UnitLesson,
+    lesson: LearnLesson,
     { teach = true } = {},
   ) => {
     if (trackId === "sentence") {
-      startSentence(lesson, { teach });
+      void startSentence(lesson, { teach });
       return;
     }
     const facts = factsOfLesson(lesson);
@@ -350,12 +337,21 @@ export function HomeFeed() {
   // Sentence ordering: teach the structure, then drill its readable sentences in
   // assembly mode. The tier marker rides in the drill set (retained so completion
   // advances the scheduler) and in the teach set on a Quiz-me too, where it would
-  // otherwise never be claimed.
-  const startSentence = (lesson: UnitLesson, { teach = true } = {}) => {
+  // otherwise never be claimed. The drill facts and marker come from the
+  // dictionary-backed sentence helpers, DYNAMICALLY IMPORTED here so they stay off
+  // the initial /learn bundle — the launch only produces fact-ids, and /session
+  // loads the content anyway.
+  const startSentence = async (lesson: LearnLesson, { teach = true } = {}) => {
     const tierId = sentenceTierId(lesson);
     if (!tierId) return;
+    const [plan, { sentenceTierMarkerFact }, { SENTENCE_ORDERING_TIERS }] =
+      await Promise.all([
+        import("@/lib/sentence-ordering-plan"),
+        import("@/lib/sentence-ordering-progress"),
+        import("@/data/assembly"),
+      ]);
     const marker = sentenceTierMarkerFact(tierId);
-    const drillFacts = sentenceLessonFacts(
+    const drillFacts = plan.sentenceLessonFacts(
       SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId)!,
       history,
     );
@@ -373,7 +369,7 @@ export function HomeFeed() {
   // function of history, so claiming advances it on this frame. A claim also
   // supersedes a session parked on exactly this material — close that run so its
   // Continue button doesn't outlive the body it belonged to (closeIfClaimedAway).
-  const claimTrack = (trackId: string, lesson: UnitLesson, run?: RunInfo) => {
+  const claimTrack = (trackId: string, lesson: LearnLesson, run?: RunInfo) => {
     const facts = factsOfLesson(lesson);
     writes.claim(facts);
     closeIfClaimedAway(run, facts);
@@ -390,12 +386,30 @@ export function HomeFeed() {
   };
 
   // Every track exhausted: the feed above rendered nothing and no kana session is
-  // resting. Sentence ordering has an ANY-of gate the content model can't yet
-  // express as blockedBy, so its readiness is still read from the plan (a tier the
-  // learner could start but hasn't means the curriculum isn't finished).
-  const sentenceReady = !kanaActive && !!nextSentenceOrderingLesson(true, history);
-  const curriculumComplete =
-    !kanaActive && visible.length === 0 && !sentenceReady;
+  // resting. Sentence ordering has an ANY-of gate (readable-vocab count + a taught
+  // grammar pattern) the content model can't express as blockedBy, so its readiness
+  // is read from the plan (a tier the learner could start but hasn't means the
+  // curriculum isn't finished). That plan pulls the dictionary, so it is loaded
+  // LAZILY and ONLY when the rest of the feed is empty — the sole moment the gate
+  // can change the outcome. A normal learner (some track still has work) never
+  // fetches it, keeping the ~8.6 MB off /learn.
+  const maybeComplete = !kanaActive && visible.length === 0;
+  useEffect(() => {
+    if (!maybeComplete || sentencePlan) return;
+    let alive = true;
+    void import("@/lib/sentence-ordering-plan").then((m) => {
+      if (alive) setSentencePlan(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [maybeComplete, sentencePlan]);
+
+  const sentenceReady =
+    maybeComplete && !!sentencePlan?.nextSentenceOrderingLesson(true, history);
+  // Declared complete only once the gate has actually been consulted — until the
+  // lazily-loaded plan lands, hold rather than flash the completion card.
+  const curriculumComplete = maybeComplete && sentencePlan !== null && !sentenceReady;
 
   // Until history has loaded, the frontiers are computed from EMPTY history — the
   // day-one lesson. Rendering that for a returning learner flashes the wrong card,
