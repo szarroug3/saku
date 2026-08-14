@@ -471,9 +471,9 @@ export function Shelf({
       // group has none. The tile grid / row list carries the shelf now, not a box.
       <section
         key={section.id}
-        className={`kq-defer ${first ? "" : "mt-3 border-t border-white/[0.08] pt-3"}`}
+        className={`kq-defer ${first ? "" : "mt-2 border-t border-white/[0.08] pt-2"}`}
       >
-        <div className="mb-2 flex items-center gap-1.5">
+        <div className="mb-1.5 flex items-center gap-1.5">
           <button
             type="button"
             aria-expanded={expanded}
@@ -534,7 +534,11 @@ export function Shelf({
                 </div>
               )
             ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-2 gap-y-1">
+              // pl matches the header's chevron gutter (size-5 + gap-1.5) so the
+              // first tile lines up under the section LABEL, not under the chevron
+              // — the same tab-in the grammar rows use, so a header sits over the
+              // content it heads instead of a step to its left.
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-2 gap-y-1 pl-[26px]">
                 {shown.map(tile)}
               </div>
             )}
