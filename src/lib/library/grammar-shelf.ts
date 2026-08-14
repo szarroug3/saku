@@ -37,8 +37,9 @@ import type { Form } from "@/lib/conjugate";
 /** The trailing bucket's key — the plain-form patterns (which build no shape) and
  * every pattern with no verb host at all. */
 const OTHER = "other";
-/** The LEADING section's key — the case/binding particles, hoisted out of the
- * "Other patterns" bucket into a section of their own at the top of the shelf. */
+/** The key for the case/binding particles — pulled out of the "Other patterns"
+ * bucket into a section of their own, which falls in teaching order (not at the
+ * top: particles are taught after the verb forms the track leads with). */
 const PARTICLES = "particles";
 type SectionKey = Form | typeof OTHER | typeof PARTICLES;
 
@@ -46,11 +47,11 @@ type SectionKey = Form | typeof OTHER | typeof PARTICLES;
  * The PARTICLES section's membership, by recipe id.
  *
  * These are the case- and binding-particle patterns — a noun plus a bare
- * particle, conjugating nothing — that a beginner meets and selects as a group,
- * before any verb form. They otherwise scatter into "Other patterns" alongside
- * the plain-form clause patterns, which buries them; a named section at the top
- * matches where the shelf used to show は/が and に/で and gives every particle a
- * selectable, quizzable (meaning) row like any other pattern.
+ * particle, conjugating nothing — that a learner meets and selects as a group.
+ * They otherwise scatter into "Other patterns" alongside the plain-form clause
+ * patterns, which buries them; a named section gathers them and gives every
+ * particle a selectable, quizzable (meaning) row like any other pattern. The
+ * section sorts into the shelf in teaching order with the rest.
  *
  * An explicit set rather than a computed marker: "is this a particle" is a
  * curatorial call (は/が/に/で/を/へ/まで/までに/だけ/しか are in; a plain-form
@@ -72,8 +73,8 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The section a pattern belongs in: the leading "Particles" section for a case/
- * binding particle, else its verb attach form when that form is a real
+ * The section a pattern belongs in: the "Particles" section for a case/binding
+ * particle, else its verb attach form when that form is a real
  * conjugation shape, else the trailing "Other patterns" bucket.
  *
  * The plain (dictionary) form joins the bucket on purpose — it is the one verb
@@ -131,24 +132,17 @@ export function grammarShelfSections(): ShelfSection[] {
 
   const sections: ShelfSection[] = [];
 
-  // PARTICLES lead the shelf — particles are taught before any verb form, and
-  // this is where は/が and に/で used to sit as bespoke links. Now they are real
-  // selectable rows (through the shared sectionCard/GrammarShelfRow), so the
-  // header is a select-all and each row ticks to drill its meaning.
-  const particles = groups.get(PARTICLES);
-  if (particles?.length) {
-    sections.push({
-      id: "particles",
-      label: "Particles",
-      entries: particles.flatMap((r) => resolve(patternEntry(r.id))),
-    });
-  }
-
+  // Sections come out in TEACHING ORDER — the groups Map preserves the first-seen
+  // order of the grammarRank-sorted recipes, so each section sits at the position
+  // of its first-taught member. Particles are NOT hoisted to the front: they fall
+  // where the track actually reaches them (after the verb forms it leads with),
+  // the same rule every form section follows. OTHER always trails, below.
   for (const [key, recipes] of groups) {
-    if (key === OTHER || key === PARTICLES) continue; // handled separately
+    if (key === OTHER) continue; // trailing — appended last, below
+    const isParticles = key === PARTICLES;
     sections.push({
-      id: `form-${key}`,
-      label: sectionLabel(key),
+      id: isParticles ? "particles" : `form-${key}`,
+      label: isParticles ? "Particles" : sectionLabel(key),
       entries: recipes.flatMap((r) => resolve(patternEntry(r.id))),
     });
   }

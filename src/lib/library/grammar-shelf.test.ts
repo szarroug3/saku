@@ -7,9 +7,9 @@
 // not by JLPT level. Four things have to hold, and the renderer (a .tsx the
 // runner cannot load) trusts this function to deliver them:
 //
-//   1. A "Particles" section leads (particles are taught first), then the form
-//      sections in teaching order (〜な, て/で, ない, た, stem), each labelled by
-//      its form and HEADED by its own form recipe.
+//   1. The foundational form sections lead in teaching order (〜な, て/で, ない,
+//      た, stem), each labelled by its form and HEADED by its own form recipe;
+//      the "Particles" section falls later, where the curriculum reaches it.
 //   2. "Other patterns" trails, holding the plain-form and no-verb-form patterns
 //      and nothing that belongs to a real form section or the Particles section.
 //   3. Every pattern lands in exactly one section — the cut tiles the whole shelf
@@ -35,22 +35,34 @@ import { COMPARISON_CLUSTER_IDS } from "@/lib/library/entries";
 const RECIPE_OF_ENTRY = new Map(RECIPES.map((r) => [patternEntry(r.id), r]));
 
 describe("the grammar shelf is cut by form", () => {
-  test("the Particles section leads, then the foundational form sections in teaching order", () => {
+  test("the foundational form sections lead, and every section runs in teaching order", () => {
     const sections = grammarShelfSections();
-    // Particles come first — they are taught before any verb form, and this is
-    // where は/が and に/で used to sit as bespoke links.
-    assert.equal(sections[0].label, "Particles");
-    const lead = sections.slice(1, 6);
+    // The verb forms the track opens with lead the shelf. Particles are NOT
+    // hoisted to the front — they are taught after the forms, so their section
+    // falls where the curriculum reaches it (asserted below), not first.
+    const lead = sections.slice(0, 5);
     assert.deepEqual(
       lead.map((s) => s.label),
       ["〜な form", "て/で-form", "ない-form", "た-form", "stem"],
-      "the foundational forms follow the Particles section in teaching order",
+      "the foundational forms lead in teaching order",
     );
     assert.deepEqual(
       lead.map((s) => s.entries[0].id),
       ["prenominal-form", "te-sequence", "nai-form", "ta-form", "stem-form"].map(patternEntry),
       "each form section is headed by its own form recipe",
     );
+    const particlesIndex = sections.findIndex((s) => s.label === "Particles");
+    assert.ok(particlesIndex > 4, "Particles follows the foundational forms, not leads");
+    // Every section but the trailing "Other patterns" appears in teaching order:
+    // the rank of each section's first entry never decreases down the shelf.
+    const ranked = sections.filter((s) => s.id !== "form-other");
+    const firstRanks = ranked.map((s) => grammarRank(RECIPE_OF_ENTRY.get(s.entries[0].id)!.id));
+    for (let i = 1; i < firstRanks.length; i++) {
+      assert.ok(
+        firstRanks[i] >= firstRanks[i - 1],
+        `section "${ranked[i].label}" is out of teaching order`,
+      );
+    }
   });
 
   test("the Particles section holds exactly the case/binding particles", () => {
@@ -110,8 +122,8 @@ describe("the grammar shelf is cut by form", () => {
     // A plain-form verb pattern and a bare noun pattern both belong here.
     assert.ok(ids.has("koto-ga-dekiru"), "〜ことができる (plain form) is in Other");
     assert.ok(ids.has("nara"), "〜なら (bare noun, no verb host) is in Other");
-    // The case/binding particles are NOT here any more — they lead the shelf in
-    // their own Particles section.
+    // The case/binding particles are NOT here any more — they live in their own
+    // Particles section (which falls in teaching order, not at the front).
     assert.ok(!ids.has("wo"), "を moved to the Particles section");
     assert.ok(!ids.has("wa"), "は is a Particles-section pattern, not Other");
     // And nothing built on a real conjugation form leaks in.
