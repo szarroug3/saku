@@ -310,15 +310,6 @@ export function SliceBar({
               Quiz eligibility is based on quizzable FORMS, below. Teach remains
               a fact-based session: one stored fact is not a useful lesson loop,
               and an empty order has nothing to teach. */}
-          {/* Quiz me follows one rule on shelves and entry pages alike: the
-              selected pool must contain more than one quizzable form. Ordinary
-              facts count once; a generator category counts the questions in its
-              configured round. */}
-          {canQuiz ? (
-            <Btn sel onClick={() => setQuizzing(true)}>
-              Quiz me {quizCount}
-            </Btn>
-          ) : null}
           {/* Teach me — learn the new, then probe. Gated on the full order, so it
               stays while there is anything at all to teach or review. */}
           {canDrill && order.length > 0 ? (
@@ -344,6 +335,16 @@ export function SliceBar({
               }
             >
               Teach me {teachPlan.displayCount ?? teachPlan.facts.length}
+            </Btn>
+          ) : null}
+          {/* Quiz me is the highlighted primary and sits LAST, rightmost — the
+              last thing in reach, after the file/claim/teach cluster. It follows
+              one rule on shelves and entry pages alike: the selected pool must
+              contain more than one quizzable form (ordinary facts count once; a
+              generator category counts its round's questions). */}
+          {canQuiz ? (
+            <Btn sel onClick={() => setQuizzing(true)}>
+              Quiz me {quizCount}
             </Btn>
           ) : null}
         </div>
