@@ -45,8 +45,8 @@
   --danger-bg: #f6e6e2;
   --success: #2f6a45;
   --success-bg: #e6efe6;
-  --warning: #7a5410;
-  --warning-bg: #f4ead4;
+  --warning: #0f6b62;
+  --warning-bg: #dcefec;
   /* The accuracy ring. A dedicated pair rather than --accent/--panel: the arc
    * is a filled band on a surface, which wants more weight than the accent
    * carries as text, and the track has to sit UNDER the arc without competing
@@ -74,8 +74,8 @@
   --dark-danger-bg: #46231e;
   --dark-success: #86bf9c;
   --dark-success-bg: #22392c;
-  --dark-warning: #d9ab63;
-  --dark-warning-bg: #423115;
+  --dark-warning: #6cc4b8;
+  --dark-warning-bg: #16332f;
   /* --dark-accent is a pastel (#8fa8d8) because it's mostly TEXT; as a filled
    * arc it washes out. Saturated indigo instead — still bright enough on the
    * charcoal ground, but it reads as ink rather than haze. */
@@ -113,8 +113,8 @@
   --danger-bg: #fdeaec;
   --success: #17864b;
   --success-bg: #e6f6ec;
-  --warning: #9a6205;
-  --warning-bg: #fcf0d9;
+  --warning: #0f766e;
+  --warning-bg: #d3efeb;
   --arc: #4b4ade;
   --arc-track: #dcdfe8;
   --shadow-card: none;
@@ -135,8 +135,8 @@
   --dark-danger-bg: #2b1419;
   --dark-success: #4ade80;
   --dark-success-bg: #0d2818;
-  --dark-warning: #fbbf4c;
-  --dark-warning-bg: #2b2010;
+  --dark-warning: #4fd1c5;
+  --dark-warning-bg: #12332f;
   --dark-arc: #5d61f0;
   --dark-arc-track: #272a34;
   --dark-shadow-card: none;
@@ -177,8 +177,8 @@
   --danger-bg: #fee2e2;
   --success: #15803d;
   --success-bg: #dcfce7;
-  --warning: #a16207;
-  --warning-bg: #fef3c7;
+  --warning: #0d9488;
+  --warning-bg: #cef6f0;
   --arc: #15803d;
   --arc-track: #d3e0ec;
   --shadow-card: 0 3px 0 var(--border);
@@ -199,8 +199,8 @@
   --dark-danger-bg: #3d1a16;
   --dark-success: #34d76d;
   --dark-success-bg: #123726;
-  --dark-warning: #eab35a;
-  --dark-warning-bg: #3a2a10;
+  --dark-warning: #2dd4bf;
+  --dark-warning-bg: #123a35;
   --dark-arc: #22a95a;
   --dark-arc-track: #22384a;
   --dark-shadow-card: 0 3px 0 var(--border);
@@ -264,8 +264,8 @@
   --danger-bg: rgba(180, 35, 47, 0.1);
   --success: #0f7a45;
   --success-bg: rgba(15, 122, 69, 0.1);
-  --warning: #8a5a08;
-  --warning-bg: rgba(138, 90, 8, 0.12);
+  --warning: #0e7a70;
+  --warning-bg: rgba(20, 140, 128, 0.12);
   /* Opaque track for the same reason the cards are: a translucent band over
    * the mesh reads as a different colour at every point of the circle. */
   --arc: #096b87;
@@ -295,8 +295,8 @@
   --dark-danger-bg: rgba(255, 138, 148, 0.13);
   --dark-success: #4ade80;
   --dark-success-bg: rgba(74, 222, 128, 0.13);
-  --dark-warning: #fbbf5e;
-  --dark-warning-bg: rgba(251, 191, 94, 0.14);
+  --dark-warning: #57d3c2;
+  --dark-warning-bg: rgba(80, 205, 190, 0.14);
   /* --dark-accent (#67d4f5) is the luminous cyan the theme signs with, but as
    * a filled band it's the "too light" read — it dissolves into the mesh.
    * Deepened until the arc is a solid object again. */
