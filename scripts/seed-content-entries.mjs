@@ -2,9 +2,11 @@
 //
 // Kinds seeded so far: term, mark, grammar-concept (id-only entries, no
 // `item: ContentItem` prop — payload is simply the source object's own fields),
-// and kana (has a glyph/ContentItem, but only its headline {text, speak} is
-// heavy enough to need seeding — see the kana section below). See
-// docs/perf-library-list-bundle.md.
+// and kana, transitivity, counter, generative-rule (each has a glyph/
+// ContentItem, but only itemHeadline's {text, speak} is heavy enough to need
+// seeding — see each section below; transitivity also seeds its glyph, since
+// library-index.ts's `libEntry` doesn't carry the right one for that kind).
+// See docs/perf-library-list-bundle.md.
 //
 // BYTE-CORRECTNESS. Every payload is the real object the live component would
 // have used (TERMS/MARKS/GRAMMAR_CONCEPTS), never re-derived or hand-copied —
@@ -33,6 +35,9 @@ import { buildItem } from "@/lib/content/build-item";
 import { itemHeadline } from "@/lib/content/headline";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry } from "@/data/transitivity-facts";
+import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
+import { NUMBER_CONSTRUCTIONS, numberConstructionEntry } from "@/data/number-construction";
+import { COUNTER_KIND, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/library-index";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -134,7 +139,36 @@ const verbPairRows = VERB_PAIRS.map((pair) => {
   return row(entry, TRANSITIVITY_SUBJECT, { text, speak, glyph: item.glyph });
 }).filter((r) => r != null);
 
-const rows = [...termRows, ...markRows, ...grammarConceptRows, ...kanaRows, ...verbPairRows];
+// ---- counter / generative-rule (Numbers & counters shelf) -----------------
+// Same shape as kana/transitivity: counterForm/numberConstructionFor (both
+// small, self-contained data files, no dictionary dependency) stay live reads
+// in CounterEntryView. Only itemHeadline's {text, speak} is heavy enough to
+// seed. Unlike transitivity, `libEntry`'s glyph IS the same value buildItem
+// produces for both these kinds (checked directly, not assumed — see the
+// commit message), so no glyph needs seeding here.
+const counterRows = COUNTER_CURRICULUM.map((form) => {
+  const entry = counterEntry(form);
+  const item = buildItem(entry, "counter");
+  if (!item) return null;
+  return row(entry, COUNTER_KIND, itemHeadline(item));
+}).filter((r) => r != null);
+
+const constructionRows = NUMBER_CONSTRUCTIONS.map((c) => {
+  const entry = numberConstructionEntry(c.id);
+  const item = buildItem(entry, "generative-rule");
+  if (!item) return null;
+  return row(entry, NUMBER_CONSTRUCTION_KIND, itemHeadline(item));
+}).filter((r) => r != null);
+
+const rows = [
+  ...termRows,
+  ...markRows,
+  ...grammarConceptRows,
+  ...kanaRows,
+  ...verbPairRows,
+  ...counterRows,
+  ...constructionRows,
+];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
 if (error) {
@@ -145,5 +179,6 @@ if (error) {
 console.log(
   `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
     `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
-    `${verbPairRows.length} transitivity rows (${rows.length} total)`,
+    `${verbPairRows.length} transitivity, ${counterRows.length} counter, ` +
+    `${constructionRows.length} generative-rule rows (${rows.length} total)`,
 );

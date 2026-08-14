@@ -176,8 +176,7 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
   // A generative-rule (11–99, 〜本) resolves a construction before it resolves a
   // counter form, so it must be checked first.
   if (numberConstructionFor(entry.id)) {
-    const item = buildItem(entry.id, "generative-rule");
-    return item ? <CounterEntryView item={item} /> : null;
+    return <CounterEntryView entry={entry.id} />;
   }
 
   switch (entry.kind) {
@@ -195,10 +194,8 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
       const item = buildItem(entry.id, "word");
       return item ? <CharacterEntryView item={item} /> : null;
     }
-    case COUNTER_KIND: {
-      const item = buildItem(entry.id, "counter");
-      return item ? <CounterEntryView item={item} /> : null;
-    }
+    case COUNTER_KIND:
+      return <CounterEntryView entry={entry.id} />;
     case KEIGO_SUBJECT: {
       const item = buildItem(entry.id, "keigo");
       return item ? <KeigoEntryView item={item} /> : null;

@@ -14,8 +14,19 @@
 //
 // A given item is one OR the other, never both: an entry either resolves to a
 // counterForm (the form shape) or a numberConstructionFor (the rule shape), so
-// exactly one section renders under the header. Reference data only — the same
-// two sources the live router reads; nothing here is invented.
+// exactly one section renders under the header. counterForm/
+// numberConstructionFor stay LIVE reads — both small, self-contained data
+// files with no dictionary dependency, so there's nothing to gain fetching
+// them. The one heavy thing this page reads is itemHeadline's {text, speak},
+// FETCHED BY ID by default (the Library route) — seeded per entry by
+// scripts/seed-content-entries.mjs. `glyph` comes from library-index.ts's
+// `libEntry` (checked to match buildItem's own glyph for both these kinds,
+// unlike transitivity) rather than needing its own seed field.
+//
+// The teach walk (TeachItemView) and /dev/views already build a live
+// ContentItem for every kind they show, so this also accepts an `item` prop
+// that skips the fetch and reads the headline straight off it — same pattern
+// as KanaEntryView/VerbPairEntryView.
 //
 // NO "Built from" here. A word's "Built from" splits its reading across its
 // kanji off a verified alignment; a counter carries no such alignment, and the
@@ -31,16 +42,21 @@ import { SoundButton } from "@/components/ui/sound-button";
 import {
   counterForm,
   isBareNumber,
-  isKanaForm,
 } from "@/data/counters";
 import { numberConstructionFor } from "@/data/number-construction";
+import { useContentEntry } from "@/lib/library/content-entries";
+import { libEntry } from "@/lib/library/library-index";
+import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
 
 export function CounterEntryView({
+  entry,
   item,
   lesson = false,
 }: {
-  item: ContentItem;
+  entry?: EntryId;
+  item?: ContentItem;
   /** The SAME page in the lesson intro. The counter page shows the same thing in
    * both contexts today (unlike a word, whose lesson hides the readings it isn't
    * teaching), so this only reserves the seam for a future difference; the
@@ -48,17 +64,27 @@ export function CounterEntryView({
   lesson?: boolean;
 }) {
   void lesson;
+  const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
+  const headline = item ? itemHeadline(item) : fetched;
+  const resolvedEntry = item ? item.entry : entry!;
+  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
+
   // The item is EITHER a counted form OR a construction rule; the two lookups are
   // mutually exclusive on a given entry (a form entry names no rule, and a rule
   // entry names no form), so at most one of these is non-null.
-  const form = counterForm(item.entry);
-  const construction = numberConstructionFor(item.entry);
+  const form = counterForm(resolvedEntry);
+  const construction = numberConstructionFor(resolvedEntry);
 
+  if (headline === undefined || headline === null || !glyph) return null;
   if (!form && !construction) return null;
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      <ContentEntryHeader
+        glyph={glyph}
+        headline={headline}
+        typeLabel={construction ? "counting rule" : "counter"}
+      />
 
       {/* ---- COUNTED FORM: how you say it, and what it means ---- */}
       {form ? (
