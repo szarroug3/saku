@@ -13,11 +13,13 @@
 // answers undefined (no facts) renders nothing, the refusal the builders make.
 
 import { CharacterEntryView } from "@/components/library/live-character-entry-view";
-import { CounterEntryView } from "@/components/library/counter-entry-view";
-import { GrammarEntryView } from "@/components/library/grammar-entry-view";
-import { KanaEntryView } from "@/components/library/kana-entry-view";
-import { KeigoEntryView } from "@/components/library/keigo-entry-view";
-import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
+import {
+  CounterEntryView,
+  GrammarEntryView,
+  KanaEntryView,
+  KeigoEntryView,
+  VerbPairEntryView,
+} from "@/components/library/live-item-entry-views";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { numberConstructionFor } from "@/data/number-construction";
 import { COUNTER_ENTRIES } from "@/data/counters";

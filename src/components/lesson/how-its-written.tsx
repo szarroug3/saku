@@ -41,7 +41,7 @@ import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // the role set, because the drill's hint builder asks the same parts question and
 // the lesson and the hint must never disagree about what 明 is made of.
 import type { LessonItem } from "@/lib/lesson-items";
-import { strokeFallbackOf as liveStrokeFallbackOf, type StrokeFallback } from "@/lib/lesson-roles";
+import type { StrokeFallback } from "@/lib/lesson-roles";
 import { useLessonPref } from "@/lib/lesson-prefs";
 import { useGlyphStrokes } from "@/lib/strokes";
 import { entryHref } from "@/lib/library/href";
@@ -51,20 +51,18 @@ import { kanjiEntry } from "@/lib/library/library-index";
  * precomputed — see scripts/build-library-index.mjs's `strokeFallback`. Passing
  * this lets a caller (the Library entry pages) skip `lib/lesson-roles.ts`'s live
  * import chain (kanji.ts, word-forms.ts, kanji-etymology.ts, the live
- * entries.ts) entirely. Omit it and this component falls back to the live
- * function, unchanged — every existing caller keeps working exactly as before. */
+ * entries.ts) entirely. It is required so this shared renderer cannot
+ * accidentally restore that live dependency. */
 export interface PrecomputedStrokeFallback {
   readonly normal: StrokeFallback;
   readonly reference: StrokeFallback;
 }
 
 function strokeFallbackOf(
-  item: LessonItem,
   reference: boolean,
-  precomputed?: PrecomputedStrokeFallback,
+  precomputed: PrecomputedStrokeFallback,
 ): StrokeFallback {
-  if (precomputed) return reference ? precomputed.reference : precomputed.normal;
-  return liveStrokeFallbackOf(item, reference);
+  return reference ? precomputed.reference : precomputed.normal;
 }
 
 /** The whole-shape fallback, shown when there's no stroke data for the glyph.
@@ -85,15 +83,13 @@ function strokeFallbackOf(
  * decision is a role question, so it moved to lesson-roles.ts where the role set
  * lives and where it can be tested. */
 function WholeShapeFallback({
-  item,
   reference = false,
   precomputedFallback,
 }: {
-  item: LessonItem;
   reference?: boolean;
-  precomputedFallback?: PrecomputedStrokeFallback;
+  precomputedFallback: PrecomputedStrokeFallback;
 }) {
-  const fallback = strokeFallbackOf(item, reference, precomputedFallback);
+  const fallback = strokeFallbackOf(reference, precomputedFallback);
 
   if (fallback.show === "parts") {
     return (
@@ -206,9 +202,8 @@ export function HowItsWritten({
    * collapsible, persisted-preference behaviour untouched. */
   alwaysOpen?: boolean;
   /** Both of strokeFallbackOf's answers for this glyph, precomputed — skips the
-   * live lesson-roles.ts import chain entirely when provided. Omit to use the
-   * live function (every existing caller's unchanged behavior). */
-  precomputedFallback?: PrecomputedStrokeFallback;
+   * live lesson-roles.ts import chain entirely. */
+  precomputedFallback: PrecomputedStrokeFallback;
 }) {
   const [pref, setOpen] = useLessonPref("writing");
   const open = alwaysOpen || pref;
@@ -240,7 +235,7 @@ export function HowItsWritten({
   // whole-shape line". Reference mode is right even though this guard also runs
   // in the lesson, because the parts breakdown the lesson adds only ever exists
   // where a stroke count does.
-  const hasFallback = strokeFallbackOf(item, true, precomputedFallback).show !== "whole";
+  const hasFallback = strokeFallbackOf(true, precomputedFallback).show !== "whole";
   if (alwaysOpen && strokes.status === "loading") return null;
   if (alwaysOpen && strokes.status === "ready" && !strokes.data && !hasFallback) {
     return null;
@@ -254,7 +249,7 @@ export function HowItsWritten({
       <StrokeOrder data={strokes.data} />
     ) : (
       // No stroke data for this glyph yet — degrade, don't crash.
-      <WholeShapeFallback item={item} reference={alwaysOpen} precomputedFallback={precomputedFallback} />
+      <WholeShapeFallback reference={alwaysOpen} precomputedFallback={precomputedFallback} />
     );
 
   const content = (

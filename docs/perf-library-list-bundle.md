@@ -1,6 +1,6 @@
 # Perf: get the ~9.5MB curriculum dictionary off `/library`'s list/search page
 
-**Status:** Phase 2a (list/search page) shipped and merged. Phase 2b (entry-detail pages, below) is in progress: 9 of 10 content kinds migrated to fetch-by-id, `character` (kanji/radical/word) and a final dispatcher pass still to go. Follow-on to `docs/perf-learn-bundle.md` (Phase 1, `/learn`).
+**Status:** Complete. Phase 2a moved list/search to a generated content-free index; Phase 2b migrated all 10 entry-detail kinds to fetch-by-id and moved the dispatcher, metadata layout, grammar presentation, and Library action gates off the live dictionary. Follow-on to `docs/perf-learn-bundle.md` (Phase 1, `/learn`).
 
 ---
 
@@ -8,7 +8,7 @@
 
 The original Phase 2 (in `perf-learn-bundle.md`) called for moving the content dictionary + Library meaning-search to **Supabase**, fetched by ID. Partway into scoping that, a cheaper alternative surfaced: `/library`'s list/search page doesn't need a database at all — it needs the same **precompute** pattern Phase 1 already proved for `/learn`. No infra, no schema, no seed script.
 
-That pivot was approved and is what shipped. **Supabase was never touched.** It remains exactly Phase 2's plan for a *different, still-open* piece — see "What's still deferred" below.
+That pivot was approved and is what Phase 2a shipped. **Supabase was not touched by Phase 2a.** Phase 2b then used it for the separate entry-detail payload problem.
 
 ## Root cause
 
@@ -32,7 +32,7 @@ This is the same shape the codebase had already recognized once, in `facts.ts` �
 
 **Rewired consumers** (swapped a live-content import for the content-free twin, function-for-function, zero behavior change): `library/search.ts`, `library/all-tab.ts`, `library/url-state.ts`, `library/href.ts`, `library/counter-shelf.ts`, `library/sub-label.ts`, `library/grammar-shelf.ts`, `library/kanji-shelf.ts`, `library/ranged-groups.ts`, `library/slice.ts`, `components/library/shelves.tsx`, `components/library/entry-tile.tsx`, `components/library/library-page.tsx`, `app/dev/library/page.tsx`.
 
-**One genuine lazy-load** (not precomputable — needs live history at call time): `components/library/slice-bar.tsx` dynamically imports `lib/word-unlock.ts` (reading-anchor index, built from the full word list) only once the bar actually has a selection to act on — mirrors the `sentenceAssembly` lazy-load pattern from Phase 1's `home-feed.tsx`.
+**History-dependent reading gates are precomputed structurally**: the index serializes each of 3,496 kanji-reading facts to the multi-part word-meaning facts that can prove it. `SliceBar` applies the live user's history to that small mapping, so claim/quiz eligibility remains byte-equivalent to `word-unlock.ts` without importing its dictionary-backed reading index. Equivalence tests compare both filters against the live implementation across every fact.
 
 **One deliberate revert**: `data/grammar/lessons.ts`'s `factsOf`/`patternEntry` imports were briefly swapped to the content-free versions, then reverted. `lessons.ts` sits in the *build script's own* dependency chain (`grammar-order.ts` → `lessons.ts`, needed to precompute `grammarTeachingOrderIds`), so having it depend on the generated JSON it helps produce is a real bootstrap cycle, not just a style nit. It doesn't matter for `/library`'s bundle — nothing on that page's path reaches `lessons.ts` anymore (the one thing that did, `grammar-shelf.ts`'s `grammarRank`, now reads the precomputed order instead).
 
@@ -59,7 +59,7 @@ This is the same shape the codebase had already recognized once, in `facts.ts` �
 
 ## Phase 2b: entry-detail pages, fetch-by-id (Supabase)
 
-The piece the original plan called "Supabase, fetched by ID" and Phase 2a explicitly deferred. In progress, not finished.
+The piece the original plan called "Supabase, fetched by ID" and Phase 2a explicitly deferred. Complete.
 
 ### Infrastructure
 
@@ -74,14 +74,14 @@ The piece the original plan called "Supabase, fetched by ID" and Phase 2a explic
 Two genuinely different techniques share the "fetch by id" label here, and picking the right one per kind mattered more than following one recipe everywhere:
 
 1. **Full-payload fetch** (term, mark, grammar-concept): the kind's own data file (`data/terms.ts`, `data/marks.ts`) is itself the heavy thing — or close enough — so the *entire* object the live component rendered is seeded and fetched whole. The live component's own rendering code is otherwise **unchanged**.
-2. **Headline-only fetch** (kana, sentence, verbpair, counter, generative-rule, keigo, grammar): the kind's actual content data (`data/keigo.ts`, `data/transitivity.ts`, `data/counters.ts`, `data/grammar/recipes.ts`, `data/grammar/clusters.ts`) turned out to be small and self-contained — no dictionary dependency — so it was **left as a live import**, verified file-by-file rather than assumed. The *only* thing seeded is `itemHeadline`'s `{text, speak}` output (a genuinely heavy derivation: `teachUnitsOf` → `factInfo`/`kanjiRow`/`keigoSetForEntry`/`grammarUnitsOf`, all reaching into the big dictionary), because that's the one piece every kind's shared `ContentEntryHeader` needs and the one piece that can't be made content-free without precomputing it.
+2. **Mostly headline-only fetch** (kana, sentence, verbpair, counter, generative-rule, keigo, grammar): each kind's small self-contained content stays live, while `itemHeadline`'s `{text, speak}` output is seeded. Grammar additionally seeds the exact authored/generated teaching pages and family-table build strings; the renderers for those values otherwise reached grammar lesson/fact and vehicle/vocabulary modules. This was found by tracing and measuring the production graph, not by assuming a source file was light.
    - `sentence-ordering` needed **no new seed data at all** — a sentence tier's library entry *is* its mark's own entry id, so it reuses the mark rows already seeded for kind 1.
-   - `grammar` needed **no fetch for its actual pattern data either** — `recipeOf`/`recipesOf` were reproduced content-free in `library-index.ts` (byte-identical to `library/entries.ts`'s versions, same `RECIPES` walk) once it became clear the entanglement was entirely in reading the lookup *through* `entries.ts`'s heavy import chain, not in the recipe/cluster data itself. Only the headline is fetched.
+   - `grammar` keeps recipe/cluster lookup live through content-free `recipeOf`/`recipesOf` twins, but fetches presentation output (`teachings`, `familyBuilds`) alongside its headline and glyph.
 3. **`glyph` sometimes has to be seeded too.** The header needs a glyph, and the instinct was to read it off `library-index.ts`'s already-precomputed `libEntry(entry).glyph` (works for kana, counter, generative-rule — checked, not assumed). For **transitivity, keigo, and grammar**, that field is either empty or subtly different from what the live `ContentItem` carried (grammar: 2 of 103 patterns differ by a parenthetical Japanese disambiguator `library-index.ts`'s search-oriented glyph field drops) — caught by a direct comparison script before shipping each kind, and once for transitivity by an actual blank-page regression caught in browser verification. Where it differs, `glyph` rides alongside `text`/`speak` in the same seeded row instead.
 
 ### Dual-mode views
 
-Several migrated kinds are ALSO rendered by the active teach walk (`TeachItemView`) and `/dev/views`, both of which already build a full live `ContentItem` for every kind they show (they need the real dictionary loaded regardless, for reasons unrelated to this migration). Round-tripping to Supabase there would be pure waste — worse, a network stall mid-lesson. So `KanaEntryView`, `VerbPairEntryView`, `CounterEntryView`, `KeigoEntryView`, and `GrammarEntryView` each accept **both** an `entry: EntryId` prop (fetches) and an `item: ContentItem` prop (reads the live item directly, `itemHeadline` computed inline, no fetch) — the Library route passes `entry`, the teach walk and `/dev/views` keep passing `item`, unchanged.
+Several migrated kinds are ALSO rendered by the active teach walk (`TeachItemView`) and `/dev/views`, both of which already build a full live `ContentItem`. Round-tripping there would add a network stall for no benefit. Base renderers therefore accept fetched `entry` mode or pre-resolved live props; `live-item-entry-views.tsx` and `live-character-entry-view.tsx` are the live-only adapters that compute `itemHeadline`, grammar teaching/family output, or the full character payload synchronously. This split is load-bearing: importing the live derivation into a dual-mode base component made Turbopack ship it to the Library route even when that branch was not used.
 
 ### Kinds migrated, in order (simplest → hardest, as planned)
 
@@ -95,27 +95,31 @@ Several migrated kinds are ALSO rendered by the active teach walk (`TeachItemVie
 | 5 | `transitivity` (verb pairs) | `57d921b` | yes (`data/transitivity.ts`, ~27KB, self-contained) | `itemHeadline` + `glyph` |
 | 6 | `counter` / `generative-rule` | `bf9ab3d` | yes (`data/counters.ts`, `data/number-construction.ts`) | `itemHeadline` only |
 | 7 | `keigo` | `a902ffa` | yes (`data/keigo.ts`) | `itemHeadline` + `glyph` |
-| 8 | `grammar` | `cd333dc` | yes (`recipeOf`/`recipesOf` reproduced content-free in `library-index.ts`) | `itemHeadline` + `glyph` |
+| 8 | `grammar` | `cd333dc` + final pass | yes (`recipeOf`/`recipesOf` reproduced content-free in `library-index.ts`) | `itemHeadline` + `glyph` + teaching pages + family builds |
+| 9 | `character` (`radical` / `kanji` / `word`) | `97fcf8e` | no — full display payload assembled at seed/live-adapter time | item, headline, roles, variants, parts, etymology, readings, senses/examples, used-in list, stroke fallback |
 
 Each commit's message has the specific verification for that kind (equivalence tests, an ad hoc byte-comparison script run against the live Supabase data and then discarded, `tsc`, the full unit suite, and a browser spot-check) — not repeated here.
 
-### What's left in Phase 2b
+### Final dispatcher pass
 
-**`character`** (kanji/radical/word combined) — deliberately last, and meaningfully bigger than everything above:
-- Not a single-entry lookup like every other kind — `buildGlyphItem(glyph)` aggregates a glyph's facts across *every role it plays* (`characterRoles`: radical, kanji, word), so 人 is one item carrying its radical meaning, its kanji meaning, AND its word readings at once. The fetch-by-id shape needs to carry that same aggregation, not just one row per role.
-- `CharacterEntryView` (`src/components/library/character-entry-view.tsx`) renders substantially more than a headline: etymology prose, variant forms, on'yomi/kun'yomi tables with example words, the "Built from" parts breakdown, a "Used as a part in" grid, and (for a word) an in-context example sentence — i.e. it needs something closer to the term/mark **full-payload** pattern than the headline-only one, but assembled from several source files (`data/kanji.ts`, `data/radicals.ts`, `data/vocab.ts`, `data/kanji-etymology.ts`, `data/variant-forms.ts`, `lib/character-role.ts`, `lib/kanji-parts.ts`) rather than one.
-- Also used by `TeachItemView` (radical/kanji/word cases) and `/dev/views` — will need the same dual-mode (`entry` / `item`) treatment as the other kinds.
+- Both `page.tsx` and its metadata `layout.tsx` resolve entries through `library-index.ts`; the dispatcher is a plain switch over the precomputed kind. A dedicated equivalence test proves every mark preserves the live sentence-rule vs writing-rule decision.
+- The old sentence `claimFacts` derivation was dead wiring: `SliceBar`'s `entry` variant returns before any claim UI and exposes only the optional quiz. It was removed rather than replacing one unused live registry lookup with another.
+- `ContentEntryHeader` and `HowItsWritten` now require resolved headline/fallback props, preventing shared renderers from silently restoring the live dictionary edge.
+- The production import trace also found two non-dispatcher leaks: grammar teaching/family renderers and keigo's grammar-concept link. Their display outputs/lookups now come from fetched payloads or the content-free index, while live lesson/dev adapters retain synchronous source derivation.
 
-**The dispatcher itself** (`src/app/library/[...entry]/page.tsx`) — a "dedicated final pass," explicitly deferred since it was first flagged (commit `cd54496`'s message), not started:
-- Still imports `libEntry`, `entryName`, `KIND_LABEL`, `shelfKindOf` from the LIVE `@/lib/library/entries` (not `library-index.ts`), so the page loads the whole dictionary regardless of which kind is being viewed — every kind migrated so far only stopped that kind's own *view* from needing it, not the surrounding page.
-- `EntryBody` checks live registries (`grammarConceptFor(entry.id)`, `termFor(entry.id)`, `markFor(entry.id)`) BEFORE its `entry.kind` switch, by design — a mark's `LibEntry.kind` is conditionally `MARK_SUBJECT` or `SENTENCE_RULE_KIND` depending on `mark.shelf === "sentence"` (`library/entries.ts:563`), so `entry.kind` alone doesn't route correctly for marks without also knowing this. Fixing this content-free needs either precomputing that routing decision into `library-index.json` directly, or confirming `LIB_ENTRIES`' own `kind` field already reflects it (it's built from the same live logic, so it likely does — needs checking, not assuming) and dropping the registry checks in favor of a plain `switch (entry.kind)`.
-- `markFor(entry.id)` is also called at the `EntryView` level (not just `EntryBody`) for `sentenceClaimFacts` — the sentence-tier "claim assembly facts on Drill" wiring. That's a second, independent reason the dispatcher can't drop its live `markFor` import until it's addressed too.
+### Final verification and measured result
+
+- Character glyph comparison: all 14,905 character entries matched the precomputed Library glyph; Supabase deep-equality verification matched all 14,905 seeded payloads to fresh live derivations.
+- Final seed: 15,364 rows total (214 radical, 2,136 kanji, 12,555 word plus the other migrated kinds).
+- Grammar's expanded payload matched fresh live JSON for all 103 rows after reseeding.
+- Dispatcher/index equivalence: 30/30, including kind routing and live-vs-precomputed claim/quiz gates.
+- `tsc --noEmit` clean; `npm test`: 3,117/3,117; production `next build` clean. ESLint is clean across every changed source file (the repository-wide command still scans generated `.next-prod` output and reports its existing generated-code failures).
+- Production browser: all 13 dispatch shapes rendered (kana, radical, kanji, word, counter, number construction, grammar, grammar concept, transitivity, keigo, sentence rule, writing rule, term); grammar's quiz pre-start action also opened correctly.
+- Production network for `/library/grammar/prenominal-form`: **20.63 MB before the dispatcher cleanup → 9.46 MB initial JavaScript**, with the 8.64 MB `beginnerRank` dictionary-signature chunk absent. The generated index is the largest remaining route chunk (6.17 MB) because meaning search and fact mappings are intentionally client-side.
+- Comprehensive client-manifest sweep: `/library`, `/library/[...entry]`, and `/learn` reference no dictionary-signature chunk. The expected grading/content-heavy routes still do; `/library/primitive/[glyph]` remains the one Library follow-up below.
 
 ## Follow-up recommendations
 
-1. **Finish `character`**, following the same rigor as the 9 kinds above (equivalence tests for any new content-free helper, an ad hoc byte-comparison script before shipping, browser spot-check on all three roles — radical-only, kanji-only, and a folded multi-role glyph like 人).
-2. **The dispatcher final pass**, once `character` ships — see "What's left" above for the two specific things blocking it (registry-based routing, `markFor` for claim wiring). Do this as its own change, not folded into `character`, since it touches every kind's routing at once and deserves its own verification pass.
-3. **Get the two GitHub Actions secrets set** (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) so the `reseed-content` CI job actually runs instead of failing on every push — currently blocking automatic reseeding.
-4. **Re-run the bundle sweep** (the same "every route, dictionary-signature chunk" check Phase 2a did — see the Verification section above) once `character` and the dispatcher pass are both done, to actually quantify Phase 2b's MB win. Nothing in this phase has been measured yet the way Phase 2a's 9.5MB → 7.94MB was; the current commits are verified for *correctness* (byte-identical content, all tests green) but not for the size delta they're presumably delivering.
-5. **Evaluate `/library/primitive/[glyph]`** — not touched by Phase 2b at all, not clear yet whether it needs the same treatment or is already light. Worth a quick check before considering Phase 2b "done."
-6. **Consider whether `library-index.json`'s `glyph` field should just be complete for every kind**, removing the need to special-case `transitivity`/`keigo`/`grammar` with a seeded `glyph` alongside the headline. Not urgent — the current per-kind verification catches the mismatch reliably — but it's asymmetry worth resolving once all kinds are migrated and the shape of the remaining work is fully known.
+1. **Get the two GitHub Actions secrets set** (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) so the `reseed-content` CI job can run after pushes to `main`.
+2. **Evaluate `/library/primitive/[glyph]`** — the comprehensive sweep confirms it still references dictionary-signature chunks; it was explicitly outside Phase 2b.
+3. **Consider whether `library-index.json`'s `glyph` field should be complete for every kind**, removing the seeded `glyph` asymmetry for transitivity/keigo/grammar.

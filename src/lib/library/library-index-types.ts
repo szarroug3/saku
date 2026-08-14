@@ -39,6 +39,9 @@ export interface LibraryIndex {
   /** Entry id -> every one of its facts (factsOf's output, unfiltered — unlike
    * knownFacts, which applies knownFactsOf's per-kind "known" filtering). */
   readonly entryFacts: Readonly<Record<string, readonly FactId[]>>;
+  /** Kanji reading fact -> word-meaning facts whose learned state makes that
+   * reading quizzable. Serialized from READINGS' multi-part attesting words. */
+  readonly readingProofFacts: Readonly<Record<string, readonly FactId[]>>;
   readonly sentenceTiers: readonly IndexSentenceTier[];
   /** Every glyph with a KANJIDIC2 row — existence only, for entryForGlyph. */
   readonly kanjiGlyphs: readonly string[];

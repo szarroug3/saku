@@ -31,7 +31,7 @@ import { Info } from "@/components/ui";
 import { SoundButton } from "@/components/ui/sound-button";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { itemHeadline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
@@ -51,9 +51,17 @@ function sharedStem(a: string, b: string): string {
   return a.slice(0, i);
 }
 
-export function VerbPairEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+export function VerbPairEntryView({
+  entry,
+  item,
+  liveHeadline,
+}: {
+  entry?: EntryId;
+  item?: ContentItem;
+  liveHeadline?: Headline;
+}) {
   const fetched = useContentEntry<VerbPairPayload>(item ? null : (entry ?? null));
-  const headline = item ? itemHeadline(item) : fetched;
+  const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
   const glyph = item ? item.glyph : fetched?.glyph;
   const pair = pairForEntry(resolvedEntry);

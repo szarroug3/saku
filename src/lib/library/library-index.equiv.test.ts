@@ -9,8 +9,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf } from "@/lib/library/entries";
+import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf } from "@/lib/library/entries";
 import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
+import {
+  claimableFacts as liveClaimableFacts,
+  quizzableFacts as liveQuizzableFacts,
+} from "@/lib/word-unlock";
+import { wordMeaningFactId } from "@/lib/vocab-ids";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { COUNTER_KIND as LIVE_COUNTER_KIND, NUMBER_CONSTRUCTION_KIND as LIVE_NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
 import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiEntry as liveKanjiEntry, kanjiTeachOrder as liveKanjiTeachOrder } from "@/data/kanji";
@@ -50,7 +55,11 @@ import {
   markEntry,
   recipeOf,
   recipesOf,
+  shelfKindOf,
+  claimableFacts,
+  quizzableFacts,
 } from "@/lib/library/library-index";
+import type { HistoryFile } from "@/types";
 
 test("KINDS matches live KINDS, in order", () => {
   assert.deepEqual(KINDS, LIVE_KINDS);
@@ -58,6 +67,15 @@ test("KINDS matches live KINDS, in order", () => {
 
 test("KIND_LABEL matches live KIND_LABEL", () => {
   assert.deepEqual(KIND_LABEL, LIVE_KIND_LABEL);
+});
+
+test("shelfKindOf matches live routing for every kind and number constructions", () => {
+  const kinds = [...LIVE_KINDS, LIVE_NUMBER_CONSTRUCTION_KIND] as Parameters<
+    typeof shelfKindOf
+  >[0][];
+  for (const kind of kinds) {
+    assert.equal(shelfKindOf(kind), liveShelfKindOf(kind), `kind ${kind}`);
+  }
 });
 
 test("LIB_ENTRIES matches live LIB_ENTRIES — same entries, same order, same fields", () => {
@@ -176,6 +194,26 @@ test("factsOf is empty for an unknown entry", () => {
   assert.deepEqual(factsOf(bogus), liveFactsOf(bogus));
 });
 
+test("claimableFacts matches the live reading-fact gate for every fact", () => {
+  assert.deepEqual(claimableFacts(ALL_FACTS), liveClaimableFacts(ALL_FACTS));
+});
+
+test("quizzableFacts matches the live learned-word gate", () => {
+  const empty: HistoryFile = { sessions: [], facts: {}, claims: {} };
+  const claimedWords: HistoryFile = {
+    ...empty,
+    claims: Object.fromEntries(
+      ["先生", "登山", "食べる"].map((word) => [wordMeaningFactId(word), 1_700_000_000_000]),
+    ) as HistoryFile["claims"],
+  };
+  for (const history of [empty, claimedWords]) {
+    assert.deepEqual(
+      quizzableFacts(ALL_FACTS, history),
+      liveQuizzableFacts(ALL_FACTS, history),
+    );
+  }
+});
+
 test("kanjiGrade matches live KANJI grade for every kanji", () => {
   for (const k of KANJI) {
     assert.equal(kanjiGrade(k.c), k.grade, `kanji ${k.c}`);
@@ -241,6 +279,18 @@ test("MARK_SUBJECT / markEntry match live values for every mark", () => {
   assert.equal(MARK_SUBJECT, LIVE_MARK_SUBJECT);
   for (const mark of MARKS) {
     assert.equal(markEntry(mark.id), liveMarkEntry(mark.id), `mark ${mark.id}`);
+  }
+});
+
+test("precomputed mark kinds preserve sentence-vs-writing-rule dispatcher routing", () => {
+  for (const mark of MARKS) {
+    const entry = libEntry(markEntry(mark.id));
+    assert.ok(entry, `mark ${mark.id} missing`);
+    assert.equal(
+      entry.kind,
+      mark.shelf === "sentence" ? "sentence-rule" : LIVE_MARK_SUBJECT,
+      `mark ${mark.id}`,
+    );
   }
 });
 

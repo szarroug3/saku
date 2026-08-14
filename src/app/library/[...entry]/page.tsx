@@ -42,29 +42,23 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { TermEntryView } from "@/components/library/term-entry-view";
 import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { FlatSurfaceProvider } from "@/components/ui";
-import { SENTENCE_ORDERING_TIERS, tierAssemblyFacts } from "@/data/assembly";
-import { KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { grammarConceptFor } from "@/data/grammar-concepts";
-import { KANJI_SUBJECT } from "@/data/kanji";
-import { KEIGO_SUBJECT } from "@/data/keigo";
-import { markFor, type Mark } from "@/data/marks";
-import { numberConstructionFor } from "@/data/number-construction";
-import { RADICAL_SUBJECT } from "@/data/radicals";
-import { termFor } from "@/data/terms";
-import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT } from "@/data/vocab";
 import {
   COUNTER_KIND,
   entryName,
+  GRAMMAR_CONCEPT_SUBJECT,
+  GRAMMAR_SUBJECT,
+  KANJI_SUBJECT,
   KIND_LABEL,
   libEntry,
+  MARK_SUBJECT,
+  NUMBER_CONSTRUCTION_KIND,
+  SENTENCE_RULE_KIND,
   shelfKindOf,
-  type LibEntry,
-} from "@/lib/library/entries";
+  VOCAB_SUBJECT,
+} from "@/lib/library/library-index";
+import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import { entryFromParam, entryFromSlug } from "@/lib/library/href";
 import { postClaim } from "@/lib/progress-fetch";
-import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
 
@@ -86,22 +80,10 @@ export default function EntryPage({ params }: { params: Promise<{ entry: string[
   return <EntryView entry={entry} />;
 }
 
-function EntryView({ entry }: { entry: LibEntry }) {
+function EntryView({ entry }: { entry: IndexLibEntry }) {
   const { history, loaded: historyLoaded, refresh } = useHistory();
   const [now] = useState(() => Date.now());
   const claims = history.claims ?? {};
-
-  // A sentence-structure tier claims its assembly facts plus its own marker when
-  // the bar's Drill leg finishes — the one bit of per-kind claim wiring the shared
-  // bar needs. Undefined for every other entry.
-  const mark = markFor(entry.id);
-  const sentenceTier =
-    mark?.shelf === "sentence"
-      ? SENTENCE_ORDERING_TIERS.find((t) => t.id === mark.id.replace("sentence-rule-", ""))
-      : undefined;
-  const sentenceClaimFacts = sentenceTier
-    ? [...tierAssemblyFacts(sentenceTier, history), sentenceTierMarkerFact(sentenceTier.id)]
-    : undefined;
 
   const claim = async (ids: FactId[]) => {
     // postClaim routes a signed-out claim (401) into this browser's local history;
@@ -130,7 +112,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         {entryName(entry)}
       </p>
 
-      <EntryBody entry={entry} mark={mark} />
+      <EntryBody entry={entry} />
 
       <SliceBar
         variant="entry"
@@ -143,7 +125,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
         history={history}
         now={now}
         onClaim={claim}
-        claimFacts={sentenceClaimFacts}
         progressReady={historyLoaded}
       />
     </FlatSurfaceProvider>
@@ -151,51 +132,38 @@ function EntryView({ entry }: { entry: LibEntry }) {
 }
 
 /**
- * The one redesigned view for this entry's kind. Reference kinds (concept, term,
- * mark) take the entry id; the rest build their ContentItem the same way
- * /dev/views does. A `null` from a builder (no facts) renders nothing rather than
- * a half page — the same refusal the builders make. `mark` is threaded from the
- * caller so it is resolved once.
+ * The one redesigned view for this entry's precomputed kind. Every branch takes
+ * the entry id; each view either fetches its seeded payload or reads its small,
+ * content-light source data. The live registries are deliberately absent here.
  */
-function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined }) {
-  // Reference kinds: identified by their own registries, not entry.kind, and
-  // rendered off the id.
-  if (grammarConceptFor(entry.id)) {
-    return <GrammarConceptEntryView entry={entry.id} />;
-  }
-  if (termFor(entry.id)) {
-    return <TermEntryView entry={entry.id} />;
-  }
-  if (mark) {
-    if (mark.shelf === "sentence") {
-      return <SentenceEntryView entry={entry.id} />;
-    }
-    return <MarkEntryView entry={entry.id} />;
-  }
-  // A generative-rule (11–99, 〜本) resolves a construction before it resolves a
-  // counter form, so it must be checked first.
-  if (numberConstructionFor(entry.id)) {
-    return <CounterEntryView entry={entry.id} />;
-  }
-
+function EntryBody({ entry }: { entry: IndexLibEntry }) {
   switch (entry.kind) {
-    case KANA_SUBJECT:
+    case "kana":
       return <KanaEntryView entry={entry.id} />;
     // A single Han glyph is ONE cohesive character item across every role it plays.
     // Its seeded payload contains buildGlyphItem's exact output whichever role id
     // opened it; multi-character words carry buildItem's exact word output.
     case KANJI_SUBJECT:
-    case RADICAL_SUBJECT:
+    case "radical":
     case VOCAB_SUBJECT:
       return <CharacterEntryView entry={entry.id} />;
     case COUNTER_KIND:
+    case NUMBER_CONSTRUCTION_KIND:
       return <CounterEntryView entry={entry.id} />;
-    case KEIGO_SUBJECT:
+    case "keigo":
       return <KeigoEntryView entry={entry.id} />;
-    case TRANSITIVITY_SUBJECT:
+    case "transitivity":
       return <VerbPairEntryView entry={entry.id} />;
     case GRAMMAR_SUBJECT:
       return <GrammarEntryView entry={entry.id} />;
+    case GRAMMAR_CONCEPT_SUBJECT:
+      return <GrammarConceptEntryView entry={entry.id} />;
+    case SENTENCE_RULE_KIND:
+      return <SentenceEntryView entry={entry.id} />;
+    case MARK_SUBJECT:
+      return <MarkEntryView entry={entry.id} />;
+    case "term":
+      return <TermEntryView entry={entry.id} />;
     default:
       return null;
   }

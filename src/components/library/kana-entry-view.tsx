@@ -21,8 +21,8 @@
 // The teach walk (TeachItemView) and /dev/views already build a live
 // `ContentItem` for every kind they show — they have the whole dictionary
 // loaded regardless of kana — so passing `item` instead of `entry` skips the
-// fetch and reads the headline straight off it (itemHeadline), the one
-// difference from the fetched path.
+// fetch. A live-only adapter computes itemHeadline and passes it here, keeping
+// that dictionary dependency out of the Library route's shared renderer.
 
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
@@ -33,19 +33,28 @@ import { getMnemonic } from "@/data/mnemonics";
 import { contextPronunciation } from "@/data/kana-context";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { libEntry, kanaConfusables, precomputedStrokeFallback } from "@/lib/library/library-index";
-import { itemHeadline, type Headline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
-export function KanaEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+export function KanaEntryView({
+  entry,
+  item,
+  liveHeadline,
+}: {
+  entry?: EntryId;
+  item?: ContentItem;
+  liveHeadline?: Headline;
+}) {
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
-  const headline = item ? itemHeadline(item) : fetched;
+  const headline = item ? liveHeadline : fetched;
   const glyph = item ? item.glyph : libEntry(entry!)?.glyph;
   const resolvedEntry = item ? item.entry : entry!;
+  const strokeFallback = glyph ? precomputedStrokeFallback(glyph) : undefined;
 
   // undefined = still loading, null/no glyph = no such entry (matches the live
   // component's behavior for an unresolved id).
-  if (headline === undefined || headline === null || !glyph) return null;
+  if (headline === undefined || headline === null || !glyph || !strokeFallback) return null;
 
   const m = getMnemonic(glyph);
   if (!m) return null;
@@ -91,7 +100,7 @@ export function KanaEntryView({ entry, item }: { entry?: EntryId; item?: Content
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
             item={{ entry: resolvedEntry, glyph, kind: "kana", facts: [] }}
-            precomputedFallback={precomputedStrokeFallback(glyph)}
+            precomputedFallback={strokeFallback}
           />
         </div>
       </article>

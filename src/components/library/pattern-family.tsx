@@ -38,16 +38,15 @@
 import Link from "next/link";
 
 import { Card, Lbl } from "@/components/ui";
-import { patternEntry } from "@/data/grammar";
 import type { Recipe } from "@/data/grammar/recipes";
-import { buildRow } from "@/lib/grammar/build";
-import { primaryHost } from "@/lib/grammar/example";
 import { entryHref } from "@/lib/library/href";
+import { patternEntry } from "@/lib/library/library-index";
 
 export function PatternFamily({
   members,
   current,
   feel,
+  builtById,
 }: {
   members: readonly Recipe[];
   /** The recipe whose page this is. Marked, not filtered out: a family with the
@@ -56,6 +55,8 @@ export function PatternFamily({
   /** The family's `feel` note — how the members differ, so the reader knows which
    * to reach for. Shown under the table. */
   feel?: string;
+  /** Exact buildRow output, computed by the seed/live adapter. */
+  builtById: Readonly<Record<string, string>>;
 }) {
   return (
     <Card>
@@ -82,7 +83,6 @@ export function PatternFamily({
               // counting one way as three. The primary host is the one shown,
               // which is the first host that actually transforms its word — see
               // primaryHost, and the 〜ので item it was written for.
-              const row = buildRow(r, primaryHost(r) ?? undefined);
               const here = r.id === current.id;
               return (
                 <tr key={r.id} className="border-b border-border last:border-b-0">
@@ -109,7 +109,7 @@ export function PatternFamily({
                       a normal value, not an error) prints nothing rather than a
                       guess. */}
                   <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-text-muted">
-                    {row ? row.built : ""}
+                    {builtById[r.id] ?? ""}
                   </td>
                   {/* THE REPETITION IS THE CONTENT. Seven rows reading "must do
                       X" is not something to dedupe with a rowspan: English has

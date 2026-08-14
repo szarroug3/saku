@@ -30,10 +30,10 @@ import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { SoundButton } from "@/components/ui/sound-button";
 import { keigoSetForEntry } from "@/data/keigo";
-import { grammarConceptEntry, grammarConceptRow } from "@/data/grammar-concepts";
+import { grammarConceptEntry, libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { itemHeadline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
@@ -61,16 +61,24 @@ const REGISTER: Record<string, { label: string; desc: string }> = {
 const KEIGO_HELP =
   "Keigo doesn't change the original everyday version of the word. These are entirely new words.";
 
-export function KeigoEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+export function KeigoEntryView({
+  entry,
+  item,
+  liveHeadline,
+}: {
+  entry?: EntryId;
+  item?: ContentItem;
+  liveHeadline?: Headline;
+}) {
   const fetched = useContentEntry<KeigoPayload>(item ? null : (entry ?? null));
-  const headline = item ? itemHeadline(item) : fetched;
+  const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
   const glyph = item ? item.glyph : fetched?.glyph;
   const set = keigoSetForEntry(resolvedEntry);
 
   if (headline === undefined || headline === null || !glyph || !set) return null;
 
-  const registers = grammarConceptRow("keigo-registers");
+  const registers = libEntry(grammarConceptEntry("keigo-registers"));
 
   return (
     <EntrySurface>

@@ -46,17 +46,19 @@ import {
 import { numberConstructionFor } from "@/data/number-construction";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { libEntry } from "@/lib/library/library-index";
-import { itemHeadline, type Headline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
 export function CounterEntryView({
   entry,
   item,
+  liveHeadline,
   lesson = false,
 }: {
   entry?: EntryId;
   item?: ContentItem;
+  liveHeadline?: Headline;
   /** The SAME page in the lesson intro. The counter page shows the same thing in
    * both contexts today (unlike a word, whose lesson hides the readings it isn't
    * teaching), so this only reserves the seam for a future difference; the
@@ -65,7 +67,7 @@ export function CounterEntryView({
 }) {
   void lesson;
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
-  const headline = item ? itemHeadline(item) : fetched;
+  const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
   const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
 

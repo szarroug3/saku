@@ -7,9 +7,9 @@
 // whole build, which touches every content module (vocab, kanji, radicals,
 // grammar, marks, terms, transitivity…). This script runs that SAME build once,
 // at build time, and serializes its OUTPUT (plus two small derived lookups) —
-// never re-deriving. `library/entries.ts` itself is NOT changed: entry DETAIL
-// pages keep reading it live, exactly as before. Only the list/search/shelf path
-// switches to this precomputed index.
+// never re-deriving. `library/entries.ts` remains the live build-time source of
+// truth; list/search, entry dispatch, and Library action gates consume this
+// serialized output instead.
 //
 // BYTE-CORRECTNESS. `knownFacts`/`factEntry` gate what a learner can claim as
 // "already known" and how a claimed fact maps back to its entry — the same class
@@ -30,7 +30,8 @@ import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { GRAMMAR_CONCEPTS } from "@/data/grammar-concepts";
 import { FORM_LABEL } from "@/lib/grammar/formula";
 import { GRAMMAR_TEACHING_ORDER } from "@/lib/library/grammar-order";
-import { KANJI, kanjiTeachOrder } from "@/data/kanji";
+import { KANJI, READINGS, kanjiTeachOrder, readingFactId } from "@/data/kanji";
+import { wordMeaningFactId } from "@/lib/vocab-ids";
 import { CHAR_INDEX } from "@/data/characters";
 import { strokeFallbackOf } from "@/lib/lesson-roles";
 
@@ -59,6 +60,18 @@ const entryFacts = {};
 for (const e of ALL_ENTRIES) {
   const fs = factsOf(e);
   if (fs.length) entryFacts[e] = [...fs];
+}
+
+// Reading fact -> the meaning facts of every multi-part word that can prove it.
+// This is the exact eligibility input word-unlock.ts's quizzableFacts needs at
+// runtime, serialized from the live reading registry so Library actions can
+// apply the same history-dependent gate without shipping the vocabulary tables.
+const readingProofFacts = {};
+for (const reading of READINGS) {
+  const proofs = reading.words
+    .filter((word) => [...word].length > 1)
+    .map((word) => wordMeaningFactId(word));
+  readingProofFacts[readingFactId(reading.k, reading.anchor, reading.base)] = proofs;
 }
 
 const sentenceTiers = SENTENCE_ORDERING_TIERS.map((t) => ({
@@ -127,6 +140,7 @@ const payload = {
   knownFacts,
   factEntry,
   entryFacts,
+  readingProofFacts,
   sentenceTiers,
   kanjiGlyphs,
   kanjiGrade,
@@ -153,5 +167,6 @@ console.log(
     `${Object.keys(knownFacts).length} known-fact entries, ` +
     `${Object.keys(factEntry).length} fact-entry mappings, ` +
     `${Object.keys(entryFacts).length} entry-facts mappings, ` +
+    `${Object.keys(readingProofFacts).length} reading-proof mappings, ` +
     `${sentenceTiers.length} sentence tiers, version ${libraryIndexVersion}`,
 );

@@ -40,7 +40,13 @@ import { NUMBER_CONSTRUCTIONS, numberConstructionEntry } from "@/data/number-con
 import { COUNTER_KIND, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/library-index";
 import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry } from "@/data/keigo";
 import { RECIPES, isPrimaryPatternRecipe } from "@/data/grammar/recipes";
-import { GRAMMAR_SUBJECT, patternEntry } from "@/lib/library/library-index";
+import { formLibraryPages } from "@/data/grammar/lessons";
+import { autoPatternPage } from "@/data/grammar/auto-page";
+import { isFormRecipe } from "@/data/grammar";
+import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
+import { buildRow } from "@/lib/grammar/build";
+import { primaryHost } from "@/lib/grammar/example";
+import { GRAMMAR_SUBJECT, patternEntry, recipesOf } from "@/lib/library/library-index";
 import { KANJI, KANJI_SUBJECT, kanjiEntry } from "@/data/kanji";
 import { RADICALS, RADICAL_SUBJECT, radicalEntry } from "@/data/radicals";
 import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
@@ -187,7 +193,11 @@ const keigoRows = KEIGO_SETS.map((set) => {
 // dictionary dependency (GrammarEntryView now reads library-index.ts's
 // content-free recipeOf/recipesOf twins instead of library/entries.ts's,
 // which drag in the whole heavy file just for this lookup). Only itemHeadline
-// is seeded, along with `glyph` — checked directly against buildItem's own
+// and the exact generated/authored teaching pages are seeded, along with
+// `glyph`. Keeping autoPatternPage/formLibraryPages on the seed/live-adapter
+// side prevents the Library route from importing grammar generation and
+// lessons, both of which reach the full dictionary. The glyph is checked
+// directly against buildItem's own
 // glyph and found to differ for 2 of 103 patterns (a parenthetical Japanese
 // disambiguator library-index.ts's glyph field doesn't carry), so it isn't a
 // safe substitute here either.
@@ -197,7 +207,29 @@ const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
     const item = buildItem(entry, "grammar");
     if (!item) return null;
     const { text, speak } = itemHeadline(item);
-    return row(entry, GRAMMAR_SUBJECT, { text, speak, glyph: item.glyph });
+    const teachings = Object.fromEntries(
+      recipesOf(entry).map((pattern) => [
+        pattern.id,
+        isFormRecipe(pattern.id)
+          ? { kind: "form", pages: formLibraryPages(pattern.id) }
+          : { kind: "pattern", pages: [autoPatternPage(pattern)] },
+      ]),
+    );
+    const primary = recipesOf(entry)[0];
+    const family = primary?.cluster ? clusterById(primary.cluster) : undefined;
+    const familyBuilds = Object.fromEntries(
+      (family ? membersOf(family) : []).map((pattern) => {
+        const built = buildRow(pattern, primaryHost(pattern) ?? undefined);
+        return [pattern.id, built?.built ?? ""];
+      }),
+    );
+    return row(entry, GRAMMAR_SUBJECT, {
+      text,
+      speak,
+      glyph: item.glyph,
+      teachings,
+      familyBuilds,
+    });
   })
   .filter((r) => r != null);
 

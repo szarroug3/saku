@@ -8,13 +8,15 @@ import type { ReactNode } from "react";
 
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
-import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/live-character-entry-view";
-import { CounterEntryView } from "@/components/library/counter-entry-view";
-import { GrammarEntryView } from "@/components/library/grammar-entry-view";
-import { KeigoEntryView } from "@/components/library/keigo-entry-view";
+import {
+  CounterEntryView,
+  GrammarEntryView,
+  KanaEntryView,
+  KeigoEntryView,
+  VerbPairEntryView,
+} from "@/components/library/live-item-entry-views";
 import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
-import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { SentenceEntryView } from "@/components/library/sentence-entry-view";
 import { MarkEntryView } from "@/components/library/mark-entry-view";
 import { TermEntryView } from "@/components/library/term-entry-view";
@@ -39,6 +41,7 @@ import { wordEntry } from "@/data/vocab";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
 import type { ContentItem } from "@/lib/content/item";
+import { itemHeadline } from "@/lib/content/headline";
 
 const tsu1 = COUNTER_CURRICULUM.find((f) => f.key === "counter:tsu:1");
 const tens = GENERATIVE_UNITS.find((u) => u.id === "tens");
@@ -165,7 +168,7 @@ export default function ViewsDevPage() {
           {HEADER_SAMPLES.map((item) => (
             <div key={String(item.entry)} className={`${glassSurface} p-4`}>
               <GlassSheen />
-              <ContentEntryHeader item={item} />
+              <ContentEntryHeader item={item} headline={itemHeadline(item)} />
             </div>
           ))}
         </div>

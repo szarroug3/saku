@@ -22,7 +22,7 @@
 // opt-out beside it: a one-off that asks exactly this set right now, for when
 // you already know it and just want to be tested — the same run Practice starts.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
 import { AddToList } from "@/components/library/add-to-list";
@@ -39,6 +39,7 @@ import {
   sliceSentence,
   type Slice,
 } from "@/lib/library/slice";
+import { claimableFacts, quizzableFacts } from "@/lib/library/library-index";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
@@ -131,27 +132,6 @@ export function SliceBar({
   // launch points that used to bypass it. See QuizPreStart below.
   const [quizzing, setQuizzing] = useState(false);
 
-  // word-unlock.ts's reading-anchor index is built from the FULL word list (it
-  // needs to know which word "proves" a kanji reading), which pulls the
-  // ~8.6MB dictionary — but this bar only reaches it once there is actually a
-  // slice to act on (`needsWordUnlock` below matches the early-return gates
-  // exactly), so it is DYNAMICALLY IMPORTED rather than statically, keeping the
-  // default (nothing selected) /library load off the dictionary entirely.
-  const needsWordUnlock = variant !== "bar" || hasSelection;
-  const [wordUnlock, setWordUnlock] = useState<typeof import("@/lib/word-unlock") | null>(
-    null,
-  );
-  useEffect(() => {
-    if (!needsWordUnlock || wordUnlock) return;
-    let alive = true;
-    void import("@/lib/word-unlock").then((m) => {
-      if (alive) setWordUnlock(m);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [needsWordUnlock, wordUnlock]);
-
   // Signed-out history lives in localStorage, which the server cannot read.
   // Until the provider has restored it, every progress-derived sentence and
   // action would be calculated from a fake empty history (briefly offering
@@ -163,11 +143,6 @@ export function SliceBar({
   // at all rather than a whole-shelf "Everything" band. (The entry variant has
   // its own gate below and never sets hasSelection.)
   if (variant === "bar" && !hasSelection) return null;
-  // The module the rest of this render needs hasn't landed yet — a one-frame
-  // gap the first time a learner selects anything (or opens an entry-variant
-  // bar) this page load.
-  if (!wordUnlock) return null;
-
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is
   // budget.planFacts's rule and not this bar's to invent. This is what "Teach me"
@@ -183,7 +158,7 @@ export function SliceBar({
   // facts and readings whose word IS known are untouched, so kana, words and
   // meanings quiz exactly as before, and a hand-picked selection still asks
   // everything it picked except a reading in a word you never learned.
-  const quizOrder = wordUnlock.quizzableFacts(sliceFacts(slice), history);
+  const quizOrder = quizzableFacts(sliceFacts(slice), history);
   const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
   const quizCount = quizFormCount(effectiveQuizOrder);
   const canQuiz = hasMultipleQuizForms(effectiveQuizOrder);
@@ -198,7 +173,7 @@ export function SliceBar({
   // its word-anchored readings. Knowing 山 does not mean knowing 登山, so
   // claiming 山 must not mark `kanji:山/reading@登山` known and slip it into the
   // quiz. Kana claim their one fact and words claim all of theirs, unchanged.
-  const ordinaryClaimOrder = wordUnlock.claimableFacts(
+  const ordinaryClaimOrder = claimableFacts(
     includeSolid
       ? (() => {
           const base = drillPlan(slice, facts, claims, now);

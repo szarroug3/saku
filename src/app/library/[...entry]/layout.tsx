@@ -6,7 +6,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
-import { libEntry } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/library-index";
 import { entryFromParam, entryFromSlug } from "@/lib/library/href";
 
 export async function generateMetadata({

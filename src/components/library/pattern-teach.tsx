@@ -55,16 +55,20 @@ import {
   IntroDeriveTableGroup,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
-import { autoPatternPage } from "@/data/grammar/auto-page";
-import { isFormRecipe } from "@/data/grammar";
-import { formLibraryPages } from "@/data/grammar/lessons";
-import type { Recipe } from "@/data/grammar/recipes";
+import type { PhaseIntro } from "@/data/phase-intros";
+
+export interface PatternTeaching {
+  readonly kind: "form" | "pattern";
+  readonly pages: readonly PhaseIntro[];
+}
 
 export function PatternTeach({
-  pattern,
+  teaching,
   hideBuildLabel = false,
 }: {
-  pattern: Recipe;
+  /** Exact pages generated/authored by the grammar curriculum. Library entries
+   * fetch them precomputed; live lesson/dev adapters pass the source output. */
+  teaching: PatternTeaching;
   /** Drop the inner "How to build it" label. The redesigned grammar entry page
    * puts this inside its own "How it's formed" section, so the label would read
    * twice; default false leaves the shipped router/lesson untouched. */
@@ -74,13 +78,13 @@ export function PatternTeach({
   // what it is for AND how to build it — as one stacked card, the same pages the
   // lesson walks (minus lesson-1 scaffolding; see formLibraryPages). A PATTERN
   // built on a form falls through to the build-or-link behaviour below.
-  if (isFormRecipe(pattern.id)) {
+  if (teaching.kind === "form") {
     // One box PER teaching page: for the て-form that is "what it is for" and
     // "how to build it" as two separate cards; for the single-page forms it is
     // one card. The entry page stacks them and drops the links below.
     return (
       <>
-        {formLibraryPages(pattern.id).map((p) => (
+        {teaching.pages.map((p) => (
           <div key={p.id} className="space-y-7">
             {!p.sectionTitle && !p.hideLibraryIntro ? (
               <Card className="h-full">
@@ -113,7 +117,8 @@ export function PatternTeach({
   // Ichidan / Exceptions like the て-form, carried through to the finished
   // pattern). The link to the form it builds on rides in the entry's Links box,
   // not here. A wrap (〜たり〜たり) has no table, so only the intro box shows.
-  const page = autoPatternPage(pattern);
+  const page = teaching.pages[0];
+  if (!page) return null;
   const hasBuild = !!(
     page.buildTables?.length ||
     page.buildRules?.length ||

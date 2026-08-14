@@ -8,7 +8,8 @@
 // A big glyph on the left; to its right the headline (the main thing about the
 // item — a spoken reading, or a meaning/rule) with a sound button ONLY when the
 // item has one unambiguous pronunciation, and the type beneath. Everything is
-// read off the item via `itemHeadline`, so every type gets the same header.
+// passed as a resolved headline, so every type gets the same header without
+// coupling this renderer to the dictionary-backed derivation.
 //
 // `chips` is the optional standing/accuracy stack (history data the page passes
 // in, not on the item); it sits at the right edge when present.
@@ -16,7 +17,7 @@
 import type { ReactNode } from "react";
 
 import { SoundIcon } from "@/components/ui";
-import { itemHeadline, type Headline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
@@ -93,7 +94,8 @@ export function ContentEntryHeader({
 
   if (!item && !glyph) return null;
   const g = item ? item.glyph : glyph!;
-  const { text, speak: speakGlyph } = item ? itemHeadline(item) : headline!;
+  if (!headline) return null;
+  const { text, speak: speakGlyph } = headline;
   const label = item ? item.typeLabel : typeLabel!;
   const phrase = /\s/.test(g);
   return (

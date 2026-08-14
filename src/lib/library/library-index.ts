@@ -6,11 +6,9 @@
 // from the file. This loader carries none of that: it is a flat JSON read plus
 // the same bucketing logic `LIB_ENTRIES_BY_KIND` already used.
 //
-// Entry DETAIL pages are NOT served by this module — they keep importing
-// library/entries.ts directly and calling its live derivation functions
-// (factRows, builtFrom, confusableWith, …), unchanged. Only the list, search,
-// and shelf-grouping path (search.ts, all-tab.ts, url-state.ts, library-page.tsx)
-// reads from here.
+// Entry detail dispatch and shared Library actions also read this module. Their
+// display payloads still come from content_entries; the index supplies only
+// routing, ids, search fields, and small structural/history gates.
 //
 // Equivalence with the live path is asserted by library-index.equiv.test.ts —
 // that test, not this module, is the safety net.
@@ -20,6 +18,8 @@ import type { LibraryIndex, IndexLibEntry } from "./library-index-types";
 import type { Kind } from "@/lib/library/entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
+import type { HistoryFile } from "@/types";
+import { effectiveState } from "@/lib/claims";
 import { RECIPES, isPrimaryPatternRecipe, patternGroup, type Recipe } from "@/data/grammar/recipes";
 import type { Form } from "@/lib/conjugate";
 
@@ -105,6 +105,38 @@ export function factsOf(entry: EntryId): FactId[] {
   return [...(INDEX.entryFacts[entry as unknown as string] ?? [])];
 }
 
+/** True for the canonical word-anchored kanji reading facts. The generated map
+ * is serialized from the live READINGS registry, so this is the content-free
+ * twin of word-unlock.ts's READING_INDEX membership check. */
+export function isReadingFact(fact: FactId): boolean {
+  return INDEX.readingProofFacts[fact as unknown as string] !== undefined;
+}
+
+/** Claimable Library facts, with word-anchored kanji readings removed. */
+export function claimableFacts(facts: readonly FactId[]): FactId[] {
+  return facts.filter((fact) => !isReadingFact(fact));
+}
+
+/** Library quiz facts, applying the same learned-multi-part-word gate as the
+ * live word-unlock implementation without loading its dictionary-backed index. */
+export function quizzableFacts(
+  facts: readonly FactId[],
+  history: HistoryFile,
+): FactId[] {
+  return facts.filter((fact) => {
+    const proofs = INDEX.readingProofFacts[fact as unknown as string];
+    if (proofs === undefined) return true;
+    return proofs.some((proof) => {
+      const state = effectiveState(
+        history.facts[proof],
+        history.claims?.[proof],
+        history.seen?.[proof],
+      );
+      return state.lastTested > 0;
+    });
+  });
+}
+
 /** A sentence-ordering tier's id/label — enough to LIST a shelf row. The full
  * tier (patterns, gates) is content; fetch it via a dynamic
  * `import("@/data/assembly")` at the point a learner actually acts on one. */
@@ -116,6 +148,13 @@ export const SENTENCE_TIERS: readonly { id: string; label: string }[] =
  * rather than pulled through entries.ts's heavy top-of-file imports. */
 export function entryName(entry: IndexLibEntry): string {
   return entry.glyph || entry.name || entry.id;
+}
+
+/** The shelf an entry kind browses under — byte-identical to the live
+ * shelfKindOf. Number constructions are pages on the counters shelf; every
+ * other kind browses under itself. */
+export function shelfKindOf(kind: Kind): Kind {
+  return kind === NUMBER_CONSTRUCTION_KIND ? COUNTER_KIND : kind;
 }
 
 /** The sentence-rule kind constant — byte-identical to library/entries.ts's
