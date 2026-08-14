@@ -31,6 +31,8 @@ import { GRAMMAR_CONCEPTS } from "@/data/grammar-concepts";
 import { FORM_LABEL } from "@/lib/grammar/formula";
 import { GRAMMAR_TEACHING_ORDER } from "@/lib/library/grammar-order";
 import { KANJI, kanjiTeachOrder } from "@/data/kanji";
+import { CHAR_INDEX } from "@/data/characters";
+import { strokeFallbackOf } from "@/lib/lesson-roles";
 
 const entries = LIB_ENTRIES.map((e) => ({
   id: e.id,
@@ -79,6 +81,23 @@ const formLabel = { ...FORM_LABEL };
 // already reached without the dictionary.
 const grammarTeachingOrderIds = GRAMMAR_TEACHING_ORDER.map((r) => r.id);
 
+// strokeFallbackOf's output per glyph — a PURE function of (glyph, kind), no
+// history — used by HowItsWritten (rendered on every kana/character entry
+// page). Its own module (lib/lesson-roles.ts) is deeply entangled (kanji.ts,
+// word-forms.ts, kanji-etymology.ts, the live entries.ts) and shared with the
+// active lesson-teaching walk, so rather than untangle that file, its OUTPUT is
+// precomputed here and HowItsWritten reads it content-free. Scoped to kana
+// glyphs for now (this pass); a future character-kind migration would extend
+// this same map with kanji/radical glyphs.
+const strokeFallback = {};
+for (const glyph of Object.keys(CHAR_INDEX)) {
+  const item = { entry: "kana:_", glyph, kind: "kana", facts: [] };
+  strokeFallback[glyph] = {
+    normal: strokeFallbackOf(item, false),
+    reference: strokeFallbackOf(item, true),
+  };
+}
+
 const kinds = [...KINDS];
 const kindLabel = { ...KIND_LABEL };
 
@@ -115,6 +134,7 @@ const payload = {
   grammarConceptIds,
   formLabel,
   grammarTeachingOrderIds,
+  strokeFallback,
 };
 const libraryIndexVersion = createHash("sha256")
   .update(JSON.stringify(payload))

@@ -36,16 +36,36 @@ import { useId, useState } from "react";
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { useFlatSurface } from "@/components/ui";
-import { kanjiEntry } from "@/data/kanji";
 import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // What this section can say when there is no diagram is worked out in lib, off
 // the role set, because the drill's hint builder asks the same parts question and
 // the lesson and the hint must never disagree about what 明 is made of.
 import type { LessonItem } from "@/lib/lesson-items";
-import { strokeFallbackOf } from "@/lib/lesson-roles";
+import { strokeFallbackOf as liveStrokeFallbackOf, type StrokeFallback } from "@/lib/lesson-roles";
 import { useLessonPref } from "@/lib/lesson-prefs";
 import { useGlyphStrokes } from "@/lib/strokes";
 import { entryHref } from "@/lib/library/href";
+import { kanjiEntry } from "@/lib/library/library-index";
+
+/** Both of `strokeFallbackOf`'s answers for one glyph (normal + reference mode),
+ * precomputed — see scripts/build-library-index.mjs's `strokeFallback`. Passing
+ * this lets a caller (the Library entry pages) skip `lib/lesson-roles.ts`'s live
+ * import chain (kanji.ts, word-forms.ts, kanji-etymology.ts, the live
+ * entries.ts) entirely. Omit it and this component falls back to the live
+ * function, unchanged — every existing caller keeps working exactly as before. */
+export interface PrecomputedStrokeFallback {
+  readonly normal: StrokeFallback;
+  readonly reference: StrokeFallback;
+}
+
+function strokeFallbackOf(
+  item: LessonItem,
+  reference: boolean,
+  precomputed?: PrecomputedStrokeFallback,
+): StrokeFallback {
+  if (precomputed) return reference ? precomputed.reference : precomputed.normal;
+  return liveStrokeFallbackOf(item, reference);
+}
 
 /** The whole-shape fallback, shown when there's no stroke data for the glyph.
  * A kanji made of teachable parts shows the breakdown; otherwise the stroke
@@ -67,11 +87,13 @@ import { entryHref } from "@/lib/library/href";
 function WholeShapeFallback({
   item,
   reference = false,
+  precomputedFallback,
 }: {
   item: LessonItem;
   reference?: boolean;
+  precomputedFallback?: PrecomputedStrokeFallback;
 }) {
-  const fallback = strokeFallbackOf(item, reference);
+  const fallback = strokeFallbackOf(item, reference, precomputedFallback);
 
   if (fallback.show === "parts") {
     return (
@@ -170,6 +192,7 @@ function WritingEarlyNotice({ open }: { open: boolean }) {
 export function HowItsWritten({
   item,
   alwaysOpen = false,
+  precomputedFallback,
 }: {
   item: LessonItem;
   /** Render the section EXPANDED with no Show/Hide control — the Library entry
@@ -182,6 +205,10 @@ export function HowItsWritten({
    * announce itself. Defaults to false, so the stepped lesson keeps its
    * collapsible, persisted-preference behaviour untouched. */
   alwaysOpen?: boolean;
+  /** Both of strokeFallbackOf's answers for this glyph, precomputed — skips the
+   * live lesson-roles.ts import chain entirely when provided. Omit to use the
+   * live function (every existing caller's unchanged behavior). */
+  precomputedFallback?: PrecomputedStrokeFallback;
 }) {
   const [pref, setOpen] = useLessonPref("writing");
   const open = alwaysOpen || pref;
@@ -213,7 +240,7 @@ export function HowItsWritten({
   // whole-shape line". Reference mode is right even though this guard also runs
   // in the lesson, because the parts breakdown the lesson adds only ever exists
   // where a stroke count does.
-  const hasFallback = strokeFallbackOf(item, true).show !== "whole";
+  const hasFallback = strokeFallbackOf(item, true, precomputedFallback).show !== "whole";
   if (alwaysOpen && strokes.status === "loading") return null;
   if (alwaysOpen && strokes.status === "ready" && !strokes.data && !hasFallback) {
     return null;
@@ -227,7 +254,7 @@ export function HowItsWritten({
       <StrokeOrder data={strokes.data} />
     ) : (
       // No stroke data for this glyph yet — degrade, don't crash.
-      <WholeShapeFallback item={item} reference={alwaysOpen} />
+      <WholeShapeFallback item={item} reference={alwaysOpen} precomputedFallback={precomputedFallback} />
     );
 
   const content = (

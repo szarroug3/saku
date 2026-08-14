@@ -13,7 +13,9 @@ import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KI
 import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { COUNTER_KIND as LIVE_COUNTER_KIND, NUMBER_CONSTRUCTION_KIND as LIVE_NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
-import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiTeachOrder as liveKanjiTeachOrder } from "@/data/kanji";
+import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiEntry as liveKanjiEntry, kanjiTeachOrder as liveKanjiTeachOrder } from "@/data/kanji";
+import { CHAR_INDEX, LOOK_GROUP, kanaEntry } from "@/data/characters";
+import { strokeFallbackOf as liveStrokeFallbackOf } from "@/lib/lesson-roles";
 import { GRAMMAR_SUBJECT as LIVE_GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT as LIVE_GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry as liveGrammarConceptEntry } from "@/data/grammar-concepts";
 import { FORM_LABEL as LIVE_FORM_LABEL } from "@/lib/grammar/formula";
@@ -37,6 +39,9 @@ import {
   GRAMMAR_CONCEPT_IDS,
   FORM_LABEL,
   grammarRank,
+  kanjiEntry,
+  kanaConfusables,
+  precomputedStrokeFallback,
   COUNTER_KIND,
   NUMBER_CONSTRUCTION_KIND,
   GRAMMAR_SUBJECT,
@@ -200,4 +205,29 @@ test("grammarRank matches live grammarRank for every taught recipe, plus an unra
     assert.equal(grammarRank(r.id), liveGrammarRank(r.id), `recipe ${r.id}`);
   }
   assert.equal(grammarRank("not-a-real-recipe"), liveGrammarRank("not-a-real-recipe"));
+});
+
+test("kanjiEntry matches live kanjiEntry for every kanji", () => {
+  for (const k of KANJI) {
+    assert.equal(kanjiEntry(k.c), liveKanjiEntry(k.c), `kanji ${k.c}`);
+  }
+});
+
+test("kanaConfusables matches live confusableWith's kana branch for every kana glyph", () => {
+  for (const glyph of Object.keys(CHAR_INDEX)) {
+    const live = (LOOK_GROUP[glyph] ?? []).filter((c) => CHAR_INDEX[c]).map((c) => kanaEntry(c));
+    assert.deepEqual(kanaConfusables(glyph), live, `glyph ${glyph}`);
+  }
+});
+
+test("precomputedStrokeFallback matches live strokeFallbackOf for every kana glyph", () => {
+  for (const glyph of Object.keys(CHAR_INDEX)) {
+    const item = { entry: "kana:_", glyph, kind: "kana", facts: [] } as unknown as Parameters<
+      typeof liveStrokeFallbackOf
+    >[0];
+    const pre = precomputedStrokeFallback(glyph);
+    assert.ok(pre, `glyph ${glyph} missing from precomputed strokeFallback`);
+    assert.deepEqual(pre.normal, liveStrokeFallbackOf(item, false), `glyph ${glyph} normal`);
+    assert.deepEqual(pre.reference, liveStrokeFallbackOf(item, true), `glyph ${glyph} reference`);
+  }
 });

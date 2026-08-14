@@ -9,6 +9,7 @@
 
 import type { EntryId, FactId } from "@/types";
 import type { LibEntry } from "@/lib/library/entries";
+import type { StrokeFallback } from "@/lib/lesson-roles";
 
 /** The precomputed record is `LibEntry` itself (type-only import — zero runtime
  * cost) so it is interchangeable with the live type wherever code (search.ts's
@@ -57,4 +58,9 @@ export interface LibraryIndex {
   /** Recipe ids in grammar teaching order (grammar-order.ts's
    * `GRAMMAR_TEACHING_ORDER`, ids only). */
   readonly grammarTeachingOrderIds: readonly string[];
+  /** Glyph -> strokeFallbackOf's two answers (normal, reference), for kana
+   * glyphs — see how-its-written.tsx's `PrecomputedStrokeFallback`. */
+  readonly strokeFallback: Readonly<
+    Record<string, { normal: StrokeFallback; reference: StrokeFallback }>
+  >;
 }

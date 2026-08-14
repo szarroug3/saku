@@ -59,9 +59,16 @@ export async function fetchContentEntry<T>(entryId: EntryId): Promise<T | null> 
  * whether that's "still loading" or "genuinely missing", matching how the
  * live components already treated a missing live lookup).
  */
-export function useContentEntry<T>(entryId: EntryId): T | null | undefined {
+/**
+ * `entryId: null` skips the fetch entirely — for a caller that sometimes
+ * already has the content live (see kana-entry-view.tsx, used both fetched-by-id
+ * from the Library route and with a live item on the teach walk, which already
+ * has the whole dictionary loaded and would rather not round-trip for it).
+ */
+export function useContentEntry<T>(entryId: EntryId | null): T | null | undefined {
   const [payload, setPayload] = useState<T | null | undefined>(undefined);
   useEffect(() => {
+    if (entryId === null) return;
     let alive = true;
     setPayload(undefined);
     void fetchContentEntry<T>(entryId).then((p) => {

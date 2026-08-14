@@ -16,7 +16,7 @@
 import type { ReactNode } from "react";
 
 import { SoundIcon } from "@/components/ui";
-import { itemHeadline } from "@/lib/content/headline";
+import { itemHeadline, type Headline } from "@/lib/content/headline";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
@@ -39,6 +39,8 @@ export function ContentEntryHeader({
   title,
   sub,
   typeLabel,
+  glyph,
+  headline,
 }: {
   item?: ContentItem;
   chips?: ReactNode;
@@ -50,6 +52,12 @@ export function ContentEntryHeader({
   title?: string;
   sub?: string;
   typeLabel?: string;
+  /** GLYPH-BEARING but fetched-by-id callers (kana): the live `item` isn't
+   * available client-side (building one drags in the heavy dictionary), so pass
+   * the glyph and `headline`/`typeLabel` — itemHeadline's precomputed output —
+   * directly instead. Renders identically to the `item` path. */
+  glyph?: string;
+  headline?: Headline;
 }) {
   // Glyph-less: the NAME takes the glyph's place as the hero, so the header reads
   // the same shape as every other entry (hero on the left, type beneath) — just
@@ -83,20 +91,22 @@ export function ContentEntryHeader({
     );
   }
 
-  if (!item) return null;
-  const { text, speak: speakGlyph } = itemHeadline(item);
-  const phrase = /\s/.test(item.glyph);
+  if (!item && !glyph) return null;
+  const g = item ? item.glyph : glyph!;
+  const { text, speak: speakGlyph } = item ? itemHeadline(item) : headline!;
+  const label = item ? item.typeLabel : typeLabel!;
+  const phrase = /\s/.test(g);
   return (
     // Center the right column against the glyph — a tall kanji and a short kana
     // both read balanced, without the empty gap that bottom-aligning a short
     // glyph would leave.
     <div className="flex items-center gap-4">
       <div
-        className={`${japaneseFontClass(item.glyph)} ${glyphSize(item.glyph)} flex-none font-light leading-none text-text ${
+        className={`${japaneseFontClass(g)} ${glyphSize(g)} flex-none font-light leading-none text-text ${
           phrase ? "max-w-[7.5rem] text-balance" : ""
         }`}
       >
-        {item.glyph}
+        {g}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -118,7 +128,7 @@ export function ContentEntryHeader({
         <div
           className={`text-[11px] font-medium uppercase tracking-[0.06em] text-accent ${text ? "mt-1.5" : ""}`}
         >
-          {item.typeLabel}
+          {label}
         </div>
       </div>
 

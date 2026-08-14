@@ -1,8 +1,9 @@
 // SEED content_entries — Library entry DETAIL payloads, by id.
 //
-// Kinds seeded so far: term, mark, grammar-concept — all three have NO glyph
-// (id-only entries) and no `item: ContentItem` prop, so their payload is simply
-// the source object's own fields, resolved once at seed time. See
+// Kinds seeded so far: term, mark, grammar-concept (id-only entries, no
+// `item: ContentItem` prop — payload is simply the source object's own fields),
+// and kana (has a glyph/ContentItem, but only its headline {text, speak} is
+// heavy enough to need seeding — see the kana section below). See
 // docs/perf-library-list-bundle.md.
 //
 // BYTE-CORRECTNESS. Every payload is the real object the live component would
@@ -27,6 +28,9 @@ import { TERMS, TERM_SUBJECT, termEntry, termRow } from "@/data/terms";
 import { MARKS, MARK_SUBJECT, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
+import { CHAR_INDEX, KANA_SUBJECT, kanaEntry } from "@/data/characters";
+import { buildItem } from "@/lib/content/build-item";
+import { itemHeadline } from "@/lib/content/headline";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -93,7 +97,24 @@ const grammarConceptRows = GRAMMAR_CONCEPTS.map((concept) => {
   return row(grammarConceptEntry(concept.id), GRAMMAR_CONCEPT_SUBJECT, payload);
 });
 
-const rows = [...termRows, ...markRows, ...grammarConceptRows];
+// ---- kana ----------------------------------------------------------------
+// The payload is just the ONE genuinely heavy thing KanaEntryView reads off the
+// item: itemHeadline's {text, speak} (calls teachUnitsOf → facts/kanji data).
+// Everything else the page needs (mnemonic, following-sound context, shape
+// lookalikes, stroke fallback) is already content-free or precomputed in
+// library-index.ts, and typeLabel is the constant "kana" (contentTypeLabel's
+// default branch), so none of that needs seeding here.
+const kanaRows = Object.keys(CHAR_INDEX)
+  .map((glyph) => {
+    const entry = kanaEntry(glyph);
+    const item = buildItem(entry, "kana");
+    if (!item) return null;
+    const { text, speak } = itemHeadline(item);
+    return row(entry, KANA_SUBJECT, { text, speak });
+  })
+  .filter((r) => r != null);
+
+const rows = [...termRows, ...markRows, ...grammarConceptRows, ...kanaRows];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
 if (error) {
@@ -103,5 +124,5 @@ if (error) {
 
 console.log(
   `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
-    `${grammarConceptRows.length} grammar-concept rows (${rows.length} total)`,
+    `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana rows (${rows.length} total)`,
 );

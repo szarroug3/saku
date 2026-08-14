@@ -186,10 +186,8 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
   }
 
   switch (entry.kind) {
-    case KANA_SUBJECT: {
-      const item = buildItem(entry.id, "kana");
-      return item ? <KanaEntryView item={item} /> : null;
-    }
+    case KANA_SUBJECT:
+      return <KanaEntryView entry={entry.id} />;
     // A single Han glyph is ONE cohesive character item across every role it plays,
     // so radical:水 and kanji:水 render the same unified page (buildGlyphItem keys
     // on the glyph, not the entry's subject).

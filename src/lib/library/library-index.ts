@@ -18,6 +18,7 @@
 import libraryIndexJson from "@/data/generated/library-index.json" with { type: "json" };
 import type { LibraryIndex, IndexLibEntry } from "./library-index-types";
 import type { Kind } from "@/lib/library/entries";
+import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
 import type { Recipe } from "@/data/grammar/recipes";
 import type { Form } from "@/lib/conjugate";
@@ -28,7 +29,7 @@ import type { Form } from "@/lib/conjugate";
 // own data/kanji.ts module has a top-level import of vocab.ts (for its separate
 // reading-attestation logic), so its existence check is precomputed instead
 // (INDEX.kanjiGlyphs) and its id builder reproduced as the pure one-liner it is.
-import { CHAR_INDEX, KANA_SUBJECT, kanaEntry } from "@/data/characters";
+import { CHAR_INDEX, KANA_SUBJECT, kanaEntry, LOOK_GROUP } from "@/data/characters";
 import { RADICAL_SUBJECT, radicalByGlyph, radicalEntry } from "@/data/radicals";
 import { PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveEntry } from "@/data/components";
 import { VOCAB_SUBJECT, wordEntry } from "@/lib/vocab-ids";
@@ -209,7 +210,7 @@ const KANJI_GLYPHS: ReadonlySet<string> = new Set(INDEX.kanjiGlyphs);
 
 /** A kanji's entry id — byte-identical to data/kanji.ts's `kanjiEntry`
  * (`entryId(KANJI_SUBJECT, c)`), a pure one-liner reproduced content-free. */
-function kanjiEntry(c: string): EntryId {
+export function kanjiEntry(c: string): EntryId {
   return entryId(KANJI_SUBJECT, c);
 }
 
@@ -249,4 +250,21 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     default:
       return null;
   }
+}
+
+/** Both of strokeFallbackOf's answers for a glyph, precomputed — content-free
+ * twin of lib/lesson-roles.ts's `strokeFallbackOf`, scoped to kana glyphs so
+ * far. Undefined for a glyph the index doesn't carry (any non-kana glyph
+ * today); the caller (how-its-written.tsx) falls back to the live function. */
+/** A kana's shape lookalikes — the content-free twin of library/entries.ts's
+ * `confusableWith` KANA branch (`LOOK_GROUP`/`CHAR_INDEX`/`kanaEntry`, all
+ * already content-free at the source — no precompute needed). */
+export function kanaConfusables(glyph: string): EntryId[] {
+  return (LOOK_GROUP[glyph] ?? []).filter((c) => CHAR_INDEX[c]).map((c) => kanaEntry(c));
+}
+
+export function precomputedStrokeFallback(
+  glyph: string,
+): { normal: StrokeFallback; reference: StrokeFallback } | undefined {
+  return INDEX.strokeFallback[glyph];
 }

@@ -8,6 +8,21 @@
 // ContentItem.mnemonic. It reuses the shared header (EntryHeader) and mnemonic
 // block (MnemonicView), the same components the shipped page and the lesson walk
 // render, inside the glass entry surface.
+//
+// FETCHED BY ID by default — the Library route. The only genuinely heavy
+// derivation a kana page reads is itemHeadline's {text, speak} — seeded per kana
+// glyph by scripts/seed-content-entries.mjs and fetched here via useContentEntry.
+// Everything else is already content-free or precomputed off library-index.ts:
+// the mnemonic (data/mnemonics, keyed by glyph), the following-sound context
+// (data/kana-context), the shape lookalikes (kanaConfusables), and the stroke
+// fallback (precomputedStrokeFallback). typeLabel is the constant "kana"
+// (contentTypeLabel's default branch for this kind — no need to fetch it).
+//
+// The teach walk (TeachItemView) and /dev/views already build a live
+// `ContentItem` for every kind they show — they have the whole dictionary
+// loaded regardless of kana — so passing `item` instead of `entry` skips the
+// fetch and reads the headline straight off it (itemHeadline), the one
+// difference from the fetched path.
 
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
@@ -15,26 +30,37 @@ import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { FlatSurfaceProvider } from "@/components/ui";
 import { getMnemonic } from "@/data/mnemonics";
+import { contextPronunciation } from "@/data/kana-context";
+import { useContentEntry } from "@/lib/library/content-entries";
+import { libEntry, kanaConfusables, precomputedStrokeFallback } from "@/lib/library/library-index";
+import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
 
-export function KanaEntryView({ item }: { item: ContentItem }) {
-  // The mnemonic is kana-specific reference data keyed by glyph — not a base
-  // ContentItem field — so a kana view looks it up.
-  const m = getMnemonic(item.glyph);
+export function KanaEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+  const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
+  const headline = item ? itemHeadline(item) : fetched;
+  const glyph = item ? item.glyph : libEntry(entry!)?.glyph;
+  const resolvedEntry = item ? item.entry : entry!;
+
+  // undefined = still loading, null/no glyph = no such entry (matches the live
+  // component's behavior for an unresolved id).
+  if (headline === undefined || headline === null || !glyph) return null;
+
+  const m = getMnemonic(glyph);
   if (!m) return null;
-  // The following-sound rules and the shape lookalikes ride on the kana item
-  // itself (see KanaItem). Narrow to read them; a non-kana item has neither.
-  const context = item.kind === "kana" ? item.context : null;
-  const confusables = item.kind === "kana" ? item.confusables : [];
+  const context = contextPronunciation(glyph);
+  const confusables = kanaConfusables(glyph);
+
   return (
     // NO CARD: the entry reads as a natural part of the page — a plain, unstyled
     // <article> (semantic anchor, no fill/border). Flat surface so the shared
     // "How it's written" section drops its own card fill.
     <FlatSurfaceProvider>
       <article>
-        <ContentEntryHeader item={item} />
+        <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="kana" />
         <div className="mt-5 border-t border-border/50 pt-6">
-          <MnemonicView m={m} glyph={item.glyph} voiceName="" />
+          <MnemonicView m={m} glyph={glyph} voiceName="" />
         </div>
         {/* How its sound bends to what follows it (ん borrows the next place, っ
             doubles the next consonant), as a heads-up aside — the same left-rule
@@ -64,7 +90,8 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             learning to write early" notice, Show expands the stroke diagram. */}
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
-            item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
+            item={{ entry: resolvedEntry, glyph, kind: "kana", facts: [] }}
+            precomputedFallback={precomputedStrokeFallback(glyph)}
           />
         </div>
       </article>

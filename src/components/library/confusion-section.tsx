@@ -13,7 +13,7 @@
 import Link from "next/link";
 
 import { Section } from "@/components/library/entry-section";
-import { libEntry } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import type { EntryId } from "@/types";
