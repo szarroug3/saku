@@ -200,10 +200,8 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
       return <KeigoEntryView entry={entry.id} />;
     case TRANSITIVITY_SUBJECT:
       return <VerbPairEntryView entry={entry.id} />;
-    case GRAMMAR_SUBJECT: {
-      const item = buildItem(entry.id, "grammar");
-      return item ? <GrammarEntryView item={item} /> : null;
-    }
+    case GRAMMAR_SUBJECT:
+      return <GrammarEntryView entry={entry.id} />;
     default:
       return null;
   }

@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph } from "@/lib/library/entries";
+import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf } from "@/lib/library/entries";
 import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { COUNTER_KIND as LIVE_COUNTER_KIND, NUMBER_CONSTRUCTION_KIND as LIVE_NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
@@ -48,6 +48,8 @@ import {
   GRAMMAR_SUBJECT,
   MARK_SUBJECT,
   markEntry,
+  recipeOf,
+  recipesOf,
 } from "@/lib/library/library-index";
 
 test("KINDS matches live KINDS, in order", () => {
@@ -221,6 +223,18 @@ test("kanaConfusables matches live confusableWith's kana branch for every kana g
     const live = (LOOK_GROUP[glyph] ?? []).filter((c) => CHAR_INDEX[c]).map((c) => kanaEntry(c));
     assert.deepEqual(kanaConfusables(glyph), live, `glyph ${glyph}`);
   }
+});
+
+test("recipeOf / recipesOf match live values for every grammar entry", () => {
+  const grammarEntries = LIVE_ENTRIES.filter((e) => e.kind === "grammar");
+  assert.ok(grammarEntries.length > 0);
+  for (const e of grammarEntries) {
+    assert.deepEqual(recipeOf(e.id), liveRecipeOf(e), `recipeOf ${e.id}`);
+    assert.deepEqual(recipesOf(e.id), liveRecipesOf(e), `recipesOf ${e.id}`);
+  }
+  const bogus = "grammar:not-a-real-recipe" as Parameters<typeof recipeOf>[0];
+  assert.equal(recipeOf(bogus), null);
+  assert.deepEqual(recipesOf(bogus), []);
 });
 
 test("MARK_SUBJECT / markEntry match live values for every mark", () => {

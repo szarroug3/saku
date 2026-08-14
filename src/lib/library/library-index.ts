@@ -20,7 +20,7 @@ import type { LibraryIndex, IndexLibEntry } from "./library-index-types";
 import type { Kind } from "@/lib/library/entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
-import type { Recipe } from "@/data/grammar/recipes";
+import { RECIPES, isPrimaryPatternRecipe, patternGroup, type Recipe } from "@/data/grammar/recipes";
 import type { Form } from "@/lib/conjugate";
 
 // The four small, genuinely content-LIGHT subjects entryForGlyph resolves
@@ -176,6 +176,29 @@ const GRAMMAR_RANK_BY_ID: ReadonlyMap<string, number> = new Map(
  * of grammar-order.ts's `grammarRank`. */
 export function grammarRank(recipeId: string): number {
   return GRAMMAR_RANK_BY_ID.get(recipeId) ?? Number.MAX_SAFE_INTEGER;
+}
+
+/** entry id → its recipe — the content-free twin of library/entries.ts's
+ * `RECIPE_OF_ENTRY` map, built the identical way (same RECIPES walk, same
+ * isPrimaryPatternRecipe filter, same patternEntry). data/grammar/recipes.ts
+ * is itself content-light (only conjugate.ts's Form/WordClass types), so this
+ * carries none of entries.ts's dictionary entanglement. */
+const RECIPE_OF_ENTRY: ReadonlyMap<EntryId, Recipe> = new Map(
+  RECIPES.filter(isPrimaryPatternRecipe).map((r) => [patternEntry(r.id), r]),
+);
+
+/** The recipe behind a grammar entry, or null — byte-identical to
+ * library/entries.ts's `recipeOf`, taking the entry id directly rather than a
+ * LibEntry (the only field that function read off it). */
+export function recipeOf(entry: EntryId): Recipe | null {
+  return RECIPE_OF_ENTRY.get(entry) ?? null;
+}
+
+/** Every independently meaningful recipe on this pattern's reference page —
+ * byte-identical to library/entries.ts's `recipesOf`. */
+export function recipesOf(entry: EntryId): readonly Recipe[] {
+  const primary = RECIPE_OF_ENTRY.get(entry);
+  return primary ? patternGroup(primary.id) : [];
 }
 
 /** The grammar-concept kind constant — byte-identical to data/grammar-concepts.

@@ -39,6 +39,8 @@ import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { NUMBER_CONSTRUCTIONS, numberConstructionEntry } from "@/data/number-construction";
 import { COUNTER_KIND, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/library-index";
 import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry } from "@/data/keigo";
+import { RECIPES, isPrimaryPatternRecipe } from "@/data/grammar/recipes";
+import { GRAMMAR_SUBJECT, patternEntry } from "@/lib/library/library-index";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -175,6 +177,26 @@ const keigoRows = KEIGO_SETS.map((set) => {
   return row(entry, KEIGO_SUBJECT, { text, speak, glyph: item.glyph });
 }).filter((r) => r != null);
 
+// ---- grammar (patterns) -----------------------------------------------------
+// recipeOf/recipesOf/clusterById/membersOf all stay live reads —
+// data/grammar/recipes.ts and data/grammar/clusters.ts are self-contained, no
+// dictionary dependency (GrammarEntryView now reads library-index.ts's
+// content-free recipeOf/recipesOf twins instead of library/entries.ts's,
+// which drag in the whole heavy file just for this lookup). Only itemHeadline
+// is seeded, along with `glyph` — checked directly against buildItem's own
+// glyph and found to differ for 2 of 103 patterns (a parenthetical Japanese
+// disambiguator library-index.ts's glyph field doesn't carry), so it isn't a
+// safe substitute here either.
+const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
+  .map((r) => {
+    const entry = patternEntry(r.id);
+    const item = buildItem(entry, "grammar");
+    if (!item) return null;
+    const { text, speak } = itemHeadline(item);
+    return row(entry, GRAMMAR_SUBJECT, { text, speak, glyph: item.glyph });
+  })
+  .filter((r) => r != null);
+
 const rows = [
   ...termRows,
   ...markRows,
@@ -184,6 +206,7 @@ const rows = [
   ...counterRows,
   ...constructionRows,
   ...keigoRows,
+  ...grammarRows,
 ];
 
 const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
@@ -196,6 +219,6 @@ console.log(
   `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
     `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
     `${verbPairRows.length} transitivity, ${counterRows.length} counter, ` +
-    `${constructionRows.length} generative-rule, ${keigoRows.length} keigo rows ` +
-    `(${rows.length} total)`,
+    `${constructionRows.length} generative-rule, ${keigoRows.length} keigo, ` +
+    `${grammarRows.length} grammar rows (${rows.length} total)`,
 );

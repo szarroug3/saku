@@ -18,6 +18,18 @@
 // and the formula helpers. Every section is guarded on its own content: a pattern
 // in no cluster (52 of 81) shows no family, and it says nothing about the gap — a
 // missing section is already legible.
+//
+// recipeOf/recipesOf/clusterById/membersOf all stay LIVE reads —
+// data/grammar/recipes.ts and data/grammar/clusters.ts are self-contained, no
+// dictionary dependency — but read off library-index.ts's content-free
+// recipeOf/recipesOf twins rather than library/entries.ts's, which would drag
+// in that file's whole heavy top-of-file import chain just for this lookup.
+// FETCHED BY ID by default (the Library route) is itemHeadline's
+// {text, speak}, seeded per pattern along with `glyph` (buildItem's — checked
+// directly against library-index.ts's `libEntry`, which differs for a couple
+// of patterns, so it isn't a safe substitute here). The teach walk /
+// /dev/views pass a live `item` instead, same dual-mode pattern as
+// KanaEntryView.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
@@ -25,8 +37,19 @@ import { LinkSlot } from "@/components/grammar/link-slot";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach } from "@/components/library/pattern-teach";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { libEntry, recipeOf, recipesOf } from "@/lib/library/entries";
+import { recipeOf, recipesOf } from "@/lib/library/library-index";
+import { useContentEntry } from "@/lib/library/content-entries";
+import { itemHeadline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
+
+/** itemHeadline's output plus the pattern's glyph, seeded together — see
+ * scripts/seed-content-entries.mjs's grammar section. */
+interface GrammarPayload {
+  readonly text: string;
+  readonly speak: string | null;
+  readonly glyph: string;
+}
 
 // The kinds of word a pattern hangs on, said the way a learner names them (い- and
 // な-adjectives collapse to "adjective" — the recipe below shows the per-kind
@@ -44,14 +67,16 @@ function hostList(attach: readonly { host: string }[]): string {
   return `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
 }
 
-export function GrammarEntryView({ item }: { item: ContentItem }) {
-  // recipeOf/recipesOf key off a LibEntry, so resolve the item's id to one. A
-  // non-grammar id (or a stale one) answers undefined here and the page is empty
-  // rather than wrong.
-  const entry = libEntry(item.entry);
-  const pattern = entry ? recipeOf(entry) : null;
-  const patterns = entry ? recipesOf(entry) : [];
-  if (!pattern) return null;
+export function GrammarEntryView({ entry, item }: { entry?: EntryId; item?: ContentItem }) {
+  const fetched = useContentEntry<GrammarPayload>(item ? null : (entry ?? null));
+  const headline = item ? itemHeadline(item) : fetched;
+  const resolvedEntry = item ? item.entry : entry!;
+  const glyph = item ? item.glyph : fetched?.glyph;
+
+  const pattern = recipeOf(resolvedEntry);
+  const patterns = recipesOf(resolvedEntry);
+
+  if (headline === undefined || headline === null || !glyph || !pattern) return null;
 
   // The family, or null. Null covers "not in a cluster" (52 of 81 patterns) and a
   // cluster with only one recipe member — neither renders a "ways to say this"
@@ -61,7 +86,7 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="grammar rule" />
 
       {/* HOW IT'S FORMED — the whole page now. The meaning is the header gloss and
           the kinds of word it attaches to fold into this lead ("Take any verb …"),
