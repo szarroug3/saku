@@ -122,6 +122,16 @@ export function entryName(entry: IndexLibEntry): string {
  * `SENTENCE_RULE_KIND`. A literal, re-declared for the same reason. */
 export const SENTENCE_RULE_KIND = "sentence-rule";
 
+/** The mark subject constant and its entry-id builder — byte-identical to
+ * data/marks.ts's `MARK_SUBJECT` / `markEntry`. Re-declared content-free so a
+ * caller that only needs a mark's entry id (SentenceEntryView, fetching the
+ * mark behind a sentence-ordering tier) doesn't pull in marks.ts's own
+ * dependencies (phase-intros.ts, sentence-ordering-guides.ts) for it. */
+export const MARK_SUBJECT = "writing-rule";
+export function markEntry(id: string): EntryId {
+  return entryId(MARK_SUBJECT, id);
+}
+
 /** The counter kind constant — byte-identical to library/entries.ts's
  * `COUNTER_KIND`. A literal, re-declared for the same reason. */
 export const COUNTER_KIND = "counter";

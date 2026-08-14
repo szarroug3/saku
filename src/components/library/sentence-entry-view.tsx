@@ -5,33 +5,29 @@
 // character; it is a RULE about the order the pieces of a sentence go in, and it
 // is carried as a "sentence"-shelf MARK. So this page shows the SAME rich mark the
 // shipped route showed — every intro card, its worked examples, and the accent
-// highlighting — via the shared MarkView, then one more real sentence beneath it.
+// highlighting — via the shared MarkView.
 //
-//   header (name + summary)
+//   header (name)
 //   How the pieces are ordered  (accent) — the mark's intros (MarkView)
-//   In a sentence               — a real corpus sentence that follows the order
 //
-// Reference data only. The tier maps to its mark by id (sentence-ordering:<id> →
-// sentence-rule-<id>); MarkView is the one renderer both this page and the mark
-// page use, so the sentence rule reads identically wherever it appears.
+// FETCHED BY ID, not built from a live ContentItem/sentenceItems() (which pulls
+// VOCAB_FACTS/GRAMMAR_FACTS to build a sentence-track item this page never used
+// beyond an existence check). A sentence tier's LIBRARY entry IS its mark's own
+// entry id (sentence-rule-<tierId>, kind writing-rule — see
+// library/entries.ts's SENTENCE_RULE_KIND branch), so `entry` here is exactly
+// what MarkEntryView also fetches: the same full Mark object, unmodified.
+// MarkView reads it directly and is unchanged.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { MarkView } from "@/components/library/mark-view";
-import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
-import { markEntry, markFor } from "@/data/marks";
-import type { ContentItem } from "@/lib/content/item";
+import { useContentEntry } from "@/lib/library/content-entries";
+import type { Mark } from "@/data/marks";
+import type { EntryId } from "@/types";
 
-const PREFIX = "sentence-ordering:";
-
-export function SentenceEntryView({ item }: { item: ContentItem }) {
-  const entry = String(item.entry);
-  const tierId = entry.startsWith(PREFIX) ? entry.slice(PREFIX.length) : entry;
-  const tier = SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId);
-  // The tier's rule lives in its sentence-shelf mark — the rich content (intros,
-  // worked examples, accents) the shipped route rendered.
-  const mark = markFor(markEntry(`sentence-rule-${tierId}`));
-  if (!tier || !mark) return null;
+export function SentenceEntryView({ entry }: { entry: EntryId }) {
+  const mark = useContentEntry<Mark>(entry);
+  if (!mark) return null;
 
   return (
     <EntrySurface>

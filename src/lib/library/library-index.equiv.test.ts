@@ -17,6 +17,7 @@ import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiEntry as liveKanjiEntr
 import { CHAR_INDEX, LOOK_GROUP, kanaEntry } from "@/data/characters";
 import { strokeFallbackOf as liveStrokeFallbackOf } from "@/lib/lesson-roles";
 import { GRAMMAR_SUBJECT as LIVE_GRAMMAR_SUBJECT } from "@/data/grammar";
+import { MARKS, MARK_SUBJECT as LIVE_MARK_SUBJECT, markEntry as liveMarkEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT as LIVE_GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry as liveGrammarConceptEntry } from "@/data/grammar-concepts";
 import { FORM_LABEL as LIVE_FORM_LABEL } from "@/lib/grammar/formula";
 import { GRAMMAR_TEACHING_ORDER, grammarRank as liveGrammarRank } from "@/lib/library/grammar-order";
@@ -45,6 +46,8 @@ import {
   COUNTER_KIND,
   NUMBER_CONSTRUCTION_KIND,
   GRAMMAR_SUBJECT,
+  MARK_SUBJECT,
+  markEntry,
 } from "@/lib/library/library-index";
 
 test("KINDS matches live KINDS, in order", () => {
@@ -217,6 +220,13 @@ test("kanaConfusables matches live confusableWith's kana branch for every kana g
   for (const glyph of Object.keys(CHAR_INDEX)) {
     const live = (LOOK_GROUP[glyph] ?? []).filter((c) => CHAR_INDEX[c]).map((c) => kanaEntry(c));
     assert.deepEqual(kanaConfusables(glyph), live, `glyph ${glyph}`);
+  }
+});
+
+test("MARK_SUBJECT / markEntry match live values for every mark", () => {
+  assert.equal(MARK_SUBJECT, LIVE_MARK_SUBJECT);
+  for (const mark of MARKS) {
+    assert.equal(markEntry(mark.id), liveMarkEntry(mark.id), `mark ${mark.id}`);
   }
 });
 

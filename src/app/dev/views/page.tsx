@@ -98,6 +98,9 @@ const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
 const MARK = markEntry("dakuten");
 const HANDAKUTEN_MARK = markEntry("handakuten");
 const CONCEPT = grammarConceptEntry("verb-classes");
+// A sentence tier's library entry IS its mark's own entry id — see
+// sentence-entry-view.tsx.
+const SENTENCE_TIER_MARK = markEntry("sentence-rule-simple");
 
 // Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
 const COUNTER_TSU = tsu1 ? formItem(tsu1) : undefined;
@@ -370,7 +373,7 @@ export default function ViewsDevPage() {
 
         <Sub title="Sentences">
           <Slot tag="Content — library & lesson">
-            {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
+            <SentenceEntryView entry={SENTENCE_TIER_MARK} />
           </Slot>
         </Sub>
 

@@ -43,7 +43,6 @@ import { TermEntryView } from "@/components/library/term-entry-view";
 import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { FlatSurfaceProvider } from "@/components/ui";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
-import { sentenceItems } from "@/lib/content/sentence-track";
 import { SENTENCE_ORDERING_TIERS, tierAssemblyFacts } from "@/data/assembly";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
@@ -170,11 +169,7 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
   }
   if (mark) {
     if (mark.shelf === "sentence") {
-      // A sentence tier's library entry IS its mark (sentence-rule-<id>); the view
-      // wants the sentence-ordering item, so map across by tier id.
-      const tierId = mark.id.replace("sentence-rule-", "");
-      const item = sentenceItems().find((i) => String(i.entry) === `sentence-ordering:${tierId}`);
-      return item ? <SentenceEntryView item={item} /> : null;
+      return <SentenceEntryView entry={entry.id} />;
     }
     return <MarkEntryView entry={entry.id} />;
   }
