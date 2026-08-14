@@ -44,7 +44,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
-import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
@@ -306,7 +305,6 @@ export function Shelf({
       key={entry.id}
       entry={entry}
       voice={voice}
-      mnemonic={mnemonicOf(kind, entry)}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
@@ -471,7 +469,7 @@ export function Shelf({
       // group has none. The tile grid / row list carries the shelf now, not a box.
       <section
         key={section.id}
-        className={`kq-defer ${first ? "" : "mt-2 border-t border-white/[0.08] pt-2"}`}
+        className={`kq-defer ${first ? "" : "mt-1.5 border-t border-white/[0.08] pt-1.5"}`}
       >
         <div className="mb-1.5 flex items-center gap-1.5">
           <button
@@ -538,7 +536,16 @@ export function Shelf({
               // first tile lines up under the section LABEL, not under the chevron
               // — the same tab-in the grammar rows use, so a header sits over the
               // content it heads instead of a step to its left.
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-x-2 gap-y-1 pl-[26px]">
+              // Kana are simple, single glyphs — a smaller square keeps them from
+              // floating in too much space; kanji/radicals want the roomier cell.
+              // (Both class strings are literal so Tailwind JIT sees them.)
+              <div
+                className={`grid ${
+                  kind === KANA_SUBJECT
+                    ? "grid-cols-[repeat(auto-fill,minmax(60px,1fr))]"
+                    : "grid-cols-[repeat(auto-fill,minmax(84px,1fr))]"
+                } items-start gap-x-2 gap-y-1 pl-[26px]`}
+              >
                 {shown.map(tile)}
               </div>
             )}
@@ -728,22 +735,3 @@ function GrammarShelfRow({
   );
 }
 
-/** The tile's hover hint.
- *
- * The hint comes from src/data/mnemonics.ts — the ONE authored source for what a
- * character's story is. This used to read from a second, older table of short
- * shape hooks, which drifted: あ's tile promised "an antenna poking out of a TV"
- * while its entry page told the acrobat-and-father story. One character, two
- * stories, and no way to notice. Deriving from `getMnemonic` means editing the
- * mnemonic updates the tooltip too.
- *
- * `object` — the thing the drawing depicts ("father") — is the short hook a
- * tooltip can carry; the mnemonic prose is a full sentence and belongs on the
- * card, not in a title attribute. A glyph with nothing authored (katakana,
- * kanji, words) gets NO invented hint — just the speaker affordance. */
-function mnemonicOf(kind: Kind, entry: LibEntry): string | undefined {
-  if (kind !== KANA_SUBJECT) return undefined;
-  const hear = "tap the speaker to hear it";
-  const object = getMnemonic(entry.glyph)?.object;
-  return object ? `${object} · ${hear}` : hear;
-}

@@ -271,7 +271,7 @@ export default async function RootLayout({
                             className="kq-stage pointer-events-none absolute inset-0 rounded-2xl"
                             aria-hidden
                           />
-                          <div className="kq-scroll relative overflow-x-clip rounded-2xl px-3 pb-15 pt-3">
+                          <div className="kq-scroll relative overflow-x-clip rounded-2xl px-2 pb-15 pt-3">
                             {/* On every page: the screens that would otherwise show
                                 a learner's work as missing are exactly the ones this
                                 has to appear on. Renders nothing when nothing is

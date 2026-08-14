@@ -799,12 +799,12 @@ export function LibraryPageClient({
               const expanded = !collapsedAllKinds.has(k);
               return (
               <div key={k}>
-                <div className="flex items-center gap-2 px-1 pb-1 pt-2">
+                <div className="flex items-center gap-1.5 pb-1 pt-2">
                   <button
                     type="button"
                     aria-expanded={expanded}
                     onClick={() => toggleAllKind(k)}
-                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-lg leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     <span aria-hidden className={`block transition-transform ${expanded ? "rotate-90" : ""}`}>›</span>
                   </button>

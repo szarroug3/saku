@@ -153,13 +153,11 @@ export function ShelfRow({
 
 export function EntryTile({
   entry,
-  mnemonic,
   voice,
   selected,
   onToggleSelect,
 }: {
   entry: LibEntry;
-  mnemonic?: string;
   voice: string;
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
@@ -182,10 +180,9 @@ export function EntryTile({
       // blurred shadow on scrolling content reintroduces jank) and an accent
       // wash + accent glyph when on. `cursor-pointer` + `select-none` because the
       // whole body is the toggle.
-      className={`group relative cursor-pointer select-none rounded-[10px] px-1.5 pb-1 pt-1.5 text-center [container-type:inline-size] transition-colors ${
+      className={`group relative flex aspect-square flex-col items-center justify-center rounded-[10px] px-1 text-center [container-type:inline-size] cursor-pointer select-none transition-colors ${
         selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
       }`}
-      title={mnemonic}
     >
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
@@ -212,8 +209,8 @@ export function EntryTile({
           fades out and the 🔊/↗ fade in over the same line. Sharing the slot keeps
           the tile compact — no empty reserved action row under every glyph — and,
           because the slot is a fixed height, hovering never reflows the grid. */}
-      <div className="relative mt-0.5 flex h-[18px] items-center justify-center">
-        <span className="truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+      <div className="relative mt-px flex h-[13px] items-center justify-center">
+        <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
           {subLabel(entry)}
         </span>
         <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
