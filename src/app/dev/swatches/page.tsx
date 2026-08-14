@@ -116,7 +116,7 @@ export default function SwatchesPage() {
   };
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-6xl">
       <h1 className="text-2xl font-semibold text-text">Theme swatches</h1>
       <p className="mt-1 mb-6 max-w-prose text-[13px] text-text-muted">
         Every colour token in the current theme. Flip the switches to preview
@@ -165,7 +165,8 @@ export default function SwatchesPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex flex-col gap-6">
         {GROUPS.map((group) => (
           <section key={group.label}>
             <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
@@ -190,7 +191,9 @@ export default function SwatchesPage() {
             </div>
           </section>
         ))}
+        </div>
 
+        <div className="flex flex-col gap-6">
         <section>
           <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
             Type samples
@@ -224,6 +227,7 @@ export default function SwatchesPage() {
             ))}
           </div>
         </section>
+        </div>
       </div>
     </div>
   );
