@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
-import { CharacterEntryView } from "@/components/library/character-entry-view";
+import { CharacterEntryView } from "@/components/library/live-character-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { GrammarEntryView } from "@/components/library/grammar-entry-view";
 import { KeigoEntryView } from "@/components/library/keigo-entry-view";

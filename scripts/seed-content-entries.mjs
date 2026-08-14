@@ -31,7 +31,7 @@ import { MARKS, MARK_SUBJECT, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
 import { CHAR_INDEX, KANA_SUBJECT, kanaEntry } from "@/data/characters";
-import { buildItem } from "@/lib/content/build-item";
+import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { itemHeadline } from "@/lib/content/headline";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry } from "@/data/transitivity-facts";
@@ -41,6 +41,10 @@ import { COUNTER_KIND, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/library-in
 import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry } from "@/data/keigo";
 import { RECIPES, isPrimaryPatternRecipe } from "@/data/grammar/recipes";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/lib/library/library-index";
+import { KANJI, KANJI_SUBJECT, kanjiEntry } from "@/data/kanji";
+import { RADICALS, RADICAL_SUBJECT, radicalEntry } from "@/data/radicals";
+import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
+import { characterEntryPayload } from "@/lib/library/character-entry-content";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -197,6 +201,36 @@ const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
   })
   .filter((r) => r != null);
 
+// ---- character (radical / kanji / word) -----------------------------------
+// This is the full-payload case. CharacterEntryView historically joined seven
+// live sources to render role aggregation, etymology, variants, readings,
+// components, word senses/examples, component uses, and writing fallback. The
+// exact live characterEntryPayload output carries all of it, including the real
+// buildGlyphItem result for every single Han glyph. That preserves the cohesive
+// radical + kanji + word item (人) whichever of its entry ids opened the page.
+// Multi-character/kana words use buildItem's real word output as before.
+const SINGLE_HAN = /^\p{Script=Han}$/u;
+
+const radicalRows = RADICALS.map((radical) => {
+  const item = buildGlyphItem(radical.glyph);
+  return item
+    ? row(radicalEntry(radical.glyph), RADICAL_SUBJECT, characterEntryPayload(item))
+    : null;
+}).filter((r) => r != null);
+
+const kanjiRows = KANJI.map((kanji) => {
+  const item = buildGlyphItem(kanji.c);
+  return item ? row(kanjiEntry(kanji.c), KANJI_SUBJECT, characterEntryPayload(item)) : null;
+}).filter((r) => r != null);
+
+const wordRows = VOCAB.map((word) => {
+  const entry = wordEntry(word.keb);
+  const item = SINGLE_HAN.test(word.keb)
+    ? buildGlyphItem(word.keb)
+    : buildItem(entry, "word");
+  return item ? row(entry, VOCAB_SUBJECT, characterEntryPayload(item)) : null;
+}).filter((r) => r != null);
+
 const rows = [
   ...termRows,
   ...markRows,
@@ -207,12 +241,23 @@ const rows = [
   ...constructionRows,
   ...keigoRows,
   ...grammarRows,
+  ...radicalRows,
+  ...kanjiRows,
+  ...wordRows,
 ];
 
-const { error } = await supabase.from("content_entries").upsert(rows, { onConflict: "entry_id" });
-if (error) {
-  console.error("seed-content-entries failed:", error.message);
-  process.exit(1);
+// Keep each REST request comfortably below proxy/body-size limits now that the
+// character payload adds every vocabulary entry. Upsert semantics are unchanged.
+const BATCH_SIZE = 500;
+for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+  const batch = rows.slice(i, i + BATCH_SIZE);
+  const { error } = await supabase
+    .from("content_entries")
+    .upsert(batch, { onConflict: "entry_id" });
+  if (error) {
+    console.error(`seed-content-entries failed at rows ${i}-${i + batch.length - 1}:`, error.message);
+    process.exit(1);
+  }
 }
 
 console.log(
@@ -220,5 +265,6 @@ console.log(
     `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
     `${verbPairRows.length} transitivity, ${counterRows.length} counter, ` +
     `${constructionRows.length} generative-rule, ${keigoRows.length} keigo, ` +
-    `${grammarRows.length} grammar rows (${rows.length} total)`,
+    `${grammarRows.length} grammar, ${radicalRows.length} radical, ` +
+    `${kanjiRows.length} kanji, ${wordRows.length} word rows (${rows.length} total)`,
 );

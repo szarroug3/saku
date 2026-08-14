@@ -60,6 +60,7 @@ describe("one table, on the reference pages only", () => {
   // The redesigned radical reference page is CharacterEntryView; its "used as a
   // part in" list is off usedAsPartIn now, not ComponentUses/RadicalKanjiTable.
   const characterView = read("./character-entry-view.tsx");
+  const characterContent = read("../../lib/library/character-entry-content.ts");
 
   test("the table sorts on the curriculum index", () => {
     assert.match(table, /orderRow\(/);
@@ -82,6 +83,7 @@ describe("one table, on the reference pages only", () => {
     // (capped in the view, the approved gallery behaviour) rather than the old
     // 30-row ComponentUses table. The invariant that survives: a radical page
     // still joins up the kanji written with it.
-    assert.match(characterView, /usedAsPartIn/);
+    assert.match(characterView, /payload\.usedIn/);
+    assert.match(characterContent, /usedAsPartIn/);
   });
 });

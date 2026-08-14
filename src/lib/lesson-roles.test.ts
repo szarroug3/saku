@@ -455,6 +455,10 @@ describe("the Library keeps what the lesson dropped", () => {
     fileURLToPath(new URL("../components/library/character-entry-view.tsx", import.meta.url)),
     "utf8",
   );
+  const characterContent = readFileSync(
+    fileURLToPath(new URL("./library/character-entry-content.ts", import.meta.url)),
+    "utf8",
+  );
 
   test("人's five in-word readings are still there to be read, off the same entry", () => {
     const shape = kanjiEntryOf(FOLDED);
@@ -474,8 +478,10 @@ describe("the Library keeps what the lesson dropped", () => {
   test("the character view mounts both, so the reference is where they went", () => {
     // The full reading groups (on'yomi + kun'yomi) and the "used as a part in"
     // list — the two things the lesson hands off to the reference — are both here.
-    assert.match(characterView, /readingGroups/);
-    assert.match(characterView, /usedAsPartIn/);
+    assert.match(characterView, /groups\.map/);
+    assert.match(characterView, /payload\.usedIn/);
+    assert.match(characterContent, /readingsOf/);
+    assert.match(characterContent, /usedAsPartIn/);
   });
 
   test("the character view's own material is untouched by the lesson's section list", () => {

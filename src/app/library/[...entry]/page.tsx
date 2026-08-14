@@ -42,7 +42,6 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { TermEntryView } from "@/components/library/term-entry-view";
 import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { FlatSurfaceProvider } from "@/components/ui";
-import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { SENTENCE_ORDERING_TIERS, tierAssemblyFacts } from "@/data/assembly";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
@@ -182,18 +181,13 @@ function EntryBody({ entry, mark }: { entry: LibEntry; mark: Mark | undefined })
   switch (entry.kind) {
     case KANA_SUBJECT:
       return <KanaEntryView entry={entry.id} />;
-    // A single Han glyph is ONE cohesive character item across every role it plays,
-    // so radical:水 and kanji:水 render the same unified page (buildGlyphItem keys
-    // on the glyph, not the entry's subject).
+    // A single Han glyph is ONE cohesive character item across every role it plays.
+    // Its seeded payload contains buildGlyphItem's exact output whichever role id
+    // opened it; multi-character words carry buildItem's exact word output.
     case KANJI_SUBJECT:
-    case RADICAL_SUBJECT: {
-      const item = buildGlyphItem(entry.glyph);
-      return item ? <CharacterEntryView item={item} /> : null;
-    }
-    case VOCAB_SUBJECT: {
-      const item = buildItem(entry.id, "word");
-      return item ? <CharacterEntryView item={item} /> : null;
-    }
+    case RADICAL_SUBJECT:
+    case VOCAB_SUBJECT:
+      return <CharacterEntryView entry={entry.id} />;
     case COUNTER_KIND:
       return <CounterEntryView entry={entry.id} />;
     case KEIGO_SUBJECT:

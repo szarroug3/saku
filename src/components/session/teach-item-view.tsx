@@ -12,7 +12,7 @@
 // (buildGlyphItem for a single Han glyph, buildItem for the rest). A builder that
 // answers undefined (no facts) renders nothing, the refusal the builders make.
 
-import { CharacterEntryView } from "@/components/library/character-entry-view";
+import { CharacterEntryView } from "@/components/library/live-character-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { GrammarEntryView } from "@/components/library/grammar-entry-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
