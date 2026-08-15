@@ -232,11 +232,14 @@ describe("the recipe table is well-formed", () => {
   test("DRILLABLE excludes exactly the unaskable rows", () => {
     assert.equal(DRILLABLE.length, RECIPES.filter(isProducible).length);
     assert.ok(DRILLABLE.every((r) => !isVacuous(r)));
-    // No wrap is drillable, and each is out for its OWN reason: two are
-    // vacuous, one is order-free, one is blocked on data the app lacks.
-    assert.ok(DRILLABLE.every((r) => !r.wrap));
+    // Three wraps stay out, each for its OWN reason: two are vacuous, one is
+    // order-free. shika-nai is the exception now — it closed its data gap (see
+    // recipes.ts) and IS drillable, via the per-class facts on its closing verb
+    // slot (data/grammar/index.ts), not through this signature's single-word
+    // apply() path.
+    assert.ok(DRILLABLE.every((r) => !r.wrap || r.id === "shika-nai"));
     assert.ok(!isProducible(recipe("tari-tari")!));
-    assert.ok(!isProducible(recipe("shika-nai")!));
+    assert.ok(isProducible(recipe("shika-nai")!));
   });
 
   test("apply() REFUSES a wrap rather than returning half of it", () => {

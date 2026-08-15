@@ -79,15 +79,19 @@ describe("the curriculum is ALL patterns, N5 before N4", () => {
         `${r.id} has no meaning fact and must not be taught`,
       );
     }
-    // The whole table is taught now, so the four formerly reference-only patterns
-    // are PRESENT — quizzed by meaning multiple choice, with no production drill.
+    // The whole table is taught now, so the three formerly reference-only
+    // comparison/list patterns are PRESENT — quizzed by meaning multiple choice,
+    // with no production drill. shika-nai moved OUT of this list: it closed its
+    // data gap (see recipes.ts) and now drills production like any other row.
     const taught = new Set(CURRICULUM_PATTERNS.map((r) => r.id));
-    for (const id of ["wa-yori", "hou-ga-yori", "tari-tari", "shika-nai"]) {
+    for (const id of ["wa-yori", "hou-ga-yori", "tari-tari"]) {
       assert.ok(taught.has(id), `${id} is now taught by meaning and must be present`);
       assert.ok(!isProducible(recipe(id)!), `${id} is expected to be non-producible`);
       // Its drills are meaning only — no production fact exists for it.
       assert.ok(factInfo(patternMeaningFactId(id)));
     }
+    assert.ok(taught.has("shika-nai"), "shika-nai is now taught and must be present");
+    assert.ok(isProducible(recipe("shika-nai")!), "shika-nai is now producible");
     // It is exactly the whole table, no more and no less.
     assert.equal(CURRICULUM_PATTERNS.length, RECIPES.length);
   });

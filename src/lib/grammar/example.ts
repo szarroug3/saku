@@ -73,6 +73,20 @@ const HOST_EXAMPLE: Record<Exclude<Host, "verb">, HostExample> = {
  * word. */
 export const HOST_ORDER: readonly Host[] = ["verb", "adj-i", "adj-na", "noun"];
 
+/**
+ * The fixed word for a WRAP's OPENING slot — the same per-host table every
+ * single-host fact already bakes on, so a wrap's example is anchored the same
+ * way. Exported for the wrap-aware production branch in data/grammar/index.ts,
+ * which pairs this fixed word with a VARYING CLASS_ANCHOR verb on the closing
+ * slot — the opening slot never conjugates for any producible wrap today (see
+ * isOrderFree/isVacuous in recipes.ts), so one fixed word is enough here where
+ * `exampleVerb` picking a verb per recipe would be for the verb host.
+ */
+export function openExample(r: Recipe): HostExample {
+  const host = r.attach[0]?.host ?? "noun";
+  return host === "verb" ? asHostExample(exampleVerb(r)) : HOST_EXAMPLE[host];
+}
+
 export interface BuiltExample {
   /** The vehicle word, surface form. 行く */
   readonly lemma: string;

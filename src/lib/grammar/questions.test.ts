@@ -75,11 +75,15 @@ describe("PRODUCTION — anchored on the first-learned verb (#50)", () => {
     }
   });
 
-  test("every drillable pattern can produce a varied question; no wrap can", () => {
+  test("every drillable non-wrap pattern can produce a varied question; no wrap can", () => {
     for (const r of DRILLABLE) {
+      if (r.wrap) continue;
       assert.ok(variedProduction(r.id, () => 0), `${r.id} produced nothing`);
     }
-    // A wrap and a vacuous recipe are not producible, so they refuse.
+    // shika-nai is now producible (see recipes.ts) but is still a WRAP: this
+    // single-word signature has nowhere to put a second vehicle, so its varied
+    // path stays refused exactly as a vacuous recipe's does — data/grammar/
+    // index.ts's own per-class loop is where its fact gets built instead.
     assert.equal(variedProduction("shika-nai", Math.random), null);
     assert.equal(variedProduction("koto-ga-dekiru", Math.random), null);
   });

@@ -76,12 +76,18 @@ describe("the baked example is a QUESTION, not the word retyped", () => {
     assert.equal(buildExample(byId("sou-appearance"))?.form, "行きそう");
   });
 
-  test("every producible recipe still bakes SOMETHING on its primary host", () => {
+  test("every producible non-wrap recipe still bakes SOMETHING on its primary host", () => {
     // The old builder walked the host list and could fall through to a later
     // host; this one is told which host to use. A recipe whose primary host
     // refuses would silently lose its production fact — the drill would go
     // quiet on it rather than break, which is the failure that hides longest.
+    //
+    // A WRAP is excluded here on purpose: buildExample refuses one outright (a
+    // wrap has two slots and no single-word form — see its own comment), and a
+    // producible wrap (shika-nai) instead bakes through the per-class loop in
+    // data/grammar/index.ts, verified by its own class-fact tests.
     for (const r of DRILLABLE) {
+      if (r.wrap) continue;
       assert.ok(buildExample(r), `${r.id} bakes no example at all`);
     }
   });

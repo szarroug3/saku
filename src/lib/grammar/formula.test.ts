@@ -200,7 +200,7 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed pattern really has unscored rows: node", () => {
+  test("the mixed patterns really have unscored rows: node, shika-nai", () => {
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
@@ -208,14 +208,23 @@ describe("production hosts against formula rows", () => {
       const rows = recipeFormula(r).opening;
       return rows.some((f) => !scored.has(f.host));
     }).map((r) => r.id);
-    assert.deepEqual(mixed, ["node"]);
+    // node: the noun row is a formula row with no scored fact (plain form + a
+    // fixed string, see isVacuous). shika-nai: its OPENING host (noun) is the
+    // same kind of unscored row — しか never conjugates — while its scored
+    // production lives on the CLOSING half instead, which this join does not
+    // see (see the next test).
+    assert.deepEqual(mixed, ["node", "shika-nai"]);
   });
 
-  test("a wrap never carries a score column", () => {
-    // The closing half sits outside the table. It may do so precisely because
-    // no wrap is producible, so the two never have to share a row grid.
+  test("a wrap carries a score column only when its CLOSING half conjugates", () => {
+    // Three of the four wraps are non-producible and so never reach a score
+    // column. shika-nai is the exception: it IS producible, and its scored
+    // facts are the per-class verb facts on the CLOSING slot (see
+    // data/grammar/index.ts), which sit outside `opening` entirely — the
+    // opening row above is the one still unscored.
     for (const r of RECIPES) {
-      if (r.wrap) assert.equal(isProducible(r), false, r.id);
+      if (!r.wrap) continue;
+      assert.equal(isProducible(r), r.id === "shika-nai", r.id);
     }
   });
 });

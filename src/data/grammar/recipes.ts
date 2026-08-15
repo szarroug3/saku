@@ -257,7 +257,7 @@ export interface RecipeException {
  * Expressible is not askable. A wrap has two slots, so a production question
  * would have to supply two words, and whether the pair yields ONE right answer
  * is a separate question answered per pattern — see `isOrderFree` and
- * `notProduced`. All four wraps in the table are reference-only today, each
+ * `notProduced`. Three of the four wraps in the table are reference-only, each
  * for its own reason, and the reasons are carried here rather than in prose.
  */
 export interface Wrap {
@@ -268,8 +268,10 @@ export interface Wrap {
    * it out — i.e. it conjugates something and its slots cannot swap, and it is
    * still not a question. A sentence, because a boolean would not say why.
    *
-   * Present on exactly one row (shika-nai), and the fact it records is about
-   * DATA, not about this model: see that row's note.
+   * Unused today (shika-nai, the row this existed for, closed its data gap via
+   * `transitivity` instead — see that row's note) but left in the model: a
+   * future wrap that conjugates, cannot swap, and still lacks the data to pose
+   * safely has exactly this field to say why.
    */
   readonly notProduced?: string;
 }
@@ -1380,20 +1382,19 @@ export const RECIPES: readonly Recipe[] = [
     attach: [{ host: "noun", form: null, add: "しか" }],
     wrap: {
       close: [{ host: "verb", form: "nai", add: "" }],
-      notProduced:
-        "The noun slot's particle depends on the VERB, and nothing in this " +
-        "app knows which verb takes which.",
     },
+    transitivity: "transitive",
     note:
-      "The only wrap the computed gates DON'T rule out, and the one worth " +
-      "reading closely. Its slots cannot swap (noun, then verb) and its " +
-      "closing half really conjugates — 読む → 読まない — so it is a real " +
-      "drill in shape. It is still not asked, for a reason about DATA: しか " +
-      "REPLACES を but sits on TOP of に. 本しか読まない is right; a generator " +
-      "reaching for a に-verb would emit 学校しか行かない, where 学校にしか行かない " +
-      "is the sentence. Picking the pair needs to know what the verb takes, " +
-      "which is a fact this app does not hold. Give it that fact and this row " +
-      "becomes askable by deleting `notProduced` — nothing else.",
+      "The only wrap the computed gates DON'T rule out. Its slots cannot " +
+      "swap (noun, then verb) and its closing half really conjugates — " +
+      "読む → 読まない — so it is a real drill in shape. It stayed unasked for " +
+      "a reason about DATA, not shape: しか REPLACES を but sits ON TOP of に " +
+      "— 本しか読まない is right, but 学校しか行かない is wrong (学校にしか行かない " +
+      "is the sentence), and nothing here knew which verb takes which. " +
+      "`transitivity: \"transitive\"` closes that gap for free: a transitive " +
+      "verb's object is always marked with を, which しか always safely " +
+      "replaces, so restricting the pool to transitive verbs is restricting " +
+      "it to exactly the safe case — no hand-curated particle table needed.",
   },
 
   // =========================================================================

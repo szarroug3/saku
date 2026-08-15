@@ -262,3 +262,22 @@ describe("a production card names the class of an unknown class word", () => {
     );
   });
 });
+
+describe("a WRAP names its fixed word — the halo only shows the varying one", () => {
+  // 〜しか〜ない opens on a fixed noun (本) and closes on the varying verb; the
+  // halo shows only the verb, so "type this word" would be asking for half a
+  // sentence with no way to guess the other half.
+  const SHIKA_V1 = classProductionFactId("shika-nai", "v1");
+  const KNOWN_TABERU = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
+
+  test("the fixed opening word is spelled out in the instruction", () => {
+    assert.equal(
+      quizInstruction(SHIKA_V1, "en2jp", "typed", KNOWN_TABERU),
+      'Type how "本 + this word" is said in the 〜しか〜ない form.',
+    );
+    assert.equal(
+      quizInstruction(SHIKA_V1, "en2jp", "mc", KNOWN_TABERU),
+      'Which of these is how "本 + this word" is said in the 〜しか〜ない form?',
+    );
+  });
+});

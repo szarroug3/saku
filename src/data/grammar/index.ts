@@ -44,8 +44,8 @@
 // See the note on `production` in src/lib/grammar/questions.ts.
 
 import { entryId, factId, productionAspect } from "../../lib/fact-id.ts";
-import { HOST_ORDER, buildExample, primaryHost } from "../../lib/grammar/example.ts";
-import { apply } from "../../lib/grammar/apply.ts";
+import { HOST_ORDER, buildExample, openExample, primaryHost } from "../../lib/grammar/example.ts";
+import { apply, applyWrap } from "../../lib/grammar/apply.ts";
 import { recipeAllows } from "../../lib/grammar/vehicles.ts";
 import {
   CLASS_ANCHOR,
@@ -404,6 +404,13 @@ function buildGrammarFacts(): FactInfo[] {
     // class. The recipe's own verb restriction still holds — 〜てある wants a verb
     // done to something, so its 泳ぐ class is skipped rather than baked into
     // 泳いである — via recipeAllows, the same guard the vehicle pool applies.
+    //
+    // A WRAP conjugates on its CLOSING half, not `r.attach` — 〜しか〜ない's verb
+    // is `r.wrap.close`, so `conjugatesVerb(r)` (which only looks at `r.attach`)
+    // is false for it and this is a second, parallel condition, not a rewrite of
+    // the first. The two never both fire: no recipe conjugates a verb on both
+    // ends today, and isOrderFree would refuse asking one that did.
+    const closeVerbForm = r.wrap?.close.find((a) => a.host === "verb")?.form;
     if (conjugatesVerb(r)) {
       for (const a of CLASS_ANCHOR) {
         if (!recipeAllows(r, a.surface)) continue;
@@ -432,6 +439,39 @@ function buildGrammarFacts(): FactInfo[] {
       // regular). Their classes (v5k-s/vs-i/vk) are absent from CLASS_ANCHOR on
       // purpose, so they never double the regular class facts above.
       mintSpecialWordFacts(r, facts, SPECIAL_VERBS);
+    } else if (closeVerbForm && closeVerbForm !== "dictionary") {
+      // A WRAP whose CLOSING half conjugates a verb — today only shika-nai. Same
+      // per-class scheme as the ordinary verb loop above, run through applyWrap
+      // instead of apply: the OPENING slot is a fixed word (openExample — 本 for
+      // shika-nai, never varying, exactly as HOST_EXAMPLE never varies for a
+      // single-host noun fact) and the CLOSING slot is the varying class anchor.
+      // The baked answer is therefore the WHOLE two-slot string (本しか読まない),
+      // never one half of it — applyWrap concatenates both by construction, which
+      // is precisely the guarantee 〜たり〜たり's removed attempt did not have
+      // (see the header comment above `buildGrammarFacts`).
+      const open = openExample(r);
+      for (const a of CLASS_ANCHOR) {
+        if (!recipeAllows(r, a.surface)) continue;
+        const surface = applyWrap(r, open.surface, open.cls, a.surface, a.cls);
+        if (!surface.ok || surface.value === open.surface + a.surface) continue;
+        const kana = applyWrap(r, open.kana, open.cls, a.kana, a.cls);
+        const form = surface.value;
+        const kanaForm = kana.ok ? kana.value : form;
+        const pId = classProductionFactId(r.id, a.cls);
+        PRODUCTION_OF.set(pId, {
+          recipeId: r.id,
+          host: "verb",
+          bucket: { kind: "class", cls: a.cls },
+        });
+        facts.push({
+          id: pId,
+          entry: libraryEntry,
+          glyph: form,
+          answers: form === kanaForm ? [form] : [form, kanaForm],
+          subject: GRAMMAR_SUBJECT,
+          meaning: r.gloss,
+        });
+      }
     }
     // NON-VERB hosts keep their own host fact. 〜すぎる on 高い is 高すぎる, a rule
     // apart from the verb one, so its own scored fact; the verb host is handled
