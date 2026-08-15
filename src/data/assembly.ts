@@ -52,12 +52,410 @@ export interface AssemblyItem {
   readonly p: readonly string[];
 }
 
-/** Short, reviewed exercises that keep the introductory tiers honest. The
- * generated grammar corpus has almost no plain SOV sentences and every request
- * in it is embedded inside a later conditional/sequential structure. These
- * mirror the lesson examples so those lessons never borrow a semantically
- * unrelated pattern merely to fill a quiz. */
+/** Short, reviewed exercises that keep every tier reachable from the teaching
+ * curriculum. The generated grammar corpus is reference-rich, not beginner-
+ * ordered: it has almost no plain SOV sentences, and several later tiers only
+ * use vocabulary that the Vocabulary track never teaches at all.
+ *
+ * The first three rows for each tier deliberately reuse a compact foundation of
+ * beginner words. That makes the gate express the real prerequisite: kana, a
+ * few nouns/pronouns and verbs, then (after Simple) the relevant grammar lesson.
+ * It must never accidentally mean “learn the exact rare words in one corpus
+ * sentence.” Grammaticalized helpers such as ください, くれる and ならない are
+ * supplied by the tier's grammar lesson, so they are intentionally not `v`
+ * vocabulary prerequisites. The generated corpus still supplies variety as the
+ * learner's vocabulary grows. */
 const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
+  // Simple: the first 34 Vocabulary-track words contain every prerequisite.
+  {
+    id: -1,
+    en: "I say that.",
+    jp: "私はそれを言う。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "それを", h: "それ" },
+      { t: "言う。", h: "言う" },
+    ],
+    v: ["私", "それ", "言う"],
+    p: ["simple"],
+  },
+  {
+    id: -2,
+    en: "What do I say?",
+    jp: "私は何を言う？",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "何を", h: "何" },
+      { t: "言う？", h: "言う" },
+    ],
+    v: ["私", "何", "言う"],
+    p: ["simple"],
+  },
+  {
+    id: -3,
+    en: "I eat this.",
+    jp: "私はこれを食べる。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "これを", h: "これ" },
+      { t: "食べる。", h: "食べる" },
+    ],
+    v: ["私", "これ", "食べる"],
+    p: ["simple"],
+  },
+
+  // Te-form links and helpers.
+  {
+    id: -11,
+    en: "I accidentally said that.",
+    jp: "私はそれを言ってしまった。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "それを", h: "それ" },
+      { t: "言ってしまった。", h: "言う" },
+    ],
+    v: ["私", "それ", "言う"],
+    p: ["te-shimau"],
+  },
+  {
+    id: -12,
+    en: "I try eating this.",
+    jp: "私はこれを食べてみる。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "これを", h: "これ" },
+      { t: "食べてみる。", h: "食べる" },
+    ],
+    v: ["私", "これ", "食べる"],
+    p: ["te-miru"],
+  },
+  {
+    id: -13,
+    en: "I have that.",
+    jp: "私はそれを持っている。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "それを", h: "それ" },
+      { t: "持っている。", h: "持つ" },
+    ],
+    v: ["私", "それ", "持つ"],
+    p: ["te-iru"],
+  },
+
+  // Requests and proposals.
+  {
+    id: -21,
+    en: "Please eat this.",
+    jp: "これを食べてください。",
+    pieces: [
+      { t: "これを", h: "これ" },
+      { t: "食べて", h: "食べる" },
+      { t: "ください。", h: null },
+    ],
+    v: ["これ", "食べる"],
+    p: ["te-request"],
+  },
+  {
+    id: -22,
+    en: "Please don't say that.",
+    jp: "それを言わないでください。",
+    pieces: [
+      { t: "それを", h: "それ" },
+      { t: "言わないで", h: "言う" },
+      { t: "ください。", h: null },
+    ],
+    v: ["それ", "言う"],
+    p: ["nai-request"],
+  },
+  {
+    id: -23,
+    en: "Let's eat this.",
+    jp: "これを食べましょう。",
+    pieces: [
+      { t: "これを", h: "これ" },
+      { t: "食べ", h: "食べる" },
+      { t: "ましょう。", h: null },
+    ],
+    v: ["これ", "食べる"],
+    p: ["mashou"],
+  },
+
+  // Desire, ease and difficulty.
+  {
+    id: -31,
+    en: "I want to eat this.",
+    jp: "私はこれを食べたい。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "これを", h: "これ" },
+      { t: "食べたい。", h: "食べる" },
+    ],
+    v: ["私", "これ", "食べる"],
+    p: ["tai"],
+  },
+  {
+    id: -32,
+    en: "This is easy to eat.",
+    jp: "これは食べやすい。",
+    pieces: [
+      { t: "これは", h: "これ" },
+      { t: "食べ", h: "食べる" },
+      { t: "やすい。", h: null },
+    ],
+    v: ["これ", "食べる"],
+    p: ["yasui"],
+  },
+  {
+    id: -33,
+    en: "This is hard to say.",
+    jp: "これは言いにくい。",
+    pieces: [
+      { t: "これは", h: "これ" },
+      { t: "言い", h: "言う" },
+      { t: "にくい。", h: null },
+    ],
+    v: ["これ", "言う"],
+    p: ["nikui"],
+  },
+
+  // Conditions.
+  {
+    id: -41,
+    en: "If you eat that, I will say so.",
+    jp: "それを食べたら、私はそう言う。",
+    pieces: [
+      { t: "それを食べたら、", h: "食べる" },
+      { t: "私は", h: "私" },
+      { t: "そう", h: "そう" },
+      { t: "言う。", h: "言う" },
+    ],
+    v: ["それ", "食べる", "私", "そう", "言う"],
+    p: ["tara"],
+  },
+  {
+    id: -42,
+    en: "If I say so, the teacher will understand this.",
+    jp: "私がそう言えば、先生はこれがわかる。",
+    pieces: [
+      { t: "私がそう言えば、", h: "言う" },
+      { t: "先生は", h: "先生" },
+      { t: "これが", h: "これ" },
+      { t: "わかる。", h: "わかる" },
+    ],
+    v: ["私", "そう", "言う", "先生", "これ", "わかる"],
+    p: ["ba"],
+  },
+  {
+    id: -43,
+    en: "If this is true, I will say so.",
+    jp: "これが本当なら、私はそう言う。",
+    pieces: [
+      { t: "これが本当なら、", h: "本当" },
+      { t: "私は", h: "私" },
+      { t: "そう", h: "そう" },
+      { t: "言う。", h: "言う" },
+    ],
+    v: ["これ", "本当", "私", "そう", "言う"],
+    p: ["nara"],
+  },
+
+  // Reasons and results.
+  {
+    id: -51,
+    en: "Because it's delicious, I eat it.",
+    jp: "おいしいから、私は食べる。",
+    pieces: [
+      { t: "おいしいから、", h: "おいしい" },
+      { t: "私は", h: "私" },
+      { t: "食べる。", h: "食べる" },
+    ],
+    v: ["おいしい", "私", "食べる"],
+    p: ["kara-reason"],
+  },
+  {
+    id: -52,
+    en: "Because I don't understand, I ask.",
+    jp: "わからないので、私は聞く。",
+    pieces: [
+      { t: "わからないので、", h: "わかる" },
+      { t: "私は", h: "私" },
+      { t: "聞く。", h: "聞く" },
+    ],
+    v: ["わかる", "私", "聞く"],
+    p: ["node"],
+  },
+  {
+    id: -53,
+    en: "Because that's wrong, I say so.",
+    jp: "それは違うから、私はそう言う。",
+    pieces: [
+      { t: "それは違うから、", h: "違う" },
+      { t: "私は", h: "私" },
+      { t: "そう", h: "そう" },
+      { t: "言う。", h: "言う" },
+    ],
+    v: ["それ", "違う", "私", "そう", "言う"],
+    p: ["kara-reason"],
+  },
+
+  // Giving and receiving help.
+  {
+    id: -61,
+    en: "The teacher kindly said that to me.",
+    jp: "先生は私にそう言ってくれた。",
+    pieces: [
+      { t: "先生は", h: "先生" },
+      { t: "私に", h: "私" },
+      { t: "そう", h: "そう" },
+      { t: "言ってくれた。", h: "言う" },
+    ],
+    v: ["先生", "私", "そう", "言う"],
+    p: ["te-kureru"],
+  },
+  {
+    id: -62,
+    en: "I had the teacher say that.",
+    jp: "私は先生にそう言ってもらった。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "先生に", h: "先生" },
+      { t: "そう", h: "そう" },
+      { t: "言ってもらった。", h: "言う" },
+    ],
+    v: ["私", "先生", "そう", "言う"],
+    p: ["te-morau"],
+  },
+  {
+    id: -63,
+    en: "I wrote this for the teacher.",
+    jp: "私は先生にこれを書いてあげた。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "先生に", h: "先生" },
+      { t: "これを", h: "これ" },
+      { t: "書いてあげた。", h: "書く" },
+    ],
+    v: ["私", "先生", "これ", "書く"],
+    p: ["te-ageru"],
+  },
+
+  // Contrast and doing something without another action.
+  {
+    id: -71,
+    en: "I left without saying anything.",
+    jp: "私は何も言わないで出た。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "何も言わないで", h: "言う" },
+      { t: "出た。", h: "出る" },
+    ],
+    v: ["私", "何", "言う", "出る"],
+    p: ["nai-de"],
+  },
+  {
+    id: -72,
+    en: "Even though it's delicious, I don't eat it.",
+    jp: "おいしいのに、私は食べない。",
+    pieces: [
+      { t: "おいしいのに、", h: "おいしい" },
+      { t: "私は", h: "私" },
+      { t: "食べない。", h: "食べる" },
+    ],
+    v: ["おいしい", "私", "食べる"],
+    p: ["noni"],
+  },
+  {
+    id: -73,
+    en: "I said it without knowing it.",
+    jp: "私はそれを知らないで言った。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "それを知らないで", h: "知る" },
+      { t: "言った。", h: "言う" },
+    ],
+    v: ["私", "それ", "知る", "言う"],
+    p: ["nai-de"],
+  },
+
+  // Obligation.
+  {
+    id: -81,
+    en: "I must eat this.",
+    jp: "私はこれを食べなければならない。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "これを", h: "これ" },
+      { t: "食べなければ", h: "食べる" },
+      { t: "ならない。", h: null },
+    ],
+    v: ["私", "これ", "食べる"],
+    p: ["nakereba-naranai"],
+  },
+  {
+    id: -82,
+    en: "I must say that.",
+    jp: "私はそれを言わなければならない。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "それを", h: "それ" },
+      { t: "言わなければ", h: "言う" },
+      { t: "ならない。", h: null },
+    ],
+    v: ["私", "それ", "言う"],
+    p: ["nakereba-naranai"],
+  },
+  {
+    id: -83,
+    en: "I have to eat this.",
+    jp: "これは食べないといけない。",
+    pieces: [
+      { t: "これは", h: "これ" },
+      { t: "食べないと", h: "食べる" },
+      { t: "いけない。", h: null },
+    ],
+    v: ["これ", "食べる"],
+    p: ["nai-to-ikenai"],
+  },
+
+  // Reports, inference and stance.
+  {
+    id: -91,
+    en: "I think so.",
+    jp: "私はそう思う。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "そう", h: "そう" },
+      { t: "思う。", h: "思う" },
+    ],
+    v: ["私", "そう", "思う"],
+    p: ["to-omou"],
+  },
+  {
+    id: -92,
+    en: "That might be wrong.",
+    jp: "それは違うかもしれない。",
+    pieces: [
+      { t: "それは", h: "それ" },
+      { t: "違う", h: "違う" },
+      { t: "かもしれない。", h: null },
+    ],
+    v: ["それ", "違う"],
+    p: ["kamoshirenai"],
+  },
+  {
+    id: -93,
+    en: "This seems to be true.",
+    jp: "これは本当らしい。",
+    pieces: [
+      { t: "これは", h: "これ" },
+      { t: "本当", h: "本当" },
+      { t: "らしい。", h: null },
+    ],
+    v: ["これ", "本当"],
+    p: ["rashii"],
+  },
+
+  // Additional reviewed variety, unlocked as its words are learned.
   {
     id: -101,
     en: "Saku ate sushi.",
@@ -321,7 +719,7 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     id: "simple",
     label: "Simple sentences",
     patterns: ["simple", "wo", "e", "made", "made-ni", "dake", "kara-source"],
-    minReadable: 1,
+    minReadable: 3,
     // Particles are structural markers, never taught as grammar lessons.
     grammarPrereqs: [],
   },

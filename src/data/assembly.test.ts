@@ -24,6 +24,8 @@ import {
 } from "./assembly.ts";
 import { STOCK_NAMES } from "../lib/grammar/readable.ts";
 import { CURRICULUM_PATTERNS } from "../lib/grammar-lesson.ts";
+import { CURRICULUM_WORDS } from "../lib/word-lesson.ts";
+import { applyClaims, emptyHistory } from "../lib/history-ops.ts";
 import { isProducible } from "./grammar/recipes.ts";
 import { VOCAB, wordMeaningFactId } from "./vocab.ts";
 import type { HistoryFile } from "../types/index.ts";
@@ -44,6 +46,14 @@ const OMNISCIENT: HistoryFile = {
   facts: {},
   claims: Object.fromEntries(VOCAB.map((w) => [wordMeaningFactId(w.keb), 1_700_000_000_000])),
 };
+
+function vocabularyPrefix(count: number): HistoryFile {
+  return applyClaims(
+    emptyHistory(),
+    CURRICULUM_WORDS.slice(0, count).map((word) => wordMeaningFactId(word.keb)),
+    1,
+  );
+}
 
 describe("sentence-ordering follows the grammar teaching order", () => {
   test("simple is first, then tiers follow their earliest taught prerequisite", () => {
@@ -140,6 +150,40 @@ describe("sentence-ordering quiz hints", () => {
 });
 
 describe("sentence-ordering quiz scope", () => {
+  test("the basic sentence lesson needs a small grammatical foundation, not sushi", () => {
+    const simple = SENTENCE_ORDERING_TIERS[0];
+    assert.equal(simple.id, "simple");
+
+    // The first 33 words do not yet supply all three reviewed examples. Word 34
+    // is 食べる: by then the learner has several noun/pronoun choices and several
+    // verbs, enough to build a real subject/object/verb sentence lesson.
+    assert.ok(readableAssemblyForTier(simple, vocabularyPrefix(33)).length < simple.minReadable);
+    const pool = readableAssemblyForTier(simple, vocabularyPrefix(34));
+    assert.ok(pool.length >= simple.minReadable);
+    assert.ok(pool.slice(0, simple.minReadable).every((item) => item.id > -100));
+    assert.ok(pool.slice(0, simple.minReadable).every((item) => !item.v.includes("寿司")));
+
+    const foundation = CURRICULUM_WORDS.slice(0, 34);
+    const nounLike = foundation.filter((word) =>
+      word.pos.some((pos) => /noun|pronoun/i.test(pos)),
+    );
+    const verbs = foundation.filter((word) =>
+      word.pos.some((pos) => /verb/i.test(pos) && !/adverb/i.test(pos)),
+    );
+    assert.ok(nounLike.length >= 2);
+    assert.ok(verbs.length >= 1);
+  });
+
+  test("every sentence tier has a reviewed drill from the first 100 vocabulary words", () => {
+    const beginner = vocabularyPrefix(100);
+    for (const tier of SENTENCE_ORDERING_TIERS) {
+      assert.ok(
+        readableAssemblyForTier(tier, beginner).length >= tier.minReadable,
+        `${tier.id} still depends on late or untaught vocabulary`,
+      );
+    }
+  });
+
   test("a tier-scoped pool contains only that sentence type", () => {
     for (const tier of SENTENCE_ORDERING_TIERS) {
       const pool = readableAssemblyForTiers([tier.id], OMNISCIENT);

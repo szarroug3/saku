@@ -15,6 +15,10 @@ import {
 } from "./sentence-ordering-plan.ts";
 import { SENTENCE_ORDERING_TIERS } from "../data/assembly.ts";
 import { sentenceTierMarkerFact } from "./sentence-ordering-progress.ts";
+import { CURRICULUM_WORDS } from "./word-lesson.ts";
+import { wordMeaningFactId } from "../data/vocab.ts";
+import { patternMeaningFactId } from "../data/grammar/index.ts";
+import { applyClaims, emptyHistory } from "./history-ops.ts";
 import type { HistoryFile } from "../types/index.ts";
 
 const EMPTY: HistoryFile = { sessions: [], facts: {} };
@@ -30,6 +34,30 @@ describe("nextSentenceOrderingLesson", () => {
     // The track is linear: an empty history cannot meet the first tier's
     // minReadable, so the walk stops at tier one rather than skipping ahead.
     assert.equal(nextSentenceOrderingLesson(true, EMPTY), null);
+  });
+
+  test("opens Simple after a small vocabulary foundation", () => {
+    const history = applyClaims(
+      emptyHistory(),
+      CURRICULUM_WORDS.slice(0, 34).map((word) => wordMeaningFactId(word.keb)),
+      1,
+    );
+    assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
+  });
+
+  test("later tiers need their grammar lesson, not hundreds of matching words", () => {
+    let history = applyClaims(
+      emptyHistory(),
+      [
+        ...CURRICULUM_WORDS.slice(0, 100).map((word) => wordMeaningFactId(word.keb)),
+        sentenceTierMarkerFact("simple"),
+      ],
+      1,
+    );
+    assert.equal(nextSentenceOrderingLesson(true, history), null);
+
+    history = applyClaims(history, [patternMeaningFactId("te-kara")], 2);
+    assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "sequential");
   });
 });
 
