@@ -132,3 +132,15 @@ export function transitivitySide(fact: FactId): TransitivitySide | undefined {
 export function pairForEntry(entry: EntryId): VerbPair | undefined {
   return PAIR_BY_ENTRY.get(entry);
 }
+
+/** The leading run of characters two written forms share (開 for 開く/開ける,
+ * つけ for 付く/つける's kana half) — not kanji-restricted, since a correctly-
+ * spelled pair can have either or both sides in kana. Empty when they share no
+ * leading run at all (生まれる/産む). Lives here (not verb-pair-unit.ts) so the
+ * Library's verb-pair page can use the same logic without pulling in that
+ * module's dictionary-backed `buildItem` dependency. */
+export function sharedStem(a: string, b: string): string {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return a.slice(0, i);
+}

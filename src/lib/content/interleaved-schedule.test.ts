@@ -50,11 +50,14 @@ import test from "node:test";
 import { UNIT_TRACKS } from "./unit-tracks.ts";
 import { nextTrackLesson } from "./unit-scheduler.ts";
 import { isUnitDue, orderedUnits } from "./teach-unit.ts";
+import { isFactFresh } from "./unit-scheduler-core.ts";
+import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { TeachingUnit } from "./teach-unit.ts";
-import type { FactId } from "@/types";
+import type { ContentItem } from "./item.ts";
+import type { FactId, HistoryFile } from "@/types";
 
 test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable unit", () => {
   // The vocab track's own order-builder — verbatim what unit-tracks.ts's
@@ -95,6 +98,14 @@ const MAX_ROUNDS = 20000;
 // sync. Computed after the simulation runs, once SIM.roundsRun is known.
 const MAX_REASONABLE_FRACTION = 0.2;
 
+/** One taught unit's round and the entry it belongs to, in teaching order —
+ * NOT declared/curriculum order, since a due-but-blocked unit can be pulled
+ * past by a later one that unblocks sooner (see unitGapRange's header). */
+interface UnitTaken {
+  readonly round: number;
+  readonly entry: string;
+}
+
 interface SimResult {
   readonly trackId: string;
   readonly totalUnits: number;
@@ -102,6 +113,34 @@ interface SimResult {
   /** The round number at which each of this track's lessons was taken, in
    * order — e.g. [1, 1, 3, 3, 3, 9] for six lessons. */
   readonly unlockRounds: readonly number[];
+  /** Every individual UNIT (not lesson) this track taught, in teaching order —
+   * a lesson bundles several units into one round, so this is longer than
+   * `unlockRounds` and is what unit-to-unit gap size is measured from. */
+  readonly unitsTaken: readonly UnitTaken[];
+  /** Every unit STILL due once the walk exhausts, with the entry(ies) its
+   * blockedBy gate is stuck on — empty `blockers` means it's stuck for some
+   * other reason (a depth-gated prereq chain), not an unlearned blocker. */
+  readonly unreachableUnits: readonly UnreachableUnit[];
+}
+
+interface UnreachableUnit {
+  readonly entry: string;
+  readonly glyph: string;
+  readonly blockers: readonly string[];
+}
+
+/** The blockedBy entries of an item that are NOT learned — no facts at all (the
+ * entry doesn't exist in the curriculum under that spelling), or at least one
+ * fact still fresh (met, but not yet fully learned). Mirrors unit-scheduler.ts's
+ * own (unexported) `isLearned`, restated here as its own report tool rather
+ * than importing a private function. */
+function unlearnedBlockers(item: ContentItem, history: HistoryFile): string[] {
+  return item.blockedBy
+    .filter((entry) => {
+      const facts = factsOf(entry);
+      return facts.length === 0 || facts.some((f) => isFactFresh(f, history));
+    })
+    .map(String);
 }
 
 /**
@@ -121,6 +160,7 @@ function simulate(): { results: readonly SimResult[]; roundsRun: number; exhaust
   const orders: readonly (readonly TeachingUnit[])[] = UNIT_TRACKS.map((t) => t.units(history));
   const cursors = orders.map(() => 0);
   const unlockRounds: number[][] = orders.map(() => []);
+  const unitsTaken: UnitTaken[][] = orders.map(() => []);
 
   let round = 0;
   let anyTaken = true;
@@ -133,6 +173,7 @@ function simulate(): { results: readonly SimResult[]; roundsRun: number; exhaust
       if (!lesson) continue;
       anyTaken = true;
       unlockRounds[i].push(round);
+      for (const u of lesson.units) unitsTaken[i].push({ round, entry: String(u.item.entry) });
       const facts = lesson.units.flatMap((u) => u.facts) as FactId[];
       history = applyClaims(history, facts, ts++);
       while (cursors[i] < order.length && !isUnitDue(order[cursors[i]], history)) cursors[i]++;
@@ -144,6 +185,14 @@ function simulate(): { results: readonly SimResult[]; roundsRun: number; exhaust
     totalUnits: orders[i].length,
     residualDue: orders[i].filter((u) => isUnitDue(u, history)).length,
     unlockRounds: unlockRounds[i],
+    unitsTaken: unitsTaken[i],
+    unreachableUnits: orders[i]
+      .filter((u) => isUnitDue(u, history))
+      .map((u) => ({
+        entry: String(u.item.entry),
+        glyph: u.item.glyph,
+        blockers: unlearnedBlockers(u.item, history),
+      })),
   }));
 
   return { results, roundsRun: round, exhausted: !anyTaken };
@@ -151,9 +200,86 @@ function simulate(): { results: readonly SimResult[]; roundsRun: number; exhaust
 
 const SIM = simulate();
 
+interface UnitGapRange {
+  readonly min: number | null;
+  readonly max: number | null;
+  /** The two units bounding the MAX gap, so the report can name what a learner
+   * would actually be waiting on — e.g. a compound word (見つかる/見つける)
+   * sorted early by a common shared kanji (見) but not itself taught by the
+   * vocab track until much later. `null` when there's no gap to bound. */
+  readonly maxGapBetween: readonly [UnitTaken, UnitTaken] | null;
+}
+
+/** The smallest and largest round-gap between two consecutively-taught units in
+ * a track's own TEACHING order — which can differ from its declared/curriculum
+ * order: a due-but-blocked unit can never be skipped by the cursor (only a
+ * fully-learned one can), so a later unit whose own blockers clear sooner gets
+ * pulled ahead of it within the same scan. 0 when a lesson bundles several
+ * units into the same round. `{ min: null, max: null, maxGapBetween: null }`
+ * when a track never taught 2+ units to gap between. */
+function unitGapRange(unitsTaken: readonly UnitTaken[]): UnitGapRange {
+  if (unitsTaken.length < 2) return { min: null, max: null, maxGapBetween: null };
+  let min = Infinity;
+  let max = -Infinity;
+  let maxGapBetween: readonly [UnitTaken, UnitTaken] | null = null;
+  for (let i = 1; i < unitsTaken.length; i++) {
+    const gap = unitsTaken[i]!.round - unitsTaken[i - 1]!.round;
+    if (gap < min) min = gap;
+    if (gap > max) {
+      max = gap;
+      maxGapBetween = [unitsTaken[i - 1]!, unitsTaken[i]!];
+    }
+  }
+  return { min, max, maxGapBetween };
+}
+
 // Derived from the actual measured walk length, not a constant — see
-// MAX_REASONABLE_FRACTION above.
+// MAX_REASONABLE_FRACTION above. Computed before the report below so the
+// thresholds it prints are the ones the tests actually check against.
 const MAX_REASONABLE_ROUNDS = Math.ceil(SIM.roundsRun * MAX_REASONABLE_FRACTION);
+
+// Printed once, independent of pass/fail, so `npm test -- interleaved-schedule`
+// always answers "what does the walk actually look like" without editing the
+// test to find out.
+console.log(
+  `\ninterleaved-schedule simulation: ${SIM.roundsRun} rounds, ${SIM.exhausted ? "exhausted" : "hit MAX_ROUNDS"}\n` +
+    `thresholds: MAX_ROUNDS=${MAX_ROUNDS} (safety cap), ` +
+    `MAX_REASONABLE_ROUNDS=${MAX_REASONABLE_ROUNDS} (${MAX_REASONABLE_FRACTION} \u00d7 roundsRun, ` +
+    `the first-lesson and same-track-gap bound below)`,
+);
+console.table(
+  SIM.results.map((r) => {
+    const { min, max, maxGapBetween } = unitGapRange(r.unitsTaken);
+    return {
+      track: r.trackId,
+      "units taught": r.totalUnits - r.residualDue,
+      "units total": r.totalUnits,
+      "min gap (rounds)": min ?? "n/a",
+      "max gap (rounds)": max ?? "n/a",
+      "max gap between": maxGapBetween
+        ? `${maxGapBetween[0].entry} (r${maxGapBetween[0].round}) \u2192 ${maxGapBetween[1].entry} (r${maxGapBetween[1].round})`
+        : "n/a",
+      unreachable: r.residualDue,
+    };
+  }),
+);
+
+// One row per stuck unit, naming exactly what it's waiting on — the detail the
+// summary table's count alone can't show.
+const anyUnreachable = SIM.results.some((r) => r.unreachableUnits.length > 0);
+if (anyUnreachable) {
+  console.log("\nunreachable units, and what each is blocked on:");
+  console.table(
+    SIM.results.flatMap((r) =>
+      r.unreachableUnits.map((u) => ({
+        track: r.trackId,
+        entry: u.entry,
+        glyph: u.glyph,
+        "unmet blockers": u.blockers.length > 0 ? u.blockers.join(", ") : "(none \u2014 stuck for another reason)",
+      })),
+    ),
+  );
+}
 
 test("the simulation terminates by exhaustion, not by hitting the safety cap", () => {
   // Hitting the cap while units are still being taken would mean something is
@@ -165,31 +291,14 @@ test("the simulation terminates by exhaustion, not by hitting the safety cap", (
   );
 });
 
-// Explicitly-named, currently-open content gaps — each is a transitivity pair
-// whose plain-verb gate can never clear because the plain verb doesn't exist
-// in VOCAB under the exact spelling/headword the pair's hand-authored English
-// sentence and audit tests require (see transitivity-facts.test.ts and
-// audit-semantics.test.ts, which pin these spellings on purpose):
-//   - 濡れる/濡らす ("get wet"/"wet something") — genuinely absent from VOCAB
-//     entirely (confirmed: zero hits for ぬれる/ぬらす/濡れる/濡らす in
-//     src/data/generated/vocab.json).
-//   - 付く/付ける — 付く is taught, but VOCAB has no entry for 付ける under
-//     that kanji spelling (only つける, a different headword).
-//   - 生まれる/産む — 生まれる is taught, but VOCAB has no entry for 産む under
-//     that kanji spelling (only 生む, a different word/sense — see
-//     transitivity-facts.test.ts's "childbirth is 産む" comment).
-//   - 掛かる/掛ける — neither kanji spelling exists in VOCAB (only かかる/かける).
-// None of these is a spelling mismatch to "fix" — they are real content gaps:
-// authoring dictionary entries this repo doesn't have a source for, not a code
-// change. Named here instead of silently passing or silently blocking every
-// future change to this test. Remove entries as VOCAB gains those headwords.
-const KNOWN_OPEN_CONTENT_GAPS: ReadonlySet<string> = new Set(["transitivity: 4/69 units never scheduled"]);
-
 test("every unit in every track is eventually reachable under a fair interleaved walk", () => {
+  // No allowlist here on purpose: an unreachable unit is a real content gap
+  // (today, 生まれる/産む and 濡れる/濡らす — see docs/interleaved-schedule-findings.md
+  // for why), and this test's whole point is to keep failing until it is
+  // actually fixed, not to go quiet the moment the gap is named.
   const unreachable = SIM.results
     .filter((r) => r.residualDue > 0)
-    .map((r) => `${r.trackId}: ${r.residualDue}/${r.totalUnits} units never scheduled`)
-    .filter((msg) => !KNOWN_OPEN_CONTENT_GAPS.has(msg));
+    .map((r) => `${r.trackId}: ${r.residualDue}/${r.totalUnits} units never scheduled`);
   assert.deepEqual(
     unreachable,
     [],

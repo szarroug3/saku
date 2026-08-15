@@ -32,6 +32,7 @@ import {
 } from "./confusable.ts";
 import { CROSS_SCRIPT_LOOKALIKES, crossScriptLookalikes } from "./cross-script.ts";
 import { kanjiRow } from "./kanji.ts";
+import { vocabRow } from "./vocab.ts";
 import { CHAR_INDEX } from "./characters.ts";
 
 // ---------------------------------------------------------------------------
@@ -136,20 +137,37 @@ describe("transitivity direction is consistent with the JMdict tags", () => {
     }
   });
 
-  test("the two members share a kanji stem, save the one documented exception", () => {
-    // Nearly every curated pair is one stem with two tails (開く/開ける, 出る/出す).
-    // The lone exception is childbirth: the intransitive is 生まれる ('be born')
-    // and the transitive is 産む ('bear a child') — different kanji on purpose,
-    // pinned that way by transitivity-facts.test.ts. Any OTHER stem-less row is a
-    // sign two unrelated verbs got paired.
-    const kanjiOf = (s: string) => [...s].filter((c) => /\p{Script=Han}/u.test(c));
-    const EXCEPTIONS = new Set(["生まれる/産む"]);
+  test("every pair member is spelled exactly as VOCAB teaches it, save one documented exception", () => {
+    // Used to check the two members share a kanji stem instead (a heuristic:
+    // most pairs are one stem with two tails). Retired because VOCAB itself
+    // does not always carry a pair's kanji spelling as its own headword —
+    // JMdict tags some verbs "usually written using kana alone" (つける, かかる,
+    // かける are real VOCAB entries; 付ける/掛かる/掛ける are not), so a correctly-
+    // spelled pair can legitimately share no kanji at all. Checking against
+    // VOCAB directly is the stronger guard: it catches an actual mismatch
+    // (blockedBy can never clear) rather than a proxy for one, and a genuinely
+    // mispaired verb is still caught independently by transitivity-pattern.
+    // test.ts's reading-based tail-shift classification, which does not care
+    // about spelling either.
+    //
+    // The exceptions are the documented, permanently-unreachable content gaps
+    // (a real, currently-unfixable content gap — see
+    // interleaved-schedule.test.ts's reachability test, which is left failing
+    // on purpose until these are actually fixed, not allowlisted quiet):
+    // childbirth
+    // — 産む ("bear a child") is deliberately NOT VOCAB's 生む ("produce/give
+    // rise to"), different senses of one JMdict entry, pinned apart on purpose
+    // by transitivity-facts.test.ts — and 濡れる/濡らす, which VOCAB carries
+    // under no spelling at all (confirmed: zero hits for ぬれる/ぬらす/濡れる/
+    // 濡らす in src/data/generated/vocab.json).
+    const EXCEPTIONS = new Set(["産む", "濡れる", "濡らす"]);
     for (const p of VERB_PAIRS) {
-      const key = `${p.happens.word}/${p.doIt.word}`;
-      if (EXCEPTIONS.has(key)) continue;
-      const a = new Set(kanjiOf(p.happens.word));
-      const shared = kanjiOf(p.doIt.word).some((c) => a.has(c));
-      assert.ok(shared, `${key}: members share no kanji stem`);
+      for (const m of [p.happens, p.doIt]) {
+        if (EXCEPTIONS.has(m.word)) continue;
+        const row = vocabRow(m.word);
+        assert.ok(row, `${m.word}: not a VOCAB entry at all`);
+        assert.equal(row!.reb, m.reading, `${m.word}: VOCAB reads it ${row!.reb}, not ${m.reading}`);
+      }
     }
   });
 });

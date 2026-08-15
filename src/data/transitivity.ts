@@ -146,7 +146,11 @@ export const VERB_PAIRS: readonly VerbPair[] = [
   },
   {
     happens: { word: "付く", reading: "つく", cls: "v5k", en: "The light came on.", jmdict: "vi" },
-    doIt: { word: "付ける", reading: "つける", cls: "v1", en: "I turned the light on.", jmdict: "vt" },
+    // 付ける is JMdict-tagged "usually written using kana alone" (confirmed against
+    // the raw dictionary), so VOCAB carries this word as つける, not 付ける — same
+    // word, no separate sense. Spelled to match so the pair's own blockedBy gate
+    // resolves against the word the learner was actually taught.
+    doIt: { word: "つける", reading: "つける", cls: "v1", en: "I turned the light on.", jmdict: "vt" },
   },
   {
     happens: { word: "消える", reading: "きえる", cls: "v1", en: "The light went out.", jmdict: "vi" },
@@ -325,6 +329,16 @@ export const VERB_PAIRS: readonly VerbPair[] = [
     doIt: { word: "育てる", reading: "そだてる", cls: "v1", en: "I raised the child.", jmdict: "vt" },
   },
   {
+    // 産む does NOT match VOCAB's spelling for this reading (生む is the row
+    // VOCAB carries) — left as-is on purpose, unlike 付ける/掛かる/掛ける above.
+    // Those three are the SAME word as their VOCAB kana spelling, just JMdict-
+    // tagged "usually kana"; 産む and 生む are genuinely different senses of one
+    // JMdict entry (産む = bear a child, 生む = produce/give rise to — see
+    // transitivity-facts.test.ts's "childbirth is 産む" comment). Renaming this
+    // one to 生む would resolve VOCAB matching but trade away that precision, so
+    // it stays a documented, permanently-unreachable content gap instead —
+    // interleaved-schedule.test.ts's reachability test is left failing on this
+    // gate on purpose, rather than allowlisting it quiet.
     happens: { word: "生まれる", reading: "うまれる", cls: "v1", en: "A baby was born.", jmdict: "vi" },
     doIt: { word: "産む", reading: "うむ", cls: "v5m", en: "She had a baby.", jmdict: "vt" },
   },
@@ -357,8 +371,12 @@ export const VERB_PAIRS: readonly VerbPair[] = [
     doIt: { word: "片付ける", reading: "かたづける", cls: "v1", en: "I tidied the room.", jmdict: "vt" },
   },
   {
-    happens: { word: "掛かる", reading: "かかる", cls: "v5r", en: "The picture is hanging.", jmdict: "vi" },
-    doIt: { word: "掛ける", reading: "かける", cls: "v1", en: "I hung the picture.", jmdict: "vt" },
+    // Both sides are JMdict-tagged "usually written using kana alone" (confirmed
+    // against the raw dictionary), so VOCAB carries かかる/かける, not 掛かる/掛ける —
+    // same words, no separate sense. Spelled to match so the pair's own blockedBy
+    // gate resolves against the words the learner was actually taught.
+    happens: { word: "かかる", reading: "かかる", cls: "v5r", en: "The picture is hanging.", jmdict: "vi" },
+    doIt: { word: "かける", reading: "かける", cls: "v1", en: "I hung the picture.", jmdict: "vt" },
   },
   {
     happens: { word: "詰まる", reading: "つまる", cls: "v5r", en: "The pipe got clogged.", jmdict: "vi" },

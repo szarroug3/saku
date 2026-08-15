@@ -54,12 +54,11 @@ describe("pairPattern exceptions", () => {
 
 describe("pairPattern over the curriculum", () => {
   // CURRICULUM_PAIRS is every pair whose both verbs are curriculum words (see
-  // transitivity-lesson.ts), so it grew when the word track widened to
-  // essentially all of VOCAB — and shrank back by 3 when 付く/付ける,
-  // 生まれる/産む and 掛かる/掛ける were reverted to their correct kanji spellings,
-  // which VOCAB does not carry (see interleaved-schedule.test.ts's
-  // KNOWN_OPEN_CONTENT_GAPS). Both counts below are recomputed off the real,
-  // now-65-pair list, not typed in.
+  // transitivity-lesson.ts). 付く/つける and かかる/かける now match VOCAB's real
+  // spelling (see transitivity.ts), so both qualify again — 65 → 67. 生まれる/
+  // 産む and 濡れる/濡らす stay out (産む/濡れる/濡らす aren't VOCAB words under any
+  // spelling this table uses). Both counts below are recomputed off the real,
+  // now-67-pair list, not typed in.
   test("labels every pair and keeps the exceptions in their CEJC teaching order", () => {
     const exceptions = CURRICULUM_PAIRS.flatMap((p, i) =>
       pairPattern(p.happens.reading, p.doIt.reading).isException ? [i + 1] : [],
@@ -73,9 +72,9 @@ describe("pairPattern over the curriculum", () => {
       const id = pairPattern(p.happens.reading, p.doIt.reading).id;
       counts[id] = (counts[id] ?? 0) + 1;
     }
-    assert.equal(counts.A, 17); // -ある → -える
+    assert.equal(counts.A, 18); // -ある → -える
     assert.equal(counts.E, 11); // -る → -す
-    assert.equal(counts.B, 9); //  -う → -える
+    assert.equal(counts.B, 10); //  -う → -える
     assert.equal(counts.exception, 6);
   });
 });

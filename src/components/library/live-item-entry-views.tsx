@@ -73,5 +73,5 @@ export function KeigoEntryView({ item }: { item: ContentItem }) {
 }
 
 export function VerbPairEntryView({ item }: { item: ContentItem }) {
-  return <VerbPairEntryRenderer item={item} liveHeadline={itemHeadline(item)} />;
+  return <VerbPairEntryRenderer item={item} />;
 }
