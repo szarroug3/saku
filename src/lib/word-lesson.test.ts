@@ -15,14 +15,9 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
-import {
-  VOCAB,
-  isWordTrackCategory,
-  wordTeachingMetadata,
-} from "../data/vocab.ts";
+import { VOCAB } from "../data/vocab.ts";
 import {
   CURRICULUM_WORDS,
-  WORDS_CURRICULUM_MAX,
   WORDS_CURRICULUM_TOTAL,
   WORDS_PER_LESSON_DEFAULT,
   clampWordsPerLesson,
@@ -47,19 +42,22 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   return history({ claims: claims as HistoryFile["claims"] });
 }
 
-describe("the curriculum is CEJC content, in approved teaching order", () => {
-  test("only core vocabulary and conversation essentials enter the word track", () => {
-    assert.ok(CURRICULUM_WORDS.length > 7000);
+describe("the curriculum is essentially all of VOCAB, in beginnerRank order", () => {
+  test("every VOCAB word enters the word track except the counter track's own duplicates", () => {
+    // See word-lesson.ts's "WHERE THE CURRICULUM ENDS" — VOCAB is already
+    // JMdict's curated everyday set, so nothing is excluded on category alone
+    // any more. The only gap is counter-owned duplicates: a strict subset of
+    // VOCAB, never a superset.
+    assert.ok(CURRICULUM_WORDS.length > 12000);
+    assert.ok(CURRICULUM_WORDS.length < VOCAB.length, "counter-track words are excluded");
+    const curriculumKebs = new Set(CURRICULUM_WORDS.map((w) => w.keb));
     for (const w of CURRICULUM_WORDS) {
-      assert.ok(isWordTrackCategory(wordTeachingMetadata(w.keb).category));
-      assert.ok(w.beginnerRank <= WORDS_CURRICULUM_MAX);
+      assert.ok(VOCAB.some((v) => v.keb === w.keb));
     }
-    // A strict subset of the CEJC-ranked head: counter-track words are excluded
-    // even when CEJC classifies them as core vocabulary.
-    const inCore = VOCAB.filter((w) => w.beginnerRank <= WORDS_CURRICULUM_MAX);
-    assert.ok(CURRICULUM_WORDS.length < inCore.length, "counter-track words are excluded");
-    for (const w of CURRICULUM_WORDS) {
-      assert.ok(inCore.some((c) => c.keb === w.keb), `${w.keb} should be in core`);
+    // The words excluded are exactly the counter-owned ones — spot-check both
+    // families named in COUNTER_TRACK_KEBS/COUNTER_KANJI_GLYPHS.
+    for (const excluded of ["百", "千", "万", "一つ", "二つ", "一人", "二人"]) {
+      assert.ok(!curriculumKebs.has(excluded), `${excluded} should be excluded (counter track owns it)`);
     }
   });
 
@@ -138,8 +136,7 @@ describe("the word total is the material, and does not move", () => {
     // Equal today because beginnerRank is dense. They are different claims, and
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
-    assert.equal(WORDS_CURRICULUM_TOTAL, 7508);
-    assert.ok(WORDS_CURRICULUM_TOTAL <= WORDS_CURRICULUM_MAX);
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12540);
   });
 });
 

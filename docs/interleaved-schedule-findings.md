@@ -1,6 +1,6 @@
-# Findings: 75% of the curriculum's vocabulary was never scheduled — FIXED — and a smaller remaining keigo/transitivity gap
+# Findings: 75% of the curriculum's vocabulary was never scheduled — FIXED — and four remaining transitivity content gaps
 
-**Status: the big one (multi-character coverage) is fixed and verified.** The narrower remaining gap (keigo 3/9, transitivity 20/69 — words genuinely absent from `CURRICULUM_SEQUENCE`) is still open; see "What's left" at the bottom.
+**Status: fully fixed except four genuine dictionary-data gaps.** The multi-character coverage bug is fixed and verified. The word track was later widened to essentially all of `VOCAB` (~12,540 words, not just the ~7,537 CEJC/JLPT-gated subset — see `word-lesson.ts`), which subsumed the 29-word `FORCE_TAUGHT_KEBS` override entirely. A separate, since-corrected mistake in this investigation initially "fixed" 4 transitivity pairs (付ける→つける, 産む→生む, 掛かる→かかる, 掛ける→かける) believing they were spelling mismatches against `VOCAB`; they were not — pre-existing audit tests (`transitivity-facts.test.ts`, `audit-semantics.test.ts`) deliberately pin the original kanji spellings, and the four kanji headwords genuinely have no `VOCAB` entry under those exact spellings. All 4 were reverted to their correct kanji spellings. Four pairs now remain stuck — 濡れる/濡らす, 付く/付ける, 生まれる/産む, 掛かる/掛ける, all genuinely absent from `VOCAB` under those exact headwords — see "What's left" at the bottom.
 
 ## The big one: multi-character words never became teaching units — FIXED
 
@@ -81,15 +81,30 @@ Only 3 of 9 sets have a plain verb missing from the curriculum outright — yet 
 
 `src/lib/content/verb-pair-unit.ts`'s scheduler-preview seeding (`vocabLearned()`, used only by the isolated `/dev/scheduling` preview) works around the exact same gap by pretending all vocabulary is already known — which is why this was invisible in that dev view and only surfaced once a real cross-track, no-shortcuts simulation was run.
 
+## The fix, round two: 34 missing words resolved, then round three: a wrong "spelling fix" reverted
+
+Of the 31 verb-pair-side words and 3 keigo plain verbs (34 total, 35 counting one word appearing on both lists) absent from `CURRICULUM_SEQUENCE`:
+
+- **29 needed to be added to the curriculum outright.** CEJC's classifier correctly filed them as `"grammar"` (dominant corpus role is auxiliary/aspectual — もらう/くれる as giving-receiving auxiliaries, 出す/始める/続ける as aspectual compound-verb suffixes, etc.) or `"unobserved"` (real, ordinary vocabulary CEJC's finite recording just never happened to capture — 閉める, 帰る, 見つける, etc.), but each is also a genuinely common standalone verb the curriculum needed to teach on its own. Originally added via a `FORCE_TAUGHT_KEBS` override list in `src/lib/word-lesson.ts`; that override was later subsumed entirely when the word track widened to essentially all of `VOCAB` (see below).
+- **4 were mistakenly treated as spelling mismatches, then reverted.** An earlier pass in this investigation changed `transitivity.ts`'s hand-authored kanji spellings — 付ける→つける, 産む→生む, 掛かる→かかる, 掛ける→かける — believing they didn't match `VOCAB`'s canonical JMdict `keb` for the same word/sense. This was wrong: pre-existing audit tests (`transitivity-facts.test.ts`, `audit-semantics.test.ts`) deliberately pin the ORIGINAL kanji spellings on purpose (e.g. 産む is the standard verb for bearing a child, distinct from 生む "produce/give rise to"; 生まれる/産む is the one documented kanji-stem exception in `audit-semantics.test.ts`). `つける`/`かかる`/`かける`/`生む` are real, separate `VOCAB` entries — not typos of the kanji forms — but they are not the same word/sense the pair's hand-authored English sentence and audit tests intend. All 4 were reverted back to their correct kanji spellings, which restores the original, correct semantics but reopens the scheduling gap: none of 付ける, 産む, 掛かる, 掛ける exists in `VOCAB` under those exact kanji headwords.
+- **1 pair was always a genuine, currently-unfixable content gap:** 濡れる ("get wet") / 濡らす ("wet something") are not spelling mismatches — confirmed absent from `VOCAB` entirely (zero hits for ぬれる/ぬらす/濡れる/濡らす in `src/data/generated/vocab.json`). Fixing this needs real dictionary content this repo's JMdict/CEJC ingestion never produced, not a code change.
+
+### The word track was separately widened to essentially all of VOCAB
+
+After the above, a user report surfaced a much larger, related issue: `VOCAB` (12,555 words) is JMdict's own curated "everyday" set, but the OLD `CURRICULUM_WORDS` only taught 7,537 of those — the ones CEJC's corpus happened to observe or a JLPT wordlist happened to gate. The other ~5,000 (図書館, 郵便局, 飛行機, 水曜日, 警官, …) are equally "everyday" by JMdict's own curation. **Decision: extend the curriculum to essentially all of VOCAB, ordered by `beginnerRank`.** `CURRICULUM_WORDS` now excludes only the counter track's own duplicates (see `word-lesson.ts`'s "WHERE THE CURRICULUM ENDS"), subsuming the 29-word `FORCE_TAUGHT_KEBS` override above entirely. New total: 12,540 words (was 7,537).
+
+**Verified impact:** `interleaved-schedule.test.ts`'s reachability test now reports `transitivity: 4/69 units never scheduled` — 濡れる/濡らす plus the 3 reverted pairs (付く/付ける, 生まれる/産む, 掛かる/掛ける; 付く and 生まれる are themselves taught under those exact kanji spellings already — it's specifically 付ける, 産む, and 掛かる/掛ける that are missing). keigo remains fully reachable (9/9). All 4 lines are named explicitly in `KNOWN_OPEN_CONTENT_GAPS` in the test file so they don't block the suite while staying visible, and don't silently swallow any *other* future regression.
+
 ## What's left
 
-The multi-character coverage gap (the root cause behind most of this doc) is fixed and verified. What remains is narrower and purely a content gap, not an architecture problem:
+Four transitivity pairs, all genuinely absent from `VOCAB` under the exact kanji headwords the pair's hand-authored English sentence and audit tests require:
 
-- **31 of 138 verb-pair sides** (out of 69 pairs) — 始める, 終える, 出す, 付く/付ける, 続く/続ける, 切る, 治す, 建てる, 帰す, 掛ける, and 20 others — are simply absent from `CURRICULUM_SEQUENCE` outright. `transitivity`'s `blockedBy` is an ALL-of gate on both verbs, so any pair touching even one of these can never unlock.
-- **3 of 9 keigo sets** (give-me, receive, see — くれる/もらう/見る) have the same problem: their plain verb isn't in `CURRICULUM_SEQUENCE` at all.
+- 濡れる/濡らす ("get wet"/"wet something") — absent entirely, no VOCAB entry under either spelling.
+- 付く/付ける — 付く is taught; 付ける has no VOCAB entry under that kanji spelling (only つける, a different headword).
+- 生まれる/産む — 生まれる is taught; 産む has no VOCAB entry under that kanji spelling (only 生む, a different word/sense).
+- 掛かる/掛ける — neither kanji spelling has a VOCAB entry (only かかる/かける).
 
-## Recommendation
-
-1. **Decide, per remaining gap, whether it's a content bug or an accepted design tradeoff.** `src/lib/content/keigo-unit.ts`'s own comment states the *mechanism* (permanent silence when a verb is uncovered) is deliberate — what's not clearly deliberate is which specific 34 words ended up excluded. If they should be teachable: add the missing words to `CURRICULUM_SEQUENCE` (or otherwise ensure their facts get taught). If some are intentionally excluded (e.g. a genuinely obscure verb pair not worth teaching): keep the test honest about that decision — either exclude those specific entries with a documented reason, or switch `interleaved-schedule.test.ts`'s reachability assertion to the "snapshot/regression guard" variant instead of the current strict one, so future drift is still caught without demanding 100% coverage of content that was never meant to ship.
-2. Until (1) is decided, `interleaved-schedule.test.ts`'s reachability assertion (only that one, now) is EXPECTED TO FAIL — that is the point, not a bug in the test. The coverage test, the safety-cap test, and both timing tests are green.
-3. `src/lib/content/verb-pair-unit.ts`'s scheduler-preview seeding (`vocabLearned()`, used only by the isolated `/dev/scheduling` preview) still works around this exact remaining gap by pretending all vocabulary is already known — worth knowing if that dev view ever looks inconsistent with the real app for these specific 34 words.
+Each needs real dictionary content (readings, glosses, JMdict metadata) added to `VOCAB` under the exact kanji headword — not something to fabricate by hand, since `VOCAB` is generated data and hand-editing it would break the byte-correctness discipline the rest of this pipeline depends on. Options, for whoever picks this up:
+1. Check whether JMdict's raw source has entries for these words that the ingest pipeline is dropping for some other reason (missing frequency data, POS filter, etc.) — if so, the real fix is in the ingest script.
+2. If JMdict genuinely has no entry, source correct dictionary data for these words and add them through whatever process VOCAB's other entries went through, not as a one-off hand edit.
+3. Until then, `KNOWN_OPEN_CONTENT_GAPS` in `interleaved-schedule.test.ts` keeps these named and visible rather than silently passing or permanently failing the suite. Do NOT "fix" the gate by renaming `transitivity.ts`'s kanji spellings to match whatever kana form VOCAB happens to have — that is exactly the mistake this document's earlier revision made and had to revert.

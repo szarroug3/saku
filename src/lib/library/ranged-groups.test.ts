@@ -149,12 +149,15 @@ describe("wordClimbRank is the words' curriculum climb", () => {
   });
 
   test("a word the spine never teaches trails every spine word, in beginnerRank order", () => {
-    // Real vocab the spine does not weave in: no spine position, but a
-    // beginnerRank that orders the tail. あの人 (10325) precedes いざこざ (10345).
-    const off = word("あの人");
-    const later = word("いざこざ");
-    assert.equal(curriculumPosition("あの人"), -1);
-    assert.equal(curriculumPosition("いざこざ"), -1);
+    // The word track widened to essentially all of VOCAB (see word-lesson.ts),
+    // so あの人/いざこざ — real vocab this test used to rely on being off-spine —
+    // are taught now. The only words still excluded on purpose are the
+    // counter track's own duplicates (COUNTER_TRACK_KEBS): 一人 (142) precedes
+    // 一つ (7516) in beginnerRank, and neither is on the spine.
+    const off = word("一人");
+    const later = word("一つ");
+    assert.equal(curriculumPosition("一人"), -1);
+    assert.equal(curriculumPosition("一つ"), -1);
     // Both land after a spine word (人, rank 0), and keep beginnerRank order.
     assert.ok(wordClimbRank(off) > wordClimbRank(word("人")));
     assert.ok(wordClimbRank(off) < wordClimbRank(later));
@@ -162,7 +165,7 @@ describe("wordClimbRank is the words' curriculum climb", () => {
     // And the whole thing composes: 人 opens the shelf, the tail follows.
     const groups = rangedGroups([later, off, word("人")], wordClimbRank, 50);
     const flat = groups.flatMap((g) => g.entries.map((e) => e.glyph));
-    assert.deepEqual(flat, ["人", "あの人", "いざこざ"]);
+    assert.deepEqual(flat, ["人", "一人", "一つ"]);
   });
 });
 

@@ -42,11 +42,9 @@ import {
   sentenceLearnLessonForRun,
   sentenceTierIdOfEntry,
   trackIdOfFact,
-  CURRICULUM_GLYPHS,
 } from "@/lib/content/learn-index";
 import type { IndexUnit } from "@/lib/content/learn-index-types";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
-import { positionLabel, type LessonPosition } from "@/lib/lesson-position";
 import { resumeLesson } from "@/lib/lesson-resume";
 
 import type { Why } from "@/data/why";
@@ -83,9 +81,11 @@ function trackKeyForRun(run: RunInfo): string | null {
   return trackIdOfFact(first) ?? null;
 }
 
-/** The noun each track counts its position in — "Word 3–8 of 6,213". Vocab mixes
- * radicals, kanji and words on one climb, so it counts the neutral "Item". Kana is
- * split into Hiragana / Katakana at render (see kanaPositionLabel). */
+/** Each card's label. No position/count on any of them — see
+ * vocabPositionLabel's comment for why (a range only some tracks can print
+ * honestly is worse than no range on any of them). Kana is split into
+ * Hiragana / Katakana at render (see kanaPositionLabel); the rest read
+ * straight off this map. */
 const TRACK_NOUN: Record<string, string> = {
   kana: "Kana",
   vocab: "Vocab",
@@ -126,31 +126,6 @@ const TRACK_WHY: Record<string, Why> = {
   sentence: lede("Arrange words and grammar into sentences that come out in the right order."),
 };
 
-/**
- * Where a lesson sits in its track, in ITEMS: the item positions its units cover
- * against the count of distinct items in the whole track order. Counts by first
- * appearance so a glyph split across two reading units (人 ひと, 人 じん) is one
- * item at its first slot, and a prerequisite pulled in inline still counts where
- * it sits in the order. Same immovable-denominator rule as lesson-position.ts:
- * the total is a property of the material, not the lesson-length slider.
- */
-function positionFor(
-  order: readonly IndexUnit[],
-  lesson: LearnLesson,
-): LessonPosition {
-  const firstIdx = new Map<string, number>();
-  let total = 0;
-  for (const u of order) {
-    const e = String(u.item.entry);
-    if (!firstIdx.has(e)) firstIdx.set(e, total++);
-  }
-  const idxs = [...new Set(lesson.units.map((u) => String(u.item.entry)))]
-    .map((e) => firstIdx.get(e))
-    .filter((x): x is number => x !== undefined);
-  // A lesson always has at least one due unit, so idxs is non-empty here.
-  return { from: Math.min(...idxs) + 1, to: Math.max(...idxs) + 1, total };
-}
-
 /** Hiragana vs katakana by Unicode block. The kana track teaches all hiragana
  * then all katakana, so a lesson's script is read straight off its glyphs. */
 const KATAKANA_RE = /[゠-ヿ]/;
@@ -158,27 +133,12 @@ function kanaScript(glyph: string): "Hiragana" | "Katakana" {
   return KATAKANA_RE.test(glyph) ? "Katakana" : "Hiragana";
 }
 
-/** The kana card's position label, SPLIT BY SCRIPT: "Hiragana 6–10 of 46" while in
- * hiragana, then "Katakana 1–5 of 46" once katakana opens — not one running "Kana
- * 6–10 of 214" spanning both. The position and its denominator are scoped to the
- * lesson's own script (hiragana and katakana are contiguous blocks in the order). */
-function kanaPositionLabel(order: readonly IndexUnit[], lesson: LearnLesson): string {
-  const script = kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
-  const firstIdx = new Map<string, number>();
-  let total = 0;
-  for (const u of order) {
-    if (kanaScript(u.item.glyph) !== script) continue;
-    const e = String(u.item.entry);
-    if (!firstIdx.has(e)) firstIdx.set(e, total++);
-  }
-  const idxs = [...new Set(lesson.units.map((u) => String(u.item.entry)))]
-    .map((e) => firstIdx.get(e))
-    .filter((x): x is number => x !== undefined);
-  return positionLabel(script, {
-    from: Math.min(...idxs) + 1,
-    to: Math.max(...idxs) + 1,
-    total,
-  });
+/** The kana card's label, SPLIT BY SCRIPT: "Hiragana" while in hiragana, then
+ * "Katakana" once katakana opens — not a running "Kana" spanning both. No
+ * position range — see vocabPositionLabel's comment for why no track shows
+ * one: consistent beats occasionally honest. */
+function kanaPositionLabel(lesson: LearnLesson): string {
+  return kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
 }
 
 /** Every fact of one script's kana in the track order — what "I already know all
@@ -194,26 +154,18 @@ function kanaScriptFacts(
   return facts;
 }
 
-/** Curriculum position of every vocab glyph — the prereq-respecting teaching order
- * (a component sits just before what it builds), NOT the frequency order the vocab
- * track schedules its reading UNITS in. */
-const CURRICULUM_INDEX = new Map(CURRICULUM_GLYPHS.map((glyph, i) => [glyph, i]));
-
-/** The vocab card's position, counted in CURRICULUM order. The vocab track is
- * ordered by spoken frequency, so a lesson pulls a due glyph plus its prerequisites
- * from all over that order — counting first-unit appearances there spread a 5-item
- * lesson across "1–459". Curriculum order keeps a lesson's items contiguous (人 口
- * 可 何 一 → a tight span), which is the position a learner actually feels. */
-function vocabPositionLabel(lesson: LearnLesson): string {
-  const idxs = [...new Set(lesson.units.map((u) => u.item.glyph))]
-    .map((g) => CURRICULUM_INDEX.get(g))
-    .filter((x): x is number => x !== undefined);
-  if (idxs.length === 0) return "Vocab";
-  return positionLabel("Vocab", {
-    from: Math.min(...idxs) + 1,
-    to: Math.max(...idxs) + 1,
-    total: CURRICULUM_GLYPHS.length,
-  });
+/** The vocab card's label. NOT a position range: the vocab track schedules by
+ * spoken frequency, not curriculum order, so a lesson's items are only
+ * SOMETIMES near each other in curriculum position too (人 口 可 何 一 → a
+ * tight span) and are never guaranteed to be — two items can sit next to each
+ * other in frequency and thousands of positions apart in the curriculum, more
+ * often the bigger the curriculum gets. A range built from that isn't a
+ * position a learner could feel, it's the seam between two orderings showing
+ * through ("1–8,910"), and there is no threshold that reliably tells "tight"
+ * bundles from "scattered" ones — so rather than sometimes print a number and
+ * sometimes not, this never does. Consistent beats occasionally honest. */
+function vocabPositionLabel(): string {
+  return "Vocab";
 }
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
@@ -447,10 +399,10 @@ export function HomeFeed() {
             title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
             positionLabel={
               track.id === "kana"
-                ? kanaPositionLabel(order, lesson!)
+                ? kanaPositionLabel(lesson!)
                 : track.id === "vocab"
-                  ? vocabPositionLabel(lesson!)
-                  : positionLabel(TRACK_NOUN[track.id] ?? "Item", positionFor(order, lesson!))
+                  ? vocabPositionLabel()
+                  : (TRACK_NOUN[track.id] ?? "Item")
             }
             why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
             onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}

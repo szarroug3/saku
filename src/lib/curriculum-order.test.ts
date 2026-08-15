@@ -3,12 +3,12 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// CURRICULUM_SEQUENCE is 7,000-odd items long and every failure mode in it
+// CURRICULUM_SEQUENCE is 14,000-odd items long and every failure mode in it
 // type-checks. A word handed over before the kanji it is written with, a kanji
 // broken into a shape nobody has met, a character taught twice under two roles,
 // a single-kanji word delivered once as a fold and again at its own rank: all of
 // those are a well-typed array of well-typed items. So the invariants are pinned
-// here, over the real 6,213 words and 2,136 kanji rather than a fixture, because
+// here, over the real 12,540 words and 2,136 kanji rather than a fixture, because
 // a fixture cannot catch an ingest re-cut moving a prerequisite.
 //
 // The counts are asserted as EXACT numbers, not ranges. They are properties of
@@ -434,7 +434,10 @@ describe("the single-kanji fold", () => {
     const single = CURRICULUM_WORDS.filter(
       (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
     );
-    assert.equal(single.length, 594);
+    // Rose from 594 to 672 when CURRICULUM_WORDS widened to essentially all of
+    // VOCAB — more single-Han-character words are now taught, so more of them
+    // land on a kanji row and fold. See word-lesson.ts.
+    assert.equal(single.length, 672);
     for (const w of single) {
       assert.ok(has(w.keb, "word"), `${w.keb} lacks the word role`);
       assert.ok(has(w.keb, "kanji"), `${w.keb} lacks the kanji role`);
@@ -492,8 +495,11 @@ describe("the tail", () => {
    * sequenced by it. */
   const pulledAsComponent = (c: string): boolean => AT.get(c)! < lastWord;
 
-  test("the orphan kanji are the 293 the CEJC curriculum leaves, and follow every word", () => {
-    assert.equal(orphanKanji.length, 293);
+  // Shrank from 293 to 110 when CURRICULUM_WORDS widened to essentially all of
+  // VOCAB — far fewer kanji are left with no word to ride in on. See
+  // word-lesson.ts.
+  test("the orphan kanji are the 110 the widened curriculum leaves, and follow every word", () => {
+    assert.equal(orphanKanji.length, 110);
     // The ones no earlier character reached for. Everything else is a component
     // debt that was paid at the point it was owed.
     const tail = orphanKanji.filter((c) => !pulledAsComponent(c));
@@ -525,7 +531,11 @@ describe("the tail", () => {
       }
     }
     const ownTurn = tail.filter((c) => !pulled.has(c));
-    assert.ok(ownTurn.length > 200, "almost the whole tail arrives on its turn");
+    // Tail shrank from 293 orphan kanji to 110 once the word track widened to
+    // essentially all of VOCAB (far fewer kanji are left with no word to ride
+    // in on) — see word-lesson.ts. 94 of the remaining 94-kanji tail arrive on
+    // their own turn today; the bound is loosened to match, not dropped.
+    assert.ok(ownTurn.length > 80, "almost the whole tail arrives on its turn");
     for (let i = 1; i < ownTurn.length; i++) {
       assert.ok(
         rank.get(ownTurn[i - 1]!)! < rank.get(ownTurn[i]!)!,
@@ -565,7 +575,7 @@ describe("the tail", () => {
     assert.ok(lastWord < lastKanji);
     assert.equal(
       CURRICULUM_SEQUENCE.length,
-      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 594,
+      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 672,
       "total is kanji + radical-only shapes + words, less the folds",
     );
   });

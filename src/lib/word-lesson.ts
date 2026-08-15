@@ -19,33 +19,43 @@
 //
 // THE ORDER
 // =========
-// The teaching order is CEJC lexical frequency with two queues: core vocabulary
-// and conversational essentials. Five approved responses bootstrap the track;
-// after that, each 30 core items are followed by four essentials. The generated
-// CEJC sidecar records category, count, rank and placement rule, while
-// `beginnerRank` exposes that sequence to the existing spine.
+// `beginnerRank` is a single TOTAL ordering over every word in VOCAB (see its
+// doc comment in vocab.ts): CEJC lexical frequency for the words CEJC's
+// conversation corpus actually observed, falling back to a JLPT/OpenSubtitles
+// blend for everything else. The curriculum sorts by it directly — there is no
+// second cut here.
 //
 // Kana-only words still lead, and for the same reason they always did: a word
 // written with no kanji (これ, もう, とても) owes nothing, so it arrives with no
 // run-up, while a kanji word of a LOWER rank (何 is rank 1) arrives behind its
-// kanji. CEJC order is preserved; what a word owes is what spaces them
+// kanji. beginnerRank order is preserved; what a word owes is what spaces them
 // out.
 //
 // WHERE THE CURRICULUM ENDS
 // =========================
-// Not at every dictionary row. Core words and general conversational
-// interjections CEJC actually observes enter the word track. Grammar belongs to
-// its prerequisite-driven track; fillers, hesitations and unobserved dictionary
-// reference material remain discoverable in Library without being pushed.
+// At (almost) every dictionary row. VOCAB is already JMdict's own curated
+// "everyday" set (ichi1/spec1/spec2 — see vocab.ts), so a word CEJC's specific
+// recordings never happened to use, or that JLPT's lists never gated, is not
+// evidence it is rare: 図書館, 郵便局, 飛行機 are exactly this shape, ordinary
+// nouns a conversation corpus rarely has occasion to say. The only VOCAB
+// entries excluded are the ones the COUNTERS track already teaches under its
+// own spoken-form entry (COUNTER_TRACK_KEBS/COUNTER_KANJI_GLYPHS, below) —
+// everything else is taught, CEJC/JLPT order first, frequency-tail order
+// after. Grammar's own facts (conjugation, particles, patterns) still belong
+// to its prerequisite-driven track, not here — but a grammar-role WORD (e.g.
+// くださる, だけ) is still a word with a plain meaning worth teaching, so it is
+// no longer excluded on category alone.
+//
+// This was a considered decision, not a default: an earlier version of this
+// file stopped at CEJC/JLPT coverage (~7,537 words) and treated the remaining
+// ~5,000 as Library-only reference material. Verified before widening: those
+// 5,000 are not junk that slipped past a filter — VOCAB's own curation already
+// screened for everyday commonness, so JLPT-gate/CEJC-observation status marks
+// *how a word's teaching order was computed*, not *whether it is worth
+// teaching*. See docs/interleaved-schedule-findings.md.
 
 import { kanjiKnown } from "@/lib/kanji-known";
-import {
-  VOCAB,
-  VOCAB_SUBJECT,
-  isWordTrackCategory,
-  wordTeachingMetadata,
-  type VocabRow,
-} from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
 import { COUNTER_CURRICULUM } from "@/data/counters";
 import type { HistoryFile } from "@/types";
 
@@ -56,15 +66,6 @@ import type { HistoryFile } from "@/types";
 import { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson } from "@/lib/lesson-sizing";
 
 export { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson };
-
-/**
- * The last CEJC teaching rank occupied by core vocabulary or a conversational
- * essential. Grammar, fillers and unobserved dictionary reference words carry
- * no CEJC teaching rank and do not enter the word track.
- */
-export const WORDS_CURRICULUM_MAX = Math.max(
-  ...VOCAB.map((word) => wordTeachingMetadata(word.keb).teachingRank ?? 0),
-);
 
 const HAN = /\p{Script=Han}/u;
 
@@ -141,12 +142,7 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
 ]);
 
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
-  .filter(
-    (w) =>
-      isWordTrackCategory(wordTeachingMetadata(w.keb).category) &&
-      !COUNTER_TRACK_KEBS.has(w.keb) &&
-      !COUNTER_KANJI_GLYPHS.has(w.keb),
-  )
+  .filter((w) => !COUNTER_TRACK_KEBS.has(w.keb) && !COUNTER_KANJI_GLYPHS.has(w.keb))
   .sort((a, b) => a.beginnerRank - b.beginnerRank);
 
 /**
