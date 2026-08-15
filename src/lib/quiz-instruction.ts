@@ -49,6 +49,7 @@ import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { isReadingFact } from "@/lib/word-unlock";
 import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
+import { openExample } from "@/lib/grammar/example";
 import type { Direction, FactId } from "@/types";
 
 /** How the instruction names the thing you are being asked to produce.
@@ -113,6 +114,16 @@ export function quizInstruction(
         : `Type this ${noun} describing みせ.`;
     }
     const form = `${patternLabel(prod.recipe)} form`;
+    // A WRAP's halo shows only ONE slot's word (the varying verb) — the other
+    // slot (本, fixed) never appears on screen, so an instruction naming only
+    // "this word" would ask for half a sentence with no way to guess the rest.
+    // Name the fixed word explicitly, the one time this ever needs saying.
+    if (prod.recipe.wrap) {
+      const open = openExample(prod.recipe).surface;
+      return mode === "mc"
+        ? `Which of these is how "${open} + this ${noun}" is said in the ${form}?`
+        : `Type how "${open} + this ${noun}" is said in the ${form}.`;
+    }
     return mode === "mc"
       ? `Which of these is how this ${noun} is said in the ${form}?`
       : `Type how this ${noun} is said in the ${form}.`;

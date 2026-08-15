@@ -6,10 +6,13 @@
 // the sections are those two groups, in teaching order.
 //
 // It lives in a .ts, not beside the JSX in shelves.tsx, so the test runner (no
-// JSX) can hold the property that matters here: the shelf lists every keigo set
-// entry, exactly once, resolved to a real Library page.
+// JSX) can hold the property that matters here: the shelf lists every TEACHABLE
+// keigo set entry (CURRICULUM_KEIGO_SETS — a set whose plain verb the app can
+// never teach is excluded, not shown-but-unreachable), exactly once, resolved
+// to a real Library page.
 
-import { KEIGO_SETS, keigoSetEntry, type KeigoSet } from "@/data/keigo";
+import { keigoSetEntry, type KeigoSet } from "@/data/keigo";
+import { CURRICULUM_KEIGO_SETS } from "@/lib/keigo-lesson";
 import { libEntry } from "@/lib/library/library-index";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
@@ -42,7 +45,7 @@ export function keigoShelfSections(): ShelfSection[] {
   return GROUPS.map((g) => ({
     id: `keigo-${g.id}`,
     label: g.label,
-    entries: KEIGO_SETS.filter(g.keep).flatMap((s) => {
+    entries: CURRICULUM_KEIGO_SETS.filter(g.keep).flatMap((s) => {
       const e = libEntry(keigoSetEntry(s));
       return e ? [e] : [];
     }),

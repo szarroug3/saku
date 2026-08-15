@@ -1042,8 +1042,12 @@ export function answerIsJapanese(fact: FactId, dir: Direction): boolean {
 //     so two patterns that coincide on 行く can never both be on the board.
 //
 // Only producible recipes carry a production fact, and producibility already
-// rejects は/が (no recipe exists), the vacuous rows, the order-free wraps and
-// the data-blocked しか〜ない — so the dangerous items never reach here.
+// rejects は/が (no recipe exists) and the vacuous/order-free rows — so the
+// dangerous items never reach here. A WRAP that IS producible (しか〜ない) still
+// never gets a VARIED vehicle below: `apply()` refuses a wrap outright, so
+// `variedVehicle` always falls back to null for one, and every showing grades
+// against the fact's own fixed baked pair (本しか + the class's verb) — the same
+// "no legal vehicle" path every other recipe already falls back to.
 
 /**
  * The VARIED vehicle a production showing runs on, or null to mean "use the

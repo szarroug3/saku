@@ -113,7 +113,7 @@ import {
  * is redundant as a member's sub-line (see the grammar-entry `sub` below). Their
  * titles still ride `searchAlso`, so the family stays findable by name. */
 export const COMPARISON_CLUSTER_IDS: ReadonlySet<string> = new Set(["wa-ga", "ni-de"]);
-import { VERB_PAIRS } from "@/data/transitivity";
+import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import {
   TRANSITIVITY_SUBJECT,
   pairEntry,
@@ -123,13 +123,13 @@ import {
 } from "@/data/transitivity-facts";
 import { pairPattern, shiftLabel } from "@/lib/transitivity-pattern";
 import {
-  KEIGO_SETS,
   KEIGO_SUBJECT,
   keigoSetEntry,
   keigoSetForEntry,
   keigoWordFactId,
   recognitionGloss,
 } from "@/data/keigo";
+import { CURRICULUM_KEIGO_SETS } from "@/lib/keigo-lesson";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { deframe } from "@/lib/kanji-parts";
@@ -779,8 +779,12 @@ function build(): LibEntry[] {
   // they browse after it. A pair is TWO verbs and one event; its first fact's
   // glyph is the shared written stem the detail route uses as its hero. `name`
   // still carries the full pair — "出る / 出す" — and both written forms ride in
-  // `searchAlso`, so every representation remains findable.
-  VERB_PAIRS.forEach((p, i) => {
+  // `searchAlso`, so every representation remains findable. CURRICULUM_PAIRS,
+  // not the raw VERB_PAIRS: a pair whose verb the app can never teach (産む,
+  // 濡れる/濡らす today) gets no entry here either, so search/detail agrees with
+  // the shelf (shelves.tsx) and the schedule (verb-pair-unit.ts) about what
+  // "the app teaches" means, instead of a third, silently different answer.
+  CURRICULUM_PAIRS.forEach((p, i) => {
     const id = pairEntry(p);
     const pattern = pairPattern(p.happens.reading, p.doIt.reading);
     const tailLabel = pattern.isException ? "Exception" : shiftLabel(pattern);
@@ -848,7 +852,10 @@ function build(): LibEntry[] {
   // the exact form the detail route uses as its hero; `name` still carries the
   // complete set — "召し上がる / いただく". The recognition glosses are the
   // `meanings`, and the plain verbs/register words ride in `searchAlso`.
-  KEIGO_SETS.forEach((set, i) => {
+  // CURRICULUM_KEIGO_SETS, not the raw KEIGO_SETS: a set whose plain verb the
+  // app can never teach gets no entry here either, matching the shelf
+  // (keigo-shelf.ts) and the schedule (keigo-unit.ts).
+  CURRICULUM_KEIGO_SETS.forEach((set, i) => {
     const id = keigoSetEntry(set);
     out.push({
       id,

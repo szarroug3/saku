@@ -53,8 +53,7 @@ function historyBlob(seed: QuizSeed): string {
     facts[f] = {
       seen: 4,
       correct: 4,
-      firstTryCorrect: 4,
-      lastSeen: now,
+      firstTry: 4,
       lastTested: now,
       stability: 30,
     };

@@ -7,34 +7,34 @@
 // keigo data back off each item to fill the KeigoFormUnit's display fields.
 
 import { buildItem } from "./build-item.ts";
-import { KEIGO_FACTS, keigoSetForEntry, keigoWordInfo } from "@/data/keigo";
+import { keigoSetEntry, keigoSetForEntry, keigoWordInfo } from "@/data/keigo";
+import { CURRICULUM_KEIGO_SETS } from "@/lib/keigo-lesson";
 import { wordEntry } from "@/data/vocab";
 import type { ContentItem } from "./item.ts";
 import type { KeigoFormUnit } from "./teach-unit.ts";
 
-/** The distinct keigo SET entries, each as a ContentItem via `buildItem`. One
- * item per set (its facts are the set's polite words). The display glyph is
- * anchored on the BASE verb the set replaces (食べる), not a polite form — the
- * Learn card shows the plain word the learner already knows, and the page then
- * teaches all the set's polite forms. Undefined builds are skipped.
+/** The distinct keigo SET entries, each as a ContentItem via `buildItem` — one
+ * per CURRICULUM_KEIGO_SETS entry (§ keigo-lesson.ts: only sets whose plain verb
+ * is actually reachable). The display glyph is anchored on the BASE verb the
+ * set replaces (食べる), not a polite form — the Learn card shows the plain word
+ * the learner already knows, and the page then teaches all the set's polite
+ * forms. Undefined builds are skipped.
  *
  * GATED ON ITS PLAIN VERB. A set means nothing until you know the everyday word
  * it replaces, so its item is `blockedBy` that verb — the scheduler holds the set
- * back until the verb is learned vocabulary, and a set the curriculum never
- * teaches the verb for never surfaces. `buildItem` leaves blockedBy empty, so the
- * gate is set HERE. The gate is the set's PRIMARY plain verb (data order): the set
- * truly opens on ANY of its plain verbs, which the all-of `blockedBy` can't
- * express, and the primary is the closest single-verb stand-in. The formulaic
+ * back until the verb is learned vocabulary. `buildItem` leaves blockedBy empty,
+ * so the gate is set HERE. The gate is the set's PRIMARY plain verb (data order):
+ * the set truly opens on ANY of its plain verbs, which the all-of `blockedBy`
+ * can't express, and the primary is the closest single-verb stand-in — the same
+ * verb keigo-lesson.ts's curriculum filter checks, so a set that passes that
+ * filter is guaranteed to actually be able to clear this gate. The formulaic
  * greeting (いらっしゃいませ) has no plain verb, so it stays ungated. */
 export function keigoItems(): ContentItem[] {
-  const seen = new Set<string>();
   const items: ContentItem[] = [];
-  for (const f of KEIGO_FACTS) {
-    if (seen.has(f.entry as string)) continue;
-    seen.add(f.entry as string);
-    const item = buildItem(f.entry, "keigo");
+  for (const set of CURRICULUM_KEIGO_SETS) {
+    const item = buildItem(keigoSetEntry(set), "keigo");
     if (!item) continue;
-    const base = keigoSetForEntry(item.entry)?.plain[0]?.keb;
+    const base = set.plain[0]?.keb;
     items.push({
       ...item,
       ...(base ? { glyph: base } : {}),
