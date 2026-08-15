@@ -12,9 +12,9 @@
 // pronunciation track, curriculum sequence for grammar, …).
 
 import { factInfo } from "@/lib/facts";
-import { wordReadingUnit, readingFrequency } from "@/data/vocab";
+import { wordReadingUnit, readingFrequency, wordEntry } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
-import { buildGlyphItem } from "./build-item";
+import { buildGlyphItem, buildItem } from "./build-item";
 import { kanaUnitsOf } from "./kana-unit";
 import { generativeUnitsOf } from "./numbers-track";
 import { keigoUnitsOf } from "./keigo-unit";
@@ -226,11 +226,21 @@ export function byFrequencyDesc(a: PronunciationUnit, b: PronunciationUnit): num
 }
 
 /** The pronunciation curriculum sequence: every glyph's pronunciation units,
- * frequency-ordered across the set. (Dueness, prereqs, and budget layer on top.) */
+ * frequency-ordered across the set. (Dueness, prereqs, and budget layer on top.)
+ *
+ * `buildGlyphItem` is single-Han-character only (it aggregates a glyph's
+ * radical/kanji/word ROLES, which only a single character plays — see
+ * `characterRoles`). A multi-character glyph plays no such role and always
+ * answers undefined, so it falls back to `buildItem(wordEntry(glyph), "word")`
+ * — the same word-builder the app already uses for a multi-character word's
+ * own entry-detail page. Without this fallback, every multi-character word in
+ * `CURRICULUM_SEQUENCE` (6,906 of 9,140 glyphs) silently produced zero
+ * teaching units and could never be scheduled — see
+ * docs/interleaved-schedule-findings.md. */
 export function orderedUnits(glyphs: Iterable<string>): PronunciationUnit[] {
   const units: PronunciationUnit[] = [];
   for (const glyph of glyphs) {
-    const item = buildGlyphItem(glyph);
+    const item = buildGlyphItem(glyph) ?? buildItem(wordEntry(glyph), "word");
     if (item) units.push(...pronunciationUnitsOf(item));
   }
   return units.sort(byFrequencyDesc);
