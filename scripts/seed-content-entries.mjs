@@ -14,6 +14,12 @@
 // reference (a term's `related`) is resolved by calling the real
 // resolver functions, not reimplemented.
 //
+// DELTA-ONLY. Payload construction is local and deterministic; before writing,
+// the script fetches only each remote row's id/kind/version and skips rows that
+// already match. This matters now that character entries bring the seed to
+// 15k+ rows: the common no-content-change push should not upload and rewrite
+// every JSON payload. Missing rows and changed kinds/payloads are still upserted.
+//
 // REQUIRES the content_entries table to already exist (supabase/schema.sql,
 // run once via psql/the SQL editor — the service-role REST API has no DDL
 // endpoint). Writes with the SERVICE ROLE key, which bypasses RLS
@@ -51,6 +57,7 @@ import { KANJI, KANJI_SUBJECT, kanjiEntry } from "@/data/kanji";
 import { RADICALS, RADICAL_SUBJECT, radicalEntry } from "@/data/radicals";
 import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
 import { characterEntryPayload } from "@/lib/library/character-entry-content";
+import { contentRowsNeedingUpsert } from "@/lib/library/content-seed-delta";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -272,11 +279,44 @@ const rows = [
   ...wordRows,
 ];
 
-// Keep each REST request comfortably below proxy/body-size limits now that the
-// character payload adds every vocabulary entry. Upsert semantics are unchanged.
+// PostgREST projects commonly cap a response at 1,000 rows. Read the complete
+// remote version set in stable pages, using the exact count so a lower project
+// cap cannot be mistaken for the final page.
+const VERSION_PAGE_SIZE = 1000;
+const remoteVersions = [];
+let offset = 0;
+let remoteCount = null;
+while (remoteCount === null || offset < remoteCount) {
+  const { data, error, count } = await supabase
+    .from("content_entries")
+    .select("entry_id,kind,content_version", { count: "exact" })
+    .order("entry_id")
+    .range(offset, offset + VERSION_PAGE_SIZE - 1);
+  if (error) {
+    console.error("seed-content-entries failed while reading remote versions:", error.message);
+    process.exit(1);
+  }
+  if (remoteCount === null) remoteCount = count ?? 0;
+  for (const remote of data ?? []) {
+    remoteVersions.push(remote);
+  }
+  const received = data?.length ?? 0;
+  if (received === 0 && offset < remoteCount) {
+    console.error(
+      `seed-content-entries received no rows at offset ${offset} of ${remoteCount}`,
+    );
+    process.exit(1);
+  }
+  offset += received;
+}
+
+const staleRows = contentRowsNeedingUpsert(rows, remoteVersions);
+
+// Keep each write comfortably below proxy/body-size limits now that character
+// payloads include every vocabulary entry. Most runs write no batches at all.
 const BATCH_SIZE = 500;
-for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-  const batch = rows.slice(i, i + BATCH_SIZE);
+for (let i = 0; i < staleRows.length; i += BATCH_SIZE) {
+  const batch = staleRows.slice(i, i + BATCH_SIZE);
   const { error } = await supabase
     .from("content_entries")
     .upsert(batch, { onConflict: "entry_id" });
@@ -287,10 +327,12 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
 }
 
 console.log(
-  `content_entries seeded: ${termRows.length} term, ${markRows.length} mark, ` +
+  `content_entries checked: ${termRows.length} term, ${markRows.length} mark, ` +
     `${grammarConceptRows.length} grammar-concept, ${kanaRows.length} kana, ` +
     `${verbPairRows.length} transitivity, ${counterRows.length} counter, ` +
     `${constructionRows.length} generative-rule, ${keigoRows.length} keigo, ` +
     `${grammarRows.length} grammar, ${radicalRows.length} radical, ` +
-    `${kanjiRows.length} kanji, ${wordRows.length} word rows (${rows.length} total)`,
+    `${kanjiRows.length} kanji, ${wordRows.length} word rows; ` +
+    `${staleRows.length} stale/missing upserted, ${rows.length - staleRows.length} current ` +
+    `(${rows.length} total)`,
 );

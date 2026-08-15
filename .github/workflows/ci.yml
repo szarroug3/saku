@@ -12,14 +12,13 @@ on:
     branches: [main]
   pull_request:
 
-# A newer push to the same branch/PR cancels the older run — the latest commit
-# is the only one whose result matters.
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   check:
+    # Checks for an obsolete commit may stop as soon as a newer commit arrives.
+    # This is job-scoped so it cannot interrupt the stateful seed job below.
+    concurrency:
+      group: ci-check-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,11 +72,17 @@ jobs:
   # as the code that reads it, but the table itself only updates when this
   # script runs — a source edit merged to main with no reseed is a silent no-op:
   # tsc/tests/build all pass, the live page still serves the OLD row. Running
-  # the (idempotent, upsert-only) seed on every push to main removes that gap —
+  # the (idempotent, delta-only) seed on every push to main removes that gap —
   # no one has to remember to reseed.
   reseed-content:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Never cancel a seed between batches, and never let two commits seed at
+    # once. A newer successful run queues behind the current one and applies its
+    # own delta afterward, so the table always ends on the newest commit.
+    concurrency:
+      group: content-entries-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
