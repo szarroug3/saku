@@ -115,7 +115,7 @@ Each commit's message has the specific verification for that kind (equivalence t
 - Final seed: 15,364 rows total (214 radical, 2,136 kanji, 12,555 word plus the other migrated kinds).
 - Grammar's expanded payload matched fresh live JSON for all 103 rows after reseeding.
 - Dispatcher/index equivalence: 30/30, including kind routing and live-vs-precomputed claim/quiz gates.
-- `tsc --noEmit` clean; `npm test`: 3,123/3,123; production `next build` clean. ESLint is clean across every changed source file (the repository-wide command still scans generated `.next-prod` output and reports its existing generated-code failures).
+- `tsc --noEmit` clean; `npm test`: 3,127/3,127; production `next build` clean. ESLint is clean across every changed source file (the repository-wide command still scans generated `.next-prod` output and reports its existing generated-code failures).
 - Production browser: all 13 dispatch shapes rendered (kana, radical, kanji, word, counter, number construction, grammar, grammar concept, transitivity, keigo, sentence rule, writing rule, term); grammar's quiz pre-start action also opened correctly.
 - Production network for `/library/grammar/prenominal-form`: **20.63 MB before the dispatcher cleanup → 9.46 MB initial JavaScript**, with the 8.64 MB `beginnerRank` dictionary-signature chunk absent. The generated index is the largest remaining route chunk (6.17 MB) because meaning search and fact mappings are intentionally client-side.
 - Primitive production network: **19.33 MB → 9.41 MB decoded initial JavaScript** (**3.61 MB → 1.89 MB transferred**). Its client manifest references none of the dictionary-signature chunks, while the rendered component list is unchanged.

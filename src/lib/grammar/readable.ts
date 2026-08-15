@@ -47,7 +47,7 @@
 import { effectiveState } from "../claims.ts";
 import { VOCAB, wordMeaningFactId, type VocabRow } from "../../data/vocab.ts";
 import type { Example } from "../../data/grammar/corpus.ts";
-import type { HistoryFile } from "../../types/index.ts";
+import type { FactId, HistoryFile } from "../../types/index.ts";
 
 /**
  * Tatoeba's stock cast, treated as ALWAYS KNOWN.
@@ -107,6 +107,22 @@ export function wordKnown(keb: string, history: HistoryFile): boolean {
 }
 
 /**
+ * Meaning facts that can prove a corpus lemma known.
+ *
+ * - `[]` means an always-known stock name.
+ * - `null` means no vocabulary row can ever teach this lemma.
+ * - otherwise any one fact is sufficient (a lemma may match keb or reb).
+ *
+ * Exported so build-time indexes can serialize this exact live resolution
+ * rather than reimplementing BY_SPELLING.
+ */
+export function lemmaMeaningFacts(lemma: string): readonly FactId[] | null {
+  if (STOCK_NAMES.has(lemma)) return [];
+  const rows = BY_SPELLING.get(lemma);
+  return rows ? rows.map((word) => wordMeaningFactId(word.keb)) : null;
+}
+
+/**
  * Is this CORPUS LEMMA a word the learner knows?
  *
  * True for a stock name (see STOCK_NAMES). Otherwise true when any vocabulary
@@ -118,10 +134,17 @@ export function wordKnown(keb: string, history: HistoryFile): boolean {
  * admitting exactly the sentences she cannot read.
  */
 export function lemmaKnown(lemma: string, history: HistoryFile): boolean {
-  if (STOCK_NAMES.has(lemma)) return true;
-  const rows = BY_SPELLING.get(lemma);
-  if (!rows) return false;
-  return rows.some((w) => wordKnown(w.keb, history));
+  const facts = lemmaMeaningFacts(lemma);
+  if (facts === null) return false;
+  if (facts.length === 0) return true;
+  return facts.some((fact) => {
+    const state = effectiveState(
+      history.facts[fact],
+      history.claims?.[fact],
+      history.seen?.[fact],
+    );
+    return state.lastTested > 0;
+  });
 }
 
 /**

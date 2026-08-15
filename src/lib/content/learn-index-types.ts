@@ -52,6 +52,24 @@ export interface IndexTrack {
   readonly units: readonly IndexUnit[];
 }
 
+/** One potentially-readable sentence, reduced to its history gate and the
+ * grammar facts its completed assembly session can credit. */
+export interface IndexSentenceGateItem {
+  /** Every inner list is ANY-of; all lists must have a known fact. */
+  readonly lemmaFacts: readonly (readonly FactId[])[];
+  readonly facts: readonly FactId[];
+}
+
+/** One sentence tier's complete history-dependent unlock structure. */
+export interface IndexSentenceGate {
+  readonly tierId: string;
+  readonly entry: EntryId;
+  readonly minReadable: number;
+  /** ANY one must be known; empty means no grammar prerequisite. */
+  readonly grammarPrereqFacts: readonly FactId[];
+  readonly readableItems: readonly IndexSentenceGateItem[];
+}
+
 /** The whole precomputed index. */
 export interface LearnIndex {
   /** A hash over the serialized index — goes in the frontier cache key so a
@@ -66,4 +84,6 @@ export interface LearnIndex {
   /** Every curriculum glyph in prereq-respecting spine order — the denominator
    * and positions the vocab card counts in (home-feed's vocabPositionLabel). */
   readonly curriculumGlyphs: readonly string[];
+  /** Sentence readability + grammar gates, serialized from the live planner. */
+  readonly sentenceGates: readonly IndexSentenceGate[];
 }

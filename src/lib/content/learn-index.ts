@@ -18,6 +18,11 @@ import {
 import type { IndexUnit, LearnIndex } from "./learn-index-types";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { EntryId, FactId, HistoryFile } from "@/types";
+import { effectiveState } from "@/lib/claims";
+import {
+  sentenceTierDone,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 
 const INDEX = indexJson as unknown as LearnIndex;
 
@@ -70,6 +75,74 @@ export function nextLearnLesson(
   start: number = 0,
 ): UnitLessonOf<IndexUnit> | null {
   return nextTrackLessonCore(units, history, range, LEARN_DEPS, start);
+}
+
+function factKnown(fact: FactId, history: HistoryFile): boolean {
+  return (
+    effectiveState(
+      history.facts[fact],
+      history.claims?.[fact],
+      history.seen?.[fact],
+    ).lastTested > 0
+  );
+}
+
+/** The next sentence tier admitted by the original planner's linear
+ * readability + grammar gate, evaluated entirely from precomputed fact ids. */
+export function nextSentenceTierId(history: HistoryFile): string | null {
+  for (const gate of INDEX.sentenceGates) {
+    const readable = gate.readableItems.filter((item) =>
+      item.lemmaFacts.every((alternatives) =>
+        alternatives.some((fact) => factKnown(fact, history)),
+      ),
+    );
+    if (readable.length < gate.minReadable) return null;
+    if (
+      gate.grammarPrereqFacts.length > 0 &&
+      !gate.grammarPrereqFacts.some((fact) => factKnown(fact, history))
+    ) {
+      return null;
+    }
+
+    const facts = [...new Set(readable.flatMap((item) => item.facts))];
+    if (sentenceTierDone(gate.tierId, facts, history)) continue;
+    return gate.tierId;
+  }
+  return null;
+}
+
+/** The gated sentence lesson. Sentence completion is session-aware rather than
+ * ordinary fact freshness, so select the admitted tier directly instead of
+ * asking the generic scheduler to infer it from the marker alone. */
+export function nextSentenceLearnLesson(
+  units: readonly IndexUnit[],
+  history: HistoryFile,
+): UnitLessonOf<IndexUnit> | null {
+  const tierId = nextSentenceTierId(history);
+  if (!tierId) return null;
+  const entry = INDEX.sentenceGates.find((gate) => gate.tierId === tierId)?.entry;
+  const unit = entry ? units.find((candidate) => candidate.item.entry === entry) : undefined;
+  return unit ? { units: [unit] } : null;
+}
+
+/** Rebuild the exact sentence tier carried by an open run. Unlike the generic
+ * resume mask, this remains stable after assembly answers have entered history
+ * and when the run's grammar facts are themselves part of the admission gate. */
+export function sentenceLearnLessonForRun(
+  units: readonly IndexUnit[],
+  facts: readonly FactId[],
+): UnitLessonOf<IndexUnit> | null {
+  const held = new Set(facts);
+  const entry = INDEX.sentenceGates.find((gate) =>
+    held.has(sentenceTierMarkerFact(gate.tierId)),
+  )?.entry;
+  const unit = entry ? units.find((candidate) => candidate.item.entry === entry) : undefined;
+  return unit ? { units: [unit] } : null;
+}
+
+/** Resolve a sentence lesson entry back to its tier without parsing opaque ids. */
+export function sentenceTierIdOfEntry(entry: EntryId): string | null {
+  return INDEX.sentenceGates.find((gate) => gate.entry === entry)?.tierId ?? null;
 }
 
 /** Fact → the id of the track that teaches it, built from the index itself. This

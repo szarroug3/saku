@@ -12,9 +12,9 @@
 //
 // UNLOCK. A tier's real gate (readable-vocabulary count + ANY of its grammar
 // patterns taught) lives in sentence-ordering-plan.ts and is ANY-of, which the
-// content model's all-of `blockedBy` can't yet express — so the gate is NOT
-// duplicated here as blockedBy. The tiers are ordered simplest→complex as the
-// curriculum already has them.
+// content model's all-of `blockedBy` can't express. The build script serializes
+// its exact fact-id structure into learn-index.json, where /learn applies it
+// before exposing a tier. The tiers stay ordered simplest→complex.
 
 import { contentTypeLabel } from "./item";
 import {
@@ -23,14 +23,17 @@ import {
   type AssemblyTier,
 } from "@/data/assembly";
 import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
-import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
+import {
+  sentenceTierEntry,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 import { VOCAB_FACTS } from "@/data/vocab";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { jp2enResponse } from "@/lib/ask-forms";
 import type { ContentItem } from "./item";
 import type { SentenceBuildUnit } from "./teach-unit";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 /** A learner who knows every word and grammar pattern — the reference against
  * which a tier's canonical worked example is chosen (its readable pool is then
@@ -58,7 +61,7 @@ export function sentenceItems(): ContentItem[] {
   return SENTENCE_ORDERING_TIERS.map((tier) => {
     const marker = sentenceTierMarkerFact(tier.id);
     return {
-      entry: `sentence-ordering:${tier.id}` as EntryId,
+      entry: sentenceTierEntry(tier.id),
       kind: "sentence-ordering",
       glyph: tier.label,
       facts: [{ id: marker, kind: jp2enResponse(marker) }],
@@ -74,9 +77,12 @@ export function sentenceItems(): ContentItem[] {
  * the guide's one-line hook, `example` a worked sentence. One unit; cost 1 (the
  * ordering skill), tracked by the tier's marker fact. */
 export function sentenceBuildUnitsOf(item: ContentItem): SentenceBuildUnit[] {
-  const tierId = String(item.entry).slice("sentence-ordering:".length);
-  const tier = SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId);
-  const guide = SENTENCE_ORDERING_GUIDES[tierId as keyof typeof SENTENCE_ORDERING_GUIDES];
+  const tier = SENTENCE_ORDERING_TIERS.find(
+    (candidate) => sentenceTierEntry(candidate.id) === item.entry,
+  );
+  const guide = tier
+    ? SENTENCE_ORDERING_GUIDES[tier.id as keyof typeof SENTENCE_ORDERING_GUIDES]
+    : undefined;
   return [
     {
       kind: "sentence-build",

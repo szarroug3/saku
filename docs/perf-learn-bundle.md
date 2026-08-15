@@ -1,6 +1,6 @@
 # Perf: get the ~8.6 MB curriculum dictionary off the `/learn` bundle
 
-**Status:** planned, not implemented. Branch `perf/learn-bundle` (worktree). Investigation done, approach validated. Implement Phase 1 from this doc.
+**Status:** Phase 1 complete. `/learn` schedules from the generated content-free index; Phase 2 is documented in `perf-library-list-bundle.md`.
 
 **Problem:** `/learn` takes a while to load in prod. Its client bundle contains an ~8.6 MB chunk of static curriculum content that the page never renders, plus it recomputes the whole scheduler on every load.
 
@@ -66,6 +66,11 @@ Each phase leaves the app fully working, tsc-clean, unit + Playwright green.
 - Also emit a **resolve map** `entry → unitIndex` per track: `prereqChain` (`unit-scheduler.ts:86-101`) resolves a prereq entry to its unit to pull it into the lesson. The loader must reconstruct the same `resolve`.
 - **Do NOT emit glosses/`meaning`/`answers`** — those are content (Phase 2). The scheduler and preview never read them.
 - Wire it into the build (a `prebuild` step or committed generated file, like the other `src/data/generated/*`). Regenerating on content change is what bumps `curriculumVersion`.
+- Sentence tiers also serialize the existing planner's history-dependent gate:
+  candidate sentences as keb/reb meaning-fact OR-sets, `minReadable`, grammar
+  prerequisite facts, and completion facts. This preserves the pre-model rule
+  (readable vocabulary + grammar, linear tiers) without returning the dictionary
+  to `/learn`.
 
 ### 2. Runtime loader → `src/lib/content/learn-index.ts`
 - Reads `learn-index.json` and reconstructs `readonly TeachingUnit[]` per track (typed to the existing `TeachingUnit` base contract) + the resolve map. Imports **no content module**. Exports `LEARN_TRACKS: { id, title, units: readonly TeachingUnit[] }[]` and `CURRICULUM_VERSION`.

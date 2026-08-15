@@ -11,10 +11,8 @@
 //     order, each expanded to its units in place (`teachUnitsOf`). One unit per
 //     item for keigo/grammar/verb-pair; one per kana; the number track's mix.
 //
-// This is the registry the scheduling dev view iterates, and the home for the
-// tracks that had only an item enumerator before (kana, keigo, grammar,
-// transitivity). `sentence-ordering` is not here yet — its facts aren't in the
-// registry, so it has no units to order.
+// This is the registry the scheduling dev view iterates, including the sentence
+// units whose additional history-dependent gate is applied by the /learn index.
 
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
 import { VOCAB_FACTS } from "@/data/vocab";

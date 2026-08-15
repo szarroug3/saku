@@ -307,10 +307,10 @@ export interface AssemblyTier {
 /**
  * The ordered sentence-structure tiers the sentence-ordering track teaches.
  *
- * Each tier unlocks independently once the learner has enough vocabulary to
- * read its sentences — no grammar fact state is consulted here. The tiers are
- * ordered from structurally simplest to most complex, so the learner always
- * encounters simple particle-marked SOV sentences first. Every tier after that
+ * Each tier needs enough vocabulary to read its sentences; the planner also
+ * applies the `grammarPrereqs` ANY-of gate below. The tiers are ordered from
+ * structurally simplest to most complex, so the learner always encounters
+ * simple particle-marked SOV sentences first. Every tier after that
  * follows the first point at which one of its prerequisite patterns appears in
  * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): sequence, requests,
  * contrast/negative linking, desire, conditionals, cause, giving/receiving,

@@ -18,10 +18,22 @@ import assert from "node:assert/strict";
 
 import { UNIT_TRACKS } from "@/lib/content/unit-tracks";
 import { nextTrackLesson } from "@/lib/content/unit-scheduler";
-import { LEARN_TRACKS, nextLearnLesson } from "@/lib/content/learn-index";
+import {
+  LEARN_TRACKS,
+  nextLearnLesson,
+  nextSentenceLearnLesson,
+  nextSentenceTierId,
+  sentenceLearnLessonForRun,
+  sentenceTierIdOfEntry,
+} from "@/lib/content/learn-index";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
+import { nextSentenceOrderingLesson } from "@/lib/sentence-ordering-plan";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
+import { VOCAB_FACTS } from "@/data/vocab";
+import { GRAMMAR_FACTS } from "@/data/grammar";
+import { wordMeaningFactId } from "@/lib/vocab-ids";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile, QuizSessionRecord } from "@/types";
 
 /** A representative spread of lesson ranges — a tight single-unit lesson, the
  * default-ish band, and a wide one — so the budget/ceiling branches are exercised. */
@@ -137,4 +149,106 @@ test("out-of-order Library claims stay equivalent", () => {
       );
     }
   }
+});
+
+function assertSentenceGateEquivalent(history: HistoryFile, label: string): void {
+  const live = nextSentenceOrderingLesson(true, history);
+  assert.equal(nextSentenceTierId(history), live?.tierId ?? null, label);
+
+  const sentenceUnits = LEARN_TRACKS.find((track) => track.id === "sentence")!.units;
+  const lesson = nextSentenceLearnLesson(sentenceUnits, history);
+  assert.equal(
+    lesson ? sentenceTierIdOfEntry(lesson.units[0].item.entry) : null,
+    live?.tierId ?? null,
+    `${label} lesson`,
+  );
+}
+
+test("sentence gate matches the live planner across partial vocabulary", () => {
+  assertSentenceGateEquivalent(emptyHistory(), "empty");
+
+  let history = applyClaims(
+    emptyHistory(),
+    [wordMeaningFactId("寿司")],
+    1,
+  );
+  assertSentenceGateEquivalent(history, "one curated-sentence word");
+
+  history = applyClaims(history, [wordMeaningFactId("食べる")], 2);
+  assertSentenceGateEquivalent(history, "one readable simple sentence");
+
+  for (const count of [10, 50, 100, 500, 1000, VOCAB_FACTS.length]) {
+    const partial = applyClaims(
+      emptyHistory(),
+      VOCAB_FACTS.slice(0, count).map((fact) => fact.id),
+      count,
+    );
+    assertSentenceGateEquivalent(partial, `${count} vocabulary facts`);
+  }
+});
+
+test("sentence gate stays linear through every fully-unlocked tier", () => {
+  let history = applyClaims(
+    emptyHistory(),
+    [...VOCAB_FACTS, ...GRAMMAR_FACTS].map((fact) => fact.id),
+    1,
+  );
+
+  for (let step = 0; step < 20; step++) {
+    const live = nextSentenceOrderingLesson(true, history);
+    assertSentenceGateEquivalent(history, `full knowledge step ${step}`);
+    if (!live) break;
+    history = applyClaims(
+      history,
+      [sentenceTierMarkerFact(live.tierId)],
+      step + 2,
+    );
+  }
+  assert.equal(nextSentenceTierId(history), null);
+});
+
+test("an assembly-completed tier advances like the live planner", () => {
+  let history = applyClaims(
+    emptyHistory(),
+    [...VOCAB_FACTS, ...GRAMMAR_FACTS].map((fact) => fact.id),
+    1,
+  );
+  const simple = nextSentenceOrderingLesson(true, history);
+  assert.ok(simple?.facts[0]);
+  const session = {
+    ts: 2,
+    mode: "assembly",
+    redrill: false,
+    total: 1,
+    forgivingPct: 100,
+    strictPct: 100,
+    facts: {
+      [simple.facts[0]]: { seen: 1, missed: 0, firstTry: 1, correct: 1 },
+    },
+  } as QuizSessionRecord;
+  history = { ...history, sessions: [session] };
+  assertSentenceGateEquivalent(history, "simple completed by assembly session");
+  assert.notEqual(nextSentenceTierId(history), "simple");
+});
+
+test("an open sentence run stays pinned to its marker tier", () => {
+  const history = applyClaims(
+    emptyHistory(),
+    [...VOCAB_FACTS, ...GRAMMAR_FACTS].map((fact) => fact.id),
+    1,
+  );
+  const sentenceUnits = LEARN_TRACKS.find((track) => track.id === "sentence")!.units;
+  const current = nextSentenceLearnLesson(sentenceUnits, history);
+  assert.ok(current);
+  const tierId = sentenceTierIdOfEntry(current.units[0].item.entry);
+  assert.ok(tierId);
+
+  const resting = sentenceLearnLessonForRun(sentenceUnits, [
+    sentenceTierMarkerFact(tierId),
+  ]);
+  assert.equal(
+    resting && sentenceTierIdOfEntry(resting.units[0].item.entry),
+    tierId,
+  );
+  assert.equal(sentenceLearnLessonForRun(sentenceUnits, []), null);
 });

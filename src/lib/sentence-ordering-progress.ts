@@ -7,7 +7,12 @@
 // `learnedSentenceTierIds`/`learnedSentenceTierFacts` — live in
 // sentence-ordering-learned.ts for exactly that reason.
 
-import type { FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId, HistoryFile } from "@/types";
+
+/** The Library/teaching entry for a sentence tier. */
+export function sentenceTierEntry(tierId: string): EntryId {
+  return `sentence-ordering:${tierId}` as EntryId;
+}
 
 /** Track-local completion marker. It is intentionally not a registered quiz
  * fact: it records an explicit "I already know this tier" action without

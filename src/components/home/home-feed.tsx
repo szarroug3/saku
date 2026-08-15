@@ -16,16 +16,16 @@
 // KANA IS THE GATE. Kanji's curriculum is a thousand lessons deep; offering it
 // beside あいうえお hands a beginner a second front. So while the kana track still
 // has a lesson (or an open kana session resting), ONLY the kana card shows;
-// finish or claim the last kana group and every other track opens at once. This
-// is the same "kana first, then everything" the old feed enforced with
-// `lesson === null`, now expressed as "the kana UnitTrack is exhausted".
+// finish or claim the last kana group and the post-kana tracks become eligible.
+// Sentences retain their additional gate: enough readable vocabulary, plus a
+// relevant learned grammar pattern after the simple tier.
 //
 // WHAT HOME IS NOT (unchanged). Home does not own quiz SETUP or SELECTION — that
 // is the Practice page. There is no generic "where you left off" card: a lesson
 // left mid-session is resumed from its own track's card (Continue), which lights
 // when an in-progress run belongs to that track (trackKeyForRun below).
 
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useMemo } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
@@ -38,6 +38,9 @@ import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import {
   LEARN_TRACKS,
   nextLearnLesson,
+  nextSentenceLearnLesson,
+  sentenceLearnLessonForRun,
+  sentenceTierIdOfEntry,
   trackIdOfFact,
   CURRICULUM_GLYPHS,
 } from "@/lib/content/learn-index";
@@ -55,14 +58,6 @@ import type { FactId } from "@/types";
 
 /** A /learn lesson: the units the frontier chose, in teach order. */
 type LearnLesson = UnitLessonOf<IndexUnit>;
-
-/** The sentence-ordering track's helpers pull the curriculum dictionary (they read
- * the assembly corpus + fact registry), so they are LAZY-LOADED — kept off the
- * initial /learn bundle and fetched only when needed: the drill facts on launch
- * (startSentence), the readable-gate for the "curriculum complete" check via an
- * effect below. The precomputed sentence units still drive the CARD; only these
- * two content-dependent extras are deferred. */
-type SentencePlan = typeof import("@/lib/sentence-ordering-plan");
 
 /** The /learn track id an in-progress run belongs to, read from its FACTS via the
  * precomputed index's fact→track map (`trackIdOfFact`) — no fact registry, no
@@ -224,9 +219,8 @@ function vocabPositionLabel(lesson: LearnLesson): string {
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
  * `sentence-ordering:<id>` (sentence-track.ts). */
 function sentenceTierId(lesson: LearnLesson): string | null {
-  const entry = String(lesson.units[0]?.item.entry ?? "");
-  const prefix = "sentence-ordering:";
-  return entry.startsWith(prefix) ? entry.slice(prefix.length) : null;
+  const entry = lesson.units[0]?.item.entry;
+  return entry ? sentenceTierIdOfEntry(entry) : null;
 }
 
 export function HomeFeed() {
@@ -240,17 +234,17 @@ export function HomeFeed() {
     [cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
-  // The sentence-ordering readable-gate is loaded lazily and ONLY when it can
-  // matter — see the effect below. Held in state so the render sees it once it lands.
-  const [sentencePlan, setSentencePlan] = useState<SentencePlan | null>(null);
-
   // Each track's precomputed order (units are history-independent) and its live
   // next lesson, computed over the index by the content-free scheduler.
   const frontiers = useMemo(
     () =>
       LEARN_TRACKS.map((track) => {
         const order = track.units;
-        return { track, order, frontier: nextLearnLesson(order, history, range) };
+        const frontier =
+          track.id === "sentence"
+            ? nextSentenceLearnLesson(order, history)
+            : nextLearnLesson(order, history, range);
+        return { track, order, frontier };
       }),
     [history, range],
   );
@@ -269,9 +263,25 @@ export function HomeFeed() {
   // (resumeLesson, reused verbatim from the old feed; generic over the lesson type).
   const shown = frontiers.map(({ track, order, frontier }) => {
     const run = lessonRuns.find((r) => trackKeyForRun(r) === track.id);
-    const lesson = resumeLesson(history, frontier, run, (h) =>
-      nextLearnLesson(track.units, h, range),
-    );
+    const restingSentence =
+      track.id === "sentence" && run
+        ? sentenceLearnLessonForRun(order, run.facts)
+        : null;
+    const restingSentenceClaimed =
+      restingSentence !== null &&
+      restingSentence.units.every((unit) =>
+        unit.facts.every((fact) => history.claims?.[fact] !== undefined),
+      );
+    const lesson =
+      restingSentence && !restingSentenceClaimed
+        ? restingSentence
+        : restingSentenceClaimed
+          ? frontier
+          : resumeLesson(history, frontier, run, (h) =>
+              track.id === "sentence"
+                ? nextSentenceLearnLesson(track.units, h)
+                : nextLearnLesson(track.units, h, range),
+            );
     return { track, order, run, lesson };
   });
 
@@ -372,6 +382,16 @@ export function HomeFeed() {
   const claimTrack = (trackId: string, lesson: LearnLesson, run?: RunInfo) => {
     const facts = factsOfLesson(lesson);
     writes.claim(facts);
+    // A sentence run drills a wide readable-fact set but its one tier marker is
+    // the card's lesson. Claiming that marker supersedes the whole resting run.
+    if (
+      trackId === "sentence" &&
+      run &&
+      facts.some((fact) => run.facts.includes(fact))
+    ) {
+      discardRun(run.id);
+      return;
+    }
     closeIfClaimedAway(run, facts);
   };
 
@@ -385,31 +405,9 @@ export function HomeFeed() {
     if (run.facts.every((f) => set.has(f))) discardRun(run.id);
   };
 
-  // Every track exhausted: the feed above rendered nothing and no kana session is
-  // resting. Sentence ordering has an ANY-of gate (readable-vocab count + a taught
-  // grammar pattern) the content model can't express as blockedBy, so its readiness
-  // is read from the plan (a tier the learner could start but hasn't means the
-  // curriculum isn't finished). That plan pulls the dictionary, so it is loaded
-  // LAZILY and ONLY when the rest of the feed is empty — the sole moment the gate
-  // can change the outcome. A normal learner (some track still has work) never
-  // fetches it, keeping the ~8.6 MB off /learn.
-  const maybeComplete = !kanaActive && visible.length === 0;
-  useEffect(() => {
-    if (!maybeComplete || sentencePlan) return;
-    let alive = true;
-    void import("@/lib/sentence-ordering-plan").then((m) => {
-      if (alive) setSentencePlan(m);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [maybeComplete, sentencePlan]);
-
-  const sentenceReady =
-    maybeComplete && !!sentencePlan?.nextSentenceOrderingLesson(true, history);
-  // Declared complete only once the gate has actually been consulted — until the
-  // lazily-loaded plan lands, hold rather than flash the completion card.
-  const curriculumComplete = maybeComplete && sentencePlan !== null && !sentenceReady;
+  // Every track exhausted: the content-free frontier has already applied the
+  // sentence readability/grammar gate, so an empty visible set is definitive.
+  const curriculumComplete = !kanaActive && visible.length === 0;
 
   // Until history has loaded, the frontiers are computed from EMPTY history — the
   // day-one lesson. Rendering that for a returning learner flashes the wrong card,

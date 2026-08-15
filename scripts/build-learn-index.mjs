@@ -29,7 +29,16 @@ import { contentResolvePrereq } from "@/lib/content/unit-scheduler";
 import { resolvableEntries } from "@/lib/content/resolve";
 import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
-import { emptyHistory } from "@/lib/history-ops";
+import { emptyHistory, applyClaims } from "@/lib/history-ops";
+import { VOCAB_FACTS } from "@/data/vocab";
+import { GRAMMAR_FACTS, patternMeaningFactId } from "@/data/grammar";
+import {
+  SENTENCE_ORDERING_TIERS,
+  assemblyFacts,
+  readableAssemblyForTier,
+} from "@/data/assembly";
+import { lemmaMeaningFacts } from "@/lib/grammar/readable";
+import { sentenceTierEntry } from "@/lib/sentence-ordering-progress";
 
 /** Serialize a teaching unit down to the scheduling/preview fields. `reading` is
  * carried only when the unit has one (pronunciation units); `scheduling` only when
@@ -103,9 +112,40 @@ for (const track of tracks) {
 // ── Curriculum glyph spine: the vocab card counts positions in this order. ─────
 const curriculumGlyphs = CURRICULUM_SEQUENCE.map((it) => it.glyph);
 
+// ── Sentence tier gates: the old planner's history-dependent readability and
+//    ANY-of grammar gates, reduced to fact-id structure. `readableAssemblyForTier`
+//    is called against complete knowledge to select the exact live candidate
+//    pool (piece limit, unambiguous tier, conditional-English guard included).
+//    Each remaining lemma becomes the exact OR-set `lemmaKnown` resolves through
+//    keb/reb; stock names have an empty fact set and are omitted (always known).
+//    /learn can then evaluate the same gate from history without the dictionary. ─
+const fullKnowledge = applyClaims(
+  emptyHistory(),
+  [...VOCAB_FACTS, ...GRAMMAR_FACTS].map((fact) => fact.id),
+  1,
+);
+const sentenceGates = SENTENCE_ORDERING_TIERS.map((tier) => ({
+  tierId: tier.id,
+  entry: sentenceTierEntry(tier.id),
+  minReadable: tier.minReadable,
+  grammarPrereqFacts: tier.grammarPrereqs.map(patternMeaningFactId),
+  readableItems: readableAssemblyForTier(tier, fullKnowledge).map((item) => ({
+    lemmaFacts: item.v.flatMap((lemma) => {
+      const facts = lemmaMeaningFacts(lemma);
+      if (facts === null) {
+        throw new Error(
+          `full-knowledge sentence ${item.id} contains unresolvable lemma ${lemma}`,
+        );
+      }
+      return facts.length > 0 ? [[...facts]] : [];
+    }),
+    facts: assemblyFacts(item),
+  })),
+}));
+
 // ── Version stamp: a hash over the serialized index (Phase 3 puts it in the
 //    frontier cache key so a content deploy invalidates cached frontiers). ──────
-const payload = { tracks, resolve, blockerFacts, curriculumGlyphs };
+const payload = { tracks, resolve, blockerFacts, curriculumGlyphs, sentenceGates };
 const curriculumVersion = createHash("sha256")
   .update(JSON.stringify(payload))
   .digest("hex")
