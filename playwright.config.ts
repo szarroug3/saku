@@ -79,19 +79,14 @@ export default defineConfig({
     timeout: 600_000,
     stdout: "ignore",
     stderr: "pipe",
-    // The suite runs SIGNED OUT, saving to localStorage — the app's default when
-    // there is no Supabase session. Blanking the Supabase keys forces exactly
-    // that regardless of what .env.local holds: isSupabaseStore() reads them as
-    // "not configured", so the server never tries to reach Supabase, auth is off,
-    // and every visitor is the signed-out-localStorage user these specs drive.
-    // The maintainer's .env.local sets real keys for her own hosted testing;
-    // Next's env loader does NOT override a variable already present in the
-    // process environment, so setting them empty here wins without touching that
-    // file. NEXT_PUBLIC_* are inlined at build time, which is why this is passed
-    // to the whole `build && start` command.
+    // The suite runs SIGNED OUT, saving progress to localStorage. Authentication
+    // is disabled independently from the public Supabase connection because
+    // Library detail pages fetch their public content_entries rows with those
+    // same NEXT_PUBLIC_* variables. Next loads those from .env.local as usual;
+    // SAKU_DISABLE_AUTH keeps middleware/session handling off and makes every
+    // visitor the deterministic signed-out user these specs drive.
     env: {
-      NEXT_PUBLIC_SUPABASE_URL: "",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      SAKU_DISABLE_AUTH: "1",
       // Do not let `next build` overwrite a concurrently running dev server's
       // `.next` artifacts. Both `build` and `start` read this through
       // next.config.ts, so the E2E server owns an isolated output directory.

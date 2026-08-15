@@ -8,8 +8,8 @@ import type { AskConfig, FactId } from "@/types";
  * Test fixtures for the app.
  *
  * SEEDING STRATEGY: the suite runs SIGNED OUT, the app's default when there is
- * no Supabase session (see playwright.config.ts — the run blanks the Supabase
- * keys). A signed-out learner's progress lives in THIS browser's localStorage,
+ * no Supabase session (see playwright.config.ts — auth is disabled independently
+ * of the public content connection). A signed-out learner's progress lives in THIS browser's localStorage,
  * not in a server file, so both things a known quiz state needs are seeded there
  * with `addInitScript`:
  *

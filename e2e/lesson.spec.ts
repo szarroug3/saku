@@ -127,26 +127,3 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // line adds up by construction.
   await expect(page.locator("body")).toContainText("0 needs work");
 });
-
-/**
- * The other door out of the same lesson: claiming the group instead of taking
- * it. This is a knowledge-base write, so it is asserted through the app rather
- * than the file — the point is that the claim reaches the curriculum and the
- * next group is offered.
- */
-test("claiming the first group advances the curriculum to the next one", async ({
-  page,
-  seed,
-}) => {
-  await seed({ seen: [], cfg: CFG });
-
-  await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
-
-  await page
-    .getByRole("button", { name: "I already know these 5", exact: true })
-    .click();
-
-  // The curriculum recomputes from history, so the next group is now up.
-  await expect(page.locator("body")).toContainText("Hiragana 6–10 of 107");
-});

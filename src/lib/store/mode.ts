@@ -18,6 +18,12 @@ import "server-only";
 // visitor — which is the intended local-dev default.
 
 export function isSupabaseStore(): boolean {
+  // Browser tests need the public Supabase connection for content_entries, but
+  // must remain deterministic signed-out visitors. Keep that test-only auth
+  // switch separate from the public content connection instead of erasing the
+  // shared NEXT_PUBLIC_* variables (which also made every Library detail test
+  // render an empty shell).
+  if (process.env.SAKU_DISABLE_AUTH === "1") return false;
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

@@ -10,9 +10,9 @@ import { test, expect } from "./helpers/lessons";
  * still free to flip that off; a claim is not a score. This guards the split the
  * memory note calls out: claim = skip the lesson, start untested.
  *
- * The existing lesson.spec.ts "claiming the first group advances the curriculum"
- * asserts only the advance; this adds the untested standing, on the day-one kana
- * group where the whole flow is reachable from an empty history.
+ * This is the one browser owner for the claim path: it checks both the frontier
+ * advance and the resulting aggregate standing. Pure claim/history semantics
+ * remain covered by the unit suite.
  */
 
 test("claiming the first group advances AND leaves the items claimed, not solid", async ({
