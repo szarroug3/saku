@@ -54,6 +54,10 @@ export interface LibraryIndex {
     readonly grade: readonly string[];
     readonly newspaper: readonly string[];
   };
+  /** Component glyph -> directly containing kanji, in teaching order. */
+  readonly componentUses: Readonly<Record<string, readonly string[]>>;
+  /** Words whose preferred reading differs from their stable legacy reading. */
+  readonly pitchIncompatibleWords: readonly string[];
   /** Every grammar-concept slug (GRAMMAR_CONCEPTS' `id`s), in order. */
   readonly grammarConceptIds: readonly string[];
   /** Form -> display label (lib/grammar/formula.ts's `FORM_LABEL`). */

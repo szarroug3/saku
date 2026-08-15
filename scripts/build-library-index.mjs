@@ -32,8 +32,10 @@ import { FORM_LABEL } from "@/lib/grammar/formula";
 import { GRAMMAR_TEACHING_ORDER } from "@/lib/library/grammar-order";
 import { KANJI, READINGS, kanjiTeachOrder, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/lib/vocab-ids";
+import { VOCAB, legacyUnqualifiedReading } from "@/data/vocab";
 import { CHAR_INDEX } from "@/data/characters";
 import { strokeFallbackOf } from "@/lib/lesson-roles";
+import { allComponents, usedAsPartIn } from "@/lib/library/components";
 
 const entries = LIB_ENTRIES.map((e) => ({
   id: e.id,
@@ -133,6 +135,22 @@ const kanjiTeachOrders = {
   newspaper: [...kanjiTeachOrder("newspaper")],
 };
 
+// Component -> directly containing kanji, in the exact teaching order used by
+// the live inverse index. Primitive pages need this relation, but importing the
+// live builder would also ship the full kanji and vocabulary dictionaries.
+const componentUses = {};
+for (const component of allComponents()) {
+  componentUses[component] = [...usedAsPartIn(component)];
+}
+
+// The handful of current preferred readings that differ from the stable legacy
+// reading a word's unqualified fact id originally meant. WordsWith has always
+// suppressed pitch on these rows; preserve that compatibility without shipping
+// vocab.ts's legacy map to the primitive route.
+const pitchIncompatibleWords = VOCAB.filter(
+  (word) => word.reb !== legacyUnqualifiedReading(word.keb),
+).map((word) => word.keb);
+
 const payload = {
   kinds,
   kindLabel,
@@ -145,6 +163,8 @@ const payload = {
   kanjiGlyphs,
   kanjiGrade,
   kanjiTeachOrders,
+  componentUses,
+  pitchIncompatibleWords,
   grammarConceptIds,
   formLabel,
   grammarTeachingOrderIds,
@@ -168,5 +188,6 @@ console.log(
     `${Object.keys(factEntry).length} fact-entry mappings, ` +
     `${Object.keys(entryFacts).length} entry-facts mappings, ` +
     `${Object.keys(readingProofFacts).length} reading-proof mappings, ` +
+    `${Object.keys(componentUses).length} component-use mappings, ` +
     `${sentenceTiers.length} sentence tiers, version ${libraryIndexVersion}`,
 );

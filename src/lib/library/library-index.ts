@@ -20,6 +20,8 @@ import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
 import type { HistoryFile } from "@/types";
 import { effectiveState } from "@/lib/claims";
+import { wordMeaningFactId } from "@/lib/vocab-ids";
+import { wordBeginnerRank } from "@/lib/word-rank";
 import { RECIPES, isPrimaryPatternRecipe, patternGroup, type Recipe } from "@/data/grammar/recipes";
 import type { Form } from "@/lib/conjugate";
 
@@ -147,6 +149,12 @@ export const SENTENCE_TIERS: readonly { id: string; label: string }[] =
  * Pure (reads only the entry's own fields), so it is simply re-declared here
  * rather than pulled through entries.ts's heavy top-of-file imports. */
 export function entryName(entry: IndexLibEntry): string {
+  if (
+    (entry.kind === "transitivity" || entry.kind === "keigo") &&
+    entry.name
+  ) {
+    return entry.name;
+  }
   return entry.glyph || entry.name || entry.id;
 }
 
@@ -296,6 +304,50 @@ export function kanjiGrade(glyph: string): number | undefined {
  * data/kanji.ts's `kanjiTeachOrder`. */
 export function kanjiTeachOrder(mode: "everyday" | "grade" | "newspaper"): readonly string[] {
   return INDEX.kanjiTeachOrders[mode];
+}
+
+/** Kanji written with this direct component, in teaching order — the
+ * content-free twin of library/components.ts's `usedAsPartIn`. */
+export function usedAsPartIn(component: string): readonly string[] {
+  return INDEX.componentUses[component] ?? [];
+}
+
+/** Known vocabulary written with a kanji containing this component. Mirrors
+ * library/components.ts's two joins and wordKnown gate using index entries. */
+export function knownWordsUsing(
+  component: string,
+  history: HistoryFile,
+): readonly string[] {
+  const kanji = new Set(usedAsPartIn(component));
+  if (kanji.size === 0) return [];
+
+  const out: string[] = [];
+  for (const word of LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? []) {
+    if (![...word.glyph].some((glyph) => kanji.has(glyph))) continue;
+    const fact = wordMeaningFactId(word.glyph);
+    const state = effectiveState(
+      history.facts[fact],
+      history.claims?.[fact],
+      history.seen?.[fact],
+    );
+    if (state.lastTested > 0) out.push(word.glyph);
+  }
+  out.sort(
+    (a, b) =>
+      (wordBeginnerRank(a) ?? Infinity) -
+      (wordBeginnerRank(b) ?? Infinity),
+  );
+  return out;
+}
+
+const PITCH_INCOMPATIBLE_WORDS: ReadonlySet<string> = new Set(
+  INDEX.pitchIncompatibleWords,
+);
+
+/** Whether WordsWith may paint the stored pitch against this word's preferred
+ * reading — the content-free twin of comparing it to legacyUnqualifiedReading. */
+export function pitchReadingCompatible(word: string): boolean {
+  return !PITCH_INCOMPATIBLE_WORDS.has(word);
 }
 
 /** The entry a glyph resolves to for its kind — the content-free twin of

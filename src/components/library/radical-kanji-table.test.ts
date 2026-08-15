@@ -51,7 +51,7 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
   });
 });
 
-describe("one table, on the reference pages only", () => {
+describe("the radical table is isolated from primitive pages", () => {
   const table = read("./radical-kanji-table.tsx");
   const uses = read("./component-uses.tsx");
   // The teach walk's item view is TeachItemView now (it dispatches to the shared
@@ -66,9 +66,9 @@ describe("one table, on the reference pages only", () => {
     assert.match(table, /orderRow\(/);
   });
 
-  test("ComponentUses renders the table for the radical (asTable) branch", () => {
-    assert.match(uses, /<RadicalKanjiTable/);
-    assert.match(uses, /asTable/);
+  test("ComponentUses uses the content-free precomputed component relation", () => {
+    assert.doesNotMatch(uses, /<RadicalKanjiTable/);
+    assert.match(uses, /@\/lib\/library\/library-index/);
   });
 
   test("the stepped lesson mounts it nowhere", () => {

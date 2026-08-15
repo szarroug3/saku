@@ -17,18 +17,15 @@
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { use, useState } from "react";
+import { use } from "react";
 
 import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks } from "@/components/library/entry-links";
-import { SliceBar } from "@/components/library/slice-bar";
 import { Card } from "@/components/ui";
-import { isPrimitive, primitiveEntry, primitiveStrokes } from "@/data/components";
-import { postClaim } from "@/lib/progress-fetch";
+import { isPrimitive, primitiveStrokes } from "@/data/components";
 import { glyphFromParam } from "@/lib/library/href";
 import { useHistory } from "@/lib/use-history";
-import { useQuizConfig } from "@/lib/quiz-config";
 
 export default function PrimitivePage({
   params,
@@ -42,16 +39,8 @@ export default function PrimitivePage({
 }
 
 function PrimitiveView({ glyph }: { glyph: string }) {
-  const { history, loaded: historyLoaded, refresh } = useHistory();
-  const { cfg } = useQuizConfig();
-  const [now] = useState(() => Date.now());
+  const { history } = useHistory();
   const strokes = primitiveStrokes(glyph);
-  const id = primitiveEntry(glyph);
-
-  const claim = async (ids: import("@/types").FactId[]) => {
-    await postClaim(ids, true);
-    await refresh();
-  };
 
   return (
     <>
@@ -75,27 +64,10 @@ function PrimitiveView({ glyph }: { glyph: string }) {
         </p>
       </Card>
 
-      <ComponentUses
-        component={glyph}
-        history={history}
-        claims={history.claims ?? {}}
-        metric={cfg.accuracyMetric}
-        now={now}
-      />
+      <ComponentUses component={glyph} history={history} />
 
       <EntryLinks mixups={{ confused: [], lookalike: [] }} />
 
-      <SliceBar
-        variant="entry"
-        slice={{ label: glyph, entries: [id] }}
-        showLabel={false}
-        facts={history.facts}
-        claims={history.claims ?? {}}
-        history={history}
-        now={now}
-        onClaim={claim}
-        progressReady={historyLoaded}
-      />
     </>
   );
 }

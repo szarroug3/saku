@@ -9,18 +9,25 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf } from "@/lib/library/entries";
+import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf, entryName as liveEntryName } from "@/lib/library/entries";
 import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
 import {
   claimableFacts as liveClaimableFacts,
   quizzableFacts as liveQuizzableFacts,
 } from "@/lib/word-unlock";
 import { wordMeaningFactId } from "@/lib/vocab-ids";
+import { VOCAB, legacyUnqualifiedReading } from "@/data/vocab";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { COUNTER_KIND as LIVE_COUNTER_KIND, NUMBER_CONSTRUCTION_KIND as LIVE_NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
 import { KANJI, KANJI_SUBJECT as LIVE_KANJI_SUBJECT, kanjiEntry as liveKanjiEntry, kanjiTeachOrder as liveKanjiTeachOrder } from "@/data/kanji";
 import { CHAR_INDEX, LOOK_GROUP, kanaEntry } from "@/data/characters";
 import { strokeFallbackOf as liveStrokeFallbackOf } from "@/lib/lesson-roles";
+import { buildItem } from "@/lib/content/build-item";
+import {
+  allComponents,
+  knownWordsUsing as liveKnownWordsUsing,
+  usedAsPartIn as liveUsedAsPartIn,
+} from "@/lib/library/components";
 import { GRAMMAR_SUBJECT as LIVE_GRAMMAR_SUBJECT } from "@/data/grammar";
 import { MARKS, MARK_SUBJECT as LIVE_MARK_SUBJECT, markEntry as liveMarkEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, GRAMMAR_CONCEPT_SUBJECT as LIVE_GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry as liveGrammarConceptEntry } from "@/data/grammar-concepts";
@@ -58,6 +65,10 @@ import {
   shelfKindOf,
   claimableFacts,
   quizzableFacts,
+  knownWordsUsing,
+  usedAsPartIn,
+  entryName,
+  pitchReadingCompatible,
 } from "@/lib/library/library-index";
 import type { HistoryFile } from "@/types";
 
@@ -97,6 +108,52 @@ test("LIB_ENTRIES matches live LIB_ENTRIES — same entries, same order, same fi
         weight: live.weight,
       },
       `entry ${i} (${live.id}) mismatch`,
+    );
+  }
+});
+
+test("entryName matches live labels for every entry", () => {
+  for (const entry of LIB_ENTRIES) {
+    assert.equal(entryName(entry), liveEntryName(entry), entry.id);
+  }
+});
+
+test("pitch-reading compatibility matches the live legacy-reading guard", () => {
+  for (const word of VOCAB) {
+    assert.equal(
+      pitchReadingCompatible(word.keb),
+      word.reb === legacyUnqualifiedReading(word.keb),
+      word.keb,
+    );
+  }
+});
+
+test("glyph-bearing aggregate entries match their live ContentItem glyph", () => {
+  const kinds = new Set(["grammar", "transitivity", "keigo"]);
+  for (const entry of LIB_ENTRIES.filter((candidate) => kinds.has(candidate.kind))) {
+    const item = buildItem(entry.id, entry.kind as "grammar" | "transitivity" | "keigo");
+    assert.ok(item, `missing ContentItem for ${entry.id}`);
+    assert.equal(entry.glyph, item.glyph, `glyph mismatch for ${entry.id}`);
+  }
+});
+
+test("component uses and known-word filtering match the live dictionary path", () => {
+  const empty: HistoryFile = { sessions: [], facts: {}, claims: {} };
+  const claimed: HistoryFile = {
+    ...empty,
+    claims: Object.fromEntries(
+      ["先生", "学生", "学校", "単語"].map((word) => [
+        wordMeaningFactId(word),
+        1_700_000_000_000,
+      ]),
+    ) as HistoryFile["claims"],
+  };
+  for (const component of allComponents()) {
+    assert.deepEqual(usedAsPartIn(component), liveUsedAsPartIn(component), component);
+    assert.deepEqual(
+      knownWordsUsing(component, claimed),
+      liveKnownWordsUsing(component, claimed),
+      `known words for ${component}`,
     );
   }
 });

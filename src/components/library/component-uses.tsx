@@ -1,14 +1,10 @@
 "use client";
 
-// What a SHAPE is worth — the two sections a component gets, wherever it is
-// shown.
+// What a primitive SHAPE is worth — the two sections on its Library page.
 //
-// A component is 日 or it is ノ, and those live on different pages: 日 is a
-// jōyō kanji with an entry page already, ノ is one of the 82 primitives with no
-// entry at all and a page of its own at /radical/ノ. What they have in common
-// is exactly this pair of questions, so this file answers them once and both
-// pages mount it. Writing it twice is how the kanji page ends up sorting by
-// frequency and the radical page by stroke count.
+// Character entry pages now receive their complete component payload by id;
+// this small client remains for primitives, whose only live personalization is
+// the learner's known-word filter.
 //
 //   "Used as a part in"        — the kanji built from this shape. Reference.
 //   "Words you know that use it" — the reader's own vocabulary, seen through it.
@@ -26,46 +22,27 @@
 import Link from "next/link";
 
 import { WordsWith } from "@/components/library/words-with";
-import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { Card, Hint, Lbl } from "@/components/ui";
-import { kanjiEntry } from "@/data/kanji";
-import { COMPONENT_USE_CAP, knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
+import {
+  kanjiEntry,
+  knownWordsUsing,
+  usedAsPartIn,
+} from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
-import type { Claims } from "@/lib/claims";
-import { useLiveFacts } from "@/lib/library/use-live-facts";
-import type { AccuracyMetric, HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types";
+
+const COMPONENT_USE_CAP = 24;
 
 export function ComponentUses({
   component,
   history,
-  claims,
-  metric,
-  now,
-  asTable = false,
-  tableCap = 30,
 }: {
-  /** The shape itself — a jōyō kanji, or one of the 82 primitives. */
+  /** The primitive shape itself. */
   component: string;
   history: HistoryFile;
-  claims: Claims;
-  metric: AccuracyMetric;
-  now: number;
-  /** Render "Used as a part in" as a learning-ordered table with each kanji's
-   * meaning and the reader's score — the shape a RADICAL entry wants. Kanji
-   * keep the flat glyph row. */
-  asTable?: boolean;
-  /** Row cap for the table variant. */
-  tableCap?: number;
 }) {
-  // Committed aggregate + the in-progress run, so the kanji table and the
-  // "words you know" list below read a mid-drill miss the moment its card
-  // resolves rather than on End session. Same reference as history.facts when
-  // nothing is in progress. This is a standing SURFACE, so it folds live;
-  // `history` (the whole file) still feeds knownWordsUsing, which is not a
-  // standing question.
-  const liveFacts = useLiveFacts(history.facts, now);
   const kanji = usedAsPartIn(component);
-  // NO `useMemo`, though the join walks all 12,553 vocabulary rows. The React
+  // NO `useMemo`, though the join walks all 12,555 vocabulary rows. The React
   // Compiler is on in this repo and memoises it for free; a hand-written
   // useMemo here is one it refuses to preserve (the early return below sits
   // between it and its use), so the manual version bought a lint error and
@@ -81,51 +58,32 @@ export function ComponentUses({
 
   return (
     <>
-      {asTable ? (
-        <RadicalKanjiTable
-          component={component}
-          cap={tableCap}
-          facts={liveFacts}
-          claims={claims}
-          metric={metric}
-          now={now}
-        />
-      ) : (
-        <Card>
-          <Lbl>Used as a part in</Lbl>
-          <div className="flex flex-wrap items-center gap-2.5">
-            {shown.map((c) => (
-              <Link
-                key={c}
-                href={entryHref(kanjiEntry(c))}
-                className="text-[22px] leading-none text-text no-underline"
-              >
-                {c}
-              </Link>
-            ))}
-            {/* The true total, in the same shape the entry page's "Appears in"
+      <Card>
+        <Lbl>Used as a part in</Lbl>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {shown.map((c) => (
+            <Link
+              key={c}
+              href={entryHref(kanjiEntry(c))}
+              className="text-[22px] leading-none text-text no-underline"
+            >
+              {c}
+            </Link>
+          ))}
+          {/* The true total, in the same shape the entry page's "Appears in"
                 row uses for its own overflow. 376 more is the interesting number
                 on this page and it is not going to be rendered as 376 links. */}
-            {rest > 0 ? <Hint>· {rest} more</Hint> : null}
-          </div>
-          <p className="mt-2.5 text-xs text-text-muted">
-            {kanji.length === 1
-              ? "1 kanji is written with this shape."
-              : `${kanji.length} kanji are written with this shape.`}
-          </p>
-        </Card>
-      )}
+          {rest > 0 ? <Hint>· {rest} more</Hint> : null}
+        </div>
+        <p className="mt-2.5 text-xs text-text-muted">
+          {kanji.length === 1
+            ? "1 kanji is written with this shape."
+            : `${kanji.length} kanji are written with this shape.`}
+        </p>
+      </Card>
 
       {known.length > 0 ? (
-        <WordsWith
-          words={known}
-          label="Words you know that use it"
-          facts={liveFacts}
-          claims={claims}
-          seen={history.seen ?? {}}
-          metric={metric}
-          now={now}
-        />
+        <WordsWith words={known} label="Words you know that use it" />
       ) : null}
     </>
   );

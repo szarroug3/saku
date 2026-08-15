@@ -14,11 +14,8 @@
 // file with no dictionary dependency, so there's nothing to gain fetching it.
 // The one heavy thing this page reads is itemHeadline's {text, speak}
 // (kanjiMeaning → kanji.ts), FETCHED BY ID by default (the Library route) —
-// seeded per pair by scripts/seed-content-entries.mjs, along with the pair's
-// glyph (buildItem's, the shared kanji — library-index.ts's own `libEntry`
-// carries an EMPTY glyph for this kind, since its list/search index displays
-// a pair by name, not glyph, so it isn't a substitute). typeLabel is the
-// constant "verb pair" (contentTypeLabel's transitivity branch).
+// seeded per pair by scripts/seed-content-entries.mjs. The shared-kanji glyph
+// comes from library-index.ts, whose entry is now authoritative for display.
 //
 // The teach walk (TeachItemView) and /dev/views already build a live
 // ContentItem for every kind they show, so this also accepts an `item` prop
@@ -30,18 +27,15 @@ import { EntrySurface } from "@/components/library/entry-section";
 import { Info } from "@/components/ui";
 import { SoundButton } from "@/components/ui/sound-button";
 import { pairForEntry } from "@/data/transitivity-facts";
+import { libEntry } from "@/lib/library/library-index";
 import { useContentEntry } from "@/lib/library/content-entries";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
-/** itemHeadline's output plus the pair's glyph, seeded together — see
- * scripts/seed-content-entries.mjs's transitivity section for why glyph rides
- * along here instead of coming from library-index.ts. */
 interface VerbPairPayload {
   readonly text: string;
   readonly speak: string | null;
-  readonly glyph: string;
 }
 
 /** The leading run of characters two strings share (開 for 開く / 開ける). */
@@ -63,7 +57,7 @@ export function VerbPairEntryView({
   const fetched = useContentEntry<VerbPairPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : fetched?.glyph;
+  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
   const pair = pairForEntry(resolvedEntry);
 
   if (headline === undefined || headline === null || !glyph || !pair) return null;

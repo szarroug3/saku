@@ -51,7 +51,9 @@ This is the same shape the codebase had already recognized once, in `facts.ts` �
 
 **Grading-critical routes** (`/session`, `/practice`, `/results`, `/stats`, `/current`, `/sessions`, `/lists`) still carry the dictionary. `factInfo` is read synchronously mid-render for quiz grading (accepted answers, glyphs) — converting that to fetch-by-id means introducing loading states into the grading path itself, a real architecture change, not a mechanical extraction. Explicitly out of scope from the start.
 
-**`/library/primitive/[glyph]`** hasn't been touched by Phase 2b — not evaluated yet, not ruled out. See "Follow-up recommendations" below.
+**`/library/primitive/[glyph]`** is now content-free too. Its component→kanji
+relation is serialized into `library-index.json`; known-word filtering joins
+against the index's word entries and history rather than the live vocabulary.
 
 **`/dev/views`** stays on the live content path on purpose — it builds a live `ContentItem` for every kind it demonstrates deliberately, as a from-scratch second construction that the shared `*-entry-view` components can render two different ways (fetched-by-id and live) without drifting. Its call sites were updated as each kind migrated (passing `item` instead of `entry`) but the page itself was never meant to go content-free.
 
@@ -66,7 +68,7 @@ The piece the original plan called "Supabase, fetched by ID" and Phase 2a explic
 - **`content_entries` table** (`supabase/schema.sql`): `entry_id text primary key, kind text, payload jsonb, content_version text, updated_at timestamptz`. RLS: public `select` only (`using (true)`) — no anon/authenticated write policy, only the service-role key (which bypasses RLS) can write. Created via `psql "$SUPABASE_DB_CONNECTION_STRING"`, not the Supabase REST API — PostgREST has no DDL endpoint regardless of key type (anon, service-role, or the newer "publishable" key), confirmed by inspecting the OpenAPI spec before falling back to a direct Postgres connection.
 - **Direct client read, not an API route**: this content is the same for every visitor (no per-user data, no auth needed), so the browser queries Supabase directly with the anon key — one fewer hop than routing through the app's own API. Deliberately different from `progress` (per-user, RLS-gated by `auth.uid()`, routed through the app's server client).
 - **`src/lib/library/content-entries.ts`**: `fetchContentEntry<T>(entryId)` (one-shot fetch) and `useContentEntry<T>(entryId: EntryId | null)` (the shared fetch-and-render hook: `undefined` while loading, `null` for "no such entry", the payload otherwise). Passing `null` skips the fetch entirely — needed because several views (see "dual-mode views" below) sometimes already have the content live and shouldn't round-trip for it.
-- **`scripts/seed-content-entries.mjs`**: one script, run manually today (`node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-content-entries.mjs`), that reads every migrated kind's real source data and `upsert`s it into `content_entries`. **Never hand-copied** — every payload is either the literal object the live component used to render (a `Term`, a `Mark`) or the exact output of the real derivation function (`itemHeadline`, `buildItem(...).glyph`), serialized once. This is the same byte-correctness discipline as every other precompute in this app (Phase 1's `learn-index.json`, Phase 2a's `library-index.json`).
+- **`scripts/seed-content-entries.mjs`**: one script, run manually today (`node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-content-entries.mjs`), that reads every migrated kind's real source data and `upsert`s it into `content_entries`. **Never hand-copied** — every payload is either the literal object the live component used to render (a `Term`, a `Mark`) or the exact output of the real derivation function (`itemHeadline`), serialized once. This is the same byte-correctness discipline as every other precompute in this app (Phase 1's `learn-index.json`, Phase 2a's `library-index.json`).
 - **CI automation** (commit `d0cbd0a`): a `reseed-content` job in `.github/workflows/ci.yml` runs the seed script automatically on every push to `main`. This closes a real gap: a source edit to, say, `data/terms.ts`, merged to `main`, passes `tsc`/tests/build and LOOKS shipped — but `content_entries` doesn't update itself, so the live page keeps serving the old row until someone remembers to reseed. Idempotent (`upsert`), cheap (a few hundred rows), so it runs unconditionally rather than trying to detect which files changed. **Needs two GitHub Actions repo secrets set by hand** (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, same values as `.env.local`) — not something an agent has permission to set. Until they're added the job fails harmlessly (doesn't block the build).
 
 ### The pattern, and when each half of it applies
@@ -76,8 +78,8 @@ Two genuinely different techniques share the "fetch by id" label here, and picki
 1. **Full-payload fetch** (term, mark, grammar-concept): the kind's own data file (`data/terms.ts`, `data/marks.ts`) is itself the heavy thing — or close enough — so the *entire* object the live component rendered is seeded and fetched whole. The live component's own rendering code is otherwise **unchanged**.
 2. **Mostly headline-only fetch** (kana, sentence, verbpair, counter, generative-rule, keigo, grammar): each kind's small self-contained content stays live, while `itemHeadline`'s `{text, speak}` output is seeded. Grammar additionally seeds the exact authored/generated teaching pages and family-table build strings; the renderers for those values otherwise reached grammar lesson/fact and vehicle/vocabulary modules. This was found by tracing and measuring the production graph, not by assuming a source file was light.
    - `sentence-ordering` needed **no new seed data at all** — a sentence tier's library entry *is* its mark's own entry id, so it reuses the mark rows already seeded for kind 1.
-   - `grammar` keeps recipe/cluster lookup live through content-free `recipeOf`/`recipesOf` twins, but fetches presentation output (`teachings`, `familyBuilds`) alongside its headline and glyph.
-3. **`glyph` sometimes has to be seeded too.** The header needs a glyph, and the instinct was to read it off `library-index.ts`'s already-precomputed `libEntry(entry).glyph` (works for kana, counter, generative-rule — checked, not assumed). For **transitivity, keigo, and grammar**, that field is either empty or subtly different from what the live `ContentItem` carried (grammar: 2 of 103 patterns differ by a parenthetical Japanese disambiguator `library-index.ts`'s search-oriented glyph field drops) — caught by a direct comparison script before shipping each kind, and once for transitivity by an actual blank-page regression caught in browser verification. Where it differs, `glyph` rides alongside `text`/`speak` in the same seeded row instead.
+   - `grammar` keeps recipe/cluster lookup live through content-free `recipeOf`/`recipesOf` twins, but fetches presentation output (`teachings`, `familyBuilds`) alongside its headline.
+3. **`glyph` is authoritative in `library-index.json`.** An earlier migration temporarily seeded a second glyph for transitivity, keigo, and grammar because their index rows were empty or differed for two disambiguated grammar patterns. The live Library builder now takes the exact first-fact glyph for all three kinds, and an equivalence test compares every one to `buildItem`. Labels for aggregate verb entries still use their full pair/set name; the glyph is the detail hero and search field. The redundant 181 seeded glyph values were removed.
 
 ### Dual-mode views
 
@@ -92,10 +94,10 @@ Several migrated kinds are ALSO rendered by the active teach walk (`TeachItemVie
 | 2 | `grammar-concept` | `cd54496` | no — full payload seeded | name/summary/body/cards |
 | 3 | `kana` | `8ed235b` | yes (mnemonic, context, confusables, stroke fallback all content-free/precomputed) | `itemHeadline` only |
 | 4 | `sentence-ordering` | `8a821a0` | yes (reuses mark's own seeded row) | nothing new |
-| 5 | `transitivity` (verb pairs) | `57d921b` | yes (`data/transitivity.ts`, ~27KB, self-contained) | `itemHeadline` + `glyph` |
+| 5 | `transitivity` (verb pairs) | `57d921b` | yes (`data/transitivity.ts`, ~27KB, self-contained) | `itemHeadline` |
 | 6 | `counter` / `generative-rule` | `bf9ab3d` | yes (`data/counters.ts`, `data/number-construction.ts`) | `itemHeadline` only |
-| 7 | `keigo` | `a902ffa` | yes (`data/keigo.ts`) | `itemHeadline` + `glyph` |
-| 8 | `grammar` | `cd333dc` + final pass | yes (`recipeOf`/`recipesOf` reproduced content-free in `library-index.ts`) | `itemHeadline` + `glyph` + teaching pages + family builds |
+| 7 | `keigo` | `a902ffa` | yes (`data/keigo.ts`) | `itemHeadline` |
+| 8 | `grammar` | `cd333dc` + final pass | yes (`recipeOf`/`recipesOf` reproduced content-free in `library-index.ts`) | `itemHeadline` + teaching pages + family builds |
 | 9 | `character` (`radical` / `kanji` / `word`) | `97fcf8e` | no — full display payload assembled at seed/live-adapter time | item, headline, roles, variants, parts, etymology, readings, senses/examples, used-in list, stroke fallback |
 
 Each commit's message has the specific verification for that kind (equivalence tests, an ad hoc byte-comparison script run against the live Supabase data and then discarded, `tsc`, the full unit suite, and a browser spot-check) — not repeated here.
@@ -113,13 +115,15 @@ Each commit's message has the specific verification for that kind (equivalence t
 - Final seed: 15,364 rows total (214 radical, 2,136 kanji, 12,555 word plus the other migrated kinds).
 - Grammar's expanded payload matched fresh live JSON for all 103 rows after reseeding.
 - Dispatcher/index equivalence: 30/30, including kind routing and live-vs-precomputed claim/quiz gates.
-- `tsc --noEmit` clean; `npm test`: 3,117/3,117; production `next build` clean. ESLint is clean across every changed source file (the repository-wide command still scans generated `.next-prod` output and reports its existing generated-code failures).
+- `tsc --noEmit` clean; `npm test`: 3,121/3,121; production `next build` clean. ESLint is clean across every changed source file (the repository-wide command still scans generated `.next-prod` output and reports its existing generated-code failures).
 - Production browser: all 13 dispatch shapes rendered (kana, radical, kanji, word, counter, number construction, grammar, grammar concept, transitivity, keigo, sentence rule, writing rule, term); grammar's quiz pre-start action also opened correctly.
 - Production network for `/library/grammar/prenominal-form`: **20.63 MB before the dispatcher cleanup → 9.46 MB initial JavaScript**, with the 8.64 MB `beginnerRank` dictionary-signature chunk absent. The generated index is the largest remaining route chunk (6.17 MB) because meaning search and fact mappings are intentionally client-side.
-- Comprehensive client-manifest sweep: `/library`, `/library/[...entry]`, and `/learn` reference no dictionary-signature chunk. The expected grading/content-heavy routes still do; `/library/primitive/[glyph]` remains the one Library follow-up below.
+- Primitive production network: **19.33 MB → 9.41 MB decoded initial JavaScript** (**3.61 MB → 1.89 MB transferred**). Its client manifest references none of the dictionary-signature chunks, while the rendered component list is unchanged.
+- Comprehensive client-manifest sweep: `/library`, `/library/[...entry]`, `/library/primitive/[glyph]`, and `/learn` reference no dictionary-signature chunk. The expected grading/content-heavy routes still do.
 
 ## Follow-up recommendations
 
 1. **Get the two GitHub Actions secrets set** (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) so the `reseed-content` CI job can run after pushes to `main`.
-2. **Evaluate `/library/primitive/[glyph]`** — the comprehensive sweep confirms it still references dictionary-signature chunks; it was explicitly outside Phase 2b.
-3. **Consider whether `library-index.json`'s `glyph` field should be complete for every kind**, removing the seeded `glyph` asymmetry for transitivity/keigo/grammar.
+The two code follow-ups are complete: primitive entries are content-free, and
+the Library index is glyph-complete for every glyph-bearing kind. The only
+remaining operational task is the GitHub Actions repository secrets above.

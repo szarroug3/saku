@@ -4,8 +4,8 @@
 // `item: ContentItem` prop — payload is simply the source object's own fields),
 // and kana, transitivity, counter, generative-rule (each has a glyph/
 // ContentItem, but only itemHeadline's {text, speak} is heavy enough to need
-// seeding — see each section below; transitivity also seeds its glyph, since
-// library-index.ts's `libEntry` doesn't carry the right one for that kind).
+// seeding — see each section below). Glyphs belong to library-index.ts for
+// every glyph-bearing entry kind.
 // See docs/perf-library-list-bundle.md.
 //
 // BYTE-CORRECTNESS. Every payload is the real object the live component would
@@ -139,17 +139,15 @@ const kanaRows = Object.keys(CHAR_INDEX)
 // small, self-contained ~27KB file, not entangled with the big dictionary —
 // VerbPairEntryView keeps reading it live. itemHeadline's {text, speak}
 // (kanjiMeaning → kanji.ts) is the heavy thing seeded; typeLabel is the
-// constant "verb pair" (contentTypeLabel's transitivity branch). `glyph` is
-// ALSO seeded here (buildItem's, the pair's shared kanji) rather than read off
-// library-index.ts's `libEntry` — a "transitivity" LIB_ENTRIES row's `glyph`
-// field is empty (that list/search index displays this kind by name, not
-// glyph), so it is not the same value the live ContentItem carried.
+// constant "verb pair" (contentTypeLabel's transitivity branch). The exact
+// buildItem glyph now lives on the generated Library index, so the fetched row
+// needs only the headline.
 const verbPairRows = VERB_PAIRS.map((pair) => {
   const entry = pairEntry(pair);
   const item = buildItem(entry, "transitivity");
   if (!item) return null;
   const { text, speak } = itemHeadline(item);
-  return row(entry, TRANSITIVITY_SUBJECT, { text, speak, glyph: item.glyph });
+  return row(entry, TRANSITIVITY_SUBJECT, { text, speak });
 }).filter((r) => r != null);
 
 // ---- counter / generative-rule (Numbers & counters shelf) -----------------
@@ -175,16 +173,15 @@ const constructionRows = NUMBER_CONSTRUCTIONS.map((c) => {
 
 // ---- keigo -----------------------------------------------------------------
 // Same shape as transitivity: keigoSetForEntry (data/keigo.ts, self-contained,
-// no dictionary dependency) stays a live read. library-index.ts's `libEntry`
-// carries an EMPTY glyph for this kind too (checked directly — same as
-// transitivity, this shelf displays a set by name, not glyph), so `glyph`
-// (buildItem's, the plain verb) is seeded alongside the headline.
+// no dictionary dependency) stays a live read. The exact buildItem glyph now
+// lives on the generated Library index, so the fetched row needs only the
+// headline.
 const keigoRows = KEIGO_SETS.map((set) => {
   const entry = keigoSetEntry(set);
   const item = buildItem(entry, "keigo");
   if (!item) return null;
   const { text, speak } = itemHeadline(item);
-  return row(entry, KEIGO_SUBJECT, { text, speak, glyph: item.glyph });
+  return row(entry, KEIGO_SUBJECT, { text, speak });
 }).filter((r) => r != null);
 
 // ---- grammar (patterns) -----------------------------------------------------
@@ -193,14 +190,12 @@ const keigoRows = KEIGO_SETS.map((set) => {
 // dictionary dependency (GrammarEntryView now reads library-index.ts's
 // content-free recipeOf/recipesOf twins instead of library/entries.ts's,
 // which drag in the whole heavy file just for this lookup). Only itemHeadline
-// and the exact generated/authored teaching pages are seeded, along with
-// `glyph`. Keeping autoPatternPage/formLibraryPages on the seed/live-adapter
+// and the exact generated/authored teaching pages are seeded. Keeping
+// autoPatternPage/formLibraryPages on the seed/live-adapter
 // side prevents the Library route from importing grammar generation and
 // lessons, both of which reach the full dictionary. The glyph is checked
 // directly against buildItem's own
-// glyph and found to differ for 2 of 103 patterns (a parenthetical Japanese
-// disambiguator library-index.ts's glyph field doesn't carry), so it isn't a
-// safe substitute here either.
+// glyph is now authoritative on library-index.ts as well.
 const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
   .map((r) => {
     const entry = patternEntry(r.id);
@@ -226,7 +221,6 @@ const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
     return row(entry, GRAMMAR_SUBJECT, {
       text,
       speak,
-      glyph: item.glyph,
       teachings,
       familyBuilds,
     });

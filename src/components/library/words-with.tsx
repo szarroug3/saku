@@ -1,6 +1,6 @@
 "use client";
 
-// "Words with this character" — the payoff section of a kanji page.
+// "Words known through this component" — the payoff section of a primitive page.
 //
 // ORDERED BY TEACHING ORDER, NOT BY RAW FREQUENCY. `beginnerRank` — word-lesson.ts
 // calls it the teaching order outright: "1 is the first word a beginner meets".
@@ -21,14 +21,13 @@ import { PitchReading } from "@/components/library/pitch-mark";
 import { Card, Lbl } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import {
-  legacyUnqualifiedReading,
+  entryForGlyph,
+  libEntry,
+  pitchReadingCompatible,
   VOCAB_SUBJECT,
-  vocabRow,
-} from "@/data/vocab";
-import { entryForGlyph } from "@/lib/library/entries";
+} from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
-import type { Claims } from "@/lib/claims";
-import type { AccuracyMetric, HistoryFile } from "@/types";
+import { wordBeginnerRank } from "@/lib/word-rank";
 
 const VISIBLE = 8;
 
@@ -46,21 +45,12 @@ export function WordsWith({
    * reimplementing them beside a different heading is how two lists drift apart.
    */
   label?: string;
-  // The list no longer paints per-word standing (status now lives only on the
-  // Practice page), so these are accepted but unused. They stay on the interface
-  // so the shared caller (ComponentUses, which also feeds RadicalKanjiTable)
-  // needn't be rewired; drop them if that caller stops passing standing data.
-  facts?: HistoryFile["facts"];
-  claims?: Claims;
-  seen?: NonNullable<HistoryFile["seen"]>;
-  metric?: AccuracyMetric;
-  now?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
 
   const ordered = [...words].sort(
     (a, b) =>
-      (vocabRow(a)?.beginnerRank ?? Infinity) - (vocabRow(b)?.beginnerRank ?? Infinity),
+      (wordBeginnerRank(a) ?? Infinity) - (wordBeginnerRank(b) ?? Infinity),
   );
   const shown = showAll ? ordered : ordered.slice(0, VISIBLE);
 
@@ -70,7 +60,7 @@ export function WordsWith({
       <div className="flex flex-col gap-1.5">
         {shown.map((w) => {
           const id = entryForGlyph(VOCAB_SUBJECT, w);
-          const row = vocabRow(w);
+          const row = id ? libEntry(id) : undefined;
           // The same pitch overline the word's own entry draws, on its reading
           // here — display only, and only where a pitch is verified; a word with
           // none shows the plain reading, unchanged. See pitch-mark.tsx.
@@ -84,13 +74,17 @@ export function WordsWith({
               ) : (
                 <span className="text-[16px]">{w}</span>
               )}
-              {row && pitch != null && row.reb === legacyUnqualifiedReading(w) ? (
-                <PitchReading reading={row.reb} downstep={pitch} className="text-text-muted" />
+              {row?.readings[0] && pitch != null && pitchReadingCompatible(w) ? (
+                <PitchReading
+                  reading={row.readings[0]}
+                  downstep={pitch}
+                  className="text-text-muted"
+                />
               ) : (
-                <span className="text-text-muted">{row?.reb}</span>
+                <span className="text-text-muted">{row?.readings[0]}</span>
               )}
               <span className="min-w-0 flex-1 truncate text-text-muted">
-                {row?.glosses.slice(0, 2).join(", ")}
+                {row?.meanings.slice(0, 2).join(", ")}
               </span>
             </div>
           );

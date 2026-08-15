@@ -522,6 +522,15 @@ export function libEntry(id: EntryId): LibEntry | undefined {
  * read them out in a Japanese voice.
  */
 export function entryName(entry: LibEntry): string {
+  // Aggregate verb entries keep their full pair/set name in labels and
+  // breadcrumbs even though their now-authoritative glyph is the one form the
+  // detail header leads with.
+  if (
+    (entry.kind === TRANSITIVITY_SUBJECT || entry.kind === KEIGO_SUBJECT) &&
+    entry.name
+  ) {
+    return entry.name;
+  }
   return entry.glyph || entry.name || entry.id;
 }
 
@@ -698,6 +707,7 @@ function build(): LibEntry[] {
   // browse order, after every word.
   RECIPES.forEach((r, i) => {
     if (!isPrimaryPatternRecipe(r)) return;
+    const id = patternEntry(r.id);
     const senses = patternGroup(r.id);
     const clusterTitles = [
       ...new Set(
@@ -723,9 +733,14 @@ function build(): LibEntry[] {
       ),
     ];
     out.push({
-      id: patternEntry(r.id),
+      id,
       kind: GRAMMAR_SUBJECT,
-      glyph: senses.length > 1 ? r.pattern : patternLabel(r),
+      // The entry's first fact is the display item the detail route builds. Its
+      // glyph carries two disambiguating parentheticals that patternLabel omits;
+      // keeping that exact value here makes the index authoritative everywhere.
+      glyph:
+        factInfo(factsOf(id)[0])?.glyph ??
+        (senses.length > 1 ? r.pattern : patternLabel(r)),
       readings: [],
       meanings: senses.map((sense) => sense.gloss),
       searchAlso: [
@@ -750,13 +765,12 @@ function build(): LibEntry[] {
   });
 
   // Verb pairs — the transitivity subject, taught after grammar (see KINDS), so
-  // they browse after it. A pair is TWO verbs and one event, not a character: it
-  // has no glyph, so `glyph` is the empty string (search-inert, exactly like a
-  // mark's) and `name` carries the pair — "出る / 出す" — for every place a glyph
-  // would have gone. The English cues are the `meanings`, so a search for "the
-  // door opened" lands here; both written forms ride in `searchAlso`, so the
-  // pair is also findable by either verb even though the empty glyph cannot be.
+  // they browse after it. A pair is TWO verbs and one event; its first fact's
+  // glyph is the shared written stem the detail route uses as its hero. `name`
+  // still carries the full pair — "出る / 出す" — and both written forms ride in
+  // `searchAlso`, so every representation remains findable.
   VERB_PAIRS.forEach((p, i) => {
+    const id = pairEntry(p);
     const pattern = pairPattern(p.happens.reading, p.doIt.reading);
     const tailLabel = pattern.isException ? "Exception" : shiftLabel(pattern);
     const tailFrom = pattern.from?.replace(/^-/, "");
@@ -765,9 +779,9 @@ function build(): LibEntry[] {
       ? ["exception", "verb pair"]
       : [tailLabel, `${tailFrom} ${tailTo}`, `${tailFrom}${tailTo}`];
     out.push({
-      id: pairEntry(p),
+      id,
       kind: TRANSITIVITY_SUBJECT,
-      glyph: "",
+      glyph: factInfo(factsOf(id)[0])?.glyph ?? p.happens.word,
       name: `${p.happens.word} / ${p.doIt.word}`,
       readings: [p.happens.reading, p.doIt.reading],
       meanings: [p.happens.en, p.doIt.en],
@@ -819,17 +833,16 @@ function build(): LibEntry[] {
   });
 
   // Keigo sets — the politeness track, browsed after verb pairs (see KINDS). A
-  // set is a plain verb and its honorific/humble forms, not a single character:
-  // like a verb pair it has no glyph, so `glyph` is the empty string (search-
-  // inert) and `name` carries the keigo forms — "召し上がる / いただく". The
-  // recognition glosses are the `meanings`, so a search for "eat honorific" lands
-  // here; the plain verbs and the register words ride in `searchAlso`, so the set
-  // is also findable by the everyday verb it replaces.
+  // set is a plain verb and its honorific/humble forms. Its first fact's glyph is
+  // the exact form the detail route uses as its hero; `name` still carries the
+  // complete set — "召し上がる / いただく". The recognition glosses are the
+  // `meanings`, and the plain verbs/register words ride in `searchAlso`.
   KEIGO_SETS.forEach((set, i) => {
+    const id = keigoSetEntry(set);
     out.push({
-      id: keigoSetEntry(set),
+      id,
       kind: KEIGO_SUBJECT,
-      glyph: "",
+      glyph: factInfo(factsOf(id)[0])?.glyph ?? set.words[0]?.word ?? "",
       name: set.words.map((w) => w.word).join(" / "),
       readings: set.words.map((w) => w.reading),
       meanings: set.words.map((w) => recognitionGloss(set, w)),

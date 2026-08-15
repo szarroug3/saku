@@ -18,11 +18,8 @@
 //
 // keigoSetForEntry (data/keigo.ts) stays a LIVE read: a small, self-contained
 // file with no dictionary dependency. FETCHED BY ID by default (the Library
-// route) is itemHeadline's {text, speak}, seeded per set along with `glyph`
-// (buildItem's, the plain verb) — library-index.ts's `libEntry` carries an
-// EMPTY glyph for this kind (checked directly, same as transitivity), so it
-// isn't a substitute. The teach walk / /dev/views pass a live `item` instead,
-// same dual-mode pattern as KanaEntryView.
+// route) is itemHeadline's {text, speak}, seeded per set. The hero glyph comes
+// from library-index.ts. The teach walk / /dev/views pass a live `item` instead.
 
 import Link from "next/link";
 
@@ -37,12 +34,9 @@ import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
-/** itemHeadline's output plus the set's glyph, seeded together — see
- * scripts/seed-content-entries.mjs's keigo section. */
 interface KeigoPayload {
   readonly text: string;
   readonly speak: string | null;
-  readonly glyph: string;
 }
 
 // Per-register label (accent) + the "when do I use this" line, shown as text
@@ -73,7 +67,7 @@ export function KeigoEntryView({
   const fetched = useContentEntry<KeigoPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : fetched?.glyph;
+  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
   const set = keigoSetForEntry(resolvedEntry);
 
   if (headline === undefined || headline === null || !glyph || !set) return null;

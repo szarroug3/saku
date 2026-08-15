@@ -24,9 +24,9 @@
 // dictionary dependency — but read off library-index.ts's content-free
 // recipeOf/recipesOf twins rather than library/entries.ts's, which would drag
 // in that file's whole heavy top-of-file import chain just for this lookup.
-// FETCHED BY ID by default (the Library route) are itemHeadline's {text, speak},
-// buildItem's glyph, and the exact generated/authored teaching + family-build
-// output. The latter two would otherwise import grammar's dictionary-backed
+// FETCHED BY ID by default (the Library route) are itemHeadline's {text, speak}
+// and the exact generated/authored teaching + family-build output. The glyph
+// comes from library-index.ts. The latter two would otherwise import grammar's dictionary-backed
 // vehicle/lesson graph. The teach walk and /dev/views pass those values through
 // a live-only adapter instead.
 
@@ -36,18 +36,15 @@ import { LinkSlot } from "@/components/grammar/link-slot";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach, type PatternTeaching } from "@/components/library/pattern-teach";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { recipeOf, recipesOf } from "@/lib/library/library-index";
+import { libEntry, recipeOf, recipesOf } from "@/lib/library/library-index";
 import { useContentEntry } from "@/lib/library/content-entries";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
-/** Display output plus the pattern's glyph, seeded together — see
- * scripts/seed-content-entries.mjs's grammar section. */
 interface GrammarPayload {
   readonly text: string;
   readonly speak: string | null;
-  readonly glyph: string;
   readonly teachings: Readonly<Record<string, PatternTeaching>>;
   readonly familyBuilds: Readonly<Record<string, string>>;
 }
@@ -84,7 +81,7 @@ export function GrammarEntryView({
   const fetched = useContentEntry<GrammarPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : fetched?.glyph;
+  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
   const teachings = item ? liveTeachings : fetched?.teachings;
   const familyBuilds = item ? liveFamilyBuilds : fetched?.familyBuilds;
 

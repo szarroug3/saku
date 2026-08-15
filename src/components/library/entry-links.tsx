@@ -24,7 +24,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Card, Hint, Lbl } from "@/components/ui";
-import { libEntry } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import type { Mixups } from "@/lib/library/mixups";
 import type { EntryId } from "@/types";
