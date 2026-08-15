@@ -52,7 +52,6 @@ import {
   type PracticeScope,
 } from "@/lib/practice-types";
 import type {
-  AccuracyMetric,
   FactBand,
   HistoryFile,
   SavedList,
@@ -232,7 +231,6 @@ export function PracticeSelector({
   sel,
   lists,
   history,
-  metric,
   now,
   graduateRuns,
   onChange,
@@ -240,7 +238,6 @@ export function PracticeSelector({
   sel: Selection;
   lists: SavedList[];
   history: HistoryFile;
-  metric: AccuracyMetric;
   now: number;
   graduateRuns: number;
   onChange: (next: Selection) => void;
@@ -273,8 +270,8 @@ export function PracticeSelector({
         ? sentenceScopeIsAvailable(s)
           ? sentenceCount
           : 0
-        : resolve(withTypes(s, [id]), history, lists, metric, 0, context).length,
-    [sentenceCount, history, lists, metric, context],
+        : resolve(withTypes(s, [id]), history, lists,  0, context).length,
+    [sentenceCount, history, lists, context],
   );
 
   // The type ids that resolve to at least one fact in a given selection's scope,
@@ -330,13 +327,13 @@ export function PracticeSelector({
           { ...base, states: [id] },
           history,
           lists,
-          metric,
+        
           0,
           context,
         ).length,
       ]),
     );
-  }, [sel, history, lists, metric, context]);
+  }, [sel, history, lists,  context]);
 
   // ---- WHEN YOU LEARNED IT (date window) ----
   // The active window, or null when the filter is off (both bounds null counts
@@ -370,13 +367,13 @@ export function PracticeSelector({
   const learnedCounts = useMemo(() => {
     const base = { ...sel };
     const countIn = (r: DateRange) =>
-      resolve({ ...base, learned: r }, history, lists, metric, 0, context).length;
+      resolve({ ...base, learned: r }, history, lists,  0, context).length;
     return {
       today: countIn(todayRange(now)),
       week: countIn(thisWeekRange(now)),
       month: countIn(thisMonthRange(now)),
     };
-  }, [sel, history, lists, metric, context, now]);
+  }, [sel, history, lists,  context, now]);
 
   // The custom panel is open when the learner opened it, or when a custom window
   // is already active (so a persisted custom range shows its inputs on load).
@@ -445,13 +442,13 @@ export function PracticeSelector({
             ),
             history,
             lists,
-            metric,
+          
             0,
             context,
           ).length,
         ]),
       ),
-    [lists, history, metric, sel, context],
+    [lists, history,  sel, context],
   );
 
   return (

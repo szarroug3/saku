@@ -162,7 +162,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           }),
     [stats, history, graduateRuns, results.ts, summaryOnly],
   );
-  const facts = useMemo(() => deriveRun(results, metric), [results, metric]);
+  const facts = useMemo(() => deriveRun(results), [results, metric]);
   const summary = useMemo(
     () => summarize(facts, stats, prior, analysis.progress),
     [facts, stats, prior, analysis.progress],
@@ -284,7 +284,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       const priorStanding = standingOf(
         prior.facts[fact],
         prior.claims?.[fact],
-        metric,
         results.ts,
       ).standing;
       if (priorStanding === "shaky" || priorStanding === "getting-there") {

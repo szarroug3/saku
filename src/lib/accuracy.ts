@@ -48,7 +48,7 @@
 // happens by default when you reach for the obvious function.
 
 import { EMPTY_COUNTS } from "@/lib/fact-counts";
-import type { AccuracyMetric, FactCounts, FactId } from "@/types";
+import type { FactCounts, FactId } from "@/types";
 
 // This module is CONTENT-FREE (no fact registry, no dictionary), so any history-
 // touching route can do accuracy math without pulling the ~8.6 MB curriculum
@@ -101,17 +101,12 @@ export function totalFor(history: CountsByFact, facts: FactId[]): FactCounts {
   return total;
 }
 
-/** Accuracy 0–100 under `metric` — a real ratio — or null when never
- * practised. */
+/** Accuracy 0–100 — a real ratio — or null when never practised. */
 export function accuracyOf(
   agg: FactCounts,
-  metric: AccuracyMetric,
 ): number | null {
   if (!agg.seen) return null;
-  const ratio =
-    metric === "firstTry"
-      ? (agg.firstTry ?? 0) / agg.seen
-      : (agg.correct ?? 0) / agg.seen;
+  const ratio = (agg.firstTry ?? 0) / agg.seen;
   return Math.max(0, Math.min(100, Math.round(100 * ratio)));
 }
 
@@ -120,9 +115,8 @@ export function accuracyOf(
 export function accuracyFor(
   history: CountsByFact,
   facts: FactId[],
-  metric: AccuracyMetric,
 ): number | null {
-  return accuracyOf(totalFor(history, facts), metric);
+  return accuracyOf(totalFor(history, facts));
 }
 
 /**

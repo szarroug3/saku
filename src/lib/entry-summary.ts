@@ -11,20 +11,20 @@
 import { factsOf } from "@/lib/facts";
 import { accuracyOf } from "@/lib/accuracy";
 import type { CountsByFact, EntrySummary } from "@/lib/accuracy";
-import type { AccuracyMetric, EntryId } from "@/types";
+import type { EntryId } from "@/types";
 
 /** An entry's summary accuracy, or null when none of its facts is practised. */
 export function summaryOfEntry(
   history: CountsByFact,
   entry: EntryId,
-  metric: AccuracyMetric,
+  
 ): EntrySummary | null {
   let sum = 0;
   let facts = 0;
   let seen = 0;
   for (const f of factsOf(entry)) {
     const agg = history.facts[f];
-    const pct = agg ? accuracyOf(agg, metric) : null;
+    const pct = agg ? accuracyOf(agg) : null;
     if (pct === null) continue; // never practised — unknown, not zero
     sum += pct;
     facts++;

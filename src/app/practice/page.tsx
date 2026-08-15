@@ -106,7 +106,6 @@ export default function PracticePage() {
             { ...cfg.selection, types: ordinaryTypes },
             history,
             lists,
-            cfg.accuracyMetric,
             0,
             {
             now: mountedNow ?? 0,
@@ -118,7 +117,6 @@ export default function PracticePage() {
       ordinarySelected,
       ordinaryTypes,
       cfg.selection,
-      cfg.accuracyMetric,
       cfg.graduateRuns,
       mountedNow,
       history,
@@ -328,8 +326,7 @@ export default function PracticePage() {
         sel={cfg.selection}
         lists={lists}
         history={history}
-        metric={cfg.accuracyMetric}
-        now={mountedNow ?? 0}
+                now={mountedNow ?? 0}
         graduateRuns={cfg.graduateRuns}
         onChange={setSelection}
       />

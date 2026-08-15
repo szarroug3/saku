@@ -196,7 +196,6 @@ export function RoundComplete({
               facts={answered}
               stats={session.roundStats}
               showOnly={solidBoxes}
-              hideFirstTry
               solidTone
               isSelected={(box) => picked.has(box)}
               onToggle={toggle}

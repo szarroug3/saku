@@ -72,16 +72,15 @@ function writeRecord(stats: SessionStats, ts: number): QuizSessionRecord {
 function durableAccuracy(stats: SessionStats): number | null {
   const facts = foldSessions([writeRecord(stats, 1_700_000_000_000)]);
   const ids = Object.keys(facts) as FactId[];
-  return accuracyOf(totalFor({ facts }, ids), "firstTry");
+  return accuracyOf(totalFor({ facts }, ids));
 }
 
 const ring = (stats: SessionStats) =>
   deriveRun(
     { mode: "drill", redrill: false, ts: 0, stats },
-    "firstTry",
   ).pct;
 
-const pill = (stats: SessionStats) => sessionAccuracy(stats, "firstTry");
+const pill = (stats: SessionStats) => sessionAccuracy(stats);
 
 describe("the ring, the pill and the durable aggregate are one measurement", () => {
   // A REAL RUN, of the shape endless mode actually produces: some facts came
@@ -148,7 +147,7 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
     assert.equal(durableAccuracy(none), 0);
   });
 
-  it("keeps mixed facts in Needs work even under Eventually right", () => {
+  it("categorizes mixed facts correctly by firstTry accuracy", () => {
     const mixed: SessionStats = {
       [f("a")]: detail({
         seen: 2,
@@ -170,7 +169,6 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
 
     const run = deriveRun(
       { mode: "drill", redrill: false, ts: 0, stats: mixed },
-      "attempt",
     );
 
     assert.deepEqual(run.needsWork, [f("a")]);

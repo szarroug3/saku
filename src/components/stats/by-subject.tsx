@@ -45,7 +45,7 @@ import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { KIND_LABEL } from "@/lib/library/entries";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type {
-  AccuracyMetric,
+
   EntryId,
   FactAggregate,
   FactId,
@@ -100,13 +100,11 @@ const SUBJECTS: Subject[] = (() => {
 export function BySubject({
   facts,
   claims,
-  metric,
   now,
   history,
 }: {
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
-  metric: AccuracyMetric;
   now: number;
   history: HistoryFile;
 }) {
@@ -122,7 +120,6 @@ export function BySubject({
               subject={s}
               facts={facts}
               claims={claims}
-              metric={metric}
               now={now}
             />
           ))}
@@ -162,16 +159,14 @@ function SubjectRow({
   subject,
   facts,
   claims,
-  metric,
   now,
 }: {
   subject: Subject;
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
-  metric: AccuracyMetric;
   now: number;
 }) {
-  const tally = tallyFacts(subject.facts, facts, claims, metric, now);
+  const tally = tallyFacts(subject.facts, facts, claims, now);
 
   // Met: entries with any record behind them — one showing, or one claim. A
   // count, and the only thing about an entry this page asserts. It says nothing

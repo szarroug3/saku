@@ -83,7 +83,6 @@ function Board({
   facts,
   stats,
   visibleBoxes,
-  hideFirstTry,
   solidTone,
   selected,
   onToggle,
@@ -94,7 +93,6 @@ function Board({
   facts: FactId[];
   stats: SessionStats;
   visibleBoxes: Set<BoxKey>;
-  hideFirstTry?: boolean;
   solidTone?: boolean;
   selected: Set<BoxKey>;
   onToggle: (box: BoxKey) => void;
@@ -135,7 +133,6 @@ function Board({
           facts={facts}
           stats={stats}
           showOnly={visibleBoxes}
-          hideFirstTry={hideFirstTry}
           solidTone={solidTone}
           displayEntry={displayEntry}
           isSelected={(box) => selected.has(box)}
@@ -229,7 +226,6 @@ export function TriageSection({
           facts={facts.facts}
           stats={stats}
           visibleBoxes={needsWorkBoxes}
-          hideFirstTry={false}
           solidTone={false}
           selected={selected}
           onToggle={toggle}
@@ -242,7 +238,6 @@ export function TriageSection({
         facts={facts.facts}
         stats={stats}
         visibleBoxes={solidBoxes}
-        hideFirstTry
         solidTone
         selected={selected}
         onToggle={toggle}

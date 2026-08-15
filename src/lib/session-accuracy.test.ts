@@ -48,17 +48,12 @@ function perfect(n: number): SessionStats {
 }
 
 test("a perfect learner reads 100% however often a fact repeats", () => {
-  // THE REGRESSION. Before the fix these read 100, 50, 20, 10.
+  // A perfect learner always reads 100% on the firstTry metric.
   for (const n of [1, 2, 5, 10]) {
     assert.equal(
-      sessionAccuracy(perfect(n), "firstTry"),
+      sessionAccuracy(perfect(n)),
       100,
-      `strict accuracy after ${n} perfect showing(s)`,
-    );
-    assert.equal(
-      sessionAccuracy(perfect(n), "attempt"),
-      100,
-      `forgiving accuracy after ${n} perfect showing(s)`,
+      `accuracy after ${n} perfect showing(s)`,
     );
   }
 });
@@ -66,24 +61,21 @@ test("a perfect learner reads 100% however often a fact repeats", () => {
 test("repetition does not move a perfect score at all", () => {
   // Same claim from the other side: the number is CONSTANT, not merely high.
   const scores = [1, 2, 3, 5, 8, 13, 21].map((n) =>
-    sessionAccuracy(perfect(n), "firstTry"),
+    sessionAccuracy(perfect(n)),
   );
   assert.deepEqual(new Set(scores), new Set([100]));
 });
 
 test("both sides of the ratio count showings", () => {
-  // 4 showings, 3 nailed cold. The old code could only ever contribute 1 to
-  // the numerator here and would have said 25%.
+  // 4 showings, 3 nailed cold.
   const stats: SessionStats = {
     [f("a")]: detail({ seen: 4, firstTryCount: 3, correct: 4, misses: 1 }),
   };
-  assert.equal(sessionAccuracy(stats, "firstTry"), 75);
-  // Forgiving is the same denominator, a different pass mark.
-  assert.equal(sessionAccuracy(stats, "attempt"), 100);
+  assert.equal(sessionAccuracy(stats), 75);
 });
 
 test("an imperfect learner is not flattered either", () => {
-  // The fix must not simply push the number up. 10 showings, 0 first-try.
+  // 10 showings, 0 first-try.
   const stats: SessionStats = {
     [f("a")]: detail({
       seen: 10,
@@ -93,8 +85,7 @@ test("an imperfect learner is not flattered either", () => {
       misses: 10,
     }),
   };
-  assert.equal(sessionAccuracy(stats, "firstTry"), 0);
-  assert.equal(sessionAccuracy(stats, "attempt"), 100);
+  assert.equal(sessionAccuracy(stats), 0);
 });
 
 test("facts pool across the run, weighted by showings", () => {
@@ -105,7 +96,7 @@ test("facts pool across the run, weighted by showings", () => {
     [f("a")]: detail({ seen: 8, firstTryCount: 8, correct: 8 }),
     [f("b")]: detail({ seen: 2, firstTryCount: 1, correct: 2, misses: 1 }),
   };
-  assert.equal(sessionAccuracy(stats, "firstTry"), 90);
+  assert.equal(sessionAccuracy(stats), 90);
 });
 
 test("a fact still in flight is left out entirely", () => {
@@ -122,15 +113,15 @@ test("a fact still in flight is left out entirely", () => {
   };
   const counts = poolSessionCounts(stats);
   assert.equal(counts.seen, 2, "the unanswered showing is not in the pool");
-  assert.equal(sessionAccuracy(stats, "firstTry"), 100);
+  assert.equal(sessionAccuracy(stats), 100);
 });
 
 test("nothing answered yet is null, not 0%", () => {
-  assert.equal(sessionAccuracy({}, "firstTry"), null);
+  assert.equal(sessionAccuracy({}), null);
   assert.equal(
     sessionAccuracy(
       { [f("a")]: detail({ firstTryCorrect: null, firstTryCount: 0 }) },
-      "firstTry",
+      
     ),
     null,
   );
@@ -155,7 +146,7 @@ test("a pre-firstTryCount stat never yields NaN", () => {
   const stats: SessionStats = { [f("a")]: legacy({ seen: 3, correct: 3 }) };
   const counts = poolSessionCounts(stats);
   assert.ok(!Number.isNaN(counts.firstTry), "numerator is a number");
-  const pct = sessionAccuracy(stats, "firstTry");
+  const pct = sessionAccuracy(stats);
   assert.ok(pct !== null && !Number.isNaN(pct), "accuracy is a number");
 });
 
@@ -181,5 +172,5 @@ test("a present count always wins over the flag", () => {
   // the flag: first showing missed (flag false), next four nailed.
   const st = detail({ seen: 5, firstTryCorrect: false, firstTryCount: 4 });
   assert.equal(firstTryShowings(st), 4);
-  assert.equal(sessionAccuracy({ [f("a")]: st }, "firstTry"), 80);
+  assert.equal(sessionAccuracy({ [f("a")]: st }), 80);
 });

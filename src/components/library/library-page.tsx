@@ -363,7 +363,6 @@ export function LibraryPageClient({
             knownFactsOf(entry),
             liveFacts,
             claims,
-            cfg.accuracyMetric,
             now,
           ),
         ) === wantKnown;
@@ -378,7 +377,6 @@ export function LibraryPageClient({
           standingOf(
             liveFacts[fact],
             claims[fact],
-            cfg.accuracyMetric,
             now,
           ).standing === wanted,
       );
@@ -386,7 +384,6 @@ export function LibraryPageClient({
     stateFilter,
     liveFacts,
     claims,
-    cfg.accuracyMetric,
     now,
     activeMixupEntries,
   ]);

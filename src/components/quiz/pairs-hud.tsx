@@ -25,7 +25,7 @@ import { SmallBtn } from "@/components/ui";
 import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
-import type { AccuracyMetric, SessionStats } from "@/types";
+import type { SessionStats } from "@/types";
 
 /** How long the controls stay lit after the mouse stops. */
 const CONTROLS_IDLE_MS = 2000;
@@ -80,7 +80,7 @@ function Pill({
  * Characters still sitting unmatched on the board are already counted as seen,
  * so they're excluded until they resolve — otherwise a fresh board would open
  * at 0% and climb, reporting "not attempted yet" as "wrong". */
-function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
+function liveAccuracy(stats: SessionStats): number | null {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not matched yet
@@ -88,7 +88,7 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
     agg.missed += st.misses;
     agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
   }
-  return accuracyOf(agg, metric);
+  return accuracyOf(agg);
 }
 
 export interface PairsHudProps {
@@ -139,7 +139,7 @@ export function PairsHud({ asked, total, stats, streak, onEnd }: PairsHudProps) 
   }, [fadeControls]);
 
   const accuracy = cfg.showAccuracy
-    ? liveAccuracy(stats, cfg.accuracyMetric)
+    ? liveAccuracy(stats)
     : null;
   const controlsLit = !fadeControls || controlsAwake;
   // Endless has no total to be a fraction of, so the bar reads full — the

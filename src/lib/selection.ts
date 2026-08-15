@@ -22,12 +22,16 @@
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { rangeLabel } from "@/lib/date-range";
 import { knownConstructionFacts } from "@/data/counter-categories";
-import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
+import {
+  ALL_FACTS,
+  entryOf,
+  factInfo,
+  factsOf,
+} from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import { standingOf } from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
 import type {
-  AccuracyMetric,
   FactId,
   FactBand,
   HistoryFile,
@@ -74,13 +78,11 @@ export function isEverything(sel: Selection): boolean {
 export function bandOf(
   fact: FactId,
   history: HistoryFile,
-  metric: AccuracyMetric,
   now = Date.now(),
 ): Exclude<FactBand, "mixup"> {
   const standing = standingOf(
     history.facts[fact],
     history.claims?.[fact],
-    metric,
     now,
   ).standing;
   return standing === "not-seen" || standing === "claimed" ? "new" : standing;
@@ -111,13 +113,12 @@ function matchesStates(
   fact: FactId,
   states: FactBand[],
   history: HistoryFile,
-  metric: AccuracyMetric,
   mixups: Set<string>,
   now: number,
 ): boolean {
   if (!states.length) return true;
   if (states.includes("mixup") && mixups.has(entryOf(fact))) return true;
-  return states.includes(bandOf(fact, history, metric, now));
+  return states.includes(bandOf(fact, history, now));
 }
 
 // ---------- text ----------
@@ -162,8 +163,7 @@ function factsOfList(
   id: string,
   lists: SavedList[],
   history: HistoryFile,
-  metric: AccuracyMetric,
-  depth: number,
+    depth: number,
   context: { now?: number; graduateRuns?: number },
 ): FactId[] {
   const list = lists.find((l) => l.id === id);
@@ -171,7 +171,7 @@ function factsOfList(
   if (list.kind === "fixed") {
     return list.entries.flatMap((e) => factsOf(e));
   }
-  return resolve(list.query, history, lists, metric, depth + 1, context);
+  return resolve(list.query, history, lists, depth + 1, context);
 }
 
 // ---------- ordering ----------
@@ -273,7 +273,6 @@ export function resolve(
   sel: Selection,
   history: HistoryFile,
   lists: SavedList[] = [],
-  metric: AccuracyMetric = "firstTry",
   depth = 0,
   context: { now?: number; graduateRuns?: number } = {},
 ): FactId[] {
@@ -282,7 +281,7 @@ export function resolve(
   // The starting pool: a list if one is named, otherwise everything you know.
   // NOT the whole dictionary — untaught material is learned, not drilled here.
   let pool: FactId[] = sel.list
-    ? factsOfList(sel.list, lists, history, metric, depth, context)
+    ? factsOfList(sel.list, lists, history, depth, context)
     : knownFacts(history);
 
   if (sel.session !== null) {
@@ -320,7 +319,7 @@ export function resolve(
     // list query persisted before types existed — an absent field is "all".
     if (!matchesTypes(f, sel.types ?? [])) continue;
     if (!matchesText(f, needle)) continue;
-    if (!matchesStates(f, sel.states, history, metric, mixups, now)) continue;
+    if (!matchesStates(f, sel.states, history, mixups, now)) continue;
     if (learned) {
       const at = history.learnedAt?.[f];
       if (at == null) continue; // unknown first-learn → excluded
@@ -359,9 +358,9 @@ export function countOf(
   sel: Selection,
   history: HistoryFile,
   lists: SavedList[] = [],
-  metric: AccuracyMetric = "firstTry",
+  
 ): number {
-  return resolve(sel, history, lists, metric).length;
+  return resolve(sel, history, lists).length;
 }
 
 // ---------- naming a selection ----------

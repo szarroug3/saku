@@ -22,7 +22,7 @@
 import { accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
 import { factKeys } from "@/lib/fact-keys";
 import { firstTryShowings } from "@/lib/first-try";
-import type { AccuracyMetric, FactCounts, SessionStats } from "@/types";
+import type { FactCounts, SessionStats } from "@/types";
 
 /**
  * Pool one run's stats into counts, on exactly the terms src/lib/accuracy.ts
@@ -68,7 +68,6 @@ export function poolSessionCounts(stats: SessionStats): FactCounts {
  */
 export function sessionAccuracy(
   stats: SessionStats,
-  metric: AccuracyMetric,
 ): number | null {
-  return accuracyOf(poolSessionCounts(stats), metric);
+  return accuracyOf(poolSessionCounts(stats));
 }

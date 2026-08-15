@@ -94,7 +94,6 @@ export function ManageLists() {
       { ...emptySelection(), list: list.id },
       history,
       lists,
-      cfg.accuracyMetric,
     );
     if (!facts.length) return;
     writes.markSeen(facts);

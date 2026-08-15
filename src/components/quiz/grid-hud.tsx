@@ -31,7 +31,7 @@ import { SmallBtn } from "@/components/ui";
 import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
-import type { AccuracyMetric, SessionStats } from "@/types";
+import type { SessionStats } from "@/types";
 
 /** How long the controls stay lit after the mouse stops. */
 const CONTROLS_IDLE_MS = 2000;
@@ -86,7 +86,7 @@ function Pill({
  * Cards that haven't been answered yet are left out — on the grid EVERY card
  * is counted as seen from the first paint, so without this the sheet would
  * open at 0% and climb, reporting "unanswered" as "wrong". */
-function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
+function liveAccuracy(stats: SessionStats): number | null {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not attempted yet
@@ -94,7 +94,7 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
     agg.missed += st.misses;
     agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
   }
-  return accuracyOf(agg, metric);
+  return accuracyOf(agg);
 }
 
 export interface GridHudProps {
@@ -144,7 +144,7 @@ export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) 
   }, [fadeControls]);
 
   const accuracy = cfg.showAccuracy
-    ? liveAccuracy(stats, cfg.accuracyMetric)
+    ? liveAccuracy(stats)
     : null;
   const controlsLit = !fadeControls || controlsAwake;
   const pct = total ? Math.min(100, Math.round((100 * done) / total)) : 0;

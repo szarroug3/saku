@@ -29,9 +29,8 @@
 //   going to be one.
 //
 //   THE METRIC TOGGLE. It existed to govern those four cards. Nothing it
-//   governed is left. The one place the distinction still bites — is a probed
-//   fact "getting there" or "shaky" — reads cfg.accuracyMetric, i.e. the
-//   setting, from Settings, where a setting lives.
+//   governed is left. The app grades first-try only now, everywhere,
+//   including the "getting there" vs "shaky" split below.
 //
 // WHAT IS LEFT IS THREE CARDS AND EVERY NUMBER ON THEM IS A COUNT OF THINGS.
 // There is no decimal on this page, and there is no arithmetic that could
@@ -68,7 +67,7 @@ export default function StatsPage() {
   const recorded = [
     ...new Set([...factKeys(history.facts), ...factKeys(claims)]),
   ].filter((fact) => !isSentenceTierMarkerFact(fact));
-  const tally = tallyFacts(recorded, history.facts, claims, cfg.accuracyMetric, now);
+  const tally = tallyFacts(recorded, history.facts, claims, now);
 
   return (
     // A contained column, not full bleed. The three groups are counts and narrow
@@ -93,8 +92,7 @@ export default function StatsPage() {
         <BySubject
           facts={history.facts}
           claims={claims}
-          metric={cfg.accuracyMetric}
-          now={now}
+                    now={now}
           history={history}
         />
         <MixUps history={history} graduateRuns={cfg.graduateRuns} />

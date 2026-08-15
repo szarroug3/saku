@@ -21,7 +21,6 @@ import { nounFor } from "@/lib/quiz-instruction";
 import type { PairRow } from "@/lib/confusions";
 import type { ResultsPayload } from "@/lib/quiz-session";
 import type {
-  AccuracyMetric,
   EntryId,
   FactCounts,
   FactId,
@@ -32,9 +31,8 @@ import type {
 
 /** How the chosen metric reads in a sentence — the chip's own words, so the
  * hero and the chip below it can't drift apart. */
-export function metricWords(metric: AccuracyMetric): string {
-  void metric;
-  return "score";
+export function metricWords(): string {
+  return "score"
 }
 
 function s(n: number): string {
@@ -90,20 +88,15 @@ export function historyBefore(history: HistoryFile, ts: number): HistoryFile {
  * are facts ABOUT the run, and `facts` below is the other sense. Renaming it is
  * churn for a later pass; the field is the one that matters.) */
 export interface RunFacts {
-  metric: AccuracyMetric;
   /** The facts this run asked. */
   facts: FactId[];
   /** Showings/questions this run asked. */
   questionsTotal: number;
   /** Showings landed on first attempt. */
   questionsFirstTry: number;
-  /** Showings landed eventually. */
-  questionsEventually: number;
   total: number;
   /** Facts answered right on the first attempt. */
   firstTry: number;
-  /** Facts answered right at some point. */
-  eventually: number;
   /** Wrong attempts across the run — the truth the metric can't soften. */
   totalMisses: number;
   /** The ring, through accuracy.ts. */
@@ -128,8 +121,8 @@ export interface RunFacts {
  * reading here is the one computeResults() itself uses for its forgiving count
  * (`everCorrect`) and the one the chip promises: you got there in the end.
  */
-function isMissed(st: FactSessionDetail, metric: AccuracyMetric): boolean {
-  return metric === "firstTry" ? st.firstTryCorrect !== true : !st.everCorrect;
+function isMissed(st: FactSessionDetail): boolean {
+  return st.firstTryCorrect !== true;
 }
 
 /**
@@ -178,7 +171,6 @@ function runAggregate(stats: SessionStats): FactCounts {
 
 export function deriveRun(
   results: ResultsPayload,
-  metric: AccuracyMetric,
 ): RunFacts {
   const { summaryOnly } = results;
   const stats = readableStats(results);
@@ -186,7 +178,7 @@ export function deriveRun(
   const agg = runAggregate(stats);
 
   const missed = r.facts
-    .filter((f) => isMissed(stats[f], metric))
+    .filter((f) => isMissed(stats[f]))
     // Worst first, the order engine.missedFacts() uses; a fact you never
     // landed leads its miss-count group, since not knowing beats fumbling.
     .sort(
@@ -194,9 +186,9 @@ export function deriveRun(
         stats[b].misses - stats[a].misses ||
         Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
     );
-  // Board split is about what needed another look in THIS run, not the lens
-  // chip's strict/forgiving metric. A fact can be first-try on one showing and
-  // still cost retries on another; misses>0 keeps that visible.
+  // Board split is about what needed another look in THIS run, not the score
+  // shown up top. A fact can be first-try on one showing and still cost
+  // retries on another; misses>0 keeps that visible.
   const needsWork = r.facts
     .filter((f) => stats[f].misses > 0)
     .sort(
@@ -207,21 +199,14 @@ export function deriveRun(
   const workSet = new Set(needsWork);
 
   return {
-    metric,
     facts: r.facts,
     questionsTotal: agg.seen,
     questionsFirstTry: agg.firstTry,
-    questionsEventually: agg.correct,
     total: r.total,
     firstTry: r.strict,
-    eventually: r.forg,
     totalMisses: r.facts.reduce((n, f) => n + stats[f].misses, 0),
     // Summary-only sessions kept percentages and nothing to recompute from.
-    pct: summaryOnly
-      ? metric === "firstTry"
-        ? summaryOnly.strictPct
-        : summaryOnly.forgivingPct
-      : accuracyOf(runAggregate(stats), metric),
+    pct: summaryOnly ? summaryOnly.strictPct : accuracyOf(runAggregate(stats)),
     stored: summaryOnly,
     missed,
     needsWork,
@@ -393,14 +378,14 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
  * Progress section earned. */
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
   const got =
-    run.metric === "firstTry" ? run.questionsFirstTry : run.questionsEventually;
+    run.questionsFirstTry;
   const beaten = progress.length;
   return [
     // A stored session counted nothing per fact, so "0 / 12 score"
     // would be an invention. Report the two percentages it did keep.
     run.stored
       ? { t: `${run.stored.strictPct}% score` }
-      : { t: `${got} / ${run.questionsTotal} ${metricWords(run.metric)}` },
+      : { t: `${got} / ${run.questionsTotal} ${"score"}` },
     ...(beaten
       ? [
           {
@@ -424,7 +409,7 @@ function perfectBits(run: RunFacts, prior: HistoryFile): Bit[] {
     .find((d) => d.facts.every((f) => ran.has(f)));
   const clean = (pct: number) => pct === 100;
   const pctOf = (x: { forgivingPct: number; strictPct: number }) =>
-    run.metric === "firstTry" ? x.strictPct : x.forgivingPct;
+    x.strictPct;
 
   if (deck) {
     const before = prior.sessions.filter(
@@ -509,7 +494,7 @@ export function summarize(
     headline: "Perfect run",
     detail: [
       {
-        t: `${run.questionsTotal} / ${run.questionsTotal} ${metricWords(run.metric)}`,
+        t: `${run.questionsTotal} / ${run.questionsTotal} ${"score"}`,
       },
       ...(beat
         ? ([

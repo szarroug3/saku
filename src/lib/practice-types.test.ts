@@ -254,7 +254,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
     const sel = withTypes(withScope(emptySelection(), "everything"), [
       "hiragana",
     ]);
-    const out = new Set(resolve(sel, h, [], "firstTry", 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
 
     assert.equal(out.size, hira.length, "exactly the known hiragana");
     for (const id of hira) assert.ok(out.has(id), "every known hiragana");
@@ -272,7 +272,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
       "hiragana",
       "radical",
     ]);
-    const out = new Set(resolve(sel, h, [], "firstTry", 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
     assert.equal(out.size, hira.length + radical.length);
     for (const id of [...hira, ...radical]) assert.ok(out.has(id));
     for (const id of kata) assert.ok(!out.has(id));
@@ -292,7 +292,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
       { ...withScope(emptySelection(), "everything"), states: ["shaky"] },
       ["kanji"],
     );
-    const out = new Set(resolve(sel, h, [], "firstTry", 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
 
     assert.equal(out.size, shakyKanji.length);
     for (const id of shakyKanji) assert.ok(out.has(id), "the shaky kanji");
@@ -358,7 +358,7 @@ describe("pruneEmptyTypes drops a chosen type absent from the new scope", () => 
     const present = new Set(
       availableTypes().filter(
         (id) =>
-          resolve(withTypes(moved, [id]), h, [], "firstTry", 0, {
+          resolve(withTypes(moved, [id]), h, [], 0, {
             now: NOW,
           }).length > 0,
       ),

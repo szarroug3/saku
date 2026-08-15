@@ -198,11 +198,6 @@ export interface AskConfig {
   english: EnglishAsk;
 }
 
-/** Which accuracy number every screen shows — the same forgiving/strict split
- * the results screen already offers, hoisted to a global preference.
- * firstTry = nailed it immediately · attempt = share of attempts correct. */
-export type AccuracyMetric = "firstTry" | "attempt";
-
 /**
  * The order the queue of UNSEEN kanji arrives in. Orders nothing else: not what
  * you are asked next (that is the ranking model's, and it only ever sees facts
@@ -264,8 +259,6 @@ export interface QuizConfig {
   voiceName: string;
 
   // ---------- what the numbers mean (used everywhere) ----------
-  /** Drives the drill HUD pill, the Home deck rings, and the picker circles. */
-  accuracyMetric: AccuracyMetric;
   /** Show practice volume next to accuracy, so 88%-from-4-tries can't lie. */
   showVolume: boolean;
   /**

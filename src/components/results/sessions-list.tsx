@@ -130,7 +130,7 @@ function SessionRow({
         <span className="tabular-nums text-text-muted">
           Score{" "}
           <span className="text-text">
-            {formatAccuracy(record.forgivingPct)}
+            {formatAccuracy(record.strictPct)}
           </span>
         </span>
         <SmallBtn

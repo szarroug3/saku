@@ -6,11 +6,9 @@
 // selection — results and stats were importing a Home component for a string
 // function, which was fine while Home had shelves and is nonsense now.
 
-import type { AccuracyMetric } from "@/types";
-
 /** How this metric's number should be read aloud in a subtitle. */
-export function metricWord(metric: AccuracyMetric): string {
-  return metric === "firstTry" ? "first try" : "of attempts";
+export function metricWord(): string {
+  return "first try";
 }
 
 /** "1 character" / "12 characters". */

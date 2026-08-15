@@ -106,7 +106,7 @@ import { anchorForFact, isReadingFact, quizzableFacts } from "@/lib/word-unlock"
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type {
-  AccuracyMetric,
+
   Direction,
   EntryId,
   FactId,
@@ -468,8 +468,8 @@ function Pill({
 /** Live session accuracy. The arithmetic is src/lib/session-accuracy.ts — it
  * moved out of this file because it was wrong (a per-fact flag over a
  * per-showing count) and a .tsx cannot be unit-tested here. */
-function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
-  return sessionAccuracy(stats, metric);
+function liveAccuracy(stats: SessionStats): number | null {
+  return sessionAccuracy(stats);
 }
 
 export function DrillScreen() {
@@ -1713,7 +1713,7 @@ export function DrillScreen() {
   })();
 
   const accuracy = cfg.showAccuracy
-    ? liveAccuracy(rt.stats, cfg.accuracyMetric)
+    ? liveAccuracy(rt.stats)
     : null;
   const controlsLit = !fadeControls || controlsAwake || drawerOpen;
   // "Look again" is offered only for a session that has a lesson to return to.

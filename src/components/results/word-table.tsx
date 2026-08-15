@@ -68,14 +68,11 @@ const OUTCOME: Record<Outcome, { label: string; text: string; dot: string }> = {
 
 function HowYouDid({
   outcome,
-  hideFirstTry,
 }: {
   outcome: Outcome;
-  hideFirstTry?: boolean;
 }) {
   // First-try status is no longer shown on this board.
   if (outcome === "first-try") return null;
-  void hideFirstTry;
   const o = OUTCOME[outcome];
   return (
     <span className={cx("flex items-center gap-1 text-[9px] font-medium", o.text)}>
@@ -91,7 +88,6 @@ function PresentationCell({
   stats,
   selected,
   onToggle,
-  hideFirstTry,
   solidTone,
 }: {
   fact: FactId;
@@ -99,7 +95,6 @@ function PresentationCell({
   stats: SessionStats;
   selected: boolean;
   onToggle: () => void;
-  hideFirstTry?: boolean;
   solidTone?: boolean;
 }) {
   const st = stats[fact];
@@ -144,7 +139,7 @@ function PresentationCell({
         {phrase}
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <HowYouDid outcome={outcome} hideFirstTry={hideFirstTry} />
+        <HowYouDid outcome={outcome} />
         {saidParts.length ? (
           <span className="inline-flex items-center gap-1 text-[9px] text-danger">
             <span aria-hidden="true" className="leading-none">
@@ -171,7 +166,6 @@ export function WordTable({
   isSelected,
   onToggle,
   showOnly,
-  hideFirstTry,
   solidTone,
   displayEntry,
 }: {
@@ -181,8 +175,6 @@ export function WordTable({
   onToggle: (box: BoxKey) => void;
   /** Optional box filter: render only these boxes, hide rows with none. */
   showOnly?: ReadonlySet<BoxKey>;
-  /** Optional: hide first-try status marker (dot + label). */
-  hideFirstTry?: boolean;
   /** Optional: tint unselected cells as solid/safe. */
   solidTone?: boolean;
   /** Optional: custom row heading text (defaults to glyphOf(entry)). */
@@ -234,7 +226,6 @@ export function WordTable({
                     stats={stats}
                     selected={isSelected(x.box)}
                     onToggle={() => onToggle(x.box)}
-                    hideFirstTry={hideFirstTry}
                     solidTone={solidTone}
                   />
                 ))}

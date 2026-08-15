@@ -93,7 +93,7 @@ test("answering perfectly reads 100%, however many times the deck wraps", () => 
   // and the card on screen is a REPEAT the guard no longer covers.
   for (let answered = 1; answered <= 12; answered++) {
     assert.equal(
-      sessionAccuracy(driveThenShowNext(answered), "firstTry"),
+      sessionAccuracy(driveThenShowNext(answered)),
       100,
       `strict accuracy after ${answered} correct answer(s), next card on screen`,
     );
@@ -105,11 +105,11 @@ test("a card on screen but not yet answered moves nothing, repeat or not", () =>
   // `a`, so the fact is no longer "in flight" by firstTryCorrect's reckoning —
   // which is precisely why the guard in session-accuracy.ts did not save it.
   const stats = driveCorrectly(5);
-  const before = sessionAccuracy(stats, "firstTry");
+  const before = sessionAccuracy(stats);
   statForShowing(stats, POOL[0]); // card 6 goes up: a repeat of `a`
   assert.equal(before, 100);
   assert.equal(
-    sessionAccuracy(stats, "firstTry"),
+    sessionAccuracy(stats),
     100,
     "showing a repeat must not drop the pill before it is answered",
   );
@@ -142,10 +142,10 @@ test("a HINTED first answer does forfeit it — the one thing a hint costs", () 
   // "nothing forfeits the credit".
   const stats: SessionStats = {};
   const st = statForShowing(stats, POOL[0]);
-  resolveShowing(st, false, true); // right, cold, but hinted → no credit
+  resolveShowing(st, false, true); // right, cold, but hinted → no first-try credit
   assert.equal(st.firstTryCount, 0);
   assert.equal(st.correct, 1, "still correct, still seen");
-  assert.equal(sessionAccuracy(stats, "attempt"), 100);
+  assert.equal(sessionAccuracy(stats), 0);
 });
 
 test("a real miss still counts, on both screens", () => {
@@ -155,7 +155,7 @@ test("a real miss still counts, on both screens", () => {
   resolveShowing(st, false, false); // wrong, retries exhausted
   st.misses++;
 
-  assert.equal(sessionAccuracy(stats, "firstTry"), 0);
+  assert.equal(sessionAccuracy(stats), 0);
   const view = roundCompleteView(sessionWith(stats));
   assert.equal(view.total, 1);
   assert.equal(view.firstTry, 0);
@@ -169,7 +169,7 @@ test("landing it on the retry is one showing, not first try", () => {
   const st = statForShowing(stats, POOL[0]);
   st.misses++; // wrong attempt, retries left — resolves nothing
   assert.equal(
-    sessionAccuracy(stats, "firstTry"),
+    sessionAccuracy(stats),
     null,
     "mid-retry, nothing has resolved, so there is no accuracy to show yet",
   );
@@ -178,8 +178,7 @@ test("landing it on the retry is one showing, not first try", () => {
   assert.equal(st.seen, 1, "one card, one showing");
   assert.equal(st.firstTryCount, 0);
   assert.equal(st.correct, 1);
-  assert.equal(sessionAccuracy(stats, "firstTry"), 0);
-  assert.equal(sessionAccuracy(stats, "attempt"), 100);
+  assert.equal(sessionAccuracy(stats), 0);
 });
 
 test("resolveShowing records the showing's presentation for the results chip", () => {

@@ -26,14 +26,14 @@ import { foldLiveStats } from "@/lib/library/live-standing";
 import { standingOf } from "@/lib/library/standing";
 import { projectSessionFacts } from "@/lib/session-record";
 import type {
-  AccuracyMetric,
+
   FactAggregate,
   FactId,
   FactSessionDetail,
   SessionStats,
 } from "@/types";
 
-const METRIC: AccuracyMetric = "firstTry";
+
 const NOW = Date.UTC(2026, 6, 1);
 const fid = (s: string) => s as unknown as FactId;
 
@@ -98,7 +98,7 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
   test("the reported bug: a fresh miss on a not-seen fact reads shaky, not not-seen", () => {
     // Before: 何 has never been asked — the Library says "not seen".
     assert.equal(
-      standingOf(undefined, undefined, METRIC, NOW).standing,
+      standingOf(undefined, undefined, NOW).standing,
       "not-seen",
     );
 
@@ -106,7 +106,7 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     const live: SessionStats = { [NANI]: MISS };
     const view = foldLiveStats({}, live, NOW);
 
-    const s = standingOf(view[NANI], undefined, METRIC, NOW);
+    const s = standingOf(view[NANI], undefined, NOW);
     assert.notEqual(s.standing, "not-seen", "the miss must show at once");
     assert.notEqual(
       s.standing,
@@ -122,7 +122,7 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     // belief lives only in claims. The Library says "claimed".
     const claimedAt = NOW - 5 * 24 * 60 * 60 * 1000; // claimed five days ago
     assert.equal(
-      standingOf(undefined, claimedAt, METRIC, NOW).standing,
+      standingOf(undefined, claimedAt, NOW).standing,
       "claimed",
       "before the drill, an untested claim reads claimed",
     );
@@ -136,7 +136,7 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
 
     // The live miss is newer than the claim, so the claim must NOT win: the
     // standing has to flip off "claimed" to the tested/shaky state.
-    const s = standingOf(view[NANI], claimedAt, METRIC, NOW);
+    const s = standingOf(view[NANI], claimedAt, NOW);
     assert.notEqual(
       s.standing,
       "claimed",
@@ -162,7 +162,7 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     });
     const view = foldLiveStats({}, { [NANI]: dealt }, NOW);
     assert.equal(
-      standingOf(view[NANI], claimedAt, METRIC, NOW).standing,
+      standingOf(view[NANI], claimedAt, NOW).standing,
       "claimed",
       "an untouched card must not budge the claim",
     );
@@ -176,14 +176,14 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
       eventually: i < 8,
     }));
     assert.equal(
-      standingOf(base[NANI], undefined, METRIC, NOW).standing,
+      standingOf(base[NANI], undefined, NOW).standing,
       "solid",
     );
 
     // The live miss pushes the oldest hit out: 7 / 10 → getting there.
     const view = foldLiveStats(base, { [NANI]: MISS }, NOW);
     assert.equal(
-      standingOf(view[NANI], undefined, METRIC, NOW).standing,
+      standingOf(view[NANI], undefined, NOW).standing,
       "getting-there",
       "the uncommitted miss drops it out of solid immediately",
     );
@@ -202,14 +202,14 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     // projection, same fold. When the round finally banks, nothing on the page
     // changes — which is the whole promise of folding at read time.
     assert.equal(
-      standingOf(liveView[NANI], undefined, METRIC, NOW).standing,
-      standingOf(committed[NANI], undefined, METRIC, NOW).standing,
+      standingOf(liveView[NANI], undefined, NOW).standing,
+      standingOf(committed[NANI], undefined, NOW).standing,
     );
     // After commit the run's live stats are empty; the view is just committed.
     const afterCommit = foldLiveStats(committed, {}, NOW);
     assert.equal(
-      standingOf(afterCommit[NANI], undefined, METRIC, NOW).standing,
-      standingOf(liveView[NANI], undefined, METRIC, NOW).standing,
+      standingOf(afterCommit[NANI], undefined, NOW).standing,
+      standingOf(liveView[NANI], undefined, NOW).standing,
     );
   });
 

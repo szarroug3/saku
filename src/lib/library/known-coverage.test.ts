@@ -69,7 +69,7 @@ test("every kind NOT on the accepted-unknowable list has SOME entry that can bec
   const byKind = new Map<string, { total: number; known: number }>();
   for (const entry of LIB_ENTRIES) {
     const facts = knownFactsOf(entry.id);
-    const standing = entryStanding(facts, {}, claims, "firstTry", now);
+    const standing = entryStanding(facts, {}, claims, now);
     const known = entryIsKnown(standing);
     const bucket = byKind.get(entry.kind) ?? { total: 0, known: 0 };
     bucket.total++;
@@ -103,7 +103,7 @@ test("the accepted-unknowable list is exactly right — no more, no less", () =>
     const entries = LIB_ENTRIES.filter((e) => e.kind === kind);
     assert.ok(entries.length > 0, `${kind} is on the accepted-unknowable list but has no entries at all`);
     const anyKnown = entries.some((e) =>
-      entryIsKnown(entryStanding(knownFactsOf(e.id), {}, claims, "firstTry", now)),
+      entryIsKnown(entryStanding(knownFactsOf(e.id), {}, claims, now)),
     );
     assert.equal(
       anyKnown,

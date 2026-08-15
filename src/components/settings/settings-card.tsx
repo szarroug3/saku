@@ -620,18 +620,6 @@ export function SettingsCard() {
         <Lbl>What the numbers mean</Lbl>
 
         <Row
-          label="Accuracy shown as"
-          info="Accuracy uses first try only. Applies everywhere the app shows a percentage."
-        >
-          <Chip
-            on={cfg.accuracyMetric === "firstTry"}
-            onClick={() => update({ accuracyMetric: "firstTry" })}
-          >
-            First try
-          </Chip>
-        </Row>
-
-        <Row
           label="Show how much you've practiced"
           info="A 90% from three cards isn't really 90%. This shows the count next to the percentage."
         >

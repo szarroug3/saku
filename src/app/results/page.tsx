@@ -16,6 +16,6 @@ export default function ResultsPage() {
   if (!results) return null;
 
   // Keyed by ts so reopening a different stored session resets the
-  // forgiving/strict toggle and the mount-time "recent" timestamp check.
+  // mount-time "recent" timestamp check.
   return <ResultsView key={results.ts} results={results} />;
 }

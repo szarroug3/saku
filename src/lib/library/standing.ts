@@ -57,7 +57,7 @@ import { accuracyOf } from "@/lib/accuracy";
 import type { Claims } from "@/lib/claims";
 import { effectiveState } from "@/lib/claims";
 import { status } from "@/lib/scoring";
-import type { AccuracyMetric, FactAggregate, FactId } from "@/types";
+import type { FactAggregate, FactId } from "@/types";
 
 export type Standing =
   | "not-seen"
@@ -111,14 +111,11 @@ export const SOLID_PCT = 80;
  * sessions backfill it. */
 export function recentRunAccuracy(
   agg: FactAggregate | undefined,
-  metric: AccuracyMetric,
 ): number | null {
   if (!agg) return null;
   const runs = agg.recentRuns;
-  if (!runs?.length) return accuracyOf(agg, metric);
-  const hits = runs.filter((run) =>
-    metric === "firstTry" ? run.firstTry : run.eventually,
-  ).length;
+  if (!runs?.length) return accuracyOf(agg);
+  const hits = runs.filter((run) => run.firstTry).length;
   return (100 * hits) / runs.length;
 }
 
@@ -136,8 +133,7 @@ export interface FactStanding {
 export function standingOf(
   agg: FactAggregate | undefined,
   claimedAt: number | undefined,
-  metric: AccuracyMetric,
-  now: number,
+    now: number,
 ): FactStanding {
   const seen = agg?.seen ?? 0;
   const testedAt = agg?.lastTested ?? 0;
@@ -165,7 +161,7 @@ export function standingOf(
   // A fact with showings behind it, lost to time: re-teach, not re-test.
   if (s === "teach") return { standing: "slipping", seen };
 
-  const pct = recentRunAccuracy(agg, metric);
+  const pct = recentRunAccuracy(agg);
   if (pct !== null && pct >= SOLID_PCT) {
     return { standing: "solid", seen };
   }
@@ -180,10 +176,9 @@ export function standingFor(
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   fact: FactId,
-  metric: AccuracyMetric,
-  now: number,
+    now: number,
 ): FactStanding {
-  return standingOf(facts[fact], claims[fact], metric, now);
+  return standingOf(facts[fact], claims[fact], now);
 }
 
 // ---------- an ENTRY's standing, which is mostly a refusal ----------
@@ -229,14 +224,13 @@ export function entryStanding(
   entryFacts: readonly FactId[],
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
-  metric: AccuracyMetric,
-  now: number,
+    now: number,
 ): EntryStanding {
   let needWork = 0;
   let seen = 0;
   let only: Standing | null = null;
   for (const f of entryFacts) {
-    const s = standingOf(facts[f], claims[f], metric, now);
+    const s = standingOf(facts[f], claims[f], now);
     if (s.seen > 0) seen++;
     if (s.standing !== "solid" && s.standing !== "claimed") needWork++;
     only = s.standing;

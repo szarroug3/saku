@@ -70,7 +70,6 @@ export function defaultConfig(): QuizConfig {
     // (packVoicesEnabled() false) or a clip is missing, speak() falls back to the
     // browser voice, so this is safe even before the audio is seeded.
     voiceName: "keita",
-    accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
@@ -104,8 +103,6 @@ function normalizeConfig(saved: unknown): QuizConfig {
     if (saved && typeof saved === "object") {
       const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
       const cfg: QuizConfig = { ...defaultConfig(), ...raw };
-      // Product decision: only first-try accuracy is supported.
-      cfg.accuracyMetric = "firstTry";
       // Pairs and grid have no per-mode chooser any more: they ALWAYS drill the
       // full relationship / response set, so a stored (possibly narrowed) value
       // is discarded and pinned to the full set here.
@@ -260,12 +257,12 @@ export function QuizConfigProvider({ children }: { children: ReactNode }) {
 
   const set = useCallback(
     (fn: (prev: QuizConfig) => QuizConfig) =>
-      setCfg((prev) => ({ ...fn(prev), accuracyMetric: "firstTry" })),
+      setCfg((prev) => ({ ...fn(prev),  })),
     [],
   );
   const update = useCallback(
     (patch: Partial<QuizConfig>) =>
-      setCfg((prev) => ({ ...prev, ...patch, accuracyMetric: "firstTry" })),
+      setCfg((prev) => ({ ...prev, ...patch,  })),
     [],
   );
 

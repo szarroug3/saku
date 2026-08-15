@@ -31,9 +31,9 @@ import {
   SOLID_PCT,
   standingOf,
 } from "@/lib/library/standing";
-import type { AccuracyMetric, EntryId, FactAggregate, FactId } from "@/types";
+import type { EntryId, FactAggregate, FactId } from "@/types";
 
-const METRIC: AccuracyMetric = "firstTry";
+
 const NOW = Date.UTC(2026, 0, 1);
 /** A claim made a moment ago — recent enough to still be `quiet` (never asked),
  * which is what makes its standing "claimed" and thus known. */
@@ -72,7 +72,7 @@ function drilledJustNow(
 
 describe("standingOf — 'solid' takes accuracy, not just recency", () => {
   const NOW_T = Date.UTC(2026, 5, 1);
-  const METRIC_S: AccuracyMetric = "firstTry";
+  
 
   test("the bug: heavily-missed but drilled just now is NOT solid", () => {
     // The exact probe from the task: seen 3, missed 4, correct 1, firstTry 1,
@@ -81,7 +81,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       { seen: 3, missed: 4, firstTry: 1, correct: 1 },
       NOW_T,
     );
-    const s = standingOf(agg, undefined, METRIC_S, NOW_T);
+    const s = standingOf(agg, undefined, NOW_T);
     assert.notEqual(s.standing, "solid", "recency must not launder into solid");
     assert.equal(s.standing, "shaky", "33% first-try is shaky");
   });
@@ -98,7 +98,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       missAt,
     );
     assert.ok(agg.lastTested > claimedAt, "the miss is the newer record");
-    const s = standingOf(agg, claimedAt, METRIC_S, missAt);
+    const s = standingOf(agg, claimedAt, missAt);
     assert.notEqual(s.standing, "solid");
     assert.equal(s.standing, "shaky", "0% first-try, claim discarded");
   });
@@ -110,7 +110,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       { seen: 3, missed: 2, firstTry: 1, correct: 1 },
       testedAt,
     );
-    const s = standingOf(agg, claimedAt, METRIC_S, claimedAt);
+    const s = standingOf(agg, claimedAt, claimedAt);
     assert.equal(s.standing, "solid");
   });
 
@@ -123,7 +123,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       { seen: 1, missed: 1, firstTry: 0, correct: 0, firstTryHit: false },
       missAt,
     );
-    const s = standingOf(agg, claimedAt, METRIC_S, missAt);
+    const s = standingOf(agg, claimedAt, missAt);
     assert.notEqual(s.standing, "solid");
   });
 
@@ -132,12 +132,12 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       { seen: 10, missed: 0, firstTry: 10, correct: 10 },
       NOW_T,
     );
-    assert.equal(standingOf(agg, undefined, METRIC_S, NOW_T).standing, "solid");
+    assert.equal(standingOf(agg, undefined, NOW_T).standing, "solid");
   });
 
   test("a claimed-but-never-tested fact reads 'claimed' — neutral, untested", () => {
     // No aggregate at all (a claim writes no counts), claimed a moment ago.
-    const s = standingOf(undefined, NOW_T - 1000, METRIC_S, NOW_T);
+    const s = standingOf(undefined, NOW_T - 1000, NOW_T);
     assert.equal(s.standing, "claimed");
     assert.equal(s.seen, 0, "a claim records no showings");
   });
@@ -154,7 +154,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       stability: 5,
       lastTested: NOW_T - 60 * DAY,
     };
-    const s = standingOf(agg, undefined, METRIC_S, NOW_T);
+    const s = standingOf(agg, undefined, NOW_T);
     assert.notEqual(s.standing, "solid");
     assert.equal(s.standing, "slipping", "seen before, now lost → re-teach");
   });
@@ -167,7 +167,7 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       NOW_T,
     );
     assert.equal(
-      standingOf(agg, undefined, METRIC_S, NOW_T).standing,
+      standingOf(agg, undefined, NOW_T).standing,
       "getting-there",
     );
   });
@@ -178,13 +178,13 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
       { seen: 100, missed: 0, firstTry: SOLID_PCT, correct: 100 },
       NOW_T,
     );
-    assert.equal(standingOf(at, undefined, METRIC_S, NOW_T).standing, "solid");
+    assert.equal(standingOf(at, undefined, NOW_T).standing, "solid");
     const under = drilledJustNow(
       { seen: 100, missed: 0, firstTry: SOLID_PCT - 1, correct: 100 },
       NOW_T,
     );
     assert.equal(
-      standingOf(under, undefined, METRIC_S, NOW_T).standing,
+      standingOf(under, undefined, NOW_T).standing,
       "getting-there",
     );
   });
@@ -203,22 +203,22 @@ describe("standingOf — the latest ten runs define the accuracy label", () => {
   });
 
   test("8+ is solid, despite poor all-time accuracy", () => {
-    assert.equal(standingOf(withRuns(8), undefined, METRIC, NOW).standing, "solid");
+    assert.equal(standingOf(withRuns(8), undefined, NOW).standing, "solid");
   });
 
   test("6–7 is getting there", () => {
     assert.equal(
-      standingOf(withRuns(6), undefined, METRIC, NOW).standing,
+      standingOf(withRuns(6), undefined, NOW).standing,
       "getting-there",
     );
     assert.equal(
-      standingOf(withRuns(7), undefined, METRIC, NOW).standing,
+      standingOf(withRuns(7), undefined, NOW).standing,
       "getting-there",
     );
   });
 
   test("fewer than 6 is shaky", () => {
-    assert.equal(standingOf(withRuns(5), undefined, METRIC, NOW).standing, "shaky");
+    assert.equal(standingOf(withRuns(5), undefined, NOW).standing, "shaky");
   });
 
   test("short histories use the percentage of available runs", () => {
@@ -237,19 +237,19 @@ describe("standingOf — the latest ten runs define the accuracy label", () => {
         eventually: i < hits,
       })),
     });
-    assert.equal(standingOf(short(1, 1), undefined, METRIC, NOW).standing, "solid");
-    assert.equal(standingOf(short(4, 5), undefined, METRIC, NOW).standing, "solid");
+    assert.equal(standingOf(short(1, 1), undefined, NOW).standing, "solid");
+    assert.equal(standingOf(short(4, 5), undefined, NOW).standing, "solid");
     assert.equal(
-      standingOf(short(3, 5), undefined, METRIC, NOW).standing,
+      standingOf(short(3, 5), undefined, NOW).standing,
       "getting-there",
     );
-    assert.equal(standingOf(short(2, 5), undefined, METRIC, NOW).standing, "shaky");
+    assert.equal(standingOf(short(2, 5), undefined, NOW).standing, "shaky");
   });
 });
 
 describe("entryIsKnown — the knowledge filter's one boolean", () => {
   test("a never-seen entry is NOT known", () => {
-    const s = entryStanding(factsOf(kana.id), NO_FACTS, NO_CLAIMS, METRIC, NOW);
+    const s = entryStanding(factsOf(kana.id), NO_FACTS, NO_CLAIMS, NOW);
     assert.equal(entryIsKnown(s), false);
   });
 
@@ -258,7 +258,6 @@ describe("entryIsKnown — the knowledge filter's one boolean", () => {
       factsOf(kana.id),
       NO_FACTS,
       claimAll(kana.id),
-      METRIC,
       NOW,
     );
     assert.equal(s.seen, 0, "a claim records no showings");
@@ -272,12 +271,12 @@ describe("entryIsKnown — the knowledge filter's one boolean", () => {
     // All but one claimed: still not known — the one unclaimed reading is work.
     const partial: Claims = {};
     for (const f of facts.slice(1)) partial[f] = JUST_NOW;
-    const partialStanding = entryStanding(facts, NO_FACTS, partial, METRIC, NOW);
+    const partialStanding = entryStanding(facts, NO_FACTS, partial, NOW);
     assert.equal(partialStanding.needWork, 1);
     assert.equal(entryIsKnown(partialStanding), false);
 
     // Every fact claimed: known.
-    const whole = entryStanding(facts, NO_FACTS, claimAll(kanji.id), METRIC, NOW);
+    const whole = entryStanding(facts, NO_FACTS, claimAll(kanji.id), NOW);
     assert.equal(whole.needWork, 0);
     assert.equal(entryIsKnown(whole), true);
   });
@@ -296,7 +295,7 @@ describe("entryIsKnown — the knowledge filter's one boolean", () => {
         correct: 4,
       };
     }
-    const s = entryStanding(factsOf(kana.id), facts, NO_CLAIMS, METRIC, NOW);
+    const s = entryStanding(factsOf(kana.id), facts, NO_CLAIMS, NOW);
     assert.equal(entryIsKnown(s), true);
   });
 
@@ -326,12 +325,12 @@ describe("knownFactsOf — the filter agrees with the entry page for a kanji", (
 
   test("a kanji with only its MEANING claimed IS known — readings unseen don't hold it back", () => {
     const claims: Claims = { [meaningFactId(kanji.glyph)]: JUST_NOW };
-    const s = entryStanding(knownFactsOf(kanji), NO_FACTS, claims, METRIC, NOW);
+    const s = entryStanding(knownFactsOf(kanji), NO_FACTS, claims, NOW);
     assert.equal(entryIsKnown(s), true);
   });
 
   test("a kanji with NOTHING claimed is NOT known", () => {
-    const s = entryStanding(knownFactsOf(kanji), NO_FACTS, NO_CLAIMS, METRIC, NOW);
+    const s = entryStanding(knownFactsOf(kanji), NO_FACTS, NO_CLAIMS, NOW);
     assert.equal(entryIsKnown(s), false);
   });
 
@@ -342,12 +341,12 @@ describe("knownFactsOf — the filter agrees with the entry page for a kanji", (
     assert.ok(facts.length > 1, "need a multi-fact non-kanji");
     const partial: Claims = {};
     for (const f of facts.slice(1)) partial[f] = JUST_NOW;
-    const s = entryStanding(facts, NO_FACTS, partial, METRIC, NOW);
+    const s = entryStanding(facts, NO_FACTS, partial, NOW);
     assert.equal(entryIsKnown(s), false);
   });
 
   test("a kana with its one fact unclaimed is NOT known", () => {
-    const s = entryStanding(knownFactsOf(kana), NO_FACTS, NO_CLAIMS, METRIC, NOW);
+    const s = entryStanding(knownFactsOf(kana), NO_FACTS, NO_CLAIMS, NOW);
     assert.equal(entryIsKnown(s), false);
   });
 });

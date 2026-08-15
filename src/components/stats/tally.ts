@@ -47,7 +47,7 @@ import {
   standingOf,
   type Standing,
 } from "@/lib/library/standing";
-import type { AccuracyMetric, FactAggregate, FactId } from "@/types";
+import type { FactAggregate, FactId } from "@/types";
 
 /**
  * The order the buckets are read in — best to worst, then the one that is not
@@ -130,12 +130,11 @@ export function tallyFacts(
   facts: readonly FactId[],
   aggregates: Record<FactId, FactAggregate>,
   claims: Claims,
-  metric: AccuracyMetric,
   now: number,
 ): Tally {
   const out = empty();
   for (const f of facts) {
-    out[standingOf(aggregates[f], claims[f], metric, now).standing]++;
+    out[standingOf(aggregates[f], claims[f], now).standing]++;
   }
   return out;
 }

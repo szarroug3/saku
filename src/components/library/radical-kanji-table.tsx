@@ -22,7 +22,7 @@ import { kanjiEntry, kanjiRow, orderRow } from "@/data/kanji";
 import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
 import type { Claims } from "@/lib/claims";
-import type { AccuracyMetric, HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types";
 
 export function RadicalKanjiTable({
   component,
@@ -38,7 +38,7 @@ export function RadicalKanjiTable({
   // rewired; drop them if that caller stops passing standing data.
   facts?: HistoryFile["facts"];
   claims?: Claims;
-  metric?: AccuracyMetric;
+  
   now?: number;
 }) {
   const kanji = usedAsPartIn(component);
