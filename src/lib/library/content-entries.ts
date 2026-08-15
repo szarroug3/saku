@@ -66,17 +66,24 @@ export async function fetchContentEntry<T>(entryId: EntryId): Promise<T | null> 
  * has the whole dictionary loaded and would rather not round-trip for it).
  */
 export function useContentEntry<T>(entryId: EntryId | null): T | null | undefined {
-  const [payload, setPayload] = useState<T | null | undefined>(undefined);
+  const [result, setResult] = useState<{
+    entryId: EntryId;
+    payload: T | null;
+  } | null>(null);
   useEffect(() => {
     if (entryId === null) return;
     let alive = true;
-    setPayload(undefined);
     void fetchContentEntry<T>(entryId).then((p) => {
-      if (alive) setPayload(p);
+      if (alive) setResult({ entryId, payload: p });
     });
     return () => {
       alive = false;
     };
   }, [entryId]);
-  return payload;
+  // Treat a result for the previous id as loading instead of synchronously
+  // clearing state in the effect. This prevents stale content on an id switch
+  // and avoids the extra render React's effect lint correctly rejects.
+  return entryId !== null && result?.entryId === entryId
+    ? result.payload
+    : undefined;
 }

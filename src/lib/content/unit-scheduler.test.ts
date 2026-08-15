@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { nextUnitLesson, nextTrackLesson, planUnitLesson } from "./unit-scheduler.ts";
-import { transitivityItems, verbPairUnitsOf } from "./verb-pair-unit.ts";
+import { transitivityItems } from "./verb-pair-unit.ts";
 import { teachUnitsOf } from "./teach-unit.ts";
 import {
   orderedUnits,

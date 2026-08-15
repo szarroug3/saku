@@ -74,7 +74,7 @@ jobs:
   # tsc/tests/build all pass, the live page still serves the OLD row. Running
   # the (idempotent, delta-only) seed on every push to main removes that gap —
   # no one has to remember to reseed.
-  reseed-content:
+  seed-content:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     # Never cancel a seed between batches, and never let two commits seed at
@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Reseed content_entries
+      - name: Seed content_entries
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
