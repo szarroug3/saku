@@ -5,7 +5,7 @@
 # error, not a type error, and no unit test mounts a route. So the build is the
 # only gate on the boot class, and it runs on every push and PR alongside the
 # checks that were already green when that conflict shipped.
-name: CI
+name: Checks and content seed
 
 on:
   push:
