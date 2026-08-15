@@ -68,6 +68,7 @@ import {
 } from "@/data/grammar";
 import { CLASS_ANCHOR } from "@/lib/grammar/te-endings";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import {
   GRAMMAR_CONCEPT_SUBJECT,
   GRAMMAR_CONCEPTS,
@@ -472,6 +473,16 @@ export function knownFactsOf(entry: LibEntry): readonly FactId[] {
   // transitivity-facts.ts.
   if (entry.kind === TRANSITIVITY_SUBJECT) {
     return factsOf(entry.id).filter((f) => transitivitySide(f)?.askable);
+  }
+  // A sentence tier's completion lives on its TRACK-LOCAL marker
+  // (sentenceTierMarkerFact) — deliberately not a registered quiz fact (see
+  // its own doc comment), so it never shows up via the general factsOf(id)
+  // lookup below. Read it directly, or the "I already know this"/completion
+  // claim a learner made is invisible here and the tier sits permanently
+  // "Not known" no matter what they do.
+  if (entry.kind === SENTENCE_RULE_KIND) {
+    const tierId = entry.id.replace(`${MARK_SUBJECT}:sentence-rule-`, "");
+    return [sentenceTierMarkerFact(tierId)];
   }
   return factsOf(entry.id);
 }
