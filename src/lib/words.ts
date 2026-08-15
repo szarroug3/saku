@@ -6,7 +6,7 @@
 // selection — results and stats were importing a Home component for a string
 // function, which was fine while Home had shelves and is nonsense now.
 
-/** How this metric's number should be read aloud in a subtitle. */
+/** How the score should be read aloud in a subtitle. */
 export function metricWord(): string {
   return "first try";
 }

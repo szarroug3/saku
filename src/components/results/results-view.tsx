@@ -128,8 +128,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const { save } = useLists();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
 
-  const metric = "firstTry" as const;
-
   // Fixed at mount: a just-finished quiz shows time-of-day like the legacy
   // finish screen; anything older (reopened sessions) shows the full date.
   const [recent] = useState(() => Date.now() - results.ts < 60_000);
@@ -162,7 +160,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           }),
     [stats, history, graduateRuns, results.ts, summaryOnly],
   );
-  const facts = useMemo(() => deriveRun(results), [results, metric]);
+  const facts = useMemo(() => deriveRun(results), [results]);
   const summary = useMemo(
     () => summarize(facts, stats, prior, analysis.progress),
     [facts, stats, prior, analysis.progress],
@@ -296,7 +294,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       }
     }
     return out;
-  }, [facts.solid, metric, prior.facts, prior.claims, results.ts]);
+  }, [facts.solid, prior.facts, prior.claims, results.ts]);
   const clearableFacts = useMemo(
     () => new Set<FactId>(factProgressRows.map((row) => row.fact)),
     [factProgressRows],
@@ -456,7 +454,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       ) : null}
 
       <TriageSection
-        key="firstTry"
         facts={triageRun}
         stats={stats}
         weakest={weakest}

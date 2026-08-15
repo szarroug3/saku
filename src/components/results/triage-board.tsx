@@ -143,12 +143,7 @@ function Board({
   );
 }
 
-/**
- * Boards + actions. Mount this KEYED BY METRIC: flipping the chip re-derives
- * which characters need work, and the selection it seeded is stale the moment
- * it does. A remount is the honest reset, and it keeps the default out of an
- * effect.
- */
+/** Boards + actions. */
 export function TriageSection({
   facts,
   stats,

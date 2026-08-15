@@ -29,10 +29,9 @@ import type {
   SessionStats,
 } from "@/types";
 
-/** How the chosen metric reads in a sentence — the chip's own words, so the
- * hero and the chip below it can't drift apart. */
+/** The hero's own words for the score. */
 export function metricWords(): string {
-  return "score"
+  return "score";
 }
 
 function s(n: number): string {
@@ -97,14 +96,14 @@ export interface RunFacts {
   total: number;
   /** Facts answered right on the first attempt. */
   firstTry: number;
-  /** Wrong attempts across the run — the truth the metric can't soften. */
+  /** Wrong attempts across the run. */
   totalMisses: number;
   /** The ring, through accuracy.ts. */
   pct: number | null;
   /** Set for a stored session that kept percentages and no detail. Everything
    * per-fact below it is inference; these two numbers are measured. */
   stored?: { forgivingPct: number; strictPct: number };
-  /** Facts that count as missed under `metric`, worst first. */
+  /** Facts missed on first try, worst first. */
   missed: FactId[];
   /** Facts that needed another look this run (any miss/retry) — Needs work. */
   needsWork: FactId[];
@@ -112,15 +111,7 @@ export interface RunFacts {
   solid: FactId[];
 }
 
-/**
- * Whether a character counts as missed under `metric`.
- *
- * Deliberately NOT engine.missedChars(stats, "forg"), which counts any wrong
- * attempt and so returns almost exactly the strict list — the two chips would
- * pick the same characters and the toggle would be decoration. The forgiving
- * reading here is the one computeResults() itself uses for its forgiving count
- * (`everCorrect`) and the one the chip promises: you got there in the end.
- */
+/** Whether a fact was missed — not landed on the first attempt. */
 function isMissed(st: FactSessionDetail): boolean {
   return st.firstTryCorrect !== true;
 }

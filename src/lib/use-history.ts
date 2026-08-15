@@ -25,7 +25,7 @@ export function useHistory(): HistoryContextValue {
   return ctx;
 }
 
-/** Accuracy % over a group of FACTS under `metric`, or null if unseen.
+/** Accuracy % over a group of FACTS, or null if unseen.
  *
  * Re-exported, not reimplemented: src/lib/accuracy.ts is the one definition of
  * what these numbers mean, and the old local copy here mixed the two
