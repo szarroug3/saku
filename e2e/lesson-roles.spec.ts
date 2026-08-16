@@ -1,4 +1,10 @@
-import { test, expect, KANA_FACTS, lessonCard, stepToHeadword } from "./helpers/lessons";
+import {
+  test,
+  expect,
+  seenToReachCurriculum,
+  lessonCard,
+  stepToHeadword,
+} from "./helpers/lessons";
 
 /**
  * ONE CHARACTER, THREE ROLES, ON THE SCREEN.
@@ -20,15 +26,16 @@ test("a folded character's lesson step teaches all three of its roles", async ({
   page,
   seed,
 }) => {
-  // Kana complete, so the home feed offers the curriculum-spine (vocab) card.
-  await seed({ seen: KANA_FACTS, cfg: {} });
+  // Seed the exact frontier where 人 is next, so the card lookup is deterministic
+  // across curriculum reordering.
+  await seed({ seen: seenToReachCurriculum("人"), cfg: {} });
   await page.goto("/learn");
 
   // THE CARD. The spine card is the only one whose tile carries the three-role
   // type label "radical · kanji · word" — a folded character like 人. (The old
   // composite "Radical 1 of 90 · Kanji 1–3 …" eyebrow is gone; the content-model
   // vocab card counts in the neutral "Item N–M of 6,213".)
-  const card = lessonCard(page, "radical · kanji · word");
+  const card = lessonCard(page, "人");
   await expect(card).toHaveCount(1);
 
   await card.getByRole("button", { name: "Start", exact: true }).click();
