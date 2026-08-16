@@ -155,6 +155,24 @@ export function skipButton(page: Page) {
   return page.getByRole("button", { name: "Skip", exact: true });
 }
 
+/**
+ * Pin the tap-drill/marker-choice coin flip (drill-screen.tsx rolls
+ * `Math.random() < 0.5` between the two forms for a は/が/を meaning fact —
+ * see lib/engine/particle-drill.ts). Call before `seedQuiz`/navigation:
+ * `addInitScript` runs before any page script, so every `Math.random()` call
+ * the app makes — including the ones `particleDrillFor`/`particleMarkerFor`
+ * use to pick a candidate sentence and shuffle a board — sees the pinned
+ * value. Fine for THIS purpose (the specs assert shape, not exact content),
+ * but do not reuse this beyond the two particle specs — it flattens every
+ * other random choice on the page too.
+ */
+export async function forceParticleForm(page: Page, form: "tap" | "marker") {
+  const value = form === "marker" ? 0.01 : 0.99;
+  await page.addInitScript((v: number) => {
+    Math.random = () => v;
+  }, value);
+}
+
 /** Start a drill from the Practice page with the seeded config in place. Mirrors
  * app.ts's startPractice, duplicated here so this file stands alone. */
 export async function startQuizDrill(page: Page) {

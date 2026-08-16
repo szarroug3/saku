@@ -1,5 +1,5 @@
 import { test, expect, STEADY_CFG } from "./helpers/app";
-import { seedQuiz, ask, instruction, startQuizDrill } from "./helpers/quiz";
+import { seedQuiz, ask, forceParticleForm, instruction, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
 
@@ -24,15 +24,14 @@ import { patternMeaningFactId } from "@/data/grammar";
  * asserts the SHAPE of the drill (tappable chunks, no pre-coloring, exactly
  * one grades correct) rather than one fixed sentence's literal text.
  *
- * drill-screen.tsx rolls a 50/50 coin between this tap-drill and its
- * marker-choice sibling (see grammar-particle-marker.spec.ts) for the same が
- * meaning fact — there is no test-side seed for that coin, so a run that
- * lands on the marker-choice board instead is skipped rather than failed; the
- * marker-choice spec covers that half of the roll.
+ * drill-screen.tsx rolls a coin between this tap-drill and its marker-choice
+ * sibling (see grammar-particle-marker.spec.ts) for the same が meaning fact —
+ * `forceParticleForm` pins it to this form so the test is not left to chance.
  */
 test("a が meaning fact is drilled by tapping the marked word, not a cloze blank", async ({
   page,
 }) => {
+  await forceParticleForm(page, "tap");
   await seedQuiz(page, {
     seen: [patternMeaningFactId("ga")],
     cfg: {
@@ -42,10 +41,6 @@ test("a が meaning fact is drilled by tapping the marked word, not a cloze blan
   });
   await startQuizDrill(page);
 
-  const chunks = page.locator('p[lang="ja"] button');
-  const isTapDrill = (await chunks.count()) > 0;
-  test.skip(!isTapDrill, "this run rolled the marker-choice sibling instead");
-
   // The role question ("Which word is the subject?") lives in the instruction
   // line below the halo now — the sentence and its translation moved INSIDE
   // the halo box (see drill-halo.tsx's `body` slot).
@@ -54,6 +49,7 @@ test("a が meaning fact is drilled by tapping the marked word, not a cloze blan
   // The COMPLETE sentence renders as separated, tappable chunks — never a
   // blank — scoped to the sentence's own <p lang="ja"> so this never matches
   // an unrelated page button (End quiz, the settings gear, …).
+  const chunks = page.locator('p[lang="ja"] button');
   const count = await chunks.count();
   expect(count).toBeGreaterThanOrEqual(2);
 

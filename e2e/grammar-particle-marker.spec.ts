@@ -1,5 +1,5 @@
 import { test, expect, STEADY_CFG } from "./helpers/app";
-import { seedQuiz, ask, instruction, startQuizDrill } from "./helpers/quiz";
+import { seedQuiz, ask, forceParticleForm, instruction, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
 import { recipe } from "@/data/grammar/recipes";
@@ -21,14 +21,14 @@ import { recipe } from "@/data/grammar/recipes";
  * `retries: "none"`) rather than auto-advancing, so this board should behave
  * the same way.
  *
- * drill-screen.tsx rolls a 50/50 coin between this board and the tap-drill
- * for the same が meaning fact — there is no test-side seed for that coin, so
- * a run that lands on the tap-drill instead is skipped rather than failed;
- * grammar-particle-tap-drill.spec.ts covers that half of the roll.
+ * drill-screen.tsx rolls a coin between this board and the tap-drill for the
+ * same が meaning fact (see grammar-particle-tap-drill.spec.ts) —
+ * `forceParticleForm` pins it to this form so the test is not left to chance.
  */
 test("a が meaning fact can be drilled by picking the particle for a highlighted word", async ({
   page,
 }) => {
+  await forceParticleForm(page, "marker");
   await seedQuiz(page, {
     seen: [patternMeaningFactId("ga")],
     cfg: {
@@ -37,13 +37,6 @@ test("a が meaning fact can be drilled by picking the particle for a highlighte
     },
   });
   await startQuizDrill(page);
-
-  // The marker-choice board never has tappable sentence chunks (that is the
-  // tap-drill's shape) — its sentence is static text with one highlighted
-  // span, and the options live in the MC grid below the halo.
-  const tapChunks = page.locator('p[lang="ja"] button');
-  const isMarkerChoice = (await tapChunks.count()) === 0;
-  test.skip(!isMarkerChoice, "this run rolled the tap-drill sibling instead");
 
   await expect(instruction(page)).toHaveText("Which particle marks this word?");
 
