@@ -342,11 +342,13 @@ describe("the totals are counted off the data, never typed in", () => {
 
   // The word total rose from 7,589 to 12,543 when CURRICULUM_WORDS widened to
   // essentially all of VOCAB (~12,540 words) plus the single-Han-character
-  // words already folded in — see word-lesson.ts.
-  test("and today those counts are 90, 2,136 and 12,543", () => {
+  // words already folded in — see word-lesson.ts. It dropped to 12,533 when
+  // PARTICLE_TRACK_KEBS pulled the 10 core particles out to the grammar track
+  // (see word-lesson.ts's "WHERE THE CURRICULUM ENDS").
+  test("and today those counts are 90, 2,136 and 12,533", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12543);
+    assert.equal(CURRICULUM_TOTALS.word, 12533);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -354,7 +356,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12543, 12543);
+        assert.equal(g.position.word?.total ?? 12533, 12533);
       }
     }
   });

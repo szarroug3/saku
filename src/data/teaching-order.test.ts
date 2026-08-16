@@ -50,12 +50,15 @@ describe("CEJC owns word-track priority", () => {
   test("CEJC POS still classifies grammar words distinctly, though the word track now teaches them too", () => {
     // CURRICULUM_WORDS widened to essentially all of VOCAB (see word-lesson.ts's
     // "WHERE THE CURRICULUM ENDS" and word-lesson.test.ts, which owns that
-    // invariant): a grammar-role word like で is no longer excluded from the
-    // word track on category alone. `isWordTrackCategory` and this category
+    // invariant): a grammar-role word like くださる is no longer excluded from
+    // the word track on category alone. `isWordTrackCategory` and this category
     // tag still matter for the CEJC-ranked bootstrap ordering above, just not
-    // as a curriculum-membership filter any more.
-    assert.equal(wordTeachingMetadata("で").category, "grammar");
-    assert.ok(CURRICULUM_WORDS.some((word) => word.keb === "で"));
+    // as a curriculum-membership filter any more. で is NOT this example any
+    // more — it is one of the core particles PARTICLE_TRACK_KEBS excludes,
+    // because it is now also a grammar-track meaning recipe with its own
+    // example sentence (see PARTICLE_TRACK_KEBS's own comment).
+    assert.equal(wordTeachingMetadata("くださる").category, "grammar");
+    assert.ok(CURRICULUM_WORDS.some((word) => word.keb === "くださる"));
   });
 
   test("CEJC dictionary lemmas normalize to everyday kana without homophone leakage", () => {

@@ -187,7 +187,33 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
   "dake",
   "kara-source",
   "shika-nai",
+  "ka",
 ]);
+
+/**
+ * Particle ids eligible for the "tap the marked word" drill (see
+ * lib/engine/particle-drill.ts) — a grammar MEANING question that shows the
+ * learner a COMPLETE, correct sentence and asks which word a given particle
+ * marks, never a blank to fill.
+ *
+ * A SEPARATE allowlist from PARTICLE_ALLOWLIST above, and does not change what
+ * that one means: PARTICLE_ALLOWLIST governs SELECTION (cloze) items, where
+ * は/が stay permanently banned for the reason the header explains — 66% of
+ * their minimal pairs share an identical English gloss, so a blank asking
+ * "which particle goes here" is often unanswerable.
+ *
+ * The tap drill is safe for は/が specifically BECAUSE it is not a cloze: the
+ * sentence is never blanked, so there is no competing-particle judgement call
+ * to get wrong. "Which word does this が mark" has exactly one right answer in
+ * an already-correct sentence, is/ga's cloze-ambiguity notwithstanding. See the
+ * "は/が CLOZE IS DEAD" header — this set does not reopen it; it does not touch
+ * cloze at all.
+ *
+ * Scoped to は/が/を for this first pass — the cleanest topic/subject/object
+ * cases. に/で/へ/まで/だけ/しか are left for a follow-up once this shape is
+ * proven out (see docs/particle-teaching-workplan.md, Package 4).
+ */
+export const PARTICLE_TAP_DRILL_IDS: ReadonlySet<string> = new Set(["wa", "ga", "wo"]);
 
 /** What a blank looks like. One place, so the renderer and tests agree. */
 export const BLANK = "＿＿＿";

@@ -24,14 +24,23 @@
 // confusable siblings. They are deliberately kept OUT of the CORPUS array itself,
 // so every corpus-count invariant (perPattern, the confound audit, the token
 // filter) keeps measuring only what the ingest produced.
+//
+// A second lane lives here too, for a different reason: the core particles
+// (か/wa/ga/に/で/を/へ/まで/までに/だけ/しか). The tagger never signs them — a bare
+// は/が/を slot is too common to be a signature — so `examplesFor` would
+// otherwise answer empty for every one of them. Each gets ONE hand-picked
+// sentence, for REFERENCE ONLY: see the row group below for what that does and
+// does not buy them.
 
 import type { Example } from "./corpus";
 
-/** An authored row before its span is resolved. `hostSurface` is the contiguous
- * slice the blank covers — the host predicate through わけだ — and MUST appear
+/** An authored row before its span is resolved. `recipe` is the one pattern it
+ * is tagged for (see authored.test.ts: one tag per row, so it can be blanked).
+ * `hostSurface` is the contiguous slice the blank covers and MUST appear
  * exactly once in `jp`; `hostDict` is the base word shown as the drill's prompt. */
 interface Authored {
   readonly id: number;
+  readonly recipe: string;
   readonly jp: string;
   readonly en: string;
   readonly n: number;
@@ -48,6 +57,7 @@ interface Authored {
 const ROWS: readonly Authored[] = [
   {
     id: -1,
+    recipe: "wake-da",
     jp: "彼はイギリスで育った。道理で英語がうまいわけだ。",
     en: "He grew up in England. No wonder his English is so good.",
     n: 13,
@@ -57,6 +67,7 @@ const ROWS: readonly Authored[] = [
   },
   {
     id: -2,
+    recipe: "wake-da",
     jp: "三人で分ければ、一人2000円になるわけだ。",
     en: "Split three ways, it comes out to 2,000 yen each.",
     n: 11,
@@ -66,6 +77,7 @@ const ROWS: readonly Authored[] = [
   },
   {
     id: -3,
+    recipe: "wake-da",
     jp: "つまり、君は何も知らなかったわけだね。",
     en: "So basically, you didn't know anything.",
     n: 11,
@@ -75,6 +87,7 @@ const ROWS: readonly Authored[] = [
   },
   {
     id: -4,
+    recipe: "wake-da",
     jp: "電車が止まっている。それで彼は遅れているわけだ。",
     en: "The trains are stopped. So that's why he's running late.",
     n: 14,
@@ -84,12 +97,134 @@ const ROWS: readonly Authored[] = [
   },
   {
     id: -5,
+    recipe: "wake-da",
     jp: "彼女は日本に十年住んでいた。だから日本語がぺらぺらなわけだ。",
     en: "She lived in Japan for ten years, so of course she's fluent.",
     n: 15,
     v: ["彼女", "日本", "年", "住む", "日本語", "ぺらぺら"],
     hostSurface: "ぺらぺらなわけだ",
     hostDict: "ぺらぺら",
+  },
+
+  // --- particles: one plain reference example each -----------------------
+  // The grammar corpus (corpus.ts) never tags these — a bare は/が/を slot is so
+  // common that a morphological match is not a signature, and は/が selection
+  // is dead outright (see questions.ts). So each core particle gets ONE hand
+  // picked sentence here instead, purely for REFERENCE: shown on the pattern's
+  // Library page with the particle itself highlighted, exactly what a learner
+  // meeting these as bare vocab glosses ("marks the subject") was missing. They
+  // still flow through examplesFor() like every other row, but PARTICLE_IDS /
+  // PARTICLE_ALLOWLIST (questions.ts) keep is/ga/etc. out of any selection
+  // question regardless — these rows change what is SHOWN, never what is ASKED.
+  {
+    id: -6,
+    recipe: "ka",
+    jp: "これは何ですか。",
+    en: "What is this?",
+    n: 5,
+    v: ["これ", "何"],
+    hostSurface: "か",
+    hostDict: "か",
+  },
+  {
+    id: -7,
+    recipe: "wa",
+    jp: "私は学生です。",
+    en: "I am a student.",
+    n: 4,
+    v: ["私", "学生"],
+    hostSurface: "は",
+    hostDict: "は",
+  },
+  {
+    id: -8,
+    recipe: "ga",
+    jp: "猫が好きです。",
+    en: "I like cats.",
+    n: 4,
+    v: ["猫", "好き"],
+    hostSurface: "が",
+    hostDict: "が",
+  },
+  {
+    id: -9,
+    recipe: "ni",
+    jp: "七時に起きます。",
+    en: "I get up at seven o'clock.",
+    n: 4,
+    v: ["七時", "起きる"],
+    hostSurface: "に",
+    hostDict: "に",
+  },
+  {
+    id: -10,
+    recipe: "de",
+    jp: "図書館で勉強します。",
+    en: "I study at the library.",
+    n: 4,
+    v: ["図書館", "勉強", "する"],
+    hostSurface: "で",
+    hostDict: "で",
+  },
+  {
+    id: -11,
+    recipe: "wo",
+    jp: "パンを食べます。",
+    en: "I eat bread.",
+    n: 3,
+    v: ["パン", "食べる"],
+    hostSurface: "を",
+    hostDict: "を",
+  },
+  {
+    id: -12,
+    recipe: "e",
+    jp: "学校へ行きます。",
+    en: "I'm going to school.",
+    n: 3,
+    v: ["学校", "行く"],
+    hostSurface: "へ",
+    hostDict: "へ",
+  },
+  {
+    id: -13,
+    recipe: "made",
+    jp: "駅まで歩きます。",
+    en: "I'll walk to the station.",
+    n: 3,
+    v: ["駅", "歩く"],
+    hostSurface: "まで",
+    hostDict: "まで",
+  },
+  {
+    id: -14,
+    recipe: "made-ni",
+    jp: "五時までに帰ります。",
+    en: "I'll be home by five o'clock.",
+    n: 3,
+    v: ["五時", "帰る"],
+    hostSurface: "までに",
+    hostDict: "までに",
+  },
+  {
+    id: -15,
+    recipe: "dake",
+    jp: "一つだけ食べました。",
+    en: "I ate just one.",
+    n: 4,
+    v: ["一つ", "食べる"],
+    hostSurface: "だけ",
+    hostDict: "だけ",
+  },
+  {
+    id: -16,
+    recipe: "shika-nai",
+    jp: "水しか飲まない。",
+    en: "I drink nothing but water.",
+    n: 3,
+    v: ["水", "飲む"],
+    hostSurface: "しか",
+    hostDict: "しか",
   },
 ];
 
@@ -110,7 +245,7 @@ export const AUTHORED: readonly Example[] = ROWS.map((r) => {
     en: r.en,
     n: r.n,
     v: r.v,
-    p: ["wake-da"],
-    sp: { "wake-da": [start, end, r.hostDict] as [number, number, string] },
+    p: [r.recipe],
+    sp: { [r.recipe]: [start, end, r.hostDict] as [number, number, string] },
   };
 });

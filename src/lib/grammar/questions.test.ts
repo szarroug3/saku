@@ -152,8 +152,8 @@ describe("SELECTION — the distractor rules are the safety argument", () => {
     for (const q of CORPUS.slice(0, 2000).flatMap((ex) => ex.p.map((p) => selection(ex, p)))) {
       if (!q) continue;
       for (const c of q.choices) {
-        assert.ok(c.pattern !== "は" && c.pattern !== "が");
-        assert.ok(c.pattern !== "に" && c.pattern !== "で");
+        assert.ok(c.pattern !== recipe("wa")!.pattern && c.pattern !== recipe("ga")!.pattern);
+        assert.ok(c.pattern !== recipe("ni")!.pattern && c.pattern !== recipe("de")!.pattern);
       }
     }
   });

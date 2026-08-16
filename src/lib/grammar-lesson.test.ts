@@ -273,7 +273,8 @@ describe("the pattern total is the whole authored table", () => {
     // The two context-dependent bare-て meanings share one recipe and lesson.
     // 105 = 101 + the four core case particles は/が/に/で, each a meaning-only
     // recipe added to the particles allowlist (taught by multiple choice).
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 105);
+    // 106 = 105 + か, the sentence-final question particle, added the same way.
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 106);
     // The drillable set is a strict subset — production is the second half of
     // some lessons' quiz, not the gate on whether a pattern is taught.
     assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
@@ -296,8 +297,11 @@ describe("the pattern total is the whole authored table", () => {
   test("the total is the number of sittings the track cuts into", () => {
     // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
     assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
-    // Solo form lessons plus the remaining pattern runs cut into groups of <=3.
-    // 46 = 45 + one sitting for the added は/が/に/で meaning lessons.
+    // 46 = 45 + one sitting for か. The other ten particles (は/が/に/で/を/へ/
+    // まで/までに/だけ/しか〜ない) now sit right after the foundation rows, where
+    // they bundle into runs of <=3 alongside neighboring N5 pattern lessons
+    // instead of opening sittings of their own — one fewer sitting overall
+    // than when they trailed the table.
     assert.equal(GRAMMAR_SITTINGS_TOTAL, 46);
     // Every lesson lands in exactly one sitting. A shared written pattern may
     // carry several meaning facts, but it is taught in one lesson.

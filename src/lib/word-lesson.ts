@@ -37,14 +37,28 @@
 // "everyday" set (ichi1/spec1/spec2 — see vocab.ts), so a word CEJC's specific
 // recordings never happened to use, or that JLPT's lists never gated, is not
 // evidence it is rare: 図書館, 郵便局, 飛行機 are exactly this shape, ordinary
-// nouns a conversation corpus rarely has occasion to say. The only VOCAB
-// entries excluded are the ones the COUNTERS track already teaches under its
-// own spoken-form entry (COUNTER_TRACK_KEBS/COUNTER_KANJI_GLYPHS, below) —
-// everything else is taught, CEJC/JLPT order first, frequency-tail order
-// after. Grammar's own facts (conjugation, particles, patterns) still belong
-// to its prerequisite-driven track, not here — but a grammar-role WORD (e.g.
-// くださる, だけ) is still a word with a plain meaning worth teaching, so it is
-// no longer excluded on category alone.
+// nouns a conversation corpus rarely has occasion to say. Two things are
+// excluded: the words the COUNTERS track already teaches under its own
+// spoken-form entry (COUNTER_TRACK_KEBS/COUNTER_KANJI_GLYPHS, below), and the
+// core case/binding particles the GRAMMAR track already teaches as their own
+// pattern, examples included (PARTICLE_TRACK_KEBS, below). Everything else is
+// taught, CEJC/JLPT order first, frequency-tail order after. A grammar-role
+// WORD with no recipe of its own (e.g. くださる) is still a word with a plain
+// meaning worth teaching, so it stays — the exclusion is for a word that would
+// otherwise be taught TWICE, once thinly here and once properly there.
+//
+// PARTICLE_TRACK_KEBS reverses an earlier call on this same file: だけ used to
+// be the worked example of "a grammar-role word is still worth teaching here".
+// It still is, in isolation — the call that changed is that だけ (like
+// か/は/が/に/で/を/へ/まで/しか) is no longer isolated: each is now ALSO a
+// meaning recipe with a real example sentence (src/data/grammar/recipes.ts,
+// authored.ts), reached from the SAME pattern page as its production siblings.
+// A bare vocab gloss ("indicates the subject of a sentence") with no sentence
+// under it, surfaced by raw reading frequency in the first lesson or two (か
+// and で are among the very first pronunciation units taught — see
+// docs/interleaved-schedule-findings.md), was a worse first meeting with these
+// than the grammar track's own page gives; excluding them here removes the
+// worse copy rather than leaving both.
 //
 // This was a considered decision, not a default: an earlier version of this
 // file stopped at CEJC/JLPT coverage (~7,537 words) and treated the remaining
@@ -141,8 +155,25 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
   "一人", "二人",
 ]);
 
+// The core case/binding particles (か/は/が/に/で/を/へ/まで/だけ/しか), so the words
+// track does not teach them a second time. Each is already a MEANING recipe in
+// the grammar track (src/data/grammar/recipes.ts) — with, unlike here, a real
+// example sentence and its role explained alongside the other patterns that use
+// it — so a bare vocab card ("indicates the subject of a sentence", no context)
+// is a worse copy of a lesson the grammar track already owns, not a second one
+// worth keeping. までに is not excluded: it has a grammar recipe but no VOCAB
+// row of its own, so there's nothing here to duplicate it.
+const PARTICLE_TRACK_KEBS: ReadonlySet<string> = new Set([
+  "か", "は", "が", "に", "で", "を", "へ", "まで", "だけ", "しか",
+]);
+
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
-  .filter((w) => !COUNTER_TRACK_KEBS.has(w.keb) && !COUNTER_KANJI_GLYPHS.has(w.keb))
+  .filter(
+    (w) =>
+      !COUNTER_TRACK_KEBS.has(w.keb) &&
+      !COUNTER_KANJI_GLYPHS.has(w.keb) &&
+      !PARTICLE_TRACK_KEBS.has(w.keb),
+  )
   .sort((a, b) => a.beginnerRank - b.beginnerRank);
 
 /**

@@ -74,6 +74,14 @@ import {
 } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import {
+  gradeParticleDrillTap,
+  gradeParticleMarkerChoice,
+  particleDrillFor,
+  particleMarkerFor,
+  type ParticleDrillQuestion,
+  type ParticleMarkerQuestion,
+} from "@/lib/engine/particle-drill";
+import {
   rollConstructionItem,
   type NumberQuizItem,
 } from "@/lib/engine/number-quiz";
@@ -116,6 +124,8 @@ import type {
 
 import { DrillDrawer } from "./drill-drawer";
 import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
+import { ParticleTapCard } from "./particle-tap-card";
+import { ParticleMarkerSentence } from "./particle-marker-card";
 
 // ---------- runtime shape (lives in active.runtime) ----------
 
@@ -247,6 +257,22 @@ interface DrillQuestion {
    * reads to decide whether it has a mix-up to name.
    */
   confused: EntryId | null;
+  /**
+   * A "tap the marked word" showing for a は/が/を MEANING fact — rolled once
+   * at ask time exactly like `grammarSelection`, so a remount cannot swap the
+   * sentence or the board under the user. null for every other card, and for
+   * a fact outside PARTICLE_TAP_DRILL_IDS (lib/grammar/questions.ts). Plain
+   * data, so it rides the serialized runtime. See lib/engine/particle-drill.ts.
+   */
+  particleDrill: ParticleDrillQuestion | null;
+  /**
+   * The tap-drill's second FORM for the same は/が/を scope: highlight the
+   * marked word and ask which particle marks it, instead of tapping the word
+   * given the particle. Rolled once at ask time exactly like `particleDrill`;
+   * the two are mutually exclusive on one showing (see presentCard) — never
+   * both, since they are one fact asked two ways, not two facts.
+   */
+  particleMarker: ParticleMarkerQuestion | null;
 }
 
 /** The presentation a resolving showing writes into its stat, so the results
@@ -255,7 +281,7 @@ interface DrillQuestion {
 function showingOf(q: DrillQuestion): ShowingPresentation {
   return {
     dir: q.dir,
-    mode: q.mc || q.recognition ? "mc" : "typed",
+    mode: q.mc || q.recognition || q.particleDrill || q.particleMarker ? "mc" : "typed",
     listen: q.listen,
   };
 }
@@ -747,6 +773,24 @@ export function DrillScreen() {
     // question, which asks the pattern in one direction and its English in the
     // other, so grammar meaning is always askable.
     const grammarSelection = typedMode ? null : grammarSelectionFor(f, history);
+    // A grammar MEANING card for は/が/を may be asked as a TAP-DRILL instead —
+    // "which word does this sentence's が mark", never a blank. Same fact, same
+    // score, and (unlike selection) never gated on grammarSelection's corpus
+    // safety argument — is/ga are always empty there (see PARTICLE_ALLOWLIST),
+    // so the two never compete for the same card. Scoped to
+    // PARTICLE_TAP_DRILL_IDS; null for every other fact. See
+    // lib/engine/particle-drill.ts.
+    const particleDrillCandidate =
+      typedMode || grammarSelection ? null : particleDrillFor(f);
+    // Its second FORM, half the time: highlight the marked word and ask which
+    // particle marks it, instead of tapping the word given the particle. Same
+    // fact, same score — rolled only when the first form would have rolled at
+    // all (so it can never appear where a tap-drill couldn't), and mutually
+    // exclusive with it: whichever wins the coin flip is the one this showing
+    // asks, never both. See lib/engine/particle-drill.ts.
+    const particleMarker =
+      particleDrillCandidate && Math.random() < 0.5 ? particleMarkerFor(f) : null;
+    const particleDrill = particleMarker ? null : particleDrillCandidate;
     const recognition =
       form.source === "sentence" &&
       form.response === "definition"
@@ -777,11 +821,13 @@ export function DrillScreen() {
     // reveal, confusion tracking — is the untouched existing path.
     const built = recognition
       ? null
-      : grammarSelection
-        ? grammarSelection.choices.slice()
-        : typedMode
-          ? null
-          : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
+      : particleDrill || particleMarker
+        ? null
+        : grammarSelection
+          ? grammarSelection.choices.slice()
+          : typedMode
+            ? null
+            : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
     const mc = built && built.length > 1 ? built : null;
     // The board "Show choices" would convert this text card into, built ONCE now
     // with the SAME call the MC ask path uses above, so a click swaps the box for
@@ -809,6 +855,8 @@ export function DrillScreen() {
       numberItem,
       variant,
       recognition,
+      particleDrill,
+      particleMarker,
       katakana: isKatakana(revealFor(f, dir, ctx)),
       listen,
       listenPlayed: false,
@@ -888,8 +936,16 @@ export function DrillScreen() {
 
   /** Legacy submit (plus the streak, which is the same first-try question
    * `firstTryCorrect` already answers). `picked` is the option FACT for MC
-   * clicks (both dirs). */
-  function submit(given: string, picked?: FactId, recognitionPick?: number) {
+   * clicks (both dirs); `particleDrillPick` is the tapped chunk id for a
+   * particle tap-drill card; `particleMarkerPick` is the chosen particle's
+   * recipe id for its marker-choice sibling. */
+  function submit(
+    given: string,
+    picked?: FactId,
+    recognitionPick?: number,
+    particleDrillPick?: string,
+    particleMarkerPick?: string,
+  ) {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     const q = rt.q;
     // Clicking an MC option is answered by WHICH option, not by its label:
@@ -903,19 +959,27 @@ export function DrillScreen() {
     // reading was actually typed; a miss (or a real reading meaning something
     // else) stays on the intended unit. Only the stat credit moves — the reveal,
     // phrase, streak, confusion and requeue all stay card-level on q.f.
-    const typed = recognitionPick === undefined && picked === undefined;
+    const typed =
+      recognitionPick === undefined &&
+      picked === undefined &&
+      particleDrillPick === undefined &&
+      particleMarkerPick === undefined;
     const credited =
       typed && q.dir === "jp2en" && isWordReadingFact(q.f)
         ? wordReadingCredit(q.f, given)
         : null;
     const ok =
-      recognitionPick !== undefined && q.recognition
-        ? recognitionPick === q.recognition.correct
-        : picked !== undefined
-          ? picked === q.f
-          : credited
-            ? credited.ok
-            : checkTyped(q.f, given, q.dir, ctxFor(q));
+      particleMarkerPick !== undefined && q.particleMarker
+        ? gradeParticleMarkerChoice(q.particleMarker, particleMarkerPick)
+        : particleDrillPick !== undefined && q.particleDrill
+          ? gradeParticleDrillTap(q.particleDrill, particleDrillPick)
+          : recognitionPick !== undefined && q.recognition
+            ? recognitionPick === q.recognition.correct
+            : picked !== undefined
+              ? picked === q.f
+              : credited
+                ? credited.ok
+                : checkTyped(q.f, given, q.dir, ctxFor(q));
     const st = statForShowing(rt.stats, credited?.fact ?? q.f);
     const phrase = presentationPhrase(q.f, showingOf(q));
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
@@ -967,7 +1031,12 @@ export function DrillScreen() {
           // DrillQuestion.confused for why it is not cleared by a later try.
           q.confused = said;
         }
-      } else if (given && given !== "(time)") {
+      } else if (
+        particleDrillPick === undefined &&
+        particleMarkerPick === undefined &&
+        given &&
+        given !== "(time)"
+      ) {
         // The search space is the deck PLUS every fact of every entry the learner
         // has met — so a typed answer that names a KNOWN entry (its meaning OR its
         // reading) is caught even when that entry is not in today's deck, and even
@@ -978,6 +1047,12 @@ export function DrillScreen() {
         // makes the space entry-complete — knowing 可's meaning makes its reading a
         // candidate — and `confusedWith` still claims a pair only when exactly one
         // entry answers, so the wider space stays honest. See confusion-search.ts.
+        // A particle-drill tap's `given` is the tapped chunk's TEXT, and a
+        // marker-choice pick's `given` is the option's label, not a typed
+        // answer — running either through the free-text confusion search would
+        // try to match a fragment against known facts, which is not what this
+        // check means. Skipped here, not upstream, so every other typed
+        // path is untouched.
         const said = confusedWith(q.f, given, rt.deck, confusionKnownFacts(history));
         if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
@@ -1515,7 +1590,30 @@ export function DrillScreen() {
   // The drill knows there is a glyph, maybe a line under it, and some options;
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
-  const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
+  // A tap-drill card puts the SENTENCE itself in the halo (as the live,
+  // tappable `body` — see the DrillHalo call below) with its English
+  // translation beneath it via `context`, exactly where a word card's reading
+  // sits. `glyph`/`jp` are set for the reveal branch's sake (unused by the
+  // body path) and `note` stays null since the translation no longer lives
+  // below the box. The role question ("Which word is the subject?") moves to
+  // `instruction`, below the box — see `instruction` further down.
+  const prompt = q.particleDrill
+    ? {
+        glyph: q.particleDrill.jp,
+        jp: true,
+        context: q.particleDrill.en,
+        hint: null,
+        note: null,
+      }
+    : q.particleMarker
+      ? {
+          glyph: q.particleMarker.jp,
+          jp: true,
+          context: q.particleMarker.en,
+          hint: null,
+          note: null,
+        }
+      : questionsFor(q.f).prompt(q.f, q.dir, ctx);
   const selectionFrame =
     q.grammarSelection?.frame ??
     (!q.listen ? q.recognition?.jp : null) ??
@@ -1593,9 +1691,16 @@ export function DrillScreen() {
   // `q.mc` is the truth about how this card is being ANSWERED, which is what the
   // instruction has to describe — "which of these" over a text box would be
   // worse than saying nothing.
-  const instruction = q.recognition
-    ? "Pick the sentence's meaning."
-    : q.numberItem
+  const instruction = q.particleDrill
+    ? // The sentence and its translation are in the halo now (see `prompt`
+      // above); this line carries the actual question — which role is being
+      // asked about, tappably.
+      q.particleDrill.prompt
+    : q.particleMarker
+      ? "Which particle marks this word?"
+      : q.recognition
+        ? "Pick the sentence's meaning."
+      : q.numberItem
       ? // A construction card asks for a count, not a word meaning — its generic
         // instruction ("what does this word mean") would be a lie. A READ card
         // wants the reading spelled out, so it mirrors the word track's exact
@@ -1622,7 +1727,7 @@ export function DrillScreen() {
   // which control to show — deriving it from the style again could disagree
   // with what was built (e.g. an MC-style card that fell back for want of
   // distractors).
-  const typedMode = !q.mc && !q.recognition;
+  const typedMode = !q.mc && !q.recognition && !q.particleDrill && !q.particleMarker;
   // Live romaji→kana exactly when the ANSWER is Japanese, which is not the same
   // question as which direction the card faces. Keyed on direction alone this
   // was wrong both ways: a jp2en kanji reading wants せい and got a latin box,
@@ -1868,6 +1973,27 @@ export function DrillScreen() {
             if (text) speak(text, cfg.voiceName);
           }}
           sentenceFrame={selectionFrame ?? undefined}
+          // The tap-drill's live sentence (and its marker-choice sibling's
+          // static highlighted one) replace the plain glyph/frame entirely —
+          // see DrillHalo's `body` doc. Built here, not passed as a ready
+          // component from further up, so it can read `revealing`/`rt.waiting`,
+          // which are computed in this scope.
+          body={
+            q.particleDrill ? (
+              <ParticleTapCard
+                question={q.particleDrill}
+                disabled={rt.waiting}
+                revealCorrect={revealing}
+                onTap={(chunkId) => {
+                  const said =
+                    q.particleDrill?.chunks.find((c) => c.id === chunkId)?.text ?? chunkId;
+                  submit(said, undefined, undefined, chunkId);
+                }}
+              />
+            ) : q.particleMarker ? (
+              <ParticleMarkerSentence jp={q.particleMarker.jp} highlightSpan={q.particleMarker.highlightSpan} />
+            ) : undefined
+          }
           reading={
             promptPitch ? (
               <PitchReading
@@ -1879,8 +2005,15 @@ export function DrillScreen() {
           }
           // A WORD card's context sits INSIDE the box beneath the glyph/speaker;
           // its old muted sub-label below the instruction is suppressed (see the
-          // `!isWordCard` guard there).
-          context={wordContext ?? undefined}
+          // `!isWordCard` guard there). A tap-drill's English translation sits
+          // the same way, beneath its sentence.
+          context={
+            q.particleDrill
+              ? q.particleDrill.en
+              : q.particleMarker
+                ? q.particleMarker.en
+                : (wordContext ?? undefined)
+          }
         />
         {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
             reads as the question rather than a muted hint above it. Every card
@@ -1914,6 +2047,8 @@ export function DrillScreen() {
         {!selectionFrame &&
         !readingWord &&
         !isWordCard &&
+        !q.particleDrill &&
+        !q.particleMarker &&
         prompt.context &&
         prompt.context !== "meaning" &&
         prompt.context !== "reading" &&
@@ -1935,7 +2070,30 @@ export function DrillScreen() {
           {hintTag}
         </p>
 
-        {typedMode ? (
+        {q.particleDrill ? null : q.particleMarker ? (
+          // Same 3-column grid every other MC board uses, options built from
+          // the marker-choice board (recipe id + display pattern) rather than
+          // FactIds — see lib/engine/particle-drill.ts's header for why this
+          // is a bespoke board, not a run through the ordinary FactId-keyed
+          // distractor machinery.
+          <div className="grid w-[min(92vw,480px)] auto-rows-fr grid-cols-3 gap-2">
+            {q.particleMarker.options.map((option, i) => (
+              <button
+                key={option.recipeId}
+                onClick={() => submit(option.label, undefined, undefined, undefined, option.recipeId)}
+                className={cx(
+                  "flex h-full min-h-15 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
+                  revealing && option.recipeId === q.particleMarker?.recipeId
+                    ? "border-success bg-success-bg text-success"
+                    : "border-border bg-card text-text hover:bg-panel",
+                )}
+              >
+                <span lang="ja">{option.label}</span>
+                <span className="text-[10px] text-text-muted">{i + 1}</span>
+              </button>
+            ))}
+          </div>
+        ) : typedMode ? (
           // Box and the line that says what goes in it, as one unit: a tight
           // gap between them rather than the stage's gap-4, so the sentence
           // reads as belonging to the field and not as another piece of the
@@ -2037,7 +2195,20 @@ export function DrillScreen() {
           {revealing ? (
             <>
               <span className="text-sm">
-                {q.recognition ? (
+                {q.particleDrill ? (
+                  <span className="font-semibold text-danger">
+                    {q.particleDrill.chunks.find((c) => c.id === q.particleDrill?.answerChunkId)
+                      ?.text}
+                  </span>
+                ) : q.particleMarker ? (
+                  <span className="font-semibold text-danger" lang="ja">
+                    {
+                      q.particleMarker.options.find(
+                        (o) => o.recipeId === q.particleMarker?.recipeId,
+                      )?.label
+                    }
+                  </span>
+                ) : q.recognition ? (
                   <span className="font-semibold text-danger">
                     {q.recognition.answer}
                   </span>

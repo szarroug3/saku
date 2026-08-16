@@ -136,7 +136,9 @@ describe("the word total is the material, and does not move", () => {
     // Equal today because beginnerRank is dense. They are different claims, and
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12540);
+    // 12,540 minus the 10 particles PARTICLE_TRACK_KEBS now excludes (か/は/が/
+    // に/で/を/へ/まで/だけ/しか — until they moved to the grammar track only).
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12530);
   });
 });
 

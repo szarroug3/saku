@@ -36,13 +36,25 @@ describe("nextSentenceOrderingLesson", () => {
     assert.equal(nextSentenceOrderingLesson(true, EMPTY), null);
   });
 
-  test("opens Simple after a small vocabulary foundation", () => {
+  test("opens Simple after a small vocabulary foundation and one of wa/ga", () => {
+    const history = applyClaims(
+      emptyHistory(),
+      [
+        ...CURRICULUM_WORDS.slice(0, 34).map((word) => wordMeaningFactId(word.keb)),
+        patternMeaningFactId("wa"),
+      ],
+      1,
+    );
+    assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
+  });
+
+  test("Simple stays locked on vocabulary alone, needing wa or ga taught first", () => {
     const history = applyClaims(
       emptyHistory(),
       CURRICULUM_WORDS.slice(0, 34).map((word) => wordMeaningFactId(word.keb)),
       1,
     );
-    assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
+    assert.equal(nextSentenceOrderingLesson(true, history), null);
   });
 
   test("later tiers need their grammar lesson, not hundreds of matching words", () => {
@@ -50,6 +62,7 @@ describe("nextSentenceOrderingLesson", () => {
       emptyHistory(),
       [
         ...CURRICULUM_WORDS.slice(0, 100).map((word) => wordMeaningFactId(word.keb)),
+        patternMeaningFactId("wa"),
         sentenceTierMarkerFact("simple"),
       ],
       1,

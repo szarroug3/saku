@@ -3,6 +3,7 @@ import { seedQuiz, ask, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
 import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { PARTICLE_TAP_DRILL_IDS } from "@/lib/grammar/questions";
 
 /**
  * GRAMMAR QUIZ SURFACE — the drill, not the lesson walk.
@@ -18,14 +19,19 @@ import { RECIPES, isProducible } from "@/data/grammar/recipes";
  *
  * The target is taken from the shipped recipe table (the first non-producible
  * pattern), so it follows the data rather than a hard-coded id and fails loudly
- * if the reference set ever empties.
+ * if the reference set ever empties. は/が/を are excluded from the pick: those
+ * three now draw their own dedicated "tap the marked word" card instead of the
+ * generic fixed-meaning MC fallback this suite is pinning — see
+ * e2e/grammar-particle-tap-drill.spec.ts for their coverage.
  *
  * The producible-side drill (build the form, across every ending) is pinned by
  * the unit suite (production-coverage.test.ts); an end-to-end build/grade drill
  * is added alongside once its card locators are validated against a real run.
  */
 
-const REFERENCE = RECIPES.find((r) => !isProducible(r));
+const REFERENCE = RECIPES.find(
+  (r) => !isProducible(r) && !PARTICLE_TAP_DRILL_IDS.has(r.id),
+);
 
 test("the recipe table still carries a reference (non-producible) pattern", () => {
   expect(REFERENCE, "no non-producible reference pattern in the table").toBeTruthy();

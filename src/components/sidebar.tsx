@@ -105,6 +105,7 @@ const DEV_PAGES: Array<{ href: string; label: string }> = [
   { href: "/dev/scheduling", label: "Scheduling" },
   { href: "/dev/numbers", label: "Numbers" },
   { href: "/dev/swatches", label: "Swatches" },
+  { href: "/dev/quiz-gallery", label: "Quiz gallery" },
 ];
 
 export function Sidebar({

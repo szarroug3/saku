@@ -94,7 +94,9 @@ describe("coverage after the audit is recorded, not assumed", () => {
   const SURVIVED: Readonly<Record<string, number>> = {
     ba: 257,
     "kara-reason": 213,
-    "made-ni": 85,
+    // +1 over the ingest's own count — authored.ts adds one hand-picked
+    // reference example (see its "particles" section) alongside the corpus.
+    "made-ni": 86,
     nikui: 63,
     node: 89,
     "ta-tokoro": 139,

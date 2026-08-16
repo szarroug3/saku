@@ -74,6 +74,7 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
   "made-ni", // までに — by (a deadline)
   "dake", // だけ — only
   "shika-nai", // しか〜ない — only (nothing but)
+  "ka", // か — question
 ]);
 
 /**

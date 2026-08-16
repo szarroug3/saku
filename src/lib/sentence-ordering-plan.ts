@@ -46,8 +46,8 @@ function sentenceTierUnlocked(
   if (readable.length < tier.minReadable) return false;
 
   // Grammar prereq: at least one of this tier's patterns must have been
-  // taught in the grammar track (seen, claimed or tested). The simple tier
-  // has no prereqs.
+  // taught in the grammar track (seen, claimed or tested). Tiers with no
+  // prereqs listed skip this check entirely.
   if (tier.grammarPrereqs.length > 0) {
     const prereqMet = tier.grammarPrereqs.some((id) => {
       const fid = patternMeaningFactId(id);

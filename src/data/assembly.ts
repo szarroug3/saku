@@ -694,10 +694,10 @@ export interface AssemblyTier {
    * Grammar pattern IDs that must have been taught in the grammar track before
    * this tier unlocks. At least ONE must be learned (seen, claimed or tested).
    *
-   * Empty for the simple tier — its patterns are structural particles that the
-   * grammar track never teaches as lessons. For all other tiers the prereqs
-   * are the patterns that describe the sentence structure this tier practices,
-   * so the learner knows what the pattern means before they practise placing it.
+   * For every tier the prereqs are the patterns that describe the sentence
+   * structure this tier practices, so the learner knows what the pattern means
+   * before they practise placing it — including the simple tier, whose は/が
+   * are real grammar-track lessons now, not assumed-known structural markers.
    */
   readonly grammarPrereqs: readonly string[];
 }
@@ -720,8 +720,7 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     label: "Simple sentences",
     patterns: ["simple", "wo", "e", "made", "made-ni", "dake", "kara-source"],
     minReadable: 3,
-    // Particles are structural markers, never taught as grammar lessons.
-    grammarPrereqs: [],
+    grammarPrereqs: ["wa", "ga"],
   },
   {
     id: "sequential",

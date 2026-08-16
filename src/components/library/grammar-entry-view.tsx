@@ -36,11 +36,13 @@ import { LinkSlot } from "@/components/grammar/link-slot";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach, type PatternTeaching } from "@/components/library/pattern-teach";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
+import { examplesFor } from "@/data/grammar/corpus";
 import { libEntry, recipeOf, recipesOf } from "@/lib/library/library-index";
 import { useContentEntry } from "@/lib/library/content-entries";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
+import type { ReactNode } from "react";
 
 interface GrammarPayload {
   readonly text: string;
@@ -63,6 +65,21 @@ function hostList(attach: readonly { host: string }[]): string {
   if (labels.length <= 1) return labels[0] ?? "word";
   if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
   return `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
+}
+
+/** `jp` with `[start, end)` picked out in the same accent color the sentence
+ * track colors its own parts with (.sentence-part-topic) — one visual language
+ * for "here is the piece that matters" everywhere the app shows a sentence. */
+function highlightSpan(jp: string, span: readonly [number, number, string | null]): ReactNode {
+  const [start, end] = span;
+  if (start < 0 || end > jp.length || start >= end) return jp;
+  return (
+    <>
+      {jp.slice(0, start)}
+      <span className="font-medium sentence-part-topic">{jp.slice(start, end)}</span>
+      {jp.slice(end)}
+    </>
+  );
 }
 
 export function GrammarEntryView({
@@ -96,6 +113,13 @@ export function GrammarEntryView({
   const familyCluster = pattern.cluster ? (clusterById(pattern.cluster) ?? null) : null;
   const familyMembers = familyCluster ? membersOf(familyCluster) : [];
 
+  // One real sentence, with this pattern's own span picked out. Most patterns
+  // draw this from the Tatoeba corpus; a handful the tagger can't sign (see
+  // authored.ts) carry a hand-picked one instead — examplesFor merges both, so
+  // this reads the same either way. Absent, not empty, when neither has one yet.
+  const example = examplesFor(pattern.id).find((ex) => ex.sp[pattern.id]);
+  const exampleSpan = example?.sp[pattern.id];
+
   return (
     <EntrySurface>
       <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="grammar rule" />
@@ -120,6 +144,15 @@ export function GrammarEntryView({
           ))}
         </div>
       </Section>
+
+      {example && exampleSpan ? (
+        <Section title="In a sentence" tone="accent">
+          <p className="font-kana text-[15px] leading-relaxed text-text">
+            {highlightSpan(example.jp, exampleSpan)}
+          </p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
+        </Section>
+      ) : null}
 
       {/* WAYS TO SAY THIS — the pattern's family, when it has one. Japanese often
           has several patterns for one English idea (seven ways to say "must"), and

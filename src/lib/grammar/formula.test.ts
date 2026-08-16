@@ -200,7 +200,7 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed patterns really have unscored rows: node, shika-nai", () => {
+  test("the mixed patterns really have unscored rows: shika-nai, node", () => {
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
@@ -213,7 +213,7 @@ describe("production hosts against formula rows", () => {
     // same kind of unscored row — しか never conjugates — while its scored
     // production lives on the CLOSING half instead, which this join does not
     // see (see the next test).
-    assert.deepEqual(mixed, ["node", "shika-nai"]);
+    assert.deepEqual(mixed, ["shika-nai", "node"]);
   });
 
   test("a wrap carries a score column only when its CLOSING half conjugates", () => {

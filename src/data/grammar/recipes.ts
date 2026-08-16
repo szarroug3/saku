@@ -509,6 +509,134 @@ export const RECIPES: readonly Recipe[] = [
       "a recipe because the user meets it as a pattern, not as a form. Both " +
       "spellings agree by construction — teiru IS te + いる in DERIVED_FORMS.",
   },
+
+  // --- particles: the ALLOWLIST ------------------------------------------
+  // These are foundational, not a late addendum: every sentence a learner
+  // builds needs は/が/に/で/を/へ/まで/までに/だけ/しか〜ない/か before it needs
+  // any N4 form, so they sit right after the three foundation rows above and
+  // lead the N5 tier. They ship as SELECTION items only in marked frames, and
+  // the allowlist is the whole safety mechanism. See selection.ts for the
+  // argument; the short version is that は/が cloze was verified dead across
+  // 660,343 particle slots and is not here, and never will be.
+  // The four core case particles, each a MEANING fact and nothing more. They
+  // attach a bare particle to a noun, so isVacuous → isProducible is false: no
+  // production question is ever minted (there is no "build the は form of 私" —
+  // that is typing), and the CHOICE between them is never asked either (は-vs-が
+  // cloze is dead; see selection.ts and this block's header). Each carries a
+  // `cluster` so its entry page shows the sibling it is paired with — は↔が,
+  // に↔で — and the cluster's feel note ("no rule; which fits comes with time").
+  // The standalone /grammar/wa-ga and /grammar/ni-de map pages retire once the
+  // clusters gain these members; the comparison moves onto each particle's page.
+  {
+    id: "wa",
+    pattern: "〜は",
+    gloss: "marks the topic",
+    level: "N5",
+    cluster: "wa-ga",
+    attach: [{ host: "noun", form: null, add: "は" }],
+  },
+  {
+    id: "ga",
+    pattern: "〜が",
+    gloss: "marks the subject",
+    level: "N5",
+    cluster: "wa-ga",
+    attach: [{ host: "noun", form: null, add: "が" }],
+  },
+  {
+    id: "ni",
+    pattern: "〜に",
+    gloss: "marks where something is or is going",
+    level: "N5",
+    cluster: "ni-de",
+    attach: [{ host: "noun", form: null, add: "に" }],
+  },
+  {
+    id: "de",
+    pattern: "〜で",
+    gloss: "marks where an action happens",
+    level: "N5",
+    cluster: "ni-de",
+    attach: [{ host: "noun", form: null, add: "で" }],
+  },
+  {
+    id: "wo",
+    pattern: "〜を",
+    gloss: "marks the direct object",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "を" }],
+  },
+  {
+    id: "e",
+    pattern: "〜へ",
+    gloss: "toward (direction)",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "へ" }],
+  },
+  {
+    id: "made",
+    pattern: "〜まで",
+    gloss: "until / as far as",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "まで" }],
+  },
+  {
+    id: "made-ni",
+    pattern: "〜までに",
+    gloss: "by (a deadline)",
+    level: "N4",
+    attach: [{ host: "noun", form: null, add: "までに" }],
+  },
+  {
+    id: "dake",
+    pattern: "〜だけ",
+    gloss: "only",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "だけ" }],
+  },
+  {
+    id: "shika-nai",
+    pattern: "〜しか〜ない",
+    gloss: "only X (nothing but)",
+    level: "N4",
+    attach: [{ host: "noun", form: null, add: "しか" }],
+    wrap: {
+      close: [{ host: "verb", form: "nai", add: "" }],
+    },
+    transitivity: "transitive",
+    note:
+      "The only wrap the computed gates DON'T rule out. Its slots cannot " +
+      "swap (noun, then verb) and its closing half really conjugates — " +
+      "読む → 読まない — so it is a real drill in shape. It stayed unasked for " +
+      "a reason about DATA, not shape: しか REPLACES を but sits ON TOP of に " +
+      "— 本しか読まない is right, but 学校しか行かない is wrong (学校にしか行かない " +
+      "is the sentence), and nothing here knew which verb takes which. " +
+      "`transitivity: \"transitive\"` closes that gap for free: a transitive " +
+      "verb's object is always marked with を, which しか always safely " +
+      "replaces, so restricting the pool to transitive verbs is restricting " +
+      "it to exactly the safe case — no hand-curated particle table needed.",
+  },
+  // か attaches to a whole PREDICATE, not a noun — unlike every particle above
+  // it closes a verb, an adjective or a noun's plain form, so it carries four
+  // attachments instead of one. Every one of them is trivial (dictionary form
+  // or bare word, no trim), so isVacuous still holds: nothing conjugates, か is
+  // added, and the recipe is meaning-only like its noun-attaching siblings.
+  // Not on PARTICLE_ALLOWLIST (see questions.ts) — kept recognition-only by
+  // the same default those particles get, absent evidence a statement/question
+  // choice is ever safely ambiguous the way は/が is proven to be.
+  {
+    id: "ka",
+    pattern: "〜か",
+    gloss: "turns a statement into a question",
+    level: "N5",
+    attach: [
+      { host: "verb", form: "dictionary", add: "か" },
+      { host: "adj-i", form: "dictionary", add: "か" },
+      { host: "adj-na", form: null, add: "か" },
+      { host: "noun", form: null, add: "か" },
+    ],
+  },
+
   {
     id: "te-shimau",
     pattern: "〜てしまう",
@@ -1291,110 +1419,6 @@ export const RECIPES: readonly Recipe[] = [
       "exists: 'give me the は form of 私' is not a question, it is typing. " +
       "The wrap does not change that — two bare nouns and two particles is " +
       "still typing, now at twice the length.",
-  },
-
-  // --- particles: the ALLOWLIST ------------------------------------------
-  // These ship as SELECTION items only in marked frames, and the allowlist is
-  // the whole safety mechanism. See selection.ts for the argument; the short
-  // version is that は/が cloze was verified dead across 660,343 particle
-  // slots and is not here, and never will be.
-  // The four core case particles, each a MEANING fact and nothing more. They
-  // attach a bare particle to a noun, so isVacuous → isProducible is false: no
-  // production question is ever minted (there is no "build the は form of 私" —
-  // that is typing), and the CHOICE between them is never asked either (は-vs-が
-  // cloze is dead; see selection.ts and this block's header). Each carries a
-  // `cluster` so its entry page shows the sibling it is paired with — は↔が,
-  // に↔で — and the cluster's feel note ("no rule; which fits comes with time").
-  // The standalone /grammar/wa-ga and /grammar/ni-de map pages retire once the
-  // clusters gain these members; the comparison moves onto each particle's page.
-  {
-    id: "wa",
-    pattern: "は",
-    gloss: "marks the topic",
-    level: "N5",
-    cluster: "wa-ga",
-    attach: [{ host: "noun", form: null, add: "は" }],
-  },
-  {
-    id: "ga",
-    pattern: "が",
-    gloss: "marks the subject",
-    level: "N5",
-    cluster: "wa-ga",
-    attach: [{ host: "noun", form: null, add: "が" }],
-  },
-  {
-    id: "ni",
-    pattern: "に",
-    gloss: "marks where something is or is going",
-    level: "N5",
-    cluster: "ni-de",
-    attach: [{ host: "noun", form: null, add: "に" }],
-  },
-  {
-    id: "de",
-    pattern: "で",
-    gloss: "marks where an action happens",
-    level: "N5",
-    cluster: "ni-de",
-    attach: [{ host: "noun", form: null, add: "で" }],
-  },
-  {
-    id: "wo",
-    pattern: "を",
-    gloss: "marks the direct object",
-    level: "N5",
-    attach: [{ host: "noun", form: null, add: "を" }],
-  },
-  {
-    id: "e",
-    pattern: "へ",
-    gloss: "toward (direction)",
-    level: "N5",
-    attach: [{ host: "noun", form: null, add: "へ" }],
-  },
-  {
-    id: "made",
-    pattern: "まで",
-    gloss: "until / as far as",
-    level: "N5",
-    attach: [{ host: "noun", form: null, add: "まで" }],
-  },
-  {
-    id: "made-ni",
-    pattern: "までに",
-    gloss: "by (a deadline)",
-    level: "N4",
-    attach: [{ host: "noun", form: null, add: "までに" }],
-  },
-  {
-    id: "dake",
-    pattern: "だけ",
-    gloss: "only",
-    level: "N5",
-    attach: [{ host: "noun", form: null, add: "だけ" }],
-  },
-  {
-    id: "shika-nai",
-    pattern: "〜しか〜ない",
-    gloss: "only X (nothing but)",
-    level: "N4",
-    attach: [{ host: "noun", form: null, add: "しか" }],
-    wrap: {
-      close: [{ host: "verb", form: "nai", add: "" }],
-    },
-    transitivity: "transitive",
-    note:
-      "The only wrap the computed gates DON'T rule out. Its slots cannot " +
-      "swap (noun, then verb) and its closing half really conjugates — " +
-      "読む → 読まない — so it is a real drill in shape. It stayed unasked for " +
-      "a reason about DATA, not shape: しか REPLACES を but sits ON TOP of に " +
-      "— 本しか読まない is right, but 学校しか行かない is wrong (学校にしか行かない " +
-      "is the sentence), and nothing here knew which verb takes which. " +
-      "`transitivity: \"transitive\"` closes that gap for free: a transitive " +
-      "verb's object is always marked with を, which しか always safely " +
-      "replaces, so restricting the pool to transitive verbs is restricting " +
-      "it to exactly the safe case — no hand-curated particle table needed.",
   },
 
   // =========================================================================

@@ -9,7 +9,8 @@
 //
 //   1. The foundational form sections lead in teaching order (〜な, て/で, ない,
 //      た, stem), each labelled by its form and HEADED by its own form recipe;
-//      the "Particles" section falls later, where the curriculum reaches it.
+//      "Particles" falls right after て/で, where the curriculum reaches it —
+//      the particles are taught right after the three foundation rows.
 //   2. "Other patterns" trails, holding the plain-form and no-verb-form patterns
 //      and nothing that belongs to a real form section or the Particles section.
 //   3. Every pattern lands in exactly one section — the cut tiles the whole shelf
@@ -37,22 +38,22 @@ const RECIPE_OF_ENTRY = new Map(RECIPES.map((r) => [patternEntry(r.id), r]));
 describe("the grammar shelf is cut by form", () => {
   test("the foundational form sections lead, and every section runs in teaching order", () => {
     const sections = grammarShelfSections();
-    // The verb forms the track opens with lead the shelf. Particles are NOT
-    // hoisted to the front — they are taught after the forms, so their section
-    // falls where the curriculum reaches it (asserted below), not first.
+    // The particles are taught right after the three foundation rows
+    // (prenominal-form, te-sequence, te-iru), so their section falls right
+    // after て/で-form — ahead of every other form section, not after them.
     const lead = sections.slice(0, 5);
     assert.deepEqual(
       lead.map((s) => s.label),
-      ["〜な form", "て/で-form", "ない-form", "た-form", "stem"],
-      "the foundational forms lead in teaching order",
+      ["〜な form", "て/で-form", "Particles", "ない-form", "た-form"],
+      "the foundational forms and Particles lead in teaching order",
     );
     assert.deepEqual(
       lead.map((s) => s.entries[0].id),
-      ["prenominal-form", "te-sequence", "nai-form", "ta-form", "stem-form"].map(patternEntry),
-      "each form section is headed by its own form recipe",
+      ["prenominal-form", "te-sequence", "wa", "nai-form", "ta-form"].map(patternEntry),
+      "each form section is headed by its own form recipe, and Particles by wa",
     );
     const particlesIndex = sections.findIndex((s) => s.label === "Particles");
-    assert.ok(particlesIndex > 4, "Particles follows the foundational forms, not leads");
+    assert.equal(particlesIndex, 2, "Particles leads, right after the foundational forms");
     // Every section but the trailing "Other patterns" appears in teaching order:
     // the rank of each section's first entry never decreases down the shelf.
     const ranked = sections.filter((s) => s.id !== "form-other");
@@ -69,14 +70,15 @@ describe("the grammar shelf is cut by form", () => {
     const particles = grammarShelfSections().find((s) => s.label === "Particles")!;
     assert.ok(particles, "a Particles section exists");
     const ids = particles.entries.map((e) => RECIPE_OF_ENTRY.get(e.id)!.id).sort();
-    // は/が/に/で plus the pre-existing を/へ/まで/までに/だけ/しか. Order within the
-    // section is teaching order (asserted rank-ascending elsewhere); membership is
-    // the point here — these ten and nothing else.
+    // は/が/に/で plus the pre-existing を/へ/まで/までに/だけ/しか, and か. Order
+    // within the section is teaching order (asserted rank-ascending elsewhere);
+    // membership is the point here — these eleven and nothing else.
     assert.deepEqual(ids, [
       "dake",
       "de",
       "e",
       "ga",
+      "ka",
       "made",
       "made-ni",
       "ni",

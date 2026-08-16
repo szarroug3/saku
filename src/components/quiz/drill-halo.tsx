@@ -234,6 +234,16 @@ export interface DrillHaloProps {
   sentenceFrameLang?: "ja" | "en";
   /** A smaller frame for short English sentence-building prompts. */
   compactSentenceFrame?: boolean;
+  /**
+   * Arbitrary interactive content in place of the plain-text glyph/frame — the
+   * particle tap-drill's tappable sentence, which has to stay ONE live
+   * component (its own per-chunk tap state) rather than a string this halo
+   * could render itself. Takes priority over `glyph`/`sentenceFrame`; forces
+   * the square (sentence-shaped) box, since the content this exists for reads
+   * as a sentence, not a lone glyph. `context` still renders beneath it,
+   * exactly as it does under a plain glyph.
+   */
+  body?: ReactNode;
   /** Optional pronunciation shown inside the halo beneath the main glyph. */
   reading?: ReactNode;
   /**
@@ -267,11 +277,12 @@ export function DrillHalo({
   sentenceFrame,
   sentenceFrameLang = "ja",
   compactSentenceFrame = false,
+  body,
   reading,
   context,
   paused = false,
 }: DrillHaloProps) {
-  const square = !!sentenceFrame;
+  const square = !!sentenceFrame || !!body;
   const feedback = feedbackSpec(state, cardKey, timerLeft, drainWindow);
 
   return (
@@ -319,7 +330,21 @@ export function DrillHalo({
           />
         </svg>
       ) : null}
-      {square ? (
+      {body ? (
+        <div
+          className={`kq-glyph relative flex flex-col items-center gap-2 text-center ${
+            compactSentenceFrame ? "px-4 py-4" : "px-5 py-6"
+          }`}
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
+        >
+          {body}
+          {context ? (
+            <div className="px-4 text-center text-[13px] leading-snug whitespace-normal text-text-muted">
+              {context}
+            </div>
+          ) : null}
+        </div>
+      ) : square ? (
         <div
           className={`kq-glyph relative text-center ${
             compactSentenceFrame ? "px-4 py-4" : "px-5 py-6"
