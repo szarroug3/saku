@@ -31,7 +31,7 @@ import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { SoundButton } from "@/components/ui/sound-button";
+import { HearButton } from "@/components/ui/hear-button";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
@@ -225,7 +225,7 @@ export function CharacterEntryView({
                               <tr key={r.base}>
                                 <td className="whitespace-nowrap py-1 pr-6">
                                   <span className="flex items-center gap-1.5">
-                                    <SoundButton text={r.base} />
+                                    <HearButton glyph={r.base} />
                                     <span className="font-kana text-text">{r.base}</span>
                                   </span>
                                 </td>
@@ -278,7 +278,7 @@ export function CharacterEntryView({
                       <tr key={w.reading}>
                         <td className="whitespace-nowrap py-1 pr-6 align-top">
                           <span className="flex items-center gap-1.5">
-                            <SoundButton text={w.reading} />
+                            <HearButton glyph={w.reading} />
                             <span className="font-kana text-text">{w.reading}</span>
                           </span>
                         </td>

@@ -30,7 +30,7 @@
 
 import Link from "next/link";
 
-import { HearButton } from "@/components/lesson/hear-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { KANA_SUBJECT } from "@/data/characters";
 import { KEIGO_SUBJECT } from "@/lib/keigo-ids";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
@@ -216,10 +216,13 @@ export function EntryTile({
           the tile compact — no empty reserved action row under every glyph — and,
           because the slot is a fixed height, hovering never reflows the grid. */}
       <div className="relative mt-1 flex h-[13px] items-center justify-center">
-        <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+        <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0">
           {subLabel(entry)}
         </span>
-        <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        {/* Revealed on hover, or on the tile's OWN keyboard focus-visible — never
+            on plain focus, which mouse-clicking to SELECT also leaves behind
+            (see ROW_ARROW_REVEAL's note on the same bug for a shelf row). */}
+        <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           {speakable(entry) ? (
             <HearButton
               glyph={entry.glyph}

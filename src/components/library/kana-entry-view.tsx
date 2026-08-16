@@ -69,7 +69,7 @@ export function KanaEntryView({
       <article>
         <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="kana" />
         <div className="mt-5 border-t border-border/50 pt-6">
-          <MnemonicView m={m} glyph={glyph} voiceName="" />
+          <MnemonicView m={m} glyph={glyph} />
         </div>
         {/* How its sound bends to what follows it (ん borrows the next place, っ
             doubles the next consonant), as a heads-up aside — the same left-rule

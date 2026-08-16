@@ -19,7 +19,7 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface } from "@/components/library/entry-section";
 import { Info } from "@/components/ui";
-import { SoundButton } from "@/components/ui/sound-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { pairForEntry } from "@/data/transitivity-facts";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
@@ -65,7 +65,7 @@ export function VerbPairEntryView({
                 <Info>{s.help}</Info>
               </p>
               <div className="flex items-center gap-2.5">
-                <SoundButton text={s.m.reading} />
+                <HearButton glyph={s.m.reading} />
                 <span className="font-kana text-[22px] leading-none text-text">{s.m.word}</span>
                 <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
               </div>

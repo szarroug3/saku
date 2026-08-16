@@ -25,7 +25,7 @@ import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
-import { SoundButton } from "@/components/ui/sound-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
@@ -116,7 +116,7 @@ export function KeigoEntryView({
                   <p className="mb-2 text-[13px] leading-relaxed text-text">{reg.desc}</p>
                 ) : null}
                 <div className="flex items-center gap-2.5">
-                  <SoundButton text={w.reading} />
+                  <HearButton glyph={w.reading} />
                   <span className="font-kana text-[22px] leading-none text-text">{w.word}</span>
                   <span className="font-kana text-[13px] text-text-muted">{w.reading}</span>
                 </div>

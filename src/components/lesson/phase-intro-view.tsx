@@ -19,8 +19,7 @@ import { Fragment } from "react";
 // step 1 of 6 has no way to tell a concept card from a character they somehow
 // can't see, and the walk's forward button looks broken rather than patient.
 
-import { HearButton } from "@/components/lesson/hear-button";
-import { SoundButton } from "@/components/ui/sound-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { countGroupHasBuild } from "@/data/phase-intros";
@@ -378,7 +377,7 @@ export function IntroExamples({
               <div className="flex flex-wrap items-baseline gap-x-1.5">
                 <span className="text-text">{accentedText(ex.from, ex.accentFrom)}</span>
                 {ex.sayFrom ? (
-                  <SoundButton text={ex.sayFrom} voiceName={cfg.voiceName} className="self-center" />
+                  <HearButton glyph={ex.sayFrom} voiceName={cfg.voiceName} />
                 ) : null}
                 <span className="text-text-muted/70">{ex.op ?? "="}</span>
                 <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
@@ -390,7 +389,7 @@ export function IntroExamples({
                   {ex.gloss}
                 </span>
                 {ex.say ? (
-                  <SoundButton text={ex.say} voiceName={cfg.voiceName} className="ml-1 self-center" />
+                  <HearButton glyph={ex.say} voiceName={cfg.voiceName} className="ml-1" />
                 ) : null}
               </div>
             )}
@@ -482,7 +481,7 @@ function Say({ glyph, voice }: { glyph: string; voice: string }) {
     <HearButton
       glyph={glyph}
       voiceName={voice}
-      className="ml-1 mr-0.5 !px-1 !py-0 align-middle"
+      className="ml-1 mr-0.5"
     />
   );
 }
@@ -737,14 +736,14 @@ export function IntroCountTable({
                 <HearButton
                   glyph={row.reading}
                   voiceName={cfg.voiceName}
-                  className="ml-1.5 align-middle"
+                  className="ml-1.5"
                 />
                 {row.alternateReadings?.map((reading) => (
                   <HearButton
                     key={reading}
                     glyph={reading}
                     voiceName={cfg.voiceName}
-                    className="ml-1 align-middle"
+                    className="ml-1"
                   />
                 ))}
               </td>

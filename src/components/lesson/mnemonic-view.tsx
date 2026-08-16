@@ -46,14 +46,12 @@ import type { ReactNode } from "react";
 import { Callout } from "@/components/lesson/callout";
 import { Line } from "@/components/lesson/mnemonic-card";
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
-import { SoundIcon } from "@/components/ui";
+import { HearButton } from "@/components/ui/hear-button";
 import type { Mnemonic } from "@/data/mnemonics";
-import { speak } from "@/lib/speech";
 
 export function MnemonicView({
   m,
   glyph,
-  voiceName,
   href,
   soundNote,
 }: {
@@ -63,8 +61,6 @@ export function MnemonicView({
    * every authored kana; passed explicitly so the caller stays the authority on
    * what its page is about. */
   glyph: string;
-  /** Which voice to speak it in (quiz config). */
-  voiceName: string;
   /** Where the picture and the glyph link to. The lesson passes the Library
    * entry, so the walk-through can open the reference; the entry page passes
    * nothing, because it IS the reference and a link to itself is noise. */
@@ -117,14 +113,7 @@ export function MnemonicView({
           <Line line={m.mnemonic} />
         </p>
         <p className="mt-2.5 flex items-baseline gap-2 text-[15px] leading-relaxed text-text-muted">
-          <button
-            type="button"
-            onClick={() => speak(glyph, voiceName)}
-            aria-label={`Hear ${glyph}`}
-            className="flex-none cursor-pointer border-none bg-transparent p-0 text-accent"
-          >
-            <SoundIcon className="align-[-0.15em]" />
-          </button>
+          <HearButton glyph={glyph} />
           <span>
             <Line line={m.analogy} />
           </span>

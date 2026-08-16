@@ -21,7 +21,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-import { HearButton } from "@/components/lesson/hear-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { Hint, Lbl } from "@/components/ui";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";

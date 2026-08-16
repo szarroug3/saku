@@ -38,7 +38,7 @@
 // rather than quietly reusing the same five base glyphs and hoping.
 
 import { Callout } from "@/components/lesson/callout";
-import { HearButton } from "@/components/lesson/hear-button";
+import { HearButton } from "@/components/ui/hear-button";
 import { CHAR_INDEX } from "@/data/characters";
 import { hookRuns, type DakutenRow } from "@/data/dakuten-rows";
 import { useQuizConfig } from "@/lib/quiz-config";

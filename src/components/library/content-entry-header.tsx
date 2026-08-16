@@ -16,10 +16,9 @@
 
 import type { ReactNode } from "react";
 
-import { SoundIcon } from "@/components/ui";
+import { HearButton } from "@/components/ui/hear-button";
 import type { Headline } from "@/lib/content/headline";
 import { japaneseFontClass } from "@/lib/japanese-text";
-import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
 /** Glyph size by length — a lone kanji is the title, a long pattern / Latin tier
@@ -115,14 +114,7 @@ export function ContentEntryHeader({
         {text ? (
           <div className="flex items-center gap-2 text-[16px] leading-snug text-text">
             {speakGlyph ? (
-              <button
-                type="button"
-                onClick={() => speak(speakGlyph, "")}
-                aria-label={`Hear ${speakGlyph}`}
-                className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-              >
-                <SoundIcon />
-              </button>
+              <HearButton glyph={speakGlyph} />
             ) : null}
             <span className="[overflow-wrap:anywhere]">{text}</span>
           </div>

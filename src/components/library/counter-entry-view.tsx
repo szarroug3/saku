@@ -38,7 +38,7 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { NumberConstructionView } from "@/components/library/number-construction-view";
-import { SoundButton } from "@/components/ui/sound-button";
+import { HearButton } from "@/components/ui/hear-button";
 import {
   counterForm,
   isBareNumber,
@@ -104,7 +104,7 @@ export function CounterEntryView({
               <tr>
                 <td className="whitespace-nowrap py-1 pr-6 align-top">
                   <span className="flex items-center gap-1.5">
-                    <SoundButton text={form.reading} />
+                    <HearButton glyph={form.reading} />
                     <span className="font-kana text-text">{form.reading}</span>
                     {/* A second reading the same number branches into — く beside
                         きゅう. It is a READING, so it rides beside the primary reading,
