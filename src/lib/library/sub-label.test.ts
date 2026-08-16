@@ -76,7 +76,7 @@ describe("a many-reading kanji still refuses to name one reading", () => {
     const sei = entryOf(KANJI_SUBJECT, "生");
     assert.ok(sei.readings.length > 1, "生 must have many readings, or this pins nothing");
     const label = subLabel(sei);
-    assert.equal(label, sei.meanings[0]);
+    assert.equal(label, sei.meanings.join(", "));
     for (const r of sei.readings) {
       assert.ok(
         !label.includes(r),

@@ -22,6 +22,7 @@
 // beginner most needs told, to "—". They are told now.
 
 import { KANA_SUBJECT } from "@/data/characters";
+import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/lib/vocab-ids";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import type { LibEntry } from "@/lib/library/entries";
@@ -51,6 +52,11 @@ export function subLabel(entry: LibEntry): string {
   // while it has a reading" invariant the kana bug pinned still holds. Counters
   // are a separate Kind (COUNTER_KIND) and unaffected.
   if (entry.kind === VOCAB_SUBJECT && entry.meanings.length > 0) {
+    return entry.meanings.join(MEANING_SEP);
+  }
+  // A KANJI shows its MEANING, not its reading — 本 is more useful as "book"
+  // than as ほん on a shelf you browse to recall what a kanji means.
+  if (entry.kind === KANJI_SUBJECT && entry.meanings.length > 0) {
     return entry.meanings.join(MEANING_SEP);
   }
   // A primitive is a shape with no meaning or reading — say what it is.
