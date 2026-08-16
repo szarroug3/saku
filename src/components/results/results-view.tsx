@@ -31,6 +31,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { pairEntries } from "@/lib/confusions";
 import { analyzeRun } from "@/lib/confusions";
 import { pairRecentRuns } from "@/lib/confusions";
+import type { PairRow } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
 import { entryOf } from "@/lib/facts";
 import { factsOf } from "@/lib/facts";
@@ -259,7 +260,15 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     setSavedAsList(true);
   };
 
-  const [clearedProgressPairs, setClearedProgressPairs] = useState<Set<string>>(new Set());
+  // Clearing a pair stamps `clearedMixups[key]` to now, which makes
+  // `pairRecords` discard every run for that pair (all of them predate "now")
+  // rather than land on the natural "cleared" state — so the row would vanish
+  // from `analysis.progress` the instant history re-renders. A snapshot of the
+  // row (and its runs) taken right before clearing is what keeps it on screen
+  // afterwards, tagged Cleared instead of flickering out.
+  const [clearedProgressPairs, setClearedProgressPairs] = useState<
+    Map<string, { row: PairRow; runs: boolean[] }>
+  >(new Map());
   const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
   const [clearedProgressFacts, setClearedProgressFacts] = useState<Set<FactId>>(new Set());
 
@@ -267,12 +276,16 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     const [a, b] = pairEntries(key);
     const facts = [...new Set([...factsOf(a), ...factsOf(b)])];
     if (facts.length) writes.claim(facts);
+    const row = analysis.progress.find((r) => r.key === key);
+    const runs = allProgressPairRuns.get(key);
     writes.clearMixup(key);
-    setClearedProgressPairs((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
+    if (row) {
+      setClearedProgressPairs((prev) => {
+        const next = new Map(prev);
+        next.set(key, { row, runs: runs ?? [] });
+        return next;
+      });
+    }
   };
 
   // Facts that were unstable before this run (shaky/getting there) and are
@@ -333,16 +346,22 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     return out;
   }, [analysis.progress, history, results.ts]);
 
-  const visiblePairProgressRows = useMemo(
-    () =>
-      analysis.progress.filter((row) => {
-        // Show pairs that still need work, or pairs that have been explicitly cleared
-        if (clearedProgressPairs.has(row.key)) return true;
-        const runs = allProgressPairRuns.get(row.key) ?? [];
-        return runsToReach(runs, SOLID_PCT) > 0;
-      }),
-    [analysis.progress, allProgressPairRuns, clearedProgressPairs],
-  );
+  const visiblePairProgressRows = useMemo(() => {
+    const rows = analysis.progress.filter((row) => {
+      // Show pairs that still need work, or pairs that have been explicitly cleared
+      if (clearedProgressPairs.has(row.key)) return true;
+      const runs = allProgressPairRuns.get(row.key) ?? [];
+      return runsToReach(runs, SOLID_PCT) > 0;
+    });
+    // A cleared pair's record gets truncated to nothing once history reflects
+    // the clear, so analyzeRun stops producing it at all. The snapshot taken
+    // at clear time is what keeps the row (and its Cleared tag) on screen.
+    const seen = new Set(rows.map((row) => row.key));
+    for (const [key, snapshot] of clearedProgressPairs) {
+      if (!seen.has(key)) rows.push(snapshot.row);
+    }
+    return rows;
+  }, [analysis.progress, allProgressPairRuns, clearedProgressPairs]);
 
   const progressPairFacts = useMemo(() => {
     const out = new Map<string, FactId[]>();
@@ -356,11 +375,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const progressPairRuns = useMemo(() => {
     const out = new Map<string, boolean[]>();
     for (const row of visiblePairProgressRows) {
-      const runs = allProgressPairRuns.get(row.key);
+      const runs = allProgressPairRuns.get(row.key) ?? clearedProgressPairs.get(row.key)?.runs;
       if (runs) out.set(row.key, runs);
     }
     return out;
-  }, [visiblePairProgressRows, allProgressPairRuns]);
+  }, [visiblePairProgressRows, allProgressPairRuns, clearedProgressPairs]);
 
   const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
 
