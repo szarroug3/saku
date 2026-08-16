@@ -9,7 +9,6 @@ import { accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
 import { foldSessions } from "@/lib/aggregate";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
-import { firstTryShowings } from "@/lib/first-try";
 import {
   entryOf,
   factInfo,
@@ -91,11 +90,11 @@ export interface RunFacts {
   facts: FactId[];
   /** Showings/questions this run asked. */
   questionsTotal: number;
-  /** Showings landed on first attempt. */
-  questionsFirstTry: number;
+  /** Showings that ended correct, first try or after a retry. */
+  questionsCorrect: number;
   total: number;
-  /** Facts answered right on the first attempt. */
-  firstTry: number;
+  /** Facts answered correct at least once. */
+  correctFacts: number;
   /** Wrong attempts across the run. */
   totalMisses: number;
   /** The ring, through accuracy.ts. */
@@ -111,9 +110,9 @@ export interface RunFacts {
   solid: FactId[];
 }
 
-/** Whether a fact was missed — not landed on the first attempt. */
+/** Whether a fact was missed — never landed at all this run. */
 function isMissed(st: FactSessionDetail): boolean {
-  return st.firstTryCorrect !== true;
+  return (st.correct ?? 0) === 0;
 }
 
 /**
@@ -147,15 +146,15 @@ export function readableStats(results: ResultsPayload): SessionStats {
  * "Exactly as" is load-bearing and was for a while merely aspirational: this
  * read `firstTryCorrect === true ? 1 : 0` — a per-run flag — while `seen` next
  * to it counted showings, so the ring disagreed with the pill it sat under by
- * more the harder you had practised. The numerator is `firstTryShowings`, the
- * same reader the pill and the writer both use, because three copies of the
- * same measurement agree by sharing the arithmetic or they do not agree. */
+ * more the harder you had practised. The numerator is `st.correct`, the same
+ * field the pill and the writer both read, because three copies of the same
+ * measurement agree by sharing the arithmetic or they do not agree. */
 function runAggregate(stats: SessionStats): FactCounts {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
     agg.missed += st.misses;
-    agg.firstTry += firstTryShowings(st);
+    agg.correct += st.correct ?? 0;
   }
   return agg;
 }
@@ -170,34 +169,35 @@ export function deriveRun(
 
   const missed = r.facts
     .filter((f) => isMissed(stats[f]))
-    // Worst first, the order engine.missedFacts() uses; a fact you never
-    // landed leads its miss-count group, since not knowing beats fumbling.
+    // Worst first, the order the results screen has always used; a fact you
+    // never landed leads its miss-count group, since not knowing beats
+    // fumbling.
     .sort(
       (a, b) =>
         stats[b].misses - stats[a].misses ||
-        Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
+        Number((stats[a].correct ?? 0) > 0) - Number((stats[b].correct ?? 0) > 0),
     );
   // Board split is about what needed another look in THIS run, not the score
-  // shown up top. A fact can be first-try on one showing and still cost
-  // retries on another; misses>0 keeps that visible.
+  // shown up top. A fact can be correct on one showing and still cost retries
+  // on another; misses>0 keeps that visible.
   const needsWork = r.facts
     .filter((f) => stats[f].misses > 0)
     .sort(
       (a, b) =>
         stats[b].misses - stats[a].misses ||
-        Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
+        Number((stats[a].correct ?? 0) > 0) - Number((stats[b].correct ?? 0) > 0),
     );
   const workSet = new Set(needsWork);
 
   return {
     facts: r.facts,
     questionsTotal: agg.seen,
-    questionsFirstTry: agg.firstTry,
+    questionsCorrect: agg.correct,
     total: r.total,
-    firstTry: r.strict,
+    correctFacts: r.forg,
     totalMisses: r.facts.reduce((n, f) => n + stats[f].misses, 0),
     // Summary-only sessions kept percentages and nothing to recompute from.
-    pct: summaryOnly ? summaryOnly.strictPct : accuracyOf(runAggregate(stats)),
+    pct: summaryOnly ? summaryOnly.forgivingPct : accuracyOf(runAggregate(stats)),
     stored: summaryOnly,
     missed,
     needsWork,
@@ -237,7 +237,7 @@ export function worstOf(
   if (!run.missed.length) return null;
 
   // 1 · never got it
-  const never = run.missed.filter((f) => !stats[f].everCorrect);
+  const never = run.missed.filter((f) => (stats[f].correct ?? 0) === 0);
   const pool = never.length ? never : run.missed;
   const kind: Worst["kind"] = never.length ? "never" : "misses";
 
@@ -369,13 +369,13 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
  * Progress section earned. */
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
   const got =
-    run.questionsFirstTry;
+    run.questionsCorrect;
   const beaten = progress.length;
   return [
     // A stored session counted nothing per fact, so "0 / 12 score"
     // would be an invention. Report the two percentages it did keep.
     run.stored
-      ? { t: `${run.stored.strictPct}% score` }
+      ? { t: `${run.stored.forgivingPct}% score` }
       : { t: `${got} / ${run.questionsTotal} ${"score"}` },
     ...(beaten
       ? [
@@ -400,7 +400,7 @@ function perfectBits(run: RunFacts, prior: HistoryFile): Bit[] {
     .find((d) => d.facts.every((f) => ran.has(f)));
   const clean = (pct: number) => pct === 100;
   const pctOf = (x: { forgivingPct: number; strictPct: number }) =>
-    x.strictPct;
+    x.forgivingPct;
 
   if (deck) {
     const before = prior.sessions.filter(

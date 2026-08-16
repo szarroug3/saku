@@ -56,7 +56,7 @@ describe("groupByEntry — one row per word", () => {
 describe("outcomeOf — how the showing went", () => {
   const cases: Array<[string, Partial<FactSessionDetail>, Outcome]> = [
     ["never on screen", { seen: 0 }, "unseen"],
-    ["shown, never landed", { seen: 1, everCorrect: false }, "missed"],
+    ["shown, never landed", { seen: 1, correct: 0, everCorrect: false }, "missed"],
     ["clean first try", { misses: 0, firstTryCorrect: true }, "first-try"],
     ["landed after a miss", { misses: 1, firstTryCorrect: false }, "recovered"],
     ["landed but hinted", { misses: 0, firstTryCorrect: false }, "recovered"],
@@ -105,6 +105,7 @@ describe("confusions still surface (regression guard)", () => {
       everCorrect: false,
       misses: 1,
       firstTryCorrect: false,
+      correct: 0,
       confused: { [said]: 1 } as Record<EntryId, number>,
     });
     // The table's column and confusions.indexPairs read the SAME field.

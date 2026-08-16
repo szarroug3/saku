@@ -46,7 +46,6 @@ export {
 // so `@/lib/engine` consumers are unchanged.
 export {
   computeResults,
-  missedFacts,
   type ResultsSummary,
 } from "@/lib/engine/results";
 

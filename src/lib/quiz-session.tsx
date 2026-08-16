@@ -1699,13 +1699,14 @@ export function QuizSessionProvider({
       } else {
         // Summary-only sessions stored aggregates and no detail — approximate a
         // view. The aggregate DOES know how many showings were landed, so
-        // `correct` is real here rather than synthesized like everCorrect below.
+        // `correct` is real here, and everCorrect is exactly `correct > 0` —
+        // no separate synthesis needed for it either.
         for (const [key, a] of Object.entries(record.facts ?? {})) {
           const c = key as FactId;
           stats[c] = {
             seen: a.seen,
             misses: a.missed,
-            everCorrect: a.missed === 0 && record.forgivingPct === 100,
+            everCorrect: (a.correct ?? 0) > 0,
             firstTryCorrect: null,
             // The aggregate DOES carry the strict numerator, same as `correct`
             // below — no need to synthesize this one either.

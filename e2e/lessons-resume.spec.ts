@@ -1,7 +1,7 @@
 import {
   test,
   expect,
-  KANA_FACTS,
+  seenToReachCurriculum,
   lessonCard,
   stepToHeadword,
   headword,
@@ -25,7 +25,7 @@ test("leaving a lesson mid-walk and continuing resumes the same step", async ({
   page,
   seed,
 }) => {
-  await seed({ seen: KANA_FACTS, cfg: {} });
+  await seed({ seen: seenToReachCurriculum("人"), cfg: {} });
 
   await page.goto("/learn");
   const card = lessonCard(page, "人");

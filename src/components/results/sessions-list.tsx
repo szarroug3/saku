@@ -125,12 +125,12 @@ function SessionRow({
       </span>
 
       <span className="flex items-center gap-2">
-        {/* One score. The strict/forgiving split was about how leniently a retry
-            counted; the app grades first-try only now, so there is one number. */}
+        {/* One score: correct or not, a retry included — there is no separate
+            "first try" reading to disagree with it. */}
         <span className="tabular-nums text-text-muted">
           Score{" "}
           <span className="text-text">
-            {formatAccuracy(record.strictPct)}
+            {formatAccuracy(record.forgivingPct)}
           </span>
         </span>
         <SmallBtn

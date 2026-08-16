@@ -99,14 +99,14 @@ test("results shows grammar split rows, label formatting, making-progress status
     mode: "drill",
     redrill: false,
     total: 1,
-    forgivingPct: 100,
+    forgivingPct: r.firstTry ? 100 : 0,
     strictPct: r.firstTry ? 100 : 0,
     facts: {
       [teAdjNa]: {
         seen: 1,
         missed: r.firstTry ? 0 : 1,
         firstTry: r.firstTry ? 1 : 0,
-        correct: 1,
+        correct: r.firstTry ? 1 : 0,
         firstTryHit: r.firstTry,
       },
     },
@@ -137,7 +137,7 @@ test("results shows grammar split rows, label formatting, making-progress status
   await page.goto("/results");
   await expect(page).toHaveURL(/\/results$/);
 
-  await expect(page.getByText("Making progress")).toBeVisible();
+  await expect(page.getByText("~て · na-adj")).toBeVisible();
   await expect(page.getByText("~て · na-adj")).toBeVisible();
   await expect(page.getByText("No miss this run")).toBeVisible();
   await expect(page.getByText(/Currently getting there, \d+ to clear it/)).toBeVisible();

@@ -2,21 +2,20 @@
 // deck rings, the character picker circles — reads through here, so the number
 // always means the same thing.
 //
-// Both metrics count SHOWINGS and divide by the same denominator — only the
-// numerator differs, so the two numbers are directly comparable:
-//   seen     = times a fact was SHOWN as a question
-//   firstTry = showings answered right on the first attempt
-//   correct  = showings answered right at all (first try or after retries)
-//   missed   = wrong ATTEMPTS; one showing can produce several. Never a
-//              denominator — mixing units is what made the legacy app print
-//              negative accuracies.
+//   seen    = times a fact was SHOWN as a question
+//   correct = showings answered right at all, first try or after a retry
+//   missed  = wrong ATTEMPTS; one showing can produce several. Never a
+//             denominator — mixing units is what made the legacy app print
+//             negative accuracies.
 //
-//   strict    = firstTry / seen   — "how often did you nail it immediately"
-//   forgiving = correct  / seen   — "how often did you get it at all"
+//   accuracy = correct / seen — "how often did you get it right"
 //
-// A showing that ended without a correct answer (quiz ended early, grid card
-// left blank) scores 0 under both. The old forgiving formula,
-// seen / (seen + missed), reported that same never-answered showing as 100%.
+// If you got it right, you got it right — a retry does not asterisk the
+// answer. A showing that ended without a correct answer (quiz ended early,
+// grid card left blank) scores 0. The old strict formula, firstTry / seen,
+// scored a corrected retry as wrong forever, and the old forgiving formula,
+// seen / (seen + missed), scored a never-answered showing as 100%. Both were
+// wrong in opposite directions; `correct / seen` is the one honest reading.
 //
 // ACCURACY IS TWO DIFFERENT NUMBERS
 // =================================
@@ -106,7 +105,7 @@ export function accuracyOf(
   agg: FactCounts,
 ): number | null {
   if (!agg.seen) return null;
-  const ratio = (agg.firstTry ?? 0) / agg.seen;
+  const ratio = (agg.correct ?? 0) / agg.seen;
   return Math.max(0, Math.min(100, Math.round(100 * ratio)));
 }
 

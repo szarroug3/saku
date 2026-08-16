@@ -28,13 +28,16 @@ import type {
 const f = (s: string): FactId => s as FactId;
 
 function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
+  const firstTryCount = over.firstTryCount ?? 1;
   return {
     seen: 1,
     misses: 0,
     everCorrect: true,
     firstTryCorrect: true,
-    firstTryCount: 1,
-    correct: 1,
+    firstTryCount,
+    // A first-try showing is always a correct one, so this is the honest
+    // default absent other evidence; callers with retries override it.
+    correct: firstTryCount,
     confused: {},
     ...over,
   };
@@ -84,8 +87,8 @@ const pill = (stats: SessionStats) => sessionAccuracy(stats);
 
 describe("the ring, the pill and the durable aggregate are one measurement", () => {
   // A REAL RUN, of the shape endless mode actually produces: some facts came
-  // round once, some several times, one was fumbled cold and only landed on the
-  // requeue. 14 showings, 11 of them nailed first try.
+  // round once, some several times, one needed retries and still cost a
+  // showing it never landed. 14 showings, 13 of them correct.
   const run: SessionStats = {
     [f("a")]: detail({ seen: 4, firstTryCount: 4 }),
     [f("b")]: detail({ seen: 3, firstTryCount: 3 }),
@@ -95,7 +98,7 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
       firstTryCount: 1,
       misses: 2,
       firstTryCorrect: false,
-      correct: 3,
+      correct: 2,
     }),
     [f("e")]: detail({
       seen: 3,
@@ -107,19 +110,19 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
   };
 
   it("agrees to the number", () => {
-    // 11 first-try showings out of 14 = 79%. accuracyOf reports 0–100.
-    assert.equal(Math.round((100 * 11) / 14), 79);
-    assert.equal(pill(run), 79);
-    assert.equal(ring(run), 79);
-    assert.equal(durableAccuracy(run), 79);
+    // 13 correct showings out of 14 = 93%. accuracyOf reports 0–100.
+    assert.equal(Math.round((100 * 13) / 14), 93);
+    assert.equal(pill(run), 93);
+    assert.equal(ring(run), 93);
+    assert.equal(durableAccuracy(run), 93);
   });
 
   it("the flag-over-showings reading disagreed with all three", () => {
     // What the ring used to compute: 4 facts with firstTryCorrect true, over
-    // the same 14 showings. 28.6% adrift, and adrift downward.
+    // the same 14 showings. Nowhere near the showing-level reading.
     const old = Math.round((100 * 4) / 14); // 29%
     assert.equal(old, 29);
-    assert.notEqual(old, 79);
+    assert.notEqual(old, 93);
   });
 
   it("a perfect run reads 100% on all three, however much it repeated", () => {
@@ -132,14 +135,15 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
     assert.equal(durableAccuracy(perfect), 100);
   });
 
-  it("a run where nothing landed cold reads 0 on all three", () => {
+  it("a run where nothing ever landed reads 0 on all three", () => {
     const none: SessionStats = {
       [f("a")]: detail({
         seen: 3,
         firstTryCount: 0,
         misses: 3,
         firstTryCorrect: false,
-        correct: 3,
+        everCorrect: false,
+        correct: 0,
       }),
     };
     assert.equal(pill(none), 0);

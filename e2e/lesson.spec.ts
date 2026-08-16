@@ -51,7 +51,8 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // 27". (The de-box redesign dropped the "Up next" eyebrow; the heading is now
   // the track title.)
   await expect(page.locator("body")).toContainText("Kana");
-  await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
+  await expect(page.locator("body")).toContainText("Hiragana");
+  await expect(page.locator("[data-learn-card]").filter({ hasText: "あ" })).toHaveCount(1);
 
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");

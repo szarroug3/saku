@@ -1,4 +1,4 @@
-import { test, expect } from "./helpers/lessons";
+import { test, expect, lessonCard } from "./helpers/lessons";
 
 /**
  * CLAIMING A GROUP ADVANCES THE CURRICULUM AND LEAVES THE ITEMS UNTESTED.
@@ -22,14 +22,19 @@ test("claiming the first group advances AND leaves the items claimed, not solid"
   await seed({ seen: [], cfg: {} });
 
   await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("Hiragana 1–5 of");
+  // The kana card no longer renders a numeric range; script + tiles identify
+  // the current group instead.
+  await expect(page.locator("body")).toContainText("Hiragana");
+  const firstGroup = lessonCard(page, "あ");
+  await expect(firstGroup).toHaveCount(1);
 
   await page
     .getByRole("button", { name: "I already know these 5", exact: true })
     .click();
 
-  // The frontier advanced: the next group is now offered.
-  await expect(page.locator("body")).toContainText("Hiragana 6–10 of");
+  // The frontier advanced: the next kana tile group is now offered.
+  await expect(lessonCard(page, "あ")).toHaveCount(0);
+  await expect(lessonCard(page, "か")).toHaveCount(1);
 
   // The knowledge base reflects the claim as CLAIMED, not SOLID. Nothing has been
   // drilled, so there is no solid bucket at all — the "What you know" card shows a

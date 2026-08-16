@@ -115,7 +115,7 @@ export function recentRunAccuracy(
   if (!agg) return null;
   const runs = agg.recentRuns;
   if (!runs?.length) return accuracyOf(agg);
-  const hits = runs.filter((run) => run.firstTry).length;
+  const hits = runs.filter((run) => run.eventually).length;
   return (100 * hits) / runs.length;
 }
 

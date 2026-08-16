@@ -56,10 +56,15 @@ export type Outcome = "first-try" | "recovered" | "missed" | "unseen";
  *   missed     — shown and never landed this run.
  *   first-try  — landed cold, no miss, no hint forfeit.
  *   recovered  — landed, but needed another look (a miss, or a hinted answer).
+ *
+ * Not "the score": both first-try and recovered count as correct there (see
+ * accuracy.ts / summary.isMissed). This is the finer, presentational read the
+ * per-cell colour and the redrill candidates need — whether THIS showing cost
+ * you a retry, which a plain correct/not-correct verdict can't say.
  */
 export function outcomeOf(st?: FactSessionDetail): Outcome {
   if (!st || st.seen === 0) return "unseen";
-  if (!st.everCorrect) return "missed";
+  if (!(st.correct ?? 0)) return "missed";
   if (st.misses === 0 && st.firstTryCorrect === true) return "first-try";
   return "recovered";
 }

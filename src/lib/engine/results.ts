@@ -22,25 +22,11 @@ export interface ResultsSummary {
   strict: number;
 }
 
-/** Totals for the results screen (forgiving vs strict). */
+/** Totals for the results screen (ever correct vs first try). */
 export function computeResults(stats: SessionStats): ResultsSummary {
   const facts = factKeys(stats);
   const total = facts.length;
-  const forg = facts.filter((f) => stats[f].everCorrect).length;
+  const forg = facts.filter((f) => (stats[f].correct ?? 0) > 0).length;
   const strict = facts.filter((f) => stats[f].firstTryCorrect === true).length;
   return { facts, total, forg, strict };
-}
-
-/** Facts counting as "missed" under the given view, most misses first. */
-export function missedFacts(
-  stats: SessionStats,
-  view: "forg" | "strict",
-): FactId[] {
-  return factKeys(stats)
-    .filter((f) =>
-      view === "forg"
-        ? stats[f].misses > 0 || !stats[f].everCorrect
-        : stats[f].firstTryCorrect !== true,
-    )
-    .sort((a, b) => stats[b].misses - stats[a].misses);
 }

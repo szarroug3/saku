@@ -160,10 +160,10 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
   });
 
   test("quiet + middling accuracy is 'getting there', not solid", () => {
-    // 70% first-try: mostly right, but short of SOLID_PCT. The band the fix
+    // 70% accuracy: mostly right, but short of SOLID_PCT. The band the fix
     // opened — this used to read solid purely because it was quiet.
     const agg = drilledJustNow(
-      { seen: 10, missed: 3, firstTry: 7, correct: 8 },
+      { seen: 10, missed: 3, firstTry: 7, correct: 7 },
       NOW_T,
     );
     assert.equal(
@@ -175,12 +175,12 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
   test("SOLID_PCT is the boundary: at it reads solid, just under does not", () => {
     assert.ok(SOLID_PCT > GETTING_THERE_PCT, "solid must sit above getting-there");
     const at = drilledJustNow(
-      { seen: 100, missed: 0, firstTry: SOLID_PCT, correct: 100 },
+      { seen: 100, missed: 0, firstTry: SOLID_PCT, correct: SOLID_PCT },
       NOW_T,
     );
     assert.equal(standingOf(at, undefined, NOW_T).standing, "solid");
     const under = drilledJustNow(
-      { seen: 100, missed: 0, firstTry: SOLID_PCT - 1, correct: 100 },
+      { seen: 100, missed: 0, firstTry: SOLID_PCT - 1, correct: SOLID_PCT - 1 },
       NOW_T,
     );
     assert.equal(

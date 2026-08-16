@@ -29,8 +29,9 @@
 //   going to be one.
 //
 //   THE METRIC TOGGLE. It existed to govern those four cards. Nothing it
-//   governed is left. The app grades first-try only now, everywhere,
-//   including the "getting there" vs "shaky" split below.
+//   governed is left. The app grades on one rule now, everywhere: right is
+//   right, first try or after a retry — including the "getting there" vs
+//   "shaky" split below.
 //
 // WHAT IS LEFT IS THREE CARDS AND EVERY NUMBER ON THEM IS A COUNT OF THINGS.
 // There is no decimal on this page, and there is no arithmetic that could

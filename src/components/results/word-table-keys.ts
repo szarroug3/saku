@@ -28,7 +28,7 @@ export function outcomeForPhrase(
   const hasPhraseMissData = Array.isArray(st.missedPhrases);
   if (hasPhraseMissData) {
     const missed = new Set(st.missedPhrases ?? []);
-    if (missed.has(phrase)) return st.everCorrect ? "recovered" : "missed";
+    if (missed.has(phrase)) return (st.correct ?? 0) > 0 ? "recovered" : "missed";
     if (missed.size === 0 && st.misses > 0) return outcomeOf(st);
     return "first-try";
   }

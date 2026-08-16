@@ -63,8 +63,8 @@ export function poolSessionCounts(stats: SessionStats): FactCounts {
 }
 
 /**
- * Live accuracy for one run: strict = first-try showings / showings,
- * forgiving = correct showings / showings. Null when nothing has resolved yet.
+ * Live accuracy for one run: correct showings / showings. Null when nothing
+ * has resolved yet.
  */
 export function sessionAccuracy(
   stats: SessionStats,

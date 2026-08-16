@@ -1,7 +1,7 @@
 import {
   test,
   expect,
-  KANA_FACTS,
+  seenToReachCurriculum,
   lessonCard,
   stepToHeadword,
   headword,
@@ -73,7 +73,7 @@ test("leaving on the last teach card and continuing resumes that same card", asy
 }) => {
   // Kana complete, so the frontier is the first curriculum group, whose last
   // teach card is what this test rests on.
-  await seed({ seen: KANA_FACTS, cfg: {} });
+  await seed({ seen: seenToReachCurriculum("人"), cfg: {} });
 
   await page.goto("/learn");
   const card = lessonCard(page, "人");

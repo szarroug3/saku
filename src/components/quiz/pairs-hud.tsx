@@ -86,7 +86,7 @@ function liveAccuracy(stats: SessionStats): number | null {
     if (st.firstTryCorrect === null) continue; // not matched yet
     agg.seen += st.seen;
     agg.missed += st.misses;
-    agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
+    agg.correct += st.everCorrect ? 1 : 0;
   }
   return accuracyOf(agg);
 }
@@ -154,7 +154,7 @@ export function PairsHud({ asked, total, stats, streak, onEnd }: PairsHudProps) 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         {/* Information — always quiet, and only ever present when it has
             something true to say. An empty pill is worse than no pill: "—
-            first try" and "🔥 0" both report an absence as if it were data. */}
+            correct" and "🔥 0" both report an absence as if it were data. */}
         <span className="flex flex-wrap items-center gap-1.5">
           <Pill>
             {total !== null ? `${asked} / ${total}` : `${asked} characters`}

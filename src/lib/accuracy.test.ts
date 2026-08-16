@@ -30,30 +30,30 @@ function counts(p: Partial<FactCounts>): FactCounts {
   return { ...EMPTY_COUNTS, ...p };
 }
 
-describe("accuracyOf — firstTry metric over one fact's counts", () => {
+describe("accuracyOf — correct showings over one fact's counts", () => {
   test("null when never seen — 'no data', not zero", () => {
     assert.equal(accuracyOf(EMPTY_COUNTS), null);
   });
 
-  test("firstTry / seen", () => {
-    assert.equal(accuracyOf(counts({ seen: 4, firstTry: 3 })), 75);
+  test("correct / seen", () => {
+    assert.equal(accuracyOf(counts({ seen: 4, correct: 3 })), 75);
   });
 
   test("a showing never answered right scores 0, not 100", () => {
-    const c = counts({ seen: 1, firstTry: 0, missed: 2 });
+    const c = counts({ seen: 1, correct: 0, missed: 2 });
     assert.equal(accuracyOf(c), 0);
   });
 
   test("`missed` never moves the number", () => {
-    const a = accuracyOf(counts({ seen: 4, firstTry: 4, missed: 0 }));
-    const b = accuracyOf(counts({ seen: 4, firstTry: 4, missed: 99 }));
+    const a = accuracyOf(counts({ seen: 4, correct: 4, missed: 0 }));
+    const b = accuracyOf(counts({ seen: 4, correct: 4, missed: 99 }));
     assert.equal(a, 100);
     assert.equal(b, 100);
   });
 
   test("clamped to 0..100 and rounded", () => {
-    assert.equal(accuracyOf(counts({ seen: 3, firstTry: 1 })), 33);
-    assert.equal(accuracyOf(counts({ seen: 3, firstTry: 2 })), 67);
+    assert.equal(accuracyOf(counts({ seen: 3, correct: 1 })), 33);
+    assert.equal(accuracyOf(counts({ seen: 3, correct: 2 })), 67);
   });
 });
 
@@ -84,18 +84,18 @@ describe("totalFor — pooling counts over facts (a real, larger population)", (
 describe("accuracyFor / volumeFor — the pooled, comparable readings", () => {
   const history: CountsByFact = {
     facts: {
-      [fid("hira-a")]: counts({ seen: 4, firstTry: 2 }),
-      [fid("hira-i")]: counts({ seen: 4, firstTry: 2 }),
+      [fid("hira-a")]: counts({ seen: 4, correct: 2 }),
+      [fid("hira-i")]: counts({ seen: 4, correct: 2 }),
     } as Record<FactId, FactCounts>,
   };
 
   test("pooled accuracy is the ratio of the pooled counts, not a mean of ratios", () => {
-    // (2+2) firstTry / (4+4) seen = 50 — NOT (50 + 50)/2 = 50 by luck; make them
+    // (2+2) correct / (4+4) seen = 50 — NOT (50 + 50)/2 = 50 by luck; make them
     // differ: use uneven seen.
     const uneven: CountsByFact = {
       facts: {
-        [fid("a")]: counts({ seen: 1, firstTry: 1 }), // 100%
-        [fid("b")]: counts({ seen: 3, firstTry: 0 }), // 0%
+        [fid("a")]: counts({ seen: 1, correct: 1 }), // 100%
+        [fid("b")]: counts({ seen: 3, correct: 0 }), // 0%
       } as Record<FactId, FactCounts>,
     };
     // pooled: 1/4 = 25.  mean of ratios: (100 + 0)/2 = 50.  The pool is the truth.

@@ -1743,7 +1743,7 @@ export function DrillScreen() {
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           {/* Information — always quiet, and only ever present when it has
               something true to say. An empty pill is worse than no pill: "—
-              first try" and "🔥 0" both report an absence as if it were data. */}
+              correct" and "🔥 0" both report an absence as if it were data. */}
           <span className="flex flex-wrap items-center gap-1.5">
             {/* HOW LONG THIS IS, and it is the one HUD chip that is not quiet.
                 A limited quiz has an end and the learner is entitled to see how
@@ -1766,7 +1766,7 @@ export function DrillScreen() {
             {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {cfg.showAccuracy && accuracy !== null ? (
               <Pill tone="accent">
-                {formatAccuracy(accuracy)} first try
+                {formatAccuracy(accuracy)} correct
               </Pill>
             ) : null}
             {/* A streak isn't a streak until it's a streak. */}

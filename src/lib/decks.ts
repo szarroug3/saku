@@ -290,9 +290,8 @@ export function lastSession(history: HistoryFile): QuizSessionRecord | null {
  * Facts missed in the most recent session, most misses first.
  *
  * "Missed" is the forgiving reading — wrong at least once, or never gotten
- * right — matching engine.missedFacts(stats, "forg") and the Results screen's
- * "Redrill the misses". Empty when there are no sessions, or when the latest
- * one has no detail.
+ * right — matching the Results screen's "Redrill the misses". Empty when
+ * there are no sessions, or when the latest one has no detail.
  */
 export function lastMisses(history: HistoryFile): FactId[] {
   const detail = lastSession(history)?.detail;

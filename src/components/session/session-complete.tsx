@@ -6,7 +6,7 @@
 // reasoning that empties that one doesn't reach here. Nothing follows this
 // screen, so there is nothing left to rehearse FOR.
 //
-// The sentence compares your LAST round's first-try count to your FIRST
+// The sentence compares your LAST round's correct count to your FIRST
 // round's, which is the only comparison the loop can honestly make: both are
 // the same set, asked cold-ish and asked warm. It says nothing when there's
 // only one round, because then there is no comparison and inventing one would
@@ -22,12 +22,12 @@ function story(session: StudySession): string {
   const last = rounds[n - 1];
   const first = rounds[0];
   const many = `${n} round${n === 1 ? "" : "s"} of the same ${session.facts.length}.`;
-  if (n === 1) return `${many} You finished on ${last.firstTry} right first try.`;
-  if (last.firstTry === first.firstTry) {
-    return `${many} You finished on ${last.firstTry} right first try, the same as you started.`;
+  if (n === 1) return `${many} You finished on ${last.correct} correct.`;
+  if (last.correct === first.correct) {
+    return `${many} You finished on ${last.correct} correct, the same as you started.`;
   }
-  const dir = last.firstTry > first.firstTry ? "up" : "down";
-  return `${many} You finished on ${last.firstTry} right first try, ${dir} from ${first.firstTry}.`;
+  const dir = last.correct > first.correct ? "up" : "down";
+  return `${many} You finished on ${last.correct} correct, ${dir} from ${first.correct}.`;
 }
 
 export function SessionComplete({
@@ -40,7 +40,7 @@ export function SessionComplete({
   onDone: () => void;
 }) {
   const last = session.rounds[session.rounds.length - 1];
-  const right = last?.firstTry ?? 0;
+  const right = last?.correct ?? 0;
   const rest = Math.max(0, (last?.total ?? 0) - right);
 
   return (

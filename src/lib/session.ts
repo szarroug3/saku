@@ -60,14 +60,14 @@ export type SessionPhase =
   | "complete";
 
 /** What one finished round looked like. Summary only: this is what the
- * session-complete screen compares ("18 first try, up from 14"), so it holds
+ * session-complete screen compares ("18 correct, up from 14"), so it holds
  * counts and never content. */
 export interface RoundSummary {
   round: number;
   /** Facts asked in the round. */
   total: number;
-  /** Facts landed on the first attempt of the round. */
-  firstTry: number;
+  /** Facts landed at least once during the round, first try or after a retry. */
+  correct: number;
   /** Facts missed at least once during the round. */
   missed: number;
 }
@@ -466,7 +466,7 @@ export function summariseRound(round: number, stats: SessionStats): RoundSummary
   return {
     round,
     total: facts.length,
-    firstTry: facts.filter((f) => stats[f].firstTryCorrect === true).length,
+    correct: facts.filter((f) => stats[f].everCorrect).length,
     missed: facts.filter((f) => stats[f].misses > 0).length,
   };
 }

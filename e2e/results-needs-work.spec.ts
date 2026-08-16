@@ -1,12 +1,14 @@
 import { test, expect } from "./helpers/app";
 
 /**
- * Regression: results summary and Needs work board must agree.
+ * Regression: the Needs work board must populate from misses even when the
+ * run's headline reads as fully landed.
  *
  * A stored session can have per-fact miss counts but no phrase-level
- * missedPhrases list (older/inferred payloads). The summary computes
- * "things need another pass" from misses; the board must still show those facts
- * in Needs work instead of reading as empty.
+ * missedPhrases list (older/inferred payloads). The board falls back to
+ * misses when missedPhrases is absent; it must still show those facts
+ * instead of reading as empty, even though a fact that was eventually
+ * correct no longer drives the headline's "needs another pass" wording.
  */
 
 test("results shows Needs work rows when summary reports another pass", async ({
@@ -46,11 +48,13 @@ test("results shows Needs work rows when summary reports another pass", async ({
   await page.goto("/results");
   await expect(page).toHaveURL(/\/results$/);
 
-  // Summary reports the miss bucket.
+  // The fact was landed (via retry), so the run reads as "everything landed
+  // in the end" rather than "needs another pass" — but the retry still cost
+  // it a spot on the Needs work board below (misses-based, not score-based).
   await expect(
     page.getByRole("heading", { name: "Results" }),
   ).toBeVisible();
-  await expect(page.getByText(/1 thing needs another pass/)).toBeVisible();
+  await expect(page.getByText(/Everything landed in the end/)).toBeVisible();
 
   // Needs work board is not empty; the missed fact's row/cell is present and
   // selected by default.

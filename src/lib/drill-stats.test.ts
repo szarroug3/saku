@@ -145,7 +145,7 @@ test("a HINTED first answer does forfeit it — the one thing a hint costs", () 
   resolveShowing(st, false, true); // right, cold, but hinted → no first-try credit
   assert.equal(st.firstTryCount, 0);
   assert.equal(st.correct, 1, "still correct, still seen");
-  assert.equal(sessionAccuracy(stats), 0);
+  assert.equal(sessionAccuracy(stats), 100, "a hint costs first-try credit, not correctness");
 });
 
 test("a real miss still counts, on both screens", () => {
@@ -178,7 +178,7 @@ test("landing it on the retry is one showing, not first try", () => {
   assert.equal(st.seen, 1, "one card, one showing");
   assert.equal(st.firstTryCount, 0);
   assert.equal(st.correct, 1);
-  assert.equal(sessionAccuracy(stats), 0);
+  assert.equal(sessionAccuracy(stats), 100, "landed the showing, just not on the first attempt");
 });
 
 test("resolveShowing records the showing's presentation for the results chip", () => {

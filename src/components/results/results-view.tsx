@@ -10,7 +10,8 @@
 // simply have less to say — no confusions were recorded, so Patterns and
 // Progress stay silent rather than guess.
 //
-// NOTHING HERE WRITES SETTINGS. Results are shown in first-try terms.
+// NOTHING HERE WRITES SETTINGS. Results are shown as correct or not — a retry
+// that landed counts the same as landing cold.
 
 import { useMemo, useState } from "react";
 

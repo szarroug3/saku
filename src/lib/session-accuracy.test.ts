@@ -23,13 +23,16 @@ import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 const f = (s: string): FactId => s as FactId;
 
 function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
+  const firstTryCount = over.firstTryCount ?? 1;
   return {
     seen: 1,
     misses: 0,
     everCorrect: true,
     firstTryCorrect: true,
-    firstTryCount: 1,
-    correct: 1,
+    firstTryCount,
+    // A first-try showing is always a correct one, so this is the honest
+    // default absent other evidence; callers with retries override it.
+    correct: firstTryCount,
     confused: {},
     ...over,
   };
@@ -67,21 +70,21 @@ test("repetition does not move a perfect score at all", () => {
 });
 
 test("both sides of the ratio count showings", () => {
-  // 4 showings, 3 nailed cold.
+  // 4 showings, 3 ever landed — one never did, despite the retry.
   const stats: SessionStats = {
-    [f("a")]: detail({ seen: 4, firstTryCount: 3, correct: 4, misses: 1 }),
+    [f("a")]: detail({ seen: 4, firstTryCount: 3, correct: 3, misses: 1 }),
   };
   assert.equal(sessionAccuracy(stats), 75);
 });
 
 test("an imperfect learner is not flattered either", () => {
-  // 10 showings, 0 first-try.
+  // 10 showings, none of them ever landed.
   const stats: SessionStats = {
     [f("a")]: detail({
       seen: 10,
       firstTryCorrect: false,
       firstTryCount: 0,
-      correct: 10,
+      correct: 0,
       misses: 10,
     }),
   };
@@ -89,12 +92,12 @@ test("an imperfect learner is not flattered either", () => {
 });
 
 test("facts pool across the run, weighted by showings", () => {
-  // 8 first-try showings out of 10 total, spread over two facts of very
+  // 9 correct showings out of 10 total, spread over two facts of very
   // different sizes — the pooled ratio is over showings, not an average of the
   // two facts' percentages (which would be 75%).
   const stats: SessionStats = {
     [f("a")]: detail({ seen: 8, firstTryCount: 8, correct: 8 }),
-    [f("b")]: detail({ seen: 2, firstTryCount: 1, correct: 2, misses: 1 }),
+    [f("b")]: detail({ seen: 2, firstTryCount: 1, correct: 1, misses: 1 }),
   };
   assert.equal(sessionAccuracy(stats), 90);
 });
