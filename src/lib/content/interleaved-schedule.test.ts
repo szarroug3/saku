@@ -86,17 +86,36 @@ test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable
 // leave headroom for curriculum growth.
 const MAX_ROUNDS = 20000;
 
-// "Unreasonable" for both the first-unlock and same-track-gap checks: no
-// legitimate prerequisite chain in this curriculum should take more than a
-// FIFTH of the entire interleaved walk to clear, under an interleaving this
-// generous (every track tried every round). A FRACTION of the measured walk
-// length, not a fixed constant — the walk's own length scales with the
-// curriculum (it roughly quadrupled, ~470 to ~1,800 rounds, the moment
-// orderedUnits stopped silently dropping multi-character words), so a fixed
-// number would need re-tuning on every curriculum-size change and would
-// silently stop meaning "a fifth of the walk" the moment it drifted out of
-// sync. Computed after the simulation runs, once SIM.roundsRun is known.
-const MAX_REASONABLE_FRACTION = 0.2;
+// keigo and transitivity are exempt from BOTH timing checks below (first-
+// unlock and same-track-gap), on a real product distinction, not a data
+// artifact: their content only matters once a learner already knows every
+// word it's about — a keigo set is unusable before its plain verb is known,
+// a transitivity pair means nothing until both sides are — so there is
+// nothing lost by them arriving in a burst whenever their gating vocabulary
+// happens to line up. A learner who cares about a specific word's
+// transitivity before its pair lesson arrives can look it up directly; nothing
+// is blocked on the pair lesson itself. Reachability is NOT exempt — the
+// test above still requires every keigo/transitivity unit to eventually
+// unlock, since "arrives late" and "never arrives" are different failure
+// modes and only the second one is a bug. kana/vocab/numbers/grammar/sentence
+// stay in the timing checks because they don't have this property: a learner
+// wants a steady drip of new words, and sentence structure (word order) is
+// basic-enough language function that a long silence there is a real gap in
+// the experience, not a "look it up if you care" case.
+const GAP_CHECK_EXEMPT_TRACKS: ReadonlySet<string> = new Set(["keigo", "transitivity"]);
+
+// A flat ceiling, not a fraction of the walk. The fraction-of-walk approach
+// existed to keep pace with tracks whose worst-case wait scales with total
+// curriculum size — exactly the property keigo/transitivity have (their gate
+// depends on however far out a specific word sits in vocab's rank order) and
+// exactly why they're now exempt above. The tracks still checked here don't
+// have that property: none of them wait on an arbitrarily-ranked cross-track
+// word, so their pacing is bounded by their own content, not by curriculum
+// size — today's real worst gap among them is 1 round (see the console.table
+// below). 30 leaves comfortable room for a legitimate future dependency chain
+// (grammar prereqs, sentence-ordering gates) without tolerating the kind of
+// silent multi-hundred-round drought that would mean a real track is stuck.
+const MAX_REASONABLE_ROUNDS = 30;
 
 /** One taught unit's round and the entry it belongs to, in teaching order —
  * NOT declared/curriculum order, since a due-but-blocked unit can be pulled
@@ -233,19 +252,14 @@ function unitGapRange(unitsTaken: readonly UnitTaken[]): UnitGapRange {
   return { min, max, maxGapBetween };
 }
 
-// Derived from the actual measured walk length, not a constant — see
-// MAX_REASONABLE_FRACTION above. Computed before the report below so the
-// thresholds it prints are the ones the tests actually check against.
-const MAX_REASONABLE_ROUNDS = Math.ceil(SIM.roundsRun * MAX_REASONABLE_FRACTION);
-
 // Printed once, independent of pass/fail, so `npm test -- interleaved-schedule`
 // always answers "what does the walk actually look like" without editing the
 // test to find out.
 console.log(
   `\ninterleaved-schedule simulation: ${SIM.roundsRun} rounds, ${SIM.exhausted ? "exhausted" : "hit MAX_ROUNDS"}\n` +
     `thresholds: MAX_ROUNDS=${MAX_ROUNDS} (safety cap), ` +
-    `MAX_REASONABLE_ROUNDS=${MAX_REASONABLE_ROUNDS} (${MAX_REASONABLE_FRACTION} \u00d7 roundsRun, ` +
-    `the first-lesson and same-track-gap bound below)`,
+    `MAX_REASONABLE_ROUNDS=${MAX_REASONABLE_ROUNDS} (first-lesson and same-track-gap bound, ` +
+    `skipped for ${[...GAP_CHECK_EXEMPT_TRACKS].join("/")})`,
 );
 console.table(
   SIM.results.map((r) => {
@@ -308,23 +322,33 @@ test("every unit in every track is eventually reachable under a fair interleaved
   );
 });
 
-test(`no track takes more than ${MAX_REASONABLE_ROUNDS} rounds to produce its first lesson`, () => {
+test("every track eventually produces at least one lesson", () => {
+  // Kept separate from, and unconditional on, the exemption below: a track
+  // that never fires at all is the UNREACHABLE failure mode (a real bug),
+  // not the "arrives late" one keigo/transitivity are excused from.
   for (const r of SIM.results) {
     assert.ok(
       r.unlockRounds.length > 0,
       `${r.trackId}: never produced a single lesson in ${SIM.roundsRun} rounds`,
     );
+  }
+});
+
+test(`no track takes more than ${MAX_REASONABLE_ROUNDS} rounds to produce its first lesson (keigo/transitivity exempt)`, () => {
+  for (const r of SIM.results) {
+    if (GAP_CHECK_EXEMPT_TRACKS.has(r.trackId)) continue;
     assert.ok(
-      r.unlockRounds[0] <= MAX_REASONABLE_ROUNDS,
+      r.unlockRounds[0]! <= MAX_REASONABLE_ROUNDS,
       `${r.trackId}: first lesson didn't unlock until round ${r.unlockRounds[0]} (> ${MAX_REASONABLE_ROUNDS})`,
     );
   }
 });
 
-test(`no lesson is more than ${MAX_REASONABLE_ROUNDS} rounds after the previous lesson in its own track`, () => {
+test(`no lesson is more than ${MAX_REASONABLE_ROUNDS} rounds after the previous lesson in its own track (keigo/transitivity exempt)`, () => {
   for (const r of SIM.results) {
+    if (GAP_CHECK_EXEMPT_TRACKS.has(r.trackId)) continue;
     for (let i = 1; i < r.unlockRounds.length; i++) {
-      const gap = r.unlockRounds[i] - r.unlockRounds[i - 1];
+      const gap = r.unlockRounds[i]! - r.unlockRounds[i - 1]!;
       assert.ok(
         gap <= MAX_REASONABLE_ROUNDS,
         `${r.trackId}: lesson ${i + 1} landed ${gap} rounds after lesson ${i} (> ${MAX_REASONABLE_ROUNDS}), ` +
