@@ -268,12 +268,9 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   p.pick = null;
   if (first.id === cell.id) {
     const st = statFor(p.stats, cell.fact);
-    // Strict scoring: only an untouched first match counts as correct.
     const clean = st.misses === 0;
-    if (clean) {
-      st.everCorrect = true;
-      st.correct = (st.correct ?? 0) + 1;
-    }
+    st.everCorrect = true;
+    st.correct = (st.correct ?? 0) + 1;
     // A board shows each pair exactly once (`seen++` once, at deal), so the
     // flag and its countable twin agree here by construction — the count is
     // kept anyway so `firstTryCount` means the same thing on every screen and

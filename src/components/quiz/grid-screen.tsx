@@ -194,11 +194,8 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
     // Only a clean first try extends the streak — a miss below has already
     // zeroed it, so getting there on the retry doesn't restore it.
     if (card.tries === 0) g.streak++;
-    // Strict scoring: only first-attempt success counts as correct.
-    if (card.tries === 0) {
-      st.everCorrect = true;
-      st.correct = (st.correct ?? 0) + 1;
-    }
+    st.everCorrect = true;
+    st.correct = (st.correct ?? 0) + 1;
     card.state = "right";
     return "right";
   }
