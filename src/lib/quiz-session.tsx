@@ -335,7 +335,7 @@ interface QuizSessionContextValue {
   completeRound(): void;
   /** The rest is over (or you skipped it): run the SAME whole set again. */
   startNextRound(): void;
-  /** Leave to home without changing session state. */
+  /** Leave for now, without changing session state — back to Learn. */
   pauseSession(): void;
   /** Stop for good — banks the current round and shows Session complete. */
   endSession(): void;
@@ -1349,7 +1349,7 @@ export function QuizSessionProvider({
 
   const pauseSession = useCallback(() => {
     if (!session) return;
-    router.push("/");
+    router.push("/learn");
   }, [session, router]);
 
   const endSession = useCallback(() => {
