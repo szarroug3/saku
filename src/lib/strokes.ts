@@ -42,8 +42,6 @@ import {
   KANJI_CHUNKS,
   RADICAL_GLYPHS,
 } from "@/data/generated/strokes/kanji-index";
-import { yoonParts } from "@/lib/library/kana-family";
-import { pathBBox, transformPathD } from "@/lib/svg-path";
 
 /** One glyph's stroke order, on KanjiVG's native 109×109 grid. */
 export interface GlyphStrokes {
@@ -125,75 +123,6 @@ export function scriptOf(glyph: string): StrokeAsset | null {
   return null;
 }
 
-// SAK-72 PART B — COMPOSING A YŌON KANA'S DIAGRAM FROM TWO INGESTED GLYPHS
-// ============================================================================
-// きゃ has no precomposed KanjiVG entry: only き (the base, ingested since
-// Part A) and ゃ (the small kana, ingested by this pass — see
-// scripts/ingest/kanjivg.mjs's SETS) are real digitized characters. Both are
-// drawn to fill their OWN 109×109 grid, the same way every glyph is — ゃ is
-// not pre-shrunk or pre-positioned for sitting next to another character, it
-// is just a visually smaller SHAPE at full-grid scale, because that is what a
-// small kana looks like drawn on its own.
-//
-// So composing them means: keep き's strokes exactly as ingested (every
-// EXISTING single-glyph call site must keep rendering byte-for-byte
-// identically — this is strictly additive), and shrink + reposition ゃ's
-// strokes into the glyph's lower-right corner, the way a small kana actually
-// sits when fused onto the kana before it.
-//
-// THE SCALE AND OFFSET ARE COMPUTED, NOT HAND-TUNED PER PAIR
-// ============================================================
-// A fixed offset that happens to look right for き+ゃ would not generalise —
-// し's bounding box is a different shape from き's, ゅ's from ゃ's. So the
-// transform is derived at compose time from the SMALL glyph's own measured
-// bounding box (via pathBBox) and a fixed TARGET box anchored to the stroke
-// grid's bottom-right corner: scale the small glyph down until its longer
-// dimension fits SMALL_KANA_BOX, then translate so its (scaled) bottom-right
-// corner lands on the grid's bottom-right corner, inset by SMALL_KANA_MARGIN.
-// This is the same math for every base+small pair, hiragana or katakana, and
-// was checked against real ingested data for three of them (き+ゃ, し+ゅ,
-// キ+ャ) before landing — see this ticket's own investigation notes.
-const SMALL_KANA_BOX = 46;
-const SMALL_KANA_MARGIN = 6;
-
-/** Compose a base glyph's stroke data with a small kana's, for one yōon
- * diagram. `numbers` (the stroke-order label positions) are transformed the
- * same way, so a future consumer of those positions stays correct too, even
- * though StrokeOrder itself only reads `strokes.length` today. Exported for
- * the test — the one place this ticket's composition math is checked. */
-export function composeGlyphStrokes(base: GlyphStrokes, small: GlyphStrokes): GlyphStrokes {
-  const bbox = small.strokes.reduce(
-    (acc, d) => {
-      const b = pathBBox(d);
-      return {
-        xmin: Math.min(acc.xmin, b.xmin),
-        xmax: Math.max(acc.xmax, b.xmax),
-        ymin: Math.min(acc.ymin, b.ymin),
-        ymax: Math.max(acc.ymax, b.ymax),
-      };
-    },
-    { xmin: Infinity, xmax: -Infinity, ymin: Infinity, ymax: -Infinity },
-  );
-  const width = bbox.xmax - bbox.xmin;
-  const height = bbox.ymax - bbox.ymin;
-  const scale = SMALL_KANA_BOX / Math.max(width, height, 1);
-  const corner = STROKE_GRID - SMALL_KANA_MARGIN;
-  const tx = corner - bbox.xmax * scale;
-  const ty = corner - bbox.ymax * scale;
-  const affine = { scale, tx, ty };
-
-  return {
-    strokes: [...base.strokes, ...small.strokes.map((d) => transformPathD(d, affine))],
-    numbers: [
-      ...base.numbers,
-      ...small.numbers.map(([x, y]): [number, number] => [
-        Math.round((x * scale + tx) * 1000) / 1000,
-        Math.round((y * scale + ty) * 1000) / 1000,
-      ]),
-    ],
-  };
-}
-
 const cache: Partial<Record<StrokeAsset, Promise<StrokeMap>>> = {};
 
 /** Load one asset's stroke map once and reuse it. Every `import()` behind this
@@ -228,35 +157,11 @@ export type StrokeLoad =
   | { status: "loading" }
   | { status: "ready"; data: GlyphStrokes | null };
 
-/** One glyph's strokes, fetched via its own scriptOf/loadStrokes resolution —
- * the single-glyph path both the plain lookup and the yōon composer below
- * share, so a base kana's own lookup (unchanged from before this pass) and a
- * yōon combo's two-part fetch go through exactly the same asset resolution. */
-async function glyphStrokes(glyph: string): Promise<GlyphStrokes | null> {
-  const asset = scriptOf(glyph);
-  if (!asset) return null;
-  const map = await loadStrokes(asset);
-  return map[glyph] ?? null;
-}
-
 /**
  * Stroke data for one glyph, lazily. Returns `loading` until the asset resolves,
  * then `ready` with the glyph's strokes — or `ready` with `null` when this glyph
  * isn't in the ingested set (a non-jōyō kanji, punctuation), which the caller
  * renders as the whole-shape fallback rather than a diagram.
- *
- * A YŌON COMBO IS TWO FETCHES, COMPOSED
- * ======================================
- * scriptOf() rejects きゃ outright (it's "single character only" by design —
- * see that function's own doc comment, and strokes.test.ts's pin that a
- * multi-character string never triggers an asset fetch, which must stay true
- * for words like これ). So a yōon combo is detected FIRST, via yoonParts —
- * gated on CHAR_INDEX, so only the 72 glyphs the app actually teaches this way
- * ever take this branch — and its two halves are fetched independently
- * through the exact same glyphStrokes() a plain single glyph uses, then
- * merged by composeGlyphStrokes. Every other multi-character string (これ,
- * がっこう, a kanji word) has no yoonParts match and falls through to the
- * unchanged scriptOf path below, which still answers null for it.
  */
 export function useGlyphStrokes(glyph: string): StrokeLoad {
   const [state, setState] = useState<StrokeLoad>({ status: "loading" });
@@ -268,26 +173,6 @@ export function useGlyphStrokes(glyph: string): StrokeLoad {
     // lesson-prefs.ts's hydration, and disabled for the same reason.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
-
-    const combo = yoonParts(glyph);
-    if (combo) {
-      const [base, small] = combo;
-      Promise.all([glyphStrokes(base), glyphStrokes(small)])
-        .then(([baseData, smallData]) => {
-          if (!live) return;
-          setState({
-            status: "ready",
-            data: baseData && smallData ? composeGlyphStrokes(baseData, smallData) : null,
-          });
-        })
-        .catch(() => {
-          if (live) setState({ status: "ready", data: null });
-        });
-      return () => {
-        live = false;
-      };
-    }
-
     const asset = scriptOf(glyph);
     if (!asset) {
       // Nothing ingested for this glyph — settle straight to the fallback
