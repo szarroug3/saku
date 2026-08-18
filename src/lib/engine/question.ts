@@ -201,6 +201,22 @@ export interface PromptContext {
    * them.
    */
   variant?: VariantPrompt;
+  /**
+   * The learner's known/seen fact ids for THIS board — threaded through so a
+   * subject's `distractors` can prefer material actually studied over its
+   * full inventory (SAK-49: a beginner who knows five vowels was being
+   * offered しょ/ちゅ/じゃ as kana MC options).
+   *
+   * Built once per board in `buildMcOptions`, from the same known-facts list
+   * that already ranks kanji reading siblings there (see `preferKnown`) — one
+   * source of "what does the learner know", two uses: kanji SORTS an existing
+   * option list by it, kana SELECTS which options exist in the first place.
+   * Every subject but kana ignores it today. Absent or empty (a `prompt`/
+   * `check` call, a hand-built ctx in a test, a learner with nothing known
+   * yet) means "nothing known" — kana's distractors() falls back to
+   * same-row, then same-set fill, which is what it always did.
+   */
+  known?: ReadonlySet<FactId>;
 }
 
 /**
@@ -555,22 +571,55 @@ const kanaQuestions: QuestionType = {
       ? checkJp2en(fact, given)
       : given.trim() === glyphOfFact(fact);
   },
-  distractors(fact, n) {
+  // SAK-49: a beginner who knows five vowels was seeing しょ/ちゅ/じゃ as MC
+  // options for a plain vowel — distractors came from the entire kana set
+  // with no notion of what had actually been studied, so a correct answer
+  // needed no real knowledge (only one option was ever a plain vowel).
+  //
+  // Six tiers, most useful/fair distractor first. `ctx.known` — the
+  // learner's known/seen fact ids, threaded in by buildMcOptions from the
+  // same list that already ranks kanji reading siblings (see `preferKnown`
+  // there) — splits both "lookalike" and "same-script fill" into a known and
+  // an unseen half, and known always outranks unseen: a KNOWN lookalike (か
+  // for カ) is the single sharpest wrong answer there is, so it leads even
+  // ahead of an unseen same-row neighbor. Within "known" and within "unseen"
+  // alike, same GOJŪON ROW (`sec`) outranks the rest of the same script —
+  // the fallback order the ticket asks for. An unseen lookalike still beats
+  // the untouched same-set fill, preserving the old "shape signal always
+  // shown" behaviour for a brand-new learner with nothing known yet, whose
+  // board should look close to what it always did (same-row, then same-set).
+  distractors(fact, n, ctx) {
     const c = glyphOfFact(fact);
     const info = CHAR_INDEX[c];
     if (!info) return [];
-    // Lookalikes first — they are the mistakes you would actually make — then
-    // same-script fill, which is what the char-keyed buildMcOptions did and is
-    // still right here.
     const looks = (LOOK_GROUP[c] ?? []).filter((x) => CHAR_INDEX[x]);
-    const rest = Object.keys(CHAR_INDEX).filter(
-      (x) => x !== c && CHAR_INDEX[x].set === info.set && !looks.includes(x),
+    const looksSet = new Set(looks);
+    const known = ctx?.known;
+    const isKnown = (x: string) => known?.has(kanaFact(x)) ?? false;
+    const sameRow = (x: string) => CHAR_INDEX[x].sec === info.sec;
+    const sameScript = Object.keys(CHAR_INDEX).filter(
+      (x) => x !== c && CHAR_INDEX[x].set === info.set && !looksSet.has(x),
     );
+
+    const knownLooks = looks.filter(isKnown);
+    const unseenLooks = looks.filter((x) => !isKnown(x));
+    const knownRow = sameScript.filter((x) => isKnown(x) && sameRow(x));
+    const knownRest = sameScript.filter((x) => isKnown(x) && !sameRow(x));
+    const unseenRow = sameScript.filter((x) => !isKnown(x) && sameRow(x));
+    const unseenRest = sameScript.filter((x) => !isKnown(x) && !sameRow(x));
+
     // Cross-script lookalikes lead: 力 is the sharpest wrong option カ has, and
-    // no kana in the same-script fill comes close.
+    // nothing in the same-script tiers below comes close.
     return [
       ...crossScriptDistractors(c),
-      ...[...looks, ...shuffled(rest)].map(kanaFact),
+      ...[
+        ...knownLooks,
+        ...shuffled(knownRow),
+        ...shuffled(knownRest),
+        ...unseenLooks,
+        ...shuffled(unseenRow),
+        ...shuffled(unseenRest),
+      ].map(kanaFact),
     ].slice(0, n);
   },
 };
