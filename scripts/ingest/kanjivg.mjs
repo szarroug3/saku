@@ -78,6 +78,16 @@ import { fileURLToPath } from "node:url";
 // the app's own definition of "every dakuten/handakuten kana" — see that
 // file's header for the row/pair shape.
 import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
+// SAK-72 Part B: きゃ (a yōon combo) has no precomposed KanjiVG entry of its
+// own — only its base kana (already ingested) and its SMALL kana are real
+// digitized characters. The small kana were never pulled in, because nothing
+// needed them standalone until the app started composing two independently-
+// ingested glyphs into one diagram (see src/lib/strokes.ts's
+// composeGlyphStrokes). Read from SMALL_TO_FULL_HIRAGANA's keys — the same
+// table kana-family.ts's combo logic already uses to name "the taught small
+// kana" — rather than typed out here, for the same never-drift reason as
+// dakutenGlyphs above.
+import { SMALL_TO_FULL_HIRAGANA } from "@/lib/library/kana-family";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -93,6 +103,20 @@ function dakutenGlyphs(setId) {
   );
 }
 
+const KATAKANA_OFFSET = 0x60;
+
+/** The three small kana a yōon combo fuses onto its base — ゃゅょ for
+ * hiragana, ャュョ for katakana, in the same order both scripts. The katakana
+ * trio is the hiragana one's own codepoints shifted by the fixed +0x60 offset
+ * between the two contiguous kana blocks (the same offset kana-family.ts's
+ * katakanaOf/twinOf use), not a second hand-typed list — one source
+ * (SMALL_TO_FULL_HIRAGANA's keys), two scripts. */
+function smallYoonGlyphs(setId) {
+  const hiragana = Object.keys(SMALL_TO_FULL_HIRAGANA);
+  if (setId === "hiragana") return hiragana;
+  return hiragana.map((g) => String.fromCodePoint(g.codePointAt(0) + KATAKANA_OFFSET));
+}
+
 /** How many files the kanji output is split across. 48 puts ~45 kanji and ~55KB
  * in each — small enough that opening one character is a normal-sized fetch,
  * few enough that the generated index stays readable. Must match KANJI_CHUNKS in
@@ -106,18 +130,19 @@ const CONCURRENCY = 8;
 
 /** One output file per kana script: the 46 base glyphs of each, in gojūon order
  * (vowels, K/S/T/N/H/M/Y/R/W rows, ん/ン), THEN the 25 dakuten/handakuten glyphs
- * DAKUTEN_ROWS teaches for that script. New glyphs are APPENDED, never
- * interleaved, so a re-run's output keeps the original 46 keys first and in
- * their original order — a diff against a prior run reads as pure addition,
- * the property the SAK-72 ingest explicitly has to preserve. Kanji is handled
- * separately below — it is chunked, and its glyph list comes from the app's
- * own data. */
+ * DAKUTEN_ROWS teaches for that script, THEN (SAK-72 Part B) the 3 small yōon
+ * kana (ゃゅょ / ャュョ). New glyphs are APPENDED, never interleaved, so a
+ * re-run's output keeps every prior run's keys first and in their original
+ * order — a diff against a prior run reads as pure addition, the property the
+ * SAK-72 ingest explicitly has to preserve. Kanji is handled separately below
+ * — it is chunked, and its glyph list comes from the app's own data. */
 const SETS = [
   {
     name: "hiragana",
     glyphs: [
       ..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん",
       ...dakutenGlyphs("hiragana"),
+      ...smallYoonGlyphs("hiragana"),
     ],
   },
   {
@@ -125,6 +150,7 @@ const SETS = [
     glyphs: [
       ..."アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン",
       ...dakutenGlyphs("katakana"),
+      ...smallYoonGlyphs("katakana"),
     ],
   },
 ];

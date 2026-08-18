@@ -31,7 +31,9 @@ import test from "node:test";
 import { dakutenRowFor } from "@/data/dakuten-rows";
 import { getMnemonic } from "@/data/mnemonics";
 import { contextPronunciation } from "@/data/kana-context";
-import { derivedKanaConfusables } from "@/lib/library/kana-family";
+import { COMBO_H, COMBO_K } from "@/data/phase-intros";
+import { yoonRowFor } from "@/data/yoon-rows";
+import { derivedKanaConfusables, yoonConfusables } from "@/lib/library/kana-family";
 import { kanaConfusables, precomputedStrokeFallback } from "@/lib/library/library-index";
 
 // The exact glyphs SAK-14 named as confirmed-broken.
@@ -107,9 +109,10 @@ test("KanaEntryView no longer bails the whole page when getMnemonic is null", ()
 // and structurally (the source actually wires that data into the page).
 
 // The SAK-14 derived set minus きゃ: that one is yōon (TWO codepoints — き +
-// small ゃ), which dakutenRowFor correctly does NOT resolve — it's Part B's
-// glyph shape, out of scope for this pass. See this file's own header and
-// dakuten-rows.test.ts's "null for a glyph the app doesn't teach" case.
+// small ゃ), which dakutenRowFor correctly does NOT resolve — it's a different
+// glyph shape, covered separately below by yoonRowFor and the Part B tests.
+// See this file's own header and dakuten-rows.test.ts's "null for a glyph the
+// app doesn't teach" case.
 const DERIVED_DAKUTEN_KANA = DERIVED_KANA.filter((g) => g !== "きゃ");
 
 test("every derived (dakuten/handakuten) kana still resolves a row, a base mnemonic, and family confusables", () => {
@@ -163,5 +166,80 @@ test("KanaEntryView wires the sound-shift block, the base-mnemonic reuse, and fa
   // LOOKALIKES-based one — a derived kana keeps whatever kanaConfusables would
   // have said (empty today) AND gains its family.
   assert.match(src, /derivedKanaConfusables\(glyph\)/, "should merge in the derived-kana family confusables");
+  assert.match(src, /kanaConfusables\(glyph\)/, "should still read the existing LOOKALIKES-based confusables too");
+});
+
+// SAK-72 Part B: きゃ/しゅ/キャ and every other yōon combo now compose their
+// page too — a "Composition" rule block (reusing COMBO_H/COMBO_K's own prose,
+// not a retyped hook), the base's mnemonic (labelled as reused, same pattern
+// as Part A), and confusables drawn from base + full-size small kana +
+// siblings. Same two-way verification as Part A above: behavioural (every
+// data source the new blocks read resolves for a yōon glyph) and structural
+// (the source actually wires that data into the page).
+
+const YOON_SAMPLES = ["きゃ", "しゅ", "ちょ"];
+const YOON_KATAKANA = "キャ";
+
+test("every yōon kana resolves a row, a base mnemonic, and family confusables", () => {
+  for (const g of [...YOON_SAMPLES, YOON_KATAKANA]) {
+    const row = yoonRowFor(g);
+    assert.ok(row, `yoonRowFor(${g}) should resolve`);
+    assert.equal(`${row.base}${row.small}`, g, `${g}'s row should reassemble from base+small`);
+
+    // The block KanaEntryView falls back to when getMnemonic(glyph) is null:
+    // the BASE's mnemonic must itself resolve, or the reused block would have
+    // nothing to show either.
+    assert.notEqual(getMnemonic(row.base), null, `getMnemonic(${row.base}) — ${g}'s fallback base — should resolve`);
+
+    // Family confusables: base + full-size small kana + siblings, never throws.
+    assert.doesNotThrow(() => yoonConfusables(g));
+    const family = yoonConfusables(g);
+    assert.ok(Array.isArray(family) && family.length > 0, `yoonConfusables(${g}) should be non-empty`);
+  }
+});
+
+test("dakutenRowFor never resolves a yōon glyph, and yoonRowFor never resolves a dakuten one — mutually exclusive", () => {
+  for (const g of YOON_SAMPLES) {
+    assert.equal(dakutenRowFor(g), null, `${g} is yōon, not a dakuten/handakuten conversion`);
+  }
+  for (const g of DERIVED_DAKUTEN_KANA) {
+    assert.equal(yoonRowFor(g), null, `${g} is dakuten/handakuten, not a yōon combo`);
+  }
+});
+
+test("COMBO_H and COMBO_K each carry the 'size is the whole tell' paragraph ComboSection reuses", () => {
+  for (const intro of [COMBO_H, COMBO_K]) {
+    const para = intro.body.find((p) => p.lead === "The size is the whole tell.");
+    assert.ok(para, `${intro.id} should have the size-distinguishes-kya-from-kiya paragraph`);
+    assert.ok(para.text.length > 0);
+  }
+});
+
+test("KanaEntryView wires the composition block, the yōon-base-mnemonic reuse, and yōon confusables into the page", () => {
+  const src = readFileSync(
+    fileURLToPath(new URL("./kana-entry-view.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  // The composition block: resolved off yoonRowFor, rendered only when a row
+  // exists — absent for every base kana and every dakuten/handakuten glyph.
+  assert.match(src, /yoonRowFor\(glyph\)/, "should resolve the glyph's yōon row");
+  assert.match(src, /ComboSection/, "should render the composition block");
+  // Reuses the existing prose rather than authoring new per-glyph copy.
+  assert.match(src, /COMBO_H/, "should reuse COMBO_H's prose for hiragana combos");
+  assert.match(src, /COMBO_K/, "should reuse COMBO_K's prose for katakana combos");
+
+  // Mnemonic reuse: the yōon base's own mnemonic, only when the glyph has
+  // none of its own.
+  assert.match(
+    src,
+    /yoonBaseMnemonic\s*=\s*!m\s*&&\s*yoonRow\s*\?\s*getMnemonic\(yoonRow\.base\)\s*:\s*null/,
+    "should fall back to the yōon BASE's mnemonic only when the glyph's own is absent",
+  );
+
+  // Confusables: yoonConfusables is merged in alongside the dakuten family and
+  // the base LOOKALIKES lookup — never swapped for either.
+  assert.match(src, /yoonConfusables\(glyph\)/, "should merge in yōon confusables");
+  assert.match(src, /derivedKanaConfusables\(glyph\)/, "should still merge in the dakuten family confusables too");
   assert.match(src, /kanaConfusables\(glyph\)/, "should still read the existing LOOKALIKES-based confusables too");
 });
