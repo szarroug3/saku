@@ -2,10 +2,18 @@
 //
 // node:test + native TypeScript stripping. No framework, no new deps — same as
 // ingest.test.ts. This file cannot import the .tsx component (the runner strips
-// types, not JSX), and it doesn't need to: both call sites — the lesson
-// walk-through and the Library entry page — render the block ONLY when
-// `getMnemonic(glyph)` is non-null, so the gate IS `getMnemonic`, and that is a
-// plain function this can drive directly.
+// types, not JSX), and it doesn't need to: `getMnemonic(glyph)` returning null
+// is the gate for the ONE mnemonic block (components/lesson/mnemonic-view.tsx),
+// which is a plain function this can drive directly.
+//
+// IT IS NOT A GATE FOR THE WHOLE PAGE. SAK-14 was exactly that bug:
+// KanaEntryView (components/library/kana-entry-view.tsx) used to `return null`
+// for the entire entry — header, pronunciation context, confusables, stroke
+// order — the moment `getMnemonic` came back null, which is every dakuten,
+// handakuten and yōon kana (が, ぱ, きゃ …; MNEMONICS only covers the 46+46 base
+// kana below). The fix scoped the bail to the mnemonic `<div>` alone; see
+// kana-entry-view.test.ts for the regression coverage on that page-level
+// behavior, since this file only owns `getMnemonic` itself.
 
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -58,14 +66,26 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
   assert.equal(Object.keys(MNEMONICS).length, 92, "all 46 base hiragana and all 46 base katakana are authored");
 });
 
-test("Library-entry / teach-flow gate: authored kana resolve, an unsupported glyph does not", () => {
-  // Exactly what app/library/[...entry]/page.tsx and
-  // components/lesson/lesson-item-view.tsx branch on. Authored kana mount the
-  // MnemonicView; a glyph without a row mounts nothing.
+test("mnemonic-block gate: authored kana resolve, an unsupported glyph does not", () => {
+  // What KanaEntryView's `{m ? (...) : null}` branches on. Authored kana mount
+  // the MnemonicView block; a glyph without a row mounts no block — but (unlike
+  // before SAK-14's fix) the rest of the entry page still renders regardless.
   assert.notEqual(getMnemonic("あ"), null);
   assert.notEqual(getMnemonic("か"), null);
   assert.notEqual(getMnemonic("カ"), null);
   assert.equal(getMnemonic("ヰ"), null);
+});
+
+test("derived kana (dakuten/handakuten/yōon) have no mnemonic row — the exact SAK-14 set", () => {
+  // が/ぱ/きゃ are not in ALL_HIRAGANA above and never will be: MNEMONICS is
+  // deliberately scoped to the 46+46 base gojūon (see this file's header).
+  // KanaEntryView must treat this null the same way it treats ヰ's — as
+  // "skip the mnemonic block" — not as "skip the page."
+  assert.equal(getMnemonic("が"), null);
+  assert.equal(getMnemonic("ぱ"), null);
+  assert.equal(getMnemonic("だ"), null);
+  assert.equal(getMnemonic("きゃ"), null);
+  assert.equal(getMnemonic("ガ"), null);
 });
 
 // EVERY kana now gets a CANDIDATE image path, derived from its own romaji. It's
