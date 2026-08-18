@@ -28,8 +28,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { dakutenRowFor } from "@/data/dakuten-rows";
 import { getMnemonic } from "@/data/mnemonics";
 import { contextPronunciation } from "@/data/kana-context";
+import { derivedKanaConfusables } from "@/lib/library/kana-family";
 import { kanaConfusables, precomputedStrokeFallback } from "@/lib/library/library-index";
 
 // The exact glyphs SAK-14 named as confirmed-broken.
@@ -94,4 +96,72 @@ test("KanaEntryView no longer bails the whole page when getMnemonic is null", ()
     /if \(headline === undefined \|\| headline === null \|\| !glyph \|\| !strokeFallback\) return null;/,
     "the loading/not-found guard should be unchanged",
   );
+});
+
+// SAK-72 Part A: が/ぱ/だ/ガ now compose their page from か/は/た/カ instead of
+// showing nothing beyond the header — a sound-shift rule block, the base's
+// mnemonic (labelled as reused), and confusables drawn from the same
+// dakuten/handakuten family. As with SAK-14 above, this file cannot render the
+// "use client" component, so it verifies the same two ways: behaviourally
+// (every data source the new blocks read resolves for a derived-kana glyph)
+// and structurally (the source actually wires that data into the page).
+
+// The SAK-14 derived set minus きゃ: that one is yōon (TWO codepoints — き +
+// small ゃ), which dakutenRowFor correctly does NOT resolve — it's Part B's
+// glyph shape, out of scope for this pass. See this file's own header and
+// dakuten-rows.test.ts's "null for a glyph the app doesn't teach" case.
+const DERIVED_DAKUTEN_KANA = DERIVED_KANA.filter((g) => g !== "きゃ");
+
+test("every derived (dakuten/handakuten) kana still resolves a row, a base mnemonic, and family confusables", () => {
+  for (const g of [...DERIVED_DAKUTEN_KANA, DERIVED_KATAKANA]) {
+    const row = dakutenRowFor(g);
+    assert.ok(row, `dakutenRowFor(${g}) should resolve — it's in the SAK-14 derived set`);
+    const base = row.pairs.find(([, converted]) => converted === g)?.[0];
+    assert.ok(base, `${g}'s row should name its own base in \`pairs\``);
+
+    // The block KanaEntryView falls back to when getMnemonic(glyph) is null:
+    // the BASE's mnemonic must itself resolve, or the reused block would have
+    // nothing to show either.
+    assert.notEqual(getMnemonic(base!), null, `getMnemonic(${base}) — が's fallback base — should resolve`);
+
+    // Family confusables: every glyph in the returned list must itself be a
+    // real, resolvable base or sibling — never throws, always an array.
+    assert.doesNotThrow(() => derivedKanaConfusables(g));
+    const family = derivedKanaConfusables(g);
+    assert.ok(Array.isArray(family) && family.length > 0, `derivedKanaConfusables(${g}) should be non-empty`);
+  }
+});
+
+test("だ (t→d, a hookless row) resolves its callout instead of a hook", () => {
+  const row = dakutenRowFor("だ");
+  assert.ok(row);
+  assert.equal(row.hook, "", "t→d has no authored hook");
+  assert.ok(row.callout && row.callout.length > 0, "t→d should carry its rare-characters callout instead");
+});
+
+test("KanaEntryView wires the sound-shift block, the base-mnemonic reuse, and family confusables into the page", () => {
+  const src = readFileSync(
+    fileURLToPath(new URL("./kana-entry-view.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  // The sound-shift block: resolved off dakutenRowFor, rendered only when a
+  // row (and its base) exist — absent for every base kana and every yōon glyph.
+  assert.match(src, /dakutenRowFor\(glyph\)/, "should resolve the glyph's dakuten row");
+  assert.match(src, /SoundShiftSection/, "should render the sound-shift block");
+
+  // Mnemonic reuse: the base's own mnemonic, only when the glyph has none of
+  // its own — never replacing an authored mnemonic, never inventing a new one.
+  assert.match(
+    src,
+    /baseMnemonic\s*=\s*!m\s*&&\s*base\s*\?\s*getMnemonic\(base\)\s*:\s*null/,
+    "should fall back to the BASE's mnemonic only when the glyph's own is absent",
+  );
+  assert.match(src, /baseMnemonic/, "the reused-mnemonic block should be wired into the render");
+
+  // Confusables: the family lookup is merged in, not swapped for the existing
+  // LOOKALIKES-based one — a derived kana keeps whatever kanaConfusables would
+  // have said (empty today) AND gains its family.
+  assert.match(src, /derivedKanaConfusables\(glyph\)/, "should merge in the derived-kana family confusables");
+  assert.match(src, /kanaConfusables\(glyph\)/, "should still read the existing LOOKALIKES-based confusables too");
 });

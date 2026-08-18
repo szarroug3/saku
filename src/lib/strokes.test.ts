@@ -34,6 +34,7 @@ import {
   RADICAL_GLYPHS,
 } from "../data/generated/strokes/kanji-index.ts";
 import { KANJI } from "../data/kanji.ts";
+import { DAKUTEN_ROWS } from "../data/dakuten-rows.ts";
 import { scriptOf } from "./strokes.ts";
 
 interface GlyphStrokes {
@@ -153,6 +154,85 @@ describe("stroke-order asset", () => {
     // section falls back to the whole-shape view.
     assert.equal(lookup("龘"), null); // a non-jōyō kanji
     assert.equal(lookup(""), null); // the collapsed sentinel
+  });
+});
+
+// SAK-72 Part A: scripts/ingest/kanjivg.mjs's SETS now fetches the 50
+// dakuten/handakuten glyphs too (が…ぽ, ガ…ポ), appended after each script's
+// base 46. Derived from DAKUTEN_ROWS, exactly like the ingest script itself —
+// see that file's `dakutenGlyphs` — so this can never drift from "every
+// glyph the app calls dakuten/handakuten" even if a row is added later.
+describe("dakuten/handakuten stroke coverage (SAK-72)", () => {
+  function dakutenGlyphs(setId: string): string[] {
+    return DAKUTEN_ROWS.filter((r) => r.setId === setId).flatMap((r) =>
+      r.pairs.map(([, converted]) => converted),
+    );
+  }
+
+  test("all 25 dakuten/handakuten hiragana and 25 katakana glyphs are present", () => {
+    for (const setId of ["hiragana", "katakana"]) {
+      const glyphs = dakutenGlyphs(setId);
+      assert.equal(glyphs.length, 25, `${setId} should teach 25 dakuten/handakuten glyphs`);
+      const missing = glyphs.filter((g) => !lookup(g));
+      assert.deepEqual(missing, [], `${setId} missing from ingest: ${missing.join(" ")}`);
+    }
+  });
+
+  test("every dakuten/handakuten glyph has real, ordered strokes with a plausible count", () => {
+    for (const setId of ["hiragana", "katakana"]) {
+      for (const g of dakutenGlyphs(setId)) {
+        const entry = lookup(g);
+        assert.ok(entry, `missing stroke data for ${g}`);
+        // A real diagram: at least one base stroke plus at least one mark
+        // stroke (the smallest real case is ぴ: ひ's 1 + the handakuten
+        // circle's 1 = 2), so this can't quietly pass on a glyph that
+        // resolved to nothing, or to just the mark alone.
+        assert.ok(entry.strokes.length >= 2, `${g} has an implausibly low stroke count (${entry.strokes.length})`);
+        for (const d of entry.strokes) {
+          assert.equal(typeof d, "string");
+          assert.match(d, /^[Mm]/, `${g} stroke isn't a path: ${d.slice(0, 12)}`);
+        }
+        assert.equal(
+          entry.numbers.length,
+          entry.strokes.length,
+          `${g}: ${entry.numbers.length} labels for ${entry.strokes.length} strokes`,
+        );
+        for (const [x, y] of entry.numbers) {
+          assert.ok(x >= 0 && x <= 109 && y >= 0 && y <= 109, `${g} label off-grid`);
+        }
+      }
+    }
+  });
+
+  test("a derived glyph carries MORE strokes than its own base — the mark is really drawn", () => {
+    // が = か (3 strokes) + the dakuten mark (2 strokes) = 5. This is the
+    // concrete check that the ingest picked up が's OWN digitized entry —
+    // base strokes plus mark strokes — rather than silently reusing the
+    // base's data or resolving to some other glyph.
+    const pairs: [string, string][] = [
+      ["か", "が"],
+      ["は", "ば"],
+      ["は", "ぱ"],
+      ["カ", "ガ"],
+      ["ハ", "バ"],
+      ["ハ", "パ"],
+    ];
+    for (const [base, derived] of pairs) {
+      const baseEntry = lookup(base)!;
+      const derivedEntry = lookup(derived)!;
+      assert.ok(
+        derivedEntry.strokes.length > baseEntry.strokes.length,
+        `${derived} (${derivedEntry.strokes.length}) should have more strokes than its base ${base} (${baseEntry.strokes.length})`,
+      );
+    }
+  });
+
+  test("scriptOf resolves every dakuten/handakuten glyph to its script asset (no code change needed)", () => {
+    for (const setId of ["hiragana", "katakana"] as const) {
+      for (const g of dakutenGlyphs(setId)) {
+        assert.equal(scriptOf(g), setId, `${g} should resolve to the ${setId} asset`);
+      }
+    }
   });
 });
 

@@ -126,6 +126,31 @@ function cell(title: string, glyphs: readonly string[]): FamilyCell | null {
  * would have to explain which one is the base. The base kana's page is the one
  * that owns the map.
  */
+/**
+ * Confusables for a DERIVED (dakuten/handakuten) kana — its own base kana, plus
+ * any other marked kana built off that SAME base. は takes both marks, so ば's
+ * natural confusable set is [は, ぱ]; が's is just [か], because the k row has no
+ * handakuten twin. This is a live NFD query, independent of both `kanaFamily`
+ * (which refuses to run FROM a marked form — "a voiced form ... owns no map of
+ * its own", above) and of the hand-curated LOOKALIKES table in characters.ts:
+ * nothing is authored here, it falls out of Unicode the same way `markedForms`
+ * does.
+ *
+ * Empty for anything that isn't itself a derived, taught kana — a base kana, a
+ * combo, or a glyph the app doesn't teach.
+ */
+export function derivedKanaConfusables(glyph: string): readonly EntryId[] {
+  if (glyph.length !== 1) return [];
+  const nfd = glyph.normalize("NFD");
+  if (nfd.length !== 2) return [];
+  const base = nfd[0];
+  if (!CHAR_INDEX[base]) return [];
+  const siblings = [...markedForms(base, DAKUTEN), ...markedForms(base, HANDAKUTEN)].filter(
+    (g) => g !== glyph,
+  );
+  return [kanaEntry(base), ...siblings.map(kanaEntry)];
+}
+
 export function kanaFamily(glyph: string): readonly FamilyCell[] {
   if (!isHiragana(glyph[0])) return [];
 
