@@ -56,8 +56,13 @@ export function KanaEntryView({
   // component's behavior for an unresolved id).
   if (headline === undefined || headline === null || !glyph || !strokeFallback) return null;
 
+  // A derived kana (dakuten/handakuten/yōon — が, ぱ, きゃ …) has no row in
+  // MNEMONICS: see that file's header, "a kana with no row here shows no
+  // block." That is a rule for the ONE mnemonic block below, not license to
+  // bail the whole page — the header, pronunciation context, confusables and
+  // stroke-order sections are all independently correct for these glyphs, so
+  // only the mnemonic div is conditional on `m`.
   const m = getMnemonic(glyph);
-  if (!m) return null;
   const context = contextPronunciation(glyph);
   const confusables = kanaConfusables(glyph);
 
@@ -68,9 +73,11 @@ export function KanaEntryView({
     <FlatSurfaceProvider>
       <article>
         <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="kana" />
-        <div className="mt-5 border-t border-border/50 pt-6">
-          <MnemonicView m={m} glyph={glyph} />
-        </div>
+        {m ? (
+          <div className="mt-5 border-t border-border/50 pt-6">
+            <MnemonicView m={m} glyph={glyph} />
+          </div>
+        ) : null}
         {/* How its sound bends to what follows it (ん borrows the next place, っ
             doubles the next consonant), as a heads-up aside — the same left-rule
             "Heads up." treatment other pages use for a rule with a wrinkle. Only
