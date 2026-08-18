@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { kanaEntry } from "@/data/characters";
-import { derivedKanaConfusables, kanaFamily } from "@/lib/library/kana-family";
+import {
+  derivedKanaConfusables,
+  kanaFamily,
+  yoonConfusables,
+  yoonParts,
+} from "@/lib/library/kana-family";
 
 function titles(glyph: string) {
   return kanaFamily(glyph).map((c) => c.title);
@@ -103,4 +108,57 @@ test("derivedKanaConfusables is empty for a base kana, a combo, and an untaught 
   assert.deepEqual(derivedKanaConfusables("きゃ"), []);
   assert.deepEqual(derivedKanaConfusables("生"), []);
   assert.deepEqual(derivedKanaConfusables(""), []);
+});
+
+// SAK-72 Part B: a yōon kana's Library page needs (a) which two glyphs to
+// compose a stroke diagram from (yoonParts) and (b) a confusables list of its
+// own (yoonConfusables) — base + the full-size version of its small kana +
+// its siblings sharing the same base. Both are gated on CHAR_INDEX, the same
+// "derived, not listed" discipline derivedKanaConfusables follows above.
+
+test("yoonParts splits a taught combo into [base, small]", () => {
+  assert.deepEqual(yoonParts("きゃ"), ["き", "ゃ"]);
+  assert.deepEqual(yoonParts("しゅ"), ["し", "ゅ"]);
+  assert.deepEqual(yoonParts("キャ"), ["キ", "ャ"]);
+  assert.deepEqual(yoonParts("ぎょ"), ["ぎ", "ょ"]);
+});
+
+test("yoonParts is null for a base kana, a dakuten kana, and an untaught string", () => {
+  assert.equal(yoonParts("き"), null);
+  assert.equal(yoonParts("が"), null);
+  assert.equal(yoonParts("これ"), null); // taught individually, not as a combo
+  assert.equal(yoonParts("がっこう"), null);
+  assert.equal(yoonParts(""), null);
+});
+
+test("yoonConfusables: きゃ is き, full-size や (not small ゃ), and its siblings きゅ/きょ", () => {
+  assert.deepEqual(
+    [...yoonConfusables("きゃ")].sort(),
+    [kanaEntry("き"), kanaEntry("や"), kanaEntry("きゅ"), kanaEntry("きょ")].sort(),
+  );
+});
+
+test("yoonConfusables works the same way for katakana, off ヤ not small ャ", () => {
+  assert.deepEqual(
+    [...yoonConfusables("キャ")].sort(),
+    [kanaEntry("キ"), kanaEntry("ヤ"), kanaEntry("キュ"), kanaEntry("キョ")].sort(),
+  );
+});
+
+test("yoonConfusables covers a base whose small kana isn't ゃ too", () => {
+  assert.deepEqual(
+    [...yoonConfusables("しゅ")].sort(),
+    [kanaEntry("し"), kanaEntry("ゆ"), kanaEntry("しゃ"), kanaEntry("しょ")].sort(),
+  );
+  assert.deepEqual(
+    [...yoonConfusables("ひょ")].sort(),
+    [kanaEntry("ひ"), kanaEntry("よ"), kanaEntry("ひゃ"), kanaEntry("ひゅ")].sort(),
+  );
+});
+
+test("yoonConfusables is empty for a base kana, a dakuten kana, and an untaught glyph", () => {
+  assert.deepEqual(yoonConfusables("き"), []);
+  assert.deepEqual(yoonConfusables("が"), []);
+  assert.deepEqual(yoonConfusables("生"), []);
+  assert.deepEqual(yoonConfusables(""), []);
 });

@@ -43,6 +43,29 @@
 // of them is null/empty for a base kana (dakutenRowFor returns null), so the
 // three new blocks are exactly as absent on か's own page as they were before —
 // this only ADDS content on a derived kana's page.
+//
+// SAK-72 PART B — A YŌON KANA (きゃ) COMPOSES THE SAME WAY, ON A PARALLEL PATH
+// ============================================================================
+// きゃ is TWO Unicode codepoints (き + ゃ), not one precomposed glyph like が —
+// dakutenRowFor never resolves it (see its own null case), so before this pass
+// a yōon kana still fell through to nothing beyond the header. The shape of
+// the fix is the same idea, three parallel sources instead of the dakuten
+// ones:
+//
+//   yoonRowFor(glyph)            the [base, small] breakdown and reading
+//                                 (data/yoon-rows.ts) — ONE shared rule
+//                                 (COMBO_H/COMBO_K), not five per-row hooks,
+//                                 because every yōon combo follows it alike
+//   getMnemonic(baseGlyph)       the SAME reuse Part A does — き's story is き's
+//                                 story whether the sound is "ki" or "kya"
+//   yoonConfusables(glyph)       base + full-size small kana + siblings
+//                                 sharing the base (lib/library/kana-family.ts)
+//
+// `yoonRow` is computed once, null for every base and dakuten/handakuten kana
+// (yoonRowFor only resolves the 72 taught combos), so this is exactly as
+// additive as Part A. The two derived kinds are mutually exclusive — a glyph
+// is never both a dakutenRowFor hit and a yoonRowFor hit — so `row` and
+// `yoonRow` are never both non-null on the same page.
 
 import Link from "next/link";
 
@@ -53,14 +76,17 @@ import { Callout } from "@/components/lesson/callout";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { Pair } from "@/components/lesson/conversion-card";
+import { HearButton } from "@/components/ui/hear-button";
 import { FlatSurfaceProvider } from "@/components/ui";
 import { kanaEntry } from "@/data/characters";
 import { dakutenRowFor, hookRuns, type DakutenRow } from "@/data/dakuten-rows";
 import { getMnemonic } from "@/data/mnemonics";
 import { contextPronunciation } from "@/data/kana-context";
+import { COMBO_H, COMBO_K } from "@/data/phase-intros";
+import { yoonRowFor, type YoonRow } from "@/data/yoon-rows";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
-import { derivedKanaConfusables } from "@/lib/library/kana-family";
+import { derivedKanaConfusables, yoonConfusables } from "@/lib/library/kana-family";
 import { libEntry, kanaConfusables, precomputedStrokeFallback } from "@/lib/library/library-index";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { Headline } from "@/lib/content/headline";
@@ -122,6 +148,61 @@ function SoundShiftSection({ glyph, base, row }: { glyph: string; base: string; 
   );
 }
 
+/** The composition block for a YŌON kana — きゃ's "き + small ゃ, one beat"
+ * strip. Structurally the same idea as SoundShiftSection (a breakdown row, a
+ * rule statement, supporting text, a link back to the base), but the rule and
+ * supporting text are NOT retyped here: every one of the 72 taught combos
+ * follows the SAME rule, already fully written once per script in
+ * data/phase-intros.ts (COMBO_H / COMBO_K), so this reads that prose rather
+ * than authoring 36 near-duplicate hooks the way Part A's five dakuten rows
+ * each needed their own. Renders nothing when `row` is null (a base kana or a
+ * dakuten/handakuten kana never reaches this — see the call site). */
+function ComboSection({ glyph, row }: { glyph: string; row: YoonRow | null }) {
+  const { cfg } = useQuizConfig();
+  if (!row) return null;
+  const intro = row.setId === "hiragana" ? COMBO_H : COMBO_K;
+  // The one paragraph of COMBO_H/COMBO_K that is actually about telling きゃ
+  // apart from きや (the "size is the whole tell" line) — reused verbatim,
+  // rather than the whole card's copy, since the opening paragraph and the
+  // "no new shapes" closer are written for the teach walk's pacing and would
+  // read as filler on a single-glyph reference page.
+  const sizeIsTheTell = intro.body.find((p) => p.lead === "The size is the whole tell.");
+  return (
+    <Section title="Composition">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+        <p className="flex items-baseline gap-2.5 text-[22px] font-light leading-none text-text">
+          <span className="font-kana">{row.base}</span>
+          <span aria-hidden className="text-[15px] text-text-muted">
+            +
+          </span>
+          <span className="font-kana">{row.small}</span>
+          <span aria-hidden className="text-[15px] text-text-muted">
+            &rarr;
+          </span>
+          <span className="font-kana text-accent">{glyph}</span>
+        </p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[15px] text-text-muted">{row.reading}, one beat</span>
+          <HearButton glyph={glyph} voiceName={cfg.voiceName} />
+        </div>
+      </div>
+      <p className="mt-4 text-[15px] leading-relaxed text-text">{intro.title}</p>
+      {sizeIsTheTell ? (
+        <p className="mt-2.5 max-w-[52ch] text-[15px] leading-relaxed text-text">
+          {sizeIsTheTell.text}
+        </p>
+      ) : null}
+      <p className="mt-3 text-[13px] text-text-muted">
+        Built from{" "}
+        <Link href={entryHref(kanaEntry(row.base))} className="text-accent no-underline hover:underline">
+          {row.base}
+        </Link>
+        .
+      </p>
+    </Section>
+  );
+}
+
 export function KanaEntryView({
   entry,
   item,
@@ -151,9 +232,10 @@ export function KanaEntryView({
   const context = contextPronunciation(glyph);
 
   // The dakuten/handakuten row this glyph is the CONVERTED half of — null for
-  // every base kana and every yōon glyph (Part B's problem, not this one's).
-  // `base` is the row's own base half, read off its `pairs`, so it can never
-  // name a character the row itself doesn't teach.
+  // every base kana and every yōon glyph (dakutenRowFor only resolves the 50
+  // single-codepoint dakuten/handakuten glyphs; yōon is handled separately
+  // below, via yoonRowFor). `base` is the row's own base half, read off its
+  // `pairs`, so it can never name a character the row itself doesn't teach.
   const row = dakutenRowFor(glyph);
   const base = row?.pairs.find(([, converted]) => converted === glyph)?.[0];
   // No new story: when this glyph has none of its own, fall back to the BASE's
@@ -161,12 +243,30 @@ export function KanaEntryView({
   // 51st mnemonic for a shape that already has one under a different key.
   const baseMnemonic = !m && base ? getMnemonic(base) : null;
 
+  // SAK-72 Part B: the yōon equivalent of `row`/`base`/`baseMnemonic` above —
+  // きゃ's [base, small] breakdown, null for everything dakutenRowFor already
+  // handles (the two are mutually exclusive: a glyph is never both a
+  // dakuten/handakuten conversion AND a yōon combo) and for every base kana.
+  // Same reuse-not-reinvent shape as the dakuten fallback, just off a
+  // different row source.
+  const yoonRow = yoonRowFor(glyph);
+  const yoonBaseMnemonic = !m && yoonRow ? getMnemonic(yoonRow.base) : null;
+
   // Base-kana lookalikes (kanaConfusables, from the hand-curated LOOKALIKES
   // table) plus, for a derived kana, its own family — the base plus any other
-  // kana marked off that same base (は/ば/ぱ). The two sources are mutually
-  // exclusive today (LOOKALIKES names no derived glyph; derivedKanaConfusables
-  // is empty for a base glyph), so this is a plain merge, not a fallback chain.
-  const confusables = [...new Set([...kanaConfusables(glyph), ...derivedKanaConfusables(glyph)])];
+  // kana marked off that same base (は/ば/ぱ), or, for a yōon combo, its base
+  // plus the full-size version of its small kana plus its sibling combos
+  // (きゃ/きゅ/きょ). The three sources are mutually exclusive today (LOOKALIKES
+  // names no derived glyph; derivedKanaConfusables and yoonConfusables are
+  // each empty outside their own glyph shape), so this is a plain merge, not a
+  // fallback chain.
+  const confusables = [
+    ...new Set([
+      ...kanaConfusables(glyph),
+      ...derivedKanaConfusables(glyph),
+      ...yoonConfusables(glyph),
+    ]),
+  ];
 
   return (
     // NO CARD: the entry reads as a natural part of the page — a plain, unstyled
@@ -177,9 +277,16 @@ export function KanaEntryView({
         <ContentEntryHeader glyph={glyph} headline={headline} typeLabel="kana" />
         {/* Derived-kana only: the k→g-style rule, its hook/aside, and a link
             back to the base kana. Absent for a base kana (row is null) and for
-            a yōon glyph (out of scope for this pass — dakutenRowFor only
-            resolves the 50 single-codepoint dakuten/handakuten glyphs). */}
+            a yōon glyph (dakutenRowFor only resolves the 50 single-codepoint
+            dakuten/handakuten glyphs — ComboSection right below is yōon's
+            equivalent block). */}
         {row && base ? <SoundShiftSection glyph={glyph} base={base} row={row} /> : null}
+        {/* Yōon-only: the "き + small ゃ, one beat" composition rule and a link
+            back to the base kana. Absent for a base kana and for a
+            dakuten/handakuten kana (yoonRowFor only resolves the 72 taught
+            combos) — row/yoonRow are never both non-null, so this and
+            SoundShiftSection above never both render. */}
+        {yoonRow ? <ComboSection glyph={glyph} row={yoonRow} /> : null}
         {m ? (
           <div className="mt-5 border-t border-border/50 pt-6">
             <MnemonicView m={m} glyph={glyph} />
@@ -192,6 +299,16 @@ export function KanaEntryView({
           <div className="mt-5 border-t border-border/50 pt-6">
             <SubLabel>{base}&rsquo;s story &mdash; same shape, only the sound changes</SubLabel>
             <MnemonicView m={baseMnemonic} glyph={glyph} />
+          </div>
+        ) : yoonBaseMnemonic && yoonRow ? (
+          // Same reuse, off the yōon base instead — き's story for きゃ. Audio
+          // still speaks the derived glyph (glyph, not yoonRow.base): see the
+          // dakuten branch above and MnemonicView's own doc comment on why.
+          <div className="mt-5 border-t border-border/50 pt-6">
+            <SubLabel>
+              {yoonRow.base}&rsquo;s story &mdash; same shape, only the sound changes
+            </SubLabel>
+            <MnemonicView m={yoonBaseMnemonic} glyph={glyph} />
           </div>
         ) : null}
         {/* How its sound bends to what follows it (ん borrows the next place, っ

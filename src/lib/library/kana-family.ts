@@ -33,7 +33,11 @@ const HIRAGANA_START = 0x3041;
 const HIRAGANA_END = 0x309f;
 const KATAKANA_OFFSET = 0x60;
 
-const SMALL_TO_FULL_HIRAGANA: Readonly<Record<string, string>> = {
+// Exported: SAK-72 Part B's ingest script (scripts/ingest/kanjivg.mjs) reads
+// this SAME map to derive the small-kana glyph list it fetches from KanjiVG,
+// so "every small kana the app combines" has exactly one source, here, rather
+// than a second hand-typed list the two could drift apart on.
+export const SMALL_TO_FULL_HIRAGANA: Readonly<Record<string, string>> = {
   ゃ: "や",
   ゅ: "ゆ",
   ょ: "よ",
@@ -149,6 +153,63 @@ export function derivedKanaConfusables(glyph: string): readonly EntryId[] {
     (g) => g !== glyph,
   );
   return [kanaEntry(base), ...siblings.map(kanaEntry)];
+}
+
+/**
+ * The two codepoints [base, small] of a taught yōon combo — きゃ → [き, ゃ] —
+ * or null for anything else. Gated on CHAR_INDEX rather than a bare "two
+ * hiragana codepoints, second one small" test, for the same reason every other
+ * derivation in this file is: a two-character STRING that happens to look like
+ * a combo but isn't one of the 72 the app actually teaches must answer null,
+ * not synthesize a page for a character nobody drills.
+ *
+ * Used by strokes.ts (SAK-72 Part B) to know which two independently-ingested
+ * glyphs to compose into one stroke diagram — KanjiVG has no precomposed きゃ
+ * of its own, only き and ゃ each on their own 109×109 grid.
+ */
+export function yoonParts(glyph: string): readonly [string, string] | null {
+  if (!CHAR_INDEX[glyph]) return null;
+  const parts = Array.from(glyph);
+  if (parts.length !== 2) return null;
+  return [parts[0], parts[1]];
+}
+
+/** The full-size kana a small yōon kana stands in for — ゃ → や, ャ → ヤ — or
+ * null if it isn't one. SMALL_TO_FULL_HIRAGANA only tables the hiragana half;
+ * a katakana small kana (ャュョ) is answered by stepping it back to hiragana,
+ * looking that up, then stepping the result forward again — the same
+ * codepoint-offset trick `katakanaOf`/`twinOf` use above, so the katakana
+ * table stays DERIVED rather than a second hand-typed copy of the hiragana
+ * one. */
+function fullSizeOf(small: string): string | null {
+  const isKata = !isHiragana(small);
+  const hiraSmall = isKata
+    ? String.fromCodePoint((small.codePointAt(0) as number) - KATAKANA_OFFSET)
+    : small;
+  const hiraFull = SMALL_TO_FULL_HIRAGANA[hiraSmall];
+  if (!hiraFull) return null;
+  return isKata
+    ? String.fromCodePoint((hiraFull.codePointAt(0) as number) + KATAKANA_OFFSET)
+    : hiraFull;
+}
+
+/**
+ * Confusables for a YŌON kana — its base kana, the FULL-SIZE version of its
+ * small kana (きゃ's small ゃ has no page of its own, but its full-size twin や
+ * does — the size IS the whole distinction, per COMBO_H's own text: "きゃ,
+ * with the small ゃ, is 'kya'. きや, with a full-size や, is 'kiya'"), and its
+ * siblings sharing the same base (きゃ/きゅ/きょ). Mirrors
+ * derivedKanaConfusables's shape and the same CHAR_INDEX-gated discipline —
+ * empty for anything that isn't itself a taught yōon combo.
+ */
+export function yoonConfusables(glyph: string): readonly EntryId[] {
+  const parts = yoonParts(glyph);
+  if (!parts) return [];
+  const [base, small] = parts;
+  const fullSize = fullSizeOf(small);
+  const siblings = combosOf(base).filter((c) => c !== glyph);
+  const glyphs = [base, ...(fullSize && CHAR_INDEX[fullSize] ? [fullSize] : []), ...siblings];
+  return glyphs.map(kanaEntry);
 }
 
 export function kanaFamily(glyph: string): readonly FamilyCell[] {
