@@ -84,7 +84,7 @@ interface ConvSpec {
  * needs to move.
  */
 export const HOOKS: Record<string, string> = {
-  g: "The [k]arate kick smashes the [g]arden gate.",
+  g: "The [k]arate [k]ick smashes the [g]arden [g]ate.",
   z: "",
   d: "",
   b: "",

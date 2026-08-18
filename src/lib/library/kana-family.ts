@@ -33,11 +33,7 @@ const HIRAGANA_START = 0x3041;
 const HIRAGANA_END = 0x309f;
 const KATAKANA_OFFSET = 0x60;
 
-// Exported: SAK-72 Part B's ingest script (scripts/ingest/kanjivg.mjs) reads
-// this SAME map to derive the small-kana glyph list it fetches from KanjiVG,
-// so "every small kana the app combines" has exactly one source, here, rather
-// than a second hand-typed list the two could drift apart on.
-export const SMALL_TO_FULL_HIRAGANA: Readonly<Record<string, string>> = {
+const SMALL_TO_FULL_HIRAGANA: Readonly<Record<string, string>> = {
   ゃ: "や",
   ゅ: "ゆ",
   ょ: "よ",
@@ -180,8 +176,13 @@ export function yoonParts(glyph: string): readonly [string, string] | null {
  * looking that up, then stepping the result forward again — the same
  * codepoint-offset trick `katakanaOf`/`twinOf` use above, so the katakana
  * table stays DERIVED rather than a second hand-typed copy of the hiragana
- * one. */
-function fullSizeOf(small: string): string | null {
+ * one.
+ *
+ * Exported: KanaEntryView's Related section (SAK-72 correction) reuses this
+ * SAME mapping to link a yōon page to the full-size version of its small kana
+ * (きゃ → や, not ゃ), rather than re-deriving the katakana step-back trick a
+ * second time. */
+export function fullSizeOf(small: string): string | null {
   const isKata = !isHiragana(small);
   const hiraSmall = isKata
     ? String.fromCodePoint((small.codePointAt(0) as number) - KATAKANA_OFFSET)
