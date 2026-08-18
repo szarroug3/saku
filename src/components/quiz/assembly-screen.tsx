@@ -149,6 +149,14 @@ function lessonPattern(tierId: SentenceOrderingTierId, jp: string): string {
   const tier = SENTENCE_ORDERING_TIERS.find((candidate) => candidate.id === tierId)!;
   const visible = tier.patterns.find((pattern) => {
     const surface: Readonly<Record<string, string>> = {
+      wo: "を",
+      ni: "に",
+      de: "で",
+      e: "へ",
+      made: "まで",
+      "made-ni": "までに",
+      dake: "だけ",
+      "kara-source": "から",
       "te-request": "ください",
       "nai-request": "ないで",
       mashou: "ましょう",

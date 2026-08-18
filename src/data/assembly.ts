@@ -77,7 +77,15 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "言う。", h: "言う" },
     ],
     v: ["私", "それ", "言う"],
-    p: ["simple"],
+    // Tagged with the actual particle this sentence turns on (を, "marks the
+    // direct object" — a real registered grammar recipe), not the tier id
+    // "simple". Tagging the tier's own id here used to leave assemblyFacts()
+    // with nothing to credit: "simple" was never a grammar recipe, so
+    // patternMeaningFactId("simple") resolved to no fact and every showing of
+    // this item credited zero facts (SAK-18). Every other curated item in this
+    // file is already tagged with the real pattern it exercises — this tier's
+    // items were the one place that convention slipped.
+    p: ["wo"],
   },
   {
     id: -2,
@@ -89,7 +97,7 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "言う？", h: "言う" },
     ],
     v: ["私", "何", "言う"],
-    p: ["simple"],
+    p: ["wo"],
   },
   {
     id: -3,
@@ -101,7 +109,7 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "食べる。", h: "食べる" },
     ],
     v: ["私", "これ", "食べる"],
-    p: ["simple"],
+    p: ["wo"],
   },
 
   // Te-form links and helpers.
@@ -466,7 +474,7 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "食べた。", h: "食べる" },
     ],
     v: ["寿司", "食べる"],
-    p: ["simple"],
+    p: ["wo"],
   },
   {
     id: -102,
@@ -478,7 +486,7 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "行った。", h: "行く" },
     ],
     v: ["店", "行く"],
-    p: ["simple"],
+    p: ["ni"],
   },
   {
     id: -103,
@@ -490,7 +498,7 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
       { t: "遊んだ。", h: "遊ぶ" },
     ],
     v: ["赤い", "ボール", "遊ぶ"],
-    p: ["simple"],
+    p: ["de"],
   },
   {
     id: -201,
@@ -718,7 +726,14 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
   {
     id: "simple",
     label: "Simple sentences",
-    patterns: ["simple", "wo", "e", "made", "made-ni", "dake", "kara-source"],
+    // Every entry here is a REGISTERED grammar recipe (src/data/grammar/recipes.ts)
+    // — the case particles a plain SOV sentence turns on. There is no "simple"
+    // pattern id: this tier's own id used to double as a pattern tag on its
+    // curated items, but patternMeaningFactId("simple") resolves to no fact, so
+    // assemblyFacts() silently credited nothing for every one of them (SAK-18).
+    // "ni"/"de" cover the two curated items (-102, -103) that turn on location/
+    // instrument marking rather than a direct object.
+    patterns: ["wo", "ni", "de", "e", "made", "made-ni", "dake", "kara-source"],
     minReadable: 3,
     grammarPrereqs: ["wa", "ga"],
   },
