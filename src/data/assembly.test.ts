@@ -11,6 +11,7 @@ import { describe, test } from "node:test";
 import {
   ASSEMBLY,
   SENTENCE_ORDERING_TIERS,
+  assemblyFacts,
   assemblyReadable,
   canonicalOrder,
   gradeAssembly,
@@ -20,9 +21,12 @@ import {
   readableAssemblyForTier,
   readableAssemblyForTiers,
   sentenceOrderingTierForItem,
+  tierAssemblyFacts,
   type AssemblyItem,
 } from "./assembly.ts";
+import { patternMeaningFactId } from "./grammar/index.ts";
 import { STOCK_NAMES } from "../lib/grammar/readable.ts";
+import { factInfo } from "../lib/facts.ts";
 import { CURRICULUM_PATTERNS } from "../lib/grammar-lesson.ts";
 import { CURRICULUM_WORDS } from "../lib/word-lesson.ts";
 import { applyClaims, emptyHistory } from "../lib/history-ops.ts";
@@ -146,6 +150,96 @@ describe("sentence-ordering quiz hints", () => {
       sentenceOrderingTierForItem(itemWithPatterns(["nai-request"])),
       "request",
     );
+  });
+});
+
+describe("SAK-18: every sentence-ordering tier pattern is a real, creditable fact", () => {
+  // The bug: "simple" (SENTENCE_ORDERING_TIERS[0].id) was ALSO used as an
+  // item.p pattern tag on that tier's curated items. patternMeaningFactId maps
+  // an item.p entry to a grammar fact id by looking it up in the registered
+  // recipes (src/data/grammar/recipes.ts) — "simple" was never one of them, so
+  // the id it produced had no factInfo and assemblyFacts() filtered it out,
+  // leaving rt.stats completely empty for every "Simple sentences" showing.
+  // The round summary and session-complete screens read directly off rt.stats
+  // (via mergeStats/roundCompleteView, src/lib/session.ts), so a learner who
+  // built every sentence correctly still saw "0 forms · 0 solid · 0 needs
+  // work" / "finished on 0 correct".
+  //
+  // This is a general invariant, not just a "simple"-tier fix: EVERY pattern id
+  // any tier lists must resolve to a real fact, or crediting silently breaks
+  // for that pattern exactly the way it did here. Fails on the pre-fix code
+  // (which listed "simple") and passes once every tier only lists registered
+  // recipe ids.
+  test("every tier's classification patterns resolve to a registered fact", () => {
+    for (const tier of SENTENCE_ORDERING_TIERS) {
+      for (const pattern of tier.patterns) {
+        assert.ok(
+          factInfo(patternMeaningFactId(pattern)),
+          `${tier.id}'s pattern "${pattern}" has no registered grammar fact — ` +
+            `assemblyFacts() will silently credit nothing for it`,
+        );
+      }
+    }
+  });
+
+  // The concrete regression: the six hand-curated "Simple sentences" items
+  // (ids -1, -2, -3, -101, -102, -103) must each credit at least one real
+  // fact. Before the fix every one of these returned [] here.
+  test("every curated Simple-sentences item credits a real fact", () => {
+    const simpleTier = SENTENCE_ORDERING_TIERS[0];
+    assert.equal(simpleTier.id, "simple");
+    const curatedSimpleItems = ASSEMBLY.filter(
+      (item) => item.id < 0 && sentenceOrderingTierForItem(item) === "simple",
+    );
+    // Guard the guard: this must actually find the six curated items, or the
+    // rest of this test would vacuously pass.
+    assert.equal(curatedSimpleItems.length, 6);
+    for (const item of curatedSimpleItems) {
+      const facts = assemblyFacts(item);
+      assert.ok(
+        facts.length > 0,
+        `item ${item.id} (${item.jp}) credits no facts — the exact SAK-18 bug`,
+      );
+    }
+  });
+
+  // tierAssemblyFacts feeds sentenceLessonFacts (src/lib/sentence-ordering-plan.ts),
+  // which is what the "Simple sentences" lesson launch and the practice-corpus
+  // runtime (assembly-screen.tsx buildRuntime) key their stats off. Empty here
+  // is exactly the state that produced the bug's symptom.
+  test("the simple tier's readable facts are non-empty for a learner who can read them", () => {
+    const simpleTier = SENTENCE_ORDERING_TIERS[0];
+    assert.ok(tierAssemblyFacts(simpleTier, OMNISCIENT).length > 0);
+  });
+
+  // No item may carry the bare tier id as a pattern tag going forward — that
+  // is precisely how "simple" ended up unregistered and un-creditable.
+  test("no assembly item is tagged with a bare tier id", () => {
+    const tierIds = new Set(SENTENCE_ORDERING_TIERS.map((tier) => tier.id));
+    for (const item of ASSEMBLY) {
+      for (const pattern of item.p) {
+        assert.ok(
+          !tierIds.has(pattern) || factInfo(patternMeaningFactId(pattern)),
+          `item ${item.id} is tagged "${pattern}", a tier id with no matching fact`,
+        );
+      }
+    }
+  });
+
+  // Regression: an already-working tier (conditional: tara/ba/nara) must be
+  // completely unaffected by the simple-tier fix.
+  test("an unaffected tier (conditional) still credits its patterns", () => {
+    const conditionalTier = SENTENCE_ORDERING_TIERS.find(
+      (tier) => tier.id === "conditional",
+    )!;
+    const pool = readableAssemblyForTier(conditionalTier, OMNISCIENT);
+    assert.ok(pool.length > 0);
+    for (const item of pool.slice(0, 10)) {
+      assert.ok(
+        assemblyFacts(item).length > 0,
+        `item ${item.id} (${item.jp}) credits no facts`,
+      );
+    }
   });
 });
 
