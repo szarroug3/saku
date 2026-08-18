@@ -112,3 +112,28 @@ test("hookRuns splits the k→g hook into bracket/plain runs, brackets never rea
 test("hookRuns on an empty hook (the four unauthored rows) yields no runs", () => {
   assert.deepEqual(hookRuns(""), []);
 });
+
+// Sam's correction on the k→g hook: only the FIRST k and g were bracketed
+// (accented) originally — "The [k]arate kick smashes the [g]arden gate." She
+// wants every k and every g accented, so both words each carry two bracket
+// pairs now. Pins the corrected string itself, plus hookRuns parsing all four
+// pairs into isolated hit runs rather than just the first of each letter.
+test("HOOKS.g accents every k and every g, not just the first of each", () => {
+  const row = dakutenRowFor("が")!;
+  assert.equal(row.hook, "The [k]arate [k]ick smashes the [g]arden [g]ate.");
+
+  const runs = hookRuns(row.hook);
+  const kHits = runs.filter((r) => r.hit && r.text === "k");
+  const gHits = runs.filter((r) => r.hit && r.text === "g");
+  assert.equal(kHits.length, 2, "expected two isolated [k] runs");
+  assert.equal(gHits.length, 2, "expected two isolated [g] runs");
+
+  // No literal bracket survives, and the plain text reassembles the sentence.
+  for (const r of runs) {
+    assert.doesNotMatch(r.text, /[[\]]/, `run text should not carry brackets: ${r.text}`);
+  }
+  assert.equal(
+    runs.map((r) => r.text).join(""),
+    "The karate kick smashes the garden gate.",
+  );
+});
