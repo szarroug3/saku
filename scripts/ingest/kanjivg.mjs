@@ -69,10 +69,29 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// SAK-72 Part A: the 50 dakuten/handakuten glyphs (が…ぽ, ガ…ポ) are each their
+// own precomposed codepoint in KanjiVG, fully and correctly digitized (が = か's
+// 3 strokes + 2 dakuten strokes, hand-placed; the exact placement varies per
+// host glyph, e.g. ぎ's mark sits at different coordinates than が's — this is
+// real per-glyph data, not a fixed offset applied here). Read from
+// DAKUTEN_ROWS rather than typed out here, so this list can never drift from
+// the app's own definition of "every dakuten/handakuten kana" — see that
+// file's header for the row/pair shape.
+import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const OUTDIR = resolve(REPO, "src/data/generated/strokes");
 const GENDIR = resolve(REPO, "src/data/generated");
+
+/** Every converted glyph DAKUTEN_ROWS teaches for one script ("hiragana" or
+ * "katakana"), in the rows' own teaching order (k→g, s→z, t→d, h→b, h→p) — 25
+ * glyphs per script, 50 total. */
+function dakutenGlyphs(setId) {
+  return DAKUTEN_ROWS.filter((r) => r.setId === setId).flatMap((r) =>
+    r.pairs.map(([, converted]) => converted),
+  );
+}
 
 /** How many files the kanji output is split across. 48 puts ~45 kanji and ~55KB
  * in each — small enough that opening one character is a normal-sized fetch,
@@ -86,19 +105,26 @@ const KANJI_CHUNKS = 48;
 const CONCURRENCY = 8;
 
 /** One output file per kana script: the 46 base glyphs of each, in gojūon order
- * (vowels, K/S/T/N/H/M/Y/R/W rows, ん/ン). Kanji is handled separately below —
- * it is chunked, and its glyph list comes from the app's own data. */
+ * (vowels, K/S/T/N/H/M/Y/R/W rows, ん/ン), THEN the 25 dakuten/handakuten glyphs
+ * DAKUTEN_ROWS teaches for that script. New glyphs are APPENDED, never
+ * interleaved, so a re-run's output keeps the original 46 keys first and in
+ * their original order — a diff against a prior run reads as pure addition,
+ * the property the SAK-72 ingest explicitly has to preserve. Kanji is handled
+ * separately below — it is chunked, and its glyph list comes from the app's
+ * own data. */
 const SETS = [
   {
     name: "hiragana",
     glyphs: [
       ..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん",
+      ...dakutenGlyphs("hiragana"),
     ],
   },
   {
     name: "katakana",
     glyphs: [
       ..."アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン",
+      ...dakutenGlyphs("katakana"),
     ],
   },
 ];

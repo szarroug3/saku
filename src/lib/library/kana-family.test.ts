@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { kanaFamily } from "@/lib/library/kana-family";
+import { kanaEntry } from "@/data/characters";
+import { derivedKanaConfusables, kanaFamily } from "@/lib/library/kana-family";
 
 function titles(glyph: string) {
   return kanaFamily(glyph).map((c) => c.title);
@@ -64,4 +65,42 @@ test("every member resolves to a real entry", () => {
       }
     }
   }
+});
+
+// SAK-72 Part A: a derived (dakuten/handakuten) kana's Library page needs a
+// confusables list of its own — its base plus any other marked kana sharing
+// that base — fed to the existing ConfusionSection. derivedKanaConfusables is
+// the query that answers it, independent of both kanaFamily (which refuses to
+// run FROM a marked glyph) and the hand-curated LOOKALIKES table.
+test("derivedKanaConfusables: が's only relative is its base か (k row has no handakuten twin)", () => {
+  assert.deepEqual(
+    derivedKanaConfusables("が"),
+    [kanaEntry("か")],
+  );
+});
+
+test("derivedKanaConfusables: は takes both marks, so ば and ぱ name each other plus は", () => {
+  assert.deepEqual(
+    [...derivedKanaConfusables("ば")].sort(),
+    [kanaEntry("は"), kanaEntry("ぱ")].sort(),
+  );
+  assert.deepEqual(
+    [...derivedKanaConfusables("ぱ")].sort(),
+    [kanaEntry("は"), kanaEntry("ば")].sort(),
+  );
+});
+
+test("derivedKanaConfusables works the same way for katakana", () => {
+  assert.deepEqual(derivedKanaConfusables("ガ"), [kanaEntry("カ")]);
+  assert.deepEqual(
+    [...derivedKanaConfusables("バ")].sort(),
+    [kanaEntry("ハ"), kanaEntry("パ")].sort(),
+  );
+});
+
+test("derivedKanaConfusables is empty for a base kana, a combo, and an untaught glyph", () => {
+  assert.deepEqual(derivedKanaConfusables("か"), []);
+  assert.deepEqual(derivedKanaConfusables("きゃ"), []);
+  assert.deepEqual(derivedKanaConfusables("生"), []);
+  assert.deepEqual(derivedKanaConfusables(""), []);
 });
