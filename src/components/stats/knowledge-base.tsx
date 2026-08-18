@@ -3,10 +3,23 @@
 // What you are holding — and the one card on this page that moves while you are
 // away.
 //
-// Nothing here is a rate. Four counts and a bar drawn from those same four
-// counts, so the bar cannot say anything the numbers don't. That is the whole
-// answer to "are these supposed to be percentages?": there is no number on this
-// card that could be one.
+// The four counts above the bar are still exactly that: counts, not rates —
+// "83 solid" is not a percentage of anything and never becomes one. The bar
+// beneath them is different on purpose: it is scaled against `total`, the
+// full population those counts are drawn from, with a trailing untouched
+// segment for whatever of it you haven't met (see tally.ts's `barSegments`).
+// That segment is transparent, not a status colour, so it reads as "not yet
+// here" rather than as a fifth condition — the bar is not a rate either, it is
+// a proportion, and the two counts above it plus the untouched remainder are
+// still the only three things determining any pixel of it.
+//
+// At real corpus scale this bar is mostly empty for most learners, and that is
+// the point rather than a defect to paper over: a five-pixel sliver of colour
+// in a mostly-empty bar next to "5 of 2,136" IS what "you've barely started"
+// looks like, and it is a more scannable answer to "what's left" than four
+// numbers alone. Do not add a minimum segment width to make the sliver more
+// visible — see by-subject.tsx, which draws the same bar for the same reason
+// and carries the fuller account of why the smudge is accepted, not hidden.
 //
 // SOLID GOES DOWN, AND THAT IS THE FEATURE
 // ========================================
@@ -18,22 +31,32 @@
 
 import { Lbl } from "@/components/ui";
 import {
+  barSegments,
   BUCKETS,
   BUCKET_LABEL,
-  fillFor,
   held,
   type Tally,
 } from "@/components/stats/tally";
 
-export function KnowledgeBase({ tally }: { tally: Tally }) {
+export function KnowledgeBase({
+  tally,
+  total,
+}: {
+  tally: Tally;
+  /** The full fact population `tally` is drawn from — e.g. `ALL_FACTS.length`
+   * from src/lib/facts.ts — so the bar can show what's untouched, not just
+   * what's held. The four numbers above the bar never use it; they stay
+   * counts of `tally` alone. */
+  total: number;
+}) {
   const shown = BUCKETS.filter((b) => tally[b] > 0);
-  const total = held(tally);
+  const heldCount = held(tally);
 
   return (
     <section>
       <Lbl>What you know</Lbl>
 
-      {total === 0 ? (
+      {heldCount === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">
           Nothing yet. Drill something and it will show up here.
         </p>
@@ -55,23 +78,26 @@ export function KnowledgeBase({ tally }: { tally: Tally }) {
             ))}
           </div>
 
-          {/* The bar is the same four numbers, laid end to end. `flex` takes the
+          {/* The bar is the four counts above it, laid end to end, plus a
+           * trailing untouched segment sized against `total`. `flex` takes the
            * count itself, so the widths ARE the counts and no percentage is
            * computed anywhere — including behind the scenes, where one would be
            * just as much of a lie about what this card knows.
            *
-           * aria-hidden with no label of its own: it restates the numbers
-           * directly above it, and a screen reader that has just read them out
-           * does not need them again as five nested percentages. */}
+           * aria-hidden with no label of its own: the four status segments
+           * restate the numbers directly above them, and a screen reader that
+           * has just read those out does not need them again as nested
+           * percentages; the untouched segment has no number of its own to
+           * restate. */}
           <div
             aria-hidden="true"
             className="mt-4 flex h-2 overflow-hidden rounded-full bg-panel"
           >
-            {shown.map((b) => (
+            {barSegments(tally, total).map((seg) => (
               <span
-                key={b}
-                className={`block h-full ${fillFor(b)}`}
-                style={{ flex: tally[b] }}
+                key={seg.bucket}
+                className={`block h-full ${seg.fill}`}
+                style={{ flex: seg.flex }}
               />
             ))}
           </div>

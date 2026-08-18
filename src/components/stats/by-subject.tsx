@@ -5,29 +5,35 @@
 //
 // TWO QUESTIONS PER ROW, AND EACH ONE ANSWERED ONCE
 // =================================================
-//   the bar     how is my memory of what I've met? — FACTS. A memory holds
-//               facts. 生 is not in one condition; its nine readings are in
-//               nine.
+//   the bar     how is my memory of what I've met, against what's out there? —
+//               FACTS. A memory holds facts. 生 is not in one condition; its
+//               nine readings are in nine. The untouched remainder is a fact
+//               count too, drawn as track-toned rather than blank.
 //   the number  how much of this subject have I met? — ENTRIES. You meet 生,
 //               once. "70 of 2,136 kanji" is a sentence. "154 of 5,314 kanji"
 //               is not: there are not 5,314 kanji, and nobody could name what
 //               there are 5,314 of.
 //
-// THE BAR DOES NOT CARRY COVERAGE, AND THE MOCK SAYS IT SHOULD
-// ============================================================
-// The approved design draws a fourth, empty segment for material you have never
-// touched, so the bar shows coverage AND mix at once. It was drawn at roughly
-// half-covered. Against the real library it does not survive: 2,136 kanji and
-// 8,045 words mean a real learner is 3% covered, so the untouched segment takes
-// 97% of the bar and every colour in it collapses into a two-pixel smudge. On
-// screen, three of the four rows rendered as an empty track. The bar's one job —
-// the mix — was the thing that disappeared.
+// THE BAR CARRIES COVERAGE ON PURPOSE, THE SMUDGE INCLUDED
+// ==========================================================
+// An earlier version of this bar drew only what you had MET, full width, and
+// left coverage to the number beside it — because at the real library's scale
+// (2,136 kanji, 8,045 words) a typical learner is ~3% covered, and scaling the
+// bar against the full total turned every colour in it into what that version's
+// comment called a "two-pixel smudge": three of four rows would have rendered
+// as empty track.
 //
-// So the bar is drawn over what you have MET, full width, and coverage is the
-// number beside it. Nothing is lost: "70 of 2,136" states coverage exactly,
-// which is better than a bar can, and the bar now states the mix, which the
-// number cannot. The two readings that looked redundant in the mock were only
-// redundant at the mock's scale.
+// Sam's call (owner's intent) is that the smudge IS the honest answer, not a
+// bug to hide: a mostly-empty bar with a sliver of colour at low coverage is
+// what "you've barely started" looks like, and a scannable "what's left" signal
+// next to a subject you've barely touched is worth more than a bar that always
+// reads full. So the bar is drawn against the SUBJECT'S WHOLE FACT COUNT —
+// `tallyFacts` is already called with every fact in the subject, met or not —
+// and the untouched remainder gets its own segment: track-toned, never a status
+// colour, so it never reads as a sixth condition of memory. See tally.ts's
+// `barSegments`. Do not add a minimum-segment-width floor to make small slivers
+// more visible; a bar that lies about a 3%-covered subject looking bigger than
+// it is would defeat the reason this segment exists.
 //
 // AN ENTRY IS STILL NEVER GIVEN A STANDING. The alternative row was "生 is solid
 // if all nine readings are", and it is the move this codebase has already
@@ -36,7 +42,7 @@
 // fact of 生 is in. `met` counts entries, and counting is all it does.
 
 import { Lbl } from "@/components/ui";
-import { BUCKETS, fillFor, tallyFacts } from "@/components/stats/tally";
+import { barSegments, tallyFacts } from "@/components/stats/tally";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
@@ -184,18 +190,20 @@ function SubjectRow({
         {subject.label}
       </th>
       <td className="w-[92px] py-2">
-        {/* `tally["not-seen"]` is deliberately not drawn — see the header. The
-         * track shows through when a subject has no record at all, which is the
-         * one case where "nothing here" is the whole answer. */}
+        {/* `tally` here was built from the subject's WHOLE fact list (see
+         * SUBJECTS above), so its own count is the total `barSegments` needs —
+         * no separate total to thread through. The untouched segment is
+         * transparent, so an unstarted subject renders as plain track, which
+         * is the one case where "nothing here" is the whole answer. */}
         <span
           aria-hidden="true"
           className="flex h-1.5 overflow-hidden rounded-full bg-panel"
         >
-          {BUCKETS.filter((b) => tally[b] > 0).map((b) => (
+          {barSegments(tally, subject.facts.length).map((seg) => (
             <span
-              key={b}
-              className={`block h-full ${fillFor(b)}`}
-              style={{ flex: tally[b] }}
+              key={seg.bucket}
+              className={`block h-full ${seg.fill}`}
+              style={{ flex: seg.flex }}
             />
           ))}
         </span>

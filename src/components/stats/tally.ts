@@ -54,9 +54,12 @@ import type { FactAggregate, FactId } from "@/types";
  * the app's opinion at all.
  *
  * `not-seen` is absent on purpose: it is not a condition your memory is in, it
- * is material you have not met. The knowledge-base card is about what you hold,
- * so it has no slot for it; By subject draws it as the empty part of a bar,
- * because there the size of the untouched remainder is the whole point.
+ * is material you have not met, so it has no slot among the COUNTS a card
+ * prints ("83 solid", "35 claimed" — there is no "612 not seen" tile to match).
+ * It still reaches the bar: both knowledge-base.tsx and by-subject.tsx draw it
+ * as an untouched, track-toned segment via `barSegments` below, because there
+ * the size of the untouched remainder is the whole point, not something the
+ * bar hides.
  */
 export const BUCKETS: readonly Standing[] = [
   "solid",
@@ -103,7 +106,51 @@ export function fillFor(standing: Standing): string {
   return TONE_FILL[STANDING_TONE[standing]];
 }
 
+/** The untouched remainder's fill — transparent, so the track's own colour
+ * shows through it. Deliberately NOT one of TONE_FILL's colours, `not-seen`
+ * included: STANDING_TONE spends "mute" on `not-seen` for the chip/label case,
+ * where something has to be drawn, but a bar segment can just not be there.
+ * Painting it grey would make "haven't met it" read as a fifth condition of
+ * memory, which is exactly the thing the rest of this bar is careful not to
+ * claim. */
+export const UNTOUCHED_FILL = "bg-transparent";
+
 export type Tally = Record<Standing, number>;
+
+/** One filled span of a coverage bar, left to right. */
+export interface BarSegment {
+  bucket: Standing;
+  /** Raw count, handed straight to `flex` — no percentage computed anywhere,
+   * same rule as every number this module produces. */
+  flex: number;
+  fill: string;
+}
+
+/**
+ * The bar's segments: one per status bucket that has anything in it, in
+ * BUCKETS order, followed by a trailing `not-seen` segment sized to whatever
+ * of `total` the tally doesn't account for.
+ *
+ * Takes `total` rather than reading `tally["not-seen"]` directly because the
+ * two callers hand it different populations: by-subject.tsx already tallies
+ * every fact in the subject, so its `total` and `held(tally) +
+ * tally["not-seen"]` agree by construction; knowledge-base.tsx tallies only
+ * facts you have a record of, so `tally["not-seen"]` there is always 0 and the
+ * untouched amount can only come from a total supplied from outside. Deriving
+ * it from `total - held(tally)` in both cases means one code path instead of
+ * two, and a caller that passes a smaller total than it holds (a bug) shows no
+ * segment rather than a negative-width one.
+ */
+export function barSegments(tally: Tally, total: number): BarSegment[] {
+  const segments: BarSegment[] = BUCKETS.filter((b) => tally[b] > 0).map(
+    (b) => ({ bucket: b, flex: tally[b], fill: fillFor(b) }),
+  );
+  const untouched = total - held(tally);
+  if (untouched > 0) {
+    segments.push({ bucket: "not-seen", flex: untouched, fill: UNTOUCHED_FILL });
+  }
+  return segments;
+}
 
 function empty(): Tally {
   return {
