@@ -269,6 +269,13 @@ export function buildMcOptions(
     answerIsJapanese(fact, "jp2en");
   const askedAnswersAreJapanese = answerIsJapanese(fact, dir);
 
+  // One "what does the learner know" set, two uses: kanji reading cards SORT
+  // an existing sibling list by it below (preferKnown, unchanged); kana's
+  // distractors() SELECTS which options exist in the first place from a much
+  // larger inventory (SAK-49), which is why it needs the set threaded onto
+  // `ctx` rather than applied as a post-hoc sort here — the same distinction
+  // the ticket draws. Every other subject's distractors() ignores `ctx.known`
+  // and is unaffected.
   const knownSet = new Set(known);
   const preferKnown = (a: FactId, b: FactId) => {
     const ak = knownSet.has(a) ? 1 : 0;
@@ -276,8 +283,9 @@ export function buildMcOptions(
     return bk - ak;
   };
 
+  const distractorCtx: PromptContext = { ...ctx, known: knownSet };
   const rankedDistractorCandidates = qt
-    .distractors(fact, optionLimit * 4, ctx)
+    .distractors(fact, optionLimit * 4, distractorCtx)
     .slice()
     .sort(isKanjiReadingCard ? preferKnown : () => 0);
 
