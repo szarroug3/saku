@@ -44,10 +44,19 @@ import { KnowledgeBase } from "@/components/stats/knowledge-base";
 import { MixUps } from "@/components/stats/mix-ups";
 import { tallyFacts } from "@/components/stats/tally";
 import { PageTitle } from "@/components/ui";
-import { factKeys } from "@/lib/facts";
+import { ALL_FACTS, factKeys } from "@/lib/facts";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
+
+/** The population behind What-you-know's bar: every registered fact. Module
+ * scope, so the 21,753-entry walk runs once per page load rather than once per
+ * render — the same reason by-subject.tsx hoists its own SUBJECTS index.
+ * Sentence-tier marker facts are never in ALL_FACTS (they're synthetic history
+ * keys, not registry entries — see sentence-ordering-progress.ts), so no
+ * filtering is needed to keep them out of this count, unlike `recorded` below
+ * which has to filter them defensively out of what history might contain. */
+const TOTAL_FACTS = ALL_FACTS.length;
 
 export default function StatsPage() {
   const { cfg } = useQuizConfig();
@@ -77,7 +86,7 @@ export default function StatsPage() {
     <div className="max-w-4xl">
       <PageTitle title="Progress" sub="How much you have covered so far." />
 
-      <KnowledgeBase tally={tally} />
+      <KnowledgeBase tally={tally} total={TOTAL_FACTS} />
 
       {/* The one hairline on the page: What-you-know is the whole knowledge base
        * summed; below it the same facts are broken out by subject, beside the
