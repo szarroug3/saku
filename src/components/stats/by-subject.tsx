@@ -422,7 +422,28 @@ function SubjectRow({
         scope="row"
         className={`py-2 pr-2 text-left font-normal${indent ? " pl-4 text-text-muted" : ""}`}
       >
-        {subject.label}
+        {/* Clickable only once there's something to open — "0 of 2,136" has
+         * no items behind it, and a panel that opened to say "Nothing here"
+         * for a row that hasn't started would be a worse answer than no
+         * button, same guard knowledge-base.tsx's buckets use. SAK-78 review:
+         * the name is the click target, not the count beside it. */}
+        {met > 0 && onOpen ? (
+          <button
+            type="button"
+            data-testid={`by-subject-met-${subject.id}`}
+            onClick={() =>
+              onOpen(
+                `${met.toLocaleString()} of ${subject.entries.length.toLocaleString()} ${subject.label}`,
+                metEntries(subject, facts, claims),
+              )
+            }
+            className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
+          >
+            {subject.label}
+          </button>
+        ) : (
+          subject.label
+        )}
       </th>
       <td className="w-[92px] py-2">
         {/* `tally` here was built from the subject's WHOLE fact list (see
@@ -446,28 +467,7 @@ function SubjectRow({
       {/* nowrap: "0 of 2,136" broke across two lines on a 375px screen and read
        * as two numbers in a column of one-number cells. */}
       <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
-        {/* Clickable only once there's something to open — "0 of 2,136" has
-         * no items behind it, and a panel that opened to say "Nothing here"
-         * for a row that hasn't started would be a worse answer than no
-         * button, same guard knowledge-base.tsx's buckets use. */}
-        {met > 0 && onOpen ? (
-          <button
-            type="button"
-            data-testid={`by-subject-met-${subject.id}`}
-            onClick={() =>
-              onOpen(
-                `${met.toLocaleString()} of ${subject.entries.length.toLocaleString()} ${subject.label}`,
-                metEntries(subject, facts, claims),
-              )
-            }
-            className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
-          >
-            {met.toLocaleString()}
-          </button>
-        ) : (
-          met.toLocaleString()
-        )}{" "}
-        of {subject.entries.length.toLocaleString()}
+        {met.toLocaleString()} of {subject.entries.length.toLocaleString()}
       </td>
     </tr>
   );
@@ -521,7 +521,25 @@ function GroupRow({
     <>
       <tr>
         <th scope="row" className="py-2 pr-2 text-left font-normal">
-          {label}
+          {/* SAK-78 review: the name is the click target, not the count
+           * beside it — same guard as SubjectRow's. */}
+          {met > 0 && onOpen ? (
+            <button
+              type="button"
+              data-testid={`by-subject-met-group-${label}`}
+              onClick={() =>
+                onOpen(
+                  `${met.toLocaleString()} of ${entryCount.toLocaleString()} ${label}`,
+                  subjects.flatMap((s) => metEntries(s, facts, claims)),
+                )
+              }
+              className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
+            >
+              {label}
+            </button>
+          ) : (
+            label
+          )}
         </th>
         <td className="w-[92px] py-2">
           <span
@@ -538,24 +556,7 @@ function GroupRow({
           </span>
         </td>
         <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
-          {met > 0 && onOpen ? (
-            <button
-              type="button"
-              data-testid={`by-subject-met-group-${label}`}
-              onClick={() =>
-                onOpen(
-                  `${met.toLocaleString()} of ${entryCount.toLocaleString()} ${label}`,
-                  subjects.flatMap((s) => metEntries(s, facts, claims)),
-                )
-              }
-              className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
-            >
-              {met.toLocaleString()}
-            </button>
-          ) : (
-            met.toLocaleString()
-          )}{" "}
-          of {entryCount.toLocaleString()}
+          {met.toLocaleString()} of {entryCount.toLocaleString()}
         </td>
       </tr>
       {subjects.map((s) => (
