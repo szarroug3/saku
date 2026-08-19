@@ -84,10 +84,20 @@ export const BUCKETS: readonly Standing[] = [
  * count, the pluralisation goes HERE and the single-row word stays in
  * standing.ts, the one place the app turns the model into a word. Keeping the
  * seam open is cheaper than reopening it.
+ *
+ * SAK-78: capitalised, not lower-cased, because a count sits under a BUTTON now,
+ * not a sentence — "Solid", not "solid". Only the first letter turns: the rest
+ * of the label, including a second word, stays exactly as STANDING_LABEL wrote
+ * it, which is by-subject.tsx's own convention for its row labels ("Verb
+ * pairs", not "Verb Pairs") — one capitalisation rule for the page, not a
+ * different one per widget.
  */
-export const BUCKET_LABEL: Record<Standing, string> = {
-  ...STANDING_LABEL,
-};
+export const BUCKET_LABEL: Record<Standing, string> = Object.fromEntries(
+  (Object.entries(STANDING_LABEL) as [Standing, string][]).map(([k, v]) => [
+    k,
+    v.charAt(0).toUpperCase() + v.slice(1),
+  ]),
+) as Record<Standing, string>;
 
 /** Bar fill per tone. The Library's chip paints the same tones as a border and a
  * text colour; a segment is a fill, so the class differs and the TONE does not —
