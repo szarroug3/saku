@@ -12,12 +12,13 @@ import { kanaFact } from "@/data/characters";
 import {
   answeredInsteadText,
   boxKeyOf,
+  factsFromPickedBoxes,
   missedBoxKeysForFacts,
   outcomeForPhrase,
   presentationPhrasesForFact,
   roundFormCounts,
 } from "@/components/results/word-table-keys";
-import type { FactSessionDetail, SessionStats } from "@/types";
+import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 function stat(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
   return {
@@ -180,6 +181,37 @@ describe("answeredInsteadText", () => {
     const result = answeredInsteadText("i", ["あ", "い"]);
     assert.equal(result, "i");
     assert.ok(!result.includes(" "), "must be one answer, not a joined blob");
+  });
+});
+
+// SAK-52: session-complete's "Quiz again" picker and round-complete's retry
+// picker both need the same last step — picked boxes to the FactIds a new
+// leg should quiz — so it is a shared, pure function rather than duplicated
+// (or drifting) inline logic in each screen.
+describe("factsFromPickedBoxes", () => {
+  const a = "a" as FactId;
+  const b = "b" as FactId;
+  const c = "c" as FactId;
+
+  test("turns picked boxes into their facts, deduped", () => {
+    const boxes = [boxKeyOf(a, "p1"), boxKeyOf(a, "p2"), boxKeyOf(b, "p1")];
+    assert.deepEqual(factsFromPickedBoxes(boxes, [a, b, c]), [a, b]);
+  });
+
+  test("drops a box whose fact is outside the allowed set", () => {
+    // A box naming a fact the screen never actually offered (e.g. a stale key,
+    // or a different session's box) must not smuggle an unrelated fact into a
+    // new quiz.
+    const boxes = [boxKeyOf(a, "p1"), boxKeyOf(c, "p1")];
+    assert.deepEqual(factsFromPickedBoxes(boxes, [a, b]), [a]);
+  });
+
+  test("no boxes picked is no facts", () => {
+    assert.deepEqual(factsFromPickedBoxes([], [a, b]), []);
+  });
+
+  test("an unparsable box is skipped rather than thrown", () => {
+    assert.deepEqual(factsFromPickedBoxes(["not-json", boxKeyOf(a, "p1")], [a]), [a]);
   });
 });
 
