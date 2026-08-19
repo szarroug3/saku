@@ -265,6 +265,29 @@ interface DrillQuestion {
    */
   confused: EntryId | null;
   /**
+   * The MC option the learner most recently picked WRONG on this showing, so
+   * the reveal can keep it lit red (border-danger/bg-danger-bg/text-danger)
+   * alongside the correct option's green — Sam's SAK-50 changes-requested
+   * follow-up: the fixed-bottom reveal rework (see revealPause below) still
+   * needs to show the wrong pick as selected, not just the right answer.
+   * Overwritten on every attempt, not just the last one, same rule as the
+   * `answered` field this sits beside used to follow before SAK-50 dropped
+   * it — this is always "what I picked LAST", the one relevant to the board
+   * on screen right now. Null whenever this showing's board isn't `mc`
+   * (including every non-mc miss), and null again for every fresh showing.
+   */
+  mcWrongPick: FactId | null;
+  /**
+   * Same idea as `mcWrongPick`, for the `recognition` board — the option
+   * INDEX picked wrong, since two recognition options can share display text.
+   */
+  recognitionWrongPick: number | null;
+  /**
+   * Same idea as `mcWrongPick`, for the `particleMarker` board — the
+   * recipeId of the option picked wrong.
+   */
+  particleMarkerWrongPick: string | null;
+  /**
    * Whether the learner has pressed "Show text" on an audio-prompt showing —
    * SAK-51's fallback for a card that would otherwise be a blank box with a
    * speaker icon and no way through it if the audio never plays (muted
@@ -905,6 +928,10 @@ export function DrillScreen() {
       choicesBoard,
       // Nothing has been said instead of this card's answer yet. Same rule.
       confused: null,
+      // No wrong pick to keep lit red on a new showing. Same rule.
+      mcWrongPick: null,
+      recognitionWrongPick: null,
+      particleMarkerWrongPick: null,
       // "Show text" has not been pressed on a new showing. Same rule as
       // `hinted` and `choicesShown` just above.
       textRevealed: false,
@@ -1073,6 +1100,17 @@ export function DrillScreen() {
       // input she typed it into, so repeating it in the reveal was redundant).
       const saidText = resolveAnsweredText({ recognitionSaid, mcSaid, typedSaid });
       recordMissedPhrase(st, phrase, saidText);
+      // The wrong pick to keep lit red at the reveal (SAK-50 changes-requested
+      // follow-up), overwritten on every attempt like `saidText` above — only
+      // one of the three can be non-null on any given miss, since `mc`,
+      // `recognition` and `particleMarker` are mutually exclusive board
+      // shapes for one showing (see DrillQuestion). A typed miss or a
+      // particleDrill tap sets none of them; particleDrill already shows its
+      // own wrong tap red via particle-tap-card.tsx's `outcome` state.
+      q.mcWrongPick = picked !== undefined ? picked : null;
+      q.recognitionWrongPick = recognitionPick !== undefined ? recognitionPick : null;
+      q.particleMarkerWrongPick =
+        particleMarkerPick !== undefined ? particleMarkerPick : null;
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
@@ -1416,6 +1454,12 @@ export function DrillScreen() {
     // what was said. Null, not undefined: `confusionNote` is only reached
     // through a truthiness test, so this is tidiness rather than load-bearing.
     if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
+    // A showing in flight from before the reveal kept a wrong MC/recognition/
+    // particleMarker pick lit red has no record of one either. Same tidiness
+    // rule as `confused` just above.
+    if (rt.q && rt.q.mcWrongPick === undefined) rt.q.mcWrongPick = null;
+    if (rt.q && rt.q.recognitionWrongPick === undefined) rt.q.recognitionWrongPick = null;
+    if (rt.q && rt.q.particleMarkerWrongPick === undefined) rt.q.particleMarkerWrongPick = null;
     // A showing in flight from before SAK-51's fallback existed has not had
     // "Show text" pressed. Same tidiness rule as `confused` above. (The
     // similar `answered` backfill this used to sit beside was removed with
@@ -2295,7 +2339,12 @@ export function DrillScreen() {
                   "flex min-h-15 shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
                   revealing && option.recipeId === q.particleMarker?.recipeId
                     ? "border-success bg-success-bg text-success"
-                    : "border-border bg-card text-text hover:bg-panel",
+                    : // The wrong pick stays selected in red alongside the
+                      // correct option's green (SAK-50 changes-requested
+                      // follow-up) — see DrillQuestion.particleMarkerWrongPick.
+                      revealing && option.recipeId === q.particleMarkerWrongPick
+                      ? "border-danger bg-danger-bg text-danger"
+                      : "border-border bg-card text-text hover:bg-panel",
                 )}
               >
                 <span lang="ja">{option.label}</span>
@@ -2381,7 +2430,12 @@ export function DrillScreen() {
                   "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-sm wrap-break-word hyphens-auto",
                   revealing && i === q.recognition?.correct
                     ? "border-success bg-success-bg text-success"
-                    : "border-border bg-card text-text hover:bg-panel",
+                    : // The wrong pick stays selected in red alongside the
+                      // correct option's green (SAK-50 changes-requested
+                      // follow-up) — see DrillQuestion.recognitionWrongPick.
+                      revealing && i === q.recognitionWrongPick
+                      ? "border-danger bg-danger-bg text-danger"
+                      : "border-border bg-card text-text hover:bg-panel",
                 )}
               >
                 <span>{option}</span>
@@ -2397,7 +2451,12 @@ export function DrillScreen() {
                   // The option you should have picked, lit alongside the reveal.
                   revealing && opt === q.f
                     ? "border-success bg-success-bg text-success"
-                    : "border-border bg-card text-text hover:bg-panel",
+                    : // The wrong pick stays selected in red alongside the
+                      // correct option's green (SAK-50 changes-requested
+                      // follow-up) — see DrillQuestion.mcWrongPick.
+                      revealing && opt === q.mcWrongPick
+                      ? "border-danger bg-danger-bg text-danger"
+                      : "border-border bg-card text-text hover:bg-panel",
                 )}
                 style={
                   q.dir === "en2jp" && q.mcFonts
