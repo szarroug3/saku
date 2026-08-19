@@ -22,11 +22,23 @@ import type { IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from
 /** The pattern's own worked sentence, straight from the Tatoeba corpus — the
  * SAME lookup grammar-entry-view.tsx used to do on its own; centralised here so
  * the teach walk and the Library page always show the identical sentence. Absent
- * for a pattern the corpus tagger has not signed (see authored.ts for that lane). */
-function sentenceExampleFor(recipeId: string): SentenceExample | undefined {
-  const example = examplesFor(recipeId).find((ex) => ex.sp[recipeId]);
-  const span = example?.sp[recipeId];
-  if (!example || !span) return undefined;
+ * for a pattern the corpus tagger has not signed (see authored.ts for that lane).
+ *
+ * PREFERS A SENTENCE WHERE THE PATTERN SURVIVES INTACT. The tagger signs a
+ * sentence whenever the pattern's HOST verb appears, even when the pattern
+ * itself has since been further conjugated away — 〜ている past-tensed to
+ * 〜ていた drops る, leaving a lone い in the highlighted span with no visible
+ * "いる" for a learner to recognise, right after a build panel that just showed
+ * them て-form + いる. Any candidate whose sentence still contains the pattern's
+ * own written form literally (てください, ている, …) reads as the SAME thing
+ * the build panel just taught; one that doesn't is technically correct but
+ * confusing, so it is only a fallback when nothing cleaner is tagged. */
+function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
+  const candidates = examplesFor(r.id).filter((ex) => ex.sp[r.id]);
+  if (!candidates.length) return undefined;
+  const written = r.pattern.replace(/^〜/, "");
+  const example = candidates.find((ex) => ex.jp.includes(written)) ?? candidates[0];
+  const span = example.sp[r.id]!;
   return { jp: example.jp, en: example.en, span: [span[0], span[1]] };
 }
 
@@ -572,7 +584,7 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
 
   if (deriveTables.length) build = "";
 
-  const sentenceExample = sentenceExampleFor(r.id);
+  const sentenceExample = sentenceExampleFor(r);
 
   // The header LEADS with the written pattern — "〜てから: After doing X." — so a
   // learner gets used to reading the pattern in its 〜て… form, then a human
