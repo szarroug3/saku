@@ -23,13 +23,8 @@ import type { NumberConstruction } from "@/data/number-construction";
 
 export function NumberConstructionView({
   construction,
-  hideExamples = false,
 }: {
   construction: NumberConstruction;
-  /** Drop the worked-example count tables. The redesigned counter page removes
-   * them — each counter's exceptions are stated in its prose (一本 → いっぽん),
-   * so the full 1–10 tables were more than the page needs. */
-  hideExamples?: boolean;
 }) {
   return (
     <>
@@ -40,7 +35,11 @@ export function NumberConstructionView({
         <IntroBody body={construction.body} measure="" />
       </Card>
 
-      {!hideExamples && construction.exampleGroups.length > 0 ? (
+      {/* The worked-example table(s), below the prose — the counts 1–10 for a
+          counter page, the hundreds/thousands/myriads for the big page, split
+          into Regular / Irregular the way the grammar pages split regular
+          conjugation from its exceptions. */}
+      {construction.exampleGroups.length > 0 ? (
         <Card className="mb-3.5">
           <IntroCountTables groups={construction.exampleGroups} />
         </Card>
