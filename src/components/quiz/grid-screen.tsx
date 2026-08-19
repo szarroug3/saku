@@ -375,7 +375,11 @@ export function GridScreen() {
   if (!active || !g) return null;
 
   return (
-    <div>
+    // .kq-center-frame (globals.css, SAK-10): floor-height wrapper so a
+    // small sheet reads as vertically centered instead of pinned to the top
+    // with a dead gap under it; a sheet with enough cards to need scrolling
+    // still just grows the frame and scrolls with the page.
+    <div className="kq-center-frame">
       <GridHud
         done={done}
         total={total}
@@ -383,27 +387,33 @@ export function GridScreen() {
         streak={g.streak}
         onFinish={() => finishQuiz(g.stats)}
       />
-      {/* The board header (task #33): a homogeneous sheet asks ONE response of
-          ONE source type, and the header is the whole of the disambiguation —
-          "Kanji → meaning" vs "Kanji → reading", a kanji sheet vs a word sheet.
-          The board counter only appears once there's more than one board. */}
-      {g.boards[g.bi] ? (
-        <div className="mt-4 flex items-baseline justify-between gap-2 px-1">
-          <span className="text-sm font-medium text-text">
-            {g.boards[g.bi].header}
-          </span>
-          {g.boards.length > 1 ? (
-            <span className="text-[11px] tabular-nums text-text-muted">
-              Board {g.bi + 1} / {g.boards.length}
+      {/* flex-1 + justify-center centers the header+sheet in whatever room
+          the frame leaves below the HUD. No items-center: the header's
+          justify-between and the sheet's own grid both want the full
+          available width, not to shrink to their content's width. */}
+      <div className="flex flex-1 flex-col justify-center">
+        {/* The board header (task #33): a homogeneous sheet asks ONE response
+            of ONE source type, and the header is the whole of the
+            disambiguation — "Kanji → meaning" vs "Kanji → reading", a kanji
+            sheet vs a word sheet. The board counter only appears once
+            there's more than one board. */}
+        {g.boards[g.bi] ? (
+          <div className="mt-4 flex items-baseline justify-between gap-2 px-1">
+            <span className="text-sm font-medium text-text">
+              {g.boards[g.bi].header}
             </span>
-          ) : null}
-        </div>
-      ) : null}
-      {/* The sheet and its cards are `kq-grid*` hook classes rather than
-          Tailwind colour utilities — see the GRID QUIZ SHEET section in
-          globals.css. Each state is a surface + edge + ink together, which is
-          one class, not three. */}
-      <div className="kq-grid-sheet mt-4">
+            {g.boards.length > 1 ? (
+              <span className="text-[11px] tabular-nums text-text-muted">
+                Board {g.bi + 1} / {g.boards.length}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {/* The sheet and its cards are `kq-grid*` hook classes rather than
+            Tailwind colour utilities — see the GRID QUIZ SHEET section in
+            globals.css. Each state is a surface + edge + ink together, which
+            is one class, not three. */}
+        <div className="kq-grid-sheet mt-4">
         {(g.boards[g.bi]?.order ?? []).map((f) => {
           const card = g.cards[f];
           const prompt = questionsFor(f).prompt(f, "jp2en");
@@ -521,6 +531,7 @@ export function GridScreen() {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
