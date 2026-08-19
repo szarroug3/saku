@@ -59,6 +59,7 @@ import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import type { Claims } from "@/lib/claims";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { KIND_LABEL } from "@/lib/library/entries";
+import { markEntry } from "@/lib/library/library-index";
 import { factType } from "@/lib/practice-types";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type {
@@ -278,7 +279,7 @@ export function BySubject({
   now: number;
   history: HistoryFile;
 }) {
-  const learnedSentenceCount = learnedSentenceTierIds(history).length;
+  const learnedSentenceIds = learnedSentenceTierIds(history);
   // SAK-78 follow-up review: "these should be clickable to show the sidebar
   // too for their items." One panel for the whole table, same shape as
   // KnowledgeBase's single BucketBreakdown — only one row's breakdown can be
@@ -323,7 +324,7 @@ export function BySubject({
               />
             ),
           )}
-          <SentenceSubjectRow learned={learnedSentenceCount} />
+          <SentenceSubjectRow learnedIds={learnedSentenceIds} onOpen={onOpen} />
         </tbody>
       </table>
       <EntryBreakdown
@@ -336,12 +337,72 @@ export function BySubject({
   );
 }
 
-function SentenceSubjectRow({ learned }: { learned: number }) {
+/** SAK-78 round 6: "i have claimed a sentence lesson but it's not clickable
+ * here." Root cause — this row never went through the Subject/`metEntries`
+ * model every other row uses. Sentence-ordering tiers are the 10
+ * SENTENCE_ORDERING_TIERS, not FactIds with a `subject` field, so they never
+ * land in ALL_FACTS's walk that builds SUBJECTS (by-subject.tsx's own module
+ * comment above). A tier is "learned" via `sentenceTierMarkerFact` — a
+ * deliberately unregistered, non-drilled marker fact (see
+ * sentence-ordering-progress.ts's own header: "not a registered quiz fact") —
+ * checked either by an explicit claim or by at least one answered fact in an
+ * assembly session (`sentenceTierDone`). Before this round the row was drawn
+ * by hand from `learnedSentenceTierIds(history).length` alone, with no
+ * `onOpen` ever wired in: not a guard that happened to always fail, an
+ * `onClick` that was never written. That's why Sam's claimed tier didn't open
+ * a panel — every other row's "0 has no button" guard was doing its job;
+ * this row had no button to guard.
+ *
+ * THE FIX, AND ITS HONEST LIMIT. This row is now clickable exactly like every
+ * other once `learnedIds` is non-empty, opening the same EntryBreakdown panel.
+ * But it cannot reuse `metGroups`/`groupEntriesByStanding` — that machinery
+ * asks `standingOf` a fact's `FactAggregate` (seen count, recall curve), and a
+ * tier's marker fact carries neither: it is never scored, so there is no
+ * solid/getting-there/shaky/slipping question to ask of it, only "done" or
+ * not. Forcing it through the standing model would either crash (no
+ * aggregate) or silently mislabel a session-completed tier as an untested
+ * self-report. So a learned tier's group is a single, explicit `"claimed"`
+ * bucket — the closest existing word for "the app has no decay/accuracy model
+ * for this, only a completion record," not a claim that overrides a session
+ * completion's actual (unmodelled) confidence. Flagged in this ticket's
+ * Linear round-6 comment as the one subject kind that only approximately fits
+ * this panel's status-grouped shape, rather than silently forcing a false
+ * standing on it. */
+function SentenceSubjectRow({
+  learnedIds,
+  onOpen,
+}: {
+  learnedIds: string[];
+  onOpen?: (label: string, groups: { standing: Standing; entries: EntryId[] }[]) => void;
+}) {
   const total = SENTENCE_ORDERING_TIERS.length;
+  const learned = learnedIds.length;
+  // A tier's Library page is a MARK entry, not `sentenceTierEntry`'s own id
+  // (see entry-breakdown.tsx's file header for the full reasoning) — marks.ts
+  // mints one sentence-rule mark per tier with the exact same id suffix
+  // (SENTENCE_ORDERING_TIERS' "simple" <-> marks.ts's "sentence-rule-simple"),
+  // so this is a re-mint, not a guess.
+  const entries = learnedIds.map((id) => markEntry(`sentence-rule-${id}`));
+
   return (
     <tr>
       <th scope="row" className="py-2 pr-2 text-left font-normal">
-        Sentences
+        {learned > 0 && onOpen ? (
+          <button
+            type="button"
+            data-testid="by-subject-met-sentences"
+            onClick={() =>
+              onOpen(`${learned.toLocaleString()} of ${total.toLocaleString()} Sentences`, [
+                { standing: "claimed", entries },
+              ])
+            }
+            className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
+          >
+            Sentences
+          </button>
+        ) : (
+          "Sentences"
+        )}
       </th>
       <td className="w-[92px] py-2">
         <span
