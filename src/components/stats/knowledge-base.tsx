@@ -29,7 +29,10 @@
 // study app can put on a page called Progress, and it needs no caption saying so:
 // you will see it drop, once, and understand it forever.
 
+import { useState } from "react";
+
 import { Lbl } from "@/components/ui";
+import { BucketBreakdown } from "@/components/stats/bucket-breakdown";
 import {
   barSegments,
   BUCKETS,
@@ -37,10 +40,13 @@ import {
   held,
   type Tally,
 } from "@/components/stats/tally";
+import type { Standing } from "@/lib/library/standing";
+import type { FactId } from "@/types";
 
 export function KnowledgeBase({
   tally,
   total,
+  factsByBucket,
 }: {
   tally: Tally;
   /** The full fact population `tally` is drawn from — e.g. `ALL_FACTS.length`
@@ -48,9 +54,17 @@ export function KnowledgeBase({
    * what's held. The four numbers above the bar never use it; they stay
    * counts of `tally` alone. */
   total: number;
+  /** SAK-78: the FACTS behind each bucket, in the exact shape `tally` was
+   * summed from (tally.ts's `factsByStanding` — the same walk `tally` came
+   * from, kept instead of counted). A count becomes clickable only once its
+   * caller can hand back what it's a count OF; optional so a page that only
+   * wants the totals (none exist yet, but nothing should require this) isn't
+   * forced to build the list it will never show. */
+  factsByBucket?: Partial<Record<Standing, readonly FactId[]>>;
 }) {
   const shown = BUCKETS.filter((b) => tally[b] > 0);
   const heldCount = held(tally);
+  const [open, setOpen] = useState<Standing | null>(null);
 
   return (
     <section>
@@ -66,17 +80,52 @@ export function KnowledgeBase({
            * deep and the card runs off the screen before the bar that sums
            * them, which is the one thing that has to be seen with them. */}
           <div className="flex flex-wrap items-end gap-x-[26px] gap-y-3">
-            {shown.map((b) => (
-              <div key={b}>
-                <p className="text-[32px] font-extralight leading-none tabular-nums sm:text-[44px]">
-                  {tally[b].toLocaleString()}
-                </p>
-                <p className="mt-1 text-xs text-text-muted">
-                  {BUCKET_LABEL[b]}
-                </p>
-              </div>
-            ))}
+            {shown.map((b) => {
+              const bucketFacts = factsByBucket?.[b];
+              // Clickable only when there's a list behind the number to open
+              // — a plain <p>, same as before, whenever a caller hasn't wired
+              // factsByBucket up (or the fact list came back empty for a
+              // bucket the tally still says has something in it, which would
+              // mean the two disagreed and a panel claiming "nothing here"
+              // next to a nonzero count would be a worse answer than no
+              // button at all).
+              if (!bucketFacts?.length) {
+                return (
+                  <div key={b}>
+                    <p className="text-[32px] font-extralight leading-none tabular-nums sm:text-[44px]">
+                      {tally[b].toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-xs text-text-muted">
+                      {BUCKET_LABEL[b]}
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  data-testid={`knowledge-base-bucket-${b}`}
+                  onClick={() => setOpen(b)}
+                  className="cursor-pointer text-left"
+                >
+                  <p className="text-[32px] font-extralight leading-none tabular-nums sm:text-[44px]">
+                    {tally[b].toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-xs text-text-muted underline decoration-dotted underline-offset-2">
+                    {BUCKET_LABEL[b]}
+                  </p>
+                </button>
+              );
+            })}
           </div>
+
+          <BucketBreakdown
+            standing={open}
+            label={open ? `${tally[open].toLocaleString()} ${BUCKET_LABEL[open]}` : ""}
+            facts={(open && factsByBucket?.[open]) || []}
+            onClose={() => setOpen(null)}
+          />
 
           {/* The bar is the four counts above it, laid end to end, plus a
            * trailing untouched segment sized against `total`. `flex` takes the
