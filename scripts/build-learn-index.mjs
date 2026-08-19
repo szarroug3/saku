@@ -29,15 +29,13 @@ import { contentResolvePrereq } from "@/lib/content/unit-scheduler";
 import { resolvableEntries } from "@/lib/content/resolve";
 import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
-import { emptyHistory, applyClaims } from "@/lib/history-ops";
-import { VOCAB_FACTS } from "@/data/vocab";
-import { GRAMMAR_FACTS, patternMeaningFactId } from "@/data/grammar";
+import { emptyHistory } from "@/lib/history-ops";
+import { patternMeaningFactId } from "@/data/grammar";
 import {
   SENTENCE_ORDERING_TIERS,
   assemblyFacts,
   readableAssemblyForTier,
 } from "@/data/assembly";
-import { lemmaMeaningFacts } from "@/lib/grammar/readable";
 import { sentenceTierEntry } from "@/lib/sentence-ordering-progress";
 
 /** Serialize a teaching unit down to the scheduling/preview fields. `reading` is
@@ -112,36 +110,25 @@ for (const track of tracks) {
 // ── Curriculum glyph spine: the vocab card counts positions in this order. ─────
 const curriculumGlyphs = CURRICULUM_SEQUENCE.map((it) => it.glyph);
 
-// ── Sentence tier gates: the old planner's history-dependent readability and
-//    ANY-of grammar gates, reduced to fact-id structure. `readableAssemblyForTier`
-//    is called against complete knowledge to select the exact live candidate
-//    pool (piece limit, unambiguous tier, conditional-English guard included).
-//    Each remaining lemma becomes the exact OR-set `lemmaKnown` resolves through
-//    keb/reb; stock names have an empty fact set and are omitted (always known).
-//    /learn can then evaluate the same gate from history without the dictionary. ─
-const fullKnowledge = applyClaims(
-  emptyHistory(),
-  [...VOCAB_FACTS, ...GRAMMAR_FACTS].map((fact) => fact.id),
-  1,
-);
-const sentenceGates = SENTENCE_ORDERING_TIERS.map((tier) => ({
-  tierId: tier.id,
-  entry: sentenceTierEntry(tier.id),
-  minReadable: tier.minReadable,
-  grammarPrereqFacts: tier.grammarPrereqs.map(patternMeaningFactId),
-  readableItems: readableAssemblyForTier(tier, fullKnowledge).map((item) => ({
-    lemmaFacts: item.v.flatMap((lemma) => {
-      const facts = lemmaMeaningFacts(lemma);
-      if (facts === null) {
-        throw new Error(
-          `full-knowledge sentence ${item.id} contains unresolvable lemma ${lemma}`,
-        );
-      }
-      return facts.length > 0 ? [[...facts]] : [];
-    }),
-    facts: assemblyFacts(item),
-  })),
-}));
+// ── Sentence tier gates: the old planner's pool-size and ANY-of grammar gates,
+//    reduced to fact-id structure. `readableAssemblyForTier` is now a purely
+//    structural filter (piece limit, unambiguous tier, conditional-English
+//    guard). SAK-87 dropped its per-learner known-words check, since the
+//    assembly screen shows a definition for any unknown piece instead of
+//    hiding the sentence. So the candidate pool is the same for every
+//    history: /learn can read its size and facts straight off the index,
+//    with only the grammar-prereq gate staying history-dependent. ───────────
+const sentenceGates = SENTENCE_ORDERING_TIERS.map((tier) => {
+  const pool = readableAssemblyForTier(tier, emptyHistory());
+  return {
+    tierId: tier.id,
+    entry: sentenceTierEntry(tier.id),
+    minReadable: tier.minReadable,
+    grammarPrereqFacts: tier.grammarPrereqs.map(patternMeaningFactId),
+    poolSize: pool.length,
+    facts: [...new Set(pool.flatMap(assemblyFacts))],
+  };
+});
 
 // ── Version stamp: a hash over the serialized index (Phase 3 puts it in the
 //    frontier cache key so a content deploy invalidates cached frontiers). ──────

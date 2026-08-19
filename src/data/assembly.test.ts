@@ -2,8 +2,11 @@
 //   node --import ./src/lib/conjugate/test-hooks.mjs --test src/data/assembly.test.ts
 //
 // THE CRUX for assembly, and the reason it is allowed to exist beside the
-// never-mark-wrong rule: every item has EXACTLY ONE accepted order, and the
-// gate never serves an item with a word the learner has not met.
+// never-mark-wrong rule: every item has EXACTLY ONE accepted order. Selection
+// no longer gates on a per-learner known-words check (SAK-87 round 5): the
+// assembly screen shows a definition for any unknown piece instead, so an
+// item is offered whenever its structural filters (piece count, tier match,
+// the conditional-tier English guard) pass, regardless of history.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -12,7 +15,6 @@ import {
   ASSEMBLY,
   SENTENCE_ORDERING_TIERS,
   assemblyFacts,
-  assemblyReadable,
   canonicalOrder,
   gradeAssembly,
   pickAssembly,
@@ -25,7 +27,6 @@ import {
   type AssemblyItem,
 } from "./assembly.ts";
 import { patternMeaningFactId } from "./grammar/index.ts";
-import { STOCK_NAMES } from "../lib/grammar/readable.ts";
 import { factInfo } from "../lib/facts.ts";
 import { CURRICULUM_PATTERNS } from "../lib/grammar-lesson.ts";
 import { CURRICULUM_WORDS } from "../lib/word-lesson.ts";
@@ -249,17 +250,21 @@ describe("sentence-ordering quiz scope", () => {
     return applyClaims(emptyHistory(), words.map(wordMeaningFactId), 1);
   }
 
-  test("the basic sentence lesson needs a small grammatical foundation, not sushi", () => {
+  test("the basic sentence tier's pool has its curated items, not sushi, regardless of vocabulary known", () => {
     const simple = SENTENCE_ORDERING_TIERS[0];
     assert.equal(simple.id, "simple");
 
-    // Missing even one of the three curated items' words is not enough to
-    // supply all three reviewed examples.
-    assert.ok(
-      readableAssemblyForTier(simple, wordsHistory(SIMPLE_TIER_WORDS.slice(0, -1))).length <
-        simple.minReadable,
+    // The vocab-known gate is gone (SAK-87 round 5): a learner who knows none
+    // of these words gets the exact same structural pool as one who knows all
+    // of them: the pool no longer depends on history at all.
+    const nobody = readableAssemblyForTier(simple, NOBODY);
+    const someone = readableAssemblyForTier(simple, wordsHistory(SIMPLE_TIER_WORDS));
+    assert.deepEqual(
+      nobody.map((item) => item.id),
+      someone.map((item) => item.id),
     );
-    const pool = readableAssemblyForTier(simple, wordsHistory(SIMPLE_TIER_WORDS));
+
+    const pool = nobody;
     assert.ok(pool.length >= simple.minReadable);
     assert.ok(pool.slice(0, simple.minReadable).every((item) => item.id > -100));
     assert.ok(pool.slice(0, simple.minReadable).every((item) => !item.v.includes("寿司")));
@@ -279,19 +284,14 @@ describe("sentence-ordering quiz scope", () => {
     assert.ok(verbs.length >= 1);
   });
 
-  test("every sentence tier has a reviewed drill reachable once its curated vocabulary is known", () => {
-    // A "beginner" here is someone who knows exactly the words the curated
-    // (hand-authored) assembly items use — not the full VOCAB (OMNISCIENT,
-    // used elsewhere for corpus-wide checks) and not a curriculum-rank slice.
-    const curatedWords = new Set<string>();
-    for (const item of ASSEMBLY) {
-      if (item.id < 0) for (const lemma of item.v) curatedWords.add(lemma);
-    }
-    const beginner = wordsHistory([...curatedWords]);
+  test("every sentence tier's structural pool clears minReadable even for a learner who knows nothing", () => {
+    // Before SAK-87 round 5, this needed a "beginner" history claiming exactly
+    // the curated items' words. Now the pool is purely structural, so it must
+    // hold even for NOBODY.
     for (const tier of SENTENCE_ORDERING_TIERS) {
       assert.ok(
-        readableAssemblyForTier(tier, beginner).length >= tier.minReadable,
-        `${tier.id} still depends on vocabulary its own curated items don't use`,
+        readableAssemblyForTier(tier, NOBODY).length >= tier.minReadable,
+        `${tier.id}'s structural pool is smaller than its minReadable floor`,
       );
     }
   });
@@ -382,46 +382,42 @@ describe("EXACTLY ONE accepted order", () => {
   });
 });
 
-describe("the known-words gate never serves an unknown word", () => {
-  test("a learner who knows nothing is served nothing", () => {
-    assert.equal(readableAssembly(NOBODY).length, 0);
-    assert.equal(pickAssembly(NOBODY, seeded(1)), null);
+describe("SAK-87 round 5: selection no longer gates on known words", () => {
+  // The old gate excluded any item with an unknown content word. It is gone:
+  // the assembly screen shows a definition for any unknown piece instead
+  // (round 4), so a sentence no longer needs to be already-readable to be
+  // useful practice.
+
+  test("a learner who knows nothing is still served the full corpus", () => {
+    assert.equal(readableAssembly(NOBODY).length, ASSEMBLY.length);
+    assert.ok(pickAssembly(NOBODY, seeded(1)) !== null);
   });
 
-  test("every served item's words are ALL in the known set", () => {
-    // A concrete mid-beginner: claims on the first 1,500 words by beginnerRank.
+  test("the pool is identical for a learner who knows nothing and one who knows everything", () => {
+    const nobody = readableAssembly(NOBODY).map((it) => it.id);
+    const everybody = readableAssembly(OMNISCIENT).map((it) => it.id);
+    assert.deepEqual(nobody, everybody);
+  });
+
+  test("pickAssembly can return an item with a word the learner has not claimed", () => {
+    // Concrete regression for the round-5 change: a mid-beginner (claims on
+    // the first 1,500 words by beginnerRank) can still be served an item
+    // whose content lemmas are not all in that claimed set.
     const knownKebs = new Set<string>();
     for (const w of VOCAB) if (w.beginnerRank <= 1500) knownKebs.add(w.keb);
     const claims: Record<string, number> = {};
     for (const keb of knownKebs) claims[wordMeaningFactId(keb)] = 1_700_000_000_000;
     const history: HistoryFile = { sessions: [], facts: {}, claims };
 
-    // Independent membership check, re-derived from raw vocab (NOT via the same
-    // lemmaKnown the gate uses): a lemma is known iff some vocab row spelled that
-    // way has a claimed keb, or it is a stock name.
     const isKnownLemma = (lemma: string): boolean =>
-      STOCK_NAMES.has(lemma) ||
       VOCAB.some((w) => (w.keb === lemma || w.reb === lemma) && knownKebs.has(w.keb));
 
-    const served = readableAssembly(history);
-    assert.ok(served.length > 0, "a mid-beginner should be able to read some items");
-    assert.ok(served.length < ASSEMBLY.length, "the gate must actually exclude items");
-    for (const it of served) {
-      for (const lemma of it.v) {
-        assert.ok(isKnownLemma(lemma), `item ${it.id} served with unknown word ${lemma}`);
-      }
-    }
-    // And the gate genuinely blocks: at least one full-corpus item is unreadable.
+    const pool = readableAssembly(history);
+    assert.equal(pool.length, ASSEMBLY.length, "the pool must not shrink for this history");
     assert.ok(
-      ASSEMBLY.some((it) => !assemblyReadable(it, history)),
-      "the gate should exclude at least one item for a mid-beginner",
+      pool.some((it) => it.v.some((lemma) => !isKnownLemma(lemma))),
+      "at least one served item should carry a word this mid-beginner has not claimed",
     );
-  });
-
-  test("pickAssembly returns a readable item", () => {
-    const item = pickAssembly(OMNISCIENT, seeded(42)) as AssemblyItem;
-    assert.ok(item);
-    assert.ok(assemblyReadable(item, OMNISCIENT));
   });
 });
 

@@ -5,9 +5,21 @@ import {
   assemblyMismatchMessage,
   chunkRoleLabels,
   findAssemblyMismatch,
+  pieceGloss,
   pieceLabel,
 } from "./assembly-check.ts";
 import type { AssemblyItem } from "../data/assembly.ts";
+import { vocabRow, vocabRowsBySpelling, wordMeaningFactId } from "../data/vocab.ts";
+import type { HistoryFile } from "../types/index.ts";
+
+const NOBODY: HistoryFile = { sessions: [], facts: {} };
+
+/** A learner who has claimed 水's meaning, knows that one word, nothing else. */
+const KNOWS_WATER: HistoryFile = {
+  sessions: [],
+  facts: {},
+  claims: { [wordMeaningFactId("水")]: 1_700_000_000_000 },
+};
 
 /** A "simple" (topic → core → ending) item — the same shape id -1 has in the
  * curated corpus (src/data/assembly.ts). */
@@ -137,5 +149,42 @@ describe("pieceLabel (SAK-50 changes-requested pass)", () => {
 
   test("a piece that is punctuation only reduces to empty, not undefined", () => {
     assert.equal(pieceLabel("。"), "");
+  });
+});
+
+describe("pieceGloss (SAK-87)", () => {
+  test("null for a bare particle piece (h is null), even for a learner who knows nothing", () => {
+    assert.equal(pieceGloss(null, NOBODY), null);
+  });
+
+  test("returns the word's glosses when the headword is not yet known", () => {
+    const row = vocabRow("水");
+    assert.ok(row, "fixture assumes 水 is in the vocabulary");
+    assert.equal(pieceGloss("水", NOBODY), row.glosses.join(", "));
+  });
+
+  test("null once the headword IS known, nothing to add for met vocabulary", () => {
+    assert.equal(pieceGloss("水", KNOWS_WATER), null);
+  });
+
+  test("a different unknown word is unaffected by KNOWS_WATER's claim", () => {
+    const row = vocabRow("本");
+    assert.ok(row, "fixture assumes 本 is in the vocabulary");
+    assert.equal(pieceGloss("本", KNOWS_WATER), row.glosses.join(", "));
+  });
+
+  test("null for a lemma the vocabulary doesn't contain at all", () => {
+    assert.equal(pieceGloss("асдф", NOBODY), null);
+  });
+
+  test("resolves a reb-only spelling the same dual-spelling way lemmaKnown does", () => {
+    // Tatoeba's tokeniser emits みる, not 見る's keb: the exact case
+    // src/lib/grammar/readable.ts documents as the reason lemmaKnown matches
+    // on keb OR reb. pieceGloss must resolve through reb the same way, not
+    // just by keb (vocabRow("みる") alone would find nothing).
+    assert.equal(vocabRow("みる"), undefined);
+    const candidates = vocabRowsBySpelling("みる");
+    assert.ok(candidates.length > 0, "fixture assumes みる resolves by reb");
+    assert.equal(pieceGloss("みる", NOBODY), candidates[0].glosses.join(", "));
   });
 });

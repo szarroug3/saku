@@ -52,22 +52,23 @@ export interface IndexTrack {
   readonly units: readonly IndexUnit[];
 }
 
-/** One potentially-readable sentence, reduced to its history gate and the
- * grammar facts its completed assembly session can credit. */
-export interface IndexSentenceGateItem {
-  /** Every inner list is ANY-of; all lists must have a known fact. */
-  readonly lemmaFacts: readonly (readonly FactId[])[];
-  readonly facts: readonly FactId[];
-}
-
-/** One sentence tier's complete history-dependent unlock structure. */
+/** One sentence tier's complete unlock structure. `poolSize`/`facts` come from
+ * `readableAssemblyForTier`, which is a purely structural filter (piece count,
+ * unambiguous tier, the conditional-tier English guard) since SAK-87 dropped
+ * its per-learner known-words check: the assembly screen shows a definition
+ * for any unknown piece instead of hiding the sentence. So the pool is the
+ * same for every history, and only `grammarPrereqFacts` stays history-
+ * dependent. */
 export interface IndexSentenceGate {
   readonly tierId: string;
   readonly entry: EntryId;
   readonly minReadable: number;
   /** ANY one must be known; empty means no grammar prerequisite. */
   readonly grammarPrereqFacts: readonly FactId[];
-  readonly readableItems: readonly IndexSentenceGateItem[];
+  /** How many assembly items this tier's structural filter admits. */
+  readonly poolSize: number;
+  /** Every fact those items can credit, deduped. */
+  readonly facts: readonly FactId[];
 }
 
 /** The whole precomputed index. */

@@ -16,13 +16,13 @@
 //      `single_order` in the ingest script. 596 of 8,547 survive; the small
 //      honest set is the point.
 //
-// The known-words gate (`pickAssembly`) is applied at RUNTIME, per learner,
-// exactly like the selection corpus's readability gate: an item is offered only
-// when every content lemma in it is a word the learner knows.
+// Selection no longer gates on a per-learner known-words check (SAK-87 round 5
+// dropped it): an item is offered whenever its structural filters pass, and the
+// assembly screen shows a tap-to-reveal definition for any unknown piece
+// instead of hiding the sentence.
 
 import assemblyJson from "./generated/assembly-corpus.json" with { type: "json" };
 import { patternMeaningFactId } from "./grammar/index.ts";
-import { lemmaKnown } from "../lib/grammar/readable.ts";
 import { factInfo } from "../lib/facts.ts";
 import type { Rng } from "../lib/grammar/vehicles.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
@@ -45,7 +45,8 @@ export interface AssemblyItem {
   readonly jp: string;
   /** The pieces IN CANONICAL ORDER. The one accepted order is this sequence. */
   readonly pieces: readonly AssemblyPiece[];
-  /** Content lemmas, for the known-words gate. */
+  /** Content lemmas. No longer used to gate selection (SAK-87 round 5); kept
+   * as sentence metadata for attribution/reporting. */
   readonly v: readonly string[];
   /** The grammar patterns this sentence matched — the facts a correct assembly
    * credits. See `assemblyFacts`. */
@@ -60,12 +61,13 @@ export interface AssemblyItem {
  * The first three rows for each tier are natural, imitable sentences a learner
  * can safely copy (Sam sign-off 2026-08-19, SAK-45). They no longer have to
  * stay within an already-known/first-N vocabulary set — concrete, genuinely
- * beginner-simple words are fine even if the learner hasn't met them yet; the
- * per-learner known-words gate (`assemblyReadable`) still decides at runtime
- * whether any one learner can read a given item. Grammaticalized helpers such
- * as ください, くれる and ならない are supplied by the tier's grammar lesson,
- * so they are intentionally not `v` vocabulary prerequisites. The generated
- * corpus still supplies variety as the learner's vocabulary grows. */
+ * beginner-simple words are fine even if the learner hasn't met them yet.
+ * Selection no longer gates on vocabulary at all (SAK-87 round 5): the
+ * assembly screen shows a definition for any unknown piece instead. Every
+ * item is offered as soon as its structural filters pass. Grammaticalized
+ * helpers such as ください, くれる and ならない are supplied by the tier's
+ * grammar lesson, so they are intentionally not `v` vocabulary prerequisites.
+ * The generated corpus still supplies variety alongside the curated set. */
 const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
   // Simple sentences. Content approved by Sam 2026-08-19 (SAK-45), replacing
   // the earlier template-generated set — see the ticket for the full table.
@@ -653,8 +655,9 @@ export function assemblyFacts(item: AssemblyItem): FactId[] {
 }
 
 /**
- * Every distinct fact represented by assembly items the learner can currently
- * read. Used to gate and label sentence-ordering drills started from Learn.
+ * Every distinct fact represented by the current assembly pool. Used to gate
+ * and label sentence-ordering drills started from Learn. `history` is kept
+ * for call-site compatibility (see `readableAssembly`).
  */
 export function readableAssemblyFacts(history: HistoryFile): FactId[] {
   const out = new Set<FactId>();
@@ -665,17 +668,21 @@ export function readableAssemblyFacts(history: HistoryFile): FactId[] {
 }
 
 /**
- * Can the learner read this item — every content lemma known?
+ * Every assembly item currently offered for sentence-ordering practice.
+ *
+ * Used to gate on a per-learner known-vocabulary check (SAK-87): a sentence
+ * with an unknown content word was excluded outright. That gate is gone now
+ * that the assembly screen shows a tap-to-reveal definition for any unknown
+ * piece (SAK-87 round 4). The learner no longer needs to already know a
+ * word to usefully practice the sentence it's in. `history` is accepted for
+ * call-site compatibility with the rest of the sentence-ordering pipeline
+ * (tier unlock still depends on it, just not this pool) but is otherwise
+ * unused here; every structural filter (piece count, tier match, the
+ * conditional-tier English guard) still applies further down the pipeline in
+ * `readableAssemblyForTier`.
  */
-export function assemblyReadable(item: AssemblyItem, history: HistoryFile): boolean {
-  return item.v.every((lemma) => lemmaKnown(lemma, history));
-}
-
-/**
- * Every assembly item the learner can read right now.
- */
-export function readableAssembly(history: HistoryFile): readonly AssemblyItem[] {
-  return ASSEMBLY.filter((it) => assemblyReadable(it, history));
+export function readableAssembly(_history: HistoryFile): readonly AssemblyItem[] {
+  return ASSEMBLY;
 }
 
 /**
@@ -697,9 +704,11 @@ export interface AssemblyTier {
    * list, provided no later-tier pattern also appears (see
    * `readableAssemblyForTier`). */
   readonly patterns: readonly string[];
-  /** Minimum number of readable sentences required for the tier to unlock.
-   * Below this, the learner cannot do a meaningful drill, so the tier is
-   * skipped rather than shown as locked. */
+  /** Minimum number of sentences the tier's structural pool must contain to
+   * unlock (see `readableAssemblyForTier`). Below this, the learner cannot do
+   * a meaningful drill, so the tier is skipped rather than shown as locked.
+   * Tiers are curated with plenty of items, so this is a sanity floor, not
+   * the usual binding constraint. */
   readonly minReadable: number;
   /**
    * Grammar pattern IDs that must have been taught in the grammar track before
@@ -716,10 +725,11 @@ export interface AssemblyTier {
 /**
  * The ordered sentence-structure tiers the sentence-ordering track teaches.
  *
- * Each tier needs enough vocabulary to read its sentences; the planner also
- * applies the `grammarPrereqs` ANY-of gate below. The tiers are ordered from
- * structurally simplest to most complex, so the learner always encounters
- * simple particle-marked SOV sentences first. Every tier after that
+ * Each tier needs enough sentences in its structural pool to clear
+ * `minReadable`; the planner also applies the `grammarPrereqs` ANY-of gate
+ * below. The tiers are ordered from structurally simplest to most complex,
+ * so the learner always encounters simple particle-marked SOV sentences
+ * first. Every tier after that
  * follows the first point at which one of its prerequisite patterns appears in
  * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): sequence, requests,
  * contrast/negative linking, desire, conditionals, cause, giving/receiving,
@@ -818,12 +828,12 @@ export function sentenceOrderingTierForItem(item: AssemblyItem): string | null {
 }
 
 /**
- * Readable assembly items that belong to this tier.
+ * Assembly items offered for this tier.
  *
  * A sentence belongs to a tier when:
- *   1. It is readable (all content lemmas known).
- *   2. It has ≤4 pieces — short enough for a clear drag exercise.
- *   3. It maps unambiguously to this one tier.
+ *   1. It has ≤4 pieces (short enough for a clear drag exercise).
+ *   2. It maps unambiguously to this one tier.
+ * No vocabulary check applies (SAK-87 round 5); see `readableAssembly`.
  */
 export function readableAssemblyForTier(
   tier: AssemblyTier,
@@ -841,7 +851,7 @@ export function readableAssemblyForTier(
   );
 }
 
-/** Readable exercises from exactly the sentence-ordering tiers requested. */
+/** Exercises from exactly the sentence-ordering tiers requested. */
 export function readableAssemblyForTiers(
   tierIds: readonly string[],
   history: HistoryFile,
@@ -860,7 +870,7 @@ export function readableAssemblyForTiers(
   return out;
 }
 
-/** Roll one readable exercise from the requested learned/taught tiers. */
+/** Roll one exercise from the requested learned/taught tiers. */
 export function pickAssemblyForTiers(
   history: HistoryFile,
   tierIds: readonly string[],
@@ -872,9 +882,9 @@ export function pickAssemblyForTiers(
 }
 
 /**
- * Every distinct grammar fact represented by the readable sentences in this
- * tier. Passed to the session so the drill can credit assembly answers against
- * the correct fact IDs.
+ * Every distinct grammar fact represented by this tier's assembly pool.
+ * Passed to the session so the drill can credit assembly answers against the
+ * correct fact IDs.
  */
 export function tierAssemblyFacts(
   tier: AssemblyTier,
@@ -888,9 +898,8 @@ export function tierAssemblyFacts(
 }
 
 /**
- * Roll one readable assembly item, or null when the learner can read none yet
- * — the ordinary early answer, exactly like the selection corpus. `rng` is
- * injectable for tests.
+ * Roll one assembly item, or null when the pool is empty (the ordinary early
+ * answer, exactly like the selection corpus). `rng` is injectable for tests.
  */
 export function pickAssembly(
   history: HistoryFile,
