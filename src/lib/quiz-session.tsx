@@ -102,6 +102,7 @@ import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
   effectiveRoundTarget,
   initialSessionPhase,
+  isTaughtSession,
   mergeStats,
   recoveredAfterLeg,
   restMinutes,
@@ -1422,6 +1423,20 @@ export function QuizSessionProvider({
       session.phase === "resting" || session.phase === "complete"
         ? session
         : closeRound(session, now);
+    // A TAUGHT session's End session is a completion, not a discard — the
+    // learner sat through the lesson, so stopping early still means the
+    // material was covered. Mark the whole lesson known, the same
+    // sessionKnownClaimTarget narrowing finishSession's "I already know
+    // these" uses: anything actually quizzed keeps its real recorded result
+    // (it's excluded because it's already in totalStats), anything the quiz
+    // never reached gets claimed. Untaught ("Quiz me") sessions are left
+    // alone here — SAK-52's explicit I-already-know-these/take-me-to-the-
+    // lesson choice on SessionComplete's Path B is what claims those, not
+    // ending the session.
+    if (isTaughtSession(banked)) {
+      const target = sessionKnownClaimTarget(banked);
+      if (target.length) void postClaim(target, true);
+    }
     setSession({ ...banked, phase: "complete", restUntil: null });
     setActive(null);
     setProgress(null);
