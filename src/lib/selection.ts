@@ -31,6 +31,8 @@ import {
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import { standingOf } from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
+import { effectiveState } from "@/lib/claims";
+import { status } from "@/lib/scoring";
 import type {
   FactId,
   FactBand,
@@ -41,8 +43,10 @@ import type {
 
 // `emptySelection` lives in the DATA-FREE src/lib/selection-empty.ts so the
 // always-mounted QuizConfigProvider can seed a config without importing this
-// module's fact registry. Re-exported so this module's consumers are unchanged.
-export { emptySelection } from "@/lib/selection-empty";
+// module's fact registry. Re-exported so this module's consumers are unchanged,
+// and imported by name too so this module's own functions (dueFacts) can call it.
+import { emptySelection } from "@/lib/selection-empty";
+export { emptySelection };
 
 /** True when the query narrows nothing — used to say "Everything" rather than
  * printing a filter list that is empty. */
@@ -370,9 +374,49 @@ export function countOf(
   sel: Selection,
   history: HistoryFile,
   lists: SavedList[] = [],
-  
+
 ): number {
   return resolve(sel, history, lists).length;
+}
+
+// ---------- due for review ----------
+
+/**
+ * The facts it is time to review right now — the SRS sense of "due", computed
+ * live rather than stored. This app deliberately keeps no due DATE on a fact
+ * (see scoring.ts's header: "a due date is banned in this app"); what it keeps
+ * instead is (stability, lastTested), and `status()` turns that plus `now` into
+ * an action. "Due" is exactly the middle one: `probe` — the model is neither
+ * confident you know it (`quiet`) nor confident you've lost it (`teach`, which
+ * is re-TAUGHT, not re-tested) — so it wants to test you, right now, on this.
+ *
+ * This is the SAME split budget.ts's `planSession` and library/slice.ts's
+ * `drillPlan` already read off `status()` to decide what a session or a Library
+ * drill asks first; nothing here re-derives the model. It differs from them
+ * only in scope — no length cap, no teach top-up, no ranking — because a
+ * one-click "what's due" button hands the whole due set straight to the quiz,
+ * the same way resolve() hands its whole named pool to Start.
+ *
+ * The base pool is `resolve(emptySelection(), …)` — the exact "Everything I
+ * know" scope the Practice query builder's Scope buttons already produce — so
+ * this is precisely what a learner would get by picking Everything and (were
+ * it offered) a "Due" status, not a second definition of the known pool.
+ */
+export function dueFacts(
+  history: HistoryFile,
+  lists: SavedList[] = [],
+  now = Date.now(),
+  graduateRuns = 10,
+): FactId[] {
+  const pool = resolve(emptySelection(), history, lists, 0, { now, graduateRuns });
+  return pool.filter((f) => {
+    const state = effectiveState(
+      history.facts[f],
+      history.claims?.[f],
+      history.seen?.[f],
+    );
+    return status(state, now) === "probe";
+  });
 }
 
 // ---------- naming a selection ----------
