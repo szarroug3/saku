@@ -84,9 +84,14 @@ export function initialPicked(
  * Nothing picked is NOT "Retry …" — a disabled button with a bare ellipsis
  * for a count reads as a label that failed to load, not as "there is
  * nothing left to retry". Say the actual state instead. See SAK-21.
+ *
+ * It is also not "No retries left" — the button is disabled because nothing
+ * is picked yet, not because retries have run out, and "no retries left"
+ * reads as a limit that doesn't exist. The button just falls back to its
+ * bare, disabled name. See SAK-21 (Changes Requested).
  */
 export function retryButtonLabel(pickedCount: number): string {
-  return pickedCount ? `Retry ${pickedCount}` : "No retries left";
+  return pickedCount ? `Retry ${pickedCount}` : "Retry";
 }
 
 /**
