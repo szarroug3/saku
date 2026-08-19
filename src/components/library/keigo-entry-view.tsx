@@ -78,10 +78,18 @@ export function KeigoEntryView({
   entry,
   item,
   liveHeadline,
+  gateToReachable = false,
 }: {
   entry?: EntryId;
   item?: ContentItem;
   liveHeadline?: Headline;
+  /** SAK-30 correction: this view is reused as BOTH the standalone Library
+   * page (the "Related" link out to keigo-registers must always show) and
+   * inside the in-lesson teach walk (where the original SAK-30 gate still
+   * applies). Defaults to false ("show everything"); only the teach walk's
+   * call site (teach-item-view.tsx, via live-item-entry-views.tsx) passes
+   * true. */
+  gateToReachable?: boolean;
 }) {
   const fetched = useContentEntry<KeigoPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
@@ -97,7 +105,7 @@ export function KeigoEntryView({
   // any keigo set at all, the same low bar TRACK_CONCEPT already applies to
   // kana/katakana; "keigo-registers" now shares that map.
   const relatedLinks: RelatedLink[] =
-    registers && conceptReachable("keigo-registers", history)
+    registers && (!gateToReachable || conceptReachable("keigo-registers", history))
       ? [{ label: entryName(registers), href: entryHref(grammarConceptEntry(registers.id)) }]
       : [];
 
