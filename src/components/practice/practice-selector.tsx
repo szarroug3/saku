@@ -66,9 +66,20 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 /** A minor sub-group heading inside the de-boxed selector — one grain finer than
  * the page's <Lbl>. The scope/status/date/kind groups separate by this label and
  * whitespace now, not by boxes or divider rules. */
-function SubLbl({ children }: { children: ReactNode }) {
+function SubLbl({
+  children,
+  className = "mb-2",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text">
+    <p
+      className={cx(
+        className,
+        "text-[11px] font-semibold uppercase tracking-[0.12em] text-text",
+      )}
+    >
       {children}
     </p>
   );
@@ -84,8 +95,8 @@ const SCOPES: ReadonlyArray<{ id: PracticeScope; label: string }> = [
 
 const STATUSES: ReadonlyArray<{ id: FactBand; label: string }> = [
   { id: "solid", label: "Solid" },
-  { id: "shaky", label: "Shaky" },
   { id: "getting-there", label: "Getting there" },
+  { id: "shaky", label: "Shaky" },
   { id: "mixup", label: "Mix-ups" },
   { id: "slipping", label: "Slipping" },
 ];
@@ -490,30 +501,40 @@ export function PracticeSelector({
       </div>
 
       <div className="mt-6">
-        <SubLbl>Status</SubLbl>
+        <div className="mb-2 flex items-center gap-0.5">
+          <SubLbl className="mb-0">Status</SubLbl>
+          <Info>
+            <dl className="space-y-1.5">
+              {STATUSES.map(({ id, label }) => (
+                <div key={id}>
+                  <dt className="font-semibold">{label}</dt>
+                  <dd>{STATUS_INFO[id]}</dd>
+                </div>
+              ))}
+            </dl>
+          </Info>
+        </div>
         <div className="flex flex-wrap gap-2">
           {STATUSES.map(({ id, label }) => (
-            <span key={id} className="inline-flex items-center gap-0.5">
-              <StatusChip
-                label={label}
-                count={statusCounts.get(id) ?? 0}
-                on={sel.states.includes(id)}
-                onClick={() => {
-                  const next: Selection = {
-                    ...sel,
-                    states: sel.states.includes(id)
-                      ? sel.states.filter((state) => state !== id)
-                      : [...sel.states, id],
-                  };
-                  onChange(
-                    scope === "everything"
-                      ? pruneEmptyTypes(next, presentTypesIn(next))
-                      : next,
-                  );
-                }}
-              />
-              <Info>{STATUS_INFO[id]}</Info>
-            </span>
+            <StatusChip
+              key={id}
+              label={label}
+              count={statusCounts.get(id) ?? 0}
+              on={sel.states.includes(id)}
+              onClick={() => {
+                const next: Selection = {
+                  ...sel,
+                  states: sel.states.includes(id)
+                    ? sel.states.filter((state) => state !== id)
+                    : [...sel.states, id],
+                };
+                onChange(
+                  scope === "everything"
+                    ? pruneEmptyTypes(next, presentTypesIn(next))
+                    : next,
+                );
+              }}
+            />
           ))}
         </div>
         <p className="mt-2 text-[12px] text-text-muted">
