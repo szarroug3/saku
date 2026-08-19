@@ -982,6 +982,10 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       lead: "The endings often shift in familiar ways.",
       text: "Most pairs share a kanji and swap only the kana on the end. The usual shifts are まる→める, る→す, and く→ける. Naming the shift helps you remember a pair, but it never tells you which verb is which, and some pairs follow no rule at all.",
     },
+    {
+      lead: "The sentence itself can hint at which one it is.",
+      text: "が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on — plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
+    },
   ],
   examples: [
     { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "まる → める (The class started. → I started the class.)" },
