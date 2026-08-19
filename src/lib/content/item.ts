@@ -70,6 +70,15 @@ export type ContentKind =
 interface BaseContentItem {
   readonly entry: EntryId;
   readonly glyph: string;
+  /** A tile shows this instead of `glyph` when the item has no natural
+   * single-glyph label of its own — the sentence-ordering tiers, whose
+   * `glyph` is an English phrase ("Simple sentences") that would overflow
+   * the glyph slot every other track's tile fits a real character into
+   * (SAK-11). 1-based position within the item's own ordered list (a tier's
+   * index in SENTENCE_ORDERING_TIERS); the tile renders it as a small
+   * numbered badge (①②③…) and falls back to `glyph` in the caption instead.
+   * Undefined for every kind whose glyph already fits. */
+  readonly badgeNumber?: number;
   readonly facts: readonly Fact[];
   readonly roles: readonly RoleName[];
   /** TEACHING prerequisites — the items this one is built on (its edges in the

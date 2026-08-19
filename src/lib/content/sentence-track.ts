@@ -56,14 +56,18 @@ function tierExample(tier: AssemblyTier): string {
 }
 
 /** Each sentence-ordering tier as a ContentItem. Its fact is the tier's own
- * marker (its distinct progress), its glyph the tier's learner-facing label. */
+ * marker (its distinct progress), its glyph the tier's learner-facing label.
+ * `badgeNumber` is the tier's 1-based position in SENTENCE_ORDERING_TIERS — the
+ * tile shows it as a compact numbered badge in place of `glyph`, which is
+ * English and would overflow the glyph slot (SAK-11). */
 export function sentenceItems(): ContentItem[] {
-  return SENTENCE_ORDERING_TIERS.map((tier) => {
+  return SENTENCE_ORDERING_TIERS.map((tier, index) => {
     const marker = sentenceTierMarkerFact(tier.id);
     return {
       entry: sentenceTierEntry(tier.id),
       kind: "sentence-ordering",
       glyph: tier.label,
+      badgeNumber: index + 1,
       facts: [{ id: marker, kind: jp2enResponse(marker) }],
       roles: [],
       prereqs: [],
