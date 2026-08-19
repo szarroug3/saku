@@ -152,7 +152,7 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             ) : null}
             {intro.sentenceExample ? (
               <div>
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
                   In a sentence
                 </p>
                 <SentenceExampleView example={intro.sentenceExample} />
