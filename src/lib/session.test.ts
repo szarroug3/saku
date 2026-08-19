@@ -514,10 +514,12 @@ describe("initialSessionPhase — where a fresh session begins (SAK-52 regressio
     assert.equal(initialSessionPhase([a, b]), "teaching");
   });
 
-  test("a sentence Quiz-me (marker-only teach) still begins in teaching", () => {
-    // startSentence's Quiz-me shape puts the tier marker alone in `teach` —
-    // never empty — so it already reached /session via the taught branch
-    // before this fix, and must keep doing so.
+  test("a marker-only teach set still begins in teaching (general contract)", () => {
+    // Not what startSentence's Quiz-me produces anymore (SAK-85 fixed it to
+    // leave `teach` empty on Quiz-me, same as every other track) — this just
+    // pins that ANY non-empty teach set, marker-only or not, still routes to
+    // "teaching". See the SAK-85 regression test below for the actual
+    // startSentence Quiz-me shape.
     const marker = f("grammar:sentence-ordering-tier/simple");
     assert.equal(initialSessionPhase([marker]), "teaching");
   });
@@ -530,5 +532,30 @@ describe("initialSessionPhase — where a fresh session begins (SAK-52 regressio
     // first leg yet.
     assert.equal(initialSessionPhase([]), "starting");
     assert.notEqual(initialSessionPhase([]), "drilling");
+  });
+});
+
+// SAK-85 REGRESSION: "Quiz me" on the Sentences track opened the lesson
+// instead of the quiz. Cause: startSentence put the tier marker fact in
+// `teach` even on Quiz-me (so it would get recorded), and initialSessionPhase
+// treats ANY non-empty `teach` as "begin teaching" — so the marker being
+// there, alone, was enough to always route into the lesson. The fix moved
+// the marker's recording to markSeen/newlySeen (the same mechanism
+// startTrack's own Quiz-me branch already used), the same way startTrack
+// leaves `teach` empty for its Quiz-me. This pins the shape startSentence now
+// hands startSession on Quiz-me.
+describe("initialSessionPhase — sentence track Quiz-me (SAK-85 regression)", () => {
+  test("startSentence's Quiz-me teach set (empty, marker recorded elsewhere) begins in starting, not teaching", () => {
+    // The exact shape startSentence now passes on Quiz-me: `teach: []`, with
+    // the marker fact recorded via markSeen instead of riding in `teach`.
+    assert.equal(initialSessionPhase([]), "starting");
+    assert.notEqual(initialSessionPhase([]), "teaching");
+  });
+
+  test("startSentence's Start (teach=true) still begins in teaching, unaffected by the fix", () => {
+    // A normal Start hands drillFacts (never including the marker) as
+    // `teach`, unchanged by SAK-85.
+    const drillFacts = ["s1", "s2", "s3"].map(f);
+    assert.equal(initialSessionPhase(drillFacts), "teaching");
   });
 });

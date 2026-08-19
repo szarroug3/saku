@@ -214,11 +214,12 @@ export type SessionOrigin = "lesson" | "library";
  * from the end-of-quiz choice instead.
  *
  * `teach` when it is non-empty: a normal lesson's taught set (== `facts` for
- * every non-sentence track — see home-feed's startTrack), or a sentence
- * Quiz-me's marker-only teach set (see startSentence, which puts the tier
- * marker in `teach` even on Quiz-me "so it would otherwise never be
- * claimed"). Only a Quiz-me-only run on a non-sentence track ever leaves
- * `teach` empty (startTrack marks seen instead of teaching), and for that one
+ * every non-sentence track — see home-feed's startTrack — or `drillFacts` for
+ * a taught sentence-ordering start — see startSentence). A Quiz-me start,
+ * sentence track included, always leaves `teach` empty (SAK-85: a non-empty
+ * `teach` would flip initialSessionPhase into "teaching", reopening the
+ * lesson instead of the quiz) — both startTrack and startSentence mark their
+ * material seen directly instead, via markSeen/newlySeen. For that empty-teach
  * case the whole quizzed set (`facts`) is the closest equivalent to what its
  * Learn card's own "I already know this" would claim.
  */
