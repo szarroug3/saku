@@ -58,11 +58,11 @@ import {
   grammarSelectionFor,
   checkTyped,
   confusedWith,
+  effectiveRetries,
   firstTryCredit,
   grammarVehicleFor,
   questionsFor,
   requeueGap,
-  retriesAllowed,
   revealFor,
   variantPromptFor,
   wordReadingCredit,
@@ -284,6 +284,20 @@ function showingOf(q: DrillQuestion): ShowingPresentation {
     mode: q.mc || q.recognition || q.particleDrill || q.particleMarker ? "mc" : "typed",
     listen: q.listen,
   };
+}
+
+/** How many buttons this showing's option board has — `mc`, `recognition` and
+ * `particleMarker` are the three board shapes (see DrillQuestion), always
+ * mutually exclusive on one showing. null for a typed card and for
+ * `particleDrill` (a tap-the-sentence board, not an option grid): neither has
+ * a retry-pip/second-guess mechanic this count is meant to gate. Fed to
+ * `effectiveRetries` (lib/engine) to scope the SAK-54 binary-board retry
+ * skip to exactly this showing's board, not the run's cfg. */
+function mcOptionCount(q: DrillQuestion): number | null {
+  if (q.mc) return q.mc.length;
+  if (q.recognition) return q.recognition.options.length;
+  if (q.particleMarker) return q.particleMarker.options.length;
+  return null;
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
@@ -1072,7 +1086,13 @@ export function DrillScreen() {
         }
       }
       q.tries++;
-      const left = retriesAllowed(cfg) - q.tries;
+      // A binary (2-option) board skips retries outright — see
+      // effectiveRetries in lib/engine — so a wrong first guess always falls
+      // to the out-of-retries branch below, whatever cfg.retries says. Every
+      // other board shape (typed, 3+ option MC, particle drill) is
+      // unaffected: `left` still reads the live configured retries exactly
+      // as before.
+      const left = effectiveRetries(cfg, mcOptionCount(q)) - q.tries;
       if (left > 0) {
         // Red pulse + one fewer pip says "wrong, go again" without a sentence.
         // A timeout needs no words either: the ring visibly ran out.
@@ -1783,10 +1803,12 @@ export function DrillScreen() {
   const hintTag = cfg.scriptLabel ? (prompt.hint ?? "") : "";
 
   // Retries: pips are the only representation. Unlimited shows an ∞ instead,
-  // and "none" has nothing to say, so it says nothing.
-  const allowed = retriesAllowed(cfg);
+  // and "none" has nothing to say, so it says nothing. A binary board reads
+  // as "none" here too (effectiveRetries returns 0), so the pips never
+  // promise a second guess this board isn't going to give.
+  const allowed = effectiveRetries(cfg, mcOptionCount(q));
   const retriesLeft = Math.max(0, allowed - q.tries);
-  const unlimited = cfg.retries === "unl";
+  const unlimited = allowed === Infinity;
   const showPips = cfg.showRetryPips && (unlimited || allowed > 0);
 
   // The ring: still, unless it has something to say. Draining only in the
@@ -2102,18 +2124,20 @@ export function DrillScreen() {
         </p>
 
         {q.particleDrill ? null : q.particleMarker ? (
-          // Same 3-column grid every other MC board uses, options built from
-          // the marker-choice board (recipe id + display pattern) rather than
-          // FactIds — see lib/engine/particle-drill.ts's header for why this
-          // is a bespoke board, not a run through the ordinary FactId-keyed
-          // distractor machinery.
-          <div className="grid w-[min(92vw,480px)] auto-rows-fr grid-cols-3 gap-2">
+          // Same 3-per-row option board every other MC board uses (see the
+          // long comment on the recognition/mc board below for why this is a
+          // wrapping FLEX row rather than a fixed CSS grid) — options built
+          // from the marker-choice board (recipe id + display pattern) rather
+          // than FactIds — see lib/engine/particle-drill.ts's header for why
+          // this is a bespoke board, not a run through the ordinary
+          // FactId-keyed distractor machinery.
+          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-2">
             {q.particleMarker.options.map((option, i) => (
               <button
                 key={option.recipeId}
                 onClick={() => submit(option.label, undefined, undefined, undefined, option.recipeId)}
                 className={cx(
-                  "flex h-full min-h-15 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
+                  "flex min-h-15 shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
                   revealing && option.recipeId === q.particleMarker?.recipeId
                     ? "border-success bg-success-bg text-success"
                     : "border-border bg-card text-text hover:bg-panel",
@@ -2164,22 +2188,42 @@ export function DrillScreen() {
             <span className="text-[11px] text-text-muted">{guide?.note}</span>
             </span>
           ) : (
-          // A UNIFORM 3-COLUMN GRID. Every option box is the same width (three
-          // equal 1fr tracks) and the same height (auto-rows-fr makes the rows
-          // equal, the buttons stretch to fill their cell), so a six-option
-          // keigo board is a clean 2×3 instead of a variable-width stack. Fewer
-          // options just fill fewer cells with the SAME box — a two-option
-          // verb-pair board is one row of two, not a padded 2×3 with holes.
-          // Long option text ("eat / drink (honorific)") wraps inside the fixed
-          // cell rather than widening it. Selection/answer states, the number
-          // labels and the click handlers are exactly as before.
-          <div className="grid w-[min(92vw,480px)] auto-rows-fr grid-cols-3 gap-2">
+          // A UNIFORM OPTION ROW, up to 3 per line. Every option box is the
+          // same fixed width (basis-[(100%-gaps)/3]) and wraps onto a new
+          // line past 3, so a six-option keigo board is a clean 2×3.
+          //
+          // This is a wrapping FLEX row, not a CSS grid — deliberately, and
+          // that is the SAK-54 fix. A `grid-cols-3` with `1fr` tracks always
+          // reserves all three column tracks regardless of how many cells are
+          // filled, so a 2-option board (real: transitivity pairs run
+          // maxOptions: 2) occupied columns 1–2 and left column 3 empty,
+          // reading as pinned to the left instead of centered under the
+          // prompt. `justify-content: center` cannot fix that in grid: it
+          // centers the TRACK SET, and the track set is still three columns
+          // wide whether or not the third one holds anything.
+          //
+          // Flex has no such reserved-but-empty third slot: each row only
+          // exists for as many items as actually flow into it, so
+          // `justify-center` centers the row that's really there — one row of
+          // two, a clean 2×3, or anything between. Fewer options just fill
+          // fewer boxes in a shorter, centered row — a two-option verb-pair
+          // board is one centered row of two, not a padded 2×3 with holes.
+          // `shrink-0 grow-0` keep every box the same size regardless of row
+          // fill (the old grid's "SAME box" guarantee); `basis-[...]` reserves
+          // the same three-per-row width the grid's `1fr` tracks gave.
+          // Height parity across a wrapped line comes for free — flex-wrap's
+          // default `align-items: stretch` sizes every item in a line to that
+          // line's tallest, the same job `auto-rows-fr` used to do. Long
+          // option text ("eat / drink (honorific)") still wraps inside the
+          // fixed box rather than widening it. Selection/answer states, the
+          // number labels and the click handlers are exactly as before.
+          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-2">
             {q.recognition?.options.map((option, i) => (
               <button
                 key={`${i}-${option}`}
                 onClick={() => submit(option, undefined, i)}
                 className={cx(
-                  "flex h-full min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-sm wrap-break-word hyphens-auto",
+                  "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-sm wrap-break-word hyphens-auto",
                   revealing && i === q.recognition?.correct
                     ? "border-success bg-success-bg text-success"
                     : "border-border bg-card text-text hover:bg-panel",
@@ -2194,7 +2238,7 @@ export function DrillScreen() {
                 key={opt}
                 onClick={() => submit(labelOf(opt, q.dir, ctx), opt)}
                 className={cx(
-                  "flex h-full min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
+                  "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
                   // The option you should have picked, lit alongside the reveal.
                   revealing && opt === q.f
                     ? "border-success bg-success-bg text-success"
