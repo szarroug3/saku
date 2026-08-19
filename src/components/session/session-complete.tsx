@@ -61,48 +61,42 @@
 // is already on RoundSummary — so the comparison has to agree on BOTH counts
 // before it can honestly call two rounds the same.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
+  boxKeysForFacts,
   factsFromPickedBoxes,
-  roundFormCounts,
-  roundFormsByOutcome,
-  WordTable,
+  missedBoxKeysForFacts,
   type BoxKey,
 } from "@/components/results/word-table";
-import { Btn, Card, Hint } from "@/components/ui";
-import { isTaughtSession, sameAsStarted, type StudySession } from "@/lib/session";
-import type { FactId } from "@/types";
+import { Board } from "@/components/results/triage-board";
+import { ResultsCard } from "@/components/results/results-card";
+import {
+  historyBefore,
+  runFactsFromSession,
+  subsetStats,
+  summarize,
+} from "@/components/results/summary";
+import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
+import { entryDisplayLabel } from "@/components/results/entry-display-label";
+import { isTaughtSession, type StudySession } from "@/lib/session";
+import { useHistory } from "@/lib/use-history";
+import type { EntryId, FactId } from "@/types";
 
-function story(session: StudySession): string {
-  const rounds = session.rounds;
-  if (!rounds.length) return "Nothing answered.";
-  const n = rounds.length;
-  const last = rounds[n - 1];
-  const first = rounds[0];
-  const many = `${n} round${n === 1 ? "" : "s"} of the same ${session.facts.length}.`;
-  if (n === 1) return `${many} You finished on ${last.correct} correct.`;
-  if (sameAsStarted(first, last)) {
-    return `${many} You finished on ${last.correct} correct, the same as you started.`;
-  }
-  if (last.correct === first.correct) {
-    // The tally matches but sameAsStarted said no — so `missed` differs: one
-    // round needed a retry to land the same count the other landed clean.
-    // Reusing "up/down from N correct" here would print a direction next to
-    // the SAME number twice ("up from 5" under "5 correct"), which reads as
-    // no change at all. Name the miss instead — the thing that actually
-    // moved.
-    const cleaner = last.missed < first.missed;
-    const note =
-      last.missed === 0
-        ? "clean this time, no retries needed"
-        : first.missed === 0
-          ? `took ${last.missed} ${last.missed === 1 ? "retry" : "retries"} to get there, none needed at the start`
-          : `${cleaner ? "fewer" : "more"} needed a retry (${last.missed}, vs ${first.missed} at the start)`;
-    return `${many} You finished on ${last.correct} correct — ${note}.`;
-  }
-  const dir = last.correct > first.correct ? "up" : "down";
-  return `${many} You finished on ${last.correct} correct, ${dir} from ${first.correct}.`;
+import { retryButtonLabel } from "./retry-grouping";
+
+/** The needs-work/solid/all box sets a board section needs, for one fact set
+ * against one stats object — the same split round-complete.tsx computes,
+ * shared here since session-complete needs it twice (Path A over
+ * `session.teach`, Path B over `session.facts`). */
+function boardBoxes(facts: FactId[], notAnswered: FactId[], stats: ReturnType<typeof subsetStats>) {
+  const allBoxes = new Set(boxKeysForFacts(facts, stats));
+  const needsWorkBoxes = new Set(missedBoxKeysForFacts(facts, stats));
+  const notAnsweredBoxes = new Set(boxKeysForFacts(notAnswered, stats));
+  const solidBoxes = new Set(
+    [...allBoxes].filter((b) => !needsWorkBoxes.has(b) && !notAnsweredBoxes.has(b)),
+  );
+  return { allBoxes, needsWorkBoxes, solidBoxes };
 }
 
 export function SessionComplete({
@@ -128,22 +122,35 @@ export function SessionComplete({
    * the lesson (or a re-quiz) is still where Learn offers it. */
   onGoToLesson: () => void;
 }) {
-  const last = session.rounds[session.rounds.length - 1];
-  const right = last?.correct ?? 0;
-  const rest = Math.max(0, (last?.total ?? 0) - right);
   const items = session.facts.length;
   const taught = isTaughtSession(session);
+  const { history } = useHistory();
+  const displayEntry = (entry: EntryId, fact: FactId): string =>
+    entryDisplayLabel(entry, fact, history);
+  const prior = useMemo(
+    () => historyBefore(history, session.startedAt),
+    [history, session.startedAt],
+  );
 
   // PATH A's picker state. Declared unconditionally — hooks can't be
-  // conditional — even though Path B never reads it. Starts EMPTY on purpose:
-  // unlike a retry's outstanding misses, quizzing again here is a deliberate
-  // pick every time, not a pre-ticked default, which is what the disabled
-  // "Select some items above to quiz" note below is for.
+  // conditional — even though Path B never reads it for its OWN buttons
+  // (its board is still the same selectable Board, just nothing downstream
+  // acts on the pick — see the render below). Starts EMPTY on purpose: unlike
+  // a retry's outstanding misses, quizzing again here is a deliberate pick
+  // every time, not a pre-ticked default, which is what the disabled "Select
+  // some items above to quiz" note below is for.
   const [picked, setPicked] = useState<Set<BoxKey>>(() => new Set());
   const toggle = (box: BoxKey) =>
     setPicked((prev) => {
       const next = new Set(prev);
       if (!next.delete(box)) next.add(box);
+      return next;
+    });
+  const setVisible = (boxes: Set<BoxKey>, on: boolean) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      for (const b of boxes) if (on) next.add(b);
+        else next.delete(b);
       return next;
     });
   // Statuses are read from `totalStats` (every round merged), not
@@ -152,121 +159,103 @@ export function SessionComplete({
   // quiz-session.tsx), so `totalStats` is the only place the whole session's
   // per-item outcome still lives.
   const pickedList = factsFromPickedBoxes(picked, session.teach);
-  const { solid, needsWork, totalForms } = roundFormCounts(
-    session.teach,
-    session.totalStats,
-  );
 
-  // PATH B's results, read-only. Same shape as a practice quiz's own results
-  // board (and RoundComplete's own breakdown) — form counts, then Needs work
-  // before Solid — just with no picker: Path B's two forward actions (I
-  // already know these / Take me to the lesson) act on the WHOLE batch, not a
-  // per-item selection, so the cells here are informational only.
-  const untaughtCounts = roundFormCounts(session.facts, session.totalStats);
-  const { solid: untaughtSolidList, needsWork: untaughtNeedsWorkList } =
-    roundFormsByOutcome(session.facts, session.totalStats);
-  const untaughtSolidBoxes = new Set(untaughtSolidList);
-  const untaughtNeedsWorkBoxes = new Set(untaughtNeedsWorkList);
-  const noSelection = () => false;
-  const noToggle = () => {};
+  // The SAME ring/headline/counts sentence and needs-work/solid board every
+  // results screen renders (results-card.tsx, triage-board.tsx, summary.ts) —
+  // Path A over `session.teach`, Path B over `session.facts` (its `teach` is
+  // empty). `subsetStats` pads to EVERY fact in that set, real entry or a
+  // zero stub — a lesson item the quiz never reached at all still belongs on
+  // the board, reading "not shown", not silently missing from it. `totalStats`
+  // can carry review material beyond this path's own set, which is exactly
+  // what this narrows away.
+  const pathFacts = taught ? session.teach : session.facts;
+  const stats = useMemo(
+    () => subsetStats(session.totalStats, pathFacts),
+    [session.totalStats, pathFacts],
+  );
+  const run = useMemo(() => runFactsFromSession(stats), [stats]);
+  const summary = useMemo(
+    () => summarize(run, stats, prior, []),
+    [run, stats, prior],
+  );
+  const { allBoxes, needsWorkBoxes, solidBoxes } = boardBoxes(
+    run.facts,
+    run.notAnswered,
+    stats,
+  );
 
   return (
     <>
-      <Card className="px-5 pb-[30px] pt-[38px] text-center">
-        <h1 className="text-[26px] font-light tracking-[-0.3px]">
+      <Card className="px-5 pb-[30px] pt-[38px]">
+        <h1 className="text-center text-[26px] font-light tracking-[-0.3px]">
           Session complete
         </h1>
-        <p className="mx-auto mt-1.5 max-w-[40ch] text-[13px] text-text-muted">
-          {story(session)}
-        </p>
 
-        {last ? (
-          <div className="mx-auto mb-2 mt-5 flex h-1.5 max-w-[280px] overflow-hidden rounded-full bg-panel">
-            {right > 0 ? (
-              <span className="block h-full bg-success" style={{ flex: right }} />
-            ) : null}
-            {rest > 0 ? (
-              <span className="block h-full bg-danger" style={{ flex: rest }} />
-            ) : null}
+        <div className="mt-5.5">
+          <ResultsCard
+            pct={run.pct}
+            headline={summary.headline}
+            detail={summary.detail}
+            counts={summary.counts}
+          />
+        </div>
+
+        {needsWorkBoxes.size ? (
+          <div className="mt-3.5 border-t border-border pt-3">
+            <Board
+              label="Needs work"
+              facts={run.facts}
+              stats={stats}
+              visibleBoxes={needsWorkBoxes}
+              selected={picked}
+              onToggle={toggle}
+              onSetVisible={setVisible}
+              displayEntry={displayEntry}
+            />
+          </div>
+        ) : null}
+        {solidBoxes.size ? (
+          <div className="mt-3.5 border-t border-border pt-3">
+            <Board
+              label="Solid"
+              facts={run.facts}
+              stats={stats}
+              visibleBoxes={solidBoxes}
+              solidTone
+              selected={picked}
+              onToggle={toggle}
+              onSetVisible={setVisible}
+              displayEntry={displayEntry}
+            />
           </div>
         ) : null}
 
         {taught ? (
-          <>
-            {/* `taught` already means `session.teach.length > 0` (that IS
-                isTaughtSession's definition), so this branch always has at
-                least one row to show. */}
-            <div className="mt-5.5 text-left">
-              <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-                {totalForms} form{totalForms === 1 ? "" : "s"} · {solid} solid
-                · {needsWork} needs work
-              </p>
-              <WordTable
-                facts={session.teach}
-                stats={session.totalStats}
-                isSelected={(box) => picked.has(box)}
-                onToggle={toggle}
-              />
-            </div>
-            <div className="mt-3.5 flex flex-col items-center gap-1.5">
-              <Btn
-                sel
-                autoFocus
-                disabled={!pickedList.length}
-                className="disabled:cursor-default disabled:opacity-45"
-                onClick={() => onQuizAgain(pickedList, [...picked])}
-              >
-                Quiz again
-              </Btn>
-              {pickedList.length ? null : (
-                <Hint>Select some items above to quiz.</Hint>
-              )}
-            </div>
-          </>
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            <SmallBtn
+              sel
+              autoFocus
+              disabled={!pickedList.length}
+              onClick={() => onQuizAgain(pickedList, [...picked])}
+            >
+              {retryButtonLabel(pickedList.length)}
+            </SmallBtn>
+            {!needsWorkBoxes.size ? (
+              <SmallBtn onClick={() => onQuizAgain(session.teach, [...allBoxes])}>
+                Retry all
+              </SmallBtn>
+            ) : null}
+            {pickedList.length ? null : (
+              <Hint>Select some items above to quiz.</Hint>
+            )}
+          </div>
         ) : (
           <>
-            <div className="mt-5.5 text-left">
-              <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-                {untaughtCounts.totalForms} asked · {untaughtCounts.solid}{" "}
-                solid · {untaughtCounts.needsWork} needs work
-              </p>
-              {untaughtNeedsWorkBoxes.size ? (
-                <div className="border-t border-border pt-3">
-                  <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-                    Needs work
-                  </p>
-                  <div className="mt-2">
-                    <WordTable
-                      facts={session.facts}
-                      stats={session.totalStats}
-                      showOnly={untaughtNeedsWorkBoxes}
-                      isSelected={noSelection}
-                      onToggle={noToggle}
-                    />
-                  </div>
-                </div>
-              ) : null}
-              {untaughtSolidBoxes.size ? (
-                <div className="mt-3.5 border-t border-border pt-3">
-                  <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-                    Solid
-                  </p>
-                  <WordTable
-                    facts={session.facts}
-                    stats={session.totalStats}
-                    showOnly={untaughtSolidBoxes}
-                    solidTone
-                    isSelected={noSelection}
-                    onToggle={noToggle}
-                  />
-                </div>
-              ) : null}
-            </div>
-            <p className="mx-auto mt-5.5 max-w-[36ch] text-[13px] text-text-muted">
+            <p className="mx-auto mt-3.5 max-w-[36ch] text-[13px] text-text-muted">
               Know {items === 1 ? "this" : "these"} already, or want the
               lesson?
             </p>
-            <div className="mt-2.5 flex flex-wrap justify-center gap-2">
+            <div className="mt-2.5 flex flex-wrap gap-2">
               <Btn onClick={onMarkKnown}>
                 I already know {items === 1 ? "this" : `these ${items}`}
               </Btn>

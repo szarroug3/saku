@@ -181,6 +181,23 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
   });
 });
 
+describe("summarize: nothing shown at all is not a 'perfect run'", () => {
+  const EMPTY_HISTORY: HistoryFile = { sessions: [], facts: {} };
+
+  it("does not fall through to a perfect-run headline over an empty board", () => {
+    // Reachable now that a taught session can end (SessionHud's End session)
+    // before its quiz phase ever starts — totalStats is completely empty,
+    // not just clean. `missed.length` and `totalMisses` are both trivially 0
+    // here, same as a genuinely perfect run; without an explicit empty guard
+    // the cascade falls all the way to "Your first perfect run" over a
+    // literal 0 shown · 0 correct · 0 incorrect · 0 not answered line.
+    const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats: {} });
+    const summary = summarize(run, {}, EMPTY_HISTORY, []);
+    assert.notEqual(summary.headline, "Perfect run");
+    assert.equal(summary.headline, "Nothing quizzed yet");
+  });
+});
+
 describe("not-answered facts are neither scored nor solid", () => {
   const EMPTY_HISTORY: HistoryFile = { sessions: [], facts: {} };
 

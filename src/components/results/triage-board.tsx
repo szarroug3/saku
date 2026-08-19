@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 
-import { Btn, PrimaryBtn } from "@/components/ui";
+import { SmallBtn } from "@/components/ui";
 import {
   boxKeysForFacts,
   factOfBoxKey,
@@ -22,7 +22,14 @@ import { entryDisplayLabel } from "@/components/results/entry-display-label";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId, SessionStats } from "@/types";
 
-function Board({
+/**
+ * One outcome's board: label, count, All/None selection, and the same
+ * WordTable every results screen uses for its cells. Exported so a screen
+ * that needs its own selection state and its own buttons (round-complete.tsx,
+ * session-complete.tsx) can render the identical board TriageSection does,
+ * without adopting TriageSection's own Redrill/Rerun action row.
+ */
+export function Board({
   label,
   facts,
   stats,
@@ -188,27 +195,21 @@ export function TriageSection({
       <div className="flex flex-wrap gap-2">
         {nothingToFix ? (
           <>
-            <PrimaryBtn className="flex-1" onClick={onRerun}>
-              Rerun full setup
-            </PrimaryBtn>
+            <SmallBtn sel onClick={onRerun}>
+              Retry all
+            </SmallBtn>
             {weakest.length ? (
-              <Btn className="flex-1" onClick={onDrillWeakest}>
+              <SmallBtn onClick={onDrillWeakest}>
                 Drill your weakest {weakest.length}
-              </Btn>
+              </SmallBtn>
             ) : null}
           </>
         ) : (
           <>
-            <PrimaryBtn
-              className="flex-1"
-              disabled={!n}
-              onClick={() => onRedrill(mergedFacts)}
-            >
-              Redrill {n} selected
-            </PrimaryBtn>
-            <Btn className="flex-1" onClick={onRerun}>
-              Rerun full setup
-            </Btn>
+            <SmallBtn sel disabled={!n} onClick={() => onRedrill(mergedFacts)}>
+              Retry {n} selected
+            </SmallBtn>
+            <SmallBtn onClick={onRerun}>Retry all</SmallBtn>
           </>
         )}
       </div>

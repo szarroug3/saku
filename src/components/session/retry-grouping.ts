@@ -81,8 +81,13 @@ export function initialPicked(
 /**
  * The Retry button's label, given how many boxes are currently picked.
  *
- * Nothing picked is NOT "Retry …" — a disabled button with a bare ellipsis
- * for a count reads as a label that failed to load, not as "there is
+ * "Retry N selected" — the same wording the practice Results page's own
+ * selection button uses (see triage-board.tsx), now shared by every results
+ * screen so picking-then-retrying reads as one mechanism everywhere it
+ * appears, not a different phrase per screen.
+ *
+ * Nothing picked is NOT "Retry … selected" — a disabled button with a bare
+ * ellipsis for a count reads as a label that failed to load, not as "there is
  * nothing left to retry". Say the actual state instead. See SAK-21.
  *
  * It is also not "No retries left" — the button is disabled because nothing
@@ -91,7 +96,7 @@ export function initialPicked(
  * bare, disabled name. See SAK-21 (Changes Requested).
  */
 export function retryButtonLabel(pickedCount: number): string {
-  return pickedCount ? `Retry ${pickedCount}` : "Retry";
+  return pickedCount ? `Retry ${pickedCount} selected` : "Retry";
 }
 
 /**

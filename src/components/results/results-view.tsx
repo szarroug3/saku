@@ -15,18 +15,17 @@
 
 import { useMemo, useState } from "react";
 
-import { AccuracyRing } from "@/components/home/accuracy-ring";
 import { FactProgressSection } from "@/components/results/fact-progress";
 import { PatternSection } from "@/components/results/pattern-rows";
+import { ResultsCard } from "@/components/results/results-card";
 import {
   deriveRun,
   historyBefore,
   readableStats,
   summarize,
-  type Bit,
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
-import { Btn, Card, Lbl, PageTitle } from "@/components/ui";
+import { Btn, Lbl, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { pairEntries } from "@/lib/confusions";
 import { analyzeRun } from "@/lib/confusions";
@@ -76,50 +75,6 @@ function modeName(m: QuizMode): string {
           : m === "listen-sentence"
             ? "Listen to sentences"
             : "Drill";
-}
-
-/**
- * Accuracy as a filled arc — the same read as Home's deck rings, at hero size.
- * A finished run always has a number, so there is no dashed empty state here;
- * `null` only happens if a session somehow stored nothing, and then the ring
- * simply doesn't draw rather than claiming a 0% nobody earned.
- *
- * Home's AccuracyRing at 78px rather than a second copy of the arc: this used
- * to be its own conic, which meant its seam had to be fixed twice and its
- * `rounded-full border` silently collected globals.css's per-theme chrome —
- * squaring the "circle" to a 2px-radius box in aizome.
- *
- * Green at 100%: the one moment the ring is reporting an achievement rather
- * than a measurement.
- */
-function BigRing({ pct }: { pct: number | null }) {
-  return (
-    <AccuracyRing
-      pct={pct}
-      unpractised="hidden"
-      size={78}
-      stroke={7.5}
-      arc={pct === 100 ? "var(--success)" : "var(--arc)"}
-      labelClassName="text-[17px] font-semibold tabular-nums"
-    />
-  );
-}
-
-/** A generated sentence, with the characters your eye should land on. */
-function Line({ bits, className }: { bits: Bit[]; className?: string }) {
-  return (
-    <span className={className}>
-      {bits.map((b, i) =>
-        b.em ? (
-          <b key={i} className="font-kana font-medium text-text">
-            {b.t}
-          </b>
-        ) : (
-          <span key={i}>{b.t}</span>
-        ),
-      )}
-    </span>
-  );
 }
 
 export function ResultsView({ results }: { results: ResultsPayload }) {
@@ -419,23 +374,21 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         } questions · ${when}${summaryOnly ? " · Older session, summary only" : ""}`}
       />
 
-      <Card className="flex items-center gap-3.5">
-        <BigRing pct={facts.pct} />
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-[15px] font-semibold">{summary.headline}</span>
-          {summary.detail ? (
-            <Line bits={summary.detail} className="text-[13px] text-text-muted" />
-          ) : null}
-          <Line bits={summary.counts} className="text-[13px] text-text-muted" />
-        </span>
-        <Btn
-          className="ml-auto shrink-0 self-start disabled:cursor-default disabled:opacity-45"
-          disabled={savedAsList}
-          onClick={() => void saveAsList()}
-        >
-          {savedAsList ? "Saved as a list" : "Save as a list"}
-        </Btn>
-      </Card>
+      <ResultsCard
+        pct={facts.pct}
+        headline={summary.headline}
+        detail={summary.detail}
+        counts={summary.counts}
+        trailing={
+          <Btn
+            className="disabled:cursor-default disabled:opacity-45"
+            disabled={savedAsList}
+            onClick={() => void saveAsList()}
+          >
+            {savedAsList ? "Saved as a list" : "Save as a list"}
+          </Btn>
+        }
+      />
 
       <PatternSection
         label="Patterns"
