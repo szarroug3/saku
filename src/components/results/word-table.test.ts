@@ -10,6 +10,7 @@ import { describe, test } from "node:test";
 
 import { kanaFact } from "@/data/characters";
 import {
+  answeredInsteadText,
   boxKeyOf,
   missedBoxKeysForFacts,
   outcomeForPhrase,
@@ -152,6 +153,33 @@ describe("roundFormCounts", () => {
       needsWork: 0,
       totalForms: 0,
     });
+  });
+});
+
+describe("answeredInsteadText", () => {
+  // SAK-21: a miss cell used to render "said that それ" or "said i あ い" —
+  // the phrase-specific `said` text and the fact-level confused glyph(s)
+  // bare-space-joined into one blob, sometimes literally the same wrong pick
+  // shown twice (once as its English gloss, once as its glyph).
+
+  test("prefers the phrase's own said text over any confused glyph", () => {
+    // The MC case: `said` ("that") and the top confused glyph (それ) name the
+    // exact same wrong pick. Showing both would print one answer twice.
+    assert.equal(answeredInsteadText("that", ["それ"]), "that");
+  });
+
+  test("falls back to at most the single top confused entry when there is no said text", () => {
+    assert.equal(answeredInsteadText(null, ["あ", "い"]), "あ");
+  });
+
+  test("is null when there is nothing to say", () => {
+    assert.equal(answeredInsteadText(null, []), null);
+  });
+
+  test("never concatenates said text with a confused glyph", () => {
+    const result = answeredInsteadText("i", ["あ", "い"]);
+    assert.equal(result, "i");
+    assert.ok(!result.includes(" "), "must be one answer, not a joined blob");
   });
 });
 

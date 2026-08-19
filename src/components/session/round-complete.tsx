@@ -47,7 +47,7 @@ import {
 } from "@/lib/session";
 import type { FactId } from "@/types";
 
-import { retryHint } from "./retry-grouping";
+import { retryButtonLabel, retryHint } from "./retry-grouping";
 
 /** The recovered line's glyph — what a retry earned back. Never paired with its
  * answer: you may be about to be asked these again. */
@@ -132,7 +132,13 @@ export function RoundComplete({
             other two summed, so the line adds up by construction. It used to
             count showings and read "5 questions · 4 right first try · 2 missed"
             for a round that only asked three distinct forms — the re-ask of a
-            miss counted as its own question. See roundFormCounts. */}
+            miss counted as its own question. See roundFormCounts.
+            The word "forms" is load-bearing: retryHint (below) counts FACTS,
+            a different and smaller-or-larger unit on purpose (a fact can carry
+            several forms; the picker retries whole facts, not individual
+            forms). The two numbers are allowed to differ — what they must
+            not do is look like the same measurement, which is what read as a
+            bug before either line named its unit. See SAK-21. */}
         <p className="mb-3 mt-0.5 text-[13px] text-text-muted">
           {totalForms} form{totalForms === 1 ? "" : "s"} · {solid} solid ·{" "}
           {needsWork} needs work
@@ -210,7 +216,7 @@ export function RoundComplete({
             className="disabled:cursor-default disabled:opacity-45"
             onClick={() => onRetry(pickedList, pickedBoxes)}
           >
-            Retry {pickedBoxes.length || "…"}
+            {retryButtonLabel(pickedBoxes.length)}
           </Btn>
           <Btn go className="ml-auto" onClick={onComplete}>
             {session.round >= SESSION_ROUND_TARGET

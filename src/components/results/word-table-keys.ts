@@ -129,6 +129,40 @@ export function roundFormCounts(
   };
 }
 
+/**
+ * What a missed/recovered cell should say you answered instead — ONE string,
+ * never a concatenation of two.
+ *
+ * `said` is this PHRASE's own recorded text (src/components/quiz/drill-
+ * screen.tsx's `saidByPhrase`): what you actually typed or picked for THIS
+ * showing, in whatever script the direction called for. It wins whenever it
+ * exists.
+ *
+ * `confusedGlyphs` is the fact-level record (`FactSessionDetail.confused`) —
+ * every entry this fact was EVER confused with, across every phrasing and
+ * every retry attempt in the round, sorted most-confused-first. It is only a
+ * fallback for the rarer case of a miss with no phrase-specific text at all
+ * (an older/inferred stat, or a pick with no usable label), and even then at
+ * most its top entry: the doc on the caller already promised "a single entry
+ * to blame," singular.
+ *
+ * Before this function existed, the cell showed BOTH, bare-space-joined. For
+ * a multiple-choice pick that is a duplicate, not a second fact: `said` was
+ * already `labelOf(picked, dir)`, and the fact-level top confused entry is
+ * `glyphOf(entryOf(picked))` — the SAME wrong pick, once as its English gloss
+ * and once as its glyph, e.g. "said that それ" for one tap on それ. For a
+ * typed answer it could also pull in confusions from a DIFFERENT retry
+ * attempt of the same phrase, e.g. "said i あ い" — three different wrong
+ * answers read as if they were one. See SAK-21.
+ */
+export function answeredInsteadText(
+  said: string | null,
+  confusedGlyphs: readonly string[],
+): string | null {
+  if (said) return said;
+  return confusedGlyphs[0] ?? null;
+}
+
 export function missedBoxKeysForFacts(
   facts: FactId[],
   stats: SessionStats,

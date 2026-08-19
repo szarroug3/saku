@@ -21,9 +21,18 @@
 // that just moves on without claiming anything — styled `go`, the same accent
 // "Start"/"Continue session" gets on that same card. Same pairing, same
 // weighting, just reached from the other end of the run.
+//
+// `correct` alone CANNOT tell "the same as you started" from "the same
+// destination by a rockier road" (SAK-21): it is everCorrect, a monotonic OR
+// over the round's retry legs (see RoundSummary and drill-stats.ts), so a
+// round with a miss that got recovered before the round ended reads
+// identically to a round with no miss at all. `missed` (facts that took at
+// least one miss this round) is what actually distinguishes the two, and it
+// is already on RoundSummary — so the comparison has to agree on BOTH counts
+// before it can honestly call two rounds the same.
 
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
-import type { StudySession } from "@/lib/session";
+import { sameAsStarted, type StudySession } from "@/lib/session";
 
 function story(session: StudySession): string {
   const rounds = session.rounds;
@@ -33,8 +42,24 @@ function story(session: StudySession): string {
   const first = rounds[0];
   const many = `${n} round${n === 1 ? "" : "s"} of the same ${session.facts.length}.`;
   if (n === 1) return `${many} You finished on ${last.correct} correct.`;
-  if (last.correct === first.correct) {
+  if (sameAsStarted(first, last)) {
     return `${many} You finished on ${last.correct} correct, the same as you started.`;
+  }
+  if (last.correct === first.correct) {
+    // The tally matches but sameAsStarted said no — so `missed` differs: one
+    // round needed a retry to land the same count the other landed clean.
+    // Reusing "up/down from N correct" here would print a direction next to
+    // the SAME number twice ("up from 5" under "5 correct"), which reads as
+    // no change at all. Name the miss instead — the thing that actually
+    // moved.
+    const cleaner = last.missed < first.missed;
+    const note =
+      last.missed === 0
+        ? "clean this time, no retries needed"
+        : first.missed === 0
+          ? `took ${last.missed} ${last.missed === 1 ? "retry" : "retries"} to get there, none needed at the start`
+          : `${cleaner ? "fewer" : "more"} needed a retry (${last.missed}, vs ${first.missed} at the start)`;
+    return `${many} You finished on ${last.correct} correct — ${note}.`;
   }
   const dir = last.correct > first.correct ? "up" : "down";
   return `${many} You finished on ${last.correct} correct, ${dir} from ${first.correct}.`;

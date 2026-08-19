@@ -19,6 +19,7 @@ import {
   type Outcome,
 } from "@/lib/results-grouping";
 import {
+  answeredInsteadText,
   boxKeyOf,
   boxKeysForFact,
   boxKeysForFacts,
@@ -103,12 +104,11 @@ function PresentationCell({
   const said = canShowSaid ? saidTextForPhrase(st, phrase) : null;
   // What you said instead, when a miss named a single entry to blame. Glyphs
   // only — this cell is about to be re-asked, so it must not print the answer,
-  // and the entry you confused it FOR is not this fact's answer.
+  // and the entry you confused it FOR is not this fact's answer. ONE string,
+  // never `said` and the confused glyph both — see answeredInsteadText.
   const confused = canShowSaid ? confusedEntries(st).map(glyphOf) : [];
-  const saidParts = said ? [said] : [];
-  for (const glyph of confused) {
-    if (!saidParts.includes(glyph)) saidParts.push(glyph);
-  }
+  const answeredInstead = answeredInsteadText(said, confused);
+  const saidParts = answeredInstead ? [answeredInstead] : [];
   return (
     <button
       type="button"
