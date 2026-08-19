@@ -284,6 +284,7 @@ export function SessionsList() {
           {picked.size ? `Delete selected (${picked.size})` : "Delete selected"}
         </SmallBtn>
         <SmallBtn
+          danger
           onClick={() => {
             void (async () => {
               const ok = await confirm({
