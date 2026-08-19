@@ -43,6 +43,34 @@ import {
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
 
+/**
+ * What each bucket shown on this card means, said once next to the header
+ * rather than once per number — same `<dl>`-of-definitions shape as the
+ * practice selector's "Status" info tooltip (src/components/practice/
+ * practice-selector.tsx's `STATUS_INFO`), so a reader who has already seen
+ * that pattern doesn't have to learn a second one here. Not imported from
+ * there: that map is keyed by `FactBand` and answers a scoped, practice-time
+ * question ("recent runs"), while this one is keyed by `Standing` and has to
+ * cover `claimed`, which practice's chips don't offer at all.
+ *
+ * `claimed`'s wording is unchanged from the tooltip this replaces (Sam's own
+ * reworded text) — only where it lives and how it's presented moved, not what
+ * it says. solid/getting-there/shaky/slipping reuse STATUS_INFO's phrasing
+ * verbatim so the two screens describe the same crossing the same way.
+ */
+const BUCKET_INFO: Record<Standing, string> = {
+  "not-seen": "",
+  claimed:
+    "This shows things that were marked known via “I already know this” but have not been quizzed yet. It fades back into drilling on its own over time. You can unclaim it from that item’s Library page.",
+  solid:
+    "You're currently expected to recall it, and at least 80% of your recent runs got it right.",
+  "getting-there":
+    "At least 60% of your recent runs got it right, but under 80%.",
+  shaky: "Under 60% of your recent runs got it right.",
+  slipping:
+    "You've seen this before, but enough time has passed that the app now expects you've forgotten it — due to be re-taught, not re-tested.",
+};
+
 export function KnowledgeBase({
   tally,
   total,
@@ -68,7 +96,19 @@ export function KnowledgeBase({
 
   return (
     <section>
-      <Lbl>What you know</Lbl>
+      <div className="mb-2 flex items-center gap-0.5">
+        <Lbl className="mb-0">What you know</Lbl>
+        <Info>
+          <dl className="space-y-1.5">
+            {BUCKETS.filter((b) => BUCKET_INFO[b]).map((b) => (
+              <div key={b}>
+                <dt className="font-semibold">{BUCKET_LABEL[b]}</dt>
+                <dd>{BUCKET_INFO[b]}</dd>
+              </div>
+            ))}
+          </dl>
+        </Info>
+      </div>
 
       {heldCount === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">
@@ -82,19 +122,6 @@ export function KnowledgeBase({
           <div className="flex flex-wrap items-end gap-x-[26px] gap-y-3">
             {shown.map((b) => {
               const bucketFacts = factsByBucket?.[b];
-              // "Claimed" is the one bucket nothing else on this page
-              // explains: it is not earned by drilling, so it needs its
-              // own word said out loud, right where the count is, not
-              // only on a reference page a reader may never open.
-              const claimedInfo =
-                b === "claimed" ? (
-                  <Info>
-                    This shows things that were marked known via &ldquo;I
-                    already know this&rdquo; but have not been quizzed yet.
-                    It fades back into drilling on its own over time. You
-                    can unclaim it from that item&rsquo;s Library page.
-                  </Info>
-                ) : null;
               // Clickable only when there's a list behind the number to open
               // — a plain <p>, same as before, whenever a caller hasn't wired
               // factsByBucket up (or the fact list came back empty for a
@@ -110,7 +137,6 @@ export function KnowledgeBase({
                     </p>
                     <p className="mt-1 text-xs text-text-muted">
                       {BUCKET_LABEL[b]}
-                      {claimedInfo}
                     </p>
                   </div>
                 );
@@ -130,7 +156,6 @@ export function KnowledgeBase({
                       {BUCKET_LABEL[b]}
                     </p>
                   </button>
-                  {claimedInfo}
                 </div>
               );
             })}

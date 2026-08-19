@@ -50,8 +50,12 @@ import {
 import type { FactAggregate, FactId } from "@/types";
 
 /**
- * The order the buckets are read in — best to worst, then the one that is not
- * the app's opinion at all.
+ * The order the buckets are read in — best to worst, matching standing.ts's own
+ * canonical order (`not seen / claimed / solid / getting there / shaky /
+ * slipping`, this file's `not-seen` dropped as above). `claimed` leads: it is
+ * an untested self-report, not a verdict earned by drilling, but Sam's read is
+ * that a learner would rather see what they've told the app they already know
+ * before the buckets the app itself measured.
  *
  * `not-seen` is absent on purpose: it is not a condition your memory is in, it
  * is material you have not met, so it has no slot among the COUNTS a card
@@ -62,11 +66,11 @@ import type { FactAggregate, FactId } from "@/types";
  * bar hides.
  */
 export const BUCKETS: readonly Standing[] = [
+  "claimed",
   "solid",
   "getting-there",
   "shaky",
   "slipping",
-  "claimed",
 ];
 
 /**
