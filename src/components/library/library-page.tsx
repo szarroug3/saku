@@ -616,9 +616,9 @@ export function LibraryPageClient({
   }, [selected, q, kinds, keep, resultHits]);
 
   // Sentence rules are the ONE place this page needs the assembly corpus
-  // (`tierAssemblyFacts` resolves a tier's readable-sentence facts against LIVE
-  // history — not precomputable, unlike the rest of the page's list/search
-  // data). Loading it eagerly would put the ~9.5MB dictionary back on every
+  // (`tierAssemblyFacts` resolves a tier's pool of sentence facts, which needs
+  // the corpus module itself, not precomputable like the rest of the page's
+  // list/search data). Loading it eagerly would put the ~9.5MB dictionary back on every
   // /library visit for a feature only a sentence-rule-mark selection ever
   // touches. So it is DYNAMICALLY IMPORTED, and only once the current slice
   // actually contains a sentence-rule mark — `hasSentenceMark` below is a cheap
