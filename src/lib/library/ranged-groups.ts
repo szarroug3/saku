@@ -156,6 +156,8 @@ export function rangedGroups(
       id: `range-${start + 1}`,
       label: `${start + 1}–${start + slice.length}`,
       entries: slice,
+      // A bare span, not a real category — see ShelfSection.isRangeLabel.
+      isRangeLabel: true,
     });
   }
   return groups;

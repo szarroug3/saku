@@ -15,6 +15,17 @@ export interface ShelfSection {
    * pick rows on its own), but a named reference page reads across a line, not
    * inside a 100px tile. Undefined everywhere else. */
   readonly asRows?: boolean;
+  /** True when `label` is a bare numeric span ("1–50") standing in for a real
+   * category, not a real category itself — set by `rangedGroups` (words,
+   * radicals, primitives) and by the kanji shelf's non-`grade` cuts. The shelf
+   * page still uses the label for its tri-state select-all header, where the
+   * range is exactly the useful thing being selected. But the same label is
+   * meaningless on an individual entry's OWN page, since it names which
+   * GROUP_SIZE-wide bucket the entry happens to fall in rather than anything
+   * about the entry — group-nav.ts reads this flag so the entry page can hide
+   * the group-nav header instead of printing a number that describes nothing.
+   * Undefined (falsy) for every real category label. */
+  readonly isRangeLabel?: boolean;
 }
 
 /** Apply a knowledge/status filter and remove sections it empties. */

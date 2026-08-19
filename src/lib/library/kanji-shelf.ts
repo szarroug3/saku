@@ -17,6 +17,9 @@ export interface KanjiCut {
   readonly id: string;
   readonly label: string;
   readonly glyphs: readonly string[];
+  /** True when `label` is a bare numeric span, not a real category — see
+   * ShelfSection.isRangeLabel, which this flows into via shelf-sections.ts. */
+  readonly isRangeLabel?: boolean;
 }
 
 /** How many kanji a range section holds.
@@ -72,6 +75,9 @@ export function kanjiCuts(mode: NewKanjiOrder): KanjiCut[] {
       // count items in a range and never lessons.
       label: `${start + 1}–${start + glyphs.length}`,
       glyphs,
+      // A bare span, not a real category — see ShelfSection.isRangeLabel. Grade
+      // cuts (gradeCuts, below) are real categories and never set this.
+      isRangeLabel: true,
     });
   }
   return cuts;

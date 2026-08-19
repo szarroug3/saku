@@ -110,6 +110,12 @@ describe("rangedGroups chunks an ordered list into labelled ranges", () => {
   test("an empty subject makes no ranges", () => {
     assert.deepEqual(rangedGroups([], byTail), []);
   });
+
+  test("every range is flagged isRangeLabel, so a consumer can tell its label apart from a real category", () => {
+    const groups = rangedGroups(entries("x", 120), byTail, 50);
+    assert.ok(groups.length > 0);
+    assert.ok(groups.every((g) => g.isRangeLabel === true));
+  });
 });
 
 describe("wordRank is the beginner's teaching order", () => {
