@@ -24,6 +24,26 @@ import { pairForEntry } from "@/data/transitivity-facts";
 import { hasKanji } from "@/lib/romaji";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
+import type { ReactNode } from "react";
+
+/** `jp` with `[start, end)` picked out in the same accent color the sentence
+ * track and the grammar entry page color a highlighted piece with
+ * (.sentence-part-topic) — one visual language for "here is the piece that
+ * matters" everywhere the app shows a sentence. Same treatment as
+ * grammar-entry-view's `highlightSpan`, just a 2-tuple span instead of that
+ * one's 3-tuple (no per-span color choice needed here — the marking particle
+ * is always the thing lit). */
+function highlightParticle(jp: string, span: readonly [number, number]): ReactNode {
+  const [start, end] = span;
+  if (start < 0 || end > jp.length || start >= end) return jp;
+  return (
+    <>
+      {jp.slice(0, start)}
+      <span className="font-medium sentence-part-topic">{jp.slice(start, end)}</span>
+      {jp.slice(end)}
+    </>
+  );
+}
 
 export function VerbPairEntryView({
   entry,
@@ -75,6 +95,11 @@ export function VerbPairEntryView({
                 ) : null}
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
+              {s.m.example ? (
+                <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
+                  {highlightParticle(s.m.example.jp, s.m.example.particleSpan)}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
