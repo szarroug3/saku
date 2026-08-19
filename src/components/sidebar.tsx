@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { SignOut } from "@/components/auth/sign-out";
@@ -19,6 +19,16 @@ import { useQuizSession } from "@/lib/quiz-session";
 // closed after hydration. This is a per-device preference and deliberately stays
 // local — it is NOT part of the server-synced settings blob (see settings.ts).
 const COLLAPSE_KEY = "saku-sidebar-collapsed";
+
+// Below this width the full-width bar squeezes <main> down to ~170px — the
+// intro banner alone wraps to two or three words a line. The cookie above is
+// a DESKTOP preference (collapsed-or-not at a wide viewport); it says nothing
+// about viewport width, so on its own a wide-viewport "expanded" preference
+// rendered exactly as-is at 375px. Below the breakpoint the bar collapses
+// unconditionally, regardless of that stored preference — see the effect
+// below, which is the thing that actually enforces it. 768 matches Tailwind's
+// default `md`, the usual phone/small-tablet cutoff.
+const MOBILE_BREAKPOINT = 768;
 
 /** A bare chevron for the collapse/expand toggle — inline so the nav pulls in no
  * icon dependency for its one glyph. */
@@ -143,17 +153,55 @@ export function Sidebar({
   const runCount = restored ? runs.length : initialRunCount;
 
   // Collapsed shrinks the bar to a thin rail so the page gets the width back.
-  // Seeded from the server's cookie read, so the first paint is already correct.
+  // Seeded from the server's cookie read, so the first paint is already correct
+  // for a desktop viewport (the server can't see the client's width at all).
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // Whether we're currently below MOBILE_BREAKPOINT. Starts false to match the
+  // server's render (SSR has no viewport to check), then the effect below
+  // corrects it — and forces `collapsed` on — the instant it can read
+  // matchMedia, same tradeoff the dark-mode `prefers-color-scheme` read in
+  // theme.tsx makes.
+  const [isMobile, setIsMobile] = useState(false);
+  // The user's actual desktop preference (what the cookie says), independent
+  // of whatever the mobile auto-collapse is currently forcing `collapsed` to.
+  // Widening back past the breakpoint restores THIS, not just whatever
+  // `collapsed` happened to be — otherwise a mobile session would leak a
+  // forced collapse into the next desktop render, and a manual expand/collapse
+  // made while narrow would incorrectly overwrite the desktop cookie.
+  const desktopPreference = useRef(initialCollapsed);
   // The dev section starts open when you're already on a /dev page, so a hard
   // reload there doesn't hide the page you're looking at behind a closed group.
   const [devOpen, setDevOpen] = useState(pathname.startsWith("/dev"));
+
+  // Auto-collapse below the mobile breakpoint, independent of the desktop
+  // preference cookie, and restore that preference when the viewport widens
+  // back out. matchMedia is browser-only, so this can only run post-mount.
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    function sync(mobile: boolean) {
+      setIsMobile(mobile);
+      setCollapsed(mobile ? true : desktopPreference.current);
+    }
+    sync(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => sync(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
   function toggleCollapsed() {
     setCollapsed((c) => {
       const next = !c;
-      // Write the cookie the server reads next load. One year, lax; path=/ so it
-      // covers every route.
-      document.cookie = `${COLLAPSE_KEY}=${next ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+      // Only persist as the desktop preference (cookie + the ref the
+      // breakpoint effect restores on resize) when actually at a desktop
+      // width. A collapse/expand made while under the breakpoint is a
+      // transient override of the auto-collapse, not a change to what a
+      // wide-viewport session should see — the cookie is one year, lax,
+      // path=/ so it covers every route, and it should keep meaning "the
+      // desktop preference," not "whatever was last tapped on a phone."
+      if (!isMobile) {
+        document.cookie = `${COLLAPSE_KEY}=${next ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+        desktopPreference.current = next;
+      }
       return next;
     });
   }
