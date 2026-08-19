@@ -12,6 +12,7 @@ import type { WordClass } from "@/lib/conjugate";
 import { apply } from "@/lib/grammar/apply";
 import { recipe } from "@/data/grammar/recipes";
 import { recipeAllows } from "@/lib/grammar/vehicles";
+import { WORD_GLOSS } from "@/data/grammar/auto-page";
 import type { IntroBuildRule, IntroPara, PhaseIntro } from "@/data/phase-intros";
 
 // ---------------------------------------------------------------------------
@@ -115,10 +116,18 @@ function formRuleTables(
       }
       const p = prefixLen(v.word, c.value);
       const note = FORM_RULE_NOTES[`${recipeId}:${v.cls}`];
+      const gloss = WORD_GLOSS[v.word];
       if (g.irregular || p === 0) {
-        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value, note });
+        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value, note, gloss });
       } else {
-        rules.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p), note });
+        rules.push({
+          label: v.label,
+          verb: v.word,
+          drop: v.word.slice(p),
+          add: c.value.slice(p),
+          note,
+          gloss,
+        });
       }
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
