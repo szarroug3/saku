@@ -18,6 +18,7 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface } from "@/components/library/entry-section";
+import { Callout } from "@/components/lesson/callout";
 import { Info } from "@/components/ui";
 import { HearButton } from "@/components/ui/hear-button";
 import { pairForEntry } from "@/data/transitivity-facts";
@@ -72,6 +73,7 @@ export function VerbPairEntryView({
       help: "Someone makes it happen.",
     },
   ];
+  const hasExample = sides.some((s) => s.m.example);
 
   return (
     <EntrySurface>
@@ -99,26 +101,33 @@ export function VerbPairEntryView({
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
               {s.m.example ? (
-                <>
-                  <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
-                    {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
-                  </p>
-                  {/* The highlighted span is often a CONJUGATED form (出た) while the
-                      headline above shows the dictionary form (出る), and nothing else
-                      on the page explains that connection. Conjugation itself isn't
-                      taught here — that's the Grammar track's job — so this just
-                      reassures the reader the sentence is still about the same word. */}
-                  <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-                    The sentence may show this verb in a different, conjugated form.
-                    Conjugation is covered in the Grammar track, so for now, just know the
-                    sentence is using this same word.
-                  </p>
-                </>
+                <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
+                  {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
+                </p>
               ) : null}
             </div>
           ))}
         </div>
       </div>
+
+      {/* The highlighted span is often a CONJUGATED form (出た) while the
+          headline above shows the dictionary form (出る), and nothing else on
+          the page explains that connection. Conjugation itself isn't taught
+          here — that's the Grammar track's job — so this just reassures the
+          reader the sentence is still about the same word. Said once, at the
+          bottom, via the shared Callout ("Heads up.", the same treatment
+          kana's conversion tables use) rather than repeated under each side's
+          example: the note is the same fact each time, and two identical
+          asides read as clutter, not two separate warnings. */}
+      {hasExample ? (
+        <div className="mt-5">
+          <Callout>
+            The sentence may show this verb in a different, conjugated form. Conjugation is
+            covered in the Grammar track, so for now, just know the sentence is using this same
+            word.
+          </Callout>
+        </div>
+      ) : null}
     </EntrySurface>
   );
 }
