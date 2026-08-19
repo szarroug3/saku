@@ -122,7 +122,6 @@ export default function SessionPage() {
     pauseSession,
     endSession,
     finishSession,
-    startSession,
     startFirstRound,
     resumeRound,
     setTeachStep,
@@ -567,11 +566,7 @@ export default function SessionPage() {
       <div className="flex flex-1 flex-col justify-center mt-3.5">
         <SessionComplete
           session={session}
-          onRerun={() => {
-            const { facts, teach, what } = session;
-            finishSession();
-            startSession(facts, teach, what);
-          }}
+          onQuizAgain={(facts, boxes) => retryLeg(facts, boxes)}
           onMarkKnown={() => {
             // finishSession pushes /learn; flag it so the "no session → Home"
             // guard above doesn't clobber that with a Home redirect.
