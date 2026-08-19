@@ -16,6 +16,7 @@ import {
   RETRY_STANDING_ORDER,
   groupByStanding,
   initialPicked,
+  retryButtonLabel,
   retryHint,
 } from "./retry-grouping";
 
@@ -95,18 +96,24 @@ test("retryHint names what the retry got back, and what is left", () => {
     "You got it back. Nothing left over, but pick anything you want another look at.",
   );
   // Partial: credit for what landed, the rest still ticked.
-  assert.equal(retryHint(1, 2), "You got all 2 back. The other 1 is picked.");
-  assert.equal(retryHint(3, 1), "You got it back. The other 3 are picked.");
+  assert.equal(
+    retryHint(1, 2),
+    "You got all 2 back. The other 1 fact is picked.",
+  );
+  assert.equal(
+    retryHint(3, 1),
+    "You got it back. The other 3 facts are picked.",
+  );
 });
 
 test("retryHint is unchanged where nothing has been recovered yet", () => {
   assert.equal(
     retryHint(2, 0),
-    "Your 2 misses are picked. Add or drop anything.",
+    "Your 2 missed facts are picked. Add or drop anything.",
   );
   assert.equal(
     retryHint(1, 0),
-    "Your 1 miss is picked. Add or drop anything.",
+    "Your 1 missed fact is picked. Add or drop anything.",
   );
   assert.equal(
     retryHint(0, 0),
@@ -118,4 +125,32 @@ test("retryHint before and after a perfect retry are different sentences", () =>
   // The requirement, stated as an assertion: a perfect retry must not leave
   // the screen saying what it said before.
   assert.notEqual(retryHint(2, 0), retryHint(0, 2));
+});
+
+// ---------- SAK-21: bare "Retry …" on a disabled button ----------
+
+test("retryButtonLabel never shows a bare ellipsis when disabled", () => {
+  const label = retryButtonLabel(0);
+  assert.equal(label, "No retries left");
+  assert.ok(!label.includes("…"), "a disabled Retry button must not show an ellipsis");
+});
+
+test("retryButtonLabel names the count when something is picked", () => {
+  assert.equal(retryButtonLabel(1), "Retry 1");
+  assert.equal(retryButtonLabel(4), "Retry 4");
+});
+
+// ---------- SAK-21: header/body unit mismatch ----------
+//
+// The round-complete header counts FORMS ("5 forms · 2 solid · 3 needs
+// work"); this line counts FACTS. The two numbers are allowed to differ —
+// the bug was that neither line said so, so a "5 forms" header next to
+// "Your 4 misses" read as arithmetic that didn't add up. Pinning that the
+// word "fact" (the unit this function actually counts) appears whenever
+// there is a count to attach it to keeps that regression from creeping back
+// in silently.
+test("retryHint names its unit as facts, distinct from the header's forms", () => {
+  assert.match(retryHint(2, 0), /\bfacts?\b/);
+  assert.match(retryHint(1, 2), /\bfacts?\b/);
+  assert.match(retryHint(0, 2), /\bnothing left over\b/i);
 });
