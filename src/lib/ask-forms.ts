@@ -200,7 +200,7 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
  * product of (Prompt Format × Response × Answer Format) for each source the fact
  * belongs to, minus the combinations the fact can't carry:
  *
- *   - audio only for a listenable word,
+ *   - audio only for a listenable word or a kana glyph,
  *   - a jp→en response the fact doesn't have (no definition on a reading, no
  *     romaji on a meaning),
  *   - a direction the subject pins away.
@@ -211,12 +211,15 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
 export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   if (!factInfo(fact)) return [];
 
-  // Kana deliberately has exactly two question shapes:
-  //   1. see kana   → type or pick Romaji
-  //   2. see Romaji → pick kana
+  // Kana deliberately has exactly three question shapes:
+  //   1. see kana    → type or pick Romaji
+  //   2. hear kana   → type or pick Romaji (dictation; SAK-16)
+  //   3. see Romaji  → pick kana
   //
-  // Audio is disabled for kana because several kana pairs are acoustically
-  // ambiguous in TTS, which makes dictation unfair.
+  // Audio is wired through the SAME "japanese" jp2en/romaji shape text uses
+  // (see the word listening form below and in listenKind) rather than a
+  // kana-specific implementation, so it obeys the one `audioPrompts` toggle
+  // exactly like every other listenable fact.
   if (isKanaFact(fact)) {
     const forms: CardForm[] = [];
     if (ask.japanese.responses.includes("romaji")) {
@@ -226,6 +229,17 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
             source: "japanese",
             response: "romaji",
             listen: false,
+            dir: "jp2en",
+            answer,
+          });
+        }
+      }
+      if (ask.japanese.prompts.includes("audio")) {
+        for (const answer of ask.japanese.answers) {
+          forms.push({
+            source: "japanese",
+            response: "romaji",
+            listen: true,
             dir: "jp2en",
             answer,
           });

@@ -24,8 +24,9 @@ export function startIsDisabled(
  * The reason message shown inside a disabled Start button. Returns null when
  * Start is enabled and no message is needed.
  *
- * Distinguishes between unreachable settings (e.g. audio-only with kana) and
- * the normal "you're solid" case so the message is specific and actionable.
+ * Distinguishes between unreachable settings (e.g. audio-only with kanji
+ * readings, which have no listening form) and the normal "you're solid" case
+ * so the message is specific and actionable.
  */
 export function getStartButtonReason(
   cfg: Pick<QuizConfig, "mode" | "ask" | "pairResponses" | "gridResponses">,
