@@ -984,7 +984,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
     },
     {
       lead: "The sentence itself can hint at which one it is.",
-      text: "が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on — plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
+      text: "が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
     },
   ],
   examples: [
