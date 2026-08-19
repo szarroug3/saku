@@ -298,6 +298,19 @@ export function LibraryPageClient({
   // drill from. It is NOT reset when the kind filter changes: select a hiragana
   // row, switch to kanji, and it is still in here and still in the bar's count.
   const [selected, setSelected] = useState<Selection>(EMPTY_SELECTION);
+  // SELECT MODE — the explicit opt-in a plain click needs before it toggles a
+  // tile/row into the selection above. Off by default, so the homepage's "look
+  // up any kana" click actually looks it up (see entry-tile.tsx's file header)
+  // instead of the old behaviour where the primary click always built a drill
+  // and viewing an entry needed a barely-discoverable hover-only ↗.
+  //
+  // NOT reset by anything that resets selection elsewhere, and NOT cleared by
+  // its own toggle either: turning it off mid-build keeps `selected` exactly as
+  // it was, so a learner can flip it off to peek at an entry via a plain click
+  // (Next's Activity-boundary back/forward preserves this component's state
+  // across that trip — see the frame comment below) and flip it back on to keep
+  // adding. Only the existing "Clear N selected" control empties the set.
+  const [selectMode, setSelectMode] = useState(false);
   // THE SHIFT-CLICK ANCHOR — the last item picked WITHOUT Shift, the fixed end a
   // range extends from. A plain click sets it; a Shift-click reads it and leaves
   // it put (so you can sweep a range wider or narrower from the same anchor).
@@ -702,17 +715,28 @@ export function LibraryPageClient({
             {label}
           </Chip>
         ))}
-        {selected.size > 0 ? (
-          <GhostBtn
-            className="ml-auto text-xs"
-            onClick={() => {
-              setSelected(EMPTY_SELECTION);
-              setAnchor(null);
-            }}
-          >
-            Clear {selected.size} selected
-          </GhostBtn>
-        ) : null}
+        {/* SELECT MODE — off by default, so a plain click opens an entry (the
+            "look up any kana" pitch). Turning this on is the explicit opt-in
+            that repurposes the same click to build a drill instead — see
+            entry-tile.tsx's file header and the `selectMode` state above. A
+            `Chip`, matching the on/off vocabulary the kind and state filters on
+            this exact row already use, rather than inventing a new control. */}
+        <div className="ml-auto flex items-center gap-2">
+          <Chip on={selectMode} onClick={() => setSelectMode((v) => !v)}>
+            {selectMode ? "Done selecting" : "Select multiple"}
+          </Chip>
+          {selected.size > 0 ? (
+            <GhostBtn
+              className="text-xs"
+              onClick={() => {
+                setSelected(EMPTY_SELECTION);
+                setAnchor(null);
+              }}
+            >
+              Clear {selected.size} selected
+            </GhostBtn>
+          ) : null}
+        </div>
         </StickySearch>
         </div>
 
@@ -789,6 +813,7 @@ export function LibraryPageClient({
                     note={h.entry.sub}
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
+                    selectMode={selectMode}
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
@@ -843,6 +868,7 @@ export function LibraryPageClient({
                   voice={cfg.voiceName}
                   keep={keep}
                   filter={stateFilter}
+                  selectMode={selectMode}
                 />)}
               </div>
               );
@@ -862,6 +888,7 @@ export function LibraryPageClient({
                 voice={cfg.voiceName}
                 keep={keep}
                 filter={stateFilter}
+                selectMode={selectMode}
               />
             );
           })()

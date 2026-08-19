@@ -50,6 +50,12 @@ export function DevShelfCompare({
           onToggleEntry={onToggleEntry}
           onToggleSection={onToggleSection}
           voice=""
+          // This comparison page exists to eyeball tri-state selection visuals
+          // side by side with DeboxedShelf (whose tiles always toggle) — see
+          // the file header. Select mode ON keeps that click-to-toggle
+          // behaviour on the shipped <Shelf> here even though it now defaults
+          // to click-to-open everywhere it ships live.
+          selectMode
         />
       </div>
       <div>
