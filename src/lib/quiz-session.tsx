@@ -100,6 +100,7 @@ import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
+  initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   restMinutes,
@@ -1122,7 +1123,6 @@ export function QuizSessionProvider({
           { ...snapshotOf(cfg), ...(mode && { mode }) },
           origin,
         );
-        const teaching = teach.length > 0;
         const name = what ?? countWhat(facts);
         setSession({
           facts,
@@ -1137,7 +1137,16 @@ export function QuizSessionProvider({
           // New material is read before it's asked. With nothing new in the
           // session there is nothing to read, so the lesson doesn't appear at
           // all rather than appearing empty.
-          phase: teaching ? "teaching" : "drilling",
+          //
+          // A "Quiz me" start (no teach set) does NOT begin its leg here, even
+          // though nothing stands between it and beginLeg — see
+          // initialSessionPhase / "starting" on SessionPhase. ALWAYS routing
+          // through /session and letting its mount effect call
+          // startFirstRound() means every session, taught or not, begins its
+          // first leg the exact same way: from a settled render of the page
+          // that owns the loop, not from whichever component happened to call
+          // startSession. One mechanism, one place it can go wrong.
+          phase: initialSessionPhase(teach),
           restUntil: null,
           roundStats: {},
           recovered: [],
@@ -1147,11 +1156,10 @@ export function QuizSessionProvider({
           origin,
         });
         setResults(null);
-        if (teaching) router.push("/session");
-        else beginLeg(facts, name, snapshot, false);
+        router.push("/session");
       });
     },
-    [cfg, beginLeg, router, parkIfActive],
+    [cfg, router, parkIfActive],
   );
 
   const startFirstRound = useCallback(
