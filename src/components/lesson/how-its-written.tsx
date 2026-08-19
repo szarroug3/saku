@@ -33,6 +33,7 @@
 import Link from "next/link";
 import { useId, useState } from "react";
 
+import { SectionTitle } from "@/components/library/entry-section";
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { useFlatSurface } from "@/components/ui";
@@ -255,9 +256,7 @@ export function HowItsWritten({
   const content = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-text">
-          How it&rsquo;s written
-        </p>
+        <SectionTitle>How it&rsquo;s written</SectionTitle>
         {alwaysOpen ? null : (
           <button
             type="button"

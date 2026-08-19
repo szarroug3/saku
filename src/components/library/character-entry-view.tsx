@@ -54,7 +54,7 @@ function RoleBlock({
 }) {
   if (labelled) {
     return (
-      <Section title={title} tone="accent">
+      <Section title={title}>
         {children}
       </Section>
     );
