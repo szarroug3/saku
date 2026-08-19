@@ -630,6 +630,34 @@ export function vocabRow(keb: string): VocabRow | undefined {
   return BY_KEB.get(keb);
 }
 
+/** keb OR reb → the vocabulary rows spelled that way. Built once. Mirrors
+ * `lemmaKnown`'s own dual-spelling index (src/lib/grammar/readable.ts) so a
+ * caller that already has a corpus lemma (not a `keb`) can resolve its
+ * glosses the same way that file resolves whether it is known, see
+ * `vocabRowsBySpelling`. */
+const BY_SPELLING: ReadonlyMap<string, readonly VocabRow[]> = buildSpellingIndex();
+
+function buildSpellingIndex(): Map<string, VocabRow[]> {
+  const map = new Map<string, VocabRow[]>();
+  for (const w of VOCAB) {
+    for (const spelling of new Set([w.keb, w.reb])) {
+      const list = map.get(spelling);
+      if (list) list.push(w);
+      else map.set(spelling, [w]);
+    }
+  }
+  return map;
+}
+
+/**
+ * Vocabulary rows spelled this way, by `keb` OR `reb` (a corpus lemma such
+ * as an assembly piece's `AssemblyPiece.h` may be either). Empty when nothing
+ * in the vocabulary is spelled this way.
+ */
+export function vocabRowsBySpelling(spelling: string): readonly VocabRow[] {
+  return BY_SPELLING.get(spelling) ?? [];
+}
+
 export function wordEntry(keb: string): EntryId {
   return entryId(VOCAB_SUBJECT, keb);
 }

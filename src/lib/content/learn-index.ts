@@ -88,16 +88,11 @@ function factKnown(fact: FactId, history: HistoryFile): boolean {
   );
 }
 
-/** The next sentence tier admitted by the original planner's linear
- * readability + grammar gate, evaluated entirely from precomputed fact ids. */
+/** The next sentence tier admitted by the original planner's linear pool-size +
+ * grammar gate, evaluated entirely from precomputed fact ids. */
 export function nextSentenceTierId(history: HistoryFile): string | null {
   for (const gate of INDEX.sentenceGates) {
-    const readable = gate.readableItems.filter((item) =>
-      item.lemmaFacts.every((alternatives) =>
-        alternatives.some((fact) => factKnown(fact, history)),
-      ),
-    );
-    if (readable.length < gate.minReadable) return null;
+    if (gate.poolSize < gate.minReadable) return null;
     if (
       gate.grammarPrereqFacts.length > 0 &&
       !gate.grammarPrereqFacts.some((fact) => factKnown(fact, history))
@@ -105,8 +100,7 @@ export function nextSentenceTierId(history: HistoryFile): string | null {
       return null;
     }
 
-    const facts = [...new Set(readable.flatMap((item) => item.facts))];
-    if (sentenceTierDone(gate.tierId, facts, history)) continue;
+    if (sentenceTierDone(gate.tierId, gate.facts, history)) continue;
     return gate.tierId;
   }
   return null;
