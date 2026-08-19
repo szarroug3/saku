@@ -28,6 +28,17 @@
 // Sessions with no `detail` at all are skipped rather than read as clean —
 // absent evidence is not evidence of absence.
 //
+// "CONTAINED" means RESOLVED, not merely keyed. `detail` gets a zero-value
+// entry (`seen: 0`) for a fact the instant it's put on screen — see
+// src/lib/drill-stats.ts's statForShowing — so a card shown and then
+// abandoned (the round ended, or a leg was walked away from) leaves a key in
+// `detail` with no evidence behind it at all: no answer, right or wrong.
+// Counting that key as "shown" would let an untouched card mint a free clean
+// qualifying run for every pair its entry belongs to, inflating `cleanStreak`
+// toward graduation for a pair that was never actually re-tested. `seen > 0`
+// is what separates "this run put evidence on the table" from "this run put
+// a card on screen and nothing else happened" — see entriesShown.
+//
 // TWO KEY SPACES
 // ==============
 // A pair is keyed by ENTRY (生, 待つ). A run's `detail` is keyed by FACT. They
@@ -323,10 +334,16 @@ function slices(history: HistoryFile, opts: RecordOpts): Slice[] {
     }));
 }
 
-/** The entries a run put on screen, whichever of their facts it asked. */
+/** The entries a run actually RESOLVED at least one showing of — never a fact
+ * merely keyed in `detail` with `seen: 0` (put on screen, then abandoned
+ * un-answered). See the denominator-rule note above for why that distinction
+ * is load-bearing: an unresolved key must not mint a clean qualifying run. */
 function entriesShown(detail: SessionStats, entryOf: EntryOf): Set<EntryId> {
   const shown = new Set<EntryId>();
-  for (const fact of Object.keys(detail)) shown.add(entryOf(fact as FactId));
+  for (const [fact, st] of Object.entries(detail)) {
+    if (!st?.seen) continue;
+    shown.add(entryOf(fact as FactId));
+  }
   return shown;
 }
 

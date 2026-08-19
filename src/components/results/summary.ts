@@ -102,17 +102,29 @@ export interface RunFacts {
   /** Set for a stored session that kept percentages and no detail. Everything
    * per-fact below it is inference; these two numbers are measured. */
   stored?: { forgivingPct: number; strictPct: number };
-  /** Facts missed on first try, worst first. */
+  /** Facts actually attempted and never landed this run, worst first. Never
+   * includes a fact that was merely asked and abandoned — see isMissed. */
   missed: FactId[];
   /** Facts that needed another look this run (any miss/retry) — Needs work. */
   needsWork: FactId[];
-  /** Everything else. */
+  /** Landed clean, no retry needed. Never includes `notAnswered` — a card
+   * you were never asked to answer is not "solid", it is unscored. */
   solid: FactId[];
+  /** Facts this run put on screen and then never resolved — the round ended,
+   * or the leg was walked away from, before an answer landed either way. No
+   * evidence either way, so these count toward nothing: not solid, not needs
+   * work, not a miss, not a correct. See countBits/deriveRun. */
+  notAnswered: FactId[];
 }
 
-/** Whether a fact was missed — never landed at all this run. */
+/** Whether a fact was ATTEMPTED and never landed this run — `seen > 0` is
+ * the guard that keeps a fact merely asked-and-abandoned (seen: 0, so
+ * `correct` is trivially 0 too) out of "missed". A card put on screen but
+ * never answered produced no evidence either way; calling that a miss would
+ * be inventing a wrong answer nobody gave. See statForShowing in
+ * src/lib/drill-stats.ts for where the zero-value key comes from. */
 function isMissed(st: FactSessionDetail): boolean {
-  return (st.correct ?? 0) === 0;
+  return st.seen > 0 && (st.correct ?? 0) === 0;
 }
 
 /**
@@ -189,6 +201,14 @@ export function deriveRun(
     );
   const workSet = new Set(needsWork);
 
+  // Never resolved this run — a key in `stats` with `seen: 0` (asked, then
+  // abandoned). Excluded from `solid` below for the same reason `isMissed`
+  // excludes it from `missed`: no evidence was produced, so it belongs to
+  // neither pile. Same precedent as round-complete.tsx's "unseen" outcome —
+  // see components/results/word-table-keys.ts's roundFormsByOutcome.
+  const notAnswered = r.facts.filter((f) => (stats[f].seen ?? 0) === 0);
+  const notAnsweredSet = new Set(notAnswered);
+
   return {
     facts: r.facts,
     questionsTotal: agg.seen,
@@ -201,7 +221,8 @@ export function deriveRun(
     stored: summaryOnly,
     missed,
     needsWork,
-    solid: r.facts.filter((f) => !workSet.has(f)),
+    solid: r.facts.filter((f) => !workSet.has(f) && !notAnsweredSet.has(f)),
+    notAnswered,
   };
 }
 
@@ -365,18 +386,24 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
   ];
 }
 
+/** The four-number breakdown: every fact this run put on screen, split into
+ * the only outcomes that actually happened to it. Always sums to `shown` by
+ * construction — `correctFacts`, `missed` and `notAnswered` partition
+ * `run.facts` exactly once each (see deriveRun/isMissed). Per FACT, not per
+ * showing: a fact re-asked after a miss is one card here, matching the row
+ * count on the board below, not the showing count "score" used to report. */
+function countLine(run: RunFacts): string {
+  return `${run.facts.length} shown · ${run.correctFacts} correct · ${run.missed.length} incorrect · ${run.notAnswered.length} not answered`;
+}
+
 /** The counts line: how the run reads under the chosen chip, plus anything the
  * Progress section earned. */
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
-  const got =
-    run.questionsCorrect;
   const beaten = progress.length;
   return [
-    // A stored session counted nothing per fact, so "0 / 12 score"
-    // would be an invention. Report the two percentages it did keep.
-    run.stored
-      ? { t: `${run.stored.forgivingPct}% score` }
-      : { t: `${got} / ${run.questionsTotal} ${"score"}` },
+    // A stored session counted nothing per fact, so a shown/correct/incorrect
+    // breakdown would be an invention. Report the two percentages it did keep.
+    run.stored ? { t: `${run.stored.forgivingPct}% score` } : { t: countLine(run) },
     ...(beaten
       ? [
           {
@@ -485,7 +512,7 @@ export function summarize(
     headline: "Perfect run",
     detail: [
       {
-        t: `${run.questionsTotal} / ${run.questionsTotal} ${"score"}`,
+        t: countLine(run),
       },
       ...(beat
         ? ([
