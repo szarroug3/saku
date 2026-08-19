@@ -15,8 +15,20 @@ import { apply } from "@/lib/grammar/apply";
 import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { recipeAllows } from "@/lib/grammar/vehicles";
+import { examplesFor } from "@/data/grammar/corpus";
 import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
-import type { IntroBuildRule, IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
+import type { IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
+
+/** The pattern's own worked sentence, straight from the Tatoeba corpus — the
+ * SAME lookup grammar-entry-view.tsx used to do on its own; centralised here so
+ * the teach walk and the Library page always show the identical sentence. Absent
+ * for a pattern the corpus tagger has not signed (see authored.ts for that lane). */
+function sentenceExampleFor(recipeId: string): SentenceExample | undefined {
+  const example = examplesFor(recipeId).find((ex) => ex.sp[recipeId]);
+  const span = example?.sp[recipeId];
+  if (!example || !span) return undefined;
+  return { jp: example.jp, en: example.en, span: [span[0], span[1]] };
+}
 
 /** One example word for the build table: the kana form, its class (null for a
  * noun, which does not conjugate), and its English meaning. Verbs also carry the
@@ -560,6 +572,8 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
 
   if (deriveTables.length) build = "";
 
+  const sentenceExample = sentenceExampleFor(r.id);
+
   // The header LEADS with the written pattern — "〜てから: After doing X." — so a
   // learner gets used to reading the pattern in its 〜て… form, then a human
   // explanation, then the build blurb and table (the 〜ている-page-1 shape).
@@ -586,5 +600,6 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
           : deriveRules.length
             ? { deriveRules, deriveHeads: { form: formLabel ?? undefined } }
             : {}),
+    ...(sentenceExample ? { sentenceExample } : {}),
   };
 }

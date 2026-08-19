@@ -35,14 +35,13 @@ import { EntrySurface, Lead, Section } from "@/components/library/entry-section"
 import { LinkSlot } from "@/components/grammar/link-slot";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach, type PatternTeaching } from "@/components/library/pattern-teach";
+import { SentenceExampleView } from "@/components/lesson/phase-intro-view";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { examplesFor } from "@/data/grammar/corpus";
 import { libEntry, recipeOf, recipesOf } from "@/lib/library/library-index";
 import { useContentEntry } from "@/lib/library/content-entries";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
-import type { ReactNode } from "react";
 
 interface GrammarPayload {
   readonly text: string;
@@ -65,21 +64,6 @@ function hostList(attach: readonly { host: string }[]): string {
   if (labels.length <= 1) return labels[0] ?? "word";
   if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
   return `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
-}
-
-/** `jp` with `[start, end)` picked out in the same accent color the sentence
- * track colors its own parts with (.sentence-part-topic) — one visual language
- * for "here is the piece that matters" everywhere the app shows a sentence. */
-function highlightSpan(jp: string, span: readonly [number, number, string | null]): ReactNode {
-  const [start, end] = span;
-  if (start < 0 || end > jp.length || start >= end) return jp;
-  return (
-    <>
-      {jp.slice(0, start)}
-      <span className="font-medium sentence-part-topic">{jp.slice(start, end)}</span>
-      {jp.slice(end)}
-    </>
-  );
 }
 
 export function GrammarEntryView({
@@ -113,12 +97,11 @@ export function GrammarEntryView({
   const familyCluster = pattern.cluster ? (clusterById(pattern.cluster) ?? null) : null;
   const familyMembers = familyCluster ? membersOf(familyCluster) : [];
 
-  // One real sentence, with this pattern's own span picked out. Most patterns
-  // draw this from the Tatoeba corpus; a handful the tagger can't sign (see
-  // authored.ts) carry a hand-picked one instead — examplesFor merges both, so
-  // this reads the same either way. Absent, not empty, when neither has one yet.
-  const example = examplesFor(pattern.id).find((ex) => ex.sp[pattern.id]);
-  const exampleSpan = example?.sp[pattern.id];
+  // The pattern's own worked sentence — generated once by autoPatternPage (see
+  // sentenceExampleFor there) from the same Tatoeba/authored corpus lookup the
+  // teach walk uses, so the two surfaces never show two different sentences for
+  // the same pattern. Absent, not empty, for a pattern with no tagged sentence.
+  const sentenceExample = teachings?.[pattern.id]?.pages?.[0]?.sentenceExample;
 
   return (
     <EntrySurface>
@@ -145,12 +128,9 @@ export function GrammarEntryView({
         </div>
       </Section>
 
-      {example && exampleSpan ? (
+      {sentenceExample ? (
         <Section title="In a sentence">
-          <p className="font-kana text-[15px] leading-relaxed text-text">
-            {highlightSpan(example.jp, exampleSpan)}
-          </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
+          <SentenceExampleView example={sentenceExample} />
         </Section>
       ) : null}
 
