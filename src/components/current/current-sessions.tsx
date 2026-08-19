@@ -32,6 +32,11 @@ import { useEffect, useRef, useState } from "react";
 import { plural } from "@/lib/words";
 import { Btn, Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import {
+  TRACK_NOUN,
+  TRACK_TITLE,
+  trackKeyForRun,
+} from "@/components/home/home-feed";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { relativeTime } from "@/lib/relative-time";
 import { fixedRunList } from "@/lib/session-list";
@@ -81,12 +86,42 @@ function progressText(run: RunInfo): string | null {
   return p.total !== null ? `${p.done} of ${p.total} answered` : `${p.done} answered`;
 }
 
-/** "12 items · Started 2 hours ago" — what a run actually IS, the two facts
- * that used to require opening it to find out (SAK-67). `facts` is deduped by
- * fact id already (a run's own list), so its length is the item count without
- * a second pass. `now` is null until mount (see CurrentSessions), so this
- * omits the started clause rather than let a server-seeded "started" line
- * disagree with the client a moment later — same guard PracticeResume uses. */
+/** A run whose frozen `what` is nothing more than its own item count — the
+ * generic fallback `countWhat()` stamps on a run nobody named (quiz-session.tsx).
+ * Matched so a row can swap that count out for something that actually says
+ * what the run is, the same way `trackKeyForRun` below reads it. */
+const GENERIC_WHAT_RE = /^[\d,]+\s+things?$/i;
+
+/** The track a run belongs to, named the way its Home card would name it —
+ * "Vocabulary", "Kana", "Counting" — read off its facts via the same
+ * `trackKeyForRun` Home uses to find a lesson's own in-progress run. Null
+ * when the facts don't resolve to one clean track (a mixed list, or none). */
+function trackLabel(run: RunInfo): string | null {
+  const key = trackKeyForRun(run);
+  if (!key) return null;
+  return TRACK_TITLE[key] ?? TRACK_NOUN[key] ?? null;
+}
+
+/** The row's headline name. Most runs are already named something real when
+ * they start — a lesson's slice label, "Counters", "Sentence ordering · tier
+ * N" — so `run.what` is used as-is. The one gap is a curriculum lesson on an
+ * ordinary track (Kana, Vocabulary, Keigo, Grammar, Transitivity): Home
+ * starts those without a name, so `run.what` freezes to `countWhat()`'s bare
+ * "5 things" — a number, not a name (SAK-67 changes requested: the row said
+ * nothing about what was actually being taught). Swap that in for the run's
+ * track name instead; every other `what` is left alone. */
+function runTitle(run: RunInfo): string {
+  if (!GENERIC_WHAT_RE.test(run.what)) return run.what;
+  return trackLabel(run) ?? run.what;
+}
+
+/** "5 items · Started 2 hours ago" — how far along the run is and when it
+ * started, the two facts that used to require opening it to find out
+ * (SAK-67). `facts` is deduped by fact id already (a run's own list), so its
+ * length is the item count without a second pass. `now` is null until mount
+ * (see CurrentSessions), so this omits the started clause rather than let a
+ * server-seeded "started" line disagree with the client a moment later —
+ * same guard PracticeResume uses. */
 function whatText(run: RunInfo, now: number | null): string {
   const items = `${plural(run.facts.length, "item")}`;
   if (!run.startedAt || !now) return items;
@@ -116,6 +151,7 @@ function RunRow({
   now: number | null;
 }) {
   const answered = progressText(run);
+  const title = runTitle(run);
   // See session-staleness.ts for the threshold and why it's a hint, never an
   // auto-discard.
   const stale = now !== null && isStaleRun(run.lastActiveAt, now);
@@ -138,7 +174,7 @@ function RunRow({
         <span
           role="checkbox"
           aria-checked={selected}
-          aria-label={`Select "${run.what}" to discard`}
+          aria-label={`Select "${title}" to discard`}
           tabIndex={0}
           title="Select to discard · Shift-click to extend"
           onClick={(e) => onToggle(e.shiftKey)}
@@ -162,7 +198,7 @@ function RunRow({
           </span>
         ) : null}
         <span className="min-w-0">
-          <span className="block truncate font-semibold">{run.what}</span>
+          <span className="block truncate font-semibold">{title}</span>
           <span className="block text-xs text-text-muted">
             {whatText(run, now)}
             {answered ? ` · ${answered}` : ""}
