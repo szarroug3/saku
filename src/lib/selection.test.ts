@@ -25,7 +25,15 @@ import { describe, test } from "node:test";
 
 import { KANA_FACTS } from "../data/characters.ts";
 import { ALL_FACTS } from "./facts.ts";
-import { countOf, emptySelection, resolve, subjectWord } from "./selection.ts";
+import { effectiveState } from "./claims.ts";
+import { status } from "./scoring.ts";
+import {
+  countOf,
+  dueFacts,
+  emptySelection,
+  resolve,
+  subjectWord,
+} from "./selection.ts";
 import type { FactAggregate, FactId, HistoryFile } from "../types/index.ts";
 
 const NOW = Date.UTC(2026, 0, 15);
@@ -200,5 +208,55 @@ describe("the learned-date window narrows on history.learnedAt", () => {
       resolve({ ...emptySelection(), learned: { from: null, to: null } }, h).sort(),
       all,
     );
+  });
+});
+
+describe('dueFacts — the "Practice what\'s due" one-click pool', () => {
+  // Stability chosen so a small multiple of it lands cleanly in each of
+  // scoring.status()'s three bands (see scoring.test.ts's own use of the same
+  // 10-day/100-day shape): elapsed = stability → recall ≈ 1/e ≈ 0.37 → probe;
+  // elapsed = 0 → recall = 1 → quiet; elapsed ≫ stability → recall ≈ 0 → teach.
+  const DAY = 86_400_000;
+  const stable = { stability: 10, lastTested: 0 };
+  const [probeFact, quietFact, teachFact, unmetFact] = KANA_IDS.slice(0, 4);
+
+  const h: HistoryFile = history({
+    facts: {
+      [probeFact]: seen({ ...stable, lastTested: NOW - 10 * DAY }),
+      [quietFact]: seen({ ...stable, lastTested: NOW }),
+      [teachFact]: seen({ ...stable, lastTested: NOW - 200 * DAY }),
+    } as Record<FactId, FactAggregate>,
+    // Claimed but never tested — UNMET, which is p → 0 and so also `teach`,
+    // not a fourth state (see scoring.ts's UNMET doc: never-met and lost are
+    // the identical state, and the model cannot tell them apart).
+    claims: { [unmetFact]: NOW },
+  });
+
+  test("keeps only the facts scoring.status() calls `probe`, drops quiet and teach", () => {
+    assert.deepEqual(dueFacts(h, [], NOW), [probeFact]);
+  });
+
+  test("is exactly the everything-scope pool filtered to `probe` — not a second model", () => {
+    // The pool a "Due" status chip WOULD filter, if the builder had one: the
+    // same "everything I know" pool the Scope buttons already produce
+    // (resolve(emptySelection(), …)), narrowed by the identical status() call
+    // budget.ts and library/slice.ts already use to decide what to ask first.
+    const everything = resolve(emptySelection(), h, [], 0, { now: NOW });
+    const wouldBeDue = everything.filter((f) => {
+      const state = effectiveState(h.facts[f], h.claims?.[f], h.seen?.[f]);
+      return status(state, NOW) === "probe";
+    });
+    assert.deepEqual(dueFacts(h, [], NOW).sort(), wouldBeDue.sort());
+  });
+
+  test("nothing due — day one, or an all-quiet history — is an empty pool, not everything", () => {
+    assert.deepEqual(dueFacts(history(), [], NOW), []);
+    const allQuiet = history({
+      facts: { [quietFact]: seen({ ...stable, lastTested: NOW }) } as Record<
+        FactId,
+        FactAggregate
+      >,
+    });
+    assert.deepEqual(dueFacts(allQuiet, [], NOW), []);
   });
 });
