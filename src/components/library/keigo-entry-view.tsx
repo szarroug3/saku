@@ -84,7 +84,7 @@ export function KeigoEntryView({
           asks "the polite form of WHAT?" — so it is named for what it actually is:
           a fixed phrase you hear rather than conjugate. */}
       {set.formulaic ? (
-        <Section title="Where you'll hear it" tone="accent">
+        <Section title="Where you'll hear it">
           <p className="text-[15px] leading-relaxed text-text">
             This one is different. It isn&rsquo;t the polite version of a verb you
             already know — it&rsquo;s a fixed phrase. It&rsquo;s the greeting shop
@@ -103,7 +103,7 @@ export function KeigoEntryView({
           accent with the "when to use it" note in a tooltip, then the form + its
           reading. The section's own tooltip carries the one thing a learner must
           not miss — these are NEW words, not a politer spelling of the plain verb. */}
-      <Section title="Polite forms" tone="accent" help={KEIGO_HELP}>
+      <Section title="Polite forms" help={KEIGO_HELP}>
         <div className="flex flex-col gap-5">
           {set.words.map((w) => {
             // A FORMULAIC SET carries no honorific/humble EXPLANATION: `register`

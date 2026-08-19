@@ -33,7 +33,7 @@ export function SentenceEntryView({ entry }: { entry: EntryId }) {
     <EntrySurface>
       <ContentEntryHeader typeLabel="sentence structure" title={mark.name} />
 
-      <Section title="How the pieces are ordered" tone="accent">
+      <Section title="How the pieces are ordered">
         <MarkView mark={mark} />
       </Section>
     </EntrySurface>

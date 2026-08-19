@@ -51,7 +51,7 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
           gloss only restated the definition in the "What it means" section below. */}
       <ContentEntryHeader typeLabel="term" title={term.name} />
 
-      <Section title="What it means" tone="accent">
+      <Section title="What it means">
         <TermView term={term} />
       </Section>
 

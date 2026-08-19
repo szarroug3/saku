@@ -119,10 +119,7 @@ export function CounterEntryView({
 
       {/* ---- COUNTED FORM: how you say it, and what it means ---- */}
       {form ? (
-        <Section
-          title="How you say it"
-          tone="accent"
-        >
+        <Section title="How you say it">
           <Lead>
             {isBareNumber(form)
               ? "The number on its own, and what it counts to."
@@ -155,7 +152,7 @@ export function CounterEntryView({
 
       {/* ---- GENERATIVE RULE: how the number/count is built ---- */}
       {construction ? (
-        <Section title="How it's built" tone="accent">
+        <Section title="How it's built">
           <Lead>{construction.summary}</Lead>
           {/* The lesson's own rule card, so the reference and the lesson cannot
               drift — prose, then the worked 1–10 (or hundreds-and-up) example
