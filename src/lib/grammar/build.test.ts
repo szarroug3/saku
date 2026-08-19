@@ -16,6 +16,7 @@ import { describe, test } from "node:test";
 import { buildRow, countWord } from "./build";
 import { CLUSTERS, membersOf } from "../../data/grammar/clusters";
 import { RECIPES, type Recipe } from "../../data/grammar/recipes";
+import { hasKanji } from "../romaji";
 
 function byId(id: string) {
   const r = RECIPES.find((x) => x.id === id);
@@ -171,6 +172,56 @@ describe("every cluster renders", () => {
       rows.map((r) => r.how),
       ["行き + すぎる", "高 + すぎる", "静か + すぎる"],
     );
+  });
+});
+
+// SAK-33: `built` is the whole reason this file exists, and it is always
+// kanji-spelled where the example word has one (行く, 高い, 静か, 本, 読む, 車).
+// `builtReading` glosses that kanji the same convention the rest of the app
+// already uses beside a word — computed through the SAME apply()/applyWrap()
+// engine, on the examples' readings, not typed out a second time.
+describe("builtReading — SAK-33's parenthetical gloss on the cluster page", () => {
+  test("a single-slot build reads through the engine, not by hand", () => {
+    assert.equal(buildRow(byId("nakereba-naranai"))?.built, "行かなければならない");
+    assert.equal(buildRow(byId("nakereba-naranai"))?.builtReading, "いかなければならない");
+    assert.equal(buildRow(byId("te-kara"))?.built, "行ってから");
+    assert.equal(buildRow(byId("te-kara"))?.builtReading, "いってから");
+  });
+
+  test("the adjective host reads too — 高すぎる is not left to guess at", () => {
+    const rows = rowsFor([byId("sugiru")]);
+    assert.deepEqual(
+      rows.map((r) => r.built),
+      ["行きすぎる", "高すぎる", "静かすぎる"],
+    );
+    assert.deepEqual(
+      rows.map((r) => r.builtReading),
+      ["いきすぎる", "たかすぎる", "しずかすぎる"],
+    );
+  });
+
+  test("a wrap's reading is both slots read, cross-checked the way the kanji build is", () => {
+    const row = buildRow(byId("wa-yori"));
+    assert.equal(row?.built, "本は車より");
+    assert.equal(row?.builtReading, "ほんはくるまより");
+
+    const shikaNai = buildRow(byId("shika-nai"));
+    assert.equal(shikaNai?.built, "本しか読まない");
+    assert.equal(shikaNai?.builtReading, "ほんしかよまない");
+  });
+
+  test("every buildable recipe's reading, when present, is never empty, and differs from a kanji build", () => {
+    // する/ある's example is already all-kana (surface === kana), so its
+    // "reading" legitimately equals its build — only a build with kanji in it
+    // (行く, 高い, 静か, 本, 読む, 車) has something for the reading to gloss.
+    for (const r of RECIPES) {
+      const row = buildRow(r);
+      if (!row?.builtReading) continue;
+      assert.ok(row.builtReading.length > 0, `${r.id}: empty reading`);
+      if (hasKanji(row.built)) {
+        assert.notEqual(row.builtReading, row.built, `${r.id}: reading equals the kanji build`);
+      }
+    }
   });
 });
 

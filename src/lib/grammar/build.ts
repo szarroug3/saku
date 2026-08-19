@@ -27,12 +27,19 @@ import type { WordClass } from "../conjugate/index.ts";
 interface Example {
   readonly word: string;
   readonly cls: WordClass | null;
+  /** SAK-33: `word`'s reading, so a kanji-spelled example (高い, 本, 読む) can
+   * gloss the cluster page's built form the way the rest of the app already
+   * glosses a word beside its reading. Optional because a purely-kana example
+   * (かう, たかい) has nothing to gloss. */
+  readonly reading?: string;
 }
 
-/** A vehicle as this file's Example. The kana reading rides along on a Vehicle
- * because the DRILL needs it to accept a kana answer; a printed row does not. */
+/** A vehicle as this file's Example. The kana reading now rides along for two
+ * reasons: the DRILL needs it to accept a kana answer, and (SAK-33) the
+ * cluster page's built column needs it to gloss a kanji-spelled verb (読む,
+ * 行く) the built row is shown on. */
 function asExample(v: Vehicle): Example {
-  return { word: v.surface, cls: v.cls };
+  return { word: v.surface, cls: v.cls, reading: v.kana };
 }
 
 /**
@@ -46,9 +53,9 @@ function asExample(v: Vehicle): Example {
  * entry page's worked line get. See vehicles.ts.
  */
 const EXAMPLE: Record<Exclude<Host, "verb">, Example> = {
-  "adj-i": { word: "高い", cls: "adj-i" },
-  "adj-na": { word: "静か", cls: "adj-na" },
-  noun: { word: "本", cls: null },
+  "adj-i": { word: "高い", cls: "adj-i", reading: "たかい" },
+  "adj-na": { word: "静か", cls: "adj-na", reading: "しずか" },
+  noun: { word: "本", cls: null, reading: "ほん" },
 };
 
 /**
@@ -68,10 +75,10 @@ const EXAMPLE: Record<Exclude<Host, "verb">, Example> = {
  * is 行ったり読んだりする — two different 音便 in one cell, both from the engine.
  */
 const CLOSING_EXAMPLE: Record<Host, Example> = {
-  verb: { word: "読む", cls: "v5m" },
-  "adj-i": { word: "安い", cls: "adj-i" },
-  "adj-na": { word: "便利", cls: "adj-na" },
-  noun: { word: "車", cls: null },
+  verb: { word: "読む", cls: "v5m", reading: "よむ" },
+  "adj-i": { word: "安い", cls: "adj-i", reading: "やすい" },
+  "adj-na": { word: "便利", cls: "adj-na", reading: "べんり" },
+  noun: { word: "車", cls: null, reading: "くるま" },
 };
 
 export interface BuiltRow {
@@ -94,6 +101,17 @@ export interface BuiltRow {
   readonly on: readonly string[];
   /** The pattern built out on `on`. 行かなければならない */
   readonly built: string;
+  /**
+   * `built`'s reading, when every example word `on` is drawn from carries one
+   * (SAK-33). Computed by running the SAME recipe through the SAME engine on
+   * the examples' READINGS instead of their surface spellings — apply()/
+   * applyWrap() are driven by `cls`, not by the string's script, so
+   * よむ + cls v5m builds よんで exactly as 読む + v5m builds 読んで. Absent, not
+   * guessed, when a slot's example has no reading on file or the reading
+   * build disagrees with the surface build (same-length, same-shape check as
+   * `built` itself gets from applyWrap below).
+   */
+  readonly builtReading?: string;
   /**
    * The build, spelled out: base form, the trim if any, the suffix.
    * 行かない − い + ければならない
@@ -199,6 +217,21 @@ function buildHalf(
  * two different words, and the row is the two halves joined — 本は車より, not
  * 本は with the rest left to the reader's imagination.
  */
+/** `ex`'s build, read through the same recipe/half but on its READING instead
+ * of its surface spelling — apply()/applyWrap() are driven by `cls`, not by
+ * the string's script, so this reuses the identical engine call rather than
+ * a hand-typed second answer (SAK-33). null when `ex` carries no reading to
+ * build from. */
+function buildHalfReading(
+  r: Recipe,
+  half: readonly Attachment[],
+  ex: Example,
+): string | null {
+  if (!ex.reading) return null;
+  const out = buildHalf(r, half, { word: ex.reading, cls: ex.cls });
+  return out?.built ?? null;
+}
+
 export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   const at = host ? r.attach.find((a) => a.host === host) : r.attach[0];
   if (!at) return null;
@@ -209,9 +242,17 @@ export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   const half = [at];
   const open = buildHalf(r, half, ex);
   if (!open) return null;
+  const openReading = buildHalfReading(r, half, ex);
 
   if (!r.wrap) {
-    return { recipe: r, host: at.host, on: [ex.word], built: open.built, how: open.how };
+    return {
+      recipe: r,
+      host: at.host,
+      on: [ex.word],
+      built: open.built,
+      builtReading: openReading ?? undefined,
+      how: open.how,
+    };
   }
 
   const ct = r.wrap.close[0];
@@ -227,11 +268,25 @@ export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   const whole = applyWrap(r, ex.word, ex.cls, cex.word, cex.cls);
   if (!whole.ok || whole.value !== open.built + close.built) return null;
 
+  // The reading side gets the identical cross-check, and on its own terms: a
+  // reading whole that does not equal its own two reading halves joined is
+  // refused (undefined) rather than shown half-trusted, the same honesty the
+  // surface build demands of itself just above.
+  const closeReading = buildHalfReading(r, r.wrap.close, cex);
+  const wholeReading =
+    ex.reading && cex.reading ? applyWrap(r, ex.reading, ex.cls, cex.reading, cex.cls) : null;
+  const builtReading =
+    wholeReading?.ok && openReading !== null && closeReading !== null &&
+    wholeReading.value === openReading + closeReading
+      ? wholeReading.value
+      : undefined;
+
   return {
     recipe: r,
     host: at.host,
     on: [ex.word, cex.word],
     built: whole.value,
+    builtReading,
     // Two builds, one per slot, in the order they appear in the string. The
     // separator is not a "+": these are not being concatenated into each other,
     // they are two independent attachments with a word between them.

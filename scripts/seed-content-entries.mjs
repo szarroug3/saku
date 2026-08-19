@@ -226,10 +226,14 @@ const grammarRows = RECIPES.filter(isPrimaryPatternRecipe)
     );
     const primary = recipesOf(entry)[0];
     const family = primary?.cluster ? clusterById(primary.cluster) : undefined;
+    // SAK-33: shape matches live-item-entry-views.tsx's liveFamilyBuilds — a
+    // {built, reading} pair per member, not a bare string — so the seeded
+    // Library page can gloss a kanji-spelled build the same way the teach
+    // walk's live computation already does.
     const familyBuilds = Object.fromEntries(
       (family ? membersOf(family) : []).map((pattern) => {
         const built = buildRow(pattern, primaryHost(pattern) ?? undefined);
-        return [pattern.id, built?.built ?? ""];
+        return [pattern.id, { built: built?.built ?? "", reading: built?.builtReading }];
       }),
     );
     return row(entry, GRAMMAR_SUBJECT, {

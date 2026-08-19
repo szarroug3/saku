@@ -307,4 +307,28 @@ describe("form tables mirror the separately scored production groups", () => {
     const naiIrregulars = tables("nai-form").find((table) => table.title === "Irregular verbs")!;
     assert.ok(naiIrregulars.rules.some((row) => row.verb === "ある" && row.to === "ない"));
   });
+
+  // SAK-33: patternRuleTables' PATTERN_TABLE_GROUPS Adjectives group (高い/静か)
+  // looked like a live kanji-with-no-reading gap on first read, but it is dead
+  // code — autoPatternPage always prefers `deriveTables` (built from EXAMPLES,
+  // which is all kana) whenever any host has a derivable row, which is every
+  // producible verb-suffix pattern this table could apply to. Pinning both
+  // halves of that so a change to the priority order gets caught here instead
+  // of resurrecting an un-glossed kanji table nobody would notice regressed.
+  test("SAK-33: patternRuleTables' kanji Adjectives rows never reach a page (deriveTables wins first)", () => {
+    for (const recipe of RECIPES) {
+      const page = autoPatternPage(recipe);
+      assert.equal(page.buildTables, undefined, `${recipe.id} unexpectedly surfaced buildTables`);
+    }
+    // 〜すぎる is PATTERN_TABLE_GROUPS' Adjectives-bearing case specifically —
+    // the one recipe whose verb-suffix attach also reaches adj-i/adj-na — and
+    // it takes the deriveTables branch, all-kana, same as everything else.
+    const sugiru = RECIPES.find((candidate) => candidate.id === "sugiru")!;
+    const page = autoPatternPage(sugiru);
+    assert.deepEqual(page.deriveTables?.map((table) => table.title), [
+      "Verbs",
+      "い-adjectives",
+      "な-adjectives",
+    ]);
+  });
 });
