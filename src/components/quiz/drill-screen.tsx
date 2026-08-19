@@ -49,6 +49,12 @@ import {
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
+import {
+  effectiveListen,
+  isRevealPause,
+  resolveAnsweredText,
+  type RevealFeedbackKind,
+} from "@/lib/drill-reveal";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { sessionAccuracy } from "@/lib/session-accuracy";
 import {
@@ -258,6 +264,33 @@ interface DrillQuestion {
    */
   confused: EntryId | null;
   /**
+   * What the learner most recently answered on THIS showing, as one display
+   * string — an MC option's label, a recognition pick's text, or typed text.
+   * Null until a miss resolves one (see submit's `resolveAnsweredText` call),
+   * and null again for every card that has not been attempted yet, including
+   * a skip thrown before a first try. SAK-50: the reveal used to say only
+   * what the right answer was, never what you said instead, so a mix-up like
+   * お/あ had nothing to compare against. Overwritten on every attempt (unlike
+   * `confused`, which sticks to the first pair it can name) because this is
+   * always "what I said LAST", the one relevant to the reveal on screen now.
+   */
+  answered: string | null;
+  /**
+   * Whether the learner has pressed "Show text" on an audio-prompt showing —
+   * SAK-51's fallback for a card that would otherwise be a blank box with a
+   * speaker icon and no way through it if the audio never plays (muted
+   * device, no TTS voice, hard of hearing). Per SHOWING, exactly like
+   * `hinted` and `choicesShown`: set flat at construction, so a remount
+   * cannot carry a stale true into the next card. Unlike those two, it costs
+   * NOTHING — turning the audio-prompts SETTING off already redraws the
+   * current card as free text (see onAudioOff), so a self-service version of
+   * the same thing on ONE card can't cost more than the setting does. It only
+   * changes how THIS card renders (see `effectiveListen` in
+   * lib/drill-reveal.ts); `listen` itself, and everything graded or spoken
+   * off it, is untouched.
+   */
+  textRevealed: boolean;
+  /**
    * A "tap the marked word" showing for a は/が/を MEANING fact — rolled once
    * at ask time exactly like `grammarSelection`, so a remount cannot swap the
    * sentence or the board under the user. null for every other card, and for
@@ -342,7 +375,7 @@ function recordMissedPhrase(
  * WHICH answer was right, and that surfaces in the answer slot instead (the
  * input, or the correct MC option), the same way grid mode already reveals. */
 interface DrillFeedback {
-  kind: "good" | "bad";
+  kind: RevealFeedbackKind;
 }
 
 /** Everything here must stay JSON-serializable (numbers/strings/plain
@@ -869,6 +902,11 @@ export function DrillScreen() {
       choicesBoard,
       // Nothing has been said instead of this card's answer yet. Same rule.
       confused: null,
+      // No attempt yet on a new showing, so nothing to compare at a reveal.
+      answered: null,
+      // "Show text" has not been pressed on a new showing. Same rule as
+      // `hinted` and `choicesShown` just above.
+      textRevealed: false,
     };
     // Creates the stat, and deliberately advances NOTHING. `seen` used to tick
     // here, which put it in the same unit as `asked` while every numerator was
@@ -1015,7 +1053,14 @@ export function DrillScreen() {
         recognitionPick !== undefined && q.recognition
           ? q.recognition.options[recognitionPick] ?? null
           : null;
-      recordMissedPhrase(st, phrase, recognitionSaid ?? mcSaid ?? typedSaid);
+      // What was said, once, for both the persisted per-phrase record and the
+      // reveal on screen right now (SAK-50) — see resolveAnsweredText.
+      const saidText = resolveAnsweredText({ recognitionSaid, mcSaid, typedSaid });
+      recordMissedPhrase(st, phrase, saidText);
+      // Overwritten on every attempt, not just the last one: whichever miss
+      // ends up being the one the reveal shows (out-of-retries, or the try a
+      // later skip stands on) is the one this should say.
+      q.answered = saidText;
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
@@ -1124,10 +1169,20 @@ export function DrillScreen() {
    * resolves as the miss it was — the same `resolveShowing(…, false, false)` the
    * out-of-retries path makes — and then goes back for another showing. Either
    * way the card lands at the END of the deck (a new question to reach in turn,
-   * not the small gap a forced requeue uses), and we advance to the next card.
+   * not the small gap a forced requeue uses).
    *
-   * Not offered while `waiting`: once a card is out of retries it is already
-   * resolved and requeued, and the Continue button is the only thing left to do.
+   * SAK-50: a skip used to jump straight to `nextQuestion()`, so the most
+   * honest answer a learner can give ("I don't know this") was the one path
+   * through the app that never showed the correct one — Continue/Enter still
+   * moved on, but nothing was ever read first. It now pauses on a reveal, the
+   * same stop an out-of-retries miss already makes (see submit and the
+   * `revealPause`-gated block in the render below): `rt.waiting` goes true
+   * with a `"skip"` feedback kind instead of advancing immediately, and
+   * `nextQuestion` is left for Enter or the Continue button, same as a miss.
+   *
+   * Not offered while `waiting`: once a card is out of retries (or already
+   * mid a skip's own reveal) it is already resolved and requeued, and the
+   * Continue button is the only thing left to do.
    */
   function skipQuestion() {
     if (!active || !rt || !rt.q || rt.waiting || finishedRef.current) return;
@@ -1135,7 +1190,9 @@ export function DrillScreen() {
     if (q.tries > 0) {
       // The attempt stands. `credit` is necessarily false after a wrong try, so
       // this records a first-try miss and marks the showing resolved, same as
-      // running out of retries — see submit's out-of-retries branch.
+      // running out of retries — see submit's out-of-retries branch. `q.answered`
+      // is already set from that attempt's submit() call, so the reveal below
+      // has what to compare without this function touching it.
       const st = statForShowing(rt.stats, q.f);
       resolveShowing(st, false, false, showingOf(q));
       rt.resolved++;
@@ -1149,7 +1206,29 @@ export function DrillScreen() {
     clearAdvance();
     syncProgress(); // the requeue grew a limited run's total
     saveNow();
-    nextQuestion();
+    // Pause here instead of advancing — see the doc comment above. The card
+    // stays exactly as it was; only `waiting`/`feedback` change, which is what
+    // flips the render into its reveal branch.
+    rt.waiting = true;
+    rt.feedback = { kind: "skip" };
+    force();
+  }
+
+  /**
+   * SAK-51: reveal the written prompt behind an audio-prompt card's speaker,
+   * without touching anything about how the card is graded, spoken, or
+   * scored. The one thing an audio card being "unanswerable" ever meant was
+   * that no TEXT version of the prompt was reachable except by leaving the
+   * drill for the settings drawer and turning Audio prompts off entirely —
+   * this is the same escape, offered on the one card that needs it, for free
+   * (see `textRevealed` on DrillQuestion for why it costs nothing). Idempotent,
+   * and a no-op on a card that was never a listening card to begin with.
+   */
+  function showListenText() {
+    if (!rt || !rt.q || finishedRef.current) return;
+    if (!rt.q.listen || rt.q.textRevealed) return;
+    rt.q.textRevealed = true;
+    force();
   }
 
   /** Legacy bindDrill document keydown: Enter advances while waiting, Enter
@@ -1328,6 +1407,11 @@ export function DrillScreen() {
     // what was said. Null, not undefined: `confusionNote` is only reached
     // through a truthiness test, so this is tidiness rather than load-bearing.
     if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
+    // A showing in flight from before SAK-50's reveal existed has no record of
+    // what was said, and one from before SAK-51's fallback existed has not had
+    // "Show text" pressed. Same tidiness rule as `confused` above.
+    if (rt.q && rt.q.answered === undefined) rt.q.answered = null;
+    if (rt.q && typeof rt.q.textRevealed !== "boolean") rt.q.textRevealed = false;
     if (rt.q && rt.q.recognition === undefined) rt.q.recognition = null;
     // A showing in flight from before the variant quiz existed had no variant.
     // Null, not undefined: ctxFor reads it through `?? undefined`, so this is
@@ -1585,6 +1669,15 @@ export function DrillScreen() {
   if (!active || !rt || !rt.q) return null;
 
   const q = rt.q;
+  // SAK-51: the RENDER-ONLY shape of a listening card, distinct from `q.listen`
+  // itself (which stays the graded, spoken truth throughout — autoplay,
+  // checkTyped/ctxFor, hintFor, all read `q.listen` directly and are untouched
+  // by this). Every place below that used to branch on "is this a listening
+  // showing" to decide what to PRINT now branches on this instead, so pressing
+  // "Show text" (showListenText) makes the card render exactly as its
+  // non-listening twin would — the same fallback turning Audio prompts off in
+  // the settings drawer already gives, just reachable without leaving the card.
+  const listenVisible = effectiveListen(q.listen, q.textRevealed);
   // The word a kanji-reading card is asked IN — the known, multi-part anchor the
   // drill picked (電話 for 話). Set only for that card type, and only jp2en
   // (reading facts are jp2en; the guard is belt-and-braces). It drives two
@@ -1592,7 +1685,7 @@ export function DrillScreen() {
   // than the lone glyph, and the "in 電話" sublabel is dropped as redundant with
   // it. undefined for every other card, which then renders exactly as before.
   const readingWord =
-    q.dir === "jp2en" && !q.listen && isReadingFact(q.f)
+    q.dir === "jp2en" && !listenVisible && isReadingFact(q.f)
       ? anchorForFact(q.f, history)
       : undefined;
   // What to put on screen is the fact's subject's answer, not this screen's.
@@ -1625,7 +1718,7 @@ export function DrillScreen() {
       : questionsFor(q.f).prompt(q.f, q.dir, ctx);
   const selectionFrame =
     q.grammarSelection?.frame ??
-    (!q.listen ? q.recognition?.jp : null) ??
+    (!listenVisible ? q.recognition?.jp : null) ??
     null;
   // A MEANING question for a word whose reading collides with another word the
   // learner knows shows the kanji (the glyph) AND the pronunciation together, so
@@ -1636,7 +1729,7 @@ export function DrillScreen() {
   // aids without leaking the English answer. Display only; a word with no verified
   // pitch shows nothing extra.
   const promptPitch = (() => {
-    if (q.listen || q.dir !== "jp2en") return null;
+    if (listenVisible || q.dir !== "jp2en") return null;
     const info = factInfo(q.f);
     if (!info || info.subject !== VOCAB_SUBJECT) return null;
     if (wordMeaningFactId(info.glyph) !== q.f) return null;
@@ -1673,14 +1766,15 @@ export function DrillScreen() {
     if (isWordReadingFact(q.f)) {
       // An AUDIO reading card is dictation — you HEAR the word and type the
       // kana — so the meaning adds nothing and would wrongly imply "produce the
-      // reading from the meaning." Only the VISUAL reading card shows it.
-      if (q.listen) return null;
+      // reading from the meaning." Only the VISUAL reading card (or a listening
+      // one with its text revealed, SAK-51) shows it.
+      if (listenVisible) return null;
       return prompt.context ? (
         <span className="text-[15px] text-text">{prompt.context}</span>
       ) : null;
     }
     // Meaning card.
-    if (q.listen) {
+    if (listenVisible) {
       return meaningMustShowGlyph(q.f, history) ? (
         <span
           className="text-[20px] leading-none text-text"
@@ -1793,15 +1887,16 @@ export function DrillScreen() {
           : rt.feedback?.kind === "bad"
             ? "wrong-flash"
             : "resting";
-  // A finished miss — out of retries, waiting for the learner to move on. This is
-  // the state that needs a way FORWARD. `revealing` (the answer text) is this AND
-  // the show-answer setting; the Continue affordance keys on `missWaiting` alone,
-  // so it is present even with reveal off. A CORRECT answer auto-advances, so its
-  // `rt.waiting` is excluded here by the `bad` check.
-  const missWaiting = rt.waiting && rt.feedback?.kind === "bad";
-  // Out of retries and waiting for the next card, with the setting on: show the
-  // answer in the answer slot (the reveal that used to be a sentence).
-  const revealing = cfg.showAnswer && missWaiting;
+  // A finished miss (out of retries) OR a skip (SAK-50) — both leave the card
+  // on screen with nothing left to do but read the reveal and move on. This is
+  // the state that needs a way FORWARD. `revealing` (the answer text) is this
+  // AND the show-answer setting; the Continue affordance keys on `revealPause`
+  // alone, so it is present even with reveal off. A CORRECT answer
+  // auto-advances, so its `rt.waiting` is excluded (see isRevealPause).
+  const revealPause = isRevealPause(rt.feedback, rt.waiting);
+  // Paused on a reveal-eligible stop, with the setting on: show the answer in
+  // the answer slot (the reveal that used to be a sentence).
+  const revealing = cfg.showAnswer && revealPause;
   // The mix-up, named at the reveal and nowhere else. Not on a miss with goes
   // left — you are still answering, and the app telling you what you nearly
   // confused it with would be handing you the answer mid-question.
@@ -1980,8 +2075,10 @@ export function DrillScreen() {
           // A listening card hides the glyph and plays the word instead; the
           // speaker replays it. `glyph` above is still passed (harmless — the
           // halo ignores it while listening) so the reveal slot below can show
-          // the written word the learner just heard.
-          listen={q.listen}
+          // the written word the learner just heard. `listenVisible`, not
+          // `q.listen`, so pressing "Show text" (SAK-51) swaps the speaker for
+          // the same glyph a non-listening twin of this card would show.
+          listen={listenVisible}
           onListen={() => {
             const info = factInfo(q.f);
             const text = q.numberItem
@@ -2034,6 +2131,24 @@ export function DrillScreen() {
                 : (wordContext ?? undefined)
           }
         />
+        {/* SAK-51: an audio-prompt card used to be a blank box with a speaker
+            icon and no text anywhere — unanswerable if the audio never plays
+            (muted device, no TTS voice, or a hard-of-hearing learner), with
+            the only way out being to find the Audio-prompts toggle in the
+            settings drawer. This is that same escape, reachable from the card
+            itself: pressing it flips `listenVisible` (see above) so the halo
+            swaps its speaker for the glyph a text card would show, same as
+            turning the setting off would draw fresh — but for THIS card only,
+            with no reset of tries or credit. Gone the instant it's pressed
+            (`!q.textRevealed`), and absent entirely on a non-listening card. */}
+        {q.listen && !q.textRevealed ? (
+          <SmallBtn
+            onClick={showListenText}
+            title="Show the word as text instead of relying on audio"
+          >
+            Show text
+          </SmallBtn>
+        ) : null}
         {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
             reads as the question rather than a muted hint above it. Every card
             has one (see quiz-instruction.ts). Outside the halo's key so it does
@@ -2214,23 +2329,36 @@ export function DrillScreen() {
         {/* The reveal: the one thing colour can't say is WHICH answer was
             right. Held until you press Enter, so it's read rather than
             glimpsed. Fixed height whether or not it's showing — otherwise the
-            stage jumps every time a card resolves. */}
+            stage jumps every time a card resolves.
+
+            SAK-50 (the audit's other finding here): this used to be the
+            SMALLEST text on the card — a `text-sm` line, itself an inherited
+            size, sitting under a 78px halo glyph. The one moment the app owes
+            you the answer you just failed to give was the one thing on screen
+            easiest to skim past. It is now the single largest thing rendered
+            outside the halo ring itself (every surrounding control — the
+            input, the MC boards, the instruction line — tops out at 20px);
+            what you actually answered instead sits directly beneath it, so
+            the comparison the ticket asked for is explicit rather than
+            requiring you to remember what you typed three seconds ago. And it
+            now appears on a SKIP, not only an out-of-retries miss — see
+            `revealPause` / skipQuestion above. */}
         <p
           className={cx(
-            "flex flex-col items-center justify-center gap-0.5",
-            revealing || missWaiting ? "min-h-[38px]" : "hidden",
+            "flex flex-col items-center justify-center gap-1.5",
+            revealing || revealPause ? "min-h-[104px]" : "hidden",
           )}
         >
           {revealing ? (
             <>
-              <span className="text-sm">
+              <span className="flex flex-col items-center gap-1">
                 {q.particleDrill ? (
-                  <span className="font-semibold text-danger">
+                  <span className="text-3xl font-bold text-danger" lang="ja">
                     {q.particleDrill.chunks.find((c) => c.id === q.particleDrill?.answerChunkId)
                       ?.text}
                   </span>
                 ) : q.particleMarker ? (
-                  <span className="font-semibold text-danger" lang="ja">
+                  <span className="text-3xl font-bold text-danger" lang="ja">
                     {
                       q.particleMarker.options.find(
                         (o) => o.recipeId === q.particleMarker?.recipeId,
@@ -2238,36 +2366,46 @@ export function DrillScreen() {
                     }
                   </span>
                 ) : q.recognition ? (
-                  <span className="font-semibold text-danger">
+                  <span className="max-w-[380px] text-center text-2xl font-bold text-danger wrap-break-word">
                     {q.recognition.answer}
                   </span>
                 ) : (
-                  <>
-                <span className="text-lg text-text">{prompt.glyph}</span>
-                {prompt.context ? (
-                  <span className="text-text-muted"> {prompt.context}</span>
-                ) : null}{" "}
-                <span className="text-text-muted">=</span>{" "}
-                {revealPitch ? (
-                  // Same answer text, drawn with its pitch-accent overline. See
-                  // revealPitch above: only ever a word reading that has a
-                  // verified pitch, DISPLAY only.
-                  <PitchReading
-                    reading={revealPitch.reading}
-                    downstep={revealPitch.downstep}
-                    className="font-semibold text-danger"
-                  />
-                ) : (
-                  <span className="font-semibold text-danger">
-                    {/* One call, no fallback composed here. The `?? answers[0]`
-                        this replaced was the "a = a" bug: in en2jp a fact's first
-                        baked answer IS the prompt. See revealFor. */}
-                    {revealFor(q.f, q.dir, ctx)}
+                  <span className="flex max-w-[380px] flex-wrap items-baseline justify-center gap-1.5 wrap-break-word">
+                    <span className="text-sm text-text-muted">{prompt.glyph}</span>
+                    {prompt.context ? (
+                      <span className="text-sm text-text-muted">{prompt.context}</span>
+                    ) : null}
+                    <span className="text-sm text-text-muted">=</span>
+                    {revealPitch ? (
+                      // Same answer text, drawn with its pitch-accent overline. See
+                      // revealPitch above: only ever a word reading that has a
+                      // verified pitch, DISPLAY only.
+                      <PitchReading
+                        reading={revealPitch.reading}
+                        downstep={revealPitch.downstep}
+                        className="text-3xl font-bold text-danger"
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold text-danger">
+                        {/* One call, no fallback composed here. The `?? answers[0]`
+                            this replaced was the "a = a" bug: in en2jp a fact's first
+                            baked answer IS the prompt. See revealFor. */}
+                        {revealFor(q.f, q.dir, ctx)}
+                      </span>
+                    )}
                   </span>
                 )}
-                  </>
-                )}
               </span>
+              {/* WHAT WAS ANSWERED, next to the correct answer, per SAK-50 —
+                  `q.answered` (set in submit) is null for a skip thrown before
+                  any attempt, so this line simply doesn't render there; there
+                  is nothing to compare when nothing was said. */}
+              {q.answered ? (
+                <span className="text-[13px] text-text-muted">
+                  You answered{" "}
+                  <span className="font-medium text-text">{q.answered}</span>
+                </span>
+              ) : null}
               {/* THE MIX-UP, when the app already knows this pair is one. A
                   third line in the column, not a change to `revealFor` — that
                   function returns the ANSWER, and folding pedagogy into it
@@ -2281,17 +2419,18 @@ export function DrillScreen() {
               ) : null}
             </>
           ) : null}
-          {/* The way on, for EVERY finished miss — typed or multiple choice,
-              reveal on or off. It used to be a real button for MC only, with a
-              "press Enter" hint for typed cards, on the reasoning that a typed
-              card has hands on the keyboard. That breaks on mobile: the input
-              goes readOnly at the reveal, so the on-screen keyboard closes, and a
-              typed card was then left with no keyboard to press Enter AND no
-              button to tap — genuinely stuck, no way to the next card. So a real,
-              tappable Continue shows on any finished miss; a desktop user can
-              still just press Enter (the title says so, and the document keydown
-              handler advances on it). */}
-          {missWaiting ? (
+          {/* The way on, for EVERY finished miss (typed or multiple choice,
+              reveal on or off) AND now every skip — see `revealPause`. It
+              used to be a real button for MC only, with a "press Enter" hint
+              for typed cards, on the reasoning that a typed card has hands on
+              the keyboard. That breaks on mobile: the input goes readOnly at
+              the reveal, so the on-screen keyboard closes, and a typed card
+              was then left with no keyboard to press Enter AND no button to
+              tap — genuinely stuck, no way to the next card. So a real,
+              tappable Continue shows on any finished miss or skip; a desktop
+              user can still just press Enter (the title says so, and the
+              document keydown handler advances on it). */}
+          {revealPause ? (
             <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
               Continue
             </SmallBtn>
