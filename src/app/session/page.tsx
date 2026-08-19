@@ -376,25 +376,25 @@ export default function SessionPage() {
         {/* The ONLY thing that scrolls. min-h-0 lets it shrink inside the flex
             column so its own overflow (not the window) takes the lesson's length. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {/* min-h-full (a FLOOR against this scroller's own height, not a
-              cap) + justify-center: a short card centers in the frame
-              instead of pinning to the top with a dead gap under it. Never
-              h-full — a fixed/percentage-capped height is what makes
-              justify-center clip the start of overflowing content in a
-              scroll container; min-height just lets this grow past the
-              floor for a long card and scroll normally, same as before
-              (SAK-10).
+          {/* items-start: the card top-aligns under the frozen bar instead of
+              drifting to mid-screen. Vertically centering this row (items-
+              center) was tried and reverted — on review it read as "the
+              header is in the middle" rather than a full-screen lesson
+              (SAK-10, round 2). justify-center is doing different, kept
+              work: it centers the (content + rail) PAIR horizontally as a
+              unit, which is the "main content centered on the page" part
+              that still holds. min-h-full (a FLOOR against this scroller's
+              own height, not a cap — never h-full, which would clip
+              overflowing content) just keeps the row from collapsing
+              shorter than the frame on a one-card lesson.
 
-              Centering alone turned "a card, then a void" into "a card, with
-              a void on both sides" — worse on a short card, because the
-              emptiness got MORE symmetric, not less (SAK-10, rejected). The
-              row below adds LessonRail in the side margin the centering
-              opened up, so a wide viewport gets ambient "up next" content
-              instead of just more balanced whitespace (SAK-10 direction 2).
-              The rail sits beside the content, both vertically centered as
-              one unit, and disappears below xl where there is no honest
-              margin left to put it in — see lesson-rail.tsx. */}
-          <div className="flex min-h-full items-center justify-center gap-8 py-2">
+              The row adds LessonRail in the side margin justify-center
+              opens up on a wide viewport, so it gets ambient "up next"
+              content instead of just whitespace (SAK-10 direction 2). The
+              rail sits beside the content, top-aligned with it, and
+              disappears below xl where there is no honest margin left to
+              put it in — see lesson-rail.tsx. */}
+          <div className="flex min-h-full items-start justify-center gap-8 py-2">
             <div className="min-w-0 max-w-2xl flex-1">
               {sentenceOrderingTeaching ? (
                 <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
