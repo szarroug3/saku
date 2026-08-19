@@ -4,7 +4,9 @@
 // are learned by entering the lesson.
 //
 // The card is a FIXED compact size; the glyph scales down so a multi-character
-// word (先生) or a long kana form (ひとつ) fits without growing the box.
+// word (先生) or a long kana form (ひとつ) fits without growing the box — and
+// stays on ONE line rather than wrapping mid-word (ありがと/う), the same
+// shrink-to-fit contract the Library grid tiles ship (entry-tile.tsx).
 //
 // LOOK: a glass card — a translucent ground so the warm page shows through, a
 // soft drop shadow for lift, a top-left sheen (a radial gradient, NOT a blur, so
@@ -26,27 +28,35 @@ function watermarkChar(item: PreviewItem): string | null {
   return null;
 }
 
-/** Glyph size so the box stays one size and the content fits. A multi-word title
- * (a sentence-ordering tier, "Simple sentences") is Latin text that wraps at
- * spaces, so it is sized by length; a CJK glyph is sized by character count. */
+/** Glyph size for a MULTI-WORD Latin title only (a sentence-ordering tier,
+ * "Simple sentences") — Latin text wraps at spaces, a natural boundary, so a
+ * length-stepped size that still fits in two `line-clamp`d lines is enough.
+ *
+ * A single Japanese token — a word (ありがとう) or a grammar formula
+ * (〜てはいけない) — has no such boundary: Japanese carries no spaces, so any
+ * wrap point inside one is a wrap MID-WORD (ありがと/う). That case is not
+ * sized here at all; ItemPreview shrinks it to fit on one line instead, via
+ * the same `--chars`/`clamp()` container-query technique the Library grid
+ * tiles already ship (see entry-tile.tsx). */
 function glyphSize(glyph: string): string {
   const n = [...glyph].length;
-  if (/\s/.test(glyph)) {
-    if (n <= 12) return "text-[15px]";
-    if (n <= 20) return "text-[12px]";
-    return "text-[11px]";
-  }
-  if (n <= 1) return "text-[34px]";
-  if (n === 2) return "text-[26px]";
-  if (n === 3) return "text-[20px]";
-  return "text-[16px]";
+  if (n <= 12) return "text-[15px]";
+  if (n <= 20) return "text-[12px]";
+  return "text-[11px]";
 }
 
 export function ItemPreview({ item }: { item: PreviewItem }) {
   const ghost = watermarkChar(item);
+  // Only a multi-word Latin title wraps (at its spaces); a single Japanese
+  // token never does — see glyphSize's comment and the span below.
+  const multiWord = /\s/.test(item.glyph);
   return (
     <div
-      className="relative flex h-[104px] w-[104px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 p-3"
+      // [container-type:inline-size] makes this tile a query container, so the
+      // glyph span below can size itself in `cqi` against the tile's own
+      // content-box width — the same mechanism entry-tile.tsx uses for the
+      // Library grid.
+      className="relative flex h-[104px] w-[104px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 p-3 [container-type:inline-size]"
       style={
         {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
@@ -73,11 +83,28 @@ export function ItemPreview({ item }: { item: PreviewItem }) {
       {/* Glyph + type label as one group, centered in the tile — so the pair sits
           in the middle rather than the glyph riding high with the label low. */}
       <div className="relative flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
-        {/* A long word (いらっしゃいませ) that would wrap to three-plus lines is
-            clamped to two and truncated with an ellipsis rather than filling the
-            tile. line-clamp sets its own -webkit-box display, so no text-balance. */}
+        {/* SHRINK-TO-FIT, like the Library grid tiles (entry-tile.tsx). `--chars`
+            holds the code-point count and `fontSize` is 90cqi/chars split
+            across it, floored at a readable 12px and capped at the 32px a
+            short single-glyph word (九, 新聞) wants. `whitespace-nowrap`
+            forbids the wrap a long word (いらっしゃいませ, 〜てはいけない)
+            used to spill mid-word into — it shrinks to one line instead.
+            A multi-word Latin title (no natural in-word break to avoid) keeps
+            the old length-stepped size and clamps to two lines instead. */}
         <span
-          className={`font-kana line-clamp-2 px-0.5 leading-tight text-text [overflow-wrap:break-word] ${glyphSize(item.glyph)}`}
+          className={
+            multiWord
+              ? `font-kana line-clamp-2 px-0.5 leading-tight text-text ${glyphSize(item.glyph)}`
+              : "font-kana whitespace-nowrap px-0.5 leading-tight text-text"
+          }
+          style={
+            multiWord
+              ? undefined
+              : ({
+                  ["--chars" as string]: [...item.glyph].length,
+                  fontSize: "clamp(12px, calc(90cqi / var(--chars)), 32px)",
+                } as CSSProperties)
+          }
           lang="ja"
         >
           {item.glyph}
