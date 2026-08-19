@@ -60,6 +60,7 @@ import type {
   ShowingPresentation,
 } from "@/types";
 
+import { DrillDrawer } from "./drill-drawer";
 import { GridHud } from "./grid-hud";
 
 // ---------- runtime (lives in active.runtime.grid) ----------
@@ -225,6 +226,7 @@ export function GridScreen() {
   const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Cast once; lazily create the runtime on the first render of a fresh
   // quiz (guarded, so StrictMode re-renders and remounts reuse it). The
@@ -386,6 +388,7 @@ export function GridScreen() {
         stats={g.stats}
         streak={g.streak}
         onFinish={() => finishQuiz(g.stats)}
+        onOpenSettings={() => setDrawerOpen((o) => !o)}
       />
       {/* flex-1 + justify-center centers the header+sheet in whatever room
           the frame leaves below the HUD. No items-center: the header's
@@ -533,6 +536,7 @@ export function GridScreen() {
         })}
         </div>
       </div>
+      {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   );
 }
