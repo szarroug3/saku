@@ -16,8 +16,8 @@ describe("assemblyRoleSpans (SAK-50 changes-requested pass)", () => {
       { part: "ending", text: "言う。", start: 5, end: 8 },
     ]);
     assert.equal(result.labels.topic, "Topic");
-    assert.equal(result.labels.core, "Object/detail");
-    assert.equal(result.labels.ending, "Final predicate");
+    assert.equal(result.labels.core, "Object");
+    assert.equal(result.labels.ending, "Action");
   });
 
   test("returns null for an unknown tier", () => {
