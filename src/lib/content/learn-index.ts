@@ -62,8 +62,9 @@ export const LEARN_TRACKS: readonly LearnTrack[] = INDEX.tracks;
 /** The content hash of the index (Phase 3 frontier cache key). */
 export const CURRICULUM_VERSION: string = INDEX.curriculumVersion;
 
-/** Every curriculum glyph in prereq-respecting spine order — the vocab card's
- * position denominator (home-feed's vocabPositionLabel). */
+/** Every curriculum glyph in prereq-respecting spine order. UNUSED today, and
+ * UNSAFE to use for a per-lesson position span — see the long comment on
+ * `curriculumGlyphs` in learn-index-types.ts before reaching for this. */
 export const CURRICULUM_GLYPHS: readonly string[] = INDEX.curriculumGlyphs;
 
 /** The next lesson for a /learn track's precomputed units, wired to history — the

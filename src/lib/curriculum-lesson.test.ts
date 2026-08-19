@@ -468,6 +468,89 @@ describe("the next lesson is a function of history, and there is no cursor", () 
   });
 });
 
+// SAK-13. "Library → I already know this" lets a learner claim an item OUT OF
+// the normal lesson delivery order — ahead of the frontier, or scattered across
+// many future lessons with nothing claimed in between. The prior "N of M"
+// attempt computed its span from whatever was left once those claims were
+// filtered out, which is neither contiguous nor small once claims scatter, and
+// printed nonsense like "1–639 of 2,136" over a card that had actually taught 5
+// items. These tests simulate exactly that shape of claim and pin that a
+// position — the WHOLE group's, per nextCurriculumLesson's own contract above —
+// is unmoved by it, because packLessons/curriculum position every group ONCE,
+// over the static packing, and never read history at all (see lesson-position.ts,
+// "SAFE UNDER OUT-OF-ORDER CLAIMS", and advancePosition there for the primitive
+// this file's `position()` is built from).
+describe("out-of-order Library claims never corrupt a position (SAK-13)", () => {
+  test("claiming a far-future lesson whole does not move the current frontier's position", () => {
+    const before = nextCurriculumLesson(history([]), RANGE)!;
+    assert.equal(before.group.index, 1);
+
+    // Reach past the frontier and claim an ENTIRE future lesson via the
+    // Library's "I already know this" — completely out of delivery order, with
+    // nothing before it (besides lesson 1 itself) ever taught.
+    const future = GROUPS[Math.floor(GROUPS.length / 2)];
+    const after = nextCurriculumLesson(history(future.facts), RANGE)!;
+
+    assert.equal(after.group.index, 1, "the frontier does not jump to the claimed lesson");
+    assert.deepEqual(
+      after.position,
+      before.position,
+      "an out-of-order claim elsewhere must not move the frontier lesson's own position",
+    );
+  });
+
+  test("scattered out-of-order claims across many future lessons leave every lesson's position exactly as packed", () => {
+    // One fact from each of several lessons spread through the curriculum —
+    // non-contiguous, out of delivery order, nothing claimed in between them.
+    const targets = [0.01, 0.1, 0.4, 0.75, 0.95]
+      .map((frac) => Math.floor(GROUPS.length * frac))
+      .filter((i) => i > 0 && i < GROUPS.length);
+    const scattered = targets.flatMap((i) => GROUPS[i].facts.slice(0, 1));
+
+    // The packing (and every group's position within it) is a pure function of
+    // `range` alone — recomputing it from scratch, with no history in sight,
+    // must reproduce the exact same spans the scattered claims are being
+    // checked against, proving the claims never had anywhere to feed in.
+    const fresh = packLessons(RANGE);
+    for (const i of targets) assert.deepEqual(GROUPS[i].position, fresh[i].position, `group ${i}`);
+
+    // And the frontier, still resting on lesson 1 (none of ITS OWN items were
+    // among the scattered claims), reports lesson 1's own unmoved position —
+    // not something inflated by the out-of-order material claimed ahead of it.
+    const frontier = nextCurriculumLesson(history(scattered), RANGE)!;
+    assert.equal(frontier.group.index, 1);
+    assert.deepEqual(frontier.position, GROUPS[0].position);
+  });
+
+  test("an item claimed long before its lesson is reached still yields the WHOLE group's frozen position, not a rebuilt one", () => {
+    // A multi-item lesson a few groups in, so claiming one item early leaves a
+    // genuine non-empty remainder once the frontier naturally reaches it.
+    const targetIndex = GROUPS.findIndex((g, i) => i > 5 && g.items.length > 1);
+    assert.ok(targetIndex >= 0, "fixture needs a multi-item lesson past the first few");
+    const target = GROUPS[targetIndex];
+
+    // Claim one of the target lesson's items' facts NOW — long before the
+    // frontier would naturally reach it, exactly "Library → I already know
+    // this" on material far ahead of the normal delivery order — alongside
+    // every EARLIER lesson's facts, walked in normally so the frontier actually
+    // arrives at the target lesson rather than stopping short of it.
+    const earlierFacts = GROUPS.slice(0, targetIndex).flatMap((g) => g.facts);
+    const outOfOrderItem = target.items[0];
+    const claimedNow = [...earlierFacts, ...outOfOrderItem.facts];
+
+    const lesson = nextCurriculumLesson(history(claimedNow), RANGE)!;
+    assert.equal(lesson.group.index, target.index);
+    assert.deepEqual(
+      lesson.cards.map((c) => c.glyph),
+      target.items.slice(1).map((c) => c.glyph),
+      "the item claimed out of order is off the card; its neighbours are not",
+    );
+    // The position is the WHOLE group's — unaffected by which item inside it was
+    // claimed early, or how long before the lesson was reached the claim happened.
+    assert.deepEqual(lesson.position, target.position);
+  });
+});
+
 // Bug 26: starting a lesson marks its facts (and the readings its words prove)
 // seen, which advances the frontier BEFORE the drill. A discard scored nothing,
 // so it must un-see exactly what the start added and leave the frontier where it
