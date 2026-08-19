@@ -11,6 +11,8 @@
 // gate's assumptions fails here too.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import { kanaEntry, kanaFact } from "@/data/characters";
@@ -130,4 +132,106 @@ test("handakuten gates independently of dakuten", () => {
   const history = met([kanaFact("ば")]);
   assert.equal(conceptReachable("dakuten", history), true);
   assert.equal(conceptReachable("handakuten", history), false);
+});
+
+// ---------------------------------------------------------------------------
+// SAK-30 CORRECTION: the gate above is fine — it was wired into the wrong call
+// sites. Sam: "the library should always show commonly mixed up with and
+// related links regardless of known or unknown. only lessons should gate."
+// She confirmed this on か's own Library page specifically, where "commonly
+// mixed up with" had gone missing entirely (should always show カ once
+// katakana exists as a concept at all) while it correctly showed during the
+// actual lesson card. KanaEntryView, TermEntryView and KeigoEntryView are
+// each reused as BOTH the standalone Library page and the in-lesson teach
+// walk, so a `gateToReachable` prop (default false — "show everything", the
+// Library page's own behavior) now threads through, with only the teach
+// walk's own call sites turning it on. None of these views have a render
+// harness in this test runner (see kana-entry-view.test.ts's own note on that
+// constraint), so — same as that file — this is verified structurally: the
+// prop exists, defaults to ungated, and each render-time gate check is
+// conditioned on it; and that the Library route never passes it while the
+// teach-walk call sites do.
+// ---------------------------------------------------------------------------
+
+function src(relPath: string): string {
+  return readFileSync(fileURLToPath(new URL(relPath, import.meta.url)), "utf8");
+}
+
+test("KanaEntryView: gateToReachable defaults to false and gates both confusables and related links on it", () => {
+  const s = src("../../components/library/kana-entry-view.tsx");
+  assert.match(s, /gateToReachable\s*=\s*false/, "gateToReachable must default to false (show everything)");
+  assert.match(
+    s,
+    /if \(!gateToReachable\) return true;/,
+    "the confusables filter must short-circuit to 'show everything' when ungated",
+  );
+  assert.match(
+    s,
+    /!gateToReachable \|\| kanaGlyphReachable\(base, history\)/,
+    "the base-kana related link must only gate when gateToReachable is true",
+  );
+  assert.match(
+    s,
+    /!gateToReachable \|\| conceptReachable\(row\.markName, history\)/,
+    "the mark related link must only gate when gateToReachable is true",
+  );
+});
+
+test("TermEntryView: gateToReachable defaults to false and only filters relatedLinks when true", () => {
+  const s = src("../../components/library/term-entry-view.tsx");
+  assert.match(s, /gateToReachable\s*=\s*false/, "gateToReachable must default to false (show everything)");
+  assert.match(
+    s,
+    /gateToReachable\s*\n?\s*\?\s*term\.relatedLinks\.filter/,
+    "relatedLinks must only be filtered through conceptReachable when gateToReachable is true",
+  );
+});
+
+test("KeigoEntryView: gateToReachable defaults to false and only gates the keigo-registers link when true", () => {
+  const s = src("../../components/library/keigo-entry-view.tsx");
+  assert.match(s, /gateToReachable\s*=\s*false/, "gateToReachable must default to false (show everything)");
+  assert.match(
+    s,
+    /registers && \(!gateToReachable \|\| conceptReachable\("keigo-registers", history\)\)/,
+    "the keigo-registers related link must only gate when gateToReachable is true",
+  );
+});
+
+test("the Library route never passes gateToReachable — it always shows everything", () => {
+  const s = src("../../app/library/[...entry]/page.tsx");
+  assert.doesNotMatch(
+    s,
+    /gateToReachable/,
+    "the standalone Library page must never opt into the lesson gate",
+  );
+});
+
+test("the teach walk turns gating on for all three reused views", () => {
+  const teachWalk = src("../../components/session/teach-walk.tsx");
+  assert.match(
+    teachWalk,
+    /<TermEntryView[^>]*gateToReachable/,
+    "teach-walk's TermEntryView call must pass gateToReachable",
+  );
+
+  const teachItemView = src("../../components/session/teach-item-view.tsx");
+  assert.match(
+    teachItemView,
+    /<KanaEntryView[^>]*gateToReachable/,
+    "teach-item-view's KanaEntryView call must pass gateToReachable",
+  );
+  assert.match(
+    teachItemView,
+    /<KeigoEntryView[^>]*gateToReachable/,
+    "teach-item-view's KeigoEntryView call must pass gateToReachable",
+  );
+
+  // The live adapters teach-item-view.tsx renders through must forward the
+  // flag to the shared renderer rather than swallowing it.
+  const liveAdapters = src("../../components/library/live-item-entry-views.tsx");
+  assert.match(
+    liveAdapters,
+    /gateToReachable=\{gateToReachable\}/,
+    "live-item-entry-views.tsx must forward gateToReachable to the shared renderers",
+  );
 });
