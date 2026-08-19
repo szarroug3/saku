@@ -69,6 +69,7 @@ import { entryHref } from "@/lib/library/href";
 // it has a reading" property is testable (the runner cannot load JSX).
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
+import { hasKanji } from "@/lib/romaji";
 import type { VerbPair } from "@/data/transitivity";
 
 /** Whether an entry has a pronunciation worth a 🔊.
@@ -508,8 +509,14 @@ function KeigoCell({
           className="relative z-10 flex-none"
         />
       </div>
+      {/* Furigana glosses a kanji reading — an all-kana word (いらっしゃいませ)
+          has nothing for it to add, so it's dropped from the joined reading
+          list rather than repeating the word verbatim. See SAK-38. */}
       <span className="mt-0.5 block truncate text-xs text-text-muted">
-        {words.map((w) => w.reading).join(" / ")}
+        {words
+          .filter((w) => hasKanji(w.word))
+          .map((w) => w.reading)
+          .join(" / ")}
         {note ? ` · ${note}` : ""}
       </span>
     </div>
@@ -587,7 +594,11 @@ function PairCell({
     <div className="min-w-0">
       <div className="flex items-center gap-1.5">
         <span className="truncate font-kana text-[17px]">{side.word}</span>
-        <span className="truncate text-xs text-text-muted">{side.reading}</span>
+        {/* Furigana glosses a kanji reading — an all-kana verb has nothing
+            for it to add. See SAK-38. */}
+        {hasKanji(side.word) ? (
+          <span className="truncate text-xs text-text-muted">{side.reading}</span>
+        ) : null}
         {tail ? <span className="truncate text-xs text-text-muted">· {tail}</span> : null}
         <HearButton
           glyph={side.word}

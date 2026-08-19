@@ -22,6 +22,7 @@ import { Fragment } from "react";
 import { HearButton } from "@/components/ui/hear-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { hasKanji } from "@/lib/romaji";
 import { countGroupHasBuild } from "@/data/phase-intros";
 import type {
   CountBuildPiece,
@@ -272,7 +273,11 @@ function AnchoredIntroExamples({ examples }: { examples: readonly IntroExample[]
           <span className="text-text">{accentedText(ex.from, ex.accentFrom)}</span>
           <span className="text-text">{ex.op ?? "="}</span>
           <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
-          {ex.reading ? <span className="text-[13px] text-text">({ex.reading})</span> : null}
+          {/* Furigana glosses a kanji reading — an all-kana result has
+              nothing for it to add. See SAK-38. */}
+          {ex.reading && hasKanji(ex.to) ? (
+            <span className="text-[13px] text-text">({ex.reading})</span>
+          ) : null}
           <span className="text-text">·</span>
           <span lang="en" className="text-[13px] text-text">
             {ex.gloss}
@@ -381,7 +386,9 @@ export function IntroExamples({
                 ) : null}
                 <span className="text-text-muted/70">{ex.op ?? "="}</span>
                 <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
-                {ex.reading ? (
+                {/* Furigana glosses a kanji reading — an all-kana result has
+                    nothing for it to add. See SAK-38. */}
+                {ex.reading && hasKanji(ex.to) ? (
                   <span className={hasAccent ? "text-text" : "text-[13px] text-text"}>({ex.reading})</span>
                 ) : null}
                 <span className="text-text-muted/70">·</span>
@@ -726,13 +733,19 @@ export function IntroCountTable({
               </td>
               <td className="whitespace-nowrap px-4 py-3 align-baseline text-[17px] text-text">
                 <span className="font-medium text-text">{row.word}</span>
-                <span className="text-text-muted">
-                  ({row.reading}
-                  {row.alternateReadings?.map((reading) => (
-                    <Fragment key={reading}> / {reading}</Fragment>
-                  ))}
-                  )
-                </span>
+                {/* Furigana glosses a kanji reading — an all-kana word
+                    (ひとつ) has nothing for it to add, so the parenthetical
+                    reading is dropped entirely; the speaker still plays the
+                    sound. See SAK-38. */}
+                {hasKanji(row.word) ? (
+                  <span className="text-text-muted">
+                    ({row.reading}
+                    {row.alternateReadings?.map((reading) => (
+                      <Fragment key={reading}> / {reading}</Fragment>
+                    ))}
+                    )
+                  </span>
+                ) : null}
                 <HearButton
                   glyph={row.reading}
                   voiceName={cfg.voiceName}
