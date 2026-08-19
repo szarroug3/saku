@@ -1228,9 +1228,11 @@ export function QuizSessionProvider({
   /**
    * Bank the round that just ended: summarise it and fold it into the totals.
    *
-   * Shared by "Complete round" (which then rests) and "Done for now" (which
+   * Shared by "Complete round" (which then rests) and "End session" (which
    * then stops) — both of those finished the round, so both bank it. The only
-   * difference is what happens next.
+   * difference is what happens next. ("Pause" does NOT call this: it leaves
+   * the round open rather than banking it, which is exactly why it's
+   * resumable and End session isn't — see pauseSession vs. endSession below.)
    *
    * THE ROUND-COMPLETE FLOOR IS NOT HERE, AND THAT IS THE FINDING.
    * =============================================================
