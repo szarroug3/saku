@@ -20,6 +20,9 @@ export interface IndexItem extends SchedulableItem {
   readonly roles: readonly string[];
   readonly prereqs: readonly EntryId[];
   readonly blockedBy: readonly EntryId[];
+  /** See BaseContentItem.badgeNumber in content/item.ts — carried through only
+   * for the sentence-ordering tiers that set it. */
+  readonly badgeNumber?: number;
 }
 
 /** A teaching unit, reduced to the fields the walk needs plus what the preview
