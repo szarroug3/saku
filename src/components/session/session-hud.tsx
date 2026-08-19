@@ -20,7 +20,7 @@ export function SessionHud({
   hideBar,
   onDone,
   onEnd,
-  doneLabel = "Done for now",
+  doneLabel = "Pause",
   endLabel = "End session",
   children,
 }: {

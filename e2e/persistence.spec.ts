@@ -154,14 +154,14 @@ test("a round committed mid-session is not counted again at the end", async ({
   // the rest means round 2 is already banked (endSession does not close a round
   // twice), and finishSession writes nothing at all now.
   //
-  // "Complete session now" rather than "Done for now": the session HUD carries
-  // its own "Done for now" and the two would be ambiguous. They are NOT the
-  // same path — "Complete session now" calls endSession, "Done for now" calls
-  // pauseSession — see the "Done for now from the ... phase" tests below for
-  // that other path.
-  await page
-    .getByRole("button", { name: "Complete session now", exact: true })
-    .click();
+  // "End session" (SAK-55): the rest screen used to grow its own
+  // "Complete session now" button, worded differently from the HUD's
+  // "End session" purely so the two duplicate-function buttons wouldn't read
+  // as the same thing. That's gone — Pause and End session each live once,
+  // on the SessionHud strip, everywhere in the session flow. This click ends
+  // the session (calls endSession); see the "Pause from the ... phase" tests
+  // below for the other path (pauseSession).
+  await page.getByRole("button", { name: "End session", exact: true }).click();
   await expect(page.locator("body")).toContainText("Session complete");
   await page
     .getByRole("button", { name: "Complete session", exact: true })
@@ -178,18 +178,19 @@ test("a round committed mid-session is not counted again at the end", async ({
 });
 
 /**
- * "DONE FOR NOW" ALWAYS RETURNS TO LEARN, NOT HOME.
+ * "PAUSE" ALWAYS RETURNS TO LEARN, NOT HOME.
  *
  * pauseSession used to hardcode router.push("/") — the signed-out marketing
  * page — even though the session it just left is fully persisted and
- * resumable. The fix routes it to "/learn" instead. "Done for now" is wired
- * to pauseSession from three HUD spots (teaching, round-complete, resting)
- * plus RestScreen's own button; each phase gets its own test, freshly seeded,
- * so a session left paused by one does not turn the next lesson's "Start"
- * button into "Continue session" underneath it.
+ * resumable. The fix routes it to "/learn" instead. "Pause" (labelled "Done
+ * for now" before SAK-55 collapsed the break screen's five differently
+ * worded exits down to two) is wired to pauseSession from all three HUD
+ * spots (teaching, round-complete, resting); each phase gets its own test,
+ * freshly seeded, so a session left paused by one does not turn the next
+ * lesson's "Start" button into "Continue session" underneath it.
  */
 
-test("Done for now from the teaching phase returns to Learn", async ({
+test("Pause from the teaching phase returns to Learn", async ({
   page,
   seed,
 }) => {
@@ -198,12 +199,12 @@ test("Done for now from the teaching phase returns to Learn", async ({
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   // Landed straight on the teach walk (phase "teaching"); its HUD carries its
-  // own "Done for now" beside "Quiz me", before the round has even started.
-  await page.getByRole("button", { name: "Done for now", exact: true }).click();
+  // own "Pause" beside "Quiz me", before the round has even started.
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.waitForURL("**/learn");
 });
 
-test("Done for now from the round-complete phase returns to Learn", async ({
+test("Pause from the round-complete phase returns to Learn", async ({
   page,
   seed,
 }) => {
@@ -216,11 +217,11 @@ test("Done for now from the round-complete phase returns to Learn", async ({
   // The fork shown right after a round finishes, before "Complete round" is
   // pressed.
   await expect(page.locator("body")).toContainText("round 1 of 3 · done");
-  await page.getByRole("button", { name: "Done for now", exact: true }).click();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.waitForURL("**/learn");
 });
 
-test("Done for now from the resting phase returns to Learn", async ({
+test("Pause from the resting phase returns to Learn", async ({
   page,
   seed,
 }) => {
@@ -234,12 +235,10 @@ test("Done for now from the resting phase returns to Learn", async ({
   // ending the session outright.
   await page.getByRole("button", { name: "Complete round", exact: true }).click();
   await expect(page.locator("body")).toContainText(/resting before round 2/);
-  // The resting phase renders "Done for now" twice — once on the sticky HUD
-  // (SessionHud) and once on RestScreen's own card — both wired to the same
-  // pauseSession, so either one proves the fix; .first() picks the HUD's.
-  await page
-    .getByRole("button", { name: "Done for now", exact: true })
-    .first()
-    .click();
+  // The resting phase renders exactly one "Pause" now (SAK-55): the sticky
+  // HUD's. RestScreen used to grow its own second, identical "Done for now"
+  // button here — the literal duplicate the ticket called out — which is
+  // why this test used to need .first().
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.waitForURL("**/learn");
 });
