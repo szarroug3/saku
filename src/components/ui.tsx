@@ -115,18 +115,24 @@ export function Card({
 export function Lbl({
   children,
   tone = "muted",
+  className,
 }: {
   children: ReactNode;
   /** "muted" (default) is the quiet section eyebrow every screen uses; "accent"
    * lifts a top-level group header, as the Practice page does over its
    * sub-labelled sections. */
   tone?: "muted" | "accent";
+  /** Extra classes merged onto the label, e.g. `w-full` to force it onto its
+   * own line inside a `flex-wrap` row of chips (the Library's two filter
+   * rows). Most callers never pass this. */
+  className?: string;
 }) {
   return (
     <p
       className={cx(
         "mb-2 text-[13px] font-semibold uppercase tracking-[0.04em]",
         tone === "accent" ? "text-accent" : "text-text-muted",
+        className,
       )}
     >
       {children}

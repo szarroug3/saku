@@ -45,12 +45,8 @@ import {
   toggleSection as toggleSectionIn,
   type Selection,
 } from "@/lib/library/selection";
-import {
-  entryStanding,
-  entryIsKnown,
-  standingOf,
-  type Standing,
-} from "@/lib/library/standing";
+import { standingOf, type Standing } from "@/lib/library/standing";
+import { isEntryKnownForDisplay } from "@/lib/library/known-mark";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import {
   ALL_TAB,
@@ -371,14 +367,7 @@ export function LibraryPageClient({
     if (stateFilter === "known" || stateFilter === "unknown") {
       const wantKnown = stateFilter === "known";
       return (entry: LibEntry) =>
-        entryIsKnown(
-          entryStanding(
-            knownFactsOf(entry),
-            liveFacts,
-            claims,
-            now,
-          ),
-        ) === wantKnown;
+        isEntryKnownForDisplay(entry, liveFacts, claims, now) === wantKnown;
     }
     if (stateFilter === "mixup") {
       return (entry: LibEntry) => activeMixupEntries.has(entry.id);
@@ -400,6 +389,16 @@ export function LibraryPageClient({
     now,
     activeMixupEntries,
   ]);
+
+  // WHETHER TO MARK AN ENTRY KNOWN IN THE GRID ITSELF (SAK-63) — unlike `keep`
+  // above, this runs regardless of the knowledge filter, so scanning the shelf
+  // shows progress even on All. Same `isEntryKnownForDisplay` call the Known /
+  // Not known branch of `keep` just made, so the tile's mark and the filter can
+  // never quietly disagree about what "known" means — see known-mark.ts.
+  const isKnown = useCallback(
+    (entry: LibEntry) => isEntryKnownForDisplay(entry, liveFacts, claims, now),
+    [liveFacts, claims, now],
+  );
 
   // SEARCH FOLLOWS THE TAB. On a subject tab it is SCOPED to that kind (the Kana
   // tab searches only kana), sectioned by HOW you matched (exact / prefix / …).
@@ -692,6 +691,16 @@ export function LibraryPageClient({
         onChange={commitQuery}
         placeholder="Search anything: し, shi, 生, せんせい, telephone…"
       >
+        {/* Each chip row gets its own heading — "Kind" governs WHAT you see,
+            "Status" governs WHICH of it, and stacked with no label the two used
+            to read as one long undifferentiated row of chips. `w-full` forces
+            the label onto its own line inside this flex-wrap row, the same
+            trick the old bare `<div className="w-full" />` used to break the
+            rows apart — `tone="accent"` matches how Practice lifts its own
+            top-level group headers ("How to ask", "What to practice"). */}
+        <Lbl tone="accent" className="w-full">
+          Kind
+        </Lbl>
         {/* The kind chips change what you SEE, never what you have SELECTED —
             the selection outlives them. One is always active. ALL LEADS THE ROW:
             it spans every subject (browse) and buckets a search by type, and the
@@ -704,8 +713,10 @@ export function LibraryPageClient({
             {KIND_LABEL[k]}
           </Chip>
         ))}
-        {/* State filters on their own line. */}
-        <div className="w-full" />
+        {/* State filters on their own line, under their own heading. */}
+        <Lbl tone="accent" className="w-full">
+          Status
+        </Lbl>
         {STATE_CHIPS.map(({ value, label }) => (
           <Chip
             key={value}
@@ -814,6 +825,7 @@ export function LibraryPageClient({
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
                     selectMode={selectMode}
+                    known={isKnown(h.entry)}
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
@@ -867,6 +879,7 @@ export function LibraryPageClient({
                   onToggleSection={onToggleSection}
                   voice={cfg.voiceName}
                   keep={keep}
+                  known={isKnown}
                   filter={stateFilter}
                   selectMode={selectMode}
                 />)}
@@ -887,6 +900,7 @@ export function LibraryPageClient({
                 onToggleSection={onToggleSection}
                 voice={cfg.voiceName}
                 keep={keep}
+                known={isKnown}
                 filter={stateFilter}
                 selectMode={selectMode}
               />
