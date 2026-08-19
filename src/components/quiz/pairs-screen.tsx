@@ -39,6 +39,7 @@ import type {
   SessionStats,
 } from "@/types";
 
+import { DrillDrawer } from "./drill-drawer";
 import { PairsHud } from "./pairs-hud";
 
 // ---------- the mismatch flash ----------
@@ -312,6 +313,7 @@ export function PairsScreen() {
   const { active, finishQuiz, setProgress } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Cast once; lazily create the runtime on the first render of a fresh
   // quiz (guarded, so StrictMode re-renders and remounts reuse it).
@@ -388,6 +390,7 @@ export function PairsScreen() {
         stats={p.stats}
         streak={p.streak}
         onEnd={() => finishQuiz(p.stats)}
+        onOpenSettings={() => setDrawerOpen((o) => !o)}
       />
 
       {/* The board is the stage, the way the halo is drill's: it stands on the
@@ -452,6 +455,7 @@ export function PairsScreen() {
           })}
         </div>
       </div>
+      {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   );
 }
