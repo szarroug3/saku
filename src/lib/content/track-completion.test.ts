@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { lessonSpanInTrack, trackCompletion } from "./track-completion.ts";
+import { lessonSpan, trackCompletion } from "./track-completion.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import type { CompletionUnit } from "./track-completion.ts";
 import type { FactId } from "@/types";
@@ -106,103 +106,74 @@ describe("trackCompletion", () => {
   });
 });
 
-// lessonSpanInTrack — the SAFE per-lesson span (see this file's own header,
-// "THE LESSON'S OWN SPAN"). It reads a lesson's units' RANK in the track's own
-// static `order`, never a count derived from history, so — unlike a naive
-// `from = known + 1` — an out-of-order Library claim or a far-flung prerequisite
-// pull can widen the span (see the last two tests) but can never make it lie:
-// it always reports exactly the rank window the units on the card occupy.
-describe("lessonSpanInTrack", () => {
-  /** A track shaped like kana/grammar/etc.: `n` distinct items, ranked by their
-   * position in the array — exactly what `order` is for every live track. */
+// lessonSpan — the TIGHT SEQUENTIAL per-lesson span (see this file's own
+// header, "THE LESSON'S OWN SPAN"). `known + 1` through `known + itemCount`,
+// off `trackCompletion`'s own safe running count: a deliberate, informed
+// reversion from the static-order-rank span (`lessonSpanInTrack`, removed —
+// its old tests lived here, proving it stayed tight under an out-of-order
+// claim elsewhere in the track) back to the simpler, tighter number the
+// product owner chose after seeing the wide version live. See lessonSpan's own
+// comment in track-completion.ts for exactly what this trade gives up.
+describe("lessonSpan", () => {
+  /** A track shaped like kana/grammar/etc.: `n` distinct items — only the
+   * COUNT matters to `lessonSpan`, never their rank in any `order`. */
   const trackOf = (n: number): CompletionUnit[] =>
     Array.from({ length: n }, (_, i) => ({
       item: { entry: `item-${i + 1}` as never },
       facts: [fact(`item-${i + 1}:fact`)],
     }));
 
-  // (a) THE ORDINARY CASE — matches the worked example from the bug report
-  // exactly: the first kana lesson, five items, nothing known yet, reads
-  // "1–5 of 46" rather than the old code's bare "0".
-  test("the first lesson's own units rank 1..K — the worked example ('1-5 of N')", () => {
-    const order = trackOf(46);
-    const lessonUnits = order.slice(0, 5); // the scheduler's first 5-item lesson
-    assert.deepEqual(lessonSpanInTrack(order, lessonUnits), { from: 1, to: 5 });
+  // THE FIRST WORKED EXAMPLE FROM THE BUG REPORT: the first kana lesson,
+  // nothing known yet, six items taught -- "Hiragana 1-6 of 46"-shape.
+  test("the first lesson, nothing known: known 0 + 6 items taught -> 1-6", () => {
+    const lessonUnits = trackOf(6);
+    assert.deepEqual(lessonSpan(0, lessonUnits), { from: 1, to: 6 });
   });
 
-  test("a later, still in-order lesson ranks contiguously from wherever it starts", () => {
-    const order = trackOf(46);
-    const lessonUnits = order.slice(20, 25); // ranks 21-25
-    assert.deepEqual(lessonSpanInTrack(order, lessonUnits), { from: 21, to: 25 });
+  // THE SECOND WORKED EXAMPLE FROM THE BUG REPORT, verbatim: 10 words already
+  // known, this lesson teaches 6 more (kara, suru, jin, kou, ka, nan) -> "11-16",
+  // never the wide static-rank span ("11-3,301") this used to print instead.
+  test("10 known, 6 taught this lesson -> 11-16, not a wide static-rank span", () => {
+    const lessonUnits = trackOf(6);
+    assert.deepEqual(lessonSpan(10, lessonUnits), { from: 11, to: 16 });
   });
 
-  test("a single-unit lesson is a degenerate span, from === to", () => {
-    const order = trackOf(19);
-    assert.deepEqual(lessonSpanInTrack(order, [order[6]]), { from: 7, to: 7 });
+  test("a later lesson advances from wherever `known` already sits", () => {
+    const lessonUnits = trackOf(5);
+    assert.deepEqual(lessonSpan(20, lessonUnits), { from: 21, to: 25 });
   });
 
-  // (b) THE COUNTER-EXAMPLE, mirroring lesson-position.test.ts's own
-  // "counter-example" test: prove this function does NOT reproduce the
-  // "1–639 of 2,136" shape for a plain in-order lesson just because an
-  // out-of-order Library claim exists SOMEWHERE ELSE in the track.
-  // `lessonSpanInTrack` takes no history/claims parameter at all — there is
-  // nothing here for a claim to read, let alone distort — so this pins that
-  // invariant directly rather than only arguing it in prose.
-  test("counter-example: an out-of-order claim elsewhere in the track cannot widen this lesson's span", () => {
-    const order = trackOf(2136);
-    // A learner claimed item 639 (0-based index 638) out of order via the
-    // Library. That claim lives entirely upstream, in history — it never
-    // reaches this function. What is ACTUALLY taught this lesson is the plain
-    // next 5 native items, ranks 1-5.
-    const lessonUnits = order.slice(0, 5);
-    const span = lessonSpanInTrack(order, lessonUnits);
-    assert.deepEqual(span, { from: 1, to: 5 });
-    assert.notEqual(span?.to, 639, "639 must not leak in — this is the bug SAK-13 reports, relocated");
+  test("a single-item lesson is a degenerate span, from === to", () => {
+    assert.deepEqual(lessonSpan(6, trackOf(1)), { from: 7, to: 7 });
   });
 
-  // A unit the scheduler pulled in from ANOTHER track's own order (see this
-  // file's header: a counter lesson's kanji prerequisite resolves through
-  // vocab's pronunciation units, not the counters track's own order) has no
-  // rank here at all — excluded, not reported as an unknown position.
-  test("a unit foreign to this track's own order is excluded, not reported as an unknown position", () => {
-    const order = trackOf(10);
-    const foreign: CompletionUnit = { item: { entry: "other-track:kanji" as never }, facts: [] };
-    const lessonUnits = [foreign, order[2]]; // foreign prereq bundled with a native due unit (rank 3)
-    assert.deepEqual(lessonSpanInTrack(order, lessonUnits), { from: 3, to: 3 });
+  // A multi-unit item (two readings, a 灯-style item) counts as ONE item
+  // toward the span, exactly like `trackCompletion`'s `known`/`total` -- the
+  // two numbers have to agree, or "known 10, teaching 6" and "span advances by
+  // 6" would silently drift apart.
+  test("a multi-unit item (two readings) counts once toward the span, matching known/total's own dedup", () => {
+    const lessonUnits: CompletionUnit[] = [
+      { item: { entry: "a" as never }, facts: [fact("a:meaning")] },
+      { item: { entry: "d" as never }, facts: [fact("d:reading1")] },
+      { item: { entry: "d" as never }, facts: [fact("d:reading2")] },
+    ];
+    // 2 distinct items (a, d), not 3 units.
+    assert.deepEqual(lessonSpan(0, lessonUnits), { from: 1, to: 2 });
   });
 
-  test("null when none of the lesson's units are native to this track's order", () => {
-    const order = trackOf(5);
-    const foreign: CompletionUnit = { item: { entry: "other-track:x" as never }, facts: [] };
-    assert.equal(lessonSpanInTrack(order, [foreign]), null);
-  });
-
-  // (c) A SYNTHETIC OUT-OF-ORDER-CLAIM + PREREQ-PULL SCENARIO — the shape
-  // unit-scheduler-core.ts's planUnitLessonCore actually produces for a track
-  // like vocab or numbers/counters, and CONFIRMED EMPIRICALLY for the real
-  // vocab track by simulating its first 60 lessons from empty history (no
-  // claims at all, in-order, default scheduling): spans like "13-3301 of
-  // 14,182" and "155-8189 of 14,182" appear from lesson 3 onward — this is not
-  // a rare edge case for vocab, it is the common shape past the first couple of
-  // lessons, because vocab's `order` is frequency-ranked while a word's
-  // kanji-component prerequisite resolves by curriculum Built-from edges (see
-  // vocabPositionLabel's comment in home-feed.tsx).
-  //
-  // Modeled here directly: the due unit sits at a low rank; its untaught
-  // prerequisite (bundled FIRST, per planUnitLessonCore's "prereqs first" —
-  // unit-scheduler-core.ts's own comment) sits far later in this SAME `order`.
-  // No history or out-of-order claim is even needed to trigger this shape (an
-  // out-of-order claim can only make it MORE likely, by leaving exactly the
-  // item whose prereq is far away as the next due one) — it falls straight out
-  // of prereqChain reaching across `order` for an untaught component. The
-  // resulting span is wide, but it is NOT a lie: it is exactly the rank window
-  // the two units the card is actually teaching occupy — see
-  // lessonSpanInTrack's own comment for why the width itself isn't a bug.
-  test("a prerequisite pulled from far away in the same order produces a wide, truthful span — not a bug", () => {
-    const order = trackOf(2136);
-    const prereq = order[1899]; // untaught component, rank 1900
-    const due = order[4]; // the due unit that needed it, rank 5
-    const lessonUnits = [prereq, due]; // chain-then-unit, as the scheduler emits it
-    assert.deepEqual(lessonSpanInTrack(order, lessonUnits), { from: 5, to: 1900 });
+  // THE ACCEPTED TRADEOFF, PINNED DIRECTLY: unlike lessonSpanInTrack,
+  // lessonSpan takes no `order` and no history at all -- it trusts `known` as
+  // handed to it. An out-of-order Library claim elsewhere in the track moves
+  // `known` (that is `trackCompletion`'s own job, and it does so safely), and
+  // this function advances the span from wherever `known` lands without
+  // checking it against any static rank. This is the exact, documented
+  // tradeoff (see track-completion.ts's "THE LESSON'S OWN SPAN"), not an
+  // oversight: this test exists so nobody "fixes" it later without noticing
+  // the product decision behind it.
+  test("known is trusted as given -- this function does not re-derive or validate it against a static order", () => {
+    // A `known` far larger than the track's real size still just advances the
+    // span from wherever it is told to; validating that is trackCompletion's
+    // job, not this function's.
+    assert.deepEqual(lessonSpan(9999, trackOf(3)), { from: 10000, to: 10002 });
   });
 });
