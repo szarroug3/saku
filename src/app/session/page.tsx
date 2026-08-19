@@ -122,7 +122,6 @@ export default function SessionPage() {
     pauseSession,
     endSession,
     finishSession,
-    startSession,
     startFirstRound,
     resumeRound,
     setTeachStep,
@@ -569,11 +568,7 @@ export default function SessionPage() {
       <div className="flex flex-1 flex-col justify-center mt-3.5">
         <SessionComplete
           session={session}
-          onRerun={() => {
-            const { facts, teach, what } = session;
-            finishSession();
-            startSession(facts, teach, what);
-          }}
+          onQuizAgain={(facts, boxes) => retryLeg(facts, boxes)}
           onMarkKnown={() => {
             // finishSession pushes /learn; flag it so the "no session → Home"
             // guard above doesn't clobber that with a Home redirect.
@@ -581,8 +576,7 @@ export default function SessionPage() {
             finishSession(true);
           }}
           onGoToLesson={() => {
-            // Same "finish, then start fresh" shape as onRerun above: finish
-            // the run with NOTHING claimed and nothing committed for its
+            // Finish the run with NOTHING claimed and nothing committed for its
             // single deferred round (see finishSession/closeRound), then
             // relaunch this exact batch in TEACH mode — the same call
             // startTrack's Start button makes (facts taught in full, nothing

@@ -280,6 +280,27 @@ export function initialSessionPhase(teach: FactId[]): SessionPhase {
   return teach.length > 0 ? "teaching" : "starting";
 }
 
+/**
+ * Which of the two "Session complete" screens applies (SAK-52, the crossed-
+ * screens fix): a lesson that TAUGHT before it quizzed (a non-empty teach set)
+ * gets the taught screen — a selectable list of what was learned plus its own
+ * "Quiz again"; a "Quiz me" run that skipped straight to the drill (teach
+ * empty) gets the plain results screen plus "I know these" / "Take me to the
+ * lesson".
+ *
+ * THE SAME SIGNAL initialSessionPhase ALREADY KEYS ON. `session.origin` does
+ * NOT distinguish the two paths — both a taught lesson and a direct "Quiz me"
+ * on the same track are `origin: "lesson"`. `teach` is what actually differs
+ * between them, it is frozen at session start (see StudySession.teach), and it
+ * is exactly the field initialSessionPhase already reads to choose "teaching"
+ * vs "starting". Reusing it here, rather than inventing a second discriminator,
+ * is what keeps "was this session taught" from being able to disagree with
+ * itself between the start of the run and the end of it.
+ */
+export function isTaughtSession(session: Pick<StudySession, "teach">): boolean {
+  return session.teach.length > 0;
+}
+
 /** The fixed number of rounds a TAUGHT session runs. See `effectiveRoundTarget`
  * for the one exception (a "Quiz me" session started with no `teach`, which
  * runs exactly one round) — this constant is never compared against directly

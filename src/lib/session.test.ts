@@ -21,6 +21,7 @@ import { describe, test } from "node:test";
 import {
   effectiveRoundTarget,
   initialSessionPhase,
+  isTaughtSession,
   mergeStats,
   recoveredAfterLeg,
   roundCompleteView,
@@ -621,4 +622,40 @@ test("sessionKnownClaimTarget: never returns the session's own array by referenc
   const teach = [f("a")];
   const target = sessionKnownClaimTarget({ facts: teach, teach, totalStats: {} });
   assert.notEqual(target, teach);
+});
+
+// SAK-52 (later round): the two "Session complete" screens were crossed —
+// a taught lesson showed the direct Quiz-me's "I already know these" / "Take
+// me to the lesson" buttons instead of its own picker + "Quiz again", and vice
+// versa. `isTaughtSession` is the fix's discriminator, and it is pinned here
+// against exactly the shapes `initialSessionPhase` above is pinned against —
+// the two must never disagree about the same `teach` set, because
+// initialSessionPhase decides where a session BEGINS and isTaughtSession
+// decides which screen it ENDS on.
+describe("isTaughtSession — which Session-complete screen applies (SAK-52)", () => {
+  test("a taught session (non-empty teach) is Path A", () => {
+    const [a, b] = ["a", "b"].map(f);
+    assert.equal(isTaughtSession({ teach: [a, b] }), true);
+  });
+
+  test("a sentence Quiz-me (marker-only teach) is still Path A", () => {
+    // Same shape sessionKnownClaimTarget and initialSessionPhase both treat as
+    // taught: the tier marker alone is non-empty, so it must not fall through
+    // to the direct-quiz screen.
+    const marker = f("grammar:sentence-ordering-tier/simple");
+    assert.equal(isTaughtSession({ teach: [marker] }), true);
+  });
+
+  test("a Quiz-me-only run (empty teach) is Path B", () => {
+    assert.equal(isTaughtSession({ teach: [] }), false);
+  });
+
+  test("agrees with initialSessionPhase on every teach shape: taught iff not starting", () => {
+    for (const teach of [[], [f("a")], [f("a"), f("b")]]) {
+      const taught = isTaughtSession({ teach });
+      const phase = initialSessionPhase(teach);
+      assert.equal(taught, phase === "teaching");
+      assert.equal(!taught, phase === "starting");
+    }
+  });
 });
