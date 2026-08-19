@@ -11,6 +11,7 @@ import {
   SENTENCE_ORDERING_GUIDES,
   sentenceOrderingIntro as sharedSentenceOrderingIntro,
   type ChunkRoleKey,
+  type SentenceOrderingWorkedExample,
 } from "@/data/sentence-ordering-guides";
 
 export type SentenceOrderingTierId =
@@ -936,6 +937,40 @@ function FocusedPartBoxes({
   );
 }
 
+/**
+ * The intro card's own worked example — same three-layer shape as the step
+ * cards below it (natural English, that sentence in Japanese chunk order, then
+ * the actual Japanese sentence), just without a chunk to highlight yet: the
+ * intro is read before the walk starts breaking anything into parts. Reuses
+ * the step cards' box/label treatment so the abstract description above it
+ * and the concrete cards after it don't look like two different features.
+ */
+function IntroWorkedExample({ example }: { example: SentenceOrderingWorkedExample }) {
+  return (
+    <div className="mt-6 rounded-md border border-border/60 bg-card/40 px-3 py-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Example
+      </p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-text">
+        Natural English
+      </p>
+      <p className="text-[14px] text-text-muted">{example.en}</p>
+
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
+        Japanese chunk order
+      </p>
+      <p className="text-[13px] text-text-muted">{example.enOrdered}</p>
+
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
+        Japanese
+      </p>
+      <p lang="ja" className="mt-1 text-[20px] font-light text-text-muted">
+        {example.jp}
+      </p>
+    </div>
+  );
+}
+
 export function sentenceOrderingTeachSteps(tierId: SentenceOrderingTierId): number {
   return 1 + TIER_LESSONS[tierId].length;
 }
@@ -967,6 +1002,7 @@ export function SentenceOrderingTeachWalk({
           // as teach-walk.tsx.
           <FlatSurfaceProvider>
             <PhaseIntroView intro={intro} />
+            {guide.example ? <IntroWorkedExample example={guide.example} /> : null}
           </FlatSurfaceProvider>
         ) : lesson ? (
           <div className="space-y-5">
