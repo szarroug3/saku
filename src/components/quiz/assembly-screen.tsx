@@ -444,9 +444,9 @@ export function AssemblyScreen() {
     if (resolved || card.tray.length !== canon.length) return;
     // Read before checkCard mutates the tray (a locked/out-of-retries check
     // overwrites card.tray with the revealed canonical order).
-    const wrongMismatch = gradeAssembly(item, card.tray)
-      ? null
-      : findAssemblyMismatch(item, card.tray, tierId);
+    // findAssemblyMismatch itself returns null on a full match, so no
+    // separate gradeAssembly pre-check is needed here.
+    const wrongMismatch = findAssemblyMismatch(item, card.tray, tierId);
     const out = checkCard(rt, card, retriesAllowed(cfg));
     saveNow();
     setMismatch(out === "right" ? null : wrongMismatch);
