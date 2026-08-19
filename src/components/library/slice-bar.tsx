@@ -61,6 +61,7 @@ export function SliceBar({
   history,
   now,
   onClaim,
+  onUnclaim,
   showLabel = true,
   includeSolid = false,
   claimFacts,
@@ -85,6 +86,11 @@ export function SliceBar({
   /** Marks the slice known. Async and owned by the page, because the page holds
    * the history this bar is rendered from and has to refresh it. */
   onClaim(facts: FactId[]): void;
+  /** Reverses a claim — "actually, I don't [know this]". Only ever offered on
+   * the entry variant (see the SAK-61 note by claimedFacts below): unclaiming
+   * belongs on the item's own Library page, not on a shelf or on Progress.
+   * Optional because the "bar" variant never renders it. */
+  onUnclaim?(facts: FactId[]): void;
   /** Whether to print `slice.label` in bold ahead of the sentence. True on the
    * shelf, where the label is the current selection or search and nothing else
    * on screen names it. False on an entry page, where the label is the entry's
@@ -195,22 +201,44 @@ export function SliceBar({
   // slices. Add-to-list and I-know-this stay: you may still file か or claim it.
   const canDrill = sliceIsDrillable(slice);
 
+  // SAK-61: what "unclaim" on an entry page reverses. The mirror of
+  // claimOrder above — the same claimable (non-reading) facts of this exact
+  // entry, filtered down to the ones that ARE currently claimed, rather than
+  // the ones that aren't. There is deliberately no separate "unclaim
+  // mechanism": it is applyDropClaims (history-ops.ts) run on this set,
+  // through the same onUnclaim the entry page already wires onClaim through.
+  const claimedFacts = claimableFacts(sliceFacts(slice)).filter(
+    (fact) => claims[fact] !== undefined,
+  );
+
   // ENTRY-PAGE TREATMENT. A Library entry page is reference, not a shelf: no
-  // filing (Add to list is the shelf's verb), no claim/teach. The only action it
-  // may still offer is a deliberate self-test, and only when the entry is
-  // quizzable on its own (a lone kana IS the answer printed above — nothing to
-  // ask). So render nothing unless canQuiz, and then just the Quiz me button,
-  // lesson-style, with no band around it.
+  // filing (Add to list is the shelf's verb), no claim/teach. It may still
+  // offer a deliberate self-test (canQuiz) and, since SAK-61, the one verb
+  // that reverses a claim already made on THIS entry (canUnclaim) — both
+  // narrow, deliberate exceptions to "reference doesn't act". Render nothing
+  // unless one of them applies.
   if (variant === "entry") {
-    if (!canQuiz) return null;
+    // SAK-61: "unclaiming should be in the library" — this is the one entry
+    // action besides Quiz me, and it only appears when there is something on
+    // THIS entry to reverse. Everything else about the entry variant (no
+    // band, no Add to list, no claim/teach) is unchanged.
+    const canUnclaim = Boolean(onUnclaim) && claimedFacts.length > 0;
+    if (!canQuiz && !canUnclaim) return null;
     return (
       <>
         {/* Bottom-RIGHT, like the lesson walk's "Quiz me" in its footer — a
             reference page's one action sits at the trailing edge, not the left. */}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <Btn sel onClick={() => setQuizzing(true)}>
-            Quiz me {quizCount}
-          </Btn>
+          {canUnclaim ? (
+            <Btn onClick={() => onUnclaim?.(claimedFacts)}>
+              Mark as not known
+            </Btn>
+          ) : null}
+          {canQuiz ? (
+            <Btn sel onClick={() => setQuizzing(true)}>
+              Quiz me {quizCount}
+            </Btn>
+          ) : null}
         </div>
         <QuizPreStart
           open={quizzing}

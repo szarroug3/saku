@@ -24,6 +24,7 @@ import {
   localAddToList,
   localClaim,
   localDeleteSessions,
+  localDropClaim,
   localResetHistory,
   localSaveList,
   localSeen,
@@ -108,6 +109,44 @@ test("localClaim persists and re-reads", () => {
     "hira-a": 1_000,
     "hira-i": 1_000,
   });
+});
+
+// SAK-61: "unclaim" — the Library entry page's "mark as not known" action —
+// mirrors POST /api/claim with `known: false` into this same local store when
+// a signed-out learner is claiming from a browser rather than an account (see
+// postClaim's fallback in progress-fetch.ts and localDropClaim's doc comment).
+// This is the storage layer the entry page's unclaim button ultimately writes
+// through when there is no server session; the equivalent server-side write
+// (applyDropClaims) already has its own coverage in history-ops.test.ts, but
+// nothing previously exercised this browser twin, so a regression here could
+// have shipped a button whose local fallback silently did nothing.
+test("localDropClaim reverses a claim already made, in the same store localClaim wrote to", () => {
+  localClaim([fid("hira-a"), fid("hira-i")], 1_000);
+  assert.deepEqual(loadLocalHistory().claims, {
+    "hira-a": 1_000,
+    "hira-i": 1_000,
+  });
+
+  const after = localDropClaim([fid("hira-a")]);
+
+  // The return value AND a fresh read agree: the claim is gone, not just
+  // absent from the value handed back.
+  assert.deepEqual(after.claims, { "hira-i": 1_000 });
+  assert.deepEqual(loadLocalHistory().claims, { "hira-i": 1_000 });
+
+  // Unclaiming is not a reset: everything else about the fact (and the other
+  // still-claimed fact) survives untouched.
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(loadLocalHistory().claims ?? {}, "hira-a"),
+    false,
+    "the key itself is deleted, not zeroed — an absent claim and a claim at ts 0 must not read the same",
+  );
+});
+
+test("localDropClaim on a fact that was never claimed is a harmless no-op", () => {
+  localClaim([fid("hira-a")], 1_000);
+  const after = localDropClaim([fid("never-claimed")]);
+  assert.deepEqual(after.claims, { "hira-a": 1_000 });
 });
 
 test("localSeen writes its own key", () => {
