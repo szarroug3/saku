@@ -377,7 +377,11 @@ export function PairsScreen() {
   if (!active || !p) return null;
 
   return (
-    <div>
+    // .kq-center-frame (globals.css, SAK-10): floor-height wrapper so a short
+    // board reads as vertically centered instead of pinned to the top with a
+    // dead gap below it; still grows and scrolls normally for a board tall
+    // enough to need it.
+    <div className="kq-center-frame">
       <PairsHud
         asked={asked}
         total={total}
@@ -387,8 +391,9 @@ export function PairsScreen() {
       />
 
       {/* The board is the stage, the way the halo is drill's: it stands on the
-          page rather than inside a card. */}
-      <div className="flex flex-col items-center pt-8 pb-4">
+          page rather than inside a card. flex-1 + justify-center centers it
+          in whatever room the frame leaves below the HUD. */}
+      <div className="flex flex-1 flex-col items-center justify-center py-4">
         {/* The board header (task #33): this matching board asks ONE response
             of ONE source type, and the header is the whole of the disambiguation
             — "Words → meaning" vs "Words → reading", a word board vs a kanji

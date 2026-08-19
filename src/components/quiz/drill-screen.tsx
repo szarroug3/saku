@@ -1827,7 +1827,12 @@ export function DrillScreen() {
   const hasLesson = !!session && session.teach.length > 0;
 
   return (
-    <div>
+    // .kq-center-frame (globals.css, SAK-10): a floor-height wrapper so the
+    // stage below reads as vertically centered on a short quiz instead of
+    // pinned to the top with a dead gap under it, while still growing (and
+    // scrolling with the page) for a card tall enough to need it — the
+    // drawer opening, or a long reveal/hint stack.
+    <div className="kq-center-frame">
       {/* px-3 to inset the HUD's contents off both edges — the same value
           pairs and grid use, so the three screens agree.
 
@@ -1924,7 +1929,12 @@ export function DrillScreen() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-4 pt-10 pb-4">
+      {/* flex-1 + justify-center: takes whatever room .kq-center-frame's
+          floor leaves below the HUD and centers the stage inside it. When
+          the stage itself is taller than that (drawer open, long reveal),
+          this simply grows past the floor — no fixed height here to clip
+          against. */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4">
         <DrillHalo
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.

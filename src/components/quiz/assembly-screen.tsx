@@ -509,7 +509,11 @@ export function AssemblyScreen() {
   const pct = total > 0 ? Math.round((100 * done) / total) : 0;
 
   return (
-    <div>
+    // .kq-center-frame (globals.css, SAK-10): floor-height wrapper so a
+    // short assembly card reads as vertically centered instead of pinned to
+    // the top with a dead gap under it; still grows and scrolls normally
+    // once the hint panel or a long piece pool needs more room.
+    <div className="kq-center-frame">
       <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span className="flex flex-wrap items-center gap-1.5">
@@ -541,7 +545,9 @@ export function AssemblyScreen() {
         </div>
       </div>
 
-      <div className="mx-auto mt-6 flex max-w-xl flex-col items-center">
+      {/* flex-1 + justify-center centers the card in whatever room the
+          frame leaves below the HUD. */}
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-4">
         <DrillHalo
           key={`${item.id}-${card.tries}`}
           cardKey={`${item.id}-${card.tries}`}
