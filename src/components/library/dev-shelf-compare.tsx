@@ -42,7 +42,7 @@ export function DevShelfCompare({
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <VariantLabel>Current — shipped &lt;Shelf&gt;</VariantLabel>
+        <VariantLabel>Current: shipped &lt;Shelf&gt;</VariantLabel>
         <Shelf
           kind={kind}
           sections={sections}
@@ -59,7 +59,7 @@ export function DevShelfCompare({
         />
       </div>
       <div>
-        <VariantLabel>Redesigned — de-boxed</VariantLabel>
+        <VariantLabel>Redesigned: de-boxed</VariantLabel>
         <DeboxedShelf
           kind={kind}
           sections={sections}

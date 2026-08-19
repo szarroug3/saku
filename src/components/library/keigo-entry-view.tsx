@@ -87,7 +87,7 @@ export function KeigoEntryView({
         <Section title="Where you'll hear it" tone="accent">
           <p className="text-[15px] leading-relaxed text-text">
             This one is different. It isn&rsquo;t the polite version of a verb you
-            already know — it&rsquo;s a fixed phrase. It&rsquo;s the greeting shop
+            already know. It&rsquo;s a fixed phrase. It&rsquo;s the greeting shop
             and restaurant staff call out to welcome a customer in:{" "}
             <span lang="ja" className="font-kana">
               いらっしゃいませ

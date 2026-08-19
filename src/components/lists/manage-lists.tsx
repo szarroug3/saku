@@ -61,7 +61,7 @@ function entriesOf(
 function subOf(entry: LibEntry): string {
   return entry.readings.length === 1
     ? entry.readings[0]
-    : (entry.meanings[0] ?? "—");
+    : (entry.meanings[0] ?? "");
 }
 
 export function ManageLists() {

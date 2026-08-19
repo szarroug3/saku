@@ -1072,7 +1072,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
     },
     {
       lead: "Three of the digits read two ways.",
-      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting leans on the first of each — よん, なな, きゅう — but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
+      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting leans on the first of each (よん, なな, きゅう), but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
     },
   ],
   examples: [
@@ -1229,11 +1229,11 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
     },
     {
       lead: "Some pieces are only there for the sound.",
-      text: "The 可 in 河 says nothing about rivers. It is there because it lends 河 its on'yomi, か — the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it lends, with a word where you can hear it.",
+      text: "The 可 in 河 says nothing about rivers. It is there because it lends 河 its on'yomi, か: the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it lends, with a word where you can hear it.",
     },
     {
       lead: "A kanji can be all meaning, too.",
-      text: "明 (bright) is 日 (sun) beside 月 (moon) — two meaning pieces, no sound piece, the two of them together giving the idea of brightness. Plenty of kanji are built this way.",
+      text: "明 (bright) is 日 (sun) beside 月 (moon): two meaning pieces, no sound piece, the two of them together giving the idea of brightness. Plenty of kanji are built this way.",
     },
     {
       lead: "And some pieces are just shape.",
