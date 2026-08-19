@@ -8,6 +8,7 @@ import {
   effectiveListen,
   isRevealPause,
   resolveAnsweredText,
+  revealTemplate,
 } from "@/lib/drill-reveal";
 
 describe("isRevealPause (SAK-50)", () => {
@@ -58,6 +59,29 @@ describe("resolveAnsweredText (SAK-50)", () => {
       }),
       null,
     );
+  });
+});
+
+describe("revealTemplate (SAK-50 changes-requested pass)", () => {
+  test("a meaning-type question is framed as what it means, even if it also reads as sound-ish", () => {
+    assert.deepEqual(revealTemplate({ isSound: true, isMeaning: true }), {
+      prefix: "This means ",
+      suffix: ".",
+    });
+  });
+
+  test("a reading-type question is framed as how it's said", () => {
+    assert.deepEqual(revealTemplate({ isSound: true, isMeaning: false }), {
+      prefix: 'This is said "',
+      suffix: '".',
+    });
+  });
+
+  test("neither reading nor meaning falls back to a plain, honest frame", () => {
+    assert.deepEqual(revealTemplate({ isSound: false, isMeaning: false }), {
+      prefix: "The answer is ",
+      suffix: ".",
+    });
   });
 });
 

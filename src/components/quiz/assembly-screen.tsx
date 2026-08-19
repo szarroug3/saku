@@ -48,8 +48,14 @@ import {
 import {
   assemblyMismatchMessage,
   findAssemblyMismatch,
+  pieceLabel,
   type AssemblyMismatch,
 } from "@/lib/assembly-check";
+import { assemblyRoleSpans } from "@/lib/sentence-part-spans";
+import {
+  colorizeSentence,
+  SentencePartBoxes,
+} from "@/components/quiz/sentence-part-breakdown";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
@@ -406,6 +412,12 @@ export function AssemblyScreen() {
   // reddens the tray and names the specific chunk that's out of place —
   // not just "the whole order is wrong" (SAK-47).
   const wrongTray = mismatch !== null || card.state === "wrong";
+  // The resolved reveal's colored-words-plus-labeled-boxes breakdown (SAK-50
+  // changes-requested: "the same style as the sentence lesson where it shows
+  // the words in color and has their definition") — null when the tier is
+  // unknown or its role count doesn't match this item's piece count, in
+  // which case the fixed bar below falls back to the plain sentence.
+  const roleSpans = resolved ? assemblyRoleSpans(item.pieces, tierId) : null;
 
   const place = (surface: string) => {
     if (resolved) return;
@@ -525,8 +537,10 @@ export function AssemblyScreen() {
       </div>
 
       {/* flex-1 + justify-center centers the card in whatever room the
-          frame leaves below the HUD. */}
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-4">
+          frame leaves below the HUD. pb-28 is a constant reservation for the
+          fixed reveal bar (see the end of this component) — constant, so it
+          cannot be the thing that shifts this stage when a card resolves. */}
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-4 pb-28">
         <DrillHalo
           key={`${item.id}-${card.tries}`}
           cardKey={`${item.id}-${card.tries}`}
@@ -611,7 +625,12 @@ export function AssemblyScreen() {
                     }
                   }}
                 >
-                  {surface}
+                  {/* Trailing sentence punctuation (。！？) is stripped for
+                      DISPLAY only — see pieceLabel. Showing it was a tell for
+                      which piece goes last, since only the final piece ever
+                      carries it (SAK-50 changes-requested). `surface` itself,
+                      punctuation and all, is still what's placed/graded. */}
+                  {pieceLabel(surface)}
                 </button>
                 {!resolved ? (
                   <button
@@ -677,24 +696,22 @@ export function AssemblyScreen() {
                   }
                 }}
               >
-                {surface}
+                {/* See the tray button above: display-only, punctuation
+                    stripped so it's not a tell for the final piece. */}
+                {pieceLabel(surface)}
               </button>
             </li>
           ))}
         </ul>
 
-        {resolved ? (
-          <div lang="ja" className="mt-4 text-center text-base">
-            {item.jp}
-          </div>
-        ) : null}
-
+        {/* The resolved reveal used to render here, in-flow (the plain
+            item.jp line, then a Next button swapped in for Check/Skip/Hint) —
+            both moved out to the fixed bottom bar below (see the end of this
+            component) so resolving a card doesn't reflow the tray/pool above
+            it, the same fix SAK-50's changes-requested pass made on the drill
+            screen. */}
         <div className="mt-6 flex w-full flex-col items-center gap-4">
-          {resolved ? (
-            <Btn go onClick={next}>
-              Next
-            </Btn>
-          ) : (
+          {resolved ? null : (
             <div className="flex items-center justify-center gap-3">
               <Btn
                 go
@@ -763,6 +780,46 @@ export function AssemblyScreen() {
           ) : null}
         </div>
       </div>
+
+      {/* THE REVEAL, fixed to the bottom of the viewport instead of in-flow
+          (SAK-50 changes-requested pass — same fix as the drill screen: see
+          its matching comment for why `position: fixed` rather than a
+          reserved-height in-flow element). `pb-28` above is the constant
+          clearance that keeps this from covering the tray/pool while it's up.
+
+          Styled like the sentence LESSON's own word-by-word breakdown
+          (colored words, a labeled box per chunk underneath) — reused from
+          mark-view.tsx via components/quiz/sentence-part-breakdown.tsx and
+          lib/sentence-part-spans.ts, not reinvented, per Sam's explicit ask.
+          Falls back to the plain sentence when the item's tier/piece count
+          doesn't line up with known chunk roles (roleSpans null) — the same
+          case chunkRoleLabels already declines to guess a label for. */}
+      {resolved ? (
+        <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
+          <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col items-center gap-1 overflow-y-auto text-center">
+            {roleSpans ? (
+              <>
+                <p lang="ja" className="text-lg">
+                  {colorizeSentence(item.jp, roleSpans.spans)}
+                </p>
+                <SentencePartBoxes
+                  sentence={item.jp}
+                  spans={roleSpans.spans}
+                  labels={roleSpans.labels}
+                  lang="ja"
+                />
+              </>
+            ) : (
+              <p lang="ja" className="text-lg">
+                {item.jp}
+              </p>
+            )}
+            <Btn go onClick={next} className="mt-2">
+              Next
+            </Btn>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
