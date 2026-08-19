@@ -117,14 +117,14 @@ export function ManageLists() {
     <div className="max-w-3xl">
       <PageTitle
         title={
-          <>
+          <span className="inline-flex items-center gap-1">
             Lists
             <Info>
               &ldquo;Deck&rdquo; here just means a list that came from an
               import. Everything you can do with a list you made yourself,
               you can do with one too.
             </Info>
-          </>
+          </span>
         }
         sub="Every list you have: decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
       />

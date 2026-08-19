@@ -162,15 +162,16 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
  * non-`grade` kanji hundred names which GROUP_SIZE-wide bucket the entry
  * happens to fall in, not anything about the entry — useful as the shelf
  * page's select-all header, meaningless as a heading on the entry's own page.
- * `groupNeighbors` flags these via `isRangeLabel`, so this bar hides itself
- * instead of printing a number that describes nothing.
+ * `groupNeighbors` flags these via `isRangeLabel`, so only the label itself is
+ * suppressed — prev/next still move you through the same group either way,
+ * so the bar stays as long as there is somewhere to move to.
  */
 function GroupNav({ entry }: { entry: IndexLibEntry }) {
   const { groupLabel, isRangeLabel, prev, next } = groupNeighbors(entry);
-  if (!groupLabel || isRangeLabel || (!prev && !next)) return null;
+  if (!prev && !next) return null;
   return (
     <nav
-      aria-label={`${groupLabel} navigation`}
+      aria-label={groupLabel ? `${groupLabel} navigation` : "Nearby entries"}
       className="mb-4 flex items-center justify-between gap-3 text-[13px]"
     >
       {prev ? (
@@ -183,9 +184,13 @@ function GroupNav({ entry }: { entry: IndexLibEntry }) {
       ) : (
         <span aria-hidden="true" />
       )}
-      <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-text-muted">
-        {groupLabel}
-      </span>
+      {groupLabel && !isRangeLabel ? (
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-text-muted">
+          {groupLabel}
+        </span>
+      ) : (
+        <span aria-hidden="true" />
+      )}
       {next ? (
         <Link
           href={entryHref(next.id)}
