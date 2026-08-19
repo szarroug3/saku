@@ -617,12 +617,23 @@ export function roundCompleteView(session: StudySession): {
  * teaching), so the candidate set is `facts` (all 5); `totalStats` holds a and
  * e, so the claim narrows to the 3 that were never asked (i, u, o). a and e
  * keep their real quiz results, already committed by `closeRound`.
+ *
+ * "Never actually answered" is `seen === 0`, not merely absent from
+ * `totalStats`: a fact gets a zero-valued stats entry the moment it is SHOWN
+ * (before it is answered — see closeRound), so a card that was shown, skipped
+ * or interrupted before it was answered still has a `totalStats` entry with
+ * nothing real in it. Filtering on key-presence alone left that card out of
+ * the claim — shown-but-unanswered facts silently kept no standing at all,
+ * neither their real (nonexistent) result nor "known" (SAK-55, Changes
+ * Requested).
  */
 export function sessionKnownClaimTarget(
   session: Pick<StudySession, "teach" | "facts" | "totalStats">,
 ): FactId[] {
   const target = session.teach.length ? session.teach : session.facts;
-  const answered = new Set(factKeys(session.totalStats));
+  const answered = new Set(
+    factKeys(session.totalStats).filter((f) => session.totalStats[f].seen > 0),
+  );
   return target.filter((f) => !answered.has(f));
 }
 

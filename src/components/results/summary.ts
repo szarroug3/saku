@@ -123,7 +123,7 @@ export interface RunFacts {
  * never answered produced no evidence either way; calling that a miss would
  * be inventing a wrong answer nobody gave. See statForShowing in
  * src/lib/drill-stats.ts for where the zero-value key comes from. */
-function isMissed(st: FactSessionDetail): boolean {
+export function isMissed(st: FactSessionDetail): boolean {
   return st.seen > 0 && (st.correct ?? 0) === 0;
 }
 
@@ -161,7 +161,7 @@ export function readableStats(results: ResultsPayload): SessionStats {
  * more the harder you had practised. The numerator is `st.correct`, the same
  * field the pill and the writer both read, because three copies of the same
  * measurement agree by sharing the arithmetic or they do not agree. */
-function runAggregate(stats: SessionStats): FactCounts {
+export function runAggregate(stats: SessionStats): FactCounts {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
@@ -171,11 +171,44 @@ function runAggregate(stats: SessionStats): FactCounts {
   return agg;
 }
 
-export function deriveRun(
-  results: ResultsPayload,
-): RunFacts {
-  const { summaryOnly } = results;
-  const stats = readableStats(results);
+/**
+ * The same RunFacts a finished, history-backed practice quiz gets — built
+ * straight off a live SessionStats instead of a stored ResultsPayload, so a
+ * still-in-progress lesson round or session can share the exact same board
+ * and summary sentence the practice Results page uses (round-complete.tsx,
+ * session-complete.tsx). `pct` is always measured here (there is no
+ * summary-only shortcut mid-session), and `stored` is always unset.
+ */
+const ZERO_DETAIL: FactSessionDetail = {
+  seen: 0,
+  misses: 0,
+  everCorrect: false,
+  firstTryCorrect: null,
+  firstTryCount: 0,
+  correct: 0,
+  confused: {},
+};
+
+/**
+ * `stats` narrowed to exactly `facts` — for a screen (round-complete,
+ * session-complete) that only wants runFactsFromSession's read of ONE part of
+ * a wider SessionStats object (e.g. `session.teach` out of `session.totalStats`,
+ * which also carries review material the current board has no section for).
+ *
+ * EVERY fact in `facts` gets an entry, real or a zero stub — a fact this path
+ * never reached at all (not merely shown-then-abandoned) still belongs in the
+ * board's "not answered" pile, same as one that WAS shown but left
+ * unresolved. Dropping it instead (the earlier version of this function) made
+ * an untouched lesson item vanish off session-complete's board entirely,
+ * rather than reading "not shown" the way it always has.
+ */
+export function subsetStats(stats: SessionStats, facts: readonly FactId[]): SessionStats {
+  const out: SessionStats = {};
+  for (const f of facts) out[f] = stats[f] ?? ZERO_DETAIL;
+  return out;
+}
+
+export function runFactsFromSession(stats: SessionStats): RunFacts {
   const r = computeResults(stats);
   const agg = runAggregate(stats);
 
@@ -216,13 +249,27 @@ export function deriveRun(
     total: r.total,
     correctFacts: r.forg,
     totalMisses: r.facts.reduce((n, f) => n + stats[f].misses, 0),
-    // Summary-only sessions kept percentages and nothing to recompute from.
-    pct: summaryOnly ? summaryOnly.forgivingPct : accuracyOf(runAggregate(stats)),
-    stored: summaryOnly,
+    pct: accuracyOf(agg),
+    stored: undefined,
     missed,
     needsWork,
     solid: r.facts.filter((f) => !workSet.has(f) && !notAnsweredSet.has(f)),
     notAnswered,
+  };
+}
+
+export function deriveRun(
+  results: ResultsPayload,
+): RunFacts {
+  const { summaryOnly } = results;
+  const stats = readableStats(results);
+  const run = runFactsFromSession(stats);
+  // Summary-only sessions kept percentages and nothing to recompute from —
+  // the only place a stored session still diverges from a live one.
+  return {
+    ...run,
+    pct: summaryOnly ? summaryOnly.forgivingPct : run.pct,
+    stored: summaryOnly,
   };
 }
 
@@ -466,6 +513,23 @@ export function summarize(
   progress: PairRow[],
 ): Summary {
   const counts = countBits(run, progress);
+
+  // Nothing was actually ATTEMPTED — every fact in the run (there may be
+  // none at all, or the full set as zero stubs — see subsetStats) is
+  // `notAnswered`. Reachable now that a lesson can end (End session,
+  // mid-teach, or before its quiz phase starts) before a single card was
+  // resolved; without this guard the cascade falls through every "nothing
+  // wrong" branch to "perfect" (missed=0 and totalMisses=0 are equally true
+  // of a run nothing happened to), so ending before anything was answered
+  // read as "Your first perfect run" over a board of untouched cards.
+  if (run.notAnswered.length === run.facts.length) {
+    return {
+      state: "perfect",
+      headline: "Nothing quizzed yet",
+      detail: null,
+      counts,
+    };
+  }
 
   if (run.missed.length) {
     const worst = worstOf({ ...run, missed: run.needsWork }, stats, prior);

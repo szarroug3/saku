@@ -136,8 +136,8 @@ test("retryButtonLabel never shows a bare ellipsis when disabled", () => {
 });
 
 test("retryButtonLabel names the count when something is picked", () => {
-  assert.equal(retryButtonLabel(1), "Retry 1");
-  assert.equal(retryButtonLabel(4), "Retry 4");
+  assert.equal(retryButtonLabel(1), "Retry 1 selected");
+  assert.equal(retryButtonLabel(4), "Retry 4 selected");
 });
 
 // ---------- SAK-21: header/body unit mismatch ----------
