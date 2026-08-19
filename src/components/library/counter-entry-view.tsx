@@ -79,8 +79,7 @@ export function CounterEntryView({
   liveHeadline?: Headline;
   /** The SAME page in the lesson intro. The counter page shows the same thing in
    * both contexts today (unlike a word, whose lesson hides the readings it isn't
-   * teaching), so this only reserves the seam for a future difference; the
-   * example tables are dropped in both. */
+   * teaching), so this only reserves the seam for a future difference. */
   lesson?: boolean;
 }) {
   void lesson;
@@ -159,9 +158,9 @@ export function CounterEntryView({
         <Section title="How it's built" tone="accent">
           <Lead>{construction.summary}</Lead>
           {/* The lesson's own rule card, so the reference and the lesson cannot
-              drift. Example tables dropped: each counter's exceptions are stated in
-              its prose, so the full 1–10 tables were more than the page needs. */}
-          <NumberConstructionView construction={construction} hideExamples />
+              drift — prose, then the worked 1–10 (or hundreds-and-up) example
+              table underneath it. */}
+          <NumberConstructionView construction={construction} />
         </Section>
       ) : null}
 
