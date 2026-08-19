@@ -79,10 +79,10 @@ export function KnowledgeBase({
                    * only on a reference page a reader may never open. */}
                   {b === "claimed" ? (
                     <Info>
-                      Marked known via &ldquo;I already know this&rdquo; in
-                      the Library, not proven by a quiz. It fades back into
-                      drilling on its own over time, and you can unclaim it
-                      from that item&rsquo;s Library page.
+                      This shows things that were marked known via &ldquo;I
+                      already know this&rdquo; but have not been quizzed yet.
+                      It fades back into drilling on its own over time. You
+                      can unclaim it from that item&rsquo;s Library page.
                     </Info>
                   ) : null}
                 </p>
