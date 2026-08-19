@@ -33,6 +33,16 @@ import { packLessons } from "./kanji-lesson.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
+import type { FactId, HistoryFile } from "../types/index.ts";
+
+/** A learner who has met exactly these facts, by the weakest record that
+ * counts, "quiz me" — the same shape spine-intros.test.ts's `met` uses. Enough
+ * to make a fact non-fresh, which is all `yoonScriptMet`/`startedTracks` ask. */
+function met(facts: Iterable<FactId>): HistoryFile {
+  const seen: Record<string, number> = {};
+  for (const f of facts) seen[f] = 1;
+  return { sessions: [], facts: {}, seen: seen as HistoryFile["seen"] };
+}
 
 /** A group by its id — the unit the budget hands out. Outside the dakuten
  * phase that id is a section of the data file; inside it, a conversion. */
@@ -197,6 +207,105 @@ describe("a phase intro opens the phase it introduces", () => {
   test("the phase's SECOND group gets no card — it is said once", () => {
     const steps = lessonSteps(group("h-conv-z").facts);
     assert.ok(steps.every((s) => s.type !== "intro"));
+  });
+});
+
+// SAK-74: きゃ used to be met with no explanation at all when it wasn't the
+// literal first item of its own teach set — the opensOn path above (INTRO_BEFORE
+// keyed on "h-kya"/"k-kya") only fires when a lesson's facts happen to START
+// exactly there. A learner whose lesson batches an earlier leftover kana ahead of
+// きゃ, or whose combos arrive a section late (h-sha, h-pya, …) because the
+// budget grouped multiple sections into one lesson, met the combo with zero
+// setup. This is the mid-lesson insertion dakuten's `conversion` step already
+// had (via `dakutenRowFor` inside the per-item loop) and combos did not.
+describe("the yōon card rides the first combo, wherever it lands in the walk", () => {
+  test("it leads a combo that is NOT the teach set's first item", () => {
+    // A base kana ahead of きゃ — the shape a mixed lesson batch takes. History
+    // marks hiragana as an already-open track (met あ elsewhere) so the walk's
+    // OWN track-intro cards stay out of the way and this test can check the
+    // combo card alone; that history is also what turns the per-item combo
+    // check on in the first place — see yoonScriptMet's history gate.
+    const g = group("h-kya");
+    const leading = kanaFact("か");
+    const steps = lessonSteps([leading, ...g.facts], met([kanaFact("あ")]));
+    const introIds = steps
+      .filter((s) => s.type === "intro")
+      .map((s) => (s.type === "intro" ? s.intro.id : null));
+    assert.deepEqual(introIds, ["intro-combo-hiragana"]);
+    // The base kana leads, the combo card comes before the first combo
+    // character, and every character still appears.
+    const shape = steps.map((s) =>
+      s.type === "item" ? s.item.glyph : s.type === "intro" ? s.intro.id : s.type,
+    );
+    assert.deepEqual(shape, ["か", "intro-combo-hiragana", ...g.chars]);
+  });
+
+  test("it fires once per SCRIPT, not once per combo section", () => {
+    // Two combo sections in one teach set (h-kya then h-sha) — only the first
+    // combo ever met gets the card, the same "once, not per row" shape dakuten's
+    // rowsSeen enforces for conversions.
+    const facts = [...group("h-kya").facts, ...group("h-sha").facts];
+    const steps = lessonSteps(facts, met([]));
+    const combos = steps.filter(
+      (s) => s.type === "intro" && s.intro.id === "intro-combo-hiragana",
+    );
+    assert.equal(combos.length, 1);
+  });
+
+  test("katakana gets its own card, independent of hiragana's", () => {
+    const facts = [...group("h-kya").facts, ...group("k-kya").facts];
+    const steps = lessonSteps(facts, met([]));
+    const introIds = steps
+      .filter((s) => s.type === "intro")
+      .map((s) => (s.type === "intro" ? s.intro.id : null));
+    assert.deepEqual(introIds, ["intro-combo-hiragana", "intro-combo-katakana"]);
+  });
+
+  test("already met in an earlier lesson — the card does not fire again", () => {
+    // h-sha taught on its own, as its own later lesson, with history recording
+    // that h-kya (the script's first combo section) was already taught earlier.
+    // Without this, h-sha's own teach set would look like the first combo ever,
+    // the same false positive the h-pya/k-pya regression test below guards.
+    const g = group("h-sha");
+    const history = met(group("h-kya").facts);
+    const steps = lessonSteps(g.facts, history);
+    assert.ok(
+      steps.every((s) => !(s.type === "intro" && s.intro.id === "intro-combo-hiragana")),
+    );
+  });
+
+  test("no history: only the opensOn path fires, same as before this fix", () => {
+    // A caller with no history to read (SSR, a test naming one section's teach
+    // set) gets the pre-history walk — the same default markedPitch/markedOnyomi
+    // already take. h-pya is the LAST hiragana combo section: taught alone, with
+    // no history, it must not show the card a second time.
+    const steps = lessonSteps(group("h-pya").facts);
+    assert.ok(steps.every((s) => s.type !== "intro" || s.intro.id !== "intro-combo-hiragana"));
+  });
+
+  test("no double card when the teach set genuinely opens on h-kya, with history", () => {
+    // The opensOn path (INTRO_BEFORE) and the per-item path both know about this
+    // exact combo; only one card should land.
+    const g = group("h-kya");
+    const steps = lessonSteps(g.facts, met([]));
+    const combos = steps.filter(
+      (s) => s.type === "intro" && s.intro.id === "intro-combo-hiragana",
+    );
+    assert.equal(combos.length, 1);
+    assert.equal(steps[0].type, "intro");
+  });
+
+  test("a combo item still gets its own character card behind the concept card", () => {
+    // Unlike dakuten's conversion (which REPLACES the row's item steps), yōon
+    // has no per-combo hook — each combo is still a real new shape to drill, so
+    // it keeps its ordinary "item" step. The concept card only adds a step, the
+    // same non-destructive shape the other word/section-gated intros use.
+    const g = group("h-kya");
+    const steps = lessonSteps(g.facts, met([]));
+    const itemGlyphs = steps
+      .filter((s) => s.type === "item")
+      .map((s) => (s.type === "item" ? s.item.glyph : null));
+    assert.deepEqual(itemGlyphs, g.chars);
   });
 });
 
