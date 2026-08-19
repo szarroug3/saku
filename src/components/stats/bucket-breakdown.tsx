@@ -53,14 +53,21 @@
 // roots stacked, inner blur a no-op). It rebuilds the surface OPAQUELY from
 // --bg + the mesh + --card's own fill, saturated once via a filter that never
 // samples the live page, so sliding this panel costs a transform, not a blur.
+//
+// THE SHELL LIVES IN side-panel.tsx. When by-subject.tsx's rows needed the
+// same clickable-sidebar treatment (SAK-78 follow-up review), the Dialog
+// wiring, the kq-surface slide and the header/close-button chrome above were
+// pulled out into `SidePanel` rather than copied a second time — this file
+// keeps only what's actually about a STANDING: the tone dot and the
+// fact-shaped row. See entry-breakdown.tsx for the entry-shaped sibling.
 
 import * as React from "react";
 import Link from "next/link";
-import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { entryOf, factInfo } from "@/lib/facts";
 import { fillFor } from "@/components/stats/tally";
 import { entryHref } from "@/lib/library/href";
+import { SidePanel } from "@/components/stats/side-panel";
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
 
@@ -82,94 +89,55 @@ export function BucketBreakdown({
   onClose: () => void;
 }) {
   return (
-    <DialogPrimitive.Root
+    <SidePanel
       open={standing !== null}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
+      label={label}
+      onClose={onClose}
+      testId="bucket-breakdown"
+      icon={
+        standing ? (
+          <span
+            aria-hidden="true"
+            className={`h-2.5 w-2.5 flex-none rounded-full ${fillFor(standing)}`}
+          />
+        ) : null
+      }
     >
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay
-          data-testid="bucket-breakdown-overlay"
-          className="fixed inset-0 z-50 bg-(--scrim) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-        />
-        <DialogPrimitive.Content
-          data-testid="bucket-breakdown"
-          aria-describedby={undefined}
-          className={[
-            "fixed inset-y-0 right-0 z-50 flex w-[calc(100vw-24px)] max-w-[380px] flex-col",
-            "border-l border-border shadow-card",
-            // kq-surface, not kq-material kq-overlay: this panel SLIDES, so it
-            // cannot afford a live backdrop-filter (see the header comment's
-            // NO BACKDROP-FILTER note). kq-surface replaces bg-card rather
-            // than joining it — same precedent as add-to-list.tsx's popover —
-            // because it IS the surface's fill, rebuilt opaque.
-            "kq-surface",
-            "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:animate-in data-[state=open]:slide-in-from-right",
-          ].join(" ")}
-        >
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <span className="flex items-center gap-2 min-w-0">
-              {standing ? (
-                <span
-                  aria-hidden="true"
-                  className={`h-2.5 w-2.5 flex-none rounded-full ${fillFor(standing)}`}
-                />
-              ) : null}
-              <DialogPrimitive.Title className="truncate text-[15px] font-semibold text-text">
-                {label}
-              </DialogPrimitive.Title>
-            </span>
-            <DialogPrimitive.Close asChild>
-              <button
-                type="button"
-                data-testid="bucket-breakdown-close"
-                aria-label="Close"
-                className="flex-none cursor-pointer rounded-md px-2 py-1 text-text-muted hover:text-text"
-              >
-                Close
-              </button>
-            </DialogPrimitive.Close>
-          </div>
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            {facts.length === 0 ? (
-              <p className="text-[13px] text-text-muted">Nothing here.</p>
-            ) : (
-              <ul className="flex flex-col gap-2.5 text-[13px]">
-                {facts.map((f) => {
-                  const info = factInfo(f);
-                  // A fact id history kept but the data no longer has: render
-                  // the bare id rather than throw. The card above it already
-                  // extends the same courtesy (see facts.ts's factInfo doc).
-                  if (!info) {
-                    return (
-                      <li key={f} className="text-text-muted">
-                        {f}
-                      </li>
-                    );
-                  }
-                  return (
-                    <li key={f}>
-                      <Link
-                        href={entryHref(entryOf(f))}
-                        onClick={onClose}
-                        className="flex items-baseline justify-between gap-3 hover:underline"
-                      >
-                        <span className="font-kana">{info.glyph}</span>
-                        {info.meaning ? (
-                          <span className="truncate text-right text-text-muted">
-                            {info.meaning}
-                          </span>
-                        ) : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+      {facts.length === 0 ? (
+        <p className="text-[13px] text-text-muted">Nothing here.</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5 text-[13px]">
+          {facts.map((f) => {
+            const info = factInfo(f);
+            // A fact id history kept but the data no longer has: render
+            // the bare id rather than throw. The card above it already
+            // extends the same courtesy (see facts.ts's factInfo doc).
+            if (!info) {
+              return (
+                <li key={f} className="text-text-muted">
+                  {f}
+                </li>
+              );
+            }
+            return (
+              <li key={f}>
+                <Link
+                  href={entryHref(entryOf(f))}
+                  onClick={onClose}
+                  className="flex items-baseline justify-between gap-3 hover:underline"
+                >
+                  <span className="font-kana">{info.glyph}</span>
+                  {info.meaning ? (
+                    <span className="truncate text-right text-text-muted">
+                      {info.meaning}
+                    </span>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </SidePanel>
   );
 }
