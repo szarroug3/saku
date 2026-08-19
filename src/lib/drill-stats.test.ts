@@ -28,6 +28,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
+import { firstTryCredit } from "@/lib/engine";
 import { poolSessionCounts, sessionAccuracy } from "@/lib/session-accuracy";
 import { roundCompleteView, type StudySession } from "@/lib/session";
 import type { FactId, SessionStats } from "@/types";
@@ -179,6 +180,68 @@ test("landing it on the retry is one showing, not first try", () => {
   assert.equal(st.firstTryCount, 0);
   assert.equal(st.correct, 1);
   assert.equal(sessionAccuracy(stats), 100, "landed the showing, just not on the first attempt");
+});
+
+test("SAK-17/SAK-26: a hint-then-correct answer scores exactly like a plain correct answer", () => {
+  // Pins the drill-screen.tsx submit() call site, not just resolveShowing.
+  // The bug (SAK-17) was that submit() computed `credit = firstTryCredit(ok,
+  // tries, hinted)` — correctly false, since a hint forfeits "nailed it" — and
+  // then passed THAT SAME `credit` as resolveShowing's `ok` argument too:
+  // `resolveShowing(st, credit, credit, ...)`. `ok` is supposed to be the real
+  // verdict on the showing ("did it land at all"), never the hint-penalized
+  // one, so a hinted-but-ultimately-correct answer silently never incremented
+  // `correct`/`everCorrect` — undercounting Live Accuracy AND writing a false
+  // "not correct" into the very record standing/scheduling reads.
+  //
+  // SAK-26 is the product rule this must satisfy: hint or Choices, followed by
+  // a correct answer, is a normal correct answer on every counter that isn't
+  // specifically "did you nail it clean" (streak already got this right, since
+  // it keys off `tries === 0`, which a hint never touches).
+  const stats: SessionStats = {};
+  const st = statForShowing(stats, POOL[0]);
+  const ok = true;
+  const tries = 0; // a hint/Choices forfeit never spends a retry pip
+  const hinted = true;
+  const credit = firstTryCredit(ok, tries, hinted);
+  assert.equal(credit, false, "a hint still forfeits the strict first-try flag");
+
+  // The fixed call: resolveShowing(st, credit, ok, ...) — `ok`, not `credit`,
+  // in the third slot.
+  resolveShowing(st, credit, ok);
+
+  assert.equal(st.correct, 1, "a hinted correct answer is still CORRECT");
+  assert.equal(st.everCorrect, true, "the real standing record sees it as correct");
+  assert.equal(st.firstTryCount, 0, "but it did not earn the strict first-try credit");
+  assert.equal(
+    sessionAccuracy(stats),
+    100,
+    "Live Accuracy must not drop for a hint-assisted correct answer",
+  );
+  // Streak's own rule, unchanged by this fix: only `tries === 0` matters, and
+  // a hint never increments `tries`, so the streak-continuing condition drill-
+  // screen.tsx checks (`if (q.tries === 0) rt.streak++`) is satisfied here too
+  // — the two counters now agree.
+  assert.equal(tries === 0, true, "streak's own condition also holds — no penalty either");
+});
+
+test("SAK-17/SAK-26 regression guard: a genuinely wrong, never-landed answer still counts against both counters", () => {
+  // The fix must not loosen what WRONG means. A card that ran out of retries
+  // (or was skipped) without ever landing correct is `ok: false` regardless of
+  // hint usage, and must still tank accuracy and break the streak.
+  const stats: SessionStats = {};
+  const st = statForShowing(stats, POOL[0]);
+  const ok = false;
+  const tries: number = 2; // exhausted its retries
+  const hinted = true; // even if a hint was used along the way
+  const credit = firstTryCredit(ok, tries, hinted);
+  assert.equal(credit, false);
+
+  resolveShowing(st, credit, ok);
+
+  assert.equal(st.correct, 0, "never landed correct — still 0");
+  assert.equal(st.everCorrect, false, "the real standing record sees it as wrong");
+  assert.equal(sessionAccuracy(stats), 0, "Live Accuracy still drops for a real miss");
+  assert.equal(tries === 0, false, "streak's own condition fails too — streak still breaks");
 });
 
 test("resolveShowing records the showing's presentation for the results chip", () => {

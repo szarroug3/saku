@@ -992,8 +992,20 @@ export function DrillScreen() {
       // forgiving numerator all advance in one call so they cannot drift into
       // different units — which is exactly what they had done. See
       // src/lib/drill-stats.ts.
-      // Strict scoring: a retry success still resolves this showing as wrong.
-      resolveShowing(st, credit, credit, showingOf(q));
+      //
+      // SAK-17/SAK-26: `ok`, not `credit`, is the third argument. `credit`
+      // is deliberately false on a hinted/choices-forfeited right answer —
+      // that is what withholds the streak-and-nailed-it flag — but a hint
+      // "should not take away from scoring" (SAK-26), and `ok` is the real
+      // verdict on the showing: it landed. Passing `credit` here for BOTH
+      // arguments was the bug: it fed the strict, hint-penalizing verdict
+      // into `correct`/`everCorrect` too, so a hinted correct answer never
+      // incremented `correct` — undercounting the LIVE ACCURACY numerator
+      // (seen still advanced, correct did not) while leaving `everCorrect`
+      // false, which is what a fact's real standing/history reads. So this
+      // was not only a live-pill bug: a hint-then-correct answer was quietly
+      // recorded as not-really-correct in the persisted per-fact record too.
+      resolveShowing(st, credit, ok, showingOf(q));
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
