@@ -11,6 +11,16 @@
 // the same set, asked cold-ish and asked warm. It says nothing when there's
 // only one round, because then there is no comparison and inventing one would
 // be the app talking for the sake of talking.
+//
+// THE CHOICE (SAK-52). A single "Complete session" button used to end the run
+// AND silently claim its material known, whatever the quiz said — "Quiz me"
+// missed once and never taught, or a real lesson scored 1 of 5, both walked
+// out of here marked known. That is never allowed to happen quietly again, so
+// finishing now asks: the exact "I already know this" claim the Learn card
+// itself offers, styled the SAME plain way it is there, or the forward action
+// that just moves on without claiming anything — styled `go`, the same accent
+// "Start"/"Continue session" gets on that same card. Same pairing, same
+// weighting, just reached from the other end of the run.
 
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import type { StudySession } from "@/lib/session";
@@ -33,15 +43,23 @@ function story(session: StudySession): string {
 export function SessionComplete({
   session,
   onRerun,
-  onDone,
+  onMarkKnown,
+  onGoToLesson,
 }: {
   session: StudySession;
   onRerun: () => void;
-  onDone: () => void;
+  /** "I already know these" over this session's material — the exact Learn-card
+   * claim mechanism, reached from here instead. */
+  onMarkKnown: () => void;
+  /** Nothing is claimed; the forward action that just leaves. Named for what a
+   * "Quiz me" run needs it to mean: not confirmed known, so the lesson (or a
+   * re-quiz) is still where Learn offers it. */
+  onGoToLesson: () => void;
 }) {
   const last = session.rounds[session.rounds.length - 1];
   const right = last?.correct ?? 0;
   const rest = Math.max(0, (last?.total ?? 0) - right);
+  const items = session.facts.length;
 
   return (
     <>
@@ -64,12 +82,18 @@ export function SessionComplete({
           </div>
         ) : null}
 
-        <div className="mt-5.5 flex justify-center gap-2">
+        <p className="mx-auto mt-5.5 max-w-[36ch] text-[13px] text-text-muted">
+          Know {items === 1 ? "this" : "these"} already, or want the lesson?
+        </p>
+        <div className="mt-2.5 flex flex-wrap justify-center gap-2">
           {/* Rerun is the same operation Recent's Rerun is: replay the session
               as it was, same set, fresh rounds. */}
           <SmallBtn onClick={onRerun}>Quiz again</SmallBtn>
-          <Btn autoFocus go onClick={onDone}>
-            Complete session
+          <Btn onClick={onMarkKnown}>
+            I already know {items === 1 ? "this" : `these ${items}`}
+          </Btn>
+          <Btn autoFocus go onClick={onGoToLesson}>
+            Take me to the lesson
           </Btn>
         </div>
       </Card>

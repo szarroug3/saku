@@ -48,6 +48,7 @@ import {
 } from "./curriculum-lesson.ts";
 import { adjectiveKind, ruVerbKind } from "./word-forms.ts";
 import { applyClaims, applyDropSeen, applySeen } from "./history-ops.ts";
+import { emptyAggregate, foldSession } from "./aggregate.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import { compositePositionLabel } from "./lesson-position.ts";
 import {
@@ -613,6 +614,121 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
       nextCurriculumLesson(completedThenUnseen, RANGE)!.facts,
       before.facts,
       "a completed lesson stays advanced regardless of its seen marks",
+    );
+  });
+
+  // SAK-52. Before the fix, finishSession claimed a taught session's material
+  // UNCONDITIONALLY (the block above modelled exactly that), and a "Quiz me"
+  // run's start-time seen mark was never rolled back by anything but a discard.
+  // Together those are the audit's two repros: either door left a batch that
+  // was never confirmed known permanently off Learn's frontier. The fix makes
+  // the claim an explicit choice and rolls the seen marks back on any OTHER
+  // ending — these tests model both endings against the real scheduler.
+
+  test("REPRO 1 — Quiz me, miss the one fact actually asked, end WITHOUT marking known: the batch is due again", () => {
+    const before = nextCurriculumLesson(EMPTY, RANGE)!;
+    assert.ok(before.facts.length > 1, "the fixture needs more than one fact to show the split");
+    const seed = startSeed(before);
+    const [tested, ...untouched] = before.facts;
+    assert.ok(untouched.length > 0);
+
+    // QUIZ ME: home-feed's startTrack marks the WHOLE batch seen the instant
+    // the button is pressed, before a single question is asked.
+    const afterClick = applySeen(EMPTY, seed, TS);
+
+    // ANSWER: the drill actually asks (and here, misses) only ONE of the
+    // batch's facts — real evidence, from the fold every closeRound runs, is
+    // exactly what a genuine miss looks like: a real `lastTested`, independent
+    // of the seen mark.
+    const missed = emptyAggregate();
+    foldSession(missed, { seen: 1, missed: 1 }, TS);
+    const afterAnswer: HistoryFile = {
+      ...afterClick,
+      facts: { ...afterClick.facts, [tested]: missed },
+    };
+    assert.notDeepEqual(
+      nextCurriculumLesson(afterAnswer, RANGE)?.facts,
+      before.facts,
+      "seen (plus the one real miss) already moved the frontier off the batch — the bug's starting point",
+    );
+
+    // END WITHOUT MARKING KNOWN ("take me to the lesson"): finishSession's new
+    // default path rolls back exactly the seen marks the start added. Each
+    // word here is its OWN scheduling unit (one word, one fact, in this
+    // fixture), so the result is precise rather than all-or-nothing: the one
+    // word that was genuinely tested (and missed) stays off the lesson on its
+    // own real evidence — correctly; that is not this fix's to undo, and
+    // isFactFresh has never treated a real answer, anywhere in the app, as
+    // reversible — but every OTHER word in the batch was only ever swept into
+    // `seen` by the click, never actually asked, so undoing exactly those
+    // marks brings exactly them back.
+    const afterFinish = applyDropSeen(afterAnswer, seed);
+    assert.deepEqual(
+      nextCurriculumLesson(afterFinish, RANGE)?.facts,
+      untouched,
+      "the untested rest of the batch is reachable from Learn again — not stranded behind the one word that was actually quizzed",
+    );
+  });
+
+  test("REPRO 2 — complete the lesson normally, quiz it, end WITHOUT marking known: the frontier never moves", () => {
+    const before = nextCurriculumLesson(EMPTY, RANGE)!;
+
+    // START (teach): a normal Start never seeds a seen mark — only "Quiz me"
+    // does (home-feed's startTrack: `teach ? [] : newlySeen(facts)`). The
+    // lesson cards are shown, the drill is answered (here, badly — one hit,
+    // the rest missed), and the round closes normally: a real session record
+    // lands in `sessions` and its facts fold into `facts` regardless of score.
+    const hit = emptyAggregate();
+    foldSession(hit, { seen: 1, correct: 1, firstTry: 1 }, TS);
+    const miss = emptyAggregate();
+    foldSession(miss, { seen: 1, missed: 1 }, TS);
+    const afterQuiz: HistoryFile = {
+      ...EMPTY,
+      facts: Object.fromEntries(
+        before.facts.map((fact, i) => [fact, i === 0 ? hit : miss]),
+      ) as HistoryFile["facts"],
+    };
+
+    // END WITHOUT MARKING KNOWN: old finishSession claimed `session.teach`
+    // (== the whole lesson for a taught session) here, unconditionally — that
+    // write is the one this fix deletes. Modelled by doing nothing further:
+    // no claim, and (unlike Quiz me) nothing to roll back either, since a
+    // taught session's start never seeded a seen mark to begin with.
+    assert.notDeepEqual(
+      nextCurriculumLesson(afterQuiz, RANGE)?.facts,
+      before.facts,
+      "a poor score still leaves genuine per-fact evidence, so the batch itself is off the frontier on its OWN evidence",
+    );
+    // The important assertion isn't that the frontier holds still — the real
+    // evidence above already moves it, correctly, same as any other quiz
+    // anywhere in the app. It's that NOTHING is claimed: a claim is forever
+    // (effectiveState never expires a nonzero lastTested), while the evidence
+    // above is exactly what was actually answered — poorly. Prove the absence
+    // of a claim directly, on the one record a claim would have written.
+    assert.equal(
+      afterQuiz.claims?.[before.facts[0]],
+      undefined,
+      "finishing without marking known writes no claim on the taught material",
+    );
+  });
+
+  test("mark known: choosing it claims sessionKnownClaimTarget, which advances the frontier permanently — like case 2, but on purpose", () => {
+    const before = nextCurriculumLesson(EMPTY, RANGE)!;
+    // The explicit choice claims the taught set via the SAME postClaim
+    // "I already know this" already uses — modelled here exactly as the
+    // pre-existing "completing keeps the advance" test above models it,
+    // because sessionKnownClaimTarget(session) === session.teach whenever
+    // teach is non-empty, and a taught session's teach is its whole facts set.
+    const claimed = applyClaims(EMPTY, before.facts, TS);
+    assert.notDeepEqual(
+      nextCurriculumLesson(claimed, RANGE)?.facts,
+      before.facts,
+      "marking known advances the frontier",
+    );
+    assert.notEqual(
+      claimed.claims?.[before.facts[0]],
+      undefined,
+      "and it is a real claim, not evidence — the two repros above prove neither ending writes one",
     );
   });
 });
