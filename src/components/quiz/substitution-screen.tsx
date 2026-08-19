@@ -207,7 +207,12 @@ export function SubstitutionScreen() {
   const answer = item.target.form; // 行ってから — the one correct form
 
   return (
-    <div className="mx-auto mt-6 max-w-xl">
+    // .kq-center-frame (globals.css, SAK-10): floor-height wrapper (no
+    // separate sticky HUD here, so this div is both the frame and the
+    // content) so the card reads as vertically centered instead of pinned
+    // to the top with a dead gap under it; still grows and scrolls
+    // normally once the hint panel needs more room.
+    <div className="kq-center-frame mx-auto w-full max-w-xl justify-center">
       <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
         <span className="rounded-full border border-border bg-accent-bg px-3 py-1 text-[13px] font-medium text-accent tabular-nums">
           {rt.pos + 1} / {rt.cards.length}

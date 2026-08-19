@@ -723,6 +723,34 @@ body {
   font-size: 15px;
 }
 
+/* ---------- content centering (SAK-10) ----------------------------------- */
+
+/* THE PAGE SCROLLS (see .kq-scroll's own comment in app/layout.tsx), so a
+ * short lesson/quiz screen used to just pin its content to the top of a wide
+ * viewport and leave the rest of the frame empty — worst on the quiz screen,
+ * one card and a void beneath it. `.kq-center-frame` gives a screen's outer
+ * wrapper a MINIMUM height instead: the full viewport minus the shell's own
+ * fixed vertical chrome, so short content can center inside it.
+ *
+ * That chrome is the same 120px on every page that wears this class: the
+ * shell row's `py-6` (24px top + 24px bottom, app/layout.tsx) plus
+ * .kq-scroll's own `pt-3 pb-15` (12px + 60px). A screen's own HUD/header is
+ * NOT subtracted here — it lives INSIDE this frame as a normal (shrink-to-
+ * content) flex child, ahead of a `flex-1 justify-center` wrapper around the
+ * actual content, so the frame never needs to know any one screen's HUD
+ * height to stay correct.
+ *
+ * min-height, not height: it is a FLOOR, never a cap. Content taller than
+ * the floor simply grows the frame past it — there is no fixed/percentage
+ * height anywhere in the chain for the overflow to fight, so a wide grid or a
+ * long lesson card grows the page and scrolls with it exactly as before,
+ * rather than clipping against a forced single screen height. */
+.kq-center-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 120px);
+}
+
 @keyframes gshake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-7px); }
