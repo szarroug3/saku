@@ -51,14 +51,6 @@ const OMNISCIENT: HistoryFile = {
   claims: Object.fromEntries(VOCAB.map((w) => [wordMeaningFactId(w.keb), 1_700_000_000_000])),
 };
 
-function vocabularyPrefix(count: number): HistoryFile {
-  return applyClaims(
-    emptyHistory(),
-    CURRICULUM_WORDS.slice(0, count).map((word) => wordMeaningFactId(word.keb)),
-    1,
-  );
-}
-
 describe("sentence-ordering follows the grammar teaching order", () => {
   test("simple is first, then tiers follow their earliest taught prerequisite", () => {
     assert.equal(SENTENCE_ORDERING_TIERS[0]?.id, "simple");
@@ -244,36 +236,62 @@ describe("SAK-18: every sentence-ordering tier pattern is a real, creditable fac
 });
 
 describe("sentence-ordering quiz scope", () => {
+  // The curated items (SAK-45) are natural, imitable sentences Sam approved
+  // directly — they no longer have to draw from the first N Vocabulary-track
+  // words by curriculum rank (see assembly.ts's CURATED_ASSEMBLY comment).
+  // These tests claim exactly the words a tier's curated items need, rather
+  // than a CURRICULUM_WORDS-rank slice, so "a small foundation unlocks the
+  // tier" is still asserted without depending on where those specific words
+  // happen to fall in curriculum rank.
+  const SIMPLE_TIER_WORDS = ["私", "水", "飲む", "何", "本", "読む"];
+
+  function wordsHistory(words: readonly string[]): HistoryFile {
+    return applyClaims(emptyHistory(), words.map(wordMeaningFactId), 1);
+  }
+
   test("the basic sentence lesson needs a small grammatical foundation, not sushi", () => {
     const simple = SENTENCE_ORDERING_TIERS[0];
     assert.equal(simple.id, "simple");
 
-    // The first 33 words do not yet supply all three reviewed examples. Word 34
-    // is 食べる: by then the learner has several noun/pronoun choices and several
-    // verbs, enough to build a real subject/object/verb sentence lesson.
-    assert.ok(readableAssemblyForTier(simple, vocabularyPrefix(33)).length < simple.minReadable);
-    const pool = readableAssemblyForTier(simple, vocabularyPrefix(34));
+    // Missing even one of the three curated items' words is not enough to
+    // supply all three reviewed examples.
+    assert.ok(
+      readableAssemblyForTier(simple, wordsHistory(SIMPLE_TIER_WORDS.slice(0, -1))).length <
+        simple.minReadable,
+    );
+    const pool = readableAssemblyForTier(simple, wordsHistory(SIMPLE_TIER_WORDS));
     assert.ok(pool.length >= simple.minReadable);
     assert.ok(pool.slice(0, simple.minReadable).every((item) => item.id > -100));
     assert.ok(pool.slice(0, simple.minReadable).every((item) => !item.v.includes("寿司")));
 
-    const foundation = CURRICULUM_WORDS.slice(0, 34);
-    const nounLike = foundation.filter((word) =>
-      word.pos.some((pos) => /noun|pronoun/i.test(pos)),
+    const nounLike = SIMPLE_TIER_WORDS.filter((keb) =>
+      CURRICULUM_WORDS.some(
+        (word) => word.keb === keb && word.pos.some((pos) => /noun|pronoun/i.test(pos)),
+      ),
     );
-    const verbs = foundation.filter((word) =>
-      word.pos.some((pos) => /verb/i.test(pos) && !/adverb/i.test(pos)),
+    const verbs = SIMPLE_TIER_WORDS.filter((keb) =>
+      CURRICULUM_WORDS.some(
+        (word) =>
+          word.keb === keb && word.pos.some((pos) => /verb/i.test(pos) && !/adverb/i.test(pos)),
+      ),
     );
     assert.ok(nounLike.length >= 2);
     assert.ok(verbs.length >= 1);
   });
 
-  test("every sentence tier has a reviewed drill from the first 100 vocabulary words", () => {
-    const beginner = vocabularyPrefix(100);
+  test("every sentence tier has a reviewed drill reachable once its curated vocabulary is known", () => {
+    // A "beginner" here is someone who knows exactly the words the curated
+    // (hand-authored) assembly items use — not the full VOCAB (OMNISCIENT,
+    // used elsewhere for corpus-wide checks) and not a curriculum-rank slice.
+    const curatedWords = new Set<string>();
+    for (const item of ASSEMBLY) {
+      if (item.id < 0) for (const lemma of item.v) curatedWords.add(lemma);
+    }
+    const beginner = wordsHistory([...curatedWords]);
     for (const tier of SENTENCE_ORDERING_TIERS) {
       assert.ok(
         readableAssemblyForTier(tier, beginner).length >= tier.minReadable,
-        `${tier.id} still depends on late or untaught vocabulary`,
+        `${tier.id} still depends on vocabulary its own curated items don't use`,
       );
     }
   });
