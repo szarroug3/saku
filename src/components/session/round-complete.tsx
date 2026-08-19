@@ -260,7 +260,7 @@ export function RoundComplete({
             SAK-21 (Changes Requested). */}
         <Hint>
           {session.round >= roundTargetOf(session) ? (
-            <
+            <>
               <b>Complete session</b> finishes for good.
             </>
           ) : (
