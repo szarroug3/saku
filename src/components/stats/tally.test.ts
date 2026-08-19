@@ -30,15 +30,17 @@ import { test } from "node:test";
 
 import {
   barSegments,
+  BUCKETS,
   factsByStanding,
   fillFor,
+  groupEntriesByStanding,
   tallyFacts,
   TONE_FILL,
   UNTOUCHED_FILL,
 } from "@/components/stats/tally";
 import type { Tally } from "@/components/stats/tally";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate, FactId } from "@/types";
+import type { EntryId, FactAggregate, FactId } from "@/types";
 
 /** A tally with everything at zero except what's overridden — the population
  * this stats page is drawn from never sees `not-seen` counted directly (see
@@ -186,4 +188,127 @@ test("factsByStanding partitions every input fact into exactly one bucket", () =
   for (const bucket of ["claimed", "solid", "getting-there", "shaky", "slipping"] as const) {
     assert.deepEqual(byBucket[bucket], []);
   }
+});
+
+// SAK-78 (round 5): "the side panel should separate by status ... ordered
+// ... claimed → solid → …". `groupEntriesByStanding` is the one place an
+// entry (not a fact) gets sorted into a standing bucket for display — see its
+// header comment in tally.ts for the full reasoning and the documented
+// tension with by-subject.tsx's "an entry is never given a standing" rule.
+// These tests pin the three load-bearing behaviours: BUCKETS order, "best
+// standing among an entry's facts wins", and "a met entry can never end up in
+// no section at all".
+
+test("groupEntriesByStanding orders sections in BUCKETS order and drops empty buckets", () => {
+  const entries = ["entry:solid", "entry:claimed", "entry:shaky"] as EntryId[];
+  const entryFacts = new Map<EntryId, FactId[]>([
+    ["entry:solid" as EntryId, ["fact:solid" as FactId]],
+    ["entry:claimed" as EntryId, ["fact:claimed" as FactId]],
+    ["entry:shaky" as EntryId, ["fact:shaky" as FactId]],
+  ]);
+  const aggregates: Record<FactId, FactAggregate> = {
+    // stability: 30, lastTested: NOW → recall ≈ 1 → status `quiet`, so the
+    // standing comes from accuracy alone (5/5 = 100% → solid).
+    ["fact:solid" as FactId]: {
+      seen: 5,
+      correct: 5,
+      stability: 30,
+      lastTested: NOW,
+    } as unknown as FactAggregate,
+    // Same recency, 1/5 = 20% accuracy → shaky (below GETTING_THERE_PCT).
+    ["fact:shaky" as FactId]: {
+      seen: 5,
+      correct: 1,
+      stability: 30,
+      lastTested: NOW,
+    } as unknown as FactAggregate,
+  };
+  const claims: Claims = { ["fact:claimed" as FactId]: NOW };
+
+  const groups = groupEntriesByStanding(
+    entries,
+    (e) => entryFacts.get(e) ?? [],
+    aggregates,
+    claims,
+    NOW,
+  );
+
+  assert.deepEqual(
+    groups.map((g) => g.standing),
+    // Only the buckets actually present, but in BUCKETS's own order —
+    // "getting-there" and "slipping" have nothing in them here and are
+    // absent, not present-and-empty.
+    (["claimed", "solid", "shaky"] as const).filter((b) => BUCKETS.includes(b)),
+  );
+  assert.deepEqual(groups.find((g) => g.standing === "solid")?.entries, ["entry:solid"]);
+  assert.deepEqual(groups.find((g) => g.standing === "claimed")?.entries, ["entry:claimed"]);
+  assert.deepEqual(groups.find((g) => g.standing === "shaky")?.entries, ["entry:shaky"]);
+});
+
+test("an entry with facts in multiple standings groups under its best (BUCKETS-order) standing", () => {
+  // One fact solid, one fact shaky, on the SAME entry — the case
+  // by-subject.tsx's own header comment uses 生's nine readings for.
+  const entries = ["entry:mixed"] as EntryId[];
+  const entryFacts = new Map<EntryId, FactId[]>([
+    ["entry:mixed" as EntryId, ["fact:a" as FactId, "fact:b" as FactId]],
+  ]);
+  const aggregates: Record<FactId, FactAggregate> = {
+    ["fact:a" as FactId]: {
+      seen: 5,
+      correct: 1,
+      stability: 30,
+      lastTested: NOW,
+    } as unknown as FactAggregate, // 20% → shaky
+    ["fact:b" as FactId]: {
+      seen: 5,
+      correct: 5,
+      stability: 30,
+      lastTested: NOW,
+    } as unknown as FactAggregate, // 100% → solid
+  };
+
+  const groups = groupEntriesByStanding(
+    entries,
+    (e) => entryFacts.get(e) ?? [],
+    aggregates,
+    {},
+    NOW,
+  );
+
+  assert.deepEqual(
+    groups.map((g) => g.standing),
+    ["solid"],
+  );
+  assert.deepEqual(groups[0]?.entries, ["entry:mixed"]);
+});
+
+test("a met entry whose only record is a decayed claim groups as claimed, never disappears into not-seen", () => {
+  // No seen fact at all — the entry is only "met" via a claim, and that claim
+  // is old enough that standingOf alone would call the fact not-seen (the
+  // decay standing.ts documents: "once its belief has decayed to teach it
+  // reads not seen"). groupEntriesByStanding's job is to keep this entry
+  // inside a section anyway, since it WAS counted as met.
+  const entries = ["entry:old-claim"] as EntryId[];
+  const entryFacts = new Map<EntryId, FactId[]>([
+    ["entry:old-claim" as EntryId, ["fact:old-claim" as FactId]],
+  ]);
+  const claimedAt = NOW;
+  const farFuture = NOW + 10 * 365 * 24 * 60 * 60 * 1000; // 10 years later
+  const claims: Claims = { ["fact:old-claim" as FactId]: claimedAt };
+
+  const groups = groupEntriesByStanding(
+    entries,
+    (e) => entryFacts.get(e) ?? [],
+    {},
+    claims,
+    farFuture,
+  );
+
+  // Every met entry lands in exactly one section — never silently dropped.
+  const allGrouped = groups.flatMap((g) => g.entries);
+  assert.deepEqual(allGrouped, ["entry:old-claim"]);
+  assert.deepEqual(
+    groups.map((g) => g.standing),
+    ["claimed"],
+  );
 });
