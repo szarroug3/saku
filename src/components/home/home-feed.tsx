@@ -28,7 +28,7 @@
 import { startTransition, useMemo } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
-import { ClaimExplainer } from "@/components/lesson/claim-explainer";
+import { SrsIntro } from "@/components/lesson/srs-intro";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 
 // /learn schedules over a PRECOMPUTED index, not the live curriculum content: the
@@ -413,8 +413,9 @@ export function HomeFeed() {
 
   return (
     <>
-      {/* What "I already know this" means, said once for the whole page. */}
-      <ClaimExplainer />
+      {/* What SRS is and how the 3-round loop works, said once for the whole
+          app. See src/components/lesson/srs-intro.tsx. */}
+      <SrsIntro />
 
       {/* THE TRACK CARDS — one card per track with a lesson, laid out in a
           RESPONSIVE TWO-COLUMN GRID: one column on narrow screens, two once the
