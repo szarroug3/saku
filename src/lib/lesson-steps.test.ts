@@ -23,10 +23,12 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { SETS, kanaFact, noteFor } from "../data/characters.ts";
+import { COUNTER_CURRICULUM, COUNTER_FACTS, counterEntry } from "../data/counters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
 import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { termEntry } from "../data/terms.ts";
+import { TSU_INTRO } from "../data/track-intros.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
 import { packLessons } from "./kanji-lesson.ts";
@@ -642,6 +644,55 @@ describe("々 and rendaku each ride the first word that shows them", () => {
               : s.type,
       ),
       ["intro-iteration-mark", "時々", String(termEntry("rendaku")), "様々", "我々"],
+    );
+  });
+});
+
+describe("the つ counter intro rides the first つ-counter item", () => {
+  test("fires once, immediately before ひとつ, in the full counters curriculum", () => {
+    // The full counters curriculum opens on its track term page ("counter"),
+    // then every つ form in COUNTER_CURRICULUM order (ひとつ…とお), then the one
+    // TAIL form (二十歳, counter 歳). TSU_INTRO must land exactly once, right
+    // before ひとつ, the first item whose counterForm().counter is "つ", and
+    // must not fire again on any later つ item, or on 二十歳. The track's own
+    // term step only fires with a history to gate it against, the same "no
+    // history, no track card" default the other TRACK_TERM_INTROS tracks take
+    // (see track-intros.test.ts's BLANK), so a blank history opens the track here.
+    const BLANK: HistoryFile = { sessions: [], facts: {} };
+    const steps = lessonSteps(
+      COUNTER_FACTS.map((f) => f.id),
+      BLANK,
+    );
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro"
+          ? s.intro.id
+          : s.type === "term"
+            ? String(s.entry)
+            : s.type === "item"
+              ? s.item.glyph
+              : s.type,
+      ),
+      [
+        String(termEntry("counter")),
+        TSU_INTRO.id,
+        ...COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => f.glyph),
+        "二十歳",
+      ],
+    );
+  });
+
+  test("a walk with no つ item gets no card", () => {
+    // 二十歳 alone (counter 歳, not つ) proves the check is the real counterForm
+    // lookup and not a glyph/kana pattern match: the form is plain kanji, no つ
+    // in sight, and the card must not fire.
+    const tail = COUNTER_CURRICULUM.find((f) => f.glyph === "二十歳")!;
+    const tailEntry = counterEntry(tail);
+    const facts = COUNTER_FACTS.filter((f) => f.entry === tailEntry);
+    const steps = lessonSteps(facts.map((f) => f.id));
+    assert.ok(
+      !steps.some((s) => s.type === "intro" && s.intro.id === TSU_INTRO.id),
+      "TSU_INTRO should not fire for a non-つ counter",
     );
   });
 });
