@@ -71,6 +71,7 @@ import {
   type AsmCard,
   type AsmRuntime,
 } from "@/components/quiz/assembly-check";
+import { DrillDrawer } from "./drill-drawer";
 
 interface CoachHint {
   id: string;
@@ -366,6 +367,7 @@ export function AssemblyScreen() {
   const [hintOpen, setHintOpen] = useState(false);
   const [shake, setShake] = useState(false);
   const [mismatch, setMismatch] = useState<AssemblyMismatch | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
   const rt =
@@ -522,6 +524,12 @@ export function AssemblyScreen() {
               <SmallBtn onClick={reviewLesson}>Look again</SmallBtn>
             ) : null}
             <SmallBtn onClick={endQuiz}>End quiz</SmallBtn>
+            <SmallBtn
+              aria-label="Mid-drill settings"
+              onClick={() => setDrawerOpen((o) => !o)}
+            >
+              ⚙
+            </SmallBtn>
           </span>
         </div>
         <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
@@ -820,6 +828,7 @@ export function AssemblyScreen() {
           </div>
         </div>
       ) : null}
+      {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   );
 }
