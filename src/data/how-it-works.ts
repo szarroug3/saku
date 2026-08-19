@@ -35,6 +35,12 @@
 export interface HowItWorksBullet {
   readonly label: string;
   readonly body: string;
+  /** Exact substrings of `body` to render in text-accent — the handful of
+   * numbers/terms that are the actual point of this definition (SAK-27
+   * review round two: "accent the things that need to stand out"). Optional;
+   * most bullets need none, since the bold label already carries the weight.
+   * See accentTerms() in src/components/ui.tsx. */
+  readonly bodyAccents?: readonly string[];
 }
 
 export interface HowItWorksSection {
@@ -43,6 +49,10 @@ export interface HowItWorksSection {
   /** Paragraphs rendered before any bullets. Can be empty (a section that is
    * entirely a bulleted list, like "Pause vs. end session"). */
   readonly paragraphs: readonly string[];
+  /** Exact substrings to accent inside `paragraphs`, index-aligned (entry i
+   * accents paragraphs[i]). Optional per paragraph; omit or leave an entry
+   * empty when a paragraph has no real landmark to lift. */
+  readonly paragraphAccents?: readonly (readonly string[])[];
   readonly bullets?: readonly HowItWorksBullet[];
   /** Paragraphs rendered after the bullets, when a section needs a closing
    * sentence the list itself can't carry (the "already know" section's note
@@ -59,6 +69,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's genuinely unsure, it asks again.",
       "And if something's clearly slipped, Saku doesn't keep grinding on it as a \"hard\" item: it treats it as new again and re-teaches it, because testing you on something you don't know isn't teaching.",
     ],
+    paragraphAccents: [["spaced repetition (SRS)"], [], []],
   },
   {
     id: "already-know",
@@ -95,6 +106,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       {
         label: "Solid",
         body: "You've actually been tested, recently, and it's gone well: at least 8 of your last 10 real attempts landed. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
+        bodyAccents: ["8 of your last 10"],
       },
       {
         label: "Getting there",
@@ -118,6 +130,11 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       "A full Learn session runs in three rounds. Each round runs through the same whole set of material queued for the session, not just what you got wrong last time, so you may see an item more than once across a session, on purpose.",
       "Between rounds, Saku enforces a short break: 5 minutes before round 2, 10 minutes before round 3 by default, adjustable in Settings. There's no break after round 3; you're offered \"Complete session\" instead.",
       "During a break, Saku deliberately shows you nothing: no items, no answers, no preview, because a rest with the material still in front of you isn't a rest. You can skip a break early, or end the session at any point; whatever round you finished is already saved.",
+    ],
+    paragraphAccents: [
+      ["three rounds"],
+      ["5 minutes before round 2", "10 minutes before round 3", "adjustable in Settings"],
+      [],
     ],
   },
   {

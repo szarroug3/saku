@@ -31,6 +31,27 @@ export const SRS_INTRO_PARAGRAPHS: readonly string[] = [
   "A Learn session runs in three rounds through the same material, with a short break in between: by default 5 minutes before round 2 and 10 minutes before round 3, adjustable in Settings. Seeing the same set again after a pause is the spacing this page just described, put into practice.",
 ];
 
+/** A short eyebrow for each entry of SRS_INTRO_PARAGRAPHS, same length and
+ * order, so the intro can render as distinct labelled chunks (the owner's
+ * "unmute the headers... this is hard to read, a big blob of text" review)
+ * instead of unbroken prose. Presentation only: none of this text is asserted
+ * by srs-intro-copy.test.ts, only SRS_INTRO_PARAGRAPHS itself is. */
+export const SRS_INTRO_HEADINGS: readonly string[] = [
+  "Spaced repetition",
+  "Recall beats hints",
+  "Three rounds, with breaks",
+];
+
+/** Terms accented (text-accent) inside each paragraph above, by index — the
+ * "accent the things that need to stand out" half of the same review. A few
+ * real landmarks per paragraph, not a rewrite: exact substrings only, see
+ * accentTerms() in src/components/ui.tsx. */
+export const SRS_INTRO_ACCENTS: readonly (readonly string[])[] = [
+  ["spaced repetition (SRS)", "increasing intervals"],
+  ["burns it into memory", "hint", "skip"],
+  ["three rounds", "5 minutes before round 2", "10 minutes before round 3", "adjustable in Settings"],
+];
+
 /** The trailing link line's text, with {link} standing in for where the
  * component splices in the actual <Link>. Kept as one string (not JSX) so the
  * copy itself, and only the link target, is what the test pins. */
