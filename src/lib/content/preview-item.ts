@@ -11,10 +11,6 @@ export interface PreviewItem {
   readonly glyph: string;
   readonly typeLabel: string;
   readonly kind: string;
-  /** 1-based position badge, shown instead of `glyph` when the item has no
-   * natural single-glyph label (a sentence-ordering tier). See
-   * BaseContentItem.badgeNumber in content/item.ts. */
-  readonly badgeNumber?: number;
 }
 
 /** One unit of a previewed lesson — its item and the facts it teaches. */

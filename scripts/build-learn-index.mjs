@@ -67,7 +67,6 @@ function serializeItem(item) {
     prereqs: [...item.prereqs],
     blockedBy: [...item.blockedBy],
   };
-  if (item.badgeNumber !== undefined) out.badgeNumber = item.badgeNumber;
   return out;
 }
 
