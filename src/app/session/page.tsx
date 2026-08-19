@@ -532,11 +532,15 @@ export default function SessionPage() {
             finishSession();
             startSession(facts, teach, what);
           }}
-          onDone={() => {
+          onMarkKnown={() => {
             // finishSession pushes /learn; flag it so the "no session → Home"
             // guard above doesn't clobber that with a Home redirect.
             finishingRef.current = true;
-            finishSession();
+            finishSession(true);
+          }}
+          onGoToLesson={() => {
+            finishingRef.current = true;
+            finishSession(false);
           }}
         />
       </div>

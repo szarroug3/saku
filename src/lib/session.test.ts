@@ -16,12 +16,13 @@
 // `firstTry`) and `missed` come only from what was actually answered.
 
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { describe, test } from "node:test";
 
 import {
   mergeStats,
   recoveredAfterLeg,
   roundCompleteView,
+  sessionKnownClaimTarget,
   type StudySession,
 } from "@/lib/session";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
@@ -440,4 +441,50 @@ test("recoveredAfterLeg on the first leg cannot claim a recovery", () => {
   // the screen never calls it a recovery: recovered is read against `missed`.
   assert.deepEqual(view.recovered, []);
   assert.deepEqual(view.outstanding, [f("y")]);
+});
+
+// SAK-52: "mark these as known" claims sessionKnownClaimTarget, not the whole
+// session unconditionally. These pin WHICH facts that target names for the two
+// shapes a session can have — see the doc comment on the function itself for
+// why the split exists (a taught session's `teach` already matches its Learn
+// card's own claim; a Quiz-me-only run never populates `teach` at all).
+describe("sessionKnownClaimTarget — what 'mark known' claims", () => {
+  test("a normal taught session claims exactly what it taught", () => {
+    const [a, b] = ["a", "b"].map(f);
+    // teach === facts for a real lesson (home-feed's startTrack: `teach ?
+    // facts : []`), so this also covers the common case directly.
+    const session = { facts: [a, b], teach: [a, b] } as unknown as StudySession;
+    assert.deepEqual(sessionKnownClaimTarget(session), [a, b]);
+  });
+
+  test("a sentence Quiz-me still claims its (marker-only) teach set", () => {
+    const marker = f("grammar:sentence-ordering-tier/simple");
+    const drillFacts = ["s1", "s2", "s3"].map(f);
+    // startSentence's Quiz-me shape: teach is the marker alone, facts is the
+    // whole wide drill set — teach must win, or "mark known" would claim every
+    // readable prerequisite fact drilled alongside the tier, not just the tier.
+    const session = {
+      facts: [...drillFacts, marker],
+      teach: [marker],
+    } as unknown as StudySession;
+    assert.deepEqual(sessionKnownClaimTarget(session), [marker]);
+  });
+
+  test("a Quiz-me-only run (empty teach) falls back to the whole quizzed set", () => {
+    const [a, b, c] = ["a", "b", "c"].map(f);
+    // startTrack's generic Quiz-me shape: teach is `[]` (only `markSeen` ran at
+    // start, nothing was ever flagged taught) — the only case old finishSession
+    // never claimed anything for, and the only one with no narrower target than
+    // the full set to fall back to.
+    const session = { facts: [a, b, c], teach: [] } as unknown as StudySession;
+    assert.deepEqual(sessionKnownClaimTarget(session), [a, b, c]);
+  });
+
+  test("never returns the session's own array by reference", () => {
+    // finishSession hands this straight to postClaim; a caller that later
+    // mutated the returned array must not be able to reach into session state.
+    const teach = [f("a")];
+    const session = { facts: teach, teach } as unknown as StudySession;
+    assert.notEqual(sessionKnownClaimTarget(session), teach);
+  });
 });
