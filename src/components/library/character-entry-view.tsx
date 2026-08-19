@@ -30,6 +30,7 @@ import Link from "next/link";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
+import { Callout } from "@/components/lesson/callout";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { HearButton } from "@/components/ui/hear-button";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
@@ -433,6 +434,21 @@ export function CharacterEntryView({
                     {renderSentence(example)}
                   </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
+                  {/* The highlighted span is often a CONJUGATED form (思った) while
+                      the headline above shows the dictionary form (思う) — same
+                      situation, same reassurance, as VerbPairEntryView's callout.
+                      Only shown when the two actually differ, so a kana-only word
+                      or an unconjugated literal match (the common case) doesn't
+                      carry a note about something that didn't happen. */}
+                  {example.span && example.jp.slice(example.span[0], example.span[1]) !== glyph ? (
+                    <div className="mt-3">
+                      <Callout>
+                        The sentence may show this word in a different, conjugated form.
+                        Conjugation is covered in the Grammar track, so for now, just know the
+                        sentence is using this same word.
+                      </Callout>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
