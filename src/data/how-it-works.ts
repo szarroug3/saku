@@ -28,9 +28,12 @@
 //   - three rounds is SESSION_ROUND_TARGET in src/lib/session.ts; the "Complete
 //     session" label on the final round and "Complete round" before it are
 //     round-complete.tsx's own button text, not paraphrased.
-//   - "Done for now" / "End session" are session-hud.tsx's own default labels.
+//   - "Pause" / "End session" are session-hud.tsx's own default labels
+//     (doneLabel / endLabel) — the only two session-exit controls in the app
+//     since SAK-55 collapsed the break screen's redundant "Done for now" /
+//     "Complete session now" pair into these.
 
-/** One definition inside a section's bulleted list ("Solid", "Done for now",
+/** One definition inside a section's bulleted list ("Solid", "Pause",
  * …). `label` is the word as it appears on screen; `body` is what it means. */
 export interface HowItWorksBullet {
   readonly label: string;
@@ -143,7 +146,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     paragraphs: [],
     bullets: [
       {
-        label: "Done for now",
+        label: "Pause",
         body: "Pauses. Takes you back to Learn and keeps your place; pick it back up later.",
       },
       {

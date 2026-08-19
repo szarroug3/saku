@@ -152,7 +152,7 @@ test("a session that lost its leg recovers instead of deadlocking", async ({
   await expect(page.locator("body")).toContainText("round 1 of 3 · done");
 
   // Most importantly: they can now get OUT.
-  await page.getByRole("button", { name: "Done for now", exact: true }).click();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.goto("/current");
   await page.getByRole("button", { name: "Discard ✕" }).first().click();
   await expect(page.getByText("Nothing in progress")).toBeVisible();
