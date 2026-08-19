@@ -327,6 +327,18 @@ export interface PhaseIntro {
    * fourteen cards below are untouched.
    */
   eyebrow?: string;
+  /**
+   * The card's own stable identity, when it teaches ONE nameable thing rather
+   * than an idea — a grammar pattern's written form (〜てください), matching
+   * byte-for-byte what the Library entry's header shows for the same pattern
+   * (see grammar-entry-view.tsx / auto-page.ts's `patternLabel`). Absent for a
+   * card that explains a concept with no single name to point at ("Grammar is
+   * how words fit together", a kana rule's own title). Distinct from `eyebrow`,
+   * which several auto-generated pattern cards share verbatim ("Grammar") and
+   * so cannot itself stand in for a name — see lesson-rail.tsx's `railCaption`,
+   * the one place this is read.
+   */
+  name?: string;
   /** One line, the whole point of the card. */
   title: string;
   /** This page is one word-type section of a larger form explanation. Its title
