@@ -520,27 +520,36 @@ export function SettingsCard() {
           label="Fonts"
           info="Cards use a random font from the ones you pick. Keep a few on so you don't just memorize one shape."
         >
-          {installedFonts.map((font) => {
-            const name = fontLabel(font);
-            const on = cfg.fonts.includes(font);
-            return (
-              <Chip
-                key={font}
-                on={on}
-                onClick={() => toggleFont(font)}
-                // The sample IS the label: a font name tells you nothing about
-                // the face. The name stays reachable via title/aria-label, since
-                // the glyphs give a screen reader nothing to read out.
-                title={name}
-                aria-label={name}
-                aria-pressed={on}
-                style={{ fontFamily: font }}
-                className="px-3.5 py-0.5 text-[21px] leading-[1.5]"
-              >
-                {FONT_SAMPLE}
-              </Chip>
-            );
-          })}
+          {installedFonts.length ? (
+            installedFonts.map((font) => {
+              const name = fontLabel(font);
+              const on = cfg.fonts.includes(font);
+              return (
+                <Chip
+                  key={font}
+                  on={on}
+                  onClick={() => toggleFont(font)}
+                  // The sample IS the label: a font name tells you nothing about
+                  // the face. The name stays reachable via title/aria-label, since
+                  // the glyphs give a screen reader nothing to read out.
+                  title={name}
+                  aria-label={name}
+                  aria-pressed={on}
+                  style={{ fontFamily: font }}
+                  className="px-3.5 py-0.5 text-[21px] leading-[1.5]"
+                >
+                  {FONT_SAMPLE}
+                </Chip>
+              );
+            })
+          ) : (
+            // Same empty state as Speech voice below: on a machine where none
+            // of the pool actually renders (detection is real-font-measured,
+            // not a hardcoded "yes"), the row must say so instead of just
+            // showing a label and tooltip with nothing beside them — which is
+            // indistinguishable from the control never having been built.
+            <Hint>No Japanese fonts found</Hint>
+          )}
         </Row>
 
         <Row
