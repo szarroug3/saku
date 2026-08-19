@@ -47,6 +47,7 @@ const entries = LIB_ENTRIES.map((e) => ({
   ...(e.searchAlso !== undefined ? { searchAlso: [...e.searchAlso] } : {}),
   sub: e.sub,
   weight: e.weight,
+  speakable: e.speakable,
 }));
 
 const knownFacts = {};
