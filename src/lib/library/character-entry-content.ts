@@ -9,7 +9,7 @@
 import { etymologyOf } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
-import { vocabRow } from "@/data/vocab";
+import { vocabRow, wordSenseRegister } from "@/data/vocab";
 import { exampleFor, type WordExample } from "@/data/word-examples";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -40,10 +40,20 @@ interface CharacterVariant {
   readonly example: { readonly glyph: string; readonly entry: EntryId } | null;
 }
 
+export interface CharacterWordMeaning {
+  /** That sense's glosses, joined. */
+  readonly text: string;
+  /** JMdict register/formality tags for THIS sense only (SAK-32), most to
+   * least formal. Never promoted to the reading or the word: a word card can
+   * show one sense tagged and a sibling sense untagged. Empty when the sense
+   * carries none of the five in-scope tags. */
+  readonly register: readonly string[];
+}
+
 export interface CharacterWordReading {
   readonly reading: string;
-  /** One entry per distinct sense; each is that sense's glosses joined. */
-  readonly meanings: readonly string[];
+  /** One entry per distinct sense. */
+  readonly meanings: readonly CharacterWordMeaning[];
 }
 
 interface CharacterWordPiece {
@@ -169,14 +179,24 @@ export function characterEntryPayload(item: ContentItem): CharacterEntryPayload 
   const wordRows: CharacterWordReading[] = [];
   const word = isWord ? vocabRow(glyph) : undefined;
   if (word) {
-    const byReading = new Map<string, string[]>();
+    const byReading = new Map<string, CharacterWordMeaning[]>();
     for (const sense of word.senses) {
       byReading.set(sense.reb, [
         ...(byReading.get(sense.reb) ?? []),
-        sense.glosses.join(", "),
+        {
+          text: sense.glosses.join(", "),
+          register: wordSenseRegister(word.keb, sense.reb, sense.glosses),
+        },
       ]);
     }
-    if (byReading.size === 0) byReading.set(word.reb, [word.glosses.join(", ")]);
+    if (byReading.size === 0) {
+      byReading.set(word.reb, [
+        {
+          text: word.glosses.join(", "),
+          register: wordSenseRegister(word.keb, word.reb, word.glosses),
+        },
+      ]);
+    }
     for (const [reading, meanings] of byReading) wordRows.push({ reading, meanings });
   }
 

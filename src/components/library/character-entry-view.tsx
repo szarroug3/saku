@@ -40,6 +40,29 @@ import type { EntryId } from "@/types";
 
 const CAP = 5;
 
+/**
+ * Register/formality annotation copy for a word sense (SAK-32).
+ *
+ * Fixed template per tag, not a per-word sentence: the text describes the
+ * REGISTER, not the word's specific meaning, so it reads correctly whether
+ * the tagged sense glosses to "yes" or "bag". Sourced from JMdict `<misc>`
+ * tags per sense (see wordSenseRegister in @/data/vocab) and applied
+ * PER SENSE, never promoted to the whole word or reading: a word can have
+ * one sense tagged and a sibling sense untagged, and only the tagged one
+ * shows a line. Approved copy, final (Sam sign-off 2026-08-19) — do not
+ * reword. Ordered most to least formal; a sense with more than one tag shows
+ * every applicable line in this order.
+ */
+const REGISTER_COPY: Record<string, string> = {
+  honorific:
+    "Honorific. Raises the person being talked about, for someone else's actions, not your own.",
+  humble:
+    "Humble. Lowers yourself, for your own actions, to show respect to the listener.",
+  polite: "Polite. The safe, formal register, used with people you don't know well.",
+  familiar: "Familiar. Casual language for people you're close to.",
+  colloquial: "Colloquial. Common in speech, not formal writing.",
+};
+
 /** One role's block. When the glyph plays SEVERAL roles the block wears an accent
  * "As a …" eyebrow to tell them apart; when it plays only one, the label is noise
  * (the whole page is that one thing) so it drops to a bare divider. */
@@ -283,13 +306,19 @@ export function CharacterEntryView({
                           </span>
                         </td>
                         <td className="w-full py-1 align-top text-text-muted">
-                          {w.meanings.length > 1
-                            ? w.meanings.map((m, i) => (
-                                <span key={i} className="block">
-                                  {m}
+                          {w.meanings.map((m, i) => (
+                            <span key={i} className={w.meanings.length > 1 ? "block" : undefined}>
+                              <span>{m.text}</span>
+                              {m.register.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="mt-0.5 block text-[11px] leading-snug text-text-muted/80"
+                                >
+                                  {REGISTER_COPY[tag]}
                                 </span>
-                              ))
-                            : w.meanings[0]}
+                              ))}
+                            </span>
+                          ))}
                         </td>
                       </tr>
                     ))}

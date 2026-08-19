@@ -225,11 +225,41 @@ interface SourceDefinition {
   readonly glosses: readonly string[];
   readonly pos: readonly string[];
   readonly readings: readonly string[];
+  /** JMdict register/formality tags for this sense (SAK-32), most to least
+   * formal, restricted to the five this app annotates: honorific, humble,
+   * polite, familiar, colloquial. Absent when the sense carries none. */
+  readonly register?: readonly string[];
 }
 
 const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
   readonly words: Readonly<Record<string, readonly SourceDefinition[]>>;
 }).words;
+
+/**
+ * Register/formality tags (SAK-32) for one specific sense of `keb`, or empty.
+ *
+ * Matched by (reading, glosses) rather than `definitionId`: the source sense
+ * boundary lives in word-definitions.json, but a `WordSense` as shown on a
+ * word card (from word-senses.json, or the single-sense vocab.json fallback)
+ * does not carry a JMdict-comparable id. Reading + exact gloss list is the
+ * same join key `readingDefinitions` already trusts to restore JMdict's real
+ * sense boundaries, so it is reused here rather than inventing a second one.
+ * Per-sense, never promoted to the whole word — see the rendering call site.
+ */
+export function wordSenseRegister(
+  keb: string,
+  reb: string,
+  glosses: readonly string[],
+): readonly string[] {
+  const definitions = SOURCE_DEFINITIONS[keb] ?? [];
+  const match = definitions.find(
+    (definition) =>
+      definition.readings.includes(reb) &&
+      definition.glosses.length === glosses.length &&
+      definition.glosses.every((gloss, i) => gloss === glosses[i]),
+  );
+  return match?.register ?? [];
+}
 
 type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
 
