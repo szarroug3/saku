@@ -62,7 +62,27 @@ export function FilterDropdown<T extends string>({
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className="kq-material z-20 w-60 rounded-xl border border-border bg-card p-2 shadow-lg"
+          // A PORTALLED OVERLAY PANEL — same category as ui/confirm-dialog.tsx's
+          // AlertDialogPrimitive.Content and slice-bar.tsx's QuizPreStart, and
+          // it needs the same fix those got: `kq-overlay` alongside
+          // `kq-material`. kq-material alone no longer carries kiri's frost —
+          // the scrolling shelf cards gave up their backdrop-filter for scroll
+          // perf (see globals.css's --material-frost) — so a lone .kq-material
+          // panel is just kiri's translucent --card with nothing blurring what
+          // sits behind it. A portalled panel is ONE element, not a wall of
+          // cards, so kq-overlay buys the blur back for free, which is what
+          // lifts the panel off the page instead of letting it read straight
+          // through. Without it, kiri's shelf — kana tiles, section headers —
+          // showed through the checkbox rows clearly enough to be unreadable
+          // where they overlapped (SAK-63 follow-up). The three opaque themes
+          // already have a solid --card, so this is a no-op for them.
+          //
+          // `rounded-(--radius)` + `shadow-card`, not `rounded-xl` + `shadow-lg`,
+          // for the same reason confirm-dialog.tsx spells out: `rounded-xl` +
+          // `bg-card` is the Card recipe (whose aizome rule dissolves the fill
+          // into hairline rules), which is right for something in the page flow
+          // and wrong for a panel floating over text that must occlude it.
+          className="kq-material kq-overlay z-20 w-60 rounded-(--radius) border border-border bg-card p-2 shadow-card"
         >
           <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
             <span className="text-[11px] font-semibold uppercase tracking-[0.04em] text-text-muted">
