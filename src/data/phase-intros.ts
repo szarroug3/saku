@@ -465,6 +465,16 @@ export interface PhaseIntro {
    * "Before you go on" card.
    */
   transitivityPairs?: readonly TransitivityPairRow[];
+  /**
+   * A hedged aside, shown ONCE at the bottom of the card via the shared
+   * `Callout` component (the same left-rule "Heads up." treatment kana's
+   * conversion tables use) — not another entry in `body`. For a remark that
+   * admits an exception or a pattern the reader should notice but not lean on,
+   * mixing it into the numbered body paragraphs makes it read as one more claim
+   * the card is teaching, when it's the opposite: a caveat about the claims
+   * above it. Used by the transitivity intro's が/を pattern note.
+   */
+  calloutTip?: string;
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW
@@ -982,11 +992,9 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       lead: "The endings often shift in familiar ways.",
       text: "Most pairs share a kanji and swap only the kana on the end. The usual shifts are まる→める, る→す, and く→ける. Naming the shift helps you remember a pair, but it never tells you which verb is which, and some pairs follow no rule at all.",
     },
-    {
-      lead: "The sentence itself can hint at which one it is.",
-      text: "が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
-    },
   ],
+  calloutTip:
+    "The sentence itself can hint at which one it is. が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
   examples: [
     { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "まる → める (The class started. → I started the class.)" },
     { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "る → す (It got fixed. → I fixed it.)" },
