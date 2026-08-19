@@ -100,85 +100,55 @@ export function trackCompletion(
   return { known, total: byEntry.size };
 }
 
-// THE LESSON'S OWN SPAN (SAK-13, reopened) — see the header above for why a
-// TRACK's overall "N of M" stays a completion COUNT: there is no frozen lesson
-// boundary a history-derived position could read safely. But a home card is not
-// only asking "how far have I progressed overall" — it is also asking "what is
-// THIS LESSON teaching", and THAT question has a genuinely safe span, because it
-// needs no history at all once the scheduler has already chosen `lesson.units`
-// for this render: every entry in `order` has a RANK — its 1-based position in
-// `order`'s own fixed sequence — that is a property of `order` ALONE, frozen the
-// instant `order` is built, before any learner has looked at it. Taking the
-// min/max of `lesson.units`' own ranks in `order` is exactly advancePosition's
-// SAFE column (lesson-position.ts's header): "freeze positions over the static
-// order first, look them up by group second."
+// THE LESSON'S OWN SPAN — SAK-13, decided (not "reopened" any more). This file
+// briefly computed this span as the STATIC-ORDER RANK window instead
+// (`lessonSpanInTrack`, since removed — see this function's git history if you
+// go looking): the 1-based min/max rank, among `order`'s own distinct entries,
+// that `lesson.units` actually occupy. That version could never be WRONG — it
+// read no history at all, so an out-of-order Library claim elsewhere in the
+// track could never move it, exactly advancePosition's SAFE column
+// (lesson-position.ts's header): "freeze positions over the static order
+// first, look them up by group second."
 //
-// This is NOT the same arithmetic as `from = known + 1`, and that distinction is
-// the whole point. `known + 1` assumes the lesson being shown is exactly the
-// next `y` items after whatever is already known, in `order`'s own order — an
-// assumption unit-scheduler-core.ts's planUnitLessonCore does not keep:
-// `planUnitLessonCore` walks `order` skipping units a learner has claimed out of
-// curriculum order via the Library, and can bundle in an untaught PREREQUISITE
-// pulled from wherever else in `order` it happens to sit, so the units actually
-// on the card are not guaranteed to be contiguous with "known + 1" at all — see
-// this file's own header and lesson-position.test.ts's "counter-example" test for
-// the shape that mistake takes. `lessonSpanInTrack` sidesteps the assumption
-// entirely: it never asks "how many are known", it asks "where do THESE units
-// — the ones the scheduler already put on the card — sit in `order`". An
-// out-of-order claim can change WHICH lesson the scheduler builds; it can never
-// change what this function reports about the lesson it was actually handed,
-// because history is not one of this function's inputs.
+// It shipped, and it was also frequently WIDE, specifically for vocab: vocab's
+// `order` is sorted by SPOKEN FREQUENCY, but a word's kanji-component
+// prerequisite resolves by curriculum Built-from edges (see
+// vocabPositionLabel's comment in home-feed.tsx), so a prerequisite pulled in
+// from far away in that SAME frequency-ranked order routinely produced spans
+// like "11–3,301 of 14,084" for a 6-item lesson — confirmed by simulation in
+// track-completion.test.ts as the common shape past the first couple of
+// lessons, not a rare edge case. Seen live, it read as broken rather than
+// honest: a learner cannot use "11–3,301" as a position, however truthfully it
+// was computed.
 //
-// A unit the scheduler pulled in from ANOTHER track's own order (e.g. a counter
-// lesson's kanji prerequisite, resolved through vocab's pronunciation units —
-// see unit-scheduler.ts's `primaryUnit`) has no rank in THIS `order` at all, and
-// is silently EXCLUDED rather than reported as an unknown position: the due unit
-// that triggered scheduling is always native to `order` (planUnitLessonCore
-// walks `order` itself to find it), so there is always at least one native rank
-// to report, and the foreign prerequisite is simply credited to whichever
-// track's own order it actually belongs to — the same boundary this file's own
-// `known`/`total` already draw.
-//
-// NOT UNCONDITIONALLY TIGHT, and that is truthful, not a bug. A track whose
-// prerequisites resolve against a DIFFERENT ordering axis than the track's own
-// delivery order (vocab: `order` is sorted by SPOKEN FREQUENCY, but a word's
-// kanji-component prerequisite resolves by curriculum Built-from edges — see
-// vocabPositionLabel's comment in home-feed.tsx) can pull a same-track
-// prerequisite from FAR AWAY in rank, producing a wide span. Simulated
-// concretely in track-completion.test.ts: it is not a rare edge case for vocab,
-// it is the common shape past the first couple of lessons. The span is still
-// exactly the frame `lesson.units` occupies in `order` — the only thing that can
-// be said honestly without deriving from history — so it is reported as-is
-// rather than suppressed; a caller that cannot tolerate a wide span for a given
-// track has to decide that per-track (see home-feed.tsx), not by this function
-// lying about what is actually on the card.
+// So this reverts to the TIGHT SEQUENTIAL span this ticket originally shipped
+// with — `from = known + 1`, `to = known + (distinct items this lesson
+// teaches)`, off `trackCompletion`'s own safe `known` tally just above — on
+// purpose, with the tradeoff left visible rather than silently reintroduced.
+// lesson-position.ts's "SAFE UNDER OUT-OF-ORDER CLAIMS" invariant (a position
+// must be read off a frozen static order, never a history-derived count) is
+// still correct, and still the right default for any OTHER "N of M" this app
+// adds — nothing about that discussion is wrong or stale. `lessonSpan` below is
+// a deliberate, informed EXCEPTION to it at this one call site: an
+// out-of-order Library claim elsewhere in the same track can still, in theory,
+// leave `known` out of step with where `lessonUnits` actually sit in `order`,
+// producing a span that misleads again — the exact failure mode SAK-13 first
+// opened this file to fix. That risk is accepted, not missed: the tight number
+// reads as a position on every render; the wide number was accurate and
+// unreadable; this is the trade that was chosen after both were seen live.
 /**
- * The current lesson's SAFE span within a track's static order: the 1-based
- * min/max RANK, among `order`'s own distinct entries (deduped exactly like
- * `trackCompletion`'s `total`), of the units `lessonUnits` is actually teaching.
+ * The current lesson's span, TIGHT AND SEQUENTIAL: `known + 1` through
+ * `known + itemCount`, where `itemCount` is the number of distinct items in
+ * `lessonUnits` (deduped by entry, exactly like `known`/`total` above).
  *
- * `order` must be the track's own STATIC order (unit-tracks.ts / learn-index.ts)
- * — the same array `trackCompletion`'s `units` would be — and `lessonUnits` must
- * be the units the SCHEDULER chose for the lesson currently on screen
- * (`lesson.units`), never a history-filtered remainder of `order` itself.
- *
- * Returns null only when NONE of `lessonUnits` are native to `order` — should
- * not happen in practice (see the header above), but a caller then has nothing
- * honest to print over a fallback rather than a fabricated span.
+ * `known` must come from `trackCompletion` over the SAME static order this
+ * lesson was scheduled from, so the running count and the span it advances
+ * agree. See the comment above for what this gives up to stay legible.
  */
-export function lessonSpanInTrack(
-  order: readonly CompletionUnit[],
+export function lessonSpan(
+  known: number,
   lessonUnits: readonly CompletionUnit[],
-): { from: number; to: number } | null {
-  const rankOf = new Map<string, number>();
-  let nextRank = 0;
-  for (const unit of order) {
-    const key = String(unit.item.entry);
-    if (!rankOf.has(key)) rankOf.set(key, ++nextRank);
-  }
-  const ranks = lessonUnits
-    .map((unit) => rankOf.get(String(unit.item.entry)))
-    .filter((rank): rank is number => rank !== undefined);
-  if (!ranks.length) return null;
-  return { from: Math.min(...ranks), to: Math.max(...ranks) };
+): { from: number; to: number } {
+  const itemCount = new Set(lessonUnits.map((unit) => String(unit.item.entry))).size;
+  return { from: known + 1, to: known + Math.max(itemCount, 1) };
 }

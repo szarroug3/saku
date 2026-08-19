@@ -46,7 +46,7 @@ import {
 import type { IndexUnit } from "@/lib/content/learn-index-types";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import { resumeLesson } from "@/lib/lesson-resume";
-import { lessonSpanInTrack, trackCompletion } from "@/lib/content/track-completion";
+import { lessonSpan, trackCompletion } from "@/lib/content/track-completion";
 import { positionLabel } from "@/lib/lesson-position";
 
 import type { Why } from "@/data/why";
@@ -133,15 +133,15 @@ function kanaScript(glyph: string): "Hiragana" | "Katakana" {
   return KATAKANA_RE.test(glyph) ? "Katakana" : "Hiragana";
 }
 
-/** A track's real "N of M" line for THIS LESSON — a SPAN over the track's own
- * static order (`lessonSpanInTrack`, track-completion.ts), never a running
- * completion count. See that function's header for why this is safe under
- * out-of-order Library claims: the span is read off `lesson.units`' own frozen
- * rank in `order` — a fact about what is literally on the card — never
- * `known + 1` (exactly the "1–639 of 2,136" bug SAK-13 named, relocated: see
- * that comment for why a count-derived "next" position isn't safe here either).
- * `total` is unchanged from before — still the track's own frozen distinct-item
- * count, `trackCompletion`'s `total`. */
+/** A track's "N of M" line for THIS LESSON: the TIGHT sequential span
+ * (`lessonSpan`, track-completion.ts) — `known + 1` through `known + (items
+ * this lesson teaches)`, off `trackCompletion`'s own safe running `known`
+ * count just below. This is a deliberate, informed choice over the wider but
+ * unconditionally-safe static-order-rank span this briefly computed instead
+ * (`lessonSpanInTrack`, since removed) — see `lessonSpan`'s own comment in
+ * track-completion.ts for exactly what that trade gives up and why it was
+ * made anyway (SAK-13, decided). `total` is unchanged from before — still the
+ * track's own frozen distinct-item count, `trackCompletion`'s `total`. */
 function trackPositionLabel(
   noun: string,
   units: readonly IndexUnit[],
@@ -149,21 +149,17 @@ function trackPositionLabel(
   history: HistoryFile,
 ): string {
   const { known, total } = trackCompletion(units, history);
-  // null only when none of the lesson's units are native to `units` — should
-  // not happen (see lessonSpanInTrack's own comment), but there is nothing
-  // honest to print over a degenerate fallback to the completion count already
-  // proven safe (SAK-13/SAK-29) rather than a fabricated span.
-  const span = lessonSpanInTrack(units, lesson.units) ?? { from: known, to: known };
+  const span = lessonSpan(known, lesson.units);
   return positionLabel(noun, { ...span, total });
 }
 
 /** The kana card's label, SPLIT BY SCRIPT: "Hiragana 1–6 of 46" while in
  * hiragana, then "Katakana 1–6 of 46" once katakana opens — not a running "Kana"
- * spanning both, and a genuine per-lesson span now (see trackPositionLabel):
- * kana has no prerequisite structure (see build-item.ts's `directPrereqs`), so
- * its lessons walk their script's slice of `order` strictly front-to-back and
- * its span stays tight in normal use; its total is exactly its script's own
- * item count, counted off the WHOLE track order — never a live recount of
+ * spanning both (see trackPositionLabel). Kana has no prerequisite structure
+ * (see build-item.ts's `directPrereqs`), so its lessons walk their script's
+ * slice of `order` strictly front-to-back and the sequential span is not just
+ * tight but exactly correct in normal use; its total is exactly its script's
+ * own item count, counted off the WHOLE track order — never a live recount of
  * what's left. */
 function kanaPositionLabel(
   lesson: LearnLesson,
@@ -188,26 +184,27 @@ function kanaScriptFacts(
   return facts;
 }
 
-/** The vocab card's label: a genuine SPAN now (see trackPositionLabel /
- * lessonSpanInTrack) rather than the running completion count this used to
- * print — e.g. "Vocab 1–6 of 14,182" for the very first lesson.
+/** The vocab card's label: the TIGHT sequential span (see trackPositionLabel /
+ * lessonSpan) — e.g. "Vocab 11–16 of 14,084" for a lesson that teaches 6 words
+ * with 10 already known — not the wide static-order-rank span this briefly
+ * printed instead.
  *
- * THE CAVEAT THIS SUPERSEDES, KEPT BECAUSE IT STILL MATTERS: the vocab track
+ * THE CAVEAT THIS RESURRECTS, KEPT BECAUSE IT STILL MATTERS: the vocab track
  * schedules by SPOKEN FREQUENCY, not curriculum (Built-from) order, so a
  * lesson's due word can need a kanji-component prerequisite that sits FAR AWAY
  * in that SAME frequency-ranked `order` — two items can sit next to each other
- * in frequency and thousands of positions apart in the curriculum. Unlike the
- * span this comment used to warn against (built by mixing `order` with the
- * unrelated `CURRICULUM_GLYPHS` spine — see learn-index-types.ts and
- * CURRICULUM_GLYPHS's own comment in learn-index.ts), `lessonSpanInTrack` never
- * mixes orderings: it ranks strictly within `order` itself, so it cannot
- * produce that specific seam. But it is NOT immune to a wide span from THIS
- * track's own prerequisite pulls — confirmed by simulation in
- * track-completion.test.ts, this is common (not rare) past the first couple of
- * lessons, sometimes spanning thousands of ranks for a 6-item lesson. That span
- * is still the truthful frame `lesson.units` occupies — never fabricated — so
- * it prints anyway rather than being suppressed the way the old count was;
- * see lessonSpanInTrack's own comment for why the width itself isn't a bug. */
+ * in frequency and thousands of positions apart in the curriculum. The
+ * static-order-rank span this used to print (`lessonSpanInTrack`, since
+ * removed — see track-completion.ts) reported that gap honestly and
+ * unconditionally-safely: "11–3,301 of 14,084" for a 6-item lesson, wide but
+ * never wrong under an out-of-order Library claim. Shipped, seen live on
+ * exactly this shape, and rejected: a learner cannot use "11–3,301" as a
+ * position, however truthfully it was computed. `lessonSpan`'s tight "11–16"
+ * is the number that was chosen instead, on purpose — see `lessonSpan`'s own
+ * comment in track-completion.ts for precisely what this gives up (a static
+ * out-of-order claim elsewhere in vocab can, in theory, leave this span
+ * describing material other than what is literally on the card again) to get
+ * a number a learner can actually read. */
 function vocabPositionLabel(
   lesson: LearnLesson,
   order: readonly IndexUnit[],
