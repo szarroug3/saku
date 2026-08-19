@@ -71,7 +71,7 @@ type LearnLesson = UnitLessonOf<IndexUnit>;
  * mirrors the old priority scan: a prep session may prepend vocab prerequisite
  * facts before, say, a keigo lesson, so the first NON-vocab fact wins (the old
  * scan likewise skipped word facts), falling back to the first fact's track. */
-function trackKeyForRun(run: RunInfo): string | null {
+export function trackKeyForRun(run: RunInfo): string | null {
   if (run.mode === "assembly") return "sentence";
   if (/^Counters\b/i.test(run.what)) return "numbers";
   for (const fact of run.facts) {
@@ -86,7 +86,7 @@ function trackKeyForRun(run: RunInfo): string | null {
 /** Each card's counting noun — "Hiragana 5 of 46", "Set 2 of 19". Kana is split
  * into Hiragana / Katakana at render (see kanaPositionLabel); the rest read
  * straight off this map and go through trackPositionLabel. */
-const TRACK_NOUN: Record<string, string> = {
+export const TRACK_NOUN: Record<string, string> = {
   kana: "Kana",
   vocab: "Vocab",
   numbers: "Counter",
@@ -98,7 +98,7 @@ const TRACK_NOUN: Record<string, string> = {
 
 /** The editorial heading each track's card shows — the track's proper name, larger
  * and plainer than the counting noun in TRACK_NOUN. */
-const TRACK_TITLE: Record<string, string> = {
+export const TRACK_TITLE: Record<string, string> = {
   kana: "Kana",
   vocab: "Vocabulary",
   numbers: "Counting",
