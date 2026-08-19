@@ -375,7 +375,15 @@ export default function SessionPage() {
         {/* The ONLY thing that scrolls. min-h-0 lets it shrink inside the flex
             column so its own overflow (not the window) takes the lesson's length. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mt-2">
+          {/* min-h-full (a FLOOR against this scroller's own height, not a
+              cap) + justify-center: a short card centers in the frame
+              instead of pinning to the top with a dead gap under it. Never
+              h-full — a fixed/percentage-capped height is what makes
+              justify-center clip the start of overflowing content in a
+              scroll container; min-height just lets this grow past the
+              floor for a long card and scroll normally, same as before
+              (SAK-10). */}
+          <div className="flex min-h-full flex-col justify-center py-2">
             {sentenceOrderingTeaching ? (
               <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
             ) : (
@@ -456,7 +464,12 @@ export default function SessionPage() {
 
   if (session.phase === "round-complete") {
     return (
-      <>
+      // .kq-center-frame (globals.css, SAK-10): floor-height wrapper so the
+      // results read as vertically centered on a short round instead of
+      // pinned to the top with a dead gap under them; a detailed results
+      // table tall enough to need it still just grows the frame and scrolls
+      // with the page.
+      <div className="kq-center-frame">
         <SessionHud
           label={label}
           where={`round ${session.round} of ${SESSION_ROUND_TARGET} · done`}
@@ -464,14 +477,14 @@ export default function SessionPage() {
           onDone={pauseSession}
           onEnd={endSession}
         />
-        <div className="mt-3.5">
+        <div className="flex flex-1 flex-col justify-center mt-3.5">
           <RoundComplete
             session={session}
             onRetry={(facts, boxes) => retryLeg(facts, boxes)}
             onComplete={completeRound}
           />
         </div>
-      </>
+      </div>
     );
   }
 
@@ -482,7 +495,9 @@ export default function SessionPage() {
     const span = session.restUntil ? session.restUntil - session.lastActiveAt : 0;
     const pct = span > 0 ? 100 - (100 * left) / span : 100;
     return (
-      <>
+      // .kq-center-frame (globals.css, SAK-10): see the round-complete
+      // branch above — same floor-height centering, same reason.
+      <div className="kq-center-frame">
         <SessionHud
           label={label}
           where={`resting before round ${Math.min(SESSION_ROUND_TARGET, session.round + 1)}`}
@@ -491,7 +506,7 @@ export default function SessionPage() {
           onDone={pauseSession}
           onEnd={endSession}
         />
-        <div className="mt-3.5">
+        <div className="flex flex-1 flex-col justify-center mt-3.5">
           <RestScreen
             session={session}
             now={now}
@@ -500,14 +515,16 @@ export default function SessionPage() {
             onComplete={endSession}
           />
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    // .kq-center-frame (globals.css, SAK-10): see the round-complete branch
+    // above — same floor-height centering, same reason.
+    <div className="kq-center-frame">
       <SessionHud label={label} where="complete" pct={100} tone="success" />
-      <div className="mt-3.5">
+      <div className="flex flex-1 flex-col justify-center mt-3.5">
         <SessionComplete
           session={session}
           onRerun={() => {
@@ -523,6 +540,6 @@ export default function SessionPage() {
           }}
         />
       </div>
-    </>
+    </div>
   );
 }
