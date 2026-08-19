@@ -29,7 +29,7 @@
 // study app can put on a page called Progress, and it needs no caption saying so:
 // you will see it drop, once, and understand it forever.
 
-import { Lbl } from "@/components/ui";
+import { Info, Lbl } from "@/components/ui";
 import {
   barSegments,
   BUCKETS,
@@ -73,6 +73,18 @@ export function KnowledgeBase({
                 </p>
                 <p className="mt-1 text-xs text-text-muted">
                   {BUCKET_LABEL[b]}
+                  {/* "Claimed" is the one bucket nothing else on this page
+                   * explains: it is not earned by drilling, so it needs its
+                   * own word said out loud, right where the count is — not
+                   * only on a reference page a reader may never open. */}
+                  {b === "claimed" ? (
+                    <Info>
+                      Marked known via &ldquo;I already know this&rdquo; in
+                      the Library, not proven by a quiz. It fades back into
+                      drilling on its own over time, and you can unclaim it
+                      from that item&rsquo;s Library page.
+                    </Info>
+                  ) : null}
                 </p>
               </div>
             ))}
