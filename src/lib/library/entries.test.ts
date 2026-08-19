@@ -18,7 +18,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { KANJI } from "@/data/kanji";
+import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
 import {
   builtFrom,
   factRows,
@@ -26,15 +26,28 @@ import {
   factsTitle,
   libEntry,
   subjectLabel,
+  LIB_ENTRIES,
+  COUNTER_KIND,
+  NUMBER_CONSTRUCTION_KIND,
+  SENTENCE_RULE_KIND,
   type LibEntry,
+  type Kind,
 } from "./entries.ts";
 import { kanjiEntry } from "@/data/kanji";
-import { kanaEntry } from "@/data/characters";
-import { wordEntry } from "@/data/vocab";
+import { kanaEntry, KANA_SUBJECT } from "@/data/characters";
+import { wordEntry, VOCAB_SUBJECT } from "@/data/vocab";
 import { factInfo } from "@/lib/facts.ts";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/data/vocab";
+import { RADICAL_SUBJECT } from "@/data/radicals";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
+import { TERM_SUBJECT } from "@/data/terms";
+import { PRIMITIVE_SUBJECT } from "@/data/components";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import { KEIGO_SUBJECT } from "@/data/keigo";
+import { MARK_SUBJECT } from "@/data/marks";
 
 const need = (e: LibEntry | undefined): LibEntry => {
   assert.ok(e);
@@ -184,4 +197,107 @@ test("the subject pip splits kana by script and singularises words", () => {
   assert.equal(subjectLabel(factInfo(meaningFactId("一"))), "Kanji");
   // A fact the data no longer has has no label rather than throwing.
   assert.equal(subjectLabel(undefined), undefined);
+});
+
+// ---- speakable: does one INSTANCE of this entry have a real pronunciation
+// worth a 🔊, per SAK-79 ----
+//
+// The bug: `speakable()` in entry-tile.tsx used to infer this from `kind`, but
+// `kind` answers "which shelf", a different question — and COUNTER_KIND shelves
+// TWO populations under it: real counted words (一本 · いっぽん, speakable) and
+// counter CONSTRUCTION/rule pages (〜枚, a placeholder glyph over prose about a
+// sound shift — not speakable). A kind check cannot tell those apart, so a
+// construction page wrongly got a speaker.
+//
+// The fix moved the decision onto LibEntry itself (`speakable`), set once by
+// whichever population's construction code in `build()` actually knows the
+// answer. These tests assert the WHOLE generated index agrees, per kind — not
+// just the one reported glyph — because the bug class is "kind conflates two
+// questions", which a single regression pin does not guard against.
+const SPEAKABLE_BY_KIND: Record<Kind, boolean> = {
+  [KANA_SUBJECT]: true,
+  [RADICAL_SUBJECT]: false,
+  [KANJI_SUBJECT]: true,
+  [VOCAB_SUBJECT]: true,
+  // The real counted words (一本 · いっぽん) — see NUMBER_CONSTRUCTION_KIND
+  // below for the reference pages that share this shelf but not this kind.
+  [COUNTER_KIND]: true,
+  // The confirmed SAK-79 case: 〜枚 and its siblings are rule pages, not words.
+  [NUMBER_CONSTRUCTION_KIND]: false,
+  [SENTENCE_RULE_KIND]: false,
+  [GRAMMAR_SUBJECT]: false,
+  [GRAMMAR_CONCEPT_SUBJECT]: false,
+  // A pair names two words (開く / 開ける); its one glyph is a representative
+  // fragment, not the whole entry's sound.
+  [TRANSITIVITY_SUBJECT]: false,
+  // A set names multiple words (honorific and humble forms), same reasoning.
+  [KEIGO_SUBJECT]: false,
+  [MARK_SUBJECT]: false,
+  [TERM_SUBJECT]: false,
+  [PRIMITIVE_SUBJECT]: false,
+};
+
+test("every entry's speakable flag matches its kind's real-pronunciation status", () => {
+  const byKind = new Map<Kind, LibEntry[]>();
+  for (const e of LIB_ENTRIES) {
+    const list = byKind.get(e.kind);
+    if (list) list.push(e);
+    else byKind.set(e.kind, [e]);
+  }
+  for (const kind of Object.keys(SPEAKABLE_BY_KIND) as Kind[]) {
+    const expected = SPEAKABLE_BY_KIND[kind];
+    const entries = byKind.get(kind) ?? [];
+    // A kind with zero entries makes the assertion below vacuously true, which
+    // would hide a build() regression that stopped minting a population
+    // entirely — so this must find something for every kind checked.
+    assert.ok(entries.length > 0, `no entries built for kind "${kind}" — test is vacuous`);
+    for (const e of entries) {
+      assert.equal(
+        e.speakable,
+        expected,
+        `${kind} entry ${e.id} (glyph "${e.glyph}") expected speakable=${expected}, got ${e.speakable}`,
+      );
+    }
+  }
+});
+
+test("SAK-79: a counter construction page (〜枚) is silent, a real counted word is not", () => {
+  const construction = LIB_ENTRIES.find(
+    (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.glyph === "〜枚",
+  );
+  assert.ok(construction, "expected the 〜枚 construction page to exist");
+  assert.equal(construction!.speakable, false, "a rule page has no pronunciation");
+
+  // COUNTER_CURRICULUM's only counted (non-kana) form today is 二十歳 (はたち) —
+  // see COUNTER_CURRICULUM's TAIL. A kana form (ひとつ…) carries the same
+  // speakable=true but no separate `readings` entry (its glyph IS its reading),
+  // so this specifically checks the counted-form branch.
+  const countedWord = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "二十歳");
+  assert.ok(countedWord, "expected the real counted word 二十歳 to exist");
+  assert.equal(countedWord!.readings.length, 1, "a counted form carries its own reading");
+  assert.equal(countedWord!.speakable, true, "a real counted word has one");
+
+  const kanaForm = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "ひとつ");
+  assert.ok(kanaForm, "expected the kana form ひとつ to exist");
+  assert.equal(kanaForm!.speakable, true, "a kana form's glyph IS its reading");
+});
+
+test("a verb pair and a keigo set are not speakable as one entry — each names more than one word", () => {
+  const pair = LIB_ENTRIES.find((e) => e.kind === TRANSITIVITY_SUBJECT);
+  assert.ok(pair, "expected at least one verb pair entry");
+  assert.equal(pair!.speakable, false);
+
+  const keigo = LIB_ENTRIES.find((e) => e.kind === KEIGO_SUBJECT);
+  assert.ok(keigo, "expected at least one keigo set entry");
+  assert.equal(keigo!.speakable, false);
+});
+
+test("a radical and a kanji part are shapes, not sounds — no speaker either", () => {
+  const radical = LIB_ENTRIES.find((e) => e.kind === RADICAL_SUBJECT);
+  assert.ok(radical, "expected at least one radical entry");
+  assert.equal(radical!.speakable, false);
+
+  const primitive = LIB_ENTRIES.find((e) => e.kind === PRIMITIVE_SUBJECT);
+  assert.ok(primitive, "expected at least one kanji-part entry");
+  assert.equal(primitive!.speakable, false);
 });

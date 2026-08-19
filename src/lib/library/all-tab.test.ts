@@ -23,6 +23,7 @@ function entry(id: string, kind: Kind): LibEntry {
     meanings: [],
     sub: "",
     weight: 0,
+    speakable: false,
   };
 }
 
