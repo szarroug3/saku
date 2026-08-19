@@ -52,7 +52,6 @@ import { answerGuide, confusionNote } from "@/lib/drill-guidance";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { sessionAccuracy } from "@/lib/session-accuracy";
 import {
-  answerContainsQuestionMark,
   answerIsJapanese,
   buildDeck,
   buildMcOptions,
@@ -1161,23 +1160,23 @@ export function DrillScreen() {
       if (e.key === "Enter") nextQuestion();
       return;
     }
-    // "?" TAKES THE HINT, and it is the one key that works with the answer box
-    // focused. The digits below deliberately stand off a focused field, but a
-    // typed card is exactly where the box IS focused — a binding that only
-    // worked on multiple choice would be no binding at all. That is safe for
-    // almost every card: no romaji and no reading ever contains "?", and
-    // neither do most English glosses. But it is NOT universally true — ね's
-    // own meaning gloss set is "right?" / "isn't it?" / "doesn't it?" / "don't
-    // you?" (vocab.json), and that IS a typed jp→en card, so unconditionally
-    // swallowing "?" would eat the one character a learner spelling ね's gloss
-    // verbatim needs, and take an unwanted hint in the process (SAK-56). Stand
-    // off exactly there: box focused AND this card's own accepted answers
-    // contain a literal "?" (answerContainsQuestionMark) — let the keystroke
-    // land in the field instead. (1–9 are the MC options and Enter submits, so
-    // both were spoken for.)
+    // "?" TAKES THE HINT — but, like the digit shortcuts below, it stands off
+    // a focused text input rather than firing globally. A learner typing an
+    // answer needs every key they press to land in the box, "?" included
+    // (SAK-56: ね's own glosses are "right?" / "isn't it?" / "doesn't it?" /
+    // "don't you?", but the same is true of any answer in principle — this
+    // isn't scoped to which card is on screen, only to whether the box has
+    // focus). Outside a focused input — between questions, or on a
+    // multiple-choice card with no text box at all — "?" is still the
+    // keyboard shortcut for Hint. (1–9 are the MC options and Enter submits,
+    // so both were spoken for.)
     if (e.key === "?") {
-      const focused = document.activeElement === inputRef.current;
-      if (focused && answerContainsQuestionMark(rt.q.f)) return;
+      const t = e.target;
+      if (
+        t instanceof HTMLElement &&
+        (t.tagName === "INPUT" || t.tagName === "TEXTAREA")
+      )
+        return;
       e.preventDefault();
       takeHint();
       return;
