@@ -1,7 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 // A MARK'S PAGE — and it is deliberately the least designed page in the Library.
 //
 // WHAT THIS COMPONENT IS ALLOWED TO DO
@@ -49,18 +47,22 @@ import {
   TIER_EXAMPLES,
   type SentenceOrderingTierId,
 } from "@/components/session/sentence-ordering-teach-walk";
+import {
+  colorizeSentence,
+  SentencePartBoxes,
+} from "@/components/quiz/sentence-part-breakdown";
 import { bodyFor, scriptLabel, type Mark } from "@/data/marks";
-import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
+import {
+  SENTENCE_ORDERING_GUIDES,
+  type ChunkRoleKey,
+} from "@/data/sentence-ordering-guides";
+import type { PositionedSentencePart } from "@/lib/sentence-part-spans";
 
-type SentencePart =
-  | "topic"
-  | "core"
-  | "ending"
-  | "context"
-  | "target"
-  | "action"
-  | "condition"
-  | "resultTopic";
+// ChunkRoleKey (data/sentence-ordering-guides.ts) is a superset of the roles
+// this page's hand-authored examples actually use — "marker" rides along
+// unused here, same as it does in SENTENCE_ORDERING_CHUNK_ROLES. Aliased
+// locally so the rest of this file reads as it always has.
+type SentencePart = ChunkRoleKey;
 
 const DEFAULT_SENTENCE_PARTS: readonly SentencePart[] = ["topic", "core", "ending"];
 const REQUEST_SENTENCE_PARTS: readonly SentencePart[] = ["context", "target", "action", "ending"];
@@ -70,17 +72,6 @@ const CONDITIONAL_SENTENCE_PARTS: readonly SentencePart[] = [
   "core",
   "ending",
 ];
-
-const PART_COLOR: Record<SentencePart, string> = {
-  topic: "sentence-part-topic",
-  core: "sentence-part-core",
-  ending: "sentence-part-ending",
-  context: "sentence-part-topic",
-  target: "sentence-part-core",
-  action: "sentence-part-action",
-  condition: "sentence-part-topic",
-  resultTopic: "sentence-part-action",
-};
 
 const SENTENCE_PART_LABELS: Record<
   SentenceOrderingTierId,
@@ -107,11 +98,6 @@ const SENTENCE_PART_LABELS: Record<
     ending: "Request / suggestion",
   },
 };
-
-interface SentenceRowPart {
-  part: SentencePart;
-  text: string;
-}
 
 type SentenceExampleParts = Partial<Record<SentencePart, string>>;
 
@@ -307,11 +293,6 @@ const SENTENCE_LIBRARY_EXAMPLES: Partial<Record<string, readonly SentenceLibrary
   ],
 };
 
-interface PositionedSentencePart extends SentenceRowPart {
-  start: number;
-  end: number;
-}
-
 function findChunkStart(sentence: string, chunk: string): number {
   const sentenceLower = sentence.toLowerCase();
   const chunkLower = chunk.toLowerCase();
@@ -368,59 +349,6 @@ function spansForSentence(
 
   placed.sort((a, b) => a.start - b.start);
   return placed;
-}
-
-function colorizeSentence(sentence: string, spans: readonly PositionedSentencePart[]) {
-  if (spans.length === 0) return sentence;
-  const out: ReactNode[] = [];
-  let cursor = 0;
-  spans.forEach((span, i) => {
-    if (span.start > cursor) out.push(sentence.slice(cursor, span.start));
-    out.push(
-      <span
-        key={`${span.part}-${span.start}-${i}`}
-        className={`font-medium ${PART_COLOR[span.part]}`}
-      >
-        {sentence.slice(span.start, span.end)}
-      </span>,
-    );
-    cursor = span.end;
-  });
-  if (cursor < sentence.length) out.push(sentence.slice(cursor));
-  return out;
-}
-
-function SentencePartBoxes({
-  sentence,
-  spans,
-  labels,
-  lang,
-}: {
-  sentence: string;
-  spans: readonly PositionedSentencePart[];
-  labels: Partial<Record<SentencePart, string>>;
-  lang?: string;
-}) {
-  return (
-    <div className="mt-1 flex flex-wrap gap-1.5">
-      {spans.map((span) => (
-        <div
-          key={`${span.part}-${span.start}`}
-          className="rounded-md border border-border/70 bg-card/60 px-2 py-1"
-        >
-          <span className="block text-[9px] font-semibold uppercase tracking-wide text-text-muted">
-            {labels[span.part]}
-          </span>
-          <span
-            lang={lang}
-            className={`text-[13px] font-medium ${PART_COLOR[span.part]}`}
-          >
-            {sentence.slice(span.start, span.end)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function hasUncoveredJapanese(sentence: string, spans: readonly PositionedSentencePart[]): boolean {

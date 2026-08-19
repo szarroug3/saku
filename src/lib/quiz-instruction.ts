@@ -147,13 +147,7 @@ export function quizInstruction(
   }
 
   const noun = nounFor(fact);
-  // "Not Japanese" is not the same as "a meaning". Kana asked jp2en wants "a" —
-  // latin, so not Japanese, and yet not a meaning either: あ does not MEAN
-  // anything, and "type what it means" over a kana card is nonsense. FactInfo
-  // already records this (`meaning: null`), so the data answers it and no
-  // subject list is needed.
-  const wantsMeaning =
-    !answerIsJapanese(fact, dir) && factInfo(fact)?.meaning != null;
+  const wantsMeaning = answerIsMeaning(fact, dir);
 
   // A kanji reading is asked ONLY inside a word (task #22): "how is 病 said in
   // 病院". The prompt names the word beneath the glyph; the instruction says the
@@ -217,4 +211,17 @@ export function isSound(fact: FactId, dir: Direction): boolean {
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;
   return isWordReadingFact(fact);
+}
+
+/** Whether this card's answer is an English MEANING — the "Type what this
+ * word means." half of the instruction, and (SAK-50) the same test the reveal
+ * uses to pick "This means …" over "This is said …".
+ *
+ * "Not Japanese" is not the same as "a meaning". Kana asked jp2en wants "a" —
+ * latin, so not Japanese, and yet not a meaning either: あ does not MEAN
+ * anything, and "type what it means" over a kana card is nonsense. FactInfo
+ * already records this (`meaning: null`), so the data answers it and no
+ * subject list is needed. */
+export function answerIsMeaning(fact: FactId, dir: Direction): boolean {
+  return !answerIsJapanese(fact, dir) && factInfo(fact)?.meaning != null;
 }
