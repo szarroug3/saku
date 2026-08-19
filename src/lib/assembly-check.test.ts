@@ -1,0 +1,121 @@
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+
+import {
+  assemblyMismatchMessage,
+  chunkRoleLabels,
+  findAssemblyMismatch,
+} from "./assembly-check.ts";
+import type { AssemblyItem } from "../data/assembly.ts";
+
+/** A "simple" (topic → core → ending) item — the same shape id -1 has in the
+ * curated corpus (src/data/assembly.ts). */
+const SIMPLE_ITEM: AssemblyItem = {
+  id: -1,
+  en: "I say that.",
+  jp: "私はそれを言う。",
+  pieces: [
+    { t: "私は", h: "私" },
+    { t: "それを", h: "それ" },
+    { t: "言う。", h: "言う" },
+  ],
+  v: ["私", "それ", "言う"],
+  p: ["wo"],
+};
+
+/** A "request" (context → target → action → ending) item — id -203 in the
+ * curated corpus, four pieces so a mid-sentence swap is distinguishable from
+ * an edge swap. */
+const REQUEST_ITEM: AssemblyItem = {
+  id: -203,
+  en: "Please write your name here.",
+  jp: "ここに名前を書いてください。",
+  pieces: [
+    { t: "ここに", h: "ここ" },
+    { t: "名前を", h: "名前" },
+    { t: "書いて", h: "書く" },
+    { t: "ください。", h: "くださる" },
+  ],
+  v: ["ここ", "名前", "書く", "くださる"],
+  p: ["te-request"],
+};
+
+describe("chunkRoleLabels", () => {
+  test("returns the tier's role labels in canonical order when piece counts match", () => {
+    assert.deepEqual(chunkRoleLabels("simple", 3), [
+      "Topic",
+      "Object/detail",
+      "Final predicate",
+    ]);
+  });
+
+  test("returns null for an unknown tier", () => {
+    assert.equal(chunkRoleLabels(null, 3), null);
+  });
+
+  test("returns null when the item's piece count doesn't match the tier's role count", () => {
+    // "simple" has exactly 3 roles (topic, core, ending); a 4-piece item
+    // can't be labeled positionally without guessing which role is missing.
+    assert.equal(chunkRoleLabels("simple", 4), null);
+  });
+});
+
+describe("findAssemblyMismatch", () => {
+  test("returns null when the tray already matches the canonical order", () => {
+    const tray = SIMPLE_ITEM.pieces.map((p) => p.t);
+    assert.equal(findAssemblyMismatch(SIMPLE_ITEM, tray, "simple"), null);
+  });
+
+  test("identifies the first out-of-place chunk and names it with the tier's role label", () => {
+    // Canonical: 私は(topic) それを(core) 言う。(ending)
+    // Built:     それを(core) 私は(topic) 言う。(ending) — the first two are swapped.
+    const tray = ["それを", "私は", "言う。"];
+    const mismatch = findAssemblyMismatch(SIMPLE_ITEM, tray, "simple");
+    assert.ok(mismatch);
+    // それを belongs at canonical index 1 ("core" / "Object/detail"), but the
+    // learner placed it first (tray index 0).
+    assert.equal(mismatch.canonIndex, 1);
+    assert.equal(mismatch.trayIndex, 0);
+    assert.equal(mismatch.surface, "それを");
+    assert.equal(mismatch.label, "Object/detail");
+    assert.equal(assemblyMismatchMessage(mismatch), "Object/detail is out of place.");
+  });
+
+  test("finds a mismatch buried in the middle of a longer sentence", () => {
+    // Canonical: ここに(context) 名前を(target) 書いて(action) ください。(ending)
+    // Built: swap target and action.
+    const tray = ["ここに", "書いて", "名前を", "ください。"];
+    const mismatch = findAssemblyMismatch(REQUEST_ITEM, tray, "request");
+    assert.ok(mismatch);
+    assert.equal(mismatch.trayIndex, 1);
+    assert.equal(mismatch.surface, "書いて");
+    assert.equal(mismatch.canonIndex, 2); // "action"
+    assert.equal(mismatch.label, "Action");
+  });
+
+  test("falls back to a positional message when no tier/role data is available", () => {
+    // A generated-corpus item has no known tier (sentenceOrderingTierForItem
+    // returns null for compound/ambiguous items) — the message should still
+    // name a specific chunk, just without the semantic label.
+    const tray = ["それを", "私は", "言う。"];
+    const mismatch = findAssemblyMismatch(SIMPLE_ITEM, tray, null);
+    assert.ok(mismatch);
+    assert.equal(mismatch.label, null);
+    assert.equal(assemblyMismatchMessage(mismatch), "Chunk 2 is out of place.");
+  });
+
+  test("returns null when the tray length doesn't match the canonical length", () => {
+    assert.equal(findAssemblyMismatch(SIMPLE_ITEM, ["私は", "それを"], "simple"), null);
+  });
+
+  test("a single misplaced piece near the end is still found", () => {
+    // Canonical: 私は それを 言う。 — only the last two are swapped.
+    const tray = ["私は", "言う。", "それを"];
+    const mismatch = findAssemblyMismatch(SIMPLE_ITEM, tray, "simple");
+    assert.ok(mismatch);
+    assert.equal(mismatch.trayIndex, 1);
+    assert.equal(mismatch.surface, "言う。");
+    assert.equal(mismatch.canonIndex, 2);
+    assert.equal(mismatch.label, "Final predicate");
+  });
+});
