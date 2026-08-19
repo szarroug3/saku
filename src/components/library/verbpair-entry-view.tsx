@@ -99,9 +99,21 @@ export function VerbPairEntryView({
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
               {s.m.example ? (
-                <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
-                  {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
-                </p>
+                <>
+                  <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
+                    {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
+                  </p>
+                  {/* The highlighted span is often a CONJUGATED form (出た) while the
+                      headline above shows the dictionary form (出る), and nothing else
+                      on the page explains that connection. Conjugation itself isn't
+                      taught here — that's the Grammar track's job — so this just
+                      reassures the reader the sentence is still about the same word. */}
+                  <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
+                    The sentence may show this verb in a different, conjugated form.
+                    Conjugation is covered in the Grammar track, so for now, just know the
+                    sentence is using this same word.
+                  </p>
+                </>
               ) : null}
             </div>
           ))}
