@@ -35,6 +35,7 @@ import { HearButton } from "@/components/ui/hear-button";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
+import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
@@ -363,7 +364,20 @@ export function CharacterEntryView({
               {example ? (
                 <div>
                   <SubLabel>In a sentence</SubLabel>
-                  <p className="font-kana text-[15px] leading-relaxed text-text">{example.jp}</p>
+                  <p className="font-kana text-[15px] leading-relaxed text-text">
+                    {sentencePiecesOf(example.jp, example.kr).map((seg, i) =>
+                      seg.kind === "text" ? (
+                        <span key={i}>{seg.text}</span>
+                      ) : seg.reading ? (
+                        <ruby key={i}>
+                          {seg.char}
+                          <rt className="text-[9px] text-text-muted">{seg.reading}</rt>
+                        </ruby>
+                      ) : (
+                        <span key={i}>{seg.char}</span>
+                      ),
+                    )}
+                  </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
                 </div>
               ) : null}
