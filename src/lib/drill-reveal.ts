@@ -51,6 +51,27 @@ export function resolveAnsweredText(opts: {
 }
 
 /**
+ * The reveal's opening sentence, split around the answer so the caller can
+ * drop in either plain text or a marked-up node (PitchReading's overline, for
+ * a word with a verified pitch) without this module knowing JSX exists.
+ *
+ * Two templates, chosen the same way the instruction line already is
+ * (`isSound` / `answerIsMeaning` in quiz-instruction.ts): a reading-type
+ * question is framed as how it's SAID, a meaning-type question as what it
+ * MEANS. Neither is true of every card (a particle-marker or tap-drill
+ * question is asking for neither a sound nor a gloss), so a third, honest
+ * fallback names it plainly rather than forcing a wrong metaphor onto it.
+ */
+export function revealTemplate(opts: {
+  isSound: boolean;
+  isMeaning: boolean;
+}): { prefix: string; suffix: string } {
+  if (opts.isMeaning) return { prefix: "This means ", suffix: "." };
+  if (opts.isSound) return { prefix: 'This is said "', suffix: '".' };
+  return { prefix: "The answer is ", suffix: "." };
+}
+
+/**
  * Whether an audio-prompt showing should still hide its glyph behind the
  * speaker (SAK-51). `listen` is the card's real, graded shape — untouched by
  * this — and audio still autoplays regardless. `textRevealed` is the one new
