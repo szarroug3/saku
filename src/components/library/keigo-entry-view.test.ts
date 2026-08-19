@@ -69,7 +69,7 @@ describe("the honorific/humble template is guarded on the set NOT being formulai
 
   test("the fixed-phrase explanation section is still gated on set.formulaic", () => {
     assert.match(SRC, /\{set\.formulaic \? \(/);
-    assert.match(SRC, /it&rsquo;s a fixed phrase/);
+    assert.match(SRC, /It&rsquo;s a fixed phrase/);
   });
 });
 

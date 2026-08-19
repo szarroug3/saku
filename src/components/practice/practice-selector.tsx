@@ -540,7 +540,7 @@ export function PracticeSelector({
         <p className="mt-2 text-[12px] text-text-muted">
           {sel.states.length
             ? "Showing anything with one of the selected statuses."
-            : "No status picked — every status is included."}
+            : "No status picked. Every status is included."}
         </p>
       </div>
 
@@ -658,10 +658,10 @@ export function PracticeSelector({
         ) : null}
         <p className={cx("mt-2 text-[12px]", invalidRange ? "text-danger" : "text-text-muted")}>
           {invalidRange
-            ? "From is after To — set From on or before To to pick a range."
+            ? "From is after To. Set From on or before To to pick a range."
             : activeLearned
               ? `Showing things you first learned ${rangeLabel(activeLearned, now)}.`
-              : "No date picked — anything you've learned counts."}
+              : "No date picked. Anything you've learned counts."}
         </p>
       </div>
 
@@ -682,7 +682,7 @@ export function PracticeSelector({
           <p className="text-[12px] text-text-muted">
             {sel.types.length
               ? `Drilling ${sel.types.map(typeLabel).join(", ")}.`
-              : "No kind picked — every kind is included."}
+              : "No kind picked. Every kind is included."}
           </p>
         </div>
       ) : null}
