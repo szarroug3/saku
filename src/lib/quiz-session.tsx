@@ -1175,7 +1175,19 @@ export function QuizSessionProvider({
       setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
       // forceCoverage: a retry is one full pass over exactly these, whatever
       // the session's length setting says. You asked for these; you get these.
-      beginLeg(facts, "The misses", session.snapshot, true, boxes);
+      //
+      // `what` used to be hardcoded to "The misses" here. Nothing renders it —
+      // a focused run in a session is always named from session.what
+      // (sessionRunInfo, not quizRunInfo; see quizRunInfo/sessionRunInfo
+      // above) — but assembly-screen.tsx's usesLessonExamples() used to read
+      // exactly this leg-local `what` to decide whether a sentence-ordering
+      // quiz sources its cards from the tier's lesson examples. "The misses"
+      // never matched that check, so a retry always fell through to the
+      // (usually empty) practice corpus instead of re-asking the actual
+      // missed lesson item — SAK-75. Carrying session.what through keeps the
+      // leg's identity intact across a retry, the same way session.snapshot
+      // already does on the line above.
+      beginLeg(facts, session.what, session.snapshot, true, boxes);
     },
     [session, beginLeg],
   );
