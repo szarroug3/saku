@@ -99,22 +99,30 @@ export interface PairMember {
   /** JMdict's tag. Checked against, never derived from. */
   readonly jmdict: JmdictTransitivity;
   /**
-   * A minimal-pair Japanese example for THIS side, with the particle that
-   * marks it highlighted — が for `happens`, を for `doIt`. Optional and rare
-   * on purpose: most pairs teach fine through the English cue alone, and
+   * A minimal-pair Japanese example for THIS side, with the conjugated verb
+   * itself highlighted — 出た for `happens`, 出した for `doIt`. Optional and
+   * rare on purpose: most pairs teach fine through the English cue alone, and
    * authoring a Japanese sentence pair is a curation task like the rest of
-   * this table, not something to generate. It exists only where the が/を
-   * contrast itself IS the lesson — 出る／出す, per SAK-42 (the Blind Audit
-   * finding that the one card built to teach transitivity had no Japanese on
-   * it at all). Every other pair leaves this absent; that is deliberate, not
-   * an oversight, exactly like a verb with no partner leaving this table
-   * altogether (see ABSENCE IS DATA, above).
+   * this table, not something to generate. It exists only where the
+   * happens/doIt contrast itself IS the lesson — 出る／出す, per SAK-42 (the
+   * Blind Audit finding that the one card built to teach transitivity had no
+   * Japanese on it at all). Every other pair leaves this absent; that is
+   * deliberate, not an oversight, exactly like a verb with no partner leaving
+   * this table altogether (see ABSENCE IS DATA, above).
+   *
+   * The highlight was originally the が/を particle, but が/を is never taught
+   * anywhere in the app as connected to transitivity — this table's own
+   * header comment says the pairing is lexical, not a derivable rule — so
+   * lighting up the particle implied a rule the app deliberately does not
+   * teach. SAK-42 review moved the highlight onto the verb itself, which is
+   * what the card's "It happens on its own" / "Someone does it" labels and
+   * tooltips actually explain.
    */
   readonly example?: {
     /** The sentence. お金が出た */
     readonly jp: string;
-    /** [start, end) of the marking particle within `jp`, for highlighting. */
-    readonly particleSpan: readonly [number, number];
+    /** [start, end) of the conjugated verb within `jp`, for highlighting. */
+    readonly highlightSpan: readonly [number, number];
   };
 }
 
@@ -157,7 +165,7 @@ export const VERB_PAIRS: readonly VerbPair[] = [
       cls: "v1",
       en: "The money came out.",
       jmdict: "vi",
-      example: { jp: "お金が出た", particleSpan: [2, 3] },
+      example: { jp: "お金が出た", highlightSpan: [3, 5] },
     },
     doIt: {
       word: "出す",
@@ -165,7 +173,7 @@ export const VERB_PAIRS: readonly VerbPair[] = [
       cls: "v5s",
       en: "I took the money out.",
       jmdict: "vt",
-      example: { jp: "お金を出した", particleSpan: [2, 3] },
+      example: { jp: "お金を出した", highlightSpan: [3, 6] },
     },
   },
   {

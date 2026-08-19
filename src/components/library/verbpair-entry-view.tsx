@@ -31,9 +31,12 @@ import type { ReactNode } from "react";
  * (.sentence-part-topic) — one visual language for "here is the piece that
  * matters" everywhere the app shows a sentence. Same treatment as
  * grammar-entry-view's `highlightSpan`, just a 2-tuple span instead of that
- * one's 3-tuple (no per-span color choice needed here — the marking particle
- * is always the thing lit). */
-function highlightParticle(jp: string, span: readonly [number, number]): ReactNode {
+ * one's 3-tuple (no per-span color choice needed here — the conjugated verb
+ * is always the thing lit, not the が/を particle: が/を is never taught
+ * anywhere in the app as connected to transitivity, so highlighting the verb
+ * ties the accent to what the card's own labels and tooltips explain instead
+ * of implying a grammatical rule the app deliberately doesn't teach). */
+function highlightSpan(jp: string, span: readonly [number, number]): ReactNode {
   const [start, end] = span;
   if (start < 0 || end > jp.length || start >= end) return jp;
   return (
@@ -97,7 +100,7 @@ export function VerbPairEntryView({
               <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
               {s.m.example ? (
                 <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
-                  {highlightParticle(s.m.example.jp, s.m.example.particleSpan)}
+                  {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
                 </p>
               ) : null}
             </div>
