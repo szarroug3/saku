@@ -35,8 +35,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
+import { HintBody } from "@/components/quiz/hint-content";
 import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import {
@@ -53,6 +53,7 @@ import {
   effectiveListen,
   isRevealPause,
   resolveAnsweredText,
+  revealTemplate,
   type RevealFeedbackKind,
 } from "@/lib/drill-reveal";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
@@ -112,7 +113,7 @@ import {
   type CardForm,
 } from "@/lib/ask-forms";
 import { isKatakana, toKana } from "@/lib/romaji";
-import { quizInstruction } from "@/lib/quiz-instruction";
+import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { prefetchClips, speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
@@ -263,18 +264,6 @@ interface DrillQuestion {
    * reads to decide whether it has a mix-up to name.
    */
   confused: EntryId | null;
-  /**
-   * What the learner most recently answered on THIS showing, as one display
-   * string — an MC option's label, a recognition pick's text, or typed text.
-   * Null until a miss resolves one (see submit's `resolveAnsweredText` call),
-   * and null again for every card that has not been attempted yet, including
-   * a skip thrown before a first try. SAK-50: the reveal used to say only
-   * what the right answer was, never what you said instead, so a mix-up like
-   * お/あ had nothing to compare against. Overwritten on every attempt (unlike
-   * `confused`, which sticks to the first pair it can name) because this is
-   * always "what I said LAST", the one relevant to the reveal on screen now.
-   */
-  answered: string | null;
   /**
    * Whether the learner has pressed "Show text" on an audio-prompt showing —
    * SAK-51's fallback for a card that would otherwise be a blank box with a
@@ -916,8 +905,6 @@ export function DrillScreen() {
       choicesBoard,
       // Nothing has been said instead of this card's answer yet. Same rule.
       confused: null,
-      // No attempt yet on a new showing, so nothing to compare at a reveal.
-      answered: null,
       // "Show text" has not been pressed on a new showing. Same rule as
       // `hinted` and `choicesShown` just above.
       textRevealed: false,
@@ -1079,16 +1066,13 @@ export function DrillScreen() {
         recognitionPick !== undefined && q.recognition
           ? q.recognition.options[recognitionPick] ?? null
           : null;
-      // What was said, once, for both the persisted per-phrase record and the
-      // reveal on screen right now (SAK-50) — see resolveAnsweredText.
+      // What was said, once, for the persisted per-phrase record
+      // (FactSessionDetail reads st.saidByPhrase) — see resolveAnsweredText.
+      // No longer also driving an on-screen "You answered" line (SAK-50
+      // changes-requested: the learner's own answer is already visible in the
+      // input she typed it into, so repeating it in the reveal was redundant).
       const saidText = resolveAnsweredText({ recognitionSaid, mcSaid, typedSaid });
       recordMissedPhrase(st, phrase, saidText);
-      // Overwritten on every attempt, not just the last one: whichever miss
-      // ends up being the out-of-retries one the reveal shows is the one this
-      // should say. (A skip never reveals, so this only matters for the
-      // out-of-retries path — but it's still set here on every miss, since a
-      // skip with tries left resolves the standing attempt without showing it.)
-      q.answered = saidText;
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
@@ -1432,10 +1416,11 @@ export function DrillScreen() {
     // what was said. Null, not undefined: `confusionNote` is only reached
     // through a truthiness test, so this is tidiness rather than load-bearing.
     if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
-    // A showing in flight from before SAK-50's reveal existed has no record of
-    // what was said, and one from before SAK-51's fallback existed has not had
-    // "Show text" pressed. Same tidiness rule as `confused` above.
-    if (rt.q && rt.q.answered === undefined) rt.q.answered = null;
+    // A showing in flight from before SAK-51's fallback existed has not had
+    // "Show text" pressed. Same tidiness rule as `confused` above. (The
+    // similar `answered` backfill this used to sit beside was removed with
+    // the field itself — SAK-50 changes-requested pass dropped the on-screen
+    // "You answered" line.)
     if (rt.q && typeof rt.q.textRevealed !== "boolean") rt.q.textRevealed = false;
     if (rt.q && rt.q.recognition === undefined) rt.q.recognition = null;
     // A showing in flight from before the variant quiz existed had no variant.
@@ -1948,6 +1933,60 @@ export function DrillScreen() {
     const downstep = wordPitch(row.keb);
     return downstep == null ? null : { reading, downstep };
   })();
+  // The reveal's answer, as one node plus the two facts revealTemplate needs
+  // to pick "This is said …" vs "This means …" vs the plain fallback — SAK-50
+  // changes-requested pass. Every branch below used to render its own
+  // giant-text answer directly; now they all produce the same shape so ONE
+  // sentence (and one fixed-bottom slot) can hold any of them.
+  const revealAnswer = !revealing
+    ? null
+    : q.particleDrill
+      ? {
+          node: (
+            <span lang="ja">
+              {
+                q.particleDrill.chunks.find((c) => c.id === q.particleDrill?.answerChunkId)
+                  ?.text
+              }
+            </span>
+          ),
+          isSound: false,
+          isMeaning: false,
+        }
+      : q.particleMarker
+        ? {
+            node: (
+              <span lang="ja">
+                {
+                  q.particleMarker.options.find(
+                    (o) => o.recipeId === q.particleMarker?.recipeId,
+                  )?.label
+                }
+              </span>
+            ),
+            isSound: false,
+            isMeaning: false,
+          }
+        : q.recognition
+          ? { node: q.recognition.answer as ReactNode, isSound: false, isMeaning: true }
+          : {
+              node: revealPitch ? (
+                // Same answer text, drawn with its pitch-accent overline. See
+                // revealPitch above: only ever a word reading that has a
+                // verified pitch, DISPLAY only.
+                <PitchReading reading={revealPitch.reading} downstep={revealPitch.downstep} />
+              ) : (
+                // One call, no fallback composed here. The `?? answers[0]`
+                // this replaced was the "a = a" bug: in en2jp a fact's first
+                // baked answer IS the prompt. See revealFor.
+                (revealFor(q.f, q.dir, ctx) as ReactNode)
+              ),
+              isSound: isSound(q.f, q.dir),
+              isMeaning: answerIsMeaning(q.f, q.dir),
+            };
+  const revealTmpl = revealAnswer
+    ? revealTemplate({ isSound: revealAnswer.isSound, isMeaning: revealAnswer.isMeaning })
+    : null;
 
   const accuracy = cfg.showAccuracy
     ? liveAccuracy(rt.stats)
@@ -2065,8 +2104,15 @@ export function DrillScreen() {
           floor leaves below the HUD and centers the stage inside it. When
           the stage itself is taller than that (drawer open, long reveal),
           this simply grows past the floor — no fixed height here to clip
-          against. */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4">
+          against.
+
+          pb-28 is a CONSTANT reservation for the fixed reveal bar at the
+          bottom of the viewport (see the end of this component), present
+          whether or not that bar is actually showing right now — a constant
+          never changes, so it cannot be the thing that shifts the stage when
+          a miss resolves (SAK-50 changes-requested: that shift was exactly
+          Sam's complaint about the old in-flow reveal). */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4 pb-28">
         <DrillHalo
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.
@@ -2376,118 +2422,12 @@ export function DrillScreen() {
             SAK-21. */}
         {!typedMode && !q.particleDrill ? <ScrollCue /> : null}
 
-        {/* The reveal: the one thing colour can't say is WHICH answer was
-            right. Held until you press Enter, so it's read rather than
-            glimpsed. Fixed height whether or not it's showing — otherwise the
-            stage jumps every time a card resolves.
-
-            SAK-50 (the audit's other finding here): this used to be the
-            SMALLEST text on the card — a `text-sm` line, itself an inherited
-            size, sitting under a 78px halo glyph. The one moment the app owes
-            you the answer you just failed to give was the one thing on screen
-            easiest to skim past. It is now the single largest thing rendered
-            outside the halo ring itself (every surrounding control — the
-            input, the MC boards, the instruction line — tops out at 20px);
-            what you actually answered instead sits directly beneath it, so
-            the comparison the ticket asked for is explicit rather than
-            requiring you to remember what you typed three seconds ago. This
-            only ever fires on an out-of-retries miss, never a skip — a skip
-            is a deferral, not a resolution, and never pauses here (see
-            `revealPause` / skipQuestion above, SAK-50 feedback). */}
-        <p
-          className={cx(
-            "flex flex-col items-center justify-center gap-1.5",
-            revealing || revealPause ? "min-h-[104px]" : "hidden",
-          )}
-        >
-          {revealing ? (
-            <>
-              <span className="flex flex-col items-center gap-1">
-                {q.particleDrill ? (
-                  <span className="text-3xl font-bold text-danger" lang="ja">
-                    {q.particleDrill.chunks.find((c) => c.id === q.particleDrill?.answerChunkId)
-                      ?.text}
-                  </span>
-                ) : q.particleMarker ? (
-                  <span className="text-3xl font-bold text-danger" lang="ja">
-                    {
-                      q.particleMarker.options.find(
-                        (o) => o.recipeId === q.particleMarker?.recipeId,
-                      )?.label
-                    }
-                  </span>
-                ) : q.recognition ? (
-                  <span className="max-w-[380px] text-center text-2xl font-bold text-danger wrap-break-word">
-                    {q.recognition.answer}
-                  </span>
-                ) : (
-                  <span className="flex max-w-[380px] flex-wrap items-baseline justify-center gap-1.5 wrap-break-word">
-                    <span className="text-sm text-text-muted">{prompt.glyph}</span>
-                    {prompt.context ? (
-                      <span className="text-sm text-text-muted">{prompt.context}</span>
-                    ) : null}
-                    <span className="text-sm text-text-muted">=</span>
-                    {revealPitch ? (
-                      // Same answer text, drawn with its pitch-accent overline. See
-                      // revealPitch above: only ever a word reading that has a
-                      // verified pitch, DISPLAY only.
-                      <PitchReading
-                        reading={revealPitch.reading}
-                        downstep={revealPitch.downstep}
-                        className="text-3xl font-bold text-danger"
-                      />
-                    ) : (
-                      <span className="text-3xl font-bold text-danger">
-                        {/* One call, no fallback composed here. The `?? answers[0]`
-                            this replaced was the "a = a" bug: in en2jp a fact's first
-                            baked answer IS the prompt. See revealFor. */}
-                        {revealFor(q.f, q.dir, ctx)}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-              {/* WHAT WAS ANSWERED, next to the correct answer, per SAK-50 —
-                  `q.answered` (set in submit) is only ever set on an
-                  out-of-retries miss, the only path that reaches this reveal;
-                  a skip never does. */}
-              {q.answered ? (
-                <span className="text-[13px] text-text-muted">
-                  You answered{" "}
-                  <span className="font-medium text-text">{q.answered}</span>
-                </span>
-              ) : null}
-              {/* THE MIX-UP, when the app already knows this pair is one. A
-                  third line in the column, not a change to `revealFor` — that
-                  function returns the ANSWER, and folding pedagogy into it
-                  would re-tangle the seam task 01 untangled. Rendered only when
-                  `confusionNote` claims the pair, so most reveals are the two
-                  lines they were before. */}
-              {mixup ? (
-                <span className="max-w-[320px] text-center text-[11px] text-text-muted">
-                  {mixup}
-                </span>
-              ) : null}
-            </>
-          ) : null}
-          {/* The way on, for EVERY finished miss (typed or multiple choice,
-              reveal on or off) — see `revealPause`. A skip never reaches this
-              state; it advances immediately (SAK-50). This used to be a real
-              button for MC only, with a "press Enter" hint for typed cards,
-              on the reasoning that a typed card has hands on the keyboard.
-              That breaks on mobile: the input goes readOnly at the reveal, so
-              the on-screen keyboard closes, and a typed card was then left
-              with no keyboard to press Enter AND no button to tap —
-              genuinely stuck, no way to the next card. So a real, tappable
-              Continue shows on any finished miss; a desktop user can still
-              just press Enter (the title says so, and the document keydown
-              handler advances on it). */}
-          {revealPause ? (
-            <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
-              Continue
-            </SmallBtn>
-          ) : null}
-        </p>
+        {/* The reveal used to render here, in-flow — which was exactly the
+            layout shift Sam flagged (SAK-50 changes-requested): the answer
+            appearing pushed the retries pips, Skip/Hint/Choices row and hint
+            drawer down the page. It now renders in a fixed bar pinned to the
+            bottom of the viewport instead (see the end of this component),
+            so nothing above it ever moves when a miss resolves. */}
 
         {/* Reserved whether or not pips are on, so toggling them mid-drill
             doesn't shove the drawer up and down. */}
@@ -2553,56 +2493,62 @@ export function DrillScreen() {
                 </Btn>
               ) : null}
             </span>
-            {q.hinted && hint ? (
-              hint.kind === "image" ? (
-                <MnemonicImage
-                  src={hint.src}
-                  glyph={hint.glyph}
-                  imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
-                  glyphClassName="text-4xl text-text-muted"
-                />
-              ) : hint.kind === "formula" ? (
-                <span className="flex flex-wrap items-end justify-center gap-x-1.5 gap-y-1 text-text-muted">
-                  {hint.formula.pieces.map((p, i) => (
-                    <span key={i} className="flex items-end gap-x-1.5">
-                      {i > 0 ? <span className="pb-0.5 text-[14px]">+</span> : null}
-                      <span className="flex flex-col items-center leading-none">
-                        <span className="min-h-[13px] text-[11px] text-accent">
-                          {p.reading ?? " "}
-                        </span>
-                        <span className="text-xl text-text">{p.text}</span>
-                      </span>
-                    </span>
-                  ))}
-                  <span className="pb-0.5 text-[14px]">=</span>
-                  <span className="pb-0.5 text-xl text-text">
-                    {hint.formula.result}
-                  </span>
-                </span>
-              ) : hint.kind === "written" ? (
-                <span className="flex flex-col items-center gap-0.5">
-                  <span
-                    className="text-3xl leading-none text-text"
-                    style={{ fontFamily: q.font }}
-                    lang="ja"
-                  >
-                    {hint.text}
-                  </span>
-                  {hint.parts ? (
-                    <span className="max-w-[320px] text-center text-[12px] text-text-muted">
-                      {hint.parts}
-                    </span>
-                  ) : null}
-                </span>
-              ) : (
-                <p className="max-w-[320px] text-center text-[12px] text-text-muted">
-                  {hint.text}
-                </p>
-              )
-            ) : null}
+            {/* Suppressed once revealPause starts: the fixed reveal bar below
+                takes over showing hint content at that point (unconditionally,
+                not gated on q.hinted — see revealAnswer), so keeping this copy
+                visible too would just be the same mnemonic twice on screen. */}
+            {q.hinted && hint && !revealPause ? <HintBody hint={hint} font={q.font} /> : null}
           </span>
         </span>
       </div>
+
+      {/* THE REVEAL, now a fixed bar pinned to the bottom of the viewport
+          instead of an in-flow element on the card (SAK-50 changes-requested:
+          Sam's complaint was specifically that the old reveal pushed the rest
+          of the page around when it appeared). `position: fixed` takes it
+          completely out of document flow, so nothing above it — halo, input,
+          MC board, retries pips, Skip/Hint/Choices row — ever moves when this
+          shows or hides; `pb-28` above is the one-time constant reservation
+          that keeps it from covering that row while it's up.
+
+          Present for every revealPause, not only cfg.showAnswer ones: Continue
+          is the only way off a finished miss (see the comment this replaced),
+          so the bar itself must render even with the setting off — it only
+          drops the sentence/hint content in that case.
+
+          Sentence + hint content: `revealTmpl` picks "This is said …" /
+          "This means …" / the plain fallback (see revealTemplate,
+          lib/drill-reveal.ts, chosen off the same isSound/answerIsMeaning
+          axes the instruction line already uses), and the hint content below
+          it is the exact HintBody the Hint button would have shown for this
+          question — reused, not reinvented, and shown unconditionally here
+          since the answer is already out. No "You answered" line: the
+          learner's own answer is still sitting in the input she typed it
+          into. */}
+      {revealPause ? (
+        <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
+          <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col items-center gap-2 overflow-y-auto text-center">
+            {revealAnswer && revealTmpl ? (
+              <>
+                <p className="max-w-[420px] wrap-break-word text-lg font-semibold text-text">
+                  {revealTmpl.prefix}
+                  <span className="text-accent">{revealAnswer.node}</span>
+                  {revealTmpl.suffix}
+                </p>
+                {mixup ? (
+                  <p className="max-w-[320px] text-center text-[11px] text-text-muted">
+                    {mixup}
+                  </p>
+                ) : null}
+                {hintReady && hint ? <HintBody hint={hint} font={q.font} /> : null}
+              </>
+            ) : null}
+            <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
+              Continue
+            </SmallBtn>
+          </div>
+        </div>
+      ) : null}
 
       {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>

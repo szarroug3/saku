@@ -37,6 +37,19 @@ export function chunkRoleLabels(
   return roles.map((role) => labels?.[role] ?? null);
 }
 
+/** The trailing sentence punctuation a canonical sentence's LAST piece alone
+ * carries (。！？ — the assembly ingest tags pieces by word boundary, and
+ * punctuation rides with whichever piece it follows, which is always the
+ * final one). Stripped for DISPLAY on the draggable pieces only (SAK-50
+ * changes-requested: Sam's own words, "remove the ending punctuation from the
+ * sentence quiz draggable pieces. it makes it obvious which word goes last").
+ * The underlying piece surface — what's stored in the pool/tray arrays,
+ * compared against canonicalOrder, and joined back into the sentence — is
+ * untouched, so grading and the assembled `item.jp` reveal are unaffected. */
+export function pieceLabel(surface: string): string {
+  return surface.replace(/[。！？]+$/u, "");
+}
+
 export interface AssemblyMismatch {
   /** Index into the CANONICAL order where the misplaced piece actually belongs. */
   canonIndex: number;
