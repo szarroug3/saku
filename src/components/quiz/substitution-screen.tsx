@@ -255,10 +255,23 @@ export function SubstitutionScreen() {
               className={`rounded-xl border p-4 text-xl ${
                 card.state === "right"
                   ? "border-success bg-success-bg"
-                  : "border-border"
+                  : "border-danger bg-danger-bg"
               }`}
             >
-              {card.state === "right" ? card.value : answer}
+              {/* The learner's own typed value, kept exactly as they left it —
+                  never swapped for the correct form. On a lock, the correct
+                  answer is shown as an ADDITION below, not a replacement (see
+                  SAK-91; assembly-check.ts fixed the same anti-pattern for the
+                  sentence-ordering screen). */}
+              {card.value}
+              {card.state === "wrong" ? (
+                <div className="mt-2 border-t border-border pt-2 text-base text-text-muted">
+                  <span className="text-xs font-semibold uppercase tracking-wide">
+                    Answer
+                  </span>{" "}
+                  <span className="text-text">{answer}</span>
+                </div>
+              ) : null}
             </div>
           ) : (
             <input
