@@ -39,13 +39,15 @@ import {
   WordTable,
 } from "@/components/results/word-table";
 import { Btn, Card, Hint } from "@/components/ui";
+import { entryDisplayLabel } from "@/components/results/entry-display-label";
 import { factInfo } from "@/lib/facts";
 import {
   roundCompleteView,
   roundTargetOf,
   type StudySession,
 } from "@/lib/session";
-import type { FactId } from "@/types";
+import { useHistory } from "@/lib/use-history";
+import type { EntryId, FactId } from "@/types";
 
 import { retryButtonLabel, retryHint } from "./retry-grouping";
 
@@ -76,6 +78,17 @@ export function RoundComplete({
   // OFFER stops re-offering work you have already done.
   const { selection, answered, recovered, outstanding } =
     roundCompleteView(session);
+
+  // Row headings, one look per fact — never one look per entry. A transitivity
+  // pair (出る／出す) mints both sides onto the SAME entry (see
+  // src/data/transitivity-facts.ts), so grouping the table's rows off the
+  // entry's own glyph (WordTable's default when no `displayEntry` is passed)
+  // silently named every row after whichever side was minted first, however
+  // few of that side's questions this round actually asked. See SAK-20 and
+  // entry-display-label.ts's header for the general rule this closes.
+  const { history } = useHistory();
+  const displayEntry = (entry: EntryId, fact: FactId): string =>
+    entryDisplayLabel(entry, fact, history);
 
   // The header, in FORMS: solid = landed first try, needsWork = missed or
   // recovered, totalForms = the two summed. Counted over the ANSWERED facts
@@ -183,6 +196,7 @@ export function RoundComplete({
               facts={answered}
               stats={session.roundStats}
               showOnly={needsWorkBoxes}
+              displayEntry={displayEntry}
               isSelected={(box) => picked.has(box)}
               onToggle={toggle}
             />
@@ -203,6 +217,7 @@ export function RoundComplete({
               stats={session.roundStats}
               showOnly={solidBoxes}
               solidTone
+              displayEntry={displayEntry}
               isSelected={(box) => picked.has(box)}
               onToggle={toggle}
             />
