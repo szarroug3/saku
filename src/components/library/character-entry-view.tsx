@@ -35,6 +35,7 @@ import { HearButton } from "@/components/ui/hear-button";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
+import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
@@ -62,6 +63,71 @@ const REGISTER_COPY: Record<string, string> = {
   familiar: "Familiar. Casual language for people you're close to.",
   colloquial: "Colloquial. Common in speech, not formal writing.",
 };
+
+/**
+ * Render a word-page "in a sentence" example: per-kanji ruby furigana
+ * (SAK-95's `kr`) with the target word's own span, when found, highlighted
+ * the same blue `sentence-part-topic` SAK-40/94 already use elsewhere. The
+ * two features are independent — a sentence can have one, both, or neither —
+ * so this walks `sentencePiecesOf`'s segments with a running character
+ * position and wraps whichever ones fall inside `span` in the highlight,
+ * splitting a "text" segment at the span boundary when the boundary lands
+ * inside a run of kana rather than on a kanji edge.
+ */
+function renderSentence(example: {
+  readonly jp: string;
+  readonly kr: readonly import("@/data/word-examples").KanjiReadingSlot[];
+  readonly span?: readonly [number, number];
+}): React.ReactNode {
+  const [spanStart, spanEnd] = example.span ?? [-1, -1];
+  let pos = 0;
+  const nodes: React.ReactNode[] = [];
+  let key = 0;
+
+  const kanjiNode = (char: string, reading: string | null, highlighted: boolean) =>
+    reading ? (
+      <ruby key={key++} className={highlighted ? "sentence-part-topic" : undefined}>
+        {char}
+        <rt className="text-[9px] text-text-muted">{reading}</rt>
+      </ruby>
+    ) : (
+      <span key={key++} className={highlighted ? "sentence-part-topic" : undefined}>
+        {char}
+      </span>
+    );
+
+  for (const seg of sentencePiecesOf(example.jp, example.kr)) {
+    if (seg.kind === "kanji") {
+      const highlighted = pos >= spanStart && pos < spanEnd;
+      nodes.push(kanjiNode(seg.char, seg.reading, highlighted));
+      pos += 1;
+      continue;
+    }
+    // A "text" run may straddle the span boundary (a kana ending like ない
+    // sitting after a kanji stem) — slice it into up to three parts so only
+    // the characters actually inside [spanStart, spanEnd) get the highlight.
+    const runStart = pos;
+    const runEnd = pos + seg.text.length;
+    const hiStart = Math.max(runStart, spanStart);
+    const hiEnd = Math.min(runEnd, spanEnd);
+    if (hiStart < hiEnd) {
+      const before = seg.text.slice(0, hiStart - runStart);
+      const mid = seg.text.slice(hiStart - runStart, hiEnd - runStart);
+      const after = seg.text.slice(hiEnd - runStart);
+      if (before) nodes.push(<span key={key++}>{before}</span>);
+      nodes.push(
+        <span key={key++} className="font-medium sentence-part-topic">
+          {mid}
+        </span>,
+      );
+      if (after) nodes.push(<span key={key++}>{after}</span>);
+    } else {
+      nodes.push(<span key={key++}>{seg.text}</span>);
+    }
+    pos = runEnd;
+  }
+  return nodes;
+}
 
 /** One role's block. When the glyph plays SEVERAL roles the block wears an accent
  * "As a …" eyebrow to tell them apart; when it plays only one, the label is noise
@@ -364,17 +430,7 @@ export function CharacterEntryView({
                 <div>
                   <SubLabel>In a sentence</SubLabel>
                   <p className="font-kana text-[15px] leading-relaxed text-text">
-                    {example.span ? (
-                      <>
-                        {example.jp.slice(0, example.span[0])}
-                        <span className="font-medium sentence-part-topic">
-                          {example.jp.slice(example.span[0], example.span[1])}
-                        </span>
-                        {example.jp.slice(example.span[1])}
-                      </>
-                    ) : (
-                      example.jp
-                    )}
+                    {renderSentence(example)}
                   </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
                 </div>
