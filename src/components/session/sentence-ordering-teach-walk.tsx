@@ -626,7 +626,7 @@ const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinition[]> 
     {
       key: "ending",
       title: "Final predicate",
-      details: ["Put the action or statement ending last.", "This is the sentence's final verb or copular ending."],
+      details: ["Put the action or statement ending last.", "This is the sentence's final verb or ending."],
     },
   ],
   conditional: [

@@ -77,7 +77,7 @@ const SENTENCE_PART_LABELS: Record<
   SentenceOrderingTierId,
   Partial<Record<SentencePart, string>>
 > = {
-  simple: { topic: "Topic", core: "Object/detail", ending: "Final predicate" },
+  simple: { topic: "Topic", core: "Object", ending: "Action" },
   conditional: {
     condition: "If part",
     resultTopic: "Who the result is about",
