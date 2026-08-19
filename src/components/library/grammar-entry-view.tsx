@@ -129,7 +129,7 @@ export function GrammarEntryView({
           so the page goes straight to the one thing only it can show: the recipe,
           rendered by the SAME PatternTeach the lesson teaches with. One box per
           independently-meaningful sense. */}
-      <Section title="How it's formed" tone="accent">
+      <Section title="How it's formed">
         <Lead>
           Take any {hostList(pattern.attach)}, put it in the right form, and add the right
           ending:
@@ -146,7 +146,7 @@ export function GrammarEntryView({
       </Section>
 
       {example && exampleSpan ? (
-        <Section title="In a sentence" tone="accent">
+        <Section title="In a sentence">
           <p className="font-kana text-[15px] leading-relaxed text-text">
             {highlightSpan(example.jp, exampleSpan)}
           </p>
@@ -162,7 +162,7 @@ export function GrammarEntryView({
           The standing columns are inert in this gallery draft — no history is
           threaded in — so every sibling reads "not seen". */}
       {familyCluster && familyMembers.length > 1 ? (
-        <Section title="Ways to say this" tone="accent">
+        <Section title="Ways to say this">
           <Lead>
             Japanese often has more than one pattern for the same idea. These are its
             near-neighbours, and how each is built:
@@ -182,7 +182,7 @@ export function GrammarEntryView({
           rides here on each member instead of being lost. Only when the pattern's
           cluster carries a link. */}
       {familyCluster?.link ? (
-        <Section title="Read about it" tone="accent">
+        <Section title="Read about it">
           <LinkSlot link={familyCluster.link} />
         </Section>
       ) : null}

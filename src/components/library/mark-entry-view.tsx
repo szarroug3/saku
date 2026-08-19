@@ -52,7 +52,7 @@ export function MarkEntryView({
         <ContentEntryHeader typeLabel="mark" title={mark.name} />
       )}
 
-      <Section title="The rule" tone="accent">
+      <Section title="The rule">
         {conversion ? (
           <DakutenConversionView mark={mark} set={set} />
         ) : (
