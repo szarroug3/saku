@@ -119,16 +119,18 @@ export function PatternFamily({
                       wrong with it. A member that will not build (a refusal is
                       a normal value, not an error) prints nothing rather than a
                       guess. */}
-                  <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-text-muted">
+                  <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-text">
                     {build?.built ?? ""}
                     {/* SAK-33: the build's reading, glossed in parens beside it
                         the same way SAK-38 established elsewhere — only when
                         the build has kanji in it (行かなければならない) and a
                         reading was actually computed for it; see
                         BuiltRow.builtReading for when that is refused instead
-                        of guessed. */}
+                        of guessed. Muted against the main form's full-strength
+                        text, same "reading is the quiet half" convention the
+                        rest of the app already uses. */}
                     {build?.built && hasKanji(build.built) && build.reading ? (
-                      <span className="ml-1 text-[12px]">({build.reading})</span>
+                      <span className="ml-1 text-[12px] text-text-muted">({build.reading})</span>
                     ) : null}
                   </td>
                   {/* THE REPETITION IS THE CONTENT. Seven rows reading "must do
