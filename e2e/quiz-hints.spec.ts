@@ -84,11 +84,19 @@ test("a multi-kanji word MEANING card hints its components, not the gloss", asyn
   await expect(slot).not.toContainText("telephone");
 });
 
-test("the '?' key takes the hint just like the button", async ({ page }) => {
-  // The one binding that works with the answer box focused — a typed card is
-  // exactly where the box IS focused, so a key-only affordance had to work there.
+test("the '?' key takes the hint when the answer box isn't focused", async ({
+  page,
+}) => {
+  // "?" is Hint's keyboard shortcut, but — like the digit shortcuts just
+  // below it in DrillScreen.onKeyDown — it stands off a focused text input.
+  // Blur the box first, the same way a learner would after tabbing away or
+  // between questions, and confirm the shortcut still fires.
   await seedQuiz(page, { seen: [wordMeaningFactId("電話")], cfg: JP2EN_TYPED });
   await startQuizDrill(page);
+
+  const input = page.locator("input.kq-material");
+  await expect(input).toBeFocused();
+  await input.blur();
 
   await expect(hintButton(page)).toBeVisible();
   await page.keyboard.press("?");
@@ -100,34 +108,36 @@ test("the '?' key takes the hint just like the button", async ({ page }) => {
   await expect(hintButton(page)).toBeDisabled();
 });
 
-test("SAK-56: '?' stays inert while typing an answer that itself needs '?'", async ({
+test("SAK-56: '?' stays inert while typing in a focused answer box, on any card", async ({
   page,
 }) => {
-  // ね's own meaning gloss set IS a question — "right?" / "isn't it?" /
-  // "doesn't it?" / "don't you?" (vocab.json) — and unlike a grammar pattern's
-  // meaning (always a selection board — see engine/index.ts's
-  // answerContainsQuestionMark doc comment), this is an ordinary TYPED jp→en
-  // word-meaning card. Being kana-only, ね also gets NO hint at all
-  // (wordHint needs ≥2 kanji to break down — hint.ts), so there is no Hint
-  // button here to assert on; the whole bug is that the pre-fix code called
-  // `e.preventDefault()` on "?" unconditionally, which swallows the keystroke
-  // whether or not a hint exists behind it. Contrast with the test above:
-  // 電話's gloss has no "?", so that card still takes the hint on "?" even
-  // with the box focused.
-  const fact = wordMeaningFactId("ね");
+  // Unconditional, not scoped to which card is on screen: "?" stands off ANY
+  // focused text input, the same way the digit shortcuts do. 電話 is an
+  // ORDINARY card — its gloss "telephone call" has no "?" in it — which is
+  // exactly the point: the old code only stood off "?" when the current
+  // card's own answer happened to contain one (e.g. ね's "right?"), so it
+  // still misfired on every other card. Typing "?" here must land the
+  // character AND leave the hint untaken, regardless of what the answer is.
+  const fact = wordMeaningFactId("電話");
   await seedQuiz(page, { seen: [fact], cfg: JP2EN_TYPED });
   await startQuizDrill(page);
 
   const input = page.locator("input.kq-material");
   await expect(input).toBeFocused();
-  await page.keyboard.type("right?");
+  await expect(hintButton(page)).toBeVisible();
+  await page.keyboard.type("telephone call?");
   // The whole string, "?" included, landed in the box — the key was never
-  // swallowed. Pre-fix, `e.preventDefault()` on the "?" keydown would have
-  // dropped it, leaving "right" in the box instead.
-  await expect(input).toHaveValue("right?");
+  // swallowed.
+  await expect(input).toHaveValue("telephone call?");
+  // No hint was taken by the keystroke: the button is still enabled and the
+  // hint slot never rendered.
+  await expect(hintButton(page)).toBeEnabled();
+  await expect(hintSlot(page)).not.toContainText("電 is electricity");
 
   // The typed answer still grades correct, "?" and all — the fix didn't turn
-  // grading stricter, only the key binding.
+  // grading stricter, only the key binding. ("telephone call?" isn't itself
+  // the accepted answer, so clear the trailing "?" before submitting.)
+  await input.fill("telephone call");
   await page.keyboard.press("Enter");
   await expect(page.getByText(answeredText(1))).toBeVisible();
 });
