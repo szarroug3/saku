@@ -28,6 +28,19 @@ function watermarkChar(item: PreviewItem): string | null {
   return null;
 }
 
+/** Circled-digit badge glyphs for a sub-lesson's 1-based position (① ② ③ …),
+ * used in place of a natural single-glyph label a tile has none of (a
+ * sentence-ordering tier — see BaseContentItem.badgeNumber). Falls back to a
+ * plain "N." past the Unicode circled-number block's range (①–㊿ tops out at
+ * 50; no track is anywhere near that many sub-lessons today). */
+const CIRCLED_DIGITS = [
+  "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩",
+  "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳",
+];
+function badgeGlyph(n: number): string {
+  return CIRCLED_DIGITS[n - 1] ?? `${n}.`;
+}
+
 /** Glyph size for a MULTI-WORD Latin title only (a sentence-ordering tier,
  * "Simple sentences") — Latin text wraps at spaces, a natural boundary, so a
  * length-stepped size that still fits in two `line-clamp`d lines is enough.
@@ -47,9 +60,16 @@ function glyphSize(glyph: string): string {
 
 export function ItemPreview({ item }: { item: PreviewItem }) {
   const ghost = watermarkChar(item);
+  // A badge tile (a sentence-ordering tier) shows ① in the glyph slot instead
+  // of its English label, so it never hits the multi-word wrap path below —
+  // and needs an aria-label, since a bare circled digit says nothing to a
+  // screen reader on its own (SAK-11).
+  const badge = item.badgeNumber !== undefined ? badgeGlyph(item.badgeNumber) : null;
+  const glyphText = badge ?? item.glyph;
   // Only a multi-word Latin title wraps (at its spaces); a single Japanese
-  // token never does — see glyphSize's comment and the span below.
-  const multiWord = /\s/.test(item.glyph);
+  // token never does — see glyphSize's comment and the span below. A badge is
+  // never multi-word (it's one circled digit or "N.").
+  const multiWord = !badge && /\s/.test(item.glyph);
   return (
     <div
       // [container-type:inline-size] makes this tile a query container, so the
@@ -62,6 +82,8 @@ export function ItemPreview({ item }: { item: PreviewItem }) {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
         } as CSSProperties
       }
+      role={badge ? "group" : undefined}
+      aria-label={badge ? `Lesson ${item.badgeNumber}: ${item.glyph}` : undefined}
     >
       {/* An oversized ghost of the glyph, bleeding off the corner as faint texture. */}
       {ghost && (
@@ -101,16 +123,24 @@ export function ItemPreview({ item }: { item: PreviewItem }) {
             multiWord
               ? undefined
               : ({
-                  ["--chars" as string]: [...item.glyph].length,
+                  ["--chars" as string]: [...glyphText].length,
                   fontSize: "clamp(12px, calc(90cqi / var(--chars)), 32px)",
                 } as CSSProperties)
           }
-          lang="ja"
+          lang={badge ? undefined : "ja"}
+          aria-hidden={badge ? true : undefined}
         >
-          {item.glyph}
+          {glyphText}
         </span>
-        <span className="text-[9px] font-medium uppercase leading-tight tracking-[0.05em] text-accent">
-          {item.typeLabel}
+        <span
+          className={
+            badge
+              ? "line-clamp-2 text-[9px] font-medium uppercase leading-tight tracking-[0.05em] text-accent"
+              : "text-[9px] font-medium uppercase leading-tight tracking-[0.05em] text-accent"
+          }
+          aria-hidden={badge ? true : undefined}
+        >
+          {badge ? item.glyph : item.typeLabel}
         </span>
       </div>
     </div>
