@@ -9,7 +9,8 @@
 //   header             — the plain verb (hero) + the shared meaning + "keigo"
 //   Everyday verb (accent) — the plain verb(s) the set replaces, with readings
 //   Polite forms (accent)  — the honorific and humble forms (KeigoSetView)
-//   The bigger picture     — a link to the politeness-levels concept
+//   Related                — the shared RelatedSection, linking to the
+//                             politeness-levels concept
 //
 // The forms come from the SAME KeigoSetView the teach walk and the entry router
 // mount, so the reference and the lesson cannot draw a set two different ways.
@@ -20,16 +21,33 @@
 // file with no dictionary dependency. FETCHED BY ID by default (the Library
 // route) is itemHeadline's {text, speak}, seeded per set. The hero glyph comes
 // from library-index.ts. The teach walk / /dev/views pass a live `item` instead.
-
-import Link from "next/link";
+//
+// SAK-36: "The bigger picture" used to be a stub Section whose only content was
+// one generic sentence ("These forms are one case of a general system of
+// politeness levels.") plus a bare Link — the same cross-reference every other
+// entry kind renders through the shared RelatedSection (see kana-entry-view.tsx
+// and term-entry-view.tsx), reinvented here with its own markup and no gate. It
+// is swapped for that same component so the styling matches the rest of the
+// app and so it draws through one place, not several.
+//
+// SAK-30 gate: the link out to "keigo-registers" is a cross-reference the page
+// draws BEFORE the learner asked for it, same as a term's RELATED list, so it
+// must not point at material not yet reachable. "keigo-registers" is not a
+// term/mark id reachable.ts already knew about, so TRACK_CONCEPT there gained
+// one minimal entry mapping it to the "keigo" track — reachable once the
+// learner has met any keigo set, the same low bar every other track concept
+// gates on (see reachable.ts's own header).
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface, Section } from "@/components/library/entry-section";
+import { RelatedSection, type RelatedLink } from "@/components/library/related-section";
 import { HearButton } from "@/components/ui/hear-button";
 import { keigoSetForEntry } from "@/data/keigo";
-import { grammarConceptEntry, libEntry } from "@/lib/library/library-index";
+import { entryName, grammarConceptEntry, libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import { useContentEntry } from "@/lib/library/content-entries";
+import { conceptReachable } from "@/lib/library/reachable";
+import { useHistory } from "@/lib/use-history";
 import { hasKanji } from "@/lib/romaji";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -67,6 +85,7 @@ export function KeigoEntryView({
 }) {
   const fetched = useContentEntry<KeigoPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
+  const { history } = useHistory();
   const resolvedEntry = item ? item.entry : entry!;
   const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
   const set = keigoSetForEntry(resolvedEntry);
@@ -74,6 +93,13 @@ export function KeigoEntryView({
   if (headline === undefined || headline === null || !glyph || !set) return null;
 
   const registers = libEntry(grammarConceptEntry("keigo-registers"));
+  // SAK-30 gate — see this file's header. Held back until the learner has met
+  // any keigo set at all, the same low bar TRACK_CONCEPT already applies to
+  // kana/katakana; "keigo-registers" now shares that map.
+  const relatedLinks: RelatedLink[] =
+    registers && conceptReachable("keigo-registers", history)
+      ? [{ label: entryName(registers), href: entryHref(grammarConceptEntry(registers.id)) }]
+      : [];
 
   return (
     <EntrySurface>
@@ -147,18 +173,10 @@ export function KeigoEntryView({
       {/* THE WHY BEHIND IT — the specific verbs above are instances of the
           three-register politeness model. The concept page is the one place that
           model is taught as an idea; the set links out to it rather than restating
-          it, the same "Read about it" hop the entry router gives a keigo page. */}
-      {registers ? (
-        <Section title="The bigger picture">
-          <Lead>These forms are one case of a general system of politeness levels.</Lead>
-          <Link
-            href={entryHref(grammarConceptEntry(registers.id))}
-            className="text-[13px] text-accent no-underline"
-          >
-            {registers.name} &rarr;
-          </Link>
-        </Section>
-      ) : null}
+          it, the same "Read about it" hop the entry router gives a keigo page.
+          Rendered through the shared RelatedSection so this page's cross-link
+          looks and gates like every other entry kind's — see this file's header. */}
+      <RelatedSection links={relatedLinks} />
     </EntrySurface>
   );
 }
