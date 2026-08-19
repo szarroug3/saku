@@ -31,7 +31,6 @@ import {
   assemblyFacts,
   ASSEMBLY_QUIZ_TARGET,
   canonicalOrder,
-  gradeAssembly,
   pickAssemblyForTiers,
   SENTENCE_ORDERING_TIERS,
   sentenceOrderingTierForItem,
@@ -54,24 +53,12 @@ import {
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type { HistoryFile, SessionStats } from "@/types";
 import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
-
-interface AsmCard {
-  item: AssemblyItem;
-  /** Surfaces still in the pool (unplaced). */
-  pool: string[];
-  /** Surfaces placed in the tray, in the learner's current order. */
-  tray: string[];
-  state: "open" | "right" | "wrong";
-  tries: number;
-}
-
-interface AsmRuntime {
-  cards: AsmCard[];
-  pos: number;
-  streak: number;
-  stats: SessionStats;
-  source: "lesson-examples" | "practice-corpus";
-}
+import { sentenceOrderingLessonTier } from "@/components/quiz/sentence-ordering-lesson-source";
+import {
+  checkCard,
+  type AsmCard,
+  type AsmRuntime,
+} from "@/components/quiz/assembly-check";
 
 interface CoachHint {
   id: string;
@@ -215,23 +202,16 @@ function lessonItems(tierId: SentenceOrderingTierId): AssemblyItem[] {
   }));
 }
 
-function usesLessonExamples(active: ActiveQuiz, tierIds: readonly string[]): boolean {
-  return (
-    tierIds.length === 1 &&
-    active.what.startsWith("Sentence ordering · tier ")
-  );
-}
-
-function buildRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
+function buildRuntime(
+  active: ActiveQuiz,
+  history: HistoryFile,
+  sessionWhat: string | undefined,
+): AsmRuntime {
   const cards: AsmCard[] = [];
   const stats: SessionStats = {};
   const seenIds = new Set<number>();
-  const tierIds = quizTierIds(active, history);
-  const lessonSource = usesLessonExamples(active, tierIds);
-  const exactLessonCards =
-    lessonSource
-      ? lessonItems(tierIds[0] as SentenceOrderingTierId)
-      : null;
+  const lessonTier = sentenceOrderingLessonTier(sessionWhat);
+  const exactLessonCards = lessonTier ? lessonItems(lessonTier) : null;
   if (exactLessonCards) {
     for (const item of exactLessonCards) {
       cards.push({
@@ -254,6 +234,7 @@ function buildRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
       source: "lesson-examples",
     };
   }
+  const tierIds = quizTierIds(active, history);
   for (
     let i = 0;
     i < ASSEMBLY_QUIZ_TARGET * 4 && cards.length < ASSEMBLY_QUIZ_TARGET;
@@ -284,19 +265,25 @@ function buildRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
   };
 }
 
-function ensureRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
+function ensureRuntime(
+  active: ActiveQuiz,
+  history: HistoryFile,
+  sessionWhat: string | undefined,
+): AsmRuntime {
   const rt = active.runtime as { assembly?: AsmRuntime };
-  const tierIds = quizTierIds(active, history);
-  const expectedSource = usesLessonExamples(active, tierIds)
+  const expectedSource = sentenceOrderingLessonTier(sessionWhat)
     ? "lesson-examples"
     : "practice-corpus";
   // Replace queues saved by the older corpus-backed lesson implementation.
   // Without this, an already-open lesson can keep showing seven unrelated
-  // generated cards even after lesson launches have been corrected.
+  // generated cards even after lesson launches have been corrected. Also
+  // covers SAK-75: a retry leg reuses this same runtime slot, so a stale
+  // practice-corpus queue from before the source rule was fixed gets rebuilt
+  // too, rather than sticking around empty.
   if (rt.assembly?.source !== expectedSource) {
-    rt.assembly = buildRuntime(active, history);
+    rt.assembly = buildRuntime(active, history, sessionWhat);
   }
-  return (rt.assembly ??= buildRuntime(active, history));
+  return (rt.assembly ??= buildRuntime(active, history, sessionWhat));
 }
 
 // ---------- mutations (module-level, runtime passed in) ----------
@@ -334,40 +321,6 @@ function dropPiece(card: AsmCard, surface: string, index: number | null): void {
   card.tray.splice(at, 0, surface);
 }
 
-/** Grade the current tray. Returns "right", "retry" (wrong, still open), or
- * "locked" (wrong, out of retries — the canonical order is revealed). */
-function checkCard(rt: AsmRuntime, card: AsmCard, retries: number): "right" | "retry" | "locked" {
-  const canon = canonicalOrder(card.item);
-  const ok = gradeAssembly(card.item, card.tray);
-  const facts = assemblyFacts(card.item);
-  for (const f of facts) {
-    const st = rt.stats[f];
-    if (st.firstTryCorrect === null) {
-      st.firstTryCorrect = ok;
-      if (ok) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
-    }
-  }
-  if (ok) {
-    if (card.tries === 0) rt.streak++;
-    for (const f of facts) {
-      rt.stats[f].everCorrect = true;
-      rt.stats[f].correct++;
-    }
-    card.state = "right";
-    return "right";
-  }
-  rt.streak = 0;
-  card.tries++;
-  for (const f of facts) rt.stats[f].misses++;
-  if (card.tries > retries) {
-    card.tray = canon.slice();
-    card.pool = [];
-    card.state = "wrong";
-    return "locked";
-  }
-  return "retry";
-}
-
 function advance(rt: AsmRuntime): void {
   rt.pos++;
 }
@@ -400,7 +353,8 @@ export function AssemblyScreen() {
   const [shake, setShake] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
-  const rt = active && loaded ? ensureRuntime(active, history) : null;
+  const rt =
+    active && loaded ? ensureRuntime(active, history, session?.what) : null;
 
   const done = rt ? rt.cards.filter((c) => c.state !== "open").length : 0;
   const total = rt?.cards.length ?? 0;
