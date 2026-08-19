@@ -24,6 +24,23 @@
 // lib/lesson-steps.ts) teach an idea, not a character, so they render a plain
 // dot instead of a blank tile — never invented text standing in for a glyph
 // that doesn't exist.
+//
+// BUT A DOT IS NOT AN EXCUSE TO GO GENERIC ON THE CAPTION. Three upcoming
+// auto-generated grammar-pattern cards in a row used to all caption "Grammar"
+// — real, but the SAME real thing three times, so the three rows read as
+// identical and don't tell you which pattern is which. Their `eyebrow` is a
+// shared category ("Grammar" — see data/grammar/auto-page.ts); their `name`,
+// where a card has one, is the one thing that ISN'T shared: a grammar
+// pattern's own written form, byte-for-byte what its Library entry's header
+// shows for the same pattern (grammar-entry-view.tsx / auto-page.ts's
+// `patternLabel`). So the caption below prefers a card's `name` over its
+// `eyebrow`, and only falls back to the eyebrow/generic label for a card that
+// has no single nameable subject — a concept explainer ("Grammar is how
+// words fit together") or a kana rule card, the genuine "nothing to name"
+// case the dot was always for. A term step needed no equivalent change:
+// `termFor` already resolves a real `name` for everything it covers (kana,
+// hiragana, mora, rendaku, …) — it just doesn't cover grammar patterns, which
+// aren't in its vocabulary.
 
 import { factInfo } from "@/lib/facts";
 import type { LessonStep } from "@/lib/lesson-steps";
@@ -60,7 +77,7 @@ function railCaption(step: LessonStep): string {
     case "term":
       return termFor(step.entry)?.name ?? "Concept";
     case "intro":
-      return step.intro.eyebrow ?? "Before you go on";
+      return step.intro.name ?? step.intro.eyebrow ?? "Before you go on";
   }
 }
 

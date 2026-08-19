@@ -15,7 +15,7 @@ import { apply } from "@/lib/grammar/apply";
 import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { recipeAllows } from "@/lib/grammar/vehicles";
-import type { Host, Recipe } from "@/data/grammar/recipes";
+import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
 import type { IntroBuildRule, IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
 
 /** One example word for the build table: the kana form, its class (null for a
@@ -523,6 +523,13 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     id: `gl-auto-${r.id}`,
     setId: "",
     eyebrow: "Grammar",
+    // Same string the Library entry header shows for this pattern (see
+    // grammar-entry-view.tsx, which reads a live item's glyph or
+    // libEntry(...).glyph — both trace back to this same patternLabel call).
+    // The eyebrow above is shared by every auto-generated pattern card
+    // ("Grammar"), so it cannot tell three upcoming patterns apart; `name`
+    // is what does.
+    name: patternLabel(r),
     title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
     ...(buildFormula ? { buildFormula } : {}),
