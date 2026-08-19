@@ -4,7 +4,9 @@
 // type (character, word, counter, grammar, …) speaks ONE visual language:
 //
 //   Section   — a titled block under a hairline divider. Every header renders
-//               the same plain eyebrow style — there is no accented tier.
+//               the same accented eyebrow style (the pink/accent colour that
+//               used to be reserved for the per-role facets) — there is no
+//               plain tier.
 //   SectionTitle — the eyebrow heading style itself, exported so a caller that
 //               can't use Section's div/border wrapper (e.g. a heading that
 //               shares a flex row with its own trailing control) still renders
@@ -26,7 +28,7 @@ export function SectionTitle({
   className?: string;
 }) {
   return (
-    <p className={`text-[11px] font-medium uppercase tracking-[0.06em] text-text ${className}`}>
+    <p className={`text-[11px] font-medium uppercase tracking-[0.06em] text-accent ${className}`}>
       {children}
     </p>
   );
