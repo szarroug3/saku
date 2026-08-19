@@ -602,6 +602,13 @@ export function roundCompleteView(session: StudySession): {
  *
  * The candidate set is `teach` when it is non-empty (a taught lesson's own
  * material), else `facts` (a "Quiz me" session, which has nothing in `teach`).
+ * A Quiz-me start, sentence track included, always leaves `teach` empty
+ * (SAK-85: a non-empty `teach` would flip initialSessionPhase into "teaching",
+ * reopening the lesson instead of the quiz) since startTrack and startSentence
+ * both mark their Quiz-me material seen directly instead, via markSeen/
+ * newlySeen. For that empty-teach case the whole quizzed set (facts) is the
+ * closest equivalent to what its Learn card's own "I already know this" would
+ * claim.
  * But the claim NARROWS to whatever of that set was never actually answered
  * this session — `totalStats` (every round's stats, banked at each
  * `closeRound`) says exactly which facts have real recorded results. An

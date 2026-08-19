@@ -472,10 +472,12 @@ describe("initialSessionPhase — where a fresh session begins (SAK-52 regressio
     assert.equal(initialSessionPhase([a, b]), "teaching");
   });
 
-  test("a sentence Quiz-me (marker-only teach) still begins in teaching", () => {
-    // startSentence's Quiz-me shape puts the tier marker alone in `teach` —
-    // never empty — so it already reached /session via the taught branch
-    // before this fix, and must keep doing so.
+  test("a marker-only teach set still begins in teaching (general contract)", () => {
+    // Not what startSentence's Quiz-me produces anymore (SAK-85 fixed it to
+    // leave `teach` empty on Quiz-me, same as every other track) — this just
+    // pins that ANY non-empty teach set, marker-only or not, still routes to
+    // "teaching". See the SAK-85 regression test below for the actual
+    // startSentence Quiz-me shape.
     const marker = f("grammar:sentence-ordering-tier/simple");
     assert.equal(initialSessionPhase([marker]), "teaching");
   });
@@ -618,12 +620,14 @@ test("sessionKnownClaimTarget: a taught lesson narrows to the TEACH set, not the
   assert.deepEqual(target, [b]);
 });
 
-test("sessionKnownClaimTarget: a sentence Quiz-me still narrows within its (marker-only) teach set", () => {
+test("sessionKnownClaimTarget: a marker-only teach set still narrows to just the marker (general contract)", () => {
   const marker = f("grammar:sentence-ordering-tier/simple");
   const drillFacts = ["s1", "s2", "s3"].map(f);
-  // startSentence's Quiz-me shape: teach is the marker alone, facts is the
-  // whole wide drill set — teach must win, or "mark known" would claim every
-  // readable prerequisite fact drilled alongside the tier, not just the tier.
+  // Not what startSentence's Quiz-me produces anymore (SAK-85 leaves `teach`
+  // empty on Quiz-me, recording the marker via markSeen instead) — this pins
+  // the function's general contract for a marker-only teach set: teach must
+  // win over facts, or "mark known" would claim every readable prerequisite
+  // fact drilled alongside the tier, not just the tier.
   const target = sessionKnownClaimTarget({
     facts: [...drillFacts, marker],
     teach: [marker],
@@ -654,10 +658,11 @@ describe("isTaughtSession — which Session-complete screen applies (SAK-52)", (
     assert.equal(isTaughtSession({ teach: [a, b] }), true);
   });
 
-  test("a sentence Quiz-me (marker-only teach) is still Path A", () => {
-    // Same shape sessionKnownClaimTarget and initialSessionPhase both treat as
-    // taught: the tier marker alone is non-empty, so it must not fall through
-    // to the direct-quiz screen.
+  test("a marker-only teach set is still Path A (general contract)", () => {
+    // Not what startSentence's Quiz-me produces anymore (SAK-85) — same shape
+    // sessionKnownClaimTarget and initialSessionPhase both treat as taught:
+    // any non-empty teach, marker-only or not, must not fall through to the
+    // direct-quiz screen.
     const marker = f("grammar:sentence-ordering-tier/simple");
     assert.equal(isTaughtSession({ teach: [marker] }), true);
   });
@@ -673,5 +678,30 @@ describe("isTaughtSession — which Session-complete screen applies (SAK-52)", (
       assert.equal(taught, phase === "teaching");
       assert.equal(!taught, phase === "starting");
     }
+  });
+});
+
+// SAK-85 REGRESSION: "Quiz me" on the Sentences track opened the lesson
+// instead of the quiz. Cause: startSentence put the tier marker fact in
+// `teach` even on Quiz-me (so it would get recorded), and initialSessionPhase
+// treats ANY non-empty `teach` as "begin teaching", so the marker being there
+// alone was enough to always route into the lesson. The fix moved the
+// marker's recording to markSeen/newlySeen (the same mechanism startTrack's
+// own Quiz-me branch already used), the same way startTrack leaves `teach`
+// empty for its Quiz-me. This pins the shape startSentence now hands
+// startSession on Quiz-me.
+describe("initialSessionPhase, sentence track Quiz-me (SAK-85 regression)", () => {
+  test("startSentence's Quiz-me teach set (empty, marker recorded elsewhere) begins in starting, not teaching", () => {
+    // The exact shape startSentence now passes on Quiz-me: `teach: []`, with
+    // the marker fact recorded via markSeen instead of riding in `teach`.
+    assert.equal(initialSessionPhase([]), "starting");
+    assert.notEqual(initialSessionPhase([]), "teaching");
+  });
+
+  test("startSentence's Start (teach=true) still begins in teaching, unaffected by the fix", () => {
+    // A normal Start hands drillFacts (never including the marker) as
+    // `teach`, unchanged by SAK-85.
+    const drillFacts = ["s1", "s2", "s3"].map(f);
+    assert.equal(initialSessionPhase(drillFacts), "teaching");
   });
 });

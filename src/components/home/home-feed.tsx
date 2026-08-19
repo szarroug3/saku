@@ -343,11 +343,15 @@ export function HomeFeed() {
 
   // Sentence ordering: teach the structure, then drill its readable sentences in
   // assembly mode. The tier marker rides in the drill set (retained so completion
-  // advances the scheduler) and in the teach set on a Quiz-me too, where it would
-  // otherwise never be claimed. The drill facts and marker come from the
-  // dictionary-backed sentence helpers, DYNAMICALLY IMPORTED here so they stay off
-  // the initial /learn bundle — the launch only produces fact-ids, and /session
-  // loads the content anyway.
+  // advances the scheduler). On a Quiz-me it must NOT also ride in the teach set —
+  // a non-empty teach set always opens the lesson (initialSessionPhase), which is
+  // exactly SAK-85 (Quiz-me opening the teach screen). So on Quiz-me the marker is
+  // recorded the same way startTrack's own Quiz-me branch records its facts:
+  // markSeen immediately, with only the newly-seen part handed to startSession as
+  // seededSeen so a discard rolls back exactly what this start added. The drill
+  // facts and marker come from the dictionary-backed sentence helpers, DYNAMICALLY
+  // IMPORTED here so they stay off the initial /learn bundle — the launch only
+  // produces fact-ids, and /session loads the content anyway.
   const startSentence = async (lesson: LearnLesson, { teach = true } = {}) => {
     const tierId = sentenceTierId(lesson);
     if (!tierId) return;
@@ -362,12 +366,14 @@ export function HomeFeed() {
       SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId)!,
       history,
     );
+    const seeded = teach ? [] : newlySeen([marker]);
+    if (!teach) markSeen([marker]);
     startSession(
       [...drillFacts, marker],
-      teach ? drillFacts : [marker],
+      teach ? drillFacts : [],
       `Sentence ordering · tier ${tierId}`,
       "lesson",
-      undefined,
+      seeded,
       "assembly",
     );
   };
