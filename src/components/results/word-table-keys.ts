@@ -178,3 +178,31 @@ export function missedBoxKeysForFacts(
     return [];
   });
 }
+
+/**
+ * Picked boxes, as the facts they name — deduped and narrowed to `allowed`.
+ * The shared last step both pickers in the results/session UI need before they
+ * can hand a subset onward (round-complete's retry, session-complete's quiz
+ * again): a tap toggles a box, but starting a new quiz needs FactIds, not
+ * cells.
+ *
+ * A box outside `allowed` is dropped rather than passed through — `allowed` is
+ * the screen's own selection universe (the round's `selection`, or a session's
+ * taught set), so a stray key can never start a quiz over a fact the picker
+ * never actually displayed.
+ */
+export function factsFromPickedBoxes(
+  boxes: Iterable<BoxKey>,
+  allowed: readonly FactId[],
+): FactId[] {
+  const allowedSet = new Set(allowed);
+  const seen = new Set<FactId>();
+  const out: FactId[] = [];
+  for (const box of boxes) {
+    const fact = factOfBoxKey(box);
+    if (!fact || seen.has(fact) || !allowedSet.has(fact)) continue;
+    seen.add(fact);
+    out.push(fact);
+  }
+  return out;
+}
