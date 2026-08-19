@@ -30,7 +30,10 @@ const SESSION_KEY = "saku-session";
 /** Start the day-one lesson and step through to a live drill. */
 async function intoTheDrill(page: Page) {
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 (SAK-28) shows in place of the
+  // ordinary lesson card first; its "Start track" button leads straight into
+  // the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   // Day one opens on the hiragana track intro, so the walk is the five vowels
   // plus that one card: step past the card AND the first four vowels (VOWELS
@@ -275,13 +278,13 @@ test("Clear knowledge base clears the session in progress", async ({
   expect(await storedSession(page)).not.toBeNull();
 
   await page.goto("/settings");
-  await page
-    .getByRole("button", { name: "Start over", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Start over", exact: true }).click();
   await page
     .getByRole("button", { name: "Clear everything", exact: true })
     .click();
-  await expect(page.getByText(/Cleared\. The app is back to its first lesson/)).toBeVisible();
+  await expect(
+    page.getByText(/Cleared\. The app is back to its first lesson/),
+  ).toBeVisible();
 
   // The run in progress is gone, not merely hidden.
   const raw = await storedSession(page);
@@ -290,10 +293,14 @@ test("Clear knowledge base clears the session in progress", async ({
   await page.goto("/current");
   await expect(page.getByText("Nothing in progress")).toBeVisible();
 
-  // Home is back to lesson one, which is the promise in full.
+  // Home is back to lesson one, which is the promise in full. The kana card-0
+  // teaser (SAK-28) is what a fully fresh history shows first, not the ordinary
+  // "Hiragana … あ" lesson card, so that is the thing to assert is back.
   await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("Hiragana");
-  await expect(page.locator("[data-learn-card]").filter({ hasText: "あ" })).toHaveCount(1);
+  await expect(page.locator("body")).toContainText("Kana");
+  await expect(
+    page.getByRole("button", { name: "Start track", exact: true }),
+  ).toBeVisible();
 });
 
 /**
@@ -351,13 +358,13 @@ test("clearing in one tab drops the session in the other", async ({
 
   // Tab A pulls the lever.
   await page.goto("/settings");
-  await page
-    .getByRole("button", { name: "Start over", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Start over", exact: true }).click();
   await page
     .getByRole("button", { name: "Clear everything", exact: true })
     .click();
-  await expect(page.getByText(/Cleared\. The app is back to its first lesson/)).toBeVisible();
+  await expect(
+    page.getByText(/Cleared\. The app is back to its first lesson/),
+  ).toBeVisible();
 
   // Tab B lets go on its own, without being reloaded.
   await expect(tabB.getByText("Nothing in progress")).toBeVisible({

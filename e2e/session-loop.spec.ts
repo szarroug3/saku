@@ -73,7 +73,10 @@ test("a session plays all three rounds through to Session complete", async ({
   await seed({ seen: [], cfg: CFG });
 
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
 
@@ -88,7 +91,9 @@ test("a session plays all three rounds through to Session complete", async ({
         .getByRole("button", { name: "Complete round", exact: true })
         .click();
       // The rest is a timestamp, not a process; skipping it is a supported door.
-      await page.getByRole("button", { name: /^Start (now →|round \d)$/ }).click();
+      await page
+        .getByRole("button", { name: /^Start (now →|round \d)$/ })
+        .click();
       await page.waitForURL("**/quiz");
     } else {
       await page

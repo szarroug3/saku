@@ -80,10 +80,7 @@ export function direction(dir: "jp2en" | "en2jp"): ConfigSeed {
 }
 
 /** Pin the answer style for a direction. */
-export function style(
-  dir: "jp2en" | "en2jp",
-  s: "typed" | "mc",
-): ConfigSeed {
+export function style(dir: "jp2en" | "en2jp", s: "typed" | "mc"): ConfigSeed {
   return dir === "jp2en" ? { styleJp2en: s } : { styleEn2jp: s };
 }
 
@@ -108,7 +105,12 @@ function historyWith(seen: string[], claims: string[]): string {
   for (const f of seen) seenRecord[f] = now;
   const claimsRecord: Record<string, number> = {};
   for (const f of claims) claimsRecord[f] = now;
-  return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord, claims: claimsRecord });
+  return JSON.stringify({
+    sessions: [],
+    facts: {},
+    seen: seenRecord,
+    claims: claimsRecord,
+  });
 }
 
 /**
@@ -173,7 +175,10 @@ export const test = base.extend<{
           }
           window.localStorage.setItem("kanaquiz-cfg", v.cfg);
         },
-        { history: historyWith(seen, claims), cfg: JSON.stringify(withAskOverride(cfg)) },
+        {
+          history: historyWith(seen, claims),
+          cfg: JSON.stringify(withAskOverride(cfg)),
+        },
       );
     });
   },
@@ -332,7 +337,10 @@ export async function startPractice(page: Page) {
  */
 export async function startVowelLessonDrill(page: Page): Promise<void> {
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 (SAK-28) shows in place of the
+  // ordinary lesson card, a one-time teaser whose own "Start track" button
+  // calls the exact same start handler "Start" always did, straight to /session.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   // The track intro and each teach card carry a "Next"; the last card drops it
   // for "Quiz me". Click through them all — the guard is only there so a copy
