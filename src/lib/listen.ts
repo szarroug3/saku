@@ -21,9 +21,10 @@
 // The owner ruled sentences OUT (romaji transcription of a sentence is
 // ambiguous — は as wa, long vowels, spacing — and would break "never mark
 // correct Japanese wrong"; and there is no sentence audio). Nothing here has a
-// sentence branch. Kana dictation is a separate, explicitly generated form in
-// ask-forms.ts: hear /a/ → produce あ. It does not use listenKind because its
-// target is the glyph rather than the fact's ordinary jp→en answer.
+// sentence branch. Kana dictation (SAK-16) is a separate, explicitly generated
+// form in ask-forms.ts: hear あ, type/pick "a" — the same jp2en/romaji shape
+// text-prompt kana already uses, only with the glyph swapped for audio. It
+// does not use listenKind because a kana glyph is not a VOCAB_SUBJECT fact.
 
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
