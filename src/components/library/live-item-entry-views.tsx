@@ -21,8 +21,24 @@ import { primaryHost } from "@/lib/grammar/example";
 import { recipesOf } from "@/lib/library/library-index";
 import type { ContentItem } from "@/lib/content/item";
 
-export function KanaEntryView({ item }: { item: ContentItem }) {
-  return <KanaEntryRenderer item={item} liveHeadline={itemHeadline(item)} />;
+export function KanaEntryView({
+  item,
+  gateToReachable = false,
+}: {
+  item: ContentItem;
+  /** SAK-30: forwarded to the shared renderer so the teach walk (the only
+   * caller that passes true, via teach-item-view.tsx) keeps gating
+   * confusables/related links to taught material, while /dev/views (which
+   * never passes this) stays ungated like the Library page. */
+  gateToReachable?: boolean;
+}) {
+  return (
+    <KanaEntryRenderer
+      item={item}
+      liveHeadline={itemHeadline(item)}
+      gateToReachable={gateToReachable}
+    />
+  );
 }
 
 export function CounterEntryView({
@@ -68,8 +84,21 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
   );
 }
 
-export function KeigoEntryView({ item }: { item: ContentItem }) {
-  return <KeigoEntryRenderer item={item} liveHeadline={itemHeadline(item)} />;
+export function KeigoEntryView({
+  item,
+  gateToReachable = false,
+}: {
+  item: ContentItem;
+  /** SAK-30: see KanaEntryView above — same forwarding, same default. */
+  gateToReachable?: boolean;
+}) {
+  return (
+    <KeigoEntryRenderer
+      item={item}
+      liveHeadline={itemHeadline(item)}
+      gateToReachable={gateToReachable}
+    />
+  );
 }
 
 export function VerbPairEntryView({ item }: { item: ContentItem }) {

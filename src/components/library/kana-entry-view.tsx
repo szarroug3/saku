@@ -245,10 +245,21 @@ export function KanaEntryView({
   entry,
   item,
   liveHeadline,
+  gateToReachable = false,
 }: {
   entry?: EntryId;
   item?: ContentItem;
   liveHeadline?: Headline;
+  /** SAK-30 correction: this view is reused as BOTH the standalone Library
+   * page (where confusables/related links must always show — か's own page
+   * should show カ as a mix-up the moment katakana exists as a concept at
+   * all, regardless of whether this learner has reached it yet) and inside
+   * the in-lesson teach walk (where the original SAK-30 gate still applies —
+   * a lesson must not link ahead of what it has taught). Defaults to false
+   * ("show everything", the Library page's own behavior); only the teach
+   * walk's call site (teach-item-view.tsx, via live-item-entry-views.tsx)
+   * passes true. */
+  gateToReachable?: boolean;
 }) {
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
@@ -313,6 +324,7 @@ export function KanaEntryView({
       ...yoonConfusables(glyph),
     ]),
   ].filter((id) => {
+    if (!gateToReachable) return true;
     const g = libEntry(id)?.glyph;
     return g ? kanaGlyphReachable(g, history) : true;
   });
@@ -339,16 +351,22 @@ export function KanaEntryView({
   const relatedLinks: RelatedLink[] = (
     row && base
       ? [
-          kanaGlyphReachable(base, history) ? relatedLink(kanaEntry(base)) : null,
-          conceptReachable(row.markName, history) ? relatedLink(markEntry(row.markName)) : null,
+          !gateToReachable || kanaGlyphReachable(base, history) ? relatedLink(kanaEntry(base)) : null,
+          !gateToReachable || conceptReachable(row.markName, history)
+            ? relatedLink(markEntry(row.markName))
+            : null,
         ]
       : yoonRow
         ? (() => {
             const fullSize = fullSizeOf(yoonRow.small);
             return [
-              kanaGlyphReachable(yoonRow.base, history) ? relatedLink(kanaEntry(yoonRow.base)) : null,
-              fullSize && kanaGlyphReachable(fullSize, history) ? relatedLink(kanaEntry(fullSize)) : null,
-              conceptReachable("yoon", history) ? relatedLink(termEntry("yoon")) : null,
+              !gateToReachable || kanaGlyphReachable(yoonRow.base, history)
+                ? relatedLink(kanaEntry(yoonRow.base))
+                : null,
+              fullSize && (!gateToReachable || kanaGlyphReachable(fullSize, history))
+                ? relatedLink(kanaEntry(fullSize))
+                : null,
+              !gateToReachable || conceptReachable("yoon", history) ? relatedLink(termEntry("yoon")) : null,
             ];
           })()
         : []

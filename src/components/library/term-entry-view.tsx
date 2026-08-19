@@ -50,7 +50,18 @@ interface TermPayload {
   readonly relatedLinks: readonly { id: string; label: string; href: string }[];
 }
 
-export function TermEntryView({ entry }: { entry: EntryId }) {
+export function TermEntryView({
+  entry,
+  gateToReachable = false,
+}: {
+  entry: EntryId;
+  /** SAK-30 correction: this view is reused as BOTH the standalone Library
+   * page (related links must always show, regardless of known/unknown) and
+   * inside the in-lesson teach walk (teach-walk.tsx), where the original
+   * SAK-30 gate still applies. Defaults to false ("show everything"); only
+   * the teach walk's call site passes true. */
+  gateToReachable?: boolean;
+}) {
   const term = useContentEntry<TermPayload>(entry);
   const { history } = useHistory();
 
@@ -58,7 +69,9 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
   // component's `if (!term) return null` for an unresolved id).
   if (term === undefined || term === null) return null;
 
-  const relatedLinks = term.relatedLinks.filter((l) => conceptReachable(l.id, history));
+  const relatedLinks = gateToReachable
+    ? term.relatedLinks.filter((l) => conceptReachable(l.id, history))
+    : term.relatedLinks;
 
   return (
     <EntrySurface>

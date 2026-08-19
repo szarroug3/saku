@@ -29,7 +29,9 @@ export function TeachItemView({ item }: { item: LessonItem }) {
   switch (item.kind) {
     case "kana": {
       const built = buildItem(item.entry, "kana");
-      return built ? <KanaEntryView item={built} /> : null;
+      // SAK-30: the teach walk still gates confusables/related links to
+      // taught material — only the standalone Library page shows everything.
+      return built ? <KanaEntryView item={built} gateToReachable /> : null;
     }
     // A single Han glyph is one cohesive character item across every role it
     // plays, whichever track the step arrived on. `lesson` caps the word block to
@@ -66,7 +68,8 @@ export function TeachItemView({ item }: { item: LessonItem }) {
     }
     case "keigo": {
       const built = buildItem(item.entry, "keigo");
-      return built ? <KeigoEntryView item={built} /> : null;
+      // SAK-30: same lesson-only gate as the "kana" case above.
+      return built ? <KeigoEntryView item={built} gateToReachable /> : null;
     }
   }
 }
