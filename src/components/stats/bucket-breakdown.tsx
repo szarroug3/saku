@@ -21,17 +21,46 @@
 // RADIX DIALOG, NOT A NEW OVERLAY PRIMITIVE. ui/confirm-dialog.tsx already
 // pulls `radix-ui` in for AlertDialog and library/filter-dropdown.tsx for
 // Popover — both for the same reason: the focus trap, Escape-to-close, the
-// aria wiring, and a portal to <body> so kq-material's backdrop-filter has the
-// real page behind it (see confirm-dialog.tsx's PORTALLED comment) are tedious
-// to get right by hand and already solved once. Dialog is the same family,
-// used here instead of AlertDialog because this panel isn't asking a
-// yes/no question — it's showing a list.
+// aria wiring, and a portal to <body> so the surface has the real page behind
+// it (see confirm-dialog.tsx's PORTALLED comment) are tedious to get right by
+// hand and already solved once. Dialog is the same family, used here instead
+// of AlertDialog because this panel isn't asking a yes/no question — it's
+// showing a list.
+//
+// EACH ROW OPENS THE FACT'S LIBRARY PAGE (SAK-78 review). A row already knows
+// its FactId; `entryOf` is facts.ts's own FactId → EntryId step (a fact has no
+// page of its own — see facts.ts) and `entryHref` is library/href.ts's one
+// minter for an entry's URL. No new URL scheme: this is the same two calls
+// entry-tile.tsx makes to link a tile, just chained from a fact instead of an
+// entry the caller already had.
+//
+// NO BACKDROP-FILTER ON THE SLIDING SURFACE (SAK-78 review, perf). This panel
+// used to wear `kq-material kq-overlay`, the same pattern confirm-dialog.tsx
+// and filter-dropdown.tsx use for a portalled panel that needs kiri's frost.
+// Those panels fade or pop in place; this one SLIDES the full height of the
+// screen every open/close. A `backdrop-filter` blur is not a paint-once
+// effect — Chromium re-snapshots and re-blurs whatever is behind the element
+// on every animation frame, at every position along the slide (see globals.
+// css's "THE FROST IS NOT HERE ANY MORE" and CARD MATERIAL sections: the
+// Library grid's own cards dropped exactly this filter for the same reason,
+// p95 33.4ms → 17.6ms). That is Sam's diagnosis and it is correct: kiri's
+// --card here is deliberately translucent (see globals.css's STICKY TABLE
+// HEADER note), so the panel relied on kq-overlay's live blur just to be
+// legible, which is the most expensive way to stay opaque while moving.
+// `kq-surface` is the codebase's existing answer to "I need a card's material
+// without a live backdrop-filter" (globals.css's CARD MATERIAL section) —
+// add-to-list.tsx's popover uses it for the identical reason (two backdrop
+// roots stacked, inner blur a no-op). It rebuilds the surface OPAQUELY from
+// --bg + the mesh + --card's own fill, saturated once via a filter that never
+// samples the live page, so sliding this panel costs a transform, not a blur.
 
 import * as React from "react";
+import Link from "next/link";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
-import { factInfo } from "@/lib/facts";
+import { entryOf, factInfo } from "@/lib/facts";
 import { fillFor } from "@/components/stats/tally";
+import { entryHref } from "@/lib/library/href";
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
 
@@ -69,13 +98,13 @@ export function BucketBreakdown({
           aria-describedby={undefined}
           className={[
             "fixed inset-y-0 right-0 z-50 flex w-[calc(100vw-24px)] max-w-[380px] flex-col",
-            "border-l border-border bg-card shadow-card",
-            // kq-overlay for the same reason confirm-dialog.tsx and
-            // filter-dropdown.tsx add it to a portalled panel: kq-material
-            // alone no longer carries kiri's frost (the scrolling shelf cards
-            // gave up their own backdrop-filter for scroll perf), so a lone
-            // panel would let the page read straight through it.
-            "kq-material kq-overlay",
+            "border-l border-border shadow-card",
+            // kq-surface, not kq-material kq-overlay: this panel SLIDES, so it
+            // cannot afford a live backdrop-filter (see the header comment's
+            // NO BACKDROP-FILTER note). kq-surface replaces bg-card rather
+            // than joining it — same precedent as add-to-list.tsx's popover —
+            // because it IS the surface's fill, rebuilt opaque.
+            "kq-surface",
             "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:animate-in data-[state=open]:slide-in-from-right",
           ].join(" ")}
         >
@@ -120,13 +149,19 @@ export function BucketBreakdown({
                     );
                   }
                   return (
-                    <li key={f} className="flex items-baseline justify-between gap-3">
-                      <span className="font-kana">{info.glyph}</span>
-                      {info.meaning ? (
-                        <span className="truncate text-right text-text-muted">
-                          {info.meaning}
-                        </span>
-                      ) : null}
+                    <li key={f}>
+                      <Link
+                        href={entryHref(entryOf(f))}
+                        onClick={onClose}
+                        className="flex items-baseline justify-between gap-3 hover:underline"
+                      >
+                        <span className="font-kana">{info.glyph}</span>
+                        {info.meaning ? (
+                          <span className="truncate text-right text-text-muted">
+                            {info.meaning}
+                          </span>
+                        ) : null}
+                      </Link>
                     </li>
                   );
                 })}
