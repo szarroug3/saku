@@ -100,10 +100,13 @@ import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
+  effectiveRoundTarget,
+  initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   restMinutes,
-  SESSION_ROUND_TARGET,
+  roundTargetOf,
+  sessionKnownClaimTarget,
   summariseRound,
   type SessionOrigin,
   type StudySession,
@@ -339,8 +342,12 @@ interface QuizSessionContextValue {
   pauseSession(): void;
   /** Stop for good — banks the current round and shows Session complete. */
   endSession(): void;
-  /** Session complete → Done: write history and clear. */
-  finishSession(): void;
+  /**
+   * Session complete → the learner's explicit choice: write history and
+   * clear either way. `markKnown` (default false) — see the implementation
+   * for the full SAK-52 rule.
+   */
+  finishSession(markKnown?: boolean): void;
   /** Throw the session away unscored. */
   discardSession(): void;
   /** Drop EVERY run, focused and parked, and remove the snapshot outright.
@@ -1103,7 +1110,6 @@ export function QuizSessionProvider({
           { ...snapshotOf(cfg), ...(mode && { mode }) },
           origin,
         );
-        const teaching = teach.length > 0;
         const name = what ?? countWhat(facts);
         setSession({
           facts,
@@ -1115,10 +1121,20 @@ export function QuizSessionProvider({
           // exactly them back (see StudySession.seededSeen and discardRun below).
           seededSeen,
           round: 1,
+          roundTarget: effectiveRoundTarget(teach),
           // New material is read before it's asked. With nothing new in the
           // session there is nothing to read, so the lesson doesn't appear at
           // all rather than appearing empty.
-          phase: teaching ? "teaching" : "drilling",
+          //
+          // A "Quiz me" start (no teach set) does NOT begin its leg here, even
+          // though nothing stands between it and beginLeg — see
+          // initialSessionPhase / "starting" on SessionPhase. ALWAYS routing
+          // through /session and letting its mount effect call
+          // startFirstRound() means every session, taught or not, begins its
+          // first leg the exact same way: from a settled render of the page
+          // that owns the loop, not from whichever component happened to call
+          // startSession. One mechanism, one place it can go wrong.
+          phase: initialSessionPhase(teach),
           restUntil: null,
           roundStats: {},
           recovered: [],
@@ -1128,11 +1144,10 @@ export function QuizSessionProvider({
           origin,
         });
         setResults(null);
-        if (teaching) router.push("/session");
-        else beginLeg(facts, name, snapshot, false);
+        router.push("/session");
       });
     },
-    [cfg, beginLeg, router, parkIfActive],
+    [cfg, router, parkIfActive],
   );
 
   const startFirstRound = useCallback(
@@ -1251,15 +1266,22 @@ export function QuizSessionProvider({
     // retry legs; a redrill is a one-off quiz you started over the misses.
     // `rounds: 1` because that is what this record covers — one round of the
     // loop — not how many the session eventually ran.
-    commitRecord(
-      buildSessionRecord(s.roundStats, {
-        mode: s.snapshot.mode,
-        redrill: false,
-        ts: now,
-        planned: s.facts,
-        rounds: 1,
-      }),
-    );
+    const record = buildSessionRecord(s.roundStats, {
+      mode: s.snapshot.mode,
+      redrill: false,
+      ts: now,
+      planned: s.facts,
+      rounds: 1,
+    });
+    // DEFERRED FOR A SINGLE-ROUND ("Quiz me") SESSION. Its one round IS the
+    // whole session, so this round's real results reaching history has to be
+    // the SAME explicit choice as the rest of the session's fate — "I already
+    // know these" commits it, "Take me to the lesson" discards it (see
+    // StudySession.pendingRecord and finishSession). A taught session commits
+    // here exactly as it always has: its rounds are real progress regardless
+    // of which button ends the session.
+    const deferred = roundTargetOf(s) === 1;
+    if (!deferred) commitRecord(record);
     return {
       ...s,
       rounds: [...s.rounds, summariseRound(s.round, s.roundStats)],
@@ -1269,6 +1291,7 @@ export function QuizSessionProvider({
       // THIS round's misses.
       recovered: [],
       lastActiveAt: now,
+      pendingRecord: deferred ? record : undefined,
     };
   }, [commitRecord]);
 
@@ -1289,7 +1312,7 @@ export function QuizSessionProvider({
   const completeRound = useCallback(() => {
     if (!session) return;
     const now = Date.now();
-    if (session.round >= SESSION_ROUND_TARGET) {
+    if (session.round >= roundTargetOf(session)) {
       setSession({
         ...closeRound(session, now),
         phase: "complete",
@@ -1316,7 +1339,7 @@ export function QuizSessionProvider({
 
   const startNextRound = useCallback(() => {
     if (!session) return;
-    if (session.round >= SESSION_ROUND_TARGET) return;
+    if (session.round >= roundTargetOf(session)) return;
     // Re-read the CURRENT settings so a change made between rounds (endless →
     // limited, a new direction, retries) takes effect on this round. The session
     // froze its snapshot at Start; without this a session that outlives a
@@ -1368,58 +1391,98 @@ export function QuizSessionProvider({
     router.push("/session");
   }, [session, closeRound, router]);
 
-  const finishSession = useCallback(async () => {
-    if (!session) return;
-    if (session.teach.length) {
-      // postClaim routes a signed-out claim into local history (401 fallback),
-      // so finishing a taught session marks its material known the same whether
-      // or not you're signed in.
-      await postClaim(session.teach, true);
-    }
-    // NOTHING IS WRITTEN HERE, AND THAT IS THE FIX.
-    //
-    // This used to be the session's only write: one record, from `totalStats`,
-    // at the very end. Everything before it lived in localStorage alone, so a
-    // session you never pressed Done on left nothing behind — the reported bug
-    // was eighteen correct answers and a 33-byte history.json. Every round is
-    // now committed as it closes (see closeRound), and `totalStats` is exactly
-    // the merge of those rounds, so writing it again here would count the whole
-    // session twice.
-    setSession(null);
-    setActive(null);
-    setProgress(null);
-    // Back to Learn, not Home — you finished a session, so the next thing you
-    // want is the next lesson, not the landing page (Sam). Signed in or out.
-    router.push("/learn");
-  }, [session, router]);
-
   /**
-   * Throw away what has NOT been recorded yet.
-   *
-   * Narrower than it used to be, necessarily: rounds are durable the moment
-   * they close, so discarding cannot un-record a round you completed. What it
-   * drops is the run — the round in progress, the loop, the fork you were
-   * sitting at. That is the honest cost of the work being safe at all, and it
-   * is the right side of the trade: "I finished three rounds and then discarded"
-   * should not erase three rounds of evidence.
-   */
-  /**
-   * Take back the seen marks a discarded session's START laid down.
+   * Take back the seen marks a session's START laid down — a discard, and now
+   * also a finish that did not choose to mark the material known (see
+   * finishSession).
    *
    * The start advanced the Learn frontier by marking the lesson (and the kanji
-   * readings its words prove) seen; a discard scored nothing, so that advance has
-   * to come off with it — "it should not advance until I complete the session".
-   * postUnseen is the inverse of the start's markSeen and reaches the server too,
-   * so a discard on this device cannot leave another device seeing the advance.
-   * Only what the start ADDED is rolled back (seededSeen is that exact set), so a
-   * reading unlocked by an earlier lesson is untouched. A completed session keeps
-   * its advance: its rounds committed real facts to history, which the frontier
-   * reads regardless of the seen marks, so un-seeing cannot pull it back.
+   * readings its words prove) seen; scoring nothing (or nothing confirmed) means
+   * that advance has to come off with it — "it should not advance until I
+   * complete the session [and say so]". postUnseen is the inverse of the
+   * start's markSeen and reaches the server too, so this device rolling it back
+   * cannot leave another device seeing the advance. Only what the start ADDED is
+   * rolled back (seededSeen is that exact set), so a reading unlocked by an
+   * earlier lesson is untouched. A session that DID commit real results (or a
+   * claim) keeps its advance regardless of this: `effectiveState` (claims.ts)
+   * reads history and claims directly, not the seen mark, so calling this
+   * alongside a commit is redundant, never wrong — but finishSession only calls
+   * it on the branch that commits nothing at all.
    */
   const rollbackSeededSeen = useCallback((s: StudySession | null) => {
     const seen = s?.seededSeen;
     if (seen && seen.length) void postUnseen(seen);
   }, []);
+
+  /**
+   * Session complete → the learner's explicit choice, made on the SAME
+   * screen: write history and clear either way.
+   *
+   * `markKnown` (default false) is SAK-52's fix. It used to happen
+   * unconditionally — any taught session got its teach set claimed the
+   * instant you hit Done, whether you'd aced the quiz or missed every
+   * question, which is what let "Quiz me" (and a poorly-scored lesson quiz)
+   * silently mark material known. Now it is one of two explicit endings:
+   *
+   *   markKnown: true — "I already know these": claim whatever of the
+   *     session's material was never actually answered this session
+   *     (sessionKnownClaimTarget, narrowed against totalStats) — the exact
+   *     "I already know this" mechanism (postClaim), reached from here
+   *     instead of only from the Learn card. A fact that WAS answered keeps
+   *     its real result and is never re-claimed over. A single-round Quiz-me
+   *     session also has a `pendingRecord` — its one round's real results,
+   *     held back at closeRound rather than committed — which is committed
+   *     here, alongside the claim, so the answered facts' real performance
+   *     reaches history exactly when the learner confirms the batch is done.
+   *
+   *   markKnown: false — "Take me to the lesson" (or any other finish that
+   *     isn't an explicit claim): nothing is claimed, and any seen marks THIS
+   *     session's start laid down (a "Quiz me" run — see
+   *     StudySession.seededSeen) are rolled back exactly like a discard
+   *     would, so the batch is due again and Learn offers it instead of the
+   *     frontier quietly having moved past it while nothing was ever
+   *     confirmed known. A single-round Quiz-me session's `pendingRecord` is
+   *     simply never committed — discarded along with the rest of the run, so
+   *     even the facts that WERE genuinely answered leave no trace. That is
+   *     stronger than a plain discard (which cannot un-record a banked round)
+   *     and is possible here only because this round's commit was held back
+   *     for exactly this decision.
+   */
+  const finishSession = useCallback(
+    async (markKnown = false) => {
+      if (!session) return;
+      if (markKnown) {
+        if (session.pendingRecord) commitRecord(session.pendingRecord);
+        // postClaim routes a signed-out claim into local history (401
+        // fallback), so this marks known the same whether or not you're
+        // signed in.
+        const target = sessionKnownClaimTarget(session);
+        if (target.length) await postClaim(target, true);
+      } else {
+        // Undo whatever THIS session's start marked seen (see
+        // StudySession.seededSeen) — a no-op for a normal taught session,
+        // which never seeds this field. The session's `pendingRecord`, if any,
+        // is simply left uncommitted below.
+        rollbackSeededSeen(session);
+      }
+      // NOTHING ELSE IS WRITTEN HERE, AND THAT IS THE OTHER FIX THIS FILE MADE.
+      //
+      // This used to be the session's only write: one record, from `totalStats`,
+      // at the very end. Everything before it lived in localStorage alone, so a
+      // session you never pressed Done on left nothing behind — the reported bug
+      // was eighteen correct answers and a 33-byte history.json. Every round is
+      // now committed as it closes (see closeRound), and `totalStats` is exactly
+      // the merge of those rounds, so writing it again here would count the whole
+      // session twice.
+      setSession(null);
+      setActive(null);
+      setProgress(null);
+      // Back to Learn, not Home — you finished a session, so the next thing you
+      // want is the next lesson, not the landing page (Sam). Signed in or out.
+      router.push("/learn");
+    },
+    [session, router, commitRecord, rollbackSeededSeen],
+  );
 
   const discardSession = useCallback(() => {
     rollbackSeededSeen(latest.current.session);
