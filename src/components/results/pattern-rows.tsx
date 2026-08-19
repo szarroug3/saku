@@ -145,11 +145,14 @@ function lines(
   }
 }
 
+// No fill any more — a hairline left rule carries the state colour, and the
+// Tag pill (state name in text) already says which state this is. A tinted
+// box behind it was redundant chrome, not information.
 const TONE: Record<string, string> = {
-  weakness: "border-danger/40 bg-danger-bg",
+  weakness: "border-danger/50",
   new: "border-border",
-  improving: "border-success/35 bg-success-bg",
-  cleared: "border-success/70 bg-success-bg",
+  improving: "border-success/45",
+  cleared: "border-success/70",
 };
 
 function Tag({ state }: { state: PairRow["state"] }) {
@@ -257,8 +260,11 @@ export function PatternRow({
     >
       <div
       className={cx(
-        "relative flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2",
-        selected ? "border-accent bg-accent-bg" : TONE[row.state],
+        // No box: a hairline left rule instead of the old bordered/rounded
+        // tile — whitespace (the stack's own `gap-1.5`, see PatternSection)
+        // separates one row from the next.
+        "relative flex items-center gap-2.5 border-l-2 py-1.5 pl-2.5 pr-1",
+        selected ? "border-accent" : TONE[row.state],
       )}
       >
       {selected ? (
