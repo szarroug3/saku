@@ -31,7 +31,7 @@ import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-sh
 import { subjectLabel as teachSubjectLabel } from "@/lib/library/entries";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
-import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
+import { restLeftMs, roundTargetOf } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -216,21 +216,17 @@ export default function SessionPage() {
     if (restored) recoverLostLeg();
   }, [session?.phase, active, restored, recoverLostLeg, router]);
 
-  // A "Quiz me" start has nothing to teach, so there is no lesson screen to
-  // land on — but it still needs to begin its first leg from a SETTLED render
-  // of this page, the same way the taught flow's own "Quiz me" button does
-  // (toDrill → startFirstRound), rather than from the tick startSession ran on
-  // Home, before this page ever mounted. One mechanism for beginning round 1,
-  // reached by both entry points, is the whole point: see "starting" on
-  // SessionPhase and the comment in startSession.
-  //
-  // Runs once per session (the phase leaves "starting" the moment this fires,
-  // via startFirstRound's own setSession), so it cannot re-fire on the session
-  // it just started.
+  // "starting": a brand-new "Quiz me" session (no teach set) with no leg begun
+  // yet — see initialSessionPhase / SessionPhase on session.ts. This is the
+  // ONLY place that begins its first leg, and it does so from a SETTLED
+  // render of this page (the effect fires after mount, once `restored` is
+  // true), never from the same tick startSession created the session. That is
+  // the whole SAK-52 routing fix: begin every session's first leg the same
+  // way, through startFirstRound, so /quiz never sees "drilling" before this
+  // page has had a chance to exist.
   useEffect(() => {
-    if (session?.phase !== "starting") return;
-    if (restored) startFirstRound();
-  }, [session?.phase, restored, startFirstRound]);
+    if (restored && session?.phase === "starting") startFirstRound();
+  }, [restored, session?.phase, startFirstRound]);
 
   const preloadPhase = session?.phase;
   const preloadFacts = session?.facts;
@@ -267,8 +263,8 @@ export default function SessionPage() {
     return () => window.clearTimeout(id);
   }, [preloadPhase, preloadFacts, preloadSnapshot]);
 
-  // "starting" paints nothing, same as "drilling": the effect above begins its
-  // leg and moves the phase on before there is anything to show here.
+  // "starting" renders nothing, same treatment as "drilling" — see the mount
+  // effect above and the phase's own doc on SessionPhase.
   if (!session || session.phase === "drilling" || session.phase === "starting")
     return null;
 
@@ -512,7 +508,7 @@ export default function SessionPage() {
       <div className="kq-center-frame">
         <SessionHud
           label={label}
-          where={`round ${session.round} of ${SESSION_ROUND_TARGET} · done`}
+          where={`round ${session.round} of ${roundTargetOf(session)} · done`}
           pct={100}
           onDone={pauseSession}
           onEnd={endSession}
@@ -540,7 +536,7 @@ export default function SessionPage() {
       <div className="kq-center-frame">
         <SessionHud
           label={label}
-          where={`resting before round ${Math.min(SESSION_ROUND_TARGET, session.round + 1)}`}
+          where={`resting before round ${Math.min(roundTargetOf(session), session.round + 1)}`}
           pct={pct}
           tone="muted"
           onDone={pauseSession}
@@ -579,8 +575,17 @@ export default function SessionPage() {
             finishSession(true);
           }}
           onGoToLesson={() => {
+            // Same "finish, then start fresh" shape as onRerun above: finish
+            // the run with NOTHING claimed and nothing committed for its
+            // single deferred round (see finishSession/closeRound), then
+            // relaunch this exact batch in TEACH mode — the same call
+            // startTrack's Start button makes (facts taught in full, nothing
+            // marked seen yet by this new start). Reuses startSession, the
+            // one way any lesson ever begins; no second entry path.
             finishingRef.current = true;
-            finishSession(false);
+            const { facts, what, origin, snapshot } = session;
+            finishSession();
+            startSession(facts, facts, what, origin, [], snapshot.mode);
           }}
         />
       </div>
