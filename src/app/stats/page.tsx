@@ -42,7 +42,7 @@ import { useState } from "react";
 import { BySubject } from "@/components/stats/by-subject";
 import { KnowledgeBase } from "@/components/stats/knowledge-base";
 import { MixUps } from "@/components/stats/mix-ups";
-import { tallyFacts } from "@/components/stats/tally";
+import { factsByStanding, tallyFacts } from "@/components/stats/tally";
 import { PageTitle } from "@/components/ui";
 import { ALL_FACTS, factKeys } from "@/lib/facts";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
@@ -78,6 +78,11 @@ export default function StatsPage() {
     ...new Set([...factKeys(history.facts), ...factKeys(claims)]),
   ].filter((fact) => !isSentenceTierMarkerFact(fact));
   const tally = tallyFacts(recorded, history.facts, claims, now);
+  // SAK-78: the same walk as `tally`, kept as fact ids instead of counted —
+  // what a click on one of the counts above opens. Built from the identical
+  // `recorded` population and the identical `aggregates`/`claims`/`now` tally
+  // was, so a bucket's list can never disagree with its own number.
+  const factsByBucket = factsByStanding(recorded, history.facts, claims, now);
 
   return (
     // A contained column, not full bleed. The three groups are counts and narrow
@@ -86,7 +91,7 @@ export default function StatsPage() {
     <div className="max-w-4xl">
       <PageTitle title="Progress" sub="How much you have covered so far." />
 
-      <KnowledgeBase tally={tally} total={TOTAL_FACTS} />
+      <KnowledgeBase tally={tally} total={TOTAL_FACTS} factsByBucket={factsByBucket} />
 
       {/* The one hairline on the page: What-you-know is the whole knowledge base
        * summed; below it the same facts are broken out by subject, beside the
