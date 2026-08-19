@@ -33,11 +33,18 @@ function story(session: StudySession): string {
 export function SessionComplete({
   session,
   onRerun,
-  onDone,
+  onMarkKnown,
+  onGoToLesson,
 }: {
   session: StudySession;
   onRerun: () => void;
-  onDone: () => void;
+  /** "I already know these": claim whatever of the batch was never actually
+   * answered this session, keep the real results for what was — see
+   * finishSession(true) / sessionKnownClaimTarget. */
+  onMarkKnown: () => void;
+  /** "Take me to the lesson": claim nothing, commit nothing, and reopen this
+   * exact batch as a fresh taught lesson — see finishSession(false). */
+  onGoToLesson: () => void;
 }) {
   const last = session.rounds[session.rounds.length - 1];
   const right = last?.correct ?? 0;
@@ -64,20 +71,23 @@ export function SessionComplete({
           </div>
         ) : null}
 
-        <div className="mt-5.5 flex justify-center gap-2">
+        <div className="mt-5.5 flex flex-wrap justify-center gap-2">
           {/* Rerun is the same operation Recent's Rerun is: replay the session
               as it was, same set, fresh rounds. */}
           <SmallBtn onClick={onRerun}>Quiz again</SmallBtn>
-          <Btn autoFocus go onClick={onDone}>
-            Complete session
+          <Btn onClick={onGoToLesson}>Take me to the lesson</Btn>
+          <Btn autoFocus go onClick={onMarkKnown}>
+            I already know these {session.facts.length}
           </Btn>
         </div>
       </Card>
 
       <Card className="px-[15px] py-[13px]">
         <Hint>
-          Saved in <b>Recent sessions</b>, and you can run this exact set again
-          any time.
+          Saved in <b>Recent sessions</b>. <b>I already know these</b> claims
+          anything you didn&apos;t actually answer — whatever you DID answer
+          keeps its real result. <b>Take me to the lesson</b> claims and saves
+          nothing, and reopens this exact set as a fresh lesson.
         </Hint>
       </Card>
     </>

@@ -19,9 +19,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  effectiveRoundTarget,
+  initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   roundCompleteView,
+  roundTargetOf,
+  sessionKnownClaimTarget,
+  SESSION_ROUND_TARGET,
   type StudySession,
 } from "@/lib/session";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
@@ -440,4 +445,115 @@ test("recoveredAfterLeg on the first leg cannot claim a recovery", () => {
   // the screen never calls it a recovery: recovered is read against `missed`.
   assert.deepEqual(view.recovered, []);
   assert.deepEqual(view.outstanding, [f("y")]);
+});
+
+// ---------- SAK-52: single round + partial credit ----------
+//
+// The worked example, verbatim: a 5-item kana lesson (hiragana vowels — a, i,
+// u, e, o), quizzed directly from Learn (no teach set). The learner answers 2
+// of 5 (a, e) in the single round, then ends and picks one of the two ways
+// out. These tests pin the three functions that decide what happens: which
+// phase/round-count a "Quiz me" session gets (initialSessionPhase /
+// effectiveRoundTarget / roundTargetOf), and what "I already know these"
+// claims (sessionKnownClaimTarget) — real answers for a and e are never
+// touched by these functions; they are a matter of what finishSession commits
+// vs discards, which lives in quiz-session.tsx and cannot be unit-tested here.
+
+test("initialSessionPhase: a direct Quiz-me (no teach) starts at 'starting', a taught lesson at 'teaching'", () => {
+  assert.equal(initialSessionPhase([]), "starting");
+  assert.equal(initialSessionPhase([f("a")]), "teaching");
+});
+
+test("effectiveRoundTarget: a direct Quiz-me runs ONE round, a taught lesson runs the normal three", () => {
+  assert.equal(effectiveRoundTarget([]), 1);
+  assert.equal(effectiveRoundTarget([f("a")]), SESSION_ROUND_TARGET);
+  assert.equal(SESSION_ROUND_TARGET, 3, "the taught flow's round count is untouched");
+});
+
+test("roundTargetOf: reads the stored field, and falls back to teach.length for an old snapshot", () => {
+  const quizMe = sessionWith([f("a")], {}) as StudySession;
+  quizMe.teach = [];
+  quizMe.roundTarget = 1;
+  assert.equal(roundTargetOf(quizMe), 1);
+
+  const taught = sessionWith([f("a")], {}) as StudySession;
+  taught.teach = [f("a")];
+  taught.roundTarget = 3;
+  assert.equal(roundTargetOf(taught), 3);
+
+  // No stored field (a session snapshotted before it existed) — same rule,
+  // derived from teach.length, so an in-flight upgrade reads exactly what it
+  // would have been given at start.
+  const legacyQuizMe = sessionWith([f("a")], {}) as StudySession;
+  legacyQuizMe.teach = [];
+  assert.equal(roundTargetOf(legacyQuizMe), 1);
+  const legacyTaught = sessionWith([f("a")], {}) as StudySession;
+  legacyTaught.teach = [f("a")];
+  assert.equal(roundTargetOf(legacyTaught), SESSION_ROUND_TARGET);
+});
+
+/** The worked example's session, mid-choice: a direct Quiz-me over the five
+ * vowels, one round closed with a and e answered (i, u, o never reached). */
+function vowelQuizMeAfterRound(): Pick<
+  StudySession,
+  "teach" | "facts" | "totalStats"
+> {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  return {
+    teach: [], // direct Quiz-me from Learn — see startTrack's teach:false path
+    facts: [a, i, u, e, o],
+    totalStats: stats({
+      a: detail({ seen: 1, firstTryCorrect: true, firstTryCount: 1, correct: 1 }),
+      e: detail({ seen: 1, misses: 1, firstTryCorrect: false, everCorrect: true, correct: 1 }),
+    }),
+  };
+}
+
+test("sessionKnownClaimTarget: claims only what was never answered — a and e are left alone", () => {
+  const target = sessionKnownClaimTarget(vowelQuizMeAfterRound());
+  assert.deepEqual(
+    [...target].sort(),
+    ["i", "o", "u"].map(f).sort(),
+    "exactly the three unanswered vowels — a and e keep their real results",
+  );
+  assert.ok(!target.includes(f("a")), "a was answered — never re-claimed");
+  assert.ok(!target.includes(f("e")), "e was answered (and missed once) — never re-claimed");
+});
+
+test("sessionKnownClaimTarget: nothing answered claims the whole batch", () => {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  const target = sessionKnownClaimTarget({
+    teach: [],
+    facts: [a, i, u, e, o],
+    totalStats: {},
+  });
+  assert.deepEqual([...target].sort(), [a, e, i, o, u].sort());
+});
+
+test("sessionKnownClaimTarget: everything answered claims nothing — no blind re-claim over real results", () => {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  const allAnswered = stats(
+    Object.fromEntries(
+      [a, i, u, e, o].map((k) => [k, detail({ seen: 1, everCorrect: true, correct: 1 })]),
+    ),
+  );
+  const target = sessionKnownClaimTarget({
+    teach: [],
+    facts: [a, i, u, e, o],
+    totalStats: allAnswered,
+  });
+  assert.deepEqual(target, []);
+});
+
+test("sessionKnownClaimTarget: a taught lesson narrows to the TEACH set, not the wider facts set", () => {
+  const [a, b, c] = ["a", "b", "c"].map(f);
+  // facts is wider than teach (budget topped it up with review material); only
+  // the taught subset is ever a claim candidate, and only the untaught-and-
+  // unanswered part of THAT.
+  const target = sessionKnownClaimTarget({
+    teach: [a, b],
+    facts: [a, b, c],
+    totalStats: stats({ a: detail({ seen: 1, everCorrect: true, correct: 1 }) }),
+  });
+  assert.deepEqual(target, [b]);
 });

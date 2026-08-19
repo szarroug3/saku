@@ -30,7 +30,7 @@ import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-sh
 import { subjectLabel as teachSubjectLabel } from "@/lib/library/entries";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
-import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
+import { restLeftMs, roundTargetOf } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -210,6 +210,18 @@ export default function SessionPage() {
     if (restored) recoverLostLeg();
   }, [session?.phase, active, restored, recoverLostLeg, router]);
 
+  // "starting": a brand-new "Quiz me" session (no teach set) with no leg begun
+  // yet — see initialSessionPhase / SessionPhase on session.ts. This is the
+  // ONLY place that begins its first leg, and it does so from a SETTLED
+  // render of this page (the effect fires after mount, once `restored` is
+  // true), never from the same tick startSession created the session. That is
+  // the whole SAK-52 routing fix: begin every session's first leg the same
+  // way, through startFirstRound, so /quiz never sees "drilling" before this
+  // page has had a chance to exist.
+  useEffect(() => {
+    if (restored && session?.phase === "starting") startFirstRound();
+  }, [restored, session?.phase, startFirstRound]);
+
   const preloadPhase = session?.phase;
   const preloadFacts = session?.facts;
   const preloadSnapshot = session?.snapshot;
@@ -245,7 +257,10 @@ export default function SessionPage() {
     return () => window.clearTimeout(id);
   }, [preloadPhase, preloadFacts, preloadSnapshot]);
 
-  if (!session || session.phase === "drilling") return null;
+  // "starting" renders nothing, same treatment as "drilling" — see the mount
+  // effect above and the phase's own doc on SessionPhase.
+  if (!session || session.phase === "drilling" || session.phase === "starting")
+    return null;
 
   const label = `${session.facts.length} item${session.facts.length === 1 ? "" : "s"}`;
 
@@ -459,7 +474,7 @@ export default function SessionPage() {
       <>
         <SessionHud
           label={label}
-          where={`round ${session.round} of ${SESSION_ROUND_TARGET} · done`}
+          where={`round ${session.round} of ${roundTargetOf(session)} · done`}
           pct={100}
           onDone={pauseSession}
           onEnd={endSession}
@@ -485,7 +500,7 @@ export default function SessionPage() {
       <>
         <SessionHud
           label={label}
-          where={`resting before round ${Math.min(SESSION_ROUND_TARGET, session.round + 1)}`}
+          where={`resting before round ${Math.min(roundTargetOf(session), session.round + 1)}`}
           pct={pct}
           tone="muted"
           onDone={pauseSession}
@@ -515,11 +530,23 @@ export default function SessionPage() {
             finishSession();
             startSession(facts, teach, what);
           }}
-          onDone={() => {
+          onMarkKnown={() => {
             // finishSession pushes /learn; flag it so the "no session → Home"
             // guard above doesn't clobber that with a Home redirect.
             finishingRef.current = true;
+            finishSession(true);
+          }}
+          onGoToLesson={() => {
+            // Same "finish, then start fresh" shape as onRerun above: finish
+            // the run with NOTHING claimed and nothing committed for its
+            // single deferred round (see finishSession/closeRound), then
+            // relaunch this exact batch in TEACH mode — the same call
+            // startTrack's Start button makes (facts taught in full, nothing
+            // marked seen yet by this new start). Reuses startSession, the
+            // one way any lesson ever begins; no second entry path.
+            const { facts, what, origin, snapshot } = session;
             finishSession();
+            startSession(facts, facts, what, origin, [], snapshot.mode);
           }}
         />
       </div>
