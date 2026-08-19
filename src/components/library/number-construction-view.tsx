@@ -28,19 +28,22 @@ export function NumberConstructionView({
 }) {
   return (
     <>
-      {/* The prose, one Card, off the lesson's own IntroBody so a construction
-          page and the lesson rule card cannot drift. No `measure` cap: the Card
-          is already a sized column. */}
-      <Card className="mb-3.5">
+      {/* The prose, off the lesson's own IntroBody so a construction page and
+          the lesson rule card cannot drift. No `measure` cap: the Card is
+          already a sized column. */}
+      <Card>
         <IntroBody body={construction.body} measure="" />
       </Card>
 
       {/* The worked-example table(s), below the prose — the counts 1–10 for a
           counter page, the hundreds/thousands/myriads for the big page, split
           into Regular / Irregular the way the grammar pages split regular
-          conjugation from its exceptions. */}
+          conjugation from its exceptions. A hairline divider (EntrySurface's
+          Section pattern) instead of the prose's own Card margin, since the
+          two are otherwise two plain blocks of text running into each other
+          with nothing to tell them apart. */}
       {construction.exampleGroups.length > 0 ? (
-        <Card className="mb-3.5">
+        <Card className="mt-5 border-t border-border/50 pt-5">
           <IntroCountTables groups={construction.exampleGroups} />
         </Card>
       ) : null}

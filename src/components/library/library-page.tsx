@@ -859,10 +859,13 @@ export function LibraryPageClient({
               </p>
             </Card>
           ) : (
-            resultSections.map((s) => {
+            resultSections.map((s, index) => {
               const expanded = !collapsedSearch.has(s.key);
               return (
-              <Card key={s.key}>
+              <Card
+                key={s.key}
+                className={index === 0 ? undefined : "mt-5 border-t border-border/50 pt-5"}
+              >
                 <div className="mb-2 flex items-center gap-2">
                   <button
                     type="button"

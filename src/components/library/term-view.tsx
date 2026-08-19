@@ -75,51 +75,66 @@ export function TermView({ term }: { term: TermViewData }) {
         </Card>
       ) : null}
 
-      {(term.cards ?? []).map((card, _i, cards) => {
-        // The paragraphs about THIS word. The identity for eleven of the twelve;
-        // only ゛ and ゜ share a card and need the split. See `cardMark`. Then drop
-        // lessonOnly paragraphs: this is the Library, not a step of a walk, so text
-        // about when the material turns up in the lesson does not belong here.
-        const body = (term.cardMark ? bodyFor(card, term.cardMark) : card.body).filter(
-          (p) => !p.lessonOnly,
-        );
-        if (body.length === 0) return null;
-        // "In hiragana" / "In katakana", and nothing at all for a card that
-        // belongs to no script. ONLY WHEN THERE ARE TWO CARDS, which is the only
-        // case it says anything: on kana, dakuten, handakuten and yōon it is what
-        // tells the two halves apart, while on the Hiragana page a lone card
-        // labelled "In hiragana" is the page's own title in smaller type.
-        const label = cards.length > 1 ? scriptLabel(card.setId) : null;
-        return (
-          // Prose in one Card, its worked examples in a Card beside it, on the
-          // container query mark-view.tsx settled: the Library column is far
-          // narrower than the viewport once the sidebar is there, so what matters
-          // is this column's width. Stacks when the column is genuinely narrow.
-          <div key={card.id} className="@container">
-            <div className="flex flex-col @xl:flex-row @xl:items-stretch @xl:gap-3.5">
-              <Card className="min-w-0 flex-1">
-                {label ? <Lbl>{label}</Lbl> : null}
-                {/* The card's own title, at reference size. It is the one line
-                    the card is built around, so dropping it would lose the point
-                    of every card and leave three okurigana sections with no way
-                    to tell them apart. */}
-                <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
-                  {card.title}
-                </h2>
-                {/* No `measure` cap: the prose already sits in a sized column,
-                    and a second cap on top of it is the early wrap the mark
-                    pages had. */}
-                <IntroBody body={body} measure="" />
-              </Card>
-              {card.examples?.length ? (
-                <Card className="@xl:w-[20rem] @xl:shrink-0">
-                  <IntroExamples examples={card.examples} bare />
+      {(term.cards ?? [])
+        .map((card) => {
+          // The paragraphs about THIS word. The identity for eleven of the
+          // twelve; only ゛ and ゜ share a card and need the split. See
+          // `cardMark`. Then drop lessonOnly paragraphs: this is the Library,
+          // not a step of a walk, so text about when the material turns up in
+          // the lesson does not belong here.
+          const body = (term.cardMark ? bodyFor(card, term.cardMark) : card.body).filter(
+            (p) => !p.lessonOnly,
+          );
+          return body.length === 0 ? null : { card, body };
+        })
+        .filter((c): c is { card: PhaseIntro; body: ReturnType<typeof bodyFor> } => c !== null)
+        .map(({ card, body }, index, cards) => {
+          // "In hiragana" / "In katakana", and nothing at all for a card that
+          // belongs to no script. ONLY WHEN THERE ARE TWO CARDS, which is the
+          // only case it says anything: on kana, dakuten, handakuten and yōon
+          // it is what tells the two halves apart, while on the Hiragana page
+          // a lone card labelled "In hiragana" is the page's own title in
+          // smaller type.
+          const label = cards.length > 1 ? scriptLabel(card.setId) : null;
+          return (
+            // Prose in one Card, its worked examples in a Card beside it, on
+            // the container query mark-view.tsx settled: the Library column is
+            // far narrower than the viewport once the sidebar is there, so
+            // what matters is this column's width. Stacks when the column is
+            // genuinely narrow. A hiragana/katakana pair (two cards) opens its
+            // second card with a hairline divider, the same one EntrySurface's
+            // Section uses between stacked sections.
+            <div key={card.id} className={index === 0 ? "@container" : "@container mt-5 border-t border-border/50 pt-5"}>
+              <div className="flex flex-col @xl:flex-row @xl:items-stretch @xl:gap-3.5">
+                <Card className="min-w-0 flex-1">
+                  {label ? <Lbl>{label}</Lbl> : null}
+                  {/* The card's own title, at reference size. It is the one line
+                      the card is built around, so dropping it would lose the point
+                      of every card and leave three okurigana sections with no way
+                      to tell them apart. */}
+                  <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
+                    {card.title}
+                  </h2>
+                  {/* No `measure` cap: the prose already sits in a sized column,
+                      and a second cap on top of it is the early wrap the mark
+                      pages had. */}
+                  <IntroBody body={body} measure="" />
                 </Card>
-              ) : null}
+                {card.examples?.length ? (
+                  // A hairline divider off the prose above it when the column is
+                  // narrow enough to stack (a bare top border, same rule every
+                  // other stacked Card pair follows); a vertical one instead once
+                  // the row splits into two columns at @xl, since there the two
+                  // Cards sit side by side and a top border would float in the
+                  // middle of the row.
+                  <Card className="mt-5 border-t border-border/50 pt-5 @xl:mt-0 @xl:w-[20rem] @xl:shrink-0 @xl:border-t-0 @xl:border-l @xl:pl-4 @xl:pt-0">
+                    <IntroExamples examples={card.examples} bare />
+                  </Card>
+                ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </>
   );
 }
