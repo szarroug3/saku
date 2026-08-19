@@ -303,7 +303,7 @@ export function SubstitutionScreen() {
               <Btn
                 className="w-20"
                 onClick={skip}
-                title="Skip — ask this again later"
+                title="Skip, ask this again later"
               >
                 Skip
               </Btn>

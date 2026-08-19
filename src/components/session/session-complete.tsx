@@ -59,7 +59,7 @@ function story(session: StudySession): string {
         : first.missed === 0
           ? `took ${last.missed} ${last.missed === 1 ? "retry" : "retries"} to get there, none needed at the start`
           : `${cleaner ? "fewer" : "more"} needed a retry (${last.missed}, vs ${first.missed} at the start)`;
-    return `${many} You finished on ${last.correct} correct — ${note}.`;
+    return `${many} You finished on ${last.correct} correct: ${note}.`;
   }
   const dir = last.correct > first.correct ? "up" : "down";
   return `${many} You finished on ${last.correct} correct, ${dir} from ${first.correct}.`;
