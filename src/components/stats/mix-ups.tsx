@@ -42,10 +42,35 @@
 
 import { useMemo } from "react";
 
-import { Lbl } from "@/components/ui";
+import { Info, Lbl } from "@/components/ui";
 import { directionOf, pairRecords, type PairRecord } from "@/lib/confusions";
 import { entryOf, glyphOf } from "@/lib/facts";
 import type { HistoryFile } from "@/types";
+
+// WHY THE HEADER CARRIES AN (i) (SAK-22, ROUND TWO)
+// ===================================================
+// The first SAK-22 pass fixed a real bug (Progress's mix-up count wasn't
+// reading `activeWeaknessPairs`) and correctly refused to make this table's
+// count equal What-you-know's count — they are different units on purpose,
+// argued at length above. That did not end the ticket: the report came back
+// because "still mixing" (a PAIR count, this table) and the standing buckets
+// "solid / getting-there / shaky / claimed" (a FACT count, knowledge-base.tsx)
+// sit on the same Progress screen, in cards side by side, and a reasonable
+// reader expects two numbers on one screen to reconcile. They can't, and no
+// renaming or rearranging fixes that, because the mismatch isn't a labeling
+// accident — it's two different questions:
+//
+//   a fact's standing   how well do YOU remember this one fact, alone
+//   a mix-up pair       do you confuse this fact with ONE SPECIFIC OTHER fact
+//
+// A fact can be "shaky" in its own standing while simultaneously being half of
+// an active "still mixing" pair — those are two independent facts about it,
+// not two measurements of the same thing, so there is no shared denominator
+// for the counts to agree on. Forcing them to line up (e.g. counting "still
+// mixing" facts into the standing tally) would recreate exactly the false
+// equivalence the first pass fixed, just moved one level up. So instead of
+// another rewrite, the header explains the relationship in place — see
+// `MIX_UP_INFO` below.
 
 type Stage = "mixing" | "better" | "sorted";
 
@@ -80,6 +105,13 @@ function stageOf(rec: PairRecord): Stage {
   if (!rec.tracked) return "sorted";
   return rec.cleanStreak === 0 ? "mixing" : "better";
 }
+
+/** What the (i) next to the header says. Kept as its own constant, named for
+ * grep, rather than inlined — it is the one place this relationship is spelled
+ * out for a reader, and it should stay findable from the ticket that asked
+ * for it. */
+const MIX_UP_INFO =
+  "Different measurement from What you know above. A fact's standing (solid, shaky, and so on) is about how well you remember that ONE fact, on its own. A mix-up pair is about whether you confuse it with a SPECIFIC OTHER entry. A fact can sit in any standing while independently being part of an active mix-up — the two counts don't share a denominator, and they're not meant to add up to the same total.";
 
 function hintOf(rec: PairRecord, stage: Stage): string {
   // A graduated record still HAS a direction — confusions.ts keeps the counts so
@@ -125,7 +157,10 @@ export function MixUps({
 
   return (
     <section>
-      <Lbl>Things you mix up{rows.length ? ` · ${rows.length}` : ""}</Lbl>
+      <Lbl>
+        Things you mix up{rows.length ? ` · ${rows.length}` : ""}
+        <Info>{MIX_UP_INFO}</Info>
+      </Lbl>
 
       {rows.length === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">
