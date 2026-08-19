@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { numberConstructionRow } from "./number-construction.ts";
+import { numberConstructionForCounterGlyph, numberConstructionRow } from "./number-construction.ts";
 import { countGroupHasBuild } from "./phase-intros.ts";
 import { counterIrregulars } from "../lib/engine/number-quiz.ts";
 import {
@@ -289,5 +289,46 @@ describe("the counter pages split by the engine's irregular counts", () => {
         }
       }
     }
+  });
+});
+
+// SAK-35: a memorised counted form (二十歳 · はたち, @/data/counters) and its
+// counter's construction page (〜歳) are two separate Library entries. This
+// join is what lets 二十歳's own page LINK to 〜歳's already-authored explanation
+// of why はたち is irregular, instead of showing generic boilerplate with no
+// counter-specific content at all. See counter-entry-view.tsx.
+describe("numberConstructionForCounterGlyph — a counted form's link to its counter's rule page", () => {
+  test("歳 resolves to the 〜歳 page, which already names 二十歳's irregular はたち", () => {
+    const page = numberConstructionForCounterGlyph("歳");
+    assert.ok(page, "〜歳 should resolve for the glyph 歳");
+    assert.equal(page!.id, "sai");
+    assert.equal(page!.glyph, "〜歳");
+    // The exact existing prose 二十歳's page links out to — proves the target
+    // page really does carry counter-specific irregular content, not more
+    // boilerplate.
+    const soundText = page!.body.map((p) => p.text).join(" ");
+    assert.match(soundText, /二十歳/, "〜歳's prose should call out 二十歳 by name");
+    assert.match(soundText, /はたち/, "〜歳's prose should name the irregular reading はたち");
+  });
+
+  test("every real counter glyph (人, 本, 匹, 枚, 個, 台, 冊, 杯, 回, 歳) resolves", () => {
+    for (const glyph of ["人", "本", "匹", "枚", "個", "台", "冊", "杯", "回", "歳"]) {
+      assert.ok(
+        numberConstructionForCounterGlyph(glyph),
+        `${glyph} should resolve to its 〜${glyph} construction page`,
+      );
+    }
+  });
+
+  test("〜つ has no construction page — native memorisation, no rule to link to", () => {
+    assert.equal(
+      numberConstructionForCounterGlyph("つ"),
+      undefined,
+      "つ is native memorisation (see NUMBER_CONSTRUCTIONS's own note), so no 〜つ rule page exists",
+    );
+  });
+
+  test("a stranger glyph resolves to undefined, not a throw", () => {
+    assert.equal(numberConstructionForCounterGlyph("犬"), undefined);
   });
 });

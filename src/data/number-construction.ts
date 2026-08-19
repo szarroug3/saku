@@ -527,3 +527,27 @@ export function numberConstructionFor(entry: EntryId): NumberConstruction | unde
 export function numberConstructionRow(id: string): NumberConstruction | undefined {
   return BY_ID.get(id);
 }
+
+/**
+ * The construction ("how it's built") page for a counted FORM's counter glyph
+ * (歳 → 〜歳), or undefined when that counter has no generative rule page. Every
+ * counter page's own `glyph` is minted as `〜${spec.glyph}` by counterConstruction
+ * above, so this is a plain reverse lookup against that same field — no new
+ * mapping, no new data.
+ *
+ * WHY THIS EXISTS: a memorised counted form (@/data/counters's CounterForm, e.g.
+ * 二十歳) and its counter's construction page (〜歳) are TWO separate Library
+ * entries today (see counter-entry-view.tsx's header comment — a page is one
+ * shape or the other, never both), so a reader on 二十歳's own page has no way to
+ * reach the 〜歳 page that already explains, in its authored prose, exactly why
+ * はたち is irregular ("二十歳, twenty years old, has its own reading はたち").
+ * This join lets 二十歳's page LINK to that existing explanation instead of the
+ * generic counted-form boilerplate pretending nothing counter-specific applies.
+ *
+ * Native 〜つ counting (ひとつ…とお) correctly resolves to undefined here — it is
+ * memorisation, not a generative rule, so there is genuinely no construction
+ * page for it to link to (see the NUMBER_CONSTRUCTIONS note above).
+ */
+export function numberConstructionForCounterGlyph(glyph: string): NumberConstruction | undefined {
+  return NUMBER_CONSTRUCTIONS.find((c) => c.glyph === `〜${glyph}`);
+}
