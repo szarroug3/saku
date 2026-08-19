@@ -51,6 +51,42 @@
 // already-open panel down, not the panel's own opening state. Worth a second
 // look once real data shows how many sections a busy subject (Vocabulary)
 // actually renders — flagged in the round-5 Linear comment.
+//
+// THE SECOND LINE IS NOW PER-KIND, REUSING THE LIBRARY'S OWN SUMMARY, NOT A
+// WORD-ONLY GLOSS (SAK-78 round 6). Sam: "for words, you show the definition
+// in the side panel. for kana, can you show the pronunciation and find
+// something for all tracks." The old line was `factInfo(firstFact).meaning` —
+// correct for a word (its gloss is a fact's `meaning`), wrong for everything
+// else that ISN'T a definition: a kana's "meaning" is silence, so the line was
+// blank there, and a kanji/grammar/keigo/counter/verb-pair/radical row got
+// whatever its first fact's `meaning` happened to hold, which is not always
+// the right field for that kind (a grammar fact's `meaning` is a reading-drill
+// gloss, not the pattern's rule).
+//
+// `entryDetail` below asks the Library's own `subLabel` (sub-label.ts) instead
+// — the exact function EntryTile/EntryRow already use for "the one line under
+// the glyph" on every Library shelf, per kind: a kana's readings (pronunciation),
+// a word's/kanji's meanings (gloss), a primitive's "Kanji part", and a single
+// reading or first meaning for everything else (grammar, keigo, transitivity,
+// counters, radicals) that doesn't need its own special case. Reusing it here
+// means this panel can never show a kind a different one-line rule than the
+// Library shelf that kind already has.
+//
+// SENTENCE TIERS ARE THE ONE EXCEPTION, AND FOR A REAL REASON, NOT A MISSED
+// CASE. A tier has no Library entry of its own under `sentenceTierEntry`
+// (`sentence-ordering:<id>`, sentence-track.ts) — the Library shelves a tier as
+// a MARK entry instead (`writing-rule:sentence-rule-<id>`, see marks.ts and
+// entries.ts's `knownFactsOf`), which is the id by-subject.tsx's
+// SentenceSubjectRow now hands this panel (see its own comment for why). That
+// mark entry carries `readings: []` (marks are notation, not sound — see
+// marks.ts's "NO READINGS" note) and `meanings: [tier name]`, so `subLabel`'s
+// generic fallback on it would just print the tier's own name a second time
+// under itself. The mark's `sub` field is exactly the line this panel wants
+// instead — the tier's one-line ordering rule ("Base sentence ordering: anchor
+// the ending, then place core meaning and context around it"), the same text
+// the entry page already sub-heads the tier with. So `entryDetail` special-
+// cases `SENTENCE_RULE_KIND` to read `sub` rather than asking `subLabel` to
+// answer a question its generic rule isn't built for.
 
 import * as React from "react";
 import Link from "next/link";
@@ -58,10 +94,40 @@ import { Collapsible as CollapsiblePrimitive } from "radix-ui";
 
 import { factInfo, factsOf, glyphOf } from "@/lib/facts";
 import { entryHref } from "@/lib/library/href";
+import { entryName, libEntry, SENTENCE_RULE_KIND } from "@/lib/library/library-index";
+import { subLabel } from "@/lib/library/sub-label";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { BUCKET_LABEL } from "@/components/stats/tally";
 import { SidePanel } from "@/components/stats/side-panel";
 import type { Standing } from "@/lib/library/standing";
 import type { EntryId } from "@/types";
+
+/** What to call an entry in this panel's list — the Library's own `entryName`
+ * (library-index.ts) when the entry is Library-browsable (every kind
+ * by-subject.tsx feeds this panel is), falling back to `glyphOf` (facts.ts)
+ * for the defensive case of an id with no Library entry. */
+function displayName(e: EntryId): string {
+  const entry = libEntry(e);
+  return entry ? entryName(entry) : glyphOf(e);
+}
+
+/** The one line under an entry's name — see the file header for why this asks
+ * `subLabel` instead of a fact's `meaning`, and why sentence tiers are the one
+ * kind that reads `sub` instead. `null` when the entry genuinely has neither
+ * (subLabel's own "—" case) so the row omits the second line rather than
+ * printing a dash. */
+function entryDetail(e: EntryId): string | null {
+  const entry = libEntry(e);
+  if (entry) {
+    if (entry.kind === SENTENCE_RULE_KIND) return entry.sub || null;
+    const label = subLabel(entry);
+    return label === "—" ? null : label;
+  }
+  // No Library entry — the panel's original fact-meaning source, kept as a
+  // fallback rather than dropped.
+  const firstFact = factsOf(e)[0];
+  return firstFact ? (factInfo(firstFact)?.meaning ?? null) : null;
+}
 
 export function EntryBreakdown({
   open,
@@ -127,13 +193,8 @@ function StatusSection({
       <CollapsiblePrimitive.Content>
         <ul className="flex flex-col gap-2.5 pt-2 text-[13px]">
           {entries.map((e) => {
-            // An entry has no meaning of its own (facts.ts) — only its facts
-            // do, and they share one where the notion applies (a word's
-            // gloss), so the first fact's is the entry's. `factsOf` answers
-            // empty for a stranger id, same courtesy factInfo extends in
-            // bucket-breakdown.tsx.
-            const firstFact = factsOf(e)[0];
-            const meaning = firstFact ? factInfo(firstFact)?.meaning : null;
+            const name = displayName(e);
+            const detail = entryDetail(e);
             return (
               <li key={e}>
                 <Link
@@ -141,10 +202,10 @@ function StatusSection({
                   onClick={onClose}
                   className="flex items-baseline justify-between gap-3 hover:underline"
                 >
-                  <span className="font-kana">{glyphOf(e)}</span>
-                  {meaning ? (
+                  <span className={japaneseFontClass(name)}>{name}</span>
+                  {detail ? (
                     <span className="truncate text-right text-text-muted">
-                      {meaning}
+                      {detail}
                     </span>
                   ) : null}
                 </Link>
