@@ -33,39 +33,29 @@ const byWord = indexByWord(CORPUS);
 // Sorted by written form so the file's key order is stable across runs.
 //
 // Six-element rows, fixed shape: [id, jp, en, start, end, kr]. start/end are
-// null when the word's literal form isn't in the sentence (see below); kr is
-// always [] here — scripts/ingest/sentence_readings.py is a SECOND pass that
-// reads this same file back and fills kr in per kanji, preserving start/end
-// unchanged. One row shape both passes agree on, so neither can silently drop
-// what the other wrote.
+// ALWAYS null here (SAK-97) — the highlight span needs real tokenization to
+// find a word's CONJUGATED surface form (思う shown as 思った), not just its
+// literal spelling, so it is computed in scripts/ingest/sentence_readings.py,
+// the same pass that already tokenizes every sentence with fugashi for the
+// `kr` per-kanji-reading field. One tokenization, both outputs. kr is always
+// [] here — sentence_readings.py is a SECOND pass that reads this same file
+// back and fills both start/end and kr in. One row shape both passes agree
+// on, so neither can silently drop what the other wrote.
 const out: Record<
   string,
   [number, string, string, number | null, number | null, unknown[]]
 > = {};
 let n = 0;
-let spanned = 0;
 for (const w of [...VOCAB].sort((a, b) => (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0))) {
   const candidates = byWord.get(w.keb);
   if (!candidates) continue;
   const pick = chooseExample(candidates, w.keb, rankOf);
   if (!pick) continue;
-  // The word's own literal written form, as a substring of the sentence
-  // actually shown, to highlight (SAK-94). The sentence choice above is
-  // unchanged — this only decides whether the CHOSEN sentence happens to
-  // spell the word literally. A conjugated form (くすぐる in くすぐらないで)
-  // does not, and gets no span: absent is honest, a wrong span is not.
-  const start = pick.jp.indexOf(w.keb);
-  if (start === -1) {
-    out[w.keb] = [pick.id, pick.jp, pick.en, null, null, []];
-  } else {
-    out[w.keb] = [pick.id, pick.jp, pick.en, start, start + w.keb.length, []];
-    spanned++;
-  }
+  out[w.keb] = [pick.id, pick.jp, pick.en, null, null, []];
   n++;
 }
 
 const path = join(import.meta.dirname, "..", "src", "data", "generated", "word-examples.json");
 writeFileSync(path, JSON.stringify(out) + "\n");
 console.log(`word-examples.json: ${n} of ${VOCAB.length} words (${((100 * n) / VOCAB.length).toFixed(1)}%)`);
-console.log(`  ${spanned} of ${n} (${((100 * spanned) / n).toFixed(1)}%) have a highlight span`);
-console.log(`  run scripts/ingest/sentence_readings.py next to fill in per-kanji readings (kr)`);
+console.log(`  run scripts/ingest/sentence_readings.py next to fill in the highlight span and per-kanji readings (kr)`);
