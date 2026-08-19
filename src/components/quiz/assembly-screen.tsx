@@ -9,21 +9,33 @@
 // DRAG, with a real KEYBOARD FALLBACK (Sam's ruling, and the accessibility bar):
 //   - Pointer: HTML5 drag. Drag a pool piece into the tray to place it; drag a
 //     placed piece onto another to reorder; drag a placed piece back to the pool
-//     to remove it.
+//     to remove it. The dragged piece gets a custom, app-styled drag image (via
+//     setDragImage) instead of the browser's default translucent snapshot, and
+//     the tray reflows live under the pointer to preview where the piece would
+//     land, both committed only on drop (SAK-90).
 //   - Keyboard: every piece is a button. In the POOL, Enter/Space places it at
 //     the end of the tray. In the TRAY, ArrowLeft/ArrowRight move it one step,
 //     and Backspace/Delete returns it to the pool. So a keyboard-only learner can
-//     build and reorder any sentence without a pointer.
+//     build and reorder any sentence without a pointer. Unaffected by the drag
+//     changes above; this path never touches dragOverIndex or setDragImage.
 //
-// No drag library (the repo has none and CSP/bundle rules discourage one). No
-// motion beyond the state tint, so prefers-reduced-motion has nothing to fight.
+// No drag library (the repo has none and CSP/bundle rules discourage one). The
+// drag image is native (OS-rendered, so it can't fight prefers-reduced-motion),
+// and the live tray reflow is a CSS transform transition gated behind
+// motion-safe: so it collapses to an instant snap when reduced motion is on.
 //
 // State lives in active.runtime.assembly, mutated in place and flushed with
 // saveNow() — the grid-screen discipline. Copy is the approved mockup's
 // ("Build the sentence", "Drag the pieces in order", meanings behind Hint,
 // green-only grading). New copy is DRAFT and flagged.
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type MutableRefObject,
+} from "react";
 
 import { Btn, Info, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
@@ -337,6 +349,71 @@ function dropPiece(card: AsmCard, surface: string, index: number | null): void {
   card.tray.splice(at, 0, surface);
 }
 
+// ---------- pointer-drag preview (SAK-90) ----------
+//
+// Everything below is display-only: it never touches card.tray, only what's
+// rendered while a drag is in flight. The actual reorder still lands through
+// dropInTray -> dropPiece above, same as before this ticket.
+
+/** The tray with the dragged surface removed, whichever origin it came from
+ * (a pool piece isn't in the tray yet, so this is a no-op for that case). */
+function trayWithoutDragged(
+  tray: readonly string[],
+  draggingSurface: string | null,
+): string[] {
+  return draggingSurface === null
+    ? [...tray]
+    : tray.filter((s) => s !== draggingSurface);
+}
+
+/** What the tray would look like if the drag ended right now, dropped at
+ * `index`. Purely for rendering the live reflow preview (SAK-90 ask #2); the
+ * real commit happens in dropInTray on drop. */
+function previewTrayOrder(
+  tray: readonly string[],
+  draggingSurface: string | null,
+  index: number | null,
+): string[] {
+  if (draggingSurface === null || index === null) return [...tray];
+  const withoutDragged = trayWithoutDragged(tray, draggingSurface);
+  const at = Math.min(Math.max(index, 0), withoutDragged.length);
+  const next = withoutDragged.slice();
+  next.splice(at, 0, draggingSurface);
+  return next;
+}
+
+/** A custom, app-styled drag image (SAK-90 ask #1) so the piece dragging
+ * around under the pointer looks like the app, not the browser's default
+ * translucent element snapshot. The clone is parked off-screen just long
+ * enough for setDragImage to snapshot it, then discarded; it never actually
+ * appears in the document's visible flow. */
+function makeDragImage(source: HTMLElement): HTMLElement {
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.style.position = "fixed";
+  clone.style.top = "-1000px";
+  clone.style.left = "-1000px";
+  clone.style.margin = "0";
+  clone.style.width = `${source.offsetWidth}px`;
+  clone.style.pointerEvents = "none";
+  document.body.appendChild(clone);
+  return clone;
+}
+
+function startDrag(
+  e: DragEvent<HTMLButtonElement>,
+  dragging: MutableRefObject<{ from: "pool" | "tray"; surface: string } | null>,
+  from: "pool" | "tray",
+  surface: string,
+): void {
+  dragging.current = { from, surface };
+  const image = makeDragImage(e.currentTarget);
+  e.dataTransfer.setDragImage(image, image.offsetWidth / 2, image.offsetHeight / 2);
+  e.dataTransfer.effectAllowed = "move";
+  // The clone only needs to survive long enough for the browser to grab its
+  // snapshot for the drag image; remove it right after this tick.
+  window.setTimeout(() => image.remove(), 0);
+}
+
 function advance(rt: AsmRuntime): void {
   rt.pos++;
 }
@@ -370,6 +447,11 @@ export function AssemblyScreen() {
   const [mismatch, setMismatch] = useState<AssemblyMismatch | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
+  // Where the dragged piece would land in the tray if dropped right now,
+  // or null when nothing's being dragged over the tray. Display-only; drop
+  // still commits through dropInTray. Cleared on drop, drag-end, and
+  // whenever the pointer leaves the tray for the pool (SAK-90).
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const rt =
     active && loaded ? ensureRuntime(active, history, session?.what) : null;
@@ -481,6 +563,8 @@ export function AssemblyScreen() {
   const next = () => {
     setHintOpen(false);
     setMismatch(null);
+    dragging.current = null;
+    setDragOverIndex(null);
     if (rt.pos + 1 >= rt.cards.length) {
       finishQuiz(rt.stats);
       return;
@@ -489,6 +573,14 @@ export function AssemblyScreen() {
     saveNow();
     rerender();
   };
+
+  // The tray as it would look if the in-flight drag dropped right now.
+  // Equal to card.tray when nothing's being dragged over the tray.
+  const previewTray = previewTrayOrder(
+    card.tray,
+    dragging.current?.surface ?? null,
+    dragOverIndex,
+  );
 
   const trayFilled = card.tray.length === canon.length;
   const allowed = retriesAllowed(cfg);
@@ -501,6 +593,8 @@ export function AssemblyScreen() {
     skipCard(rt, card);
     setHintOpen(false);
     setMismatch(null);
+    dragging.current = null;
+    setDragOverIndex(null);
     saveNow();
     rerender();
   };
@@ -574,7 +668,10 @@ export function AssemblyScreen() {
           Build the sentence
         </div>
 
-        {/* The tray: the answer, in order. A drop target. */}
+        {/* The tray: the answer, in order. A drop target. previewTray is the
+            tray reordered as if the current drag dropped right now, equal
+            to card.tray whenever nothing's being dragged over it, so this
+            adds nothing to the non-dragging render path. */}
         <ul
           className={`mt-4 flex min-h-17 w-full flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
             card.state === "right"
@@ -587,20 +684,37 @@ export function AssemblyScreen() {
           } ${shake ? "animate-gshake" : ""}`}
           aria-label="Sentence being built"
           onDragOver={(e) => {
-            if (dragging.current) e.preventDefault();
+            if (!dragging.current) return;
+            e.preventDefault();
+            // Reached only when the pointer is over empty tray space, not
+            // over a specific piece (each piece's own onDragOver below
+            // stops propagation): land at the end.
+            setDragOverIndex(
+              trayWithoutDragged(card.tray, dragging.current.surface).length,
+            );
           }}
           onDrop={(e) => {
             e.preventDefault();
             const d = dragging.current;
-            if (d) dropInTray(d.surface, null);
+            if (d) dropInTray(d.surface, dragOverIndex);
             dragging.current = null;
+            setDragOverIndex(null);
+          }}
+          onDragLeave={(e) => {
+            // dragleave fires constantly moving between child pieces; only
+            // clear the preview once the pointer actually leaves the tray.
+            if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+            setDragOverIndex(null);
           }}
         >
-          {card.tray.length === 0 ? (
+          {previewTray.length === 0 ? (
             <li className="text-sm text-text-muted">Tap or drag the pieces into order</li>
           ) : (
-            card.tray.map((surface, idx) => {
+            previewTray.map((surface) => {
               const gloss = pieceGloss(pieceBySurface.get(surface)?.h ?? null, history);
+              const committedIdx = card.tray.indexOf(surface);
+              const isPreviewSlot =
+                dragOverIndex !== null && dragging.current?.surface === surface;
               return (
               <li key={surface} className="group relative">
                 <button
@@ -608,28 +722,47 @@ export function AssemblyScreen() {
                   lang="ja"
                   draggable={!resolved}
                   disabled={resolved}
-                  aria-label={`Piece ${surface}, position ${idx + 1} of ${card.tray.length}. Arrow keys to move, Backspace to remove.`}
-                  className={`kq-material rounded-xl border py-3 pr-8 text-center text-lg ${
+                  aria-label={`Piece ${surface}, position ${committedIdx + 1} of ${card.tray.length}. Arrow keys to move, Backspace to remove.`}
+                  className={`kq-material rounded-xl border py-3 pr-8 text-center text-lg motion-safe:transition-[opacity,transform] motion-safe:duration-150 ${
                     gloss ? "pl-8" : "pl-4"
                   } ${
                     card.state === "right"
                       ? "border-success bg-success-bg"
-                      : mismatch?.trayIndex === idx
+                      : mismatch?.trayIndex === committedIdx
                         ? "border-danger bg-danger-bg"
-                        : "border-border bg-card"
+                        : isPreviewSlot
+                          ? "border-dashed border-accent bg-accent-bg opacity-70"
+                          : "border-border bg-card"
                   } ${resolved ? "" : "cursor-grab"}`}
-                  onDragStart={() => {
-                    dragging.current = { from: "tray", surface };
-                  }}
+                  onDragStart={(e) => startDrag(e, dragging, "tray", surface)}
                   onDragOver={(e) => {
-                    if (dragging.current) e.preventDefault();
+                    if (!dragging.current || dragging.current.surface === surface) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const before = e.clientX < rect.left + rect.width / 2;
+                    const withoutDragged = trayWithoutDragged(
+                      card.tray,
+                      dragging.current.surface,
+                    );
+                    const logicalIdx = withoutDragged.indexOf(surface);
+                    const target =
+                      logicalIdx < 0
+                        ? withoutDragged.length
+                        : logicalIdx + (before ? 0 : 1);
+                    setDragOverIndex(target);
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     const d = dragging.current;
-                    if (d) dropInTray(d.surface, idx);
+                    if (d) dropInTray(d.surface, dragOverIndex);
                     dragging.current = null;
+                    setDragOverIndex(null);
+                  }}
+                  onDragEnd={() => {
+                    dragging.current = null;
+                    setDragOverIndex(null);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "ArrowLeft") {
@@ -705,16 +838,28 @@ export function AssemblyScreen() {
           aria-label="Pieces to place"
           onDragOver={(e) => {
             if (dragging.current?.from === "tray") e.preventDefault();
+            // A tray piece dragged back out is no longer a tray-insertion
+            // preview, so drop the live reflow: the tray should show its
+            // committed order while the pointer is over the pool.
+            if (dragOverIndex !== null) setDragOverIndex(null);
           }}
           onDrop={(e) => {
             e.preventDefault();
             const d = dragging.current;
             if (d?.from === "tray") unplace(d.surface);
             dragging.current = null;
+            setDragOverIndex(null);
           }}
         >
           {card.pool.map((surface) => {
             const gloss = pieceGloss(pieceBySurface.get(surface)?.h ?? null, history);
+            // Dimmed while this piece is the one being dragged into the
+            // tray, so it doesn't read as a second copy alongside its
+            // dashed preview slot over there.
+            const isBeingDragged =
+              dragOverIndex !== null &&
+              dragging.current?.from === "pool" &&
+              dragging.current.surface === surface;
             return (
             <li key={surface} className="relative">
               <button
@@ -723,12 +868,14 @@ export function AssemblyScreen() {
                 draggable={!resolved}
                 disabled={resolved}
                 aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
-                className={`kq-material cursor-grab rounded-xl border border-border bg-card py-3 pr-4 text-center text-lg shadow-chip ${
-                  gloss ? "pl-8" : "pl-4"
-                }`}
+                className={`kq-material cursor-grab rounded-xl border border-border bg-card py-3 pr-4 text-center text-lg shadow-chip motion-safe:transition-opacity motion-safe:duration-150 ${
+                  isBeingDragged ? "opacity-40" : ""
+                } ${gloss ? "pl-8" : "pl-4"}`}
                 onClick={() => place(surface)}
-                onDragStart={() => {
-                  dragging.current = { from: "pool", surface };
+                onDragStart={(e) => startDrag(e, dragging, "pool", surface)}
+                onDragEnd={() => {
+                  dragging.current = null;
+                  setDragOverIndex(null);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
