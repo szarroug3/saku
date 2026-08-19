@@ -12,12 +12,18 @@
 // GATING LIVES IN THE CALLER. This component is a dumb, stateless presenter;
 // home-feed.tsx decides WHETHER a track is "opening" (via
 // startedLearnTracks in src/lib/content/learn-index.ts) and swaps this in for
-// NextLessonPreview at that track's slot. Once "Start track" is pressed, the
-// caller's `onStart` is the SAME handler NextLessonPreview's own "Start" button
-// calls (home-feed.tsx's startTrack): there is no second start path, and no
-// flag on disk marks this card "shown". The gate is startedLearnTracks reading
-// history, so once the track has a single met fact this card simply stops
-// being the thing rendered in that slot.
+// NextLessonPreview at that track's slot. "Start track" does NOT launch a
+// lesson (Sam, Changes Requested on the first pass of this ticket: hitting it
+// used to call the same handler as NextLessonPreview's own "Start" button and
+// jump straight into a session, which is wrong). It only dismisses the
+// teaser for this page load, so home-feed re-renders the track's normal
+// NextLessonPreview in this same slot and the learner picks Start / Quiz me /
+// I already know from there, same as any track already underway. That
+// dismissal is local render state in home-feed.tsx, not history: the gate
+// that actually and permanently marks a track "started" stays
+// startedLearnTracks reading history, so once the track has a single met fact
+// this card stops being the thing rendered in that slot regardless of
+// whether the teaser was ever dismissed.
 //
 // EDITORIAL / BOXLESS layout, matching NextLessonPreview verbatim: no panel, no
 // fill, no shadow (see that file's PERFORMANCE RULE comment for why: the scroll
@@ -43,8 +49,9 @@ export function TrackIntroCard({
   title: string;
   /** Sam's approved card-0 copy for this track, verbatim. */
   description: string;
-  /** Start the track's first lesson: teach then drill, the same destination
-   * the ordinary "Start" button reaches. Omit for an inert preview. */
+  /** Dismiss the teaser so the caller reveals the track's normal
+   * NextLessonPreview in this slot. Does NOT start a lesson itself. Omit for
+   * an inert preview. */
   onStart?: () => void;
 }) {
   return (

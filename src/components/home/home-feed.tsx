@@ -25,7 +25,7 @@
 // left mid-session is resumed from its own track's card (Continue), which lights
 // when an in-progress run belongs to that track (trackKeyForRun below).
 
-import { startTransition, useMemo } from "react";
+import { startTransition, useMemo, useState } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { SrsIntro } from "@/components/lesson/srs-intro";
@@ -290,6 +290,19 @@ export function HomeFeed() {
     [history],
   );
 
+  // "Start track" on the card-0 teaser must NOT launch a lesson (Sam, Changes
+  // Requested on SAK-28's first pass): it only reveals the track's normal
+  // NextLessonPreview, the same card any already-started track shows, so the
+  // learner still makes the real "start a lesson" decision from there (Start /
+  // Quiz me / I already know). This is deliberately NOT history-backed: it is a
+  // per-page-load dismissal, not the "started" fact. `openedTracks` above is
+  // the one gate that is allowed to persist; it flips once a real lesson/quiz
+  // interaction lands in history. Conflating the two would make dismissing the
+  // teaser (without ever starting a lesson) count as having started the track.
+  const [dismissedIntros, setDismissedIntros] = useState<Set<string>>(
+    new Set(),
+  );
+
   // Each track's precomputed order (units are history-independent) and its live
   // next lesson, computed over the index by the content-free scheduler.
   const frontiers = useMemo(
@@ -508,9 +521,14 @@ export function HomeFeed() {
           // NextLessonPreview (same slot, same grid, so the two must never
           // both render for one track). Falls through to the ordinary card for
           // any track with no approved copy yet (transitivity, sentence; see
-          // TRACK_INTRO_COPY's own comment for why).
+          // TRACK_INTRO_COPY's own comment for why), or once its "Start track"
+          // button has been pressed on this page load (dismissedIntros above).
           const introCopy = TRACK_INTRO_COPY[track.id];
-          if (introCopy && !openedTracks.has(track.id)) {
+          if (
+            introCopy &&
+            !openedTracks.has(track.id) &&
+            !dismissedIntros.has(track.id)
+          ) {
             return (
               <TrackIntroCard
                 key={track.id}
@@ -518,7 +536,11 @@ export function HomeFeed() {
                   TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"
                 }
                 description={introCopy}
-                onStart={() => startTrack(track.id, lesson!)}
+                onStart={() =>
+                  setDismissedIntros(
+                    (prev) => new Set(prev).add(track.id),
+                  )
+                }
               />
             );
           }
