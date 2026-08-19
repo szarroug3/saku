@@ -92,10 +92,7 @@ export function SrsIntro() {
 
   return (
     <div className="kq-material mb-5 flex flex-col gap-4 rounded-xl border border-accent bg-accent-bg p-5">
-      <PageTitle
-        title="Before you start"
-        sub="A quick read on how Saku teaches, then you're set."
-      />
+      <PageTitle title="Before you start" />
 
       {SRS_INTRO_PARAGRAPHS.map((p, i) => (
         <div key={i}>
