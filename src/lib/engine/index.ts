@@ -357,6 +357,25 @@ export function retriesAllowed(cfg: QuizConfig): number {
   return cfg.retries === "unl" ? Infinity : cfg.retries === "none" ? 0 : cfg.retryN;
 }
 
+/**
+ * Retries allowed for a showing whose option board has `optionCount` buttons
+ * (null for a typed card, or any board shape that isn't a plain option grid).
+ *
+ * A BINARY board — exactly two options — always gets zero, regardless of
+ * `cfg`: missing the one wrong answer leaves a single button standing, so a
+ * second guess tests nothing (SAK-54). Every other count, including a typed
+ * card (null), reads the configured retries unchanged — this does NOT zero
+ * retries globally, only for the specific showing that has exactly two
+ * options.
+ */
+export function effectiveRetries(
+  cfg: QuizConfig,
+  optionCount: number | null,
+): number {
+  if (optionCount === 2) return 0;
+  return retriesAllowed(cfg);
+}
+
 // ---------- stats ----------
 
 /**
