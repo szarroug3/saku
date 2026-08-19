@@ -15,7 +15,6 @@ import {
 } from "./sentence-ordering-plan.ts";
 import { SENTENCE_ORDERING_TIERS } from "../data/assembly.ts";
 import { sentenceTierMarkerFact } from "./sentence-ordering-progress.ts";
-import { CURRICULUM_WORDS } from "./word-lesson.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { applyClaims, emptyHistory } from "./history-ops.ts";
@@ -36,13 +35,20 @@ describe("nextSentenceOrderingLesson", () => {
     assert.equal(nextSentenceOrderingLesson(true, EMPTY), null);
   });
 
+  // The curated "Simple sentences" items (SAK-45) no longer draw from the
+  // first N Vocabulary-track words by curriculum rank — Sam's approved copy
+  // is natural, imitable content, not rank-ordered filler (see assembly.ts).
+  // These tests claim exactly the words those curated items need, rather than
+  // a CURRICULUM_WORDS slice, so the assertion still expresses "a small
+  // vocabulary foundation, not the whole track" without depending on where
+  // those specific words happen to fall in curriculum rank.
+  const SIMPLE_TIER_WORDS = ["私", "水", "飲む", "何", "本", "読む"];
+  const SEQUENTIAL_TIER_WORDS = ["宿題", "忘れる", "新しい", "料理", "食べる", "傘", "持つ"];
+
   test("opens Simple after a small vocabulary foundation and one of wa/ga", () => {
     const history = applyClaims(
       emptyHistory(),
-      [
-        ...CURRICULUM_WORDS.slice(0, 34).map((word) => wordMeaningFactId(word.keb)),
-        patternMeaningFactId("wa"),
-      ],
+      [...SIMPLE_TIER_WORDS.map(wordMeaningFactId), patternMeaningFactId("wa")],
       1,
     );
     assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
@@ -51,7 +57,7 @@ describe("nextSentenceOrderingLesson", () => {
   test("Simple stays locked on vocabulary alone, needing wa or ga taught first", () => {
     const history = applyClaims(
       emptyHistory(),
-      CURRICULUM_WORDS.slice(0, 34).map((word) => wordMeaningFactId(word.keb)),
+      SIMPLE_TIER_WORDS.map(wordMeaningFactId),
       1,
     );
     assert.equal(nextSentenceOrderingLesson(true, history), null);
@@ -61,7 +67,7 @@ describe("nextSentenceOrderingLesson", () => {
     let history = applyClaims(
       emptyHistory(),
       [
-        ...CURRICULUM_WORDS.slice(0, 100).map((word) => wordMeaningFactId(word.keb)),
+        ...[...SIMPLE_TIER_WORDS, ...SEQUENTIAL_TIER_WORDS].map(wordMeaningFactId),
         patternMeaningFactId("wa"),
         sentenceTierMarkerFact("simple"),
       ],
