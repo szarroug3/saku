@@ -1244,11 +1244,17 @@ body {
  *                  saturating its warm washi --bg would tint a theme whose whole
  *                  premise is that it has no glass.
  *
- *                  It is a token and not a literal because it has THREE readers
- *                  — --card-frost below, and the two opaque rebuilds — and the
- *                  entire STICKY TABLE HEADER bug was two of them disagreeing.
+ *                  It is a token and not a literal because it has readers besides
+ *                  --card-frost — the two opaque rebuilds — and the entire STICKY
+ *                  TABLE HEADER bug was two of them disagreeing.
  * --card-frost     the whole backdrop-filter FOR A .kq-band — the sticky HUD,
  *                  where the blur smears cards passing under and is real work.
+ *                  BLUR ONLY (SAK-92): it does not also compose --card-frost-sat.
+ *                  A backdrop-filter samples the backdrop as body::before already
+ *                  rendered it — mesh, saturated once — so a band that saturated
+ *                  its own sample again compounded toward 225% and painted a
+ *                  visible violet patch under itself. See the note where
+ *                  --card-frost is set, below.
  * --material-frost what a .kq-material (a CARD) filters with. It USED to be the
  *                  same value as --card-frost, but kiri splits them: a card's
  *                  backdrop is the mesh, where the blur is a 0.20 dE no-op, and
@@ -1263,9 +1269,9 @@ body {
  * glass simply never overrides it. `.kq-material` on an aizome surface is not a
  * special case to be excluded — it resolves, correctly, to no filter at all.
  *
- * BOTH frosts COMPOSE --card-frost-sat rather than restating it, so the one
- * saturate in the file cannot drift: the band is `blur(18px) sat`, the material
- * is `sat` alone, and both opaque rebuilds keep the same `sat` they need.
+ * --material-frost COMPOSES --card-frost-sat rather than restating it, so the
+ * saturate a card needs and the saturate the mesh itself already carries cannot
+ * drift apart. --card-frost does NOT compose it — see the note above.
  *
  * A NESTED backdrop-filter IS A NO-OP. An element with one becomes a BACKDROP
  * ROOT, so a `.kq-material` INSIDE a `.kq-material` (e.g. anything inside a
@@ -1314,8 +1320,19 @@ body {
    * quiz/drill HUD and its blur is REAL WORK: it smears the CARDS SCROLLING UNDER
    * it, not the mesh (the GRID QUIZ SHEET note says it exactly — "the scrim blurs
    * CARDS passing under it, not the mesh"). A band is ONE sticky element, so its
-   * blur is not a per-scroll-frame multiplier the way a page full of cards is. */
-  --card-frost: blur(18px) var(--card-frost-sat);
+   * blur is not a per-scroll-frame multiplier the way a page full of cards is.
+   *
+   * NO --card-frost-sat HERE, unlike the name would suggest (SAK-92). A
+   * backdrop-filter samples the backdrop AS RENDERED — body::before has already
+   * run the mesh through `saturate(150%)` once (see filter: var(--card-frost-sat)
+   * above) — so a band that ALSO saturates its backdrop applies the same 150%
+   * twice, compounding toward 225%. That is a visible, measured violet patch
+   * sitting under the band and nowhere else on the page, not the "0.2 dE no-op"
+   * the blur alone is: confirmed live by dropping the saturate from a real
+   * drill-screen band and watching the patch disappear. The blur alone still
+   * does the band's one real job (smearing cards scrolling under it); the mesh's
+   * own one-time saturate is already in every pixel the blur reads. */
+  --card-frost: blur(18px);
   /* THE CARD's frost: NONE. No backdrop-filter on a .kq-material — and this time
    * the cards stay TRANSLUCENT (the live glass) instead of going opaque to earn
    * it. The two facts fit together like this:
@@ -1410,6 +1427,18 @@ body {
   background-color: var(--band-fill);
   -webkit-backdrop-filter: var(--card-frost);
   backdrop-filter: var(--card-frost);
+}
+
+/* The progress track inside a band (drill-screen.tsx, assembly-screen.tsx,
+ * session-hud.tsx, grid-hud.tsx, pairs-hud.tsx: `bg-panel`, 2px, full width)
+ * is a solid fill even at 0% progress, before any accent fill has grown into
+ * it — the one hard-edged rectangle left once the band itself reads as blurred
+ * mesh rather than a box (SAK-92). The three opaque themes keep it: their band
+ * is already a flat --bg rectangle, so one more flat rectangle inside it reads
+ * as a track, not a second box. kiri has no box to blend into, so the track
+ * goes back to being the mesh until it actually has something to say. */
+[data-theme="kiri"] .kq-band [class~="rounded-full"][class~="bg-panel"] {
+  background-color: transparent;
 }
 
 /* A PORTALLED OVERLAY PANEL keeps the frost the scrolling cards gave up. When
