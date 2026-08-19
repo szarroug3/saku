@@ -11,10 +11,12 @@
 //   header
 //   How you say it   — the reading(s) + meaning of a counted form (form only)
 //   How it's built    — the construction rule + worked examples (rule only)
+//   Related          — a counted form's link to its counter's rule page, when
+//                       one exists (form only; see numberConstructionForCounterGlyph)
 //
 // A given item is one OR the other, never both: an entry either resolves to a
 // counterForm (the form shape) or a numberConstructionFor (the rule shape), so
-// exactly one section renders under the header. counterForm/
+// exactly one of the two content sections renders under the header. counterForm/
 // numberConstructionFor stay LIVE reads — both small, self-contained data
 // files with no dictionary dependency, so there's nothing to gain fetching
 // them. The one heavy thing this page reads is itemHeadline's {text, speak},
@@ -22,6 +24,16 @@
 // scripts/seed-content-entries.mjs. `glyph` comes from library-index.ts's
 // `libEntry` (checked to match buildItem's own glyph for both these kinds,
 // unlike transitivity) rather than needing its own seed field.
+//
+// SAK-35: a counted form's "How you say it" section is deliberately generic —
+// it says what a counting word IS, not what is irregular about this one, and
+// that irregular content (人's suppletive ひとり/ふたり/よにん, 本/匹/杯's hardening,
+// …) already lives entirely on the counter's OWN "how it's built" page, wired
+// from number-construction.ts's counterIrregulars()-derived prose. The one gap
+// was 二十歳: a genuinely irregular counted form with a sibling rule page (〜歳)
+// that already explains はたち, but no link from 二十歳's own page to it. The
+// Related section below closes that gap with the EXISTING 〜歳 prose, not new
+// copy — see numberConstructionForCounterGlyph's doc comment.
 //
 // The teach walk (TeachItemView) and /dev/views already build a live
 // ContentItem for every kind they show, so this also accepts an `item` prop
@@ -38,13 +50,19 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { NumberConstructionView } from "@/components/library/number-construction-view";
+import { RelatedSection, type RelatedLink } from "@/components/library/related-section";
 import { HearButton } from "@/components/ui/hear-button";
 import {
   counterForm,
   isBareNumber,
 } from "@/data/counters";
-import { numberConstructionFor } from "@/data/number-construction";
+import {
+  numberConstructionEntry,
+  numberConstructionFor,
+  numberConstructionForCounterGlyph,
+} from "@/data/number-construction";
 import { useContentEntry } from "@/lib/library/content-entries";
+import { entryHref } from "@/lib/library/href";
 import { libEntry } from "@/lib/library/library-index";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -76,6 +94,18 @@ export function CounterEntryView({
   // entry names no form), so at most one of these is non-null.
   const form = counterForm(resolvedEntry);
   const construction = numberConstructionFor(resolvedEntry);
+
+  // A memorised counted form's own "how it's built" page, when its counter has
+  // one — 二十歳's page links to 〜歳, which already explains (in its own,
+  // already-authored prose) that はたち is the one irregular count 〜歳 has. A
+  // bare number (isBareNumber) and every 〜つ form correctly find nothing here:
+  // 〜つ is native memorisation with no rule page (see
+  // numberConstructionForCounterGlyph's own doc comment).
+  const relatedConstruction =
+    form && !isBareNumber(form) ? numberConstructionForCounterGlyph(form.counter) : undefined;
+  const relatedLinks: RelatedLink[] = relatedConstruction
+    ? [{ label: relatedConstruction.name, href: entryHref(numberConstructionEntry(relatedConstruction.id)) }]
+    : [];
 
   if (headline === undefined || headline === null || !glyph) return null;
   if (!form && !construction) return null;
@@ -134,6 +164,11 @@ export function CounterEntryView({
           <NumberConstructionView construction={construction} hideExamples />
         </Section>
       ) : null}
+
+      {/* A counted form's link to its counter's own "how it's built" page —
+          absent (RelatedSection renders nothing) for a bare number and for
+          every 〜つ form, which has no rule page to link to. */}
+      <RelatedSection links={relatedLinks} />
     </EntrySurface>
   );
 }
