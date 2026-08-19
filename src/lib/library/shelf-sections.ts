@@ -158,7 +158,7 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         [...(LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? [])],
         wordClimbRank,
       );
-    // Numbers and counters, cut into the groups the track teaches (see
+    // Counting, cut into the groups the track teaches (see
     // counter-shelf.ts). Rendered as TILES like kana and kanji, not rows: a
     // counter is a glyph (一本, ひとつ) with a reading under it, which is what a
     // tile is for. The whole subject is 87 entries across seven small sections,

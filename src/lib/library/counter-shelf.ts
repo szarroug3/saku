@@ -1,4 +1,4 @@
-// The "Numbers and counters" shelf, cut into the groups the track teaches.
+// The "Counting" shelf, cut into the groups the track teaches.
 //
 // A shelf is cut where the cut MEANS something to the reader (see shelves.tsx).
 // The counters carry that cut in their own data — the `counter` a form belongs

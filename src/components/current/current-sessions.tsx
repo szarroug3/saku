@@ -103,7 +103,7 @@ function trackLabel(run: RunInfo): string | null {
 }
 
 /** The row's headline name. Most runs are already named something real when
- * they start — a lesson's slice label, "Counters", "Sentence ordering · tier
+ * they start — a lesson's slice label, "Counting", "Sentence ordering · tier
  * N" — so `run.what` is used as-is. The one gap is a curriculum lesson on an
  * ordinary track (Kana, Vocabulary, Keigo, Grammar, Transitivity): Home
  * starts those without a name, so `run.what` freezes to `countWhat()`'s bare

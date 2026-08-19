@@ -11,7 +11,7 @@
 // the owner rejected it for being one unbroken page, having no worked examples,
 // and reading "Grammar concepts" in its breadcrumb. This file is the fix: it is
 // its OWN Library kind (NUMBER_CONSTRUCTION_KIND, wired in entries.ts), so a
-// page's breadcrumb reads under "Numbers and counters"; every page carries an
+// page's breadcrumb reads under "Counting"; every page carries an
 // example table; and the categories are separate pages.
 //
 // THE PROSE AND THE EXAMPLES ARE DATA, NOT A SECOND COPY

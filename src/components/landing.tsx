@@ -20,7 +20,7 @@ const TRACKS: Array<{ en: string; jp: string }> = [
   { en: "Radicals", jp: "部首" },
   { en: "Kanji", jp: "漢字" },
   { en: "Vocabulary", jp: "単語" },
-  { en: "Counters", jp: "数え方" },
+  { en: "Counting", jp: "数え方" },
   { en: "Grammar", jp: "文法" },
   { en: "Verb pairs", jp: "自他動詞" },
   { en: "Keigo", jp: "敬語" },
