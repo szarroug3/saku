@@ -43,7 +43,12 @@
 import { useMemo } from "react";
 
 import { Lbl } from "@/components/ui";
-import { directionOf, pairRecords, type PairRecord } from "@/lib/confusions";
+import {
+  activeWeaknessPairs,
+  directionOf,
+  pairRecords,
+  type PairRecord,
+} from "@/lib/confusions";
 import { entryOf, glyphOf } from "@/lib/facts";
 import type { HistoryFile } from "@/types";
 
@@ -123,9 +128,42 @@ export function MixUps({
       );
   }, [history, graduateRuns]);
 
+  // THE HEADER COUNT (SAK-22) — deliberately NOT `rows.length`.
+  //
+  // `rows` is `everMixedUp`: it keeps "sorted" (graduated) pairs so the table
+  // can still show them, dimmed, as a beaten record — that is the reward this
+  // page's own header comment describes, and Statistics is allowed to
+  // remember what Patterns and Home forget. But a graduated pair is not a
+  // thing the learner CURRENTLY mixes up, so it must not inflate a heading
+  // that says "you mix up" in the present tense. `activeWeaknessPairs` is the
+  // canonical "still counts against you" set — Practice's "Mix-ups" chip
+  // (src/lib/selection.ts's `mixedUpEntries`) and the Library's mix-up filter
+  // both already read it. This page didn't, which is why its count could
+  // disagree with Practice's for a reason that had nothing to do with pairs
+  // vs. facts: it was counting pairs the learner had already beaten.
+  //
+  // The number still won't match Practice's chip even so, and that is
+  // expected, not a bug: this counts PAIRS (always 2 entries), Practice
+  // counts drillable FACTS (a kanji entry can carry ~11 — see
+  // src/lib/facts.ts's `factsOf`). Forcing this to show a fact count would
+  // desync it from `rows`, which the table below is keyed on pair by pair;
+  // forcing Practice's chip to show a pair count would desync IT from the
+  // Start bar, which runs exactly what the chip counts. So the unit stays
+  // "pairs", spelled out, rather than a bare number that invites comparison
+  // to a chip counting something else.
+  const activeCount = useMemo(
+    () => activeWeaknessPairs(history, graduateRuns, entryOf).length,
+    [history, graduateRuns],
+  );
+
   return (
     <section>
-      <Lbl>Things you mix up{rows.length ? ` · ${rows.length}` : ""}</Lbl>
+      <Lbl>
+        Things you mix up
+        {activeCount
+          ? ` · ${activeCount} pair${activeCount === 1 ? "" : "s"}`
+          : ""}
+      </Lbl>
 
       {rows.length === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">

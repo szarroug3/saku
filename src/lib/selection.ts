@@ -89,12 +89,24 @@ export function bandOf(
 }
 
 /**
- * Every ENTRY involved in a measured mix-up, plus the predicted lookalikes.
+ * Every ENTRY in an active confusion pair — `activeWeaknessPairs` flattened to
+ * the entries it names, nothing predicted or added on top.
  *
  * Separate from `bandOf` because it is not on the same axis: a fact you mix up
  * can be solid, shaky or new. That is exactly why Selection.states is a SET
  * that ORs rather than one value that partitions — "Mix-ups" is a different
  * question from "Shaky", and the answer to both can be yes.
+ *
+ * This is the canonical "currently confuses" set — the same one the Library's
+ * mix-up filter reads (library-page.tsx's `activeMixupEntries`, doing this
+ * same flatten by hand). resolve() below turns these ENTRIES into the FACTS
+ * the pool actually contains, so the Practice "Mix-ups" chip's number is a
+ * fact count, not a pair count: an entry can own many facts (a kanji carries
+ * ~11, see facts.ts's `factsOf`), so it is routinely larger than the number
+ * of pairs behind it. The Progress page's "Things you mix up" count
+ * (stats/mix-ups.tsx) reads `activeWeaknessPairs` directly for exactly that
+ * reason — it counts PAIRS, on purpose, and is spelled "N pairs" so it never
+ * reads as the same number this produces (SAK-22).
  */
 function mixedUpEntries(
   history: HistoryFile,
