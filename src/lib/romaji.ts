@@ -271,6 +271,28 @@ export function isKanaOnly(str: string): boolean {
   return true;
 }
 
+/** Whether a string contains at least one kanji (CJK ideograph). Furigana
+ * exists to gloss a kanji's reading, so a span with no kanji — already all
+ * kana, or kana plus punctuation/latin — has nothing for a furigana
+ * annotation to say, and every reading-rendering call site should suppress it
+ * rather than print the same kana twice. Covers the CJK Unified Ideographs
+ * block (U+4E00–U+9FFF) plus the two ranges this app's own words actually
+ * reach into: Extension A (U+3400–U+4DBF, rare surnames/place names) and the
+ * Compatibility Ideographs (U+F900–U+FAFF, canonical variant forms). */
+export function hasKanji(str: string): boolean {
+  for (const ch of str) {
+    const code = ch.codePointAt(0)!;
+    if (
+      (code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0x3400 && code <= 0x4dbf) ||
+      (code >= 0xf900 && code <= 0xfaff)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Does a typed answer match a kana target, allowing romaji, raw kana, or a
  * mix, and ignoring script? This is the one function the en2jp grader needs.
