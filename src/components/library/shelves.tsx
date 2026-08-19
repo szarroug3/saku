@@ -311,7 +311,6 @@ export function Shelf({
   onToggleSection,
   voice,
   keep,
-  known,
   filter = "all",
   selectMode,
 }: {
@@ -327,12 +326,6 @@ export function Shelf({
    * pass a test built from `entryStanding` upstream (see library-page): the shelf
    * itself no longer paints standing, but it is still what the filter selects by. */
   keep?: (entry: LibEntry) => boolean;
-  /** Marks an entry KNOWN directly on its tile/row (SAK-63) — independent of
-   * `keep`/`filter`: it runs on every entry shown, not just while the Known
-   * filter is active, so scanning the shelf on All still shows progress.
-   * Undefined paints no mark, matching `keep`'s "no predicate = no per-entry
-   * work" default. */
-  known?: (entry: LibEntry) => boolean;
   /** Which filter is active, for the empty-state copy. The predicate above does
    * the work; this only picks the words when it removes everything. */
   filter?: KnowledgeFilter;
@@ -369,7 +362,6 @@ export function Shelf({
       voice={voice}
       selected={selected.has(entry.id)}
       selectMode={selectMode}
-      known={known?.(entry) ?? false}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
@@ -391,7 +383,6 @@ export function Shelf({
       grid={grid}
       selected={selected.has(entry.id)}
       selectMode={selectMode}
-      known={known?.(entry) ?? false}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );

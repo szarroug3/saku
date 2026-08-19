@@ -39,23 +39,21 @@
 // shelving are two ways into one drill, not two drills.
 //
 // NEITHER SHAPE PAINTS THE FULL STANDING MODEL. The shelf is de-boxed — glyphs
-// on the mesh, no per-tile solid/shaky/slipping colour-coding or count — because
+// on the mesh, no per-tile solid/shaky/slipping colour-coding or count, and (as
+// of SAK-63's second round of feedback) no per-tile "known" mark either — because
 // that heat-map-of-your-own-memory was exactly what the design kept throwing
-// out. Full status still lives only on the Practice page's filters. The ONE
-// exception, added for SAK-63, is a single boolean: a small `known` dot (see
-// KnownDot below), because "scanning the shelf communicates progress" turned
-// out to need one bit on the tile itself, not the whole standing vocabulary —
-// the Library knowledge FILTER already decided what "known" means
-// (`entryIsKnown`/`standingOf`, via known-mark.ts's `isEntryKnownForDisplay`),
-// this just also DRAWS it instead of only selecting by it. It is deliberately
-// NOT the accent wash `selected` uses (a small corner/leading dot in `success`,
-// not a fill), because a tile can be both selected AND known at once during
-// multi-select and the two must stay tellable apart — see KnownDot's comment.
-// The same argument for select mode is why it is a page-level toggle rather
-// than an always-on per-tile checkbox (the Sessions list's pattern — see
-// results/sessions-list.tsx): a checkbox on every one of a 2,136-tile kanji
-// shelf or a 12,553-tile word shelf is exactly the per-tile furniture this file
-// already refuses to paint, at a scale Sessions' handful of rows never reaches.
+// out. A `known` dot briefly lived here as a single-bit exception; the owner's
+// call was "i don't like the dots, let's remove them", so there is no exception
+// any more: the shelf stays fully de-boxed and full status lives only on the
+// Practice page's filters. The Library knowledge FILTER still decides what
+// "known" means (`entryIsKnown`/`standingOf`, via known-mark.ts's
+// `isEntryKnownForDisplay`) — see library-page.tsx's `keep` — it just no longer
+// also DRAWS it on every tile. The same argument for select mode is why it is a
+// page-level toggle rather than an always-on per-tile checkbox (the Sessions
+// list's pattern — see results/sessions-list.tsx): a checkbox on every one of a
+// 2,136-tile kanji shelf or a 12,553-tile word shelf is exactly the per-tile
+// furniture this file already refuses to paint, at a scale Sessions' handful of
+// rows never reaches.
 
 import Link from "next/link";
 
@@ -125,39 +123,6 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
     >
       ↗
     </Link>
-  );
-}
-
-/** THE ONLY PER-TILE STANDING MARK (SAK-63) — a small `success`-toned dot, not
- * a fill. `selected` already owns the tile/row's whole-surface language (a
- * `bg-accent-bg` wash + `text-accent` glyph, see EntryTile/EntryRow below); a
- * SECOND state painted the same way — a fill, a text-colour swap — would be
- * unreadable the moment both are true at once (an already-known kana toggled
- * into a multi-select build). A dot occupies neither channel: it sits ON TOP
- * of a selected tile's wash exactly as clearly as an unselected one, so
- * "known" and "selected" stay two independent, simultaneously-legible facts
- * about the same tile rather than two coats of the same kind of paint.
- *
- * `success`, not `accent`: reads as the "you've got this" green the rest of
- * the app already spends on a correct/solid outcome (see
- * results/pattern-rows.tsx's first-try dot), not the app's one selection
- * colour — and the two are NOT always the same colour to fall back on: the
- * `momentum` theme deliberately sets `--success` equal to `--accent` (see
- * globals.css), so the dot's SHAPE and POSITION, not just its hue, are what
- * keep it distinguishable from `selected` in every theme, including that one.
- *
- * `pointer-events-none` because the dot is decorative, not a control, sitting
- * over the stretched Link both shapes wire behind their content (see the file
- * header) — it must never steal the click that Link exists to catch.
- * `role="img"` + `aria-label` (not `aria-hidden`) because unlike the mesh
- * itself this dot carries real information: the entry is known. */
-function KnownDot({ className = "" }: { className?: string }) {
-  return (
-    <span
-      role="img"
-      aria-label="Known"
-      className={`pointer-events-none inline-block rounded-full bg-success ${className}`}
-    />
   );
 }
 
@@ -262,7 +227,6 @@ export function EntryTile({
   voice,
   selected,
   selectMode,
-  known = false,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -271,11 +235,6 @@ export function EntryTile({
   /** Whether a plain click currently toggles selection (true) or opens the
    * entry page (false, the default — see the file header). */
   selectMode: boolean;
-  /** Already known (`entryIsKnown`, via known-mark.ts — see the file header's
-   * note on KnownDot). Paints a small corner dot; never touches the
-   * background/text-colour channels `selected` uses, so the two read
-   * separately even on the same tile at once. */
-  known?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   // BORDERLESS — no outline, no `bg-card` fill: glyph + reading sit straight on
@@ -289,22 +248,11 @@ export function EntryTile({
   }`;
   // Full label on hover for the meaning-bearing kinds (words, kanji…) whose
   // sub-line truncates; kana show only their romaji, which never truncates, so
-  // they get no tooltip (that speaker-hint text was removed on purpose). A
-  // known tile earns one even on kana, since KnownDot's own dot is otherwise
-  // the only signal — the tooltip is the words for it.
-  const title =
-    [entry.kind === KANA_SUBJECT ? undefined : subLabel(entry), known ? "Known" : undefined]
-      .filter(Boolean)
-      .join(" · ") || undefined;
+  // they get no tooltip (that speaker-hint text was removed on purpose).
+  const title = entry.kind === KANA_SUBJECT ? undefined : subLabel(entry);
 
   const body = (
     <>
-      {/* The corner dot — see KnownDot's comment for why it is a dot and not a
-          fill/text-colour change. Positioned clear of the bottom hover-reveal
-          slot below. */}
-      {known ? (
-        <KnownDot className="absolute right-1 top-1 z-10 h-1.5 w-1.5" />
-      ) : null}
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
           "glyph" is an English name. */}
@@ -409,7 +357,6 @@ export function EntryRow({
   selected,
   selectMode,
   grid = false,
-  known = false,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -426,10 +373,6 @@ export function EntryRow({
    * across rows (see shelves.tsx). Off everywhere else — the flat search list and
    * the mark/term shelves keep the independent flex row. */
   grid?: boolean;
-  /** Already known (`entryIsKnown`, via known-mark.ts) — see KnownDot's
-   * comment near the top of this file for why it is a leading dot rather than
-   * a fill/text-colour change. */
-  known?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
@@ -472,13 +415,6 @@ export function EntryRow({
     >
       {/* NO visible checkbox — the whole row is the select target and its accent
           wash IS the selected state. */}
-      {/* The known dot, as a leading flex item — NOT rendered in `grid` mode,
-          which subgrids into a fixed parent column template (see the `grid`
-          prop above) that has no track reserved for it; no caller currently
-          passes `grid`, so this is a documented gap rather than a live one. */}
-      {!grid && known ? (
-        <KnownDot className="h-1.5 w-1.5 flex-none self-center" />
-      ) : null}
       {/* Reserve a glyph column only when there is a glyph to show. Sentence
           rules, keigo sets and terms are named concepts, so an empty 64px cell
           only pushes their useful text away from the row's leading edge. */}
