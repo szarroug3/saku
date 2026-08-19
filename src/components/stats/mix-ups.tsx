@@ -116,7 +116,7 @@ function stageOf(rec: PairRecord): Stage {
  * out for a reader, and it should stay findable from the ticket that asked
  * for it. */
 const MIX_UP_INFO =
-  "Different measurement from What you know above. A fact's standing (solid, shaky, and so on) is about how well you remember that ONE fact, on its own. A mix-up pair is about whether you confuse it with a SPECIFIC OTHER entry. A fact can sit in any standing while independently being part of an active mix-up — the two counts don't share a denominator, and they're not meant to add up to the same total.";
+  "This section shows different measurements from \"What you know\" above. A fact's standing (solid, shaky, and so on) is about how well you remember that ONE fact, on its own. A mix-up pair is about whether you confuse it with a SPECIFIC OTHER entry. A fact can be in any standing while independently being part of an active mix-up. The two counts don't share a status and are not meant to add up to the same total.";
 
 function hintOf(rec: PairRecord, stage: Stage): string {
   // A graduated record still HAS a direction — confusions.ts keeps the counts so
