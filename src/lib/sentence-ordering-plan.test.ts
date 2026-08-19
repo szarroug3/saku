@@ -13,9 +13,8 @@ import {
   nextSentenceOrderingLesson,
   sentenceLessonFacts,
 } from "./sentence-ordering-plan.ts";
-import { SENTENCE_ORDERING_TIERS } from "../data/assembly.ts";
+import { SENTENCE_ORDERING_TIERS, type AssemblyTier } from "../data/assembly.ts";
 import { sentenceTierMarkerFact } from "./sentence-ordering-progress.ts";
-import { wordMeaningFactId } from "../data/vocab.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { applyClaims, emptyHistory } from "./history-ops.ts";
 import type { HistoryFile } from "../types/index.ts";
@@ -29,48 +28,27 @@ describe("nextSentenceOrderingLesson", () => {
     assert.equal(nextSentenceOrderingLesson(false, EMPTY), null);
   });
 
-  test("stays locked when the first tier has no readable material", () => {
-    // The track is linear: an empty history cannot meet the first tier's
-    // minReadable, so the walk stops at tier one rather than skipping ahead.
+  test("stays locked when the first tier's grammar prereq isn't taught yet", () => {
+    // The track is linear: an empty history has met neither of the first
+    // tier's grammar prereqs (wa/ga), so the walk stops at tier one rather
+    // than skipping ahead. The tier's structural pool alone is not enough
+    // (SAK-87 round 5 dropped the vocabulary-known half of this gate).
     assert.equal(nextSentenceOrderingLesson(true, EMPTY), null);
   });
 
-  // The curated "Simple sentences" items (SAK-45) no longer draw from the
-  // first N Vocabulary-track words by curriculum rank — Sam's approved copy
-  // is natural, imitable content, not rank-ordered filler (see assembly.ts).
-  // These tests claim exactly the words those curated items need, rather than
-  // a CURRICULUM_WORDS slice, so the assertion still expresses "a small
-  // vocabulary foundation, not the whole track" without depending on where
-  // those specific words happen to fall in curriculum rank.
-  const SIMPLE_TIER_WORDS = ["私", "水", "飲む", "何", "本", "読む"];
-  const SEQUENTIAL_TIER_WORDS = ["宿題", "忘れる", "新しい", "料理", "食べる", "傘", "持つ"];
-
-  test("opens Simple after a small vocabulary foundation and one of wa/ga", () => {
-    const history = applyClaims(
-      emptyHistory(),
-      [...SIMPLE_TIER_WORDS.map(wordMeaningFactId), patternMeaningFactId("wa")],
-      1,
-    );
+  // SAK-87 round 5 dropped the vocabulary-known half of the tier-unlock gate:
+  // a tier's structural pool (piece count, tier match, curated + generated
+  // items) is available regardless of history, so only the grammar-prereq
+  // ANY-of check below is left to exercise.
+  test("opens Simple once one of wa/ga is taught, with no vocabulary claimed", () => {
+    const history = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
     assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
   });
 
-  test("Simple stays locked on vocabulary alone, needing wa or ga taught first", () => {
-    const history = applyClaims(
-      emptyHistory(),
-      SIMPLE_TIER_WORDS.map(wordMeaningFactId),
-      1,
-    );
-    assert.equal(nextSentenceOrderingLesson(true, history), null);
-  });
-
-  test("later tiers need their grammar lesson, not hundreds of matching words", () => {
+  test("later tiers need their own grammar lesson, not just the earlier tier's", () => {
     let history = applyClaims(
       emptyHistory(),
-      [
-        ...[...SIMPLE_TIER_WORDS, ...SEQUENTIAL_TIER_WORDS].map(wordMeaningFactId),
-        patternMeaningFactId("wa"),
-        sentenceTierMarkerFact("simple"),
-      ],
+      [patternMeaningFactId("wa"), sentenceTierMarkerFact("simple")],
       1,
     );
     assert.equal(nextSentenceOrderingLesson(true, history), null);
@@ -81,13 +59,30 @@ describe("nextSentenceOrderingLesson", () => {
 });
 
 describe("sentenceLessonFacts", () => {
-  test("falls back to the tier marker when no example fact resolves", () => {
-    // With nothing learned, a tier has no readable examples to mint facts from,
-    // so it surfaces its marker fact — the thing that still lets the tier be
-    // shown and completed.
-    const simple = SENTENCE_ORDERING_TIERS[0];
-    assert.deepEqual(sentenceLessonFacts(simple, EMPTY), [
-      sentenceTierMarkerFact(simple.id),
+  // SAK-87 round 5 dropped the vocab-known gate, so a real tier's pool no
+  // longer empties out for a learner who has claimed nothing: real tiers
+  // now resolve real facts even against EMPTY history (see
+  // nextSentenceOrderingLesson's tests above). The marker fallback still
+  // exists for the other case sentenceLessonFacts documents: a tier whose
+  // pool genuinely has no items to credit facts from, modeled here with a
+  // tier id no assembly item is tagged with.
+  test("falls back to the tier marker when the tier's pool credits no facts", () => {
+    const emptyTier: AssemblyTier = {
+      id: "sak-87-test-empty-tier",
+      label: "Test tier with no matching items",
+      patterns: ["sak-87-test-pattern-nobody-tags"],
+      minReadable: 0,
+      grammarPrereqs: [],
+    };
+    assert.deepEqual(sentenceLessonFacts(emptyTier, EMPTY), [
+      sentenceTierMarkerFact(emptyTier.id),
     ]);
+  });
+
+  test("a real tier resolves real facts even against EMPTY history", () => {
+    const simple = SENTENCE_ORDERING_TIERS[0];
+    const facts = sentenceLessonFacts(simple, EMPTY);
+    assert.ok(facts.length > 0);
+    assert.ok(!facts.includes(sentenceTierMarkerFact(simple.id)));
   });
 });

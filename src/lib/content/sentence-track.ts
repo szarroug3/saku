@@ -10,7 +10,7 @@
 // meaning facts, since ordering practice is not the same as knowing the pattern).
 // This file only re-expresses that data as the shared content model.
 //
-// UNLOCK. A tier's real gate (readable-vocabulary count + ANY of its grammar
+// UNLOCK. A tier's real gate (structural pool-size count + ANY of its grammar
 // patterns taught) lives in sentence-ordering-plan.ts and is ANY-of, which the
 // content model's all-of `blockedBy` can't express. The build script serializes
 // its exact fact-id structure into learn-index.json, where /learn applies it
