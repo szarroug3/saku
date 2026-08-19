@@ -74,9 +74,11 @@ test("a session plays all three rounds through to Session complete", async ({
 
   await page.goto("/learn");
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
 

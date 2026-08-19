@@ -48,9 +48,12 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // From wholly empty history the kana track's card-0 teaser (SAK-28) is what
   // shows first, in place of the ordinary lesson card: Sam's approved copy in
   // place of the usual "Hiragana 1–5 of 107" position line and あ…お tiles.
-  // Its "Start track" button leads to the exact same place "Start" always did.
+  // Its "Start track" button only dismisses the teaser, revealing the normal
+  // lesson card whose own "Start" button leads to the same place "Start"
+  // always did.
   await expect(page.locator("body")).toContainText("Kana");
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
   // THE FIRST SCREEN IS THE "KANA" CONCEPT PAGE, NOT あ.

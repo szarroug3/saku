@@ -95,9 +95,11 @@ test("a completed round is on disk before the session ends", async ({
   // The starting state the bug report quoted: an empty history.
   expect((await history(page)).sessions).toEqual([]);
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
@@ -132,9 +134,11 @@ test("a round committed mid-session is not counted again at the end", async ({
 
   await page.goto("/learn");
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
 
@@ -204,9 +208,11 @@ test("Pause from the teaching phase returns to Learn", async ({
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   // Landed straight on the teach walk (phase "teaching"); its HUD carries its
   // own "Pause" beside "Quiz me", before the round has even started.
@@ -221,9 +227,11 @@ test("Pause from the round-complete phase returns to Learn", async ({
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
@@ -241,9 +249,11 @@ test("Pause from the resting phase returns to Learn", async ({
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
   // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
-  // place of the ordinary lesson card; its "Start track" button leads straight
-  // into the same session "Start" always did.
+  // place of the ordinary lesson card; its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card whose own
+  // "Start" button leads into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
