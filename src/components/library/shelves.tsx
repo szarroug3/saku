@@ -312,6 +312,7 @@ export function Shelf({
   voice,
   keep,
   filter = "all",
+  selectMode,
 }: {
   kind: Kind;
   sections: readonly ShelfSection[];
@@ -328,6 +329,9 @@ export function Shelf({
   /** Which filter is active, for the empty-state copy. The predicate above does
    * the work; this only picks the words when it removes everything. */
   filter?: KnowledgeFilter;
+  /** Whether a plain click on a tile/row currently toggles selection (true) or
+   * opens the entry (false, the default — see entry-tile.tsx's file header). */
+  selectMode: boolean;
 }) {
   // Shelves arrive open so their contents remain part of the server-rendered
   // first paint. A disclosure only removes the body after the learner asks;
@@ -357,6 +361,7 @@ export function Shelf({
       entry={entry}
       voice={voice}
       selected={selected.has(entry.id)}
+      selectMode={selectMode}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
@@ -377,6 +382,7 @@ export function Shelf({
       note={entry.sub}
       grid={grid}
       selected={selected.has(entry.id)}
+      selectMode={selectMode}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
@@ -392,6 +398,7 @@ export function Shelf({
       gloss={entry.meanings.slice(0, 3).join(", ") || entry.sub}
       note={entry.sub}
       href={entryHref(entry.id)}
+      selectMode={selectMode}
       select={{
         selected: selected.has(entry.id),
         onToggle: (shift) => onToggleEntry(entry.id, shift),
@@ -412,6 +419,7 @@ export function Shelf({
         pair={pair}
         voice={voice}
         selected={selected.has(entry.id)}
+        selectMode={selectMode}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
       />
     );
@@ -427,6 +435,7 @@ export function Shelf({
         set={set}
         voice={voice}
         selected={selected.has(entry.id)}
+        selectMode={selectMode}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
       />
     );
@@ -700,12 +709,17 @@ function GrammarShelfRow({
   note,
   href,
   select,
+  selectMode = false,
 }: {
   lead: string;
   gloss: string;
   note?: string;
   href: string;
   select?: { selected: boolean; onToggle: (shiftKey: boolean) => void };
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry (false, the default). Only meaningful when `select` is given — a
+   * cluster-map row with no `select` at all always opens, mode or not. */
+  selectMode?: boolean;
 }) {
   // The row's own layout — a subgrid band of the shared GRAMMAR_ROWS grid — on
   // top of the shared ShelfRow shell (accent hover + selected wash, hairline, the
@@ -731,14 +745,20 @@ function GrammarShelfRow({
         ) : null}
       </span>
       {select ? (
-        <Link
-          href={href}
-          aria-label="Open"
-          onClick={(e) => e.stopPropagation()}
-          className={arrowCls}
-        >
-          ↗
-        </Link>
+        // Only rendered while selecting — a "peek" so the entry can be opened
+        // without dropping the selection being built. Off select mode the row
+        // itself already opens the entry (see the `select` branch below), so
+        // this slot renders nothing rather than a now-redundant arrow.
+        selectMode ? (
+          <Link
+            href={href}
+            aria-label={`Open ${lead}`}
+            onClick={(e) => e.stopPropagation()}
+            className={`relative z-10 ${arrowCls}`}
+          >
+            ↗
+          </Link>
+        ) : null
       ) : (
         <span aria-hidden className={arrowCls}>
           ↗
@@ -751,6 +771,9 @@ function GrammarShelfRow({
       <ShelfRow
         selected={select.selected}
         onToggleSelect={select.onToggle}
+        selectMode={selectMode}
+        href={href}
+        openLabel={`Open ${lead}`}
         className={layout}
       >
         {cells}

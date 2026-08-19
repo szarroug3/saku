@@ -2,20 +2,36 @@
 
 // The tile and the row — the two shapes an entry takes in the Library.
 //
-// THREE ACTIONS, ONE TILE. The Library stopped being a place you only look
-// things up: you BUILD a drill here by toggling entries on. So every entry now
-// answers to three verbs that must not step on each other:
+// VIEW IS THE DEFAULT CLICK; SELECT IS AN OPT-IN. The homepage promises "look
+// up any kana in the Library" — so the plain, unmodified click on a tile or row
+// now opens that entry's page, the same destination `entryHref` has always
+// pointed selection's ↗ escape hatch at. Building a drill (the multi-select
+// that unions entries into one Slice — see lib/library/selection.ts) moved
+// behind SELECT MODE, an explicit toggle the caller threads down as
+// `selectMode` (see library-page.tsx's "Select multiple" chip): only while it
+// is on does a plain click toggle the tile/row into the selection instead of
+// navigating. Every entry still answers to the same three verbs —
 //
-//   SELECT — toggle it into the drill. THE PRIMARY ACTION, so it is the whole
-//            tile body (glyph + reading): the big, obvious target.
-//   VIEW  — open its page. A small ↗ corner target.
-//   HEAR  — speak it. A small 🔊 corner target.
+//   VIEW   — open its page. THE DEFAULT, so it is the whole tile body.
+//   SELECT — toggle it into the drill. Select-mode-only; same whole-body
+//            target, just re-aimed at a different verb while the mode is on.
+//   HEAR   — speak it. A small 🔊 corner target, in both modes.
 //
-// The two small targets `stopPropagation`, so hitting one never also toggles
-// select. This is the successor to the old split the header here used to defend
-// ("making the whole tile a link would have deleted the speaker"): the reason
-// two targets could not collapse into one is exactly why there are now three
-// distinct ones and not a tile that does two things on one click.
+// — just with VIEW and SELECT trading which one owns the body, rather than
+// SELECT permanently owning it and VIEW being demoted to a small ↗ almost no
+// one found (the bug this file used to ship). ViewLink survives as a
+// select-mode-only "peek" — open an entry without losing your place mid-build —
+// since the body itself already covers the common case once select mode is off.
+//
+// A REAL <Link>, NOT AN ONCLICK NAVIGATION, EVEN WHILE SELECTABLE. Middle-click
+// and cmd-click still open a new tab on the default click, which means the
+// click target can't simply BE the tile/row's outer element the way ViewLink
+// was a lone `<a>`: the Hear button (and, in select mode, the peek arrow) are
+// real interactive elements, and HTML forbids interactive content inside an
+// `<a>`. So the outer element stays a plain `<div>` and the navigate case wires
+// a STRETCHED LINK instead — an `absolute inset-0` sibling behind the content,
+// with any genuinely interactive child lifted `relative z-10` so it still wins
+// the click where the two overlap. See ShelfRow and EntryTile below.
 //
 // BOTH SHAPES TAKE THE SAME THREE. The row (search results) is wider, so it lays
 // them out along its length instead of stacking them — but selecting a searched
@@ -27,6 +43,11 @@
 // tiles was a heat-map of your own memory the design keeps throwing out. Status
 // now lives only on the Practice page's filters; the Library knowledge FILTER
 // still selects by standing under the hood, it just no longer shows on the tile.
+// The same argument is why select mode is a page-level toggle rather than an
+// always-on per-tile checkbox (the Sessions list's pattern — see
+// results/sessions-list.tsx): a checkbox on every one of a 2,136-tile kanji
+// shelf or a 12,553-tile word shelf is exactly the per-tile furniture this file
+// already refuses to paint, at a scale Sessions' handful of rows never reaches.
 
 import Link from "next/link";
 
@@ -76,10 +97,14 @@ function speakable(entry: LibEntry): boolean {
   );
 }
 
-/** The small ↗ target — opens the entry page. A `Link`, so it is a real
- * navigation (middle-click, cmd-click work); `stopPropagation` keeps the click
- * off SELECT. Borderless (no frame, no `bg-card`) to match the de-boxed shelf:
- * it sits on the mesh like the glyph does, revealed on hover by its container. */
+/** The small ↗ "peek" target — opens the entry page without leaving select
+ * mode. Once select mode is off the tile/row body already does this (see the
+ * file header), so this only ever renders while selecting: a way to check an
+ * entry's page mid-build without losing the selection you're assembling. A
+ * `Link`, so it is a real navigation (middle-click, cmd-click work);
+ * `stopPropagation` keeps the click off SELECT. Borderless (no frame, no
+ * `bg-card`) to match the de-boxed shelf: it sits on the mesh like the glyph
+ * does, revealed on hover by its container. */
 function ViewLink({ entry, className }: { entry: LibEntry; className?: string }) {
   return (
     <Link
@@ -102,32 +127,55 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
 export const ROW_ARROW_REVEAL =
   "flex-none opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100";
 
-/** THE one selectable-row shell every table shelf wears — grammar, marks,
- * sentence rules, terms, grammar concepts, search results, keigo and verb pairs.
- * It carries the shared behaviour and LOOK: the whole row is the select target
- * (role=button, Enter/Space, aria-pressed) with NO visible checkbox, selection
- * and hover both painted as the accent wash (`bg-accent-bg`), a hairline between
- * rows, and `group` so the trailing ↗ can reveal on hover. Each shelf passes its
- * own column layout + horizontal padding via `className` and its own cells as
+/** THE one row shell every table shelf wears — grammar, marks, sentence rules,
+ * terms, grammar concepts, search results, keigo and verb pairs. It carries the
+ * shared behaviour and LOOK: NO visible checkbox, selection and hover both
+ * painted as the accent wash (`bg-accent-bg`), a hairline between rows, and
+ * `group` so the trailing ↗ can reveal on hover. Each shelf passes its own
+ * column layout + horizontal padding via `className` and its own cells as
  * children, so one shell fits the simple lead+gloss rows AND the multi-column
- * keigo / verb-pair rows. A `href` with no `onToggleSelect` makes it a plain link
- * row instead (the map-only grammar clusters), same hover, no select. */
+ * keigo / verb-pair rows.
+ *
+ * THREE MODES, not two:
+ *   - `onToggleSelect` + `selectMode` — the row IS the select target
+ *     (role=button, Enter/Space, aria-pressed), same as before select mode
+ *     existed.
+ *   - `onToggleSelect` alone (select mode off) — the row still carries a
+ *     select action for when the learner turns select mode back on, but a
+ *     plain click OPENS `href` instead. See the file header for why this is a
+ *     stretched Link rather than the row itself being the anchor.
+ *   - neither `onToggleSelect` nor select mode ever applies — a plain link row
+ *     (the map-only grammar clusters), same hover, no select, mode-independent.
+ */
 export function ShelfRow({
   selected = false,
   onToggleSelect,
+  selectMode = false,
   href,
+  /** Accessible name for the whole-row Link used when the row opens the entry
+   * (select mode off, or no `onToggleSelect` at all). Callers that know the
+   * entry's name pass `Open ${entryName(entry)}`, matching what ViewLink used
+   * to announce for the same destination. */
+  openLabel,
   className = "",
   children,
 }: {
   selected?: boolean;
   onToggleSelect?: (shiftKey: boolean) => void;
-  /** Link-only mode: the whole row navigates instead of selecting. */
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry (false, the default). Ignored without `onToggleSelect` — a link-only
+   * row always opens, mode or not. */
+  selectMode?: boolean;
+  /** The entry's page — the navigate destination whenever the row isn't acting
+   * as a select target (link-only mode, or `onToggleSelect` with select mode
+   * off). */
   href?: string;
+  openLabel?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   const shell = `group cursor-pointer select-none border-b border-white/[0.06] text-text transition-colors last:border-b-0 ${className}`;
-  if (onToggleSelect) {
+  if (onToggleSelect && selectMode) {
     return (
       <div
         role="button"
@@ -146,6 +194,21 @@ export function ShelfRow({
       </div>
     );
   }
+  if (onToggleSelect) {
+    // SELECT MODE OFF: still selectable in principle (the learner can turn
+    // select mode back on), but the default click OPENS the entry. The Link
+    // is a STRETCHED LINK behind the row's own content rather than the row's
+    // outer element — see the file header's note on why an `<a>` can't wrap
+    // the row's real interactive children directly.
+    return (
+      <div
+        className={`${shell} relative ${selected ? "bg-accent-bg" : "hover:bg-accent-bg"}`}
+      >
+        <Link href={href ?? "#"} aria-label={openLabel ?? "Open"} className="absolute inset-0" />
+        {children}
+      </div>
+    );
+  }
   return (
     <Link href={href ?? "#"} className={`${shell} no-underline hover:bg-accent-bg`}>
       {children}
@@ -157,39 +220,33 @@ export function EntryTile({
   entry,
   voice,
   selected,
+  selectMode,
   onToggleSelect,
 }: {
   entry: LibEntry;
   voice: string;
   selected: boolean;
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry page (false, the default — see the file header). */
+  selectMode: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      onClick={(e) => onToggleSelect(e.shiftKey)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onToggleSelect(e.shiftKey);
-        }
-      }}
-      // BORDERLESS — no outline, no `bg-card` fill: glyph + reading sit straight
-      // on the mesh. The whole cell is the SELECT target, signalled by a FLAT
-      // hover tint (never a shadow — a shelf is thousands of tiles and any
-      // blurred shadow on scrolling content reintroduces jank) and an accent
-      // wash + accent glyph when on. `cursor-pointer` + `select-none` because the
-      // whole body is the toggle.
-      className={`group relative flex aspect-square flex-col justify-center rounded-[10px] px-1 text-center [container-type:inline-size] cursor-pointer select-none transition-colors ${
-        selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
-      }`}
-      // Full label on hover for the meaning-bearing kinds (words, kanji…) whose
-      // sub-line truncates; kana show only their romaji, which never truncates,
-      // so they get no tooltip (that speaker-hint text was removed on purpose).
-      title={entry.kind === KANA_SUBJECT ? undefined : subLabel(entry)}
-    >
+  // BORDERLESS — no outline, no `bg-card` fill: glyph + reading sit straight on
+  // the mesh. The whole cell is the click target (SELECT while selecting, VIEW
+  // otherwise), signalled by a FLAT hover tint (never a shadow — a shelf is
+  // thousands of tiles and any blurred shadow on scrolling content reintroduces
+  // jank) and an accent wash + accent glyph when selected. `cursor-pointer` +
+  // `select-none` because the whole body is the target either way.
+  const className = `group relative flex aspect-square flex-col justify-center rounded-[10px] px-1 text-center [container-type:inline-size] cursor-pointer select-none transition-colors ${
+    selected ? "bg-accent-bg" : "hover:bg-white/[0.04]"
+  }`;
+  // Full label on hover for the meaning-bearing kinds (words, kanji…) whose
+  // sub-line truncates; kana show only their romaji, which never truncates, so
+  // they get no tooltip (that speaker-hint text was removed on purpose).
+  const title = entry.kind === KANA_SUBJECT ? undefined : subLabel(entry);
+
+  const body = (
+    <>
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
           "glyph" is an English name. */}
@@ -212,16 +269,20 @@ export function EntryTile({
       </div>
       {/* ONE bottom slot for BOTH the romaji and the hover actions, not two
           stacked rows. At rest it shows the reading; on hover/focus the reading
-          fades out and the 🔊/↗ fade in over the same line. Sharing the slot keeps
-          the tile compact — no empty reserved action row under every glyph — and,
-          because the slot is a fixed height, hovering never reflows the grid. */}
+          fades out and the 🔊(/↗ while selecting) fade in over the same line.
+          Sharing the slot keeps the tile compact — no empty reserved action row
+          under every glyph — and, because the slot is a fixed height, hovering
+          never reflows the grid. */}
       <div className="relative mt-1 flex h-[13px] items-center justify-center">
         <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0">
           {subLabel(entry)}
         </span>
         {/* Revealed on hover, or on the tile's OWN keyboard focus-visible — never
             on plain focus, which mouse-clicking to SELECT also leaves behind
-            (see ROW_ARROW_REVEAL's note on the same bug for a shelf row). */}
+            (see ROW_ARROW_REVEAL's note on the same bug for a shelf row).
+            `relative z-10` lifts these above the stretched Link the non-select
+            branch below wires behind the whole tile (see the file header) —
+            harmless in select mode, where there is no such Link to out-stack. */}
         <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           {speakable(entry) ? (
             <HearButton
@@ -229,11 +290,49 @@ export function EntryTile({
               voiceName={voice}
               stopPropagation
               label={`Hear ${entryName(entry)}`}
+              className="relative z-10"
             />
           ) : null}
-          <ViewLink entry={entry} />
+          {selectMode ? <ViewLink entry={entry} className="relative z-10" /> : null}
         </span>
       </div>
+    </>
+  );
+
+  if (selectMode) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={(e) => onToggleSelect(e.shiftKey)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggleSelect(e.shiftKey);
+          }
+        }}
+        className={className}
+        title={title}
+      >
+        {body}
+      </div>
+    );
+  }
+
+  // DEFAULT: the whole tile opens the entry — a real `Link` so middle-click and
+  // cmd-click still open a new tab, wired as a STRETCHED LINK (`absolute
+  // inset-0`) behind the tile's own content rather than as the tile's outer
+  // element, because the Hear button inside is a real `<button>` and HTML
+  // forbids interactive content inside an `<a>` (see the file header).
+  return (
+    <div className={className} title={title}>
+      <Link
+        href={entryHref(entry.id)}
+        aria-label={`Open ${entryName(entry)}`}
+        className="absolute inset-0 rounded-[10px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      />
+      {body}
     </div>
   );
 }
@@ -241,17 +340,16 @@ export function EntryTile({
 /** The search-result shape: glyph, what it is, how it's going — and the same
  * three actions the tile has, laid along the row instead of stacked.
  *
- * THE ROW IS NO LONGER A LINK. It used to be one big `<Link>`, but SELECT is now
- * the primary verb and it wants the row body; VIEW moved to its own ↗ target at
- * the end. That is the honest layout call for a dense row — one whole-row click
- * cannot mean both "select" and "open", so the frequent action (select, which
- * you do to many results) gets the body and the occasional one (open one to
- * study it) gets an explicit target. */
+ * THE ROW OPENS BY DEFAULT, SELECTS IN SELECT MODE. Off select mode a plain
+ * click opens the entry (ShelfRow wires it as a stretched Link behind the row's
+ * content); while selecting, the whole row body is the select target and ↗
+ * becomes a "peek" — see the file header. */
 export function EntryRow({
   entry,
   note,
   voice,
   selected,
+  selectMode,
   grid = false,
   onToggleSelect,
 }: {
@@ -260,6 +358,9 @@ export function EntryRow({
   note?: string;
   voice: string;
   selected: boolean;
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry (false, the default — see the file header). */
+  selectMode: boolean;
   /** Lay the row out as a `grid-cols-subgrid` band of a shared parent grid,
    * instead of a self-contained flex row. The grammar shelf turns this on so
    * every pattern column sizes to the WIDEST pattern and the explanations align
@@ -295,6 +396,9 @@ export function EntryRow({
     <ShelfRow
       selected={selected}
       onToggleSelect={onToggleSelect}
+      selectMode={selectMode}
+      href={entryHref(entry.id)}
+      openLabel={`Open ${entryName(entry)}`}
       // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
       // and column gap; the default row is a self-contained flex line with its
       // own gap and horizontal padding so its text and ↗ sit inset from the
@@ -373,10 +477,12 @@ export function EntryRow({
           voiceName={voice}
           stopPropagation
           label={`Hear ${entryName(entry)}`}
-          className="flex-none"
+          className="relative z-10 flex-none"
         />
       ) : null}
-      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+      {selectMode ? (
+        <ViewLink entry={entry} className={`relative z-10 ${ROW_ARROW_REVEAL}`} />
+      ) : null}
     </ShelfRow>
   );
 }
@@ -405,7 +511,7 @@ function KeigoCell({
           glyph={words[0].word}
           voiceName={voice}
           stopPropagation
-          className="flex-none"
+          className="relative z-10 flex-none"
         />
       </div>
       <span className="mt-0.5 block truncate text-xs text-text-muted">
@@ -438,12 +544,16 @@ export function KeigoSetRow({
   set,
   voice,
   selected,
+  selectMode,
   onToggleSelect,
 }: {
   entry: LibEntry;
   set: KeigoSet;
   voice: string;
   selected: boolean;
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry (false, the default — see the file header). */
+  selectMode: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const honorific = set.words.filter((w) => w.register === "honorific");
@@ -452,12 +562,17 @@ export function KeigoSetRow({
     <ShelfRow
       selected={selected}
       onToggleSelect={onToggleSelect}
+      selectMode={selectMode}
+      href={entryHref(entry.id)}
+      openLabel={`Open ${entryName(entry)}`}
       className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
       <KeigoCell words={honorific} meaning={set.meaning} voice={voice} />
       <KeigoCell words={humble.slice(0, 1)} voice={voice} />
       <KeigoCell words={humble.slice(1, 2)} voice={voice} />
-      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+      {selectMode ? (
+        <ViewLink entry={entry} className={`relative z-10 ${ROW_ARROW_REVEAL}`} />
+      ) : null}
     </ShelfRow>
   );
 }
@@ -484,7 +599,7 @@ function PairCell({
           glyph={side.word}
           voiceName={voice}
           stopPropagation
-          className="flex-none"
+          className="relative z-10 flex-none"
         />
       </div>
       <span className="mt-0.5 block truncate text-xs text-text-muted">{side.en}</span>
@@ -514,30 +629,40 @@ export function VerbPairHeader() {
  * speaker and English cue, so the row shows the whole contrast a pair IS. Not
  * EntryRow: that row is built around a single glyph in a fixed cell, and a pair
  * has no glyph and two things to say, which left its checkbox stranded a cell
- * away from any content and only one of its two verbs a speaker. SELECT is still
- * the row body; VIEW and the two HEAR targets swallow their own clicks. */
+ * away from any content and only one of its two verbs a speaker. The row body
+ * is VIEW by default and SELECT in select mode (see ShelfRow); the two HEAR
+ * targets swallow their own clicks either way. */
 export function VerbPairRow({
   entry,
   pair,
   voice,
   selected,
+  selectMode,
   onToggleSelect,
 }: {
   entry: LibEntry;
   pair: VerbPair;
   voice: string;
   selected: boolean;
+  /** Whether a plain click currently toggles selection (true) or opens the
+   * entry (false, the default — see the file header). */
+  selectMode: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
     <ShelfRow
       selected={selected}
       onToggleSelect={onToggleSelect}
+      selectMode={selectMode}
+      href={entryHref(entry.id)}
+      openLabel={`Open ${entryName(entry)}`}
       className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
       <PairCell side={pair.happens} voice={voice} />
       <PairCell side={pair.doIt} voice={voice} />
-      <ViewLink entry={entry} className={ROW_ARROW_REVEAL} />
+      {selectMode ? (
+        <ViewLink entry={entry} className={`relative z-10 ${ROW_ARROW_REVEAL}`} />
+      ) : null}
     </ShelfRow>
   );
 }
