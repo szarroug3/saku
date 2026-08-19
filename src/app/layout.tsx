@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
@@ -181,7 +182,17 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
+        {/* next/script with strategy="beforeInteractive": Next.js's own inline-script
+            mechanism for exactly this case (must run in <head>, before hydration).
+            It still emits a real <script> in <head> ahead of hydration — same timing
+            guarantee a raw <script> tag had — but routes through Next's runtime
+            instead of a JSX <script> element, which React 19 warns about renderer-side
+            since script tags outside this mechanism are never executed on the client. */}
+        <Script
+          id="no-flash"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: NO_FLASH }}
+        />
         {/* Preload the wordmark so it's decoded before first paint — the sidebar
             shows it on every page, so without this its <img> flashes blank until
             the PNG arrives. The mark is landing-only, so it's preloaded there
