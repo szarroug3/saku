@@ -309,7 +309,15 @@ export function CharacterEntryView({
                           {w.meanings.map((m, i) => (
                             <span key={i} className={w.meanings.length > 1 ? "block" : undefined}>
                               <span>{m.text}</span>
-                              {m.register.map((tag) => (
+                              {/* Defensive: `register` is non-optional in
+                                  CharacterWordPayload, but Library payloads
+                                  come from Supabase's content_entries table
+                                  (fetchContentEntry casts, it never
+                                  validates), and rows seeded before SAK-32
+                                  added this field simply lack it until the
+                                  seed script re-runs. Fall back to no tags
+                                  rather than crash on a stale row. */}
+                              {(m.register ?? []).map((tag) => (
                                 <span
                                   key={tag}
                                   className="mt-0.5 block text-[11px] leading-snug text-text-muted/80"
