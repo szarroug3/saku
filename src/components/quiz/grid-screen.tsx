@@ -212,7 +212,11 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }
   if (card.tries > retriesAllowed(cfg)) {
-    if (cfg.showAnswer) card.value = factInfo(f)?.answers[0] ?? "";
+    // The learner's own typed value (card.value) is left exactly as they
+    // left it — it must never be overwritten with the correct answer here.
+    // The correct answer is shown as an addition, below the input, computed
+    // straight from factInfo at render time (see the "wrong" branch in the
+    // card render below). See SAK-91.
     card.state = "wrong";
     return "locked";
   }
@@ -509,6 +513,14 @@ export function GridScreen() {
                   className="kq-gcard-well w-full px-1 py-1.5 text-center text-sm"
                 />
               </form>
+              {/* Out of retries, with the setting on: the correct answer is
+                  added here, under the learner's own (still-visible, still
+                  unchanged) input — never swapped in over it. See SAK-91. */}
+              {card.state === "wrong" && cfg.showAnswer ? (
+                <span className="mt-1 block text-[10px] leading-tight text-danger">
+                  {factInfo(f)?.answers[0] ?? ""}
+                </span>
+              ) : null}
               {/* The dots are the whole retry counter now that colour isn't
                   carrying it. Reserved height whether or not they're on, so
                   toggling the setting mid-quiz doesn't reflow 214 cards. */}
