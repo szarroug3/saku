@@ -45,7 +45,8 @@ import { useState } from "react";
 
 import { Lbl } from "@/components/ui";
 import { EntryBreakdown } from "@/components/stats/entry-breakdown";
-import { barSegments, tallyFacts } from "@/components/stats/tally";
+import { barSegments, groupEntriesByStanding, tallyFacts } from "@/components/stats/tally";
+import type { Standing } from "@/lib/library/standing";
 import { counterForm, isBareNumber } from "@/data/counters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
@@ -281,12 +282,20 @@ export function BySubject({
   // SAK-78 follow-up review: "these should be clickable to show the sidebar
   // too for their items." One panel for the whole table, same shape as
   // KnowledgeBase's single BucketBreakdown — only one row's breakdown can be
-  // open at a time, so a shared { label, entries } slot is enough; no row
+  // open at a time, so a shared { label, groups } slot is enough; no row
   // needs its own open/closed state.
-  const [open, setOpen] = useState<{ label: string; entries: EntryId[] } | null>(
-    null,
-  );
-  const onOpen = (label: string, entries: EntryId[]) => setOpen({ label, entries });
+  //
+  // SAK-78 round 5: `entries` became `groups` — already grouped and BUCKETS-
+  // ordered by `groupEntriesByStanding` (tally.ts), computed by SubjectRow/
+  // GroupRow at click time from that row's own `metEntries` + entry→facts
+  // scope, same as `entries` was before. EntryBreakdown only renders what
+  // it's handed.
+  const [open, setOpen] = useState<{
+    label: string;
+    groups: { standing: Standing; entries: EntryId[] }[];
+  } | null>(null);
+  const onOpen = (label: string, groups: { standing: Standing; entries: EntryId[] }[]) =>
+    setOpen({ label, groups });
   return (
     <section>
       <Lbl>By subject</Lbl>
@@ -320,7 +329,7 @@ export function BySubject({
       <EntryBreakdown
         open={open !== null}
         label={open?.label ?? ""}
-        entries={open?.entries ?? []}
+        groups={open?.groups ?? []}
         onClose={() => setOpen(null)}
       />
     </section>
@@ -392,6 +401,47 @@ function metEntries(
   );
 }
 
+/** `metEntries`'s output, grouped and ordered by status (SAK-78 round 5: "the
+ * side panel should separate by status ... ordered ... claimed → solid →
+ * …"). A thin wrapper over tally.ts's `groupEntriesByStanding`, handed
+ * `subject.entryFacts` as the lookup so the grouping asks about the exact
+ * same facts `metEntries` used to decide each entry was met — see that
+ * function's header for why the lookup is scoped, not global. */
+function metGroups(
+  subject: Subject,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): { standing: Standing; entries: EntryId[] }[] {
+  return groupEntriesByStanding(
+    metEntries(subject, facts, claims),
+    (e) => subject.entryFacts.get(e) ?? [],
+    facts,
+    claims,
+    now,
+  );
+}
+
+/** `metGroups`'s sibling for a GroupRow's aggregate panel — every child
+ * subject's met entries, grouped by status over the UNION of the children's
+ * `entryFacts` lookups. Safe for the same disjointness reason GroupRow's own
+ * comment already gives for summing `met` across children: no entry belongs
+ * to two subjects here, so merging their entryFacts maps can never let one
+ * subject's lookup answer for another's entry. */
+function metGroupsForSubjects(
+  subjects: Subject[],
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): { standing: Standing; entries: EntryId[] }[] {
+  const lookup = new Map<EntryId, FactId[]>();
+  for (const s of subjects) {
+    for (const [e, fs] of s.entryFacts) lookup.set(e, fs);
+  }
+  const entries = subjects.flatMap((s) => metEntries(s, facts, claims));
+  return groupEntriesByStanding(entries, (e) => lookup.get(e) ?? [], facts, claims, now);
+}
+
 function SubjectRow({
   subject,
   facts,
@@ -409,9 +459,10 @@ function SubjectRow({
    * Hiragana/Katakana) rather than as a flat top-level row. */
   indent?: boolean;
   /** SAK-78: opens the shared EntryBreakdown panel with this row's met
-   * entries. Optional so SentenceSubjectRow (no entries — sentences are
-   * tiers, not entries) never has to pretend it has one. */
-  onOpen?: (label: string, entries: EntryId[]) => void;
+   * entries, grouped by status (round 5). Optional so SentenceSubjectRow (no
+   * entries — sentences are tiers, not entries) never has to pretend it has
+   * one. */
+  onOpen?: (label: string, groups: { standing: Standing; entries: EntryId[] }[]) => void;
 }) {
   const tally = tallyFacts(subject.facts, facts, claims, now);
   const met = metCount(subject, facts, claims);
@@ -434,7 +485,7 @@ function SubjectRow({
             onClick={() =>
               onOpen(
                 `${met.toLocaleString()} of ${subject.entries.length.toLocaleString()} ${subject.label}`,
-                metEntries(subject, facts, claims),
+                metGroups(subject, facts, claims, now),
               )
             }
             className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
@@ -493,10 +544,13 @@ function SubjectRow({
  * parent's own met count opens `metEntries` run over every child and
  * concatenated — safe for the identical disjointness reason the summed `met`
  * above already relies on, so this is not a second argument, just the same
- * one applied to a list instead of a length. It's a FLAT list, not grouped
- * by child subject — see entry-breakdown.tsx's header comment for why: it
- * matches bucket-breakdown.tsx's panel, which never subdivides by subject
- * either, so both breakdown kinds on this page read as one pattern. */
+ * one applied to a list instead of a length. It's a FLAT union of child
+ * SUBJECTS, not grouped by subject — see entry-breakdown.tsx's header comment
+ * for why: it matches bucket-breakdown.tsx's panel, which never subdivides by
+ * subject either, so both breakdown kinds on this page read as one pattern.
+ * SAK-78 round 5 groups that union by STATUS instead (`metGroupsForSubjects`,
+ * same disjointness argument extended to entryFacts lookups) — a different
+ * axis from "by child subject", not a reversal of this call. */
 function GroupRow({
   label,
   subjects,
@@ -510,7 +564,7 @@ function GroupRow({
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
   now: number;
-  onOpen?: (label: string, entries: EntryId[]) => void;
+  onOpen?: (label: string, groups: { standing: Standing; entries: EntryId[] }[]) => void;
 }) {
   const allFacts = subjects.flatMap((s) => s.facts);
   const tally = tallyFacts(allFacts, facts, claims, now);
@@ -530,7 +584,7 @@ function GroupRow({
               onClick={() =>
                 onOpen(
                   `${met.toLocaleString()} of ${entryCount.toLocaleString()} ${label}`,
-                  subjects.flatMap((s) => metEntries(s, facts, claims)),
+                  metGroupsForSubjects(subjects, facts, claims, now),
                 )
               }
               className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
