@@ -3,9 +3,12 @@
 // Shared building blocks for the redesigned Library entry pages, so every page
 // type (character, word, counter, grammar, …) speaks ONE visual language:
 //
-//   Section   — a titled block under a hairline divider. tone="accent" colours
-//               the eyebrow like the header's role tags (used for the per-role
-//               sections); default white is for universal blocks.
+//   Section   — a titled block under a hairline divider. Every header renders
+//               the same plain eyebrow style — there is no accented tier.
+//   SectionTitle — the eyebrow heading style itself, exported so a caller that
+//               can't use Section's div/border wrapper (e.g. a heading that
+//               shares a flex row with its own trailing control) still renders
+//               the identical style instead of duplicating the classes.
 //   SubLabel  — a muted sub-heading inside a Section (On'yomi, Etymology, …).
 //   Lead      — a muted one-line description opening a Section, framing what
 //               follows. It teaches (says something true about Japanese); it does
@@ -15,27 +18,35 @@
 
 import { FlatSurfaceProvider, Info } from "@/components/ui";
 
+export function SectionTitle({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={`text-[11px] font-medium uppercase tracking-[0.06em] text-text ${className}`}>
+      {children}
+    </p>
+  );
+}
+
 export function Section({
   title,
   help,
-  tone = "default",
   children,
 }: {
   title: string;
   help?: string;
-  tone?: "default" | "accent";
   children: React.ReactNode;
 }) {
   return (
     <div className="mt-5 border-t border-border/50 pt-5">
-      <p
-        className={`mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] ${
-          tone === "accent" ? "text-accent" : "text-text"
-        }`}
-      >
+      <SectionTitle className="mb-3 flex items-center">
         {title}
         {help ? <Info>{help}</Info> : null}
-      </p>
+      </SectionTitle>
       {children}
     </div>
   );

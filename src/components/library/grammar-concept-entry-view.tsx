@@ -49,7 +49,7 @@ export function GrammarConceptEntryView({ entry }: { entry: EntryId }) {
           rather than as boxes within a box. A fuller redesign would de-card the
           body entirely and let the prose run directly under the eyebrow, but
           reusing the shared view keeps the reference and the lesson identical. */}
-      <Section title="The idea" tone="accent">
+      <Section title="The idea">
         <GrammarConceptView concept={concept} hideTitles />
       </Section>
     </EntrySurface>
