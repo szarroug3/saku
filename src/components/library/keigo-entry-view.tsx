@@ -106,12 +106,23 @@ export function KeigoEntryView({
       <Section title="Polite forms" tone="accent" help={KEIGO_HELP}>
         <div className="flex flex-col gap-5">
           {set.words.map((w) => {
-            const reg = REGISTER[w.register];
+            // A FORMULAIC SET carries no honorific/humble EXPLANATION: `register`
+            // still tags いらっしゃいませ for the question engine's distractor logic,
+            // but "Use this form to raise another person when they take an
+            // action" describes a conjugation choice this fixed phrase doesn't
+            // have — printing it here would contradict the "Where you'll hear it"
+            // section just above, which already told the learner it's a phrase to
+            // learn by ear, not a form to reach for. So the register label AND its
+            // description are both suppressed for formulaic sets; only the word
+            // itself (with its audio) still renders.
+            const reg = set.formulaic ? undefined : REGISTER[w.register];
             return (
               <div key={w.key}>
-                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
-                  {reg?.label ?? w.register}
-                </p>
+                {reg ? (
+                  <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+                    {reg.label}
+                  </p>
+                ) : null}
                 {reg ? (
                   <p className="mb-2 text-[13px] leading-relaxed text-text">{reg.desc}</p>
                 ) : null}
