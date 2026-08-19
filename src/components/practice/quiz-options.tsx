@@ -51,7 +51,18 @@ export function QuizOptionsFields() {
               Limited
             </Chip>
             {cfg.length === "limited" ? (
-              <>
+              // Full coverage/Count are a MODE of Limited, not a third top-level
+              // choice beside Endless/Limited — cfg.limType only exists once
+              // length is "limited" (see QuizConfig, quiz-config.tsx's default,
+              // and every downstream read of limType). Flat chips of the same
+              // shape as Endless/Limited made this read as three siblings, so
+              // "Limited" and "Full coverage" could both look selected at once
+              // with nothing showing one contained the other. The left rule
+              // is the app's existing "this is subordinate" cue (see the same
+              // border-l-2 border-accent pl-3.5 recipe in callout.tsx and
+              // kana-entry-view.tsx) — here it visually hangs this pair off the
+              // Limited chip it belongs to instead of floating beside it.
+              <span className="flex flex-wrap items-center gap-1.5 border-l-2 border-accent pl-2.5">
                 <SmallBtn
                   sel={cfg.limType === "cov"}
                   onClick={() => update({ limType: "cov" })}
@@ -81,7 +92,7 @@ export function QuizOptionsFields() {
                   aria-label="Question count"
                   className="kq-num w-20 rounded-lg border border-border bg-bg px-2 py-1.5 text-right text-sm text-text disabled:opacity-40"
                 />
-              </>
+              </span>
             ) : null}
           </Row>
         </>
