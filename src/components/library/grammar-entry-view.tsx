@@ -33,7 +33,7 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { LinkSlot } from "@/components/grammar/link-slot";
-import { PatternFamily } from "@/components/library/pattern-family";
+import { PatternFamily, type FamilyBuild } from "@/components/library/pattern-family";
 import { PatternTeach, type PatternTeaching } from "@/components/library/pattern-teach";
 import { SentenceExampleView } from "@/components/lesson/phase-intro-view";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
@@ -47,7 +47,7 @@ interface GrammarPayload {
   readonly text: string;
   readonly speak: string | null;
   readonly teachings: Readonly<Record<string, PatternTeaching>>;
-  readonly familyBuilds: Readonly<Record<string, string>>;
+  readonly familyBuilds: Readonly<Record<string, FamilyBuild>>;
 }
 
 // The kinds of word a pattern hangs on, said the way a learner names them (い- and
@@ -77,7 +77,7 @@ export function GrammarEntryView({
   item?: ContentItem;
   liveHeadline?: Headline;
   liveTeachings?: Readonly<Record<string, PatternTeaching>>;
-  liveFamilyBuilds?: Readonly<Record<string, string>>;
+  liveFamilyBuilds?: Readonly<Record<string, FamilyBuild>>;
 }) {
   const fetched = useContentEntry<GrammarPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;

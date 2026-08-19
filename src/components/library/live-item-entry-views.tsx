@@ -71,7 +71,11 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
   const liveFamilyBuilds = Object.fromEntries(
     (family ? membersOf(family) : []).map((pattern) => {
       const row = buildRow(pattern, primaryHost(pattern) ?? undefined);
-      return [pattern.id, row?.built ?? ""];
+      // SAK-33: reading rides alongside the built string so PatternFamily can
+      // gloss a kanji-spelled build (行かなければならない) the way the rest of
+      // the app glosses a word beside its reading. Absent when buildRow found
+      // no reading to build (see BuiltRow.builtReading in lib/grammar/build.ts).
+      return [pattern.id, { built: row?.built ?? "", reading: row?.builtReading }];
     }),
   );
   return (

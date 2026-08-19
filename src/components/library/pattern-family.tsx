@@ -40,7 +40,17 @@ import Link from "next/link";
 import { Card, Lbl } from "@/components/ui";
 import type { Recipe } from "@/data/grammar/recipes";
 import { entryHref } from "@/lib/library/href";
+import { hasKanji } from "@/lib/romaji";
 import { patternEntry } from "@/lib/library/library-index";
+
+/** One family member's built form plus its reading, when the build has one
+ * (SAK-33) — see BuiltRow.builtReading in lib/grammar/build.ts. Exported so
+ * grammar-entry-view.tsx's fetched/live payload types stay this component's
+ * one definition rather than a second, independently-typed copy. */
+export interface FamilyBuild {
+  readonly built: string;
+  readonly reading?: string;
+}
 
 export function PatternFamily({
   members,
@@ -56,7 +66,7 @@ export function PatternFamily({
    * to reach for. Shown under the table. */
   feel?: string;
   /** Exact buildRow output, computed by the seed/live adapter. */
-  builtById: Readonly<Record<string, string>>;
+  builtById: Readonly<Record<string, FamilyBuild>>;
 }) {
   return (
     <Card>
@@ -84,6 +94,7 @@ export function PatternFamily({
               // which is the first host that actually transforms its word — see
               // primaryHost, and the 〜ので item it was written for.
               const here = r.id === current.id;
+              const build = builtById[r.id];
               return (
                 <tr key={r.id} className="border-b border-border last:border-b-0">
                   <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-[15px]">
@@ -109,7 +120,16 @@ export function PatternFamily({
                       a normal value, not an error) prints nothing rather than a
                       guess. */}
                   <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-text-muted">
-                    {builtById[r.id] ?? ""}
+                    {build?.built ?? ""}
+                    {/* SAK-33: the build's reading, glossed in parens beside it
+                        the same way SAK-38 established elsewhere — only when
+                        the build has kanji in it (行かなければならない) and a
+                        reading was actually computed for it; see
+                        BuiltRow.builtReading for when that is refused instead
+                        of guessed. */}
+                    {build?.built && hasKanji(build.built) && build.reading ? (
+                      <span className="ml-1 text-[12px]">({build.reading})</span>
+                    ) : null}
                   </td>
                   {/* THE REPETITION IS THE CONTENT. Seven rows reading "must do
                       X" is not something to dedupe with a rowspan: English has
