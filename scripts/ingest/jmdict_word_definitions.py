@@ -31,6 +31,19 @@ OUT = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
 URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
 UK = "word usually written using kana alone"
 CURATED = {"ichi1", "spec1", "spec2"}
+
+# The five JMdict register/formality <misc> tags this app annotates (SAK-32),
+# most to least formal. Their JMdict text is confirmed against the raw XML;
+# every other <misc> value (archaic, slang, abbreviation, ...) is out of scope
+# and stays discarded, same as before this change.
+REGISTER_TAGS = {
+    "honorific or respectful (sonkeigo) language": "honorific",
+    "humble (kenjougo) language": "humble",
+    "polite (teineigo) language": "polite",
+    "familiar language": "familiar",
+    "colloquial": "colloquial",
+}
+REGISTER_ORDER = ["honorific", "humble", "polite", "familiar", "colloquial"]
 SMALL_KANA = set("ゃゅょぁぃぅぇぉゎ")
 VOWELS = {
     **{c: "a" for c in "あかがさざただなはばぱまゃらわ"},
@@ -159,6 +172,9 @@ def reduce(path):
                     glosses = [g.text for g in sense.findall("gloss") if g.text]
                     if not glosses:
                         continue
+                    misc = {m.text for m in sense.findall("misc")}
+                    present = {key for text, key in REGISTER_TAGS.items() if text in misc}
+                    register = [key for key in REGISTER_ORDER if key in present]
                     ordered_by_sound = {}
                     for reading in (r["reb"] for r in rels if r["reb"] in applicable):
                         key = pronunciation_key(reading)
@@ -171,12 +187,15 @@ def reduce(path):
                         ):
                             ordered_by_sound[key] = reading
                     ordered = list(ordered_by_sound.values())
-                    collected[form].append({
+                    definition = {
                         "id": f"{seq}:{i}",
                         "glosses": glosses,
                         "pos": inherited_pos,
                         "readings": ordered,
-                    })
+                    }
+                    if register:
+                        definition["register"] = register
+                    collected[form].append(definition)
             entry.clear()
 
     # Remove exact duplicate source rows. Keep the frozen app's established
@@ -191,6 +210,7 @@ def reduce(path):
                 tuple(definition["glosses"]),
                 tuple(definition["pos"]),
                 tuple(definition["readings"]),
+                tuple(definition.get("register", ())),
             )
             if key in seen:
                 continue
@@ -199,10 +219,15 @@ def reduce(path):
         first_known_sense = wanted[keb][0]
         unique.sort(key=lambda d: (first_known_sense not in d["readings"],))
         # A plain one-definition/one-reading word is already represented by its
-        # vocab row. Ship the source sidecar only where it adds a definition or
-        # a pronunciation; this keeps the processed artifact compact without
-        # throwing away either relationship again.
-        if len(unique) > 1 or any(len(d["readings"]) > 1 for d in unique):
+        # vocab row. Ship the source sidecar only where it adds a definition, a
+        # pronunciation, or a register tag; register (SAK-32) is not carried by
+        # the vocab row at all, so a single-sense word must still ship here when
+        # that one sense is tagged, or its annotation would be silently dropped.
+        if (
+            len(unique) > 1
+            or any(len(d["readings"]) > 1 for d in unique)
+            or any(d.get("register") for d in unique)
+        ):
             words[keb] = unique
 
     digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
