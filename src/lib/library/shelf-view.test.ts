@@ -20,6 +20,7 @@ function entry(id: string): LibEntry {
     meanings: [],
     sub: "",
     weight: 0,
+    speakable: true,
   };
 }
 
