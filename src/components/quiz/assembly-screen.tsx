@@ -461,8 +461,10 @@ export function AssemblyScreen() {
 
   const check = () => {
     if (resolved || card.tray.length !== canon.length) return;
-    // Read before checkCard mutates the tray (a locked/out-of-retries check
-    // overwrites card.tray with the revealed canonical order).
+    // card.tray is never touched by checkCard, wrong or right (Sam, changes
+    // requested: the learner's own order must stay on screen exactly as they
+    // left it) — this mismatch stays valid against the tray shown after
+    // locking too, not just at the moment it's computed here.
     // findAssemblyMismatch itself returns null on a full match, so no
     // separate gradeAssembly pre-check is needed here.
     const wrongMismatch = findAssemblyMismatch(item, card.tray, tierId);
@@ -607,7 +609,9 @@ export function AssemblyScreen() {
                   draggable={!resolved}
                   disabled={resolved}
                   aria-label={`Piece ${surface}, position ${idx + 1} of ${card.tray.length}. Arrow keys to move, Backspace to remove.`}
-                  className={`kq-material rounded-xl border px-4 py-3 pr-8 text-lg ${
+                  className={`kq-material rounded-xl border py-3 pr-8 text-center text-lg ${
+                    gloss ? "pl-8" : "pl-4"
+                  } ${
                     card.state === "right"
                       ? "border-success bg-success-bg"
                       : mismatch?.trayIndex === idx
@@ -719,7 +723,9 @@ export function AssemblyScreen() {
                 draggable={!resolved}
                 disabled={resolved}
                 aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
-                className="kq-material cursor-grab rounded-xl border border-border bg-card px-4 py-3 text-lg shadow-chip"
+                className={`kq-material cursor-grab rounded-xl border border-border bg-card py-3 pr-4 text-center text-lg shadow-chip ${
+                  gloss ? "pl-8" : "pl-4"
+                }`}
                 onClick={() => place(surface)}
                 onDragStart={() => {
                   dragging.current = { from: "pool", surface };
@@ -736,12 +742,15 @@ export function AssemblyScreen() {
                 {pieceLabel(surface)}
               </button>
               {/* The unknown-word definition badge (SAK-87), see the tray's
-                  matching comment above. No remove button on a pool piece to
-                  avoid, so it sits at the same corner "×" uses on a placed
-                  piece. */}
+                  matching comment above. Left corner in both states (Sam,
+                  changes requested): a pool piece has no remove button to
+                  avoid, but the badge stays on the same side either way
+                  rather than flipping between tray and pool. Buttons reserve
+                  room for it (see the conditional pl-8 above) so it never
+                  sits on top of the piece's own text. */}
               {gloss ? (
                 <span
-                  className="absolute right-1.5 top-1.5"
+                  className="absolute left-1.5 top-1.5"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <Info label={`Meaning of ${pieceLabel(surface)}`}>

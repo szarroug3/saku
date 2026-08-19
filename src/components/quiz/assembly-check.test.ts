@@ -50,7 +50,11 @@ describe("checkCard — SAK-19 retry/reveal timing", () => {
     assert.equal(second, "locked", "reveal lands on the press that exhausts the configured retries, not one later");
     assert.equal(card.state, "wrong");
     assert.equal(card.tries, 2);
-    assert.deepEqual(card.tray, RIGHT_ORDER, "the canonical order is revealed");
+    assert.deepEqual(
+      card.tray,
+      WRONG_ORDER,
+      "the learner's own (wrong) order is kept, not silently replaced by the canonical one",
+    );
   });
 
   test("with Retries: 0, the very first wrong press reveals (no free retries)", () => {
