@@ -44,7 +44,10 @@
 import { Lbl } from "@/components/ui";
 import { barSegments, tallyFacts } from "@/components/stats/tally";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { KANJI_SUBJECT } from "@/data/kanji";
+import { RADICAL_SUBJECT } from "@/data/radicals";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import { VOCAB_SUBJECT } from "@/data/vocab";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import type { Claims } from "@/lib/claims";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
@@ -103,6 +106,45 @@ const SUBJECTS: Subject[] = (() => {
   return out;
 })();
 
+/** SAK-25: Radicals, Kanji, and Words nest under a "Vocabulary" parent row
+ * rather than sitting as three flat siblings. The three are already separate
+ * subjects (see SUBJECTS above) — this only changes how they're grouped for
+ * display, not what's counted.
+ *
+ * Counting's Numbers/Counters half of the same ticket is explicitly out of
+ * scope tonight (blocked on a separate naming decision) and untouched here. */
+const VOCABULARY_CHILD_IDS: readonly string[] = [
+  RADICAL_SUBJECT,
+  KANJI_SUBJECT,
+  VOCAB_SUBJECT,
+];
+
+type Row =
+  | { kind: "subject"; subject: Subject }
+  | { kind: "vocabulary-group"; children: Subject[] };
+
+/** SUBJECTS in render order, with the three vocabulary subjects collected into
+ * one group row at the position the first of them would have occupied.
+ * Everything else keeps its exact original row and order. Built by reference
+ * so the group row's `children` array keeps growing as later members of the
+ * group are found, mutation the map below relies on. */
+const ROWS: Row[] = (() => {
+  const out: Row[] = [];
+  let group: Subject[] | null = null;
+  for (const s of SUBJECTS) {
+    if (VOCABULARY_CHILD_IDS.includes(s.id)) {
+      if (!group) {
+        group = [];
+        out.push({ kind: "vocabulary-group", children: group });
+      }
+      group.push(s);
+      continue;
+    }
+    out.push({ kind: "subject", subject: s });
+  }
+  return out;
+})();
+
 export function BySubject({
   facts,
   claims,
@@ -120,15 +162,25 @@ export function BySubject({
       <Lbl>By subject</Lbl>
       <table className="w-full border-collapse text-[13px]">
         <tbody>
-          {SUBJECTS.map((s) => (
-            <SubjectRow
-              key={s.id}
-              subject={s}
-              facts={facts}
-              claims={claims}
-              now={now}
-            />
-          ))}
+          {ROWS.map((row) =>
+            row.kind === "subject" ? (
+              <SubjectRow
+                key={row.subject.id}
+                subject={row.subject}
+                facts={facts}
+                claims={claims}
+                now={now}
+              />
+            ) : (
+              <VocabularyGroupRow
+                key="vocabulary"
+                subjects={row.children}
+                facts={facts}
+                claims={claims}
+                now={now}
+              />
+            ),
+          )}
           <SentenceSubjectRow learned={learnedSentenceCount} />
         </tbody>
       </table>
@@ -161,31 +213,44 @@ function SentenceSubjectRow({ learned }: { learned: number }) {
   );
 }
 
+/** Met: entries with any record behind them — one showing, or one claim. A
+ * count, and the only thing about an entry this page asserts. It says nothing
+ * about how the entry is GOING, which is the question an entry cannot answer.
+ * Shared by SubjectRow and VocabularyGroupRow so a parent row's "met" is the
+ * same question asked over a bigger population, not a different one. */
+function metCount(
+  subject: Subject,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+): number {
+  return subject.entries.filter((e) =>
+    factsOfEntry(subject, e).some((f) => facts[f]?.seen || claims[f]),
+  ).length;
+}
+
 function SubjectRow({
   subject,
   facts,
   claims,
   now,
+  indent = false,
 }: {
   subject: Subject;
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
   now: number;
+  /** SAK-25: true for Radicals/Kanji/Words, which render as children under
+   * the "Vocabulary" group row rather than as flat top-level rows. */
+  indent?: boolean;
 }) {
   const tally = tallyFacts(subject.facts, facts, claims, now);
-
-  // Met: entries with any record behind them — one showing, or one claim. A
-  // count, and the only thing about an entry this page asserts. It says nothing
-  // about how the entry is GOING, which is the question an entry cannot answer.
-  const met = subject.entries.filter((e) =>
-    factsOfEntry(subject, e).some((f) => facts[f]?.seen || claims[f]),
-  ).length;
+  const met = metCount(subject, facts, claims);
 
   return (
     <tr>
       <th
         scope="row"
-        className="py-2 pr-2 text-left font-normal"
+        className={`py-2 pr-2 text-left font-normal${indent ? " pl-4 text-text-muted" : ""}`}
       >
         {subject.label}
       </th>
@@ -214,6 +279,70 @@ function SubjectRow({
         {met.toLocaleString()} of {subject.entries.length.toLocaleString()}
       </td>
     </tr>
+  );
+}
+
+/** SAK-25: "Vocabulary" — a parent row over Radicals, Kanji, and Words,
+ * rendered as its own header row followed by the three indented child rows
+ * (reusing SubjectRow as-is, just with `indent`).
+ *
+ * The parent's own bar and count are an AGGREGATE, not a fourth subject: its
+ * facts are the three children's facts concatenated, so `tallyFacts` sees the
+ * exact same population it would if asked to count them all at once, and its
+ * `met` is the three children's `met` summed — safe because the three are
+ * disjoint entry populations (a radical, a kanji, and a word are never the
+ * same entry), so no entry is double-counted. */
+function VocabularyGroupRow({
+  subjects,
+  facts,
+  claims,
+  now,
+}: {
+  subjects: Subject[];
+  facts: Record<FactId, FactAggregate>;
+  claims: Claims;
+  now: number;
+}) {
+  const allFacts = subjects.flatMap((s) => s.facts);
+  const tally = tallyFacts(allFacts, facts, claims, now);
+  const met = subjects.reduce((n, s) => n + metCount(s, facts, claims), 0);
+  const entryCount = subjects.reduce((n, s) => n + s.entries.length, 0);
+
+  return (
+    <>
+      <tr>
+        <th scope="row" className="py-2 pr-2 text-left font-normal">
+          Vocabulary
+        </th>
+        <td className="w-[92px] py-2">
+          <span
+            aria-hidden="true"
+            className="flex h-1.5 overflow-hidden rounded-full bg-panel"
+          >
+            {barSegments(tally, allFacts.length).map((seg) => (
+              <span
+                key={seg.bucket}
+                className={`block h-full ${seg.fill}`}
+                style={{ flex: seg.flex }}
+              />
+            ))}
+          </span>
+        </td>
+        <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
+          {met.toLocaleString()} of {entryCount.toLocaleString()}
+        </td>
+      </tr>
+      {subjects.map((s) => (
+        <SubjectRow
+          key={s.id}
+          subject={s}
+          facts={facts}
+          claims={claims}
+          now={now}
+          indent
+        />
+      ))}
+    </>
   );
 }
 
