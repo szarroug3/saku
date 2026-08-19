@@ -66,9 +66,9 @@ import {
   constructionIntroForMarker,
   isConstructionMarker,
 } from "@/data/counter-categories";
-import { COUNTER_ENTRIES } from "@/data/counters";
+import { COUNTER_ENTRIES, counterForm } from "@/data/counters";
 import { termEntry } from "@/data/terms";
-import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
+import { TRACK_INTROS, TSU_INTRO, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
@@ -415,6 +415,11 @@ export function lessonSteps(
   // pair contrast is in play — so its intro lands once, ahead of the first pair,
   // the same word-gated shape the rules above use. See phase-intros.ts.
   let markedTransitivity = false;
+  // The つ counter intro rides the first つ-counter item (ひとつ, ふたつ, …), the
+  // escape-hatch pitch for the one counter that always works, shown once ahead
+  // of the form that first needs it. Non-term (no "〜つ" glossary word), so it
+  // is a plain intro card rather than a term step. See TSU_INTRO.
+  let markedTsu = false;
   // The pitch card rides the first word carrying a verified pitch, so the overline
   // is taught before it is first drawn (on that word's reveal). ONCE EVER, not per
   // lesson: it is a concept card whose id lives in CONCEPT_CARD_IDS, so a learner
@@ -509,6 +514,10 @@ export function lessonSteps(
     if (!markedTransitivity && item.kind === "transitivity") {
       markedTransitivity = true;
       steps.push({ type: "intro", key: TRANSITIVITY_INTRO.id, intro: TRANSITIVITY_INTRO });
+    }
+    if (!markedTsu && counterForm(item.entry)?.counter === "つ") {
+      markedTsu = true;
+      steps.push({ type: "intro", key: TSU_INTRO.id, intro: TSU_INTRO });
     }
     // The counter sound-change rule is no longer form-gated here: each object
     // counter is a generative CATEGORY that carries its own rule card (attach +
