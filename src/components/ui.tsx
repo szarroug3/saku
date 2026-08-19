@@ -118,6 +118,7 @@ export function Card({
 export function Lbl({
   children,
   tone = "muted",
+  flush,
   className,
 }: {
   children: ReactNode;
@@ -125,6 +126,15 @@ export function Lbl({
    * lifts a top-level group header, as the Practice page does over its
    * sub-labelled sections. */
   tone?: "muted" | "accent";
+  /** Drops the label's own mb-2 for a caller composing its own spacing
+   * (e.g. a flex row pairing the label with an Info icon, where the label's
+   * usual bottom margin would land inside the row's cross-axis box and pull
+   * `items-center` off the icon). A prop branch rather than a `className`
+   * override for the same reason `Btn`'s `danger`/`go` are: `cx` is a plain
+   * join, not tailwind-merge, so `mb-2 … mb-0` both reach the element and
+   * the generated stylesheet's declaration order picks the winner, not the
+   * caller — `mb-2` won every time. */
+  flush?: boolean;
   /** Extra classes merged onto the label, e.g. `w-full` to force it onto its
    * own line inside a `flex-wrap` row of chips (the Library's two filter
    * rows). Most callers never pass this. */
@@ -133,7 +143,8 @@ export function Lbl({
   return (
     <p
       className={cx(
-        "mb-2 text-[13px] font-semibold uppercase tracking-[0.04em]",
+        flush ? "" : "mb-2",
+        "text-[13px] font-semibold uppercase tracking-[0.04em]",
         tone === "accent" ? "text-accent" : "text-text-muted",
         className,
       )}
