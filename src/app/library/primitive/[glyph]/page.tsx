@@ -64,9 +64,13 @@ function PrimitiveView({ glyph }: { glyph: string }) {
         </p>
       </Card>
 
-      <ComponentUses component={glyph} history={history} />
+      {/* ComponentUses can render nothing (a shape used in no kanji) and
+          EntryLinks always renders — each gets its own divider prop rather
+          than a divider wrapped around the call here, so a hairline never
+          appears over an empty ComponentUses. */}
+      <ComponentUses component={glyph} history={history} divider />
 
-      <EntryLinks mixups={{ confused: [], lookalike: [] }} />
+      <EntryLinks mixups={{ confused: [], lookalike: [] }} divider />
 
     </>
   );

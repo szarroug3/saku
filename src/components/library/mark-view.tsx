@@ -454,42 +454,54 @@ function SentenceRuleExamples({ markId }: { markId: string }) {
   );
 }
 
+// The hairline divider EntrySurface's <Section> uses to separate stacked
+// sections, applied here (SAK-80 round 2) between MarkView's own top-level
+// blocks now that Card draws no box of its own — otherwise two plain runs of
+// text would read as one, with nothing to tell an "intro" block from a
+// "conversion table" block or the closing note.
+const BLOCK_DIVIDER = "mt-5 border-t border-border/50 pt-5";
+
 export function MarkView({ mark }: { mark: Mark }) {
   const sentenceTierId = mark.id.replace("sentence-rule-", "") as SentenceOrderingTierId;
 
+  // Resolved up front (rather than filtered inline in the map below) so the
+  // divider logic can tell "the first block on the page" from "a later one"
+  // across all three groups (intros, conversion rows, the closing note)
+  // without guessing at how many of each a given mark actually renders.
+  const introBlocks = mark.intros
+    .map((intro) => {
+      // The paragraphs about THIS mark. For four of the five marks that is all
+      // of them; for ゛ and ゜, which share one lesson card, it is the half that
+      // is about the one you opened. See `bodyFor`.
+      const body = bodyFor(intro, mark.glyph).map((p) =>
+        // Drop the paragraph's mark plate on the Library page. The entry header
+        // already shows this rule's glyph at 76px directly above, and `bodyFor`
+        // only ever keeps paragraphs whose plate IS that glyph (the ゜ half of
+        // the dakuten card is filtered out on the ゛ page and vice versa), so
+        // every plate that would render here is the header glyph a second time,
+        // the same character twice with nothing between them. The plate still
+        // earns its place in the teach walk, whose hero is a sentence, not a
+        // glyph — there is no header there for it to repeat. Library-only.
+        p.mark === mark.glyph ? { ...p, mark: undefined } : p,
+      );
+      return body.length === 0 ? null : { intro, body };
+    })
+    .filter((b): b is { intro: (typeof mark.intros)[number]; body: ReturnType<typeof bodyFor> } => b !== null);
+
+  const hasRows = mark.rows.length > 0;
+  const hasNote = !!mark.note;
+
   return (
     <>
-      {mark.intros.map((intro) => {
-        // The paragraphs about THIS mark. For four of the five marks that is all
-        // of them; for ゛ and ゜, which share one lesson card, it is the half that
-        // is about the one you opened. See `bodyFor`.
-        const body = bodyFor(intro, mark.glyph).map((p) =>
-          // Drop the paragraph's mark plate on the Library page. The entry header
-          // already shows this rule's glyph at 76px directly above, and `bodyFor`
-          // only ever keeps paragraphs whose plate IS that glyph (the ゜ half of
-          // the dakuten card is filtered out on the ゛ page and vice versa), so
-          // every plate that would render here is the header glyph a second time,
-          // the same character twice with nothing between them. The plate still
-          // earns its place in the teach walk, whose hero is a sentence, not a
-          // glyph — there is no header there for it to repeat. Library-only.
-          p.mark === mark.glyph ? { ...p, mark: undefined } : p,
-        );
-        if (body.length === 0) return null;
+      {introBlocks.map(({ intro, body }, index) => {
         const label = scriptLabel(intro.setId);
         return (
-          // Prose in one Card, its worked examples in a SEPARATE Card beside it,
-          // so the examples read as their own box in the row rather than a panel
-          // sunk inside the prose box. A container query drives the split (this
-          // column is far narrower than the viewport once the Library sidebar is
-          // there, so a viewport breakpoint left it one column with room to
-          // spare); it stacks below when the column is genuinely narrow. The
-          // threshold is @xl (36rem) to match the walk and to clear the 148px
-          // sidebar at ordinary laptop widths. `items-stretch` makes the two
-          // Cards share the row's height, so the shorter examples box lines up
-          // with the prose rather than floating. The prose passes no `measure`
-          // cap: it sits in a sized flex column, and a 64ch cap on top of that
-          // was the early word-wrap these pages had.
-          <div key={intro.id} className="@container">
+          // Prose in one Card, its worked examples in a SEPARATE Card beneath
+          // it. Every block after the first (across intros, conversion rows and
+          // the closing note) opens with a hairline divider instead of the old
+          // per-block box, so the run of blocks reads as one page rather than a
+          // stack of unrelated boxes.
+          <div key={intro.id} className={index === 0 ? "" : BLOCK_DIVIDER}>
             {intro.punctuation?.length ? (
               // Punctuation is a catalogue, so it gets a table Card of the marks
               // with the closing sentence in a Card beneath, rather than the
@@ -547,8 +559,11 @@ export function MarkView({ mark }: { mark: Mark }) {
           carries its own heading ("dakuten · one mark, five sounds"), its own
           call-outs and its own speakers, so there is nothing for this file to add
           around it and it does not get any. */}
-      {mark.rows.map((row) => (
-        <Card key={row.id}>
+      {mark.rows.map((row, index) => (
+        <Card
+          key={row.id}
+          className={introBlocks.length > 0 || index > 0 ? BLOCK_DIVIDER : undefined}
+        >
           <ConversionCard row={row} />
         </Card>
       ))}
@@ -558,8 +573,8 @@ export function MarkView({ mark }: { mark: Mark }) {
           an aside about the rule rather than as more of the rule. Only small
           kana has one (ぁぃぅぇぉ); see SMALL_VOWEL_NOTE for why it is a line
           here and not a sixth entry on the shelf. */}
-      {mark.note ? (
-        <Card>
+      {hasNote ? (
+        <Card className={introBlocks.length > 0 || hasRows ? BLOCK_DIVIDER : undefined}>
           <Lbl>Also worth knowing</Lbl>
           <Callout label="The other small kana.">{mark.note}</Callout>
         </Card>

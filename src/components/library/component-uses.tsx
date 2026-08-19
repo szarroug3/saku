@@ -36,10 +36,17 @@ const COMPONENT_USE_CAP = 24;
 export function ComponentUses({
   component,
   history,
+  divider = false,
 }: {
   /** The primitive shape itself. */
   component: string;
   history: HistoryFile;
+  /** Open with the hairline divider EntrySurface's Section uses — for a caller
+   * (the primitive page) that stacks this directly below another Card-
+   * rendering block with nothing else between them. Skipped when this
+   * component renders nothing (kanji.length === 0, below), so a divider never
+   * floats over empty content. Default false: most callers don't need it. */
+  divider?: boolean;
 }) {
   const kanji = usedAsPartIn(component);
   // NO `useMemo`, though the join walks all 12,555 vocabulary rows. The React
@@ -58,7 +65,7 @@ export function ComponentUses({
 
   return (
     <>
-      <Card>
+      <Card className={divider ? "mt-5 border-t border-border/50 pt-5" : undefined}>
         <Lbl>Used as a part in</Lbl>
         <div className="flex flex-wrap items-center gap-2.5">
           {shown.map((c) => (
@@ -83,7 +90,14 @@ export function ComponentUses({
       </Card>
 
       {known.length > 0 ? (
-        <WordsWith words={known} label="Words you know that use it" />
+        // Hairline divider (EntrySurface's Section pattern), not WordsWith's
+        // own margin: it renders a plain Card too and the two would otherwise
+        // read as one run-on block with nothing between them. Wrapped here
+        // rather than inside WordsWith, which is also used with nothing above
+        // it and needs no divider of its own.
+        <div className="mt-5 border-t border-border/50 pt-5">
+          <WordsWith words={known} label="Words you know that use it" />
+        </div>
       ) : null}
     </>
   );

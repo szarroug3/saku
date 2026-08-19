@@ -43,7 +43,7 @@ import {
   runFactsFromSession,
   summarize,
 } from "@/components/results/summary";
-import { Btn, Card, FlatSurfaceProvider, Hint, SmallBtn } from "@/components/ui";
+import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import { entryDisplayLabel } from "@/components/results/entry-display-label";
 import { factInfo } from "@/lib/facts";
 import {
@@ -165,10 +165,10 @@ export function RoundComplete({
   const pickedBoxes = [...picked];
 
   return (
-    // Both Cards below de-box via context rather than each hand-stripping
-    // its own chrome — the same pattern EntrySurface uses for the redesigned
-    // Library entry pages. See useBorderlessSurface in ui.tsx. SAK-21.
-    <FlatSurfaceProvider borderless>
+    // No FlatSurfaceProvider needed here any more (SAK-80 round 2) — Card
+    // itself is now unconditionally de-boxed, so there is no context flag left
+    // for this screen's one Card to read.
+    <>
       <Card>
         <h1 className="mb-3 text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
@@ -286,6 +286,6 @@ export function RoundComplete({
           </div>
         </div>
       </Card>
-    </FlatSurfaceProvider>
+    </>
   );
 }
