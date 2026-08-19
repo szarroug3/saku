@@ -39,7 +39,7 @@ export interface HowItWorksBullet {
    * numbers/terms that are the actual point of this definition (SAK-27
    * review round two: "accent the things that need to stand out"). Optional;
    * most bullets need none, since the bold label already carries the weight.
-   * See accentTerms() in src/components/ui.tsx. */
+   * See accentTerms() in src/lib/accent-terms.tsx. */
   readonly bodyAccents?: readonly string[];
 }
 

@@ -60,7 +60,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { accentTerms, Btn, Lbl, PageTitle } from "@/components/ui";
+import { Btn, Lbl, PageTitle } from "@/components/ui";
+import { accentTerms } from "@/lib/accent-terms";
 import { browserStore, isIntroShown, markIntroShown } from "@/lib/intro-shown";
 import {
   SRS_INTRO_ACCENTS,

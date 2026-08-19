@@ -45,7 +45,7 @@ export const SRS_INTRO_HEADINGS: readonly string[] = [
 /** Terms accented (text-accent) inside each paragraph above, by index — the
  * "accent the things that need to stand out" half of the same review. A few
  * real landmarks per paragraph, not a rewrite: exact substrings only, see
- * accentTerms() in src/components/ui.tsx. */
+ * accentTerms() in src/lib/accent-terms.tsx. */
 export const SRS_INTRO_ACCENTS: readonly (readonly string[])[] = [
   ["spaced repetition (SRS)", "increasing intervals"],
   ["burns it into memory", "hint", "skip"],
