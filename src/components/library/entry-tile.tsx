@@ -254,34 +254,41 @@ export function EntryTile({
       >
         {entry.glyph}
       </div>
-      {/* ONE bottom slot for BOTH the romaji and the hover actions, not two
-          stacked rows. At rest it shows the reading; on hover/focus the reading
-          fades out and the 🔊(/↗ while selecting) fade in over the same line.
-          Sharing the slot keeps the tile compact — no empty reserved action row
-          under every glyph — and, because the slot is a fixed height, hovering
-          never reflows the grid. */}
-      <div className="relative mt-1 flex h-[13px] items-center justify-center">
-        <span className="min-w-0 max-w-full truncate text-xs text-text-muted transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0">
+      {/* ONE bottom slot for the reading AND its 🔊, side by side — not a hover
+          swap of one for the other. A swap put the speaker on the SAME pixels
+          as the reading and hid both behind a hover a learner had to find
+          first: at rest there was no button at all, and hovering just made
+          the reading vanish with nothing legible replacing it (SAK-79's
+          follow-up report). The reading now stays put and the 🔊 sits beside
+          it — small enough (`text-[11px]`, shrunk from the icon's default
+          size) to fit next to even the widest kana romaji (kyo, shu) inside
+          the smallest (60px) tile. Only the ↗ "peek" (select mode only, and
+          rare enough not to need permanent room) still reveals on hover. */}
+      <div className="relative mt-1 flex min-w-0 items-center justify-center gap-1">
+        <span className="min-w-0 max-w-full truncate text-xs text-text-muted">
           {subLabel(entry)}
         </span>
+        {speakable(entry) ? (
+          <HearButton
+            glyph={entry.glyph}
+            voiceName={voice}
+            stopPropagation
+            label={`Hear ${entryName(entry)}`}
+            className="relative z-10 flex-none text-[11px]"
+          />
+        ) : null}
         {/* Revealed on hover, or on the tile's OWN keyboard focus-visible — never
             on plain focus, which mouse-clicking to SELECT also leaves behind
             (see ROW_ARROW_REVEAL's note on the same bug for a shelf row).
-            `relative z-10` lifts these above the stretched Link the non-select
+            `relative z-10` lifts it above the stretched Link the non-select
             branch below wires behind the whole tile (see the file header) —
             harmless in select mode, where there is no such Link to out-stack. */}
-        <span className="absolute inset-0 flex items-center justify-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-          {speakable(entry) ? (
-            <HearButton
-              glyph={entry.glyph}
-              voiceName={voice}
-              stopPropagation
-              label={`Hear ${entryName(entry)}`}
-              className="relative z-10"
-            />
-          ) : null}
-          {selectMode ? <ViewLink entry={entry} className="relative z-10" /> : null}
-        </span>
+        {selectMode ? (
+          <ViewLink
+            entry={entry}
+            className="relative z-10 flex-none opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          />
+        ) : null}
       </div>
     </>
   );
