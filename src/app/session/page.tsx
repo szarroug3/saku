@@ -19,6 +19,7 @@ import {
   sentenceOrderingTeachSteps,
   type SentenceOrderingTierId,
 } from "@/components/session/sentence-ordering-teach-walk";
+import { LessonRail } from "@/components/session/lesson-rail";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { ConfigPreview } from "@/components/quiz/config-preview";
@@ -382,23 +383,38 @@ export default function SessionPage() {
               justify-center clip the start of overflowing content in a
               scroll container; min-height just lets this grow past the
               floor for a long card and scroll normally, same as before
-              (SAK-10). */}
-          <div className="flex min-h-full flex-col justify-center py-2">
-            {sentenceOrderingTeaching ? (
-              <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
-            ) : (
-              <TeachWalk
-                facts={session.teach}
-                history={history}
-                // "Seen before" vs never met is a PRESENTATION difference and only
-                // that — the budget put both here for the same reason and neither
-                // is treated differently. History is the only thing that can tell
-                // them apart, and it's read here rather than stored on the session
-                // so it can't go stale against a deleted session.
-                familiar={(f) => !!history.facts[f]?.seen}
-                shownIntros={shownCards}
-                step={at}
-              />
+              (SAK-10).
+
+              Centering alone turned "a card, then a void" into "a card, with
+              a void on both sides" — worse on a short card, because the
+              emptiness got MORE symmetric, not less (SAK-10, rejected). The
+              row below adds LessonRail in the side margin the centering
+              opened up, so a wide viewport gets ambient "up next" content
+              instead of just more balanced whitespace (SAK-10 direction 2).
+              The rail sits beside the content, both vertically centered as
+              one unit, and disappears below xl where there is no honest
+              margin left to put it in — see lesson-rail.tsx. */}
+          <div className="flex min-h-full items-center justify-center gap-8 py-2">
+            <div className="min-w-0 max-w-2xl flex-1">
+              {sentenceOrderingTeaching ? (
+                <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
+              ) : (
+                <TeachWalk
+                  facts={session.teach}
+                  history={history}
+                  // "Seen before" vs never met is a PRESENTATION difference and only
+                  // that — the budget put both here for the same reason and neither
+                  // is treated differently. History is the only thing that can tell
+                  // them apart, and it's read here rather than stored on the session
+                  // so it can't go stale against a deleted session.
+                  familiar={(f) => !!history.facts[f]?.seen}
+                  shownIntros={shownCards}
+                  step={at}
+                />
+              )}
+            </div>
+            {sentenceOrderingTeaching ? null : (
+              <LessonRail steps={teachItems} at={at} />
             )}
           </div>
         </div>
