@@ -37,7 +37,7 @@ import {
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
-import { Btn, SmallBtn } from "@/components/ui";
+import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import {
   legacyUnqualifiedReading,
@@ -2181,6 +2181,16 @@ export function DrillScreen() {
             ))}
           </div>
         )}
+
+        {/* On a short viewport the 3-column option grid can run past the
+            fold with nothing on screen to say so — the page scrolls (see
+            layout.tsx), but a learner has no reason to try scrolling a quiz
+            card unless something tells them there's more. Self-hiding: gone
+            the moment the page has nothing left below to scroll to. Not
+            shown for typedMode (nothing to overflow — one input box) or
+            particleDrill (a tap-the-sentence board, not this grid). See
+            SAK-21. */}
+        {!typedMode && !q.particleDrill ? <ScrollCue /> : null}
 
         {/* The reveal: the one thing colour can't say is WHICH answer was
             right. Held until you press Enter, so it's read rather than

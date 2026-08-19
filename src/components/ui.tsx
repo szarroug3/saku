@@ -7,6 +7,8 @@
 import {
   createContext,
   useContext,
+  useEffect,
+  useState,
   type ComponentProps,
   type ReactNode,
 } from "react";
@@ -16,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isNearPageBottom } from "@/lib/scroll-cue";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -387,5 +390,56 @@ export function PageTitle({
       <h1 className="mb-0.5 text-[22px] font-semibold">{title}</h1>
       {sub ? <p className="mb-[18px] text-[13px] text-text-muted">{sub}</p> : null}
     </>
+  );
+}
+
+/**
+ * "There's more below" — a quiet, fixed hint at the bottom of the viewport,
+ * shown only while the page has content past the fold. THE PAGE SCROLLS, NOT
+ * AN INNER FRAME (see layout.tsx), so scrolling always works; this exists
+ * for the learner who has never had to on a quiz card before and, on a short
+ * viewport, may not realise a multiple-choice grid runs past what's visible.
+ *
+ * Self-hiding: it tracks scroll/resize (via isNearPageBottom, kept pure and
+ * DOM-free for testing) and disappears the moment the page IS scrolled to
+ * its end, so it never sits over content once there's nothing left to
+ * scroll to. `pointer-events-none` — it is a hint, never a tap target, so it
+ * can't shadow a genuine option button sitting near the bottom edge.
+ */
+export function ScrollCue() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      const doc = document.documentElement;
+      setVisible(
+        !isNearPageBottom(window.scrollY, window.innerHeight, doc.scrollHeight),
+      );
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    // The grid's own height can change after mount (fonts, images), so a
+    // resize observer on the document catches that too, not just viewport
+    // resizes.
+    const ro = new ResizeObserver(check);
+    ro.observe(document.documentElement);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+      ro.disconnect();
+    };
+  }, []);
+
+  if (!visible) return null;
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center pb-2"
+    >
+      <span className="kq-material flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-muted shadow-sm">
+        more below <span aria-hidden="true">↓</span>
+      </span>
+    </div>
   );
 }

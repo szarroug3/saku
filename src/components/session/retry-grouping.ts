@@ -79,6 +79,17 @@ export function initialPicked(
 }
 
 /**
+ * The Retry button's label, given how many boxes are currently picked.
+ *
+ * Nothing picked is NOT "Retry …" — a disabled button with a bare ellipsis
+ * for a count reads as a label that failed to load, not as "there is
+ * nothing left to retry". Say the actual state instead. See SAK-21.
+ */
+export function retryButtonLabel(pickedCount: number): string {
+  return pickedCount ? `Retry ${pickedCount}` : "No retries left";
+}
+
+/**
  * The line above the picker, in the four states the round can be in.
  *
  * A function, and here rather than in the JSX, because it is the only place
@@ -90,19 +101,26 @@ export function initialPicked(
  * missed this round and landed clean on a later leg, `open` were not. The
  * round's history is not edited by either (see roundCompleteView) — this line
  * only ever describes what is left to do, and says what the retry earned.
+ *
+ * Counted in FACTS, not forms — spelled out as "fact(s)" below on purpose. The
+ * header above this line counts FORMS (roundFormCounts), a different unit
+ * that can print a different number for the same round, since one fact can
+ * carry several forms. Two different numbers with no unit on either read as
+ * a contradiction ("5 forms · 3 needs work" over "Your 4 misses are
+ * picked."); naming the unit here is what tells them apart. See SAK-21.
  */
 export function retryHint(open: number, back: number): string {
   const them = back === 1 ? "it" : "all " + back;
   if (open && back) {
-    return `You got ${them} back. The other ${open} ${
-      open === 1 ? "is" : "are"
-    } picked.`;
+    return `You got ${them} back. The other ${open} fact${
+      open === 1 ? "" : "s"
+    } ${open === 1 ? "is" : "are"} picked.`;
   }
   if (back) {
     return `You got ${them} back. Nothing left over, but pick anything you want another look at.`;
   }
   if (open) {
-    return `Your ${open} miss${open === 1 ? "" : "es"} ${
+    return `Your ${open} missed fact${open === 1 ? "" : "s"} ${
       open === 1 ? "is" : "are"
     } picked. Add or drop anything.`;
   }
