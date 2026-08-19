@@ -6,8 +6,11 @@ import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { FlatSurfaceProvider } from "@/components/ui";
 import type { PhaseIntro } from "@/data/phase-intros";
 import {
+  CHUNK_ROLE_LABELS,
+  SENTENCE_ORDERING_CHUNK_ROLES,
   SENTENCE_ORDERING_GUIDES,
   sentenceOrderingIntro as sharedSentenceOrderingIntro,
+  type ChunkRoleKey,
 } from "@/data/sentence-ordering-guides";
 
 export type SentenceOrderingTierId =
@@ -222,51 +225,11 @@ export const LEGACY_TIER_GUIDE: Record<SentenceOrderingTierId, TierGuide> = {
   },
 };
 
-type StepKey =
-  | "ending"
-  | "core"
-  | "topic"
-  | "marker"
-  | "action"
-  | "target"
-  | "context"
-  | "condition"
-  | "resultTopic";
-
-const DEFAULT_STEP_PARTS: readonly StepKey[] = ["topic", "core", "ending"];
-const REQUEST_STEP_PARTS: readonly StepKey[] = ["context", "target", "action", "ending"];
-const CONDITIONAL_STEP_PARTS: readonly StepKey[] = [
-  "condition",
-  "resultTopic",
-  "core",
-  "ending",
-];
-
-const STEP_PART_LABELS: Record<
-  SentenceOrderingTierId,
-  Partial<Record<StepKey, string>>
-> = {
-  simple: { topic: "Topic", core: "Object/detail", ending: "Final predicate" },
-  conditional: {
-    condition: "If part",
-    resultTopic: "Who the result is about",
-    core: "Other result information",
-    ending: "What happens",
-  },
-  causal: { topic: "Who the result is about", core: "Reason", ending: "What happened" },
-  obligation: { topic: "Who and when", core: "Required action", ending: "Must / have to" },
-  sequential: { topic: "Who", core: "Where or what", ending: "Action + added meaning" },
-  desire: { topic: "Who or what", core: "Action", ending: "Want / easy / hard" },
-  giving: { topic: "Whose side", core: "Who does what for whom", ending: "Giving / receiving" },
-  reported: { topic: "Who, what, or when", core: "Basic statement", ending: "Speaker's view" },
-  contrast: { topic: "Who the result is about", core: "First situation", ending: "What happened" },
-  request: {
-    context: "Time or place",
-    target: "What the action affects",
-    action: "Action",
-    ending: "Request / suggestion",
-  },
-};
+// Chunk roles and their plain-English labels live in
+// src/data/sentence-ordering-guides.ts (ChunkRoleKey, SENTENCE_ORDERING_CHUNK_ROLES,
+// CHUNK_ROLE_LABELS), shared with the assembly quiz's wrong-answer feedback
+// (src/lib/assembly-check.ts), which names a misplaced chunk with these same labels.
+type StepKey = ChunkRoleKey;
 
 export interface TierChunk {
   en: string;
@@ -880,9 +843,7 @@ function findChunkStart(sentence: string, chunk: string): number {
 }
 
 function stepPartOrder(tierId: SentenceOrderingTierId): readonly StepKey[] {
-  if (tierId === "request") return REQUEST_STEP_PARTS;
-  if (tierId === "conditional") return CONDITIONAL_STEP_PARTS;
-  return DEFAULT_STEP_PARTS;
+  return SENTENCE_ORDERING_CHUNK_ROLES[tierId];
 }
 
 function positionedStepParts(
@@ -1029,7 +990,7 @@ export function SentenceOrderingTeachWalk({
               <div className="mt-2 space-y-3">
                 {lesson.examples.map(({ example, activePart }, idx) => {
                   const partOrder = stepPartOrder(tierId);
-                  const labels = STEP_PART_LABELS[tierId];
+                  const labels = CHUNK_ROLE_LABELS[tierId];
                   const orderedSentence = example.enOrdered.replaceAll(", ", " → ");
                   const naturalParts = positionedStepParts(
                     example.en,
