@@ -97,7 +97,7 @@ export function KnowledgeBase({
   return (
     <section>
       <div className="mb-2 flex items-center gap-0.5">
-        <Lbl className="mb-0">What you know</Lbl>
+        <Lbl flush>What you know</Lbl>
         <Info>
           <dl className="space-y-1.5">
             {BUCKETS.filter((b) => BUCKET_INFO[b]).map((b) => (
