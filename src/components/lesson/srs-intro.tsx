@@ -8,6 +8,29 @@
 // ever meets a rest screen or a hint button. See src/lib/srs-intro-copy.ts for
 // the copy and the sourcing of every claim in it.
 //
+// PRESENTATION, ROUND TWO (second review pass, same ticket): "i meant for
+// this to be a page that appears on your first time on the learn page...
+// this is hard to read, a big blob of text. let's unmute the headers and
+// main text. accent the things that need to stand out." Fixed by giving it
+// real page weight in place (PageTitle, an accent Lbl eyebrow per paragraph,
+// a handful of text-accent landmark terms via accentTerms()) rather than
+// turning it into a blocking modal.
+//
+// WHY IN-FLOW, NOT A BLOCKING OVERLAY: her wording is "a page that appears
+// on your first time on the learn page", not "a dialog that blocks the
+// feed" — and it already IS the first thing rendered on /learn (see
+// home-feed.tsx), ahead of every track card, so "appears on your first
+// time" is already true positionally. The gap she flagged was that it read
+// like just another banner in the scroll, not that it failed to interrupt
+// you. The app's only modal precedent (ConfirmProvider / AlertDialog in
+// ui/confirm-dialog.tsx) is built for a single yes/no decision with a focus
+// trap, not for reading three paragraphs of teaching copy plus a link out;
+// stretching it to page-length content would be new, heavier machinery this
+// ticket never asked for. A strongly page-shaped in-flow section reads as
+// "a page" without inventing that machinery, and it costs a dismissed
+// learner nothing extra to scroll past on return visits (moot anyway, since
+// isIntroShown means a returning learner never sees it render at all).
+//
 // WHY THIS REUSES intro-shown.ts AND NOT A NEW claim-hint-STYLE MODULE
 // ======================================================================
 // The old ClaimExplainer had its own bespoke localStorage key (claim-hint.ts)
@@ -37,8 +60,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { accentTerms, Btn, Lbl, PageTitle } from "@/components/ui";
 import { browserStore, isIntroShown, markIntroShown } from "@/lib/intro-shown";
 import {
+  SRS_INTRO_ACCENTS,
+  SRS_INTRO_HEADINGS,
   SRS_INTRO_LINK_HREF,
   SRS_INTRO_LINK_LABEL,
   SRS_INTRO_LINK_TEXT,
@@ -64,26 +90,37 @@ export function SrsIntro() {
   };
 
   return (
-    <div className="kq-material mb-3.5 flex flex-col gap-2.5 rounded-xl border border-accent bg-accent-bg p-[18px]">
+    <div className="kq-material mb-5 flex flex-col gap-4 rounded-xl border border-accent bg-accent-bg p-5">
+      <PageTitle
+        title="Before you start"
+        sub="A quick read on how Saku teaches, then you're set."
+      />
+
       {SRS_INTRO_PARAGRAPHS.map((p, i) => (
-        <p key={i} className="text-[13px] leading-relaxed text-text">
-          {p}
-        </p>
+        <div key={i}>
+          <Lbl tone="accent">{SRS_INTRO_HEADINGS[i]}</Lbl>
+          <p className="text-[13px] leading-relaxed text-text">
+            {accentTerms(p, SRS_INTRO_ACCENTS[i] ?? [])}
+          </p>
+        </div>
       ))}
-      <p className="text-[13px] leading-relaxed text-text">
+
+      <p className="text-[13px] leading-relaxed text-text-muted">
         <Link href={SRS_INTRO_LINK_HREF} className="font-medium text-accent">
           {SRS_INTRO_LINK_LABEL}
         </Link>{" "}
         {SRS_INTRO_LINK_TEXT}
       </p>
-      <button
+
+      <Btn
+        go
         type="button"
         onClick={onDismiss}
         aria-label="Got it, don't show this again"
-        className="kq-material -mb-0.5 w-fit shrink-0 cursor-pointer rounded-lg border border-accent bg-card px-2 py-0.5 text-xs text-accent hover:bg-panel"
+        className="w-fit shrink-0"
       >
         Got it
-      </button>
+      </Btn>
     </div>
   );
 }
