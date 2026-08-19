@@ -22,7 +22,6 @@ import {
 import { LessonRail } from "@/components/session/lesson-rail";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
-import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, SmallBtn } from "@/components/ui";
 import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
@@ -462,11 +461,6 @@ export default function SessionPage() {
         />
         <div className="shrink-0 border-t border-border">
           <div className="px-3 py-3">
-            {onLast ? (
-              <div className="mb-3 rounded-lg border border-border bg-panel px-3 py-2">
-                <ConfigPreview />
-              </div>
-            ) : null}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Btn
                 onClick={() => setTeachStep(at - 1)}
