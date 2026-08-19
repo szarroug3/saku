@@ -94,6 +94,6 @@ describe("fact-checked claims stay in the copy", () => {
   test("pause vs end session names the real button labels", () => {
     const pauseEnd = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "pause-end")!;
     const labels = pauseEnd.bullets!.map((b) => b.label);
-    assert.deepEqual(labels, ["Done for now", "End session"]);
+    assert.deepEqual(labels, ["Pause", "End session"]);
   });
 });

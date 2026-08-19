@@ -16,8 +16,11 @@
 // that felt so helpful in the first draft. An earlier version of this screen
 // was the nicest-looking one in the set and it defeated the entire feature.
 //
-// What's left is: how long (the countdown and the wall-clock return time), and
-// the two ways out. That's the screen.
+// What's left is: how long (the countdown and the wall-clock return time), a
+// way to skip the wait, and the config for the next round. Pause and End
+// session are NOT rendered here — they live once, on the SessionHud strip
+// above (SAK-55) — so this screen's own affordances are just "how long" and
+// "skip it".
 //
 // (The SESSION-COMPLETE screen may show results — it's a different screen,
 // after a different decision, and nothing follows it. Don't reason from it
@@ -47,8 +50,6 @@ export function RestScreen({
   session,
   now,
   onStart,
-  onDone,
-  onComplete,
 }: {
   session: StudySession;
   /** The ticking clock, owned by the route so this and the bar above it agree.
@@ -56,8 +57,6 @@ export function RestScreen({
    * is only how often we look at it. */
   now: number | null;
   onStart: () => void;
-  onDone: () => void;
-  onComplete: () => void;
 }) {
   // Before the clock has been read, show the countdown rather than the Start
   // button: claiming "ready" and being wrong would skip someone's rest, where
@@ -75,9 +74,13 @@ export function RestScreen({
               Round {nextRound}
             </p>
             <p className="text-[26px] font-light">Ready when you are.</p>
+            {/* Pause and End session are NOT repeated here — they already live
+                on the SessionHud strip above (SAK-55). This screen used to
+                grow its own "Done for now" / "Complete session now" pair,
+                worded differently from the HUD's identical-in-function
+                buttons so the two wouldn't read as duplicates; that was the
+                bug, not the fix. One wording, one place each. */}
             <div className="mt-6 flex justify-center gap-2">
-              <SmallBtn onClick={onDone}>Done for now</SmallBtn>
-              <SmallBtn onClick={onComplete}>Complete session now</SmallBtn>
               <Btn autoFocus go onClick={onStart}>
                 Start round {nextRound}
               </Btn>
@@ -100,9 +103,9 @@ export function RestScreen({
                 Come back at {formatReturnTime(session.restUntil)}
               </p>
             )}
+            {/* Pause and End session live on the SessionHud strip above, not
+                here — see the note in the ready branch above (SAK-55). */}
             <div className="mt-6 flex justify-center gap-2">
-              <SmallBtn onClick={onDone}>Done for now</SmallBtn>
-              <SmallBtn onClick={onComplete}>Complete session now</SmallBtn>
               {/* Skipping is yours to do. The app doesn't hide it and doesn't
                   argue with you about it. */}
               <SmallBtn onClick={onStart}>Start now →</SmallBtn>
