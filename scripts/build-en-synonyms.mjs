@@ -32,24 +32,32 @@
 // gloss, its paren-stripped form, and each comma-separated piece — and each
 // fragment is reduced to a query key with `synonymKeyOf` (imported from
 // en-match.ts, not reimplemented, so the two can never drift about what
-// reduces cleanly). A gloss that is already a bare word ("teacher") or a bare
-// infinitive ("to eat") keys straight in; anything left with a space, a digit,
-// or other punctuation is skipped rather than guessed at — Datamuse's
-// `ml=<phrase>` on a MULTI-WORD QUERY was verified (by hand, see the ticket)
-// to be mostly co-occurrence noise, not real synonymy: `ml=doesn't+exist`
-// puts one real hit ("nonexistent") at rank 0, tags a SECOND result
-// `results_type:backfill_gloss` (Datamuse's own "ran out of real data"
-// marker), and everything after that is a flat, indistinguishable noise
-// floor. A DELIBERATE JUDGMENT CALL, revisited once already: now that
-// candidate SYNONYMS may themselves be short phrases (see `isSane` in
-// scripts/build-en-synonyms.mjs — "turn off" for "abhor" passed review),
-// `synonymKeyOf` still only reduces QUERY KEYS from single words, not
-// multi-word gloss pieces. The two are not symmetric risks: a multi-word
-// CANDIDATE was already vetted by gap-detection/backfill-exclusion against a
-// query Datamuse could answer well; a multi-word QUERY reopens exactly the
-// phrase-noise failure mode above at the query itself, before any of that
-// filtering gets a chance to run. Flagged for Sam rather than resolved
-// silently — see the ticket write-up's open questions.
+// reduces cleanly). A gloss that is already a bare word ("teacher"), a bare
+// infinitive ("to eat"), or a short run (up to four) of plain words ("does
+// not exist", "old japanese coin") keys straight in; anything left with a
+// digit or other punctuation, or longer than four words, is skipped rather
+// than guessed at.
+//
+// MULTI-WORD QUERIES WERE ONCE EXCLUDED HERE ENTIRELY — THAT WAS WRONG, AND
+// HAS BEEN CORRECTED. The original version of this script only ever reduced
+// single-word fragments to query keys, on the theory that a multi-word
+// `ml=<phrase>` query "reopens the phrase-level noise problem this ticket
+// started from." That theory does not survive checking the actual API
+// response. `ml=doesn't+exist` (curl it yourself) has EXACTLY the same
+// structure the single-word case does: position 0 ("nonexistent") is tagged
+// `syn`+`results_type:primary_external` — genuine signal; position 1
+// ("come") is tagged `results_type:backfill_gloss` — Datamuse's own explicit
+// low-confidence marker; everything after that has no `results_type` tag and
+// scores compressed into a flat noise band with no real ordering — the exact
+// "flat noise floor past the backfill marker" pattern the score-gap +
+// backfill-exclusion filter below was ALREADY built to stop at for single
+// words (see "WHAT ml CANDIDATES ARE KEPT" below). That filter runs
+// unmodified on multi-word queries now — there is no second filtering
+// mechanism, because none was needed: the phrase case was never actually a
+// different shape of problem, just a query the pipeline hadn't been pointed
+// at yet. `rel_syn` stays single-word-only (it is a WordNet relation over
+// single lexical entries, not a phrase index), so multi-word keys skip it
+// and rely on `ml` alone — see `candidatesFor` below.
 //
 // THE DATAMUSE QUERY STRATEGY (verified by hand against the live API,
 // REVISED once already — see below)
@@ -345,12 +353,22 @@ function isBackfillTagged(tags) {
 
 /** One key's raw candidate words from Datamuse: rel_syn UNION ml's
  * high-confidence cluster (syn-tagged, plus the untagged run that survives
- * gap-detection), pre-sanity-filtering. Both sources are always queried —
- * see the header's "THE DATAMUSE QUERY STRATEGY" for why rel_syn-first
- * fallback silently dropped good synonyms like "hate"/"detest" for "abhor". */
+ * gap-detection), pre-sanity-filtering. Both sources are always queried for a
+ * single-word key — see the header's "THE DATAMUSE QUERY STRATEGY" for why
+ * rel_syn-first fallback silently dropped good synonyms like "hate"/"detest"
+ * for "abhor". A MULTI-WORD key skips rel_syn entirely and relies on ml
+ * alone: rel_syn is a WordNet relation over single lexical entries, not a
+ * phrase index, so querying it for "does not exist" would just waste a
+ * request for an empty/meaningless response — the multi-word signal lives
+ * entirely in ml (see the header's "MULTI-WORD QUERIES WERE ONCE EXCLUDED"
+ * section for why ml alone is safe to trust here, via the same
+ * score-gap/backfill-exclusion filter used below). */
 async function candidatesFor(key) {
+  const isMultiWord = key.includes(" ");
   const [relSynRaw, mlRaw] = await Promise.all([
-    datamuseFetch(`rel_syn=${encodeURIComponent(key)}`),
+    isMultiWord
+      ? Promise.resolve([])
+      : datamuseFetch(`rel_syn=${encodeURIComponent(key)}`),
     datamuseFetch(`ml=${encodeURIComponent(key)}`),
   ]);
 
@@ -360,19 +378,49 @@ async function candidatesFor(key) {
     (r) => typeof r.score === "number" && !isBackfillTagged(r.tags),
   );
 
+  const hasSynSignal = scored.some((r) => r.tags?.includes("syn"));
   const tagged = scored
     .filter((r) => r.tags?.includes("syn"))
     .slice(0, MAX_SYN_TAGGED)
     .map((r) => r.word);
 
+  // MULTI-WORD, ZERO-syn-signal safety cap suppression. Found by hand-checking
+  // ml=<phrase> for keys this ticket's extension newly reduces
+  // ("not being", from ない's own gloss "not being (there)" once
+  // paren-stripped): with no `syn`-tagged hit anywhere and no backfill marker
+  // either, the whole result list decays in ~0.00003-per-step increments —
+  // GAP_RATIO never trips, so the UNTAGGED_SAFETY_CAP fallback (tuned against
+  // "yes"/"persimmon", both concrete/adjective single WORDS with a real if
+  // incomplete embedding neighbourhood) walks straight to its cap and accepts
+  // 7 candidates that are mostly unrelated negation phrases ("not that", "not
+  // applicable", "no longer") or outright non-English ("nicht", German for
+  // "not"). A second case, "make light of" (an idiom with likewise zero syn
+  // tags), shows the failure mode isn't only flat noise: its top untagged hit
+  // by score, "make fun of", is a DIFFERENT idiom (mockery, not dismissal) —
+  // co-occurrence-adjacent, not synonymous. Neither failure was possible to
+  // hit for a single WORD query in the original pass (every single-word
+  // gloss checked either had real syn-tag grounding or was a concrete noun
+  // where the untagged neighbourhood, while imprecise, was still genuinely
+  // related). For a multi-word key specifically, "Datamuse has zero
+  // syn-tagged relational data for this exact phrase" is itself a reliable
+  // signal that the untagged tier is unmoored guessing, not a near-miss
+  // tier — so the safety-cap fallback is suppressed entirely for that case,
+  // trading away some legitimate ml-only phrase coverage for the precision
+  // this pool's whole design exists to protect. A multi-word key WITH at
+  // least one syn-tagged hit (real grounding exists) keeps the exact same
+  // gap-detected untagged walk a single-word key gets.
+  const suppressUntagged = isMultiWord && !hasSynSignal;
+
   const untagged = [];
   let prevScore = null;
-  for (const r of scored) {
-    if (r.tags?.includes("syn")) continue;
-    if (untagged.length >= UNTAGGED_SAFETY_CAP) break;
-    if (prevScore !== null && r.score / prevScore < GAP_RATIO) break;
-    untagged.push(r.word);
-    prevScore = r.score;
+  if (!suppressUntagged) {
+    for (const r of scored) {
+      if (r.tags?.includes("syn")) continue;
+      if (untagged.length >= UNTAGGED_SAFETY_CAP) break;
+      if (prevScore !== null && r.score / prevScore < GAP_RATIO) break;
+      untagged.push(r.word);
+      prevScore = r.score;
+    }
   }
 
   return [...relSyn, ...tagged, ...untagged];
@@ -608,7 +656,13 @@ async function main() {
     while (cursor < todo.length) {
       const i = cursor++;
       const key = todo[i];
-      const cached = existsSync(cachePathFor(`rel_syn=${key}`));
+      // A multi-word key never queries rel_syn (see `candidatesFor`), so its
+      // "already cached" check is against the ml response instead — checking
+      // the rel_syn path for it would always miss and force an unnecessary
+      // stagger even when the real (ml) response is already on disk.
+      const cached = key.includes(" ")
+        ? existsSync(cachePathFor(`ml=${encodeURIComponent(key)}`))
+        : existsSync(cachePathFor(`rel_syn=${encodeURIComponent(key)}`));
       if (cached) fromCache++;
       else await sleep(STAGGER_MS);
       const raw = await candidatesFor(key);
