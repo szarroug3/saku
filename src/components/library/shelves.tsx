@@ -82,7 +82,6 @@ import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import { filterSections, type ShelfSection } from "@/lib/library/shelf-view";
 import { curriculumRank, rangedGroups, wordClimbRank } from "@/lib/library/ranged-groups";
 import { sectionState, type Selection } from "@/lib/library/selection";
-import type { KnowledgeFilter } from "@/lib/library/url-state";
 
 import type { EntryId, NewKanjiOrder } from "@/types";
 
@@ -311,7 +310,7 @@ export function Shelf({
   onToggleSection,
   voice,
   keep,
-  filter = "all",
+  filter = "",
   selectMode,
 }: {
   kind: Kind;
@@ -326,9 +325,13 @@ export function Shelf({
    * pass a test built from `entryStanding` upstream (see library-page): the shelf
    * itself no longer paints standing, but it is still what the filter selects by. */
   keep?: (entry: LibEntry) => boolean;
-  /** Which filter is active, for the empty-state copy. The predicate above does
-   * the work; this only picks the words when it removes everything. */
-  filter?: KnowledgeFilter;
+  /** The active Status selection, already formatted as words ("known, solid",
+   * "no status") — for the empty-state copy only. The predicate above does the
+   * filtering; the Status dropdown is now a genuine multi-select (SAK-63), so
+   * this is a caller-built label rather than one enum value this file could
+   * switch on. Empty string means "no filter description needed" (nothing has
+   * been narrowed enough for a shelf to ever come up empty from it). */
+  filter?: string;
   /** Whether a plain click on a tile/row currently toggles selection (true) or
    * opens the entry (false, the default — see entry-tile.tsx's file header). */
   selectMode: boolean;
@@ -648,22 +651,15 @@ export function Shelf({
   );
 }
 
-/** What the shelf says when the knowledge filter removed everything on it. Only
- * reached with a filter active — All never empties a shelf — so it always names
- * the filter and points at the way out. */
-function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
-  const label =
-    filter === "unknown"
-      ? "not-known"
-      : filter === "getting-there"
-        ? "getting-there"
-        : filter === "mixup"
-          ? "mix-up"
-          : filter;
+/** What the shelf says when the Status filter removed everything on it. Only
+ * reached with a filter active — every status checked never empties a shelf —
+ * so it always names the filter (already formatted by the caller — see
+ * Shelf's `filter` prop) and points at the way out. */
+function FilterEmpty({ filter }: { filter: string }) {
   return (
     <p className="text-[13px] text-text-muted">
-      Nothing on this shelf matches the {label} filter.{" "}
-      <Hint>Switch the filter to All to see the whole shelf, or search.</Hint>
+      Nothing on this shelf matches the {filter} filter.{" "}
+      <Hint>Check more boxes in the Status dropdown to see the whole shelf, or search.</Hint>
     </p>
   );
 }
