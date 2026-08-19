@@ -1,7 +1,7 @@
 // LIBRARY INDEX — the serialized shape of the precomputed Library list/search
 // index (src/data/generated/library-index.json). Carries only what the Library
 // LIST page, search, and shelf grouping need — the same fields `LibEntry`
-// already exposed (glyph, readings, meanings, sub, weight) plus small structural
+// already exposed (glyph, readings, meanings, sub, weight, speakable) plus small structural
 // lookups (known facts, fact→entry, the kind list, sentence tier ids/labels).
 // Never a definition, an etymology, or anything a detail page alone needs — those
 // stay on the live derivation in library/entries.ts, read only by entry detail

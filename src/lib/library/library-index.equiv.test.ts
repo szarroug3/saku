@@ -106,6 +106,7 @@ test("LIB_ENTRIES matches live LIB_ENTRIES — same entries, same order, same fi
         ...(live.searchAlso !== undefined ? { searchAlso: [...live.searchAlso] } : {}),
         sub: live.sub,
         weight: live.weight,
+        speakable: live.speakable,
       },
       `entry ${i} (${live.id}) mismatch`,
     );
