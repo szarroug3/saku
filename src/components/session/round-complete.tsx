@@ -42,7 +42,7 @@ import { Btn, Card, Hint } from "@/components/ui";
 import { factInfo } from "@/lib/facts";
 import {
   roundCompleteView,
-  SESSION_ROUND_TARGET,
+  roundTargetOf,
   type StudySession,
 } from "@/lib/session";
 import type { FactId } from "@/types";
@@ -219,7 +219,7 @@ export function RoundComplete({
             {retryButtonLabel(pickedBoxes.length)}
           </Btn>
           <Btn go className="ml-auto" onClick={onComplete}>
-            {session.round >= SESSION_ROUND_TARGET
+            {session.round >= roundTargetOf(session)
               ? "Complete session"
               : "Complete round"}
           </Btn>
@@ -235,7 +235,7 @@ export function RoundComplete({
             there and promised a rest that wasn't coming. */}
         <Hint>
           Retries bring you back to this screen.{" "}
-          {session.round >= SESSION_ROUND_TARGET ? (
+          {session.round >= roundTargetOf(session) ? (
             <>
               <b>Complete session</b> finishes for good.
             </>

@@ -19,11 +19,14 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  effectiveRoundTarget,
   initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   roundCompleteView,
+  roundTargetOf,
   sessionKnownClaimTarget,
+  SESSION_ROUND_TARGET,
   type StudySession,
 } from "@/lib/session";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
@@ -444,52 +447,6 @@ test("recoveredAfterLeg on the first leg cannot claim a recovery", () => {
   assert.deepEqual(view.outstanding, [f("y")]);
 });
 
-// SAK-52: "mark these as known" claims sessionKnownClaimTarget, not the whole
-// session unconditionally. These pin WHICH facts that target names for the two
-// shapes a session can have — see the doc comment on the function itself for
-// why the split exists (a taught session's `teach` already matches its Learn
-// card's own claim; a Quiz-me-only run never populates `teach` at all).
-describe("sessionKnownClaimTarget — what 'mark known' claims", () => {
-  test("a normal taught session claims exactly what it taught", () => {
-    const [a, b] = ["a", "b"].map(f);
-    // teach === facts for a real lesson (home-feed's startTrack: `teach ?
-    // facts : []`), so this also covers the common case directly.
-    const session = { facts: [a, b], teach: [a, b] } as unknown as StudySession;
-    assert.deepEqual(sessionKnownClaimTarget(session), [a, b]);
-  });
-
-  test("a sentence Quiz-me still claims its (marker-only) teach set", () => {
-    const marker = f("grammar:sentence-ordering-tier/simple");
-    const drillFacts = ["s1", "s2", "s3"].map(f);
-    // startSentence's Quiz-me shape: teach is the marker alone, facts is the
-    // whole wide drill set — teach must win, or "mark known" would claim every
-    // readable prerequisite fact drilled alongside the tier, not just the tier.
-    const session = {
-      facts: [...drillFacts, marker],
-      teach: [marker],
-    } as unknown as StudySession;
-    assert.deepEqual(sessionKnownClaimTarget(session), [marker]);
-  });
-
-  test("a Quiz-me-only run (empty teach) falls back to the whole quizzed set", () => {
-    const [a, b, c] = ["a", "b", "c"].map(f);
-    // startTrack's generic Quiz-me shape: teach is `[]` (only `markSeen` ran at
-    // start, nothing was ever flagged taught) — the only case old finishSession
-    // never claimed anything for, and the only one with no narrower target than
-    // the full set to fall back to.
-    const session = { facts: [a, b, c], teach: [] } as unknown as StudySession;
-    assert.deepEqual(sessionKnownClaimTarget(session), [a, b, c]);
-  });
-
-  test("never returns the session's own array by reference", () => {
-    // finishSession hands this straight to postClaim; a caller that later
-    // mutated the returned array must not be able to reach into session state.
-    const teach = [f("a")];
-    const session = { facts: teach, teach } as unknown as StudySession;
-    assert.notEqual(sessionKnownClaimTarget(session), teach);
-  });
-});
-
 // SAK-52 REGRESSION: "Quiz me" (no teach set) reached round-complete with an
 // empty roundStats — "0 forms · 0 solid · 0 needs work" despite the learner
 // having genuinely answered every card. Both writers of the round-complete
@@ -531,4 +488,137 @@ describe("initialSessionPhase — where a fresh session begins (SAK-52 regressio
     assert.equal(initialSessionPhase([]), "starting");
     assert.notEqual(initialSessionPhase([]), "drilling");
   });
+});
+
+// ---------- SAK-52: single round + partial credit ----------
+//
+// The worked example, verbatim: a 5-item kana lesson (hiragana vowels — a, i,
+// u, e, o), quizzed directly from Learn (no teach set). The learner answers 2
+// of 5 (a, e) in the single round, then ends and picks one of the two ways
+// out. These tests pin the three functions that decide what happens: which
+// phase/round-count a "Quiz me" session gets (initialSessionPhase /
+// effectiveRoundTarget / roundTargetOf), and what "I already know these"
+// claims (sessionKnownClaimTarget) — real answers for a and e are never
+// touched by these functions; they are a matter of what finishSession commits
+// vs discards, which lives in quiz-session.tsx and cannot be unit-tested here.
+
+test("initialSessionPhase: a direct Quiz-me (no teach) starts at 'starting', a taught lesson at 'teaching'", () => {
+  assert.equal(initialSessionPhase([]), "starting");
+  assert.equal(initialSessionPhase([f("a")]), "teaching");
+});
+
+test("effectiveRoundTarget: a direct Quiz-me runs ONE round, a taught lesson runs the normal three", () => {
+  assert.equal(effectiveRoundTarget([]), 1);
+  assert.equal(effectiveRoundTarget([f("a")]), SESSION_ROUND_TARGET);
+  assert.equal(SESSION_ROUND_TARGET, 3, "the taught flow's round count is untouched");
+});
+
+test("roundTargetOf: reads the stored field, and falls back to teach.length for an old snapshot", () => {
+  const quizMe = sessionWith([f("a")], {}) as StudySession;
+  quizMe.teach = [];
+  quizMe.roundTarget = 1;
+  assert.equal(roundTargetOf(quizMe), 1);
+
+  const taught = sessionWith([f("a")], {}) as StudySession;
+  taught.teach = [f("a")];
+  taught.roundTarget = 3;
+  assert.equal(roundTargetOf(taught), 3);
+
+  // No stored field (a session snapshotted before it existed) — same rule,
+  // derived from teach.length, so an in-flight upgrade reads exactly what it
+  // would have been given at start.
+  const legacyQuizMe = sessionWith([f("a")], {}) as StudySession;
+  legacyQuizMe.teach = [];
+  assert.equal(roundTargetOf(legacyQuizMe), 1);
+  const legacyTaught = sessionWith([f("a")], {}) as StudySession;
+  legacyTaught.teach = [f("a")];
+  assert.equal(roundTargetOf(legacyTaught), SESSION_ROUND_TARGET);
+});
+
+/** The worked example's session, mid-choice: a direct Quiz-me over the five
+ * vowels, one round closed with a and e answered (i, u, o never reached). */
+function vowelQuizMeAfterRound(): Pick<
+  StudySession,
+  "teach" | "facts" | "totalStats"
+> {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  return {
+    teach: [], // direct Quiz-me from Learn — see startTrack's teach:false path
+    facts: [a, i, u, e, o],
+    totalStats: stats({
+      a: detail({ seen: 1, firstTryCorrect: true, firstTryCount: 1, correct: 1 }),
+      e: detail({ seen: 1, misses: 1, firstTryCorrect: false, everCorrect: true, correct: 1 }),
+    }),
+  };
+}
+
+test("sessionKnownClaimTarget: claims only what was never answered — a and e are left alone", () => {
+  const target = sessionKnownClaimTarget(vowelQuizMeAfterRound());
+  assert.deepEqual(
+    [...target].sort(),
+    ["i", "o", "u"].map(f).sort(),
+    "exactly the three unanswered vowels — a and e keep their real results",
+  );
+  assert.ok(!target.includes(f("a")), "a was answered — never re-claimed");
+  assert.ok(!target.includes(f("e")), "e was answered (and missed once) — never re-claimed");
+});
+
+test("sessionKnownClaimTarget: nothing answered claims the whole batch", () => {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  const target = sessionKnownClaimTarget({
+    teach: [],
+    facts: [a, i, u, e, o],
+    totalStats: {},
+  });
+  assert.deepEqual([...target].sort(), [a, e, i, o, u].sort());
+});
+
+test("sessionKnownClaimTarget: everything answered claims nothing — no blind re-claim over real results", () => {
+  const [a, i, u, e, o] = ["a", "i", "u", "e", "o"].map(f);
+  const allAnswered = stats(
+    Object.fromEntries(
+      [a, i, u, e, o].map((k) => [k, detail({ seen: 1, everCorrect: true, correct: 1 })]),
+    ),
+  );
+  const target = sessionKnownClaimTarget({
+    teach: [],
+    facts: [a, i, u, e, o],
+    totalStats: allAnswered,
+  });
+  assert.deepEqual(target, []);
+});
+
+test("sessionKnownClaimTarget: a taught lesson narrows to the TEACH set, not the wider facts set", () => {
+  const [a, b, c] = ["a", "b", "c"].map(f);
+  // facts is wider than teach (budget topped it up with review material); only
+  // the taught subset is ever a claim candidate, and only the untaught-and-
+  // unanswered part of THAT.
+  const target = sessionKnownClaimTarget({
+    teach: [a, b],
+    facts: [a, b, c],
+    totalStats: stats({ a: detail({ seen: 1, everCorrect: true, correct: 1 }) }),
+  });
+  assert.deepEqual(target, [b]);
+});
+
+test("sessionKnownClaimTarget: a sentence Quiz-me still narrows within its (marker-only) teach set", () => {
+  const marker = f("grammar:sentence-ordering-tier/simple");
+  const drillFacts = ["s1", "s2", "s3"].map(f);
+  // startSentence's Quiz-me shape: teach is the marker alone, facts is the
+  // whole wide drill set — teach must win, or "mark known" would claim every
+  // readable prerequisite fact drilled alongside the tier, not just the tier.
+  const target = sessionKnownClaimTarget({
+    facts: [...drillFacts, marker],
+    teach: [marker],
+    totalStats: {},
+  });
+  assert.deepEqual(target, [marker]);
+});
+
+test("sessionKnownClaimTarget: never returns the session's own array by reference", () => {
+  // finishSession hands this straight to postClaim; a caller that later
+  // mutated the returned array must not be able to reach into session state.
+  const teach = [f("a")];
+  const target = sessionKnownClaimTarget({ facts: teach, teach, totalStats: {} });
+  assert.notEqual(target, teach);
 });
