@@ -190,13 +190,15 @@ export function MixUps({
 
   return (
     <section>
-      <Lbl>
-        Things you mix up
-        {activeCount
-          ? ` · ${activeCount} pair${activeCount === 1 ? "" : "s"}`
-          : ""}
+      <div className="mb-2 flex items-center gap-0.5">
+        <Lbl flush>
+          Things you mix up
+          {activeCount
+            ? ` · ${activeCount} pair${activeCount === 1 ? "" : "s"}`
+            : ""}
+        </Lbl>
         <Info>{MIX_UP_INFO}</Info>
-      </Lbl>
+      </div>
 
       {rows.length === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">
