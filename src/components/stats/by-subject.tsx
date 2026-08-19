@@ -41,7 +41,10 @@
 // average with the arithmetic filed off, and it would put 生 in a bucket that no
 // fact of 生 is in. `met` counts entries, and counting is all it does.
 
+import { useState } from "react";
+
 import { Lbl } from "@/components/ui";
+import { EntryBreakdown } from "@/components/stats/entry-breakdown";
 import { barSegments, tallyFacts } from "@/components/stats/tally";
 import { counterForm, isBareNumber } from "@/data/counters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
@@ -275,6 +278,15 @@ export function BySubject({
   history: HistoryFile;
 }) {
   const learnedSentenceCount = learnedSentenceTierIds(history).length;
+  // SAK-78 follow-up review: "these should be clickable to show the sidebar
+  // too for their items." One panel for the whole table, same shape as
+  // KnowledgeBase's single BucketBreakdown — only one row's breakdown can be
+  // open at a time, so a shared { label, entries } slot is enough; no row
+  // needs its own open/closed state.
+  const [open, setOpen] = useState<{ label: string; entries: EntryId[] } | null>(
+    null,
+  );
+  const onOpen = (label: string, entries: EntryId[]) => setOpen({ label, entries });
   return (
     <section>
       <Lbl>By subject</Lbl>
@@ -288,6 +300,7 @@ export function BySubject({
                 facts={facts}
                 claims={claims}
                 now={now}
+                onOpen={onOpen}
               />
             ) : (
               <GroupRow
@@ -297,12 +310,19 @@ export function BySubject({
                 facts={facts}
                 claims={claims}
                 now={now}
+                onOpen={onOpen}
               />
             ),
           )}
           <SentenceSubjectRow learned={learnedSentenceCount} />
         </tbody>
       </table>
+      <EntryBreakdown
+        open={open !== null}
+        label={open?.label ?? ""}
+        entries={open?.entries ?? []}
+        onClose={() => setOpen(null)}
+      />
     </section>
   );
 }
@@ -340,15 +360,36 @@ function SentenceSubjectRow({ learned }: { learned: number }) {
  * `subject.entryFacts` directly (built alongside the subject itself, see
  * buildSubject) rather than a shared registry keyed by top-level subject id —
  * a split-off child (Hiragana, Numbers, …) is not in that registry, and
- * doesn't need to be. */
+ * doesn't need to be.
+ *
+ * A thin wrapper over `metEntries` (SAK-78) — kept as its own function rather
+ * than inlined as `metEntries(...).length` at every call site, because most
+ * of this row's renders only need the count, not the array: the bar and the
+ * "70 of 2,136" text run on every render, the actual list of which 70 is only
+ * needed once, when a click opens the panel. */
 function metCount(
   subject: Subject,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
 ): number {
+  return metEntries(subject, facts, claims).length;
+}
+
+/** The entries `metCount` is counting, not just their count (SAK-78: "these
+ * should be clickable to show the sidebar too for their items"). Same
+ * predicate as `metCount` — "any record behind them, showing or claimed" —
+ * kept in exact lockstep with it (metCount calls this rather than
+ * re-filtering) so the number a row prints and the list its panel opens can
+ * never independently disagree, the same guarantee tally.ts's
+ * `factsByStanding` gives knowledge-base.tsx's panel. */
+function metEntries(
+  subject: Subject,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+): EntryId[] {
   return subject.entries.filter((e) =>
     (subject.entryFacts.get(e) ?? []).some((f) => facts[f]?.seen || claims[f]),
-  ).length;
+  );
 }
 
 function SubjectRow({
@@ -357,6 +398,7 @@ function SubjectRow({
   claims,
   now,
   indent = false,
+  onOpen,
 }: {
   subject: Subject;
   facts: Record<FactId, FactAggregate>;
@@ -366,6 +408,10 @@ function SubjectRow({
    * Radicals/Kanji/Words, Counting's Numbers/Counters, Kana's
    * Hiragana/Katakana) rather than as a flat top-level row. */
   indent?: boolean;
+  /** SAK-78: opens the shared EntryBreakdown panel with this row's met
+   * entries. Optional so SentenceSubjectRow (no entries — sentences are
+   * tiers, not entries) never has to pretend it has one. */
+  onOpen?: (label: string, entries: EntryId[]) => void;
 }) {
   const tally = tallyFacts(subject.facts, facts, claims, now);
   const met = metCount(subject, facts, claims);
@@ -400,7 +446,28 @@ function SubjectRow({
       {/* nowrap: "0 of 2,136" broke across two lines on a 375px screen and read
        * as two numbers in a column of one-number cells. */}
       <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
-        {met.toLocaleString()} of {subject.entries.length.toLocaleString()}
+        {/* Clickable only once there's something to open — "0 of 2,136" has
+         * no items behind it, and a panel that opened to say "Nothing here"
+         * for a row that hasn't started would be a worse answer than no
+         * button, same guard knowledge-base.tsx's buckets use. */}
+        {met > 0 && onOpen ? (
+          <button
+            type="button"
+            data-testid={`by-subject-met-${subject.id}`}
+            onClick={() =>
+              onOpen(
+                `${met.toLocaleString()} of ${subject.entries.length.toLocaleString()} ${subject.label}`,
+                metEntries(subject, facts, claims),
+              )
+            }
+            className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
+          >
+            {met.toLocaleString()}
+          </button>
+        ) : (
+          met.toLocaleString()
+        )}{" "}
+        of {subject.entries.length.toLocaleString()}
       </td>
     </tr>
   );
@@ -420,19 +487,30 @@ function SubjectRow({
  * one disjoint entry population (a radical, a kanji and a word are never the
  * same entry; a bare number and a counted form are never the same entry; a
  * hiragana and a katakana character are never the same entry), so no entry is
- * ever double-counted. */
+ * ever double-counted.
+ *
+ * ITS PANEL IS THE SAME UNION (SAK-78 follow-up review). Clicking the
+ * parent's own met count opens `metEntries` run over every child and
+ * concatenated — safe for the identical disjointness reason the summed `met`
+ * above already relies on, so this is not a second argument, just the same
+ * one applied to a list instead of a length. It's a FLAT list, not grouped
+ * by child subject — see entry-breakdown.tsx's header comment for why: it
+ * matches bucket-breakdown.tsx's panel, which never subdivides by subject
+ * either, so both breakdown kinds on this page read as one pattern. */
 function GroupRow({
   label,
   subjects,
   facts,
   claims,
   now,
+  onOpen,
 }: {
   label: string;
   subjects: Subject[];
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
   now: number;
+  onOpen?: (label: string, entries: EntryId[]) => void;
 }) {
   const allFacts = subjects.flatMap((s) => s.facts);
   const tally = tallyFacts(allFacts, facts, claims, now);
@@ -460,7 +538,24 @@ function GroupRow({
           </span>
         </td>
         <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
-          {met.toLocaleString()} of {entryCount.toLocaleString()}
+          {met > 0 && onOpen ? (
+            <button
+              type="button"
+              data-testid={`by-subject-met-group-${label}`}
+              onClick={() =>
+                onOpen(
+                  `${met.toLocaleString()} of ${entryCount.toLocaleString()} ${label}`,
+                  subjects.flatMap((s) => metEntries(s, facts, claims)),
+                )
+              }
+              className="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-text"
+            >
+              {met.toLocaleString()}
+            </button>
+          ) : (
+            met.toLocaleString()
+          )}{" "}
+          of {entryCount.toLocaleString()}
         </td>
       </tr>
       {subjects.map((s) => (
@@ -471,6 +566,7 @@ function GroupRow({
           claims={claims}
           now={now}
           indent
+          onOpen={onOpen}
         />
       ))}
     </>
