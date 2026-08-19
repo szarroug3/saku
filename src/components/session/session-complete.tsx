@@ -74,11 +74,14 @@ export function SessionComplete({
   session: StudySession;
   onRerun: () => void;
   /** "I already know these" over this session's material — the exact Learn-card
-   * claim mechanism, reached from here instead. */
+   * claim mechanism, reached from here instead. Claims whatever of the batch
+   * was never actually answered this session; whatever WAS answered keeps its
+   * real result — see finishSession(true) / sessionKnownClaimTarget. */
   onMarkKnown: () => void;
   /** Nothing is claimed; the forward action that just leaves. Named for what a
    * "Quiz me" run needs it to mean: not confirmed known, so the lesson (or a
-   * re-quiz) is still where Learn offers it. */
+   * re-quiz) is still where Learn offers it — reopens this exact batch as a
+   * fresh taught lesson. See finishSession(false). */
   onGoToLesson: () => void;
 }) {
   const last = session.rounds[session.rounds.length - 1];
@@ -125,8 +128,10 @@ export function SessionComplete({
 
       <Card className="px-[15px] py-[13px]">
         <Hint>
-          Saved in <b>Recent sessions</b>, and you can run this exact set again
-          any time.
+          Saved in <b>Recent sessions</b>. <b>I already know these</b> claims
+          anything you didn&apos;t actually answer — whatever you DID answer
+          keeps its real result. <b>Take me to the lesson</b> claims and saves
+          nothing, and reopens this exact set as a fresh lesson.
         </Hint>
       </Card>
     </>
