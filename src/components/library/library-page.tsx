@@ -390,16 +390,6 @@ export function LibraryPageClient({
     activeMixupEntries,
   ]);
 
-  // WHETHER TO MARK AN ENTRY KNOWN IN THE GRID ITSELF (SAK-63) — unlike `keep`
-  // above, this runs regardless of the knowledge filter, so scanning the shelf
-  // shows progress even on All. Same `isEntryKnownForDisplay` call the Known /
-  // Not known branch of `keep` just made, so the tile's mark and the filter can
-  // never quietly disagree about what "known" means — see known-mark.ts.
-  const isKnown = useCallback(
-    (entry: LibEntry) => isEntryKnownForDisplay(entry, liveFacts, claims, now),
-    [liveFacts, claims, now],
-  );
-
   // SEARCH FOLLOWS THE TAB. On a subject tab it is SCOPED to that kind (the Kana
   // tab searches only kana), sectioned by HOW you matched (exact / prefix / …).
   // On the All tab it spans every subject and is grouped BY TYPE — a Kanji block,
@@ -825,7 +815,6 @@ export function LibraryPageClient({
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
                     selectMode={selectMode}
-                    known={isKnown(h.entry)}
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
@@ -879,7 +868,6 @@ export function LibraryPageClient({
                   onToggleSection={onToggleSection}
                   voice={cfg.voiceName}
                   keep={keep}
-                  known={isKnown}
                   filter={stateFilter}
                   selectMode={selectMode}
                 />)}
@@ -900,7 +888,6 @@ export function LibraryPageClient({
                 onToggleSection={onToggleSection}
                 voice={cfg.voiceName}
                 keep={keep}
-                known={isKnown}
                 filter={stateFilter}
                 selectMode={selectMode}
               />
