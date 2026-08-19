@@ -58,7 +58,7 @@ function serializeUnit(u) {
 /** Serialize a content item down to what the walk (entry, prereqs, blockedBy) and
  * the preview (glyph, typeLabel, kind, roles) read. */
 function serializeItem(item) {
-  return {
+  const out = {
     entry: item.entry,
     glyph: item.glyph,
     typeLabel: item.typeLabel,
@@ -67,6 +67,8 @@ function serializeItem(item) {
     prereqs: [...item.prereqs],
     blockedBy: [...item.blockedBy],
   };
+  if (item.badgeNumber !== undefined) out.badgeNumber = item.badgeNumber;
+  return out;
 }
 
 // ── Tracks: each track's units for EMPTY history. Units are history-independent
