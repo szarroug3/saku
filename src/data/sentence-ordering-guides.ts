@@ -106,8 +106,17 @@ export interface SentenceOrderingGuide {
 export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOrderingGuide> = {
   simple: {
     eyebrow: "Simple sentence ordering",
-    title: "Japanese sentences are ordered differently from English.",
+    // Was the header (this card's `title`) until SAK-11 round 2: Sam asked for
+    // the sentence to move out of the header while still existing somewhere,
+    // so it now opens `body` instead, worded exactly as it was. The header
+    // slot takes the tile's own "Simple" + "sentence structure" pairing
+    // (see sentence-track.ts's glyph/typeLabel) instead of repeating it.
+    title: "Simple sentence structure",
     body: [
+      {
+        lead: "Simple sentence ordering.",
+        text: "Japanese sentences are ordered differently from English.",
+      },
       {
         lead: "English usually puts the action in the middle.",
         text: "A simple English sentence often follows this order: who or what → main action → the thing affected by the action.",

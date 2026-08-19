@@ -55,19 +55,28 @@ function tierExample(tier: AssemblyTier): string {
   return readableAssemblyForTier(tier, knowsEverything())[0]?.jp ?? "";
 }
 
+/** The tile's main-glyph label for a sentence-ordering tier — the tier's
+ * learner-facing `label` with a redundant trailing " sentences" stripped, since
+ * the tile's own type slot already says "sentence structure"
+ * (`contentTypeLabel`). "Simple sentences" → "Simple", "Conditional sentences"
+ * → "Conditional". A label with no such suffix (e.g. "Te-form links and
+ * helpers") is returned unchanged — this only trims the redundant word, it
+ * never invents a new label (SAK-11). */
+function sentenceTierShortLabel(label: string): string {
+  return label.replace(/\s+sentences$/i, "");
+}
+
 /** Each sentence-ordering tier as a ContentItem. Its fact is the tier's own
- * marker (its distinct progress), its glyph the tier's learner-facing label.
- * `badgeNumber` is the tier's 1-based position in SENTENCE_ORDERING_TIERS — the
- * tile shows it as a compact numbered badge in place of `glyph`, which is
- * English and would overflow the glyph slot (SAK-11). */
+ * marker (its distinct progress); its glyph is the tier's short label (see
+ * `sentenceTierShortLabel`), rendered in the tile's plain glyph+type slots the
+ * same way every other track's tile is (SAK-11). */
 export function sentenceItems(): ContentItem[] {
-  return SENTENCE_ORDERING_TIERS.map((tier, index) => {
+  return SENTENCE_ORDERING_TIERS.map((tier) => {
     const marker = sentenceTierMarkerFact(tier.id);
     return {
       entry: sentenceTierEntry(tier.id),
       kind: "sentence-ordering",
-      glyph: tier.label,
-      badgeNumber: index + 1,
+      glyph: sentenceTierShortLabel(tier.label),
       facts: [{ id: marker, kind: jp2enResponse(marker) }],
       roles: [],
       prereqs: [],
