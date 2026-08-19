@@ -63,6 +63,7 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         id: cut.id,
         label: cut.label,
         entries: cut.glyphs.flatMap((c) => resolve(entryForGlyph(KANJI_SUBJECT, c))),
+        isRangeLabel: cut.isRangeLabel,
       }));
     }
     case GRAMMAR_SUBJECT:

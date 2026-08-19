@@ -15,8 +15,9 @@ function entryOf(id: EntryId) {
 }
 
 test("hiragana vowels: あ has no previous, next is い", () => {
-  const { groupLabel, prev, next } = groupNeighbors(entryOf(kanaEntry("あ")));
+  const { groupLabel, isRangeLabel, prev, next } = groupNeighbors(entryOf(kanaEntry("あ")));
   assert.equal(groupLabel, "Hiragana · Vowels あ");
+  assert.equal(isRangeLabel, false, "a kana row is a real category, not a range");
   assert.equal(prev, null);
   assert.equal(next?.glyph, "い");
 });
@@ -62,10 +63,25 @@ test("a kanji's neighbours come from its own shelf cut, not the kana rows", () =
   if (next) assert.equal(next.kind, "kanji");
 });
 
+test("a kanji's default (everyday-order) group is a bare numeric range, flagged isRangeLabel", () => {
+  // sectionsFor hard-codes "everyday" (see group-nav.ts), so a kanji's group
+  // label here is one of kanji-shelf.ts's range cuts, not a "School grade N"
+  // category — the entry page must not treat it as one.
+  const { groupLabel, isRangeLabel } = groupNeighbors(entryOf(kanjiEntry("一")));
+  assert.match(groupLabel ?? "", /^\d+–\d+$/);
+  assert.equal(isRangeLabel, true);
+});
+
 test("a radical's neighbours are other radicals, in curriculum order", () => {
   const { prev, next } = groupNeighbors(entryOf(radicalEntry("人")));
   if (prev) assert.equal(prev.kind, "radical");
   if (next) assert.equal(next.kind, "radical");
+});
+
+test("a radical's group label is a bare numeric range, flagged isRangeLabel", () => {
+  const { groupLabel, isRangeLabel } = groupNeighbors(entryOf(radicalEntry("人")));
+  assert.match(groupLabel ?? "", /^\d+–\d+$/);
+  assert.equal(isRangeLabel, true);
 });
 
 test("results are stable across repeated calls (cache does not mutate)", () => {

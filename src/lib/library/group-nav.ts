@@ -55,6 +55,14 @@ export interface GroupNeighbors {
    * (should not happen for anything `libEntry` can resolve, but a screen must
    * not crash on a stranger). */
   readonly groupLabel: string | null;
+  /** True when `groupLabel` is a bare numeric span ("1–50") standing in for a
+   * real category, carried straight from the section's own `isRangeLabel` (see
+   * ShelfSection). The caller should treat this the same as no label at all:
+   * a range span names which GROUP_SIZE-wide bucket the entry falls in, not
+   * anything about the entry, so it is not worth a header on the entry's own
+   * page — even though the identical label earns its place on the shelf page,
+   * where it drives a tri-state select-all over that range. */
+  readonly isRangeLabel: boolean;
   /** The entry immediately before this one in its group, or null at the first
    * entry (edges do not wrap — see the file header). */
   readonly prev: LibEntry | null;
@@ -63,7 +71,7 @@ export interface GroupNeighbors {
   readonly next: LibEntry | null;
 }
 
-const EMPTY: GroupNeighbors = { groupLabel: null, prev: null, next: null };
+const EMPTY: GroupNeighbors = { groupLabel: null, isRangeLabel: false, prev: null, next: null };
 
 /** Where one entry sits in its shelf section, and its immediate neighbours. */
 export function groupNeighbors(entry: LibEntry): GroupNeighbors {
@@ -73,6 +81,7 @@ export function groupNeighbors(entry: LibEntry): GroupNeighbors {
   const index = section.entries.findIndex((e) => e.id === entry.id);
   return {
     groupLabel: section.label,
+    isRangeLabel: section.isRangeLabel ?? false,
     prev: index > 0 ? section.entries[index - 1] : null,
     next: index < section.entries.length - 1 ? section.entries[index + 1] : null,
   };

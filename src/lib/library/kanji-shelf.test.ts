@@ -127,4 +127,14 @@ describe("kanjiCuts", () => {
       for (const glyph of c.glyphs) assert.equal(gradeOf.get(glyph), g);
     }
   });
+
+  test("everyday and newspaper cuts are flagged isRangeLabel — the label is a bare span, not a category", () => {
+    for (const mode of ["everyday", "newspaper"] as const) {
+      for (const c of kanjiCuts(mode)) assert.equal(c.isRangeLabel, true);
+    }
+  });
+
+  test("grade cuts are NOT flagged isRangeLabel — School grade N is a real category", () => {
+    for (const c of kanjiCuts("grade")) assert.equal(c.isRangeLabel, undefined);
+  });
 });

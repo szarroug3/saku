@@ -157,10 +157,17 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
  * file header for why). The whole bar disappears when there is nothing to
  * move to either side — a lone-entry group, or a kind this route cannot place
  * in any section.
+ *
+ * NO BARE RANGE LABELS: a radical/word/primitive range ("1–50") or a
+ * non-`grade` kanji hundred names which GROUP_SIZE-wide bucket the entry
+ * happens to fall in, not anything about the entry — useful as the shelf
+ * page's select-all header, meaningless as a heading on the entry's own page.
+ * `groupNeighbors` flags these via `isRangeLabel`, so this bar hides itself
+ * instead of printing a number that describes nothing.
  */
 function GroupNav({ entry }: { entry: IndexLibEntry }) {
-  const { groupLabel, prev, next } = groupNeighbors(entry);
-  if (!groupLabel || (!prev && !next)) return null;
+  const { groupLabel, isRangeLabel, prev, next } = groupNeighbors(entry);
+  if (!groupLabel || isRangeLabel || (!prev && !next)) return null;
   return (
     <nav
       aria-label={`${groupLabel} navigation`}
