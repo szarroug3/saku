@@ -30,6 +30,7 @@ import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, libEntry } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import { useContentEntry } from "@/lib/library/content-entries";
+import { hasKanji } from "@/lib/romaji";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
@@ -129,7 +130,13 @@ export function KeigoEntryView({
                 <div className="flex items-center gap-2.5">
                   <HearButton glyph={w.reading} />
                   <span className="font-kana text-[22px] leading-none text-text">{w.word}</span>
-                  <span className="font-kana text-[13px] text-text-muted">{w.reading}</span>
+                  {/* Furigana glosses a kanji reading — a word already written
+                      entirely in kana (いらっしゃいませ) has nothing for it to
+                      add, so the reading is suppressed rather than printed
+                      twice. See SAK-38. */}
+                  {hasKanji(w.word) ? (
+                    <span className="font-kana text-[13px] text-text-muted">{w.reading}</span>
+                  ) : null}
                 </div>
               </div>
             );
