@@ -1084,8 +1084,10 @@ export function DrillScreen() {
       const saidText = resolveAnsweredText({ recognitionSaid, mcSaid, typedSaid });
       recordMissedPhrase(st, phrase, saidText);
       // Overwritten on every attempt, not just the last one: whichever miss
-      // ends up being the one the reveal shows (out-of-retries, or the try a
-      // later skip stands on) is the one this should say.
+      // ends up being the out-of-retries one the reveal shows is the one this
+      // should say. (A skip never reveals, so this only matters for the
+      // out-of-retries path — but it's still set here on every miss, since a
+      // skip with tries left resolves the standing attempt without showing it.)
       q.answered = saidText;
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
@@ -1203,18 +1205,16 @@ export function DrillScreen() {
    * way the card lands at the END of the deck (a new question to reach in turn,
    * not the small gap a forced requeue uses).
    *
-   * SAK-50: a skip used to jump straight to `nextQuestion()`, so the most
-   * honest answer a learner can give ("I don't know this") was the one path
-   * through the app that never showed the correct one — Continue/Enter still
-   * moved on, but nothing was ever read first. It now pauses on a reveal, the
-   * same stop an out-of-retries miss already makes (see submit and the
-   * `revealPause`-gated block in the render below): `rt.waiting` goes true
-   * with a `"skip"` feedback kind instead of advancing immediately, and
-   * `nextQuestion` is left for Enter or the Continue button, same as a miss.
+   * SAK-50: a skip jumps straight to `nextQuestion()` and never reveals the
+   * answer. A card that runs out of retries is a resolved miss and gets the
+   * reveal pause (see submit and `isRevealPause`); a skip is a deferral, not
+   * a resolution — the learner may just want to come back to it later, not
+   * be told the answer now. (This app briefly paused skip on a reveal too;
+   * that was reverted on feedback that skipping should not show the answer.)
    *
-   * Not offered while `waiting`: once a card is out of retries (or already
-   * mid a skip's own reveal) it is already resolved and requeued, and the
-   * Continue button is the only thing left to do.
+   * Not offered while `waiting`: once a card is out of retries it is already
+   * resolved and requeued, and the Continue button is the only thing left to
+   * do.
    */
   function skipQuestion() {
     if (!active || !rt || !rt.q || rt.waiting || finishedRef.current) return;
@@ -1222,9 +1222,7 @@ export function DrillScreen() {
     if (q.tries > 0) {
       // The attempt stands. `credit` is necessarily false after a wrong try, so
       // this records a first-try miss and marks the showing resolved, same as
-      // running out of retries — see submit's out-of-retries branch. `q.answered`
-      // is already set from that attempt's submit() call, so the reveal below
-      // has what to compare without this function touching it.
+      // running out of retries — see submit's out-of-retries branch.
       const st = statForShowing(rt.stats, q.f);
       resolveShowing(st, false, false, showingOf(q));
       rt.resolved++;
@@ -1238,12 +1236,7 @@ export function DrillScreen() {
     clearAdvance();
     syncProgress(); // the requeue grew a limited run's total
     saveNow();
-    // Pause here instead of advancing — see the doc comment above. The card
-    // stays exactly as it was; only `waiting`/`feedback` change, which is what
-    // flips the render into its reveal branch.
-    rt.waiting = true;
-    rt.feedback = { kind: "skip" };
-    force();
+    nextQuestion();
   }
 
   /**
@@ -1921,12 +1914,13 @@ export function DrillScreen() {
           : rt.feedback?.kind === "bad"
             ? "wrong-flash"
             : "resting";
-  // A finished miss (out of retries) OR a skip (SAK-50) — both leave the card
-  // on screen with nothing left to do but read the reveal and move on. This is
-  // the state that needs a way FORWARD. `revealing` (the answer text) is this
-  // AND the show-answer setting; the Continue affordance keys on `revealPause`
-  // alone, so it is present even with reveal off. A CORRECT answer
-  // auto-advances, so its `rt.waiting` is excluded (see isRevealPause).
+  // A finished miss (out of retries) — leaves the card on screen with nothing
+  // left to do but read the reveal and move on. This is the state that needs
+  // a way FORWARD. `revealing` (the answer text) is this AND the show-answer
+  // setting; the Continue affordance keys on `revealPause` alone, so it is
+  // present even with reveal off. A CORRECT answer auto-advances, so its
+  // `rt.waiting` is excluded, and a SKIP never reaches this state at all — it
+  // advances immediately (see isRevealPause, SAK-50).
   const revealPause = isRevealPause(rt.feedback, rt.waiting);
   // Paused on a reveal-eligible stop, with the setting on: show the answer in
   // the answer slot (the reveal that used to be a sentence).
@@ -2396,9 +2390,10 @@ export function DrillScreen() {
             input, the MC boards, the instruction line — tops out at 20px);
             what you actually answered instead sits directly beneath it, so
             the comparison the ticket asked for is explicit rather than
-            requiring you to remember what you typed three seconds ago. And it
-            now appears on a SKIP, not only an out-of-retries miss — see
-            `revealPause` / skipQuestion above. */}
+            requiring you to remember what you typed three seconds ago. This
+            only ever fires on an out-of-retries miss, never a skip — a skip
+            is a deferral, not a resolution, and never pauses here (see
+            `revealPause` / skipQuestion above, SAK-50 feedback). */}
         <p
           className={cx(
             "flex flex-col items-center justify-center gap-1.5",
@@ -2453,9 +2448,9 @@ export function DrillScreen() {
                 )}
               </span>
               {/* WHAT WAS ANSWERED, next to the correct answer, per SAK-50 —
-                  `q.answered` (set in submit) is null for a skip thrown before
-                  any attempt, so this line simply doesn't render there; there
-                  is nothing to compare when nothing was said. */}
+                  `q.answered` (set in submit) is only ever set on an
+                  out-of-retries miss, the only path that reaches this reveal;
+                  a skip never does. */}
               {q.answered ? (
                 <span className="text-[13px] text-text-muted">
                   You answered{" "}
@@ -2476,16 +2471,17 @@ export function DrillScreen() {
             </>
           ) : null}
           {/* The way on, for EVERY finished miss (typed or multiple choice,
-              reveal on or off) AND now every skip — see `revealPause`. It
-              used to be a real button for MC only, with a "press Enter" hint
-              for typed cards, on the reasoning that a typed card has hands on
-              the keyboard. That breaks on mobile: the input goes readOnly at
-              the reveal, so the on-screen keyboard closes, and a typed card
-              was then left with no keyboard to press Enter AND no button to
-              tap — genuinely stuck, no way to the next card. So a real,
-              tappable Continue shows on any finished miss or skip; a desktop
-              user can still just press Enter (the title says so, and the
-              document keydown handler advances on it). */}
+              reveal on or off) — see `revealPause`. A skip never reaches this
+              state; it advances immediately (SAK-50). This used to be a real
+              button for MC only, with a "press Enter" hint for typed cards,
+              on the reasoning that a typed card has hands on the keyboard.
+              That breaks on mobile: the input goes readOnly at the reveal, so
+              the on-screen keyboard closes, and a typed card was then left
+              with no keyboard to press Enter AND no button to tap —
+              genuinely stuck, no way to the next card. So a real, tappable
+              Continue shows on any finished miss; a desktop user can still
+              just press Enter (the title says so, and the document keydown
+              handler advances on it). */}
           {revealPause ? (
             <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
               Continue
