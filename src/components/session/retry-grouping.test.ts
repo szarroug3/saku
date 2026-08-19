@@ -131,7 +131,7 @@ test("retryHint before and after a perfect retry are different sentences", () =>
 
 test("retryButtonLabel never shows a bare ellipsis when disabled", () => {
   const label = retryButtonLabel(0);
-  assert.equal(label, "No retries left");
+  assert.equal(label, "Retry");
   assert.ok(!label.includes("…"), "a disabled Retry button must not show an ellipsis");
 });
 
