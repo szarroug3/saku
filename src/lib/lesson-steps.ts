@@ -39,10 +39,14 @@
 // than hypothetical. See phase-intros.ts for why these are word-gated rather than
 // anchored to a section.
 
-import { CHAR_INDEX } from "@/data/characters";
+import { CHAR_INDEX, kanaFact } from "@/data/characters";
 import { dakutenRowFor, type DakutenRow } from "@/data/dakuten-rows";
+import { YOON_ROWS, yoonRowFor } from "@/data/yoon-rows";
+import { effectiveState } from "@/lib/claims";
 import {
   BUILT_FROM_INTRO,
+  COMBO_H,
+  COMBO_K,
   INTRO_AFTER,
   INTRO_BEFORE,
   ITERATION_MARK,
@@ -148,6 +152,31 @@ const GRAMMAR_CARD_TERM: Readonly<Record<string, string>> = {
 function sectionOf(item: LessonItem): string | null {
   if (item.kind !== "kana") return null;
   return CHAR_INDEX[item.glyph]?.sec ?? null;
+}
+
+/** Has any yōon combo of this script already been met — answered, claimed, or
+ * "quiz me"'d — OUTSIDE this lesson's own facts? The same "history minus the
+ * teach set" read `startedTracks` uses (src/lib/track-open.ts). True here means
+ * some earlier lesson already taught that script's first combo, which by this
+ * same rule running then already showed COMBO_H/COMBO_K — so this lesson, even
+ * one that opens on a LATER combo section (h-sha, h-pya, …), must not show it
+ * again. */
+function yoonScriptMet(
+  setId: "hiragana" | "katakana",
+  teachSet: ReadonlySet<FactId>,
+  history: HistoryFile,
+): boolean {
+  return YOON_ROWS.some((row) => {
+    if (row.setId !== setId) return false;
+    const fact = kanaFact(row.glyph);
+    if (teachSet.has(fact)) return false;
+    const state = effectiveState(
+      history.facts[fact],
+      history.claims?.[fact],
+      history.seen?.[fact],
+    );
+    return state.lastTested !== 0;
+  });
 }
 
 /** The iteration mark, whose presence in a word's spelling is the gate for the
@@ -336,6 +365,45 @@ export function lessonSteps(
   // its other four fold into the same card rather than adding four steps. See
   // src/data/dakuten-rows.ts.
   const rowsSeen = new Set<string>();
+  // Yōon has no per-combo hook the way dakuten has a per-conversion one — one
+  // shared rule, authored once per script as COMBO_H/COMBO_K (see
+  // src/data/yoon-rows.ts's header) — so its concept card is not folded into a
+  // row card the way `rowsSeen` folds dakuten's five. It rides the first yōon
+  // combo about to be taught, ONCE PER SCRIPT rather than once per combo.
+  //
+  // Not `shownIntros`: COMBO_H/COMBO_K are not in CONCEPT_CARD_IDS, the same
+  // call INTRO_BEFORE's "h-g"/"k-g" (dakuten) already makes — re-teaching the
+  // phase is allowed to show the card again, by design (see this file's header:
+  // "a group re-taught later shows its card again"). But "already introduced"
+  // still has to mean something truer than "seen earlier in THIS forEach", or
+  // teaching a later combo section (h-sha, h-pya, …) on its own — the ordinary
+  // shape once h-kya's lesson is behind it — would look like the first combo
+  // ever and show the card a second time. So the flag is seeded two ways:
+  //
+  //   - the teach set OPENS exactly on "h-kya"/"k-kya": INTRO_BEFORE anchors its
+  //     own copy of this same card there (added by SAK-72 Part B, ahead of this
+  //     fix) and unshifts it at the very end of this function, so the flag is
+  //     pre-seeded true to stop the per-item check below from doubling it.
+  //
+  //   - `history` shows ANY combo of this script already met OUTSIDE this
+  //     lesson's own facts — the same "history minus the teach set" read
+  //     `startedTracks` uses (src/lib/track-open.ts) — meaning some earlier
+  //     lesson already taught that script's first combo and, by this same
+  //     logic running then, already showed the card.
+  //
+  // Absent `history` (SSR, a test naming one section's teach set) there is no
+  // record to check, so the flag falls back to the opensOn seed alone — the
+  // same "no history, no track/concept cards beyond opensOn" default
+  // `markedPitch`/`markedOnyomi` already take.
+  const opensOnCombo = items.length ? sectionOf(items[0]) : null;
+  let markedComboH =
+    opensOnCombo === "h-kya" ||
+    !history ||
+    yoonScriptMet("hiragana", teachSet, history);
+  let markedComboK =
+    opensOnCombo === "k-kya" ||
+    !history ||
+    yoonScriptMet("katakana", teachSet, history);
   // The iteration mark rides the first word whose spelling uses 々, and only the
   // first one, so a teach set full of 々 words teaches it once.
   let markedIteration = false;
@@ -415,6 +483,18 @@ export function lessonSteps(
       rowsSeen.add(row.id);
       steps.push({ type: "conversion", key: row.id, row });
       return;
+    }
+    // Unlike a dakuten row, a yōon combo still gets its own item step (it is a
+    // real new shape to drill, not a rule that replaces five character cards) —
+    // this only adds the concept card ahead of the FIRST one per script, the
+    // same "concept card leads its material" placement as the checks below.
+    const yoonRow = item.kind === "kana" ? yoonRowFor(item.glyph) : null;
+    if (yoonRow?.setId === "hiragana" && !markedComboH) {
+      markedComboH = true;
+      steps.push({ type: "intro", key: COMBO_H.id, intro: COMBO_H });
+    } else if (yoonRow?.setId === "katakana" && !markedComboK) {
+      markedComboK = true;
+      steps.push({ type: "intro", key: COMBO_K.id, intro: COMBO_K });
     }
     if (!markedIteration && item.glyph.includes(ITERATION_GLYPH)) {
       markedIteration = true;
