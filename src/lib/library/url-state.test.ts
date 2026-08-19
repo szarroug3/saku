@@ -3,19 +3,26 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The Library's tab and search box live in the URL, and a URL is the one input
-// nobody validates: the entry page writes `?kind=kanji` into a breadcrumb, a
-// user pastes a link from six months ago, someone edits the address bar by
-// hand. Two properties have to hold, and neither is visible from the page.
+// The Library's checked kinds, checked statuses and search box all live in the
+// URL, and a URL is the one input nobody validates: the entry page writes
+// `?kind=kanji` into a breadcrumb, a user pastes a link from six months ago,
+// someone edits the address bar by hand. Three properties have to hold, and
+// none is visible from the page.
 //
-//   THE BREADCRUMB CASE. `/library?kind=kanji` must actually select Kanji. It
-//   did not — the page held the kind in useState and the param was generated
-//   and dropped — so this is the regression these tests exist for first.
+//   THE BREADCRUMB CASE. `/library?kind=kanji` must actually check Kanji alone
+//   — it did not, once (the page held the kind in useState and the param was
+//   generated and dropped), so `kindFromParams` guards the single-kind reading
+//   that regression needed, and `kindsFromParams` guards the same link under
+//   the multi-select widening (SAK-63's second round): a comma-free value is
+//   exactly a checked set of one.
 //
-//   THE STRANGER CASE. An absent, empty, misspelled or hostile `kind` must read
-//   as Kana. The page does `shelvesByKind.get(kind)!` — a bare string that
-//   type-checks as a Kind throws on the shelf lookup, which is a blank screen
-//   on a reference page because someone typo'd a URL.
+//   THE STRANGER CASE. An absent, empty, misspelled or hostile `kind`/`state`
+//   must read as "everything checked" — the default — never throw, and never
+//   be mistaken for the dropdown's own Clear button (`none`).
+//
+//   THE CLEAR CASE. Checking every box off in a dropdown is a real, distinct
+//   state from never having touched it — `none` is the one token that means
+//   "nothing checked", kept apart from a missing param ("everything checked").
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -26,15 +33,16 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { KINDS } from "@/lib/library/entries";
 import {
-  ALL_TAB,
+  ALL_KINDS,
+  ALL_STATES,
   DEFAULT_KIND,
-  DEFAULT_STATE,
-  DEFAULT_TAB,
+  isEveryKind,
+  isEveryState,
   kindFromParams,
+  kindsFromParams,
   libraryUrl,
   queryFromParams,
-  stateFromParams,
-  tabFromParams,
+  statesFromParams,
 } from "@/lib/library/url-state";
 
 /** A URL, as the page sees it. `useSearchParams()` hands back a read-only
@@ -42,7 +50,7 @@ import {
 const params = (search: string) => new URLSearchParams(search);
 
 describe("kindFromParams", () => {
-  test("selects the tab the breadcrumb asks for", () => {
+  test("selects the shelf the breadcrumb asks for", () => {
     // The link the entry page has always generated, for each kind it can be on.
     assert.equal(kindFromParams(params("?kind=kanji")), KANJI_SUBJECT);
     assert.equal(kindFromParams(params("?kind=word")), VOCAB_SUBJECT);
@@ -50,13 +58,15 @@ describe("kindFromParams", () => {
     assert.equal(kindFromParams(params("?kind=kana")), KANA_SUBJECT);
   });
 
-  test("every kind the chips render round-trips through a URL", () => {
+  test("every kind the dropdown renders round-trips through a URL", () => {
     // Pinned as a loop over KINDS rather than a list, so a fifth subject cannot
-    // be added to the shelf chips and silently be unreachable by link.
+    // be added to the dropdown and silently be unreachable by link.
     for (const k of KINDS) {
-      const url = libraryUrl({ kind: k, query: "" });
-      const search = url.includes("?") ? url.slice(url.indexOf("?")) : "";
-      assert.equal(kindFromParams(params(search)), k, `round-trip ${k}`);
+      assert.equal(
+        kindFromParams(params(`?kind=${k}`)),
+        k,
+        `round-trip ${k}`,
+      );
     }
   });
 
@@ -72,40 +82,47 @@ describe("kindFromParams", () => {
   });
 });
 
-describe("tabFromParams — subjects plus the All tab", () => {
-  test("reads the All tab, still honoring an explicit ?kind=all link", () => {
-    // An old link or a hand-typed URL can still carry ?kind=all, and it reads as
-    // the All tab.
-    assert.equal(tabFromParams(params("?kind=all")), ALL_TAB);
-    // But All is the default tab now, so libraryUrl omits it: the bare /library
-    // IS the All tab, and reading that empty URL back returns All.
-    assert.equal(libraryUrl({ kind: ALL_TAB, query: "" }), "/library");
-    assert.equal(tabFromParams(params("")), ALL_TAB);
-  });
-
-  test("every subject still reads through, and is NOT the All tab", () => {
+describe("kindsFromParams — the Kind dropdown's checked set", () => {
+  test("a single, comma-free value is the breadcrumb case — checks that one kind alone", () => {
     for (const k of KINDS) {
-      assert.equal(tabFromParams(params(`?kind=${k}`)), k);
-      assert.notEqual(tabFromParams(params(`?kind=${k}`)), ALL_TAB);
+      const got = kindsFromParams(params(`?kind=${k}`));
+      assert.equal(got.size, 1, `?kind=${k} should check exactly one kind`);
+      assert.ok(got.has(k));
     }
   });
 
-  test("All IS the default tab — a plain URL opens on All", () => {
-    assert.equal(tabFromParams(params("")), DEFAULT_TAB);
-    assert.equal(DEFAULT_TAB, ALL_TAB);
-    // The default tab is omitted, so All round-trips as the bare /library.
-    assert.equal(libraryUrl({ kind: DEFAULT_TAB, query: "" }), "/library");
-    // Kana is no longer the default, so it now carries an explicit ?kind=.
-    assert.equal(
-      libraryUrl({ kind: DEFAULT_KIND, query: "" }),
-      `/library?kind=${DEFAULT_KIND}`,
-    );
+  test("a comma list checks exactly those kinds", () => {
+    const got = kindsFromParams(params("?kind=kanji,word"));
+    assert.equal(got.size, 2);
+    assert.ok(got.has(KANJI_SUBJECT));
+    assert.ok(got.has(VOCAB_SUBJECT));
+    assert.ok(!got.has(KANA_SUBJECT));
   });
 
-  test("a fallback is a fallback, not a throw", () => {
-    // The point of the default: a garbage URL renders a Library, not an error.
-    assert.doesNotThrow(() => kindFromParams(params("?kind=%%%")));
-    assert.ok(KINDS.includes(kindFromParams(params("?kind=nonsense"))));
+  test("an unrecognised token in an otherwise-real list is dropped, not fatal", () => {
+    const got = kindsFromParams(params("?kind=kanji,banana"));
+    assert.equal(got.size, 1);
+    assert.ok(got.has(KANJI_SUBJECT));
+  });
+
+  test("missing, empty, or the literal `all` token is every kind checked", () => {
+    assert.ok(isEveryKind(kindsFromParams(params(""))));
+    assert.ok(isEveryKind(kindsFromParams(params("?q=shi"))));
+    assert.ok(isEveryKind(kindsFromParams(params("?kind="))));
+    assert.ok(isEveryKind(kindsFromParams(params("?kind=all"))));
+  });
+
+  test("`none` is every kind UNCHECKED — the dropdown's Clear button, not a fallback", () => {
+    const got = kindsFromParams(params("?kind=none"));
+    assert.equal(got.size, 0);
+  });
+
+  test("garbage that leaves nothing real falls back to every kind, not to `none`", () => {
+    // A `none` round-trip is a deliberate Clear; a query the page can't read at
+    // all must not be mistaken for one — it shows the whole Library instead.
+    assert.ok(isEveryKind(kindsFromParams(params("?kind=banana"))));
+    assert.ok(isEveryKind(kindsFromParams(params("?kind=,,"))));
+    assert.ok(isEveryKind(kindsFromParams(params("?kind=__proto__"))));
   });
 });
 
@@ -131,83 +148,147 @@ describe("libraryUrl", () => {
   test("the default state stays a plain /library", () => {
     // So mounting the page cannot rewrite the address bar to something the user
     // never asked for, and Back is never spent undoing our own tidying.
-    assert.equal(libraryUrl({ kind: ALL_TAB, query: "" }), "/library");
+    assert.equal(libraryUrl({ kinds: ALL_KINDS, query: "" }), "/library");
+    // Omitting kinds/states entirely means the same default.
+    assert.equal(libraryUrl({ query: "" }), "/library");
   });
 
   test("carries whichever halves are not default", () => {
-    assert.equal(libraryUrl({ kind: KANJI_SUBJECT, query: "" }), "/library?kind=kanji");
-    assert.equal(libraryUrl({ kind: ALL_TAB, query: "shi" }), "/library?q=shi");
+    assert.equal(
+      libraryUrl({ kinds: new Set([KANJI_SUBJECT]), query: "" }),
+      "/library?kind=kanji",
+    );
+    assert.equal(libraryUrl({ kinds: ALL_KINDS, query: "shi" }), "/library?q=shi");
   });
 
-  test("a kind and a query survive together", () => {
-    const url = libraryUrl({ kind: VOCAB_SUBJECT, query: "raw" });
+  test("a checked kind and a query survive together", () => {
+    const url = libraryUrl({ kinds: new Set([VOCAB_SUBJECT]), query: "raw" });
     const search = url.slice(url.indexOf("?"));
-    assert.equal(kindFromParams(params(search)), VOCAB_SUBJECT);
+    const got = kindsFromParams(params(search));
+    assert.equal(got.size, 1);
+    assert.ok(got.has(VOCAB_SUBJECT));
     assert.equal(queryFromParams(params(search)), "raw");
   });
 
   test("encodes a query rather than pasting it into the URL", () => {
-    const url = libraryUrl({ kind: KANA_SUBJECT, query: "a&kind=kanji" });
+    const url = libraryUrl({ kinds: new Set([KANA_SUBJECT]), query: "a&kind=kanji" });
     // A query that spells a param must not become one.
     const search = url.slice(url.indexOf("?"));
-    assert.equal(kindFromParams(params(search)), KANA_SUBJECT);
+    const got = kindsFromParams(params(search));
+    assert.equal(got.size, 1);
+    assert.ok(got.has(KANA_SUBJECT));
     assert.equal(queryFromParams(params(search)), "a&kind=kanji");
   });
 
-  test("the all filter is omitted, the two narrowings are carried", () => {
-    // The default state stays out of the URL like an empty query does. Uses the
-    // default TAB (All) as the kind so only the state param is under test here.
+  test("every kind serialises in KINDS order, not selection order", () => {
+    const url = libraryUrl({
+      kinds: new Set([VOCAB_SUBJECT, KANA_SUBJECT]),
+      query: "",
+    });
+    // URLSearchParams percent-encodes the comma (`,` → `%2C`); read it back
+    // through the same parser rather than asserting the raw string, so this
+    // test doesn't pin an encoding detail that isn't the property under test.
+    const kanaIdx = KINDS.indexOf(KANA_SUBJECT);
+    const wordIdx = KINDS.indexOf(VOCAB_SUBJECT);
+    const expectedOrder =
+      kanaIdx < wordIdx ? [KANA_SUBJECT, VOCAB_SUBJECT] : [VOCAB_SUBJECT, KANA_SUBJECT];
+    const search = url.slice(url.indexOf("?"));
     assert.equal(
-      libraryUrl({ kind: ALL_TAB, query: "", state: "all" }),
+      new URLSearchParams(search).get("kind"),
+      expectedOrder.join(","),
+    );
+  });
+
+  test("every kind unchecked writes the `none` token, not an omitted param", () => {
+    assert.equal(
+      libraryUrl({ kinds: new Set(), query: "" }),
+      "/library?kind=none",
+    );
+  });
+
+  test("the all-status default is omitted, the two narrowings are carried", () => {
+    assert.equal(
+      libraryUrl({ kinds: ALL_KINDS, query: "", states: ALL_STATES }),
       "/library",
     );
     assert.equal(
-      libraryUrl({ kind: ALL_TAB, query: "", state: "known" }),
+      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set(["known"]) }),
       "/library?state=known",
     );
     assert.equal(
-      libraryUrl({ kind: ALL_TAB, query: "", state: "unknown" }),
+      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set(["unknown"]) }),
       "/library?state=unknown",
     );
   });
 
-  test("kind, query and filter all survive together", () => {
-    const url = libraryUrl({ kind: KANJI_SUBJECT, query: "life", state: "unknown" });
+  test("every status unchecked writes the `none` token, not an omitted param", () => {
+    assert.equal(
+      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set() }),
+      "/library?state=none",
+    );
+  });
+
+  test("kind, query and status all survive together", () => {
+    const url = libraryUrl({
+      kinds: new Set([KANJI_SUBJECT]),
+      query: "life",
+      states: new Set(["unknown"]),
+    });
     const search = url.slice(url.indexOf("?"));
-    assert.equal(kindFromParams(params(search)), KANJI_SUBJECT);
+    const gotKinds = kindsFromParams(params(search));
+    assert.equal(gotKinds.size, 1);
+    assert.ok(gotKinds.has(KANJI_SUBJECT));
     assert.equal(queryFromParams(params(search)), "life");
-    assert.equal(stateFromParams(params(search)), "unknown");
+    const gotStates = statesFromParams(params(search));
+    assert.equal(gotStates.size, 1);
+    assert.ok(gotStates.has("unknown"));
   });
 });
 
-describe("stateFromParams", () => {
-  test("reads every supported filter value", () => {
-    assert.equal(stateFromParams(params("?state=known")), "known");
-    assert.equal(stateFromParams(params("?state=unknown")), "unknown");
-    assert.equal(stateFromParams(params("?state=solid")), "solid");
-    assert.equal(stateFromParams(params("?state=shaky")), "shaky");
-    assert.equal(
-      stateFromParams(params("?state=getting-there")),
+describe("statesFromParams — the Status dropdown's checked set", () => {
+  test("reads every supported status value", () => {
+    for (const v of [
+      "known",
+      "unknown",
+      "solid",
+      "shaky",
       "getting-there",
-    );
-    assert.equal(stateFromParams(params("?state=mixup")), "mixup");
-    assert.equal(stateFromParams(params("?state=slipping")), "slipping");
+      "mixup",
+      "slipping",
+    ] as const) {
+      const got = statesFromParams(params(`?state=${v}`));
+      assert.equal(got.size, 1);
+      assert.ok(got.has(v));
+    }
   });
 
-  test("an absent, empty, literal-all or hostile value falls back to all", () => {
-    // Same rule as the kind: a stale link or a hand-typed value must show the
-    // whole shelf, not an empty one.
-    assert.equal(stateFromParams(params("")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?kind=kanji")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?state=")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?state=all")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?state=KNOWN")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?state=banana")), DEFAULT_STATE);
-    assert.equal(stateFromParams(params("?state=__proto__")), DEFAULT_STATE);
-    assert.equal(DEFAULT_STATE, "all");
+  test("a comma list checks exactly those statuses", () => {
+    const got = statesFromParams(params("?state=known,solid"));
+    assert.equal(got.size, 2);
+    assert.ok(got.has("known"));
+    assert.ok(got.has("solid"));
+  });
+
+  test("an absent, empty, or literal-all value is every status checked", () => {
+    assert.ok(isEveryState(statesFromParams(params(""))));
+    assert.ok(isEveryState(statesFromParams(params("?kind=kanji"))));
+    assert.ok(isEveryState(statesFromParams(params("?state="))));
+    assert.ok(isEveryState(statesFromParams(params("?state=all"))));
+  });
+
+  test("`none` is every status UNCHECKED, not a fallback", () => {
+    const got = statesFromParams(params("?state=none"));
+    assert.equal(got.size, 0);
+  });
+
+  test("a hostile or all-unrecognised value falls back to every status, not to `none`", () => {
+    assert.ok(isEveryState(statesFromParams(params("?state=KNOWN"))));
+    assert.ok(isEveryState(statesFromParams(params("?state=banana"))));
+    assert.ok(isEveryState(statesFromParams(params("?state=__proto__"))));
   });
 
   test("a fallback is a fallback, not a throw", () => {
-    assert.doesNotThrow(() => stateFromParams(params("?state=%%%")));
+    assert.doesNotThrow(() => statesFromParams(params("?state=%%%")));
+    assert.doesNotThrow(() => kindsFromParams(params("?kind=%%%")));
   });
 });
