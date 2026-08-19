@@ -595,7 +595,7 @@ export function AssemblyScreen() {
           }}
         >
           {card.tray.length === 0 ? (
-            <li className="text-sm text-text-muted">Drag the pieces in order</li>
+            <li className="text-sm text-text-muted">Tap or drag the pieces into order</li>
           ) : (
             card.tray.map((surface, idx) => (
               <li key={surface} className="group relative">
