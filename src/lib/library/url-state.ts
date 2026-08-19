@@ -21,61 +21,47 @@
 // NOTHING HERE TOUCHES THE ROUTER. These are string in / string out so the
 // fallback rules below can be tested without a browser — a URL bar can say
 // `?kind=banana`, and what that does is a property of this file.
+//
+// KIND AND STATUS ARE MULTI-SELECT NOW (SAK-63, second round). The owner:
+// "make the two labels 'kind' and 'status' drop downs with the items... all
+// items should be checked by default." A single chosen tab widened to a
+// CHECKED SET — `?kind=kanji,word` browses/searches Kanji and Words only — and
+// the encoding keeps the same "garbage is not an error, the default is
+// omitted" discipline the single-value version already had:
+//
+//   missing/empty/`all` ......... every kind (or status) checked — the default,
+//                                 and what a plain `/library` opens on.
+//   `none` ....................... every kind (or status) UNCHECKED — the
+//                                 Kind/Status dropdown's Clear button. Needs
+//                                 its own token because an omitted param and an
+//                                 empty comma-list would otherwise collide.
+//   a comma list ................. exactly those, each validated the same way
+//                                 a single value always was; an unrecognised
+//                                 token is dropped, and if NONE of them survive
+//                                 that the whole thing falls back to "every kind
+//                                 checked" rather than reading as `none`.
+//
+// `kindFromParams` — a single, always-real `Kind` — is kept exactly as it was:
+// it answers a different question ("what ONE shelf does a lookup need") than
+// the multi-select `kindsFromParams` does, and nothing about widening the
+// Library's own UI to a checklist changes what a shelf lookup wants.
 
 import { KINDS } from "@/lib/library/library-index";
 import type { Kind } from "@/lib/library/entries";
 import { KANA_SUBJECT } from "@/data/characters";
 
-/** The shelf you are browsing. */
+/** The shelf(s) you are browsing. */
 export const KIND_PARAM = "kind";
 /** What you typed in the search box. */
 export const QUERY_PARAM = "q";
-/** The knowledge-state filter: `known`, `unknown`, or absent for all. */
+/** The knowledge-state filter(s), or absent for all. */
 export const STATE_PARAM = "state";
 
 /** The SUBJECT a per-kind lookup falls back to when a URL names no real kind.
  * This is only the fallback for `kindFromParams`, which must return a real
- * `Kind` for a shelf lookup, so it cannot be the All tab. It is NOT what a plain
- * `/library` opens on: that is `DEFAULT_TAB` below. Kept as the lightest shelf so
- * a garbage `?kind=` still renders something cheap rather than the heaviest view. */
+ * `Kind` for a shelf lookup, so it cannot be "every kind". Kept as the
+ * lightest shelf so a garbage `?kind=` still resolves to something cheap. */
 export const DEFAULT_KIND: Kind = KANA_SUBJECT;
-
-/**
- * The "All" tab — every subject at once, not one shelf. It is a TAB value, not a
- * `Kind`: no subject is called "all", and the browse/search code branches on it
- * rather than looking it up in a per-kind map. It rides the same `?kind=` param
- * (value `all`) so a link carries it and Back steps through it like any shelf.
- */
-export const ALL_TAB = "all" as const;
-
-/** What the kind chips can select: any one subject, or All. The page reads this
- * from the URL and branches — a real `Kind` looks its shelf up; `ALL_TAB` spans
- * every subject (browse) and buckets a search by type. */
-export type LibraryTab = Kind | typeof ALL_TAB;
-
-/** What a plain `/library` opens on: All, every subject at once. Promoted from
- * the lightest shelf (kana) now the capped browse (all-tab.ts) is cheap enough
- * to be the default first paint. It is a TAB, not a `Kind`, which is exactly why
- * it is separate from `DEFAULT_KIND`: the subject-lookup fallback must stay a
- * real `Kind`, but the tab the page opens on can be All. Omitted from the URL by
- * libraryUrl, so the bare `/library` IS the All tab. */
-export const DEFAULT_TAB: LibraryTab = ALL_TAB;
-
-/**
- * The knowledge filter, in one of three states. `all` is the default and, like
- * the default kind and an empty query, is OMITTED from the URL — the plain
- * `/library` shows everything, which is what a reference is for.
- */
-export type KnowledgeFilter =
-  | "all"
-  | "known"
-  | "unknown"
-  | "solid"
-  | "shaky"
-  | "getting-there"
-  | "mixup"
-  | "slipping";
-export const DEFAULT_STATE: KnowledgeFilter = "all";
 
 /** Just enough of `URLSearchParams` to read one — which is also all of the
  * read-only view `useSearchParams()` hands back. */
@@ -84,37 +70,22 @@ export interface ReadableParams {
 }
 
 /**
- * The kind a URL is asking for.
+ * The one kind a URL is asking for.
  *
  * A MISSING OR UNKNOWN KIND IS NOT AN ERROR. Anyone can type this URL, an old
  * link can name a shelf that no longer exists, and the page below has a `!` on
  * `shelvesByKind.get(kind)` that would throw on a value that is merely a string
  * shaped like a Kind. So the gate is membership in KINDS — the same list the
- * chips are rendered from, so it cannot drift — and anything else quietly reads
- * as the default rather than 500ing a reference screen.
+ * dropdown's checkboxes are rendered from, so it cannot drift — and anything
+ * else quietly reads as the default rather than 500ing a reference screen.
+ *
+ * Kept separate from `kindsFromParams` below: the many callers that genuinely
+ * want ONE real `Kind` (a shelf lookup, a fact subject) are not handed a set
+ * they cannot use.
  */
 export function kindFromParams(params: ReadableParams): Kind {
   const raw = params.get(KIND_PARAM);
   return KINDS.find((k) => k === raw) ?? DEFAULT_KIND;
-}
-
-/**
- * The TAB a URL is asking for — a subject, or All.
- *
- * The same forgiving gate as `kindFromParams`, widened by one value: `?kind=all`
- * is the All tab, every real subject is itself, and anything else (missing,
- * misspelled, hostile) falls back to the default shelf. It is a superset of
- * `kindFromParams`, kept separate so the many callers that genuinely want a
- * `Kind` (a shelf lookup, a fact subject) are not handed a value they cannot use.
- */
-export function tabFromParams(params: ReadableParams): LibraryTab {
-  const raw = params.get(KIND_PARAM);
-  if (raw === ALL_TAB) return ALL_TAB;
-  // A real subject is itself; anything else (missing, misspelled, hostile) opens
-  // on the default tab, which is All. This no longer delegates to kindFromParams,
-  // whose own fallback is a real Kind (kana) for shelf lookups, not the tab the
-  // page defaults to.
-  return KINDS.find((k) => k === raw) ?? DEFAULT_TAB;
 }
 
 /** What the search box should contain. Absent reads as empty, never "null". */
@@ -122,53 +93,150 @@ export function queryFromParams(params: ReadableParams): string {
   return params.get(QUERY_PARAM) ?? "";
 }
 
+// ---------- KIND, as the Library's own multi-select ----------
+
+/** A literal token for "nothing checked" — the Kind/Status dropdown's Clear
+ * button. Needed because an OMITTED param already means "everything checked"
+ * (the default); without a distinct token for empty, clearing a dropdown down
+ * to zero items could never round-trip through the URL — an empty comma-list
+ * and a missing param would parse identically. */
+const NONE_TOKEN = "none";
+/** The old single-select "All tab"'s sentinel, still honoured so a link
+ * written before this became a checklist (`/library?kind=all`) keeps meaning
+ * what it always meant: every kind. */
+const ALL_TOKEN = "all";
+
+/** Every kind, checked — the default selection, and what a plain `/library`
+ * browses and searches. Reach-equivalent to the old "All" tab. */
+export const ALL_KINDS: ReadonlySet<Kind> = new Set(KINDS);
+
 /**
- * The knowledge filter a URL is asking for.
+ * The set of kinds a URL's `?kind=` asks for.
  *
- * Like `kindFromParams`, a missing, empty, misspelled or hostile value is not
- * an error: it reads as `all`, so a stale link or a hand-typed `?state=banana`
- * shows the whole shelf rather than an empty one. Only the two non-default
- * words are recognised; everything else, including the literal `all`, collapses
- * to the default so the URL and the chips cannot drift.
+ * `?kind=kanji,word` checks Kanji and Words only; `?kind=kanji` (no comma) is
+ * exactly the breadcrumb link the entry page has always written, and still
+ * checks Kanji alone. A missing, empty, or literal `all` param is every kind
+ * checked; `none` is every kind UNCHECKED. Anything else is read token by
+ * token, each validated against KINDS the same way a single value always was —
+ * an unrecognised token is dropped, and if the whole list turns out empty
+ * (`?kind=banana`, `?kind=,,`) that is garbage, not a deliberate Clear, so it
+ * falls back to every kind checked rather than being mistaken for `none`.
  */
-export function stateFromParams(params: ReadableParams): KnowledgeFilter {
+export function kindsFromParams(params: ReadableParams): ReadonlySet<Kind> {
+  const raw = params.get(KIND_PARAM);
+  if (raw === null || raw === "" || raw === ALL_TOKEN) return ALL_KINDS;
+  if (raw === NONE_TOKEN) return new Set();
+  const picked = raw.split(",").filter((tok) => KINDS.includes(tok as Kind));
+  return picked.length > 0 ? new Set(picked as Kind[]) : ALL_KINDS;
+}
+
+// ---------- STATUS, as the Library's own multi-select ----------
+
+/**
+ * The knowledge-filter values the Status dropdown offers as checkboxes.
+ * There is deliberately no `all` item any more — the owner's own reasoning:
+ * "multi-select with everything checked already IS all", so a dedicated All
+ * button is redundant once every item defaults to checked.
+ */
+export type StatusFilter =
+  | "known"
+  | "unknown"
+  | "solid"
+  | "shaky"
+  | "getting-there"
+  | "mixup"
+  | "slipping";
+
+const STATUS_VALUES: readonly StatusFilter[] = [
+  "known",
+  "unknown",
+  "solid",
+  "shaky",
+  "getting-there",
+  "mixup",
+  "slipping",
+];
+
+/** Every status, checked — the default, equivalent to the old "All" filter
+ * chip (known and unknown alone already partition every entry, so checking
+ * every item here filters nothing, exactly like the old default did). */
+export const ALL_STATES: ReadonlySet<StatusFilter> = new Set(STATUS_VALUES);
+
+/**
+ * The set of statuses a URL's `?state=` asks for. Same shape as
+ * `kindsFromParams`: a missing/empty/literal-`all` param is every status
+ * checked, `none` is every status unchecked (the dropdown's Clear), a comma
+ * list is read token by token with unrecognised tokens dropped, and an
+ * all-garbage list falls back to every status checked rather than reading as
+ * a deliberate Clear.
+ */
+export function statesFromParams(
+  params: ReadableParams,
+): ReadonlySet<StatusFilter> {
   const raw = params.get(STATE_PARAM);
-  return raw === "known" ||
-    raw === "unknown" ||
-    raw === "solid" ||
-    raw === "shaky" ||
-    raw === "getting-there" ||
-    raw === "mixup" ||
-    raw === "slipping"
-    ? raw
-    : DEFAULT_STATE;
+  if (raw === null || raw === "" || raw === ALL_TOKEN) return ALL_STATES;
+  if (raw === NONE_TOKEN) return new Set();
+  const picked = raw
+    .split(",")
+    .filter((tok) => STATUS_VALUES.includes(tok as StatusFilter));
+  return picked.length > 0 ? new Set(picked as StatusFilter[]) : ALL_STATES;
+}
+
+function setEquals<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+/** Whether `kinds` is exactly "every kind checked" — the fast path callers use
+ * to skip filtering entirely, and the line between "behaves like the old All
+ * tab" and "behaves like All-but-filtered-to-a-subset". */
+export function isEveryKind(kinds: ReadonlySet<Kind>): boolean {
+  return setEquals(kinds, ALL_KINDS);
+}
+
+/** Whether `states` is exactly "every status checked" — same fast path, for
+ * the Status dropdown. */
+export function isEveryState(states: ReadonlySet<StatusFilter>): boolean {
+  return setEquals(states, ALL_STATES);
 }
 
 /**
  * The Library URL for a given state.
  *
- * The default kind, an empty query, and the `all` filter are OMITTED, so the
- * plain `/library` stays plain: a page that rewrote itself to
- * `/library?kind=kana&q=&state=all` the moment it mounted would put a URL in the
- * address bar that the user never asked for, and make the first Back press a
- * no-op that only undoes our own tidying.
+ * Every-kind-checked, an empty query, and every-status-checked are OMITTED, so
+ * the plain `/library` stays plain: a page that rewrote itself to
+ * `/library?kind=…&q=&state=…` the moment it mounted would put a URL in the
+ * address bar the user never asked for, and make the first Back press a no-op
+ * that only undoes our own tidying. The two multi-select params serialise in
+ * KINDS/STATUS_VALUES order (not selection order), so the same checked set
+ * always writes the same URL regardless of the order the boxes were ticked in.
  */
 export function libraryUrl({
-  kind,
+  kinds = ALL_KINDS,
   query,
-  state = DEFAULT_STATE,
+  states = ALL_STATES,
 }: {
-  kind: LibraryTab;
+  kinds?: ReadonlySet<Kind>;
   query: string;
-  state?: KnowledgeFilter;
+  states?: ReadonlySet<StatusFilter>;
 }): string {
   const params = new URLSearchParams();
-  // The default tab (All) is omitted, so it round-trips as the bare `/library`.
-  // Every other tab writes its `?kind=`, including kana now that it is a chosen
-  // shelf rather than the default.
-  if (kind !== DEFAULT_TAB) params.set(KIND_PARAM, kind);
+  if (!isEveryKind(kinds)) {
+    params.set(
+      KIND_PARAM,
+      kinds.size === 0 ? NONE_TOKEN : KINDS.filter((k) => kinds.has(k)).join(","),
+    );
+  }
   if (query !== "") params.set(QUERY_PARAM, query);
-  if (state !== DEFAULT_STATE) params.set(STATE_PARAM, state);
+  if (!isEveryState(states)) {
+    params.set(
+      STATE_PARAM,
+      states.size === 0
+        ? NONE_TOKEN
+        : STATUS_VALUES.filter((s) => states.has(s)).join(","),
+    );
+  }
   const qs = params.toString();
   return qs ? `/library?${qs}` : "/library";
 }

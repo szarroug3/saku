@@ -1,13 +1,17 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test \
 //        src/lib/library/known-mark.test.ts
 //
-// WHAT THIS TEST IS FOR (SAK-63)
+// WHAT THIS TEST IS FOR
 // ===============================
-// The Library grid now paints a small "known" dot on an entry's tile/row (see
-// entry-tile.tsx's KnownDot). Its whole promise — matching the Known/Not known
-// FILTER's promise in standing.test.ts — is that it is not a second, silently
-// divergent definition of "known": it is `entryIsKnown(entryStanding(...))`,
-// the exact chain the filter runs, wrapped once so both call sites share it.
+// The Library's Known/Not-known FILTER (library-page.tsx's `keep`) needs one
+// definition of "known" that never quietly drifts from standing.ts's own —
+// `isEntryKnownForDisplay` is that one function: `entryIsKnown(entryStanding(
+// knownFactsOf(entry), …))`, wrapped once so the filter never re-derives it.
+//
+// A per-tile "known" dot (SAK-63) briefly called this same function from a
+// second site (entry-tile.tsx's KnownDot); the owner asked for the dot to be
+// removed entirely, so that second call site is gone and this file no longer
+// tests it — see entry-tile.tsx's file header for the removal.
 //
 // So this file checks two different things:
 //
@@ -17,14 +21,14 @@
 //      If this module ever grew its own threshold or its own accuracy math
 //      instead of delegating, these would drift from standing.test.ts's cases.
 //
-//   2. WIRING — the actual call sites (library-page.tsx's grid predicate,
-//      entry-tile.tsx's KnownDot) go through THIS function and standing.ts's
-//      real exports, not a re-derived formula. A source-text check, in the
-//      spirit of mark-view.test.ts's guard on <Lbl>'s truthy check: cheaper
-//      than a render test (this repo has no React Testing Library set up —
-//      see the total absence of "@testing-library/react" under src/), and it
-//      catches the actual failure mode (someone inlines
-//      `standing >= 80 ? …` on a tile instead of calling this function).
+//   2. WIRING — the filter's own call site (library-page.tsx's `keep`) goes
+//      through THIS function and standing.ts's real exports, not a re-derived
+//      formula. A source-text check, in the spirit of mark-view.test.ts's guard
+//      on <Lbl>'s truthy check: cheaper than a render test (this repo has no
+//      React Testing Library set up — see the total absence of
+//      "@testing-library/react" under src/), and it catches the actual failure
+//      mode (someone inlines `standing >= 80 ? …` on a tile instead of calling
+//      this function).
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -116,56 +120,25 @@ function readSrc(relPath: string): string {
   );
 }
 
-describe("wiring — the grid mark is drawn through isEntryKnownForDisplay, not a new formula", () => {
-  test("library-page.tsx's grid predicate calls isEntryKnownForDisplay, not entryIsKnown/entryStanding directly", () => {
+describe("wiring — the Known/Not-known filter is drawn through isEntryKnownForDisplay, not a new formula", () => {
+  test("library-page.tsx's filter calls isEntryKnownForDisplay, not entryIsKnown/entryStanding directly", () => {
     const src = readSrc("components/library/library-page.tsx");
     assert.match(
       src,
       /import\s*\{\s*isEntryKnownForDisplay\s*\}\s*from\s*"@\/lib\/library\/known-mark"/,
       "library-page.tsx must import the shared known-mark helper",
     );
-    // The always-on grid predicate (independent of the Known/Not known filter)
-    // and the filter's own known/unknown branch both resolve through it.
+    // The Known/Not-known branch of `keep` resolves through it.
     const calls = src.match(/isEntryKnownForDisplay\(/g) ?? [];
     assert.ok(
-      calls.length >= 2,
-      "expected isEntryKnownForDisplay to be called at least twice (the filter's keep, and the grid's known predicate)",
+      calls.length >= 1,
+      "expected isEntryKnownForDisplay to be called by the filter's keep",
     );
     // No stray re-derivation via the raw standing chain elsewhere in the file.
     assert.doesNotMatch(
       src,
       /entryIsKnown\(\s*entryStanding\(/,
       "library-page.tsx should route through isEntryKnownForDisplay rather than re-inlining entryIsKnown(entryStanding(...))",
-    );
-  });
-
-  test("entry-tile.tsx's KnownDot is painted from a `known` boolean prop, not a re-derived standing", () => {
-    const src = readSrc("components/library/entry-tile.tsx");
-    assert.match(
-      src,
-      /function KnownDot/,
-      "expected a KnownDot component",
-    );
-    assert.match(
-      src,
-      /known\s*=\s*false/,
-      "EntryTile/EntryRow should default `known` to false rather than computing it themselves",
-    );
-    // entry-tile.tsx must not import standing.ts itself — it only ever
-    // receives the already-resolved boolean from its caller.
-    assert.doesNotMatch(
-      src,
-      /from ["']@\/lib\/library\/standing["']/,
-      "entry-tile.tsx should not import standing.ts directly — known-ness is computed once, upstream",
-    );
-  });
-
-  test("the known mark uses the app's `success` tone, the same tone standing.ts spends on solid/known elsewhere", () => {
-    const src = readSrc("components/library/entry-tile.tsx");
-    assert.match(
-      src,
-      /bg-success/,
-      "the known dot should paint with the shared success token, not a bespoke colour",
     );
   });
 });

@@ -19,6 +19,7 @@ import {
 } from "react";
 
 import { EntryRow } from "@/components/library/entry-tile";
+import { FilterDropdown } from "@/components/library/filter-dropdown";
 import { Shelf, shelfSections } from "@/components/library/shelves";
 import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
@@ -35,7 +36,7 @@ import {
   factEntryOf,
 } from "@/lib/library/library-index";
 import type { Kind, LibEntry } from "@/lib/library/entries";
-import { search, searchAll, searchByType } from "@/lib/library/search";
+import { search, searchByType } from "@/lib/library/search";
 import { allTabBrowseKinds } from "@/lib/library/all-tab";
 import {
   addRange,
@@ -48,27 +49,38 @@ import {
 import { standingOf, type Standing } from "@/lib/library/standing";
 import { isEntryKnownForDisplay } from "@/lib/library/known-mark";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
+import type { Claims } from "@/lib/claims";
 import {
-  ALL_TAB,
+  ALL_KINDS,
+  ALL_STATES,
+  isEveryKind,
+  isEveryState,
+  kindsFromParams,
   libraryUrl,
   queryFromParams,
-  stateFromParams,
-  tabFromParams,
-  type KnowledgeFilter,
-  type LibraryTab,
+  statesFromParams,
+  type StatusFilter,
 } from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { postClaim } from "@/lib/progress-fetch";
 import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactAggregate, FactId } from "@/types";
 
-/** The knowledge-filter chips, in the order they read: the escape hatch first,
- * then the two narrowings. Their values are the `KnowledgeFilter` the URL
- * carries; the labels are the user's words for them. */
-const STATE_CHIPS: readonly { value: KnowledgeFilter; label: string }[] = [
-  { value: "all", label: "All" },
+/** The Kind dropdown's items, in curriculum teaching order — the same order
+ * the old chip row used, and the order every kind-scoped list on this page
+ * already reads in. */
+const KIND_ITEMS: readonly { value: Kind; label: string }[] = KINDS.map((k) => ({
+  value: k,
+  label: KIND_LABEL[k],
+}));
+
+/** The Status dropdown's items. NO "All" ITEM (the owner's second round of
+ * feedback): a multi-select with every box checked already IS "all", so a
+ * dedicated All button was redundant the moment this became a checklist —
+ * that redundancy is exactly why she asked for it gone. */
+const STATUS_ITEMS: readonly { value: StatusFilter; label: string }[] = [
   { value: "known", label: "Known" },
   { value: "unknown", label: "Not known" },
   { value: "solid", label: "Solid" },
@@ -78,8 +90,7 @@ const STATE_CHIPS: readonly { value: KnowledgeFilter; label: string }[] = [
   { value: "slipping", label: "Slipping" },
 ];
 
-const FILTER_LABEL: Record<KnowledgeFilter, string> = {
-  all: "all",
+const FILTER_LABEL: Record<StatusFilter, string> = {
   known: "known",
   unknown: "not-known",
   solid: "solid",
@@ -89,18 +100,56 @@ const FILTER_LABEL: Record<KnowledgeFilter, string> = {
   slipping: "slipping",
 };
 
+/** One checked status, as a predicate over an entry — the same test the old
+ * single-select filter always ran, just callable per-item now that several can
+ * be checked at once. Module scope (not inline in the `keep` memo below) keeps
+ * that memo's own body a plain map + union, which is what the React Compiler
+ * needs to keep hand-writing `useMemo` here worth doing at all. */
+function statusPredicate(
+  value: StatusFilter,
+  liveFacts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+  activeMixupEntries: ReadonlySet<string>,
+): (entry: LibEntry) => boolean {
+  if (value === "known" || value === "unknown") {
+    const wantKnown = value === "known";
+    return (entry) =>
+      isEntryKnownForDisplay(entry, liveFacts, claims, now) === wantKnown;
+  }
+  if (value === "mixup") {
+    return (entry) => activeMixupEntries.has(entry.id);
+  }
+  const wanted: Standing = value;
+  return (entry) =>
+    knownFactsOf(entry).some(
+      (fact) => standingOf(liveFacts[fact], claims[fact], now).standing === wanted,
+    );
+}
+
+/** The active Status selection, as words — "known, solid", or "no status" for
+ * a fully-cleared dropdown. Only ever built for the empty-state copy (search's
+ * "No … entries match", a shelf's FilterEmpty): the predicate itself
+ * (`keep`, below) does the actual filtering. */
+function statesLabel(states: ReadonlySet<StatusFilter>): string {
+  if (states.size === 0) return "no status";
+  return STATUS_ITEMS.filter((i) => states.has(i.value))
+    .map((i) => FILTER_LABEL[i.value])
+    .join(", ");
+}
+
 interface LibraryUrlState {
-  tab: LibraryTab;
+  kinds: ReadonlySet<Kind>;
   query: string;
-  filter: KnowledgeFilter;
+  states: ReadonlySet<StatusFilter>;
 }
 
 function readUrlState(search: string): LibraryUrlState {
   const params = new URLSearchParams(search);
   return {
-    tab: tabFromParams(params),
+    kinds: kindsFromParams(params),
     query: queryFromParams(params),
-    filter: stateFromParams(params),
+    states: statesFromParams(params),
   };
 }
 
@@ -134,11 +183,11 @@ export function LibraryPageClient({
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
 
-  // THE URL IS THE STATE, for both the tab and the box. It is seeded by the
-  // server instead of `useSearchParams`: that hook forced the whole page behind
-  // a null Suspense fallback, so every reload first painted an empty Library and
-  // waited for hydration. Native history writes update this state directly;
-  // Back/Forward synchronize through popstate.
+  // THE URL IS THE STATE, for the kinds, statuses and the box. It is seeded by
+  // the server instead of `useSearchParams`: that hook forced the whole page
+  // behind a null Suspense fallback, so every reload first painted an empty
+  // Library and waited for hydration. Native history writes update this state
+  // directly; Back/Forward synchronize through popstate.
   const [urlState, setUrlState] = useState<LibraryUrlState>(() =>
     readUrlState(initialSearch),
   );
@@ -148,7 +197,7 @@ export function LibraryPageClient({
     // The App Router may remount this cached page after the browser's popstate
     // has already fired. Read the restored URL on mount/pageshow as well as on
     // the event itself, so Back cannot fall back to the server's older seed and
-    // clear the selected tab, knowledge filter or query.
+    // clear the checked kinds, statuses or query.
     syncFromLocation();
     window.addEventListener("popstate", syncFromLocation);
     window.addEventListener("pageshow", syncFromLocation);
@@ -175,14 +224,15 @@ export function LibraryPageClient({
   // back→forward→back through a detail page), a subsequent SAME-SEGMENT,
   // search-params-only push/replace is silently dropped — the reducer no-ops it,
   // no URL change, no re-render. Segment-changing navigations (a detail tile, a
-  // sidebar link) still work, which is why only the chips and the search box went
-  // dead until a full reload. The History API takes a different path through the
-  // router and is unaffected, so the chips keep working across any history dance.
+  // sidebar link) still work, which is why only the dropdowns and the search box
+  // went dead until a full reload. The History API takes a different path
+  // through the router and is unaffected, so they keep working across any
+  // history dance.
   //
   // pushState/replaceState also give us the two behaviours we relied on
   // router's options for, for free: they add NO scroll (the `scroll: false` the
-  // chip nav wanted), and pushState still writes one history entry so Back
-  // undoes a kind/filter choice exactly as before.
+  // old chip nav wanted), and pushState still writes one history entry so Back
+  // undoes a checkbox toggle exactly as it undid a chip switch before.
   const pushUrl = useCallback(
     (url: string) => {
       window.history.pushState(null, "", url);
@@ -197,21 +247,22 @@ export function LibraryPageClient({
     },
     [],
   );
-  // THE TAB — one subject, or All. All stacks every subject's shelf (each capped
-  // to a taste; see all-tab.ts) and buckets a search BY TYPE; a subject tab shows
-  // and searches only its own kind. The old "no All view, search spans every
-  // kind" rule is gone: search is now SCOPED to the tab, and All is the tab that
-  // spans everything. The default is still Kana — the lightest first paint — so a
-  // plain /library never opens on the heaviest render.
-  const tab = urlState.tab;
-  const isAll = tab === ALL_TAB;
+  // THE CHECKED KINDS — the Kind dropdown's own selection, every kind checked by
+  // default. Every kind checked spans every subject (browse) and buckets a
+  // search by type, exactly like the old "All" tab; a narrower set behaves like
+  // that same All view filtered down to only the checked subjects — see
+  // `isEveryKind` and the render below, which generalise the old All-tab code
+  // path (allTabBrowseKinds) rather than duplicating it for the narrowed case.
+  const kinds = urlState.kinds;
   const urlQuery = urlState.query;
-  // THE KNOWLEDGE FILTER — All / Known / Not known. Like the kind, it lives in
-  // the URL so a link carries it and Back steps through it, and it spans every
-  // kind: it governs both the browse shelf and the search results, so "which
-  // kanji don't I know" is the same question whether you are browsing or
-  // searching. Its default is All, and All is omitted from the URL.
-  const stateFilter = urlState.filter;
+  // THE CHECKED STATUSES — the Status dropdown's own selection, every status
+  // checked by default (which filters nothing — "known" and "not known" alone
+  // already partition every entry, so a full check-set is reach-equivalent to
+  // the old "All" chip). Like the kinds, it lives in the URL so a link carries
+  // it and Back steps through it, and it spans every kind: it governs both the
+  // browse shelf and the search results, so "which kanji don't I know" is the
+  // same question whether you are browsing or searching.
+  const states = urlState.states;
 
   // THE BOX IS TYPED INTO AND THE URL IS NOT TYPED INTO, so the box keeps a
   // local copy. A controlled input whose value round-trips through the router
@@ -236,7 +287,7 @@ export function LibraryPageClient({
     if (debounce.current) clearTimeout(debounce.current);
   }, []);
 
-  // TYPING REPLACES, SWITCHING TABS PUSHES.
+  // TYPING REPLACES, CHECKING A BOX PUSHES.
   //
   // A push per keystroke means "shirasu" buries the previous page under seven
   // history entries and Back becomes a stuck key. So the query is a `replace`,
@@ -245,44 +296,73 @@ export function LibraryPageClient({
   // a 2,136-tile shelf. What you get back is one URL that always describes the
   // box, and a Back that leaves the Library in one press from a typed word.
   //
-  // The tab, by contrast, IS a navigation: you chose Kanji, you can expect Back
-  // to return you to Kana. That is a `push`, and it is the behaviour the
-  // breadcrumb was already written as if it had.
+  // A checkbox toggle, by contrast, IS a navigation: you unchecked Kanji, you
+  // can expect Back to recheck it. That is a `push`, and it is the behaviour
+  // the old single-select chips already had — this only widens WHAT the push
+  // carries, from one chosen value to a whole checked set.
   const commitQuery = useCallback(
     (value: string) => {
       setQuery(value);
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
         ownQuery.current = value;
-        replaceUrl(libraryUrl({ kind: tab, query: value, state: stateFilter }));
+        replaceUrl(libraryUrl({ kinds, query: value, states }));
       }, 250);
     },
-    [tab, stateFilter, replaceUrl],
+    [kinds, states, replaceUrl],
   );
 
-  const selectTab = useCallback(
-    (next: LibraryTab) => {
-      // Flush the pending query first — the tab switch carries whatever is in
-      // the box RIGHT NOW, not whatever the debounce last got around to
-      // writing, or the new history entry would disagree with the screen.
+  // TOGGLE ONE ITEM / SELECT EVERY ITEM / CLEAR EVERY ITEM, built twice (Kind,
+  // Status) rather than once behind a generic hook: two call sites of a
+  // four-line closure read plainer than a hook whose only job is to avoid four
+  // lines twice. Each flushes the pending query first — same reason
+  // `selectTab`/`selectState` always did (see the file's TYPING
+  // REPLACES/CHECKING A BOX PUSHES note above): a checkbox click carries
+  // whatever is in the box RIGHT NOW, not whatever the debounce last got
+  // around to writing, or the new history entry would disagree with the screen.
+  const toggleKind = useCallback(
+    (k: Kind) => {
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      pushUrl(libraryUrl({ kind: next, query, state: stateFilter }));
+      const next = new Set(kinds);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      pushUrl(libraryUrl({ kinds: next, query, states }));
     },
-    [query, stateFilter, pushUrl],
+    [kinds, query, states, pushUrl],
   );
+  const selectAllKinds = useCallback(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    ownQuery.current = query;
+    pushUrl(libraryUrl({ kinds: ALL_KINDS, query, states }));
+  }, [query, states, pushUrl]);
+  const clearKinds = useCallback(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    ownQuery.current = query;
+    pushUrl(libraryUrl({ kinds: new Set(), query, states }));
+  }, [query, states, pushUrl]);
 
-  // The knowledge filter is a navigation like the kind chips: choosing "Known"
-  // is a decision you can expect Back to undo, so it PUSHES. It carries the
-  // live query for the same reason the tab switch does.
-  const selectState = useCallback(
-    (next: KnowledgeFilter) => {
+  const toggleState = useCallback(
+    (s: StatusFilter) => {
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      pushUrl(libraryUrl({ kind: tab, query, state: next }));
+      const next = new Set(states);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      pushUrl(libraryUrl({ kinds, query, states: next }));
     },
-    [tab, query, pushUrl],
+    [kinds, query, states, pushUrl],
   );
+  const selectAllStates = useCallback(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    ownQuery.current = query;
+    pushUrl(libraryUrl({ kinds, query, states: ALL_STATES }));
+  }, [kinds, query, pushUrl]);
+  const clearStates = useCallback(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    ownQuery.current = query;
+    pushUrl(libraryUrl({ kinds, query, states: new Set() }));
+  }, [kinds, query, pushUrl]);
 
   // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
   // be fine synchronously; `useDeferredValue` is here for the RENDER, which is
@@ -291,8 +371,9 @@ export function LibraryPageClient({
   // frames. Deferring lets the field stay live while the results catch up.
   const deferred = useDeferredValue(query);
   // THE SELECTION — a global, cross-kind set of toggled entries you build a
-  // drill from. It is NOT reset when the kind filter changes: select a hiragana
-  // row, switch to kanji, and it is still in here and still in the bar's count.
+  // drill from. It is NOT reset when the checked kinds change: select a
+  // hiragana row, uncheck Kana, and it is still in here and still in the bar's
+  // count.
   const [selected, setSelected] = useState<Selection>(EMPTY_SELECTION);
   // SELECT MODE — the explicit opt-in a plain click needs before it toggles a
   // tile/row into the selection above. Off by default, so the homepage's "look
@@ -350,12 +431,14 @@ export function LibraryPageClient({
     return set;
   }, [lists]);
 
-  // THE KNOWLEDGE FILTER AS A PREDICATE, in one place, so search and browse
-  // apply the identical test. Undefined for All — the callers treat "no keep"
-  // as "keep everything", so the common case adds no per-entry work. For Known
-  // and Not known it resolves each entry through `entryStanding`, the same
-  // effective-progress-and-claims path the tiles already use, so a thing you
-  // marked "I already know this" filters as Known without a Library-only rule.
+  // THE STATUS FILTER AS A PREDICATE, in one place, so search and browse apply
+  // the identical test. Undefined when every status is checked — the callers
+  // treat "no keep" as "keep everything", so the common (default) case adds no
+  // per-entry work. Otherwise an entry passes if it matches ANY checked status
+  // (a union, not an intersection — checking both Known and Solid means "known
+  // OR solid", the same "widen what you see" reading multi-select checkboxes
+  // always have): each status resolves through the same predicates the single-
+  // select filter always used, just OR'd together instead of switched on one.
   //
   // WHICH facts define "known" is `knownFactsOf`'s call, not this predicate's:
   // all of them for most kinds, but a KANJI on its MEANING alone — the fact the
@@ -363,89 +446,68 @@ export function LibraryPageClient({
   // what makes 人 ("Meaning: you know this" on its page) filter as Known here,
   // instead of failing because its ten unlearned readings looked like work.
   const keep = useMemo(() => {
-    if (stateFilter === "all") return undefined;
-    if (stateFilter === "known" || stateFilter === "unknown") {
-      const wantKnown = stateFilter === "known";
-      return (entry: LibEntry) =>
-        isEntryKnownForDisplay(entry, liveFacts, claims, now) === wantKnown;
-    }
-    if (stateFilter === "mixup") {
-      return (entry: LibEntry) => activeMixupEntries.has(entry.id);
-    }
-    const wanted: Standing = stateFilter;
-    return (entry: LibEntry) =>
-      knownFactsOf(entry).some(
-        (fact) =>
-          standingOf(
-            liveFacts[fact],
-            claims[fact],
-            now,
-          ).standing === wanted,
-      );
-  }, [
-    stateFilter,
-    liveFacts,
-    claims,
-    now,
-    activeMixupEntries,
-  ]);
+    if (isEveryState(states)) return undefined;
+    // Every box unchecked is not "no filter", it is "filter everything out" —
+    // the Status dropdown's Clear button, taken at its word. An empty
+    // `predicates` array falls straight out of `.some()` below (vacuously
+    // false for every entry), so that case needs no branch of its own.
+    const predicates = [...states].map((value) =>
+      statusPredicate(value, liveFacts, claims, now, activeMixupEntries),
+    );
+    return (entry: LibEntry) => predicates.some((p) => p(entry));
+  }, [states, liveFacts, claims, now, activeMixupEntries]);
 
-  // WHETHER TO MARK AN ENTRY KNOWN IN THE GRID ITSELF (SAK-63) — unlike `keep`
-  // above, this runs regardless of the knowledge filter, so scanning the shelf
-  // shows progress even on All. Same `isEntryKnownForDisplay` call the Known /
-  // Not known branch of `keep` just made, so the tile's mark and the filter can
-  // never quietly disagree about what "known" means — see known-mark.ts.
-  const isKnown = useCallback(
-    (entry: LibEntry) => isEntryKnownForDisplay(entry, liveFacts, claims, now),
-    [liveFacts, claims, now],
-  );
-
-  // SEARCH FOLLOWS THE TAB. On a subject tab it is SCOPED to that kind (the Kana
-  // tab searches only kana), sectioned by HOW you matched (exact / prefix / …).
-  // On the All tab it spans every subject and is grouped BY TYPE — a Kanji block,
-  // a Radicals block, a Words block, in teaching order — which is the tab's whole
-  // point. Both come back as `{ key, label, hits, more }` so one render draws
-  // either; the difference is only what the blocks are cut by.
-  const allHits = useMemo(
-    () =>
-      q
-        ? searchAll(q, { kind: tab === ALL_TAB ? null : tab, pinned, keep })
-        : [],
-    [q, tab, pinned, keep],
-  );
-
+  // SEARCH FOLLOWS THE CHECKED KINDS. Exactly one kind checked keeps today's
+  // richer single-subject search, sectioned by HOW you matched (exact / prefix
+  // / means that / …) — the same experience narrowing to one subject has always
+  // given. Two or more (including every kind, the default) reuses the All-tab's
+  // grouping BY TYPE — a Kanji block, a Words block, in teaching order —
+  // restricted to whichever kinds are still checked; "every kind checked
+  // behaves like the old All tab, a subset behaves like All-but-filtered" is
+  // the same rule the browse view below follows. Both come back as
+  // `{ key, label, hits }` so one render draws either.
   const resultSections = useMemo(() => {
-    if (!q) return [];
-    // SEARCH SHOWS EVERYTHING IT FOUND. No per-section cap: the owner wants a
-    // search to render every match, not the first 8 with a "+N more" footer. So
-    // `perSection` is unbounded and every section's `hits` holds all of them.
-    // (A broad query — a single kana like で — can now paint a lot of rows; that
-    // is the deliberate choice.)
-    //
-    // `tab === ALL_TAB` (not `isAll`) so TypeScript narrows `tab` to a real Kind
-    // in the else branch, where `search` needs one.
-    if (tab === ALL_TAB) {
-      return searchByType(q, {
+    if (!q || kinds.size === 0) return [];
+    if (kinds.size === 1) {
+      const [onlyKind] = kinds;
+      return search(q, {
+        kind: onlyKind,
         pinned,
         keep,
         perSection: Number.MAX_SAFE_INTEGER,
       }).map((s) => ({
-        key: s.kind as string,
+        key: s.why as string,
         label: s.label,
         hits: s.hits,
       }));
     }
-    return search(q, {
-      kind: tab,
+    // SEARCH SHOWS EVERYTHING IT FOUND. No per-section cap: the owner wants a
+    // search to render every match, not the first 8 with a "+N more" footer. So
+    // `perSection` is unbounded and every section's `hits` holds all of them.
+    return searchByType(q, {
       pinned,
       keep,
       perSection: Number.MAX_SAFE_INTEGER,
-    }).map((s) => ({
-      key: s.why as string,
-      label: s.label,
-      hits: s.hits,
-    }));
-  }, [q, tab, pinned, keep]);
+    })
+      .filter((s) => kinds.has(s.kind))
+      .map((s) => ({
+        key: s.kind as string,
+        label: s.label,
+        hits: s.hits,
+      }));
+  }, [q, kinds, pinned, keep]);
+
+  // Every hit, unsectioned — what the drill bar's slice is over when searching,
+  // and what "show the other 140" would expand. `resultSections` already holds
+  // every match uncapped (see the comment above), so this is a flatten of it
+  // rather than a second search call: the two used to be separate queries
+  // (`search`/`searchAll` run twice with slightly different options) that
+  // happened to agree on the same entries; deriving one from the other makes
+  // that agreement structural instead of coincidental.
+  const resultHits = useMemo(
+    () => resultSections.flatMap((s) => s.hits),
+    [resultSections],
+  );
 
   // Shelves are cut lazily per shown kind now — see shelfFor above. The kanji
   // shelf is sectioned by the "everyday" teaching order, the one the curriculum
@@ -459,20 +521,18 @@ export function LibraryPageClient({
   // what you can see. The order is the flattened top-to-bottom reading order
   // across sections (and, in search, across kinds), which is the order a range
   // follows.
+  //
+  // ONE FORMULA COVERS EVERY CHECKED-KIND SIZE — zero, one, a subset, or every
+  // kind — because `allTabBrowseKinds` already enumerates in teaching order and
+  // drops whatever the Status filter emptied; filtering ITS output by which
+  // kinds are checked is the "All-tab-but-filtered-to-a-subset" rule applied to
+  // Shift-range order the same way it is applied to the render below.
   const visibleIds = useMemo<EntryId[]>(() => {
     if (q) return resultSections.flatMap((s) => s.hits.map((h) => h.entry.id));
-    // The All browse: the painted ids of every shown subject, concatenated in
-    // teaching order — so a Shift-range follows the same top-to-bottom reading
-    // the eye does across the stacked shelves.
-    if (tab === ALL_TAB) {
-      return allTabBrowseKinds(keep, (k) => shelfFor(k).sections).flatMap(
-        (k) =>
-          visibleShelfIds(k, shelfFor(k).sections, keep),
-      );
-    }
-    const sh = shelfFor(tab);
-    return visibleShelfIds(tab, sh.sections, keep);
-  }, [q, resultSections, tab, keep]);
+    return allTabBrowseKinds(keep, (k) => shelfFor(k).sections)
+      .filter((k) => kinds.has(k))
+      .flatMap((k) => visibleShelfIds(k, shelfFor(k).sections, keep));
+  }, [q, resultSections, kinds, keep]);
 
   // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
   // anchor there. With Shift, IF there is a live anchor still on screen, it adds
@@ -511,33 +571,43 @@ export function LibraryPageClient({
   //                    are assembling a selection, the bar is about it.
   //   searching ...... the results. The sections already show every hit, and the
   //                    bar means the same set: you asked for で and the bar means で.
-  //   a single kind .. that whole shelf (the shipped "drill all of Kanji").
+  //   browsing ....... whatever the checked kinds currently show — the whole
+  //                    library when every kind is checked, or the union of the
+  //                    checked subjects' shelves otherwise.
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
       // The bar means every search hit under the same scope as the visible
       // results, reusing the computed hit set.
-      return { label: q, entries: allHits.map((h) => h.entry.id) };
+      return { label: q, entries: resultHits.map((h) => h.entry.id) };
     }
-    // All browse with nothing selected: the bar is the whole library (the "drill
-    // everything" the per-kind shelf's "drill all of Kanji" generalises to).
-    if (tab === ALL_TAB) {
+    if (kinds.size === 0) return { label: "Nothing", entries: [] };
+    // Every kind checked, nothing selected: the bar is the whole library (the
+    // "drill everything" a single checked kind's shelf generalises to). Reads
+    // straight off LIB_ENTRIES rather than summing every kind's own
+    // visibleShelfIds: the counters shelf's sections weave in entries from
+    // other kinds (see counter-shelf.ts), so a per-kind sum only matters once
+    // the checked set stops being "everything" and the union actually needs
+    // deriving from what's on screen — see the branches below.
+    if (isEveryKind(kinds)) {
       const entries = keep ? LIB_ENTRIES.filter(keep) : LIB_ENTRIES;
       return { label: "Everything", entries: entries.map((e) => e.id) };
     }
-    // The bar means exactly what the shelf SHOWS — the same visible, keep-filtered
-    // id list a Shift-range selects over (visibleShelfIds above), not the kind's raw
-    // LIB_ENTRIES_BY_KIND set. The two diverge on "Numbers and counters", whose
-    // sections are assembled from several kinds (the construction reference pages
-    // and the number kanji 一…十, not just COUNTER_KIND entries — see
-    // counterShelfSections): counting the raw set there names only the handful of
-    // memorised counter forms and undercounts the shelf. Deriving from the sections
-    // keeps the count, the selection range and the painted rows one set.
+    // A checked subset: the bar means exactly what the checked shelves SHOW —
+    // the same visible, keep-filtered id list a Shift-range selects over
+    // (visibleIds above), not each kind's raw LIB_ENTRIES_BY_KIND set. The two
+    // diverge on "Numbers and counters", whose sections are assembled from
+    // several kinds (the construction reference pages and the number kanji
+    // 一…十, not just COUNTER_KIND entries — see counterShelfSections):
+    // counting the raw set there names only the handful of memorised counter
+    // forms and undercounts the shelf. Deriving from the sections keeps the
+    // count, the selection range and the painted rows one set.
+    const shownKinds = KINDS.filter((k) => kinds.has(k));
     return {
-      label: KIND_LABEL[tab],
-      entries: visibleShelfIds(tab, shelfFor(tab).sections, keep),
+      label: shownKinds.map((k) => KIND_LABEL[k]).join(", "),
+      entries: shownKinds.flatMap((k) => visibleShelfIds(k, shelfFor(k).sections, keep)),
     };
-  }, [selected, q, tab, keep, allHits]);
+  }, [selected, q, kinds, keep, resultHits]);
 
   // Sentence rules are the ONE place this page needs the assembly corpus
   // (`tierAssemblyFacts` resolves a tier's readable-sentence facts against LIVE
@@ -675,10 +745,10 @@ export function LibraryPageClient({
     // frozen rows. Everything stays in this server-rendered tree (no portalling),
     // so the SSR DOM and the hydrated DOM match and no control reflows on mount.
     <div className="-mb-15 flex h-[calc(100dvh-60px)] flex-col">
-      {/* THE FROZEN HEADER. Title, search and filter chips. `shrink-0` keeps it
-          at its natural height at the top of the frame; it does not scroll and
-          nothing scrolls behind it, so it needs no occluding material. pb-2 sets
-          it off from the scroll region below. */}
+      {/* THE FROZEN HEADER. Title, search and filter controls. `shrink-0` keeps
+          it at its natural height at the top of the frame; it does not scroll
+          and nothing scrolls behind it, so it needs no occluding material. pb-2
+          sets it off from the scroll region below. */}
         <div className="shrink-0 pb-2">
           <PageTitle
             title="Library"
@@ -691,48 +761,36 @@ export function LibraryPageClient({
         onChange={commitQuery}
         placeholder="Search anything: し, shi, 生, せんせい, telephone…"
       >
-        {/* Each chip row gets its own heading — "Kind" governs WHAT you see,
-            "Status" governs WHICH of it, and stacked with no label the two used
-            to read as one long undifferentiated row of chips. `w-full` forces
-            the label onto its own line inside this flex-wrap row, the same
-            trick the old bare `<div className="w-full" />` used to break the
-            rows apart — `tone="accent"` matches how Practice lifts its own
-            top-level group headers ("How to ask", "What to practice"). */}
-        <Lbl tone="accent" className="w-full">
-          Kind
-        </Lbl>
-        {/* The kind chips change what you SEE, never what you have SELECTED —
-            the selection outlives them. One is always active. ALL LEADS THE ROW:
-            it spans every subject (browse) and buckets a search by type, and the
-            per-subject chips scope to their one kind. */}
-        <Chip on={isAll} onClick={() => selectTab(ALL_TAB)}>
-          All
-        </Chip>
-        {KINDS.map((k) => (
-          <Chip key={k} on={tab === k} onClick={() => selectTab(k)}>
-            {KIND_LABEL[k]}
-          </Chip>
-        ))}
-        {/* State filters on their own line, under their own heading. */}
-        <Lbl tone="accent" className="w-full">
-          Status
-        </Lbl>
-        {STATE_CHIPS.map(({ value, label }) => (
-          <Chip
-            key={value}
-            on={stateFilter === value}
-            onClick={() => selectState(value)}
-          >
-            {label}
-          </Chip>
-        ))}
-        {/* SELECT MODE — off by default, so a plain click opens an entry (the
-            "look up any kana" pitch). Turning this on is the explicit opt-in
-            that repurposes the same click to build a drill instead — see
-            entry-tile.tsx's file header and the `selectMode` state above. A
-            `Chip`, matching the on/off vocabulary the kind and state filters on
-            this exact row already use, rather than inventing a new control. */}
-        <div className="ml-auto flex items-center gap-2">
+        {/* KIND AND STATUS, AS DROPDOWNS, ON THE LEFT UNDER THE SEARCH BAR — the
+            owner's second round of feedback on this ticket: two chip ROWS (one
+            item always on, changing what you SEE) became two CHECKLISTS (any
+            number of items on, all checked by default), so they no longer need
+            a whole line each to lay their options out — a trigger chip per
+            filter says how much of it is checked, and the checkboxes live in
+            the popover. "Select multiple" and "Clear N selected" move into the
+            same row, since they are the same kind of control (a mode/filter
+            toggle for this view), not pushed to the far right of it any more. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterDropdown
+            label="Kind"
+            items={KIND_ITEMS}
+            selected={kinds}
+            onToggle={toggleKind}
+            onSelectAll={selectAllKinds}
+            onClear={clearKinds}
+          />
+          <FilterDropdown
+            label="Status"
+            items={STATUS_ITEMS}
+            selected={states}
+            onToggle={toggleState}
+            onSelectAll={selectAllStates}
+            onClear={clearStates}
+          />
+          {/* SELECT MODE — off by default, so a plain click opens an entry (the
+              "look up any kana" pitch). Turning this on is the explicit opt-in
+              that repurposes the same click to build a drill instead — see
+              entry-tile.tsx's file header and the `selectMode` state above. */}
           <Chip on={selectMode} onClick={() => setSelectMode((v) => !v)}>
             {selectMode ? "Done selecting" : "Select multiple"}
           </Chip>
@@ -762,31 +820,41 @@ export function LibraryPageClient({
           graphite's `[class~="sticky"] + card` lit-hairline rule and so never
           wears the active-quiz detail. */}
       <div className="kq-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto">
-        {q ? (
+        {kinds.size === 0 ? (
+          // No kind is checked at all — nothing to browse or search, and a
+          // distinct message from "the Status filter emptied everything": this
+          // one names the OTHER dropdown, so it never reads as a dead end.
+          <Card>
+            <p className="text-[13px] text-text-muted">
+              No kind is selected.{" "}
+              <Hint>Check at least one in the Kind dropdown to browse or search.</Hint>
+            </p>
+          </Card>
+        ) : q ? (
           resultSections.length === 0 ? (
             <Card>
               <p className="text-[13px]">
-                {stateFilter === "all" ? (
+                {isEveryState(states) ? (
                   <>
                     Nothing matches <b>{q}</b>.
                   </>
                 ) : (
                   <>
-                    No <b>{FILTER_LABEL[stateFilter]}</b>{" "}
+                    No <b>{statesLabel(states)}</b>{" "}
                     entries match <b>{q}</b>.
                   </>
                 )}
               </p>
               <p className="mt-1.5">
                 <Hint>
-                  {stateFilter === "all" ? (
+                  {isEveryState(states) ? (
                     <>
                       Searching an inflected form won&rsquo;t find its dictionary
                       word yet. 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
                       known gap, not a missing word.
                     </>
                   ) : (
-                    <>Switch the filter back to All to see every match.</>
+                    <>Check more boxes in the Status dropdown to see every match.</>
                   )}
                 </Hint>
               </p>
@@ -825,7 +893,6 @@ export function LibraryPageClient({
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
                     selectMode={selectMode}
-                    known={isKnown(h.entry)}
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
@@ -833,29 +900,32 @@ export function LibraryPageClient({
               );
             })
           )
-        ) : tab === ALL_TAB ? (
-          // THE ALL BROWSE — every subject with something to show, in teaching
-          // order, each its own tab's shelf capped to a taste. A subject the
-          // filter empties drops out entirely (allTabBrowseKinds), so no empty
-          // headers; if the filter empties them ALL, one message stands in.
+        ) : (
+          // THE BROWSE — every checked kind with something to show, in teaching
+          // order, each its own shelf. A subject the filter empties drops out
+          // entirely (allTabBrowseKinds), so no empty headers; if the checked
+          // set or the filter empties them ALL, one message stands in. This is
+          // the SAME render every kind checked always used (the old All tab),
+          // now just restricted to whichever kinds are checked — see the file
+          // header's note on generalising rather than duplicating this path.
           (() => {
-            const kinds = allTabBrowseKinds(
+            const shownKinds = allTabBrowseKinds(
               keep,
               (k) => shelfFor(k).sections,
-            );
-            if (kinds.length === 0) {
+            ).filter((k) => kinds.has(k));
+            if (shownKinds.length === 0) {
               return (
                 <Card>
                   <p className="text-[13px] text-text-muted">
-                    Nothing matches the {FILTER_LABEL[stateFilter]} filter.{" "}
+                    Nothing matches the {statesLabel(states)} filter.{" "}
                     <Hint>
-                      Switch the filter to All to see every subject, or search.
+                      Check more boxes in the Status dropdown to see every subject, or search.
                     </Hint>
                   </p>
                 </Card>
               );
             }
-            return kinds.map((k) => {
+            return shownKinds.map((k) => {
               const expanded = !collapsedAllKinds.has(k);
               return (
               <div key={k}>
@@ -879,32 +949,12 @@ export function LibraryPageClient({
                   onToggleSection={onToggleSection}
                   voice={cfg.voiceName}
                   keep={keep}
-                  known={isKnown}
-                  filter={stateFilter}
+                  filter={statesLabel(states)}
                   selectMode={selectMode}
                 />)}
               </div>
               );
             });
-          })()
-        ) : (
-          (() => {
-            const sh = shelfFor(tab);
-            return (
-              <Shelf
-                key={tab}
-                kind={tab}
-                sections={sh.sections}
-                selected={selected}
-                onToggleEntry={onToggleEntry}
-                onToggleSection={onToggleSection}
-                voice={cfg.voiceName}
-                keep={keep}
-                known={isKnown}
-                filter={stateFilter}
-                selectMode={selectMode}
-              />
-            );
           })()
         )}
       </div>
