@@ -52,11 +52,20 @@ import type { HistoryFile } from "@/types";
 /** Glossary/mark ids that stand for a whole track — "katakana" for both the
  * term and the mark id spaces share this shape, so one map covers both. `kana`
  * and `hiragana` both ride on the hiragana track: kana-the-concept has nothing
- * to say until hiragana, its first half, has started. */
+ * to say until hiragana, its first half, has started.
+ *
+ * SAK-36: `keigo-registers` (the grammar-concept id the いらっしゃいませ card and
+ * every other keigo set links out to for "the general system of politeness
+ * levels") joins this map the same way — reachable once the keigo track has
+ * started, i.e. once the learner has met any keigo set. It is a GRAMMAR
+ * CONCEPT id, not a term or mark id, but this map is keyed by bare id
+ * regardless of which id space it came from (see conceptReachable's own doc),
+ * so one more entry is all a new caller needs. */
 const TRACK_CONCEPT: Readonly<Record<string, TrackId>> = {
   kana: "hiragana",
   hiragana: "hiragana",
   katakana: "katakana",
+  "keigo-registers": "keigo",
 };
 
 /** Every glyph a dakuten/handakuten mark actually lands on, e.g.
