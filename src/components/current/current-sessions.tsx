@@ -27,13 +27,15 @@
 // easier to fire by accident on the wrong set, so it confirms first — the same
 // split the Recent sessions list keeps.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { plural } from "@/lib/words";
 import { Btn, Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
+import { relativeTime } from "@/lib/relative-time";
 import { fixedRunList } from "@/lib/session-list";
+import { isStaleRun } from "@/lib/session-staleness";
 import { useLists } from "@/lib/use-lists";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -79,6 +81,18 @@ function progressText(run: RunInfo): string | null {
   return p.total !== null ? `${p.done} of ${p.total} answered` : `${p.done} answered`;
 }
 
+/** "12 items · Started 2 hours ago" — what a run actually IS, the two facts
+ * that used to require opening it to find out (SAK-67). `facts` is deduped by
+ * fact id already (a run's own list), so its length is the item count without
+ * a second pass. `now` is null until mount (see CurrentSessions), so this
+ * omits the started clause rather than let a server-seeded "started" line
+ * disagree with the client a moment later — same guard PracticeResume uses. */
+function whatText(run: RunInfo, now: number | null): string {
+  const items = `${plural(run.facts.length, "item")}`;
+  if (!run.startedAt || !now) return items;
+  return `${items} · Started ${relativeTime(run.startedAt, now)}`;
+}
+
 function RunRow({
   run,
   selected,
@@ -87,6 +101,7 @@ function RunRow({
   onDiscard,
   onMakeList,
   madeList,
+  now,
 }: {
   run: RunInfo;
   selected: boolean;
@@ -95,8 +110,15 @@ function RunRow({
   onDiscard: () => void;
   onMakeList: () => void;
   madeList: boolean;
+  /** The clock to read `run.lastActiveAt`/`run.startedAt` against — null until
+   * mount (see CurrentSessions), so a first paint never claims a staleness or
+   * a "started …" line the server couldn't have known. */
+  now: number | null;
 }) {
   const answered = progressText(run);
+  // See session-staleness.ts for the threshold and why it's a hint, never an
+  // auto-discard.
+  const stale = now !== null && isStaleRun(run.lastActiveAt, now);
   return (
     <div
       className={cx(
@@ -131,11 +153,20 @@ function RunRow({
           />
         </span>
         <KindBadge kind={run.kind} />
+        {stale ? (
+          <span
+            title="No activity for over a day — still here if you want it, or Discard to clear it out"
+            className="flex-none rounded-full border border-warning/40 bg-warning-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-warning"
+          >
+            Inactive
+          </span>
+        ) : null}
         <span className="min-w-0">
           <span className="block truncate font-semibold">{run.what}</span>
-          {answered ? (
-            <span className="block text-xs text-text-muted">{answered}</span>
-          ) : null}
+          <span className="block text-xs text-text-muted">
+            {whatText(run, now)}
+            {answered ? ` · ${answered}` : ""}
+          </span>
         </span>
       </span>
       <span className="flex flex-none items-center gap-2">
@@ -187,6 +218,16 @@ export function CurrentSessions() {
   // The last row you toggled, for Shift-range selection. A ref, not state: it
   // only ever seeds the NEXT click, so changing it should not re-render.
   const anchorRef = useRef<string | null>(null);
+
+  // The clock every row's "Started …" line and staleness hint read against.
+  // Set strictly after mount, not in a useState initialiser, so a server-seeded
+  // "started 4 minutes ago" can't disagree with the client on hydration — same
+  // pattern PracticeResume/PracticePage use for the same reason.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+  }, []);
 
   if (!runs.length) return <NoRuns />;
 
@@ -303,6 +344,7 @@ export function CurrentSessions() {
       onDiscard={() => discardOne(r.id)}
       onMakeList={() => makeList(r)}
       madeList={madeLists.has(r.id)}
+      now={now}
     />
   );
 
