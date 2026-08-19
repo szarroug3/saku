@@ -372,7 +372,7 @@ export default function SessionPage() {
         {/* The frozen top row. It carries the position through the lesson —
             "1 of 5", updating as you step — in place of the item count and the
             round (there is no round while teaching, and the count reads better as
-            a place than a size). "Quiz me" lives here beside "Done for now": both
+            a place than a size). "Quiz me" lives here beside "Pause": both
             are ways OUT of the lesson, so they belong together — the escape hatch,
             not the screen's primary, so it wears the same small button.
 
@@ -555,13 +555,7 @@ export default function SessionPage() {
           onEnd={endSession}
         />
         <div className="flex flex-1 flex-col justify-center mt-3.5">
-          <RestScreen
-            session={session}
-            now={now}
-            onStart={startNextRound}
-            onDone={pauseSession}
-            onComplete={endSession}
-          />
+          <RestScreen session={session} now={now} onStart={startNextRound} />
         </div>
       </div>
     );
