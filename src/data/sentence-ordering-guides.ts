@@ -12,6 +12,73 @@ export type SentenceOrderingTierId =
   | "contrast"
   | "request";
 
+/**
+ * A chunk's grammatical role within its tier's sentence frame — "topic",
+ * "core", "ending", and the handful of tier-specific roles (a conditional's
+ * "condition"/"resultTopic", a request's "context"/"target"/"action"). Shared
+ * between the teach walkthrough (which highlights each role's span as it
+ * steps through an example) and the assembly quiz (which uses the same roles
+ * to name a misplaced chunk on a wrong check — see `src/lib/assembly-check.ts`).
+ */
+export type ChunkRoleKey =
+  | "ending"
+  | "core"
+  | "topic"
+  | "marker"
+  | "action"
+  | "target"
+  | "context"
+  | "condition"
+  | "resultTopic";
+
+/** The ordered chunk roles a tier's canonical sentence frame is built from,
+ * left-to-right. Most tiers are topic → core → ending; request and
+ * conditional have their own shape. */
+export const SENTENCE_ORDERING_CHUNK_ROLES: Record<
+  SentenceOrderingTierId,
+  readonly ChunkRoleKey[]
+> = {
+  request: ["context", "target", "action", "ending"],
+  conditional: ["condition", "resultTopic", "core", "ending"],
+  simple: ["topic", "core", "ending"],
+  causal: ["core", "topic", "ending"],
+  obligation: ["topic", "core", "ending"],
+  sequential: ["core", "topic", "ending"],
+  desire: ["topic", "core", "ending"],
+  giving: ["topic", "core", "ending"],
+  reported: ["topic", "core", "ending"],
+  contrast: ["core", "topic", "ending"],
+};
+
+/** The learner-facing name for each role, per tier — the plain-English labels
+ * already shown while teaching a tier's chunk order (e.g. "Topic",
+ * "Final predicate", "If part"). */
+export const CHUNK_ROLE_LABELS: Record<
+  SentenceOrderingTierId,
+  Partial<Record<ChunkRoleKey, string>>
+> = {
+  simple: { topic: "Topic", core: "Object/detail", ending: "Final predicate" },
+  conditional: {
+    condition: "If part",
+    resultTopic: "Who the result is about",
+    core: "Other result information",
+    ending: "What happens",
+  },
+  causal: { topic: "Who the result is about", core: "Reason", ending: "What happened" },
+  obligation: { topic: "Who and when", core: "Required action", ending: "Must / have to" },
+  sequential: { topic: "Who", core: "Where or what", ending: "Action + added meaning" },
+  desire: { topic: "Who or what", core: "Action", ending: "Want / easy / hard" },
+  giving: { topic: "Whose side", core: "Who does what for whom", ending: "Giving / receiving" },
+  reported: { topic: "Who, what, or when", core: "Basic statement", ending: "Speaker's view" },
+  contrast: { topic: "Who the result is about", core: "First situation", ending: "What happened" },
+  request: {
+    context: "Time or place",
+    target: "What the action affects",
+    action: "Action",
+    ending: "Request / suggestion",
+  },
+};
+
 export interface SentenceOrderingGuide {
   eyebrow: string;
   title: string;

@@ -38,6 +38,7 @@ import {
   type AssemblyItem,
 } from "@/data/assembly";
 import {
+  SENTENCE_ORDERING_CHUNK_ROLES,
   SENTENCE_ORDERING_GUIDES,
   type SentenceOrderingTierId,
 } from "@/data/sentence-ordering-guides";
@@ -45,6 +46,11 @@ import {
   TIER_EXAMPLES,
   type TierExample,
 } from "@/components/session/sentence-ordering-teach-walk";
+import {
+  assemblyMismatchMessage,
+  findAssemblyMismatch,
+  type AssemblyMismatch,
+} from "@/lib/assembly-check";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
@@ -130,20 +136,14 @@ function quizTierIds(active: ActiveQuiz, history: HistoryFile): string[] {
   return learnedSentenceTierIds(history);
 }
 
-const LESSON_PARTS: Readonly<
+// The ordered chunk roles per tier — shared with the teach walkthrough and
+// with the wrong-check mismatch labeling (src/lib/assembly-check.ts), so a
+// lesson card's pieces and its "which chunk is misplaced" feedback name
+// chunks the same way. `keyof TierExample` is a superset of ChunkRoleKey
+// (TierExample also carries en/enOrdered/jp), so the cast is safe here.
+const LESSON_PARTS = SENTENCE_ORDERING_CHUNK_ROLES as Readonly<
   Record<SentenceOrderingTierId, readonly (keyof TierExample)[]>
-> = {
-  request: ["context", "target", "action", "ending"],
-  conditional: ["condition", "resultTopic", "core", "ending"],
-  simple: ["topic", "core", "ending"],
-  causal: ["core", "topic", "ending"],
-  obligation: ["topic", "core", "ending"],
-  sequential: ["core", "topic", "ending"],
-  desire: ["topic", "core", "ending"],
-  giving: ["topic", "core", "ending"],
-  reported: ["topic", "core", "ending"],
-  contrast: ["core", "topic", "ending"],
-};
+>;
 
 function lessonPattern(tierId: SentenceOrderingTierId, jp: string): string {
   const tier = SENTENCE_ORDERING_TIERS.find((candidate) => candidate.id === tierId)!;
@@ -406,6 +406,7 @@ export function AssemblyScreen() {
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
   const [shake, setShake] = useState(false);
+  const [mismatch, setMismatch] = useState<AssemblyMismatch | null>(null);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
   const rt = active && loaded ? ensureRuntime(active, history) : null;
@@ -447,10 +448,15 @@ export function AssemblyScreen() {
         : shake
           ? "wrong-flash"
           : "resting";
+  // A wrong check (still-open retry, or the final out-of-retries reveal)
+  // reddens the tray and names the specific chunk that's out of place —
+  // not just "the whole order is wrong" (SAK-47).
+  const wrongTray = mismatch !== null || card.state === "wrong";
 
   const place = (surface: string) => {
     if (resolved) return;
     placePiece(card, surface);
+    setMismatch(null);
     saveNow();
     rerender();
   };
@@ -458,6 +464,7 @@ export function AssemblyScreen() {
   const unplace = (surface: string) => {
     if (resolved) return;
     unplacePiece(card, surface);
+    setMismatch(null);
     saveNow();
     rerender();
   };
@@ -465,6 +472,7 @@ export function AssemblyScreen() {
   const moveInTray = (surface: string, dir: -1 | 1) => {
     if (resolved) return;
     movePiece(card, surface, dir);
+    setMismatch(null);
     saveNow();
     rerender();
   };
@@ -473,14 +481,21 @@ export function AssemblyScreen() {
   const dropInTray = (surface: string, index: number | null) => {
     if (resolved) return;
     dropPiece(card, surface, index);
+    setMismatch(null);
     saveNow();
     rerender();
   };
 
   const check = () => {
     if (resolved || card.tray.length !== canon.length) return;
+    // Read before checkCard mutates the tray (a locked/out-of-retries check
+    // overwrites card.tray with the revealed canonical order).
+    const wrongMismatch = gradeAssembly(item, card.tray)
+      ? null
+      : findAssemblyMismatch(item, card.tray, tierId);
     const out = checkCard(rt, card, retriesAllowed(cfg));
     saveNow();
+    setMismatch(out === "right" ? null : wrongMismatch);
     if (out !== "right") {
       setShake(true);
       window.setTimeout(() => setShake(false), 460);
@@ -490,6 +505,7 @@ export function AssemblyScreen() {
 
   const next = () => {
     setHintOpen(false);
+    setMismatch(null);
     if (rt.pos + 1 >= rt.cards.length) {
       finishQuiz(rt.stats);
       return;
@@ -509,6 +525,7 @@ export function AssemblyScreen() {
     if (resolved) return;
     skipCard(rt, card);
     setHintOpen(false);
+    setMismatch(null);
     saveNow();
     rerender();
   };
@@ -579,9 +596,11 @@ export function AssemblyScreen() {
           className={`mt-4 flex min-h-17 w-full flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
             card.state === "right"
               ? "border-success bg-success-bg"
-              : trayFilled
-                ? "border-accent bg-accent-bg"
-                : "border-dashed border-border bg-panel"
+              : wrongTray
+                ? "border-danger bg-danger-bg"
+                : trayFilled
+                  ? "border-accent bg-accent-bg"
+                  : "border-dashed border-border bg-panel"
           } ${shake ? "animate-gshake" : ""}`}
           aria-label="Sentence being built"
           onDragOver={(e) => {
@@ -608,7 +627,9 @@ export function AssemblyScreen() {
                   className={`kq-material rounded-xl border px-4 py-3 pr-8 text-lg ${
                     card.state === "right"
                       ? "border-success bg-success-bg"
-                      : "border-border bg-card"
+                      : mismatch?.trayIndex === idx
+                        ? "border-danger bg-danger-bg"
+                        : "border-border bg-card"
                   } ${resolved ? "" : "cursor-grab"}`}
                   onDragStart={() => {
                     dragging.current = { from: "tray", surface };
@@ -656,6 +677,15 @@ export function AssemblyScreen() {
             ))
           )}
         </ul>
+
+        {/* Names the specific chunk a wrong check found out of place, using
+            the tier's own chunk-role labels — not just a red tray with no
+            explanation (SAK-47). */}
+        {wrongTray && mismatch ? (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            {assemblyMismatchMessage(mismatch)}
+          </p>
+        ) : null}
 
         {/* Keep the pool's row reserved after its final piece is placed. Without
             this minimum height, the controls jump upward at the exact moment
