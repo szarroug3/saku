@@ -1,4 +1,11 @@
-import { test, expect, STEADY_CFG, direction, style } from "./helpers/app";
+import {
+  test,
+  expect,
+  STEADY_CFG,
+  direction,
+  style,
+  answeredText,
+} from "./helpers/app";
 import {
   seedQuiz,
   ask,
@@ -91,6 +98,38 @@ test("the '?' key takes the hint just like the button", async ({ page }) => {
   // renders it with `disabled={q.hinted}`), so there is nothing to press twice —
   // and takeHint's own `q.hinted` guard makes a second "?" inert too.
   await expect(hintButton(page)).toBeDisabled();
+});
+
+test("SAK-56: '?' stays inert while typing an answer that itself needs '?'", async ({
+  page,
+}) => {
+  // ね's own meaning gloss set IS a question — "right?" / "isn't it?" /
+  // "doesn't it?" / "don't you?" (vocab.json) — and unlike a grammar pattern's
+  // meaning (always a selection board — see engine/index.ts's
+  // answerContainsQuestionMark doc comment), this is an ordinary TYPED jp→en
+  // word-meaning card. Being kana-only, ね also gets NO hint at all
+  // (wordHint needs ≥2 kanji to break down — hint.ts), so there is no Hint
+  // button here to assert on; the whole bug is that the pre-fix code called
+  // `e.preventDefault()` on "?" unconditionally, which swallows the keystroke
+  // whether or not a hint exists behind it. Contrast with the test above:
+  // 電話's gloss has no "?", so that card still takes the hint on "?" even
+  // with the box focused.
+  const fact = wordMeaningFactId("ね");
+  await seedQuiz(page, { seen: [fact], cfg: JP2EN_TYPED });
+  await startQuizDrill(page);
+
+  const input = page.locator("input.kq-material");
+  await expect(input).toBeFocused();
+  await page.keyboard.type("right?");
+  // The whole string, "?" included, landed in the box — the key was never
+  // swallowed. Pre-fix, `e.preventDefault()` on the "?" keydown would have
+  // dropped it, leaving "right" in the box instead.
+  await expect(input).toHaveValue("right?");
+
+  // The typed answer still grades correct, "?" and all — the fix didn't turn
+  // grading stricter, only the key binding.
+  await page.keyboard.press("Enter");
+  await expect(page.getByText(answeredText(1))).toBeVisible();
 });
 
 test("multiple choice offers NO hint", async ({ page }) => {

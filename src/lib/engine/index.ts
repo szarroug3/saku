@@ -149,6 +149,26 @@ export function checkTyped(
 }
 
 /**
+ * Whether `fact`'s own accepted answers include a literal "?" — SAK-56.
+ * ね's own gloss set is "right?" / "isn't it?" / "doesn't it?" / "don't you?"
+ * (vocab.json), and it is a TYPED jp→en meaning card, not multiple choice, so a
+ * learner spelling that gloss verbatim really does need to type "?". (A grammar
+ * pattern's meaning gloss can carry one too — "shall I X?", "won't you X?
+ * (invitation)" in recipes.ts's mashou-ka/masen-ka — but that fact is always
+ * asked as a selection board (`grammarMeaning` forces `mcOnlyIn` true in both
+ * directions), so it can never actually reach this scoping; ね is the case that
+ * does.) Almost every answer in the corpus (kana, readings, most English
+ * glosses) is "?"-free, which is what lets the drill bind "?" to Hint globally,
+ * even with the answer box focused — see DrillScreen.onKeyDown. This is the one
+ * check that keeps that binding from eating the character on the glosses that
+ * need it: the caller stands the key off exactly when this is true AND the box
+ * is focused.
+ */
+export function answerContainsQuestionMark(fact: FactId): boolean {
+  return !!factInfo(fact)?.answers.some((a) => a.includes("?"));
+}
+
+/**
  * The ENTRY a typed wrong answer names, for confusion tracking — or null.
  *
  * Entry, not fact, and not a character: a confusion is a failure to tell two
