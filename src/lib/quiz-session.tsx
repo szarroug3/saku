@@ -1753,7 +1753,8 @@ export function QuizSessionProvider({
       // anything and it does not leave the loop. Scoring happens once, when
       // the session ends.
       if (session && quiz) {
-        setSession({
+        const now = Date.now();
+        const withLeg: StudySession = {
           ...session,
           roundStats: mergeStats(session.roundStats, stats),
           // The leg boundary is the only place that can see a leg BY ITSELF —
@@ -1761,9 +1762,28 @@ export function QuizSessionProvider({
           // indistinguishable from "missed cold, never re-asked". See
           // StudySession.recovered.
           recovered: recoveredAfterLeg(session.recovered ?? [], stats),
-          phase: "round-complete",
-          lastActiveAt: Date.now(),
-        });
+          lastActiveAt: now,
+        };
+        // A "Quiz me" session (session.teach empty) runs exactly one round
+        // (roundTargetOf === 1, see effectiveRoundTarget) — its one round IS
+        // the whole session, so finishing it finishes the session outright.
+        // Landing on "round-complete" first (the RoundComplete screen, with
+        // its Retry/Complete-session controls) would put an extra screen and
+        // an extra click between the quiz and the actual results screen
+        // (SessionComplete's Path B: "I know these" / "Take me to the
+        // lesson"), which is a taught-session control set this path never
+        // wanted. A taught session (roundTargetOf > 1) still goes through
+        // round-complete on every round including its last, same as before —
+        // its RoundComplete screen is where "Complete session" lives.
+        if (withLeg.round >= roundTargetOf(withLeg)) {
+          setSession({
+            ...closeRound(withLeg, now),
+            phase: "complete",
+            restUntil: null,
+          });
+        } else {
+          setSession({ ...withLeg, phase: "round-complete" });
+        }
         setActive(null);
         setProgress(null);
         router.push("/session");
@@ -1794,7 +1814,7 @@ export function QuizSessionProvider({
       });
       router.push("/results");
     },
-    [active, session, commitRecord, router],
+    [active, session, commitRecord, router, closeRound],
   );
 
   const abandonQuiz = useCallback(() => {

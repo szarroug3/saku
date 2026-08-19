@@ -589,6 +589,22 @@ test("sessionKnownClaimTarget: everything answered claims nothing — no blind r
   assert.deepEqual(target, []);
 });
 
+test("sessionKnownClaimTarget: a card shown but never answered (seen: 0) still gets claimed", () => {
+  // A fact gets a zero-valued totalStats entry the instant it's SHOWN, before
+  // it's answered (see closeRound) — so a card that was shown and then
+  // skipped or interrupted before answering has a totalStats key but no real
+  // result. Filtering on key-presence alone (the SAK-55 regression) left it
+  // out of the claim entirely: neither its real (nonexistent) result nor
+  // "known". `seen > 0` is the real "was this answered" test.
+  const [a, b] = ["a", "b"].map(f);
+  const target = sessionKnownClaimTarget({
+    teach: [a, b],
+    facts: [a, b],
+    totalStats: stats({ a: detail({ seen: 0 }) }),
+  });
+  assert.deepEqual([...target].sort(), [a, b].sort());
+});
+
 test("sessionKnownClaimTarget: a taught lesson narrows to the TEACH set, not the wider facts set", () => {
   const [a, b, c] = ["a", "b", "c"].map(f);
   // facts is wider than teach (budget topped it up with review material); only

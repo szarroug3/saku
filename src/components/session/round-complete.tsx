@@ -28,17 +28,22 @@
 // miss — what you answered instead, never the answer itself: you are about to be
 // re-asked these.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
+  boxKeysForFacts,
   factOfBoxKey,
   missedBoxKeysForFacts,
-  roundFormCounts,
-  roundFormsByOutcome,
   type BoxKey,
-  WordTable,
 } from "@/components/results/word-table";
-import { Btn, Card, FlatSurfaceProvider, Hint, Info } from "@/components/ui";
+import { Board } from "@/components/results/triage-board";
+import { ResultsCard } from "@/components/results/results-card";
+import {
+  historyBefore,
+  runFactsFromSession,
+  summarize,
+} from "@/components/results/summary";
+import { Btn, Card, FlatSurfaceProvider, Hint, SmallBtn } from "@/components/ui";
 import { entryDisplayLabel } from "@/components/results/entry-display-label";
 import { factInfo } from "@/lib/facts";
 import {
@@ -90,23 +95,40 @@ export function RoundComplete({
   const displayEntry = (entry: EntryId, fact: FactId): string =>
     entryDisplayLabel(entry, fact, history);
 
-  // The header, in FORMS: solid = landed first try, needsWork = missed or
-  // recovered, totalForms = the two summed. Counted over the ANSWERED facts
-  // (what the round played), never the full selection — an unreached form is not
-  // a miss. See roundFormCounts / roundFormsByOutcome for the form-vs-showing
-  // distinction this replaced.
-  const { solid, needsWork, totalForms } = roundFormCounts(
-    answered,
-    session.roundStats,
+  // The SAME ring/headline/counts sentence and the SAME needs-work/solid board
+  // the practice Results page renders (see results-card.tsx, triage-board.tsx,
+  // summary.ts) — round-complete used to reimplement both, in a different unit
+  // (forms, not facts) and without the ring or All/None selection. "Prior" is
+  // cut at the SESSION's start, not "now": every earlier round of THIS session
+  // is already committed to `history` by the time a later round's fork renders
+  // (closeRound commits as each round closes), and prior/needsWork's own
+  // "first clean pass" read must not count this session's own rounds as
+  // evidence of themselves.
+  const prior = useMemo(
+    () => historyBefore(history, session.startedAt),
+    [history, session.startedAt],
+  );
+  const run = useMemo(
+    () => runFactsFromSession(session.roundStats),
+    [session.roundStats],
+  );
+  const summary = useMemo(
+    () => summarize(run, session.roundStats, prior, []),
+    [run, session.roundStats, prior],
   );
 
-  // The same forms as BOXES, so each section renders only its own outcome. The
-  // sets are derived from the identical classification the counts use, so the
-  // header and the two lists can never disagree.
-  const { solid: solidBoxList, needsWork: needsWorkBoxList } =
-    roundFormsByOutcome(answered, session.roundStats);
-  const solidBoxes = new Set(solidBoxList);
-  const needsWorkBoxes = new Set(needsWorkBoxList);
+  const allBoxes = new Set(boxKeysForFacts(run.facts, session.roundStats));
+  const needsWorkBoxes = new Set(
+    missedBoxKeysForFacts(run.facts, session.roundStats),
+  );
+  const notAnsweredBoxes = new Set(
+    boxKeysForFacts(run.notAnswered, session.roundStats),
+  );
+  const solidBoxes = new Set(
+    [...allBoxes].filter(
+      (b) => !needsWorkBoxes.has(b) && !notAnsweredBoxes.has(b),
+    ),
+  );
 
   // The OUTSTANDING misses open pre-ticked. So the default "Retry N" IS "retry
   // what's still open" — the same one tap the old dedicated button gave, now
@@ -126,6 +148,13 @@ export function RoundComplete({
       if (!next.delete(box)) next.add(box);
       return next;
     });
+  const setVisible = (boxes: Set<BoxKey>, on: boolean) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      for (const b of boxes) if (on) next.add(b);
+        else next.delete(b);
+      return next;
+    });
 
   const pickedFacts = [...picked]
     .map((box) => factOfBoxKey(box))
@@ -141,36 +170,20 @@ export function RoundComplete({
     // Library entry pages. See useBorderlessSurface in ui.tsx. SAK-21.
     <FlatSurfaceProvider borderless>
       <Card>
-        <h1 className="text-[22px] font-light tracking-[-0.3px]">
+        <h1 className="mb-3 text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
         </h1>
-        {/* Three numbers in ONE unit (distinct FORMS), and the total is the
-            other two summed, so the line adds up by construction. It used to
-            count showings and read "5 questions · 4 right first try · 2 missed"
-            for a round that only asked three distinct forms — the re-ask of a
-            miss counted as its own question. See roundFormCounts.
-            The word "forms" is load-bearing: retryHint (below) counts FACTS,
-            a different and smaller-or-larger unit on purpose (a fact can carry
-            several forms; the picker retries whole facts, not individual
-            forms). The two numbers are allowed to differ — what they must
-            not do is look like the same measurement, which is what read as a
-            bug before either line named its unit. See SAK-21. */}
-        <p className="mb-3 mt-0.5 text-[13px] text-text-muted">
-          {totalForms} form{totalForms === 1 ? "" : "s"} · {solid} solid ·{" "}
-          {needsWork} needs work
-        </p>
 
-        {/* One bar, two piles. No percentage: you can count the cells. */}
-        <div className="mb-3.5 flex h-1.5 overflow-hidden rounded-full bg-panel">
-          {solid > 0 ? (
-            <span className="block h-full bg-success" style={{ flex: solid }} />
-          ) : null}
-          {needsWork > 0 ? (
-            <span
-              className="block h-full bg-danger"
-              style={{ flex: needsWork }}
-            />
-          ) : null}
+        {/* The same ring/headline/counts card every results screen shows —
+            see results-card.tsx. Replaces the old form-counted text line and
+            solid/danger bar: the ring carries that signal now. */}
+        <div className="mb-3.5">
+          <ResultsCard
+            pct={run.pct}
+            headline={summary.headline}
+            detail={summary.detail}
+            counts={summary.counts}
+          />
         </div>
 
         {/* What the retry earned, named. Glyphs only, same rule as the chips:
@@ -181,94 +194,97 @@ export function RoundComplete({
           </p>
         ) : null}
 
-        {/* NEEDS WORK first — the actionable pile. Each cell is a form you
-            missed or only got after another look: the phrase, how it went, and
-            what you answered instead (never the answer — it may be re-asked).
-            Outstanding misses open pre-ticked; recovered forms show here too but
-            open un-ticked, since the "Back on the retry" line already accounts
-            for them. Tapping a cell adds or drops it from the retry. */}
+        {/* NEEDS WORK first — the actionable pile, in the SAME board the
+            practice Results page uses (label, count, All/None, WordTable —
+            see triage-board.tsx's Board). Outstanding misses open pre-ticked;
+            recovered forms show here too but open un-ticked, since the "Back
+            on the retry" line already accounts for them. */}
         {needsWorkBoxes.size ? (
           <div className="border-t border-border pt-3">
-            <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-              Needs work
-            </p>
-            <p className="mb-3 mt-0.5">
+            <p className="mb-3 text-[13px] text-text-muted">
               <Hint>{retryHint(outstanding.length, recovered.length)}</Hint>
             </p>
-            <WordTable
-              facts={answered}
+            <Board
+              label="Needs work"
+              facts={run.facts}
               stats={session.roundStats}
-              showOnly={needsWorkBoxes}
-              displayEntry={displayEntry}
-              isSelected={(box) => picked.has(box)}
+              visibleBoxes={needsWorkBoxes}
+              selected={picked}
               onToggle={toggle}
+              onSetVisible={setVisible}
+              displayEntry={displayEntry}
             />
           </div>
         ) : null}
 
-        {/* SOLID — the quiet "you nailed these" list. First-try forms only, no
-            "said" and no status marker. Tappable through the same picker so you
-            can fold one back into a retry if you want, but it opens un-ticked
-            and adds nothing to Retry by default. */}
+        {/* SOLID — the quiet "you nailed these" list. Tappable through the
+            same picker so you can fold one back into a retry if you want, but
+            it opens un-ticked and adds nothing to Retry by default. */}
         {solidBoxes.size ? (
           <div className="mt-3.5 border-t border-border pt-3">
-            <p className="mb-3 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-              Solid
-            </p>
-            <WordTable
-              facts={answered}
+            <Board
+              label="Solid"
+              facts={run.facts}
               stats={session.roundStats}
-              showOnly={solidBoxes}
+              visibleBoxes={solidBoxes}
               solidTone
-              displayEntry={displayEntry}
-              isSelected={(box) => picked.has(box)}
+              selected={picked}
               onToggle={toggle}
+              onSetVisible={setVisible}
+              displayEntry={displayEntry}
             />
           </div>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Btn
-            sel
-            disabled={!pickedBoxes.length}
-            className="disabled:cursor-default disabled:opacity-45"
-            onClick={() => onRetry(pickedList, pickedBoxes)}
-          >
-            {retryButtonLabel(pickedBoxes.length)}
-          </Btn>
-          <Info>Retries bring you back to this screen.</Info>
-          <Btn go className="ml-auto" onClick={onComplete}>
-            {session.round >= roundTargetOf(session)
-              ? "Complete session"
-              : "Complete round"}
-          </Btn>
-        </div>
-      </Card>
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-2">
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <SmallBtn
+                sel
+                disabled={!pickedBoxes.length}
+                onClick={() => onRetry(pickedList, pickedBoxes)}
+              >
+                {retryButtonLabel(pickedBoxes.length)}
+              </SmallBtn>
+              {/* Nothing needs work — "Retry 0 selected" would sit there
+                  disabled and meaningless (same reasoning as the practice
+                  Results page's own nothingToFix branch — see triage-board.tsx).
+                  Retry the WHOLE round instead, same mechanism, full selection. */}
+              {!needsWorkBoxes.size && answered.length ? (
+                <SmallBtn onClick={() => onRetry(answered, [...allBoxes])}>
+                  Retry all
+                </SmallBtn>
+              ) : null}
+            </div>
+            <Hint>Retries bring you back to this screen.</Hint>
+          </div>
 
-      <Card>
-        {/* This sentence has to name the button that is actually on screen,
-            and say what that button actually does. On the last round it
-            reads "Complete session", and there is no break after it — the
-            session ends. The old line said "Complete round starts the break"
-            unconditionally, which on the final round named a button that wasn't
-            there and promised a rest that wasn't coming.
-            The retry-specific sentence that used to open this Hint ("Retries
-            bring you back to this screen.") now lives in the Info tooltip
-            next to the Retry button instead — it explains what the Retry
-            button on THIS screen does, not what happens next, so it belongs
-            beside that button rather than as permanent on-screen text. See
-            SAK-21 (Changes Requested). */}
-        <Hint>
-          {session.round >= roundTargetOf(session) ? (
-            <>
-              <b>Complete session</b> finishes for good.
-            </>
-          ) : (
-            <>
-              <b>Complete round</b> starts the break.
-            </>
-          )}
-        </Hint>
+          <div className="flex flex-col items-end gap-1.5">
+            <Btn go onClick={onComplete}>
+              {session.round >= roundTargetOf(session)
+                ? "Complete session"
+                : "Complete round"}
+            </Btn>
+            {/* This sentence has to name the button directly above it, and say
+                what that button actually does. On the last round it reads
+                "Complete session", and there is no break after it — the
+                session ends. The old line said "Complete round starts the
+                break" unconditionally, which on the final round named a
+                button that wasn't there and promised a rest that wasn't
+                coming. See SAK-21 (Changes Requested). */}
+            <Hint>
+              {session.round >= roundTargetOf(session) ? (
+                <>
+                  <b>Complete session</b> finishes for good.
+                </>
+              ) : (
+                <>
+                  <b>Complete round</b> starts the break.
+                </>
+              )}
+            </Hint>
+          </div>
+        </div>
       </Card>
     </FlatSurfaceProvider>
   );
