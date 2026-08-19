@@ -22,6 +22,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
+import { DuePracticeButton } from "@/components/practice/due-practice-button";
 import { PracticeResume } from "@/components/practice/practice-resume";
 import { QuizOptionsFields } from "@/components/practice/quiz-options";
 import { StartBar } from "@/components/practice/start-bar";
@@ -40,7 +41,7 @@ import {
 import {
   englishSentenceAsksOrdering,
 } from "@/lib/ask-config";
-import { resolve, whatSentence } from "@/lib/selection";
+import { dueFacts, resolve, whatSentence } from "@/lib/selection";
 import {
   ASSEMBLY_QUIZ_TARGET,
   readableAssemblyForTiers,
@@ -281,6 +282,19 @@ export default function PracticePage() {
     startQuiz(planned.facts, { what: runWhat });
   };
 
+  // The one-click shortcut above the builder: exactly what's due right now
+  // (see selection.dueFacts), skipping Scope/Status/Kind entirely. `now` waits
+  // for mount for the same reason every other clock read on this page does —
+  // no server/client hydration disagreement.
+  const due = useMemo(
+    () => dueFacts(history, lists, mountedNow ?? 0, cfg.graduateRuns),
+    [history, lists, mountedNow, cfg.graduateRuns],
+  );
+  const startDue = () => {
+    if (!due.length) return;
+    startQuiz(due, { what: "Due for review" });
+  };
+
   const setSelection = (selection: Selection) =>
     set((prev) => ({ ...prev, selection }));
 
@@ -320,6 +334,8 @@ export default function PracticePage() {
           ) : null}
         </>
       ) : null}
+
+      <DuePracticeButton count={due.length} onStart={startDue} />
 
       <Lbl tone="accent">What to practice</Lbl>
       <PracticeSelector
