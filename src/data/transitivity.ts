@@ -98,6 +98,24 @@ export interface PairMember {
   readonly en: string;
   /** JMdict's tag. Checked against, never derived from. */
   readonly jmdict: JmdictTransitivity;
+  /**
+   * A minimal-pair Japanese example for THIS side, with the particle that
+   * marks it highlighted — が for `happens`, を for `doIt`. Optional and rare
+   * on purpose: most pairs teach fine through the English cue alone, and
+   * authoring a Japanese sentence pair is a curation task like the rest of
+   * this table, not something to generate. It exists only where the が/を
+   * contrast itself IS the lesson — 出る／出す, per SAK-42 (the Blind Audit
+   * finding that the one card built to teach transitivity had no Japanese on
+   * it at all). Every other pair leaves this absent; that is deliberate, not
+   * an oversight, exactly like a verb with no partner leaving this table
+   * altogether (see ABSENCE IS DATA, above).
+   */
+  readonly example?: {
+    /** The sentence. お金が出た */
+    readonly jp: string;
+    /** [start, end) of the marking particle within `jp`, for highlighting. */
+    readonly particleSpan: readonly [number, number];
+  };
 }
 
 /**
@@ -133,8 +151,22 @@ export const VERB_PAIRS: readonly VerbPair[] = [
     doIt: { word: "終える", reading: "おえる", cls: "v1", en: "I ended the meeting.", jmdict: "split" },
   },
   {
-    happens: { word: "出る", reading: "でる", cls: "v1", en: "The money came out.", jmdict: "vi" },
-    doIt: { word: "出す", reading: "だす", cls: "v5s", en: "I took the money out.", jmdict: "vt" },
+    happens: {
+      word: "出る",
+      reading: "でる",
+      cls: "v1",
+      en: "The money came out.",
+      jmdict: "vi",
+      example: { jp: "お金が出た", particleSpan: [2, 3] },
+    },
+    doIt: {
+      word: "出す",
+      reading: "だす",
+      cls: "v5s",
+      en: "I took the money out.",
+      jmdict: "vt",
+      example: { jp: "お金を出した", particleSpan: [2, 3] },
+    },
   },
   {
     happens: { word: "入る", reading: "はいる", cls: "v5r", en: "The money went in.", jmdict: "vi" },
