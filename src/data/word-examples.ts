@@ -28,19 +28,36 @@ export interface WordExample {
   readonly jp: string;
   /** A HUMAN translation. Never machine-translated. */
   readonly en: string;
+  /**
+   * The `[start, end)` span within `jp` where the word's own literal written
+   * form (`keb`) appears, to highlight — the same convention SAK-40 uses for
+   * a grammar pattern's worked sentence (see SentenceExampleView).
+   *
+   * Absent, not a guess, when `jp` does not contain `keb` as a literal
+   * substring — a conjugated/inflected sentence (くすぐる shown as
+   * くすぐらないで) has nothing to point at, and pointing at the wrong
+   * characters is worse than pointing at nothing. See build-word-examples.ts
+   * for how this is computed.
+   */
+  readonly span?: readonly [number, number];
 }
 
-/** Tuple-packed on disk: [id, jp, en]. 2,692 rows times three key names is
- * ~40 KB of the same six words, so the keys are put back on here instead. */
+/** Tuple-packed on disk: [id, jp, en] or [id, jp, en, start, end] when the
+ * word's literal written form was found in the sentence. 2,692 rows times
+ * three key names is ~40 KB of the same six words, so the keys are put back
+ * on here instead. */
 const RAW = examplesJson as unknown as Readonly<
-  Record<string, readonly [number, string, string]>
+  Record<string, readonly [number, string, string] | readonly [number, string, string, number, number]>
 >;
 
 /** The example sentence for a word's written form, or null if it has none.
  * Absent is a normal answer for four words in five — see the header. */
 export function exampleFor(keb: string): WordExample | null {
   const row = RAW[keb];
-  return row ? { id: row[0], jp: row[1], en: row[2] } : null;
+  if (!row) return null;
+  const [id, jp, en] = row;
+  const span = row.length === 5 ? ([row[3], row[4]] as const) : undefined;
+  return span ? { id, jp, en, span } : { id, jp, en };
 }
 
 /** How many words have a sentence. Pinned by a test so a regenerated artifact
