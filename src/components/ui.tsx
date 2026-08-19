@@ -163,13 +163,29 @@ export function Hint({ children }: { children: ReactNode }) {
  * A real button, not a bare hover target: hover-only info is unreachable by
  * keyboard and on touch, and this is the only place some of it is written
  * down. Radix handles focus, Escape, and the aria wiring. */
-export function Info({ children }: { children: ReactNode }) {
+export function Info({
+  children,
+  label = "More about this setting",
+  className,
+}: {
+  children: ReactNode;
+  /** The trigger's aria-label. Defaults to the settings-row wording every
+   * existing call site relies on; a caller explaining something other than a
+   * setting (a word's meaning, say) should name that instead. */
+  label?: string;
+  /** Extra classes merged onto the trigger, e.g. to reposition it when it is
+   * not sitting inline after a label (SAK-87's per-piece badge). */
+  className?: string;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger
         type="button"
-        aria-label="More about this setting"
-        className="kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-border align-[1px] text-[9px] leading-none text-text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        aria-label={label}
+        className={cx(
+          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-border align-[1px] text-[9px] leading-none text-text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          className,
+        )}
       >
         i
       </TooltipTrigger>

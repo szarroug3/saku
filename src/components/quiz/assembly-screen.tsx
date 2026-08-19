@@ -25,7 +25,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, SmallBtn } from "@/components/ui";
+import { Btn, Info, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
   assemblyFacts,
@@ -48,6 +48,7 @@ import {
 import {
   assemblyMismatchMessage,
   findAssemblyMismatch,
+  pieceGloss,
   pieceLabel,
   type AssemblyMismatch,
 } from "@/lib/assembly-check";
@@ -395,6 +396,10 @@ export function AssemblyScreen() {
   const item = card.item;
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
+  // Surface → its piece, so pool/tray rendering (which only carries surface
+  // strings, the shape grading needs) can still reach each piece's headword
+  // for the unknown-word definition badge (SAK-87).
+  const pieceBySurface = new Map(item.pieces.map((p) => [p.t, p]));
   const coach = coachHints(item, canon, card.tries);
   const tierId = sentenceOrderingTierForItem(
     item,
@@ -592,7 +597,9 @@ export function AssemblyScreen() {
           {card.tray.length === 0 ? (
             <li className="text-sm text-text-muted">Tap or drag the pieces into order</li>
           ) : (
-            card.tray.map((surface, idx) => (
+            card.tray.map((surface, idx) => {
+              const gloss = pieceGloss(pieceBySurface.get(surface)?.h ?? null, history);
+              return (
               <li key={surface} className="group relative">
                 <button
                   type="button"
@@ -654,8 +661,26 @@ export function AssemblyScreen() {
                     ×
                   </button>
                 ) : null}
+                {/* The unknown-word definition badge (SAK-87): only when this
+                    piece's headword is a real content word (h non-null) the
+                    learner hasn't met yet. pieceGloss already returns null
+                    for a bare particle or an already-known word, so a card
+                    built entirely from known material shows no badges at
+                    all. Opposite corner from the remove "×" above so the two
+                    never overlap. */}
+                {gloss ? (
+                  <span
+                    className="absolute left-1.5 top-1.5"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Info label={`Meaning of ${pieceLabel(surface)}`}>
+                      {gloss}
+                    </Info>
+                  </span>
+                ) : null}
               </li>
-            ))
+              );
+            })
           )}
         </ul>
 
@@ -684,8 +709,10 @@ export function AssemblyScreen() {
             dragging.current = null;
           }}
         >
-          {card.pool.map((surface) => (
-            <li key={surface}>
+          {card.pool.map((surface) => {
+            const gloss = pieceGloss(pieceBySurface.get(surface)?.h ?? null, history);
+            return (
+            <li key={surface} className="relative">
               <button
                 type="button"
                 lang="ja"
@@ -708,8 +735,23 @@ export function AssemblyScreen() {
                     stripped so it's not a tell for the final piece. */}
                 {pieceLabel(surface)}
               </button>
+              {/* The unknown-word definition badge (SAK-87), see the tray's
+                  matching comment above. No remove button on a pool piece to
+                  avoid, so it sits at the same corner "×" uses on a placed
+                  piece. */}
+              {gloss ? (
+                <span
+                  className="absolute right-1.5 top-1.5"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Info label={`Meaning of ${pieceLabel(surface)}`}>
+                    {gloss}
+                  </Info>
+                </span>
+              ) : null}
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         {/* The resolved reveal used to render here, in-flow (the plain

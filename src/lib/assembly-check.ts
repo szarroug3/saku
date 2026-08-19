@@ -21,6 +21,9 @@ import {
   SENTENCE_ORDERING_CHUNK_ROLES,
   type SentenceOrderingTierId,
 } from "@/data/sentence-ordering-guides";
+import { lemmaKnown } from "@/lib/grammar/readable";
+import { vocabRowsBySpelling } from "@/data/vocab";
+import type { HistoryFile } from "@/types";
 
 /** The learner-facing role label for each canonical piece of this item, in
  * canonical order — or null when the tier is unknown or its role count
@@ -48,6 +51,28 @@ export function chunkRoleLabels(
  * untouched, so grading and the assembled `item.jp` reveal are unaffected. */
 export function pieceLabel(surface: string): string {
   return surface.replace(/[。！？]+$/u, "");
+}
+
+/**
+ * The learner-facing definition for one draggable piece's headword, or null
+ * when there is nothing to show (SAK-87).
+ *
+ * Null in two cases, both deliberate:
+ *   - `h` is null: a bare grammatical particle (ください, ましょう, …) has no
+ *     content word to define.
+ *   - the word IS already known: the learner has met it, so a gloss would
+ *     only clutter the screen with material she does not need explained.
+ *
+ * `h` may be a `keb` or a `reb`, whichever dictionary form the assembly
+ * ingest tagged the piece with (the same as `AssemblyItem.v`), so this
+ * resolves it the same dual-spelling way `lemmaKnown` decides whether it
+ * is known, rather than assuming it is always a `keb`.
+ */
+export function pieceGloss(h: string | null, history: HistoryFile): string | null {
+  if (h === null) return null;
+  if (lemmaKnown(h, history)) return null;
+  const row = vocabRowsBySpelling(h)[0];
+  return row ? row.glosses.join(", ") : null;
 }
 
 export interface AssemblyMismatch {
