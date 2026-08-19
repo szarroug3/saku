@@ -121,8 +121,12 @@ export function nextSentenceLearnLesson(
 ): UnitLessonOf<IndexUnit> | null {
   const tierId = nextSentenceTierId(history);
   if (!tierId) return null;
-  const entry = INDEX.sentenceGates.find((gate) => gate.tierId === tierId)?.entry;
-  const unit = entry ? units.find((candidate) => candidate.item.entry === entry) : undefined;
+  const entry = INDEX.sentenceGates.find(
+    (gate) => gate.tierId === tierId,
+  )?.entry;
+  const unit = entry
+    ? units.find((candidate) => candidate.item.entry === entry)
+    : undefined;
   return unit ? { units: [unit] } : null;
 }
 
@@ -137,13 +141,17 @@ export function sentenceLearnLessonForRun(
   const entry = INDEX.sentenceGates.find((gate) =>
     held.has(sentenceTierMarkerFact(gate.tierId)),
   )?.entry;
-  const unit = entry ? units.find((candidate) => candidate.item.entry === entry) : undefined;
+  const unit = entry
+    ? units.find((candidate) => candidate.item.entry === entry)
+    : undefined;
   return unit ? { units: [unit] } : null;
 }
 
 /** Resolve a sentence lesson entry back to its tier without parsing opaque ids. */
 export function sentenceTierIdOfEntry(entry: EntryId): string | null {
-  return INDEX.sentenceGates.find((gate) => gate.entry === entry)?.tierId ?? null;
+  return (
+    INDEX.sentenceGates.find((gate) => gate.entry === entry)?.tierId ?? null
+  );
 }
 
 /** Fact → the id of the track that teaches it, built from the index itself. This
@@ -165,4 +173,63 @@ const TRACK_ID_OF_FACT: ReadonlyMap<FactId, string> = (() => {
  * content). */
 export function trackIdOfFact(fact: FactId): string | undefined {
   return TRACK_ID_OF_FACT.get(fact);
+}
+
+/** Has the app any record of this fact: answered, claimed, or "quiz me"'d? The
+ * same `lastTested !== 0` definition of "met" src/lib/track-open.ts's own
+ * `startedTracks` uses. */
+function factMet(fact: FactId, history: HistoryFile): boolean {
+  return (
+    effectiveState(
+      history.facts[fact],
+      history.claims?.[fact],
+      history.seen?.[fact],
+    ).lastTested !== 0
+  );
+}
+
+/**
+ * Every /learn track (see LEARN_TRACKS) the learner has already touched,
+ * ignoring the facts of the lesson about to be taught: the SAK-28 "track intro"
+ * card-0 gate. A track absent from the result is opening right now, which is
+ * exactly when card-0 belongs in its Home slot instead of NextLessonPreview.
+ *
+ * This is `startedTracks` (src/lib/track-open.ts) rebuilt on `trackIdOfFact`
+ * instead of that module's subject-based `TrackId`, and on purpose: track-open's
+ * TrackId predates the vocab merge and still tells radical/kanji/word/hiragana/
+ * katakana apart (it has to, since the spine-intro cards it gates are
+ * per-role), and it doesn't carry transitivity or sentence at all (see its
+ * header comment). `trackIdOfFact` already folds every fact onto the CURRENT
+ * seven /learn track ids (kana, vocab, numbers, keigo, grammar, transitivity,
+ * sentence), the same ids home-feed.tsx renders one card per, so gating card-0
+ * through it needs no "hiragana-or-katakana" / "radical-or-kanji-or-word" union
+ * at the call site and covers all seven tracks uniformly, transitivity and
+ * sentence included.
+ *
+ * `exclude` exists for the same reason track-open.ts's does: a lesson's own
+ * about-to-be-taught facts can already be in history by the time this is asked
+ * (a word lesson marks its facts seen on Start, unlocking the kanji readings it
+ * proves), so counting them would make a track "already started" at the instant
+ * it starts and card-0 would never fire. Home's own callers pass an empty set,
+ * since card-0's gate is asked before any lesson of the frame has started; the
+ * parameter is kept so a future caller mid-lesson isn't tempted to fake it.
+ */
+export function startedLearnTracks(
+  history: HistoryFile,
+  exclude: ReadonlySet<FactId>,
+): Set<string> {
+  const started = new Set<string>();
+  const seen = new Set<string>([
+    ...Object.keys(history.facts ?? {}),
+    ...Object.keys(history.claims ?? {}),
+    ...Object.keys(history.seen ?? {}),
+  ]);
+  for (const key of seen) {
+    const fact = key as FactId;
+    if (exclude.has(fact)) continue;
+    if (!factMet(fact, history)) continue;
+    const track = trackIdOfFact(fact);
+    if (track) started.add(track);
+  }
+  return started;
 }

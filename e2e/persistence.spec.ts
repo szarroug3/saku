@@ -55,10 +55,7 @@ async function history(page: Page): Promise<HistoryFile> {
 /** Total showings recorded across the whole history, for the five seeded facts. */
 async function totalSeen(page: Page): Promise<number> {
   const h = await history(page);
-  return VOWEL_FACTS.reduce(
-    (n, f) => n + (h.facts[f as FactId]?.seen ?? 0),
-    0,
-  );
+  return VOWEL_FACTS.reduce((n, f) => n + (h.facts[f as FactId]?.seen ?? 0), 0);
 }
 
 /** Answer every card of a full-coverage round, ending on the last one without
@@ -97,7 +94,10 @@ test("a completed round is on disk before the session ends", async ({
   await page.goto("/learn");
   // The starting state the bug report quoted: an empty history.
   expect((await history(page)).sessions).toEqual([]);
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
@@ -106,7 +106,9 @@ test("a completed round is on disk before the session ends", async ({
   // it is, and the fork is where you say it. The commit point is `closeRound`.
   expect((await history(page)).sessions).toEqual([]);
 
-  await page.getByRole("button", { name: "Complete round", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Complete round", exact: true })
+    .click();
 
   // THE FIX. One round, five facts, written while the session is still open —
   // the learner has pressed nothing that finishes anything.
@@ -129,7 +131,10 @@ test("a round committed mid-session is not counted again at the end", async ({
   await seed({ seen: [], cfg: CFG });
 
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
 
@@ -141,7 +146,9 @@ test("a round committed mid-session is not counted again at the end", async ({
     await page
       .getByRole("button", { name: "Complete round", exact: true })
       .click();
-    await expect.poll(async () => (await history(page)).sessions.length).toBe(round);
+    await expect
+      .poll(async () => (await history(page)).sessions.length)
+      .toBe(round);
     if (round === 1) {
       await page
         .getByRole("button", { name: /^Start (now →|round \d)$/ })
@@ -196,7 +203,10 @@ test("Pause from the teaching phase returns to Learn", async ({
 }) => {
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   // Landed straight on the teach walk (phase "teaching"); its HUD carries its
   // own "Pause" beside "Quiz me", before the round has even started.
@@ -210,7 +220,10 @@ test("Pause from the round-complete phase returns to Learn", async ({
 }) => {
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
@@ -227,13 +240,18 @@ test("Pause from the resting phase returns to Learn", async ({
 }) => {
   await seed({ seen: [], cfg: CFG });
   await page.goto("/learn");
-  await page.getByRole("button", { name: "Start", exact: true }).click();
+  // From empty history the kana track's card-0 teaser (SAK-28) shows first, in
+  // place of the ordinary lesson card; its "Start track" button leads straight
+  // into the same session "Start" always did.
+  await page.getByRole("button", { name: "Start track", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
   await playRound(page, VOWELS.length);
   // Completing round 1 of 3 starts the rest before round 2, rather than
   // ending the session outright.
-  await page.getByRole("button", { name: "Complete round", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Complete round", exact: true })
+    .click();
   await expect(page.locator("body")).toContainText(/resting before round 2/);
   // The resting phase renders exactly one "Pause" now (SAK-55): the sticky
   // HUD's. RestScreen used to grow its own second, identical "Done for now"
