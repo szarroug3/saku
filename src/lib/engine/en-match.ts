@@ -15,9 +15,10 @@
 // spike) showed a phrase-level fuzzy/embedding approach accepts antonyms.
 //
 //   1. Curated synonym pool, EXACT MATCH ONLY. A small, precision-filtered,
-//      mostly auto-generated (Datamuse, reviewed) list of single-word
-//      equivalents for single-word glosses — "nonexistent" also accepts
-//      "absent", "missing" … — built by scripts/build-en-synonyms.mjs into
+//      mostly auto-generated (Datamuse, reviewed) list of equivalents for
+//      single-word AND short multi-word glosses — "nonexistent" also accepts
+//      "absent", "missing" …, "does not exist" also accepts "not existing"
+//      — built by scripts/build-en-synonyms.mjs into
 //      src/data/generated/en-synonyms.json. See `synonymCandidates` below for
 //      why this stays a SEPARATE pool from the layers under it: an entry here
 //      is never run through the typo layer, so one bad entry can degrade to
@@ -52,23 +53,42 @@ export function norm(s: string): string {
  * built (Datamuse rel_syn/ml, filtered) and self-reviewed. */
 const SYNONYM_POOL: Readonly<Record<string, readonly string[]>> = synonymPoolJson;
 
+// A "word" for key-reduction purposes: letters, plus an internal hyphen or
+// apostrophe joining more letters ("well-known", "doesn't"). No digits, no
+// other punctuation — those are left for a human/JMdict to disambiguate, not
+// guessed at.
+const KEY_WORD = "[a-z]+(?:['-][a-z]+)*";
+// A key is one to four such words separated by single spaces. Four is a
+// generous-but-bounded cap on gloss-fragment length (see the fragments this
+// actually reduces below, e.g. "does not exist", "old japanese coin"), not a
+// precision mechanism by itself — Datamuse's `ml=<phrase>` response for a
+// fragment this short is where the actual safety work happens (score-gap +
+// backfill-exclusion, both already proven for the single-word case, applied
+// identically here — see build-en-synonyms.mjs's header for why).
+const KEY_RE = new RegExp(`^${KEY_WORD}(?: ${KEY_WORD}){0,3}$`);
+
 /**
- * The single-word (or "to "-prefixed infinitive) key a gloss FRAGMENT reduces
- * to for the curated synonym pool, or null if it doesn't reduce cleanly.
+ * The key a gloss FRAGMENT reduces to for the curated synonym pool, or null
+ * if it doesn't reduce cleanly. Originally single-word-only; extended to
+ * short multi-word phrases once it was verified (see build-en-synonyms.mjs's
+ * header) that Datamuse's `ml=<phrase>` query surfaces the same clean
+ * score-gap structure for a phrase as for a single word, so the existing
+ * filtering pipeline can be reused rather than needing a second one.
  *
- * Deliberately narrow, and deliberately the ONE place this reduction happens:
- * scripts/build-en-synonyms.mjs applies this exact same function (imported,
- * not re-implemented) to every candidate gloss fragment before deciding what
- * to query Datamuse for, so a fragment that could never have been queried can
- * never accidentally collide with a pool entry it was never checked against.
- * A gloss that is already a bare word ("teacher") or a bare infinitive
- * ("to eat") keys straight in; anything with a leftover space, digit, or
- * punctuation is left alone rather than guessed at.
+ * Deliberately the ONE place this reduction happens: scripts/build-en-synonyms.mjs
+ * applies this exact same function (imported, not re-implemented) to every
+ * candidate gloss fragment before deciding what to query Datamuse for, so a
+ * fragment that could never have been queried can never accidentally collide
+ * with a pool entry it was never checked against. A gloss that is already a
+ * bare word ("teacher"), a bare infinitive ("to eat"), or a short run of
+ * plain words ("does not exist", "old japanese coin") keys straight in;
+ * anything with a leftover digit or other punctuation, or longer than four
+ * words, is left alone rather than guessed at.
  */
 export function synonymKeyOf(fragment: string): string | null {
   let s = fragment.trim().toLowerCase();
   if (s.startsWith("to ")) s = s.slice(3).trim();
-  return /^[a-z]+(-[a-z]+)*$/.test(s) ? s : null;
+  return KEY_RE.test(s) ? s : null;
 }
 
 /**
