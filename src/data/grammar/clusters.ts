@@ -149,7 +149,7 @@ export const CLUSTERS: readonly Cluster[] = [
       "nakya",
     ],
     feel:
-      "All seven are ない-form + a fixed ending, and all seven gloss as 'must'. " +
+      "All seven are ない-form + a fixed ending, and all seven mean 'must'. " +
       "なくちゃ / なきゃ are spoken contractions of なくては / なければ. " +
       "〜ならない and 〜いけない are interchangeable in nearly every frame.",
     link: null,
