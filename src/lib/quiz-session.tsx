@@ -100,11 +100,12 @@ import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
+  effectiveRoundTarget,
   initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   restMinutes,
-  SESSION_ROUND_TARGET,
+  roundTargetOf,
   sessionKnownClaimTarget,
   summariseRound,
   type SessionOrigin,
@@ -1134,6 +1135,7 @@ export function QuizSessionProvider({
           // exactly them back (see StudySession.seededSeen and discardRun below).
           seededSeen,
           round: 1,
+          roundTarget: effectiveRoundTarget(teach),
           // New material is read before it's asked. With nothing new in the
           // session there is nothing to read, so the lesson doesn't appear at
           // all rather than appearing empty.
@@ -1290,15 +1292,22 @@ export function QuizSessionProvider({
     // retry legs; a redrill is a one-off quiz you started over the misses.
     // `rounds: 1` because that is what this record covers — one round of the
     // loop — not how many the session eventually ran.
-    commitRecord(
-      buildSessionRecord(s.roundStats, {
-        mode: s.snapshot.mode,
-        redrill: false,
-        ts: now,
-        planned: s.facts,
-        rounds: 1,
-      }),
-    );
+    const record = buildSessionRecord(s.roundStats, {
+      mode: s.snapshot.mode,
+      redrill: false,
+      ts: now,
+      planned: s.facts,
+      rounds: 1,
+    });
+    // DEFERRED FOR A SINGLE-ROUND ("Quiz me") SESSION. Its one round IS the
+    // whole session, so this round's real results reaching history has to be
+    // the SAME explicit choice as the rest of the session's fate — "I already
+    // know these" commits it, "Take me to the lesson" discards it (see
+    // StudySession.pendingRecord and finishSession). A taught session commits
+    // here exactly as it always has: its rounds are real progress regardless
+    // of which button ends the session.
+    const deferred = roundTargetOf(s) === 1;
+    if (!deferred) commitRecord(record);
     return {
       ...s,
       rounds: [...s.rounds, summariseRound(s.round, s.roundStats)],
@@ -1308,6 +1317,7 @@ export function QuizSessionProvider({
       // THIS round's misses.
       recovered: [],
       lastActiveAt: now,
+      pendingRecord: deferred ? record : undefined,
     };
   }, [commitRecord]);
 
@@ -1328,7 +1338,7 @@ export function QuizSessionProvider({
   const completeRound = useCallback(() => {
     if (!session) return;
     const now = Date.now();
-    if (session.round >= SESSION_ROUND_TARGET) {
+    if (session.round >= roundTargetOf(session)) {
       setSession({
         ...closeRound(session, now),
         phase: "complete",
@@ -1355,7 +1365,7 @@ export function QuizSessionProvider({
 
   const startNextRound = useCallback(() => {
     if (!session) return;
-    if (session.round >= SESSION_ROUND_TARGET) return;
+    if (session.round >= roundTargetOf(session)) return;
     // Re-read the CURRENT settings so a change made between rounds (endless →
     // limited, a new direction, retries) takes effect on this round. The session
     // froze its snapshot at Start; without this a session that outlives a
@@ -1419,33 +1429,66 @@ export function QuizSessionProvider({
    * start's markSeen and reaches the server too, so this device rolling it back
    * cannot leave another device seeing the advance. Only what the start ADDED is
    * rolled back (seededSeen is that exact set), so a reading unlocked by an
-   * earlier lesson is untouched. A CLAIMED session keeps its advance regardless
-   * of this: effectiveState (claims.ts) takes the newest record, and the claim
-   * postClaim just wrote is always newer than the seen mark it is being rolled
-   * back against — so calling this after a claim would be redundant, not wrong,
-   * but finishSession skips it there anyway (see below).
+   * earlier lesson is untouched. A session that DID commit real results (or a
+   * claim) keeps its advance regardless of this: `effectiveState` (claims.ts)
+   * reads history and claims directly, not the seen mark, so calling this
+   * alongside a commit is redundant, never wrong — but finishSession only calls
+   * it on the branch that commits nothing at all.
    */
   const rollbackSeededSeen = useCallback((s: StudySession | null) => {
     const seen = s?.seededSeen;
     if (seen && seen.length) void postUnseen(seen);
   }, []);
 
+  /**
+   * Session complete → the learner's explicit choice, made on the SAME
+   * screen: write history and clear either way.
+   *
+   * `markKnown` (default false) is SAK-52's fix. It used to happen
+   * unconditionally — any taught session got its teach set claimed the
+   * instant you hit Done, whether you'd aced the quiz or missed every
+   * question, which is what let "Quiz me" (and a poorly-scored lesson quiz)
+   * silently mark material known. Now it is one of two explicit endings:
+   *
+   *   markKnown: true — "I already know these": claim whatever of the
+   *     session's material was never actually answered this session
+   *     (sessionKnownClaimTarget, narrowed against totalStats) — the exact
+   *     "I already know this" mechanism (postClaim), reached from here
+   *     instead of only from the Learn card. A fact that WAS answered keeps
+   *     its real result and is never re-claimed over. A single-round Quiz-me
+   *     session also has a `pendingRecord` — its one round's real results,
+   *     held back at closeRound rather than committed — which is committed
+   *     here, alongside the claim, so the answered facts' real performance
+   *     reaches history exactly when the learner confirms the batch is done.
+   *
+   *   markKnown: false — "Take me to the lesson" (or any other finish that
+   *     isn't an explicit claim): nothing is claimed, and any seen marks THIS
+   *     session's start laid down (a "Quiz me" run — see
+   *     StudySession.seededSeen) are rolled back exactly like a discard
+   *     would, so the batch is due again and Learn offers it instead of the
+   *     frontier quietly having moved past it while nothing was ever
+   *     confirmed known. A single-round Quiz-me session's `pendingRecord` is
+   *     simply never committed — discarded along with the rest of the run, so
+   *     even the facts that WERE genuinely answered leave no trace. That is
+   *     stronger than a plain discard (which cannot un-record a banked round)
+   *     and is possible here only because this round's commit was held back
+   *     for exactly this decision.
+   */
   const finishSession = useCallback(
     async (markKnown = false) => {
       if (!session) return;
       if (markKnown) {
-        // "Mark these as known" — the explicit choice, and the ONLY thing that
-        // may claim a session's material now (SAK-52: it used to happen on
-        // every finish, unconditionally, however the quiz went). postClaim
-        // routes a signed-out claim into local history (401 fallback), so this
-        // marks known the same whether or not you're signed in.
-        await postClaim(sessionKnownClaimTarget(session), true);
+        if (session.pendingRecord) commitRecord(session.pendingRecord);
+        // postClaim routes a signed-out claim into local history (401
+        // fallback), so this marks known the same whether or not you're
+        // signed in.
+        const target = sessionKnownClaimTarget(session);
+        if (target.length) await postClaim(target, true);
       } else {
-        // "Take me to the lesson" (or any other finish that isn't an explicit
-        // claim): undo whatever THIS session's start marked seen, so a "Quiz
-        // me" run that wasn't confirmed known doesn't strand its batch out of
-        // Learn — see StudySession.seededSeen. A no-op for a normal taught
-        // session, which never seeds this field.
+        // Undo whatever THIS session's start marked seen (see
+        // StudySession.seededSeen) — a no-op for a normal taught session,
+        // which never seeds this field. The session's `pendingRecord`, if any,
+        // is simply left uncommitted below.
         rollbackSeededSeen(session);
       }
       // NOTHING ELSE IS WRITTEN HERE, AND THAT IS THE OTHER FIX THIS FILE MADE.
@@ -1464,7 +1507,7 @@ export function QuizSessionProvider({
       // want is the next lesson, not the landing page (Sam). Signed in or out.
       router.push("/learn");
     },
-    [session, router, rollbackSeededSeen],
+    [session, router, commitRecord, rollbackSeededSeen],
   );
 
   /**
