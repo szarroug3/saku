@@ -31,9 +31,11 @@ const SESSION_KEY = "saku-session";
 async function intoTheDrill(page: Page) {
   await page.goto("/learn");
   // From empty history the kana track's card-0 (SAK-28) shows in place of the
-  // ordinary lesson card first; its "Start track" button leads straight into
-  // the same session "Start" always did.
+  // ordinary lesson card first; its "Start track" button only dismisses the
+  // teaser, revealing the normal lesson card whose own "Start" button leads
+  // into the session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   // Day one opens on the hiragana track intro, so the walk is the five vowels
   // plus that one card: step past the card AND the first four vowels (VOWELS

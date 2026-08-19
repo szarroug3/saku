@@ -338,9 +338,11 @@ export async function startPractice(page: Page) {
 export async function startVowelLessonDrill(page: Page): Promise<void> {
   await page.goto("/learn");
   // From empty history the kana track's card-0 (SAK-28) shows in place of the
-  // ordinary lesson card, a one-time teaser whose own "Start track" button
-  // calls the exact same start handler "Start" always did, straight to /session.
+  // ordinary lesson card, a one-time teaser. Its "Start track" button only
+  // dismisses the teaser, revealing the normal lesson card in its place; the
+  // real "Start" button on THAT card is what leads to /session.
   await page.getByRole("button", { name: "Start track", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   // The track intro and each teach card carry a "Next"; the last card drops it
   // for "Quiz me". Click through them all — the guard is only there so a copy
