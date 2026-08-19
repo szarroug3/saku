@@ -122,7 +122,9 @@ export function TeachWalk({
           {current.type === "intro" ? (
             <PhaseIntroView key={current.key} intro={current.intro} />
           ) : current.type === "term" ? (
-            <TermEntryView key={current.key} entry={current.entry} />
+            // SAK-30: the teach walk still gates related links to taught
+            // material — only the standalone Library page shows everything.
+            <TermEntryView key={current.key} entry={current.entry} gateToReachable />
           ) : current.type === "conversion" ? (
             <ConversionCard key={current.key} row={current.row} />
           ) : (
