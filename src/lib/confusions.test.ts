@@ -101,6 +101,24 @@ function mixup(shown: FactId, said: EntryId, times = 1): SessionStats {
   };
 }
 
+/** A run that put `facts` on screen and never resolved any of them — asked,
+ * then abandoned (the round ended, or the leg was walked away from) before
+ * an answer landed either way. Same zero-value shape statForShowing writes
+ * the instant a card is displayed; see src/lib/drill-stats.ts. */
+function unresolved(...facts: FactId[]): SessionStats {
+  const s: SessionStats = {};
+  for (const f of facts) {
+    s[f] = stat({
+      seen: 0,
+      everCorrect: false,
+      firstTryCorrect: null,
+      firstTryCount: 0,
+      correct: 0,
+    });
+  }
+  return s;
+}
+
 function history(...details: SessionStats[]): HistoryFile {
   const sessions: QuizSessionRecord[] = details.map((detail, i) => ({
     ts: i + 1,
@@ -151,6 +169,27 @@ describe("the denominator rule", () => {
     const rec = recordFor(h);
     assert.equal(rec.qualifyingRuns, 4, "all four runs showed entry 生");
     assert.equal(rec.cleanStreak, 3);
+  });
+
+  test("a fact merely asked and abandoned (seen: 0) does not mint a clean qualifying run", () => {
+    // Same shape as the regression above — SHOU is 生's OTHER reading — but
+    // this time the three follow-up rounds put SHOU on screen and the round
+    // ended before it was ever answered. No evidence was produced, so unlike
+    // the `clean(SHOU)` case, none of these may count toward the pair's
+    // streak: a card shown and abandoned is not the same run as a card shown
+    // and answered right. Before the `seen > 0` guard, entriesShown read
+    // Object.keys(detail) and could not tell the two apart, so an abandoned
+    // card would silently walk a confusion pair toward graduation.
+    const h = history(
+      mixup(SEI, SAKI),
+      unresolved(SHOU),
+      unresolved(SHOU),
+      unresolved(SHOU),
+    );
+    const rec = recordFor(h);
+    assert.equal(rec.qualifyingRuns, 1, "unresolved-only runs must not qualify");
+    assert.equal(rec.cleanStreak, 0, "no evidence, so no clean streak either");
+    assert.equal(rec.tracked, true, "the pair is still an open weakness");
   });
 });
 
