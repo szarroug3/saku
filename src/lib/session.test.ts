@@ -19,6 +19,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  initialSessionPhase,
   mergeStats,
   recoveredAfterLeg,
   roundCompleteView,
@@ -486,5 +487,48 @@ describe("sessionKnownClaimTarget — what 'mark known' claims", () => {
     const teach = [f("a")];
     const session = { facts: teach, teach } as unknown as StudySession;
     assert.notEqual(sessionKnownClaimTarget(session), teach);
+  });
+});
+
+// SAK-52 REGRESSION: "Quiz me" (no teach set) reached round-complete with an
+// empty roundStats — "0 forms · 0 solid · 0 needs work" despite the learner
+// having genuinely answered every card. Both writers of the round-complete
+// phase live in quiz-session.tsx (finishQuiz, which merges the real leg's
+// stats, and recoverLostLeg, which does not — it exists only to put a
+// genuinely LOST leg back at the fork with whatever it already banked, which
+// may honestly be nothing). The regression was startSession flipping a
+// Quiz-me session straight to "drilling" and starting its leg in the same
+// tick it was created — before /session (and recoverLostLeg's "drilling with
+// no leg means lost" guard) had ever mounted for this run — so the first time
+// /session mounted for a "Quiz me" run could not be told apart from a lost
+// leg by phase alone.
+//
+// initialSessionPhase is the fix, pinned directly: a "Quiz me" session now
+// begins in "starting", never "drilling", so it always reaches /session (and
+// begins its leg from a settled render there, via startFirstRound — see
+// /session's mount effect) before phase ever says "drilling". recoverLostLeg
+// can then trust "drilling with no leg" to mean lost, unconditionally.
+describe("initialSessionPhase — where a fresh session begins (SAK-52 regression)", () => {
+  test("a taught session (non-empty teach) begins in teaching", () => {
+    const [a, b] = ["a", "b"].map(f);
+    assert.equal(initialSessionPhase([a, b]), "teaching");
+  });
+
+  test("a sentence Quiz-me (marker-only teach) still begins in teaching", () => {
+    // startSentence's Quiz-me shape puts the tier marker alone in `teach` —
+    // never empty — so it already reached /session via the taught branch
+    // before this fix, and must keep doing so.
+    const marker = f("grammar:sentence-ordering-tier/simple");
+    assert.equal(initialSessionPhase([marker]), "teaching");
+  });
+
+  test("a Quiz-me-only run (empty teach) begins in starting, never drilling", () => {
+    // The exact shape home-feed's startTrack hands startSession for "Quiz me"
+    // on a non-sentence track. Asserting "starting" (not "drilling") is the
+    // whole fix: it is what makes /session's "drilling with no leg" guard
+    // (recoverLostLeg) unreachable for a session that simply hasn't begun its
+    // first leg yet.
+    assert.equal(initialSessionPhase([]), "starting");
+    assert.notEqual(initialSessionPhase([]), "drilling");
   });
 });

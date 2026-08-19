@@ -50,6 +50,16 @@ export type SessionPhase =
    * the items you haven't met (or have comprehensively lost) are SHOWN, with
    * their answers, before anything is asked. See src/lib/budget.ts. */
   | "teaching"
+  /**
+   * A brand-new session with nothing to teach (a "Quiz me" start): the round
+   * has not begun its first leg yet. This exists ONLY so that beginning it
+   * happens from a settled render of /session, via the same `startFirstRound`
+   * call the taught flow's own "Quiz me" button uses — never from the tick a
+   * session is created, and never by improvising a second way to start a leg.
+   * /session's mount effect is the only reader; nothing else should branch on
+   * it, and no screen renders for it (same treatment as "drilling").
+   */
+  | "starting"
   /** A round (or a retry leg of one) is on screen. */
   | "drilling"
   /** The fork: retry misses, pick your own, or complete the round. */
@@ -216,6 +226,34 @@ export function sessionKnownClaimTarget(
   session: Pick<StudySession, "teach" | "facts">,
 ): FactId[] {
   return session.teach.length ? [...session.teach] : [...session.facts];
+}
+
+/**
+ * Which phase a freshly created session begins in, from its teach set.
+ *
+ * A taught session shows the lesson first ("teaching"). A "Quiz me" session
+ * has nothing to teach — but it must NOT begin drilling in the same breath it
+ * is created. It begins in "starting" instead, which routes it through
+ * /session first, so its first leg begins from a SETTLED render there (see
+ * SessionPhase and /session's "starting" mount effect) — the same mechanism
+ * the taught flow's own "Quiz me" button already uses to begin its first leg
+ * (startFirstRound), rather than a second, direct call to beginLeg made from
+ * whatever component happened to call startSession.
+ *
+ * THE SAK-52 REGRESSION THIS PINS: a "Quiz me" session used to begin in
+ * "drilling" here, with its leg started in the same startTransition as
+ * startSession itself — before /session (and its "drilling with no leg means
+ * lost" guard) had ever mounted for this run. Reaching /session for the first
+ * time only once the leg had already finished put phase and leg out of step
+ * for exactly the window that guard cannot tell apart from a genuinely lost
+ * leg, and the round-complete screen it recovered to reported an untouched,
+ * empty `roundStats` despite the learner having actually answered every
+ * card. Starting every session's first leg from the one place ("starting")
+ * removes the second mechanism instead of teaching the guard to tell the two
+ * states apart.
+ */
+export function initialSessionPhase(teach: FactId[]): SessionPhase {
+  return teach.length > 0 ? "teaching" : "starting";
 }
 
 /** The fixed number of quizzes in one session run. */

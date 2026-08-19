@@ -202,6 +202,11 @@ export default function SessionPage() {
   // state that gets corrected rather than the guard that gets loosened; see
   // recoverLostLeg, which puts the session back at its fork with its answers
   // intact and, above all, with buttons on the screen.
+  //
+  // This guard trusts "drilling with no leg" to mean LOST exactly because
+  // nothing legitimate can reach that combination any more: a session with no
+  // teach set arrives here as "starting" (below), not "drilling", so by the
+  // time phase says "drilling" a leg was always begun alongside it.
   useEffect(() => {
     if (session?.phase !== "drilling") return;
     if (active) {
@@ -210,6 +215,22 @@ export default function SessionPage() {
     }
     if (restored) recoverLostLeg();
   }, [session?.phase, active, restored, recoverLostLeg, router]);
+
+  // A "Quiz me" start has nothing to teach, so there is no lesson screen to
+  // land on — but it still needs to begin its first leg from a SETTLED render
+  // of this page, the same way the taught flow's own "Quiz me" button does
+  // (toDrill → startFirstRound), rather than from the tick startSession ran on
+  // Home, before this page ever mounted. One mechanism for beginning round 1,
+  // reached by both entry points, is the whole point: see "starting" on
+  // SessionPhase and the comment in startSession.
+  //
+  // Runs once per session (the phase leaves "starting" the moment this fires,
+  // via startFirstRound's own setSession), so it cannot re-fire on the session
+  // it just started.
+  useEffect(() => {
+    if (session?.phase !== "starting") return;
+    if (restored) startFirstRound();
+  }, [session?.phase, restored, startFirstRound]);
 
   const preloadPhase = session?.phase;
   const preloadFacts = session?.facts;
@@ -246,7 +267,10 @@ export default function SessionPage() {
     return () => window.clearTimeout(id);
   }, [preloadPhase, preloadFacts, preloadSnapshot]);
 
-  if (!session || session.phase === "drilling") return null;
+  // "starting" paints nothing, same as "drilling": the effect above begins its
+  // leg and moves the phase on before there is anything to show here.
+  if (!session || session.phase === "drilling" || session.phase === "starting")
+    return null;
 
   const label = `${session.facts.length} item${session.facts.length === 1 ? "" : "s"}`;
 
