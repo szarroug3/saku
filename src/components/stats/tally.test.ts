@@ -30,11 +30,15 @@ import { test } from "node:test";
 
 import {
   barSegments,
+  factsByStanding,
   fillFor,
+  tallyFacts,
   TONE_FILL,
   UNTOUCHED_FILL,
 } from "@/components/stats/tally";
 import type { Tally } from "@/components/stats/tally";
+import type { Claims } from "@/lib/claims";
+import type { FactAggregate, FactId } from "@/types";
 
 /** A tally with everything at zero except what's overridden — the population
  * this stats page is drawn from never sees `not-seen` counted directly (see
@@ -130,4 +134,56 @@ test("a total smaller than what's held (a caller bug) shows no negative-width se
 
   assert.ok(!segments.some((s) => s.bucket === "not-seen"));
   assert.ok(segments.every((s) => s.flex >= 0));
+});
+
+// SAK-78: `factsByStanding` is `tallyFacts`'s own walk, kept as fact ids
+// instead of counted. The click-through breakdown panel is only honest if
+// this can never disagree with `tallyFacts` — a bucket's count and the list
+// behind it coming from two independently-derived answers is exactly the kind
+// of drift SAK-22 already had to reconcile once for a different pair of
+// counts on this same page (see mix-ups.tsx). These tests pin that the two
+// functions agree on the same input, not just that each individually looks
+// right.
+
+const NOW = 1_700_000_000_000;
+
+test("factsByStanding's bucket sizes match tallyFacts's counts for the same input", () => {
+  const facts = ["fact:a", "fact:b", "fact:c", "fact:d"] as FactId[];
+  const aggregates: Record<FactId, FactAggregate> = {
+    // Recently tested, high accuracy → solid.
+    ["fact:a" as FactId]: {
+      seen: 5,
+      lastTested: NOW,
+      recentRuns: [true, true, true, true, true],
+    } as unknown as FactAggregate,
+  };
+  const claims: Claims = {
+    // Claimed and never tested → claimed.
+    ["fact:b" as FactId]: NOW,
+  };
+  // fact:c and fact:d have neither an aggregate nor a claim → not-seen.
+
+  const t = tallyFacts(facts, aggregates, claims, NOW);
+  const byBucket = factsByStanding(facts, aggregates, claims, NOW);
+
+  for (const bucket of Object.keys(t) as (keyof Tally)[]) {
+    assert.equal(
+      byBucket[bucket].length,
+      t[bucket],
+      `bucket "${bucket}": factsByStanding's list length must equal tallyFacts's count`,
+    );
+  }
+});
+
+test("factsByStanding partitions every input fact into exactly one bucket", () => {
+  const facts = ["fact:a", "fact:b", "fact:c"] as FactId[];
+  const byBucket = factsByStanding(facts, {}, {}, NOW);
+
+  const seen = Object.values(byBucket).flat();
+  assert.deepEqual([...seen].sort(), [...facts].sort());
+  // Untested, unclaimed facts land in not-seen and nowhere else.
+  assert.deepEqual([...byBucket["not-seen"]].sort(), [...facts].sort());
+  for (const bucket of ["claimed", "solid", "getting-there", "shaky", "slipping"] as const) {
+    assert.deepEqual(byBucket[bucket], []);
+  }
 });

@@ -192,3 +192,33 @@ export function tallyFacts(
 export function held(t: Tally): number {
   return BUCKETS.reduce((n, b) => n + t[b], 0);
 }
+
+/**
+ * `tallyFacts`'s own walk, kept instead of counted — the FACTS behind each
+ * bucket, not just how many. SAK-78: a clickable "83 solid" opens a panel
+ * listing exactly this, so the count on screen and the list behind it can
+ * never disagree — there is no second query that could drift from the first.
+ *
+ * Same signature and same per-fact rule as `tallyFacts` on purpose: this is
+ * that function's own accumulator with `push` instead of `++`, not a
+ * reimplementation that could answer a different question by accident.
+ */
+export function factsByStanding(
+  facts: readonly FactId[],
+  aggregates: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): Record<Standing, FactId[]> {
+  const out: Record<Standing, FactId[]> = {
+    "not-seen": [],
+    claimed: [],
+    solid: [],
+    "getting-there": [],
+    shaky: [],
+    slipping: [],
+  };
+  for (const f of facts) {
+    out[standingOf(aggregates[f], claims[f], now).standing].push(f);
+  }
+  return out;
+}
