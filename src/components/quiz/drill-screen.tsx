@@ -2523,7 +2523,7 @@ export function DrillScreen() {
               <Btn
                 className="w-20"
                 onClick={skipQuestion}
-                title="Skip — ask this again later"
+                title="Skip, ask this again later"
               >
                 Skip
               </Btn>

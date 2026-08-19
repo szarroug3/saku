@@ -304,7 +304,7 @@ export function Sidebar({
           reload before the wordmark arrives. The link carries the accessible name
           instead, and the image is decorative. */}
       <div className="mb-2 flex items-center justify-between pr-1">
-        <Link href="/" aria-label="Saku — home" className="block px-3 py-1">
+        <Link href="/" aria-label="Saku (home)" className="block px-3 py-1">
           <Image
             src="/brand/saku-wordmark.png"
             alt=""

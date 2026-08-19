@@ -783,7 +783,7 @@ export function AssemblyScreen() {
               <Btn
                 className="w-20"
                 onClick={skip}
-                title="Skip — ask this again later"
+                title="Skip, ask this again later"
               >
                 Skip
               </Btn>
