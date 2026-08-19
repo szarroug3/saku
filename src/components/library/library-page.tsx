@@ -63,9 +63,9 @@ import {
 } from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { postClaim } from "@/lib/progress-fetch";
 import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
+import { useHistoryWrites } from "@/lib/history-writes";
 import type { EntryId, FactAggregate, FactId } from "@/types";
 
 /** The Kind dropdown's items, in curriculum teaching order — the same order
@@ -179,7 +179,13 @@ export function LibraryPageClient({
    * response. URL changes after mount are mirrored into local state below. */
   initialSearch: string;
 }) {
-  const { history, loaded: historyLoaded, refresh } = useHistory();
+  const { history, loaded: historyLoaded } = useHistory();
+  // The optimistic write path (see history-writes.ts): claim/unclaim update
+  // the screen immediately and post in the background, instead of the
+  // blocking postClaim()+refresh() round trip this page used before. Reused
+  // for both the single-entry "I know these" (unchanged behaviour, faster
+  // now) and the new bulk "Mark as not known" the owner asked back for.
+  const writes = useHistoryWrites();
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
 
@@ -715,13 +721,6 @@ export function LibraryPageClient({
     };
   }, [slice.entries, history, claims, sentenceAssembly]);
 
-  const claim = async (facts: FactId[]) => {
-    // postClaim, not a raw fetch: a signed-out claim (401) is saved to this
-    // browser instead of vanishing, and the refresh() below reads it back.
-    await postClaim(facts, true);
-    await refresh();
-  };
-
   return (
     // THE LIBRARY IS ITS OWN THREE-ROW FRAME, NOT PART OF THE PAGE SCROLL.
     //
@@ -973,7 +972,14 @@ export function LibraryPageClient({
           claims={claims}
           history={history}
           now={now}
-          onClaim={claim}
+          onClaim={writes.claim}
+          /* Bulk "Mark as not known": only meaningful once the reader has
+           * hand-picked a selection. SliceBar itself gates the button on
+           * claimedFacts within THIS slice being non-empty, and the whole bar
+           * only mounts while hasSelection is true (see below), so it is safe
+           * to always pass this — there is never a search/browse slice with
+           * nothing selected reaching it. */
+          onUnclaim={writes.unclaim}
           hasSelection={selected.size > 0}
           includeSolid={selected.size > 0}
           claimFacts={sentenceRuleClaimFacts}
