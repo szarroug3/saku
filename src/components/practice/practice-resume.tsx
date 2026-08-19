@@ -25,17 +25,7 @@
 
 import { Btn, Hint, SmallBtn } from "@/components/ui";
 import type { QuizProgress } from "@/lib/quiz-session";
-
-/** "2 hours ago". Coarse on purpose — this is a nudge, not a stopwatch. */
-function ago(ts: number, now: number): string {
-  const mins = Math.round((now - ts) / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.round(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
-}
+import { relativeTime } from "@/lib/relative-time";
 
 export function PracticeResume({
   kind,
@@ -89,7 +79,7 @@ export function PracticeResume({
           </p>
           {startedAt && now ? (
             <p className="mt-1 max-w-[46ch] text-xs text-text-muted">
-              Started {ago(startedAt, now)}.
+              Started {relativeTime(startedAt, now)}.
             </p>
           ) : null}
         </div>

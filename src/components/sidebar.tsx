@@ -217,7 +217,7 @@ export function Sidebar({
   // when a run is in progress, then Recent sessions (when there is history) sat
   // directly ABOVE Progress since the two are the "look back at what I did" pair,
   // then the rest of the static list.
-  const items: Array<{ href: string; label: ReactNode }> = [
+  const items: Array<{ href: string; label: ReactNode; ariaLabel?: string }> = [
     // Home is the signed-out landing; once you're in, "/" just redirects to
     // /learn, so the nav item is a dead loop. Hidden when signed in.
     ...(signedIn ? [] : [NAV[0]]),
@@ -226,6 +226,11 @@ export function Sidebar({
     ...(runCount > 0
       ? [
           {
+            // SAK-71: the two spans below concatenate to "Current sessions4"
+            // for assistive tech with no word break between the label and the
+            // count — an explicit aria-label on the rendered <Link> (added
+            // where `items` is mapped below) gives it a real, unambiguous
+            // name instead.
             href: "/current",
             label: (
               <span className="flex w-full items-baseline justify-between gap-2">
@@ -235,6 +240,7 @@ export function Sidebar({
                 </span>
               </span>
             ),
+            ariaLabel: `Current sessions, ${runCount} in progress`,
           },
         ]
       : []),
@@ -319,7 +325,7 @@ export function Sidebar({
           <Chevron dir="left" />
         </button>
       </div>
-      {items.map(({ href, label }) => {
+      {items.map(({ href, label, ariaLabel }) => {
         // An entry page is IN the Library, so /library/kanji%3A%E7%94%9F has to
         // light the Library item — an exact match would leave the whole nav
         // unlit on the one screen you reach by clicking a link on the previous
@@ -330,6 +336,7 @@ export function Sidebar({
           <Link
             key={href}
             href={href}
+            aria-label={ariaLabel}
             // flex + whitespace-nowrap on every item: the width is fixed at
             // w-[148px], the labels are short and already fit, and keeping one
             // layout rule for the whole nav is one fewer thing to rediscover
