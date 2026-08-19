@@ -41,6 +41,7 @@ function entry(id: string, glyph = id): LibEntry {
     meanings: [],
     sub: "",
     weight: 0,
+    speakable: true,
   };
 }
 
