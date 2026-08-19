@@ -47,7 +47,7 @@ import {
   standingOf,
   type Standing,
 } from "@/lib/library/standing";
-import type { FactAggregate, FactId } from "@/types";
+import type { EntryId, FactAggregate, FactId } from "@/types";
 
 /**
  * The order the buckets are read in — best to worst, matching standing.ts's own
@@ -235,4 +235,81 @@ export function factsByStanding(
     out[standingOf(aggregates[f], claims[f], now).standing].push(f);
   }
   return out;
+}
+
+/**
+ * SAK-78 (round 5): "the side panel should separate by status. the sections
+ * should be collapsible and ordered in the same order as the what you know
+ * area at the top so claimed → solid → …" — Sam's own words, and BUCKETS
+ * above IS that order, so this reuses it verbatim rather than inventing a
+ * second one.
+ *
+ * THIS IS THE ONE PLACE ENTRIES CROSS INTO STANDING TERRITORY. by-subject.tsx's
+ * header comment says, correctly, "AN ENTRY IS NEVER GIVEN A STANDING" — a
+ * fact is, an entry can hold nine facts in nine different conditions, and
+ * averaging them into one word is the exact move that got
+ * `decks.weakestEntries()` deleted. But the side panel this function feeds
+ * has to put every entry under exactly one heading, so this DOES pick one —
+ * a display grouping for one panel, not a new fact recorded about the entry
+ * anywhere else. `by-subject.tsx`'s printed "70 of 2,136" is untouched by
+ * this function and still comes from `metEntries` alone. Flagged back to Sam
+ * in the round-5 Linear comment as a real tension with that header comment,
+ * not silently resolved — implementing it here because the ask was explicit
+ * and specific ("claimed → solid → …"), which reads as an informed choice to
+ * accept that tradeoff for this one view.
+ *
+ * THE RULE: an entry's group is the BEST standing (BUCKETS order — the same
+ * "best to worst" reading order BUCKETS's own comment above already defines)
+ * among the facts that carry a real record. `standingOf` only returns
+ * something other than `claimed`/`not-seen` for a fact with `agg.seen > 0`,
+ * so only seen facts compete for "best"; an entry with no seen fact but at
+ * least one claim — the other half of `metEntries`'s "showing or claimed"
+ * predicate — groups as `claimed` outright, even if that claim has since
+ * decayed far enough that `standingOf` alone would call it `not-seen` (a
+ * claim read long after the fact decays the same way untested material does
+ * — see standing.ts). That fallback exists so a MET entry can never land
+ * outside every section: this panel's own history (this ticket, four rounds
+ * of review back) is built on the guarantee that its list can never disagree
+ * with the count that opened it, and a silently dropped entry would be
+ * exactly that disagreement.
+ *
+ * `entryFacts` is a lookup, not a fixed map, because the two callers
+ * (by-subject.tsx's SubjectRow and GroupRow) draw an entry's facts from
+ * different scopes — one subject's own `entryFacts` map, or several
+ * children's merged — and grouping is only correct if it asks about the same
+ * facts `metEntries` already counted as making that entry met.
+ */
+export function groupEntriesByStanding(
+  entries: readonly EntryId[],
+  entryFacts: (entry: EntryId) => readonly FactId[],
+  aggregates: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): { standing: Standing; entries: EntryId[] }[] {
+  const buckets = new Map<Standing, EntryId[]>();
+  for (const e of entries) {
+    let best: Standing | null = null;
+    let anyClaimed = false;
+    for (const f of entryFacts(e)) {
+      if (aggregates[f]?.seen) {
+        const standing = standingOf(aggregates[f], claims[f], now).standing;
+        if (best === null || BUCKETS.indexOf(standing) < BUCKETS.indexOf(best)) {
+          best = standing;
+        }
+      } else if (claims[f]) {
+        anyClaimed = true;
+      }
+    }
+    const standing: Standing = best ?? (anyClaimed ? "claimed" : "not-seen");
+    const list = buckets.get(standing);
+    if (list) list.push(e);
+    else buckets.set(standing, [e]);
+  }
+  // BUCKETS order first (Sam's "claimed → solid → …"), with `not-seen` last
+  // and present only if the defensive fallback above was actually hit — see
+  // header comment. A genuinely met entry never lands there in practice.
+  const order: readonly Standing[] = [...BUCKETS, "not-seen"];
+  return order
+    .filter((b) => buckets.has(b))
+    .map((b) => ({ standing: b, entries: buckets.get(b)! }));
 }
