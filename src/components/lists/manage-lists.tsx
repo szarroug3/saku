@@ -19,7 +19,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { Btn, Hint, PageTitle } from "@/components/ui";
+import { Btn, Hint, Info, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { japaneseFontClass } from "@/lib/japanese-text";
@@ -116,7 +116,16 @@ export function ManageLists() {
   return (
     <div className="max-w-3xl">
       <PageTitle
-        title="Lists"
+        title={
+          <>
+            Lists
+            <Info>
+              &ldquo;Deck&rdquo; here just means a list that came from an
+              import. Everything you can do with a list you made yourself,
+              you can do with one too.
+            </Info>
+          </>
+        }
         sub="Every list you have: decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
       />
 
