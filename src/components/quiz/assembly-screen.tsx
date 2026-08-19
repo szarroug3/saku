@@ -84,6 +84,11 @@ import {
   type AsmCard,
   type AsmRuntime,
 } from "@/components/quiz/assembly-check";
+import {
+  computeDragOverIndex,
+  DRAG_OVER_UNCHANGED,
+  previewTrayOrder,
+} from "@/components/quiz/assembly-drag";
 import { DrillDrawer } from "./drill-drawer";
 
 interface CoachHint {
@@ -351,36 +356,17 @@ function dropPiece(card: AsmCard, surface: string, index: number | null): void {
 
 // ---------- pointer-drag preview (SAK-90) ----------
 //
-// Everything below is display-only: it never touches card.tray, only what's
-// rendered while a drag is in flight. The actual reorder still lands through
+// The pure drop-target math (previewTrayOrder, computeDragOverIndex, and the
+// trayWithoutDragged helper they share) lives in assembly-drag.ts, imported
+// above -- pulled
+// out so it can be unit-tested with plain node:test (this file's JSX can't
+// be parsed by the test runner's loader) and so the tray <ul>'s and each
+// piece <button>'s onDragOver can't disagree about what "empty space" versus
+// "over a piece" means (see assembly-drag.ts's computeDragOverIndex doc
+// comment for the SAK-90 round-2 bug that shared logic fixes). Everything
+// below is display-only: it never touches card.tray, only what's rendered
+// while a drag is in flight. The actual reorder still lands through
 // dropInTray -> dropPiece above, same as before this ticket.
-
-/** The tray with the dragged surface removed, whichever origin it came from
- * (a pool piece isn't in the tray yet, so this is a no-op for that case). */
-function trayWithoutDragged(
-  tray: readonly string[],
-  draggingSurface: string | null,
-): string[] {
-  return draggingSurface === null
-    ? [...tray]
-    : tray.filter((s) => s !== draggingSurface);
-}
-
-/** What the tray would look like if the drag ended right now, dropped at
- * `index`. Purely for rendering the live reflow preview (SAK-90 ask #2); the
- * real commit happens in dropInTray on drop. */
-function previewTrayOrder(
-  tray: readonly string[],
-  draggingSurface: string | null,
-  index: number | null,
-): string[] {
-  if (draggingSurface === null || index === null) return [...tray];
-  const withoutDragged = trayWithoutDragged(tray, draggingSurface);
-  const at = Math.min(Math.max(index, 0), withoutDragged.length);
-  const next = withoutDragged.slice();
-  next.splice(at, 0, draggingSurface);
-  return next;
-}
 
 /** A custom, app-styled drag image (SAK-90 ask #1) so the piece dragging
  * around under the pointer looks like the app, not the browser's default
@@ -688,9 +674,12 @@ export function AssemblyScreen() {
             e.preventDefault();
             // Reached only when the pointer is over empty tray space, not
             // over a specific piece (each piece's own onDragOver below
-            // stops propagation): land at the end.
+            // always stops propagation while dragging, self-hover included):
+            // land at the end.
             setDragOverIndex(
-              trayWithoutDragged(card.tray, dragging.current.surface).length,
+              computeDragOverIndex(card.tray, dragging.current.surface, {
+                kind: "tray-empty",
+              }),
             );
           }}
           onDrop={(e) => {
@@ -736,21 +725,32 @@ export function AssemblyScreen() {
                   } ${resolved ? "" : "cursor-grab"}`}
                   onDragStart={(e) => startDrag(e, dragging, "tray", surface)}
                   onDragOver={(e) => {
-                    if (!dragging.current || dragging.current.surface === surface) return;
+                    if (!dragging.current) return;
                     e.preventDefault();
+                    // Always stop propagation while dragging, including when
+                    // hovering the dragged piece's own ghost slot. Without
+                    // this, the parent tray <ul>'s onDragOver treats the
+                    // bubbled event as "empty tray space" and forces
+                    // dragOverIndex to the end (SAK-90 round 2 bug: see
+                    // computeDragOverIndex's doc comment in assembly-drag.ts
+                    // for the full mechanics of why the drop always landed
+                    // at the end regardless of where the pointer hovered).
                     e.stopPropagation();
                     const rect = e.currentTarget.getBoundingClientRect();
                     const before = e.clientX < rect.left + rect.width / 2;
-                    const withoutDragged = trayWithoutDragged(
+                    const target = computeDragOverIndex(
                       card.tray,
                       dragging.current.surface,
+                      {
+                        kind: "piece",
+                        hoveredSurface: surface,
+                        pointerBeforeMidpoint: before,
+                      },
                     );
-                    const logicalIdx = withoutDragged.indexOf(surface);
-                    const target =
-                      logicalIdx < 0
-                        ? withoutDragged.length
-                        : logicalIdx + (before ? 0 : 1);
-                    setDragOverIndex(target);
+                    // Self-hover (dragging the piece's own rendered ghost
+                    // slot) is a decided "no change" case, not the
+                    // end-of-tray fallback -- see assembly-drag.ts.
+                    if (target !== DRAG_OVER_UNCHANGED) setDragOverIndex(target);
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
