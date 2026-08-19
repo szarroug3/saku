@@ -66,6 +66,7 @@ import { useState } from "react";
 import {
   factsFromPickedBoxes,
   roundFormCounts,
+  roundFormsByOutcome,
   WordTable,
   type BoxKey,
 } from "@/components/results/word-table";
@@ -156,6 +157,19 @@ export function SessionComplete({
     session.totalStats,
   );
 
+  // PATH B's results, read-only. Same shape as a practice quiz's own results
+  // board (and RoundComplete's own breakdown) — form counts, then Needs work
+  // before Solid — just with no picker: Path B's two forward actions (I
+  // already know these / Take me to the lesson) act on the WHOLE batch, not a
+  // per-item selection, so the cells here are informational only.
+  const untaughtCounts = roundFormCounts(session.facts, session.totalStats);
+  const { solid: untaughtSolidList, needsWork: untaughtNeedsWorkList } =
+    roundFormsByOutcome(session.facts, session.totalStats);
+  const untaughtSolidBoxes = new Set(untaughtSolidList);
+  const untaughtNeedsWorkBoxes = new Set(untaughtNeedsWorkList);
+  const noSelection = () => false;
+  const noToggle = () => {};
+
   return (
     <>
       <Card className="px-5 pb-[30px] pt-[38px] text-center">
@@ -211,6 +225,43 @@ export function SessionComplete({
           </>
         ) : (
           <>
+            <div className="mt-5.5 text-left">
+              <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+                {untaughtCounts.totalForms} asked · {untaughtCounts.solid}{" "}
+                solid · {untaughtCounts.needsWork} needs work
+              </p>
+              {untaughtNeedsWorkBoxes.size ? (
+                <div className="border-t border-border pt-3">
+                  <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+                    Needs work
+                  </p>
+                  <div className="mt-2">
+                    <WordTable
+                      facts={session.facts}
+                      stats={session.totalStats}
+                      showOnly={untaughtNeedsWorkBoxes}
+                      isSelected={noSelection}
+                      onToggle={noToggle}
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {untaughtSolidBoxes.size ? (
+                <div className="mt-3.5 border-t border-border pt-3">
+                  <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+                    Solid
+                  </p>
+                  <WordTable
+                    facts={session.facts}
+                    stats={session.totalStats}
+                    showOnly={untaughtSolidBoxes}
+                    solidTone
+                    isSelected={noSelection}
+                    onToggle={noToggle}
+                  />
+                </div>
+              ) : null}
+            </div>
             <p className="mx-auto mt-5.5 max-w-[36ch] text-[13px] text-text-muted">
               Know {items === 1 ? "this" : "these"} already, or want the
               lesson?
