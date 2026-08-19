@@ -28,6 +28,7 @@
 import { startTransition, useMemo, useState } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
+import { sentenceSessionTeach } from "@/components/home/home-feed-helpers";
 import { SrsIntro } from "@/components/lesson/srs-intro";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { TrackIntroCard } from "@/components/learn/track-intro-card";
@@ -414,16 +415,18 @@ export function HomeFeed() {
   };
 
   // Sentence ordering: teach the structure, then drill its readable sentences in
-  // assembly mode. The tier marker rides in the drill set (retained so completion
-  // advances the scheduler). On a Quiz-me it must NOT also ride in the teach set —
-  // a non-empty teach set always opens the lesson (initialSessionPhase), which is
-  // exactly SAK-85 (Quiz-me opening the teach screen). So on Quiz-me the marker is
-  // recorded the same way startTrack's own Quiz-me branch records its facts:
-  // markSeen immediately, with only the newly-seen part handed to startSession as
-  // seededSeen so a discard rolls back exactly what this start added. The drill
-  // facts and marker come from the dictionary-backed sentence helpers, DYNAMICALLY
-  // IMPORTED here so they stay off the initial /learn bundle — the launch only
-  // produces fact-ids, and /session loads the content anyway.
+  // assembly mode. The tier marker rides in both the full facts pool and the teach
+  // set on a real Start (teach: true), so it is part of the end-of-session claim
+  // target (sessionKnownClaimTarget reads teach when non-empty) and the tier can
+  // actually be marked known. On a Quiz-me the marker must NOT ride in the teach
+  // set — a non-empty teach set always opens the lesson (initialSessionPhase),
+  // which is exactly SAK-85 (Quiz-me opening the teach screen). So on Quiz-me the
+  // marker is recorded the same way startTrack's own Quiz-me branch records its
+  // facts: markSeen immediately, with only the newly-seen part handed to
+  // startSession as seededSeen so a discard rolls back exactly what this start
+  // added. The drill facts and marker come from the dictionary-backed sentence
+  // helpers, DYNAMICALLY IMPORTED here so they stay off the initial /learn bundle —
+  // the launch only produces fact-ids, and /session loads the content anyway.
   const startSentence = async (lesson: LearnLesson, { teach = true } = {}) => {
     const tierId = sentenceTierId(lesson);
     if (!tierId) return;
@@ -442,7 +445,7 @@ export function HomeFeed() {
     if (!teach) markSeen([marker]);
     startSession(
       [...drillFacts, marker],
-      teach ? drillFacts : [],
+      sentenceSessionTeach(teach, drillFacts, marker),
       `Sentence ordering · tier ${tierId}`,
       "lesson",
       seeded,
