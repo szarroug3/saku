@@ -38,7 +38,7 @@ import {
   type BoxKey,
   WordTable,
 } from "@/components/results/word-table";
-import { Btn, Card, Hint } from "@/components/ui";
+import { Btn, Card, FlatSurfaceProvider, Hint, Info } from "@/components/ui";
 import { entryDisplayLabel } from "@/components/results/entry-display-label";
 import { factInfo } from "@/lib/facts";
 import {
@@ -136,7 +136,10 @@ export function RoundComplete({
   const pickedBoxes = [...picked];
 
   return (
-    <>
+    // Both Cards below de-box via context rather than each hand-stripping
+    // its own chrome — the same pattern EntrySurface uses for the redesigned
+    // Library entry pages. See useBorderlessSurface in ui.tsx. SAK-21.
+    <FlatSurfaceProvider borderless>
       <Card>
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
@@ -233,6 +236,7 @@ export function RoundComplete({
           >
             {retryButtonLabel(pickedBoxes.length)}
           </Btn>
+          <Info>Retries bring you back to this screen.</Info>
           <Btn go className="ml-auto" onClick={onComplete}>
             {session.round >= roundTargetOf(session)
               ? "Complete session"
@@ -241,17 +245,22 @@ export function RoundComplete({
         </div>
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
-        {/* The second sentence has to name the button that is actually on
-            screen, and say what that button actually does. On the last round it
+      <Card>
+        {/* This sentence has to name the button that is actually on screen,
+            and say what that button actually does. On the last round it
             reads "Complete session", and there is no break after it — the
             session ends. The old line said "Complete round starts the break"
             unconditionally, which on the final round named a button that wasn't
-            there and promised a rest that wasn't coming. */}
+            there and promised a rest that wasn't coming.
+            The retry-specific sentence that used to open this Hint ("Retries
+            bring you back to this screen.") now lives in the Info tooltip
+            next to the Retry button instead — it explains what the Retry
+            button on THIS screen does, not what happens next, so it belongs
+            beside that button rather than as permanent on-screen text. See
+            SAK-21 (Changes Requested). */}
         <Hint>
-          Retries bring you back to this screen.{" "}
           {session.round >= roundTargetOf(session) ? (
-            <>
+            <
               <b>Complete session</b> finishes for good.
             </>
           ) : (
@@ -261,6 +270,6 @@ export function RoundComplete({
           )}
         </Hint>
       </Card>
-    </>
+    </FlatSurfaceProvider>
   );
 }
