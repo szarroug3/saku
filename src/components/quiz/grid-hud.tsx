@@ -106,9 +106,20 @@ export interface GridHudProps {
   /** Cards answered right on the first try, in a row. */
   streak: number;
   onFinish(): void;
+  /** Opens the mid-drill settings drawer (retries, show-answer, retry pips,
+   * fade controls, streak/accuracy display — all live for the grid). Same
+   * trigger and drawer drill-screen uses; see SAK-81. */
+  onOpenSettings(): void;
 }
 
-export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) {
+export function GridHud({
+  done,
+  total,
+  stats,
+  streak,
+  onFinish,
+  onOpenSettings,
+}: GridHudProps) {
   const { cfg } = useQuizConfig();
   const reducedMotion = usePrefersReducedMotion();
   const [controlsAwake, setControlsAwake] = useState(false);
@@ -195,6 +206,9 @@ export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) 
           }}
         >
           <SmallBtn onClick={onFinish}>Finish quiz</SmallBtn>
+          <SmallBtn aria-label="Mid-drill settings" onClick={onOpenSettings}>
+            ⚙
+          </SmallBtn>
         </span>
       </div>
       {/* 2px hairline: the progress bar reduced to the one thing it says. */}

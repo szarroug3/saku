@@ -54,6 +54,7 @@ import {
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type { HistoryFile, SessionStats } from "@/types";
 import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
+import { DrillDrawer } from "./drill-drawer";
 
 interface AsmCard {
   item: AssemblyItem;
@@ -406,6 +407,7 @@ export function AssemblyScreen() {
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
   const [shake, setShake] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
   const rt = active && loaded ? ensureRuntime(active, history) : null;
@@ -539,6 +541,12 @@ export function AssemblyScreen() {
               <SmallBtn onClick={reviewLesson}>Look again</SmallBtn>
             ) : null}
             <SmallBtn onClick={endQuiz}>End quiz</SmallBtn>
+            <SmallBtn
+              aria-label="Mid-drill settings"
+              onClick={() => setDrawerOpen((o) => !o)}
+            >
+              ⚙
+            </SmallBtn>
           </span>
         </div>
         <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
@@ -779,6 +787,7 @@ export function AssemblyScreen() {
           ) : null}
         </div>
       </div>
+      {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   );
 }
