@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "JMdict",
-    "rawSha256": "a741932c15f7dc1d3be50958798e641141e3f6cafda1c19c8f62ef33b86b8b25",
+    "rawSha256": "96f110138c3435daa1d16643fda1b94ee578c921a2808795b25cec3a06c88347",
     "url": "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
   },
   "words": {
@@ -18,6 +18,9 @@
         ],
         "readings": [
           "あいつ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -32,6 +35,28 @@
         ],
         "readings": [
           "あいつ"
+        ],
+        "register": [
+          "familiar"
+        ]
+      }
+    ],
+    "あいつら": [
+      {
+        "glosses": [
+          "they",
+          "those guys",
+          "those fellows"
+        ],
+        "id": "1985390:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "あいつら"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -143,6 +168,23 @@
         ]
       }
     ],
+    "あけましておめでとうございます": [
+      {
+        "glosses": [
+          "Happy New Year"
+        ],
+        "id": "1532270:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "あけましておめでとうございます"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "あざ": [
       {
         "glosses": [
@@ -228,6 +270,9 @@
         ],
         "readings": [
           "あそこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -512,6 +557,23 @@
         ]
       }
     ],
+    "あなた方": [
+      {
+        "glosses": [
+          "you (plural)"
+        ],
+        "id": "1586560:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "あなたがた"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "あの": [
       {
         "glosses": [
@@ -543,6 +605,29 @@
         ]
       }
     ],
+    "あのね": [
+      {
+        "glosses": [
+          "look here",
+          "I say",
+          "well",
+          "I know what",
+          "I'll tell you what",
+          "just a minute",
+          "hold on"
+        ],
+        "id": "1612640:0",
+        "pos": [
+          "interjection (kandoushi)"
+        ],
+        "readings": [
+          "あのね"
+        ],
+        "register": [
+          "familiar"
+        ]
+      }
+    ],
     "あの人": [
       {
         "glosses": [
@@ -568,6 +653,26 @@
         ],
         "readings": [
           "あのひと"
+        ]
+      }
+    ],
+    "あの方": [
+      {
+        "glosses": [
+          "that gentleman",
+          "that lady",
+          "he",
+          "she"
+        ],
+        "id": "1000450:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "あのかた"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -647,6 +752,9 @@
         ],
         "readings": [
           "あまり"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -834,6 +942,9 @@
         ],
         "readings": [
           "あり"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -895,6 +1006,40 @@
         ],
         "readings": [
           "ありえない"
+        ]
+      }
+    ],
+    "ありがとうございました": [
+      {
+        "glosses": [
+          "thank you"
+        ],
+        "id": "2845468:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ありがとうございました"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "ありがとうございます": [
+      {
+        "glosses": [
+          "thank you"
+        ],
+        "id": "1541040:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ありがとうございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -1005,6 +1150,9 @@
         ],
         "readings": [
           "ある"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -1111,6 +1259,9 @@
         ],
         "readings": [
           "あれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -1124,6 +1275,9 @@
         ],
         "readings": [
           "あれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -1344,6 +1498,23 @@
         ]
       }
     ],
+    "あんた": [
+      {
+        "glosses": [
+          "you"
+        ],
+        "id": "1979920:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "あんた"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "あん摩": [
       {
         "glosses": [
@@ -1383,6 +1554,9 @@
         ],
         "readings": [
           "あんま"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -1919,6 +2093,9 @@
         ],
         "readings": [
           "いじる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -1983,6 +2160,24 @@
         ]
       }
     ],
+    "いたす": [
+      {
+        "glosses": [
+          "to do"
+        ],
+        "id": "1421900:0",
+        "pos": [
+          "Godan verb with 'su' ending",
+          "transitive verb"
+        ],
+        "readings": [
+          "いたす"
+        ],
+        "register": [
+          "humble"
+        ]
+      }
+    ],
     "いたずら": [
       {
         "glosses": [
@@ -2028,6 +2223,9 @@
         ],
         "readings": [
           "いたずら"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -2098,6 +2296,9 @@
         ],
         "readings": [
           "いただく"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -2112,6 +2313,10 @@
         ],
         "readings": [
           "いただく"
+        ],
+        "register": [
+          "humble",
+          "polite"
         ]
       },
       {
@@ -2155,6 +2360,9 @@
         ],
         "readings": [
           "いただく"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -2172,6 +2380,9 @@
         ],
         "readings": [
           "いただける"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -2186,6 +2397,9 @@
         ],
         "readings": [
           "いただける"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -2618,6 +2832,25 @@
         ]
       }
     ],
+    "いまいち": [
+      {
+        "glosses": [
+          "not quite (right)",
+          "not very good",
+          "somewhat (lacking)"
+        ],
+        "id": "1289030:0",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "いまいち"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "いや": [
       {
         "glosses": [
@@ -2790,6 +3023,26 @@
         ]
       }
     ],
+    "いらして": [
+      {
+        "glosses": [
+          "coming",
+          "going",
+          "being (somewhere)",
+          "being (doing something)"
+        ],
+        "id": "2829587:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "いらして"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "いらっしゃい": [
       {
         "glosses": [
@@ -2803,6 +3056,9 @@
         ],
         "readings": [
           "いらっしゃい"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -2975,6 +3231,26 @@
         ],
         "readings": [
           "いろは"
+        ]
+      }
+    ],
+    "いろんな": [
+      {
+        "glosses": [
+          "various",
+          "a variety of",
+          "all sorts of",
+          "many (different)"
+        ],
+        "id": "1609270:0",
+        "pos": [
+          "pre-noun adjectival (rentaishi)"
+        ],
+        "readings": [
+          "いろんな"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -3683,6 +3959,11 @@
         ],
         "readings": [
           "お"
+        ],
+        "register": [
+          "honorific",
+          "humble",
+          "polite"
         ]
       }
     ],
@@ -3702,6 +3983,9 @@
         ],
         "readings": [
           "おい"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -3796,6 +4080,9 @@
         ],
         "readings": [
           "おうち"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -3826,6 +4113,9 @@
         ],
         "readings": [
           "おかげさまで"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -3841,6 +4131,9 @@
         ],
         "readings": [
           "おかげさまで"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -3934,6 +4227,9 @@
         ],
         "readings": [
           "おかず"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -4030,6 +4326,27 @@
         ]
       }
     ],
+    "おしっこ": [
+      {
+        "glosses": [
+          "wee-wee",
+          "pee-pee",
+          "number one"
+        ],
+        "id": "1001260:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "おしっこ"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "おしまい": [
       {
         "glosses": [
@@ -4043,6 +4360,9 @@
         ],
         "readings": [
           "おしまい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -4197,6 +4517,9 @@
         ],
         "readings": [
           "おす"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -4233,6 +4556,25 @@
         ]
       }
     ],
+    "おっきい": [
+      {
+        "glosses": [
+          "big",
+          "large",
+          "great"
+        ],
+        "id": "2137230:0",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "おっきい"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "おっさん": [
       {
         "glosses": [
@@ -4244,6 +4586,9 @@
         ],
         "readings": [
           "おっさん"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -4256,6 +4601,9 @@
         ],
         "readings": [
           "おっさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -4273,6 +4621,9 @@
         ],
         "readings": [
           "おっしゃる"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -4286,6 +4637,9 @@
         ],
         "readings": [
           "おっしゃる"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -4303,6 +4657,9 @@
         ],
         "readings": [
           "おっぱい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -4355,6 +4712,9 @@
         ],
         "readings": [
           "おでこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -4407,6 +4767,9 @@
         ],
         "readings": [
           "おなじみ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -4422,6 +4785,26 @@
         ],
         "readings": [
           "おなじみ"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "おはようございます": [
+      {
+        "glosses": [
+          "good morning"
+        ],
+        "id": "1002340:0",
+        "pos": [
+          "interjection (kandoushi)"
+        ],
+        "readings": [
+          "おはようございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -4465,6 +4848,9 @@
         ],
         "readings": [
           "おばあちゃん"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -4478,6 +4864,26 @@
         ],
         "readings": [
           "おばあちゃん"
+        ],
+        "register": [
+          "familiar"
+        ]
+      }
+    ],
+    "おふくろ": [
+      {
+        "glosses": [
+          "(one's) mother"
+        ],
+        "id": "1002370:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おふくろ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -4526,6 +4932,40 @@
         ],
         "readings": [
           "おまけ"
+        ]
+      }
+    ],
+    "おまわりさん": [
+      {
+        "glosses": [
+          "police officer"
+        ],
+        "id": "1002120:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おまわりさん"
+        ],
+        "register": [
+          "familiar"
+        ]
+      }
+    ],
+    "おめでとうございます": [
+      {
+        "glosses": [
+          "congratulations"
+        ],
+        "id": "1001540:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おめでとうございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -4601,6 +5041,9 @@
         ],
         "readings": [
           "おやじ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -4615,6 +5058,9 @@
         ],
         "readings": [
           "おやじ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -4627,6 +5073,9 @@
         ],
         "readings": [
           "おやじ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -4758,6 +5207,9 @@
         ],
         "readings": [
           "おる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -4916,6 +5368,9 @@
         ],
         "readings": [
           "おひとりさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -4928,6 +5383,73 @@
         ],
         "readings": [
           "おひとりさま"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "お世話になる": [
+      {
+        "glosses": [
+          "to receive favor",
+          "to receive assistance",
+          "to receive help",
+          "to be looked after",
+          "to be taken care of",
+          "to become dependent (on)",
+          "to become much obliged (to someone)",
+          "to become indebted"
+        ],
+        "id": "1002260:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "Godan verb with 'ru' ending"
+        ],
+        "readings": [
+          "おせわになる"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お久しぶり": [
+      {
+        "glosses": [
+          "it's been a long time",
+          "long time no see"
+        ],
+        "id": "2222180:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おひさしぶり"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お互いに": [
+      {
+        "glosses": [
+          "mutually",
+          "with each other",
+          "reciprocally",
+          "together",
+          "both"
+        ],
+        "id": "2231160:0",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "おたがいに"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -4944,6 +5466,9 @@
         ],
         "readings": [
           "おやすみ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -4957,6 +5482,9 @@
         ],
         "readings": [
           "おやすみ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -4969,6 +5497,24 @@
         ],
         "readings": [
           "おやすみ"
+        ]
+      }
+    ],
+    "お会計": [
+      {
+        "glosses": [
+          "bill (at a restaurant)",
+          "check"
+        ],
+        "id": "2513640:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おかいけい"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -4985,6 +5531,9 @@
         ],
         "readings": [
           "おつかい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5000,6 +5549,9 @@
         ],
         "readings": [
           "おつかい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5012,6 +5564,10 @@
         ],
         "readings": [
           "おつかい"
+        ],
+        "register": [
+          "honorific",
+          "polite"
         ]
       }
     ],
@@ -5027,6 +5583,9 @@
         ],
         "readings": [
           "おにいさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5042,6 +5601,9 @@
         ],
         "readings": [
           "おにいさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -5057,6 +5619,9 @@
         ],
         "readings": [
           "おさきに"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5069,6 +5634,9 @@
         ],
         "readings": [
           "おさきに"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5081,6 +5649,9 @@
         ],
         "readings": [
           "おさきに"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5096,6 +5667,10 @@
         ],
         "readings": [
           "おでかけ"
+        ],
+        "register": [
+          "honorific",
+          "polite"
         ]
       },
       {
@@ -5124,6 +5699,9 @@
         "readings": [
           "おまえ",
           "おまい"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -5140,6 +5718,40 @@
         ]
       }
     ],
+    "お医者さん": [
+      {
+        "glosses": [
+          "doctor"
+        ],
+        "id": "1612760:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おいしゃさん"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お名前": [
+      {
+        "glosses": [
+          "name"
+        ],
+        "id": "2853328:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おなまえ"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "お土産": [
       {
         "glosses": [
@@ -5152,6 +5764,9 @@
         "readings": [
           "おみやげ",
           "おみあげ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5165,6 +5780,9 @@
         "readings": [
           "おみやげ",
           "おみあげ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5180,6 +5798,9 @@
         "readings": [
           "おみやげ",
           "おみあげ"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5195,6 +5816,10 @@
         ],
         "readings": [
           "おぼうさん"
+        ],
+        "register": [
+          "honorific",
+          "familiar"
         ]
       },
       {
@@ -5207,6 +5832,10 @@
         ],
         "readings": [
           "おぼうさん"
+        ],
+        "register": [
+          "honorific",
+          "familiar"
         ]
       }
     ],
@@ -5263,6 +5892,9 @@
         ],
         "readings": [
           "おてんき"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5291,6 +5923,9 @@
         ],
         "readings": [
           "おねえさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5353,6 +5988,9 @@
         ],
         "readings": [
           "おじょうさん"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5379,6 +6017,9 @@
         ],
         "readings": [
           "おこさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5408,6 +6049,9 @@
         ],
         "readings": [
           "おたく"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5420,6 +6064,9 @@
         ],
         "readings": [
           "おたく"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5432,6 +6079,9 @@
         ],
         "readings": [
           "おたく"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5444,6 +6094,9 @@
         ],
         "readings": [
           "おたく"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -5459,6 +6112,9 @@
         ],
         "readings": [
           "おきゃくさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5478,6 +6134,9 @@
         ],
         "readings": [
           "おきゃくさま"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -5492,6 +6151,9 @@
         ],
         "readings": [
           "おかえり"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5507,6 +6169,44 @@
         ]
       }
     ],
+    "お店": [
+      {
+        "glosses": [
+          "store",
+          "shop",
+          "establishment",
+          "restaurant"
+        ],
+        "id": "2842661:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おみせ"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お待たせしました": [
+      {
+        "glosses": [
+          "thank you for waiting",
+          "sorry to have kept you waiting"
+        ],
+        "id": "2149640:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おまたせしました"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "お待ちかね": [
       {
         "glosses": [
@@ -5519,6 +6219,9 @@
         ],
         "readings": [
           "おまちかね"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5532,6 +6235,9 @@
         ],
         "readings": [
           "おまちかね"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5562,6 +6268,10 @@
         ],
         "readings": [
           "おてつだい"
+        ],
+        "register": [
+          "honorific",
+          "polite"
         ]
       }
     ],
@@ -5578,6 +6288,26 @@
         "readings": [
           "おてすう",
           "おてかず"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "お支払い方法": [
+      {
+        "glosses": [
+          "payment method"
+        ],
+        "id": "2838993:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おしはらいほうほう"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5592,6 +6322,9 @@
         ],
         "readings": [
           "おひる"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5605,6 +6338,9 @@
         ],
         "readings": [
           "おひる"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5617,6 +6353,9 @@
         ],
         "readings": [
           "おひる"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5631,6 +6370,26 @@
         ],
         "readings": [
           "おひる"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "お時間": [
+      {
+        "glosses": [
+          "(your) time"
+        ],
+        "id": "2842263:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おじかん"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5676,6 +6435,9 @@
         "readings": [
           "おかあさん",
           "おかーさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5689,6 +6451,9 @@
         "readings": [
           "おかあさん",
           "おかーさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5704,6 +6469,9 @@
         "readings": [
           "おかあさん",
           "おかーさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -5721,6 +6489,9 @@
         ],
         "readings": [
           "おきにいり"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5754,6 +6525,9 @@
         "readings": [
           "おとうさん",
           "おとっさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5767,6 +6541,9 @@
         "readings": [
           "おとうさん",
           "おとっさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5782,6 +6559,9 @@
         "readings": [
           "おとうさん",
           "おとっさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -5826,6 +6606,9 @@
         ],
         "readings": [
           "おれい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5839,6 +6622,9 @@
         ],
         "readings": [
           "おれい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5851,6 +6637,9 @@
         ],
         "readings": [
           "おれい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5864,6 +6653,9 @@
         ],
         "readings": [
           "おれい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5877,6 +6669,9 @@
         ],
         "readings": [
           "おれい"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5894,6 +6689,9 @@
         ],
         "readings": [
           "おいわい"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -5910,6 +6708,25 @@
         ]
       }
     ],
+    "お腹": [
+      {
+        "glosses": [
+          "belly",
+          "abdomen",
+          "stomach"
+        ],
+        "id": "1002610:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おなか"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "お茶": [
       {
         "glosses": [
@@ -5921,6 +6738,9 @@
         ],
         "readings": [
           "おちゃ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -5951,6 +6771,41 @@
         ]
       }
     ],
+    "お葬式": [
+      {
+        "glosses": [
+          "funeral"
+        ],
+        "id": "2854977:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おそうしき"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お見積もり": [
+      {
+        "glosses": [
+          "(price) quotation",
+          "quote"
+        ],
+        "id": "2850928:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おみつもり"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "お話": [
       {
         "glosses": [
@@ -5976,6 +6831,117 @@
         ],
         "readings": [
           "おはなし"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "お誕生日": [
+      {
+        "glosses": [
+          "birthday"
+        ],
+        "id": "2852392:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おたんじょうび"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お誕生日おめでとうございます": [
+      {
+        "glosses": [
+          "happy birthday"
+        ],
+        "id": "1002410:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おたんじょうびおめでとうございます"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お買い得": [
+      {
+        "glosses": [
+          "bargain",
+          "good buy",
+          "budget"
+        ],
+        "id": "2617070:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "nouns which may take the genitive case particle 'no'"
+        ],
+        "readings": [
+          "おかいどく"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お辞儀": [
+      {
+        "glosses": [
+          "bow",
+          "bowing"
+        ],
+        "id": "1002030:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "おじぎ"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お酢": [
+      {
+        "glosses": [
+          "vinegar"
+        ],
+        "id": "2855385:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おす"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "お金": [
+      {
+        "glosses": [
+          "money"
+        ],
+        "id": "1001820:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おかね"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -5990,6 +6956,9 @@
         ],
         "readings": [
           "おつり"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -6002,6 +6971,9 @@
         ],
         "readings": [
           "おつり"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -6020,6 +6992,9 @@
         ],
         "readings": [
           "おねがい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -6032,6 +7007,40 @@
         ],
         "readings": [
           "おねがい"
+        ]
+      }
+    ],
+    "お願いいたします": [
+      {
+        "glosses": [
+          "please"
+        ],
+        "id": "1001730:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おねがいいたします"
+        ],
+        "register": [
+          "humble"
+        ]
+      }
+    ],
+    "お願いします": [
+      {
+        "glosses": [
+          "please"
+        ],
+        "id": "1001720:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "おねがいします"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -6298,6 +7307,9 @@
         ],
         "readings": [
           "かい"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -6616,6 +7628,26 @@
         ],
         "readings": [
           "かく"
+        ]
+      }
+    ],
+    "かけっこ": [
+      {
+        "glosses": [
+          "(foot) race",
+          "sprint"
+        ],
+        "id": "1244710:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "かけっこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -7062,6 +8094,26 @@
         ]
       }
     ],
+    "かしこまりました": [
+      {
+        "glosses": [
+          "certainly!",
+          "very well",
+          "with pleasure",
+          "understood!"
+        ],
+        "id": "1002790:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "かしこまりました"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "かしら": [
       {
         "glosses": [
@@ -7319,6 +8371,9 @@
         ],
         "readings": [
           "かと"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -7903,11 +8958,33 @@
         ]
       }
     ],
+    "かもしれません": [
+      {
+        "glosses": [
+          "may",
+          "might",
+          "perhaps",
+          "may be",
+          "possibly"
+        ],
+        "id": "1002975:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "かもしれません"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "から": [
       {
         "glosses": [
-          "from (e.g. time, place, numerical quantity)",
-          "since"
+          "from",
+          "since",
+          "at"
         ],
         "id": "1002980:0",
         "pos": [
@@ -7919,8 +8996,10 @@
       },
       {
         "glosses": [
-          "from (originator)",
-          "by"
+          "through (e.g. a window, door)",
+          "via",
+          "by",
+          "from"
         ],
         "id": "1002980:1",
         "pos": [
@@ -7933,11 +9012,15 @@
       {
         "glosses": [
           "because",
-          "since"
+          "as",
+          "since",
+          "so",
+          "therefore"
         ],
         "id": "1002980:2",
         "pos": [
-          "particle"
+          "particle",
+          "conjunction"
         ],
         "readings": [
           "から"
@@ -7945,7 +9028,9 @@
       },
       {
         "glosses": [
-          "out of (constituent, part)"
+          "from (as in \"made from\")",
+          "of (as in \"consisting of\")",
+          "out of"
         ],
         "id": "1002980:3",
         "pos": [
@@ -7957,7 +9042,9 @@
       },
       {
         "glosses": [
-          "through (e.g. window, vestibule)"
+          "from (as in \"a quotation from a book\")",
+          "out of (as in \"out of 10 people\")",
+          "from among"
         ],
         "id": "1002980:4",
         "pos": [
@@ -7969,7 +9056,7 @@
       },
       {
         "glosses": [
-          "after",
+          "after (doing)",
           "since"
         ],
         "id": "1002980:5",
@@ -7982,7 +9069,8 @@
       },
       {
         "glosses": [
-          "expresses sympathy or warning"
+          "from",
+          "by (as in \"getting scolded by\")"
         ],
         "id": "1002980:6",
         "pos": [
@@ -7990,6 +9078,209 @@
         ],
         "readings": [
           "から"
+        ]
+      },
+      {
+        "glosses": [
+          "from (e.g. one's viewpoint)",
+          "based on",
+          "according to",
+          "in (e.g. one's eyes)",
+          "by"
+        ],
+        "id": "1002980:7",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "because of",
+          "from",
+          "out of (curiosity, necessity, etc.)",
+          "due to",
+          "by",
+          "owing to"
+        ],
+        "id": "1002980:8",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "as much as",
+          "upwards of",
+          "at least",
+          "more than"
+        ],
+        "id": "1002980:9",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "marks the starting state of a change"
+        ],
+        "id": "1002980:10",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "expresses warning, sympathy, excitement or determination",
+          "emphasizes the previous statement"
+        ],
+        "id": "1002980:11",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      },
+      {
+        "glosses": [
+          "trails off with an implied reason or consequence left unstated",
+          "so ..."
+        ],
+        "id": "1002980:12",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      },
+      {
+        "glosses": [
+          "even",
+          "to begin with, even ...",
+          "right from ...",
+          "starting with ... (let alone)"
+        ],
+        "id": "1002980:13",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "it is precisely due to ... (one can't)",
+          "it is because ..."
+        ],
+        "id": "1002980:14",
+        "pos": [
+          "particle",
+          "conjunction"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "now that",
+          "since",
+          "so long as",
+          "because"
+        ],
+        "id": "1002980:15",
+        "pos": [
+          "particle",
+          "conjunction"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "so",
+          "therefore",
+          "accordingly",
+          "consequently",
+          "on those grounds",
+          "that is why",
+          "for that reason"
+        ],
+        "id": "1002980:16",
+        "pos": [
+          "conjunction"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "just from (doing)",
+          "simply by"
+        ],
+        "id": "1002980:17",
+        "pos": [
+          "particle",
+          "conjunction"
+        ],
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "by",
+          "with",
+          "by means of",
+          "via"
+        ],
+        "id": "1002980:18",
+        "pos": [
+          "particle"
+        ],
+        "readings": [
+          "から"
+        ]
+      }
+    ],
+    "からって": [
+      {
+        "glosses": [
+          "just because",
+          "even if",
+          "even though"
+        ],
+        "id": "2841254:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "からって"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -8668,6 +9959,9 @@
         ],
         "readings": [
           "がん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -9637,6 +10931,9 @@
         ],
         "readings": [
           "くそ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -9681,6 +10978,9 @@
         ],
         "readings": [
           "くそ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -9867,6 +11167,9 @@
         ],
         "readings": [
           "くださる"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -9883,6 +11186,9 @@
         ],
         "readings": [
           "くださる"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -10011,6 +11317,9 @@
         ],
         "readings": [
           "くっつける"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -10499,6 +11808,9 @@
         ],
         "readings": [
           "けれど"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -10517,6 +11829,9 @@
         ],
         "readings": [
           "こいつ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -10531,6 +11846,9 @@
         ],
         "readings": [
           "こいつ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -10545,6 +11863,24 @@
         ],
         "readings": [
           "こいつ"
+        ]
+      }
+    ],
+    "こいつら": [
+      {
+        "glosses": [
+          "these guys",
+          "these fellows"
+        ],
+        "id": "2092950:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "こいつら"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -12338,6 +13674,11 @@
         ],
         "readings": [
           "ご"
+        ],
+        "register": [
+          "honorific",
+          "humble",
+          "polite"
         ]
       },
       {
@@ -12350,6 +13691,9 @@
         ],
         "readings": [
           "ご"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -12365,6 +13709,9 @@
         ],
         "readings": [
           "ございます"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -12377,6 +13724,9 @@
         ],
         "readings": [
           "ございます"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -12390,6 +13740,9 @@
         ],
         "readings": [
           "ございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -12417,6 +13770,25 @@
         ],
         "readings": [
           "ごちそうさま"
+        ]
+      }
+    ],
+    "ごちそうさまでした": [
+      {
+        "glosses": [
+          "thank you for the meal",
+          "that was a delicious meal",
+          "what a wonderful meal"
+        ],
+        "id": "1005080:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ごちそうさまでした"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -12599,6 +13971,9 @@
         ],
         "readings": [
           "ごめん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12612,6 +13987,9 @@
         ],
         "readings": [
           "ごめん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12654,6 +14032,9 @@
         ],
         "readings": [
           "ごめんください"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -12694,6 +14075,27 @@
         ],
         "readings": [
           "ごらん"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "ご主人": [
+      {
+        "glosses": [
+          "your husband",
+          "her husband"
+        ],
+        "id": "1270390:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ごしゅじん"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -12709,6 +14111,9 @@
         ],
         "readings": [
           "ごしゅじんさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12723,6 +14128,9 @@
         ],
         "readings": [
           "ごしゅじんさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12736,6 +14144,28 @@
         ],
         "readings": [
           "ごしゅじんさま"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "ご了承ください": [
+      {
+        "glosses": [
+          "please be aware (that ...)",
+          "please note (that ...)",
+          "please understand (that ...)"
+        ],
+        "id": "2860737:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ごりょうしょうください"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -12751,6 +14181,9 @@
         ],
         "readings": [
           "ごぞんじ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12766,6 +14199,25 @@
         ]
       }
     ],
+    "ご苦労様": [
+      {
+        "glosses": [
+          "thank you (for your hard work)",
+          "I appreciate your efforts"
+        ],
+        "id": "1005030:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "adjectival nouns or quasi-adjectives (keiyodoshi)"
+        ],
+        "readings": [
+          "ごくろうさま"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "ご褒美": [
       {
         "glosses": [
@@ -12778,6 +14230,9 @@
         ],
         "readings": [
           "ごほうび"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -12809,6 +14264,9 @@
         ],
         "readings": [
           "ごらんになる"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -12822,6 +14280,32 @@
         ],
         "readings": [
           "ごらんになる"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "ご連絡": [
+      {
+        "glosses": [
+          "contacting",
+          "getting in touch",
+          "communication",
+          "call",
+          "message"
+        ],
+        "id": "1270820:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "ごれんらく"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -13387,6 +14871,9 @@
         ],
         "readings": [
           "させる"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -13977,6 +15464,9 @@
         ],
         "readings": [
           "される"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -13995,6 +15485,10 @@
         ],
         "readings": [
           "さん"
+        ],
+        "register": [
+          "honorific",
+          "familiar"
         ]
       },
       {
@@ -14007,6 +15501,9 @@
         ],
         "readings": [
           "さん"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -15527,6 +17024,27 @@
         ]
       }
     ],
+    "すげー": [
+      {
+        "glosses": [
+          "incredible",
+          "unbelievable",
+          "terrific",
+          "impressive"
+        ],
+        "id": "2722660:0",
+        "pos": [
+          "interjection (kandoushi)",
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "すげー"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "すごい": [
       {
         "glosses": [
@@ -15581,6 +17099,9 @@
         ],
         "readings": [
           "すごい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -15692,6 +17213,9 @@
         ],
         "readings": [
           "すっごい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -15707,6 +17231,9 @@
         ],
         "readings": [
           "すっごい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -15720,6 +17247,9 @@
         ],
         "readings": [
           "すっごい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -15977,6 +17507,9 @@
         ],
         "readings": [
           "すみません"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -15992,6 +17525,9 @@
         ],
         "readings": [
           "すみません"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -16709,6 +18245,9 @@
         ],
         "readings": [
           "ぜ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -16739,6 +18278,9 @@
         ],
         "readings": [
           "そいつ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -16753,6 +18295,9 @@
         ],
         "readings": [
           "そいつ"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -16888,6 +18433,9 @@
         ],
         "readings": [
           "そうです"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -16902,6 +18450,9 @@
         ],
         "readings": [
           "そうです"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -16954,6 +18505,26 @@
         ],
         "readings": [
           "そこ"
+        ]
+      }
+    ],
+    "そこらへん": [
+      {
+        "glosses": [
+          "hereabouts",
+          "around there",
+          "that area"
+        ],
+        "id": "2072990:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "そこらへん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -17019,6 +18590,27 @@
         ],
         "readings": [
           "そちら"
+        ]
+      }
+    ],
+    "そっか": [
+      {
+        "glosses": [
+          "oh",
+          "right",
+          "I see",
+          "OK",
+          "gotcha"
+        ],
+        "id": "2853750:0",
+        "pos": [
+          "interjection (kandoushi)"
+        ],
+        "readings": [
+          "そっか"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -17649,6 +19241,9 @@
         ],
         "readings": [
           "それじゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -17662,6 +19257,9 @@
         ],
         "readings": [
           "それじゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -17676,6 +19274,9 @@
         ],
         "readings": [
           "それじゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -17688,6 +19289,9 @@
         ],
         "readings": [
           "それじゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -17846,6 +19450,26 @@
         ]
       }
     ],
+    "そんでもって": [
+      {
+        "glosses": [
+          "and (so)",
+          "(and) then",
+          "because of which",
+          "in addition to that"
+        ],
+        "id": "2206340:0",
+        "pos": [
+          "conjunction"
+        ],
+        "readings": [
+          "そんでもって"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "そんな": [
       {
         "glosses": [
@@ -17873,6 +19497,9 @@
         ],
         "readings": [
           "そんな"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -18420,6 +20047,9 @@
         ],
         "readings": [
           "たこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -19126,6 +20756,9 @@
         ],
         "readings": [
           "ため"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -19189,6 +20822,9 @@
         ],
         "readings": [
           "たら"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -19204,6 +20840,9 @@
         ],
         "readings": [
           "たら"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -19218,6 +20857,9 @@
         ],
         "readings": [
           "たら"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -19230,6 +20872,9 @@
         ],
         "readings": [
           "たら"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -19301,6 +20946,9 @@
         ],
         "readings": [
           "たらたら"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -19534,6 +21182,9 @@
         ],
         "readings": [
           "たれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -19590,6 +21241,9 @@
         ],
         "readings": [
           "だい"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -19816,6 +21470,25 @@
         ]
       }
     ],
+    "だったりして": [
+      {
+        "glosses": [
+          "might it be that",
+          "could it be that",
+          "perhaps"
+        ],
+        "id": "2870459:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "だったりして"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "だって": [
       {
         "glosses": [
@@ -19828,6 +21501,9 @@
         ],
         "readings": [
           "だって"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -19840,6 +21516,9 @@
         ],
         "readings": [
           "だって"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -20575,6 +22254,23 @@
         ]
       }
     ],
+    "ちゃん": [
+      {
+        "glosses": [
+          "suffix for familiar person"
+        ],
+        "id": "1007660:0",
+        "pos": [
+          "suffix"
+        ],
+        "readings": [
+          "ちゃん"
+        ],
+        "register": [
+          "familiar"
+        ]
+      }
+    ],
     "ちゃんと": [
       {
         "glosses": [
@@ -20797,6 +22493,30 @@
         ],
         "readings": [
           "ちょっと"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "ちょっぴり": [
+      {
+        "glosses": [
+          "a tiny bit",
+          "just a smidgin",
+          "a wee bit",
+          "very slightly"
+        ],
+        "id": "1007840:0",
+        "pos": [
+          "adverb (fukushi)",
+          "adverb taking the 'to' particle"
+        ],
+        "readings": [
+          "ちょっぴり"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -21071,6 +22791,27 @@
         ]
       }
     ],
+    "っちゅう": [
+      {
+        "glosses": [
+          "meaning",
+          "called",
+          "named",
+          "that says",
+          "that"
+        ],
+        "id": "2757620:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "っちゅう"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "って": [
       {
         "glosses": [
@@ -21184,6 +22925,25 @@
         ],
         "readings": [
           "って"
+        ]
+      }
+    ],
+    "ってことは": [
+      {
+        "glosses": [
+          "that is to say",
+          "so that means"
+        ],
+        "id": "2857085:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "ってことは"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -22690,6 +24450,25 @@
         ]
       }
     ],
+    "つまんない": [
+      {
+        "glosses": [
+          "boring",
+          "dull",
+          "uninteresting"
+        ],
+        "id": "2450680:0",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "つまんない"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "つもり": [
       {
         "glosses": [
@@ -22793,6 +24572,7 @@
           "adjectival nouns or quasi-adjectives (keiyodoshi)",
           "nouns which may take the genitive case particle 'no'",
           "adverb (fukushi)",
+          "adverb taking the 'to' particle",
           "noun or participle which takes the aux. verb suru"
         ],
         "readings": [
@@ -22809,6 +24589,7 @@
           "adjectival nouns or quasi-adjectives (keiyodoshi)",
           "nouns which may take the genitive case particle 'no'",
           "adverb (fukushi)",
+          "adverb taking the 'to' particle",
           "noun or participle which takes the aux. verb suru"
         ],
         "readings": [
@@ -22926,6 +24707,9 @@
         ],
         "readings": [
           "で"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -22941,6 +24725,9 @@
         ],
         "readings": [
           "で"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -23047,6 +24834,9 @@
         ],
         "readings": [
           "で"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -23060,6 +24850,43 @@
         ],
         "readings": [
           "で"
+        ]
+      }
+    ],
+    "であります": [
+      {
+        "glosses": [
+          "be",
+          "is"
+        ],
+        "id": "2255600:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "であります"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "でかい": [
+      {
+        "glosses": [
+          "huge",
+          "big",
+          "enormous"
+        ],
+        "id": "1008370:0",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "でかい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -23203,6 +25030,9 @@
         ],
         "readings": [
           "できる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -23216,6 +25046,27 @@
         ],
         "readings": [
           "できる"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "でございます": [
+      {
+        "glosses": [
+          "be",
+          "is"
+        ],
+        "id": "2253080:0",
+        "pos": [
+          "copula"
+        ],
+        "readings": [
+          "でございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -23263,6 +25114,9 @@
         ],
         "readings": [
           "でしょう"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -23276,6 +25130,27 @@
         ],
         "readings": [
           "でしょう"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "でしょうか": [
+      {
+        "glosses": [
+          "don't you think?",
+          "indicates question"
+        ],
+        "id": "2825978:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "でしょうか"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -23292,6 +25167,9 @@
         ],
         "readings": [
           "です"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -23316,6 +25194,93 @@
         ],
         "readings": [
           "です"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "ですか": [
+      {
+        "glosses": [
+          "indicates question"
+        ],
+        "id": "2457920:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ですか"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "ですから": [
+      {
+        "glosses": [
+          "so",
+          "therefore",
+          "accordingly",
+          "consequently",
+          "on those grounds",
+          "that is why",
+          "for that reason"
+        ],
+        "id": "1008430:0",
+        "pos": [
+          "conjunction"
+        ],
+        "readings": [
+          "ですから"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "ですが": [
+      {
+        "glosses": [
+          "but",
+          "however",
+          "(and) yet",
+          "nevertheless",
+          "still",
+          "for all that"
+        ],
+        "id": "2850805:0",
+        "pos": [
+          "conjunction"
+        ],
+        "readings": [
+          "ですが"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "ですので": [
+      {
+        "glosses": [
+          "because",
+          "as",
+          "since",
+          "so",
+          "therefore"
+        ],
+        "id": "2871535:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "conjunction"
+        ],
+        "readings": [
+          "ですので"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -23900,6 +25865,9 @@
         ],
         "readings": [
           "とか"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -24338,6 +26306,9 @@
         ],
         "readings": [
           "とにかく"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -24982,6 +26953,9 @@
         ],
         "readings": [
           "どうか"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -25839,6 +27813,57 @@
         ]
       }
     ],
+    "どなた": [
+      {
+        "glosses": [
+          "who"
+        ],
+        "id": "1189370:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "どなた"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "どなたか": [
+      {
+        "glosses": [
+          "someone"
+        ],
+        "id": "2202770:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "どなたか"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "どなたでも": [
+      {
+        "glosses": [
+          "anyone"
+        ],
+        "id": "1009220:0",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "どなたでも"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "どの辺": [
       {
         "glosses": [
@@ -25921,6 +27946,9 @@
         ],
         "readings": [
           "ども"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -26962,6 +28990,24 @@
         ]
       }
     ],
+    "なさる": [
+      {
+        "glosses": [
+          "to do"
+        ],
+        "id": "1157090:0",
+        "pos": [
+          "Godan verb - -aru special class",
+          "transitive verb"
+        ],
+        "readings": [
+          "なさる"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "なし": [
       {
         "glosses": [
@@ -26988,6 +29034,9 @@
         ],
         "readings": [
           "なし"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -27276,6 +29325,9 @@
         ],
         "readings": [
           "なら"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -27649,6 +29701,9 @@
         ],
         "readings": [
           "なる"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -27868,6 +29923,27 @@
         ],
         "readings": [
           "なんで"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "なんです": [
+      {
+        "glosses": [
+          "it is assuredly that ...",
+          "can say with confidence that ..."
+        ],
+        "id": "2683060:0",
+        "pos": [
+          "auxiliary"
+        ],
+        "readings": [
+          "なんです"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -28239,6 +30315,9 @@
         ],
         "readings": [
           "に"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -29088,6 +31167,9 @@
         ],
         "readings": [
           "ね"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -29100,6 +31182,9 @@
         ],
         "readings": [
           "ね"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -29765,6 +31850,9 @@
         ],
         "readings": [
           "はい"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -29807,6 +31895,9 @@
         ],
         "readings": [
           "はい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -30181,6 +32272,25 @@
         ],
         "readings": [
           "はじく"
+        ]
+      }
+    ],
+    "はじめまして": [
+      {
+        "glosses": [
+          "nice to meet you",
+          "I'm glad to make your acquaintance",
+          "how do you do?"
+        ],
+        "id": "1625780:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "はじめまして"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -30622,6 +32732,9 @@
         ],
         "readings": [
           "はめる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -30837,6 +32950,9 @@
         ],
         "readings": [
           "ばあちゃん"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -30850,6 +32966,9 @@
         ],
         "readings": [
           "ばあちゃん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -31101,6 +33220,25 @@
         ]
       }
     ],
+    "ばてる": [
+      {
+        "glosses": [
+          "to be exhausted",
+          "to be worn out"
+        ],
+        "id": "1010300:0",
+        "pos": [
+          "Ichidan verb",
+          "intransitive verb"
+        ],
+        "readings": [
+          "ばてる"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "ばね": [
       {
         "glosses": [
@@ -31225,6 +33363,9 @@
         ],
         "readings": [
           "ばらす"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -31240,6 +33381,9 @@
         ],
         "readings": [
           "ばらす"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -31255,6 +33399,9 @@
         ],
         "readings": [
           "ばらす"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -31269,6 +33416,9 @@
         ],
         "readings": [
           "ばらす"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -32016,6 +34166,9 @@
         ],
         "readings": [
           "ひねる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -32099,6 +34252,9 @@
         ],
         "readings": [
           "ひも"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -32641,6 +34797,9 @@
         ],
         "readings": [
           "ふける"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -33771,6 +35930,23 @@
         ]
       }
     ],
+    "ほっぺた": [
+      {
+        "glosses": [
+          "cheek"
+        ],
+        "id": "1520630:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ほっぺた"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "ほとんど": [
       {
         "glosses": [
@@ -34097,6 +36273,9 @@
         ],
         "readings": [
           "ぼけ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -34668,6 +36847,9 @@
         ],
         "readings": [
           "まいる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -34779,6 +36961,20 @@
       },
       {
         "glosses": [
+          "to go",
+          "to come"
+        ],
+        "id": "1302070:8",
+        "pos": [
+          "Godan verb with 'ru' ending",
+          "intransitive verb"
+        ],
+        "readings": [
+          "まいる"
+        ]
+      },
+      {
+        "glosses": [
           "to have a sword fight"
         ],
         "id": "1302070:10",
@@ -34816,6 +37012,9 @@
         ],
         "readings": [
           "まいる"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -35193,6 +37392,9 @@
         ],
         "readings": [
           "まし"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -35205,6 +37407,9 @@
         ],
         "readings": [
           "まし"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -35235,6 +37440,24 @@
         ],
         "readings": [
           "まして"
+        ]
+      }
+    ],
+    "ましょうか": [
+      {
+        "glosses": [
+          "shall I?",
+          "shall we?"
+        ],
+        "id": "2210710:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "ましょうか"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -35420,6 +37643,9 @@
         ],
         "readings": [
           "ませんか"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -36124,6 +38350,9 @@
         ],
         "readings": [
           "まま"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -36231,6 +38460,9 @@
         ],
         "readings": [
           "まめ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -36411,6 +38643,27 @@
         ],
         "readings": [
           "みかん"
+        ]
+      }
+    ],
+    "みたい": [
+      {
+        "glosses": [
+          "-like",
+          "sort of",
+          "similar to",
+          "resembling"
+        ],
+        "id": "2016410:0",
+        "pos": [
+          "suffix",
+          "adjectival nouns or quasi-adjectives (keiyodoshi)"
+        ],
+        "readings": [
+          "みたい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -36641,6 +38894,9 @@
         ],
         "readings": [
           "むちゃくちゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -37021,6 +39277,9 @@
         ],
         "readings": [
           "も"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -38230,6 +40489,9 @@
         ],
         "readings": [
           "やかん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -38563,6 +40825,9 @@
         ],
         "readings": [
           "やつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -38668,6 +40933,9 @@
         ],
         "readings": [
           "やばい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -38868,6 +41136,9 @@
         ],
         "readings": [
           "やる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -39004,6 +41275,9 @@
         ],
         "readings": [
           "やる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -39433,6 +41707,9 @@
         ],
         "readings": [
           "よう"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -40161,6 +42438,30 @@
         ]
       }
     ],
+    "よろしい": [
+      {
+        "glosses": [
+          "good",
+          "OK",
+          "all right",
+          "fine",
+          "very well",
+          "will do",
+          "may",
+          "can"
+        ],
+        "id": "1224880:0",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "よろしい"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "よろしく": [
       {
         "glosses": [
@@ -40237,6 +42538,9 @@
         ],
         "readings": [
           "よろしくおねがいいたします"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -40250,6 +42554,9 @@
         ],
         "readings": [
           "よろしくおねがいいたします"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -40267,6 +42574,9 @@
         ],
         "readings": [
           "よろしくおねがいします"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -40280,6 +42590,9 @@
         ],
         "readings": [
           "よろしくおねがいします"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -40757,6 +43070,9 @@
         ],
         "readings": [
           "わさび"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -40945,6 +43261,28 @@
         ]
       }
     ],
+    "んす": [
+      {
+        "glosses": [
+          "the expectation is that ...",
+          "the reason is that ...",
+          "the fact is that ...",
+          "the explanation is that ...",
+          "it is that ..."
+        ],
+        "id": "2870837:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "particle"
+        ],
+        "readings": [
+          "んす"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "アル中": [
       {
         "glosses": [
@@ -40956,6 +43294,9 @@
         ],
         "readings": [
           "あるちゅう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -40969,6 +43310,9 @@
         ],
         "readings": [
           "あるちゅう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -41028,6 +43372,23 @@
         ],
         "readings": [
           "せーらーふく"
+        ]
+      }
+    ],
+    "デパ地下": [
+      {
+        "glosses": [
+          "basement of a department store (where foodstuffs are usually sold)"
+        ],
+        "id": "2112350:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "でぱちか"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -41104,6 +43465,9 @@
         "readings": [
           "ぶちぎれ",
           "ぶちきれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -44365,6 +46729,9 @@
         ],
         "readings": [
           "うえ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -44444,6 +46811,9 @@
         ],
         "readings": [
           "かみ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -44496,6 +46866,9 @@
         ],
         "readings": [
           "かみ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -44928,6 +47301,9 @@
         ],
         "readings": [
           "あがる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -44955,6 +47331,9 @@
         ],
         "readings": [
           "あがる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -44969,6 +47348,9 @@
         ],
         "readings": [
           "あがる"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -45123,6 +47505,9 @@
         ],
         "readings": [
           "あげる"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -45324,6 +47709,9 @@
         ],
         "readings": [
           "あげる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -45380,6 +47768,9 @@
         ],
         "readings": [
           "あげる"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -45406,6 +47797,9 @@
         ],
         "readings": [
           "あげる"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -45894,6 +48288,26 @@
         ],
         "readings": [
           "じょうりゅう"
+        ]
+      }
+    ],
+    "上皇": [
+      {
+        "glosses": [
+          "retired emperor",
+          "ex-emperor",
+          "former emperor",
+          "emperor emeritus"
+        ],
+        "id": "1353180:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じょうこう"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -48001,6 +50415,9 @@
         ],
         "readings": [
           "ふしょう"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -50562,6 +52979,9 @@
         ],
         "readings": [
           "ぬし"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -52311,6 +54731,36 @@
         ]
       }
     ],
+    "事実": [
+      {
+        "glosses": [
+          "fact",
+          "truth",
+          "reality",
+          "actuality"
+        ],
+        "id": "1313960:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じじつ"
+        ]
+      },
+      {
+        "glosses": [
+          "in fact",
+          "actually"
+        ],
+        "id": "1313960:1",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "じじつ"
+        ]
+      }
+    ],
     "事故": [
       {
         "glosses": [
@@ -53527,6 +55977,24 @@
         ]
       }
     ],
+    "人様": [
+      {
+        "glosses": [
+          "other people",
+          "others"
+        ],
+        "id": "1953400:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ひとさま"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "人気": [
       {
         "glosses": [
@@ -53672,6 +56140,9 @@
         ],
         "readings": [
           "じんしゅ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -55355,6 +57826,9 @@
         ],
         "readings": [
           "れいじょう"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -55367,6 +57841,9 @@
         ],
         "readings": [
           "れいじょう"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -55944,6 +58421,9 @@
         ],
         "readings": [
           "なかよし"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -57160,6 +59640,9 @@
         ],
         "readings": [
           "うかがう"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -57174,6 +59657,9 @@
         ],
         "readings": [
           "うかがう"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -57188,6 +59674,9 @@
         ],
         "readings": [
           "うかがう"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -57496,6 +59985,9 @@
         ],
         "readings": [
           "ていきあつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -57582,6 +60074,53 @@
         ],
         "readings": [
           "からだ"
+        ]
+      }
+    ],
+    "体制": [
+      {
+        "glosses": [
+          "order",
+          "system",
+          "structure",
+          "set-up",
+          "organization",
+          "organisation"
+        ],
+        "id": "1409550:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "たいせい"
+        ]
+      },
+      {
+        "glosses": [
+          "the establishment",
+          "(ruling) regime",
+          "those in power"
+        ],
+        "id": "1409550:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "たいせい"
+        ]
+      },
+      {
+        "glosses": [
+          "structural plan",
+          "body plan",
+          "anatomy"
+        ],
+        "id": "1409550:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "たいせい"
         ]
       }
     ],
@@ -57872,6 +60411,9 @@
         ],
         "readings": [
           "なに"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -58357,6 +60899,9 @@
         "readings": [
           "なにとぞ",
           "なにそつ"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -59302,6 +61847,39 @@
         ],
         "readings": [
           "さむらい"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
+    "供給": [
+      {
+        "glosses": [
+          "supply",
+          "provision",
+          "service"
+        ],
+        "id": "1233630:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "きょうきゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "supply"
+        ],
+        "id": "1233630:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "きょうきゅう"
         ]
       }
     ],
@@ -60140,6 +62718,9 @@
         ],
         "readings": [
           "しんじゃ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -60339,6 +62920,9 @@
           "こ",
           "ゖ",
           "け"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -60849,6 +63433,9 @@
         ],
         "readings": [
           "しゃっきん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -62194,6 +64781,9 @@
         ],
         "readings": [
           "ぼく"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -62292,6 +64882,9 @@
         ],
         "readings": [
           "ゆうしょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -62713,6 +65306,9 @@
         "readings": [
           "にいさん",
           "あにさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -62742,6 +65338,9 @@
         "readings": [
           "にいさん",
           "あにさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -62784,6 +65383,9 @@
         ],
         "readings": [
           "きょうだい"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -63101,6 +65703,9 @@
         ],
         "readings": [
           "せんせい"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -63113,6 +65718,9 @@
         ],
         "readings": [
           "せんせい"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -64415,6 +67023,9 @@
         "readings": [
           "ぜんぜん",
           "ぜんっぜん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -64555,6 +67166,9 @@
         ],
         "readings": [
           "やおや"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -65056,6 +67670,9 @@
         ],
         "readings": [
           "へいたい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -65569,6 +68186,9 @@
         ],
         "readings": [
           "ないしょく"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -67037,6 +69657,9 @@
         ],
         "readings": [
           "へこむ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -68004,6 +70627,9 @@
         ],
         "readings": [
           "できあがる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -68090,6 +70716,9 @@
         ],
         "readings": [
           "しゅっけつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -69577,6 +72206,9 @@
         ],
         "readings": [
           "きれる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -69855,6 +72487,9 @@
         ],
         "readings": [
           "はじめて"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -70326,6 +72961,9 @@
         ],
         "readings": [
           "べっそう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -71084,6 +73722,9 @@
         ],
         "readings": [
           "まえ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -72387,6 +75028,9 @@
         ],
         "readings": [
           "げきてき"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -75318,6 +77962,9 @@
         ],
         "readings": [
           "はんとう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -76079,6 +78726,9 @@
         ],
         "readings": [
           "はかせ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -76556,6 +79206,9 @@
           "あぶない",
           "あぶねー",
           "あっぶねー"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -79438,6 +82091,9 @@
         ],
         "readings": [
           "うける"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -79666,6 +82322,35 @@
         ],
         "readings": [
           "うけつけ"
+        ]
+      }
+    ],
+    "受動": [
+      {
+        "glosses": [
+          "passivity",
+          "passiveness"
+        ],
+        "id": "1329990:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "nouns which may take the genitive case particle 'no'"
+        ],
+        "readings": [
+          "じゅどう"
+        ]
+      },
+      {
+        "glosses": [
+          "passivity",
+          "(the) passive"
+        ],
+        "id": "1329990:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じゅどう"
         ]
       }
     ],
@@ -80396,6 +83081,25 @@
         ]
       }
     ],
+    "召し上がる": [
+      {
+        "glosses": [
+          "to eat",
+          "to drink"
+        ],
+        "id": "1346370:0",
+        "pos": [
+          "Godan verb with 'ru' ending",
+          "transitive verb"
+        ],
+        "readings": [
+          "めしあがる"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "召す": [
       {
         "glosses": [
@@ -80411,6 +83115,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80425,6 +83132,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80439,6 +83149,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80453,6 +83166,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80466,6 +83182,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80481,6 +83200,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80494,6 +83216,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80508,6 +83233,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80522,6 +83250,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80535,6 +83266,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80548,6 +83282,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -80561,6 +83298,9 @@
         ],
         "readings": [
           "めす"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -80707,6 +83447,9 @@
         ],
         "readings": [
           "かわいがる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -81208,6 +83951,9 @@
         ],
         "readings": [
           "ごうきゅう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -83302,6 +86048,9 @@
         ],
         "readings": [
           "きみ"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -83330,6 +86079,9 @@
         ],
         "readings": [
           "きみ"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -83370,6 +86122,25 @@
         ],
         "readings": [
           "くん"
+        ]
+      }
+    ],
+    "君たち": [
+      {
+        "glosses": [
+          "you (plural)",
+          "all of you",
+          "you all"
+        ],
+        "id": "1247310:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "きみたち"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -84914,6 +87685,9 @@
           "おしょう",
           "かしょう",
           "わじょう"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -85517,6 +88291,9 @@
         ],
         "readings": [
           "しょうばい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -86422,6 +89199,9 @@
         ],
         "readings": [
           "かい"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -89010,6 +91790,9 @@
         ],
         "readings": [
           "じみ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -89271,6 +92054,10 @@
         ],
         "readings": [
           "ぼうさん"
+        ],
+        "register": [
+          "honorific",
+          "familiar"
         ]
       },
       {
@@ -89283,6 +92070,9 @@
         ],
         "readings": [
           "ぼうさん"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -89299,6 +92089,9 @@
         ],
         "readings": [
           "ぼっちゃん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -89358,6 +92151,9 @@
         "readings": [
           "ぼうず",
           "ぼんず"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -90830,6 +93626,9 @@
         ],
         "readings": [
           "しお"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -92908,6 +95707,24 @@
         ]
       }
     ],
+    "夜ご飯": [
+      {
+        "glosses": [
+          "dinner",
+          "evening meal"
+        ],
+        "id": "2528530:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "よるごはん"
+        ],
+        "register": [
+          "colloquial"
+        ]
+      }
+    ],
     "夜学": [
       {
         "glosses": [
@@ -93458,6 +96275,9 @@
         "readings": [
           "だいじょうぶ",
           "だいじょぶ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -94594,6 +97414,9 @@
         ],
         "readings": [
           "だいとうりょう"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -95098,6 +97921,9 @@
         ],
         "readings": [
           "てんねん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -95186,6 +98012,9 @@
         ],
         "readings": [
           "ふともも"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -95231,6 +98060,9 @@
         "readings": [
           "ふじん",
           "ぶにん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -95509,6 +98341,44 @@
         ]
       }
     ],
+    "失礼しました": [
+      {
+        "glosses": [
+          "my apologies",
+          "I'm sorry",
+          "excuse me"
+        ],
+        "id": "1320240:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "しつれいしました"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "失礼します": [
+      {
+        "glosses": [
+          "excuse me",
+          "pardon me",
+          "I beg your pardon"
+        ],
+        "id": "2276200:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "しつれいします"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
     "失神": [
       {
         "glosses": [
@@ -95678,6 +98548,48 @@
         ],
         "readings": [
           "おく"
+        ]
+      }
+    ],
+    "奥さん": [
+      {
+        "glosses": [
+          "wife",
+          "your wife",
+          "his wife",
+          "married lady",
+          "madam"
+        ],
+        "id": "1179330:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おくさん"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "奥様": [
+      {
+        "glosses": [
+          "wife",
+          "your wife",
+          "his wife",
+          "married lady",
+          "madam"
+        ],
+        "id": "1179630:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おくさま"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -95928,6 +98840,9 @@
         ],
         "readings": [
           "じょちゅう"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -96031,6 +98946,24 @@
         "readings": [
           "じょおう",
           "じょうおう"
+        ]
+      }
+    ],
+    "奴ら": [
+      {
+        "glosses": [
+          "they",
+          "those guys"
+        ],
+        "id": "1913290:0",
+        "pos": [
+          "pronoun"
+        ],
+        "readings": [
+          "やつら"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -96175,6 +99108,24 @@
         ],
         "readings": [
           "こうい"
+        ]
+      }
+    ],
+    "妃殿下": [
+      {
+        "glosses": [
+          "princess",
+          "Her Royal Highness"
+        ],
+        "id": "1483050:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ひでんか"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -96411,6 +99362,9 @@
         "readings": [
           "ねえさん",
           "あねさん"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -96801,6 +99755,23 @@
         ],
         "readings": [
           "ゆだねる"
+        ]
+      }
+    ],
+    "姫君": [
+      {
+        "glosses": [
+          "daughter of a person of high rank (esp. eldest daughter)"
+        ],
+        "id": "1487950:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ひめぎみ"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -97694,6 +100665,9 @@
         ],
         "readings": [
           "ぞんじる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -97710,6 +100684,9 @@
         ],
         "readings": [
           "ぞんじる"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -99135,6 +102112,40 @@
         ]
       }
     ],
+    "宣告": [
+      {
+        "glosses": [
+          "sentencing",
+          "pronouncement of a verdict",
+          "passing of sentence"
+        ],
+        "id": "1389700:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "せんこく"
+        ]
+      },
+      {
+        "glosses": [
+          "declaration (of a diagnosis, bankruptcy, decision, etc.)",
+          "announcement",
+          "pronouncement"
+        ],
+        "id": "1389700:1",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "せんこく"
+        ]
+      }
+    ],
     "室": [
       {
         "glosses": [
@@ -99391,6 +102402,9 @@
         ],
         "readings": [
           "かない"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -102020,6 +105034,9 @@
         "readings": [
           "しょうべん",
           "しょんべん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -102126,6 +105143,10 @@
         "readings": [
           "こや",
           "しょうおく"
+        ],
+        "register": [
+          "humble",
+          "colloquial"
         ]
       }
     ],
@@ -104876,6 +107897,9 @@
         ],
         "readings": [
           "さしあげる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -104889,6 +107913,9 @@
         ],
         "readings": [
           "さしあげる"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -106346,6 +109373,9 @@
         ],
         "readings": [
           "へいき"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -106978,6 +110008,25 @@
         ],
         "readings": [
           "さいわい"
+        ]
+      }
+    ],
+    "幸いです": [
+      {
+        "glosses": [
+          "it would be appreciated (if)",
+          "I would be grateful (if)",
+          "it would be helpful (if)"
+        ],
+        "id": "2871489:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "さいわいです"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -108166,6 +111215,24 @@
         ]
       }
     ],
+    "弊社": [
+      {
+        "glosses": [
+          "our company",
+          "our firm"
+        ],
+        "id": "1508280:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "へいしゃ"
+        ],
+        "register": [
+          "humble"
+        ]
+      }
+    ],
     "式": [
       {
         "glosses": [
@@ -108435,7 +111502,8 @@
     "引きつける": [
       {
         "glosses": [
-          "to attract",
+          "to attract (to oneself, e.g. with bait or light)",
+          "to draw close",
           "to draw near"
         ],
         "id": "1601680:0",
@@ -108451,6 +111519,7 @@
         "glosses": [
           "to charm",
           "to attract",
+          "to captivate",
           "to fascinate",
           "to entice"
         ],
@@ -108465,7 +111534,8 @@
       },
       {
         "glosses": [
-          "to have a convulsion"
+          "to have a convulsion",
+          "to convulse"
         ],
         "id": "1601680:2",
         "pos": [
@@ -109450,6 +112520,9 @@
         ],
         "readings": [
           "ひく"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -109602,6 +112675,9 @@
         ],
         "readings": [
           "ひっつく"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -112064,6 +115140,9 @@
         ],
         "readings": [
           "かれし"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -112999,6 +116078,9 @@
         ],
         "readings": [
           "おんしゃ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -113011,6 +116093,9 @@
         ],
         "readings": [
           "おんしゃ"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -113142,6 +116227,9 @@
         ],
         "readings": [
           "びみょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -113448,8 +116536,11 @@
     "心得": [
       {
         "glosses": [
-          "knowledge",
-          "understanding"
+          "knowledge (of a skill, art, etc.)",
+          "proficiency",
+          "understanding",
+          "command",
+          "experience"
         ],
         "id": "1360910:0",
         "pos": [
@@ -113461,9 +116552,12 @@
       },
       {
         "glosses": [
+          "essentials",
+          "know-how",
+          "guidelines",
           "rules",
-          "regulations",
-          "guideline",
+          "basics",
+          "precautions",
           "directions"
         ],
         "id": "1360910:1",
@@ -113476,10 +116570,25 @@
       },
       {
         "glosses": [
+          "preparedness",
+          "readiness",
+          "mental attitude",
+          "frame of mind"
+        ],
+        "id": "1360910:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "こころえ"
+        ]
+      },
+      {
+        "glosses": [
           "deputy",
           "acting"
         ],
-        "id": "1360910:2",
+        "id": "1360910:3",
         "pos": [
           "noun, used as a suffix"
         ],
@@ -114602,6 +117711,23 @@
         ]
       }
     ],
+    "思い出": [
+      {
+        "glosses": [
+          "memories",
+          "recollections",
+          "reminiscence"
+        ],
+        "id": "1589340:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おもいで",
+          "おもひで"
+        ]
+      }
+    ],
     "思い切り": [
       {
         "glosses": [
@@ -115180,6 +118306,9 @@
         ],
         "readings": [
           "きゅうしょ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -115351,6 +118480,9 @@
         ],
         "readings": [
           "せいへき"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -116024,6 +119156,9 @@
         ],
         "readings": [
           "むすこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -118802,6 +121937,9 @@
         ],
         "readings": [
           "われら"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -119775,6 +122913,9 @@
         ],
         "readings": [
           "て"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -120190,6 +123331,9 @@
         ],
         "readings": [
           "てまえ"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -120803,7 +123947,8 @@
         "id": "1408700:1",
         "pos": [
           "Ichidan verb",
-          "transitive verb"
+          "transitive verb",
+          "intransitive verb"
         ],
         "readings": [
           "うちあげる"
@@ -120825,7 +123970,7 @@
       },
       {
         "glosses": [
-          "to report (to boss, etc.)"
+          "to report (e.g. to one's boss)"
         ],
         "id": "1408700:3",
         "pos": [
@@ -121724,6 +124869,9 @@
         ],
         "readings": [
           "うけたまわる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -124042,6 +127190,50 @@
         ],
         "readings": [
           "おがむ"
+        ],
+        "register": [
+          "humble"
+        ]
+      }
+    ],
+    "拝借": [
+      {
+        "glosses": [
+          "borrowing"
+        ],
+        "id": "1472280:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "はいしゃく"
+        ],
+        "register": [
+          "humble",
+          "polite"
+        ]
+      }
+    ],
+    "拝見": [
+      {
+        "glosses": [
+          "seeing",
+          "looking at"
+        ],
+        "id": "1472270:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "はいけん"
+        ],
+        "register": [
+          "humble",
+          "polite"
         ]
       }
     ],
@@ -124627,6 +127819,9 @@
         ],
         "readings": [
           "もつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -125176,6 +128371,9 @@
         ],
         "readings": [
           "あいさつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -128727,6 +131925,9 @@
         ],
         "readings": [
           "せめる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -128946,6 +132147,9 @@
         ],
         "readings": [
           "ほうしゃのう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -128958,6 +132162,9 @@
         ],
         "readings": [
           "ほうしゃのう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -131337,6 +134544,9 @@
         ],
         "readings": [
           "かた"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -131497,6 +134707,9 @@
         ],
         "readings": [
           "かたがた"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -131509,6 +134722,9 @@
         ],
         "readings": [
           "かたがた"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -132689,6 +135905,9 @@
         ],
         "readings": [
           "だんな"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -134060,6 +137279,9 @@
         ],
         "readings": [
           "しょうわ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -135122,6 +138344,9 @@
         ],
         "readings": [
           "ひま"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -136577,6 +139802,9 @@
         ],
         "readings": [
           "さいあく"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -136590,6 +139818,9 @@
         ],
         "readings": [
           "さいあく"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -140497,6 +143728,9 @@
         ],
         "readings": [
           "ぼう"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -143017,6 +146251,9 @@
         ],
         "readings": [
           "さま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -143029,6 +146266,9 @@
         ],
         "readings": [
           "さま"
+        ],
+        "register": [
+          "polite"
         ]
       },
       {
@@ -145733,6 +148973,43 @@
         ]
       }
     ],
+    "殿": [
+      {
+        "glosses": [
+          "Mr.",
+          "Mrs.",
+          "Miss",
+          "Ms."
+        ],
+        "id": "1442500:0",
+        "pos": [
+          "suffix"
+        ],
+        "readings": [
+          "どの"
+        ],
+        "register": [
+          "polite"
+        ]
+      }
+    ],
+    "母": [
+      {
+        "glosses": [
+          "mother"
+        ],
+        "id": "1514990:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "はは"
+        ],
+        "register": [
+          "humble"
+        ]
+      }
+    ],
     "母さん": [
       {
         "glosses": [
@@ -145758,6 +149035,9 @@
         "readings": [
           "かあさん",
           "かかさん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -145880,6 +149160,9 @@
         ],
         "readings": [
           "まいど"
+        ],
+        "register": [
+          "familiar"
         ]
       },
       {
@@ -146705,6 +149988,9 @@
         ],
         "readings": [
           "きもち"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -147684,6 +150970,9 @@
         ],
         "readings": [
           "もとめる"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -148427,6 +151716,9 @@
         ],
         "readings": [
           "ちんぼつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -148441,6 +151733,9 @@
         ],
         "readings": [
           "ちんぼつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -151045,6 +154340,9 @@
         ],
         "readings": [
           "せんけん"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -151306,6 +154604,9 @@
         ],
         "readings": [
           "うく"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -151838,6 +155139,9 @@
         ],
         "readings": [
           "けす"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -154079,6 +157383,9 @@
         ],
         "readings": [
           "とかす"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -154175,6 +157482,9 @@
         ],
         "readings": [
           "とける"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -154481,6 +157791,9 @@
         ],
         "readings": [
           "すべる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -154559,21 +157872,6 @@
     "漁る": [
       {
         "glosses": [
-          "to fish"
-        ],
-        "id": "1232970:0",
-        "pos": [
-          "Godan verb with 'ru' ending",
-          "transitive verb"
-        ],
-        "readings": [
-          "あさる",
-          "すなどる",
-          "いさる"
-        ]
-      },
-      {
-        "glosses": [
           "to look for",
           "to search for",
           "to hunt for",
@@ -154582,7 +157880,7 @@
           "to look through",
           "to rummage through"
         ],
-        "id": "1232970:1",
+        "id": "1232970:0",
         "pos": [
           "Godan verb with 'ru' ending",
           "transitive verb"
@@ -154596,10 +157894,23 @@
           "to go on a spree (spending, reading, etc.)",
           "to binge"
         ],
-        "id": "1232970:2",
+        "id": "1232970:1",
         "pos": [
           "auxiliary verb",
           "Godan verb with 'ru' ending"
+        ],
+        "readings": [
+          "あさる"
+        ]
+      },
+      {
+        "glosses": [
+          "to fish"
+        ],
+        "id": "1232970:2",
+        "pos": [
+          "Godan verb with 'ru' ending",
+          "transitive verb"
         ],
         "readings": [
           "あさる"
@@ -157286,6 +160597,9 @@
         ],
         "readings": [
           "むり"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -157600,6 +160914,54 @@
         ]
       }
     ],
+    "無邪気": [
+      {
+        "glosses": [
+          "innocent",
+          "childlike",
+          "sweet and innocent",
+          "artless"
+        ],
+        "id": "1530080:0",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "むじゃき"
+        ]
+      },
+      {
+        "glosses": [
+          "guileless",
+          "free of malice",
+          "ingenuous"
+        ],
+        "id": "1530080:1",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "むじゃき"
+        ]
+      },
+      {
+        "glosses": [
+          "thoughtless",
+          "simple-minded",
+          "lacking consideration"
+        ],
+        "id": "1530080:2",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "むじゃき"
+        ]
+      }
+    ],
     "無限": [
       {
         "glosses": [
@@ -157730,6 +161092,9 @@
         ],
         "readings": [
           "あせる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -158785,6 +162150,9 @@
           "かそ",
           "しし",
           "あて"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -160365,6 +163733,9 @@
         ],
         "readings": [
           "もうれつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -160514,6 +163885,52 @@
         ],
         "readings": [
           "こんだて"
+        ]
+      }
+    ],
+    "猶予": [
+      {
+        "glosses": [
+          "postponement",
+          "deferment",
+          "extension (of time)"
+        ],
+        "id": "1541740:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "ゆうよ"
+        ]
+      },
+      {
+        "glosses": [
+          "hesitation",
+          "delaying",
+          "dawdling"
+        ],
+        "id": "1541740:1",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "ゆうよ"
+        ]
+      },
+      {
+        "glosses": [
+          "suspended sentence"
+        ],
+        "id": "1541740:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ゆうよ"
         ]
       }
     ],
@@ -160829,6 +164246,9 @@
         ],
         "readings": [
           "ぎょくさい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -160899,6 +164319,23 @@
         ],
         "readings": [
           "おうじ"
+        ]
+      }
+    ],
+    "王様": [
+      {
+        "glosses": [
+          "king"
+        ],
+        "id": "1181700:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おうさま"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -161920,6 +165357,9 @@
         ],
         "readings": [
           "なま"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -162955,6 +166395,9 @@
         ],
         "readings": [
           "さんち"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -163378,6 +166821,9 @@
         ],
         "readings": [
           "もうしあげる"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -163391,6 +166837,9 @@
         ],
         "readings": [
           "もうしあげる"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -163465,6 +166914,9 @@
         ],
         "readings": [
           "もうす"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -163478,6 +166930,9 @@
         ],
         "readings": [
           "もうす"
+        ],
+        "register": [
+          "humble"
         ]
       }
     ],
@@ -163821,6 +167276,9 @@
         ],
         "readings": [
           "がはく"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -163910,6 +167368,9 @@
         ],
         "readings": [
           "はたけ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -164562,6 +168023,9 @@
         ],
         "readings": [
           "やむ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -164608,6 +168072,9 @@
         ],
         "readings": [
           "びょうき"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -164636,6 +168103,9 @@
         ],
         "readings": [
           "いたい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -166439,6 +169909,9 @@
         ],
         "readings": [
           "てき"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -166457,6 +169930,9 @@
         ],
         "readings": [
           "てき"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -166471,6 +169947,10 @@
         ],
         "readings": [
           "てき"
+        ],
+        "register": [
+          "familiar",
+          "colloquial"
         ]
       }
     ],
@@ -166525,6 +170005,42 @@
         "readings": [
           "てきかく",
           "てっかく"
+        ]
+      }
+    ],
+    "皆さん": [
+      {
+        "glosses": [
+          "all",
+          "everyone",
+          "everybody"
+        ],
+        "id": "1202170:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "みなさん"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
+    "皆様": [
+      {
+        "glosses": [
+          "everyone"
+        ],
+        "id": "1202260:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "みなさま"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -168007,6 +171523,9 @@
         ],
         "readings": [
           "もうちょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -168019,6 +171538,9 @@
         ],
         "readings": [
           "もうちょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -170449,6 +173971,9 @@
         ],
         "readings": [
           "やじるし"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -170937,6 +174462,9 @@
         ],
         "readings": [
           "せきゆ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -171435,6 +174963,9 @@
         ],
         "readings": [
           "はきょく"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -172335,6 +175866,9 @@
         ],
         "readings": [
           "かみ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -172453,6 +175987,9 @@
         ],
         "readings": [
           "かみさま"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -172617,6 +176154,9 @@
         ],
         "readings": [
           "まつり"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -172631,6 +176171,9 @@
         ],
         "readings": [
           "まつり"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -174862,6 +178405,9 @@
         ],
         "readings": [
           "くうき"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -175661,6 +179207,38 @@
         ]
       }
     ],
+    "立ち寄る": [
+      {
+        "glosses": [
+          "to drop by",
+          "to stop by",
+          "to visit briefly (on the way somewhere)"
+        ],
+        "id": "1551300:0",
+        "pos": [
+          "Godan verb with 'ru' ending",
+          "intransitive verb"
+        ],
+        "readings": [
+          "たちよる"
+        ]
+      },
+      {
+        "glosses": [
+          "to approach",
+          "to draw near",
+          "to come close (to)"
+        ],
+        "id": "1551300:1",
+        "pos": [
+          "Godan verb with 'ru' ending",
+          "intransitive verb"
+        ],
+        "readings": [
+          "たちよる"
+        ]
+      }
+    ],
     "立ち止まる": [
       {
         "glosses": [
@@ -175907,6 +179485,9 @@
         ],
         "readings": [
           "たつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -178090,6 +181671,9 @@
         ],
         "readings": [
           "はこ"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -178655,6 +182239,9 @@
         "readings": [
           "そしな",
           "そひん"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -180373,6 +183960,9 @@
         ],
         "readings": [
           "おわる"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -180389,6 +183979,9 @@
         ],
         "readings": [
           "おわる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -182211,6 +185804,9 @@
         ],
         "readings": [
           "ぜっさん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -183072,6 +186668,9 @@
         ],
         "readings": [
           "しめる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -188198,6 +191797,9 @@
         ],
         "readings": [
           "こしかけ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -188825,6 +192427,9 @@
         ],
         "readings": [
           "じすい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -190288,6 +193893,51 @@
         ]
       }
     ],
+    "苦い": [
+      {
+        "glosses": [
+          "bitter (taste)"
+        ],
+        "id": "1244310:0",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "にがい"
+        ]
+      },
+      {
+        "glosses": [
+          "sour (expression, look)",
+          "bitter",
+          "displeased",
+          "unpleasant"
+        ],
+        "id": "1244310:1",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "にがい"
+        ]
+      },
+      {
+        "glosses": [
+          "bitter (e.g. experience)",
+          "painful",
+          "distressing",
+          "hard",
+          "trying"
+        ],
+        "id": "1244310:2",
+        "pos": [
+          "adjective (keiyoushi)"
+        ],
+        "readings": [
+          "にがい"
+        ]
+      }
+    ],
     "苦しい": [
       {
         "glosses": [
@@ -190992,6 +194642,9 @@
         ],
         "readings": [
           "あらす"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -191306,6 +194959,9 @@
         ],
         "readings": [
           "なえる"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -191411,6 +195067,9 @@
         ],
         "readings": [
           "おちこぼれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -192173,6 +195832,9 @@
         ],
         "readings": [
           "おとす"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -192235,6 +195897,9 @@
         ],
         "readings": [
           "はっぱ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -192378,6 +196043,9 @@
         ],
         "readings": [
           "じょうはつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -192725,6 +196393,9 @@
         ],
         "readings": [
           "とら"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -193564,6 +197235,9 @@
         "readings": [
           "いく",
           "ゆく"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -193580,6 +197254,24 @@
         "readings": [
           "いく",
           "ゆく"
+        ]
+      }
+    ],
+    "行ってきます": [
+      {
+        "glosses": [
+          "I'm off (and will be back later)",
+          "see you later"
+        ],
+        "id": "2020140:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "いってきます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -195556,6 +199248,9 @@
         ],
         "readings": [
           "みえる"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -198331,6 +202026,9 @@
         ],
         "readings": [
           "とける"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -199775,6 +203473,9 @@
         ],
         "readings": [
           "さぎ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -200179,6 +203880,9 @@
         ],
         "readings": [
           "つむ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -201054,6 +204758,23 @@
         ],
         "readings": [
           "まこと"
+        ]
+      }
+    ],
+    "誠にありがとうございます": [
+      {
+        "glosses": [
+          "thank you very much"
+        ],
+        "id": "2838980:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "まことにありがとうございます"
+        ],
+        "register": [
+          "polite"
         ]
       }
     ],
@@ -202297,6 +206018,9 @@
         ],
         "readings": [
           "けいさつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -202922,6 +206646,9 @@
         ],
         "readings": [
           "ざいばつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -203363,6 +207090,9 @@
         ],
         "readings": [
           "きしゃ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -203375,6 +207105,9 @@
         ],
         "readings": [
           "きしゃ"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -203659,6 +207392,9 @@
         ],
         "readings": [
           "かす"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -204051,6 +207787,9 @@
         ],
         "readings": [
           "あか"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -204145,6 +207884,9 @@
         ],
         "readings": [
           "あかい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -204694,6 +208436,9 @@
         ],
         "readings": [
           "ちょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -204710,6 +208455,9 @@
         ],
         "readings": [
           "ちょう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -204871,6 +208619,9 @@
         ],
         "readings": [
           "こす"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -205081,6 +208832,9 @@
         ],
         "readings": [
           "あし"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -211346,6 +215100,26 @@
         ]
       }
     ],
+    "逝去": [
+      {
+        "glosses": [
+          "death",
+          "passing"
+        ],
+        "id": "1381360:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "せいきょ"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "速さ": [
       {
         "glosses": [
@@ -212563,6 +216337,9 @@
         ],
         "readings": [
           "はこぶ"
+        ],
+        "register": [
+          "honorific"
         ]
       },
       {
@@ -215764,6 +219541,9 @@
         ],
         "readings": [
           "きん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -215836,6 +219616,9 @@
         ],
         "readings": [
           "かなしばり"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -216294,6 +220077,9 @@
         ],
         "readings": [
           "てつ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -216361,6 +220147,9 @@
         ],
         "readings": [
           "てっぽう"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -218929,6 +222718,26 @@
         ]
       }
     ],
+    "閣下": [
+      {
+        "glosses": [
+          "your Excellency",
+          "his Excellency",
+          "her Excellency"
+        ],
+        "id": "1206280:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun, used as a suffix"
+        ],
+        "readings": [
+          "かっか"
+        ],
+        "register": [
+          "honorific"
+        ]
+      }
+    ],
     "閲覧": [
       {
         "glosses": [
@@ -220514,6 +224323,9 @@
         ],
         "readings": [
           "かくれる"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
@@ -221204,6 +225016,9 @@
         ],
         "readings": [
           "あまだれ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -222839,23 +226654,48 @@
       {
         "glosses": [
           "voice",
-          "speech",
-          "sound of a voice"
+          "speech"
         ],
         "id": "1183880:0",
         "pos": [
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "おんせい",
-          "おんじょう"
+          "おんせい"
         ]
       },
       {
         "glosses": [
-          "sound (e.g. of a TV)"
+          "phone (as opposed to a phoneme)",
+          "speech sound"
         ],
         "id": "1183880:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おんせい"
+        ]
+      },
+      {
+        "glosses": [
+          "audio",
+          "sound (as opposed to the picture)"
+        ],
+        "id": "1183880:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "おんせい"
+        ]
+      },
+      {
+        "glosses": [
+          "sound recordist",
+          "audio engineer (in film, broadcasting, etc.)"
+        ],
+        "id": "1183880:3",
         "pos": [
           "noun (common) (futsuumeishi)"
         ],
@@ -222936,6 +226776,9 @@
         ],
         "readings": [
           "おんてい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -223198,6 +227041,9 @@
         ],
         "readings": [
           "ちょうだい"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -223214,6 +227060,9 @@
         ],
         "readings": [
           "ちょうだい"
+        ],
+        "register": [
+          "humble"
         ]
       },
       {
@@ -223226,6 +227075,9 @@
         ],
         "readings": [
           "ちょうだい"
+        ],
+        "register": [
+          "familiar"
         ]
       }
     ],
@@ -223786,6 +227638,9 @@
         ],
         "readings": [
           "あたま"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -223943,6 +227798,9 @@
         ],
         "readings": [
           "たのむ"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -225894,6 +229752,9 @@
         ],
         "readings": [
           "くう"
+        ],
+        "register": [
+          "colloquial"
         ]
       },
       {
@@ -227521,6 +231382,9 @@
         ],
         "readings": [
           "こうめい"
+        ],
+        "register": [
+          "honorific"
         ]
       }
     ],
