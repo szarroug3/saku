@@ -143,7 +143,7 @@ import type { EntryId, FactId, FactInfo } from "@/types";
  * subject. The counters track breaks that on purpose: the owner ruled it "vocab
  * with a track label", so its facts carry subject `word` (COUNTERS_SUBJECT) and
  * are indistinguishable from any other word downstream — but on the Library it
- * wants a shelf of its own, "Numbers and counters", not to be dropped into the
+ * wants a shelf of its own, "Counting", not to be dropped into the
  * general Words shelf. So the SHELF label and the FACT subject are decoupled
  * here for the counters alone: their LibEntry.kind is this string, while their
  * facts stay `word`. Nothing reads it as a subject (the registry never sees it;
@@ -200,7 +200,7 @@ export const KINDS: readonly Kind[] = [
   RADICAL_SUBJECT,
   KANJI_SUBJECT,
   VOCAB_SUBJECT,
-  // Numbers and counters sit right after words: they ARE words (subject `word`),
+  // Counting sits right after words: its entries ARE words (subject `word`),
   // and a learner reaches for them alongside vocabulary. They get their own shelf
   // rather than mixing into Words because the track teaches them as a system with
   // its own order — see COUNTER_KIND.
@@ -234,12 +234,12 @@ export const KIND_LABEL: Record<Kind, string> = {
   [RADICAL_SUBJECT]: "Radicals",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
-  [COUNTER_KIND]: "Numbers and counters",
-  // A construction page's breadcrumb crumb reads under the counters shelf, the
+  [COUNTER_KIND]: "Counting",
+  // A construction page's breadcrumb crumb reads under the counting shelf, the
   // same label its pages browse on. It is deliberately NOT in KINDS (no shelf
-  // chip of its own — the pages live on the counters shelf); this label is what
+  // chip of its own — the pages live on the counting shelf); this label is what
   // the breadcrumb prints, via shelfKindOf.
-  [NUMBER_CONSTRUCTION_KIND]: "Numbers and counters",
+  [NUMBER_CONSTRUCTION_KIND]: "Counting",
   [SENTENCE_RULE_KIND]: "Sentence rules",
   [GRAMMAR_SUBJECT]: "Grammar",
   [GRAMMAR_CONCEPT_SUBJECT]: "Grammar concepts",
@@ -252,7 +252,7 @@ export const KIND_LABEL: Record<Kind, string> = {
 /**
  * The shelf an entry's breadcrumb crumb should point at — its own kind, except
  * for a construction page, whose pages BROWSE on the counters shelf rather than
- * a shelf of their own. So a construction page's "Numbers and counters" crumb
+ * a shelf of their own. So a construction page's "Counting" crumb
  * links to the counters shelf (where the reader actually finds it) instead of a
  * /library?kind=numbers shelf that is not offered. Every other kind is its own
  * shelf and maps to itself.
@@ -886,11 +886,11 @@ function build(): LibEntry[] {
     });
   });
 
-  // Numbers and counters — the track's words, given browse pages of their own.
+  // Counting — the track's words, given browse pages of their own.
   //
   // These are `word` facts (COUNTERS_SUBJECT), so they are indistinguishable
   // from vocabulary in the registry and the drill — but here they carry
-  // COUNTER_KIND so they shelve as "Numbers and counters" rather than vanishing
+  // COUNTER_KIND so they shelve as "Counting" rather than vanishing
   // into 12,553 everyday words. The whole point of the page is to VIEW the
   // counted form beside its reading (一本 · いっぽん), which is exactly what a
   // counter's factRows below print.

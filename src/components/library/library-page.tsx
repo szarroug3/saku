@@ -602,7 +602,7 @@ export function LibraryPageClient({
     // A checked subset: the bar means exactly what the checked shelves SHOW —
     // the same visible, keep-filtered id list a Shift-range selects over
     // (visibleIds above), not each kind's raw LIB_ENTRIES_BY_KIND set. The two
-    // diverge on "Numbers and counters", whose sections are assembled from
+    // diverge on "Counting", whose sections are assembled from
     // several kinds (the construction reference pages and the number kanji
     // 一…十, not just COUNTER_KIND entries — see counterShelfSections):
     // counting the raw set there names only the handful of memorised counter

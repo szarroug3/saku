@@ -70,9 +70,9 @@ const SAMPLES: Sample[] = (
     },
     {
       key: "numbers",
-      title: "Counters",
+      title: "Counting",
       positionLabel: "Counter 1–5 of 210",
-      why: lede("Counters teach you how to count anything: days, people, drinks, etc."),
+      why: lede("Counting teaches you how to count anything: days, people, drinks, etc."),
       lesson: NUMBERS_LESSON,
     },
   ] as { key: string; title: string; positionLabel: string; why: Why; lesson: UnitLesson | null }[]

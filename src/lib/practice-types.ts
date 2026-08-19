@@ -57,7 +57,7 @@ export const PRACTICE_TYPES: readonly PracticeType[] = [
   { id: "radical", label: "Radicals", glyph: "氵" },
   { id: "kanji", label: "Kanji", glyph: "字" },
   { id: "word", label: "Words", glyph: "語" },
-  { id: "counter", label: "Counters", glyph: "本" },
+  { id: "counter", label: "Counting", glyph: "本" },
   { id: "grammar", label: "Grammar", glyph: "文" },
   { id: "sentence", label: "Sentences", glyph: "文。" },
   { id: "transitivity", label: "Verb pairs", glyph: "動" },

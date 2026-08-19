@@ -70,13 +70,13 @@ type LearnLesson = UnitLessonOf<IndexUnit>;
  *
  * Two runs the index can't classify keep their own shortcut: an ASSEMBLY run
  * drills readable sentence facts (not the tier marker the index carries), so it is
- * the `sentence` track by mode; a Counters run is named as such. Otherwise this
+ * the `sentence` track by mode; a Counting run is named as such. Otherwise this
  * mirrors the old priority scan: a prep session may prepend vocab prerequisite
  * facts before, say, a keigo lesson, so the first NON-vocab fact wins (the old
  * scan likewise skipped word facts), falling back to the first fact's track. */
 export function trackKeyForRun(run: RunInfo): string | null {
   if (run.mode === "assembly") return "sentence";
-  if (/^Counters\b/i.test(run.what)) return "numbers";
+  if (/^Counting\b/i.test(run.what)) return "numbers";
   for (const fact of run.facts) {
     const t = trackIdOfFact(fact);
     if (t && t !== "vocab") return t;
@@ -384,7 +384,7 @@ export function HomeFeed() {
   // Two tracks need a non-default session:
   //   NUMBERS — a generative-rule unit drills a procedurally-generated number set
   //     (its fact is the category fact, resolved in build-item), so the session
-  //     runs in "drill" mode and carries the "Counters" name the resume detector
+  //     runs in "drill" mode and carries the "Counting" name the resume detector
   //     reads. The number kanji in the same lesson drill fine in that mode too.
   //   SENTENCE — the unit only carries the tier's PROGRESS marker; the ordering
   //     quiz drills the tier's readable sentence facts (sentenceLessonFacts) in
@@ -406,7 +406,7 @@ export function HomeFeed() {
       startSession(
         facts,
         teach ? facts : [],
-        isNumbers ? "Counters" : undefined,
+        isNumbers ? "Counting" : undefined,
         "lesson",
         seeded,
         isNumbers ? "drill" : undefined,

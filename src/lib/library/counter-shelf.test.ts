@@ -51,7 +51,7 @@ const NUMBER_KANJI = ["一", "二", "三", "四", "五", "六", "七", "八", "�
 const byGlyph = (g: string) => COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
 describe("the shelf exists and lists the counters", () => {
-  test("Numbers and counters is a shelf of its own", () => {
+  test("Counting is a shelf of its own", () => {
     assert.ok(KINDS.includes(COUNTER_KIND), "COUNTER_KIND is a browse kind");
     assert.ok(KIND_LABEL[COUNTER_KIND], "it has a shelf label");
   });
