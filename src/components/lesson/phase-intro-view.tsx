@@ -35,6 +35,7 @@ import type {
   IntroPara,
   PhaseIntro,
   PunctuationRow,
+  SentenceExample,
   TransitivityPairRow,
 } from "@/data/phase-intros";
 
@@ -148,6 +149,14 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             {intro.bodyAfterBuild?.length ? <IntroBody body={intro.bodyAfterBuild} /> : null}
             {intro.transitivityPairs?.length ? (
               <TransitivityPairsTable rows={intro.transitivityPairs} />
+            ) : null}
+            {intro.sentenceExample ? (
+              <div>
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+                  In a sentence
+                </p>
+                <SentenceExampleView example={intro.sentenceExample} />
+              </div>
             ) : null}
           </div>
         )}
@@ -868,6 +877,32 @@ export function IntroBuildSection({
       ))}
       {footer ? <IntroBuildFooter footer={footer} /> : null}
     </section>
+  );
+}
+
+/**
+ * A pattern's own worked sentence: one real corpus sentence with the piece this
+ * pattern actually built picked out in accent color, plus its gloss and a
+ * speaker. Shared by the teach walk (PhaseIntroView, below) and the Library
+ * grammar page (grammar-entry-view.tsx) so both read the exact same sentence —
+ * autoPatternPage generates it once, from the same corpus lookup, for both.
+ */
+export function SentenceExampleView({ example }: { example: SentenceExample }) {
+  const { cfg } = useQuizConfig();
+  const [start, end] = example.span;
+  const jp = example.jp;
+  return (
+    <>
+      <p className="flex flex-wrap items-center gap-1.5 font-kana text-[15px] leading-relaxed text-text">
+        <span lang="ja">
+          {jp.slice(0, start)}
+          <span className="text-accent">{jp.slice(start, end)}</span>
+          {jp.slice(end)}
+        </span>
+        <HearButton glyph={jp} voiceName={cfg.voiceName} />
+      </p>
+      <p lang="en" className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
+    </>
   );
 }
 

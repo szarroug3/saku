@@ -475,6 +475,29 @@ export interface PhaseIntro {
    * above it. Used by the transitivity intro's が/を pattern note.
    */
   calloutTip?: string;
+  /**
+   * One real sentence showing the pattern in use, with the piece it actually
+   * built picked out — the same "In a sentence" evidence the Library grammar
+   * page shows (grammar-entry-view.tsx), generated once by autoPatternPage from
+   * the Tatoeba corpus (data/grammar/corpus.ts) so the teach walk and the
+   * Library page show the identical sentence rather than two independently
+   * chosen ones. Absent, not empty, for a pattern the corpus has not tagged.
+   */
+  sentenceExample?: SentenceExample;
+}
+
+/**
+ * A worked sentence for a grammar pattern's card: a real sentence, its gloss,
+ * and the `[start, end)` span of the piece this pattern built, to accent.
+ */
+export interface SentenceExample {
+  /** The whole sentence: "最初着る前に洗濯してください。" */
+  readonly jp: string;
+  /** Its English gloss: "Wash before first wearing." */
+  readonly en: string;
+  /** The `[start, end)` span of `jp` this pattern actually built — the part to
+   * highlight, not the whole sentence. */
+  readonly span: readonly [number, number];
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW
