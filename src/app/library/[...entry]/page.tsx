@@ -57,7 +57,8 @@ import {
   VOCAB_SUBJECT,
 } from "@/lib/library/library-index";
 import type { IndexLibEntry } from "@/lib/library/library-index-types";
-import { entryFromParam, entryFromSlug } from "@/lib/library/href";
+import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
+import { groupNeighbors } from "@/lib/library/group-nav";
 import { postClaim } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
@@ -112,6 +113,8 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
         {entryName(entry)}
       </p>
 
+      <GroupNav entry={entry} />
+
       <EntryBody entry={entry} />
 
       <SliceBar
@@ -128,6 +131,54 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
         progressReady={historyLoaded}
       />
     </FlatSurfaceProvider>
+  );
+}
+
+/**
+ * Prev/next within THIS ENTRY'S GROUP — the same section the Library shelf
+ * would show it under (HIRAGANA · VOWELS, a kanji hundred, a word range, …),
+ * not the whole shelf and not the whole Library. See group-nav.ts for how a
+ * group and its order are decided — reusing exactly the cut `shelfSections`
+ * already makes, never a second description of it.
+ *
+ * EDGES DO NOT WRAP: the first/last item in a group simply has no control on
+ * that side, rather than looping to the group's other end (see group-nav.ts's
+ * file header for why). The whole bar disappears when there is nothing to
+ * move to either side — a lone-entry group, or a kind this route cannot place
+ * in any section.
+ */
+function GroupNav({ entry }: { entry: IndexLibEntry }) {
+  const { groupLabel, prev, next } = groupNeighbors(entry);
+  if (!groupLabel || (!prev && !next)) return null;
+  return (
+    <nav
+      aria-label={`${groupLabel} navigation`}
+      className="mb-4 flex items-center justify-between gap-3 text-[13px]"
+    >
+      {prev ? (
+        <Link
+          href={entryHref(prev.id)}
+          className="min-w-0 truncate text-text no-underline"
+        >
+          ‹ {entryName(prev)}
+        </Link>
+      ) : (
+        <span aria-hidden="true" />
+      )}
+      <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-text-muted">
+        {groupLabel}
+      </span>
+      {next ? (
+        <Link
+          href={entryHref(next.id)}
+          className="min-w-0 truncate text-right text-text no-underline"
+        >
+          {entryName(next)} ›
+        </Link>
+      ) : (
+        <span aria-hidden="true" />
+      )}
+    </nav>
   );
 }
 
