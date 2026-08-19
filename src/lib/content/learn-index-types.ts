@@ -81,8 +81,26 @@ export interface LearnIndex {
   /** Every BLOCKING-prerequisite entry → its facts, so `isLearned` runs without
    * the dictionary. */
   readonly blockerFacts: Readonly<Record<string, readonly FactId[]>>;
-  /** Every curriculum glyph in prereq-respecting spine order — the denominator
-   * and positions the vocab card counts in (home-feed's vocabPositionLabel). */
+  /** Every curriculum glyph in prereq-respecting spine order (CURRICULUM_SEQUENCE
+   * from curriculum-order.ts, serialized). Currently UNUSED by any card — home-
+   * feed's vocabPositionLabel deliberately prints no range at all, and this array
+   * is why it can't safely do otherwise: the vocab track schedules by SPOKEN
+   * FREQUENCY (see unit-tracks.ts's vocabUnits/orderedUnits), not this spine
+   * order, so a lesson's items are only sometimes near each other here and are
+   * never guaranteed to be.
+   *
+   * DO NOT use this array to build a per-lesson "N of M" span by taking the
+   * min/max index of a lesson's item glyphs — that reintroduces SAK-13 in a new
+   * place: a frequency-bundled lesson's glyphs can sit thousands of positions
+   * apart in THIS order, so `{from: min, to: max}` reads as a huge span for a
+   * handful of items, the exact "1–639 of 2,136" shape the bug was named for.
+   * See lesson-position.ts's file header (SAFE UNDER OUT-OF-ORDER CLAIMS) for the
+   * invariant a position has to satisfy, and advancePosition() there for the one
+   * safe way to compute one — it requires a track's OWN delivery order to match
+   * the order being counted against, which vocab's does not. If a track ever
+   * wants a "know N of M" figure without a positional span, count claimed/seen
+   * items directly instead (see src/components/stats/by-subject.tsx), which is
+   * order-independent and cannot suffer this failure mode. */
   readonly curriculumGlyphs: readonly string[];
   /** Sentence readability + grammar gates, serialized from the live planner. */
   readonly sentenceGates: readonly IndexSentenceGate[];
