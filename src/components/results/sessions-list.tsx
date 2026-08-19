@@ -233,6 +233,19 @@ export function SessionsList() {
     }
   };
 
+  // Same confirm() the bulk actions below use, same stats-rebuild wording —
+  // just singular. The row's × used to skip this and delete instantly.
+  const deleteOne = (record: QuizSessionRecord) => {
+    void (async () => {
+      const ok = await confirm({
+        title: "Delete this session?",
+        body: "This also rebuilds your per-character stats.",
+        confirmLabel: "Delete",
+      });
+      if (ok) await deleteSessions([rowKey(record)], false);
+    })();
+  };
+
   if (!loaded) return null;
   if (!sessions.length) return <NoSessions />;
 
@@ -246,7 +259,7 @@ export function SessionsList() {
             selected={picked.has(rowKey(s))}
             onToggle={() => togglePicked(rowKey(s))}
             onOpen={() => viewStoredSession(s)}
-            onDelete={() => void deleteSessions([rowKey(s)], false)}
+            onDelete={() => deleteOne(s)}
             onMakeList={() => makeList(s)}
             madeList={madeLists.has(rowKey(s))}
           />
