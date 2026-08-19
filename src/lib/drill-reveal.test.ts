@@ -11,9 +11,12 @@ import {
 } from "@/lib/drill-reveal";
 
 describe("isRevealPause (SAK-50)", () => {
-  test("a skip pause is reveal-eligible, same as an out-of-retries miss", () => {
-    assert.equal(isRevealPause({ kind: "skip" }, true), true);
+  test("an out-of-retries miss is reveal-eligible", () => {
     assert.equal(isRevealPause({ kind: "bad" }, true), true);
+  });
+
+  test("a skip is a deferral, not a resolution — it never reveals, requeued or not", () => {
+    assert.equal(isRevealPause({ kind: "skip" }, true), false);
   });
 
   test("a correct-answer pause never reveals — nothing to compare", () => {
