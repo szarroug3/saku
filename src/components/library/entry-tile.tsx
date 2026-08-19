@@ -35,13 +35,7 @@ import { KANA_SUBJECT } from "@/data/characters";
 import { KEIGO_SUBJECT } from "@/lib/keigo-ids";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
-import { TERM_SUBJECT } from "@/data/terms";
-import {
-  GRAMMAR_CONCEPT_SUBJECT,
-  GRAMMAR_SUBJECT,
-  SENTENCE_RULE_KIND,
-  entryName,
-} from "@/lib/library/library-index";
+import { GRAMMAR_SUBJECT, entryName } from "@/lib/library/library-index";
 import type { LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
@@ -52,28 +46,15 @@ import type { VerbPair } from "@/data/transitivity";
 
 /** Whether an entry has a pronunciation worth a 🔊.
  *
- * A grammar pattern does not — 〜てから is a shape, not a sound. Neither does a
- * MARK, and it is the clearer case of the two: ゛ has no pronunciation whatsoever
- * (it is a diacritic; the sound it makes is the sound of the kana under it), and
- * long vowels has no glyph for a synthesiser to be handed at all. Both omit the
- * speaker rather than render one that reads out a placeholder — or, for a mark,
- * one that reads out silence and looks broken.
- *
- * A TERM is the same case arriving from the other direction. "Kana", "Hiragana",
- * "Romaji" are the English names we use to talk ABOUT Japanese, so a term's glyph
- * is an English string. Handing that to a Japanese synthesiser produced a button
- * that visibly did nothing, which is worse than no button at all. A GRAMMAR
- * CONCEPT is the same: a reference page (what a form is, う-verbs vs る-verbs) with
- * an English title and no single sound to speak, so it gets no speaker either. */
+ * A DIRECT FIELD READ, not a `kind` check. `kind` answers "which shelf" — it
+ * is not safe to reread as "does this have a sound", because two populations
+ * can share one shelving kind and disagree on that question (COUNTER_KIND
+ * shelves both real counted words AND sound-shift rule pages under one kind;
+ * see LibEntry.speakable's own doc for the SAK-79 story). So the answer is
+ * decided once, per entry, where each population is actually built — in
+ * entries.ts's `build()` — and this is just where it is read. */
 function speakable(entry: LibEntry): boolean {
-  return (
-    entry.kind !== GRAMMAR_SUBJECT &&
-    entry.kind !== GRAMMAR_CONCEPT_SUBJECT &&
-    entry.kind !== MARK_SUBJECT &&
-    entry.kind !== SENTENCE_RULE_KIND &&
-    entry.kind !== TERM_SUBJECT &&
-    entry.kind !== KEIGO_SUBJECT
-  );
+  return entry.speakable;
 }
 
 /** The small ↗ target — opens the entry page. A `Link`, so it is a real

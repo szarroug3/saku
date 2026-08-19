@@ -381,6 +381,35 @@ export interface LibEntry {
    * anything on its own and it never reaches a screen.
    */
   readonly weight: number;
+  /**
+   * Whether this ENTRY (one instance, not its shelf) has one real pronunciation
+   * worth a 🔊 — the fact `speakable()` in entry-tile.tsx reads instead of
+   * re-deriving from `kind`.
+   *
+   * `kind` answers "which shelf" and nothing else; it is not safe to reread it
+   * as "does this have a sound", because two populations can share one shelving
+   * kind and disagree on that question. COUNTER_KIND is exactly this: a real
+   * counted word (一本 · いっぽん, from COUNTER_CURRICULUM) sits on the same
+   * shelf as a sound-shift RULE PAGE (〜枚, from NUMBER_CONSTRUCTIONS) whose
+   * "glyph" is a tilde-prefixed placeholder and whose body is prose about how
+   * a counter's sound shifts. A kind check alone cannot tell those apart, so
+   * whether an entry is speakable is decided HERE, once, by the construction
+   * code that actually knows which population it is building — not re-guessed
+   * from `kind` at render time.
+   *
+   * TRUE for anything that is genuinely one piece of spoken Japanese with one
+   * pronunciation: kana, kanji (even a many-reading one — the shelf's speaker
+   * plays *a* reading, the same accepted imprecision `readings[0]` would be if
+   * anyone printed it, which nothing does), a word, a counted or kana counter
+   * form. FALSE for a reference/rule/concept page (grammar, grammar concepts,
+   * number-construction pages, terms), writing notation (marks, sentence
+   * rules), a shape with no attested reading of its own (a radical, a kanji
+   * part), and an AGGREGATE entry that names more than one word at once (a verb
+   * pair, a keigo set) — its one `glyph` is a representative fragment, not the
+   * whole entry's sound, the same reason those rows carry their own per-word
+   * speakers instead of one entry-level button.
+   */
+  readonly speakable: boolean;
 }
 
 // ---------- readings, grouped (needed by the build below) ----------
@@ -557,6 +586,8 @@ function build(): LibEntry[] {
       meanings: [],
       sub: `${info.setLabel} · ${info.secLabel}`,
       weight: 0,
+      // A kana IS a sound — the one thing this whole shelf teaches.
+      speakable: true,
     });
   }
 
@@ -593,6 +624,9 @@ function build(): LibEntry[] {
       // five entries near the front, and typing "dakuten" should not turn up a
       // word first.
       weight: 1,
+      // A mark is writing notation, not a sound — see LibEntry.speakable and the
+      // NO READINGS note above.
+      speakable: false,
     });
   }
 
@@ -615,6 +649,9 @@ function build(): LibEntry[] {
       // that answer "what is this word", worth leading with when a query hits
       // one, and never numerous enough to bury anything.
       weight: 1,
+      // A term is an English name for a concept, not a Japanese sound — see
+      // LibEntry.speakable.
+      speakable: false,
     });
   }
 
@@ -636,6 +673,9 @@ function build(): LibEntry[] {
       // Beside marks and terms (1): a reference entry worth leading with when a
       // query hits it, and never numerous enough to bury anything.
       weight: 1,
+      // A grammar concept is an idea explained in English, not a sound — see
+      // LibEntry.speakable.
+      speakable: false,
     });
   }
 
@@ -658,6 +698,12 @@ function build(): LibEntry[] {
       // Beside marks, terms and concepts (1): a reference entry worth leading
       // with when a query hits it, and never numerous enough to bury anything.
       weight: 1,
+      // A construction page is a sound-shift RULE, read in prose, not a word —
+      // its glyph is a tilde-prefixed plate (〜枚), not something to hand a
+      // synthesiser. This is the confirmed SAK-79 bug: these pages shared
+      // COUNTER_KIND's shelf and used to fall through `speakable()`'s kind
+      // check unnoticed. See LibEntry.speakable.
+      speakable: false,
     });
   }
 
@@ -678,6 +724,11 @@ function build(): LibEntry[] {
       // the word before 氵 the radical, so radicals sort after both on a shared
       // meaning. The Kangxi number keeps them in canonical order among themselves.
       weight: 2000 + r.num,
+      // A radical is a shape and an idea, not a pronunciation (see the "no
+      // reading fact" note atop src/data/radicals.ts and the null `speak` its
+      // own meaning-fact row carries below) — found wrongly speakable during
+      // the SAK-79 audit and fixed alongside it. See LibEntry.speakable.
+      speakable: false,
     });
   }
 
@@ -695,6 +746,12 @@ function build(): LibEntry[] {
       // page foot credits every source.
       sub: `${k.strokes} stroke${k.strokes === 1 ? "" : "s"}`,
       weight: 1000 + (k.newspaperFreq ?? 3000),
+      // A kanji is a real character with real readings, even when it has more
+      // than one — the shelf's 🔊 plays *a* reading, the same accepted
+      // imprecision as elsewhere in this file, and stays distinct from a
+      // reference page (number construction) or a shape with none (radical,
+      // primitive). See LibEntry.speakable.
+      speakable: true,
     });
   }
 
@@ -709,6 +766,9 @@ function build(): LibEntry[] {
       // "everyday word" is not a fact worth a line under every one of 12,553.
       sub: "",
       weight: 10_000 + (w.newspaperBand ?? 60),
+      // A word is one glyph with one reading (w.reb) — the clearest speakable
+      // case there is. See LibEntry.speakable.
+      speakable: true,
     });
   }
 
@@ -762,6 +822,9 @@ function build(): LibEntry[] {
       // of what the row is. Keep a meaningful family cue ("after", "must",
       // and so on) where one exists; otherwise the sub-line is simply absent.
       sub: subTitles.join(" · "),
+      // A pattern has no single pronunciation (〜てから is a shape, not a
+      // sound) — see LibEntry.speakable.
+      speakable: false,
       // A LOW weight, below kanji — the one kind that outranks it. This is the
       // owner's "make sure search surfaces grammar properly" as a number: when
       // you type "must", the seven obligation PATTERNS are the answer, and a
@@ -811,6 +874,15 @@ function build(): LibEntry[] {
       // whole English sentences, so this only breaks ties among pairs — in data
       // order, which is the order the table was curated in.
       weight: 700 + i,
+      // A pair NAMES TWO WORDS, not one — its `glyph` is a representative hero
+      // form (see above), not the whole entry's sound. That is exactly why
+      // VerbPairRow renders two independent per-verb HearButtons instead of one
+      // entry-level speaker. Found wrongly speakable during the SAK-79 audit —
+      // a generic search-result row (EntryRow, not VerbPairRow) rendered a
+      // single speaker that only ever said HALF the pair — and fixed alongside
+      // it, matching KEIGO_SUBJECT's identical call below. See
+      // LibEntry.speakable.
+      speakable: false,
     });
   });
 
@@ -844,6 +916,11 @@ function build(): LibEntry[] {
       // specialist answer, surfaced but not ahead of the vocabulary. Curriculum
       // order breaks ties among counters.
       weight: 9_000 + i,
+      // A REAL counted word, unlike its NUMBER_CONSTRUCTION_KIND shelf-mate
+      // above: a kana form's glyph IS its reading (ひとつ) and a counted form
+      // carries its own (一本 · いっぽん) — both are one genuine pronunciation.
+      // See LibEntry.speakable.
+      speakable: true,
     });
   });
 
@@ -872,6 +949,11 @@ function build(): LibEntry[] {
       ],
       sub: `Keigo · ${set.meaning}`,
       weight: 800 + i,
+      // A set NAMES MULTIPLE WORDS (honorific and humble forms), not one — same
+      // reasoning as the verb-pair case above, and the reason KeigoSetRow gives
+      // each word its own HearButton instead of one entry-level speaker. See
+      // LibEntry.speakable.
+      speakable: false,
     });
   });
 
@@ -893,6 +975,12 @@ function build(): LibEntry[] {
       meanings: [],
       sub: strokes === 1 ? "1 stroke" : `${strokes} strokes`,
       weight: 900 + strokes,
+      // A primitive is a shape, not a character — no meaning and no reading
+      // are tracked for it anywhere in the app (see the empty `meanings` above
+      // and `factsTitle`'s "it is a shape, not a character"). Found wrongly
+      // speakable during the SAK-79 audit and fixed alongside it. See
+      // LibEntry.speakable.
+      speakable: false,
     });
   }
 
