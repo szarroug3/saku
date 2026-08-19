@@ -180,12 +180,43 @@ export interface StudySession {
    * discarded lesson did not create. Absent/empty for a session that marked
    * nothing seen at start (a taught lesson's Start on non-curriculum tracks) and
    * for sessions snapshotted before this field existed; both roll back nothing.
+   *
+   * ALSO rolled back by `finishSession` itself now, when the session ends
+   * WITHOUT the learner choosing "mark as known" — see sessionKnownClaimTarget
+   * and the SAK-52 fix. A "Quiz me" run seeds this and used to keep the seen
+   * mark forever once the run ended any way other than discard, which is what
+   * let a missed quiz permanently drop its batch out of Learn: `isFactFresh`
+   * only asks whether `lastTested` is nonzero, and a `seen` mark never expires
+   * that field on its own (only its `stability` decays, which drives review
+   * scheduling, not the new-lesson frontier). So finishing unscored now undoes
+   * the same seed a discard would, and the batch is due again — undone for
+   * real by the SAME write, not left to a decay that isFactFresh never reads.
    */
   seededSeen?: FactId[];
 }
 
 /** Who opened a session. See StudySession.origin. */
 export type SessionOrigin = "lesson" | "library";
+
+/**
+ * Which facts "mark these as known" claims when a session ends — the SAME
+ * mechanism as the Learn card's "I already know this" (postClaim), reached
+ * from the end-of-quiz choice instead.
+ *
+ * `teach` when it is non-empty: a normal lesson's taught set (== `facts` for
+ * every non-sentence track — see home-feed's startTrack), or a sentence
+ * Quiz-me's marker-only teach set (see startSentence, which puts the tier
+ * marker in `teach` even on Quiz-me "so it would otherwise never be
+ * claimed"). Only a Quiz-me-only run on a non-sentence track ever leaves
+ * `teach` empty (startTrack marks seen instead of teaching), and for that one
+ * case the whole quizzed set (`facts`) is the closest equivalent to what its
+ * Learn card's own "I already know this" would claim.
+ */
+export function sessionKnownClaimTarget(
+  session: Pick<StudySession, "teach" | "facts">,
+): FactId[] {
+  return session.teach.length ? [...session.teach] : [...session.facts];
+}
 
 /** The fixed number of quizzes in one session run. */
 export const SESSION_ROUND_TARGET = 3;
