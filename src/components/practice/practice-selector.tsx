@@ -23,6 +23,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { Info } from "@/components/ui";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { readableAssemblyForTiers } from "@/data/assembly";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
@@ -88,6 +89,26 @@ const STATUSES: ReadonlyArray<{ id: FactBand; label: string }> = [
   { id: "mixup", label: "Mix-ups" },
   { id: "slipping", label: "Slipping" },
 ];
+
+// Matches the real crossing computed in src/lib/library/standing.ts
+// (`standingOf`) — accuracy is over the up-to-ten most recent runs, not the
+// lifetime total, and "solid" additionally requires the app to currently
+// expect you'd recall it right now. Mix-ups is a separate axis entirely (see
+// selection.ts's `mixedUpEntries`): a fact keeps its own standing regardless
+// of whether it's also tangled up with something else.
+// STATUSES never includes "new" (the empty/unmet band has no chip here — see
+// the map below), so every lookup key this map actually sees is covered.
+const STATUS_INFO: Partial<Record<FactBand, string>> = {
+  solid:
+    "You're currently expected to recall it, and at least 80% of your recent runs got it right.",
+  "getting-there":
+    "At least 60% of your recent runs got it right, but under 80%.",
+  shaky: "Under 60% of your recent runs got it right.",
+  slipping:
+    "You've seen this before, but enough time has passed that the app now expects you've forgotten it — due to be re-taught, not re-tested.",
+  mixup:
+    "You've been mixing it up with a specific other entry. A separate question from how well you know it on its own — a fact can be any status here while also being an active mix-up.",
+};
 
 function sentenceScopeIsAvailable(sel: Selection): boolean {
   return (
@@ -472,25 +493,27 @@ export function PracticeSelector({
         <SubLbl>Status</SubLbl>
         <div className="flex flex-wrap gap-2">
           {STATUSES.map(({ id, label }) => (
-            <StatusChip
-              key={id}
-              label={label}
-              count={statusCounts.get(id) ?? 0}
-              on={sel.states.includes(id)}
-              onClick={() => {
-                const next: Selection = {
-                  ...sel,
-                  states: sel.states.includes(id)
-                    ? sel.states.filter((state) => state !== id)
-                    : [...sel.states, id],
-                };
-                onChange(
-                  scope === "everything"
-                    ? pruneEmptyTypes(next, presentTypesIn(next))
-                    : next,
-                );
-              }}
-            />
+            <span key={id} className="inline-flex items-center gap-0.5">
+              <StatusChip
+                label={label}
+                count={statusCounts.get(id) ?? 0}
+                on={sel.states.includes(id)}
+                onClick={() => {
+                  const next: Selection = {
+                    ...sel,
+                    states: sel.states.includes(id)
+                      ? sel.states.filter((state) => state !== id)
+                      : [...sel.states, id],
+                  };
+                  onChange(
+                    scope === "everything"
+                      ? pruneEmptyTypes(next, presentTypesIn(next))
+                      : next,
+                  );
+                }}
+              />
+              <Info>{STATUS_INFO[id]}</Info>
+            </span>
           ))}
         </div>
         <p className="mt-2 text-[12px] text-text-muted">
