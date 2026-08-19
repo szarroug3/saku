@@ -363,7 +363,19 @@ export function CharacterEntryView({
               {example ? (
                 <div>
                   <SubLabel>In a sentence</SubLabel>
-                  <p className="font-kana text-[15px] leading-relaxed text-text">{example.jp}</p>
+                  <p className="font-kana text-[15px] leading-relaxed text-text">
+                    {example.span ? (
+                      <>
+                        {example.jp.slice(0, example.span[0])}
+                        <span className="font-medium sentence-part-topic">
+                          {example.jp.slice(example.span[0], example.span[1])}
+                        </span>
+                        {example.jp.slice(example.span[1])}
+                      </>
+                    ) : (
+                      example.jp
+                    )}
+                  </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
                 </div>
               ) : null}
