@@ -12,11 +12,28 @@ export type SentenceOrderingTierId =
   | "contrast"
   | "request";
 
+/** One worked example for an intro guide, in the same three-layer shape the
+ * teach walk's step cards use (see TierExample in sentence-ordering-teach-walk.tsx):
+ * natural English, that same sentence spelled out in Japanese chunk order, then
+ * the actual Japanese sentence. Kept separate from TierExample because the intro
+ * card has no active chunk to highlight — it is shown plain, before the walk
+ * starts breaking the sentence into steps. */
+export interface SentenceOrderingWorkedExample {
+  en: string;
+  enOrdered: string;
+  jp: string;
+}
+
 export interface SentenceOrderingGuide {
   eyebrow: string;
   title: string;
   body: readonly { lead: string; text: string }[];
   hook: string;
+  /** A worked example shown on the intro card itself, so the abstract ordering
+   * description isn't the learner's only exposure to the concept before the
+   * step cards that follow give one. Optional: only the `simple` tier's intro
+   * is purely abstract today. */
+  example?: SentenceOrderingWorkedExample;
 }
 
 export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOrderingGuide> = {
@@ -38,6 +55,11 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
       },
     ],
     hook: "Think: who or what → other information → main action.",
+    example: {
+      en: "I eat that.",
+      enOrdered: "As for me → that → eat.",
+      jp: "私はそれを食べる。",
+    },
   },
   conditional: {
     eyebrow: "Conditional sentence ordering",
