@@ -48,11 +48,10 @@ export function DuePracticeButton({
       </span>
       <Info>
         &ldquo;Due&rdquo; means it&apos;s time to review this again, based on
-        how well — and how recently — you&apos;ve remembered it before. The
-        app tracks this per fact instead of a fixed schedule: something you
+        how well and how recently you&apos;ve remembered it before. The app
+        tracks this per fact instead of a fixed schedule: something you
         answer well drifts out of Due for longer, something shaky comes back
-        sooner. It is the same timing the app already uses to decide what a
-        drill asks first.
+        sooner.
       </Info>
     </div>
   );
