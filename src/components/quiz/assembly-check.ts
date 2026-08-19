@@ -68,7 +68,6 @@ export function checkCard(
   card: AsmCard,
   retries: number,
 ): "right" | "retry" | "locked" {
-  const canon = canonicalOrder(card.item);
   const ok = gradeAssembly(card.item, card.tray);
   const facts = assemblyFacts(card.item);
   for (const f of facts) {
@@ -91,7 +90,14 @@ export function checkCard(
   card.tries++;
   for (const f of facts) rt.stats[f].misses++;
   if (card.tries >= retries) {
-    card.tray = canon.slice();
+    // The learner's own (wrong) tray order is kept exactly as they left it —
+    // it must never silently snap to canon here. The correct answer is shown
+    // separately, in the reveal panel below the tray (assembly-screen.tsx),
+    // which reads it straight from item.jp rather than from card.tray. A
+    // wrong-position mismatch computed against the learner's placement (see
+    // findAssemblyMismatch in assembly-screen.tsx's check()) stays meaningful
+    // after locking only because the tray it was computed against is still
+    // the tray on screen (Sam, changes requested).
     card.pool = [];
     card.state = "wrong";
     return "locked";
