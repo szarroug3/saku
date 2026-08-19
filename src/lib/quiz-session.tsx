@@ -96,7 +96,7 @@ import {
   SESSION_KEY,
 } from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
-import { buildSessionRecord } from "@/lib/session-record";
+import { buildSessionRecord, newRecordId } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
@@ -1133,6 +1133,11 @@ export function QuizSessionProvider({
           // The seen marks the caller laid down at start, so a discard can take
           // exactly them back (see StudySession.seededSeen and discardRun below).
           seededSeen,
+          // Minted once, here, and never again for this session — every round's
+          // record carries it unchanged so Recent Sessions can group them back
+          // into the one row this session actually is. See
+          // StudySession.sessionId / QuizSessionRecord.sessionId.
+          sessionId: newRecordId(),
           round: 1,
           // New material is read before it's asked. With nothing new in the
           // session there is nothing to read, so the lesson doesn't appear at
@@ -1285,6 +1290,10 @@ export function QuizSessionProvider({
         ts: now,
         planned: s.facts,
         rounds: 1,
+        // Same id on every round of this session, so Recent Sessions can
+        // group the per-round records it still durably commits (see the
+        // note above) back into one row — SAK-23.
+        sessionId: s.sessionId,
       }),
     );
     return {

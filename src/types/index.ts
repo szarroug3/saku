@@ -739,6 +739,28 @@ export interface QuizSessionRecord {
   planned?: FactId[];
   /** How many rounds of the loop this session ran. Absent on one-off quizzes. */
   rounds?: number;
+  /**
+   * Links this record to every OTHER round of the same multi-round session —
+   * minted once, on the StudySession, at startSession, and carried unchanged
+   * onto every round's record as closeRound commits it (see quiz-session.tsx).
+   *
+   * EXISTS FOR GROUPING, NOT FOR WRITE-TIME MERGING. A completed round is
+   * still the durable commit unit (closeRound writes one record per round, on
+   * purpose — see the note there): abandoning a session between rounds must
+   * not lose the rounds already finished, the exact bug that made per-round
+   * commits necessary in the first place. What `sessionId` fixes is a
+   * DIFFERENT bug (SAK-23): a completed multi-round session showed up in
+   * Recent Sessions as one row per round, each with that round's own
+   * (therefore wrong-looking) count and score. `session-rows.ts`'s
+   * `buildSessionListRows` groups records sharing a `sessionId` into a single
+   * display row with the real counts and score summed across the group — a
+   * read-side view, not a change to what gets written or folded.
+   *
+   * Absent on a one-off quiz (no rounds to link) and on any record written
+   * before this field existed; both read as their own, ungrouped row, which is
+   * what they always were.
+   */
+  sessionId?: string;
 }
 
 export interface HistoryFile {
