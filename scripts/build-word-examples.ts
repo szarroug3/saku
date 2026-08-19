@@ -31,7 +31,17 @@ const rankOf = (lemma: string) => rank.get(lemma);
 const byWord = indexByWord(CORPUS);
 
 // Sorted by written form so the file's key order is stable across runs.
-const out: Record<string, [number, string, string] | [number, string, string, number, number]> = {};
+//
+// Six-element rows, fixed shape: [id, jp, en, start, end, kr]. start/end are
+// null when the word's literal form isn't in the sentence (see below); kr is
+// always [] here — scripts/ingest/sentence_readings.py is a SECOND pass that
+// reads this same file back and fills kr in per kanji, preserving start/end
+// unchanged. One row shape both passes agree on, so neither can silently drop
+// what the other wrote.
+const out: Record<
+  string,
+  [number, string, string, number | null, number | null, unknown[]]
+> = {};
 let n = 0;
 let spanned = 0;
 for (const w of [...VOCAB].sort((a, b) => (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0))) {
@@ -46,9 +56,9 @@ for (const w of [...VOCAB].sort((a, b) => (a.keb < b.keb ? -1 : a.keb > b.keb ? 
   // does not, and gets no span: absent is honest, a wrong span is not.
   const start = pick.jp.indexOf(w.keb);
   if (start === -1) {
-    out[w.keb] = [pick.id, pick.jp, pick.en];
+    out[w.keb] = [pick.id, pick.jp, pick.en, null, null, []];
   } else {
-    out[w.keb] = [pick.id, pick.jp, pick.en, start, start + w.keb.length];
+    out[w.keb] = [pick.id, pick.jp, pick.en, start, start + w.keb.length, []];
     spanned++;
   }
   n++;
@@ -58,3 +68,4 @@ const path = join(import.meta.dirname, "..", "src", "data", "generated", "word-e
 writeFileSync(path, JSON.stringify(out) + "\n");
 console.log(`word-examples.json: ${n} of ${VOCAB.length} words (${((100 * n) / VOCAB.length).toFixed(1)}%)`);
 console.log(`  ${spanned} of ${n} (${((100 * spanned) / n).toFixed(1)}%) have a highlight span`);
+console.log(`  run scripts/ingest/sentence_readings.py next to fill in per-kanji readings (kr)`);

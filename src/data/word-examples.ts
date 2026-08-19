@@ -18,8 +18,24 @@
 // it. The acknowledgement itself is the "About the data" link in the global
 // sidebar (src/components/sidebar.tsx), reachable from every screen; /about/data
 // names Tatoeba and the sentence data in full. See src/data/attribution.ts.
+//
+// PER-KANJI READINGS (SAK-95). `kr` is a second pass over this same file, run
+// by scripts/ingest/sentence_readings.py AFTER build-word-examples.ts: one
+// slot per KANJI CHARACTER in `jp`, left to right (kana characters contribute
+// no slot). Each slot is either the same [kanji, surface-reading,
+// base-reading] triple `VocabRow.align` already uses (src/data/vocab.ts), or
+// null when that kanji's in-context reading could not be safely determined —
+// a jukujikun the sentence tokenizer's dictionary reading doesn't survive
+// aligner's rendaku rules, or a reading vocab.json never happened to attest.
+// Null is a normal answer, not a gap to fill in later: see the script's
+// module doc for the measured 95% per-kanji coverage and known caveats.
 
 import examplesJson from "./generated/word-examples.json" with { type: "json" };
+
+/** [kanji, surface-reading-in-this-sentence, base-reading], or null when this
+ * kanji's reading could not be safely determined. Same shape as one slot of
+ * `VocabRow.align`. */
+export type KanjiReadingSlot = readonly [string, string, string] | null;
 
 /** A word shown in a real sentence, with a human translation. */
 export interface WordExample {
@@ -40,14 +56,21 @@ export interface WordExample {
    * for how this is computed.
    */
   readonly span?: readonly [number, number];
+  /** Per-kanji reading breakdown of `jp`. See the module header. */
+  readonly kr: readonly KanjiReadingSlot[];
 }
 
-/** Tuple-packed on disk: [id, jp, en] or [id, jp, en, start, end] when the
- * word's literal written form was found in the sentence. 2,692 rows times
- * three key names is ~40 KB of the same six words, so the keys are put back
- * on here instead. */
+/** Tuple-packed on disk: [id, jp, en, start, end, kr] — start/end are null
+ * when the word's literal written form was not found in the sentence (SAK-94
+ * has nothing to highlight then). A fixed six-element shape rather than a
+ * variable-length one keeps this single format the only one two independent
+ * generation passes (build-word-examples.ts for span, sentence_readings.py
+ * for kr) both have to agree on. */
 const RAW = examplesJson as unknown as Readonly<
-  Record<string, readonly [number, string, string] | readonly [number, string, string, number, number]>
+  Record<
+    string,
+    readonly [number, string, string, number | null, number | null, readonly KanjiReadingSlot[]]
+  >
 >;
 
 /** The example sentence for a word's written form, or null if it has none.
@@ -55,9 +78,9 @@ const RAW = examplesJson as unknown as Readonly<
 export function exampleFor(keb: string): WordExample | null {
   const row = RAW[keb];
   if (!row) return null;
-  const [id, jp, en] = row;
-  const span = row.length === 5 ? ([row[3], row[4]] as const) : undefined;
-  return span ? { id, jp, en, span } : { id, jp, en };
+  const [id, jp, en, start, end, kr] = row;
+  const span = start !== null && end !== null ? ([start, end] as const) : undefined;
+  return span ? { id, jp, en, span, kr } : { id, jp, en, kr };
 }
 
 /** How many words have a sentence. Pinned by a test so a regenerated artifact
