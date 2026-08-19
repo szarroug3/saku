@@ -123,6 +123,7 @@ export default function SessionPage() {
     endSession,
     finishSession,
     startFirstRound,
+    startSession,
     resumeRound,
     setTeachStep,
     recoverLostLeg,
