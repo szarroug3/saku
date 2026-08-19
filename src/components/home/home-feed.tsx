@@ -30,6 +30,7 @@ import { startTransition, useMemo } from "react";
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { SrsIntro } from "@/components/lesson/srs-intro";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
+import { TrackIntroCard } from "@/components/learn/track-intro-card";
 
 // /learn schedules over a PRECOMPUTED index, not the live curriculum content: the
 // ~8.6 MB dictionary is derived at build time into learn-index.json and this page
@@ -41,6 +42,7 @@ import {
   nextSentenceLearnLesson,
   sentenceLearnLessonForRun,
   sentenceTierIdOfEntry,
+  startedLearnTracks,
   trackIdOfFact,
 } from "@/lib/content/learn-index";
 import type { IndexUnit } from "@/lib/content/learn-index-types";
@@ -116,14 +118,61 @@ const TRACK_TITLE: Record<string, string> = {
 function lede(strong: string): Why {
   return { lede: { strong }, paras: [] };
 }
+/**
+ * SAK-28 "track intro" card 0. Sam's approved copy (sign-off 2026-08-19), used
+ * VERBATIM. Shown once, in place of a track's NextLessonPreview, for as long as
+ * `startedLearnTracks` (src/lib/content/learn-index.ts) says the track is
+ * untouched. See TrackIntroCard for the gate mechanism and how it differs from
+ * src/data/track-intros.ts's TRACK_INTROS (the longer in-lesson explainer).
+ *
+ * Keyed by the SAME ids TRACK_TITLE/TRACK_WHY use above (kana/vocab/numbers/
+ * keigo/grammar), not track-open.ts's older per-role TrackId; see
+ * startedLearnTracks's own comment for why.
+ *
+ * TRANSITIVITY AND SENTENCE ARE DELIBERATELY ABSENT. Sam's approved copy in the
+ * ticket names all seven tracks, including these two, but neither behaves like
+ * a track a learner "starts": both open automatically once their own
+ * prerequisites are met (transitivity already gets an inline intro card the
+ * moment its first pair is taught, TRANSITIVITY_INTRO, gated in
+ * lesson-steps.ts; sentence's card names the specific tier it opens, e.g.
+ * "Simple sentences", which a generic "why this track" teaser would obscure).
+ * Card 0 for either would also collide with e2e specs that assert those cards'
+ * OWN content the instant they're admitted (see e2e/sentence-gates.spec.ts).
+ * Flagged in the SAK-28 tracking comment for a human call rather than guessed
+ * silently; the copy is ready to wire in the moment that call is made.
+ */
+const TRACK_INTRO_COPY: Record<string, string> = {
+  kana: "Kana comes first because Japanese isn't written with the letters you already know. Learning it is what unlocks everything else, so there's no reason to wait.",
+  vocab:
+    "This is the main track. Kanji and words keep unlocking as you go, so there's no reason to wait.",
+  grammar:
+    "Start once single words feel limiting, when you want to say 'I ate' or 'please eat,' not just 'eat.'",
+  numbers:
+    "Start anytime. You'll want these the first time you order two of something or count people.",
+  keigo:
+    "Start once plain verbs feel comfortable. This is the polite, formal version of what you already know.",
+};
+
 const TRACK_WHY: Record<string, Why> = {
-  kana: lede("Kana teaches you how to read and pronounce words. It’s the fastest way to get started."),
-  vocab: lede("Vocabulary teaches you the glyphs and words you’ll actually read and speak."),
-  numbers: lede("Counters teach you how to count anything: days, people, drinks, etc."),
-  keigo: lede("Speak politely to people you don’t know well, or want to show respect."),
+  kana: lede(
+    "Kana teaches you how to read and pronounce words. It’s the fastest way to get started.",
+  ),
+  vocab: lede(
+    "Vocabulary teaches you the glyphs and words you’ll actually read and speak.",
+  ),
+  numbers: lede(
+    "Counters teach you how to count anything: days, people, drinks, etc.",
+  ),
+  keigo: lede(
+    "Speak politely to people you don’t know well, or want to show respect.",
+  ),
   grammar: lede("Turn the words you know into real sentences."),
-  transitivity: lede("Say whether something happened on its own or someone did it."),
-  sentence: lede("Arrange words and grammar into sentences that come out in the right order."),
+  transitivity: lede(
+    "Say whether something happened on its own or someone did it.",
+  ),
+  sentence: lede(
+    "Arrange words and grammar into sentences that come out in the right order.",
+  ),
 };
 
 /** Hiragana vs katakana by Unicode block. The kana track teaches all hiragana
@@ -229,6 +278,16 @@ export function HomeFeed() {
   const range = useMemo(
     () => ({ min: cfg.lessonMinCost, max: cfg.lessonMaxCost }),
     [cfg.lessonMinCost, cfg.lessonMaxCost],
+  );
+
+  // The SAK-28 card-0 gate: every /learn track the learner has already touched.
+  // A track absent from this set is opening right now, and gets the one-time
+  // intro card in place of its NextLessonPreview below. `exclude` is empty,
+  // since this is asked before any lesson of THIS frame has started, so there is no
+  // just-taught teach set to exclude yet (see startedLearnTracks's own comment).
+  const openedTracks = useMemo(
+    () => startedLearnTracks(history, new Set<FactId>()),
+    [history],
   );
 
   // Each track's precomputed order (units are history-independent) and its live
@@ -437,40 +496,68 @@ export function HomeFeed() {
           "why", and Start / Quiz me / Continue / I-already-know, all off the one
           NextLessonPreview. */}
       <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2">
-        {visible.map(({ track, order, run, lesson }) => (
-          <NextLessonPreview
-            key={track.id}
-            lesson={lesson!}
-            separated={false}
-            title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
-            positionLabel={
-              track.id === "kana"
-                ? kanaPositionLabel(lesson!, order, history)
-                : track.id === "vocab"
-                  ? vocabPositionLabel(lesson!, order, history)
-                  : trackPositionLabel(TRACK_NOUN[track.id] ?? "Item", order, lesson!, history)
-            }
-            why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
-            onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}
-            onClaim={() => claimTrack(track.id, lesson!, run)}
-            claimAll={
-              track.id === "kana"
-                ? (() => {
-                    const script = kanaScript(String(lesson!.units[0]?.item.glyph ?? ""));
-                    return {
-                      label: `all ${script.toLowerCase()}`,
-                      onClaim: () => {
-                        const all = kanaScriptFacts(order, script);
-                        writes.claim(all);
-                        closeIfClaimedAway(run, all);
-                      },
-                    };
-                  })()
-                : undefined
-            }
-            onContinue={run ? () => continueRun(run.id) : undefined}
-          />
-        ))}
+        {visible.map(({ track, order, run, lesson }) => {
+          // SAK-28 card 0: a track absent from openedTracks is opening right
+          // now, and gets the one-time intro card in this slot INSTEAD of
+          // NextLessonPreview (same slot, same grid, so the two must never
+          // both render for one track). Falls through to the ordinary card for
+          // any track with no approved copy yet (transitivity, sentence; see
+          // TRACK_INTRO_COPY's own comment for why).
+          const introCopy = TRACK_INTRO_COPY[track.id];
+          if (introCopy && !openedTracks.has(track.id)) {
+            return (
+              <TrackIntroCard
+                key={track.id}
+                title={
+                  TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"
+                }
+                description={introCopy}
+                onStart={() => startTrack(track.id, lesson!)}
+              />
+            );
+          }
+          return (
+            <NextLessonPreview
+              key={track.id}
+              lesson={lesson!}
+              separated={false}
+              title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
+              positionLabel={
+                track.id === "kana"
+                  ? kanaPositionLabel(lesson!, order, history)
+                  : track.id === "vocab"
+                    ? vocabPositionLabel(lesson!, order, history)
+                    : trackPositionLabel(
+                        TRACK_NOUN[track.id] ?? "Item",
+                        order,
+                        lesson!,
+                        history,
+                      )
+              }
+              why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
+              onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}
+              onClaim={() => claimTrack(track.id, lesson!, run)}
+              claimAll={
+                track.id === "kana"
+                  ? (() => {
+                      const script = kanaScript(
+                        String(lesson!.units[0]?.item.glyph ?? ""),
+                      );
+                      return {
+                        label: `all ${script.toLowerCase()}`,
+                        onClaim: () => {
+                          const all = kanaScriptFacts(order, script);
+                          writes.claim(all);
+                          closeIfClaimedAway(run, all);
+                        },
+                      };
+                    })()
+                  : undefined
+              }
+              onContinue={run ? () => continueRun(run.id) : undefined}
+            />
+          );
+        })}
       </div>
 
       {curriculumComplete ? <CurriculumComplete /> : null}
