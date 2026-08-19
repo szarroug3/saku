@@ -246,7 +246,7 @@ const STEP_PART_LABELS: Record<
   SentenceOrderingTierId,
   Partial<Record<StepKey, string>>
 > = {
-  simple: { topic: "Topic", core: "Object/detail", ending: "Final predicate" },
+  simple: { topic: "Topic", core: "Object", ending: "Action" },
   conditional: {
     condition: "If part",
     resultTopic: "Who the result is about",
@@ -662,7 +662,7 @@ const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinition[]> 
     {
       key: "ending",
       title: "Final predicate",
-      details: ["Put the action or statement ending last.", "This is the sentence's final verb or copular ending."],
+      details: ["Put the action or statement ending last.", "This is the sentence's final verb or ending."],
     },
   ],
   conditional: [
