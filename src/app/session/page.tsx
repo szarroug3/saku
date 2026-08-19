@@ -417,8 +417,20 @@ export default function SessionPage() {
               content instead of just whitespace (SAK-10 direction 2). The
               rail sits beside the content, top-aligned with it, and
               disappears below xl where there is no honest margin left to
-              put it in — see lesson-rail.tsx. */}
-          <div className="flex min-h-full items-start justify-center gap-8 py-2">
+              put it in — see lesson-rail.tsx.
+
+              pb-6: breathing room above the frozen footer below (SAK-31).
+              Without it the last section of whatever card is on screen —
+              a kana card, a keigo card, a grammar pattern card, any of
+              them — lands flush against the footer's hairline on load or
+              at scroll-end. Content stayed reachable even before this (the
+              region scrolls), so this is spacing, not a clipping fix. 24px
+              matches the gap start-bar.tsx uses above its own footer-like
+              bar (`pt-6`), the app's existing "content to bottom bar"
+              rhythm. Kept on this row rather than the pt-2 above so the
+              gap sits only at the END of the scroll, not doubled at the
+              top under the frozen header. */}
+          <div className="flex min-h-full items-start justify-center gap-8 pt-2 pb-6">
             <div className="min-w-0 max-w-2xl flex-1">
               {sentenceOrderingTeaching ? (
                 <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
