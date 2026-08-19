@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { meaningFactId, readingFactId } from "../../data/kanji.ts";
+import { wordMeaningFactId } from "../vocab-ids.ts";
 import { checkTyped } from "./index.ts";
 import {
   digitVariants,
@@ -18,6 +19,8 @@ import {
   matchesEnglish,
   norm,
   stripParentheticals,
+  synonymCandidates,
+  synonymKeyOf,
   typoBudget,
 } from "./en-match.ts";
 
@@ -147,6 +150,71 @@ describe("matchesEnglish — layer 3, typo tolerance", () => {
   });
 });
 
+describe("synonymKeyOf — what reduces cleanly for the curated pool", () => {
+  test("a bare word keys in, lowercased", () => {
+    assert.equal(synonymKeyOf("Nonexistent"), "nonexistent");
+  });
+  test("a bare infinitive strips its leading 'to '", () => {
+    assert.equal(synonymKeyOf("to eat"), "eat");
+  });
+  test("a hyphenated compound keys in whole", () => {
+    assert.equal(synonymKeyOf("well-known"), "well-known");
+  });
+  test("anything left multi-word, punctuated, or with a digit is skipped", () => {
+    assert.equal(synonymKeyOf("not being (there)"), null);
+    assert.equal(synonymKeyOf("line, row, verse"), null);
+    assert.equal(synonymKeyOf("four (4)"), null);
+    assert.equal(synonymKeyOf(""), null);
+  });
+});
+
+describe("matchesEnglish — layer 0.5, curated synonym pool (SAK-53)", () => {
+  test("the original reported case: ない's own gloss is exact-matched more forgivingly", () => {
+    // The bug this ticket fixes: ない's glosses are "nonexistent, not being
+    // (there)"; typing the paraphrase "doesn't exist" was marked wrong.
+    assert.equal(
+      matchesEnglish("doesn't exist", ["nonexistent", "not being (there)"]),
+      true,
+    );
+    assert.equal(
+      matchesEnglish("does not exist", ["nonexistent", "not being (there)"]),
+      true,
+    );
+  });
+  test("slang register variants of high-frequency 'yes' glosses are accepted", () => {
+    // Sam's second reported case: "yas" for うん isn't a typo (typoBudget is
+    // 0 at this length by design) — it's a genuine informal register variant,
+    // hand-seeded because WordNet (rel_syn=yes) has no entry for it at all.
+    assert.equal(matchesEnglish("yas", ["yes"]), true);
+    assert.equal(matchesEnglish("yas", ["yeah"]), true);
+  });
+  test("an unrelated word is still rejected even though the pool has entries", () => {
+    assert.equal(matchesEnglish("banana", ["nonexistent", "not being (there)"]), false);
+  });
+  test("the pool layer is EXACT-ONLY — a typo of a pool entry is not forgiven", () => {
+    // "doesnt exist" is one edit (the dropped apostrophe) from the pool entry
+    // "doesn't exist" — close enough that a MERGED pool would let the typo
+    // layer wave it through. It must not: the pool is checked exact-only, and
+    // "doesnt exist" is also far (by edit distance) from the real gloss
+    // "nonexistent" itself, so layer 3 cannot rescue it either. This is what
+    // proves the "no compounding" design actually holds, not just that the
+    // pool exists.
+    assert.equal(matchesEnglish("doesnt exist", ["nonexistent"]), false);
+  });
+});
+
+describe("synonymCandidates — assembled from the same fragments as layer 2", () => {
+  test("draws from the whole gloss, its paren-stripped form, and comma pieces", () => {
+    const c = synonymCandidates(["nonexistent, not being (there)"]);
+    assert.ok(c.has("doesn't exist"));
+    assert.ok(c.has("does not exist"));
+  });
+  test("a fact with no queryable single-word gloss yields an empty pool", () => {
+    const c = synonymCandidates(["a very specific multi word gloss"]);
+    assert.equal(c.size, 0);
+  });
+});
+
 describe("matchesEnglish — never regresses exact / all-glosses", () => {
   test("exact match against any of several answers still passes", () => {
     const glosses = ["teacher", "instructor", "master"];
@@ -209,5 +277,19 @@ describe("wired into checkTyped for real kanji facts", () => {
     const ichi = readingFactId("一", "一");
     assert.equal(checkTyped(ichi, "いち", "jp2en"), true);
     assert.equal(checkTyped(ichi, "いし", "jp2en"), false);
+  });
+  test("SAK-53's literal repro case, through the real ない fact end-to-end", () => {
+    // Not a hand-typed gloss fixture: this is the actual VOCAB row for ない,
+    // its real fact id, and the real generated en-synonyms.json loaded by
+    // en-match.ts at import time. ない's live glosses are exactly
+    // ["nonexistent", "not being (there)"] — confirmed by reading VOCAB
+    // directly while writing this test. If the generated pool ever stops
+    // carrying the "nonexistent" → "doesn't exist" entry, this fails, unlike
+    // the hand-fixture tests above which would keep passing regardless.
+    const nai = wordMeaningFactId("ない");
+    assert.equal(checkTyped(nai, "doesn't exist", "jp2en"), true);
+    assert.equal(checkTyped(nai, "does not exist", "jp2en"), true);
+    assert.equal(checkTyped(nai, "nonexistent", "jp2en"), true); // unchanged exact match
+    assert.equal(checkTyped(nai, "delicious", "jp2en"), false); // unrelated, still rejected
   });
 });
