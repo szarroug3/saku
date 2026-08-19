@@ -41,7 +41,12 @@
 import { factKeys } from "@/lib/fact-keys";
 // Also from a data-free module, and for the same bundle reason as factKeys.
 import { firstTryShowings } from "@/lib/first-try";
-import type { FactId, FactSessionDetail, SessionStats } from "@/types";
+import type {
+  FactId,
+  FactSessionDetail,
+  QuizSessionRecord,
+  SessionStats,
+} from "@/types";
 
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 
@@ -58,6 +63,18 @@ export type SessionPhase =
    * session is created, and never by improvising a second way to start a leg.
    * /session's mount effect is the only reader; nothing else should branch on
    * it, and no screen renders for it (same treatment as "drilling").
+   *
+   * THE BUG THIS PINS: a "Quiz me" session used to begin its leg in the same
+   * startTransition as startSession itself — before /session (and its
+   * "drilling with no leg means lost" guard) had ever mounted for this run.
+   * Reaching /session for the first time only once the leg had already
+   * finished put phase and leg out of step for exactly the window that guard
+   * cannot tell apart from a genuinely lost leg, and the round-complete
+   * screen it recovered to reported an untouched, empty `roundStats` despite
+   * the learner having actually answered every card — a bogus "Round 1 · 0
+   * forms" screen. Starting every session's first leg from the one place
+   * ("starting") removes the second mechanism instead of teaching the guard
+   * to tell the two states apart.
    */
   | "starting"
   /** A round (or a retry leg of one) is on screen. */
@@ -203,61 +220,81 @@ export interface StudySession {
    * real by the SAME write, not left to a decay that isFactFresh never reads.
    */
   seededSeen?: FactId[];
+  /**
+   * How many rounds THIS session runs before it reaches "complete" — stored
+   * explicitly at start (see `effectiveRoundTarget`) rather than re-derived at
+   * every check site, alongside `teach`/`facts`/`seededSeen` and for the same
+   * reason: the session freezes its own shape at Start.
+   *
+   * A taught session (`teach` non-empty) runs the normal `SESSION_ROUND_TARGET`
+   * (3). A "Quiz me" session started directly from a Learn card (no `teach`)
+   * runs exactly ONE round: Sam's own quiz-taking behaviour is to stop after
+   * the single round and expect the end-of-session choice right there, not
+   * after three. See `initialSessionPhase` — the identical `teach.length`
+   * signal decides both this and whether the session opens teaching or
+   * "starting".
+   *
+   * Optional and read through `effectiveRoundTarget`/`roundTargetOf` so a
+   * session snapshotted before this field existed falls back to the same
+   * `teach.length` rule it would have been given at start.
+   */
+  roundTarget?: number;
+  /**
+   * A completed round's durable record, held here instead of committed —
+   * ONLY for a single-round ("Quiz me") session whose one and only round just
+   * closed. `closeRound` builds the record as it always does but, for this one
+   * case, does not hand it to `commitRecord` yet: the round covers whatever
+   * subset of the batch the learner actually answered, and whether that
+   * subset's real results ever reach history is the learner's own explicit
+   * choice on SessionComplete, not automatic. "I already know these" commits
+   * it (see finishSession); "Take me to the lesson" discards it along with
+   * the rest of the run, so a Quiz-me attempt abandoned mid-way leaves no
+   * trace at all — not even for the items that were genuinely answered.
+   *
+   * Absent (or null) for every taught session, which commits at `closeRound`
+   * exactly as it always did — this field only ever gets set on the one round
+   * a `roundTarget: 1` session runs.
+   */
+  pendingRecord?: QuizSessionRecord | null;
 }
 
 /** Who opened a session. See StudySession.origin. */
 export type SessionOrigin = "lesson" | "library";
 
 /**
- * Which facts "mark these as known" claims when a session ends — the SAME
- * mechanism as the Learn card's "I already know this" (postClaim), reached
- * from the end-of-quiz choice instead.
- *
- * `teach` when it is non-empty: a normal lesson's taught set (== `facts` for
- * every non-sentence track — see home-feed's startTrack), or a sentence
- * Quiz-me's marker-only teach set (see startSentence, which puts the tier
- * marker in `teach` even on Quiz-me "so it would otherwise never be
- * claimed"). Only a Quiz-me-only run on a non-sentence track ever leaves
- * `teach` empty (startTrack marks seen instead of teaching), and for that one
- * case the whole quizzed set (`facts`) is the closest equivalent to what its
- * Learn card's own "I already know this" would claim.
- */
-export function sessionKnownClaimTarget(
-  session: Pick<StudySession, "teach" | "facts">,
-): FactId[] {
-  return session.teach.length ? [...session.teach] : [...session.facts];
-}
-
-/**
  * Which phase a freshly created session begins in, from its teach set.
  *
  * A taught session shows the lesson first ("teaching"). A "Quiz me" session
  * has nothing to teach — but it must NOT begin drilling in the same breath it
- * is created. It begins in "starting" instead, which routes it through
- * /session first, so its first leg begins from a SETTLED render there (see
- * SessionPhase and /session's "starting" mount effect) — the same mechanism
- * the taught flow's own "Quiz me" button already uses to begin its first leg
- * (startFirstRound), rather than a second, direct call to beginLeg made from
- * whatever component happened to call startSession.
- *
- * THE SAK-52 REGRESSION THIS PINS: a "Quiz me" session used to begin in
- * "drilling" here, with its leg started in the same startTransition as
- * startSession itself — before /session (and its "drilling with no leg means
- * lost" guard) had ever mounted for this run. Reaching /session for the first
- * time only once the leg had already finished put phase and leg out of step
- * for exactly the window that guard cannot tell apart from a genuinely lost
- * leg, and the round-complete screen it recovered to reported an untouched,
- * empty `roundStats` despite the learner having actually answered every
- * card. Starting every session's first leg from the one place ("starting")
- * removes the second mechanism instead of teaching the guard to tell the two
- * states apart.
+ * is created; see the long note on `"starting"` above for why.
  */
 export function initialSessionPhase(teach: FactId[]): SessionPhase {
   return teach.length > 0 ? "teaching" : "starting";
 }
 
-/** The fixed number of quizzes in one session run. */
+/** The fixed number of rounds a TAUGHT session runs. See `effectiveRoundTarget`
+ * for the one exception (a "Quiz me" session started with no `teach`, which
+ * runs exactly one round) — this constant is never compared against directly
+ * outside this file; every check site reads `roundTargetOf` instead. */
 export const SESSION_ROUND_TARGET = 3;
+
+/** How many rounds a session with this `teach` set should run, computed once
+ * at Start and stored on the session (`StudySession.roundTarget`) — see the
+ * field doc for why a direct Quiz-me runs exactly one round. */
+export function effectiveRoundTarget(teach: FactId[]): number {
+  return teach.length > 0 ? SESSION_ROUND_TARGET : 1;
+}
+
+/** A session's actual round target: the stored field, or (for a session
+ * snapshotted before the field existed) the same rule it would have been
+ * given at start. Every completeRound/startNextRound/round-label check reads
+ * THIS, never `SESSION_ROUND_TARGET` directly, so a single-round Quiz-me
+ * session is never held to the taught session's three rounds. */
+export function roundTargetOf(
+  session: Pick<StudySession, "roundTarget" | "teach">,
+): number {
+  return session.roundTarget ?? effectiveRoundTarget(session.teach);
+}
 
 /**
  * How long the rest before `nextRound` is, in minutes.
@@ -527,6 +564,37 @@ export function roundCompleteView(session: StudySession): {
     firstTry,
     needAnother: total - firstTry,
   };
+}
+
+/**
+ * Which facts "I already know these" claims when a session ends — the SAME
+ * mechanism as the Learn card's own "I already know this" (postClaim), reached
+ * from the end-of-session choice instead.
+ *
+ * The candidate set is `teach` when it is non-empty (a taught lesson's own
+ * material), else `facts` (a "Quiz me" session, which has nothing in `teach`).
+ * But the claim NARROWS to whatever of that set was never actually answered
+ * this session — `totalStats` (every round's stats, banked at each
+ * `closeRound`) says exactly which facts have real recorded results. An
+ * answered fact keeps whatever standing its real performance earned; claiming
+ * it too would silently overwrite a real result with a blind "known", which is
+ * the one thing a claim must never do (see src/lib/claims.ts — a claim clears
+ * the learner's PATH, it does not get to overwrite what the learner actually
+ * proved).
+ *
+ * Worked example (SAK-52): a 5-item kana lesson, quizzed directly from Learn.
+ * The learner answers 2 of 5 (a, e) in the single round, then ends and hits "I
+ * already know these": `teach` is empty (a direct Quiz-me marks seen instead of
+ * teaching), so the candidate set is `facts` (all 5); `totalStats` holds a and
+ * e, so the claim narrows to the 3 that were never asked (i, u, o). a and e
+ * keep their real quiz results, already committed by `closeRound`.
+ */
+export function sessionKnownClaimTarget(
+  session: Pick<StudySession, "teach" | "facts" | "totalStats">,
+): FactId[] {
+  const target = session.teach.length ? session.teach : session.facts;
+  const answered = new Set(factKeys(session.totalStats));
+  return target.filter((f) => !answered.has(f));
 }
 
 /** Summarise the round that just ended. */
