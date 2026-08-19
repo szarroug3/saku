@@ -203,6 +203,14 @@ export interface StudySession {
    * real by the SAME write, not left to a decay that isFactFresh never reads.
    */
   seededSeen?: FactId[];
+  /** Minted once at startSession and carried unchanged onto every round's
+   * persisted record (see QuizSessionRecord.sessionId) — what lets Recent
+   * Sessions group a multi-round session's per-round rows back into the one
+   * row a learner actually experienced. Optional only because a session
+   * resumed from a snapshot written before this field existed has none; such
+   * a session's rounds simply go on being their own, ungrouped rows, same as
+   * before SAK-23. */
+  sessionId?: string;
 }
 
 /** Who opened a session. See StudySession.origin. */

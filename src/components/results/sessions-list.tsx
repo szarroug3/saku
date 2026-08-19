@@ -23,10 +23,10 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
 import { postDelete } from "@/lib/progress-fetch";
 import { deriveSessionList } from "@/lib/session-list";
+import { buildSessionListRows, type SessionListRow } from "@/lib/session-rows";
 import { useLists } from "@/lib/use-lists";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
-import type { QuizSessionRecord } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -54,7 +54,7 @@ function SessionRow({
   onMakeList,
   madeList,
 }: {
-  record: QuizSessionRecord;
+  record: SessionListRow;
   selected: boolean;
   onToggle: () => void;
   onOpen: () => void;
@@ -120,6 +120,10 @@ function SessionRow({
                 Library's bar already uses for the same count (see slice.ts) and
                 it is true for every subject. */}
             {plural(record.total, "question")}
+            {/* Only when this row is several rounds merged into one — see
+                session-rows.ts. A one-round / one-off row says nothing extra,
+                same as before SAK-23. */}
+            {(record.rounds ?? 1) > 1 ? ` · ${record.rounds} rounds` : ""}
           </span>
         </span>
       </span>
@@ -178,11 +182,14 @@ function NoSessions() {
   );
 }
 
-/** The stable identity a delete request is keyed on: a record's `id` when it
- * has one, else its `ts` for legacy records. Matches history.deleteSessions —
- * keying on `ts` alone collides for two sessions made in the same millisecond
- * and would select/delete both together. */
-function rowKey(s: QuizSessionRecord): string | number {
+/** The stable identity a ROW is keyed on for selection/React — a record's
+ * `id` when it has one, else its `ts` for legacy records. A grouped row's own
+ * `id`/`ts` are its newest round's, which is unique across rows the same way
+ * a standalone record's always was. Deleting the row still has to remove
+ * every underlying record, which is what `row.ids` (session-rows.ts) is for —
+ * see deleteSessions below, which expands this key back to that full list
+ * rather than using it directly. */
+function rowKey(s: SessionListRow): string | number {
   return s.id ?? s.ts;
 }
 
@@ -200,15 +207,24 @@ export function SessionsList() {
   // timestamp. Unlike an in-progress run, a finished session IS in history, so
   // resolve({ session: ts }) finds it and the list drills the same material.
   // Idempotent by ts so re-clicking re-saves the same list.
-  const makeList = (record: QuizSessionRecord) => {
+  //
+  // For a grouped multi-round row this resolves against the NEWEST round's
+  // own stored `facts` (record.ts's exact match in history.sessions), not the
+  // merged union — a pre-existing gap Rerun/"Make a list" already had for a
+  // single round (see QuizSessionRecord.planned's doc) and not one SAK-23
+  // widens.
+  const makeList = (record: SessionListRow) => {
     void (async () => {
       await save(deriveSessionList(record.ts));
       setMadeLists((prev) => new Set(prev).add(rowKey(record)));
     })();
   };
 
+  // One row per completed session, not per round — see session-rows.ts.
   // Newest first: the run you just did is the one you want to reopen.
-  const sessions = history.sessions.slice().sort((a, b) => b.ts - a.ts);
+  const sessions = buildSessionListRows(history.sessions).sort(
+    (a, b) => b.ts - a.ts,
+  );
 
   const togglePicked = (key: string | number) => {
     setPicked((prev) => {
@@ -235,14 +251,18 @@ export function SessionsList() {
 
   // Same confirm() the bulk actions below use, same stats-rebuild wording —
   // just singular. The row's × used to skip this and delete instantly.
-  const deleteOne = (record: QuizSessionRecord) => {
+  //
+  // Deletes EVERY round the row represents (record.ids), not just the row's
+  // own key — a grouped row's × is one control over several stored records,
+  // and leaving the others behind would resurrect the row as a smaller one.
+  const deleteOne = (record: SessionListRow) => {
     void (async () => {
       const ok = await confirm({
         title: "Delete this session?",
         body: "This also rebuilds your per-character stats.",
         confirmLabel: "Delete",
       });
-      if (ok) await deleteSessions([rowKey(record)], false);
+      if (ok) await deleteSessions(record.ids, false);
     })();
   };
 
@@ -277,7 +297,13 @@ export function SessionsList() {
                 body: "This also rebuilds your per-character stats.",
                 confirmLabel: "Delete",
               });
-              if (ok) await deleteSessions([...picked], false);
+              if (!ok) return;
+              // Expand each picked ROW back to every record it represents —
+              // same reasoning as deleteOne above, just for the bulk action.
+              const ids = sessions
+                .filter((s) => picked.has(rowKey(s)))
+                .flatMap((s) => s.ids);
+              await deleteSessions(ids, false);
             })();
           }}
         >

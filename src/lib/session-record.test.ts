@@ -205,6 +205,54 @@ test("a round nobody answered produces no record", () => {
   assert.equal(buildSessionRecord({}, { ...OPTS, ts: 1 }), null);
 });
 
+// ---------- SAK-23: showings, not unique facts ----------
+//
+// `total`/`forgivingPct`/`strictPct` used to come from computeResults(),
+// which pools UNIQUE FACTS ("did you ever land it") rather than SHOWINGS
+// ("how often did you get it right") — the same distinction accuracy.ts's
+// header draws, and the reason a round that missed cold and recovered on a
+// retry used to persist as a flat 100%. These tests pin the showings-based
+// replacement directly, independent of the fold/aggregate machinery above.
+
+test("total counts SHOWINGS, not unique facts asked", () => {
+  // ROUND_1 is three facts, but い and う were each asked twice (leg 1 plus a
+  // retry) — five showings total (あ once, い twice, う twice), not three.
+  const r = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000 })!;
+  assert.equal(r.total, 5);
+});
+
+test("forgivingPct is correct-showings over seen-showings, not ever-correct-facts over facts", () => {
+  // Every one of ROUND_1's three FACTS is eventually correct (each was
+  // landed at least once across its showings), so the old per-fact reading
+  // (computeResults: facts landed / facts asked) called this round 100% —
+  // exactly finding 1's "Score 100% regardless of what the live counters
+  // actually read". Pooled over the five real SHOWINGS instead, one of
+  // them (う's first, missed and never retried within this round) did not
+  // land: 4 correct showings / 5 seen showings = 80%, not 100%.
+  const r = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000 })!;
+  assert.equal(r.forgivingPct, 80);
+});
+
+test("a session where cards were SHOWN but never answered produces no record — not a false Score 0%", () => {
+  // statForShowing's placeholder entry: a key exists in `stats` (the fact was
+  // put on screen) but seen is 0 (no showing ever resolved). The old guard
+  // (computeResults().total, a per-FACT count) saw a nonzero total here and
+  // let a record through — a real-looking `Score 0%` row for a session the
+  // learner never actually answered a single question of. SAK-23 finding 2.
+  const shownNotAnswered: SessionStats = {
+    [A]: { seen: 0, misses: 0, everCorrect: false, firstTryCorrect: null, firstTryCount: 0, correct: 0, confused: {} },
+    [I]: { seen: 0, misses: 0, everCorrect: false, firstTryCorrect: null, firstTryCount: 0, correct: 0, confused: {} },
+  };
+  assert.equal(buildSessionRecord(shownNotAnswered, { ...OPTS, ts: 1_000 }), null);
+});
+
+test("sessionId carries through when the caller supplies one, and is absent otherwise", () => {
+  const grouped = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, sessionId: "s1" })!;
+  assert.equal(grouped.sessionId, "s1");
+  const standalone = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000 })!;
+  assert.equal(standalone.sessionId, undefined);
+});
+
 test("every record carries a distinct id, so a retry can be recognised", () => {
   const a = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000 })!;
   const b = buildSessionRecord(ROUND_2, { ...OPTS, ts: 1_000 })!;
