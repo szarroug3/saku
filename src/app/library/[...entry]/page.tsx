@@ -92,6 +92,16 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
     await refresh();
   };
 
+  // SAK-61: "mark as not known" — the inverse of `claim` above, through the
+  // exact same postClaim/refresh path with `known: false`. That flag is what
+  // routes the write to dropClaims/applyDropClaims (see src/app/api/claim's
+  // route and src/lib/history-ops.ts): there is no separate unclaim write to
+  // invent, only the existing claim mechanism's own inverse.
+  const unclaim = async (ids: FactId[]) => {
+    await postClaim(ids, false);
+    await refresh();
+  };
+
   return (
     <FlatSurfaceProvider>
       <p className="mb-3 text-[11.5px] text-text-muted">
@@ -125,6 +135,7 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
         history={history}
         now={now}
         onClaim={claim}
+        onUnclaim={unclaim}
         progressReady={historyLoaded}
       />
     </FlatSurfaceProvider>
