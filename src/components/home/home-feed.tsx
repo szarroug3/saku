@@ -46,13 +46,15 @@ import {
 import type { IndexUnit } from "@/lib/content/learn-index-types";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import { resumeLesson } from "@/lib/lesson-resume";
+import { trackCompletion } from "@/lib/content/track-completion";
+import { positionLabel } from "@/lib/lesson-position";
 
 import type { Why } from "@/data/why";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
-import type { FactId } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 /** A /learn lesson: the units the frontier chose, in teach order. */
 type LearnLesson = UnitLessonOf<IndexUnit>;
@@ -81,11 +83,9 @@ function trackKeyForRun(run: RunInfo): string | null {
   return trackIdOfFact(first) ?? null;
 }
 
-/** Each card's label. No position/count on any of them — see
- * vocabPositionLabel's comment for why (a range only some tracks can print
- * honestly is worse than no range on any of them). Kana is split into
- * Hiragana / Katakana at render (see kanaPositionLabel); the rest read
- * straight off this map. */
+/** Each card's counting noun — "Hiragana 5 of 46", "Set 2 of 19". Kana is split
+ * into Hiragana / Katakana at render (see kanaPositionLabel); the rest read
+ * straight off this map and go through trackPositionLabel. */
 const TRACK_NOUN: Record<string, string> = {
   kana: "Kana",
   vocab: "Vocab",
@@ -133,12 +133,34 @@ function kanaScript(glyph: string): "Hiragana" | "Katakana" {
   return KATAKANA_RE.test(glyph) ? "Katakana" : "Hiragana";
 }
 
-/** The kana card's label, SPLIT BY SCRIPT: "Hiragana" while in hiragana, then
- * "Katakana" once katakana opens — not a running "Kana" spanning both. No
- * position range — see vocabPositionLabel's comment for why no track shows
- * one: consistent beats occasionally honest. */
-function kanaPositionLabel(lesson: LearnLesson): string {
-  return kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
+/** A track's real "N of M" line — a completion COUNT, never a lesson SPAN. See
+ * track-completion.ts's header for why: none of /learn's live tracks have the
+ * frozen lesson-boundary structure a safe SPAN needs (that property lived only
+ * in curriculum-lesson.ts, which no /learn card is actually scheduled by any
+ * more), but a completion tally is order-independent by construction and
+ * cannot reproduce SAK-13's "1–639 of 2,136" shape under any claim order. */
+function trackPositionLabel(
+  noun: string,
+  units: readonly IndexUnit[],
+  history: HistoryFile,
+): string {
+  const { known, total } = trackCompletion(units, history);
+  return positionLabel(noun, { from: known, to: known, total });
+}
+
+/** The kana card's label, SPLIT BY SCRIPT: "Hiragana 5 of 46" while in
+ * hiragana, then "Katakana 1 of 46" once katakana opens — not a running "Kana"
+ * spanning both, and not a lesson span (see trackPositionLabel): kana has no
+ * prerequisite structure, so its total is exactly its script's own item count,
+ * counted off the WHOLE track order — never a live recount of what's left. */
+function kanaPositionLabel(
+  lesson: LearnLesson,
+  order: readonly IndexUnit[],
+  history: HistoryFile,
+): string {
+  const script = kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
+  const scriptUnits = order.filter((u) => kanaScript(u.item.glyph) === script);
+  return trackPositionLabel(script, scriptUnits, history);
 }
 
 /** Every fact of one script's kana in the track order — what "I already know all
@@ -154,18 +176,20 @@ function kanaScriptFacts(
   return facts;
 }
 
-/** The vocab card's label. NOT a position range: the vocab track schedules by
- * spoken frequency, not curriculum order, so a lesson's items are only
- * SOMETIMES near each other in curriculum position too (人 口 可 何 一 → a
- * tight span) and are never guaranteed to be — two items can sit next to each
- * other in frequency and thousands of positions apart in the curriculum, more
- * often the bigger the curriculum gets. A range built from that isn't a
- * position a learner could feel, it's the seam between two orderings showing
- * through ("1–8,910"), and there is no threshold that reliably tells "tight"
- * bundles from "scattered" ones — so rather than sometimes print a number and
- * sometimes not, this never does. Consistent beats occasionally honest. */
-function vocabPositionLabel(): string {
-  return "Vocab";
+/** The vocab card's label: "Vocab 234 of 6,213" — a completion count, NOT a
+ * position range. The vocab track schedules by spoken frequency, not
+ * curriculum order, so a lesson's items are only SOMETIMES near each other in
+ * curriculum position too (人 口 可 何 一 → a tight span) and are never
+ * guaranteed to be — two items can sit next to each other in frequency and
+ * thousands of positions apart in the curriculum, more often the bigger the
+ * curriculum gets. A SPAN built from that isn't a position a learner could
+ * feel, it's the seam between two orderings showing through ("1–8,910"), and
+ * there is no threshold that reliably tells "tight" bundles from "scattered"
+ * ones — so this never attempts one (see trackCompletion's header). A
+ * completion count has no such seam: it only ever tallies items actually met,
+ * against the track's own fixed total, whatever order they were met in. */
+function vocabPositionLabel(order: readonly IndexUnit[], history: HistoryFile): string {
+  return trackPositionLabel("Vocab", order, history);
 }
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
@@ -399,10 +423,10 @@ export function HomeFeed() {
             title={TRACK_TITLE[track.id] ?? TRACK_NOUN[track.id] ?? "Up next"}
             positionLabel={
               track.id === "kana"
-                ? kanaPositionLabel(lesson!)
+                ? kanaPositionLabel(lesson!, order, history)
                 : track.id === "vocab"
-                  ? vocabPositionLabel()
-                  : (TRACK_NOUN[track.id] ?? "Item")
+                  ? vocabPositionLabel(order, history)
+                  : trackPositionLabel(TRACK_NOUN[track.id] ?? "Item", order, history)
             }
             why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
             onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}
