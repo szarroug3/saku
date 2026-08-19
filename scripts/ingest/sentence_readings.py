@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Sentence-level furigana: per-kanji reading breakdown for word-examples.json's
-example sentences (SAK-95).
+Sentence-level furigana AND highlight span for word-examples.json's example
+sentences (SAK-95, SAK-97).
 
 Run, AFTER scripts/build-word-examples.ts has (re)generated word-examples.json:
 
@@ -9,13 +9,29 @@ Run, AFTER scripts/build-word-examples.ts has (re)generated word-examples.json:
 
 WHAT THIS ADDS
 ==============
-Adds one field, `kr`, to every row of word-examples.json: an array with one
-slot per KANJI CHARACTER in `jp`, left to right (kana characters contribute no
-slot -- the renderer walks `jp` directly for those, the same way
-src/lib/library/word-pieces.ts's `piecesOf()` walks a word's `keb`). Each slot
-is either [kanji, surface-reading, base-reading] -- the exact triple shape
-`VocabRow.align` already uses (src/data/vocab.ts) -- or null when this kanji's
-reading in this sentence could not be safely determined.
+Two fields, filled from ONE fugashi tokenization pass per sentence:
+
+`kr`: an array with one slot per KANJI CHARACTER in `jp`, left to right (kana
+characters contribute no slot -- the renderer walks `jp` directly for those,
+the same way src/lib/library/word-pieces.ts's `piecesOf()` walks a word's
+`keb`). Each slot is either [kanji, surface-reading, base-reading] -- the
+exact triple shape `VocabRow.align` already uses (src/data/vocab.ts) -- or
+null when this kanji's reading in this sentence could not be safely
+determined.
+
+`start`/`end` (SAK-97): the `[start, end)` character span within `jp` where
+the word's CONJUGATED surface form appears, for the word-page highlight
+(SAK-94). build-word-examples.ts always emits these null; this script is the
+single source of truth for the span, using the SAME lemma resolution
+scripts/ingest/assembly.py's `content_lemmas()` already uses to match a
+conjugated form back to its dictionary entry: tokenize with fugashi, and for
+each CONTENT-POS token take `orthBase`, falling back to `lemma` when
+`orthBase` is empty. The first content token whose resolved lemma equals the
+word's `keb` gives the span, at its real position in `jp` -- so 思う shown as
+だと思った highlights 思った, not nothing. No match (the tokenizer's lemma
+resolution disagrees with `keb`, or the word genuinely never occurs) leaves
+start/end null -- "absent, not wrong", the same refusal used for `kr`. Never a
+substring guess.
 
 WHY A SEPARATE PASS, NOT PART OF build-word-examples.ts
 =========================================================
@@ -112,13 +128,45 @@ def build_krd(vocab):
     return krd
 
 
-def sentence_kanji_readings(jp, tagger, krd):
-    """[kanji, surface-reading, base-reading] | null per kanji CHARACTER in
-    `jp`, left to right -- the same triple shape as VocabRow.align, so the
-    rendering side can reuse piecesOf()'s convention unchanged instead of
-    inventing a second one."""
+# Content POS, for the highlight-span match (SAK-97). Mirrors
+# scripts/ingest/assembly.py's CONTENT_POS exactly -- content_lemmas() there
+# is the resolver this reuses, so the gate that decides which tokens are
+# eligible to BE a lemma has to match too, or a particle or auxiliary could
+# spuriously resolve to a content word's keb.
+CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名詞")
+
+
+def analyze_sentence(jp, tagger, krd, keb):
+    """One fugashi tokenization of `jp` produces both outputs this script
+    fills in:
+
+    - `kr`: [kanji, surface-reading, base-reading] | null per kanji CHARACTER
+      in `jp`, left to right -- the same triple shape as VocabRow.align, so
+      the rendering side can reuse piecesOf()'s convention unchanged instead
+      of inventing a second one.
+    - `(start, end)`: the highlight span (SAK-97) for the first CONTENT-POS
+      token whose orthBase (falling back to lemma) equals `keb` -- the same
+      resolution assembly.py's content_lemmas() uses to match a conjugated
+      surface form back to its dictionary entry. (None, None) when no token
+      resolves to `keb`: absent, not a guess.
+
+    UniDic splits a conjugated predicate into the content-verb morph plus a
+    CHAIN of trailing 助動詞 (auxiliary-verb) tokens -- 思った is 思っ (動詞,
+    orthBase 思う) + た (助動詞); 食べさせられた is 食べ + させ + られ + た, all
+    four chained. Taking only the matched content token's surface would
+    highlight 思っ and leave った bare, so once the content token is found,
+    `end` extends through each immediately-following, contiguous 助動詞
+    token -- the whole conjugated surface, not just its first morph.
+    """
+    toks = list(tagger(jp))
+    offsets = []
+    cursor = 0
+    for w in toks:
+        offsets.append(cursor)
+        cursor += len(w.surface)
+
     slots = []
-    for w in tagger(jp):
+    for w in toks:
         surf = w.surface
         if not any(is_kanji(c) for c in surf):
             # No kanji in this token: nothing to add, and nothing consumed --
@@ -131,7 +179,27 @@ def sentence_kanji_readings(jp, tagger, krd):
             slots.extend([list(t) for t in a])
         else:
             slots.extend([None] * n_kanji)
-    return slots
+
+    start = end = None
+    for i, w in enumerate(toks):
+        pos1 = getattr(w.feature, "pos1", None) or ""
+        if pos1 not in CONTENT_POS:
+            continue
+        orth = getattr(w.feature, "orthBase", None) or ""
+        lemma = getattr(w.feature, "lemma", None) or ""
+        if (orth or lemma) != keb:
+            continue
+        start = offsets[i]
+        end = offsets[i] + len(w.surface)
+        j = i + 1
+        while j < len(toks):
+            npos1 = getattr(toks[j].feature, "pos1", None) or ""
+            if npos1 != "助動詞":
+                break
+            end = offsets[j] + len(toks[j].surface)
+            j += 1
+        break  # first match wins, consistent with chooseExample's ordering
+    return slots, start, end
 
 
 def main():
@@ -145,15 +213,18 @@ def main():
 
     n_kanji_tot = 0
     n_kanji_ok = 0
+    n_spanned = 0
     out = {}
     for keb, row in examples.items():
-        entry_id, jp, en, start, end = row[0], row[1], row[2], row[3], row[4]
-        kr = sentence_kanji_readings(jp, tagger, krd)
+        entry_id, jp, en = row[0], row[1], row[2]
+        # start/end from row[3]/row[4] are ignored -- build-word-examples.ts
+        # always emits them null (SAK-97); this pass is the single source of
+        # truth for the span, computed below in the same tokenization as kr.
+        kr, start, end = analyze_sentence(jp, tagger, krd, keb)
         n_kanji_tot += len(kr)
         n_kanji_ok += sum(1 for s in kr if s is not None)
-        # start/end (SAK-94's highlight span) pass through unchanged -- this
-        # script only fills in kr, the 6th slot; see build-word-examples.ts
-        # for the row shape both passes agree on.
+        if start is not None:
+            n_spanned += 1
         out[keb] = [entry_id, jp, en, start, end, kr]
 
     with open(examples_path, "w", encoding="utf-8") as fh:
@@ -161,8 +232,10 @@ def main():
         fh.write("\n")
 
     pct = 100 * n_kanji_ok / n_kanji_tot if n_kanji_tot else 0
+    span_pct = 100 * n_spanned / len(out) if out else 0
     print(f"wrote {examples_path}")
     print(f"kanji reading coverage: {n_kanji_ok}/{n_kanji_tot} ({pct:.1f}%) across {len(out)} sentences")
+    print(f"highlight span coverage: {n_spanned}/{len(out)} ({span_pct:.1f}%)")
 
 
 if __name__ == "__main__":
