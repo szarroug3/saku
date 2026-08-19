@@ -52,6 +52,7 @@ import { answerGuide, confusionNote } from "@/lib/drill-guidance";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { sessionAccuracy } from "@/lib/session-accuracy";
 import {
+  answerContainsQuestionMark,
   answerIsJapanese,
   buildDeck,
   buildMcOptions,
@@ -1163,11 +1164,20 @@ export function DrillScreen() {
     // "?" TAKES THE HINT, and it is the one key that works with the answer box
     // focused. The digits below deliberately stand off a focused field, but a
     // typed card is exactly where the box IS focused — a binding that only
-    // worked on multiple choice would be no binding at all. "?" is safe to
-    // swallow there: no romaji, no reading and no English gloss contains one, so
-    // preventDefault cannot eat a character anybody was answering with. (1–9 are
-    // the MC options and Enter submits, so both were spoken for.)
+    // worked on multiple choice would be no binding at all. That is safe for
+    // almost every card: no romaji and no reading ever contains "?", and
+    // neither do most English glosses. But it is NOT universally true — ね's
+    // own meaning gloss set is "right?" / "isn't it?" / "doesn't it?" / "don't
+    // you?" (vocab.json), and that IS a typed jp→en card, so unconditionally
+    // swallowing "?" would eat the one character a learner spelling ね's gloss
+    // verbatim needs, and take an unwanted hint in the process (SAK-56). Stand
+    // off exactly there: box focused AND this card's own accepted answers
+    // contain a literal "?" (answerContainsQuestionMark) — let the keystroke
+    // land in the field instead. (1–9 are the MC options and Enter submits, so
+    // both were spoken for.)
     if (e.key === "?") {
+      const focused = document.activeElement === inputRef.current;
+      if (focused && answerContainsQuestionMark(rt.q.f)) return;
       e.preventDefault();
       takeHint();
       return;
