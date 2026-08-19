@@ -882,10 +882,16 @@ export function IntroBuildSection({
 
 /**
  * A pattern's own worked sentence: one real corpus sentence with the piece this
- * pattern actually built picked out in accent color, plus its gloss and a
- * speaker. Shared by the teach walk (PhaseIntroView, below) and the Library
- * grammar page (grammar-entry-view.tsx) so both read the exact same sentence —
- * autoPatternPage generates it once, from the same corpus lookup, for both.
+ * pattern actually built picked out, plus its gloss and a speaker. Shared by the
+ * teach walk (PhaseIntroView, below) and the Library grammar page
+ * (grammar-entry-view.tsx) so both read the exact same sentence — autoPatternPage
+ * generates it once, from the same corpus lookup, for both.
+ *
+ * The picked-out piece uses .sentence-part-topic (blue), not the pink text-accent
+ * the "In a sentence" heading above it renders in — the same piece-highlight
+ * color the sentence track already uses (see verbpair-entry-view.tsx). Using
+ * text-accent for both would make the heading and its own highlighted word read
+ * as one indistinguishable color.
  */
 export function SentenceExampleView({ example }: { example: SentenceExample }) {
   const { cfg } = useQuizConfig();
@@ -896,7 +902,7 @@ export function SentenceExampleView({ example }: { example: SentenceExample }) {
       <p className="flex flex-wrap items-center gap-1.5 font-kana text-[15px] leading-relaxed text-text">
         <span lang="ja">
           {jp.slice(0, start)}
-          <span className="text-accent">{jp.slice(start, end)}</span>
+          <span className="font-medium sentence-part-topic">{jp.slice(start, end)}</span>
           {jp.slice(end)}
         </span>
         <HearButton glyph={jp} voiceName={cfg.voiceName} />
