@@ -178,7 +178,17 @@ export function TriageSection({
 
   const allBoxes = new Set(boxKeysForFacts(facts.facts, stats));
   const needsWorkBoxes = new Set(missedBoxKeysForFacts(facts.facts, stats));
-  const solidBoxes = new Set([...allBoxes].filter((b) => !needsWorkBoxes.has(b)));
+  // `facts.facts` still carries every fact this run put on screen, including
+  // ones it never resolved (asked, then abandoned — see RunFacts.notAnswered).
+  // Neither board is the right place for those: Solid means "landed clean",
+  // and an unanswered card landed nothing. Same precedent round-complete.tsx's
+  // roundFormsByOutcome already set for its own "unseen" outcome — a card
+  // nothing happened to belongs to neither pile, so it simply doesn't render
+  // here rather than needing a third board.
+  const notAnsweredBoxes = new Set(boxKeysForFacts(facts.notAnswered, stats));
+  const solidBoxes = new Set(
+    [...allBoxes].filter((b) => !needsWorkBoxes.has(b) && !notAnsweredBoxes.has(b)),
+  );
 
   const [selected, setSelected] = useState<Set<BoxKey>>(
     () => new Set(needsWorkBoxes),

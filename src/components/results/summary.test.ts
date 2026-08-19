@@ -13,13 +13,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { deriveRun } from "@/components/results/summary";
+import { deriveRun, summarize } from "@/components/results/summary";
 import { accuracyOf, totalFor } from "@/lib/accuracy";
 import { foldSessions } from "@/lib/aggregate";
 import { sessionAccuracy } from "@/lib/session-accuracy";
 import type {
   FactId,
   FactSessionDetail,
+  HistoryFile,
   QuizSessionRecord,
   SessionFactCounts,
   SessionStats,
@@ -177,5 +178,93 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
 
     assert.deepEqual(run.needsWork, [f("a")]);
     assert.deepEqual(run.solid, [f("b")]);
+  });
+});
+
+describe("not-answered facts are neither scored nor solid", () => {
+  const EMPTY_HISTORY: HistoryFile = { sessions: [], facts: {} };
+
+  function unresolved(): Partial<FactSessionDetail> {
+    return {
+      seen: 0,
+      misses: 0,
+      everCorrect: false,
+      firstTryCorrect: null,
+      firstTryCount: 0,
+      correct: 0,
+    };
+  }
+
+  // Her exact reported scenario: 5 facts in the round — よ missed (said ぴ),
+  // ひゆ and じゃ landed clean, あ and みゃ were put on screen and the round
+  // ended before either was answered (seen: 0 — the zero-value key
+  // statForShowing writes the instant a card is displayed; see
+  // src/lib/drill-stats.ts).
+  const stats: SessionStats = {
+    [f("yo")]: detail({
+      seen: 1,
+      misses: 1,
+      everCorrect: false,
+      firstTryCorrect: false,
+      firstTryCount: 0,
+      correct: 0,
+    }),
+    [f("hyu")]: detail(),
+    [f("sha")]: detail(),
+    [f("a")]: detail(unresolved()),
+    [f("mya")]: detail(unresolved()),
+  };
+
+  it("splits into shown / correct / incorrect / not-answered, matching the board", () => {
+    const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats });
+
+    assert.equal(run.facts.length, 5, "shown");
+    assert.equal(run.correctFacts, 2, "correct");
+    assert.deepEqual(run.missed, [f("yo")], "incorrect");
+    assert.deepEqual(new Set(run.notAnswered), new Set([f("a"), f("mya")]));
+
+    // Exhaustive and disjoint: every shown fact lands in exactly one of
+    // correct / missed / notAnswered.
+    assert.equal(
+      run.correctFacts + run.missed.length + run.notAnswered.length,
+      run.facts.length,
+    );
+  });
+
+  it("keeps not-answered facts out of Solid — a card nothing happened to is not solid", () => {
+    const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats });
+    assert.deepEqual(new Set(run.solid), new Set([f("hyu"), f("sha")]));
+    assert.ok(!run.solid.includes(f("a")));
+    assert.ok(!run.solid.includes(f("mya")));
+  });
+
+  it("prints her exact breakdown line instead of a bare score fraction", () => {
+    const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats });
+    const summary = summarize(run, stats, EMPTY_HISTORY, []);
+    const line = summary.counts.map((b) => b.t).join("");
+    assert.equal(line, "5 shown · 2 correct · 1 incorrect · 2 not answered");
+    // And the headline still names only the genuine miss — needsWork, not
+    // the contaminated old `missed` list, decides the count.
+    assert.equal(summary.headline, "1 thing needs another pass");
+  });
+
+  it("does not let a not-answered fact gate the run into 'misses' by itself", () => {
+    // All correct, two never answered, nothing actually missed. The old
+    // `isMissed` read `correct === 0` alone, which called an unresolved fact
+    // "missed" too and could headline a clean run "0 things need another
+    // pass".
+    const allCorrectOrUnanswered: SessionStats = {
+      [f("hyu")]: detail(),
+      [f("sha")]: detail(),
+      [f("a")]: detail(unresolved()),
+    };
+    const run = deriveRun({
+      mode: "drill",
+      redrill: false,
+      ts: 0,
+      stats: allCorrectOrUnanswered,
+    });
+    assert.deepEqual(run.missed, []);
+    assert.deepEqual(run.needsWork, []);
   });
 });
