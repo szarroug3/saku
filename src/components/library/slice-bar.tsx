@@ -83,13 +83,18 @@ export function SliceBar({
    * renders against ONE `now`, or the bar and the table it summarises can
    * disagree about whether a fact is solid. */
   now: number;
-  /** Marks the slice known. Async and owned by the page, because the page holds
-   * the history this bar is rendered from and has to refresh it. */
+  /** Marks the slice known. Owned by the page, because the page holds the
+   * history this bar is rendered from — typically `useHistoryWrites().claim`,
+   * which applies locally and posts in the background rather than blocking on
+   * a round trip. */
   onClaim(facts: FactId[]): void;
-  /** Reverses a claim — "actually, I don't [know this]". Only ever offered on
-   * the entry variant (see the SAK-61 note by claimedFacts below): unclaiming
-   * belongs on the item's own Library page, not on a shelf or on Progress.
-   * Optional because the "bar" variant never renders it. */
+  /** Reverses a claim — "actually, I don't [know this]". Offered on the entry
+   * variant (see the SAK-61 note by claimedFacts below) and, since the owner's
+   * follow-up request, on the "bar" variant too — but ONLY there while it is
+   * showing an explicit selection (hasSelection): a search or browse slice
+   * never gets an unclaim action, just the hand-picked set the reader built.
+   * Optional because a whole-shelf/search "bar" render still has nothing to
+   * reverse until the caller wires it up. */
   onUnclaim?(facts: FactId[]): void;
   /** Whether to print `slice.label` in bold ahead of the sentence. True on the
    * shelf, where the label is the current selection or search and nothing else
@@ -201,12 +206,16 @@ export function SliceBar({
   // slices. Add-to-list and I-know-this stay: you may still file か or claim it.
   const canDrill = sliceIsDrillable(slice);
 
-  // SAK-61: what "unclaim" on an entry page reverses. The mirror of
+  // SAK-61: what "unclaim" reverses, on an entry OR a selection. The mirror of
   // claimOrder above — the same claimable (non-reading) facts of this exact
-  // entry, filtered down to the ones that ARE currently claimed, rather than
+  // slice, filtered down to the ones that ARE currently claimed, rather than
   // the ones that aren't. There is deliberately no separate "unclaim
   // mechanism": it is applyDropClaims (history-ops.ts) run on this set,
-  // through the same onUnclaim the entry page already wires onClaim through.
+  // through the same onUnclaim the caller already wires onClaim through.
+  // Together, claimOrder and claimedFacts are the whole "smart" bulk-action
+  // rule the owner asked for: an all-unclaimed selection shows only "I know
+  // these", an all-claimed one shows only "Mark as not known", and a mixed
+  // selection shows both, each acting on its own subset.
   const claimedFacts = claimableFacts(sliceFacts(slice)).filter(
     (fact) => claims[fact] !== undefined,
   );
@@ -321,6 +330,17 @@ export function SliceBar({
           {claimOrder.length > 0 ? (
             <Btn onClick={() => onClaim(claimOrder)}>
               ✓ I know {slice.entries.length === 1 ? "this" : "these"}
+            </Btn>
+          ) : null}
+          {/* The bulk mirror of "Mark as not known" on the entry page: only
+              once the caller has wired an onUnclaim (selections only — see
+              the prop doc) and only while some of the selection IS claimed.
+              Acts on exactly that subset (claimedFacts), so a mixed
+              selection's "I know these" and "Mark as not known" never
+              overlap on the same fact. */}
+          {onUnclaim && claimedFacts.length > 0 ? (
+            <Btn onClick={() => onUnclaim(claimedFacts)}>
+              Mark as not known
             </Btn>
           ) : null}
           {/* Two ways to run a slice, with gates suited to their jobs.
