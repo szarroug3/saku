@@ -52,6 +52,57 @@ export interface FamilyBuild {
   readonly reading?: string;
 }
 
+/**
+ * `built`'s reading (SAK-33) is one flat string for the whole form, not a
+ * per-kanji breakdown — there is no per-character align data here, unlike
+ * `VocabRow.align`/`kr`. The conjugated ending is already written in kana in
+ * BOTH `built` and `reading` (apply()/applyWrap() spell it the same way
+ * regardless of which script drove the build), so it is also their longest
+ * common SUFFIX: trimming it off both strings leaves exactly the kanji-bearing
+ * host on one side and its reading on the other, with no tokenizer needed.
+ * 行かなければならない / いかなければならない -> head "行", reading "い", kana
+ * "かなければならない". Returns null when nothing kanji-bearing is left after
+ * the trim (nothing to put a ruby over) or the trim would leave the reading
+ * side empty (an "on"-slot reading that doesn't actually align with `built`
+ * shouldn't render at all — same "absent, not wrong" refusal `builtReading`
+ * itself already makes at the source).
+ */
+function splitBuiltReading(
+  built: string,
+  reading: string,
+): { readonly head: string; readonly kana: string; readonly headReading: string } | null {
+  let i = built.length;
+  let j = reading.length;
+  while (i > 0 && j > 0 && built[i - 1] === reading[j - 1]) {
+    i--;
+    j--;
+  }
+  const head = built.slice(0, i);
+  const headReading = reading.slice(0, j);
+  if (!head || !headReading || !hasKanji(head)) return null;
+  return { head, kana: built.slice(i), headReading };
+}
+
+/** The build cell's content: the built form with its reading as real ruby
+ * furigana over just the kanji-bearing head, the same convention SAK-95
+ * established for word-page example sentences — not the muted parenthetical
+ * this table used before. Falls back to the bare built form when there's no
+ * reading to show, or the split above finds nothing kanji-bearing to annotate. */
+function renderBuild(build: FamilyBuild | undefined): React.ReactNode {
+  if (!build?.built) return "";
+  const split = build.reading ? splitBuiltReading(build.built, build.reading) : null;
+  if (!split) return build.built;
+  return (
+    <>
+      <ruby>
+        {split.head}
+        <rt className="text-[10px] text-text-muted">{split.headReading}</rt>
+      </ruby>
+      {split.kana}
+    </>
+  );
+}
+
 export function PatternFamily({
   members,
   current,
@@ -120,18 +171,7 @@ export function PatternFamily({
                       a normal value, not an error) prints nothing rather than a
                       guess. */}
                   <td className="whitespace-nowrap py-2 pr-2 align-middle font-kana text-text">
-                    {build?.built ?? ""}
-                    {/* SAK-33: the build's reading, glossed in parens beside it
-                        the same way SAK-38 established elsewhere — only when
-                        the build has kanji in it (行かなければならない) and a
-                        reading was actually computed for it; see
-                        BuiltRow.builtReading for when that is refused instead
-                        of guessed. Muted against the main form's full-strength
-                        text, same "reading is the quiet half" convention the
-                        rest of the app already uses. */}
-                    {build?.built && hasKanji(build.built) && build.reading ? (
-                      <span className="ml-1 text-[12px] text-text-muted">({build.reading})</span>
-                    ) : null}
+                    {renderBuild(build)}
                   </td>
                   {/* THE REPETITION IS THE CONTENT. Seven rows reading "must do
                       X" is not something to dedupe with a rowspan: English has
