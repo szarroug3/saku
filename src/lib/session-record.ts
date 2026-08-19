@@ -34,7 +34,7 @@
 // Both from the DATA-FREE modules rather than the barrels, for the same bundle
 // reason quiz-session.tsx imports them that way: this sits on the path of the
 // always-mounted provider, and `facts.ts` is the whole ~3.6 MB subject registry.
-import { computeResults } from "@/lib/engine/results";
+import { accuracyOf, totalFor } from "@/lib/accuracy";
 import { factKeys } from "@/lib/fact-keys";
 import { firstTryShowings } from "@/lib/first-try";
 import type {
@@ -68,6 +68,9 @@ export interface RecordOptions {
   planned?: FactId[];
   /** Which round of the loop this is, or how many a one-shot session ran. */
   rounds?: number;
+  /** Links this round's record to every other round of the SAME multi-round
+   * session — see QuizSessionRecord.sessionId. */
+  sessionId?: string;
 }
 
 /**
@@ -128,29 +131,58 @@ export function projectSessionFacts(
 /**
  * Project one run's stats into the record that goes on disk.
  *
- * Returns null when nothing was answered. An empty record is not a smaller
- * record, it is a lie: `foldSession` would move `lastTested` for facts nobody
- * was asked, and the sessions list would grow rows for rounds that never
- * happened. A round you walked into and out of without answering has produced
- * no evidence, so it produces no record.
+ * Returns null when nothing was ANSWERED. Not the same as "nothing was
+ * asked": `statForShowing` (drill-stats.ts) gives a fact a zero-valued entry
+ * the moment it is put on screen, on purpose, so the round-complete picker can
+ * offer a fact you were shown and walked away from — see its own comment. That
+ * means `stats` can hold keys for a round nobody actually answered, and a
+ * per-FACT count (facts.length, the old `computeResults().total`) is nonzero
+ * for it. Guarding on that let a zero-answer session through with a real-
+ * looking, unearned `Score 0%` row — SAK-23's second finding. Guarding on
+ * SHOWINGS instead (`total` below, Σ `seen`) reads the same zero every other
+ * screen already sees for an unresolved card, so the guard now agrees with the
+ * rest of the app about what "nothing happened" means, and an empty record is
+ * not a smaller record — it is a lie, same as before: `foldSession` would move
+ * `lastTested` for facts nobody was asked, and the sessions list would grow a
+ * row for a round that never happened.
+ *
+ * THE OTHER SAK-23 FIX, IN THE SAME PLACE
+ * ========================================
+ * `total`/`forgivingPct`/`strictPct` used to come from `computeResults()`,
+ * which counts UNIQUE FACTS (`facts.filter(everCorrect).length / facts.length`)
+ * — the same per-fact unit `accuracy.ts`'s header calls out by name as one of
+ * the two formulas the app moved away from ("the old forgiving formula...
+ * scored a never-answered showing as 100%"). Every other screen that reports a
+ * run's accuracy — the round-complete header (session.ts's roundCompleteView),
+ * the results screen (summary.ts's runAggregate + accuracyOf) — already counts
+ * SHOWINGS, so a round that missed a fact cold and landed it on a retry pulls
+ * the number down; the per-fact reading only asks "did you EVER land it",
+ * which retries push toward 100% almost by construction. That mismatch is
+ * finding 1's "Score 100% regardless of what the live counters actually read":
+ * the persisted record and the screen the learner just watched were measuring
+ * two different things. `totalFor`/`accuracyOf` (accuracy.ts) are the same
+ * showings-based pooling every other reader uses, so the number on this record
+ * is now the number the learner saw.
  */
 export function buildSessionRecord(
   stats: SessionStats,
   opts: RecordOptions,
 ): QuizSessionRecord | null {
-  const s = computeResults(stats);
-  if (!s.total) return null;
+  const facts = projectSessionFacts(stats);
+  const agg = totalFor({ facts }, factKeys(facts));
+  if (!agg.seen) return null;
   return {
     id: opts.id ?? newRecordId(),
     ts: opts.ts,
     mode: opts.mode,
     redrill: opts.redrill,
-    total: s.total,
-    forgivingPct: Math.round((100 * s.forg) / s.total),
-    strictPct: Math.round((100 * s.strict) / s.total),
-    facts: projectSessionFacts(stats),
+    total: agg.seen,
+    forgivingPct: accuracyOf(agg) ?? 0,
+    strictPct: Math.round((100 * agg.firstTry) / agg.seen),
+    facts,
     detail: stats,
     ...(opts.planned ? { planned: opts.planned } : {}),
     ...(opts.rounds !== undefined ? { rounds: opts.rounds } : {}),
+    ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),
   };
 }
