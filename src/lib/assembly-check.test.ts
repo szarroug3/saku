@@ -5,6 +5,7 @@ import {
   assemblyMismatchMessage,
   chunkRoleLabels,
   findAssemblyMismatch,
+  pieceLabel,
 } from "./assembly-check.ts";
 import type { AssemblyItem } from "../data/assembly.ts";
 
@@ -117,5 +118,24 @@ describe("findAssemblyMismatch", () => {
     assert.equal(mismatch.surface, "言う。");
     assert.equal(mismatch.canonIndex, 2);
     assert.equal(mismatch.label, "Final predicate");
+  });
+});
+
+describe("pieceLabel (SAK-50 changes-requested pass)", () => {
+  test("strips a trailing 。 from the last piece", () => {
+    assert.equal(pieceLabel("言う。"), "言う");
+  });
+
+  test("strips a trailing ？ or ！ the same way", () => {
+    assert.equal(pieceLabel("食べる？"), "食べる");
+    assert.equal(pieceLabel("走れ！"), "走れ");
+  });
+
+  test("a piece with no trailing punctuation is unchanged", () => {
+    assert.equal(pieceLabel("それを"), "それを");
+  });
+
+  test("a piece that is punctuation only reduces to empty, not undefined", () => {
+    assert.equal(pieceLabel("。"), "");
   });
 });
