@@ -204,17 +204,12 @@ export function MixUps({
           here.
         </p>
       ) : (
-        // No sticky header, and a taller cap than it looks like it needs
-        // (SAK-77). A pair is earned one miss at a time, so this table was
-        // never going to run away with the page the way a table over every
-        // character could — but the board is the taller of the two cards on
-        // this row (see the layout comment in stats/page.tsx) and used to hit
-        // its scroll cap at 280px while the page still had visible room below
-        // it. 440px lets several more rows show before scrolling kicks in
-        // without turning the cap into no-op; a scroller with no header in it
-        // never meets the nested-backdrop-filter problem that the sticky
-        // header needed .kq-table-head to solve.
-        <div className="kq-scroll max-h-[440px] overflow-y-auto pr-1">
+        // No cap and no sticky header. A pair is earned one miss at a time, so
+        // this table cannot run away with the page the way a table over every
+        // character could — and a scroller with no header in it never meets the
+        // nested-backdrop-filter problem that the sticky header needed
+        // .kq-table-head to solve.
+        <div className="kq-scroll max-h-[280px] overflow-y-auto pr-1">
           <table className="w-full border-collapse text-[13px]">
             <tbody>
               {rows.map((r) => (
