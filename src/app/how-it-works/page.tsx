@@ -22,7 +22,8 @@
 // A Server Component: it renders constants and has no state.
 
 import { HOW_IT_WORKS_SECTIONS, type HowItWorksBullet } from "@/data/how-it-works";
-import { accentTerms, Lbl, PageTitle } from "@/components/ui";
+import { Lbl, PageTitle } from "@/components/ui";
+import { accentTerms } from "@/lib/accent-terms";
 
 export const metadata = { title: "How Saku works" };
 
