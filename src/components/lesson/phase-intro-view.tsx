@@ -498,7 +498,7 @@ export function IntroBuildTable({
   heads,
 }: {
   rules: readonly IntroBuildRule[];
-  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  heads?: { label?: string; change?: string; note?: string };
 }) {
   // One framed table with hairline row separators, not a stack of boxes. Each row
   // is enriched with its built result and a note — an explicit one, else an
@@ -506,6 +506,11 @@ export function IntroBuildTable({
   // column (right, muted) each appear only when some row uses them, so a plain
   // single-verb table is not left with empty columns. Every build table carries
   // the same heading row so the related te-form pages read as one format.
+  //
+  // No Meaning column (SAK-83): the built form is what this table teaches, not
+  // the example verb's English gloss — that gloss lives on the verb elsewhere
+  // (the Library entry, the lesson card it came from), so repeating it here was
+  // just noise next to the conjugation itself.
   const { cfg } = useQuizConfig();
   const rows = rules.map((r) => {
     const verb = r.verb ?? "";
@@ -515,8 +520,7 @@ export function IntroBuildTable({
   });
   const hasLabels = rules.some((r) => r.label);
   const hasNotes = rows.some((x) => x.note);
-  const hasGloss = rules.some((r) => r.gloss);
-  const hasRight = hasNotes || hasGloss;
+  const hasRight = hasNotes;
   const headCell = "px-4 py-2.5 font-semibold";
   const accented = (text: string, accent: string | false | undefined, fallback: boolean) => {
     if (accent === false) return text;
@@ -543,7 +547,6 @@ export function IntroBuildTable({
             {hasLabels ? <th className={headCell}>{heads?.label ?? "Ending"}</th> : null}
             <th className={headCell}>{heads?.change ?? "Change"}</th>
             {hasNotes ? <th className={headCell}>{heads?.note ?? "Note"}</th> : null}
-            {hasGloss ? <th className={headCell}>{heads?.gloss ?? "Meaning"}</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -594,17 +597,9 @@ export function IntroBuildTable({
               {hasNotes ? (
                 <td
                   lang="en"
-                  className={`${hasGloss ? "" : "w-full min-w-[13rem] "}px-4 py-3 align-baseline text-[13px] leading-snug text-text-muted`}
+                  className="w-full min-w-[13rem] px-4 py-3 align-baseline text-[13px] leading-snug text-text-muted"
                 >
                   {note ?? ""}
-                </td>
-              ) : null}
-              {hasGloss ? (
-                <td
-                  lang="en"
-                  className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
-                >
-                  {r.gloss ?? ""}
                 </td>
               ) : null}
             </tr>
@@ -627,7 +622,7 @@ export function IntroBuildTableGroup({
 }: {
   title: string;
   rules: readonly IntroBuildRule[];
-  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  heads?: { label?: string; change?: string; note?: string };
 }) {
   return (
     <div className="space-y-2.5">
@@ -836,11 +831,11 @@ export function IntroBuildSection({
   body: readonly IntroPara[];
   formula?: { base: string; add?: string; trim?: string };
   rules?: readonly IntroBuildRule[];
-  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  heads?: { label?: string; change?: string; note?: string };
   tables?: readonly {
     title: string;
     rules: readonly IntroBuildRule[];
-    heads?: { label?: string; change?: string; note?: string; gloss?: string };
+    heads?: { label?: string; change?: string; note?: string };
   }[];
   footer?: { chain: string; gloss: string };
 }) {
