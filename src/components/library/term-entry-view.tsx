@@ -20,12 +20,24 @@
 // real termFor/termRow/termEntry/entryHref, `related` already resolved to
 // links) and read from Supabase's `content_entries` table — see
 // src/lib/library/content-entries.ts. Nothing here imports data/terms.ts.
+//
+// SAK-30: `relatedLinks` also carries each link's bare TERM id (`related`'s
+// own entries — "katakana", "dakuten") alongside its precomputed label/href,
+// so this page can gate on reachability WITHOUT a second round trip. The
+// gate itself cannot be precomputed at seed time: it depends on THIS
+// learner's history, which the seed script (one row per term, shared by
+// every visitor) has no access to and must not — see reachable.ts's own
+// header for what "reachable" means. The Hiragana term card used to link
+// Katakana and Dakuten before a single hiragana character had been taught;
+// this is where that link is now held back.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { RelatedSection } from "@/components/library/related-section";
 import { TermView } from "@/components/library/term-view";
 import { useContentEntry } from "@/lib/library/content-entries";
+import { conceptReachable } from "@/lib/library/reachable";
+import { useHistory } from "@/lib/use-history";
 import type { PhaseIntro } from "@/data/phase-intros";
 import type { EntryId } from "@/types";
 
@@ -35,15 +47,18 @@ interface TermPayload {
   readonly body: readonly string[];
   readonly cards?: readonly PhaseIntro[];
   readonly cardMark?: string;
-  readonly relatedLinks: readonly { label: string; href: string }[];
+  readonly relatedLinks: readonly { id: string; label: string; href: string }[];
 }
 
 export function TermEntryView({ entry }: { entry: EntryId }) {
   const term = useContentEntry<TermPayload>(entry);
+  const { history } = useHistory();
 
   // undefined = still loading, null = no such term (matches the live
   // component's `if (!term) return null` for an unresolved id).
   if (term === undefined || term === null) return null;
+
+  const relatedLinks = term.relatedLinks.filter((l) => conceptReachable(l.id, history));
 
   return (
     <EntrySurface>
@@ -55,7 +70,7 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
         <TermView term={term} />
       </Section>
 
-      <RelatedSection links={term.relatedLinks} />
+      <RelatedSection links={relatedLinks} />
     </EntrySurface>
   );
 }

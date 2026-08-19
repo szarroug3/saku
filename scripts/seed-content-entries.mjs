@@ -79,14 +79,21 @@ function row(entryId, kind, payload) {
 
 // ---- term ------------------------------------------------------------------
 // The payload is the view-model TermEntryView renders: `related` resolved to
-// {label, href} pairs at seed time (the real termRow/termEntry/entryHref), so
-// the reader makes exactly one request. Drops any related id that no longer
+// {id, label, href} pairs at seed time (the real termRow/termEntry/entryHref),
+// so the reader makes exactly one request. Drops any related id that no longer
 // names a real term, same guard the live component made.
+//
+// `id` (the bare term id — "katakana", "dakuten") rides along too, SAK-30:
+// content_entries is one row shared by every visitor, so it cannot itself
+// decide whether a given link is reachable — that depends on the reader's own
+// history, which only exists client-side. Carrying the id lets
+// TermEntryView make that call at read time without a second request; see
+// that component's own comment.
 const termRows = TERMS.map((term) => {
   const relatedLinks = (term.related ?? [])
     .map((id) => {
       const r = termRow(id);
-      return r ? { label: r.name, href: entryHref(termEntry(id)) } : null;
+      return r ? { id, label: r.name, href: entryHref(termEntry(id)) } : null;
     })
     .filter((l) => l != null);
   const payload = {
