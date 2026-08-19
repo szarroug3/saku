@@ -121,6 +121,8 @@ import {
   kanaConfusables,
   precomputedStrokeFallback,
 } from "@/lib/library/library-index";
+import { conceptReachable, kanaGlyphReachable } from "@/lib/library/reachable";
+import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -250,6 +252,12 @@ export function KanaEntryView({
 }) {
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
+  // SAK-30: both the shape lookalikes below and the foot-of-page Related links
+  // are cross-references the page draws BEFORE the learner asked for them, so
+  // neither may point at material not yet reachable — see reachable.ts's own
+  // header for what "reachable" means here (has the learner been SHOWN this
+  // at all, not mastered it).
+  const { history } = useHistory();
   const glyph = item ? item.glyph : libEntry(entry!)?.glyph;
   const resolvedEntry = item ? item.entry : entry!;
   const strokeFallback = glyph ? precomputedStrokeFallback(glyph) : undefined;
@@ -292,13 +300,22 @@ export function KanaEntryView({
   // names no derived glyph; derivedKanaConfusables and yoonConfusables are
   // each empty outside their own glyph shape), so this is a plain merge, not a
   // fallback chain.
+  // SAK-30: か's "commonly mixed up with" showed カ before katakana had been
+  // introduced at all. Each candidate is a kana entry (kana:<glyph>), so it
+  // gates on that GLYPH's OWN script's track — カ waits for the katakana
+  // track, not for カ itself to have been met (kanaGlyphReachable's own doc
+  // says why: a lookalike call-out that only fired after the exact glyph was
+  // already met could never warn about a mix-up before it happened).
   const confusables = [
     ...new Set([
       ...kanaConfusables(glyph),
       ...derivedKanaConfusables(glyph),
       ...yoonConfusables(glyph),
     ]),
-  ];
+  ].filter((id) => {
+    const g = libEntry(id)?.glyph;
+    return g ? kanaGlyphReachable(g, history) : true;
+  });
 
   // The foot-of-page "Related" links — the real components a derived kana is
   // built from, so a reader can tap straight to them instead of hunting the
@@ -312,18 +329,30 @@ export function KanaEntryView({
   // Yōon: the base kana, the FULL-SIZE version of the small kana (きゃ → や,
   // not ゃ — reusing kana-family.ts's own fullSizeOf rather than re-deriving
   // it), and the Yōon term page.
-  const relatedLinks: RelatedLink[] = row && base
-    ? [relatedLink(kanaEntry(base)), relatedLink(markEntry(row.markName))].filter(isRelatedLink)
-    : yoonRow
-      ? (() => {
-          const fullSize = fullSizeOf(yoonRow.small);
-          return [
-            relatedLink(kanaEntry(yoonRow.base)),
-            fullSize ? relatedLink(kanaEntry(fullSize)) : null,
-            relatedLink(termEntry("yoon")),
-          ].filter(isRelatedLink);
-        })()
-      : [];
+  // SAK-30: the Hiragana term card linked Katakana and Dakuten at lesson-1
+  // card-2, before a single hiragana character had been taught. Each link
+  // below is gated the same way: the base kana on its OWN script's track
+  // (kanaGlyphReachable), the mark on the decoration concept it names
+  // (conceptReachable — "dakuten"/"handakuten" are not tracks of their own,
+  // see that function's doc), the Yōon term on the "yoon" concept (unnamed by
+  // SAK-30, so `conceptReachable` leaves it ungated, same as before).
+  const relatedLinks: RelatedLink[] = (
+    row && base
+      ? [
+          kanaGlyphReachable(base, history) ? relatedLink(kanaEntry(base)) : null,
+          conceptReachable(row.markName, history) ? relatedLink(markEntry(row.markName)) : null,
+        ]
+      : yoonRow
+        ? (() => {
+            const fullSize = fullSizeOf(yoonRow.small);
+            return [
+              kanaGlyphReachable(yoonRow.base, history) ? relatedLink(kanaEntry(yoonRow.base)) : null,
+              fullSize && kanaGlyphReachable(fullSize, history) ? relatedLink(kanaEntry(fullSize)) : null,
+              conceptReachable("yoon", history) ? relatedLink(termEntry("yoon")) : null,
+            ];
+          })()
+        : []
+  ).filter(isRelatedLink);
 
   return (
     // NO CARD: the entry reads as a natural part of the page — a plain, unstyled
