@@ -502,6 +502,29 @@ export function summariseRound(round: number, stats: SessionStats): RoundSummary
   };
 }
 
+/**
+ * Is `last` honestly indistinguishable from `first` — the comparison
+ * session-complete's recap needs before it can say "the same as you
+ * started"?
+ *
+ * `correct` ALONE cannot answer this. It is `everCorrect`, a monotonic OR
+ * over a round's retry legs (see resolveShowing in drill-stats.ts): a round
+ * that missed a fact and then recovered it on a later leg, before the round
+ * ended, reads identically on `correct` to a round that never missed the
+ * fact at all — both land on `correct: total`. `missed` (facts that took at
+ * least one miss this round) is what actually tells the two apart, and it is
+ * already computed alongside `correct` in summariseRound, so this only has
+ * to check both.
+ *
+ * The bug this fixes: a session where round 1 missed a fact and recovered it
+ * mid-round, then a later round matched round 1's final tally, had the recap
+ * claim nothing changed — because the only thing it compared, `correct`,
+ * genuinely hadn't. See SAK-21.
+ */
+export function sameAsStarted(first: RoundSummary, last: RoundSummary): boolean {
+  return last.correct === first.correct && last.missed === first.missed;
+}
+
 // ---------- coming back ----------
 
 /**
