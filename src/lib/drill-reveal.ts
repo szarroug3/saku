@@ -5,10 +5,10 @@
 
 /** The three things a resolved showing can be. "good" is the 650ms
  * auto-advance and never reveals — there is nothing to compare when you got
- * it right. "bad" is an out-of-retries miss. "skip" is the deferral SAK-50
- * gave a reveal to: it used to jump straight to the next card with no
- * indication of what the answer was, which made "I don't know this, skip"
- * the one path through the app that taught nothing. */
+ * it right. "bad" is an out-of-retries miss. "skip" is the deferral: it
+ * jumps straight to the next card with no reveal, because a skipped card is
+ * requeued for later — the learner may just want to come back to it, not be
+ * told the answer (SAK-50 feedback: skipping should not show the answer). */
 export type RevealFeedbackKind = "good" | "bad" | "skip";
 
 export interface RevealFeedback {
@@ -17,17 +17,18 @@ export interface RevealFeedback {
 
 /**
  * Whether the drill is paused on a reveal-eligible stop: an out-of-retries
- * miss, or a skip. Both leave the card on screen with nothing left to do but
- * read the answer and press on — the state the Continue button and the
- * showAnswer reveal key off. A "good" pause (the correct-answer auto-advance)
- * is deliberately excluded: it already tells you what you needed to know by
- * turning green.
+ * miss. That leaves the card on screen with nothing left to do but read the
+ * answer and press on — the state the Continue button and the showAnswer
+ * reveal key off. A "good" pause (the correct-answer auto-advance) is
+ * deliberately excluded: it already tells you what you needed to know by
+ * turning green. A "skip" is deliberately excluded too: it's a deferral, not
+ * a resolution, so it never pauses on a reveal.
  */
 export function isRevealPause(
   feedback: RevealFeedback | null | undefined,
   waiting: boolean,
 ): boolean {
-  return waiting && (feedback?.kind === "bad" || feedback?.kind === "skip");
+  return waiting && feedback?.kind === "bad";
 }
 
 /**
