@@ -19,6 +19,7 @@ import { Fragment } from "react";
 // step 1 of 6 has no way to tell a concept card from a character they somehow
 // can't see, and the walk's forward button looks broken rather than patient.
 
+import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/ui/hear-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -151,6 +152,16 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
           </div>
         )}
       </div>
+
+      {/* A hedged aside, shown once at the bottom of the card via the shared
+          Callout — the same "Heads up." treatment kana's conversion tables use.
+          Kept out of the mt-8 block above so it reads as a caveat about
+          everything the card just said, not as one more numbered claim. */}
+      {intro.calloutTip ? (
+        <div className="mt-6">
+          <Callout>{intro.calloutTip}</Callout>
+        </div>
+      ) : null}
     </div>
   );
 }
