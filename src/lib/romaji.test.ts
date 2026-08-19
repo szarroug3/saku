@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { isKanaOnly, romajiMatches, toHiragana, toKana } from "./romaji.ts";
+import { hasKanji, isKanaOnly, romajiMatches, toHiragana, toKana } from "./romaji.ts";
 
 describe("toKana — base kana and vowels", () => {
   test("plain syllables", () => {
@@ -178,6 +178,21 @@ describe("passthrough and script helpers", () => {
     assert.equal(isKanaOnly("生"), false);
     assert.equal(isKanaOnly(""), false);
     assert.equal(isKanaOnly("kore"), false);
+  });
+
+  test("hasKanji is false for kana, punctuation and latin — true once a kanji appears", () => {
+    // Pure kana, either script: no kanji to gloss.
+    assert.equal(hasKanji("これ"), false);
+    assert.equal(hasKanji("コーヒー"), false);
+    assert.equal(hasKanji("いらっしゃいませ"), false);
+    // Kana plus punctuation/latin: still nothing for furigana to say.
+    assert.equal(hasKanji("これ!"), false);
+    assert.equal(hasKanji("OK"), false);
+    assert.equal(hasKanji(""), false);
+    // A single kanji, or kanji mixed with okurigana, is a hit.
+    assert.equal(hasKanji("先生"), true);
+    assert.equal(hasKanji("生"), true);
+    assert.equal(hasKanji("食べる"), true);
   });
 });
 

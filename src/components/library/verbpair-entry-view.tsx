@@ -21,6 +21,7 @@ import { EntrySurface } from "@/components/library/entry-section";
 import { Info } from "@/components/ui";
 import { HearButton } from "@/components/ui/hear-button";
 import { pairForEntry } from "@/data/transitivity-facts";
+import { hasKanji } from "@/lib/romaji";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
@@ -67,7 +68,11 @@ export function VerbPairEntryView({
               <div className="flex items-center gap-2.5">
                 <HearButton glyph={s.m.reading} />
                 <span className="font-kana text-[22px] leading-none text-text">{s.m.word}</span>
-                <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
+                {/* Furigana glosses a kanji reading — an all-kana verb has
+                    nothing for it to add. See SAK-38. */}
+                {hasKanji(s.m.word) ? (
+                  <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
+                ) : null}
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
             </div>

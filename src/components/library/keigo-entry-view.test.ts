@@ -19,6 +19,7 @@ import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 
 import { KEIGO_SETS } from "../../data/keigo.ts";
+import { hasKanji } from "../../lib/romaji.ts";
 
 describe("only genuinely plain-verb-less sets are flagged formulaic", () => {
   test("welcome (いらっしゃいませ) is the only formulaic set today", () => {
@@ -69,5 +70,39 @@ describe("the honorific/humble template is guarded on the set NOT being formulai
   test("the fixed-phrase explanation section is still gated on set.formulaic", () => {
     assert.match(SRC, /\{set\.formulaic \? \(/);
     assert.match(SRC, /it&rsquo;s a fixed phrase/);
+  });
+});
+
+// SAK-38: NO FURIGANA OVER AN ALREADY-ALL-KANA WORD
+// ===================================================================
+// The formulaic set's own word, いらっしゃいませ, is written entirely in kana —
+// exactly the case this ticket is about. Before this fix the reading span
+// printed いらっしゃいませ a second time right beside itself. The fix gates
+// that span on `hasKanji(w.word)`, the shared kanji-detection helper (romaji.ts),
+// so a kana-only word's reading is dropped rather than duplicated, while a
+// kanji-bearing polite form (召し上がる) still shows its reading as before.
+describe("the reading span is suppressed for an all-kana word (SAK-38)", () => {
+  const SRC = readFileSync(new URL("./keigo-entry-view.tsx", import.meta.url), "utf8");
+
+  test("imports the shared hasKanji helper rather than re-deriving the check", () => {
+    assert.match(SRC, /import \{ hasKanji \} from "@\/lib\/romaji";/);
+  });
+
+  test("the reading span is gated on hasKanji(w.word), not rendered unconditionally", () => {
+    assert.match(SRC, /\{hasKanji\(w\.word\) \? \(\s*<span[^>]*>\{w\.reading\}<\/span>\s*\) : null\}/);
+  });
+
+  test("the formulaic word いらっしゃいませ is exactly the all-kana case the guard exists for", () => {
+    const welcome = KEIGO_SETS.find((s) => s.id === "welcome")!;
+    const [w] = welcome.words;
+    assert.equal(w.word, "いらっしゃいませ");
+    assert.equal(hasKanji(w.word), false, "the guard must suppress the reading for this word");
+  });
+
+  test("a real polite form (召し上がる) still passes the guard, so its reading keeps rendering", () => {
+    const eat = KEIGO_SETS.find((s) => s.id === "eat");
+    const honorific = eat?.words.find((w) => w.register === "honorific");
+    assert.ok(honorific, "expected the eat set to have an honorific form");
+    assert.ok(hasKanji(honorific!.word), `expected ${honorific!.word} to contain kanji`);
   });
 });
