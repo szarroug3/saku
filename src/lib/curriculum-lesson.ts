@@ -88,6 +88,7 @@ import {
   type CurriculumRole,
 } from "@/lib/curriculum-order";
 import { type LessonRange } from "@/lib/lesson-sizing";
+import { advancePosition } from "@/lib/lesson-position";
 import type { CompositePosition, LessonPosition } from "@/lib/lesson-position";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -361,9 +362,14 @@ export function packLessons(
  * Where a lesson sits, one span per role it actually teaches.
  *
  * Advances `seen` as a side effect, which is why it is called once per lesson in
- * packing order and nowhere else. A role the lesson does not teach gets null and
- * prints no segment at all, so a words-only lesson reads "Word 12 of 6,213" and
- * says nothing about kanji it is not teaching.
+ * packing order and nowhere else — packLessons walks the WHOLE static packing
+ * front to back exactly once (memoized on the range, never on history), so
+ * `seen` is a pure function of the curriculum, not of any one learner's claims.
+ * That is what makes the result safe under an out-of-order Library claim: the
+ * arithmetic itself is advancePosition (see lesson-position.ts for why it is the
+ * one place this counting step lives), and a role the lesson does not teach gets
+ * null and prints no segment at all, so a words-only lesson reads "Word 12 of
+ * 6,213" and says nothing about kanji it is not teaching.
  */
 function position(
   items: readonly CurriculumLessonItem[],
@@ -371,10 +377,13 @@ function position(
 ): CompositePosition {
   const counts = countRoles(items);
   const span = (role: CurriculumRole): LessonPosition | null => {
-    if (counts[role] === 0) return null;
-    const from = seen[role] + 1;
-    seen[role] += counts[role];
-    return { from, to: seen[role], total: CURRICULUM_TOTALS[role] };
+    const { position: p, seenSoFar } = advancePosition(
+      seen[role],
+      counts[role],
+      CURRICULUM_TOTALS[role],
+    );
+    seen[role] = seenSoFar;
+    return p;
   };
   return { radical: span("radical"), kanji: span("kanji"), word: span("word") };
 }

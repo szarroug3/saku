@@ -53,6 +53,55 @@
 // A track with no derivable total prints the position alone ("Kanji 5–8")
 // rather than reach for a number it would have to invent. `total` is optional
 // here for exactly that case; today all three tracks can answer.
+//
+// THIS FILE ONLY FORMATS. SEE advancePosition() FOR THE ONE SAFE WAY TO COMPUTE
+// =================================================================
+// Everything above renders a `{from, to, total}` this file is handed — it computes
+// nothing, so it cannot itself get "how far into the curriculum am I" wrong. The
+// bug that this file's callers have to avoid lived entirely upstream, in whatever
+// built that struct (SAK-13): "Kanji 1–639 of 2,136" printed from a history where
+// only 5 kanji had actually been taught, because the Library's "I already know
+// this" lets a learner claim an item OUT OF the normal lesson delivery order, and
+// the code computing the span rebuilt it from whatever was left in a
+// claim-filtered remainder — which is neither contiguous nor small once claims
+// scatter through the middle of the curriculum.
+//
+// THE INVARIANT: a position is a property of the STATIC CURRICULUM ORDER, counted
+// ONCE, up front, over every item/group in the whole track — never rebuilt at
+// render time from whatever the current history has NOT yet claimed. Concretely:
+//
+//   SAFE   — pack (or otherwise fix) the whole track into its groups once,
+//            independent of any one learner's history, and walk that fixed
+//            packing front-to-back summing counts as you go (advancePosition,
+//            below). A claim only ever crosses an item off inside whichever
+//            frozen group it already belongs to; it can never move the group's
+//            `from`/`to`/`total`, however out of order the claim was.
+//   UNSAFE — filter the track down to "what's left" (or "what's left in this
+//            group") and derive `from`/`to` from THAT filtered list's size or
+//            position. An out-of-order claim changes what's left non-
+//            contiguously, and a span built from it describes material that may
+//            not even be on the card (see curriculum-lesson.ts's own comment on
+//            nextCurriculumLesson, and the "half-claimed lesson" test in
+//            curriculum-lesson.test.ts).
+//
+// curriculum-lesson.ts's `position()` is the reference implementation of the safe
+// side: `curriculum(range)` packs and positions the ENTIRE track exactly once
+// (memoized on the range, not on history), and nextCurriculumLesson always hands
+// back that frozen `group.position`, never a span rebuilt from `cards` (the
+// claim-filtered remainder actually on the card). Route any new "N of M" through
+// the same shape: freeze positions over the static order first, look them up by
+// group second. Do not invent a second way of answering "how far in am I" — see
+// advancePosition() below, which is that file's own counting step, pulled out
+// here so it has one home and one set of tests instead of being reinvented per
+// track.
+//
+// A track whose own delivery order does NOT match the curriculum order it would
+// be counted against (home-feed's vocab card, scheduled by spoken frequency) has
+// no safe span to print at all, in-order claims or not — see vocabPositionLabel's
+// comment in home-feed.tsx for why printing nothing beats printing a lie, and
+// treat `CURRICULUM_GLYPHS` (learn-index-types.ts) as exactly this trap: it is a
+// glyph's fixed RANK, not a lesson's honest SPAN, and taking the min/max rank of a
+// frequency-ordered lesson's items reproduces this exact bug in a new location.
 
 /**
  * A lesson's place in its curriculum, in ITEMS.
@@ -144,4 +193,47 @@ export function compositePositionLabel(pos: CompositePosition): string {
   return COMPOSITE_NOUNS.filter(([role]) => pos[role] !== null)
     .map(([role, noun]) => positionLabel(noun, pos[role]!))
     .join(" · ");
+}
+
+// THE ONE SAFE WAY TO COMPUTE A POSITION (see the file header, "SEE
+// advancePosition() FOR THE ONE SAFE WAY TO COMPUTE"). Pulled out of
+// curriculum-lesson.ts's `position()` so the counting step has a single home,
+// its own tests, and one obvious place for SAK-29 (or anyone adding a new
+// track's "N of M") to reuse rather than re-derive.
+
+/**
+ * Advance a running position cursor by one group's count of a single kind of
+ * item, in the curriculum's own fixed order — the entire arithmetic a safe "N
+ * of M" needs, and the only place it should live.
+ *
+ * SAFE USE: call this once per group, in the STATIC curriculum order, threading
+ * `seenSoFar` from one call to the next, over the WHOLE track computed once and
+ * memoized independent of history (see curriculum-lesson.ts's `curriculum()`).
+ * The result never depends on which items a learner has claimed, out of order or
+ * not — that is the entire point, and why this function does not take a history
+ * or a claims set as a parameter at all. There is nothing here for an
+ * out-of-order claim TO corrupt.
+ *
+ * UNSAFE USE this function will not stop you from making: calling it over a
+ * history-filtered subset (e.g. "the items not yet claimed") instead of the
+ * whole static group. That reintroduces SAK-13 with new code — see the file
+ * header's SAFE/UNSAFE table.
+ *
+ * `count` is the group's size for this kind (0 when the group teaches none of
+ * it, e.g. a words-only lesson has `count === 0` for `radical`) — that group
+ * contributes no segment, and null is returned rather than a degenerate
+ * `{from, to: from - 1, ...}`. `total` is the kind's fixed curriculum-wide
+ * denominator (COUNTED off the shipped data, never typed in — see
+ * CURRICULUM_TOTALS in curriculum-lesson.ts), or null when the track can derive
+ * no total at all (see positionLabel's own null-total case).
+ */
+export function advancePosition(
+  seenSoFar: number,
+  count: number,
+  total: number | null,
+): { position: LessonPosition | null; seenSoFar: number } {
+  if (count <= 0) return { position: null, seenSoFar };
+  const from = seenSoFar + 1;
+  const to = seenSoFar + count;
+  return { position: { from, to, total }, seenSoFar: to };
 }
