@@ -166,10 +166,11 @@ export function FactProgressSection({
     >
       <div
       className={cx(
-        "relative flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2",
-        selected
-          ? "border-accent bg-accent-bg"
-          : "border-success/35 bg-success-bg",
+        // No box: a hairline left rule instead of the old bordered/rounded
+        // tile, matching PatternRow — whitespace (the stack's own `gap-1.5`,
+        // see FactProgressSection) separates one row from the next.
+        "relative flex items-center gap-2.5 border-l-2 py-1.5 pl-2.5 pr-1",
+        selected ? "border-accent" : "border-success/45",
       )}
       >
       {selected ? (
