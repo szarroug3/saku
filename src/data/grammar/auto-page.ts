@@ -61,6 +61,38 @@ const EXAMPLES: Record<Host, ExampleWord[]> = {
   ],
 };
 
+/** Meanings for words used in the Ending·Change build tables (RULE_VERBS,
+ * PATTERN_TABLE_GROUPS, and form-intros.ts's FORM_TABLE_VERBS) that fall
+ * outside EXAMPLES' spread — the representative-per-sound-change set needs a
+ * couple of verbs (まつ, とる, しぬ, およぐ) and the irregulars/exceptions
+ * (いく, する, くる, ある, いい) EXAMPLES has no reason to carry, plus the
+ * kanji spellings PATTERN_TABLE_GROUPS' adjective rows use (高い, 静か)
+ * alongside the kana ones (たかい, しずか) FORM_TABLE_VERBS and lessons.ts use.
+ * One consistent gloss per word, single source, reused by every table builder
+ * so no two tables can drift on what a shared word means (SAK-39). */
+const EXTRA_GLOSSES: Readonly<Record<string, string>> = {
+  まつ: "wait",
+  とる: "take",
+  しぬ: "die",
+  およぐ: "swim",
+  いく: "go",
+  する: "do",
+  くる: "come",
+  ある: "exist",
+  いい: "good",
+  高い: "expensive",
+  静か: "quiet",
+};
+
+/** Every word's English meaning, keyed by its kana (or, for the adjective rows
+ * that are spelled in kanji, its kanji) — EXAMPLES' own meanings plus
+ * EXTRA_GLOSSES for the words EXAMPLES doesn't carry. The single lookup every
+ * build-table generator glosses its rows from. */
+export const WORD_GLOSS: Readonly<Record<string, string>> = {
+  ...Object.fromEntries(Object.values(EXAMPLES).flat().map((ex) => [ex.word, ex.en])),
+  ...EXTRA_GLOSSES,
+};
+
 const HOST_SECTION_TITLE: Record<Host, string> = {
   verb: "Verbs",
   "adj-i": "い-adjectives",
@@ -246,9 +278,15 @@ function standaloneRuleRows(form: Form): IntroBuildRule[] {
     if (p === 0) {
       // The whole word shifts (する→できる): no drop/add rule fits, so it is
       // shown whole and flagged irregular, the way the form intros do.
-      rows.push({ label: "irregular", verb: v.word, to: c.value });
+      rows.push({ label: "irregular", verb: v.word, to: c.value, gloss: WORD_GLOSS[v.word] });
     } else {
-      rows.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p) });
+      rows.push({
+        label: v.label,
+        verb: v.word,
+        drop: v.word.slice(p),
+        add: c.value.slice(p),
+        gloss: WORD_GLOSS[v.word],
+      });
     }
   }
   return rows;
@@ -350,7 +388,13 @@ function patternRuleTables(
         const reg = apply(r, v.word, v.regular);
         if (reg.ok && reg.value === built.value) continue;
       }
-      rules.push({ label: v.label, verb: v.word, to: built.value, note: v.note });
+      rules.push({
+        label: v.label,
+        verb: v.word,
+        to: built.value,
+        note: v.note,
+        gloss: WORD_GLOSS[v.word],
+      });
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
   }
