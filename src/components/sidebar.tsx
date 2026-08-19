@@ -77,6 +77,13 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
   // open — a permanent nav slot pointing at "No sessions yet" is a door onto an
   // empty room.
   { href: "/settings", label: "Settings" },
+  // SAK-27: the SRS / rounds-and-breaks / progress-words reference. Sits beside
+  // Resources rather than up with Learn/Practice — same argument the Grammar
+  // comment above makes: "the reference should exist as an easy way to look
+  // things up, not as the product." A newcomer meets this content once, up
+  // front, via the SrsIntro banner on Home; this nav entry is where it lives to
+  // be looked up again later.
+  { href: "/how-it-works", label: "How Saku works" },
   // The credits/attributions page — where the data, the stroke-order glyphs,
   // and the guides the app learned from are named. A courtesy list, not a
   // licence obligation (that is "About the data" below, which the EDRDG licence

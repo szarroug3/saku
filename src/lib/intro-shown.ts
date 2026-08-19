@@ -66,6 +66,15 @@ export const CONCEPT_CARD_IDS: readonly string[] = [
   // that needs them. See src/data/phase-intros.ts and lesson-steps.ts.
   "intro-onyomi",
   "intro-built-from",
+  // The SRS explainer at the top of Home (src/components/lesson/srs-intro.tsx,
+  // SAK-27). Same species of once-ever flag as the rest of this list, so it
+  // rides the same registry, the same server sync (introShown), and the same
+  // knowledge-base reset sweep — a restarting learner meets it again, same as
+  // every other day-one introduction. It replaced the old claim-only explainer
+  // (formerly claim-explainer.tsx / claim-hint.ts), which explained only what
+  // "I already know" does; this one explains SRS itself, and links to
+  // /how-it-works for the rest, including the claim buttons.
+  "intro-srs",
 ];
 
 /** The localStorage key for one intro's "already shown" flag (renamed
