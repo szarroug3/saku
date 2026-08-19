@@ -129,11 +129,11 @@ export function RestScreen({
           what stopped it double-boxing here — the Card and ConfigPreview's own
           recessed panel used to draw two near-concentric borders. The config
           now reads as one clean Card, sibling to the hints Card below. */}
-      <Card className="px-[15px] py-[13px]">
+      <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
         <ConfigPreview />
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
+      <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
         {/* Each hint gets its own block. Hint is a <span> (see ui.tsx), so two
             of them side by side ran together into "…if you need to.Your
             finished rounds are saved." — reported in the beginner audit at both

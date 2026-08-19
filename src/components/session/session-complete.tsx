@@ -267,7 +267,7 @@ export function SessionComplete({
         )}
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
+      <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
         <Hint>
           {taught ? (
             <>

@@ -54,15 +54,21 @@ function LinkRow({ label, children }: { label: string; children: ReactNode }) {
 export function EntryLinks({
   mixups,
   children,
+  divider = false,
 }: {
   mixups: Mixups;
   /** The "everything else" rows — made of, appears in, your lists. Passed as
    * children so each kind supplies only the rows it has, while the two lines
    * above keep their fixed positions regardless. */
   children?: ReactNode;
+  /** Open with the hairline divider EntrySurface's Section uses — for a caller
+   * (the primitive page) that stacks this directly below another Card-
+   * rendering block with nothing else between them. Default false: most
+   * callers don't need it. */
+  divider?: boolean;
 }) {
   return (
-    <Card>
+    <Card className={divider ? "mt-5 border-t border-border/50 pt-5" : undefined}>
       <Lbl>Links</Lbl>
       <dl className="grid grid-cols-[150px_1fr] gap-x-3 gap-y-1.5 text-[13px] max-[700px]:grid-cols-1">
         {/* 1 — HISTORY. Absent when empty, and NOT a filtered view of the line

@@ -58,67 +58,73 @@ export function GrammarConceptView({
         </Card>
       ) : null}
 
-      {concept.cards.map((card) => {
-        if (card.body.length === 0) return null;
-        // The adjective intro is deliberately the lesson's own page, whose
-        // title differs from the Library entry only by a final period. Repeating
-        // it as an h2 directly beneath the identical h1 made the reference page
-        // look like two pages stacked together. Other cards keep their title.
-        const repeatsEntryTitle =
-          hideTitles ||
-          card.title.replace(/[.!?]+$/, "") === concept.name.replace(/[.!?]+$/, "");
-        return (
-          // Prose in one Card, its worked examples in a Card beside it, on the
-          // container query the mark and term pages settled: the Library column
-          // is far narrower than the viewport once the sidebar is there, so what
-          // matters is this column's width. Stacks when the column is narrow.
-          <div key={card.id} className="@container">
-            <div className="flex flex-col @xl:flex-row @xl:items-stretch @xl:gap-3.5">
-              <Card className="min-w-0 flex-1">
-                {/* The card's own title, at reference size — the one line each
-                    card is built around, so dropping it would leave two sections
-                    with no way to tell them apart. The accent kicker is dropped;
-                    the page title already says what this is about. */}
-                {!repeatsEntryTitle ? (
-                  <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
-                    {card.title}
-                  </h2>
-                ) : null}
-                {/* No `measure` cap: the prose already sits in a sized column,
-                    and a second cap on top of it is the early wrap the mark pages
-                    had. */}
-                <IntroBodyWithAnchoredExamples intro={card} measure="max-w-[88ch]" />
-                {card.buildTables?.length ? (
-                  <div className="mt-6 space-y-6">
-                    {card.buildTables.map((table, index) => (
-                      <IntroBuildTableGroup
-                        key={index}
-                        title={table.title}
-                        rules={table.rules}
-                        heads={table.heads}
-                      />
-                    ))}
-                  </div>
-                ) : null}
+      {concept.cards
+        .filter((card) => card.body.length > 0)
+        .map((card, index) => {
+          // The adjective intro is deliberately the lesson's own page, whose
+          // title differs from the Library entry only by a final period. Repeating
+          // it as an h2 directly beneath the identical h1 made the reference page
+          // look like two pages stacked together. Other cards keep their title.
+          const repeatsEntryTitle =
+            hideTitles ||
+            card.title.replace(/[.!?]+$/, "") === concept.name.replace(/[.!?]+$/, "");
+          return (
+            // Prose in one Card, its worked examples in a Card beside it, on the
+            // container query the mark and term pages settled: the Library column
+            // is far narrower than the viewport once the sidebar is there, so what
+            // matters is this column's width. Stacks when the column is narrow. A
+            // second card (a concept with more than one, e.g. godan/ichidan) opens
+            // with the same hairline divider EntrySurface's Section uses.
+            <div key={card.id} className={index === 0 ? "@container" : "@container mt-5 border-t border-border/50 pt-5"}>
+              <div className="flex flex-col @xl:flex-row @xl:items-stretch @xl:gap-3.5">
+                <Card className="min-w-0 flex-1">
+                  {/* The card's own title, at reference size — the one line each
+                      card is built around, so dropping it would leave two sections
+                      with no way to tell them apart. The accent kicker is dropped;
+                      the page title already says what this is about. */}
+                  {!repeatsEntryTitle ? (
+                    <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
+                      {card.title}
+                    </h2>
+                  ) : null}
+                  {/* No `measure` cap: the prose already sits in a sized column,
+                      and a second cap on top of it is the early wrap the mark pages
+                      had. */}
+                  <IntroBodyWithAnchoredExamples intro={card} measure="max-w-[88ch]" />
+                  {card.buildTables?.length ? (
+                    <div className="mt-6 space-y-6">
+                      {card.buildTables.map((table, i) => (
+                        <IntroBuildTableGroup
+                          key={i}
+                          title={table.title}
+                          rules={table.rules}
+                          heads={table.heads}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {card.examples?.length &&
+                  card.examplesAfterBodyIndex === undefined &&
+                  card.examplesPlacement === "below" ? (
+                    <div className="mt-4">
+                      <IntroExamples examples={card.examples} />
+                    </div>
+                  ) : null}
+                </Card>
                 {card.examples?.length &&
                 card.examplesAfterBodyIndex === undefined &&
-                card.examplesPlacement === "below" ? (
-                  <div className="mt-4">
-                    <IntroExamples examples={card.examples} />
-                  </div>
+                card.examplesPlacement !== "below" ? (
+                  // Same responsive divider term-view.tsx uses for its prose/
+                  // examples pair: a top hairline when stacked narrow, a left
+                  // one instead once the row splits into two columns at @xl.
+                  <Card className="mt-5 border-t border-border/50 pt-5 @xl:mt-0 @xl:w-[20rem] @xl:shrink-0 @xl:border-t-0 @xl:border-l @xl:pl-4 @xl:pt-0">
+                    <IntroExamples examples={card.examples} bare />
+                  </Card>
                 ) : null}
-              </Card>
-              {card.examples?.length &&
-              card.examplesAfterBodyIndex === undefined &&
-              card.examplesPlacement !== "below" ? (
-                <Card className="@xl:w-[20rem] @xl:shrink-0">
-                  <IntroExamples examples={card.examples} bare />
-                </Card>
-              ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </>
   );
 }

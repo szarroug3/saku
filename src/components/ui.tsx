@@ -27,26 +27,21 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 /**
  * FLAT SECTION SURFACES, scoped by a provider rather than threaded as a prop.
  *
- * The Library entry page wants every section surface FLAT — border and radius
- * kept, the translucent `.kq-material` fill dropped — but those sections are
- * built by a dozen-odd different components that each render a <Card> of their
- * own (KanjiReadings, EntryLinks, WordBuiltFrom, the readings table, …). Passing
- * a `flat` prop would mean threading it through every one of those pass-through
- * intermediaries. Instead the entry page wraps its content in
- * <FlatSurfaceProvider> and Card reads the flag from context, so a card
- * flattens by WHERE it is rendered, not by what each intermediary forwards.
- *
- * It is read ONLY by section containers — Card here, and the two hand-rolled
- * section boxes in the verb-pair / keigo views, and the "How you say it" panel.
- * Chips, pills, buttons and the sticky drill band wear their own raw classes
- * rather than <Card>, so they keep their material: the owner wants outlined
- * section blocks with their normal chips still inside, not a flattened page.
+ * `<Card>` itself no longer reads this (SAK-80 round 2 — every Card is now the
+ * de-boxed, no-fill/no-border/no-radius look, unconditionally; see Card below).
+ * The provider and its two hooks survive for the OTHER hand-rolled section
+ * surfaces that still choose between a boxed and a flat look by WHERE they are
+ * rendered rather than by a threaded prop: the verb-pair / keigo section boxes,
+ * the "How you say it" panel, and lesson-panel.tsx's card. Passing a `flat` prop
+ * to each of those would mean threading it through every pass-through
+ * intermediary between the page and the component that finally renders one;
+ * wrapping the page in <FlatSurfaceProvider> instead lets them read the flag
+ * from context.
  */
-// Two flat levels. "flat" keeps the border + radius and drops only the frosty
-// fill — the shipped Library entry route's look. "borderless" drops the box
-// entirely (no border, radius, or padding), for the REDESIGNED entry pages whose
-// own sections are divider-separated and want no boxes-within-boxes. A plain
-// FlatSurfaceProvider still means "flat"; EntrySurface opts into "borderless".
+// Two flat levels, kept for those other surfaces. "flat" keeps a border +
+// radius and drops only the frosty fill; "borderless" drops the box entirely
+// (no border, radius, or padding) — the level EntrySurface opts into for the
+// redesigned entry pages, whose own sections are divider-separated.
 type FlatLevel = "flat" | "borderless";
 const FlatSurfaceContext = createContext<FlatLevel | null>(null);
 
@@ -66,8 +61,8 @@ export function FlatSurfaceProvider({
 }
 
 /** True when the surrounding surface should render FLAT (transparent fill) — at
- * either level. False everywhere no provider sits above, so all other Cards keep
- * their frost untouched. */
+ * either level. False everywhere no provider sits above, so all other readers
+ * keep their frost untouched. */
 export function useFlatSurface(): boolean {
   return useContext(FlatSurfaceContext) !== null;
 }
@@ -78,40 +73,33 @@ export function useBorderlessSurface(): boolean {
   return useContext(FlatSurfaceContext) === "borderless";
 }
 
+/**
+ * A section of content on the page — NO fill, NO border, NO radius, NO shadow
+ * (SAK-80 round 2). Every screen used to reach for <Card> to draw a bordered,
+ * frosted box; the app-wide de-boxed pass (SAK-80) already stripped that chrome
+ * from the word table, the pattern rows, fact-progress and ScrollCue, and from
+ * every Library entry page via EntrySurface. Card was the one box left standing
+ * — Sam saw a screenshot of the still-boxed Session complete screen and
+ * confirmed Card itself should go the same way. It is now exactly what
+ * EntrySurface's own <Section> is: a plain wrapper that lets its content flow on
+ * the page ground.
+ *
+ * Only spacing is left: `mb-3.5` so Cards stacked back to back keep the gap the
+ * old box's margin gave them. A caller stacking two Cards where whitespace alone
+ * reads as one run-on block (not whitespace ALREADY provided by a heading, a
+ * <Section>, or a flex/space-y layout between them) adds a hairline itself via
+ * `className`, the same `mt-5 border-t border-border/50 pt-5` divider
+ * EntrySurface's <Section> uses to separate stacked sections — see e.g.
+ * number-construction-view.tsx.
+ */
 export function Card({
   children,
   className,
-  flat: flatProp,
 }: {
   children: ReactNode;
   className?: string;
-  /** Force the flat look on this one card. Usually granted instead by
-   * FlatSurfaceProvider (the Library entry page), so most callers never pass it. */
-  flat?: boolean;
 }) {
-  // Flat = the entry-page look: keep the border and radius, drop the frosty
-  // `.kq-material` fill (and its `bg-card`) for a transparent ground. "No fill"
-  // is `bg-transparent`, not a hardcoded colour, so the flat look holds in every
-  // theme. The flag comes from an explicit prop OR the surrounding provider.
-  const inheritedFlat = useFlatSurface();
-  const borderless = useBorderlessSurface();
-  const flat = flatProp || inheritedFlat;
-  return (
-    <div
-      className={cx(
-        borderless
-          ? // No box at all — the redesigned entry pages separate sections with a
-            // divider, so a reused component's Card should just be its content.
-            "mb-3.5 bg-transparent"
-          : flat
-            ? "mb-3.5 rounded-xl border border-border bg-transparent p-[18px]"
-            : "kq-material mb-3.5 rounded-xl border border-border bg-card p-[18px]",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cx("mb-3.5", className)}>{children}</div>;
 }
 
 /** Uppercase section label ("QUIZ", "MISSED CHARACTERS", …). */
