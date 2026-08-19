@@ -470,7 +470,10 @@ export function ScrollCue() {
       aria-hidden="true"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center pb-2"
     >
-      <span className="kq-material flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-muted shadow-sm">
+      {/* No shadow — this sits over content that is actively scrolling, and a
+          box-shadow there is exactly the jank the de-boxed pass exists to
+          avoid. The border + kq-material fill are enough to read as a pill. */}
+      <span className="kq-material flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-muted">
         more below <span aria-hidden="true">↓</span>
       </span>
     </div>

@@ -120,13 +120,16 @@ function PresentationCell({
         saidParts.length ? `, answered ${saidParts.join(" ")} instead` : ""
       }`}
       className={cx(
-        "relative flex min-w-0 flex-col gap-1 rounded-[10px] border px-2 py-1.5 text-left",
+        // No box: a hairline left rule replaces the old bordered/rounded tile,
+        // and the grid's own gap (see WordTable) is what separates one cell
+        // from the next — the de-boxed pattern, not a card per cell.
+        "relative flex min-w-0 flex-col gap-1 border-l-2 py-1 pl-2 pr-1 text-left",
         "cursor-pointer transition-colors",
         selected
-          ? "border-accent bg-accent-bg"
+          ? "border-accent"
           : solidTone
-            ? "border-success/45 bg-success-bg hover:bg-success-bg"
-            : "border-border bg-panel hover:bg-card",
+            ? "border-success/45 hover:border-accent/50"
+            : "border-border/60 hover:border-accent/50",
       )}
     >
       {selected ? (
@@ -137,7 +140,12 @@ function PresentationCell({
           ✓
         </span>
       ) : null}
-      <span className="text-[10px] uppercase leading-tight tracking-[0.04em] text-text">
+      <span
+        className={cx(
+          "text-[10px] uppercase leading-tight tracking-[0.04em]",
+          selected ? "text-accent" : "text-text",
+        )}
+      >
         {phrase}
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
