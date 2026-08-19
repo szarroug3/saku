@@ -45,8 +45,8 @@ describe("chunkRoleLabels", () => {
   test("returns the tier's role labels in canonical order when piece counts match", () => {
     assert.deepEqual(chunkRoleLabels("simple", 3), [
       "Topic",
-      "Object/detail",
-      "Final predicate",
+      "Object",
+      "Action",
     ]);
   });
 
@@ -73,13 +73,13 @@ describe("findAssemblyMismatch", () => {
     const tray = ["それを", "私は", "言う。"];
     const mismatch = findAssemblyMismatch(SIMPLE_ITEM, tray, "simple");
     assert.ok(mismatch);
-    // それを belongs at canonical index 1 ("core" / "Object/detail"), but the
+    // それを belongs at canonical index 1 ("core" / "Object"), but the
     // learner placed it first (tray index 0).
     assert.equal(mismatch.canonIndex, 1);
     assert.equal(mismatch.trayIndex, 0);
     assert.equal(mismatch.surface, "それを");
-    assert.equal(mismatch.label, "Object/detail");
-    assert.equal(assemblyMismatchMessage(mismatch), "Object/detail is out of place.");
+    assert.equal(mismatch.label, "Object");
+    assert.equal(assemblyMismatchMessage(mismatch), "Object is out of place.");
   });
 
   test("finds a mismatch buried in the middle of a longer sentence", () => {
@@ -117,7 +117,7 @@ describe("findAssemblyMismatch", () => {
     assert.equal(mismatch.trayIndex, 1);
     assert.equal(mismatch.surface, "言う。");
     assert.equal(mismatch.canonIndex, 2);
-    assert.equal(mismatch.label, "Final predicate");
+    assert.equal(mismatch.label, "Action");
   });
 });
 
