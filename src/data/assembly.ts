@@ -193,14 +193,15 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
   // Desire, ease and difficulty.
   {
     id: -31,
-    en: "I want to speak Japanese.",
-    jp: "私は日本語を話したい。",
+    en: "I want to see my friend.",
+    jp: "私は友達に会いたい。",
     pieces: [
       { t: "私は", h: "私" },
-      { t: "日本語を", h: "日本語" },
-      { t: "話したい。", h: "話す" },
+      { t: "友達に", h: "友達" },
+      { t: "会い", h: "会う" },
+      { t: "たい。", h: null },
     ],
-    v: ["私", "日本語", "話す"],
+    v: ["私", "友達", "会う"],
     p: ["tai"],
   },
   {
