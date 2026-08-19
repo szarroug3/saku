@@ -160,11 +160,22 @@ describe("synonymKeyOf — what reduces cleanly for the curated pool", () => {
   test("a hyphenated compound keys in whole", () => {
     assert.equal(synonymKeyOf("well-known"), "well-known");
   });
-  test("anything left multi-word, punctuated, or with a digit is skipped", () => {
+  test("a short run of plain words keys in too", () => {
+    // Extended for multi-word gloss fragments: Datamuse's ml=<phrase> proved
+    // to have the same clean score-gap structure a single word does (see
+    // build-en-synonyms.mjs's header), so these are no longer skipped.
+    assert.equal(synonymKeyOf("does not exist"), "does not exist");
+    assert.equal(synonymKeyOf("not being"), "not being");
+    assert.equal(synonymKeyOf("Old Japanese Coin"), "old japanese coin");
+  });
+  test("punctuated or digit-bearing fragments are still skipped", () => {
     assert.equal(synonymKeyOf("not being (there)"), null);
     assert.equal(synonymKeyOf("line, row, verse"), null);
     assert.equal(synonymKeyOf("four (4)"), null);
     assert.equal(synonymKeyOf(""), null);
+  });
+  test("more than four words is still skipped — not guessed at", () => {
+    assert.equal(synonymKeyOf("a very specific multi word gloss"), null);
   });
 });
 
