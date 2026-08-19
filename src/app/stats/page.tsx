@@ -89,15 +89,19 @@ export default function StatsPage() {
       <KnowledgeBase tally={tally} total={TOTAL_FACTS} />
 
       {/* The one hairline on the page: What-you-know is the whole knowledge base
-       * summed; below it the same facts are broken out by subject, beside the
+       * summed; below it the same facts are broken out by subject, then the
        * mix-ups board. That is the one major seam, so it gets the rule — the
        * groups within it separate by their heading and their whitespace, not by
        * more lines (the boxless language's rule; see the Row primitive).
        *
-       * Two columns on a wide screen, stacked on a narrow one. The mix-ups board
-       * is the taller of the two and the one you came for; it goes second so a
-       * stacked phone reads By subject → mix-ups, the same order as the wide
-       * screen's left → right. */}
+       * By subject stays a half-width column — it is five short rows and never
+       * grows. Mix-ups (SAK-77) used to share that same half on a wide screen,
+       * which squeezed the one card on this page with genuinely unbounded
+       * content — a board of pairs that can run past its scroll cap — into the
+       * same width as a fixed five-row table, while the page had visible room
+       * beside it. It now spans the full row instead, stacked below By subject
+       * on every width, which also means the wide screen reads top-to-bottom in
+       * the same order the narrow screen always did. */}
       <div className="mt-6 grid gap-x-10 gap-y-8 border-t border-white/[0.08] pt-6 md:grid-cols-2">
         <BySubject
           facts={history.facts}
@@ -105,7 +109,9 @@ export default function StatsPage() {
                     now={now}
           history={history}
         />
-        <MixUps history={history} graduateRuns={cfg.graduateRuns} />
+        <div className="md:col-span-2">
+          <MixUps history={history} graduateRuns={cfg.graduateRuns} />
+        </div>
       </div>
     </div>
   );
