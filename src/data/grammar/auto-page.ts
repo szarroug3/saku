@@ -605,10 +605,19 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
           const instruction = onVolitional
             ? `${sectionBuild?.instruction ?? build} A godan verb shifts to う; an ichidan verb or irregular adds よう, which is why the pattern is written ${r.pattern}.`
             : (sectionBuild?.instruction ?? build);
+          // Two pills instead of one, for the same reason the derive table
+          // above gets two rows: a single "[let's-form] + と思う" formula
+          // never shows WHICH ending, う or よう, actually lands.
+          const formula = onVolitional
+            ? ([
+                { label: "Godan", base: "う", add: attachment!.add },
+                { label: "Ichidan/irregular", base: "よう", add: attachment!.add },
+              ] as const)
+            : sectionBuild?.formula;
           return {
             title: HOST_SECTION_TITLE[sectionHost],
             instruction,
-            ...(sectionBuild?.formula ? { formula: sectionBuild.formula } : {}),
+            ...(formula ? { formula } : {}),
             rules,
             heads: { verb: HOST_COLUMN_TITLE[sectionHost], form: formHead },
           };

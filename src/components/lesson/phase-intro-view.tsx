@@ -1025,7 +1025,12 @@ export function IntroDeriveTable({
                 {hasGloss ? (
                   <td
                     lang="en"
-                    className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
+                    // The trailing column takes w-full so leftover table width
+                    // collects after IT, not between it and Meaning — with
+                    // Class present, giving Meaning the stretch would strand
+                    // Class alone at the table's far edge with a dead gap
+                    // between them.
+                    className={`${hasClass ? "" : "w-full "}min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text`}
                   >
                     {r.gloss ?? ""}
                   </td>
@@ -1033,7 +1038,7 @@ export function IntroDeriveTable({
                 {hasClass ? (
                   <td
                     lang="en"
-                    className="min-w-[9rem] px-4 py-3 align-baseline text-[13px] leading-snug text-text-muted"
+                    className="w-full min-w-[9rem] px-4 py-3 align-baseline text-[13px] leading-snug text-text"
                   >
                     {r.classLabel ?? ""}
                   </td>
@@ -1058,15 +1063,32 @@ export function IntroDeriveTableGroup({
 }: {
   title: string;
   instruction?: string;
-  formula?: { base: string; add?: string; trim?: string };
+  formula?:
+    | { base: string; add?: string; trim?: string }
+    | readonly { label: string; base: string; add?: string; trim?: string }[];
   rows: readonly IntroDeriveRow[];
   heads?: { verb?: string; form?: string; pattern?: string };
 }) {
+  // An array means the form itself branches by conjugation class — one pill
+  // per branch, each labeled, so neither reads as THE rule on its own (see
+  // IntroDeriveRow.classLabel for why the table below needs the same split).
+  // Normalized to a list either way so the render below has one shape to
+  // handle, not two.
+  const formulas = formula ? (Array.isArray(formula) ? formula : [formula]) : [];
   return (
     <section className="space-y-3.5">
       <h3 className="text-[17px] font-semibold text-accent">{title}</h3>
       {instruction ? <p className="text-[15px] leading-relaxed text-text">{instruction}</p> : null}
-      {formula ? <IntroBuildFormula {...formula} /> : null}
+      {formulas.length ? (
+        <div className="flex flex-col gap-2.5">
+          {formulas.map((f, i) => (
+            <div key={"label" in f ? f.label : i} className="flex flex-wrap items-center gap-2.5">
+              {"label" in f ? <span className="text-[13px] text-text-muted">{f.label}</span> : null}
+              <IntroBuildFormula base={f.base} add={f.add} trim={f.trim} />
+            </div>
+          ))}
+        </div>
+      ) : null}
       <IntroDeriveTable rows={rows} heads={heads} />
     </section>
   );
