@@ -156,20 +156,29 @@ function shelfSectionsFor(k: Kind): BrowseShelfSection[] {
   return v;
 }
 
-// Keyed by kind + CURRICULUM_VERSION so a new deploy with different content
-// naturally gets a fresh Data Cache entry instead of serving a stale one
-// forever — no revalidate/tag-based invalidation needed, the key itself
-// changes when the content does.
+// Keyed by kind + chunk index + CURRICULUM_VERSION so a new deploy with
+// different content naturally gets a fresh Data Cache entry instead of
+// serving a stale one forever — no revalidate/tag-based invalidation needed,
+// the key itself changes when the content does.
 //
-// CACHED PER KIND, NOT AS ONE BATCHED CALL: the first version of this wrapped
-// the whole ~15,640-entry computeLibraryShelves() result in a single
-// unstable_cache entry, which broke in practice — Next's Data Cache rejects
-// any single cached item over 2MB, and the full payload is ~3.8MB. Splitting
-// per kind keeps each entry well under that limit (the largest kind is a
-// small fraction of the total) and still gives every kind its own
-// cross-invocation cache hit.
-const cachedShelfSectionsFor = unstable_cache(
-  async (k: Kind) => shelfSectionsFor(k),
+// CACHED IN FIXED-SIZE CHUNKS, NOT ONE ENTRY PER KIND: per-kind caching
+// (SAK-110's original fix, for a single ~3.8MB batched entry) still broke in
+// practice — "word" alone is ~2.95MB, still over Next's Data Cache's 2MB
+// per-item limit on its own. A section here is ~11KB regardless of kind, so
+// a fixed 50-section chunk stays well under the limit (~585KB) for every
+// kind, present and future, without needing a per-kind size check.
+const SHELF_CHUNK_SIZE = 50;
+
+function shelfChunkCount(k: Kind): number {
+  return Math.max(1, Math.ceil(shelfSectionsFor(k).length / SHELF_CHUNK_SIZE));
+}
+
+const cachedShelfChunk = unstable_cache(
+  async (k: Kind, chunkIndex: number) =>
+    shelfSectionsFor(k).slice(
+      chunkIndex * SHELF_CHUNK_SIZE,
+      (chunkIndex + 1) * SHELF_CHUNK_SIZE,
+    ),
   ["getLibraryShelves", CURRICULUM_VERSION],
   { tags: ["library-shelves"] },
 );
@@ -177,15 +186,19 @@ const cachedShelfSectionsFor = unstable_cache(
 /** Every kind's shelf sections, in one round trip — the browse view needs all
  * of them anyway (to decide, via allTabBrowseKinds, which subjects still have
  * something to show under the current filter), so one batched call replaces
- * what used to be a bundled import. Each kind's computation is cached
- * separately in Vercel's Data Cache via unstable_cache (SAK-110), keyed by
- * CURRICULUM_VERSION so it survives cold starts and is shared across
- * instances, not just memoized per warm process. */
+ * what used to be a bundled import. Each kind's computation is cached in
+ * fixed-size chunks in Vercel's Data Cache via unstable_cache (SAK-110, then
+ * SAK-119), keyed by CURRICULUM_VERSION so it survives cold starts and is
+ * shared across instances, not just memoized per warm process. */
 export async function getLibraryShelves(): Promise<Record<string, BrowseShelfSection[]>> {
   const out: Record<string, BrowseShelfSection[]> = {};
   await Promise.all(
     ALL_KINDS_INDEX.map(async (k) => {
-      out[k as unknown as string] = await cachedShelfSectionsFor(k as Kind);
+      const kind = k as Kind;
+      const chunks = await Promise.all(
+        Array.from({ length: shelfChunkCount(kind) }, (_, i) => cachedShelfChunk(kind, i)),
+      );
+      out[k as unknown as string] = chunks.flat();
     }),
   );
   return out;
