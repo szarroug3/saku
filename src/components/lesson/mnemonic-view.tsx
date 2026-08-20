@@ -85,6 +85,7 @@ export function MnemonicView({
       glyph={m.glyph}
       imgClassName="aspect-square w-full max-w-[440px] object-contain"
       glyphClassName="flex size-[220px] max-w-full items-center justify-center font-kana text-[150px] font-extralight leading-none text-text"
+      priority
     />
   );
 
