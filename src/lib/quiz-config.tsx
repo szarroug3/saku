@@ -31,6 +31,7 @@ import {
   WORDS_PER_LESSON_DEFAULT,
   clampWordsPerLesson,
 } from "@/lib/lesson-sizing";
+import { DEFAULT_PITCH_VOICE_ID } from "@/lib/pitch-audio";
 import { emptySelection } from "@/lib/selection-empty";
 import {
   allGridResponses,
@@ -70,6 +71,10 @@ export function defaultConfig(): QuizConfig {
     // (packVoicesEnabled() false) or a clip is missing, speak() falls back to the
     // browser voice, so this is safe even before the audio is seeded.
     voiceName: "keita",
+    // SAK-98's sole hardcoded voice, kept as the default so an existing
+    // learner's pitch clips (and cache) don't change until they pick
+    // differently in Settings — see pitch-audio.ts's PITCH_VOICES.
+    pitchVoiceId: DEFAULT_PITCH_VOICE_ID,
     showVolume: true,
     graduateRuns: 10,
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.

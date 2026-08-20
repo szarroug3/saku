@@ -53,6 +53,12 @@ import { clearAllDismissedHints } from "@/lib/claim-hint";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { detectPlatform, type Platform } from "@/lib/platform";
+import {
+  DEFAULT_PITCH_VOICE_ID,
+  PITCH_VOICES,
+  PITCH_VOICE_PREVIEW,
+  pitchApiUrl,
+} from "@/lib/pitch-audio";
 import { postDelete } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -318,6 +324,23 @@ export function SettingsCard() {
   const pickVoice = (name: string) => {
     update({ voiceName: name });
     speak(VOICE_PREVIEW, name);
+  };
+
+  // The pitch-accent "Hear it" voice (SAK-99) — a SEPARATE choice from the
+  // speech voice above (it only ever backs the pitch button, never ordinary
+  // speech), so it gets its own picker and its own preview. The preview plays
+  // straight from /api/pitch-tts rather than lib/speech.ts's speak(): that
+  // pipeline is for the pack/browser voice tiers this button doesn't use (see
+  // pitch-hear-button.tsx's header) — same reasoning, same one-shot Audio()
+  // call, just inlined here since this is the only other place it happens.
+  const pickPitchVoice = (id: string) => {
+    update({ pitchVoiceId: id });
+    const audio = new Audio(
+      pitchApiUrl(PITCH_VOICE_PREVIEW.reading, PITCH_VOICE_PREVIEW.downstep, id),
+    );
+    void audio.play().catch(() => {
+      // No fallback — same silent-on-failure discipline as the pitch button.
+    });
   };
 
   // Voice pill selection: fall back to Auto if the saved voice is gone. A pack
@@ -591,6 +614,21 @@ export function SettingsCard() {
           ) : (
             <Hint>No Japanese voices found</Hint>
           )}
+        </Row>
+
+        <Row
+          label="Pitch-accent voice"
+          info="The voice behind the pitch-accent Hear it button on a word's page — a separate choice from Speech voice above, since only this one carries the word's real pitch. Picking one plays a short sample so you can hear it before committing."
+        >
+          {PITCH_VOICES.map((v) => (
+            <Chip
+              key={v.id}
+              on={(cfg.pitchVoiceId || DEFAULT_PITCH_VOICE_ID) === v.id}
+              onClick={() => pickPitchVoice(v.id)}
+            >
+              {v.label}
+            </Chip>
+          ))}
         </Row>
       </section>
 
