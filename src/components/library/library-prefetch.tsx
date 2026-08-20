@@ -23,6 +23,11 @@ import { useServerLookup } from "@/lib/library/use-server-lookup";
 const EMPTY_ARGS: [] = [];
 
 export function LibraryPrefetch() {
-  useServerLookup(getLibraryShelves, EMPTY_ARGS);
+  // persist: true (SAK-112) — mirrors the resolved value into IndexedDB, keyed
+  // by CURRICULUM_VERSION, so a hard reload or a new tab seeds this from disk
+  // instead of re-running the ~15,640-entry computation over the network every
+  // time. See use-server-lookup.ts's header for why this is opt-in rather than
+  // applied to every action.
+  useServerLookup(getLibraryShelves, EMPTY_ARGS, { persist: true });
   return null;
 }
