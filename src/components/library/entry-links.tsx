@@ -24,19 +24,22 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Card, Hint, Lbl } from "@/components/ui";
-import { libEntry } from "@/lib/library/library-index";
-import { entryHref } from "@/lib/library/href";
+import { getGlyphLink } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { Mixups } from "@/lib/library/mixups";
 import type { EntryId } from "@/types";
 
 export function GlyphLink({ id, glyph }: { id: EntryId; glyph?: string }) {
-  const e = libEntry(id);
+  // SAK-104: libEntry/entryHref live in a server-only module now, so this
+  // resolves the one entry it needs over the wire instead of importing the
+  // whole index.
+  const e = useServerLookup(getGlyphLink, [id]);
   if (!e) return null;
   // `glyph` overrides the shown character for a variant component: the "Made of"
   // row displays the form actually written (亻) while the link resolves to the
   // taught character it is a form of (人). Defaults to the entry's own glyph.
   return (
-    <Link href={entryHref(e.id)} className="text-[17px] text-text no-underline">
+    <Link href={e.href} className="text-[17px] text-text no-underline">
       {glyph ?? e.glyph}
     </Link>
   );

@@ -113,20 +113,22 @@ import { COMBO_H, COMBO_K } from "@/data/phase-intros";
 import { termEntry } from "@/data/terms";
 import { yoonRowFor, type YoonRow } from "@/data/yoon-rows";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { entryHref } from "@/lib/library/href";
 import { derivedKanaConfusables, fullSizeOf, yoonConfusables } from "@/lib/library/kana-family";
-import {
-  libEntry,
-  entryName,
-  kanaConfusables,
-  precomputedStrokeFallback,
-} from "@/lib/library/library-index";
+import { getKanaAux, getLibEntry } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { conceptReachable, kanaGlyphReachable } from "@/lib/library/reachable";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
+
+/** Every confusable id here is minted by kanaEntry (`kana:${glyph}` —
+ * data/characters.ts), so the glyph is read straight off the id rather than a
+ * server round trip per candidate. */
+function glyphOfKanaEntryId(id: EntryId): string {
+  return (id as unknown as string).slice("kana:".length);
+}
 
 /** The rule + hook/aside block for a DERIVED kana — が's "k→g, the karate kick
  * smashes the garden gate" strip. Scoped to the one glyph on this page (a
@@ -227,14 +229,16 @@ function ComboSection({ glyph, row }: { glyph: string; row: YoonRow | null }) {
   );
 }
 
-/** One entry as a Related link — `entryName` gives the right label for
- * whatever kind of entry this is (a kana's glyph, a mark's own glyph, a
- * term's name — see that function's own doc comment), and `entryHref` its
- * page. Null when the id somehow names no real entry, which
+/** One entry as a Related link, read off the batch `related` map fetched by
+ * getKanaAux (SAK-104: label/href used to come from entryName/entryHref
+ * directly). Null when the id somehow names no real entry, which
  * `.filter(isRelatedLink)` below drops rather than rendering a dead link. */
-function relatedLink(id: EntryId): RelatedLink | null {
-  const le = libEntry(id);
-  return le ? { label: entryName(le), href: entryHref(id) } : null;
+function relatedLink(
+  id: EntryId,
+  related: Record<string, { label: string; href: string; glyph: string }>,
+): RelatedLink | null {
+  const e = related[id as unknown as string];
+  return e ? { label: e.label, href: e.href } : null;
 }
 
 function isRelatedLink(l: RelatedLink | null): l is RelatedLink {
@@ -269,9 +273,38 @@ export function KanaEntryView({
   // header for what "reachable" means here (has the learner been SHOWN this
   // at all, not mastered it).
   const { history } = useHistory();
-  const glyph = item ? item.glyph : libEntry(entry!)?.glyph;
+  // SAK-104: libEntry/kanaConfusables/precomputedStrokeFallback/entryHref/
+  // entryName all live in server-only modules now. Two hooks, both called
+  // unconditionally (React hook rules): the fallback-glyph lookup (skipped
+  // once `item` already supplies it), then the batch of glyph-dependent
+  // lookups below (skipped until the glyph is known).
+  const fetchedEntry = useServerLookup(getLibEntry, item ? null : [entry!]);
+  const glyph = item ? item.glyph : fetchedEntry?.glyph;
   const resolvedEntry = item ? item.entry : entry!;
-  const strokeFallback = glyph ? precomputedStrokeFallback(glyph) : undefined;
+
+  // The dakuten/handakuten row this glyph is the CONVERTED half of — null for
+  // every base kana and every yōon glyph (dakutenRowFor only resolves the 50
+  // single-codepoint dakuten/handakuten glyphs; yōon is handled separately
+  // below, via yoonRowFor). `base` is the row's own base half, read off its
+  // `pairs`, so it can never name a character the row itself doesn't teach.
+  const row = glyph ? dakutenRowFor(glyph) : null;
+  const base = row?.pairs.find(([, converted]) => converted === glyph)?.[0];
+  // SAK-72 Part B: the yōon equivalent of `row`/`base` above.
+  const yoonRow = glyph ? yoonRowFor(glyph) : null;
+  const yoonFullSize = yoonRow ? fullSizeOf(yoonRow.small) : null;
+  const relatedCandidateIds: EntryId[] =
+    row && base
+      ? [kanaEntry(base), markEntry(row.markName)]
+      : yoonRow
+        ? [
+            kanaEntry(yoonRow.base),
+            ...(yoonFullSize ? [kanaEntry(yoonFullSize)] : []),
+            termEntry("yoon"),
+          ]
+        : [];
+  const aux = useServerLookup(getKanaAux, glyph ? [glyph, relatedCandidateIds] : null);
+  const strokeFallback = aux?.strokeFallback;
+  const related = aux?.related ?? {};
 
   // undefined = still loading, null/no glyph = no such entry (matches the live
   // component's behavior for an unresolved id).
@@ -289,20 +322,6 @@ export function KanaEntryView({
   const m = getMnemonic(glyph);
   const context = contextPronunciation(glyph);
 
-  // The dakuten/handakuten row this glyph is the CONVERTED half of — null for
-  // every base kana and every yōon glyph (dakutenRowFor only resolves the 50
-  // single-codepoint dakuten/handakuten glyphs; yōon is handled separately
-  // below, via yoonRowFor). `base` is the row's own base half, read off its
-  // `pairs`, so it can never name a character the row itself doesn't teach.
-  const row = dakutenRowFor(glyph);
-  const base = row?.pairs.find(([, converted]) => converted === glyph)?.[0];
-
-  // SAK-72 Part B: the yōon equivalent of `row`/`base` above — きゃ's [base,
-  // small] breakdown, null for everything dakutenRowFor already handles (the
-  // two are mutually exclusive: a glyph is never both a dakuten/handakuten
-  // conversion AND a yōon combo) and for every base kana.
-  const yoonRow = yoonRowFor(glyph);
-
   // Base-kana lookalikes (kanaConfusables, from the hand-curated LOOKALIKES
   // table) plus, for a derived kana, its own family — the base plus any other
   // kana marked off that same base (は/ば/ぱ), or, for a yōon combo, its base
@@ -319,14 +338,13 @@ export function KanaEntryView({
   // already met could never warn about a mix-up before it happened).
   const confusables = [
     ...new Set([
-      ...kanaConfusables(glyph),
+      ...(aux?.kanaConfusableIds ?? []),
       ...derivedKanaConfusables(glyph),
       ...yoonConfusables(glyph),
     ]),
   ].filter((id) => {
     if (!gateToReachable) return true;
-    const g = libEntry(id)?.glyph;
-    return g ? kanaGlyphReachable(g, history) : true;
+    return kanaGlyphReachable(glyphOfKanaEntryId(id), history);
   });
 
   // The foot-of-page "Related" links — the real components a derived kana is
@@ -351,24 +369,25 @@ export function KanaEntryView({
   const relatedLinks: RelatedLink[] = (
     row && base
       ? [
-          !gateToReachable || kanaGlyphReachable(base, history) ? relatedLink(kanaEntry(base)) : null,
+          !gateToReachable || kanaGlyphReachable(base, history)
+            ? relatedLink(kanaEntry(base), related)
+            : null,
           !gateToReachable || conceptReachable(row.markName, history)
-            ? relatedLink(markEntry(row.markName))
+            ? relatedLink(markEntry(row.markName), related)
             : null,
         ]
       : yoonRow
-        ? (() => {
-            const fullSize = fullSizeOf(yoonRow.small);
-            return [
-              !gateToReachable || kanaGlyphReachable(yoonRow.base, history)
-                ? relatedLink(kanaEntry(yoonRow.base))
-                : null,
-              fullSize && (!gateToReachable || kanaGlyphReachable(fullSize, history))
-                ? relatedLink(kanaEntry(fullSize))
-                : null,
-              !gateToReachable || conceptReachable("yoon", history) ? relatedLink(termEntry("yoon")) : null,
-            ];
-          })()
+        ? [
+            !gateToReachable || kanaGlyphReachable(yoonRow.base, history)
+              ? relatedLink(kanaEntry(yoonRow.base), related)
+              : null,
+            yoonFullSize && (!gateToReachable || kanaGlyphReachable(yoonFullSize, history))
+              ? relatedLink(kanaEntry(yoonFullSize), related)
+              : null,
+            !gateToReachable || conceptReachable("yoon", history)
+              ? relatedLink(termEntry("yoon"), related)
+              : null,
+          ]
         : []
   ).filter(isRelatedLink);
 
