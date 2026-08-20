@@ -75,3 +75,6 @@ history.json
 # Local work tracker — not shipped
 tasks/
 .worktrees/
+
+# Bulk-job progress logs (seed-voice-audio.mjs etc.) — machine-local, not shipped
+.logs/
