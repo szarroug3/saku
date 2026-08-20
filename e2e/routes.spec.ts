@@ -171,7 +171,7 @@ test("the landing lists the real curriculum tracks", async ({ page }) => {
   });
   // Each chip renders its Japanese and English joined (単語Vocabulary), so match
   // the English as a substring rather than the chip's exact text.
-  for (const track of ["Vocabulary", "Counters", "Verb pairs", "Sentence ordering"]) {
+  for (const track of ["Vocabulary", "Counting", "Verb pairs", "Sentence ordering"]) {
     await expect(path.getByText(track)).toBeVisible();
   }
 });
