@@ -79,6 +79,13 @@ const SUBJECT_LABEL: Record<string, string> = {
   // here. "Verb pairs" is the app's word for it everywhere else — the session
   // header and the Home card both avoid the jargon — so Progress says the same.
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
+  // The Kana/Counting split subjects (server-lookups.ts's splitKanaSubject/
+  // splitWordSubject) mint synthetic ids with no Kind counterpart, so they
+  // have no KIND_LABEL entry either and fell back to the raw id string.
+  "kana-hiragana": "Hiragana",
+  "kana-katakana": "Katakana",
+  "counting-numbers": "Numbers",
+  "counting-counters": "Counters",
 };
 
 /** A StatsSubject with its display label attached. The label is a plain
