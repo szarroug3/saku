@@ -1083,7 +1083,13 @@ export function IntroDeriveTableGroup({
         <div className="flex flex-col gap-2.5">
           {formulas.map((f, i) => (
             <div key={"label" in f ? f.label : i} className="flex flex-wrap items-center gap-2.5">
-              {"label" in f ? <span className="text-[13px] text-text-muted">{f.label}</span> : null}
+              {/* A fixed-width label column so every pill starts at the same
+                  x position regardless of its label's length ("Godan" vs
+                  "Ichidan/irregular") — without it the pills stagger and read
+                  as unrelated lines instead of two versions of one rule. */}
+              {"label" in f ? (
+                <span className="w-32 shrink-0 text-[13px] text-text">{f.label}</span>
+              ) : null}
               <IntroBuildFormula base={f.base} add={f.add} trim={f.trim} />
             </div>
           ))}
