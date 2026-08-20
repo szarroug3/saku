@@ -285,6 +285,15 @@ export interface IntroDeriveRow {
   result: string;
   /** What the finished pattern means — the pattern applied to this verb. */
   gloss?: string;
+  /**
+   * The verb's conjugation class, shown in its own column — e.g. "Godan — adds
+   * う" / "Ichidan/irregular — adds よう". Only needed where the pattern's own
+   * written form branches by class (〜(よ)うと思う's parenthesized よ); an
+   * ordinary pattern conjugates the same way across classes as far as the
+   * FORMULA is concerned, so this stays absent there. The column appears only
+   * when some row carries one.
+   */
+  classLabel?: string;
 }
 
 export interface PunctuationRow {
