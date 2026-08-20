@@ -1106,8 +1106,25 @@ export function answerIsJapanese(fact: FactId, dir: Direction): boolean {
  * the first shape (no Japanese character survived at all) is claimed as a
  * mismatch; a mixed string is left as the ordinary miss it always was, so an
  * everyday romaji typo does not quietly turn into a free, unlimited retry.
+ *
+ * SAK-124: plain Latin text on a card that wants English is not automatically
+ * clear of script trouble. A jp2en MEANING card's own reading, typed as
+ * romaji instead of translated ("unn" for うん's meaning, rather than "yeah"),
+ * is still Latin script — isJapaneseText says nothing about it — yet it is
+ * the same shape of mistake as the other branches here: the learner answered
+ * with the wrong HALF of the card (the reading) instead of what was asked
+ * (the meaning). Caught by decoding `given` the exact same way the real
+ * grader already does (`romajiMatches`, shared with checkProduces/checkJp2en
+ * so this can never disagree with what they call correct) and comparing
+ * against the fact's own reading via `wordReadingUnit` — only when that
+ * reading exists, so a fact with nothing to compare against (no reading unit)
+ * falls through to the ordinary "wants English" case unchanged.
  */
-export type ScriptMismatch = "wantsJapanese" | "wantsRomaji" | "wantsEnglish";
+export type ScriptMismatch =
+  | "wantsJapanese"
+  | "wantsRomaji"
+  | "wantsEnglish"
+  | "typedTheReading";
 
 export function scriptMismatch(
   fact: FactId,
@@ -1127,7 +1144,15 @@ export function scriptMismatch(
   // The card wants English or romaji. There is no legitimate English/romaji
   // answer that contains kana or kanji, so Japanese script here is always the
   // mismatch — the label just depends on which of the two the card wants.
-  if (!isJapaneseText(g)) return null;
+  if (!isJapaneseText(g)) {
+    // Latin, but is it secretly the card's OWN reading rather than an
+    // attempted English answer? Only a jp2en MEANING fact reaches this branch
+    // at all (answerIsJapanese is unconditionally true for en2jp), and only
+    // some of those have a reading to check against.
+    const reading = wordReadingUnit(fact)?.unit.reb;
+    if (reading && romajiMatches(g, reading)) return "typedTheReading";
+    return null;
+  }
   return factInfo(fact)?.subject === KANA_SUBJECT ? "wantsRomaji" : "wantsEnglish";
 }
 

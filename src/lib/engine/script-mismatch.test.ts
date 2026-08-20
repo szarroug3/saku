@@ -132,6 +132,40 @@ describe("kana typed where romaji is the expected FORMAT is a mismatch", () => {
   });
 });
 
+describe("SAK-124: the card's own reading typed as romaji on a meaning card", () => {
+  test("うん's meaning card answered with its own reading romanized is caught as typedTheReading, not wantsEnglish", () => {
+    // うん means "yeah"/"yes"; its reading IS うん (a kana word, reb === keb).
+    // Typing "unn" — a romaji spelling of the reading, not an attempted
+    // translation — should be named as having typed the reading, distinct
+    // from an ordinary wrong English guess.
+    const un = wordMeaningFactId("うん");
+    assert.equal(checkTyped(un, "unn", "jp2en"), false);
+    assert.equal(scriptMismatch(un, "jp2en", "unn"), "typedTheReading");
+  });
+
+  test("a genuinely wrong English guess on the same card is still an ordinary miss", () => {
+    const un = wordMeaningFactId("うん");
+    assert.equal(checkTyped(un, "cat", "jp2en"), false);
+    assert.equal(scriptMismatch(un, "jp2en", "cat"), null);
+  });
+
+  test("does not fire on a fact with no reading to compare against", () => {
+    // A kanji MEANING fact (not a word fact) has no wordReadingUnit at all,
+    // so there is nothing to decode `given` against; falls through to the
+    // ordinary wantsEnglish case unchanged.
+    const life = meaningFactId("生");
+    assert.equal(scriptMismatch(life, "jp2en", "sei"), null);
+  });
+
+  test("an exact reading match beats a coincidental substring: no false positive on ordinary English", () => {
+    // romajiMatches requires an exact full-string match, not a substring —
+    // confirm a wrong English word containing a coincidentally kana-shaped
+    // run doesn't get swept in as "typed the reading".
+    const un = wordMeaningFactId("うん");
+    assert.equal(scriptMismatch(un, "jp2en", "unnecessary"), null);
+  });
+});
+
 describe("empty and mixed input never produce a false mismatch", () => {
   test("an empty answer is null, not a mismatch", () => {
     const teacher = wordMeaningFactId("先生");
