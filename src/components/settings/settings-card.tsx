@@ -52,18 +52,11 @@ import { askFromAudioPrompts } from "@/lib/ask-config";
 import { clearAllDismissedHints } from "@/lib/claim-hint";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
-import { detectPlatform, type Platform } from "@/lib/platform";
-import {
-  DEFAULT_PITCH_VOICE_ID,
-  PITCH_VOICES,
-  PITCH_VOICE_PREVIEW,
-  pitchApiUrl,
-} from "@/lib/pitch-audio";
 import { postDelete } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
-import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
-import { PACK_VOICES, VOICE_PREVIEW, isPackVoice, packVoicesEnabled } from "@/lib/voice-audio";
+import { speak } from "@/lib/speech";
+import { isVoiceId, VOICE_PREVIEW, VOICES, pitchApiUrl, voicesEnabled } from "@/lib/voice";
 
 /** Kana shown on every font chip in place of the font's name. あ and き are
  * the two faces diverge on hardest: Mincho gives あ a wedge-tipped brush
@@ -124,30 +117,6 @@ function NumIn({
       className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-center text-sm"
     />
   );
-}
-
-/** Legacy voice-name reformat: "Kyoko (Enhanced)" → "Kyoko · Enhanced". */
-function voiceLabel(name: string): string {
-  // Drop the language tag macOS appends ("Eddy (Japanese (Japan))" → "Eddy"),
-  // but keep a meaningful build qualifier ("Kyoko (Enhanced)" → "Kyoko · Enhanced").
-  return name
-    .replace(/\s*\(Japanese \(Japan\)\)\s*$/i, "")
-    .replace(/\s*\(([^)]+)\)\s*$/, " · $1")
-    .trim();
-}
-
-/** The Speech voice tooltip. First and last sentences hold on any OS; the
- * middle one names a path, so it's only added once we know which OS we're on.
- * The Mac path in particular is not something you'd ever find on your own. */
-function voiceInfo(platform: Platform): string {
-  const where =
-    platform === "mac"
-      ? "under System Settings → Accessibility → Spoken Content → Manage Voices"
-      : platform === "windows"
-        ? "under Settings → Time & Language → Speech"
-        : "in your system's speech settings";
-  const siri = platform === "mac" ? " Siri voices never show up here." : "";
-  return `The Japanese voices installed on this computer. You can add more ${where}, but the browser won't see them until you restart it.${siri}`;
 }
 
 /** On/Off button with the accent selected state when on. */
@@ -264,25 +233,16 @@ function ResetProgress() {
 export function SettingsCard() {
   const { cfg, update, set } = useQuizConfig();
 
-  // Installed Japanese voices. speechSynthesis is browser-only and its list
-  // can arrive asynchronously, so populate post-mount and stay subscribed.
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  useEffect(() => {
-    // Voice discovery must run post-mount (SSR has no speechSynthesis) and
-    // set state synchronously so the pills paint in the same pass.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVoices(jaVoices());
-    return onVoicesChanged(() => setVoices(jaVoices()));
-  }, []);
-  // Whether pack voices are configured. Resolved POST-MOUNT (not during render)
-  // even though it only reads a NEXT_PUBLIC env: in dev the client bundle can
-  // hold a stale inline of that var while the server sees the current one, so
-  // reading it during render would render the picker differently on server vs.
-  // client and trip a hydration mismatch. Same post-mount pattern as `voices`.
-  const [packEnabled, setPackEnabled] = useState(false);
+  // Whether the roster is configured (Storage bucket set). Resolved
+  // POST-MOUNT (not during render) even though it only reads a NEXT_PUBLIC
+  // env: in dev the client bundle can hold a stale inline of that var while
+  // the server sees the current one, so reading it during render would
+  // render the picker differently on server vs. client and trip a hydration
+  // mismatch.
+  const [rosterEnabled, setRosterEnabled] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPackEnabled(packVoicesEnabled());
+    setRosterEnabled(voicesEnabled());
   }, []);
 
   // Only the fonts this machine actually has. A given machine tends to have
@@ -293,15 +253,6 @@ export function SettingsCard() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInstalledFonts(availableFonts(JP_FONTS));
-  }, []);
-
-  // Platform is only knowable in the browser, so start "unknown" (the copy the
-  // server renders too) and fill it in post-mount. Same shape as the font
-  // detection above; keeps the server and first client paint identical.
-  const [platform, setPlatform] = useState<Platform>("unknown");
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPlatform(detectPlatform());
   }, []);
 
   const toggleFont = (font: string) => {
@@ -321,37 +272,30 @@ export function SettingsCard() {
     });
   };
 
-  const pickVoice = (name: string) => {
-    update({ voiceName: name });
-    speak(VOICE_PREVIEW, name);
-  };
-
-  // The pitch-accent "Hear it" voice (SAK-99) — a SEPARATE choice from the
-  // speech voice above (it only ever backs the pitch button, never ordinary
-  // speech), so it gets its own picker and its own preview. The preview plays
-  // straight from /api/pitch-tts rather than lib/speech.ts's speak(): that
-  // pipeline is for the pack/browser voice tiers this button doesn't use (see
-  // pitch-hear-button.tsx's header) — same reasoning, same one-shot Audio()
-  // call, just inlined here since this is the only other place it happens.
-  const pickPitchVoice = (id: string) => {
-    update({ pitchVoiceId: id });
-    const audio = new Audio(
-      pitchApiUrl(PITCH_VOICE_PREVIEW.reading, PITCH_VOICE_PREVIEW.downstep, id),
-    );
+  // ONE voice picker for every kind of speech in the app (SAK-100 merged what
+  // used to be a "Speech voice" picker — pack/browser voices, Azure-backed —
+  // and a separate "Pitch-accent voice" picker, SAK-99, into this single
+  // roster choice). "Auto" plays the browser's own installed Japanese voice
+  // via speak(); a roster voice previews straight from /api/pitch-tts
+  // (VOICEVOX) rather than lib/speech.ts's speak(), so picking one plays a
+  // short, verifiably pitch-correct sample (先生, downstep 3) rather than a
+  // plain string a browser voice would also happily say.
+  const pickVoice = (id: string) => {
+    update({ voiceName: id });
+    if (id === "") {
+      speak("こんにちは", "");
+      return;
+    }
+    const audio = new Audio(pitchApiUrl(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep, id));
     void audio.play().catch(() => {
       // No fallback — same silent-on-failure discipline as the pitch button.
     });
   };
 
-  // Voice pill selection: fall back to Auto if the saved voice is gone. A pack
-  // voice (Storage clips, not a browser voice) is valid even though it is not in
-  // `voices`, so accept it too rather than snapping the selection back to Auto.
-  const currentVoice =
-    cfg.voiceName &&
-    (voices.some((v) => v.name === cfg.voiceName) ||
-      (isPackVoice(cfg.voiceName) && packEnabled))
-      ? cfg.voiceName
-      : "";
+  // Voice pill selection: fall back to Auto if the saved voice isn't a real
+  // roster id (a pre-SAK-100 Azure id, corrupt storage, ...) — normalizeConfig
+  // already migrates this on load, but a defensive check here costs nothing.
+  const currentVoice = isVoiceId(cfg.voiceName) ? cfg.voiceName : "";
 
   // Nothing here dims. These are YOUR settings, not the current quiz's: the
   // timer and script label do nothing in grid mode, but greying them out
@@ -585,50 +529,24 @@ export function SettingsCard() {
           />
         </Row>
 
-        <Row label="Speech voice" info={voiceInfo(platform)}>
-          {voices.length || packEnabled ? (
+        <Row
+          label="Speech voice"
+          info="Used everywhere the app speaks — quiz prompts, listening exercises, the Hear button, and the word page's pitch accent. Every voice here carries a word's real pitch, not just its own accent. Auto uses your browser's own installed Japanese voice instead (no pitch correction). Picking a voice plays a short sample so you can hear it before committing."
+        >
+          {rosterEnabled ? (
             <>
-              {/* Auto leads; every other voice — pack (Keita/Nanami, when
-                  configured) and the device's own — is folded into ONE list
-                  sorted by label, so the picker reads alphabetically. */}
               <Chip on={currentVoice === ""} onClick={() => pickVoice("")}>
                 Auto
               </Chip>
-              {[
-                ...(packEnabled
-                  ? PACK_VOICES.map((p) => ({ value: p.id, label: p.label }))
-                  : []),
-                ...voices.map((v) => ({ value: v.name, label: voiceLabel(v.name) })),
-              ]
-                .sort((a, b) => a.label.localeCompare(b.label))
-                .map((p) => (
-                  <Chip
-                    key={p.value}
-                    on={currentVoice === p.value}
-                    onClick={() => pickVoice(p.value)}
-                  >
-                    {p.label}
-                  </Chip>
-                ))}
+              {VOICES.map((v) => (
+                <Chip key={v.id} on={currentVoice === v.id} onClick={() => pickVoice(v.id)}>
+                  {v.label}
+                </Chip>
+              ))}
             </>
           ) : (
-            <Hint>No Japanese voices found</Hint>
+            <Hint>No voice audio configured</Hint>
           )}
-        </Row>
-
-        <Row
-          label="Pitch-accent voice"
-          info="The voice behind the pitch-accent Hear it button on a word's page — a separate choice from Speech voice above, since only this one carries the word's real pitch. Picking one plays a short sample so you can hear it before committing."
-        >
-          {PITCH_VOICES.map((v) => (
-            <Chip
-              key={v.id}
-              on={(cfg.pitchVoiceId || DEFAULT_PITCH_VOICE_ID) === v.id}
-              onClick={() => pickPitchVoice(v.id)}
-            >
-              {v.label}
-            </Chip>
-          ))}
         </Row>
       </section>
 

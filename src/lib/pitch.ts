@@ -56,7 +56,12 @@ export interface PitchMora {
 }
 
 /**
- * The high/low pattern for a reading given its downstep position.
+ * The high/low pattern for `length` morae given a downstep position — the pure
+ * arithmetic core `pitchPattern` wraps with a reading's own mora text. Split
+ * out (SAK-100) so sentence-level audio correction can apply the same rule to
+ * a VOICEVOX accent phrase's OWN mora count directly, without round-tripping
+ * through `moraeOf` on a reconstructed kana string that might segment
+ * differently than VOICEVOX's own tokenizer did.
  *
  * high(i), 1-indexed:
  *   mora 1  → high only for atamadaka (downstep === 1)
@@ -65,18 +70,33 @@ export interface PitchMora {
  * The drop sits on mora `downstep` when downstep ≥ 1 (the last high mora before
  * the fall). Heiban has no in-word drop.
  *
- * A downstep past the end of the word (bad data) simply yields no drop marker;
- * it never throws.
+ * A downstep past `length` (bad data) simply yields no drop marker past the
+ * end; it never throws.
  */
-export function pitchPattern(reading: string, downstep: number): PitchMora[] {
-  const morae = moraeOf(reading);
-  return morae.map((text, index) => {
+export function pitchPatternForLength(
+  length: number,
+  downstep: number,
+): { high: boolean; drop: boolean }[] {
+  const out: { high: boolean; drop: boolean }[] = [];
+  for (let index = 0; index < length; index++) {
     const pos = index + 1; // 1-indexed mora position
     const high =
       pos === 1 ? downstep === 1 : downstep === 0 || pos <= downstep;
     const drop = downstep >= 1 && pos === downstep;
-    return { text, high, drop };
-  });
+    out.push({ high, drop });
+  }
+  return out;
+}
+
+/**
+ * The high/low pattern for a reading given its downstep position. See
+ * `pitchPatternForLength` for the rule itself; this just pairs it with the
+ * reading's own mora text for the renderer (pitch-mark.tsx).
+ */
+export function pitchPattern(reading: string, downstep: number): PitchMora[] {
+  const morae = moraeOf(reading);
+  const pattern = pitchPatternForLength(morae.length, downstep);
+  return morae.map((text, index) => ({ text, ...pattern[index] }));
 }
 
 /** English name of the accent class, for screen readers and any explainer copy.
