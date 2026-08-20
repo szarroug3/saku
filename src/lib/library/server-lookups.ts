@@ -86,8 +86,12 @@ import type { StatusFilter } from "@/lib/library/url-state";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate } from "@/types";
 import { unstable_cache } from "next/cache";
+import { createHash } from "node:crypto";
 import { CURRICULUM_VERSION, learnIndexSnapshot } from "@/lib/content/learn-index";
-import type { LearnIndex } from "@/lib/content/learn-index-types";
+import type { LearnIndex, IndexUnit } from "@/lib/content/learn-index-types";
+import { nextLearnLesson, nextSentenceLearnLesson } from "@/lib/content/learn-scheduler";
+import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
+import type { LessonRange } from "@/lib/lesson-sizing";
 
 /* -------------------------------------------------------------------------
  * /LEARN HOME FEED — SAK-115. home-feed.tsx (its per-track frontier) and
@@ -107,6 +111,157 @@ import type { LearnIndex } from "@/lib/content/learn-index-types";
  * (EMPTY_ARGS, like getLibraryShelves) — see this section's header. */
 export async function getLearnIndexData(): Promise<LearnIndex> {
   return learnIndexSnapshot();
+}
+
+/* -------------------------------------------------------------------------
+ * /LEARN FRONTIER — SAK-116 (Phase 3 of docs/perf-learn-bundle.md). The
+ * section above (SAK-115) ships the raw index DATA once and lets the client
+ * run learn-scheduler.ts's walk itself against the live, reactive `history` —
+ * necessary for the INTERACTIVE case (a claim/markSeen changes `history` on
+ * literally every render, and that header's own reasoning for why a round
+ * trip per change is unacceptable still holds; home-feed.tsx keeps that local
+ * fallback below, unchanged).
+ *
+ * But most /learn PAGE LOADS are not that case: a learner opens /learn, looks
+ * at the top card, and does one thing (or nothing) — the walk that produced
+ * that card ran once, client-side, over the vocab track's 14k+ units, for a
+ * known-set that is IDENTICAL to the last time this same learner (or, at the
+ * curriculum's early tiers, any learner with the same progress) loaded the
+ * page. That is the "frontier walk specifically" the doc's Phase 3 is about,
+ * and it is exactly reproducible from a small, stable projection of
+ * `history` — so it moves here, computed once per distinct
+ * (known-set, lesson range, curriculumVersion) and cached both server-side
+ * (unstable_cache, Vercel's Data Cache — survives cold starts and is shared
+ * across every learner who lands on the same known-set, e.g. every new
+ * account's day-one frontier) and client-side (useServerLookup, keyed by the
+ * same args tuple — see home-feed.tsx's call site).
+ *
+ * WHAT COUNTS AS "known-set": exactly the HistoryFile fields
+ * nextLearnLesson/nextSentenceLearnLesson (via unit-scheduler-core.ts's
+ * isFactFresh/isRegression and learn-scheduler.ts's isLearned/factMet) ever
+ * read — `facts`, `claims`, `seen`, `learnedAt`. NOT `sessions` (the field
+ * that actually dominates a real HistoryFile's size, up to 200 records) and
+ * NOT `clearedMixups` (mix-up UI state, unrelated to /learn). This is a
+ * materially smaller payload than the full HistoryFile several other actions
+ * in this file already pass around (getQuizzableFacts, resolveWeakestFacts).
+ *
+ * The frontier also depends on the learner's configured lesson size
+ * (QuizConfig.lessonMinCost/Max, threaded through as `LessonRange`) — not
+ * itself part of "history", but just as much a determinant of the walk's
+ * output, so it rides in the cache key alongside the known-set. */
+
+/** The slice of HistoryFile the /learn frontier walk actually reads. See this
+ * section's header for why `sessions`/`clearedMixups` are excluded. */
+export type LearnHistorySlice = Pick<HistoryFile, "facts" | "claims" | "seen" | "learnedAt">;
+
+/** Every /learn track's frontier lesson (or null, track exhausted/gated), keyed
+ * by track id — the whole of what home-feed.tsx's `frontiers` needs per track
+ * beyond the already-fetched index's own `order`. */
+export interface LearnFrontierResult {
+  readonly curriculumVersion: string;
+  readonly byTrack: Readonly<Record<string, UnitLessonOf<IndexUnit> | null>>;
+}
+
+/** A stable, order-independent serialization of a known-set + range — sorts
+ * every record's own keys so two HistoryFiles with the same facts/claims/
+ * seen/learnedAt content but different insertion order (a real possibility:
+ * `facts` is rebuilt by aggregate.foldSessions, `claims`/`seen` accrue over
+ * time) serialize identically. This is what gets hashed, not the raw object,
+ * so JSON key order can never fork the cache.
+ *
+ * `facts` reduces each FactAggregate to its own `lastTested` before hashing —
+ * the only field of it effectiveState (lib/claims.ts) ever reads into the
+ * walk's fresh/met booleans (stability only changes ORDER within "met",
+ * which the frontier walk never uses; recentRuns/seen/missed/correctFirst are
+ * display-only counts the walk doesn't touch at all). Two HistoryFiles that
+ * differ only in those untouched fields produce the identical frontier, so
+ * they deserve the identical cache entry — hashing the full FactAggregate
+ * would needlessly fragment the cache across learners (or sessions) whose
+ * SCHEDULING state is the same but whose display stats differ. */
+function stableSliceKey(slice: LearnHistorySlice, range: LessonRange): string {
+  const sortedEntries = (r: Record<string, number> | undefined) =>
+    Object.keys(r ?? {})
+      .sort()
+      .map((k) => [k, r![k]] as const);
+  const factsLastTested = Object.keys(slice.facts ?? {})
+    .sort()
+    .map((k) => [k, slice.facts[k as FactId]?.lastTested ?? 0] as const);
+  return JSON.stringify({
+    facts: factsLastTested,
+    claims: sortedEntries(slice.claims),
+    seen: sortedEntries(slice.seen),
+    learnedAt: sortedEntries(slice.learnedAt),
+    range,
+  });
+}
+
+/** sha256 of the stable serialization above — fixed-length and
+ * collision-resistant (cryptographic hash, not just "probably unique"), and
+ * far smaller than the slice itself once a learner has a few thousand facts.
+ * Speed doesn't matter here (this runs once per distinct known-set, not per
+ * request — see the cache below), so there's no reason to reach for a faster
+ * non-cryptographic hash; sha256 is a single `node:crypto` call and avoids
+ * even a theoretical accidental-collision worry as the fact catalog grows. */
+function hashKnownSet(slice: LearnHistorySlice, range: LessonRange): string {
+  return createHash("sha256").update(stableSliceKey(slice, range)).digest("hex");
+}
+
+/** `history.facts`/`claims`/`seen`/`learnedAt` are all the walk reads (see this
+ * section's header) — `sessions: []` is an unread stub so the slice satisfies
+ * `HistoryFile`'s shape without shipping the field that dominates its size. */
+function toWalkHistory(slice: LearnHistorySlice): HistoryFile {
+  return {
+    sessions: [],
+    facts: slice.facts,
+    claims: slice.claims,
+    seen: slice.seen,
+    learnedAt: slice.learnedAt,
+  };
+}
+
+function computeLearnFrontier(slice: LearnHistorySlice, range: LessonRange): LearnFrontierResult {
+  const index = learnIndexSnapshot();
+  const history = toWalkHistory(slice);
+  const byTrack: Record<string, UnitLessonOf<IndexUnit> | null> = {};
+  for (const track of index.tracks) {
+    byTrack[track.id] =
+      track.id === "sentence"
+        ? nextSentenceLearnLesson(track.units, history, index)
+        : nextLearnLesson(track.units, history, range, index);
+  }
+  return { curriculumVersion: index.curriculumVersion, byTrack };
+}
+
+// Keyed by CURRICULUM_VERSION (a content deploy invalidates every cached
+// frontier the same way it invalidates getLibraryShelves) plus the per-call
+// hash — passed explicitly as the first runtime argument rather than relying
+// solely on Next's own argument serialization, so the cache is anchored to
+// the small, stable digest above and not to a raw slice whose JSON can vary
+// in key order across otherwise-identical HistoryFiles. The computed RESULT
+// is a handful of lessons (well under Next's 2MB Data Cache item limit — see
+// getLibraryShelves's own comment above for the incident that limit is from);
+// only the getLibraryShelves case needed splitting to stay under it, this one
+// never approaches it.
+const cachedLearnFrontier = unstable_cache(
+  async (hash: string, slice: LearnHistorySlice, range: LessonRange) =>
+    computeLearnFrontier(slice, range),
+  ["getLearnFrontier", CURRICULUM_VERSION],
+  { tags: ["learn-frontier"] },
+);
+
+/** The /learn frontier for a known-set + lesson range, computed server-side
+ * over the precomputed index and cached by hash(known-set, range) +
+ * curriculumVersion — see this section's header for the full rationale and
+ * home-feed.tsx for the client-side call site (which falls back to the local
+ * walk, learn-scheduler.ts, whenever this hasn't resolved yet for the
+ * CURRENT known-set, so an interactive history change is never gated on a
+ * round trip). */
+export async function getLearnFrontier(
+  slice: LearnHistorySlice,
+  range: LessonRange,
+): Promise<LearnFrontierResult> {
+  const hash = hashKnownSet(slice, range);
+  return cachedLearnFrontier(hash, slice, range);
 }
 
 /* -------------------------------------------------------------------------
