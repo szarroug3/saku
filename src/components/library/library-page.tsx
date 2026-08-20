@@ -37,11 +37,11 @@ import { markFor } from "@/data/marks";
 import {
   getActiveMixupEntries,
   getEverythingSlice,
-  getLibraryShelves,
   getSelectionSlice,
   searchLibraryByType,
   searchLibraryOneKind,
   type BrowseEntry,
+  type BrowseShelfSection,
 } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { KIND_LABEL, KINDS, type Kind } from "@/lib/library/kinds";
@@ -163,28 +163,26 @@ function readUrlState(search: string): LibraryUrlState {
   };
 }
 
-// SAK-104: a shelf's sections used to be cut LAZILY and cached at module
-// scope — this component now fetches ALL kinds' sections in one batched
-// Server Action call (getLibraryShelves), on mount, and keeps them in state
-// for the component's lifetime (the same "compute/fetch once, keep for as
-// long as this page stays mounted" contract, just an async fetch instead of a
-// sync module-scope cut — see the file header note by the imports).
-// `shelfFor` reads from that fetched map; an empty array while it is still
-// loading (which the render below is written to tolerate — see
-// `shelvesLoaded`).
+// SAK-104 had this component fetch ALL kinds' sections in one batched Server
+// Action call (getLibraryShelves) on mount, via useServerLookup. SAK-121
+// moved that call server-side instead — page.tsx now `await`s it and passes
+// the result down as `initialShelves` — so there is no client fetch here at
+// all any more; `shelfFor` just reads the prop (kept in state, see below).
 const EMPTY_SECTIONS: readonly ShelfSection[] = [];
-/** A stable zero-length args tuple for the one Server Action this page calls
- * with no arguments (getLibraryShelves) — useServerLookup keys by
- * JSON.stringify(args), so a fresh `[]` literal every render would still key
- * the same and re-fetch nothing, but a shared constant makes that obvious. */
-const EMPTY_ARGS: [] = [];
 
 export function LibraryPageClient({
   initialSearch,
+  initialShelves,
 }: {
   /** The server-read query string, so the complete Library is in the first
    * response. URL changes after mount are mirrored into local state below. */
   initialSearch: string;
+  /** SAK-121: every kind's shelf sections, already resolved server-side
+   * (page.tsx's own `await getLibraryShelves()`) and shipped as part of this
+   * page's first HTML response — see page.tsx's header note. This is now the
+   * ONLY source for `shelvesByKind`; there is no client-side fetch to seed it
+   * from, so it is never `undefined` and the old "Loading…" gate is gone. */
+  initialShelves: Record<string, BrowseShelfSection[]>;
 }) {
   const { history, loaded: historyLoaded } = useHistory();
   // The optimistic write path (see history-writes.ts): claim/unclaim update
@@ -196,22 +194,15 @@ export function LibraryPageClient({
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
 
-  // SAK-104: every kind's shelf sections, fetched once via a Server Action —
-  // see the EMPTY_SECTIONS note above. `undefined` until the first response
-  // lands (a real network round trip on first /library visit now, where this
-  // used to be instant off the bundle); the render below shows a loading
-  // state rather than an empty shelf while it's in flight. Usually already
-  // resolved by the time this mounts, via LibraryPrefetch (SAK-111) warming
-  // the same cache key from layout.tsx. persist: true (SAK-112) — same
-  // IndexedDB-backed key LibraryPrefetch's own call uses, so a hard reload or
-  // a fresh tab can seed from disk instead of the network.
-  const shelvesByKind = useServerLookup(getLibraryShelves, EMPTY_ARGS, {
-    persist: true,
-  });
-  const shelvesLoaded = shelvesByKind !== undefined;
+  // SAK-121: every kind's shelf sections arrive as a prop, already resolved
+  // server-side — see the component's own doc comment above and page.tsx's
+  // header note. Kept in state (not read as a plain prop) only because
+  // `shelfFor`/callers below expect a stable reference across this
+  // component's other re-renders; it never refetches or changes after mount.
+  const [shelvesByKind] = useState(initialShelves);
   const shelfFor = useCallback(
     (k: Kind): { sections: readonly ShelfSection[] } => ({
-      sections: shelvesByKind?.[k as unknown as string] ?? EMPTY_SECTIONS,
+      sections: shelvesByKind[k as unknown as string] ?? EMPTY_SECTIONS,
     }),
     [shelvesByKind],
   );
@@ -982,14 +973,6 @@ export function LibraryPageClient({
           // the SAME render every kind checked always used (the old All tab),
           // now just restricted to whichever kinds are checked — see the file
           // header's note on generalising rather than duplicating this path.
-          !shelvesLoaded ? (
-            // SAK-104: the shelf data is now a Server Action fetch instead of
-            // a bundled import — a real (if brief) network round trip on
-            // first /library visit, where this used to be instant.
-            <Card>
-              <p className="text-[13px] text-text-muted">Loading…</p>
-            </Card>
-          ) : (
           (() => {
             const shownKinds = allTabBrowseKinds(
               keep,
@@ -1038,7 +1021,6 @@ export function LibraryPageClient({
               );
             });
           })()
-          )
         )}
       </div>
 

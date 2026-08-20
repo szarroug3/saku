@@ -19,9 +19,13 @@
 //
 // SAK-112: THE IN-MEMORY MAP ABOVE ONLY SURVIVES ONE TAB'S SESSION. A hard
 // reload or a new tab re-runs this module from scratch, so `cache` starts
-// empty again and every lookup — including the ~15,640-entry
-// getLibraryShelves() — refetches, even though (per the paragraph above) the
-// result can only ever be the SAME value for this build. `persist: true`
+// empty again and every lookup — including a large batched payload like
+// resolveHrefs' ~97-entry grammar-shelf call — refetches, even though (per
+// the paragraph above) the result can only ever be the SAME value for this
+// build. (SAK-121: getLibraryShelves itself no longer goes through this hook
+// at all — /library now resolves it server-side and ships it in the page's
+// own first response, so there is no client fetch left to warm or persist
+// for it.) `persist: true`
 // (opt-in, see the `options` param) additionally mirrors a resolved value
 // into IndexedDB, keyed by CURRICULUM_VERSION so a new deploy's differently-
 // shaped data is never read back as if it were still valid. On mount, a
@@ -35,8 +39,9 @@
 // batch of a dozen facts) where an IndexedDB round trip would be pure
 // overhead over just refetching — and every one of them still gets the
 // in-memory cache above for free. Only callers who pass `persist: true`
-// (today: getLibraryShelves, the one genuinely large/slow payload this ticket
-// is about) pay for the extra IndexedDB read/write. Widening this to every
+// (today: getLearnIndexData and getStatsRows' own EMPTY_ARGS calls, and
+// resolveHrefs' grammar-shelf/PatternFamily batches — see those call sites)
+// pay for the extra IndexedDB read/write. Widening this to every
 // call site would mean opening a transaction for cache entries nobody is
 // reload-sensitive about, for no real benefit.
 
