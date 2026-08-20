@@ -452,7 +452,17 @@ export interface PhaseIntro {
   deriveTables?: readonly {
     readonly title: string;
     readonly instruction?: string;
-    readonly formula?: { base: string; add?: string; trim?: string };
+    /**
+     * The section's build formula — usually one, shown as a single dashed
+     * pill. A FEW, labeled, when the form itself branches by conjugation
+     * class and one pill would only show half the rule: 〜(よ)うと思う's
+     * volitional ending is う for a godan verb, よう for ichidan/irregular,
+     * so its section carries two — same reason its derive table gets two
+     * rows instead of one (see IntroDeriveRow.classLabel).
+     */
+    readonly formula?:
+      | { base: string; add?: string; trim?: string }
+      | readonly { label: string; base: string; add?: string; trim?: string }[];
     readonly rules: readonly IntroDeriveRow[];
     readonly heads?: { verb?: string; form?: string; pattern?: string };
   }[];
