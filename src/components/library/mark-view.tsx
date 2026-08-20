@@ -46,7 +46,7 @@ import { Card, Lbl } from "@/components/ui";
 import {
   TIER_EXAMPLES,
   type SentenceOrderingTierId,
-} from "@/components/session/sentence-ordering-teach-walk";
+} from "@/components/library/sentence-rule-entry-view";
 import {
   colorizeSentence,
   SentencePartBoxes,

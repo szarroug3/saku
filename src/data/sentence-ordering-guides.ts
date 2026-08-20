@@ -80,7 +80,8 @@ export const CHUNK_ROLE_LABELS: Record<
 };
 
 /** One worked example for an intro guide, in the same three-layer shape the
- * teach walk's step cards use (see TierExample in sentence-ordering-teach-walk.tsx):
+ * teach walk's step cards use (see TierExample in
+ * src/components/library/sentence-rule-entry-view.tsx):
  * natural English, that same sentence spelled out in Japanese chunk order, then
  * the actual Japanese sentence. Kept separate from TierExample because the intro
  * card has no active chunk to highlight — it is shown plain, before the walk
