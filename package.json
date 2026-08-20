@@ -9,6 +9,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "next dev",
     "build:learn-index": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs",
     "build:library-index": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs",
