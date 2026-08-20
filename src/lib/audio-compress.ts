@@ -15,28 +15,39 @@
 // was done before committing to this). That brings the same corpus to well
 // under 1GB.
 //
-// Server-only: shells out to an ffmpeg binary via child_process. Resolves the
-// binary via `ffmpeg-static` (SAK-108) rather than assuming a bare "ffmpeg"
-// is on $PATH: Vercel's Node serverless runtime does not bundle system
-// binaries, so `spawn("ffmpeg", ...)` had nothing to run in the deployed
-// function even though it worked fine locally/in agent sandboxes (Homebrew
-// ffmpeg on PATH there). ffmpeg-static downloads a platform-matched static
-// binary at `pnpm install` time — on Vercel that's the linux-x64 build,
-// matching the serverless runtime — and next.config.ts's
-// outputFileTracingIncludes makes sure that binary file actually ships in
-// the deployed function bundle (Next's file tracer only follows `require`
-// calls, not the binary ffmpeg-static's index.js points at on disk). Falls
-// back to a bare "ffmpeg" on $PATH if ffmpeg-static has no build for the
-// current platform/arch (its `require` resolves to null in that case).
+// Server-only: shells out to an ffmpeg binary via child_process.
+//
+// SAK-108, attempt 3. Attempts 1 and 2 both resolved the binary via
+// `ffmpeg-static`'s own dynamic path (path.join(__dirname, ...) + an
+// os.platform() check) and tried to get Next to ship it with
+// outputFileTracingIncludes (with, then without, output:"standalone"). Both
+// ENOENT'd identically in prod: the file was correctly listed in Next's own
+// .nft.json trace but never actually landed in the deployed function. A
+// third-party package's runtime-computed path through pnpm's nested .pnpm
+// symlink structure is exactly the case Next's file tracer is documented to
+// get wrong.
+//
+// So this attempt removes the dynamic resolution entirely.
+// scripts/copy-ffmpeg-binary.mjs (wired into the `prebuild` step) copies
+// ffmpeg-static's resolved binary to a FIXED, LITERAL path — bin/ffmpeg —
+// before every build, including Vercel's. Referencing that literal string
+// (not a package's internal path math) is the pattern Next's tracer handles
+// reliably. Falls back to ffmpeg-static's own resolution, then a bare
+// "ffmpeg" on $PATH, for a local dev environment where `prebuild` (a
+// `next build`-only hook) hasn't run.
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 import ffmpegStaticPath from "ffmpeg-static";
 
-/** Resolved once at module load: ffmpeg-static's platform binary, or the bare
- * command name as a last-resort fallback (e.g. an unsupported arch, or a dev
- * environment where the package's install script didn't run). */
-const FFMPEG_BIN = ffmpegStaticPath ?? "ffmpeg";
+const COPIED_BIN = join(process.cwd(), "bin", "ffmpeg");
+
+/** Resolved once at module load: the build-time-copied literal-path binary if
+ * present, else ffmpeg-static's own resolution, else the bare command name as
+ * a last-resort fallback (e.g. an unsupported arch). */
+const FFMPEG_BIN = existsSync(COPIED_BIN) ? COPIED_BIN : (ffmpegStaticPath ?? "ffmpeg");
 
 /** Real speech-call quality (Discord/WhatsApp territory) verified by ear
  * against the raw WAV across the whole voice roster before picking this —

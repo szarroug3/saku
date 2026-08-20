@@ -82,3 +82,7 @@ tasks/
 
 # Bulk-job progress logs (seed-voice-audio.mjs etc.) — machine-local, not shipped
 .logs/
+
+# ffmpeg binary, copied here fresh by scripts/copy-ffmpeg-binary.mjs on every
+# build (prebuild) — platform-specific, never shipped in source
+/bin/
