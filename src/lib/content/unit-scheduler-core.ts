@@ -142,12 +142,73 @@ function prereqChain<U extends SchedulableUnit>(
 }
 
 /**
+ * A unit is a REGRESSION when some fact it teaches was met before
+ * (`history.learnedAt`) and is due again now — the learner reset it (Library
+ * "Mark as not known" / SAK-61's unclaim) rather than never having met it.
+ * `learnedAt` is the right signal because it is written once, by every path
+ * that ever counts as meeting a fact (a claim, a "quiz me", a real session —
+ * see history-ops.ts's `stampLearned` in applyClaims/applySeen/applySession),
+ * and NEVER cleared by the writes that take material back OUT of history
+ * (applyDropClaims, applyDeleteSessions) — see claims.ts and history-ops.ts's
+ * own comments on why those two are surgical deletes, not full resets. So a
+ * fact can be "fresh again" (isFactFresh) while still carrying the permanent
+ * record that it was once met, and that combination is exactly a reset.
+ */
+function isRegression<U extends SchedulableUnit>(
+  unit: U,
+  history: HistoryFile,
+): boolean {
+  return unit.facts.some((f) => history.learnedAt?.[f] !== undefined);
+}
+
+/**
+ * The order `planUnitLessonCore` VISITS due units in — the track's own frozen
+ * order, with one exception: a regression (see `isRegression`) is visited
+ * before any unit the learner has never met, within the `start..order.length`
+ * window this call is scanning. This is a PRIORITY change only. It does not
+ * touch `order` itself, so a track that never has a regression (every
+ * simulateLessons walk, which only ever advances history forward) sees
+ * byte-identical behaviour.
+ *
+ * THE BUG THIS FIXES (SAK-103): the walk used to fill a lesson from the FIRST
+ * due units it met, front-to-back over `order`. That is invisible on a small,
+ * near-complete track like kana — a reset item there IS the frontier, so it
+ * surfaces immediately. It silently starves a large, non-monotonically
+ * learned track like vocab (14k+ units, taught out of frequency order via
+ * prereq bundling and out-of-order Library claims — see track-completion.ts's
+ * header on the same scatter): a word reset deep in that frozen order sat
+ * behind every not-yet-reached word ranked ahead of it, and with thousands of
+ * those still fresh, the walk filled its 6-12-item budget from them every
+ * time and never reached the reset word. Reordering VISIT priority (not the
+ * frozen order itself, which lesson-position.ts's "SAFE UNDER OUT-OF-ORDER
+ * CLAIMS" invariant still governs for POSITIONS/labels) is what makes the
+ * reset word due again actually mean "taught again soon".
+ */
+function dueUnitsInVisitOrder<U extends SchedulableUnit>(
+  order: readonly U[],
+  history: HistoryFile,
+  deps: SchedulerDeps<U>,
+  start: number,
+): U[] {
+  const regressed: U[] = [];
+  const rest: U[] = [];
+  for (let i = start; i < order.length; i++) {
+    const unit = order[i];
+    if (!isUnitDue(unit, history, deps.isFactFresh)) continue;
+    (isRegression(unit, history) ? regressed : rest).push(unit);
+  }
+  return [...regressed, ...rest];
+}
+
+/**
  * The pure core of the lesson walk — a verbatim port of the original
- * `planUnitLesson`, with the three content touch-points taken as `deps`. Walk
- * `order`; for each DUE unit gather its item's untaught prereq primary units
- * (dependency order), DEPTH-GATE anything whose untaught chain runs past
- * `maxDepth`, and fill toward the `range` floor — never past its ceiling except a
- * lone bundle oversized on its own. Dedupe by unit key. Uniform over the base unit.
+ * `planUnitLesson`, with the three content touch-points taken as `deps`. Visit
+ * due units in `dueUnitsInVisitOrder` (regressions first, see SAK-103 above,
+ * then the track's own order); for each gather its item's untaught prereq
+ * primary units (dependency order), DEPTH-GATE anything whose untaught chain
+ * runs past `maxDepth`, and fill toward the `range` floor — never past its
+ * ceiling except a lone bundle oversized on its own. Dedupe by unit key.
+ * Uniform over the base unit.
  */
 export function planUnitLessonCore<U extends SchedulableUnit>(
   order: readonly U[],
@@ -160,9 +221,7 @@ export function planUnitLessonCore<U extends SchedulableUnit>(
   const out: U[] = [];
   const emitted = new Set<string>();
   let spent = 0;
-  for (let i = start; i < order.length; i++) {
-    const unit = order[i];
-    if (!isUnitDue(unit, history, deps.isFactFresh)) continue;
+  for (const unit of dueUnitsInVisitOrder(order, history, deps, start)) {
     // BLOCKING gate: a unit whose item is blocked by an unlearned dependency is
     // deferred and its blockers are NOT pulled in.
     if (unit.item.blockedBy.some((e) => !deps.isLearned(e, history))) continue;
