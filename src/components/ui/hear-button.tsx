@@ -17,14 +17,30 @@
 // a dense list and an entry page used to render two different chips for the
 // same action, and a learner shouldn't have to notice a shape change to know
 // it's the same button.
+//
+// EXACT PITCH MODE (SAK-100, folded in from the retired PitchHearButton). Pass
+// `downstep` when the caller already knows a word's VERIFIED pitch-accent
+// pattern (the Library word page, off wordPitch/legacyUnqualifiedReading in
+// character-entry-view.tsx) and wants it applied with no fuzzy matching — see
+// synthesizeWordWav's doc comment in src/lib/tts-synth.ts. Without it, the
+// button still carries pitch correction: /api/tts matches each spoken
+// sentence's own accent phrases against the pitch dataset on the fly (see
+// src/lib/sentence-pitch.ts) — `downstep` just skips that guesswork when the
+// exact answer is already in hand. In this mode the button plays straight from
+// /api/pitch-tts rather than through lib/speech.ts's Auto/roster tiering: this
+// clip has exactly one source, so on failure it just stays silent —
+// substituting a different voice would lose the very thing the mode exists to
+// demonstrate.
 
 import { SoundIcon } from "@/components/ui";
 import { prefetchClip, speak } from "@/lib/speech";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { DEFAULT_VOICE_ID, pitchApiUrl } from "@/lib/voice";
 
 export function HearButton({
   glyph,
   voiceName,
+  downstep,
   className = "",
   // When the button sits inside a click target of its own (a Library tile is
   // itself a toggle), swallow the click and the pointerenter so aiming at the
@@ -34,15 +50,48 @@ export function HearButton({
   // entry reads out its full name, not just its lead glyph).
   label,
 }: {
+  /** The reading (kana) or text to speak. In EXACT PITCH mode (`downstep`
+   * set) this must be the word's kana reading — VOICEVOX is asked to read it
+   * directly, not to infer it from kanji. */
   glyph: string;
   /** Pin a specific voice; omit to speak in the learner's configured voice. */
   voiceName?: string;
+  /** EXACT PITCH mode — the mora position of the word's verified downstep
+   * (see src/lib/pitch.ts). Omit for ordinary speech (still pitch-corrected,
+   * just via the fuzzy sentence-level match instead of a known-exact one). */
+  downstep?: number;
   className?: string;
   stopPropagation?: boolean;
   label?: string;
 }) {
   const { cfg } = useQuizConfig();
   const voice = voiceName ?? cfg.voiceName;
+
+  if (downstep !== undefined) {
+    const voiceId = voice || DEFAULT_VOICE_ID;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          if (stopPropagation) e.stopPropagation();
+          const audio = new Audio(pitchApiUrl(glyph, downstep, voiceId));
+          void audio.play().catch(() => {
+            // No fallback on purpose — see the module header.
+          });
+          if (e.detail !== 0) e.currentTarget.blur();
+        }}
+        onPointerEnter={(e) => {
+          if (stopPropagation) e.stopPropagation();
+          void fetch(pitchApiUrl(glyph, downstep, voiceId)).catch(() => {});
+        }}
+        aria-label={label ?? `Hear ${glyph} with its pitch accent`}
+        className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-accent ${className}`}
+      >
+        <SoundIcon />
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"

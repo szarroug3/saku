@@ -1,39 +1,43 @@
-// GET /api/tts?v=<voiceId>&t=<text> — on-demand pack-voice audio.
+// GET /api/tts?v=<voiceId>&t=<text> — on-demand voice audio, general speech
+// (SAK-100). Backs every ordinary Hear button, quiz prompt and listening
+// exercise in the app — the SAME contract this route has always had
+// (?v=&t=), so lib/speech.ts's callers needed no changes; only what
+// synthesizes behind it changed, from Azure to VOICEVOX with sentence-level
+// pitch correction (src/lib/tts-synth.ts, src/lib/sentence-pitch.ts).
 //
-// speech.ts tries the CDN clip first; this route is the SECOND tier, hit only
-// when a clip isn't seeded yet (words and sentences). On a cache hit it 302s to
-// the public CDN object; on a miss it synthesizes with Azure (the same code the
-// seeder uses), caches the mp3 into the SAME bucket, and returns the bytes — so
-// the next request for it is a CDN hit. Any failure answers non-2xx and speech.ts
-// falls back to the browser voice.
+// Same two-tier shape as before: check the Storage bucket first (302 to the
+// CDN URL on a hit); on a miss, synthesize, cache the wav into the bucket, and
+// return the bytes, so the next request for it is a cache hit. Any failure
+// answers non-2xx and speech.ts falls back to the browser voice.
 //
-// No auth: the audio is public and non-sensitive. Abuse is bounded by requiring
-// a REGISTERED pack voice and a short text; anything else is a 400.
+// No auth: the audio is public and non-sensitive. Abuse is bounded by
+// requiring a REGISTERED roster voice and a short text; anything else is 400.
 
 import { createClient } from "@supabase/supabase-js";
 
-import { azureConfigured, synthesizeMp3 } from "@/lib/tts-synth";
-import { packAudioUrl, packVoice, voiceBucket, voiceObjectPath } from "@/lib/voice-audio";
+import { synthesizeSentenceWav, ttsConfigured } from "@/lib/tts-synth";
+import { voice, voiceAudioUrl, voiceBucket, voiceObjectPath } from "@/lib/voice";
 
-/** Longest text we will synthesize on demand — a bound on per-request Azure
- * cost. Kana are seeded; this is for words and short sentences. */
-const MAX_TEXT = 120;
+/** Longest text we will synthesize on demand — a bound on per-request engine
+ * cost. Kana are effectively instant to (re)synthesize; this guards a long
+ * pasted sentence, not ordinary content. */
+const MAX_TEXT = 200;
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const voiceId = searchParams.get("v") ?? "";
   const text = (searchParams.get("t") ?? "").trim();
 
-  const pack = packVoice(voiceId);
-  if (!pack || !text || text.length > MAX_TEXT) {
+  const v = voice(voiceId);
+  if (!v || !text || text.length > MAX_TEXT) {
     return new Response("bad request", { status: 400 });
   }
 
   const bucket = voiceBucket();
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const publicUrl = packAudioUrl(voiceId, text);
-  if (!bucket || !supaUrl || !serviceKey || !publicUrl || !azureConfigured()) {
+  const publicUrl = voiceAudioUrl(voiceId, text);
+  if (!bucket || !supaUrl || !serviceKey || !publicUrl || !ttsConfigured()) {
     return new Response("tts not configured", { status: 503 });
   }
 
@@ -48,16 +52,24 @@ export async function GET(request: Request): Promise<Response> {
     return Response.redirect(publicUrl, 302);
   }
 
-  // Miss → synthesize, cache, and return the bytes (populates the CDN for next time).
+  // Miss → synthesize, cache, and return the bytes (populates the CDN for next
+  // time). The pitch-match coverage is logged, not surfaced to the client —
+  // useful during development/verification without adding response shape the
+  // browser has to ignore.
   try {
-    const bytes = await synthesizeMp3(pack.source.voice, pack.source.rate, pack.source.pitch, text);
+    const { bytes, totalPhrases, matchedPhrases } = await synthesizeSentenceWav(text, v.speakerId);
+    if (totalPhrases > 0) {
+      console.info(
+        `tts: pitch-matched ${matchedPhrases}/${totalPhrases} accent phrase(s) for "${text}"`,
+      );
+    }
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(path, bytes, { contentType: "audio/mpeg", upsert: true });
+      .upload(path, bytes, { contentType: "audio/wav", upsert: true });
     if (error) throw error;
-    return new Response(new Blob([bytes], { type: "audio/mpeg" }), {
+    return new Response(new Blob([bytes], { type: "audio/wav" }), {
       headers: {
-        "Content-Type": "audio/mpeg",
+        "Content-Type": "audio/wav",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

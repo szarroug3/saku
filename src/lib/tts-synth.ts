@@ -1,56 +1,204 @@
-// Azure Speech REST synthesis — the ONE generator, used by both the seeder
-// (scripts/seed-voice.mjs) and the on-demand route (/api/tts). Using the same
-// code + endpoint + SSML for both means a pre-seeded clip and one generated on
-// demand are identical; there is no second engine to drift.
+// VOICEVOX-backed synthesis — the ONE TTS engine in the app (SAK-100). Used by
+// both /api/tts (general speech: quiz prompts, listening exercises, the
+// ordinary Hear button, anywhere in the app) and /api/pitch-tts (a word's
+// EXACT known pitch-accent clip on the Library word page).
 //
-// Server-only (reads AZURE_SPEECH_KEY / AZURE_SPEECH_REGION, does a network
-// POST). NEVER import this from client code — speech.ts talks to /api/tts, not
-// to this. The free tier (F0) is 500k characters/month of neural TTS, and the
-// voice names are the same Azure neural voices the pack registry lists.
+// This replaces two things that used to exist separately:
+//   - Azure REST synthesis (the old tts-synth.ts), which sounded natural but
+//     spoke with its OWN accent, never a word's real pitch.
+//   - pitch-tts-synth.ts, which used VOICEVOX but only for a single word with
+//     an already-known downstep.
+// VOICEVOX (self-hosted, github.com/VOICEVOX/voicevox_engine) exposes the one
+// thing Azure never could: a per-mora pitch value a caller can hand-edit
+// before synthesis, for ANY input text, one word or a whole sentence.
+// POST /audio_query gets the engine's own reading + pitch guess; edit
+// `accent_phrases[].moras[].pitch`; POST the edited JSON to /synthesis and get
+// WAV bytes back with exactly that contour.
+//
+// TWO CORRECTION STRATEGIES, ONE SYNTHESIS PATH
+// ===============================================
+//   synthesizeWordWav   — the caller already knows the EXACT downstep (a
+//                          verified Kanjium row, resolved by the word page
+//                          against the word's taught reading). Every mora in
+//                          the query gets that one pattern; no guessing.
+//   synthesizeSentenceWav — arbitrary text (a full sentence, or any word not
+//                          already resolved to an exact downstep). Each
+//                          VOICEVOX accent phrase is matched independently
+//                          against the pitch dataset (src/lib/sentence-pitch.ts)
+//                          and corrected where a confident match exists; left
+//                          at VOICEVOX's own natural contour where it doesn't.
+// Both funnel through the same natural-range measurement and the same
+// /synthesis call — there is exactly one degree of freedom between them (how
+// the target pattern for each phrase is decided), not two maintained engines.
+//
+// STAYING INSIDE THE VOICE'S NATURAL RANGE
+// =========================================
+// A prior research spike (SAK-6) found that hand-set pitch values outside the
+// voice's own natural range make the vocoder produce quiet, scratchy audio.
+// The fix: measure the voice's actual pitch range from a filler sentence's own
+// /audio_query (its non-zero mora pitches), once, and map the desired
+// High/Low pattern onto points a small margin IN FROM each end of that
+// measured range — never fixed absolute pitches, never the raw extremes.
+//
+// Server-only: reads VOICEVOX_ENGINE_URL and does network POSTs. Never import
+// this from client code (see /api/tts/route.ts and /api/pitch-tts/route.ts,
+// the two callers).
 
-import { ttsSsml } from "@/lib/voice-audio";
+import { pitchPatternForLength } from "@/lib/pitch";
+import {
+  correctSentencePitch,
+  type AccentPhraseLike,
+} from "@/lib/sentence-pitch";
 
-/** Whether Azure credentials are present. When false, /api/tts answers 503 and
- * the client stays on the CDN clip / browser voice. */
-export function azureConfigured(): boolean {
-  return !!process.env.AZURE_SPEECH_KEY && !!process.env.AZURE_SPEECH_REGION;
+// A short, common phrase, guaranteed to carry several voiced moras across a
+// real pitch swing, used only to measure the voice's natural pitch range.
+const FILLER_TEXT = "おはようございます";
+
+// How far in from each end of the measured natural range a High/Low target
+// sits. 0 would use the extremes themselves (the scratchy-audio failure mode
+// SAK-6 hit); this is the margin that spike's listening tests landed on.
+const RANGE_MARGIN_FRACTION = 0.15;
+
+function engineUrl(): string | undefined {
+  const u = process.env.VOICEVOX_ENGINE_URL;
+  return u && u.length ? u.replace(/\/$/, "") : undefined;
+}
+
+/** Whether VOICEVOX is configured at all. When false, both routes answer a
+ * clean 503. */
+export function ttsConfigured(): boolean {
+  return !!engineUrl();
+}
+
+interface VoicevoxMora {
+  pitch: number;
+  text: string;
+  [key: string]: unknown;
+}
+interface VoicevoxAccentPhrase {
+  moras: VoicevoxMora[];
+  [key: string]: unknown;
+}
+interface VoicevoxAudioQuery {
+  accent_phrases: VoicevoxAccentPhrase[];
+  [key: string]: unknown;
+}
+
+async function audioQuery(
+  base: string,
+  text: string,
+  speakerId: number,
+): Promise<VoicevoxAudioQuery> {
+  const url = `${base}/audio_query?speaker=${speakerId}&text=${encodeURIComponent(text)}`;
+  const res = await fetch(url, { method: "POST" });
+  if (!res.ok) throw new Error(`VOICEVOX audio_query ${res.status} ${res.statusText}`);
+  return (await res.json()) as VoicevoxAudioQuery;
+}
+
+function flatMoras(query: VoicevoxAudioQuery): VoicevoxMora[] {
+  return query.accent_phrases.flatMap((p) => p.moras);
+}
+
+// Each voice's own natural pitch range, measured once per server instance (a
+// running server's VOICEVOX voices do not change between requests) and reused
+// for every synthesis after the first. Keyed by speaker id — a range measured
+// for one voice is meaningless applied to another's pitch values.
+const cachedRanges = new Map<number, { min: number; max: number }>();
+
+async function naturalRange(base: string, speakerId: number): Promise<{ min: number; max: number }> {
+  const cached = cachedRanges.get(speakerId);
+  if (cached) return cached;
+  const query = await audioQuery(base, FILLER_TEXT, speakerId);
+  const pitches = flatMoras(query)
+    .map((m) => m.pitch)
+    .filter((p) => p > 0); // 0 marks a silent/devoiced mora, not a real pitch
+  if (pitches.length === 0) throw new Error("VOICEVOX filler query returned no voiced moras");
+  const range = { min: Math.min(...pitches), max: Math.max(...pitches) };
+  cachedRanges.set(speakerId, range);
+  return range;
+}
+
+async function targetRange(base: string, speakerId: number): Promise<{ low: number; high: number }> {
+  const { min, max } = await naturalRange(base, speakerId);
+  const margin = (max - min) * RANGE_MARGIN_FRACTION;
+  return { low: min + margin, high: max - margin };
+}
+
+async function synthesize(base: string, speakerId: number, query: VoicevoxAudioQuery): Promise<ArrayBuffer> {
+  const res = await fetch(`${base}/synthesis?speaker=${speakerId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (!res.ok) throw new Error(`VOICEVOX synthesis ${res.status} ${res.statusText}`);
+  return res.arrayBuffer();
 }
 
 /**
- * Synthesize `text` in `voice` with the given prosody to MP3 bytes. Throws if
- * Azure is unconfigured or the request fails, so callers can fall back (the
- * route to 502, the seeder to a logged skip).
+ * Synthesize `reading` (kana) at its own EXACT, already-known pitch-accent
+ * pattern (`downstep`, the mora position of the drop — see src/lib/pitch.ts)
+ * to WAV bytes. The caller (the word page, via /api/pitch-tts) has already
+ * resolved and validated `downstep` against a verified Kanjium row, so every
+ * mora in the query gets that one pattern — no fuzzy matching, unlike
+ * `synthesizeSentenceWav`.
  *
- * Output format matches what the seeder and the browser expect: 24 kHz mono MP3.
- * Returns a plain ArrayBuffer — a valid Blob part and Supabase upload body.
+ * Throws on any failure (unconfigured engine, unreachable, bad response) so
+ * the route can turn that into a clean 503/502 rather than an unhandled error.
  */
-export async function synthesizeMp3(
-  voice: string,
-  rate: string,
-  pitch: string,
-  text: string,
+export async function synthesizeWordWav(
+  reading: string,
+  downstep: number,
+  speakerId: number,
 ): Promise<ArrayBuffer> {
-  const key = process.env.AZURE_SPEECH_KEY;
-  const region = process.env.AZURE_SPEECH_REGION;
-  if (!key || !region) {
-    throw new Error("Azure Speech not configured (AZURE_SPEECH_KEY / AZURE_SPEECH_REGION).");
+  const base = engineUrl();
+  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
+
+  const { low, high } = await targetRange(base, speakerId);
+  const query = await audioQuery(base, reading, speakerId);
+  const moras = flatMoras(query);
+  const pattern = pitchPatternForLength(moras.length, downstep);
+  for (let i = 0; i < moras.length; i++) {
+    if (moras[i].pitch <= 0) continue;
+    moras[i].pitch = pattern[i].high ? high : low;
   }
-  const res = await fetch(
-    `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
-    {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-        "User-Agent": "saku",
-      },
-      body: ttsSsml(voice, rate, pitch, text),
-    },
+
+  return synthesize(base, speakerId, query);
+}
+
+export interface SentenceSynthResult {
+  bytes: ArrayBuffer;
+  /** Sentence-level pitch match coverage for this one synthesis — how many of
+   * VOICEVOX's own accent phrases got a confident dictionary match and were
+   * corrected, out of the total. Reported by /api/tts callers that want it;
+   * not persisted anywhere. */
+  totalPhrases: number;
+  matchedPhrases: number;
+}
+
+/**
+ * Synthesize arbitrary `text` — a full sentence or a single word — to WAV
+ * bytes, applying pitch correction PER ACCENT PHRASE wherever the phrase's
+ * own reading confidently matches the pitch dataset (see
+ * src/lib/sentence-pitch.ts), and leaving VOICEVOX's own natural contour
+ * everywhere it doesn't. This is the general path: every ordinary Hear
+ * button, quiz prompt and listening exercise in the app goes through this.
+ *
+ * Throws on any failure, same discipline as `synthesizeWordWav`.
+ */
+export async function synthesizeSentenceWav(
+  text: string,
+  speakerId: number,
+): Promise<SentenceSynthResult> {
+  const base = engineUrl();
+  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
+
+  const target = await targetRange(base, speakerId);
+  const query = await audioQuery(base, text, speakerId);
+  const { totalPhrases, matchedPhrases } = correctSentencePitch(
+    query.accent_phrases as AccentPhraseLike[],
+    target,
   );
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Azure TTS ${res.status} ${res.statusText}${detail ? `: ${detail}` : ""}`);
-  }
-  return res.arrayBuffer();
+
+  const bytes = await synthesize(base, speakerId, query);
+  return { bytes, totalPhrases, matchedPhrases };
 }
