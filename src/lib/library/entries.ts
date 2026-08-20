@@ -397,17 +397,18 @@ export interface LibEntry {
    * code that actually knows which population it is building — not re-guessed
    * from `kind` at render time.
    *
-   * TRUE for anything that is genuinely one piece of spoken Japanese with one
-   * pronunciation: kana, kanji (even a many-reading one — the shelf's speaker
-   * plays *a* reading, the same accepted imprecision `readings[0]` would be if
-   * anyone printed it, which nothing does), a word, a counted or kana counter
-   * form. FALSE for a reference/rule/concept page (grammar, grammar concepts,
-   * number-construction pages, terms), writing notation (marks, sentence
-   * rules), a shape with no attested reading of its own (a radical, a kanji
-   * part), and an AGGREGATE entry that names more than one word at once (a verb
-   * pair, a keigo set) — its one `glyph` is a representative fragment, not the
-   * whole entry's sound, the same reason those rows carry their own per-word
-   * speakers instead of one entry-level button.
+   * TRUE for anything that is genuinely one piece of spoken Japanese with ONE
+   * pronunciation: kana, a word, a counted or kana counter form. FALSE for a
+   * reference/rule/concept page (grammar, grammar concepts, number-construction
+   * pages, terms), writing notation (marks, sentence rules), a shape with no
+   * attested reading of its own (a radical, a kanji part), an AGGREGATE entry
+   * that names more than one word at once (a verb pair, a keigo set) — its one
+   * `glyph` is a representative fragment, not the whole entry's sound, the same
+   * reason those rows carry their own per-word speakers instead of one
+   * entry-level button — and a KANJI, whose glyph has no single pronunciation
+   * of its own at all (on'yomi vs. kun'yomi is context-dependent); a 🔊 next to
+   * the bare glyph would teach the wrong thing, so its readings only ever get a
+   * speaker each, on the entry page's own "As a kanji" section.
    */
   readonly speakable: boolean;
 }
@@ -746,12 +747,15 @@ function build(): LibEntry[] {
       // page foot credits every source.
       sub: `${k.strokes} stroke${k.strokes === 1 ? "" : "s"}`,
       weight: 1000 + (k.newspaperFreq ?? 3000),
-      // A kanji is a real character with real readings, even when it has more
-      // than one — the shelf's 🔊 plays *a* reading, the same accepted
-      // imprecision as elsewhere in this file, and stays distinct from a
-      // reference page (number construction) or a shape with none (radical,
-      // primitive). See LibEntry.speakable.
-      speakable: true,
+      // FALSE, even though a kanji is a real character with a real reading (or
+      // several) — unlike a kana or a word, a bare kanji glyph has NO single
+      // pronunciation of its own; on'yomi vs. kun'yomi and which one applies is
+      // entirely context-dependent (人 alone could be じん, にん, or ひと). A 🔊
+      // next to the tile implies the glyph itself has a canonical sound, which
+      // is exactly the wrong thing to teach. The readings live in the entry
+      // page's own "As a kanji" section, each with its own speaker on the
+      // specific reading, not the glyph. See LibEntry.speakable.
+      speakable: false,
     });
   }
 
