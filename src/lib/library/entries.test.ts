@@ -217,7 +217,9 @@ test("the subject pip splits kana by script and singularises words", () => {
 const SPEAKABLE_BY_KIND: Record<Kind, boolean> = {
   [KANA_SUBJECT]: true,
   [RADICAL_SUBJECT]: false,
-  [KANJI_SUBJECT]: true,
+  // A bare kanji glyph has no single pronunciation of its own (on'yomi vs.
+  // kun'yomi is context-dependent) — see LibEntry.speakable.
+  [KANJI_SUBJECT]: false,
   [VOCAB_SUBJECT]: true,
   // The real counted words (一本 · いっぽん) — see NUMBER_CONSTRUCTION_KIND
   // below for the reference pages that share this shelf but not this kind.
