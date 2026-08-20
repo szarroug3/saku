@@ -200,8 +200,15 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
 
 /** The derivation rows for a pattern on a host: for each accepted example, the
  * dictionary verb, the form the pattern attaches to (omitted where the word is
- * taken unchanged), the finished pattern, and what the finished pattern means. */
-function deriveRows(r: Recipe, host: Host, limit = 3): IntroDeriveRow[] {
+ * taken unchanged), the finished pattern, and what the finished pattern means.
+ *
+ * `labelClass` tags each row with its conjugation class (Godan / Ichidan·
+ * irregular) — only asked for by the volitional form's own pattern page, where
+ * the written pattern branches by class (〜(よ)うと思う's parenthesized よ) and a
+ * single example would leave the branch unexplained. EXAMPLES.verb leads with
+ * たべる (v1) before any godan verb, so `limit`'s first two rows are already one
+ * of each class without any special selection here. */
+function deriveRows(r: Recipe, host: Host, limit = 3, labelClass = false): IntroDeriveRow[] {
   const attach = r.attach.find((a) => a.host === host) ?? r.attach[0];
   if (!attach) return [];
   const rows: IntroDeriveRow[] = [];
@@ -214,7 +221,19 @@ function deriveRows(r: Recipe, host: Host, limit = 3): IntroDeriveRow[] {
       const c = conjugate(ex.word, ex.cls, attach.form as Form);
       if (c.ok && c.value !== ex.word) form = c.value;
     }
-    rows.push({ verb: ex.word, form, result: built.value, gloss: appliedGloss(r.gloss, ex) });
+    const classLabel =
+      labelClass && ex.cls
+        ? ex.cls === "v1"
+          ? "Ichidan/irregular, adds よう"
+          : "Godan, adds う"
+        : undefined;
+    rows.push({
+      verb: ex.word,
+      form,
+      result: built.value,
+      gloss: appliedGloss(r.gloss, ex),
+      ...(classLabel ? { classLabel } : {}),
+    });
     if (rows.length >= limit) break;
   }
   return rows;
@@ -562,8 +581,15 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
         .map((sectionHost) => {
           const attachment = r.attach.find((a) => a.host === sectionHost);
           // One row is enough here: the formula already states the rule, and a
-          // pattern page gives each distinct word class its own section.
-          const rules = wrapRows.length ? wrapRows : deriveRows(r, sectionHost, 1);
+          // pattern page gives each distinct word class its own section. The
+          // volitional form is the one exception — its OWN written form (the
+          // parenthesized よ) branches by class, so one example can only ever
+          // show half the rule. Two rows, labeled, so both halves are visible
+          // on the page that actually needs them.
+          const onVolitional = attachment?.form === "volitional" && !!attachment.add;
+          const rules = wrapRows.length
+            ? wrapRows
+            : deriveRows(r, sectionHost, onVolitional ? 2 : 1, onVolitional);
           const sectionBuild = wrapRows.length ? null : hostBuild(r, sectionHost);
           const form = attachment?.form;
           const formHead =
@@ -572,9 +598,16 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
                 ? "〜な form"
                 : FORM_LABEL[form]
               : undefined;
+          // The pattern's own written form carries a parenthesized よ because the
+          // volitional ending it's built on branches by class, and nothing else
+          // on THIS page (the build table's two labeled rows aside) says why in
+          // words. Said here, in the build instruction, not as a separate aside.
+          const instruction = onVolitional
+            ? `${sectionBuild?.instruction ?? build} A godan verb shifts to う; an ichidan verb or irregular adds よう, which is why the pattern is written ${r.pattern}.`
+            : (sectionBuild?.instruction ?? build);
           return {
             title: HOST_SECTION_TITLE[sectionHost],
-            instruction: sectionBuild?.instruction ?? build,
+            instruction,
             ...(sectionBuild?.formula ? { formula: sectionBuild.formula } : {}),
             rules,
             heads: { verb: HOST_COLUMN_TITLE[sectionHost], form: formHead },

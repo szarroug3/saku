@@ -973,6 +973,7 @@ export function IntroDeriveTable({
   // meaning is already the page's hero title, so a column repeating it three
   // times is noise. Suppressed when the rows carry one distinct gloss or none.
   const hasGloss = new Set(rows.map((r) => r.gloss).filter(Boolean)).size > 1;
+  const hasClass = rows.some((r) => r.classLabel);
   const headCell = "px-4 py-2.5 font-semibold";
   const jpCell = "whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text";
   return (
@@ -990,6 +991,7 @@ export function IntroDeriveTable({
             {hasForm ? <th className={headCell}>{heads?.form ?? "Form"}</th> : null}
             <th className={headCell}>{heads?.pattern ?? "Pattern"}</th>
             {hasGloss ? <th className={headCell}>Meaning</th> : null}
+            {hasClass ? <th className={headCell}>Class</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -1026,6 +1028,14 @@ export function IntroDeriveTable({
                     className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
                   >
                     {r.gloss ?? ""}
+                  </td>
+                ) : null}
+                {hasClass ? (
+                  <td
+                    lang="en"
+                    className="min-w-[9rem] px-4 py-3 align-baseline text-[13px] leading-snug text-text-muted"
+                  >
+                    {r.classLabel ?? ""}
                   </td>
                 ) : null}
               </tr>
