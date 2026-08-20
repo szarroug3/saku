@@ -117,6 +117,35 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           }),
     [stats, history, graduateRuns, results.ts, summaryOnly],
   );
+  // Compute pair runs for all progress rows once, then filter and reuse.
+  // This avoids calling pairRecentRuns twice per row (once to filter visibility,
+  // once to display runs), which is expensive when iterating through history.
+  //
+  // Declared here, right after `analysis`, rather than nearer the pair-progress
+  // code below that mostly uses it: `clearNow` (further down) closes over this
+  // value, and the React Compiler's memoization-preservation check trips when a
+  // closure created BEFORE a memo's declaration reads it — even though that's
+  // completely valid JS (the closure only ever RUNS after this line has
+  // executed for the render). Source order matching actual dependency order
+  // avoids the false bailout; see the "Compilation Skipped" error this used to
+  // produce if you move it back down next to clearNow.
+  const allProgressPairRuns = useMemo(
+    () =>
+      new Map(
+        analysis.progress.map((row) => [
+          row.key,
+          [
+            ...pairRecentRuns(history, row.key, {
+              entryOf,
+              excludeTs: results.ts,
+            }),
+            true,
+          ].slice(-10),
+        ]),
+      ),
+    [analysis.progress, history, results.ts],
+  );
+
   const facts = useMemo(() => deriveRun(results), [results]);
   const summary = useMemo(
     () => summarize(facts, stats, prior, analysis.progress),
@@ -283,23 +312,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     () => ({ ...facts, facts: triageFacts, solid: facts.solid.filter((fact) => !clearableFacts.has(fact)) }),
     [facts, triageFacts, clearableFacts],
   );
-
-  // Compute pair runs for all progress rows once, then filter and reuse.
-  // This avoids calling pairRecentRuns twice per row (once to filter visibility,
-  // once to display runs), which is expensive when iterating through history.
-  const allProgressPairRuns = useMemo(() => {
-    const out = new Map<string, boolean[]>();
-    for (const row of analysis.progress) {
-      out.set(row.key, [
-        ...pairRecentRuns(history, row.key, {
-          entryOf,
-          excludeTs: results.ts,
-        }),
-        true,
-      ].slice(-10));
-    }
-    return out;
-  }, [analysis.progress, history, results.ts]);
 
   const visiblePairProgressRows = useMemo(() => {
     const rows = analysis.progress.filter((row) => {

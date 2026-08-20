@@ -36,27 +36,6 @@ import { pitchPatternForLength } from "@/lib/pitch";
 import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { wordPitch } from "@/data/pitch";
 
-const SMALL_KANA = new Set([
-  "ゃ", "ゅ", "ょ", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゎ",
-  "ャ", "ュ", "ョ", "ァ", "ィ", "ゥ", "ェ", "ォ", "ヮ",
-]);
-
-/** Split a kana string into morae, exactly like `moraeOf` in pitch.ts (kept as
- * a tiny local copy rather than importing a client-facing helper twice —
- * behaviour must match, see pitch.test.ts, so keep the two definitions
- * textually identical if either changes). */
-function morae(reading: string): string[] {
-  const out: string[] = [];
-  for (const ch of reading) {
-    if (SMALL_KANA.has(ch) && out.length > 0) {
-      out[out.length - 1] += ch;
-    } else {
-      out.push(ch);
-    }
-  }
-  return out;
-}
-
 /** Katakana → hiragana, code-point shift over the katakana block (U+30A1
  * "ァ" … U+30F6 "ヶ", -0x60 lands on the matching hiragana). VOICEVOX's mora
  * `text` is katakana; the pitch dataset's readings are hiragana (vocab.json's
