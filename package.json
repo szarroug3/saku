@@ -22,7 +22,6 @@
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit",
     "mnemonic-images": "node scripts/build-mnemonic-images.mjs",
-    "voice:seed": "node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice.mjs",
     "audit-corpus": "node scripts/audit-corpus.ts",
     "audit-corpus:check": "node scripts/audit-corpus.ts --check",
     "test": "env -u NODE_OPTIONS -u VSCODE_INSPECTOR_OPTIONS node ./scripts/run-unit-tests.mjs",
