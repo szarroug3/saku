@@ -256,17 +256,26 @@ export interface QuizConfig {
   /** JP fonts to draw from per card — more than one selected = randomized. */
   fonts: string[];
   blurSubmit: boolean;
-  voiceName: string;
   /**
-   * The learner's chosen VOICEVOX voice for pitch-accent "Hear it" audio
-   * (SAK-99) — a roster id from src/lib/pitch-audio.ts's PITCH_VOICES, NOT a
-   * raw VOICEVOX speaker number. Independent of `voiceName` above: that picks
-   * the general speech voice (pack or browser), this picks only the one used
-   * to demonstrate a word's real pitch contour. Defaults to "nana" (speaker
-   * id 30), the sole voice SAK-98 hardcoded, so an existing learner's clips
-   * keep playing the same voice until they actively pick another.
+   * The learner's chosen voice for EVERY kind of speech in the app — quiz
+   * prompts, listening exercises, the ordinary Hear button, and the
+   * word-page pitch button (SAK-100 unified what used to be two separate
+   * fields, `voiceName` and SAK-99's `pitchVoiceId`, into this one).
+   *
+   * Either "" (Auto: the browser's own installed Japanese voice, chosen by
+   * pickAutoVoice in src/lib/speech.ts) or a roster id from
+   * src/lib/voice.ts's VOICES — never a raw VOICEVOX speaker number. Every
+   * roster voice is pitch-corrected: a single word gets its exact known
+   * downstep (character-entry-view.tsx), and any other utterance gets
+   * per-accent-phrase correction wherever it confidently matches the pitch
+   * dataset (src/lib/sentence-pitch.ts), natural VOICEVOX prosody elsewhere.
+   * Defaults to "nana" (speaker id 30, DEFAULT_VOICE_ID) — SAK-98's original
+   * hardcoded pitch voice, kept as the one default so an existing learner's
+   * pitch-button clips don't change until they pick differently in Settings.
+   * A saved legacy Azure id ("keita"/"nanami") or SAK-99's `pitchVoiceId`
+   * migrates to this field in quiz-config.tsx's normalizeConfig.
    */
-  pitchVoiceId: string;
+  voiceName: string;
 
   // ---------- what the numbers mean (used everywhere) ----------
   /** Show practice volume next to accuracy, so 88%-from-4-tries can't lie. */

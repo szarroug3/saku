@@ -31,7 +31,7 @@ import {
   WORDS_PER_LESSON_DEFAULT,
   clampWordsPerLesson,
 } from "@/lib/lesson-sizing";
-import { DEFAULT_PITCH_VOICE_ID } from "@/lib/pitch-audio";
+import { DEFAULT_VOICE_ID, isVoiceId } from "@/lib/voice";
 import { emptySelection } from "@/lib/selection-empty";
 import {
   allGridResponses,
@@ -67,14 +67,13 @@ export function defaultConfig(): QuizConfig {
     scriptLabel: true,
     fonts: [...JP_FONTS],
     blurSubmit: false,
-    // The soothing pack voice is the default. When its bucket isn't configured
-    // (packVoicesEnabled() false) or a clip is missing, speak() falls back to the
-    // browser voice, so this is safe even before the audio is seeded.
-    voiceName: "keita",
-    // SAK-98's sole hardcoded voice, kept as the default so an existing
-    // learner's pitch clips (and cache) don't change until they pick
-    // differently in Settings — see pitch-audio.ts's PITCH_VOICES.
-    pitchVoiceId: DEFAULT_PITCH_VOICE_ID,
+    // The roster's default voice (SAK-98's sole hardcoded pitch voice, kept
+    // as the default so an existing learner's pitch clips and cache don't
+    // change until they pick differently in Settings — see voice.ts's
+    // VOICES). When its bucket isn't configured (voicesEnabled() false) or a
+    // clip is missing, speak() falls back to the browser voice, so this is
+    // safe even before any audio is cached.
+    voiceName: DEFAULT_VOICE_ID,
     showVolume: true,
     graduateRuns: 10,
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
@@ -124,6 +123,24 @@ function normalizeConfig(saved: unknown): QuizConfig {
       //   - else off.
       // The old fields are then dropped so they can't shadow the new model.
       const rawObj = raw as Record<string, unknown>;
+      // VOICE CONSOLIDATION (SAK-100). `voiceName` and the retired
+      // `pitchVoiceId` (SAK-99) collapse into ONE field, sourced from the
+      // unified VOICEVOX roster (src/lib/voice.ts's VOICES). A saved
+      // `pitchVoiceId`, if it still names a real roster voice, wins — it was
+      // the more deliberate of the two choices, since SAK-99's picker only
+      // ever offered roster voices. Otherwise a saved `voiceName` wins IF it
+      // is still a roster id. Anything else — "" (Auto, always valid, kept
+      // as-is below), a pre-SAK-100 Azure id ("keita"/"nanami"), or garbage —
+      // falls back to the roster default.
+      const legacyPitchVoiceId =
+        typeof rawObj.pitchVoiceId === "string" ? rawObj.pitchVoiceId : undefined;
+      cfg.voiceName =
+        legacyPitchVoiceId && isVoiceId(legacyPitchVoiceId)
+          ? legacyPitchVoiceId
+          : isVoiceId(cfg.voiceName) || cfg.voiceName === ""
+            ? cfg.voiceName
+            : DEFAULT_VOICE_ID;
+      delete (cfg as unknown as Record<string, unknown>).pitchVoiceId;
       // A short-lived build exposed sentence practice as a separate "mixed"
       // mode. Sentences now correctly use the Japanese-sentence source inside
       // Drill, so migrate that saved UI state back to Drill.

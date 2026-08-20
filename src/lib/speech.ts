@@ -2,7 +2,7 @@
 // Note: browsers only refresh the installed-voice list on a full restart,
 // and Siri voices are never exposed to the web speech API.
 
-import { isPackVoice, packApiUrl, packAudioUrl, packVoicesEnabled } from "@/lib/voice-audio";
+import { isVoiceId, voiceApiUrl, voiceAudioUrl, voicesEnabled } from "@/lib/voice";
 
 /**
  * Duplicate-speak guard for intermittent double-trigger races.
@@ -182,9 +182,9 @@ function speakNow(text: string, voiceName: string): void {
   speechSynthesis.speak(u);
 }
 
-/** The pack clip currently playing, if any — stopped before the next one so two
- * rapid taps don't overlap (the speechSynthesis path does the same via
- * `speechSynthesis.cancel()`). */
+/** The roster-voice clip currently playing, if any — stopped before the next
+ * one so two rapid taps don't overlap (the speechSynthesis path does the same
+ * via `speechSynthesis.cancel()`). */
 let currentClip: HTMLAudioElement | null = null;
 
 /** Clips warmed this session, so a second hover/tap on the same word doesn't
@@ -192,23 +192,25 @@ let currentClip: HTMLAudioElement | null = null;
 const prefetched = new Set<string>();
 
 /**
- * Warm a pack clip before it is played — call it on HOVER/FOCUS of a Hear
- * button, not on mount, so only the clip a pointer is aiming at is fetched (a
- * dense page does not fire a hundred synth requests at Azure at once).
+ * Warm a roster-voice clip before it is played — call it on HOVER/FOCUS of a
+ * Hear button, not on mount, so only the clip a pointer is aiming at is
+ * fetched (a dense page does not fire a hundred synth requests at VOICEVOX at
+ * once).
  *
  * If the CDN object is already there (every kana, or a word heard before) the
- * GET just fills the browser cache; if it is not (an on-demand word) this hits
- * /api/tts to synthesize and cache it, so the ~0.6s synthesis is paid while the
- * pointer is still travelling rather than on the click. Fire-and-forget, silent
- * on failure, and a no-op unless pack voices are on and this is a pack voice.
+ * GET just fills the browser cache; if it is not (an on-demand word or
+ * sentence) this hits /api/tts to synthesize and cache it, so the synthesis is
+ * paid while the pointer is still travelling rather than on the click.
+ * Fire-and-forget, silent on failure, and a no-op unless the roster is
+ * configured and `voiceName` names one of its voices.
  */
 async function warmOne(text: string, voiceName: string): Promise<void> {
-  if (!text || !isPackVoice(voiceName) || !packVoicesEnabled()) return;
+  if (!text || !isVoiceId(voiceName) || !voicesEnabled()) return;
   const key = `${voiceName} ${text}`;
   if (prefetched.has(key)) return;
   prefetched.add(key);
-  const cdn = packAudioUrl(voiceName, text);
-  const api = packApiUrl(voiceName, text);
+  const cdn = voiceAudioUrl(voiceName, text);
+  const api = voiceApiUrl(voiceName, text);
   try {
     if (cdn) {
       const hit = await fetch(cdn);
@@ -227,8 +229,8 @@ export function prefetchClip(text: string, voiceName: string): void {
 
 // A small rate-limited queue for warming MANY clips at once — a quiz priming
 // every word it will speak. At most MAX_WARMING run together, so a long deck
-// does not fire fifty synth requests at Azure in one burst; the rest wait their
-// turn and trickle in while the learner works through the earlier cards.
+// does not fire fifty synth requests at VOICEVOX in one burst; the rest wait
+// their turn and trickle in while the learner works through the earlier cards.
 const warmQueue: Array<() => Promise<void>> = [];
 let warming = 0;
 const MAX_WARMING = 2;
@@ -251,7 +253,7 @@ function pumpWarmQueue(): void {
  */
 export function prefetchClips(texts: readonly string[], voiceName: string): void {
   if (typeof window === "undefined") return;
-  if (!isPackVoice(voiceName) || !packVoicesEnabled()) return;
+  if (!isVoiceId(voiceName) || !voicesEnabled()) return;
   const seen = new Set<string>();
   for (const text of texts) {
     if (!text || seen.has(text)) continue;
@@ -262,13 +264,14 @@ export function prefetchClips(texts: readonly string[], voiceName: string): void
 }
 
 /**
- * Play a pack-voice clip, in two tiers, falling back to the browser voice last.
+ * Play a roster-voice clip (VOICEVOX, pitch-corrected — see
+ * src/lib/tts-synth.ts), in two tiers, falling back to the browser voice last.
  *
- *   1. The CDN object (packAudioUrl) — instant for anything already seeded or
- *      cached (all kana, plus any word heard before).
- *   2. /api/tts (packApiUrl) — the on-demand route: it synthesizes a missing
- *      word with Azure, caches it into the bucket, and returns it, so the next
- *      play is a tier-1 hit. Only reached when tier 1 404s.
+ *   1. The CDN object (voiceAudioUrl) — instant for anything already cached
+ *      (all kana, plus any word or sentence heard before).
+ *   2. /api/tts (voiceApiUrl) — the on-demand route: it synthesizes a missing
+ *      clip with VOICEVOX, caches it into the bucket, and returns it, so the
+ *      next play is a tier-1 hit. Only reached when tier 1 404s.
  *   3. The browser's own Japanese voice — when neither is available (offline,
  *      unconfigured, autoplay blocked).
  *
@@ -276,8 +279,8 @@ export function prefetchClips(texts: readonly string[], voiceName: string): void
  * via a rejected `play()`; either advances to the next tier. Tiers run inside the
  * click's sticky activation, so the tier-2 play is still allowed to make sound.
  */
-function speakPack(text: string, voiceId: string): void {
-  const tiers = [packAudioUrl(voiceId, text), packApiUrl(voiceId, text)].filter(
+function speakRoster(text: string, voiceId: string): void {
+  const tiers = [voiceAudioUrl(voiceId, text), voiceApiUrl(voiceId, text)].filter(
     (u): u is string => !!u,
   );
   if (currentClip) {
@@ -307,9 +310,9 @@ function speakPack(text: string, voiceId: string): void {
   playFrom(0);
 }
 
-/** Speak Japanese text with the configured voice ("" = auto). A pack voice
- * (see voice-audio.ts) plays a pre-generated clip; everything else goes through
- * speechSynthesis. */
+/** Speak Japanese text with the configured voice ("" = auto). A roster voice
+ * (see voice.ts) plays a VOICEVOX clip, pitch-corrected where the sentence
+ * matches the Kanjium data; everything else goes through speechSynthesis. */
 export function speak(text: string, voiceName: string): void {
   if (typeof window === "undefined") return;
   // Automation/e2e browsers set navigator.webdriver (Playwright does). No test
@@ -318,10 +321,11 @@ export function speak(text: string, voiceName: string): void {
   // runs quiet without affecting real users (real browsers leave webdriver false).
   if (typeof navigator !== "undefined" && navigator.webdriver) return;
   if (shouldSkipDuplicateSpeak(text, voiceName)) return;
-  // Only take the pack path when it's actually configured (bucket set); a pack
-  // voice selected without a bucket just uses the browser voice, no dead request.
-  if (isPackVoice(voiceName) && packVoicesEnabled()) {
-    speakPack(text, voiceName);
+  // Only take the roster path when it's actually configured (bucket set); a
+  // roster voice selected without a bucket just uses the browser voice, no
+  // dead request.
+  if (isVoiceId(voiceName) && voicesEnabled()) {
+    speakRoster(text, voiceName);
     return;
   }
   speakBrowser(text, voiceName);

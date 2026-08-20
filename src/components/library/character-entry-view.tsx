@@ -30,7 +30,6 @@ import Link from "next/link";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
-import { PitchHearButton } from "@/components/library/pitch-hear-button";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { TermLink } from "@/components/library/term-link";
 import { Callout } from "@/components/lesson/callout";
@@ -40,7 +39,6 @@ import type { CharacterEntryPayload } from "@/lib/library/character-entry-conten
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
 import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
-import { DEFAULT_PITCH_VOICE_ID } from "@/lib/pitch-audio";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { ContentItem } from "@/lib/content/item";
 import { wordPitch } from "@/data/pitch";
@@ -179,12 +177,14 @@ export function CharacterEntryView({
 }) {
   const fetched = useContentEntry<CharacterEntryPayload>(item ? null : (entry ?? null));
   const payload = item ? live : fetched;
-  // The learner's saved pitch voice (Settings), read unconditionally so this
-  // hook runs on every render regardless of the payload-not-ready early
-  // return just below. Falls back to the shipped default until Settings
-  // hydrates or a choice is made — see quiz-config.tsx's defaultConfig.
-  const { cfg } = useQuizConfig();
-  const pitchVoiceId = cfg.pitchVoiceId || DEFAULT_PITCH_VOICE_ID;
+  // Called unconditionally (never after the payload-not-ready early return
+  // just below) to keep this component's hook count stable across renders.
+  // HearButton reads the learner's saved voice off the SAME context itself
+  // (and falls back to the roster default when it's "" (Auto) or before
+  // Settings hydrates — see quiz-config.tsx's defaultConfig and
+  // hear-button.tsx's EXACT PITCH mode), so this page doesn't thread it
+  // through by hand.
+  useQuizConfig();
   if (payload === undefined || payload === null) return null;
 
   item = payload.item;
@@ -394,18 +394,17 @@ export function CharacterEntryView({
                       <tr key={w.reading}>
                         <td className="whitespace-nowrap py-1 pr-6 align-top">
                           <span className="flex flex-wrap items-center gap-1.5">
-                            <HearButton glyph={w.reading} />
                             {showPitch ? (
                               <>
+                                {/* EXACT PITCH mode (SAK-100): this reading's
+                                    downstep is a VERIFIED Kanjium row, not the
+                                    fuzzy per-sentence match every other Hear
+                                    button relies on — see hear-button.tsx. */}
+                                <HearButton glyph={w.reading} downstep={pitchDownstep!} />
                                 <PitchReading
                                   reading={w.reading}
                                   downstep={pitchDownstep!}
                                   className="font-kana text-text"
-                                />
-                                <PitchHearButton
-                                  reading={w.reading}
-                                  downstep={pitchDownstep!}
-                                  voiceId={pitchVoiceId}
                                 />
                                 {/* The overline is drawn but never named on the
                                     page; this is the one way to what it is. */}
@@ -417,7 +416,10 @@ export function CharacterEntryView({
                                 </TermLink>
                               </>
                             ) : (
-                              <span className="font-kana text-text">{w.reading}</span>
+                              <>
+                                <HearButton glyph={w.reading} />
+                                <span className="font-kana text-text">{w.reading}</span>
+                              </>
                             )}
                           </span>
                         </td>
