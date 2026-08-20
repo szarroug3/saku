@@ -7,8 +7,6 @@
 export type { FactKind, Fact } from "./fact";
 export type { ContentKind, ContentItem } from "./item";
 export type { Track } from "./track";
-export type { OrderSpec } from "./ordered-track";
-export { orderedTrack } from "./ordered-track";
 export { unitItem, formItem, numbersTrack } from "./numbers-track";
 export type { Lesson, NextLesson } from "./scheduler";
 export { MAX_PREREQ_DEPTH, planLesson, nextLesson } from "./scheduler";
