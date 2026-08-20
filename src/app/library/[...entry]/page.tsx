@@ -105,42 +105,55 @@ function EntryView({ entry }: { entry: IndexLibEntry }) {
 
   return (
     <FlatSurfaceProvider>
-      <p className="mb-3 text-[11.5px] text-text-muted">
-        <Link href="/library" className="text-text-muted no-underline">
-          Library
-        </Link>
-        {" › "}
-        {/* `shelfKindOf`, not `entry.kind`: a construction page browses on the
-            counters shelf, so its crumb links there. Every other kind maps to
-            itself. */}
-        <Link
-          href={`/library?kind=${shelfKindOf(entry.kind)}`}
-          className="text-text-muted no-underline"
-        >
-          {KIND_LABEL[shelfKindOf(entry.kind)]}
-        </Link>
-        {" › "}
-        {entryName(entry)}
-      </p>
+      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom) plus mt-auto
+          on the SliceBar wrapper below: a flex-column sticky footer, scoped
+          to THIS column, not the viewport. A short entry (a two-line word)
+          gets its Quiz me pushed to the bottom of the column instead of
+          stranded right under the content with a dead gap below it; a long
+          entry just gets an ordinary footer after its last line, the same as
+          before. See slice-bar.tsx for why this isn't `fixed inset-x-0`. */}
+      <div className="flex min-h-[calc(100vh-3rem)] flex-col">
+        <div>
+          <p className="mb-3 text-[11.5px] text-text-muted">
+            <Link href="/library" className="text-text-muted no-underline">
+              Library
+            </Link>
+            {" › "}
+            {/* `shelfKindOf`, not `entry.kind`: a construction page browses on
+                the counters shelf, so its crumb links there. Every other kind
+                maps to itself. */}
+            <Link
+              href={`/library?kind=${shelfKindOf(entry.kind)}`}
+              className="text-text-muted no-underline"
+            >
+              {KIND_LABEL[shelfKindOf(entry.kind)]}
+            </Link>
+            {" › "}
+            {entryName(entry)}
+          </p>
 
-      <GroupNav entry={entry} />
+          <GroupNav entry={entry} />
 
-      <EntryBody entry={entry} />
+          <EntryBody entry={entry} />
+        </div>
 
-      <SliceBar
-        variant="entry"
-        slice={{ label: entryName(entry), entries: [entry.id] }}
-        showLabel={false}
-        // The committed aggregate on purpose: the bar plans a drill, which is a
-        // query over what you durably know, not the run you are in.
-        facts={history.facts}
-        claims={claims}
-        history={history}
-        now={now}
-        onClaim={claim}
-        onUnclaim={unclaim}
-        progressReady={historyLoaded}
-      />
+        <div className="mt-auto pt-5">
+          <SliceBar
+            variant="entry"
+            slice={{ label: entryName(entry), entries: [entry.id] }}
+            showLabel={false}
+            // The committed aggregate on purpose: the bar plans a drill, which
+            // is a query over what you durably know, not the run you are in.
+            facts={history.facts}
+            claims={claims}
+            history={history}
+            now={now}
+            onClaim={claim}
+            onUnclaim={unclaim}
+            progressReady={historyLoaded}
+          />
+        </div>
+      </div>
     </FlatSurfaceProvider>
   );
 }
