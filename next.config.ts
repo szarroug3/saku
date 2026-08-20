@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
   ...(process.env.NEXT_DIST_DIR
     ? { distDir: process.env.NEXT_DIST_DIR }
     : {}),
+
+  // SAK-108: /api/tts and /api/pitch-tts shell out to ffmpeg (audio-compress.ts)
+  // via the `ffmpeg-static` package. Next's file tracer only follows
+  // `require`/`import` calls to build each route's deployed bundle — it can't
+  // see that ffmpeg-static's index.js points at a sibling *binary* file on
+  // disk at runtime, so without this the binary silently doesn't ship to
+  // Vercel and the routes 502/fall back exactly as before. Force-include it
+  // for both routes explicitly.
+  outputFileTracingIncludes: {
+    "/api/tts/**": ["./node_modules/ffmpeg-static/ffmpeg"],
+    "/api/pitch-tts/**": ["./node_modules/ffmpeg-static/ffmpeg"],
+  },
 };
 
 export default nextConfig;

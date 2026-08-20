@@ -15,13 +15,28 @@
 // was done before committing to this). That brings the same corpus to well
 // under 1GB.
 //
-// Server-only: shells out to the `ffmpeg` binary via child_process. Needs
-// ffmpeg on PATH wherever this runs — present on Sam's machine for the local
-// seed script; the live routes' production deployment (Vercel) needs it
-// bundled before they carry real traffic. See tts-synth.ts's own header for
-// the live-path status.
+// Server-only: shells out to an ffmpeg binary via child_process. Resolves the
+// binary via `ffmpeg-static` (SAK-108) rather than assuming a bare "ffmpeg"
+// is on $PATH: Vercel's Node serverless runtime does not bundle system
+// binaries, so `spawn("ffmpeg", ...)` had nothing to run in the deployed
+// function even though it worked fine locally/in agent sandboxes (Homebrew
+// ffmpeg on PATH there). ffmpeg-static downloads a platform-matched static
+// binary at `pnpm install` time — on Vercel that's the linux-x64 build,
+// matching the serverless runtime — and next.config.ts's
+// outputFileTracingIncludes makes sure that binary file actually ships in
+// the deployed function bundle (Next's file tracer only follows `require`
+// calls, not the binary ffmpeg-static's index.js points at on disk). Falls
+// back to a bare "ffmpeg" on $PATH if ffmpeg-static has no build for the
+// current platform/arch (its `require` resolves to null in that case).
 
 import { spawn } from "node:child_process";
+
+import ffmpegStaticPath from "ffmpeg-static";
+
+/** Resolved once at module load: ffmpeg-static's platform binary, or the bare
+ * command name as a last-resort fallback (e.g. an unsupported arch, or a dev
+ * environment where the package's install script didn't run). */
+const FFMPEG_BIN = ffmpegStaticPath ?? "ffmpeg";
 
 /** Real speech-call quality (Discord/WhatsApp territory) verified by ear
  * against the raw WAV across the whole voice roster before picking this —
@@ -41,7 +56,7 @@ export const AUDIO_CONTENT_TYPE = "audio/ogg";
  */
 export function encodeOpus(wavBytes: ArrayBuffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const ff = spawn("ffmpeg", [
+    const ff = spawn(FFMPEG_BIN, [
       "-y",
       "-loglevel", "error",
       "-i", "pipe:0",

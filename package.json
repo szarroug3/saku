@@ -38,6 +38,7 @@
     "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ffmpeg-static": "^5.3.0",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "radix-ui": "^1.6.2",
@@ -57,5 +58,10 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "ffmpeg-static"
+    ]
   }
 }
