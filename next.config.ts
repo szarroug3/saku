@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Multiple independent reports (vercel/next.js discussions #47293, #55228)
+  // say `outputFileTracingIncludes` is silently NOT applied on Vercel without
+  // this — matches our exact symptom: the binary is correctly listed in
+  // .next/server/**/route.js.nft.json locally, but ENOENTs at runtime on
+  // Vercel. Trying this as the fix for SAK-108's still-failing ffmpeg include.
+  output: "standalone",
+
   // A production E2E build may run while the maintainer has `pnpm dev` open.
   // Keeping that build out of `.next` prevents it from replacing the dev
   // server's client chunks mid-session and leaving client-only UI (notably the
