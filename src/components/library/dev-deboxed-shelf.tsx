@@ -18,7 +18,7 @@
 // long scroll. Section ids start with "hiragana"/"katakana", the same grouping
 // key shelves.tsx uses.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";
 import { Hint, Lbl } from "@/components/ui";
@@ -37,8 +37,10 @@ import {
 } from "@/lib/library/entries";
 import { EntryLink } from "@/components/library/entry-link";
 import { japaneseFontClass } from "@/lib/japanese-text";
+import { resolveHrefs } from "@/lib/library/server-lookups";
 import { subLabel } from "@/lib/library/sub-label";
 import { sectionState, type Selection } from "@/lib/library/selection";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import type { EntryId } from "@/types";
 
@@ -91,6 +93,17 @@ export function DeboxedShelf({
   const [collapsedScripts, setCollapsedScripts] = useState<ReadonlySet<string>>(
     new Set(),
   );
+
+  // SAK-118: every tile/row on this shelf renders its own EntryLink (the ↗
+  // "open" target) — collected and resolved ONCE here, batched, instead of one
+  // getEntryHref Server Action call per rendered entry (this dev shelf can hold
+  // as many entries as the shipped one). Passed down as `href` so EntryLink
+  // skips its own per-instance fetch entirely.
+  const allIds = useMemo(
+    () => sections.flatMap((s) => s.entries.map((e) => e.id)),
+    [sections],
+  );
+  const hrefs = useServerLookup(resolveHrefs, [allIds]) ?? {};
   const toggle = (
     set: ReadonlySet<string>,
     apply: (s: ReadonlySet<string>) => void,
@@ -158,6 +171,7 @@ export function DeboxedShelf({
                   <DeboxedRow
                     key={entry.id}
                     entry={entry}
+                    href={hrefs[entry.id as unknown as string]}
                     grid
                     selected={selected.has(entry.id)}
                     onToggle={(shift) => onToggleEntry(entry.id, shift)}
@@ -170,6 +184,7 @@ export function DeboxedShelf({
                   <DeboxedRow
                     key={entry.id}
                     entry={entry}
+                    href={hrefs[entry.id as unknown as string]}
                     selected={selected.has(entry.id)}
                     onToggle={(shift) => onToggleEntry(entry.id, shift)}
                   />
@@ -182,6 +197,7 @@ export function DeboxedShelf({
                 <DeboxedTile
                   key={entry.id}
                   entry={entry}
+                  href={hrefs[entry.id as unknown as string]}
                   voice={voice}
                   selected={selected.has(entry.id)}
                   onToggle={(shift) => onToggleEntry(entry.id, shift)}
@@ -237,11 +253,14 @@ export function DeboxedShelf({
  * shrink-to-fit is copied from EntryTile so sizing matches the boxed side. */
 function DeboxedTile({
   entry,
+  href,
   voice,
   selected,
   onToggle,
 }: {
   entry: LibEntry;
+  /** Pre-resolved by DeboxedShelf's batched lookup — see its own header. */
+  href: string | undefined;
   voice: string;
   selected: boolean;
   onToggle(shiftKey: boolean): void;
@@ -285,6 +304,7 @@ function DeboxedTile({
         />
         <EntryLink
           id={entry.id}
+          href={href}
           onClick={(e) => e.stopPropagation()}
           ariaLabel={`Open ${entryName(entry)}`}
           className="inline-flex size-5 items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline hover:text-text"
@@ -304,11 +324,14 @@ function DeboxedTile({
  * aligns down the list. */
 function DeboxedRow({
   entry,
+  href,
   selected,
   grid = false,
   onToggle,
 }: {
   entry: LibEntry;
+  /** Pre-resolved by DeboxedShelf's batched lookup — see its own header. */
+  href: string | undefined;
   selected: boolean;
   grid?: boolean;
   onToggle(shiftKey: boolean): void;
@@ -353,6 +376,7 @@ function DeboxedRow({
       <span className="min-w-0 flex-1 truncate text-[13px]">{meaning}</span>
       <EntryLink
         id={entry.id}
+        href={href}
         onClick={(e) => e.stopPropagation()}
         ariaLabel={`Open ${entryName(entry)}`}
         className="inline-flex size-5 flex-none items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
