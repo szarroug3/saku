@@ -135,18 +135,20 @@ function shelfSectionsFor(k: Kind): BrowseShelfSection[] {
   return v;
 }
 
-function computeLibraryShelves(): Record<string, BrowseShelfSection[]> {
-  const out: Record<string, BrowseShelfSection[]> = {};
-  for (const k of ALL_KINDS_INDEX) out[k as unknown as string] = shelfSectionsFor(k as Kind);
-  return out;
-}
-
-// Keyed by CURRICULUM_VERSION (a build-time content hash, learn-index.ts) so
-// a new deploy with different content naturally gets a fresh Data Cache
-// entry instead of serving a stale one forever — no revalidate/tag-based
-// invalidation needed, the key itself changes when the content does.
-const cachedLibraryShelves = unstable_cache(
-  async () => computeLibraryShelves(),
+// Keyed by kind + CURRICULUM_VERSION so a new deploy with different content
+// naturally gets a fresh Data Cache entry instead of serving a stale one
+// forever — no revalidate/tag-based invalidation needed, the key itself
+// changes when the content does.
+//
+// CACHED PER KIND, NOT AS ONE BATCHED CALL: the first version of this wrapped
+// the whole ~15,640-entry computeLibraryShelves() result in a single
+// unstable_cache entry, which broke in practice — Next's Data Cache rejects
+// any single cached item over 2MB, and the full payload is ~3.8MB. Splitting
+// per kind keeps each entry well under that limit (the largest kind is a
+// small fraction of the total) and still gives every kind its own
+// cross-invocation cache hit.
+const cachedShelfSectionsFor = unstable_cache(
+  async (k: Kind) => shelfSectionsFor(k),
   ["getLibraryShelves", CURRICULUM_VERSION],
   { tags: ["library-shelves"] },
 );
@@ -154,12 +156,18 @@ const cachedLibraryShelves = unstable_cache(
 /** Every kind's shelf sections, in one round trip — the browse view needs all
  * of them anyway (to decide, via allTabBrowseKinds, which subjects still have
  * something to show under the current filter), so one batched call replaces
- * what used to be a bundled import. The ~15,640-entry computation is cached
- * in Vercel's Data Cache via unstable_cache (SAK-110), keyed by
+ * what used to be a bundled import. Each kind's computation is cached
+ * separately in Vercel's Data Cache via unstable_cache (SAK-110), keyed by
  * CURRICULUM_VERSION so it survives cold starts and is shared across
  * instances, not just memoized per warm process. */
 export async function getLibraryShelves(): Promise<Record<string, BrowseShelfSection[]>> {
-  return cachedLibraryShelves();
+  const out: Record<string, BrowseShelfSection[]> = {};
+  await Promise.all(
+    ALL_KINDS_INDEX.map(async (k) => {
+      out[k as unknown as string] = await cachedShelfSectionsFor(k as Kind);
+    }),
+  );
+  return out;
 }
 
 export interface BrowseHit {
