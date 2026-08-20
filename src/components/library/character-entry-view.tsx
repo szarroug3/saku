@@ -40,6 +40,8 @@ import type { CharacterEntryPayload } from "@/lib/library/character-entry-conten
 import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
 import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
+import { DEFAULT_PITCH_VOICE_ID } from "@/lib/pitch-audio";
+import { useQuizConfig } from "@/lib/quiz-config";
 import type { ContentItem } from "@/lib/content/item";
 import { wordPitch } from "@/data/pitch";
 import { legacyUnqualifiedReading } from "@/data/vocab";
@@ -177,6 +179,12 @@ export function CharacterEntryView({
 }) {
   const fetched = useContentEntry<CharacterEntryPayload>(item ? null : (entry ?? null));
   const payload = item ? live : fetched;
+  // The learner's saved pitch voice (Settings), read unconditionally so this
+  // hook runs on every render regardless of the payload-not-ready early
+  // return just below. Falls back to the shipped default until Settings
+  // hydrates or a choice is made — see quiz-config.tsx's defaultConfig.
+  const { cfg } = useQuizConfig();
+  const pitchVoiceId = cfg.pitchVoiceId || DEFAULT_PITCH_VOICE_ID;
   if (payload === undefined || payload === null) return null;
 
   item = payload.item;
@@ -394,7 +402,11 @@ export function CharacterEntryView({
                                   downstep={pitchDownstep!}
                                   className="font-kana text-text"
                                 />
-                                <PitchHearButton reading={w.reading} downstep={pitchDownstep!} />
+                                <PitchHearButton
+                                  reading={w.reading}
+                                  downstep={pitchDownstep!}
+                                  voiceId={pitchVoiceId}
+                                />
                                 {/* The overline is drawn but never named on the
                                     page; this is the one way to what it is. */}
                                 <TermLink
