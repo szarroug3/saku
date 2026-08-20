@@ -56,7 +56,7 @@ import {
 import {
   TIER_EXAMPLES,
   type TierExample,
-} from "@/components/session/sentence-ordering-teach-walk";
+} from "@/components/library/sentence-rule-entry-view";
 import {
   assemblyMismatchMessage,
   findAssemblyMismatch,

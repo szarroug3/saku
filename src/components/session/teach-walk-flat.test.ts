@@ -6,8 +6,10 @@ import { describe, test } from "node:test";
 
 const HERE = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const TEACH_WALK = readFileSync(resolve(HERE, "teach-walk.tsx"), "utf-8");
+// SAK-113 moved this from components/session/sentence-ordering-teach-walk.tsx
+// into components/library, alongside the other entry-view components.
 const SO_TEACH_WALK = readFileSync(
-  resolve(HERE, "sentence-ordering-teach-walk.tsx"),
+  resolve(HERE, "../library/sentence-rule-entry-view.tsx"),
   "utf-8",
 );
 const HOW_ITS_WRITTEN = readFileSync(
