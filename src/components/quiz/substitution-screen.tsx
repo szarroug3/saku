@@ -234,11 +234,7 @@ export function SubstitutionScreen() {
         </span>
       </div>
 
-      <div
-        className={`kq-material rounded-2xl border bg-card p-8 shadow-card ${
-          card.state === "right" ? "border-success" : "border-border"
-        }`}
-      >
+      <div className="mt-4">
         <div className="text-center">
           <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">
             You already know
