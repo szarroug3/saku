@@ -1775,7 +1775,14 @@ export function QuizSessionProvider({
         // wanted. A taught session (roundTargetOf > 1) still goes through
         // round-complete on every round including its last, same as before —
         // its RoundComplete screen is where "Complete session" lives.
-        if (withLeg.round >= roundTargetOf(withLeg)) {
+        //
+        // `!isTaughtSession(withLeg)` is load-bearing, not redundant with the
+        // round check below: on a taught session's LAST round, `withLeg.round
+        // >= roundTargetOf(withLeg)` is ALSO true (3 >= 3), so testing only
+        // that would skip round-complete on exactly the round whose
+        // RoundComplete screen is supposed to hold "Complete session" — the
+        // three-round loop never seeing round 3's own round-complete stop.
+        if (!isTaughtSession(withLeg) && withLeg.round >= roundTargetOf(withLeg)) {
           setSession({
             ...closeRound(withLeg, now),
             phase: "complete",
