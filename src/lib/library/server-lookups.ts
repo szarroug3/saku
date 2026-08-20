@@ -85,6 +85,8 @@ import { entryIsKnown, entryStanding, standingOf, type Standing } from "@/lib/li
 import type { StatusFilter } from "@/lib/library/url-state";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate } from "@/types";
+import { unstable_cache } from "next/cache";
+import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
 
 /* -------------------------------------------------------------------------
  * LIBRARY BROWSE/SEARCH — SAK-104's hardest case. library-page.tsx (the full
@@ -110,6 +112,16 @@ export interface BrowseShelfSection extends Omit<ShelfSection, "entries"> {
   readonly entries: readonly BrowseEntry[];
 }
 
+// Fast-path only: reused when the SAME warm serverless instance serves a
+// second getLibraryShelves() call before unstable_cache's own read completes
+// a round trip to Vercel's Data Cache. It is NOT the cross-invocation cache
+// anymore — this app runs on Vercel's default Node serverless runtime
+// (Hobby tier, no vercel.json, no Edge Functions), so cold starts and
+// multi-instance scaling mean a module-scope Map is empty far more often
+// than warm, and never shared across instances at all. unstable_cache below
+// is what actually persists the computed shelves across invocations/cold
+// starts; this Map just skips re-deriving them within one still-warm
+// instance. Cheap to keep, safe to delete if it ever gets in the way.
 const SHELF_CACHE = new Map<string, BrowseShelfSection[]>();
 function shelfSectionsFor(k: Kind): BrowseShelfSection[] {
   let v = SHELF_CACHE.get(k);
@@ -123,16 +135,31 @@ function shelfSectionsFor(k: Kind): BrowseShelfSection[] {
   return v;
 }
 
-/** Every kind's shelf sections, in one round trip — the browse view needs all
- * of them anyway (to decide, via allTabBrowseKinds, which subjects still have
- * something to show under the current filter), so one batched call replaces
- * what used to be a bundled import. Cached at module scope for the server
- * process's lifetime, same memoization the old client-side SHELF_CACHE gave,
- * just reached over a Server Action now. */
-export async function getLibraryShelves(): Promise<Record<string, BrowseShelfSection[]>> {
+function computeLibraryShelves(): Record<string, BrowseShelfSection[]> {
   const out: Record<string, BrowseShelfSection[]> = {};
   for (const k of ALL_KINDS_INDEX) out[k as unknown as string] = shelfSectionsFor(k as Kind);
   return out;
+}
+
+// Keyed by CURRICULUM_VERSION (a build-time content hash, learn-index.ts) so
+// a new deploy with different content naturally gets a fresh Data Cache
+// entry instead of serving a stale one forever — no revalidate/tag-based
+// invalidation needed, the key itself changes when the content does.
+const cachedLibraryShelves = unstable_cache(
+  async () => computeLibraryShelves(),
+  ["getLibraryShelves", CURRICULUM_VERSION],
+  { tags: ["library-shelves"] },
+);
+
+/** Every kind's shelf sections, in one round trip — the browse view needs all
+ * of them anyway (to decide, via allTabBrowseKinds, which subjects still have
+ * something to show under the current filter), so one batched call replaces
+ * what used to be a bundled import. The ~15,640-entry computation is cached
+ * in Vercel's Data Cache via unstable_cache (SAK-110), keyed by
+ * CURRICULUM_VERSION so it survives cold starts and is shared across
+ * instances, not just memoized per warm process. */
+export async function getLibraryShelves(): Promise<Record<string, BrowseShelfSection[]>> {
+  return cachedLibraryShelves();
 }
 
 export interface BrowseHit {
