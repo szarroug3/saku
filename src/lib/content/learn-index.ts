@@ -1,4 +1,7 @@
-import "server-only";
+// NO `import "server-only"` YET (SAK-104): it hard-breaks `next build` while
+// home-feed.tsx/current-sessions.tsx still import this file client-side —
+// tracked under the separate perf/learn-bundle initiative. Re-add once that
+// lands.
 
 // LEARN INDEX LOADER — the content-free frontier for /learn.
 //

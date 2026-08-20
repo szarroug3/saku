@@ -1,4 +1,7 @@
-import "server-only";
+// NO `import "server-only"` YET (SAK-104): it hard-breaks `next build` while
+// manage-lists.tsx (lists page) still imports href.ts, which imports this
+// file, client-side. Re-add once that consumer is migrated to a Server
+// Action too.
 
 // LIBRARY INDEX LOADER — the content-free list/search path for /library.
 //

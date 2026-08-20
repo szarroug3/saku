@@ -1,4 +1,7 @@
-import "server-only";
+// NO `import "server-only"` YET (SAK-104): it hard-breaks `next build` while
+// any client component still imports this file — practice/page.tsx's
+// lib/engine chain still does. Re-add only once that consumer is migrated to
+// a Server Action too, alongside the ones already done (server-lookups.ts).
 
 // The vocabulary subject: 12,553 everyday words from JMdict.
 //
