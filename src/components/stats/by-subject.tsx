@@ -166,11 +166,13 @@ export function BySubject({
               ),
             )
           )}
-          <SentenceSubjectRow
-            learnedIds={learnedSentenceIds}
-            total={sentenceTierCount}
-            onOpen={onOpen}
-          />
+          {statsData ? (
+            <SentenceSubjectRow
+              learnedIds={learnedSentenceIds}
+              total={sentenceTierCount}
+              onOpen={onOpen}
+            />
+          ) : null}
         </tbody>
       </table>
       <EntryBreakdown
