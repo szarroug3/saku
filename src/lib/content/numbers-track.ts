@@ -3,7 +3,7 @@
 //
 // The track has two item shapes:
 //   - ENTRY-BACKED forms (the 〜つ natives, 二十歳, はたち …): ordinary entries
-//     buildItem handles — see `orderedTrack` for the base spec (later piece).
+//     buildItem handles directly.
 //   - GENERATIVE-RULE units (compose 11-99, the big words, each counter): these
 //     have NO normal entry buildItem can read, so `unitItem` builds them here.
 //

@@ -1,15 +1,26 @@
 # Architecture refactor: one model, many surfaces
 
-Status: content model + generic scheduler MERGED to main. Meaning model in
-progress on branch `refactor/meaning-model`. Author: pairing session, Aug 2026.
+Status: content model MERGED to main and partly adopted (§6 below). The generic
+**scheduler half** (`scheduler.ts`'s `planLesson`/`nextLesson`, `resolve.ts`'s
+`resolveItem`, `ordered-track.ts`) was built and tested in isolation but never
+completed the Stage-3 track swap — **superseded in practice, not adopted.**
+Production scheduling shipped a different way: `docs/perf-learn-bundle.md`'s
+Phase 1 precomputed a content-free index (`learn-index.json`) + a single frontier
+walk (`src/lib/content/unit-scheduler-core.ts`), which IS what drives `/learn` in
+production today. See [§6 Progress](#6-progress-branch-refactorcontent-model) for
+what's actually live vs. what's dead. Meaning model in progress on branch
+`refactor/meaning-model`. Author: pairing session, Aug 2026.
 Goal: stop re-wiring every surface by hand for each new content type. An update to
 a content **type** (or a new word) should propagate consistently across lessons,
 quizzes, and the library — with the compiler and tests catching what's missing.
 
-> **Progress at a glance** — the content model and the ONE generic scheduler are
-> built and tested in isolation; nothing live consumes them yet, so main is safe.
-> The next step is the first live track migration (numbers/counters), the largest
-> and riskiest slice. See [§6 Progress](#6-progress-branch-refactorcontent-model).
+> **Progress at a glance** — the content model's non-scheduler half
+> (`item.ts`/`build-item.ts`/`fact.ts`/`meaning.ts`/`teach-unit.ts`) is live: it
+> backs the "Numbers & counters" content and the `/dev/scheduling` +
+> `/dev/views` reference pages. The generic *scheduler* half
+> (`scheduler.ts`/`resolve.ts`) never got its Stage-3 track swap and is now
+> superseded — see §6. `ordered-track.ts` had zero adopters (not even a dev page)
+> and was deleted (SAK-117).
 
 ---
 
@@ -189,13 +200,18 @@ track at a time; delete each forked file only when its track is fully moved.
   **Guards:** the engine never returns an item whose prereqs are unsatisfied; and
   it never returns an item whose untaught-prereq chain exceeds the depth cap.
   (Kills mechanism 3: ordering.)
-  *Status: 🟡 engine done, no track on it yet —* `planLesson` (pure core) +
-  `nextLesson` (history seam) + `resolveItem` (kanji-corpus resolve) are built and
-  tested standalone. *Remaining, and the next real step:* write the first
-  `Track.order()` (numbers/counters — including the `generative-rule` units that
-  have no normal entry) and swap the live counter scheduler onto `nextLesson`.
-  This is the largest, riskiest slice — it touches shipped lesson behavior — so it
-  is its own session.
+  *Status: ⚫ superseded, not adopted (SAK-117).* `planLesson` (pure core) +
+  `nextLesson` (history seam) + `resolveItem` (kanji-corpus resolve) were built
+  and tested standalone, and `numbersTrack()` (numbers-track.ts) was written
+  against them as the pilot `Track.order()`. The Stage-3 swap onto the live
+  counter scheduler never happened. Instead, `docs/perf-learn-bundle.md`'s Phase 1
+  solved cross-track scheduling a different way — a content-free precomputed
+  index (`learn-index.json`) walked by one frontier function
+  (`unit-scheduler-core.ts`) — and that IS what schedules `/learn` in production
+  today (client-side, and partly server-side as of SAK-116). `scheduler.ts` and
+  `resolve.ts` are kept only because `/dev/numbers` (a reference page) still
+  demonstrates their output; `ordered-track.ts` had no adopter at all, including
+  no dev page, and was deleted.
 
 - **Stage 4 — One `<Quiz>` shell and one `<EntryPage>`.** Collapse the 13 quiz
   screens to a shell + registered per-fact-kind renderers, and the ~7 library
@@ -234,28 +250,48 @@ These encode "consistency" so a future update can't silently drift:
 Nothing here is a from-scratch rewrite: it's introducing the shared seam, then
 moving tracks across it one at a time, each move deleting a fork.
 
+**Reality check (SAK-117):** the scheduler row above (`Track.order()` + shared
+`nextLesson` engine) is the one row of this table that did NOT happen as
+planned — see §6 and the Stage 3 status in §3. The other rows are unaffected by
+that: `LessonWalk`/registry-style collapse for the viewport and quiz/library
+layers is a separate, still-open goal.
+
 ---
 
 ## 6. Progress (branch `refactor/content-model`)
 
-The shared model and the one scheduler are built and tested in isolation. Nothing
-live imports `@/lib/content` yet — main is safe, and each piece landed as its own
-green commit.
+**Correction (SAK-117):** the claim below that "nothing live imports
+`@/lib/content` yet" is now false and has been for a while. Plenty of live
+code imports `item.ts`/`build-item.ts`/`fact.ts`/`meaning.ts`/`teach-unit.ts`
+from this directory — they're the model half, and they're load-bearing for the
+shipped numbers/counters content, `unit-tracks.ts`, `teach-unit.ts` consumers,
+and the `/dev/scheduling` + `/dev/views` reference pages. What's genuinely dead
+is narrower: the **scheduler half** (`scheduler.ts`, `resolve.ts`) is imported
+only by the `/dev/numbers` reference page (kept alive for that reason — dev
+pages are never deleted), and `ordered-track.ts` had no importer at all
+(deleted, SAK-117; see the superseded note in §3 Stage 3 above and
+`docs/perf-learn-bundle.md` for what actually shipped this goal in production).
+Each piece below still landed as its own green commit; the barrel `index.ts` in
+the table is itself unused (no non-comment importer, live or dev).
 
 `src/lib/content/`:
 
-| File | What it is | Tests |
-|---|---|---|
-| `fact.ts` | `Fact { id, kind }`; `FactKind = ResponseKind` via `jp2enResponse` (alias, not a new enum) | `fact.test.ts` |
-| `item.ts` | `ContentItem { entry, kind, glyph, facts, roles, prereqs }` — the keystone shape | — |
-| `build-item.ts` | `buildItem(entry, kind)` — derives facts (`factsOf`+`jp2enResponse`), roles (`characterRoles`), and prereq edges (`teachableParts`/kanji-in-glyph). An item is "whole" by construction | `build-item.test.ts` |
-| `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | `scheduler.test.ts` |
-| `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | `resolve.test.ts` |
-| `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | — |
-| `ordered-track.ts` | `orderedTrack(id, spec)` — turn a fixed (entry, kind) sequence into a Track, built through `buildItem` | `ordered-track.test.ts` |
-| `numbers-track.ts` | `unitItem(unit)` — a generative-rule unit as a ContentItem (buildItem on its category-fact entry + bespoke `UNIT_KANJI` prereqs). The numbers/counters pilot's novel half | `numbers-track.test.ts` |
-| `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | `registry.test.ts` |
-| `index.ts` | barrel |  |
+| File | What it is | Live/dev status | Tests |
+|---|---|---|---|
+| `fact.ts` | `Fact { id, kind }`; `FactKind = ResponseKind` via `jp2enResponse` (alias, not a new enum) | live | `fact.test.ts` |
+| `item.ts` | `ContentItem { entry, kind, glyph, facts, roles, prereqs }` — the keystone shape | live | — |
+| `build-item.ts` | `buildItem(entry, kind)` — derives facts (`factsOf`+`jp2enResponse`), roles (`characterRoles`), and prereq edges (`teachableParts`/kanji-in-glyph). An item is "whole" by construction | live | `build-item.test.ts` |
+| `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | superseded — only `/dev/numbers` (dev page) imports it | `scheduler.test.ts` |
+| `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | superseded — only `/dev/numbers` (dev page) imports it | `resolve.test.ts` |
+| `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | kept — the type `numbers-track.ts` implements | — |
+| `numbers-track.ts` | `unitItem(unit)` — a generative-rule unit as a ContentItem (buildItem on its category-fact entry + bespoke `UNIT_KANJI` prereqs). The numbers/counters pilot's novel half | live — feeds `unit-tracks.ts`'s "numbers" track (the real scheduling path) and the `/dev/numbers`, `/dev/views` dev pages | `numbers-track.test.ts` |
+| `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | unconsumed | `registry.test.ts` |
+| `index.ts` | barrel | unused (no non-comment importer) |  |
+
+`ordered-track.ts` (`orderedTrack(id, spec)` — turn a fixed (entry, kind)
+sequence into a Track, built through `buildItem`) was deleted in SAK-117: it had
+no importer anywhere, live, dev, or otherwise, beyond its own test and the dead
+barrel.
 
 **What's proven:** a number-as-word carries BOTH its meaning and its reading
 (the drop can't happen by construction); the engine emits prereqs before
@@ -263,26 +299,36 @@ dependents across tracks, gates chains past depth 3 (and the gate lifts as the
 tail is learned), fills to the floor without crossing the ceiling, and teaches a
 real due item out of an empty history.
 
-**The reusable toolkit is now complete** — model (`buildItem`), engine
+**The reusable toolkit was complete at the time** — model (`buildItem`), engine
 (`planLesson` / `nextLesson`), resolve (`resolveItem`), and the Track adapter
-(`orderedTrack`), each tested in isolation and composed on real data. There is no
-smaller safe/additive piece left; what remains is the integration.
+(`orderedTrack`), each tested in isolation and composed on real data. Step 4
+below (the live scheduler swap) never happened; `unit-scheduler-core.ts` +
+`learn-index.json` (`perf-learn-bundle.md` Phase 1) solved live scheduling
+first, a different way, making this swap moot. `orderedTrack` itself was never
+adopted by anything (dev page or production) and was deleted in SAK-117.
 
-**Numbers/counters pilot — in progress.** Building the track from the real
-`counter-lesson.ts` curriculum, one committed slice at a time:
+**Numbers/counters pilot — the model half landed, the scheduler swap did not.**
+Built off the real `counter-lesson.ts` curriculum, one committed slice at a time:
 
 1. ✅ `unitItem` — the generative-rule units (the part `buildItem` can't make).
 2. ✅ `formItem` — the entry-backed forms (`〜つ` natives + the `二十歳` tail),
    wholly `buildItem`'s job off `counterEntry(form)`.
 3. ✅ `numbersTrack()` — walks the same `SCHEDULE` (exported from
    `counter-lesson`), maps each step through `formItem`/`unitItem`, splices the
-   Sino numbers in as first-class number items, and runs end to end through
-   `nextLesson` (opens on ひとつ from an empty history).
-4. ☐ swap the live counter scheduler onto `nextLesson` under the fact-set guard.
+   Sino numbers in as first-class number items. Originally run through
+   `nextLesson` for standalone testing (opens on ひとつ from an empty history);
+   in production it is instead walked directly by `unit-tracks.ts`'s "numbers"
+   track (`numbersTrack().order(h)`, no `scheduler.ts`/`resolve.ts` involved) —
+   that's the live path, feeding `learn-index.json` and `/dev/scheduling`.
+4. ⚫ Abandoned: swapping the live counter scheduler onto `nextLesson` under the
+   fact-set guard. Superseded by the `unit-scheduler-core.ts` frontier walk
+   (`perf-learn-bundle.md` Phase 1), which schedules `/learn` in production
+   today instead.
 
-Note: because `SCHEDULE` interleaves forms and units, this track walks
-`formItem`/`unitItem` directly rather than `orderedTrack` — `orderedTrack` stays
-the tool for pure entry-list tracks (words, a grammar syllabus).
+Note: because `SCHEDULE` interleaves forms and units, this track walked
+`formItem`/`unitItem` directly rather than the now-deleted `orderedTrack`, which
+was meant to be the tool for pure entry-list tracks (words, a grammar syllabus)
+but never got an adopter either.
 
 **Reconciliations for step 4 (the swap):**
 - ✅ **Cost.** Settled with a shared, fact-derived `itemCost` (cost.ts) — one
