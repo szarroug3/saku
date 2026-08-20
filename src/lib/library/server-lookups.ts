@@ -538,6 +538,9 @@ function isCountingNumberEntry(entry: EntryId): boolean {
   return form !== undefined && isBareNumber(form);
 }
 
+// Not exported: this is a "use server" file, and Next only allows async
+// function exports from one (a plain const export would break the build).
+// by-subject.tsx's SUBJECT_LABEL duplicates these same 4 literal ids.
 const COUNTING_NUMBERS_ID = "counting-numbers";
 const COUNTING_COUNTERS_ID = "counting-counters";
 const KANA_HIRAGANA_ID = "kana-hiragana";
