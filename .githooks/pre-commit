@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-commit gate: the two checks CI's "check" job runs FIRST (type-check,
+# lint), so a bad commit fails locally in ~30s instead of red on GitHub a
+# minute later. Deliberately NOT the whole check job (unit tests, corpus
+# audit, build) -- those take minutes, and CI still runs them on push; this
+# hook exists to catch the fast, common case before it ever leaves the
+# machine.
+#
+# Wired in via `git config core.hooksPath .githooks` (see README/setup) --
+# .git/hooks/ isn't version-controlled, so the hook has to live here to be
+# shared across clones at all.
+
+set -e
+
+echo "pre-commit: type-check..."
+pnpm run type-check
+
+echo "pre-commit: lint..."
+pnpm exec eslint src
+
+echo "pre-commit: OK"
