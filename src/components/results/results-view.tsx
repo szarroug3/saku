@@ -13,7 +13,7 @@
 // NOTHING HERE WRITES SETTINGS. Results are shown as correct or not — a retry
 // that landed counts the same as landing cold.
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { FactProgressSection } from "@/components/results/fact-progress";
 import { PatternSection } from "@/components/results/pattern-rows";
@@ -31,9 +31,12 @@ import { pairEntries } from "@/lib/confusions";
 import { analyzeRun } from "@/lib/confusions";
 import { pairRecentRuns } from "@/lib/confusions";
 import type { PairRow } from "@/lib/confusions";
-import { weakestFacts } from "@/lib/decks";
-import { entryOf } from "@/lib/facts";
-import { factsOf } from "@/lib/facts";
+import {
+  resolveFactInfos,
+  resolveFactsOfEntries,
+  resolveWeakestFacts,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistoryWrites } from "@/lib/history-writes";
@@ -43,9 +46,13 @@ import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import { SOLID_PCT, standingOf } from "@/lib/library/standing";
 import { addClearedFact } from "@/components/results/clear-state";
-import type { FactId, QuizMode } from "@/types";
+import type { EntryId, FactId, FactInfo, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
+const EMPTY_FACT_IDS: readonly FactId[] = [];
+const EMPTY_ENTRY_IDS: readonly EntryId[] = [];
+const EMPTY_FACT_INFO_MAP: Record<string, FactInfo> = {};
+const EMPTY_FACTS_OF_MAP: Record<string, FactId[]> = {};
 
 function pctOf(runs: boolean[]): number {
   if (!runs.length) return 0;
@@ -106,16 +113,42 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     () => historyBefore(history, results.ts),
     [history, results.ts],
   );
+  // SAK-104: lib/facts.ts's entryOf is a guarded dictionary read, injected
+  // into analyzeRun/pairRecentRuns below exactly the way lib/confusions.ts's
+  // own `EntryOf` type is built for (see its header comment) — so the fix is
+  // to batch-resolve it, not to restructure those functions. The full set of
+  // facts either function can ever ask about is bounded by what's already in
+  // `history` (this run's own `stats` plus every past session's recorded
+  // `detail`, both keyed by FactId — see SessionStats/QuizSessionRecord),
+  // fetched once here and read synchronously through `localEntryOf` — the
+  // same fallback lib/facts.ts documents (an id this run doesn't recognise
+  // answers as itself).
+  const allFactIds = useMemo(() => {
+    const set = new Set<FactId>();
+    for (const f of Object.keys(stats)) set.add(f as FactId);
+    for (const s of history.sessions) {
+      if (s.detail) for (const f of Object.keys(s.detail)) set.add(f as FactId);
+    }
+    return set.size ? [...set] : EMPTY_FACT_IDS;
+  }, [stats, history]);
+  const factInfoMap =
+    useServerLookup(resolveFactInfos, [allFactIds]) ?? EMPTY_FACT_INFO_MAP;
+  const localEntryOf = useCallback(
+    (id: FactId): EntryId =>
+      factInfoMap[id as unknown as string]?.entry ?? (id as unknown as EntryId),
+    [factInfoMap],
+  );
+
   const analysis = useMemo(
     () =>
       summaryOnly
         ? EMPTY_ANALYSIS
         : analyzeRun(stats, history, {
             graduateRuns,
-            entryOf,
+            entryOf: localEntryOf,
             excludeTs: results.ts,
           }),
-    [stats, history, graduateRuns, results.ts, summaryOnly],
+    [stats, history, graduateRuns, results.ts, summaryOnly, localEntryOf],
   );
   // Compute pair runs for all progress rows once, then filter and reuse.
   // This avoids calling pairRecentRuns twice per row (once to filter visibility,
@@ -136,14 +169,14 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           row.key,
           [
             ...pairRecentRuns(history, row.key, {
-              entryOf,
+              entryOf: localEntryOf,
               excludeTs: results.ts,
             }),
             true,
           ].slice(-10),
         ]),
       ),
-    [analysis.progress, history, results.ts],
+    [analysis.progress, history, results.ts, localEntryOf],
   );
 
   const facts = useMemo(() => deriveRun(results), [results]);
@@ -161,10 +194,9 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   //   2. Date.now() in a render is not a pure render. This one is a prop of the
   //      payload, so the screen is a function of its input and nothing here
   //      needs a clock at all.
-  const weakest = useMemo(
-    () => weakestFacts(prior, results.ts, 20),
-    [prior, results.ts],
-  );
+  const weakest: FactId[] = [
+    ...(useServerLookup(resolveWeakestFacts, [prior, results.ts, 20]) ?? EMPTY_FACT_IDS),
+  ];
 
   // The heaviest record on screen, so an improving row can say what the pair
   // was before it started getting better.
@@ -256,9 +288,13 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
   const [clearedProgressFacts, setClearedProgressFacts] = useState<Set<FactId>>(new Set());
 
-  const clearNow = (key: string) => {
+  const clearNow = async (key: string) => {
     const [a, b] = pairEntries(key);
-    const facts = [...new Set([...factsOf(a), ...factsOf(b)])];
+    // SAK-104: factsOf reads lib/facts.ts (server-only). This is an event
+    // handler, not a render, so a live round trip costs nothing a click
+    // wasn't already going to wait on.
+    const resolved = await resolveFactsOfEntries([a, b]);
+    const facts = [...new Set([...(resolved[a] ?? []), ...(resolved[b] ?? [])])];
     if (facts.length) writes.claim(facts);
     const row = analysis.progress.find((r) => r.key === key);
     const runs = allProgressPairRuns.get(key);
@@ -330,14 +366,29 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     return rows;
   }, [analysis.progress, allProgressPairRuns, clearedProgressPairs]);
 
+  // The pair-progress board's own on-screen rows are the whole bounded set —
+  // batch every entry they name in one round trip rather than one per row.
+  const pairProgressEntryIds = useMemo(() => {
+    const set = new Set<EntryId>();
+    for (const row of visiblePairProgressRows) {
+      const [a, b] = pairEntries(row.key);
+      set.add(a);
+      set.add(b);
+    }
+    return set.size ? [...set] : EMPTY_ENTRY_IDS;
+  }, [visiblePairProgressRows]);
+  const pairFactsMap =
+    useServerLookup(resolveFactsOfEntries, [pairProgressEntryIds]) ?? EMPTY_FACTS_OF_MAP;
   const progressPairFacts = useMemo(() => {
     const out = new Map<string, FactId[]>();
     for (const row of visiblePairProgressRows) {
       const [a, b] = pairEntries(row.key);
-      out.set(row.key, [...new Set([...factsOf(a), ...factsOf(b)])]);
+      const af = pairFactsMap[a as unknown as string] ?? [];
+      const bf = pairFactsMap[b as unknown as string] ?? [];
+      out.set(row.key, [...new Set([...af, ...bf])]);
     }
     return out;
-  }, [visiblePairProgressRows]);
+  }, [visiblePairProgressRows, pairFactsMap]);
 
   const progressPairRuns = useMemo(() => {
     const out = new Map<string, boolean[]>();

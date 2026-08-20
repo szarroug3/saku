@@ -39,9 +39,22 @@ import Link from "next/link";
 
 import { Card, Lbl } from "@/components/ui";
 import type { Recipe } from "@/data/grammar/recipes";
-import { entryHref } from "@/lib/library/href";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { entryId } from "@/lib/fact-id";
 import { hasKanji } from "@/lib/romaji";
-import { patternEntry } from "@/lib/library/library-index";
+import { resolveHrefs } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
+import type { EntryId } from "@/types";
+
+// SAK-104: patternEntry (library-index.ts) is a pure re-export of
+// `entryId(GRAMMAR_SUBJECT, recipeId)` — no dictionary read at all, just
+// bundled inside a guarded file. Rebuilt here off the same unguarded pieces
+// (data/grammar/index.ts's own GRAMMAR_SUBJECT, fact-id.ts's entryId) so this
+// table doesn't need a round trip just to mint the id; only entryHref's own
+// source-data-backed slug lookup (below) needs one.
+function patternEntry(recipeId: string): EntryId {
+  return entryId(GRAMMAR_SUBJECT, recipeId);
+}
 
 /** One family member's built form plus its reading, when the build has one
  * (SAK-33) — see BuiltRow.builtReading in lib/grammar/build.ts. Exported so
@@ -119,6 +132,8 @@ export function PatternFamily({
   /** Exact buildRow output, computed by the seed/live adapter. */
   builtById: Readonly<Record<string, FamilyBuild>>;
 }) {
+  const entryIds = members.map((r) => patternEntry(r.id));
+  const hrefs = useServerLookup(resolveHrefs, [entryIds]) ?? {};
   return (
     <Card>
       <Lbl>Ways to say this</Lbl>
@@ -153,7 +168,7 @@ export function PatternFamily({
                       <span className="text-accent">{r.pattern}</span>
                     ) : (
                       <Link
-                        href={entryHref(patternEntry(r.id))}
+                        href={hrefs[patternEntry(r.id) as unknown as string] ?? "#"}
                         className="text-text no-underline"
                       >
                         {r.pattern}

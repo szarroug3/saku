@@ -42,18 +42,24 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  GRAMMAR_CONCEPT_SUBJECT,
-  SENTENCE_RULE_KIND,
-} from "@/lib/library/library-index";
 import { KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT } from "@/lib/library/library-index";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { entryHref } from "@/lib/library/href";
+import { getEntryHref } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";
+
+// SAK-104: GRAMMAR_SUBJECT/GRAMMAR_CONCEPT_SUBJECT/SENTENCE_RULE_KIND used to
+// come from the server-only library-index.ts, which re-declared them as pure
+// literals so callers wouldn't need data/grammar/index.ts or
+// data/grammar-concepts.ts (both of which drag in vocab.ts through unrelated
+// dependencies — see that file's own comments). Re-declared here too, one
+// more remove from the source of truth but still byte-identical literals.
+const GRAMMAR_SUBJECT = "grammar";
+const GRAMMAR_CONCEPT_SUBJECT = "grammar-concept";
+const SENTENCE_RULE_KIND = "sentence-rule";
 import {
   EntryRow,
   EntryTile,
@@ -74,13 +80,11 @@ import type { EntryId } from "@/types";
  * math that reads it live in @/lib/library/shelf-view so they can be unit-tested;
  * this file only builds and renders them. */
 
-/** The sections of a shelf — the actual cut logic now lives in
- * @/lib/library/shelf-sections, a plain data module with no React import edge,
- * so group-nav.ts (and its node:test suite, which cannot resolve a .tsx module)
- * can depend on it without pulling this component along. Re-exported here so
- * every existing caller of `shelves.tsx`'s `shelfSections` keeps working
- * unchanged. */
-export { shelfSections } from "@/lib/library/shelf-sections";
+/** The sections of a shelf — the actual cut logic lives in
+ * @/lib/library/shelf-sections, a plain data module with no React import edge.
+ * SAK-104: that module is only safely importable from a Server Component (it
+ * reads the server-only library-index.ts), so it is no longer re-exported from
+ * this "use client" file — every caller now imports it directly. */
 
 /**
  * Defer a heavy section body until it is near the viewport, then mount it ONCE.
@@ -230,7 +234,7 @@ export function Shelf({
       lead={entry.glyph}
       gloss={entry.meanings.slice(0, 3).join(", ") || entry.sub}
       note={entry.sub}
-      href={entryHref(entry.id)}
+      id={entry.id}
       selectMode={selectMode}
       select={{
         selected: selected.has(entry.id),
@@ -533,20 +537,24 @@ function GrammarShelfRow({
   lead,
   gloss,
   note,
-  href,
+  id,
   select,
   selectMode = false,
 }: {
   lead: string;
   gloss: string;
   note?: string;
-  href: string;
+  /** SAK-104: entryHref reads the server-only index, so this row resolves its
+   * own href via a Server Action instead of taking one as a prop. Renders with
+   * a "#" href for the one tick before it resolves. */
+  id: EntryId;
   select?: { selected: boolean; onToggle: (shiftKey: boolean) => void };
   /** Whether a plain click currently toggles selection (true) or opens the
    * entry (false, the default). Only meaningful when `select` is given — a
    * cluster-map row with no `select` at all always opens, mode or not. */
   selectMode?: boolean;
 }) {
+  const href = useServerLookup(getEntryHref, [id]) ?? "#";
   // The row's own layout — a subgrid band of the shared GRAMMAR_ROWS grid — on
   // top of the shared ShelfRow shell (accent hover + selected wash, hairline, the
   // whole-row select target with no checkbox). The pl-6/pr-3 horizontal inset

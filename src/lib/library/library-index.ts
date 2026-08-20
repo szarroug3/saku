@@ -1,3 +1,5 @@
+import "server-only";
+
 // LIBRARY INDEX LOADER — the content-free list/search path for /library.
 //
 // Reads the precomputed index (library-index.json) instead of importing
@@ -107,37 +109,11 @@ export function factsOf(entry: EntryId): FactId[] {
   return [...(INDEX.entryFacts[entry as unknown as string] ?? [])];
 }
 
-/** True for the canonical word-anchored kanji reading facts. The generated map
- * is serialized from the live READINGS registry, so this is the content-free
- * twin of word-unlock.ts's READING_INDEX membership check. */
-export function isReadingFact(fact: FactId): boolean {
-  return INDEX.readingProofFacts[fact as unknown as string] !== undefined;
-}
-
-/** Claimable Library facts, with word-anchored kanji readings removed. */
-export function claimableFacts(facts: readonly FactId[]): FactId[] {
-  return facts.filter((fact) => !isReadingFact(fact));
-}
-
-/** Library quiz facts, applying the same learned-multi-part-word gate as the
- * live word-unlock implementation without loading its dictionary-backed index. */
-export function quizzableFacts(
-  facts: readonly FactId[],
-  history: HistoryFile,
-): FactId[] {
-  return facts.filter((fact) => {
-    const proofs = INDEX.readingProofFacts[fact as unknown as string];
-    if (proofs === undefined) return true;
-    return proofs.some((proof) => {
-      const state = effectiveState(
-        history.facts[proof],
-        history.claims?.[proof],
-        history.seen?.[proof],
-      );
-      return state.lastTested > 0;
-    });
-  });
-}
+/** True for the canonical word-anchored kanji reading facts — re-exported from
+ * reading-proof-facts.ts, which now owns this and the two functions below (see
+ * that file's header: SAK-104 split it out to its own small generated JSON so
+ * slice-bar.tsx doesn't need the whole guarded index for it). */
+export { isReadingFact, claimableFacts, quizzableFacts } from "@/lib/library/reading-proof-facts";
 
 /** A sentence-ordering tier's id/label — enough to LIST a shelf row. The full
  * tier (patterns, gates) is content; fetch it via a dynamic

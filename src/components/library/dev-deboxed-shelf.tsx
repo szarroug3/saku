@@ -19,7 +19,6 @@
 // key shelves.tsx uses.
 
 import { useState } from "react";
-import Link from "next/link";
 
 import { HearButton } from "@/components/ui/hear-button";
 import { Hint, Lbl } from "@/components/ui";
@@ -36,7 +35,7 @@ import {
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
-import { entryHref } from "@/lib/library/href";
+import { EntryLink } from "@/components/library/entry-link";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
 import { sectionState, type Selection } from "@/lib/library/selection";
@@ -284,14 +283,14 @@ function DeboxedTile({
           stopPropagation
           label={`Hear ${entryName(entry)}`}
         />
-        <Link
-          href={entryHref(entry.id)}
+        <EntryLink
+          id={entry.id}
           onClick={(e) => e.stopPropagation()}
-          aria-label={`Open ${entryName(entry)}`}
+          ariaLabel={`Open ${entryName(entry)}`}
           className="inline-flex size-5 items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline hover:text-text"
         >
           ↗
-        </Link>
+        </EntryLink>
       </div>
     </div>
   );
@@ -352,14 +351,14 @@ function DeboxedRow({
         </span>
       ) : null}
       <span className="min-w-0 flex-1 truncate text-[13px]">{meaning}</span>
-      <Link
-        href={entryHref(entry.id)}
+      <EntryLink
+        id={entry.id}
         onClick={(e) => e.stopPropagation()}
-        aria-label={`Open ${entryName(entry)}`}
+        ariaLabel={`Open ${entryName(entry)}`}
         className="inline-flex size-5 flex-none items-center justify-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
       >
         ↗
-      </Link>
+      </EntryLink>
     </div>
   );
 }

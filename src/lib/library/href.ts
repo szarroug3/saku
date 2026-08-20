@@ -1,3 +1,5 @@
+import "server-only";
+
 // An entry's URL.
 //
 // WHY IT IS /library/kanji/生 AND NOT /library/生

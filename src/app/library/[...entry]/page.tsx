@@ -1,16 +1,13 @@
-"use client";
-
 // One entry, opened up — on the content model.
 //
-// This page is now a THIN DISPATCH: it resolves the URL to a library entry, draws
-// the breadcrumb, hands the entry to the one redesigned view for its kind (the
-// SAME components /dev/views is built from and the lesson walk renders), and puts
-// the shared action bar (Drill / Add to list) beneath. Every per-kind layout,
-// header, standing chip and links footer that used to live here now lives inside
-// the kind's own *-entry-view; there is one description of each page, and it is
-// the component.
+// SAK-104: this page resolves the URL to a library entry, the breadcrumb and
+// the group-nav neighbours SERVER-SIDE (library-index.ts/href.ts are
+// server-only — the ~9.5MB dictionary they read from must never reach a client
+// bundle) and hands the already-resolved, already-serializable pieces down to
+// EntryView, a Client Component that keeps only what's genuinely interactive
+// (useHistory, the claim/unclaim actions). See entry-view.tsx for what moved.
 //
-// WHAT MOVED OUT, AND WHERE IT WENT
+// WHAT MOVED OUT, AND WHERE IT WENT (unchanged from the prior file header)
 // =================================
 //  - the glyph/reading/standing header       → each view's ContentEntryHeader
 //  - kana mnemonic + context + confusables    → KanaEntryView
@@ -26,42 +23,17 @@
 // lone "Quiz me" when the entry is quizzable, nothing otherwise). The data-sources
 // acknowledgement is no longer per-page; it lives in the global sidebar.
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { use, useState } from "react";
 
-import { CharacterEntryView } from "@/components/library/character-entry-view";
-import { CounterEntryView } from "@/components/library/counter-entry-view";
-import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
-import { GrammarEntryView } from "@/components/library/grammar-entry-view";
-import { KanaEntryView } from "@/components/library/kana-entry-view";
-import { KeigoEntryView } from "@/components/library/keigo-entry-view";
-import { MarkEntryView } from "@/components/library/mark-entry-view";
-import { SentenceEntryView } from "@/components/library/sentence-entry-view";
-import { SliceBar } from "@/components/library/slice-bar";
-import { TermEntryView } from "@/components/library/term-entry-view";
-import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
-import { FlatSurfaceProvider } from "@/components/ui";
 import {
-  COUNTER_KIND,
   entryName,
-  GRAMMAR_CONCEPT_SUBJECT,
-  GRAMMAR_SUBJECT,
-  KANJI_SUBJECT,
   KIND_LABEL,
   libEntry,
-  MARK_SUBJECT,
-  NUMBER_CONSTRUCTION_KIND,
-  SENTENCE_RULE_KIND,
   shelfKindOf,
-  VOCAB_SUBJECT,
 } from "@/lib/library/library-index";
-import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { groupNeighbors } from "@/lib/library/group-nav";
-import { postClaim } from "@/lib/progress-fetch";
-import { useHistory } from "@/lib/use-history";
-import type { FactId } from "@/types";
+import { EntryView } from "@/components/library/entry-view";
 
 /**
  * ONE CATCH-ALL ROUTE FOR TWO URL SHAPES — a readable two-segment URL
@@ -72,186 +44,37 @@ import type { FactId } from "@/types";
  * undefined for a stranger, and a URL outlives the data it names, so a miss is a
  * 404 rather than an empty page.
  */
-export default function EntryPage({ params }: { params: Promise<{ entry: string[] }> }) {
-  const { entry: path } = use(params);
+export default async function EntryPage({
+  params,
+}: {
+  params: Promise<{ entry: string[] }>;
+}) {
+  const { entry: path } = await params;
   const id =
     path.length === 2 ? entryFromSlug(path[0], path[1]) : entryFromParam(path[0] ?? "");
   const entry = id ? libEntry(id) : undefined;
   if (!entry) notFound();
-  return <EntryView entry={entry} />;
-}
 
-function EntryView({ entry }: { entry: IndexLibEntry }) {
-  const { history, loaded: historyLoaded, refresh } = useHistory();
-  const [now] = useState(() => Date.now());
-  const claims = history.claims ?? {};
-
-  const claim = async (ids: FactId[]) => {
-    // postClaim routes a signed-out claim (401) into this browser's local history;
-    // refresh() re-reads whichever store answered.
-    await postClaim(ids, true);
-    await refresh();
-  };
-
-  // SAK-61: "mark as not known" — the inverse of `claim` above, through the
-  // exact same postClaim/refresh path with `known: false`. That flag is what
-  // routes the write to dropClaims/applyDropClaims (see src/app/api/claim's
-  // route and src/lib/history-ops.ts): there is no separate unclaim write to
-  // invent, only the existing claim mechanism's own inverse.
-  const unclaim = async (ids: FactId[]) => {
-    await postClaim(ids, false);
-    await refresh();
-  };
-
-  return (
-    <FlatSurfaceProvider>
-      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom) plus mt-auto
-          on the SliceBar wrapper below: a flex-column sticky footer, scoped
-          to THIS column, not the viewport. A short entry (a two-line word)
-          gets its Quiz me pushed to the bottom of the column instead of
-          stranded right under the content with a dead gap below it; a long
-          entry just gets an ordinary footer after its last line, the same as
-          before. See slice-bar.tsx for why this isn't `fixed inset-x-0`. */}
-      <div className="flex min-h-[calc(100vh-3rem)] flex-col">
-        <div>
-          <p className="mb-3 text-[11.5px] text-text-muted">
-            <Link href="/library" className="text-text-muted no-underline">
-              Library
-            </Link>
-            {" › "}
-            {/* `shelfKindOf`, not `entry.kind`: a construction page browses on
-                the counters shelf, so its crumb links there. Every other kind
-                maps to itself. */}
-            <Link
-              href={`/library?kind=${shelfKindOf(entry.kind)}`}
-              className="text-text-muted no-underline"
-            >
-              {KIND_LABEL[shelfKindOf(entry.kind)]}
-            </Link>
-            {" › "}
-            {entryName(entry)}
-          </p>
-
-          <GroupNav entry={entry} />
-
-          <EntryBody entry={entry} />
-        </div>
-
-        <div className="mt-auto pt-5">
-          <SliceBar
-            variant="entry"
-            slice={{ label: entryName(entry), entries: [entry.id] }}
-            showLabel={false}
-            // The committed aggregate on purpose: the bar plans a drill, which
-            // is a query over what you durably know, not the run you are in.
-            facts={history.facts}
-            claims={claims}
-            history={history}
-            now={now}
-            onClaim={claim}
-            onUnclaim={unclaim}
-            progressReady={historyLoaded}
-          />
-        </div>
-      </div>
-    </FlatSurfaceProvider>
-  );
-}
-
-/**
- * Prev/next within THIS ENTRY'S GROUP — the same section the Library shelf
- * would show it under (HIRAGANA · VOWELS, a kanji hundred, a word range, …),
- * not the whole shelf and not the whole Library. See group-nav.ts for how a
- * group and its order are decided — reusing exactly the cut `shelfSections`
- * already makes, never a second description of it.
- *
- * EDGES DO NOT WRAP: the first/last item in a group simply has no control on
- * that side, rather than looping to the group's other end (see group-nav.ts's
- * file header for why). The whole bar disappears when there is nothing to
- * move to either side — a lone-entry group, or a kind this route cannot place
- * in any section.
- *
- * NO BARE RANGE LABELS: a radical/word/primitive range ("1–50") or a
- * non-`grade` kanji hundred names which GROUP_SIZE-wide bucket the entry
- * happens to fall in, not anything about the entry — useful as the shelf
- * page's select-all header, meaningless as a heading on the entry's own page.
- * `groupNeighbors` flags these via `isRangeLabel`, so only the label itself is
- * suppressed — prev/next still move you through the same group either way,
- * so the bar stays as long as there is somewhere to move to.
- */
-function GroupNav({ entry }: { entry: IndexLibEntry }) {
+  const kind = shelfKindOf(entry.kind);
   const { groupLabel, isRangeLabel, prev, next } = groupNeighbors(entry);
-  if (!prev && !next) return null;
-  return (
-    <nav
-      aria-label={groupLabel ? `${groupLabel} navigation` : "Nearby entries"}
-      className="mb-4 flex items-center justify-between gap-3 text-[13px]"
-    >
-      {prev ? (
-        <Link
-          href={entryHref(prev.id)}
-          className="min-w-0 truncate text-text no-underline"
-        >
-          ‹ {entryName(prev)}
-        </Link>
-      ) : (
-        <span aria-hidden="true" />
-      )}
-      {groupLabel && !isRangeLabel ? (
-        <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-text-muted">
-          {groupLabel}
-        </span>
-      ) : (
-        <span aria-hidden="true" />
-      )}
-      {next ? (
-        <Link
-          href={entryHref(next.id)}
-          className="min-w-0 truncate text-right text-text no-underline"
-        >
-          {entryName(next)} ›
-        </Link>
-      ) : (
-        <span aria-hidden="true" />
-      )}
-    </nav>
-  );
-}
 
-/**
- * The one redesigned view for this entry's precomputed kind. Every branch takes
- * the entry id; each view either fetches its seeded payload or reads its small,
- * content-light source data. The live registries are deliberately absent here.
- */
-function EntryBody({ entry }: { entry: IndexLibEntry }) {
-  switch (entry.kind) {
-    case "kana":
-      return <KanaEntryView entry={entry.id} />;
-    // A single Han glyph is ONE cohesive character item across every role it plays.
-    // Its seeded payload contains buildGlyphItem's exact output whichever role id
-    // opened it; multi-character words carry buildItem's exact word output.
-    case KANJI_SUBJECT:
-    case "radical":
-    case VOCAB_SUBJECT:
-      return <CharacterEntryView entry={entry.id} />;
-    case COUNTER_KIND:
-    case NUMBER_CONSTRUCTION_KIND:
-      return <CounterEntryView entry={entry.id} />;
-    case "keigo":
-      return <KeigoEntryView entry={entry.id} />;
-    case "transitivity":
-      return <VerbPairEntryView entry={entry.id} />;
-    case GRAMMAR_SUBJECT:
-      return <GrammarEntryView entry={entry.id} />;
-    case GRAMMAR_CONCEPT_SUBJECT:
-      return <GrammarConceptEntryView entry={entry.id} />;
-    case SENTENCE_RULE_KIND:
-      return <SentenceEntryView entry={entry.id} />;
-    case MARK_SUBJECT:
-      return <MarkEntryView entry={entry.id} />;
-    case "term":
-      return <TermEntryView entry={entry.id} />;
-    default:
-      return null;
-  }
+  return (
+    <EntryView
+      entryId={entry.id}
+      entryKind={entry.kind}
+      entryName={entryName(entry)}
+      breadcrumbKindHref={`/library?kind=${kind}`}
+      breadcrumbKindLabel={KIND_LABEL[kind]}
+      groupNav={
+        prev || next
+          ? {
+              groupLabel,
+              isRangeLabel,
+              prev: prev ? { href: entryHref(prev.id), name: entryName(prev) } : null,
+              next: next ? { href: entryHref(next.id), name: entryName(next) } : null,
+            }
+          : null
+      }
+    />
+  );
 }

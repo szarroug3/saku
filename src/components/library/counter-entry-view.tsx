@@ -62,8 +62,8 @@ import {
   numberConstructionForCounterGlyph,
 } from "@/data/number-construction";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { entryHref } from "@/lib/library/href";
-import { libEntry } from "@/lib/library/library-index";
+import { getEntryHref, getLibEntry } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import type { EntryId } from "@/types";
@@ -86,7 +86,13 @@ export function CounterEntryView({
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
+  // SAK-104: libEntry/entryHref live in server-only modules now, so the
+  // fallback glyph lookup and the related-construction href are fetched
+  // instead of imported. Both are called unconditionally (React hook rules) —
+  // skipped (null args) once `item` already supplies the glyph directly, or
+  // there's no related construction to link.
+  const fetchedEntry = useServerLookup(getLibEntry, item ? null : [resolvedEntry]);
+  const glyph = item ? item.glyph : fetchedEntry?.glyph;
 
   // The item is EITHER a counted form OR a construction rule; the two lookups are
   // mutually exclusive on a given entry (a form entry names no rule, and a rule
@@ -102,9 +108,14 @@ export function CounterEntryView({
   // numberConstructionForCounterGlyph's own doc comment).
   const relatedConstruction =
     form && !isBareNumber(form) ? numberConstructionForCounterGlyph(form.counter) : undefined;
-  const relatedLinks: RelatedLink[] = relatedConstruction
-    ? [{ label: relatedConstruction.name, href: entryHref(numberConstructionEntry(relatedConstruction.id)) }]
-    : [];
+  const relatedHref = useServerLookup(
+    getEntryHref,
+    relatedConstruction ? [numberConstructionEntry(relatedConstruction.id)] : null,
+  );
+  const relatedLinks: RelatedLink[] =
+    relatedConstruction && relatedHref
+      ? [{ label: relatedConstruction.name, href: relatedHref }]
+      : [];
 
   if (headline === undefined || headline === null || !glyph) return null;
   if (!form && !construction) return null;

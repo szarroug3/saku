@@ -39,8 +39,15 @@ import { TeachItemView } from "@/components/session/teach-item-view";
 import { TermEntryView } from "@/components/library/term-entry-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { FlatSurfaceProvider } from "@/components/ui";
-import { lessonSteps } from "@/lib/lesson-steps";
+import { resolveLessonSteps } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
+import type { LessonStep } from "@/lib/lesson-steps";
 import type { FactId, HistoryFile } from "@/types";
+
+/** A stable empty step list — same "loading reads as nothing" contract as
+ * server-lookups.ts's other undefined-while-loading fetches, and a shared
+ * reference so a still-loading walk doesn't re-render on every poll. */
+const EMPTY_STEPS: readonly LessonStep[] = [];
 
 export function TeachWalk({
   facts,
@@ -73,10 +80,14 @@ export function TeachWalk({
   // lesson with no card produces exactly the item list this used to hold, so
   // everything below — Back/Next, the last-card "Quiz me", the HUD's count —
   // works unchanged for the phases that have none.
-  const steps = useMemo(
-    () => lessonSteps(facts, history, shownIntros),
-    [facts, history, shownIntros],
-  );
+  // SAK-104: lessonSteps reads guarded dictionaries transitively
+  // (itemsFromFacts → lib/facts.ts, plus its own kanji/vocab imports), so the
+  // step list now comes from one batched Server Action call per teach set
+  // instead of a synchronous useMemo. `shownIntros` (a Set) is flattened to
+  // an array to cross the action boundary — see resolveLessonSteps.
+  const introsArgs = useMemo(() => [...(shownIntros ?? [])], [shownIntros]);
+  const steps =
+    useServerLookup(resolveLessonSteps, [facts, history, introsArgs]) ?? EMPTY_STEPS;
   const at = Math.min(step, steps.length - 1);
   const current = steps[at];
   // "Seen before" is a fact about material you've met. A concept card is not

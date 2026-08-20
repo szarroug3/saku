@@ -20,34 +20,41 @@ import {
 
 import { EntryRow } from "@/components/library/entry-tile";
 import { FilterDropdown } from "@/components/library/filter-dropdown";
-import { Shelf, shelfSections } from "@/components/library/shelves";
+import { Shelf } from "@/components/library/shelves";
 import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
 import { markFor } from "@/data/marks";
-import { activeWeaknessPairs } from "@/lib/confusions";
+// SAK-104: the raw index/search functions used to be a bundled import; this
+// page still legitimately needs the whole thing (it is the library's own
+// search-as-you-type + browse-everything reference view), so the DATA now
+// arrives through these Server Actions instead — see server-lookups.ts's
+// "LIBRARY BROWSE/SEARCH" section for the full design note. The Known/Not-
+// known/standing FILTER (`keep`, below) stays exactly the client-side
+// predicate it always was; it just reads `entry.knownFacts` (attached by the
+// action) instead of calling the now-guarded `knownFactsOf`.
 import {
-  KIND_LABEL,
-  KINDS,
-  knownFactsOf,
-  LIB_ENTRIES,
-  LIB_ENTRIES_BY_KIND,
-  factEntryOf,
-} from "@/lib/library/library-index";
-import type { Kind, LibEntry } from "@/lib/library/entries";
-import { search, searchByType } from "@/lib/library/search";
+  getActiveMixupEntries,
+  getEverythingSlice,
+  getLibraryShelves,
+  getSelectionSlice,
+  searchLibraryByType,
+  searchLibraryOneKind,
+  type BrowseEntry,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
+import { KIND_LABEL, KINDS, type Kind } from "@/lib/library/kinds";
+import type { LibEntry } from "@/lib/library/entries";
 import { allTabBrowseKinds } from "@/lib/library/all-tab";
 import {
   addRange,
   EMPTY_SELECTION,
-  selectionSlice,
   toggleEntry as toggleEntryIn,
   toggleSection as toggleSectionIn,
   type Selection,
 } from "@/lib/library/selection";
-import { standingOf, type Standing } from "@/lib/library/standing";
-import { isEntryKnownForDisplay } from "@/lib/library/known-mark";
+import { entryIsKnown, entryStanding, standingOf, type Standing } from "@/lib/library/standing";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import type { Claims } from "@/lib/claims";
 import {
@@ -111,18 +118,21 @@ function statusPredicate(
   claims: Claims,
   now: number,
   activeMixupEntries: ReadonlySet<string>,
-): (entry: LibEntry) => boolean {
+): (entry: BrowseEntry) => boolean {
   if (value === "known" || value === "unknown") {
     const wantKnown = value === "known";
+    // isEntryKnownForDisplay's exact chain (known-mark.ts), just reading the
+    // fetched knownFacts field instead of calling the guarded knownFactsOf —
+    // see server-lookups.ts's BrowseEntry/withKnown.
     return (entry) =>
-      isEntryKnownForDisplay(entry, liveFacts, claims, now) === wantKnown;
+      entryIsKnown(entryStanding(entry.knownFacts, liveFacts, claims, now)) === wantKnown;
   }
   if (value === "mixup") {
     return (entry) => activeMixupEntries.has(entry.id);
   }
   const wanted: Standing = value;
   return (entry) =>
-    knownFactsOf(entry).some(
+    entry.knownFacts.some(
       (fact) => standingOf(liveFacts[fact], claims[fact], now).standing === wanted,
     );
 }
@@ -153,24 +163,21 @@ function readUrlState(search: string): LibraryUrlState {
   };
 }
 
-// A shelf's sections and entries, cut LAZILY and cached at module scope. It used
-// to build every kind up front on Library mount — including the 12,553-word sort
-// — even when the default Kana tab never renders them. `shelfSections(k,
-// "everyday")` depends only on the shipped tables (the knowledge filter is
-// applied later, at render), so the cut is the same for every learner and every
-// mount: compute each kind on first use and keep it for the app's lifetime.
-const SHELF_CACHE = new Map<Kind, { sections: ShelfSection[]; entries: LibEntry[] }>();
-function shelfFor(k: Kind): { sections: ShelfSection[]; entries: LibEntry[] } {
-  let v = SHELF_CACHE.get(k);
-  if (!v) {
-    v = {
-      sections: shelfSections(k, "everyday"),
-      entries: [...(LIB_ENTRIES_BY_KIND.get(k) ?? [])],
-    };
-    SHELF_CACHE.set(k, v);
-  }
-  return v;
-}
+// SAK-104: a shelf's sections used to be cut LAZILY and cached at module
+// scope — this component now fetches ALL kinds' sections in one batched
+// Server Action call (getLibraryShelves), on mount, and keeps them in state
+// for the component's lifetime (the same "compute/fetch once, keep for as
+// long as this page stays mounted" contract, just an async fetch instead of a
+// sync module-scope cut — see the file header note by the imports).
+// `shelfFor` reads from that fetched map; an empty array while it is still
+// loading (which the render below is written to tolerate — see
+// `shelvesLoaded`).
+const EMPTY_SECTIONS: readonly ShelfSection[] = [];
+/** A stable zero-length args tuple for the one Server Action this page calls
+ * with no arguments (getLibraryShelves) — useServerLookup keys by
+ * JSON.stringify(args), so a fresh `[]` literal every render would still key
+ * the same and re-fetch nothing, but a shared constant makes that obvious. */
+const EMPTY_ARGS: [] = [];
 
 export function LibraryPageClient({
   initialSearch,
@@ -188,6 +195,20 @@ export function LibraryPageClient({
   const writes = useHistoryWrites();
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
+
+  // SAK-104: every kind's shelf sections, fetched once via a Server Action —
+  // see the EMPTY_SECTIONS note above. `undefined` until the first response
+  // lands (a real network round trip on first /library visit now, where this
+  // used to be instant off the bundle); the render below shows a loading
+  // state rather than an empty shelf while it's in flight.
+  const shelvesByKind = useServerLookup(getLibraryShelves, EMPTY_ARGS);
+  const shelvesLoaded = shelvesByKind !== undefined;
+  const shelfFor = useCallback(
+    (k: Kind): { sections: readonly ShelfSection[] } => ({
+      sections: shelvesByKind?.[k as unknown as string] ?? EMPTY_SECTIONS,
+    }),
+    [shelvesByKind],
+  );
 
   // THE URL IS THE STATE, for the kinds, statuses and the box. It is seeded by
   // the server instead of `useSearchParams`: that hook forced the whole page
@@ -417,18 +438,20 @@ export function LibraryPageClient({
   // to history.facts (same reference) when nothing is in progress. Every
   // standing surface on this page reads THIS, not history.facts.
   const liveFacts = useLiveFacts(history.facts, now);
-  const activeMixupEntries = useMemo(() => {
-    const entries = new Set<string>();
-    for (const pair of activeWeaknessPairs(
-      history,
-      cfg.graduateRuns,
-      factEntryOf,
-    )) {
-      entries.add(pair.a);
-      entries.add(pair.b);
-    }
-    return entries;
-  }, [history, cfg.graduateRuns]);
+  // SAK-104: activeWeaknessPairs+factEntryOf need the guarded fact registry,
+  // so this is now a Server Action call — once per history/graduateRuns
+  // change (not per render, not per keystroke), same as before. Empty until
+  // it resolves (the mixup Status filter simply matches nothing for that one
+  // frame, same fallback `resultActiveMixupEntries` already had to tolerate a
+  // freshly-mounted page).
+  const activeMixupEntriesArr = useServerLookup(getActiveMixupEntries, [
+    history,
+    cfg.graduateRuns,
+  ]);
+  const activeMixupEntries = useMemo(
+    () => new Set(activeMixupEntriesArr ?? []),
+    [activeMixupEntriesArr],
+  );
 
   /** Entries you have filed. Search sorts these to the front of a section. */
   const pinned = useMemo(() => {
@@ -460,7 +483,12 @@ export function LibraryPageClient({
     const predicates = [...states].map((value) =>
       statusPredicate(value, liveFacts, claims, now, activeMixupEntries),
     );
-    return (entry: LibEntry) => predicates.some((p) => p(entry));
+    // Typed over LibEntry (not BrowseEntry) so this still satisfies
+    // allTabBrowseKinds/visibleShelfIds/<Shelf>'s existing `keep` prop type —
+    // every entry actually flowing through this page now carries knownFacts
+    // (fetched via getLibraryShelves/searchLibrary*, see BrowseEntry), so the
+    // cast is safe at every real call site.
+    return (entry: LibEntry) => predicates.some((p) => p(entry as BrowseEntry));
   }, [states, liveFacts, claims, now, activeMixupEntries]);
 
   // SEARCH FOLLOWS THE CHECKED KINDS. Exactly one kind checked keeps today's
@@ -472,36 +500,40 @@ export function LibraryPageClient({
   // behaves like the old All tab, a subset behaves like All-but-filtered" is
   // the same rule the browse view below follows. Both come back as
   // `{ key, label, hits }` so one render draws either.
+  //
+  // SAK-104: the actual match-finding moved into two Server Actions
+  // (searchLibraryOneKind/searchLibraryByType — search.ts needs the guarded
+  // index). `keep` is NOT sent over: it stays a client-side predicate exactly
+  // as before (see statusPredicate above), applied to the returned hits here.
+  // That is behaviourally identical to passing `keep` into search() itself —
+  // search.ts's own opts.keep is a plain `continue` in its classify loop, so
+  // filtering the fetched hits afterward (and dropping any section that comes
+  // up empty as a result, same as a keep'd search() never populating it)
+  // produces the same sections.
+  const onlyKind = kinds.size === 1 ? [...kinds][0] : null;
+  const pinnedArr = useMemo(() => [...pinned], [pinned]);
+  const oneKindHits = useServerLookup(
+    searchLibraryOneKind,
+    q && onlyKind ? [q, onlyKind, pinnedArr] : null,
+  );
+  const byTypeHits = useServerLookup(
+    searchLibraryByType,
+    q && kinds.size > 1 ? [q, pinnedArr] : null,
+  );
   const resultSections = useMemo(() => {
     if (!q || kinds.size === 0) return [];
-    if (kinds.size === 1) {
-      const [onlyKind] = kinds;
-      return search(q, {
-        kind: onlyKind,
-        pinned,
-        keep,
-        perSection: Number.MAX_SAFE_INTEGER,
-      }).map((s) => ({
-        key: s.why as string,
-        label: s.label,
-        hits: s.hits,
-      }));
-    }
-    // SEARCH SHOWS EVERYTHING IT FOUND. No per-section cap: the owner wants a
-    // search to render every match, not the first 8 with a "+N more" footer. So
-    // `perSection` is unbounded and every section's `hits` holds all of them.
-    return searchByType(q, {
-      pinned,
-      keep,
-      perSection: Number.MAX_SAFE_INTEGER,
-    })
-      .filter((s) => kinds.has(s.kind))
+    const raw =
+      kinds.size === 1
+        ? (oneKindHits ?? [])
+        : (byTypeHits ?? []).filter((s) => kinds.has(s.kind));
+    return raw
       .map((s) => ({
-        key: s.kind as string,
+        key: s.key,
         label: s.label,
-        hits: s.hits,
-      }));
-  }, [q, kinds, pinned, keep]);
+        hits: keep ? s.hits.filter((h) => keep(h.entry)) : s.hits,
+      }))
+      .filter((s) => s.hits.length > 0);
+  }, [q, kinds, oneKindHits, byTypeHits, keep]);
 
   // Every hit, unsectioned — what the drill bar's slice is over when searching,
   // and what "show the other 140" would expand. `resultSections` already holds
@@ -538,7 +570,7 @@ export function LibraryPageClient({
     return allTabBrowseKinds(keep, (k) => shelfFor(k).sections)
       .filter((k) => kinds.has(k))
       .flatMap((k) => visibleShelfIds(k, shelfFor(k).sections, keep));
-  }, [q, resultSections, kinds, keep]);
+  }, [q, resultSections, kinds, keep, shelfFor]);
 
   // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
   // anchor there. With Shift, IF there is a live anchor still on screen, it adds
@@ -580,8 +612,34 @@ export function LibraryPageClient({
   //   browsing ....... whatever the checked kinds currently show — the whole
   //                    library when every kind is checked, or the union of the
   //                    checked subjects' shelves otherwise.
+  // SAK-104: the two branches below that need the FULL entry list (a built
+  // selection, in canonical library order; "Everything", every kind checked
+  // and nothing selected) now fetch it via Server Actions instead of reading
+  // the bundled LIB_ENTRIES. The "Everything, no status filter" case (the
+  // page's DEFAULT state) is given a stable cache key that ignores
+  // liveFacts/claims — getEverythingSlice doesn't need them for that case
+  // either — so it fetches once rather than refetching on every fact tested.
+  const selectedIdsArr = useMemo(() => [...selected], [selected]);
+  const selectionSliceFetched = useServerLookup(
+    getSelectionSlice,
+    selected.size > 0 ? [selectedIdsArr] : null,
+  );
+  const everyStateChecked = isEveryState(states);
+  const wantEverything =
+    selected.size === 0 && !q && kinds.size > 0 && isEveryKind(kinds);
+  const everythingSliceFetched = useServerLookup(
+    getEverythingSlice,
+    wantEverything
+      ? everyStateChecked
+        ? [[], true, {}, {}, 0, []]
+        : [[...states], false, liveFacts, claims, now, [...activeMixupEntries]]
+      : null,
+  );
+
   const slice = useMemo(() => {
-    if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
+    if (selected.size > 0) {
+      return selectionSliceFetched ?? { label: `${selected.size} selected`, entries: [] };
+    }
     if (q) {
       // The bar means every search hit under the same scope as the visible
       // results, reusing the computed hit set.
@@ -596,8 +654,7 @@ export function LibraryPageClient({
     // the checked set stops being "everything" and the union actually needs
     // deriving from what's on screen — see the branches below.
     if (isEveryKind(kinds)) {
-      const entries = keep ? LIB_ENTRIES.filter(keep) : LIB_ENTRIES;
-      return { label: "Everything", entries: entries.map((e) => e.id) };
+      return { label: "Everything", entries: everythingSliceFetched ?? [] };
     }
     // A checked subset: the bar means exactly what the checked shelves SHOW —
     // the same visible, keep-filtered id list a Shift-range selects over
@@ -613,7 +670,16 @@ export function LibraryPageClient({
       label: shownKinds.map((k) => KIND_LABEL[k]).join(", "),
       entries: shownKinds.flatMap((k) => visibleShelfIds(k, shelfFor(k).sections, keep)),
     };
-  }, [selected, q, kinds, keep, resultHits]);
+  }, [
+    selected,
+    selectionSliceFetched,
+    q,
+    kinds,
+    keep,
+    resultHits,
+    everythingSliceFetched,
+    shelfFor,
+  ]);
 
   // Sentence rules are the ONE place this page needs the assembly corpus
   // (`tierAssemblyFacts` resolves a tier's pool of sentence facts, which needs
@@ -910,6 +976,14 @@ export function LibraryPageClient({
           // the SAME render every kind checked always used (the old All tab),
           // now just restricted to whichever kinds are checked — see the file
           // header's note on generalising rather than duplicating this path.
+          !shelvesLoaded ? (
+            // SAK-104: the shelf data is now a Server Action fetch instead of
+            // a bundled import — a real (if brief) network round trip on
+            // first /library visit, where this used to be instant.
+            <Card>
+              <p className="text-[13px] text-text-muted">Loading…</p>
+            </Card>
+          ) : (
           (() => {
             const shownKinds = allTabBrowseKinds(
               keep,
@@ -958,6 +1032,7 @@ export function LibraryPageClient({
               );
             });
           })()
+          )
         )}
       </div>
 

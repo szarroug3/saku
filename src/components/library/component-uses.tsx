@@ -23,12 +23,8 @@ import Link from "next/link";
 
 import { WordsWith } from "@/components/library/words-with";
 import { Card, Hint, Lbl } from "@/components/ui";
-import {
-  kanjiEntry,
-  knownWordsUsing,
-  usedAsPartIn,
-} from "@/lib/library/library-index";
-import { entryHref } from "@/lib/library/href";
+import { getComponentUses } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { HistoryFile } from "@/types";
 
 const COMPONENT_USE_CAP = 24;
@@ -48,16 +44,19 @@ export function ComponentUses({
    * floats over empty content. Default false: most callers don't need it. */
   divider?: boolean;
 }) {
-  const kanji = usedAsPartIn(component);
-  // NO `useMemo`, though the join walks all 12,555 vocabulary rows. The React
-  // Compiler is on in this repo and memoises it for free; a hand-written
-  // useMemo here is one it refuses to preserve (the early return below sits
-  // between it and its use), so the manual version bought a lint error and
-  // less memoisation than doing nothing.
-  const known = knownWordsUsing(component, history);
+  // SAK-104: usedAsPartIn/knownWordsUsing/entryHref live in server-only
+  // modules now (the ~9.5MB dictionary they read from must never reach the
+  // client bundle), so this fetches its one combined payload from the server
+  // instead of importing them directly.
+  const data = useServerLookup(getComponentUses, [component, history]);
+  const kanji = data?.kanji ?? [];
+  const hrefs = data?.hrefs ?? {};
+  const known = data?.known ?? [];
 
   // Nothing is built from this shape, so there is nothing downstream of it
-  // either — no list, no words, no section. 74 jōyō kanji land here.
+  // either — no list, no words, no section. 74 jōyō kanji land here. Also
+  // covers the still-loading state (data undefined), which reads the same as
+  // "nothing yet" for one render.
   if (kanji.length === 0) return null;
 
   const shown = kanji.slice(0, COMPONENT_USE_CAP);
@@ -71,7 +70,7 @@ export function ComponentUses({
           {shown.map((c) => (
             <Link
               key={c}
-              href={entryHref(kanjiEntry(c))}
+              href={hrefs[c] ?? "#"}
               className="text-[22px] leading-none text-text no-underline"
             >
               {c}

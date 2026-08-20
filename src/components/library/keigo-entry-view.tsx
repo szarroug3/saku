@@ -43,8 +43,9 @@ import { EntrySurface, Section } from "@/components/library/entry-section";
 import { RelatedSection, type RelatedLink } from "@/components/library/related-section";
 import { HearButton } from "@/components/ui/hear-button";
 import { keigoSetForEntry } from "@/data/keigo";
-import { entryName, grammarConceptEntry, libEntry } from "@/lib/library/library-index";
-import { entryHref } from "@/lib/library/href";
+import { grammarConceptEntry } from "@/data/grammar-concepts";
+import { getGlyphLink, resolveEntryLinks } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { conceptReachable } from "@/lib/library/reachable";
 import { useHistory } from "@/lib/use-history";
@@ -95,18 +96,25 @@ export function KeigoEntryView({
   const headline = item ? liveHeadline : fetched;
   const { history } = useHistory();
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
+  // SAK-104: libEntry/entryHref/entryName all read library-index.ts/href.ts
+  // (server-only) now, so the glyph (when this view has no live `item`) and
+  // the "keigo-registers" cross-reference both come from batched round trips
+  // instead of the direct imports this used to make.
+  const glyphLink = useServerLookup(getGlyphLink, item ? null : [resolvedEntry]);
+  const glyph = item ? item.glyph : glyphLink?.glyph;
   const set = keigoSetForEntry(resolvedEntry);
+  const registersId = grammarConceptEntry("keigo-registers");
+  const registersLinks = useServerLookup(resolveEntryLinks, [[registersId]]);
+  const registers = registersLinks?.[registersId as unknown as string];
 
   if (headline === undefined || headline === null || !glyph || !set) return null;
 
-  const registers = libEntry(grammarConceptEntry("keigo-registers"));
   // SAK-30 gate — see this file's header. Held back until the learner has met
   // any keigo set at all, the same low bar TRACK_CONCEPT already applies to
   // kana/katakana; "keigo-registers" now shares that map.
   const relatedLinks: RelatedLink[] =
     registers && (!gateToReachable || conceptReachable("keigo-registers", history))
-      ? [{ label: entryName(registers), href: entryHref(grammarConceptEntry(registers.id)) }]
+      ? [{ label: registers.name, href: registers.href }]
       : [];
 
   return (

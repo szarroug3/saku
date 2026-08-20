@@ -64,12 +64,14 @@
 import * as React from "react";
 import Link from "next/link";
 
-import { entryOf, factInfo } from "@/lib/facts";
 import { fillFor } from "@/components/stats/tally";
-import { entryHref } from "@/lib/library/href";
+import { getBucketBreakdownRows } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { SidePanel } from "@/components/stats/side-panel";
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
+
+const EMPTY_FACTS: FactId[] = [];
 
 export function BucketBreakdown({
   standing,
@@ -88,9 +90,18 @@ export function BucketBreakdown({
   facts: readonly FactId[];
   onClose: () => void;
 }) {
+  const open = standing !== null;
+  // SAK-104: glyph/meaning/href per fact used to come from direct calls into
+  // the (now server-only) fact registry and library index. One batched
+  // Server Action fetch per open instead — see getBucketBreakdownRows.
+  const rows = useServerLookup(
+    getBucketBreakdownRows,
+    open ? [facts.length > 0 ? facts : EMPTY_FACTS] : null,
+  );
+
   return (
     <SidePanel
-      open={standing !== null}
+      open={open}
       label={label}
       onClose={onClose}
       testId="bucket-breakdown"
@@ -105,14 +116,17 @@ export function BucketBreakdown({
     >
       {facts.length === 0 ? (
         <p className="text-[13px] text-text-muted">Nothing here.</p>
+      ) : !rows ? (
+        <p className="text-[13px] text-text-muted">Loading…</p>
       ) : (
         <ul className="flex flex-col gap-2.5 text-[13px]">
           {facts.map((f) => {
-            const info = factInfo(f);
+            const row = rows[f as unknown as string];
             // A fact id history kept but the data no longer has: render
             // the bare id rather than throw. The card above it already
-            // extends the same courtesy (see facts.ts's factInfo doc).
-            if (!info) {
+            // extends the same courtesy (see server-lookups.ts's
+            // getBucketBreakdownRows doc).
+            if (!row) {
               return (
                 <li key={f} className="text-text-muted">
                   {f}
@@ -122,14 +136,14 @@ export function BucketBreakdown({
             return (
               <li key={f}>
                 <Link
-                  href={entryHref(entryOf(f))}
+                  href={row.href}
                   onClick={onClose}
                   className="flex items-baseline justify-between gap-3 hover:underline"
                 >
-                  <span className="font-kana">{info.glyph}</span>
-                  {info.meaning ? (
+                  <span className="font-kana">{row.glyph}</span>
+                  {row.meaning ? (
                     <span className="truncate text-right text-text-muted">
-                      {info.meaning}
+                      {row.meaning}
                     </span>
                   ) : null}
                 </Link>

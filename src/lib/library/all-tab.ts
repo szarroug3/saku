@@ -22,7 +22,10 @@
 // lives in a .tsx (JSX the test runner cannot strip); handed the cut, this file
 // is pure array work and the properties above are unit-tested in all-tab.test.ts.
 
-import { KINDS } from "@/lib/library/library-index";
+// SAK-104: KINDS from the small unguarded kinds.ts, not library-index.ts — see
+// that file's header. `LibEntry` stays imported as a type only (types vanish
+// at build time, so entries.ts being server-only doesn't taint this file).
+import { KINDS } from "@/lib/library/kinds";
 import type { Kind, LibEntry } from "@/lib/library/entries";
 import { shownSectionsOf, type ShelfSection } from "@/lib/library/shelf-view";
 

@@ -92,42 +92,18 @@ import * as React from "react";
 import Link from "next/link";
 import { Collapsible as CollapsiblePrimitive } from "radix-ui";
 
-import { factInfo, factsOf, glyphOf } from "@/lib/facts";
-import { entryHref } from "@/lib/library/href";
-import { entryName, libEntry, SENTENCE_RULE_KIND } from "@/lib/library/library-index";
-import { subLabel } from "@/lib/library/sub-label";
+import {
+  getEntryBreakdownRows,
+  type EntryBreakdownRow,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { BUCKET_LABEL } from "@/components/stats/tally";
 import { SidePanel } from "@/components/stats/side-panel";
 import type { Standing } from "@/lib/library/standing";
 import type { EntryId } from "@/types";
 
-/** What to call an entry in this panel's list — the Library's own `entryName`
- * (library-index.ts) when the entry is Library-browsable (every kind
- * by-subject.tsx feeds this panel is), falling back to `glyphOf` (facts.ts)
- * for the defensive case of an id with no Library entry. */
-function displayName(e: EntryId): string {
-  const entry = libEntry(e);
-  return entry ? entryName(entry) : glyphOf(e);
-}
-
-/** The one line under an entry's name — see the file header for why this asks
- * `subLabel` instead of a fact's `meaning`, and why sentence tiers are the one
- * kind that reads `sub` instead. `null` when the entry genuinely has neither
- * (subLabel's own "—" case) so the row omits the second line rather than
- * printing a dash. */
-function entryDetail(e: EntryId): string | null {
-  const entry = libEntry(e);
-  if (entry) {
-    if (entry.kind === SENTENCE_RULE_KIND) return entry.sub || null;
-    const label = subLabel(entry);
-    return label === "—" ? null : label;
-  }
-  // No Library entry — the panel's original fact-meaning source, kept as a
-  // fallback rather than dropped.
-  const firstFact = factsOf(e)[0];
-  return firstFact ? (factInfo(firstFact)?.meaning ?? null) : null;
-}
+const EMPTY_IDS: EntryId[] = [];
 
 export function EntryBreakdown({
   open,
@@ -145,14 +121,31 @@ export function EntryBreakdown({
   groups: readonly { standing: Standing; entries: readonly EntryId[] }[];
   onClose: () => void;
 }) {
+  // SAK-104: name/detail/href per entry used to come from direct calls into
+  // the (now server-only) library index and fact registry. One batched
+  // Server Action fetch per open, instead of one guarded call per row — see
+  // getEntryBreakdownRows's own header. Fetched only while the panel is open
+  // (`open ? [...] : null` skips the request while closed, same guard
+  // library-page.tsx's own useServerLookup calls use).
+  const allIds = groups.length > 0 ? groups.flatMap((g) => g.entries) : EMPTY_IDS;
+  const rows = useServerLookup(getEntryBreakdownRows, open ? [allIds] : null);
+
   return (
     <SidePanel open={open} label={label} onClose={onClose} testId="entry-breakdown">
       {groups.length === 0 ? (
         <p className="text-[13px] text-text-muted">Nothing here.</p>
+      ) : !rows ? (
+        <p className="text-[13px] text-text-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-1">
           {groups.map((g) => (
-            <StatusSection key={g.standing} standing={g.standing} entries={g.entries} onClose={onClose} />
+            <StatusSection
+              key={g.standing}
+              standing={g.standing}
+              entries={g.entries}
+              rows={rows}
+              onClose={onClose}
+            />
           ))}
         </div>
       )}
@@ -163,10 +156,12 @@ export function EntryBreakdown({
 function StatusSection({
   standing,
   entries,
+  rows,
   onClose,
 }: {
   standing: Standing;
   entries: readonly EntryId[];
+  rows: Record<string, EntryBreakdownRow>;
   onClose: () => void;
 }) {
   return (
@@ -193,12 +188,13 @@ function StatusSection({
       <CollapsiblePrimitive.Content>
         <ul className="flex flex-col gap-2.5 pt-2 text-[13px]">
           {entries.map((e) => {
-            const name = displayName(e);
-            const detail = entryDetail(e);
+            const row = rows[e as unknown as string];
+            const name = row?.name ?? e;
+            const detail = row?.detail ?? null;
             return (
               <li key={e}>
                 <Link
-                  href={entryHref(e)}
+                  href={row?.href ?? "#"}
                   onClick={onClose}
                   className="flex items-baseline justify-between gap-3 hover:underline"
                 >
