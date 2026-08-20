@@ -27,7 +27,7 @@
 // easier to fire by accident on the wrong set, so it confirms first — the same
 // split the Recent sessions list keeps.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { plural } from "@/lib/words";
 import { Btn, Hint, SmallBtn } from "@/components/ui";
@@ -39,9 +39,14 @@ import {
 } from "@/components/home/home-feed";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { relativeTime } from "@/lib/relative-time";
-import { fixedRunList } from "@/lib/library/server-lookups";
+import { fixedRunList, getLearnIndexData } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
+import { trackIdOfFactMap } from "@/lib/content/learn-scheduler";
 import { isStaleRun } from "@/lib/session-staleness";
 import { useLists } from "@/lib/use-lists";
+import type { FactId } from "@/types";
+
+const EMPTY_ARGS: [] = [];
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -95,9 +100,17 @@ const GENERIC_WHAT_RE = /^[\d,]+\s+things?$/i;
 /** The track a run belongs to, named the way its Home card would name it —
  * "Vocabulary", "Kana", "Counting" — read off its facts via the same
  * `trackKeyForRun` Home uses to find a lesson's own in-progress run. Null
- * when the facts don't resolve to one clean track (a mixed list, or none). */
-function trackLabel(run: RunInfo): string | null {
-  const key = trackKeyForRun(run);
+ * when the facts don't resolve to one clean track (a mixed list, or none).
+ *
+ * `trackMap` is `trackIdOfFactMap(index.tracks)` off the CurrentSessions-level
+ * fetched index snapshot (SAK-115 — see this file's own import comment on
+ * getLearnIndexData); this runs synchronously per row, so it cannot fetch its
+ * own copy. */
+function trackLabel(
+  run: RunInfo,
+  trackMap: ReadonlyMap<FactId, string>,
+): string | null {
+  const key = trackKeyForRun(run, trackMap);
   if (!key) return null;
   return TRACK_TITLE[key] ?? TRACK_NOUN[key] ?? null;
 }
@@ -110,9 +123,9 @@ function trackLabel(run: RunInfo): string | null {
  * "5 things" — a number, not a name (SAK-67 changes requested: the row said
  * nothing about what was actually being taught). Swap that in for the run's
  * track name instead; every other `what` is left alone. */
-function runTitle(run: RunInfo): string {
+function runTitle(run: RunInfo, trackMap: ReadonlyMap<FactId, string>): string {
   if (!GENERIC_WHAT_RE.test(run.what)) return run.what;
-  return trackLabel(run) ?? run.what;
+  return trackLabel(run, trackMap) ?? run.what;
 }
 
 /** "5 items · Started 2 hours ago" — how far along the run is and when it
@@ -137,6 +150,7 @@ function RunRow({
   onMakeList,
   madeList,
   now,
+  trackMap,
 }: {
   run: RunInfo;
   selected: boolean;
@@ -149,9 +163,11 @@ function RunRow({
    * mount (see CurrentSessions), so a first paint never claims a staleness or
    * a "started …" line the server couldn't have known. */
   now: number | null;
+  /** See runTitle/trackLabel above. */
+  trackMap: ReadonlyMap<FactId, string>;
 }) {
   const answered = progressText(run);
-  const title = runTitle(run);
+  const title = runTitle(run, trackMap);
   // See session-staleness.ts for the threshold and why it's a hint, never an
   // auto-discard.
   const stale = now !== null && isStaleRun(run.lastActiveAt, now);
@@ -264,6 +280,15 @@ export function CurrentSessions() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(Date.now());
   }, []);
+
+  // The /learn index snapshot every row's track label reads (SAK-115 — see this
+  // file's own import comment). Fetched once and cached forever, like Home's own
+  // copy; a row simply reads "Discard" instead of a track name until it lands.
+  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS);
+  const trackMap = useMemo(
+    () => (index ? trackIdOfFactMap(index.tracks) : new Map<FactId, string>()),
+    [index],
+  );
 
   if (!runs.length) return <NoRuns />;
 
@@ -381,6 +406,7 @@ export function CurrentSessions() {
       onMakeList={() => makeList(r)}
       madeList={madeLists.has(r.id)}
       now={now}
+      trackMap={trackMap}
     />
   );
 
