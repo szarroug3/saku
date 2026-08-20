@@ -1,5 +1,54 @@
 "use client";
 
+// SENTENCE-RULE teach walk — the in-lesson twin of the Library's sentence-rule
+// reference page (sentence-entry-view.tsx, backed by MarkView). SAK-113 moved
+// this out of components/session (where it sat as a hand-rolled sibling to
+// TeachWalk, never touching ContentItem/buildItem/the Library entry-view
+// family) and into components/library, alongside SentenceEntryView,
+// TermEntryView and the other entry-view components — the same family
+// TeachWalk already renders TermEntryView from directly for grammar-concept/
+// term steps, without going through TeachItemView (see teach-walk.tsx).
+//
+// WHY NOT ROUTE THROUGH TeachItemView / LessonStep LIKE THE OTHER 7 KINDS
+// =========================================================================
+// TeachItemView dispatches on LessonItem.kind (LessonKind), and LessonStep
+// ("intro" | "term" | "conversion" | "item") is built by resolveLessonSteps
+// from a teach set's FACTS (src/lib/lesson-steps.ts / lesson-items.ts). A
+// sentence-ordering round has no facts at all: it is its own session mode
+// (session.snapshot.mode === "assembly", see src/app/session/page.tsx),
+// stepping through a single tier's rule by tierId instead of walking a fact
+// list. Folding it into LessonStep/resolveLessonSteps would mean inventing
+// fake facts for a mode that structurally has none, and reworking the
+// assembly round's session plumbing — a much larger, riskier change than the
+// content-architecture problem this ticket is about. So this stays a second
+// entry point TeachWalk's session-page caller renders directly, exactly the
+// way `term` steps render TermEntryView directly — same precedent, same
+// reason (a step kind that isn't a glyph/LessonKind item still deserves the
+// shared library component family, not a hand-rolled tree).
+//
+// WHAT DID MOVE
+// =============
+// TIER_EXAMPLES was already the shared corpus: mark-view.tsx has imported it
+// from this file (formerly components/session/sentence-ordering-teach-walk.tsx)
+// as its authoritative sentence data for years, and the intro card already
+// reads the same SENTENCE_ORDERING_GUIDES this file always did (shared with
+// the Library and the assembly quiz — see data/sentence-ordering-guides.ts).
+// The only things that were genuinely private and duplicated-in-spirit with
+// mark-view.tsx were the local rendering helpers below (findChunkStart,
+// positionedStepParts, focusedSentence, FocusedPartBoxes) — kept AS IS rather
+// than force-merged with mark-view.tsx's own near-identical versions, because
+// the two pages render a genuinely different interaction: this walk highlights
+// ONE active chunk role per step and grays the rest, while MarkView's
+// SentenceRuleExamples colors every role at once on a single static page.
+// Unifying those two rendering strategies is a real design decision the owner
+// hasn't made (see mark-view.tsx's own "least designed page" header), so it is
+// left alone here rather than guessed at.
+//
+// LEGACY_TIER_GUIDE, which used to live in this file, was dropped: it was
+// fully superseded by SENTENCE_ORDERING_GUIDES (sentenceOrderingIntro already
+// only ever read the shared guide, never LEGACY_TIER_GUIDE) and had no
+// remaining reference anywhere in the app.
+
 import type { ReactNode } from "react";
 
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
@@ -25,206 +74,6 @@ export type SentenceOrderingTierId =
   | "reported"
   | "contrast"
   | "request";
-
-interface TierGuide {
-  eyebrow: string;
-  title: string;
-  body: readonly { lead: string; text: string }[];
-  hook: string;
-}
-
-export const LEGACY_TIER_GUIDE: Record<SentenceOrderingTierId, TierGuide> = {
-  simple: {
-    eyebrow: "What sentence ordering is",
-    title: "Japanese usually puts the main action near the end, not in English word order.",
-    body: [
-      {
-        lead: "English and Japanese build sentences differently.",
-        text: "English is usually Subject-Verb-Object: \"Sam eats sushi.\" Japanese is usually Topic/Subject-Object-Verb, so the action chunk tends to be near the end.",
-      },
-      {
-        lead: "It is not simply \"nouns first\".",
-        text: "Time, place and topic chunks can be placed early. Particles show each chunk's role, so order follows structure as opposed to how English positions words.",
-      },
-      {
-        lead: "Verb choice does not usually rewrite the whole order.",
-        text: "The specific verb form can change, but the sentence-final action pattern is still the default.",
-      },
-    ],
-    hook: "This lesson is about baseline chunk order in plain statements.",
-  },
-  conditional: {
-    eyebrow: "Conditional sentence ordering",
-    title: "Conditionals split a sentence into an IF chunk and a result chunk.",
-    body: [
-      {
-        lead: "Find the condition marker first.",
-        text: "Look for condition endings such as たら, ば or なら. That boundary tells you where the condition chunk ends.",
-      },
-      {
-        lead: "Result follows condition.",
-        text: "After the condition chunk, place the main outcome chunk. Keep the final action/result anchored near the right edge.",
-      },
-      {
-        lead: "Topic/context still sits to the left.",
-        text: "Topic, time and place can still appear early; the conditional boundary is what you are practicing here.",
-      },
-    ],
-    hook: "In this tier, your key cue is the IF boundary (たら/ば/なら).",
-  },
-  causal: {
-    eyebrow: "Cause and result ordering",
-    title: "Because/so sentences are ordered by cause chunk then result chunk.",
-    body: [
-      {
-        lead: "Identify the reason marker.",
-        text: "Watch for から or ので to locate the reason chunk.",
-      },
-      {
-        lead: "Cause feeds into outcome.",
-        text: "Place the reason chunk before the result chunk so the logic flows correctly.",
-      },
-      {
-        lead: "Keep sentence backbone stable.",
-        text: "Even with reason markers, the final predicate still tends to settle at the end.",
-      },
-    ],
-    hook: "In this tier, your key cue is cause-first flow (から/ので).",
-  },
-  obligation: {
-    eyebrow: "Obligation sentence ordering",
-    title: "Must/have-to patterns create a requirement chunk before the obligation ending.",
-    body: [
-      {
-        lead: "Spot obligation endings.",
-        text: "Look for patterns like なければならない, なければいけない, なきゃ, or ないといけない.",
-      },
-      {
-        lead: "Action chunk comes before the obligation frame.",
-        text: "The verb/action chunk is followed by the obligation expression that finalizes the meaning.",
-      },
-      {
-        lead: "Read it as structure, not translation order.",
-        text: "Place chunks by grammatical frame first, then read the whole sentence meaning.",
-      },
-    ],
-    hook: "In this tier, your key cue is the obligation frame near the sentence end.",
-  },
-  sequential: {
-    eyebrow: "Te-form construction ordering",
-    title: "Te-form constructions connect an action to a following link or helper.",
-    body: [
-      {
-        lead: "Find the complete final construction.",
-        text: "Look for forms such as てから, ている, or てみる and keep each form attached to the action it modifies.",
-      },
-      {
-        lead: "Read the helper's actual function.",
-        text: "てから marks what happens after an action, ている marks an ongoing action, and てみる marks trying an action.",
-      },
-      {
-        lead: "Do not treat every te-form as a sequence.",
-        text: "The te-form connects the verb to what follows, but the following form determines the relationship.",
-      },
-    ],
-    hook: "In this tier, your key cue is the complete te-form construction.",
-  },
-  desire: {
-    eyebrow: "Desire/ease sentence ordering",
-    title: "Want-to and easy/hard patterns attach to action chunks in fixed spots.",
-    body: [
-      {
-        lead: "Find attached evaluation forms.",
-        text: "Look for たい, やすい, and にくい attached to action stems.",
-      },
-      {
-        lead: "Action and evaluation stay together.",
-        text: "Place the action chunk so its attached desire/ease form stays structurally connected.",
-      },
-      {
-        lead: "Context remains left-side support.",
-        text: "Topic/time/place chunks still frame the sentence on the left.",
-      },
-    ],
-    hook: "In this tier, your key cue is the action-plus-evaluation chunk.",
-  },
-  giving: {
-    eyebrow: "Giving/receiving sentence ordering",
-    title: "Giving and receiving patterns encode direction between people.",
-    body: [
-      {
-        lead: "Identify the helper verb.",
-        text: "Look for てあげる, てくれる, or てもらう to identify direction of benefit.",
-      },
-      {
-        lead: "Place giver/receiver context clearly.",
-        text: "Chunks naming who does what for whom need clear placement before the final helper chunk.",
-      },
-      {
-        lead: "Direction matters more than English gloss.",
-        text: "Order chunks to preserve who benefits, not just a literal word-by-word translation.",
-      },
-    ],
-    hook: "In this tier, your key cue is benefit direction (giver vs receiver).",
-  },
-  reported: {
-    eyebrow: "Reported/opinion ordering",
-    title: "I think / seems-like patterns add an outer opinion layer around a core statement.",
-    body: [
-      {
-        lead: "Separate core statement from report layer.",
-        text: "Watch for markers like と思う, らしい, かもしれない, and でしょう.",
-      },
-      {
-        lead: "Core meaning chunk first, stance after.",
-        text: "The proposition chunk is placed, then the opinion/probability layer wraps it.",
-      },
-      {
-        lead: "Read confidence level from the ending.",
-        text: "These endings signal certainty/uncertainty, so keep them in the right chunk position.",
-      },
-    ],
-    hook: "In this tier, your key cue is outer stance markers on top of the core clause.",
-  },
-  contrast: {
-    eyebrow: "Linked-clause sentence ordering",
-    title: "Even-though and without-doing patterns put a marked clause before the main result.",
-    body: [
-      {
-        lead: "Find the clause marker.",
-        text: "のに closes an “even though” clause; ないで closes a “without doing” clause.",
-      },
-      {
-        lead: "Keep the marked clause together.",
-        text: "Place the complete のに or ないで clause before the main action or result.",
-      },
-      {
-        lead: "Do not give both markers the same meaning.",
-        text: "のに expresses a contrast; ないで says that the following action happens without the first action.",
-      },
-    ],
-    hook: "In this tier, your key cue is the marked clause before the main result.",
-  },
-  request: {
-    eyebrow: "Request/proposal ordering",
-    title: "Requests and proposals place a target action before the request frame.",
-    body: [
-      {
-        lead: "Identify request/proposal endings.",
-        text: "Look for てください-type requests, ましょう proposals, and instruction forms.",
-      },
-      {
-        lead: "Action target precedes the request frame.",
-        text: "Place the thing being requested/proposed before the final request expression.",
-      },
-      {
-        lead: "Keep politeness/function chunk intact.",
-        text: "The request ending carries social function; do not detach it from the action chunk it governs.",
-      },
-    ],
-    hook: "In this tier, your key cue is the request/proposal frame at the end.",
-  },
-};
 
 // Chunk roles and their plain-English labels live in
 // src/data/sentence-ordering-guides.ts (ChunkRoleKey, SENTENCE_ORDERING_CHUNK_ROLES,
@@ -971,11 +820,15 @@ function IntroWorkedExample({ example }: { example: SentenceOrderingWorkedExampl
   );
 }
 
-export function sentenceOrderingTeachSteps(tierId: SentenceOrderingTierId): number {
+/** Total steps for a tier's walk: the intro card, plus one step per chunk role
+ * TIER_LESSONS teaches for that tier. Called from src/app/session/page.tsx to
+ * size the HUD's "N of M" and clamp the current step — same contract
+ * sentenceOrderingTeachSteps always had, renamed on the SAK-113 move. */
+export function sentenceRuleEntrySteps(tierId: SentenceOrderingTierId): number {
   return 1 + TIER_LESSONS[tierId].length;
 }
 
-export function SentenceOrderingTeachWalk({
+export function SentenceRuleEntryView({
   step,
   tierId = "simple",
 }: {
