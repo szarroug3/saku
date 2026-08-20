@@ -16,7 +16,7 @@
     "build:word-rank": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs",
     "build:scheduling-preview": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-scheduling-preview.mjs",
     "build:en-synonyms": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-en-synonyms.mjs",
-    "prebuild": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-scheduling-preview.mjs",
+    "prebuild": "node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs && node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-scheduling-preview.mjs && node scripts/copy-ffmpeg-binary.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
