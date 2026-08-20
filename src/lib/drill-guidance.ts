@@ -129,6 +129,8 @@ export function mismatchWarning(
       return "This card wants a Japanese answer.";
     case "wantsRomaji":
       return "This card wants a romaji answer.";
+    case "typedTheReading":
+      return "That's the reading. Type what it means.";
     case "wantsEnglish":
       return "This card wants an English answer.";
     default:
