@@ -35,14 +35,15 @@ import { TermLink } from "@/components/library/term-link";
 import { Callout } from "@/components/lesson/callout";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { HearButton } from "@/components/ui/hear-button";
+import { EntryLink } from "@/components/library/entry-link";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { entryHref } from "@/lib/library/href";
+import { getLegacyUnqualifiedReading } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { ContentItem } from "@/lib/content/item";
 import { wordPitch } from "@/data/pitch";
-import { legacyUnqualifiedReading } from "@/data/vocab";
 import type { EntryId } from "@/types";
 
 const CAP = 5;
@@ -185,6 +186,14 @@ export function CharacterEntryView({
   // hear-button.tsx's EXACT PITCH mode), so this page doesn't thread it
   // through by hand.
   useQuizConfig();
+  // SAK-104: legacyUnqualifiedReading lives in the server-only data/vocab.ts,
+  // so this fetches it instead of importing it — called unconditionally (same
+  // reason as useQuizConfig above) with payload's own glyph once it's ready,
+  // null (skips the fetch) until then.
+  const legacyReading = useServerLookup(
+    getLegacyUnqualifiedReading,
+    payload ? [payload.item.glyph] : null,
+  );
   if (payload === undefined || payload === null) return null;
 
   item = payload.item;
@@ -228,7 +237,7 @@ export function CharacterEntryView({
   // onto a sibling reading it wasn't verified for. Absent (null) renders
   // nothing, same "absent is normal" discipline as the rest of this page.
   const pitchDownstep = isWord ? wordPitch(glyph) : null;
-  const pitchReading = pitchDownstep !== null ? legacyUnqualifiedReading(glyph) : null;
+  const pitchReading = pitchDownstep !== null ? (legacyReading ?? null) : null;
 
   const usedIn = payload.usedIn;
   const shownUsedIn = usedIn.slice(0, CAP);
@@ -270,12 +279,12 @@ export function CharacterEntryView({
                         {v.example ? (
                           <>
                             as in{" "}
-                            <Link
-                              href={entryHref(v.example.entry)}
+                            <EntryLink
+                              id={v.example.entry}
                               className="font-kana text-[16px] text-text no-underline"
                             >
                               {v.example.glyph}
-                            </Link>
+                            </EntryLink>
                           </>
                         ) : null}
                       </td>
@@ -305,9 +314,9 @@ export function CharacterEntryView({
                   <SubLabel>Sub-components</SubLabel>
                   <div className="flex flex-col gap-1.5">
                     {parts.map((p) => (
-                      <Link
+                      <EntryLink
                         key={p.glyph}
-                        href={entryHref(p.entry)}
+                        id={p.entry}
                         className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
                       >
                         <span className="font-kana text-[18px] leading-none">{p.glyph}</span>
@@ -317,7 +326,7 @@ export function CharacterEntryView({
                             {p.role}
                           </span>
                         ) : null}
-                      </Link>
+                      </EntryLink>
                     ))}
                   </div>
                 </div>
@@ -461,13 +470,13 @@ export function CharacterEntryView({
                       {wordPieces.map((p, i) => (
                         <tr key={`${p.char}-${i}`}>
                           <td className="whitespace-nowrap py-1 pr-4 align-middle">
-                            <Link
-                              href={entryHref(p.entry)}
+                            <EntryLink
+                              id={p.entry}
                               className="flex items-baseline gap-2.5 text-text no-underline"
                             >
                               <span className="font-kana text-[20px] leading-none">{p.written}</span>
                               <span className="font-kana text-[14px] text-accent">{p.reading}</span>
-                            </Link>
+                            </EntryLink>
                           </td>
                           <td className="w-full py-1 align-middle text-[13px] text-text-muted">
                             {p.meaning}
@@ -534,16 +543,16 @@ export function CharacterEntryView({
           <Section title="Used as a part in">
             <div className="flex flex-col gap-1.5">
               {shownUsedIn.map((c) => (
-                <Link
+                <EntryLink
                   key={c.glyph}
-                  href={entryHref(c.entry)}
+                  id={c.entry}
                   className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
                 >
                   <span className="font-kana text-[18px] leading-none">{c.glyph}</span>
                   <span className="min-w-0 flex-1 truncate text-text-muted">
                     {c.meaning}
                   </span>
-                </Link>
+                </EntryLink>
               ))}
             </div>
             {restUsedIn > 0 ? (

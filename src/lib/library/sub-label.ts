@@ -21,8 +21,13 @@
 // the ONE group of kana whose romanisation is not mechanical, the group a
 // beginner most needs told, to "—". They are told now.
 
+// SAK-104: KANJI_SUBJECT used to come from @/data/kanji, which imports the
+// now server-only vocab.ts (for VOCAB/vocabRow) — this file is a client-
+// reachable leaf (via entry-tile.tsx), so it reads the same literal off the
+// small unguarded kinds.ts instead. VOCAB_SUBJECT already came from the
+// (unguarded) vocab-ids.ts, unchanged.
 import { KANA_SUBJECT } from "@/data/characters";
-import { KANJI_SUBJECT } from "@/data/kanji";
+import { KANJI_KIND as KANJI_SUBJECT } from "@/lib/library/kinds";
 import { VOCAB_SUBJECT } from "@/lib/vocab-ids";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import type { LibEntry } from "@/lib/library/entries";

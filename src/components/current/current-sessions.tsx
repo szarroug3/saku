@@ -39,7 +39,7 @@ import {
 } from "@/components/home/home-feed";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { relativeTime } from "@/lib/relative-time";
-import { fixedRunList } from "@/lib/session-list";
+import { fixedRunList } from "@/lib/library/server-lookups";
 import { isStaleRun } from "@/lib/session-staleness";
 import { useLists } from "@/lib/use-lists";
 
@@ -346,7 +346,7 @@ export function CurrentSessions() {
   // rather than piling up duplicates.
   const makeList = (run: RunInfo) => {
     void (async () => {
-      const list = fixedRunList(run.id, run.what, run.facts);
+      const list = await fixedRunList(run.id, run.what, run.facts);
       if (!list) return;
       await save(list);
       setMadeLists((prev) => new Set(prev).add(run.id));

@@ -183,6 +183,19 @@ const outPath = fileURLToPath(
 );
 writeFileSync(outPath, JSON.stringify(index) + "\n");
 
+// SAK-104: a second, much smaller file carrying ONLY readingProofFacts — the
+// one piece of this index a hot, frequently-re-rendered client component
+// (slice-bar.tsx) needs synchronously, every render, to gate claim/quiz
+// eligibility. Reading it from library-index.json (guarded, ~9.5MB parsed)
+// would mean either a server round trip on every SliceBar render (a real
+// latency regression on a button-enabling computation) or reintroducing the
+// whole dictionary to the client. This ~3,500-entry map is safe to ship: it
+// carries no search text, no glosses, only fact-id -> fact-id[] proofs.
+const readingProofPath = fileURLToPath(
+  new URL("../src/data/generated/reading-proof-facts.json", import.meta.url),
+);
+writeFileSync(readingProofPath, JSON.stringify({ readingProofFacts }) + "\n");
+
 console.log(
   `library-index.json written: ${entries.length} entries, ` +
     `${Object.keys(knownFacts).length} known-fact entries, ` +
