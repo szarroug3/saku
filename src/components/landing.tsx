@@ -11,9 +11,11 @@ import type { ReactNode } from "react";
 // The tracks the curriculum actually teaches, in the order the lesson feed opens
 // them (kana, then the radical/kanji/word spine, then the post-kana tracks). Kept
 // in step with home-feed.tsx: verb pairs (the transitivity track) and sentence
-// ordering are real tracks and belong here. Pitch is last because it rides along
-// on words rather than being a track of its own, but it is still something we
-// teach, so it earns a chip.
+// ordering are real tracks and belong here. Pitch is deliberately NOT a chip
+// here (SAK-98): it rides along on words rather than being a track of its own —
+// no lesson, no quiz, no progress of its own to show — so it doesn't earn one.
+// It's reference content on the word entry page instead (see
+// CharacterEntryView and pitch-mark.tsx).
 const TRACKS: Array<{ en: string; jp: string }> = [
   { en: "Hiragana", jp: "ひらがな" },
   { en: "Katakana", jp: "カタカナ" },
@@ -25,7 +27,6 @@ const TRACKS: Array<{ en: string; jp: string }> = [
   { en: "Verb pairs", jp: "自他動詞" },
   { en: "Keigo", jp: "敬語" },
   { en: "Sentence ordering", jp: "語順" },
-  { en: "Pitch", jp: "アクセント" },
 ];
 
 const FEATURES: Array<{ title: string; body: string }> = [

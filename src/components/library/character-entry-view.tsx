@@ -30,6 +30,9 @@ import Link from "next/link";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
+import { PitchHearButton } from "@/components/library/pitch-hear-button";
+import { PitchReading } from "@/components/library/pitch-mark";
+import { TermLink } from "@/components/library/term-link";
 import { Callout } from "@/components/lesson/callout";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { HearButton } from "@/components/ui/hear-button";
@@ -38,6 +41,8 @@ import { useContentEntry } from "@/lib/library/content-entries";
 import { entryHref } from "@/lib/library/href";
 import { sentencePiecesOf } from "@/lib/library/sentence-furigana";
 import type { ContentItem } from "@/lib/content/item";
+import { wordPitch } from "@/data/pitch";
+import { legacyUnqualifiedReading } from "@/data/vocab";
 import type { EntryId } from "@/types";
 
 const CAP = 5;
@@ -206,6 +211,17 @@ export function CharacterEntryView({
   const hasWord = wordRows.length > 0;
   const labelled = [hasRadical, hasKanji, hasWord].filter(Boolean).length > 1;
 
+  // Pitch accent (SAK-98): a verified downstep is stored per WRITTEN FORM
+  // (keb) and validated by the ingest against the word's TAUGHT reading — see
+  // scripts/ingest/pitch.mjs and legacyUnqualifiedReading's own doc. A word
+  // that carries several readings (byReading above) can have wordRows for
+  // readings the downstep was never checked against, so the overline is drawn
+  // ONLY on the row whose reading matches that taught reading — never guessed
+  // onto a sibling reading it wasn't verified for. Absent (null) renders
+  // nothing, same "absent is normal" discipline as the rest of this page.
+  const pitchDownstep = isWord ? wordPitch(glyph) : null;
+  const pitchReading = pitchDownstep !== null ? legacyUnqualifiedReading(glyph) : null;
+
   const usedIn = payload.usedIn;
   const shownUsedIn = usedIn.slice(0, CAP);
   const restUsedIn = usedIn.length - shownUsedIn.length;
@@ -364,12 +380,33 @@ export function CharacterEntryView({
                 ) : null}
                 <table className="w-full text-[14px]">
                   <tbody>
-                    {wordRows.map((w) => (
+                    {wordRows.map((w) => {
+                      const showPitch = pitchDownstep !== null && w.reading === pitchReading;
+                      return (
                       <tr key={w.reading}>
                         <td className="whitespace-nowrap py-1 pr-6 align-top">
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex flex-wrap items-center gap-1.5">
                             <HearButton glyph={w.reading} />
-                            <span className="font-kana text-text">{w.reading}</span>
+                            {showPitch ? (
+                              <>
+                                <PitchReading
+                                  reading={w.reading}
+                                  downstep={pitchDownstep!}
+                                  className="font-kana text-text"
+                                />
+                                <PitchHearButton reading={w.reading} downstep={pitchDownstep!} />
+                                {/* The overline is drawn but never named on the
+                                    page; this is the one way to what it is. */}
+                                <TermLink
+                                  id="pitch-accent"
+                                  className="text-[11px] text-accent no-underline hover:underline"
+                                >
+                                  pitch accent
+                                </TermLink>
+                              </>
+                            ) : (
+                              <span className="font-kana text-text">{w.reading}</span>
+                            )}
                           </span>
                         </td>
                         <td className="w-full py-1 align-top text-text-muted">
@@ -396,7 +433,8 @@ export function CharacterEntryView({
                           ))}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
