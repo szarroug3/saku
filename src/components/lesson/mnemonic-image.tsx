@@ -24,6 +24,7 @@ export function MnemonicImage({
   imgClassName,
   glyphClassName,
   onMissing,
+  priority,
 }: {
   /** Candidate picture path, e.g. "/mnemonics/a.webp". */
   src: string;
@@ -38,6 +39,11 @@ export function MnemonicImage({
    * so a kana with no drawing doesn't print its glyph twice. Fired from the
    * <img>'s error event, never during render. */
   onMissing?: () => void;
+  /** Set when this is the single large hero drawing for the page (MnemonicView),
+   * so Next can skip lazy-loading it — it is the page's LCP element there. Leave
+   * unset everywhere else (hint popovers, drill screens) where many of these can
+   * mount at once and eager-loading all of them would cost more than it saves. */
+  priority?: boolean;
 }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
@@ -57,6 +63,7 @@ export function MnemonicImage({
       height={192}
       className={imgClassName}
       aria-hidden
+      priority={priority}
       onError={() => {
         setFailedSrc(src);
         onMissing?.();
