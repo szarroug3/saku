@@ -50,7 +50,7 @@ import {
 } from "@/lib/library/server-lookups";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
-import { answerGuide, confusionNote } from "@/lib/drill-guidance";
+import { answerGuide, confusionNote, mismatchWarning } from "@/lib/drill-guidance";
 import {
   effectiveListen,
   isRevealPause,
@@ -410,7 +410,15 @@ function recordMissedPhrase(
  * WHICH answer was right, and that surfaces in the answer slot instead (the
  * input, or the correct MC option), the same way grid mode already reveals. */
 interface DrillFeedback {
-  kind: RevealFeedbackKind;
+  // "warn" (SAK-122) is local to this screen, not part of the shared
+  // RevealFeedbackKind: it is neither a resolved right nor a resolved wrong
+  // answer — the showing stays open and ungraded, waiting for a retype — so
+  // it deliberately does not participate in isRevealPause/haloState's
+  // good/bad handling, which is written to react to a RESOLVED showing.
+  kind: RevealFeedbackKind | "warn";
+  /** Set only for "warn" — the reason shown under the box in place of the
+   * ordinary answer-format note. See lib/drill-guidance.ts's mismatchWarning. */
+  message?: string;
 }
 
 /** Everything here must stay JSON-serializable (numbers/strings/plain
@@ -1180,6 +1188,24 @@ export function DrillScreen() {
               : credited
                 ? credited.ok
                 : checkTyped(q.f, given, q.dir, ctxFor(q));
+    // SAK-122: a TYPED miss that looks like the wrong script/format for what
+    // this card wants (English on a Japanese-answer card, Japanese on an
+    // English-answer card, kana typed where the card wants romaji) is not
+    // scored at all — no miss, no streak break, no tries spent, no requeue.
+    // The learner gets a short warning and the box stays open on the same
+    // showing for a retype, exactly the state a fresh unanswered card is in.
+    // Runs strictly AFTER `ok`, and only for a real typed answer (never an
+    // MC/recognition/particle pick, which has no script to get wrong) — see
+    // scriptMismatch's contract in lib/engine/question.ts.
+    if (!ok && typed) {
+      const warning = mismatchWarning(q.f, q.dir, given);
+      if (warning) {
+        rt.feedback = { kind: "warn", message: warning };
+        inputRef.current?.select();
+        force();
+        return;
+      }
+    }
     const st = statForShowing(rt.stats, credited?.fact ?? q.f);
     const phrase = presentationPhrase(q.f, showingOf(q));
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
@@ -2103,7 +2129,14 @@ export function DrillScreen() {
   // present even with reveal off. A CORRECT answer auto-advances, so its
   // `rt.waiting` is excluded, and a SKIP never reaches this state at all — it
   // advances immediately (see isRevealPause, SAK-50).
-  const revealPause = isRevealPause(rt.feedback, rt.waiting);
+  // "warn" (SAK-122) is not a RevealFeedbackKind — it is not a resolved
+  // showing at all, so it never counts as a reveal pause — hence the local
+  // narrowing rather than widening the shared RevealFeedback type every
+  // other screen (grid, assembly) also uses.
+  const revealPause = isRevealPause(
+    rt.feedback && rt.feedback.kind !== "warn" ? { kind: rt.feedback.kind } : null,
+    rt.waiting,
+  );
   // Paused on a reveal-eligible stop, with the setting on: show the answer in
   // the answer slot (the reveal that used to be a sentence).
   const revealing = cfg.showAnswer && revealPause;
@@ -2542,8 +2575,20 @@ export function DrillScreen() {
             {/* Says what kind of answer this card wants, and keeps saying it —
                 the placeholder above is gone from the first keystroke, which is
                 exactly when the romaji line starts mattering. Quiet: it is
-                standing instruction, not part of the question. */}
-            <span className="text-[11px] text-text-muted">{guide?.note}</span>
+                standing instruction, not part of the question.
+                SAK-122: a wrong-script/format retype (rt.feedback.kind ===
+                "warn") takes this slot instead — it is a MORE useful thing to
+                say right now than the standing note, and the card is not
+                resolved (no reveal, no miss), so this is the only place the
+                warning has to go. */}
+            <span
+              className={cx(
+                "text-[11px]",
+                rt.feedback?.kind === "warn" ? "text-warning" : "text-text-muted",
+              )}
+            >
+              {rt.feedback?.kind === "warn" ? rt.feedback.message : guide?.note}
+            </span>
             </span>
           ) : (
           // A UNIFORM OPTION ROW, up to 3 per line. Every option box is the
