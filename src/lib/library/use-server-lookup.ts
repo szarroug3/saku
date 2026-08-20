@@ -41,6 +41,9 @@
 // reload-sensitive about, for no real benefit.
 
 import { useEffect, useState } from "react";
+import { actionName } from "@/lib/library/server-lookup-action-names";
+
+type AnyAction = (...args: never[]) => Promise<unknown>;
 
 const cache = new Map<string, unknown>();
 // In-flight promises, separate from `cache`, so two components mounting for
@@ -176,9 +179,12 @@ export function useServerLookup<Args extends readonly unknown[], T>(
   args: Args | null,
   options?: UseServerLookupOptions,
 ): T | undefined {
-  // `fn.name` disambiguates different zero/same-shaped-arg actions from each
-  // other — every server-lookups.ts export has a distinct name.
-  const key = args ? `${fn.name}:${JSON.stringify(args)}` : null;
+  // actionName(fn), NOT `fn.name` (SAK-119) — see server-lookup-action-names.ts's
+  // header: every Server Action's client-side `fn.name` collapses to the SAME
+  // minified string in a production build, so two different actions called
+  // with the same-shaped args used to collide on one cache key and hand each
+  // other's callers the wrong value.
+  const key = args ? `${actionName(fn as unknown as AnyAction)}:${JSON.stringify(args)}` : null;
   const persist = options?.persist ?? false;
   const [, forceRender] = useState(0);
 
