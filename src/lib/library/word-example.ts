@@ -98,10 +98,16 @@ export function hardestRank(ex: Example, target: string, rankOf: RankOf): number
 /**
  * The one sentence to show for `target`, or null if there is none.
  *
- * Ordered by hardest word (commonest wins), then by token count (shorter wins),
- * then by Tatoeba id. The last key is what makes this a total order: two
- * sentences can agree on both of the first two, and a pick that depends on
- * corpus iteration order is a pick that can move when the corpus is rebuilt.
+ * Ordered by hardest word (commonest wins), then by whether the sentence
+ * spells `target` LITERALLY (SAK-97 — a sentence that shows the word's own
+ * dictionary form gets a highlight span for free, one that only shows a
+ * conjugated form needs scripts/ingest/sentence_readings.py's tokenizer to
+ * find it; independent of and secondary to vocabulary difficulty, but worth
+ * preferring over a marginally shorter sentence), then by token count
+ * (shorter wins), then by Tatoeba id. The last key is what makes this a total
+ * order: two sentences can agree on all of the above, and a pick that depends
+ * on corpus iteration order is a pick that can move when the corpus is
+ * rebuilt.
  */
 export function chooseExample(
   candidates: readonly Example[],
@@ -123,6 +129,12 @@ export function chooseExample(
       continue;
     }
     if (score > bestScore) continue;
+    const exLiteral = ex.jp.includes(target);
+    const bestLiteral = best.jp.includes(target);
+    if (exLiteral !== bestLiteral) {
+      if (exLiteral) best = ex;
+      continue;
+    }
     if (ex.n !== best.n) {
       if (ex.n < best.n) best = ex;
       continue;
