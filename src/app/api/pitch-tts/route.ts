@@ -18,7 +18,12 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { pitchTtsConfigured, synthesizePitchWav } from "@/lib/pitch-tts-synth";
-import { pitchAudioUrl, pitchObjectPath } from "@/lib/pitch-audio";
+import {
+  DEFAULT_PITCH_VOICE_ID,
+  pitchAudioUrl,
+  pitchObjectPath,
+  pitchVoice,
+} from "@/lib/pitch-audio";
 import { voiceBucket } from "@/lib/voice-audio";
 
 /** Longest reading we'll synthesize — words, not sentences. */
@@ -29,26 +34,35 @@ export async function GET(request: Request): Promise<Response> {
   const reading = (searchParams.get("r") ?? "").trim();
   const downstepRaw = searchParams.get("d") ?? "";
   const downstep = Number.parseInt(downstepRaw, 10);
+  // `v` names a roster id (e.g. "nana"), never a raw VOICEVOX speaker number —
+  // resolving it here, against the curated list in pitch-audio.ts, is what
+  // stops a client from synthesizing with a speaker we never intended to
+  // expose (and from blowing past the resource caps that choice implies).
+  // Missing param ⇒ the shipped default, so old callers/URLs keep working.
+  const voiceIdRaw = searchParams.get("v") ?? DEFAULT_PITCH_VOICE_ID;
+  const voice = pitchVoice(voiceIdRaw);
 
   if (
     !reading ||
     reading.length > MAX_READING ||
     !/^\d+$/.test(downstepRaw) ||
     !Number.isFinite(downstep) ||
-    downstep < 0
+    downstep < 0 ||
+    !voice
   ) {
     return new Response("bad request", { status: 400 });
   }
+  const speakerId = voice.speakerId;
 
   const bucket = voiceBucket();
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const publicUrl = pitchAudioUrl(reading, downstep);
+  const publicUrl = pitchAudioUrl(reading, downstep, speakerId);
   if (!bucket || !supaUrl || !serviceKey || !publicUrl || !pitchTtsConfigured()) {
     return new Response("pitch tts not configured", { status: 503 });
   }
 
-  const path = pitchObjectPath(reading, downstep);
+  const path = pitchObjectPath(reading, downstep, speakerId);
   const folder = path.slice(0, path.lastIndexOf("/"));
   const file = path.slice(path.lastIndexOf("/") + 1);
   const supabase = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });
@@ -67,7 +81,7 @@ export async function GET(request: Request): Promise<Response> {
   // but that is a config fix for the bucket owner, not a reason to 502 here.
   let bytes: ArrayBuffer;
   try {
-    bytes = await synthesizePitchWav(reading, downstep);
+    bytes = await synthesizePitchWav(reading, downstep, speakerId);
   } catch {
     return new Response("synthesis failed", { status: 502 });
   }
