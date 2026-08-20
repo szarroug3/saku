@@ -27,7 +27,7 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
 import { AddToList } from "@/components/library/add-to-list";
 import { ConfigPreview } from "@/components/quiz/config-preview";
-import { Btn, Hint } from "@/components/ui";
+import { Btn, Card, Hint } from "@/components/ui";
 import { constructionConfigForFact } from "@/data/counter-categories";
 import {
   drillPlan,
@@ -235,20 +235,26 @@ export function SliceBar({
     if (!canQuiz && !canUnclaim) return null;
     return (
       <>
-        {/* Bottom-RIGHT, like the lesson walk's "Quiz me" in its footer — a
-            reference page's one action sits at the trailing edge, not the left. */}
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          {canUnclaim ? (
-            <Btn onClick={() => onUnclaim?.(claimedFacts)}>
-              Mark as not known
-            </Btn>
-          ) : null}
-          {canQuiz ? (
-            <Btn sel onClick={() => setQuizzing(true)}>
-              Quiz me {quizCount}
-            </Btn>
-          ) : null}
-        </div>
+        {/* Its own card at the foot of the entry, the same STATIC-footer
+            position the lesson walk holds its forward button in — set off
+            from the reference content above by a hairline, not squeezed
+            straight onto the end of the page with nothing marking a
+            boundary. Bottom-RIGHT within it: a reference page's one action
+            sits at the trailing edge, not the left. */}
+        <Card className="border-t border-white/[0.08] pt-3.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            {canUnclaim ? (
+              <Btn onClick={() => onUnclaim?.(claimedFacts)}>
+                Mark as not known
+              </Btn>
+            ) : null}
+            {canQuiz ? (
+              <Btn sel onClick={() => setQuizzing(true)}>
+                Quiz me {quizCount}
+              </Btn>
+            ) : null}
+          </div>
+        </Card>
         <QuizPreStart
           open={quizzing}
           onOpenChange={setQuizzing}
