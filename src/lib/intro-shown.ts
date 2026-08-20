@@ -117,15 +117,41 @@ export function shownIntros(store: Reader | null | undefined): Set<string> {
   return shown;
 }
 
-/** Record that a card has been through a walk. Swallows a throwing store: a
- * failed write means the card returns next time, which is a nuisance and not a
- * bug. */
-export function markIntroShown(store: Writer | null | undefined, id: string): void {
+/** Record that a card has been through a walk, and mirror the change to the
+ * server so it survives the next reconcile-down.
+ *
+ * WHY THIS PUSHES TOO, NOT JUST markConceptCardsShown
+ * ====================================================
+ * SAK-102: the SRS intro card (srs-intro.tsx) dismisses itself by calling this
+ * function directly, not markConceptCardsShown — it is a single standalone
+ * card, not a walk. That meant the local flag was written but never sent to
+ * the server. `introShown` is a field-level REPLACE on the server (see
+ * settings-merge.ts), and SettingsProvider reconciles server -> local on every
+ * fresh mount (settings-provider.tsx: applyServerSettings), setting the local
+ * flag for every id the server's `introShown` list names and REMOVING it for
+ * every id it doesn't. A dismissal that only ever touched localStorage was
+ * therefore wiped the next time the app reconciled down (e.g. a fresh page
+ * load), and the banner reappeared even though it had been "Got it"-dismissed.
+ * Pushing the full shown set here, the same way markConceptCardsShown already
+ * does for a finished walk, closes that gap for every single-card dismissal.
+ *
+ * Swallows a throwing store: a failed write means the card returns next time,
+ * which is a nuisance and not a bug.
+ */
+export function markIntroShown(store: (Reader & Writer) | null | undefined, id: string): void {
   try {
-    store?.setItem(introShownKey(id), SHOWN);
+    writeIntroShown(store, id);
+    if (store) pushSettings({ introShown: [...shownIntros(store)] });
   } catch {
     // storage unavailable, so the card will simply come back
   }
+}
+
+/** The write half of markIntroShown, with no server push — shared with
+ * markConceptCardsShown, which pushes once for the whole batch instead of once
+ * per card. Not exported: every external caller wants the push. */
+function writeIntroShown(store: Writer | null | undefined, id: string): void {
+  store?.setItem(introShownKey(id), SHOWN);
 }
 
 /**
@@ -147,7 +173,7 @@ export function markConceptCardsShown(
   let changed = false;
   for (const id of ids) {
     if (CONCEPT_CARD_IDS.includes(id)) {
-      markIntroShown(store, id);
+      writeIntroShown(store, id);
       changed = true;
     }
   }
