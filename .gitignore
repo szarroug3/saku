@@ -76,5 +76,9 @@ history.json
 tasks/
 .worktrees/
 
+# Agent-managed worktrees/state (harness-created, not this project's own
+# .worktrees convention above) — machine-local, never shipped
+.claude/
+
 # Bulk-job progress logs (seed-voice-audio.mjs etc.) — machine-local, not shipped
 .logs/
