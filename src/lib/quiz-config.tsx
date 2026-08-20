@@ -129,15 +129,16 @@ function normalizeConfig(saved: unknown): QuizConfig {
       // `pitchVoiceId`, if it still names a real roster voice, wins — it was
       // the more deliberate of the two choices, since SAK-99's picker only
       // ever offered roster voices. Otherwise a saved `voiceName` wins IF it
-      // is still a roster id. Anything else — "" (Auto, always valid, kept
-      // as-is below), a pre-SAK-100 Azure id ("keita"/"nanami"), or garbage —
-      // falls back to the roster default.
+      // is still a roster id. Anything else — the retired "Auto" (""), a
+      // pre-SAK-100 Azure id ("keita"/"nanami"), or garbage — falls back to
+      // the roster default. Auto is no longer an offered choice (Settings
+      // dropped it), so unlike before this migration no longer preserves "".
       const legacyPitchVoiceId =
         typeof rawObj.pitchVoiceId === "string" ? rawObj.pitchVoiceId : undefined;
       cfg.voiceName =
         legacyPitchVoiceId && isVoiceId(legacyPitchVoiceId)
           ? legacyPitchVoiceId
-          : isVoiceId(cfg.voiceName) || cfg.voiceName === ""
+          : isVoiceId(cfg.voiceName)
             ? cfg.voiceName
             : DEFAULT_VOICE_ID;
       delete (cfg as unknown as Record<string, unknown>).pitchVoiceId;
