@@ -26,7 +26,7 @@ test("voiceKey is deterministic 16-hex and text-sensitive", () => {
 test("voiceObjectPath is voices/<id>/<key>.wav", () => {
   assert.equal(
     voiceObjectPath("nana", "あ"),
-    `voices/nana/${voiceKey("あ")}.wav`,
+    `voices/nana/${voiceKey("あ")}.opus`,
   );
 });
 
@@ -36,7 +36,7 @@ test("pitchObjectPath keys on (reading, downstep, voiceId), never colliding with
   const general = voiceObjectPath("nana", "せんせい");
   assert.notEqual(p1, p2, "a different downstep must not collide");
   assert.notEqual(p1, general, "a pitch clip must not collide with a general-speech clip of the same text");
-  assert.match(p1, /^voices\/nana\/pitch-[0-9a-f]{16}\.wav$/);
+  assert.match(p1, /^voices\/nana\/pitch-[0-9a-f]{16}\.opus$/);
 });
 
 test("isVoiceId matches only registered roster ids", () => {

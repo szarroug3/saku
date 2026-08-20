@@ -1,7 +1,14 @@
 // Pre-generate voice clips into Storage for a whole content set, across every
 // roster voice, ahead of anyone hitting /api/tts live. Same cache the live
-// route writes to (voices/<voiceId>/<key>.wav) — this just warms it in bulk
+// route writes to (voices/<voiceId>/<key>.opus) — this just warms it in bulk
 // so the FIRST real request is already a cache hit, not a synthesis wait.
+//
+// COMPRESSED (SAK-101-ish, no ticket yet): every clip is encoded WAV→Opus at
+// 24kbps via src/lib/audio-compress.ts (shared with the live routes) before
+// upload — the full corpus × 6 voices as raw WAV projected to ~11GB, well
+// past Supabase's free-tier storage; Opus at this bitrate is ~16x smaller
+// with no audible loss for speech, verified by ear across the whole roster
+// first. Needs `ffmpeg` on PATH.
 //
 // GENERIC ON PURPOSE: --set selects which text list to seed (see SETS below).
 // Add a new set (e.g. words) by adding one entry — the run/upload/skip/limit
@@ -56,6 +63,7 @@ import { createClient } from "@supabase/supabase-js";
 import { CHAR_INDEX } from "@/data/characters";
 import { READINGS } from "@/data/kanji";
 import { VOCAB } from "@/data/vocab";
+import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { VOICES } from "@/lib/voice";
 import { voiceObjectPath } from "@/lib/voice";
 import grammarCorpus from "@/data/generated/grammar-corpus.json" with { type: "json" };
@@ -232,10 +240,11 @@ async function seedOneWithRetry({ voiceId, text }, { base, bucket, supabase, spe
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     try {
       const query = await audioQuery(base, text, speakerId);
-      const bytes = await synthesize(base, speakerId, query);
+      const wavBytes = await synthesize(base, speakerId, query);
+      const opusBytes = await encodeOpus(wavBytes);
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(path, bytes, { contentType: "audio/wav", upsert: true });
+        .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
       if (error) throw error;
       // The same text can turn up in more than one set (a grammar-corpus
       // sentence that's also someone's word-example) — record it locally so
