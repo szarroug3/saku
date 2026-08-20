@@ -25,7 +25,8 @@ import {
   pickSubstitution,
   type SubstitutionItem,
 } from "@/lib/engine/substitution";
-import { vocabRow } from "@/data/vocab";
+import { resolveVocabRows } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { toKana } from "@/lib/romaji";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -127,9 +128,11 @@ function skipCard(rt: SubRuntime, card: SubCard): void {
   rt.cards.push(skipped);
 }
 
-/** The first gloss of a verb, for the meaning hint. DRAFT: single gloss. */
-function gloss(surface: string): string {
-  return vocabRow(surface)?.glosses[0] ?? "";
+/** The first gloss of a verb, for the meaning hint. DRAFT: single gloss.
+ * SAK-104: vocabRow reads data/vocab.ts (server-only), so the caller passes
+ * the batched-fetched row map instead of looking it up here. */
+function gloss(surface: string, rows: Record<string, { glosses: readonly string[] }>): string {
+  return rows[surface]?.glosses[0] ?? "";
 }
 
 export function SubstitutionScreen() {
@@ -145,6 +148,15 @@ export function SubstitutionScreen() {
   // Build only once history has actually arrived — an empty EMPTY history would
   // roll zero items and wrongly show the empty state.
   const rt = active && loaded ? ensureRuntime(active, history) : null;
+
+  // SAK-104: vocabRow reads data/vocab.ts (server-only). The runtime's cards
+  // are rolled ONCE (buildRuntime, above) so the full set of surfaces the hint
+  // panel can ever need is known up front — one batched fetch per runtime,
+  // not one per hint open.
+  const surfaces = rt
+    ? [...new Set(rt.cards.flatMap((c) => [c.item.target.surface, c.item.demo.surface]))]
+    : [];
+  const vocabRows = useServerLookup(resolveVocabRows, rt ? [surfaces] : null) ?? {};
 
   const done = rt ? rt.cards.filter((c) => c.state !== "open").length : 0;
   const total = rt?.cards.length ?? 0;
@@ -336,11 +348,11 @@ export function SubstitutionScreen() {
             <span lang="ja" className="font-medium">
               {item.target.surface}
             </span>{" "}
-            {gloss(item.target.surface)} ·{" "}
+            {gloss(item.target.surface, vocabRows)} ·{" "}
             <span lang="ja" className="font-medium">
               {item.demo.form}
             </span>{" "}
-            {gloss(item.demo.surface)} form
+            {gloss(item.demo.surface, vocabRows)} form
           </div>
         ) : null}
       </div>

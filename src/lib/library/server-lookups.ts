@@ -36,16 +36,44 @@ import {
   knownFactsOf as knownFactsOfIndex,
   knownWordsUsing as knownWordsUsingIndex,
   libEntry as libEntryOf,
+  pitchReadingCompatible as pitchReadingCompatibleOf,
   precomputedStrokeFallback as precomputedStrokeFallbackOf,
   quizzableFacts as quizzableFactsOf,
   recipeOf as recipeOfIndex,
   recipesOf as recipesOfIndex,
+  SENTENCE_RULE_KIND,
   usedAsPartIn as usedAsPartInIndex,
 } from "@/lib/library/library-index";
 import { entryHref } from "@/lib/library/href";
 import { termHref } from "@/lib/library/term-href";
-import { entryOf, factInfo, factsOf, glyphOf } from "@/lib/facts";
-import { vocabRow, legacyUnqualifiedReading } from "@/data/vocab";
+import { subLabel } from "@/lib/library/sub-label";
+import { subjectLabel as subjectLabelOf } from "@/lib/library/entries";
+import { speechForFact } from "@/lib/fact-speech";
+import { ALL_FACTS, entryOf, factInfo, factsOf, glyphOf } from "@/lib/facts";
+import {
+  isWordReadingFact,
+  vocabRow,
+  legacyUnqualifiedReading,
+  VOCAB_SUBJECT,
+} from "@/data/vocab";
+import { KANA_SUBJECT } from "@/data/characters";
+import { RADICAL_SUBJECT } from "@/data/radicals";
+import { KANJI_SUBJECT } from "@/data/kanji";
+import { factType } from "@/lib/practice-types";
+import { counterForm, isBareNumber, COUNTER_ENTRIES } from "@/data/counters";
+import { numberConstructionEntry } from "@/data/number-construction-id";
+import { numberConstructionFor } from "@/data/number-construction";
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
+import { itemHeadline } from "@/lib/content/headline";
+import type { Headline } from "@/lib/content/headline";
+import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
+import type { ContentItem } from "@/lib/content/item";
+import { lessonSteps } from "@/lib/lesson-steps";
+import type { LessonStep } from "@/lib/lesson-steps";
+import type { LessonItem } from "@/lib/lesson-items";
+import { weakestFacts as weakestFactsOf } from "@/lib/decks";
+import { characterEntryPayload } from "@/lib/library/character-entry-content";
+import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import type { SavedList } from "@/types";
 import { KINDS as ALL_KINDS_INDEX, LIB_ENTRIES } from "@/lib/library/library-index";
 import type { Kind } from "@/lib/library/kinds";
@@ -440,4 +468,496 @@ export async function getSelectionSlice(
   const set = new Set(ids);
   const entries = LIB_ENTRIES.filter((e) => set.has(e.id)).map((e) => e.id);
   return { label: `${entries.length} selected`, entries };
+}
+
+/* -------------------------------------------------------------------------
+ * STATS PAGE (Progress's "By subject") — SAK-104. by-subject.tsx's module
+ * scope used to walk ALL_FACTS via factInfo/entryOf (facts.ts, guarded) to
+ * build one Subject per scheduled subject, split Words into
+ * words/numbers/counters (factType, counterForm/isBareNumber — data/
+ * counters.ts, itself guarded via facts.ts) and Kana into hiragana/katakana,
+ * then grouped the result into the page's Vocabulary/Counting/Kana rows. None
+ * of that depends on the reader's own history — it's the identical static
+ * walk for every visitor — so it moves here as one action, computed once and
+ * cached for the server process's lifetime (same pattern as SHELF_CACHE
+ * above). The client keeps only what DOES depend on the reader: met counts,
+ * standing, and the row labels (SUBJECT_LABEL, a plain string table with no
+ * guarded dependency of its own — see by-subject.tsx). ------------------- */
+
+export interface StatsSubject {
+  readonly id: string;
+  readonly facts: readonly FactId[];
+  readonly entries: readonly EntryId[];
+  /** entry -> its facts, within this subject's own population only — built
+   * once per Subject (top-level or a split-off child, Hiragana/Numbers/…)
+   * rather than read from one shared registry keyed by top-level subject id.
+   * A plain object (not a Map) so it survives the Server Action boundary the
+   * same way every other batched action here returns its rows. */
+  readonly entryFacts: Readonly<Record<string, readonly FactId[]>>;
+}
+
+export type StatsRow =
+  | { kind: "subject"; subject: StatsSubject }
+  | { kind: "group"; label: string; children: StatsSubject[] };
+
+export interface StatsData {
+  rows: StatsRow[];
+  /** SENTENCE_ORDERING_TIERS.length — the one other piece of the page's
+   * module-scope data that reached a guarded module (data/assembly.ts, via
+   * its own factInfo import), needed only as a count. */
+  sentenceTierCount: number;
+}
+
+function buildStatsSubject(id: string, facts: FactId[]): StatsSubject {
+  const entryFacts: Record<string, FactId[]> = {};
+  const entries: EntryId[] = [];
+  for (const f of facts) {
+    const e = entryOf(f) as unknown as string;
+    const list = entryFacts[e];
+    if (list) list.push(f);
+    else {
+      entryFacts[e] = [f];
+      entries.push(e as unknown as EntryId);
+    }
+  }
+  return { id, facts, entries, entryFacts };
+}
+
+/** The two bare-number generative categories ("Numbers 1-99", "Numbers
+ * 100-9999") — the only construction categories with no counter attached.
+ * Every other category is a real counter. See by-subject.tsx's original
+ * comment (git history) for the full reasoning; unchanged by this move. */
+const NUMBER_CATEGORY_ENTRIES: ReadonlySet<EntryId> = new Set([
+  numberConstructionEntry("tens"),
+  numberConstructionEntry("big"),
+]);
+
+function isCountingNumberEntry(entry: EntryId): boolean {
+  if (NUMBER_CATEGORY_ENTRIES.has(entry)) return true;
+  const form = counterForm(entry);
+  return form !== undefined && isBareNumber(form);
+}
+
+const COUNTING_NUMBERS_ID = "counting-numbers";
+const COUNTING_COUNTERS_ID = "counting-counters";
+const KANA_HIRAGANA_ID = "kana-hiragana";
+const KANA_KATAKANA_ID = "kana-katakana";
+
+function splitWordSubject(
+  subject: StatsSubject,
+): { words: StatsSubject; numbers: StatsSubject; counters: StatsSubject } {
+  const wordFacts: FactId[] = [];
+  const numberFacts: FactId[] = [];
+  const counterFacts: FactId[] = [];
+  for (const f of subject.facts) {
+    if (factType(f) !== "counter") {
+      wordFacts.push(f);
+      continue;
+    }
+    (isCountingNumberEntry(entryOf(f)) ? numberFacts : counterFacts).push(f);
+  }
+  return {
+    words: buildStatsSubject(subject.id, wordFacts),
+    numbers: buildStatsSubject(COUNTING_NUMBERS_ID, numberFacts),
+    counters: buildStatsSubject(COUNTING_COUNTERS_ID, counterFacts),
+  };
+}
+
+function splitKanaSubject(
+  subject: StatsSubject,
+): { hiragana: StatsSubject; katakana: StatsSubject } {
+  const hiraganaFacts = subject.facts.filter((f) => factType(f) === "hiragana");
+  const katakanaFacts = subject.facts.filter((f) => factType(f) === "katakana");
+  return {
+    hiragana: buildStatsSubject(KANA_HIRAGANA_ID, hiraganaFacts),
+    katakana: buildStatsSubject(KANA_KATAKANA_ID, katakanaFacts),
+  };
+}
+
+const VOCABULARY_CHILD_IDS: readonly string[] = [RADICAL_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT];
+
+let STATS_DATA_CACHE: StatsData | null = null;
+
+/** Every row Progress's "By subject" table renders, in display order — see
+ * this section's header for why this can be computed once and cached rather
+ * than per-request. */
+export async function getStatsRows(): Promise<StatsData> {
+  if (STATS_DATA_CACHE) return STATS_DATA_CACHE;
+
+  const byId = new Map<string, FactId[]>();
+  const order: string[] = [];
+  for (const f of ALL_FACTS) {
+    const id = factInfo(f)?.subject;
+    if (!id) continue;
+    let list = byId.get(id);
+    if (!list) {
+      list = [];
+      byId.set(id, list);
+      order.push(id);
+    }
+    list.push(f);
+  }
+  const subjects = order.map((id) => buildStatsSubject(id, byId.get(id)!));
+
+  const rows: StatsRow[] = [];
+  let vocabularyChildren: StatsSubject[] | null = null;
+  for (const s of subjects) {
+    if (s.id === KANA_SUBJECT) {
+      const { hiragana, katakana } = splitKanaSubject(s);
+      rows.push({ kind: "group", label: "Kana", children: [hiragana, katakana] });
+      continue;
+    }
+    if (s.id === VOCAB_SUBJECT) {
+      const { words, numbers, counters } = splitWordSubject(s);
+      if (!vocabularyChildren) {
+        vocabularyChildren = [];
+        rows.push({ kind: "group", label: "Vocabulary", children: vocabularyChildren });
+      }
+      vocabularyChildren.push(words);
+      rows.push({ kind: "group", label: "Counting", children: [numbers, counters] });
+      continue;
+    }
+    if (VOCABULARY_CHILD_IDS.includes(s.id)) {
+      if (!vocabularyChildren) {
+        vocabularyChildren = [];
+        rows.push({ kind: "group", label: "Vocabulary", children: vocabularyChildren });
+      }
+      vocabularyChildren.push(s);
+      continue;
+    }
+    rows.push({ kind: "subject", subject: s });
+  }
+
+  STATS_DATA_CACHE = { rows, sentenceTierCount: SENTENCE_ORDERING_TIERS.length };
+  return STATS_DATA_CACHE;
+}
+
+/* -------------------------------------------------------------------------
+ * STATS SIDE PANELS — entry-breakdown.tsx and bucket-breakdown.tsx render a
+ * list of entries/facts a by-subject.tsx click already resolved; each row
+ * still needs a guarded lookup (name/detail/href for an entry, glyph/meaning/
+ * href for a fact), batched into one round trip per panel open rather than
+ * one request per row. ------------------------------------------------- */
+
+export interface EntryBreakdownRow {
+  name: string;
+  detail: string | null;
+  href: string;
+}
+
+/** entry-breakdown.tsx's whole per-row data need, batched. Mirrors that
+ * file's own `displayName`/`entryDetail` exactly (see its header for why
+ * sentence-rule marks read `sub` instead of `subLabel`). */
+export async function getEntryBreakdownRows(
+  ids: readonly EntryId[],
+): Promise<Record<string, EntryBreakdownRow>> {
+  const out: Record<string, EntryBreakdownRow> = {};
+  for (const id of ids) {
+    const entry = libEntryOf(id);
+    let name: string;
+    let detail: string | null;
+    if (entry) {
+      name = libEntryName(entry);
+      if (entry.kind === SENTENCE_RULE_KIND) {
+        detail = entry.sub || null;
+      } else {
+        const label = subLabel(entry);
+        detail = label === "—" ? null : label;
+      }
+    } else {
+      name = glyphOf(id);
+      const firstFact = factsOf(id)[0];
+      detail = firstFact ? (factInfo(firstFact)?.meaning ?? null) : null;
+    }
+    out[id as unknown as string] = { name, detail, href: entryHref(id) };
+  }
+  return out;
+}
+
+export interface BucketBreakdownRow {
+  glyph: string;
+  meaning: string | null;
+  href: string;
+}
+
+/** bucket-breakdown.tsx's whole per-row data need, batched. A fact id history
+ * kept but the data no longer has is simply absent from the result — the
+ * caller renders the bare id, the same courtesy factInfo's own callers already
+ * extend it. */
+export async function getBucketBreakdownRows(
+  facts: readonly FactId[],
+): Promise<Record<string, BucketBreakdownRow>> {
+  const out: Record<string, BucketBreakdownRow> = {};
+  for (const id of facts) {
+    const info = factInfo(id);
+    if (!info) continue;
+    out[id as unknown as string] = {
+      glyph: info.glyph,
+      meaning: info.meaning,
+      href: entryHref(info.entry),
+    };
+  }
+  return out;
+}
+
+/* -------------------------------------------------------------------------
+ * LIVE QUIZ/SESSION CLUSTER — SAK-104. drill-screen.tsx and its siblings hold
+ * the CURRENT LEG's fact set (active.facts, frozen at Start — see
+ * quiz-session.tsx) client-side for the run's lifetime, so the batched actions
+ * below are fetched ONCE per leg (or once per new question, for the MC-option
+ * facts a subject's distractor pool draws from outside that frozen set) into a
+ * local map the hot per-question render path then reads synchronously — never
+ * a server round trip while a question is on screen. See drill-screen.tsx's
+ * own header for why this cluster keeps its zero-latency contract. ------- */
+
+/** Batched vocabRow lookups by keb (word spelling) — the word-pitch/reading
+ * display path (promptPitch/revealPitch in drill-screen.tsx, the
+ * substitution screen's hint gloss) all key off a fact's OWN glyph, so this is
+ * fetched for a small, already-known set of kebs, never an open-ended one. */
+export async function resolveVocabRows(
+  kebs: readonly string[],
+): Promise<Record<string, VocabRow>> {
+  const out: Record<string, VocabRow> = {};
+  for (const keb of [...new Set(kebs)]) {
+    const row = vocabRow(keb);
+    if (row) out[keb] = row;
+  }
+  return out;
+}
+
+/** Batched legacyUnqualifiedReading lookups by keb — paired with
+ * resolveVocabRows for the same pitch-display call sites. */
+export async function resolveLegacyUnqualifiedReadings(
+  kebs: readonly string[],
+): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = {};
+  for (const keb of [...new Set(kebs)]) out[keb] = legacyUnqualifiedReading(keb);
+  return out;
+}
+
+/** Which of `facts` are word READING facts (vs meaning, vs a non-word fact) —
+ * WORD_READING_FACTS is a module-scope Set inside the guarded vocab.ts, so
+ * membership is resolved here once per leg for the leg's whole fact pool,
+ * rather than importing the set directly. */
+export async function getWordReadingFactSet(
+  facts: readonly FactId[],
+): Promise<FactId[]> {
+  return facts.filter((f) => isWordReadingFact(f));
+}
+
+/** WordsWith's whole per-word data need, batched by GLYPH (the word's own
+ * spelling, not an id it doesn't have yet) — the entry id (if the vocabulary
+ * teaches this spelling as a word), its href, its primary reading (pitch-
+ * annotatable only when pitchReadingCompatible), and up to two glosses. */
+export interface WordLinkRow {
+  readonly id: EntryId;
+  readonly href: string;
+  readonly reading: string | null;
+  readonly pitchCompatible: boolean;
+  readonly meanings: readonly string[];
+}
+
+export async function resolveWordLinksByGlyph(
+  glyphs: readonly string[],
+): Promise<Record<string, WordLinkRow>> {
+  const out: Record<string, WordLinkRow> = {};
+  for (const g of [...new Set(glyphs)]) {
+    const id = entryForGlyphOf(VOCAB_SUBJECT as Parameters<typeof entryForGlyphOf>[0], g);
+    if (!id) continue;
+    const entry = libEntryOf(id);
+    if (!entry) continue;
+    out[g] = {
+      id,
+      href: entryHref(id),
+      reading: entry.readings[0] ?? null,
+      pitchCompatible: pitchReadingCompatibleOf(g),
+      meanings: entry.meanings,
+    };
+  }
+  return out;
+}
+
+/** how-its-written.tsx's whole-shape parts fallback — each part is a single
+ * kanji glyph; this resolves the small (2-4 element) breakdown to its href in
+ * one round trip. */
+export async function resolveKanjiPartLinks(
+  chars: readonly string[],
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const c of [...new Set(chars)]) out[c] = entryHref(kanjiEntryFor(c));
+  return out;
+}
+
+/** app/session/page.tsx's teach-set header label — "Word", "Kanji", "Keigo
+ * set", … for the first fact of a teach set. subjectLabel (library/entries.ts)
+ * reads the guarded FactInfo shape, so this is the one round trip the session
+ * header needs. */
+export async function getTeachSubjectLabel(
+  fact: FactId,
+): Promise<string | undefined> {
+  return subjectLabelOf(factInfo(fact));
+}
+
+/** Batched TTS text (`speechForFact`) for a set of facts — the drill screen's
+ * listening-card autoplay and its "hear it again" speaker both want it for
+ * the CURRENT showing's fact, always a member of the leg's own pool
+ * (active.facts, frozen at Start), so it is fetched alongside factInfo for
+ * that same bounded set. speechForFact itself reads several guarded subject
+ * modules (keigoWordInfo, wordReadingUnit, …), not just factInfo's own shape,
+ * which is why it needs its own round trip rather than being derived
+ * client-side from resolveFactInfos's result. */
+export async function resolveSpeechForFacts(
+  facts: readonly FactId[],
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const id of facts) {
+    const info = factInfo(id);
+    if (!info) continue;
+    const text = speechForFact(info);
+    if (text) out[id as unknown as string] = text;
+  }
+  return out;
+}
+
+// RESULTS SCREEN — SAK-104 (Chain B, results-view.tsx/results/page.tsx).
+//
+// results-view.tsx used to import `entryOf`/`factsOf` from lib/facts.ts
+// directly and pass `entryOf` on as a synchronous callback into
+// confusions.ts's already-DI-friendly `analyzeRun`/`pairRecentRuns` (see
+// lib/confusions.ts's own `EntryOf` type). The set of facts either function
+// could ever ask about is bounded — every fact key across this run's own
+// stats plus every past session's recorded detail, all already sitting in
+// `history` client-side — so it batches exactly like drill-screen.tsx's
+// pool: one round trip for the whole known set, then a synchronous local
+// wrapper (`id => map[id] ?? id`, the same "unknown id answers itself"
+// fallback lib/facts.ts's own entryOf documents) stands in for the import.
+// factsOf(entry) is looked up the same batched way for the small, always-
+// on-screen set of confusion-pair entries.
+export async function resolveFactsOfEntries(
+  entries: readonly EntryId[],
+): Promise<Record<string, FactId[]>> {
+  const out: Record<string, FactId[]> = {};
+  for (const e of [...new Set(entries)]) out[e as unknown as string] = [...factsOf(e)];
+  return out;
+}
+
+/** weakestFacts (lib/decks.ts) is a pure function of a whole HistoryFile plus
+ * a timestamp/count — it filters `history.facts` through the same
+ * dictionary-existence check (`factsOf(entryOf(f)).length`) resolveFactsOf-
+ * Entries's siblings use, then ranks. Nothing about it is per-item or
+ * unbounded, so it moves whole rather than being decomposed into a batched
+ * client-side loop. */
+export async function resolveWeakestFacts(
+  history: HistoryFile,
+  now: number,
+  n: number,
+): Promise<FactId[]> {
+  return weakestFactsOf(history, now, n);
+}
+
+/** characterEntryPayload (lib/library/character-entry-content.ts) derives a
+ * single Han glyph's whole display payload from a plain, already-built
+ * ContentItem — the same "item carries no dictionary dependency, one
+ * function reading it does" shape as resolveItemHeadline above. The teach
+ * walk's live adapter (live-character-entry-view.tsx) is this function's
+ * only caller left importing it directly; the Library route already reaches
+ * the same payload by id through useContentEntry/content-entries.ts. */
+export async function resolveCharacterEntryPayload(
+  item: ContentItem,
+): Promise<CharacterEntryPayload> {
+  return characterEntryPayload(item);
+}
+
+/** One row of ConfusionSection's "commonly mixed up with" / "you've mixed up
+ * with" tiles (confusion-section.tsx) — glyph, one gloss, and the link, batch-
+ * resolved for the whole (always small — shape lookalikes) confusables/
+ * confused set in one call instead of one libEntry/entryHref pair per tile. */
+export interface ConfusableRowData {
+  readonly glyph: string;
+  readonly gloss: string;
+  readonly href: string;
+}
+
+/** Just the URL for a batch of entries — for callers (like PatternFamily)
+ * that already mint the EntryId themselves off a pure, unguarded id-builder
+ * (patternEntry is `entryId(GRAMMAR_SUBJECT, recipeId)`, no dictionary read)
+ * and only need entryHref's own SOURCE-DATA-backed slug lookup. */
+export async function resolveHrefs(
+  ids: readonly EntryId[],
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const id of [...new Set(ids)]) out[id as unknown as string] = entryHref(id);
+  return out;
+}
+
+export async function resolveConfusableRows(
+  ids: readonly EntryId[],
+): Promise<Record<string, ConfusableRowData>> {
+  const out: Record<string, ConfusableRowData> = {};
+  for (const id of [...new Set(ids)]) {
+    const e = libEntryOf(id);
+    if (!e) continue;
+    out[id as unknown as string] = {
+      glyph: e.glyph,
+      gloss: e.meanings[0] ?? e.readings[0] ?? "",
+      href: entryHref(id),
+    };
+  }
+  return out;
+}
+
+// TEACH WALK / LIVE-ITEM ENTRY VIEWS — SAK-104 (Chain A).
+//
+// itemHeadline (lib/content/headline.ts) reads factInfo/kanjiRow off a plain,
+// already-built ContentItem — the item itself carries no dictionary
+// dependency (see lib/content/item.ts), only this ONE function does — so the
+// live adapters (live-item-entry-views.tsx) fetch the headline for an item
+// they already hold instead of importing the guarded module.
+export async function resolveItemHeadline(item: ContentItem): Promise<Headline> {
+  return itemHeadline(item);
+}
+
+/** buildGlyphItem/buildItem (lib/content/build-item.ts) assemble a
+ * ContentItem for one teach-walk step. The teach walk (teach-item-view.tsx)
+ * used to call them directly, synchronously, branching on the step's
+ * LessonKind the same way this function does — that branch (which builder,
+ * which ContentKind) moves here verbatim so the client keeps only the
+ * RENDERER choice, not the dictionary read. dev/views/page.tsx, the only
+ * other caller, is a Server Component and keeps calling the builders
+ * directly — no client-bundle concern there. */
+export async function resolveTeachItem(item: LessonItem): Promise<ContentItem | null> {
+  switch (item.kind) {
+    case "kana":
+      return buildItem(item.entry, "kana") ?? null;
+    case "radical":
+    case "kanji":
+      return buildGlyphItem(item.glyph) ?? null;
+    case "word":
+      if (numberConstructionFor(item.entry)) {
+        return buildItem(item.entry, "generative-rule") ?? null;
+      }
+      if (COUNTER_ENTRIES.has(item.entry)) return buildItem(item.entry, "counter") ?? null;
+      return buildItem(item.entry, "word") ?? null;
+    case "grammar":
+      return buildItem(item.entry, "grammar") ?? null;
+    case "transitivity":
+      return buildItem(item.entry, "transitivity") ?? null;
+    case "keigo":
+      return buildItem(item.entry, "keigo") ?? null;
+  }
+}
+
+/** lessonSteps (lib/lesson-steps.ts) reads factInfo/vocabRow/etc transitively
+ * (itemsFromFacts → lib/facts.ts, and its own kanji/vocab imports). Both
+ * callers (teach-walk.tsx, app/session/page.tsx) already compute the whole
+ * teach set's steps once per lesson via useMemo — this is that same "compute
+ * once per lesson" call, just an async round trip instead of a sync
+ * function. `shownIntros` crosses the Server Action boundary as a plain
+ * array (a Set does not survive JSON serialization) and is rebuilt here. */
+export async function resolveLessonSteps(
+  facts: readonly FactId[],
+  history: HistoryFile | undefined,
+  shownIntros: readonly string[],
+): Promise<LessonStep[]> {
+  return lessonSteps(facts, history, new Set(shownIntros));
 }
