@@ -1,3 +1,5 @@
+import "server-only";
+
 // The vocabulary subject: 12,553 everyday words from JMdict.
 //
 // WHICH WORDS, AND WHY NOT ALL 190,000

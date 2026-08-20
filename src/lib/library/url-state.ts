@@ -46,8 +46,12 @@
 // the multi-select `kindsFromParams` does, and nothing about widening the
 // Library's own UI to a checklist changes what a shelf lookup wants.
 
-import { KINDS } from "@/lib/library/library-index";
-import type { Kind } from "@/lib/library/entries";
+// SAK-104: KINDS/Kind come from the small unguarded kinds.ts, not
+// entries.ts/library-index.ts (both server-only) — this file is read from a
+// client component (library-page.tsx) on every render, so it cannot afford a
+// Server Action round trip just to enumerate/validate the kind list. See
+// kinds.ts's own header for why duplicating these literals is safe.
+import { KINDS, type Kind } from "@/lib/library/kinds";
 import { KANA_SUBJECT } from "@/data/characters";
 
 /** The shelf(s) you are browsing. */

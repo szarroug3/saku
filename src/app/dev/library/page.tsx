@@ -1,5 +1,3 @@
-"use client";
-
 // DEV gallery for the Library shelf redesign — a few representative shelves, each
 // rendered TWO ways stacked with labelled headings: the CURRENT boxed version
 // (the shipped <Shelf>, one <Card> per section) and the REDESIGNED de-boxed
@@ -18,12 +16,17 @@
 //               so it shows the de-boxed treatment of a row section.
 //
 // Data comes from the same source the live page uses — shelfSections(kind,
-// "everyday") in components/library/shelves.tsx — so the sections and entries are
+// "everyday") in lib/library/shelf-sections.ts — so the sections and entries are
 // exactly what /library builds. Standings are computed against EMPTY history (see
 // DevShelfCompare), so every tile reads "not known"; this is a visual comparison.
+//
+// SAK-104: this page has no interactivity of its own (DevShelfCompare and its
+// children carry all of it), so it is a Server Component — shelfSections reads
+// the server-only library index, and computing the three section lists here
+// means that multi-megabyte index never has to reach client JS for this route.
 
 import { DevShelfCompare } from "@/components/library/dev-shelf-compare";
-import { shelfSections } from "@/components/library/shelves";
+import { shelfSections } from "@/lib/library/shelf-sections";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT, KANJI_SUBJECT } from "@/lib/library/library-index";
 

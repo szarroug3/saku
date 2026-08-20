@@ -20,13 +20,8 @@ import { useState } from "react";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { Card, Lbl } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
-import {
-  entryForGlyph,
-  libEntry,
-  pitchReadingCompatible,
-  VOCAB_SUBJECT,
-} from "@/lib/library/library-index";
-import { entryHref } from "@/lib/library/href";
+import { resolveWordLinksByGlyph } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { wordBeginnerRank } from "@/lib/word-rank";
 
 const VISIBLE = 8;
@@ -54,34 +49,40 @@ export function WordsWith({
   );
   const shown = showAll ? ordered : ordered.slice(0, VISIBLE);
 
+  // SAK-104: entryForGlyph/libEntry/pitchReadingCompatible/entryHref all read
+  // server-only modules now, so the whole per-word row (id, href, reading,
+  // pitch-compatibility, glosses) comes from one batched round trip keyed by
+  // `shown` — the same VISIBLE-capped list already renders, so this never
+  // fetches more than the page is about to show.
+  const links = useServerLookup(resolveWordLinksByGlyph, [shown]);
+
   return (
     <Card>
       <Lbl>{label}</Lbl>
       <div className="flex flex-col gap-1.5">
         {shown.map((w) => {
-          const id = entryForGlyph(VOCAB_SUBJECT, w);
-          const row = id ? libEntry(id) : undefined;
+          const row = links?.[w];
           // The same pitch overline the word's own entry draws, on its reading
           // here — display only, and only where a pitch is verified; a word with
           // none shows the plain reading, unchanged. See pitch-mark.tsx.
           const pitch = wordPitch(w);
           return (
             <div key={w} className="flex flex-wrap items-baseline gap-2 text-[13px]">
-              {id ? (
-                <Link href={entryHref(id)} className="text-[16px] text-text no-underline">
+              {row ? (
+                <Link href={row.href} className="text-[16px] text-text no-underline">
                   {w}
                 </Link>
               ) : (
                 <span className="text-[16px]">{w}</span>
               )}
-              {row?.readings[0] && pitch != null && pitchReadingCompatible(w) ? (
+              {row?.reading && pitch != null && row.pitchCompatible ? (
                 <PitchReading
-                  reading={row.readings[0]}
+                  reading={row.reading}
                   downstep={pitch}
                   className="text-text-muted"
                 />
               ) : (
-                <span className="text-text-muted">{row?.readings[0]}</span>
+                <span className="text-text-muted">{row?.reading}</span>
               )}
               <span className="min-w-0 flex-1 truncate text-text-muted">
                 {row?.meanings.slice(0, 2).join(", ")}

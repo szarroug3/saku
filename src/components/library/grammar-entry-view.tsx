@@ -37,7 +37,8 @@ import { PatternFamily, type FamilyBuild } from "@/components/library/pattern-fa
 import { PatternTeach, type PatternTeaching } from "@/components/library/pattern-teach";
 import { SentenceExampleView } from "@/components/lesson/phase-intro-view";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { libEntry, recipeOf, recipesOf } from "@/lib/library/library-index";
+import { getGlyphLink, getRecipeOf, getRecipesOf } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { useContentEntry } from "@/lib/library/content-entries";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -82,12 +83,17 @@ export function GrammarEntryView({
   const fetched = useContentEntry<GrammarPayload>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  const glyph = item ? item.glyph : libEntry(resolvedEntry)?.glyph;
+  // SAK-104: libEntry/recipeOf/recipesOf all read library-index.ts
+  // (server-only) now, so the glyph (when this view has no live `item`) and
+  // the pattern's recipe(s) come from batched round trips instead of the
+  // direct imports this used to make.
+  const glyphLink = useServerLookup(getGlyphLink, item ? null : [resolvedEntry]);
+  const glyph = item ? item.glyph : glyphLink?.glyph;
   const teachings = item ? liveTeachings : fetched?.teachings;
   const familyBuilds = item ? liveFamilyBuilds : fetched?.familyBuilds;
 
-  const pattern = recipeOf(resolvedEntry);
-  const patterns = recipesOf(resolvedEntry);
+  const pattern = useServerLookup(getRecipeOf, [resolvedEntry]);
+  const patterns = useServerLookup(getRecipesOf, [resolvedEntry]) ?? [];
 
   if (headline === undefined || headline === null || !glyph || !pattern) return null;
 

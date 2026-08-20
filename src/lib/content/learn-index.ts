@@ -1,3 +1,5 @@
+import "server-only";
+
 // LEARN INDEX LOADER — the content-free frontier for /learn.
 //
 // Reads the precomputed index (learn-index.json) and runs the SAME scheduler core

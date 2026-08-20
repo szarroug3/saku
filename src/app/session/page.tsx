@@ -25,14 +25,17 @@ import { TeachWalk } from "@/components/session/teach-walk";
 import { Btn, SmallBtn } from "@/components/ui";
 import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
-import { factInfo } from "@/lib/facts";
 import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-shown";
-import { subjectLabel as teachSubjectLabel } from "@/lib/library/entries";
+import { getTeachSubjectLabel, resolveLessonSteps } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { groupOfFact, widerScope } from "@/lib/lesson";
-import { lessonSteps } from "@/lib/lesson-steps";
+import type { LessonStep } from "@/lib/lesson-steps";
 import { restLeftMs, roundTargetOf } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
+
+/** Same stable-empty-while-loading contract as teach-walk.tsx's own copy. */
+const EMPTY_STEPS: readonly LessonStep[] = [];
 
 const SENTENCE_TIER_IDS: readonly SentenceOrderingTierId[] = [
   "simple",
@@ -158,9 +161,22 @@ export default function SessionPage() {
     () => shownIntros(browserStore()),
     [teachKey], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  const teachItems = useMemo(
-    () => (session ? lessonSteps(session.teach, history, shownCards) : []),
-    [teachKey, history, shownCards], // eslint-disable-line react-hooks/exhaustive-deps
+  // SAK-104: lessonSteps reads guarded dictionaries transitively — see
+  // teach-walk.tsx's own resolveLessonSteps note. shownCards flattens to an
+  // array to cross the Server Action boundary (a Set doesn't serialize).
+  const shownCardsArgs = useMemo(() => [...shownCards], [shownCards]);
+  const teachItems =
+    useServerLookup(
+      resolveLessonSteps,
+      session ? [session.teach, history, shownCardsArgs] : null,
+    ) ?? EMPTY_STEPS;
+  // SAK-104: factInfo reads lib/facts.ts (server-only), so the teach set's
+  // subject label (used by the top bar below) is fetched once per lesson
+  // rather than imported directly.
+  const teachHeadFact = session?.teach.length ? session.teach[0] : null;
+  const teachHeadSubjectLabel = useServerLookup(
+    getTeachSubjectLabel,
+    teachHeadFact ? [teachHeadFact] : null,
   );
   // Where the walk is now lives on the SESSION (session.teachStep), not in this
   // page's local state, so a reload or a cross-device teleport resumes on the
@@ -351,7 +367,7 @@ export default function SessionPage() {
       /^Counting\b/i.test(session.what)
         ? "Counting"
         : session.teach.length
-          ? teachSubjectLabel(factInfo(session.teach[0]))
+          ? teachHeadSubjectLabel
           : undefined;
     return (
       // THE LESSON IS ITS OWN VIEWPORT-TALL FRAME, like the Library (see

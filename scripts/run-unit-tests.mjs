@@ -11,6 +11,7 @@ const targets = args.length ? args : ["src/**/*.test.ts"];
 const child = spawnSync(
   process.execPath,
   [
+    "--conditions=react-server",
     "--import",
     "./src/lib/conjugate/test-hooks.mjs",
     "--test",

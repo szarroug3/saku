@@ -39,7 +39,7 @@ import {
   sliceSentence,
   type Slice,
 } from "@/lib/library/slice";
-import { claimableFacts, quizzableFacts } from "@/lib/library/library-index";
+import { claimableFacts, quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";

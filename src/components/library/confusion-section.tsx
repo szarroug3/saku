@@ -13,31 +13,38 @@
 import Link from "next/link";
 
 import { Section } from "@/components/library/entry-section";
-import { libEntry } from "@/lib/library/library-index";
-import { entryHref } from "@/lib/library/href";
+import {
+  resolveConfusableRows,
+  type ConfusableRowData,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import type { EntryId } from "@/types";
 
-function ConfusableRow({ id }: { id: EntryId }) {
-  const le = libEntry(id);
-  if (!le) return null;
-  const gloss = le.meanings[0] ?? le.readings[0] ?? "";
+function ConfusableRow({ row }: { row: ConfusableRowData | undefined }) {
+  if (!row) return null;
   return (
     <Link
-      href={entryHref(id)}
+      href={row.href}
       className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
     >
-      <span className={`${japaneseFontClass(le.glyph)} text-[18px] leading-none`}>{le.glyph}</span>
-      {gloss ? <span className="min-w-0 flex-1 truncate text-text-muted">{gloss}</span> : null}
+      <span className={`${japaneseFontClass(row.glyph)} text-[18px] leading-none`}>{row.glyph}</span>
+      {row.gloss ? <span className="min-w-0 flex-1 truncate text-text-muted">{row.gloss}</span> : null}
     </Link>
   );
 }
 
-function TileRow({ ids }: { ids: readonly EntryId[] }) {
+function TileRow({
+  ids,
+  rows,
+}: {
+  ids: readonly EntryId[];
+  rows: Record<string, ConfusableRowData>;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       {ids.map((id) => (
-        <ConfusableRow key={id} id={id} />
+        <ConfusableRow key={id} row={rows[id as unknown as string]} />
       ))}
     </div>
   );
@@ -54,6 +61,12 @@ export function ConfusionSection({
 }) {
   const confusedSet = new Set(confused);
   const lookalike = confusables.filter((id) => !confusedSet.has(id));
+  // SAK-104: libEntry/entryHref both read server-only modules now, so every
+  // tile's glyph/gloss/link is fetched in one batched call for the whole
+  // (always small — shape lookalikes) set instead of a synchronous read per
+  // row.
+  const allIds = [...confused, ...lookalike];
+  const rows = useServerLookup(resolveConfusableRows, [allIds]) ?? {};
   if (confused.length === 0 && lookalike.length === 0) return null;
   return (
     <>
@@ -62,7 +75,7 @@ export function ConfusionSection({
           <p className="mb-3 text-[13px] leading-relaxed text-text-muted">
             Ones you&rsquo;ve actually answered with by mistake:
           </p>
-          <TileRow ids={confused} />
+          <TileRow ids={confused} rows={rows} />
         </Section>
       ) : null}
       {lookalike.length > 0 ? (
@@ -70,7 +83,7 @@ export function ConfusionSection({
           <p className="mb-3 text-[13px] leading-relaxed text-text-muted">
             These look alike, so they&rsquo;re easy to confuse:
           </p>
-          <TileRow ids={lookalike} />
+          <TileRow ids={lookalike} rows={rows} />
         </Section>
       ) : null}
     </>
