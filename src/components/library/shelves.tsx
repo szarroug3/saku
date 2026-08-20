@@ -40,14 +40,14 @@
 // depths of the same set.
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { getEntryHref } from "@/lib/library/server-lookups";
+import { resolveHrefs } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";
 
@@ -224,6 +224,20 @@ export function Shelf({
     />
   );
 
+  // SAK-118: GrammarShelfRow used to resolve its OWN href via a per-row
+  // useServerLookup(getEntryHref, [id]) call — hundreds of individual Server
+  // Action round trips on the grammar shelf (every grammar pattern/cluster/
+  // concept row). Batched here instead: every grammar-shelf entry id across
+  // ALL sections (not just the ones currently expanded/mounted) is collected
+  // up front, in one resolveHrefs call, so a section scrolling into view (or a
+  // filter/collapse toggle remounting one) never triggers its own round trip.
+  const grammarEntryIds = useMemo(
+    () => (kind === GRAMMAR_SUBJECT ? sections.flatMap((s) => s.entries.map((e) => e.id)) : []),
+    [kind, sections],
+  );
+  const grammarHrefs =
+    useServerLookup(resolveHrefs, kind === GRAMMAR_SUBJECT ? [grammarEntryIds] : null) ?? {};
+
   // The grammar shelf uses the shared GrammarShelfRow (the same row the cluster
   // families use), not EntryRow — the pattern, its gloss, the tick-to-drill and
   // the open ↗, compact and column-aligned. `note` (entry.sub) rides a sub-line
@@ -234,7 +248,7 @@ export function Shelf({
       lead={entry.glyph}
       gloss={entry.meanings.slice(0, 3).join(", ") || entry.sub}
       note={entry.sub}
-      id={entry.id}
+      href={grammarHrefs[entry.id as unknown as string] ?? "#"}
       selectMode={selectMode}
       select={{
         selected: selected.has(entry.id),
@@ -537,24 +551,23 @@ function GrammarShelfRow({
   lead,
   gloss,
   note,
-  id,
+  href,
   select,
   selectMode = false,
 }: {
   lead: string;
   gloss: string;
   note?: string;
-  /** SAK-104: entryHref reads the server-only index, so this row resolves its
-   * own href via a Server Action instead of taking one as a prop. Renders with
-   * a "#" href for the one tick before it resolves. */
-  id: EntryId;
+  /** SAK-118: batched by the caller (Shelf, via resolveHrefs — see its own
+   * comment) instead of this row resolving its own href via a per-row Server
+   * Action call. "#" until the batch resolves. */
+  href: string;
   select?: { selected: boolean; onToggle: (shiftKey: boolean) => void };
   /** Whether a plain click currently toggles selection (true) or opens the
    * entry (false, the default). Only meaningful when `select` is given — a
    * cluster-map row with no `select` at all always opens, mode or not. */
   selectMode?: boolean;
 }) {
-  const href = useServerLookup(getEntryHref, [id]) ?? "#";
   // The row's own layout — a subgrid band of the shared GRAMMAR_ROWS grid — on
   // top of the shared ShelfRow shell (accent hover + selected wash, hairline, the
   // whole-row select target with no checkbox). The pl-6/pr-3 horizontal inset
