@@ -133,7 +133,11 @@ export function PatternFamily({
   builtById: Readonly<Record<string, FamilyBuild>>;
 }) {
   const entryIds = members.map((r) => patternEntry(r.id));
-  const hrefs = useServerLookup(resolveHrefs, [entryIds]) ?? {};
+  // SAK-120: resolveHrefs is a pure function of build content (entryHref off a
+  // build-fixed id, per its own header in server-lookups.ts) — persist so a
+  // repeat visit to this pattern's page reads straight from IndexedDB instead
+  // of round-tripping again.
+  const hrefs = useServerLookup(resolveHrefs, [entryIds], { persist: true }) ?? {};
   return (
     <Card>
       <Lbl>Ways to say this</Lbl>

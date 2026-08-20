@@ -284,7 +284,8 @@ export function CurrentSessions() {
   // The /learn index snapshot every row's track label reads (SAK-115 — see this
   // file's own import comment). Fetched once and cached forever, like Home's own
   // copy; a row simply reads "Discard" instead of a track name until it lands.
-  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS);
+  // SAK-120: persisted, same reasoning as home-feed.tsx's copy of this call.
+  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS, { persist: true });
   const trackMap = useMemo(
     () => (index ? trackIdOfFactMap(index.tracks) : new Map<FactId, string>()),
     [index],
