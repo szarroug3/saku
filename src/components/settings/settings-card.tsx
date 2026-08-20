@@ -55,8 +55,14 @@ import { availableFonts } from "@/lib/font-detect";
 import { postDelete } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
-import { speak } from "@/lib/speech";
-import { isVoiceId, VOICE_PREVIEW, VOICES, pitchApiUrl, voicesEnabled } from "@/lib/voice";
+import {
+  DEFAULT_VOICE_ID,
+  isVoiceId,
+  VOICE_PREVIEW,
+  VOICES,
+  pitchApiUrl,
+  voicesEnabled,
+} from "@/lib/voice";
 
 /** Kana shown on every font chip in place of the font's name. あ and き are
  * the two faces diverge on hardest: Mincho gives あ a wedge-tipped brush
@@ -275,27 +281,23 @@ export function SettingsCard() {
   // ONE voice picker for every kind of speech in the app (SAK-100 merged what
   // used to be a "Speech voice" picker — pack/browser voices, Azure-backed —
   // and a separate "Pitch-accent voice" picker, SAK-99, into this single
-  // roster choice). "Auto" plays the browser's own installed Japanese voice
-  // via speak(); a roster voice previews straight from /api/pitch-tts
-  // (VOICEVOX) rather than lib/speech.ts's speak(), so picking one plays a
-  // short, verifiably pitch-correct sample (先生, downstep 3) rather than a
-  // plain string a browser voice would also happily say.
+  // roster choice). No "Auto"/browser-voice option any more — every learner
+  // gets a real, pitch-correct VOICEVOX voice. Picking one previews straight
+  // from /api/pitch-tts (VOICEVOX) rather than lib/speech.ts's speak(), so it
+  // plays a short, verifiably pitch-correct sample (先生, downstep 3).
   const pickVoice = (id: string) => {
     update({ voiceName: id });
-    if (id === "") {
-      speak("こんにちは", "");
-      return;
-    }
     const audio = new Audio(pitchApiUrl(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep, id));
     void audio.play().catch(() => {
       // No fallback — same silent-on-failure discipline as the pitch button.
     });
   };
 
-  // Voice pill selection: fall back to Auto if the saved voice isn't a real
-  // roster id (a pre-SAK-100 Azure id, corrupt storage, ...) — normalizeConfig
-  // already migrates this on load, but a defensive check here costs nothing.
-  const currentVoice = isVoiceId(cfg.voiceName) ? cfg.voiceName : "";
+  // Voice pill selection: fall back to the roster default if the saved voice
+  // isn't a real roster id (a pre-SAK-100 Azure id, the retired "Auto", corrupt
+  // storage, ...) — normalizeConfig already migrates this on load, but a
+  // defensive check here costs nothing.
+  const currentVoice = isVoiceId(cfg.voiceName) ? cfg.voiceName : DEFAULT_VOICE_ID;
 
   // Nothing here dims. These are YOUR settings, not the current quiz's: the
   // timer and script label do nothing in grid mode, but greying them out
@@ -531,13 +533,10 @@ export function SettingsCard() {
 
         <Row
           label="Speech voice"
-          info="Used everywhere the app speaks — quiz prompts, listening exercises, the Hear button, and the word page's pitch accent. Every voice here carries a word's real pitch, not just its own accent. Auto uses your browser's own installed Japanese voice instead (no pitch correction). Picking a voice plays a short sample so you can hear it before committing."
+          info="Used everywhere the app speaks — quiz prompts, listening exercises, the Hear button, and the word page's pitch accent. Every voice here carries a word's real pitch, not just its own accent. Picking a voice plays a short sample so you can hear it before committing."
         >
           {rosterEnabled ? (
             <>
-              <Chip on={currentVoice === ""} onClick={() => pickVoice("")}>
-                Auto
-              </Chip>
               {VOICES.map((v) => (
                 <Chip key={v.id} on={currentVoice === v.id} onClick={() => pickVoice(v.id)}>
                   {v.label}

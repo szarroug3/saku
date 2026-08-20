@@ -51,7 +51,7 @@ test("isVoiceId matches only registered roster ids", () => {
 test("VOICES is the curated six, never the raw VOICEVOX 'No.7' label", () => {
   assert.equal(VOICES.length, 6);
   assert.ok(VOICES.every((v) => !/no\.?\s*7/i.test(v.label)));
-  assert.equal(DEFAULT_VOICE_ID, "nana");
+  assert.equal(DEFAULT_VOICE_ID, "aoyama");
   assert.ok(isVoiceId(DEFAULT_VOICE_ID));
 });
 

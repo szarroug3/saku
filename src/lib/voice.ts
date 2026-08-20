@@ -52,14 +52,11 @@ export const VOICES: readonly Voice[] = [
   { id: "nana", label: "Nana", speakerId: 30 },
 ];
 
-/** Speaker id 30 ("Nana") was the sole hardcoded voice under SAK-98's pitch
- * button, and it is also what this ticket (SAK-100) picks as the roster
- * default for ALL speech — a legacy Azure `voiceName` ("keita"/"nanami") or
- * SAK-99's `pitchVoiceId` migrates here in quiz-config.tsx's normalizeConfig.
- * Keeping Nana as the one default means a learner who used the pitch feature
- * before this ticket sees no change in that button's voice, and no cache is
- * orphaned twice. */
-export const DEFAULT_VOICE_ID = "nana";
+/** Sam's chosen default for every learner who hasn't picked a voice yet — a
+ * legacy Azure `voiceName` ("keita"/"nanami"), a retired `pitchVoiceId`, or
+ * the no-longer-offered "Auto" ("") all migrate here in quiz-config.tsx's
+ * normalizeConfig. */
+export const DEFAULT_VOICE_ID = "aoyama";
 
 /** The word played to preview a voice on selection in Settings — 先生
  * (せんせい), a real Kanjium pitch entry (downstep 3, see
