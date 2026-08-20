@@ -86,7 +86,28 @@ import type { StatusFilter } from "@/lib/library/url-state";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate } from "@/types";
 import { unstable_cache } from "next/cache";
-import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
+import { CURRICULUM_VERSION, learnIndexSnapshot } from "@/lib/content/learn-index";
+import type { LearnIndex } from "@/lib/content/learn-index-types";
+
+/* -------------------------------------------------------------------------
+ * /LEARN HOME FEED — SAK-115. home-feed.tsx (its per-track frontier) and
+ * current-sessions.tsx (trackKeyForRun) both used to import learn-index.ts's
+ * scheduling functions directly. Those functions run reactively against a
+ * live, frequently-changing `history` (a session round, a claim) — a round
+ * trip per call would be both slow and a poor fit for useServerLookup's
+ * persistent no-invalidation cache (use-server-lookup.ts's own header), which
+ * assumes a (fn, args) pair is fetched once and never varies. So instead of
+ * wrapping the history-taking functions themselves, this ships the build-fixed
+ * INDEX DATA those functions need — exactly like getLibraryShelves — ONCE,
+ * cached forever, and the client runs the walk itself (learn-scheduler.ts,
+ * which is plain, unguarded code parameterized over this snapshot instead of
+ * closing over learn-index.ts's module-scope INDEX). */
+
+/** The whole precomputed /learn index, fetched once and cached client-side
+ * (EMPTY_ARGS, like getLibraryShelves) — see this section's header. */
+export async function getLearnIndexData(): Promise<LearnIndex> {
+  return learnIndexSnapshot();
+}
 
 /* -------------------------------------------------------------------------
  * LIBRARY BROWSE/SEARCH — SAK-104's hardest case. library-page.tsx (the full

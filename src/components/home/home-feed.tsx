@@ -37,16 +37,27 @@ import { TrackIntroCard } from "@/components/learn/track-intro-card";
 // ~8.6 MB dictionary is derived at build time into learn-index.json and this page
 // carries only the tiny scheduling shape (glyph, typeLabel, fact-ids, prereqs).
 // See docs/perf-learn-bundle.md and src/lib/content/learn-index.ts.
+//
+// SAK-115: this no longer imports learn-index.ts directly (it is a guarded-
+// eventually module — see that file's own header for why the guard isn't back
+// on yet). The index DATA is fetched once via getLearnIndexData
+// (server-lookups.ts) and cached forever by useServerLookup, exactly like
+// library-page.tsx's getLibraryShelves; the actual scheduling WALK
+// (nextLearnLesson, startedLearnTracks, …) runs from learn-scheduler.ts, the
+// same plain functions learn-index.ts itself binds to its own module-scope
+// index, just parameterized over the fetched snapshot instead.
+import { getLearnIndexData } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import {
-  LEARN_TRACKS,
   nextLearnLesson,
   nextSentenceLearnLesson,
   sentenceLearnLessonForRun,
   sentenceTierIdOfEntry,
   startedLearnTracks,
   trackIdOfFact,
-} from "@/lib/content/learn-index";
-import type { IndexUnit } from "@/lib/content/learn-index-types";
+  trackIdOfFactMap,
+} from "@/lib/content/learn-scheduler";
+import type { IndexUnit, LearnIndex } from "@/lib/content/learn-index-types";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import { resumeLesson } from "@/lib/lesson-resume";
 import { lessonSpan, trackCompletion } from "@/lib/content/track-completion";
@@ -58,6 +69,8 @@ import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import type { FactId, HistoryFile } from "@/types";
+
+const EMPTY_ARGS: [] = [];
 
 /** A /learn lesson: the units the frontier chose, in teach order. */
 type LearnLesson = UnitLessonOf<IndexUnit>;
@@ -73,17 +86,25 @@ type LearnLesson = UnitLessonOf<IndexUnit>;
  * the `sentence` track by mode; a Counting run is named as such. Otherwise this
  * mirrors the old priority scan: a prep session may prepend vocab prerequisite
  * facts before, say, a keigo lesson, so the first NON-vocab fact wins (the old
- * scan likewise skipped word facts), falling back to the first fact's track. */
-export function trackKeyForRun(run: RunInfo): string | null {
+ * scan likewise skipped word facts), falling back to the first fact's track.
+ *
+ * `trackMap` is `trackIdOfFactMap(index.tracks)` (learn-scheduler.ts) — the
+ * caller's own already-fetched index snapshot, since this runs synchronously
+ * (current-sessions.tsx calls it once per row while rendering) and so cannot
+ * fetch it itself. */
+export function trackKeyForRun(
+  run: RunInfo,
+  trackMap: ReadonlyMap<FactId, string>,
+): string | null {
   if (run.mode === "assembly") return "sentence";
   if (/^Counting\b/i.test(run.what)) return "numbers";
   for (const fact of run.facts) {
-    const t = trackIdOfFact(fact);
+    const t = trackIdOfFact(fact, trackMap);
     if (t && t !== "vocab") return t;
   }
   const first = run.facts[0];
   if (!first) return null;
-  return trackIdOfFact(first) ?? null;
+  return trackIdOfFact(first, trackMap) ?? null;
 }
 
 /** Each card's counting noun — "Hiragana 5 of 46", "Set 2 of 19". Kana is split
@@ -265,9 +286,9 @@ function vocabPositionLabel(
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
  * `sentence-ordering:<id>` (sentence-track.ts). */
-function sentenceTierId(lesson: LearnLesson): string | null {
+function sentenceTierId(lesson: LearnLesson, index: LearnIndex): string | null {
   const entry = lesson.units[0]?.item.entry;
-  return entry ? sentenceTierIdOfEntry(entry) : null;
+  return entry ? sentenceTierIdOfEntry(entry, index) : null;
 }
 
 export function HomeFeed() {
@@ -275,6 +296,17 @@ export function HomeFeed() {
   const { startSession, runs, continueRun, discardRun } = useQuizSession();
   const { history, loaded } = useHistory();
   const writes = useHistoryWrites();
+
+  // The whole precomputed /learn index, fetched once and cached forever (SAK-115
+  // — see this file's own import comment and getLearnIndexData's header). Every
+  // computation below that used to call straight into learn-index.ts now calls
+  // the same learn-scheduler.ts functions with this snapshot instead.
+  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS);
+
+  const trackMap = useMemo(
+    () => (index ? trackIdOfFactMap(index.tracks) : new Map<FactId, string>()),
+    [index],
+  );
 
   const range = useMemo(
     () => ({ min: cfg.lessonMinCost, max: cfg.lessonMaxCost }),
@@ -287,8 +319,8 @@ export function HomeFeed() {
   // since this is asked before any lesson of THIS frame has started, so there is no
   // just-taught teach set to exclude yet (see startedLearnTracks's own comment).
   const openedTracks = useMemo(
-    () => startedLearnTracks(history, new Set<FactId>()),
-    [history],
+    () => startedLearnTracks(history, new Set<FactId>(), trackMap),
+    [history, trackMap],
   );
 
   // "Start track" on the card-0 teaser must NOT launch a lesson (Sam, Changes
@@ -308,15 +340,15 @@ export function HomeFeed() {
   // next lesson, computed over the index by the content-free scheduler.
   const frontiers = useMemo(
     () =>
-      LEARN_TRACKS.map((track) => {
+      (index?.tracks ?? []).map((track) => {
         const order = track.units;
         const frontier =
           track.id === "sentence"
-            ? nextSentenceLearnLesson(order, history)
-            : nextLearnLesson(order, history, range);
+            ? nextSentenceLearnLesson(order, history, index!)
+            : nextLearnLesson(order, history, range, index!);
         return { track, order, frontier };
       }),
-    [history, range],
+    [index, history, range],
   );
 
   // The lesson runs that can pin a track's card to Continue: an in-progress
@@ -332,10 +364,10 @@ export function HomeFeed() {
   // — the run's resting lesson while a session is open, else the live frontier
   // (resumeLesson, reused verbatim from the old feed; generic over the lesson type).
   const shown = frontiers.map(({ track, order, frontier }) => {
-    const run = lessonRuns.find((r) => trackKeyForRun(r) === track.id);
+    const run = lessonRuns.find((r) => trackKeyForRun(r, trackMap) === track.id);
     const restingSentence =
       track.id === "sentence" && run
-        ? sentenceLearnLessonForRun(order, run.facts)
+        ? sentenceLearnLessonForRun(order, run.facts, index!)
         : null;
     const restingSentenceClaimed =
       restingSentence !== null &&
@@ -349,8 +381,8 @@ export function HomeFeed() {
           ? frontier
           : resumeLesson(history, frontier, run, (h) =>
               track.id === "sentence"
-                ? nextSentenceLearnLesson(track.units, h)
-                : nextLearnLesson(track.units, h, range),
+                ? nextSentenceLearnLesson(track.units, h, index!)
+                : nextLearnLesson(track.units, h, range, index!),
             );
     return { track, order, run, lesson };
   });
@@ -428,7 +460,8 @@ export function HomeFeed() {
   // helpers, DYNAMICALLY IMPORTED here so they stay off the initial /learn bundle —
   // the launch only produces fact-ids, and /session loads the content anyway.
   const startSentence = async (lesson: LearnLesson, { teach = true } = {}) => {
-    const tierId = sentenceTierId(lesson);
+    if (!index) return;
+    const tierId = sentenceTierId(lesson, index);
     if (!tierId) return;
     const [plan, { sentenceTierMarkerFact }, { SENTENCE_ORDERING_TIERS }] =
       await Promise.all([
@@ -489,8 +522,10 @@ export function HomeFeed() {
 
   // Until history has loaded, the frontiers are computed from EMPTY history — the
   // day-one lesson. Rendering that for a returning learner flashes the wrong card,
-  // so hold the feed until the real history lands.
-  if (!loaded) return null;
+  // so hold the feed until the real history lands. Likewise hold until the index
+  // snapshot itself has arrived (getLearnIndexData, fetched once and cached
+  // forever thereafter — see this file's own import comment).
+  if (!loaded || !index) return null;
 
   return (
     <>
