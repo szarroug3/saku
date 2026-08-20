@@ -17,11 +17,21 @@
 //
 // STORAGE LAYOUT. All clips — a quiz sentence, a lesson word, a pitch-button
 // word — live in the SAME public Supabase Storage bucket, at
-// `voices/<voiceId>/<key>.wav`, where `key` is a stable hash of the spoken
+// `voices/<voiceId>/<key>.opus`, where `key` is a stable hash of the spoken
 // text (voiceKey). Kana were previously pre-seeded under the OLD Azure voice
 // ids' paths (voices/keita/…, voices/nanami/…); those are simply orphaned now
 // — the app synthesizes and caches fresh clips under the new voice ids on
 // first use, same miss-then-cache flow as before. No migration needed.
+//
+// `.opus` NOT `.wav` — the app's audio used to be raw WAV until the bulk
+// pre-seed (kana/yomi/words/sentences/word-examples × every voice) turned out
+// to project to ~11GB, well past Supabase's free-tier storage. 24kbps Opus
+// cuts that to well under 1GB with no audible loss for speech at this
+// bitrate. Every clip in the bucket is Opus now, live-synthesized or
+// pre-seeded alike — see src/lib/audio-compress.ts for the shared encode
+// step. The ~4,800 WAV clips a first pre-seed run had already written before
+// this change were deleted rather than left orphaned: at this budget, ~200MB
+// of dead weight actually matters.
 //
 // No secrets here — NEXT_PUBLIC_SUPABASE_URL and the bucket name are already
 // public (readable in the browser).
@@ -99,9 +109,16 @@ export function voiceKey(text: string): string {
 }
 
 /** The Storage object path for a clip of arbitrary text (a word or a full
- * sentence) under a given voice — shared by the runtime cache and playback. */
+ * sentence) under a given voice — shared by the runtime cache and playback.
+ *
+ * `.opus` (Ogg Opus), not `.wav`: at 24kbps this is ~16x smaller than the raw
+ * WAV VOICEVOX returns with no audible loss for speech at this bitrate (the
+ * same ballpark as Discord/WhatsApp voice), and the difference between "fits
+ * the Supabase free tier" and "doesn't" for a corpus this size — see
+ * src/lib/audio-compress.ts for the encode step both the live routes and the
+ * bulk seed script share. */
 export function voiceObjectPath(voiceId: string, text: string): string {
-  return `voices/${voiceId}/${voiceKey(text)}.wav`;
+  return `voices/${voiceId}/${voiceKey(text)}.opus`;
 }
 
 /** The Storage object path for a word's EXACT pitch-accent clip — a
@@ -112,7 +129,7 @@ export function voiceObjectPath(voiceId: string, text: string): string {
  * for the same reading under a different accent (a bug, or the Kanjium data
  * changing on a re-ingest) must not collide with an existing clip. */
 export function pitchObjectPath(reading: string, downstep: number, voiceId: string): string {
-  return `voices/${voiceId}/pitch-${voiceKey(`${reading}:${downstep}`)}.wav`;
+  return `voices/${voiceId}/pitch-${voiceKey(`${reading}:${downstep}`)}.opus`;
 }
 
 function supabaseUrl(): string | undefined {

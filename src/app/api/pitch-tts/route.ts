@@ -21,9 +21,20 @@
 // play() rather than falling back to a different voice, because unlike the
 // general Hear button there is no substitute that would still carry the exact
 // pitch.
+//
+// COMPRESSED, WITH A FALLBACK /api/tts DOESN'T NEED: this route's whole
+// reason to exist is "the learner hears the exact pitch, or nothing" (see
+// above) — so if the WAV→Opus encode step itself fails (audio-compress.ts;
+// most likely `ffmpeg` missing wherever this is deployed), that must NOT cost
+// the learner the clip the way a hard failure would. Encoding gets its own
+// try, separate from synthesis: on an encode failure this falls back to
+// serving the raw WAV uncached rather than 502ing, the same "a caching
+// problem must not silence the button" reasoning the upload step below
+// already applies.
 
 import { createClient } from "@supabase/supabase-js";
 
+import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { synthesizeWordWav, ttsConfigured } from "@/lib/tts-synth";
 import {
   DEFAULT_VOICE_ID,
@@ -88,17 +99,34 @@ export async function GET(request: Request): Promise<Response> {
   } catch {
     return new Response("synthesis failed", { status: 502 });
   }
+
+  let opusBytes: Buffer | null = null;
+  try {
+    opusBytes = await encodeOpus(bytes);
+  } catch (err) {
+    console.error("pitch-tts: opus encode failed, serving uncompressed WAV uncached", err);
+  }
+
+  if (opusBytes === null) {
+    return new Response(new Blob([bytes], { type: "audio/wav" }), {
+      headers: {
+        "Content-Type": "audio/wav",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
   try {
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(path, bytes, { contentType: "audio/wav", upsert: true });
+      .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
     if (error) throw error;
   } catch (err) {
     console.error("pitch-tts: cache upload failed, serving uncached", err);
   }
-  return new Response(new Blob([bytes], { type: "audio/wav" }), {
+  return new Response(new Blob([new Uint8Array(opusBytes)], { type: AUDIO_CONTENT_TYPE }), {
     headers: {
-      "Content-Type": "audio/wav",
+      "Content-Type": AUDIO_CONTENT_TYPE,
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });

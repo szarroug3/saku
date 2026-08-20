@@ -6,15 +6,23 @@
 // pitch correction (src/lib/tts-synth.ts, src/lib/sentence-pitch.ts).
 //
 // Same two-tier shape as before: check the Storage bucket first (302 to the
-// CDN URL on a hit); on a miss, synthesize, cache the wav into the bucket, and
-// return the bytes, so the next request for it is a cache hit. Any failure
-// answers non-2xx and speech.ts falls back to the browser voice.
+// CDN URL on a hit); on a miss, synthesize, cache the clip into the bucket,
+// and return the bytes, so the next request for it is a cache hit. Any
+// failure answers non-2xx and speech.ts falls back to the browser voice.
+//
+// COMPRESSED: VOICEVOX's own output is raw WAV; every clip is re-encoded to
+// Opus (audio-compress.ts, shared with the bulk seed script) before it's
+// cached or returned, same as the pre-seeded corpus — otherwise a live miss
+// would write an inconsistent uncompressed clip under the same path scheme
+// the pre-seed uses. See audio-compress.ts's header for why (Supabase
+// free-tier storage budget) and voice.ts's for the path scheme.
 //
 // No auth: the audio is public and non-sensitive. Abuse is bounded by
 // requiring a REGISTERED roster voice and a short text; anything else is 400.
 
 import { createClient } from "@supabase/supabase-js";
 
+import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { synthesizeSentenceWav, ttsConfigured } from "@/lib/tts-synth";
 import { voice, voiceAudioUrl, voiceBucket, voiceObjectPath } from "@/lib/voice";
 
@@ -63,13 +71,14 @@ export async function GET(request: Request): Promise<Response> {
         `tts: pitch-matched ${matchedPhrases}/${totalPhrases} accent phrase(s) for "${text}"`,
       );
     }
+    const opusBytes = await encodeOpus(bytes);
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(path, bytes, { contentType: "audio/wav", upsert: true });
+      .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
     if (error) throw error;
-    return new Response(new Blob([bytes], { type: "audio/wav" }), {
+    return new Response(new Blob([new Uint8Array(opusBytes)], { type: AUDIO_CONTENT_TYPE }), {
       headers: {
-        "Content-Type": "audio/wav",
+        "Content-Type": AUDIO_CONTENT_TYPE,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
