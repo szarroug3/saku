@@ -52,6 +52,16 @@
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice-audio.mjs --set=kana
 //   node ... scripts/seed-voice-audio.mjs --set=kana --voices=aoyama,namine --concurrency=6 --dry-run
 //
+// --set=pitch (SAK-107) seeds the EXACT-pitch cache instead — /api/pitch-tts's
+// pitchObjectPath, not the general voiceObjectPath the other sets share. IF
+// .env.local's VOICEVOX_ENGINE_URL points at Cloud Run (as it does whenever
+// prod's engine is configured there), --env-file=.env.local makes THAT the
+// resolved default, not this script's own http://localhost:50021 fallback —
+// export an explicit override first to force the local container regardless
+// of what .env.local says:
+//   export VOICEVOX_ENGINE_URL=http://localhost:50021
+//   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice-audio.mjs --set=pitch
+//
 // Check in on it from another terminal:
 //   tail -f .logs/seed-voice-audio.log
 //   cat .logs/seed-voice-audio.progress.json
@@ -62,32 +72,98 @@ import { createClient } from "@supabase/supabase-js";
 
 import { CHAR_INDEX } from "@/data/characters";
 import { READINGS } from "@/data/kanji";
+import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
-import { VOICES } from "@/lib/voice";
-import { voiceObjectPath } from "@/lib/voice";
+import { synthesizeWordWav } from "@/lib/tts-synth";
+import { pitchObjectPath, VOICE_PREVIEW, VOICES, voiceObjectPath } from "@/lib/voice";
 import grammarCorpus from "@/data/generated/grammar-corpus.json" with { type: "json" };
 import wordExamples from "@/data/generated/word-examples.json" with { type: "json" };
 
-/** Each set is just a function returning the list of distinct strings to
- * speak. Order matters only for what shows up first in the log — resume
+/** A "text" set: every item is just a string to speak verbatim, cached at
+ * `voiceObjectPath`, synthesized with no pitch correction at all (that's
+ * `synthesizeSentenceWav`'s job at live-request time, not this bulk seed's —
+ * see the header comment). Wraps a bare string-list function into the shape
+ * `SETS` needs so every text set doesn't repeat the same four lines. */
+function textSet(getTexts) {
+  return {
+    items: () => [...new Set(getTexts())].map((text) => ({ text })),
+    path: (raw, voiceId) => voiceObjectPath(voiceId, raw.text),
+    label: (raw) => raw.text,
+    synth: (raw, base, speakerId) => synthesizeText(base, speakerId, raw.text),
+  };
+}
+
+/** Every (reading, downstep) pair the EXACT-pitch cache (`pitchObjectPath`,
+ * /api/pitch-tts) can ever be asked for — SAK-107. Two sources:
+ *
+ *   1. Every VOCAB row with a verified Kanjium accent. pitch.json (and
+ *      `wordPitch`) is keyed on the WRITTEN form (`keb`, which may be kanji),
+ *      not the kana the app actually speaks — the word page resolves a hit
+ *      to its own `reb` before ever calling the pitch route (see
+ *      character-entry-view.tsx's `pitchReading` / `HearButton glyph={w.reading}`).
+ *      Seeding pitch.json's keys directly would be wrong for any kanji-written
+ *      word: VOICEVOX would read the kanji using ITS OWN guessed reading,
+ *      which can disagree with the word's taught reb in mora count, so this
+ *      walks VOCAB and reproduces that same keb→reb resolution rather than
+ *      trusting pitch.json's keys as if they were kana.
+ *   2. The settings-page voice-preview reading (VOICE_PREVIEW) — fixed
+ *      せんせい/downstep 3, confirmed NOT itself a pitch.json entry.
+ *
+ * Deduped by (reading, downstep): two different kanji spellings of the same
+ * reading and accent (a true homophone pair) synthesize identically and must
+ * not be seeded twice. */
+function pitchItems() {
+  const seen = new Set();
+  const items = [];
+  function add(reading, downstep) {
+    const key = `${reading}:${downstep}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ reading, downstep });
+  }
+  for (const row of VOCAB) {
+    const downstep = wordPitch(row.keb);
+    if (downstep !== null) add(row.reb, downstep);
+  }
+  add(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep);
+  return items;
+}
+
+/** Each set describes how to enumerate, cache-path, label, and synthesize its
+ * own items — the run/upload/skip/limit machinery below (`runPool`,
+ * `seedOneWithRetry`) is generic over all four, so a new set (a new content
+ * shape, not just a new text list) is one entry here, not a fork of the
+ * script. Order matters only for what shows up first in the log — resume
  * behavior (the cache-skip check) doesn't care what order sets run in. */
 const SETS = {
-  kana: () => Object.keys(CHAR_INDEX),
+  kana: textSet(() => Object.keys(CHAR_INDEX)),
   // On'yomi/kun'yomi readings — the same `r.base` string HearButton speaks
   // next to a kanji's reading rows on the Library page (character-entry-view).
-  yomi: () => READINGS.map((r) => r.base),
+  yomi: textSet(() => READINGS.map((r) => r.base)),
   // Every word's reading — the same `w.reading`/`v.reb` string HearButton
   // speaks on a word's Library entry page.
-  words: () => VOCAB.map((r) => r.reb),
+  words: textSet(() => VOCAB.map((r) => r.reb)),
   // The full grammar corpus (Tatoeba sentences, CC BY 2.0 FR) — every
   // sentence a grammar pattern page or a quiz can show.
-  sentences: () => grammarCorpus.map((r) => r.jp),
+  sentences: textSet(() => grammarCorpus.map((r) => r.jp)),
   // The word-page "in a sentence" examples — a curated subset of the same
   // Tatoeba pool. Overlapping text with `sentences` is normal and harmless:
   // it hashes to the same Storage path, so the second sighting is just a
   // cache hit, not wasted synthesis.
-  "word-examples": () => Object.values(wordExamples).map((row) => row[1]),
+  "word-examples": textSet(() => Object.values(wordExamples).map((row) => row[1])),
+  // SAK-107: the EXACT-pitch cache `/api/pitch-tts` reads/writes — the
+  // settings voice-picker preview and every Library word's pitch "hear it"
+  // button. Different item shape (reading+downstep, not free text), different
+  // cache path (pitchObjectPath), different synth (the pitch-locked
+  // synthesizeWordWav, not the plain audio_query→synthesis pair `textSet`
+  // items use) — that's exactly what `path`/`label`/`synth` exist to isolate.
+  pitch: {
+    items: pitchItems,
+    path: (raw, voiceId) => pitchObjectPath(raw.reading, raw.downstep, voiceId),
+    label: (raw) => `${raw.reading}:${raw.downstep}`,
+    synth: (raw, base, speakerId) => synthesizeWordWav(raw.reading, raw.downstep, speakerId),
+  },
 };
 
 /** Failed items get this many total attempts (1 try + retries) before being
@@ -120,6 +196,11 @@ function parseArgs() {
     voiceIds,
     concurrency: Number(args.concurrency ?? 4),
     dryRun: !!args["dry-run"],
+    // Caps each set's item list to its first N (pre-dedup order) — not for
+    // production runs, but so a slice of a new/changed set can be proven
+    // against real Storage (a real synth + upload + list-back) without
+    // committing to the full corpus first. Omit for a real run.
+    limit: args.limit ? Number(args.limit) : undefined,
   };
 }
 
@@ -172,6 +253,15 @@ async function synthesize(base, speakerId, query) {
   return res.arrayBuffer();
 }
 
+/** Plain text → WAV, no pitch correction — what every `textSet` item uses.
+ * (The pitch set instead calls `synthesizeWordWav` from tts-synth.ts, which
+ * hand-edits the query's mora pitches to an exact downstep before synthesis —
+ * see that module's header comment for why the two paths don't share this.) */
+async function synthesizeText(base, speakerId, text) {
+  const query = await audioQuery(base, text, speakerId);
+  return synthesize(base, speakerId, query);
+}
+
 /** Runs `tasks` with at most `limit` in flight at once — no dependency, just
  * a worker pool over a shared cursor. `onProgress` fires after every item so
  * the caller can log/persist state without runPool knowing about sets. */
@@ -185,7 +275,7 @@ async function runPool(items, limit, worker, onProgress) {
       const i = cursor++;
       const item = items[i];
       const result = await worker(item, i).catch((err) => {
-        log(`  ✗ ${item.voiceId}:${item.text}: ${err.message}`);
+        log(`  ✗ ${item.voiceId}:${item.label}: ${err.message}`);
         return "failed";
       });
       if (result === "ok") ok++;
@@ -227,9 +317,14 @@ async function loadExistingKeys(supabase, bucket, voiceIds) {
 }
 
 /** One item, with retries. Only a real, repeated failure reaches the caller —
- * a transient hiccup on attempt 1 is invisible in the final tally. */
-async function seedOneWithRetry({ voiceId, text }, { base, bucket, supabase, speakerOf, dryRun, existingKeys }) {
-  const path = voiceObjectPath(voiceId, text);
+ * a transient hiccup on attempt 1 is invisible in the final tally. `setDef`
+ * supplies the per-set `path`/`synth` — this function itself knows nothing
+ * about text vs. pitch. */
+async function seedOneWithRetry(
+  { voiceId, raw },
+  { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys },
+) {
+  const path = setDef.path(raw, voiceId);
   const file = path.slice(path.lastIndexOf("/") + 1);
 
   if (existingKeys.get(voiceId)?.has(file)) return "skipped";
@@ -239,14 +334,13 @@ async function seedOneWithRetry({ voiceId, text }, { base, bucket, supabase, spe
   let lastErr;
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     try {
-      const query = await audioQuery(base, text, speakerId);
-      const wavBytes = await synthesize(base, speakerId, query);
+      const wavBytes = await setDef.synth(raw, base, speakerId);
       const opusBytes = await encodeOpus(wavBytes);
       const { error } = await supabase.storage
         .from(bucket)
         .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
       if (error) throw error;
-      // The same text can turn up in more than one set (a grammar-corpus
+      // The same item can turn up in more than one set (a grammar-corpus
       // sentence that's also someone's word-example) — record it locally so
       // the second sighting skips instantly instead of re-synthesizing.
       existingKeys.get(voiceId)?.add(file);
@@ -260,9 +354,16 @@ async function seedOneWithRetry({ voiceId, text }, { base, bucket, supabase, spe
 }
 
 async function main() {
-  const { setNames, voiceIds, concurrency, dryRun } = parseArgs();
+  const { setNames, voiceIds, concurrency, dryRun, limit } = parseArgs();
 
   const base = (process.env.VOICEVOX_ENGINE_URL ?? "http://localhost:50021").replace(/\/$/, "");
+  // tts-synth.ts (the pitch set's synth path — synthesizeWordWav) reads
+  // VOICEVOX_ENGINE_URL from process.env itself rather than taking `base` as
+  // a parameter; without this, an unset env var would resolve to this
+  // script's "http://localhost:50021" default for the text sets above but
+  // throw "VOICEVOX not configured" for the pitch set. Writing the resolved
+  // value back keeps both paths pointed at the exact same engine.
+  process.env.VOICEVOX_ENGINE_URL = base;
   const bucket = process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET;
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -277,14 +378,17 @@ async function main() {
   // EVERYTHING, not just the current set) is known from the first progress
   // line, not guessed at as sets complete.
   const bySet = setNames.map((setName) => {
-    const texts = [...new Set(SETS[setName]())];
-    const items = voiceIds.flatMap((voiceId) => texts.map((text) => ({ voiceId, text })));
-    return { setName, items };
+    const setDef = SETS[setName];
+    const rawItems = limit ? setDef.items().slice(0, limit) : setDef.items();
+    const items = voiceIds.flatMap((voiceId) =>
+      rawItems.map((raw) => ({ voiceId, raw, label: setDef.label(raw) })),
+    );
+    return { setName, setDef, items };
   });
   const grandTotal = bySet.reduce((sum, s) => sum + s.items.length, 0);
 
   log(
-    `seed-voice-audio: sets=${setNames.join(",")} × ${voiceIds.length} voice(s) = ${grandTotal} clips total, engine=${base}, concurrency=${concurrency}${dryRun ? " [dry run]" : ""}`,
+    `seed-voice-audio: sets=${setNames.join(",")} × ${voiceIds.length} voice(s) = ${grandTotal} clips total, engine=${base}, concurrency=${concurrency}${dryRun ? " [dry run]" : ""}${limit ? ` [limit=${limit}/set]` : ""}`,
   );
 
   log("Listing existing clips per voice (one pass, not per item)...");
@@ -299,14 +403,14 @@ async function main() {
   const overall = { done: 0, total: grandTotal, ok: 0, skipped: 0, failed: 0 };
   writeStatus(overall, setState);
 
-  for (const { setName, items } of bySet) {
+  for (const { setName, setDef, items } of bySet) {
     log(`\n-- ${setName}: ${items.length} clips --`);
     const state = setState[setName];
 
     const { ok, skipped, failed } = await runPool(
       items,
       concurrency,
-      (item) => seedOneWithRetry(item, { base, bucket, supabase, speakerOf, dryRun, existingKeys }),
+      (item) => seedOneWithRetry(item, { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys }),
       (progress) => {
         state.done = progress.done;
         state.ok = progress.ok;
