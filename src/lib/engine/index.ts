@@ -28,6 +28,7 @@ export {
   mcOnlyIn,
   questionsFor,
   revealFor,
+  scriptMismatch,
   wordReadingCredit,
   grammarVehicleFor,
   grammarSelectionFor,
@@ -38,6 +39,7 @@ export {
   type GrammarVehicle,
   type GrammarSelection,
   type VariantPrompt,
+  type ScriptMismatch,
 } from "@/lib/engine/question";
 
 // The pure totals/stats math lives in engine/results.ts — no registry, no

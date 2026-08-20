@@ -20,7 +20,7 @@
 // disagree about what あ/お is.
 
 import { KANA_SUBJECT } from "@/data/characters";
-import { answerIsJapanese } from "@/lib/engine/question";
+import { answerIsJapanese, scriptMismatch } from "@/lib/engine/question";
 import { factInfo, glyphOf } from "@/lib/facts";
 import { confusableWith, libEntry } from "@/lib/library/entries";
 import type { Direction, EntryId, FactId } from "@/types";
@@ -105,4 +105,33 @@ export function confusionNote(asked: EntryId, said: EntryId): string | null {
   const entry = libEntry(asked);
   if (!entry || !confusableWith(entry).includes(said)) return null;
   return `You answered ${glyphOf(said)}. Those two get mixed up a lot.`;
+}
+
+/**
+ * SAK-122: the short warning shown when a typed answer looks like it was
+ * given in the wrong script/format for what this card wants — English on a
+ * Japanese-answer card, Japanese on an English-answer card, or the kana
+ * glyph itself on a kana card (which wants romaji). Null for an ordinary
+ * wrong answer, which the caller scores as a miss same as always.
+ *
+ * Caller contract matches `scriptMismatch`: only call this for a TYPED
+ * answer that the real grader has already marked wrong, never for an
+ * MC/recognition pick and never in place of the grader itself. See
+ * lib/engine/question.ts's `scriptMismatch` for why.
+ */
+export function mismatchWarning(
+  fact: FactId,
+  dir: Direction,
+  given: string,
+): string | null {
+  switch (scriptMismatch(fact, dir, given)) {
+    case "wantsJapanese":
+      return "This card wants a Japanese answer.";
+    case "wantsRomaji":
+      return "This card wants a romaji answer.";
+    case "wantsEnglish":
+      return "This card wants an English answer.";
+    default:
+      return null;
+  }
 }

@@ -87,7 +87,7 @@ import {
   productionCue,
 } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
-import { matchesEnglish, norm } from "@/lib/engine/en-match";
+import { isEnglishGloss, matchesEnglish, norm } from "@/lib/engine/en-match";
 import { gradeNumberItem, type NumberQuizItem } from "@/lib/engine/number-quiz";
 import {
   constructionCategory,
@@ -1010,13 +1010,20 @@ function isWordReading(fact: FactId): boolean {
   return isWordReadingFact(fact);
 }
 
+/** Kana, kanji, or the citation mark 〜 — anywhere in the string, latin or
+ * not. Exported as the raw character test (not "IS this text Japanese",
+ * which also demands no latin — see isJapaneseText) so `scriptMismatch` can
+ * ask the narrower question "did ANY Japanese character make it into this
+ * answer" on its own. */
+const JAPANESE_CHAR_RE = /[぀-ヿ㐀-䶿一-鿿々〜～]/;
+
 /** Kana, kanji, or the citation mark 〜 — and no latin letter anywhere. Both
  * halves matter: "sushi" has no Japanese in it, and a gloss like "OK" that
  * happened to carry a 〜 is still English and still typed as latin. */
 function isJapaneseText(str: string): boolean {
   const s = str.trim();
   if (!s || /[A-Za-z]/.test(s)) return false;
-  return /[぀-ヿ㐀-䶿一-鿿々〜～]/.test(s);
+  return JAPANESE_CHAR_RE.test(s);
 }
 
 /**
@@ -1057,6 +1064,71 @@ export function answerIsJapanese(fact: FactId, dir: Direction): boolean {
   if (!info) return false;
   if (dir === "en2jp") return true;
   return info.answers.length > 0 && info.answers.every(isJapaneseText);
+}
+
+/**
+ * What KIND of wrong script/format `given` looks like, for a card whose real
+ * grader (checkTyped, via checkEn2jp/checkJp2en/checkProduces) has ALREADY
+ * said it is wrong — or null when there's nothing script-shaped to say.
+ *
+ * SAK-122: typing English on a card that wants Japanese, Japanese on a card
+ * that wants English, or the kana glyph itself on a kana card (which wants
+ * ROMAJI — "a" for あ, not あ) is not the same failure as an ordinary wrong
+ * answer, and the drill screen uses this to warn and let the learner retype
+ * instead of scoring a miss.
+ *
+ * CALLERS MUST RUN THIS ONLY AFTER `given` HAS ALREADY FAILED THE REAL
+ * GRADER. This is not a replacement for checkTyped and does not re-derive
+ * correctness — a genuinely correct romaji-for-kana answer, or a correct kana
+ * answer typed via IME, is caught by checkProduces's own romajiMatches
+ * fallback long before this would ever run, so this function never needs to
+ * (and does not attempt to) tell a correct answer from an incorrect one. It
+ * only classifies an already-wrong answer's SCRIPT against what the card
+ * wants — reusing `answerIsJapanese` (the same predicate the live romaji→kana
+ * converter and answerGuide already key off), `isEnglishGloss` and the same
+ * Japanese-character test `isJapaneseText` is built from, rather than
+ * inventing new Unicode-range checks, so this can never disagree with what
+ * those already call Japanese or English.
+ *
+ * Also never meant to run against an MC/recognition/particle pick — those are
+ * answered by WHICH option, not by typed text, and have no script to get
+ * wrong.
+ *
+ * A CARD THAT WANTS JAPANESE ALREADY LIVE-CONVERTS ROMAJI AS YOU TYPE, and
+ * that shapes what "wrong script" can mean there. A clean paste of English
+ * text ("teacher" on a card wanting せんせい) never touches a kana table entry
+ * and reaches here as pure, unconverted Latin — exactly the mismatch this
+ * ticket names. But an in-progress or botched ROMAJI attempt ("sensai" for
+ * せんせい) almost always resolves at least its first syllable or two through
+ * the same converter before running out of table (live mode: see toKana's
+ * "unresolved letter" branch), so it reaches here as a mix of real kana plus
+ * a latin tail — evidence the learner WAS typing Japanese, just wrong. Only
+ * the first shape (no Japanese character survived at all) is claimed as a
+ * mismatch; a mixed string is left as the ordinary miss it always was, so an
+ * everyday romaji typo does not quietly turn into a free, unlimited retry.
+ */
+export type ScriptMismatch = "wantsJapanese" | "wantsRomaji" | "wantsEnglish";
+
+export function scriptMismatch(
+  fact: FactId,
+  dir: Direction,
+  given: string,
+): ScriptMismatch | null {
+  const g = given.trim();
+  if (!g) return null;
+  if (answerIsJapanese(fact, dir)) {
+    // The card wants Japanese. A `given` that reads as English and carries
+    // NO Japanese character at all — see the comment above for why that,
+    // rather than isJapaneseText's negation, is the safe test — is the
+    // mismatch; anything with even one real kana/kanji in it is left as a
+    // plain miss.
+    return isEnglishGloss(g) && !JAPANESE_CHAR_RE.test(g) ? "wantsJapanese" : null;
+  }
+  // The card wants English or romaji. There is no legitimate English/romaji
+  // answer that contains kana or kanji, so Japanese script here is always the
+  // mismatch — the label just depends on which of the two the card wants.
+  if (!isJapaneseText(g)) return null;
+  return factInfo(fact)?.subject === KANA_SUBJECT ? "wantsRomaji" : "wantsEnglish";
 }
 
 // ---------- grammar ----------
