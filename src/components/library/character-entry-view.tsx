@@ -25,7 +25,6 @@
 // those already-heavy routes never add a network pause and this module itself
 // stays free of runtime imports from the curriculum dictionary.
 
-import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";

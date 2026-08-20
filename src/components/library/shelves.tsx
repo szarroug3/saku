@@ -47,7 +47,6 @@ import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { EntryLink } from "@/components/library/entry-link";
 import { getEntryHref } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";

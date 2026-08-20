@@ -47,20 +47,17 @@ import { Lbl } from "@/components/ui";
 import { EntryBreakdown } from "@/components/stats/entry-breakdown";
 import { barSegments, groupEntriesByStanding, tallyFacts } from "@/components/stats/tally";
 import type { Standing } from "@/lib/library/standing";
-import { counterForm, isBareNumber } from "@/data/counters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { KANJI_SUBJECT } from "@/data/kanji";
-import { numberConstructionEntry } from "@/data/number-construction-id";
-import { RADICAL_SUBJECT } from "@/data/radicals";
-import { KANA_SUBJECT } from "@/data/characters";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT } from "@/data/vocab";
-import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
+import { markEntry } from "@/data/marks";
 import type { Claims } from "@/lib/claims";
-import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
-import { KIND_LABEL } from "@/lib/library/entries";
-import { markEntry } from "@/lib/library/library-index";
-import { factType } from "@/lib/practice-types";
+import { KIND_LABEL } from "@/lib/library/kinds";
+import {
+  getStatsRows,
+  type StatsRow,
+  type StatsSubject,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import type {
 
@@ -84,189 +81,18 @@ const SUBJECT_LABEL: Record<string, string> = {
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
 };
 
-interface Subject {
-  id: string;
-  label: string;
-  facts: FactId[];
-  entries: EntryId[];
-  /** entry → its facts, within this subject's own population only. Built once
-   * per Subject (top-level or a split-off child/group member alike) rather
-   * than read from one shared registry keyed by top-level subject id, which
-   * is what let a synthetic subject (Hiragana, Numbers, …) compute `met` the
-   * same way a real one does. */
-  entryFacts: Map<EntryId, FactId[]>;
+/** A StatsSubject with its display label attached. The label is a plain
+ * string lookup (SUBJECT_LABEL, no guarded dependency) so it stays a
+ * client-side concern even though the subject's facts/entries themselves are
+ * now fetched from getStatsRows (SAK-104) rather than walked at module scope
+ * here. */
+type Subject = StatsSubject & { label: string };
+
+function withLabel(s: StatsSubject): Subject {
+  return { ...s, label: SUBJECT_LABEL[s.id] ?? s.id };
 }
 
-/** Build a Subject from any fact list — a real top-level subject (the SUBJECTS
- * walk below) or a slice carved out of one (Hiragana out of Kana, Numbers out
- * of Words' counting facts, …). The entry index is a groupBy over `facts`
- * alone, so it is exactly the population the row it renders is about. */
-function buildSubject(id: string, label: string, facts: FactId[]): Subject {
-  const entryFacts = new Map<EntryId, FactId[]>();
-  for (const f of facts) {
-    const e = entryOf(f);
-    const list = entryFacts.get(e);
-    if (list) list.push(f);
-    else entryFacts.set(e, [f]);
-  }
-  return { id, label, facts, entries: [...entryFacts.keys()], entryFacts };
-}
-
-/** Every subject in the app, in data order, with its facts and its entries.
- *
- * Module scope, so the 21,753-fact walk happens once per page load rather than
- * once per render. It reads ALL_FACTS and factInfo — the registry — rather than
- * importing the four data modules directly, which is what keeps a fifth subject
- * from needing a line here: facts.ts's SUBJECTS list is already the contract. */
-const SUBJECTS: Subject[] = (() => {
-  const byId = new Map<string, FactId[]>();
-  const order: string[] = [];
-  for (const f of ALL_FACTS) {
-    const id = factInfo(f)?.subject;
-    if (!id) continue;
-    let list = byId.get(id);
-    if (!list) {
-      list = [];
-      byId.set(id, list);
-      order.push(id);
-    }
-    list.push(f);
-  }
-  return order.map((id) => buildSubject(id, SUBJECT_LABEL[id] ?? id, byId.get(id)!));
-})();
-
-/** SAK-25: Radicals, Kanji, and Words nest under a "Vocabulary" parent row
- * rather than sitting as three flat siblings. The three are already separate
- * subjects (see SUBJECTS above) — this only changes how they're grouped for
- * display, not what's counted. */
-const VOCABULARY_CHILD_IDS: readonly string[] = [
-  RADICAL_SUBJECT,
-  KANJI_SUBJECT,
-  VOCAB_SUBJECT,
-];
-
-/** SAK-25: the two Counting synthetic subject ids, carved out of the Words
- * subject's own facts (see splitWordSubject). Neither is a real FactId
- * subject — COUNTER_FACTS and CONSTRUCTION_CATEGORY_FACTS both still carry
- * subject "word" (see src/data/counters.ts: the owner ruled counters "vocab
- * with a track label", not a seventh subject kind, and counters.test.ts
- * asserts COUNTERS_SUBJECT === VOCAB_SUBJECT — changing that would contradict
- * a standing design decision and break that assertion). So this ticket's
- * "own subject id" for Counting is a DISPLAY-layer id, in the same spirit as
- * practice-types.ts's factType() already splitting "word" into "word" and
- * "counter" for the Practice type chooser — this file reuses that exact
- * predicate and only adds the finer Numbers/Counters cut underneath it. */
-const COUNTING_NUMBERS_ID = "counting-numbers";
-const COUNTING_COUNTERS_ID = "counting-counters";
-
-/** SAK-25: the two Kana synthetic subject ids, carved out of the Kana
- * subject's own facts by script (see splitKanaSubject). Reuses factType()'s
- * existing hiragana/katakana predicate rather than re-deriving it from
- * CHAR_INDEX, so this row can never disagree with the Practice type chooser
- * about which glyph is which script. */
-const KANA_HIRAGANA_ID = "kana-hiragana";
-const KANA_KATAKANA_ID = "kana-katakana";
-
-/** The two bare-number generative categories ("Numbers 1-99", "Numbers
- * 100-9999") — the only construction categories with no counter attached.
- * Every other category (nin, hon, hiki, mai, ko, dai, satsu, hai, kai, sai)
- * is a real counter. See src/data/counter-categories.ts and
- * src/data/number-construction.ts (those two ids are the only ones built
- * with no `kind: CounterKind`). */
-const NUMBER_CATEGORY_ENTRIES: ReadonlySet<EntryId> = new Set([
-  numberConstructionEntry("tens"),
-  numberConstructionEntry("big"),
-]);
-
-/** Within the "counter" practice type (factType()'s split of "word"): is this
- * entry a bare number (いち, にじゅう, …) rather than a counted form (三本) or a
- * per-counter category (〜本)? A memorised form asks counters.ts's own
- * isBareNumber; a generative category asks membership in the two bare-number
- * ranges above — every other category is a counter. */
-function isCountingNumberEntry(entry: EntryId): boolean {
-  if (NUMBER_CATEGORY_ENTRIES.has(entry)) return true;
-  const form = counterForm(entry);
-  return form !== undefined && isBareNumber(form);
-}
-
-/** Split the Words subject's own facts into the three Counting-era pieces:
- * plain vocabulary words, the Counting track's Numbers, and its Counters.
- * `factType` already answers "word" vs "counter" (practice-types.ts); this
- * only adds the Numbers/Counters cut underneath "counter". */
-function splitWordSubject(
-  subject: Subject,
-): { words: Subject; numbers: Subject; counters: Subject } {
-  const wordFacts: FactId[] = [];
-  const numberFacts: FactId[] = [];
-  const counterFacts: FactId[] = [];
-  for (const f of subject.facts) {
-    if (factType(f) !== "counter") {
-      wordFacts.push(f);
-      continue;
-    }
-    (isCountingNumberEntry(entryOf(f)) ? numberFacts : counterFacts).push(f);
-  }
-  return {
-    words: buildSubject(subject.id, subject.label, wordFacts),
-    numbers: buildSubject(COUNTING_NUMBERS_ID, "Numbers", numberFacts),
-    counters: buildSubject(COUNTING_COUNTERS_ID, "Counters", counterFacts),
-  };
-}
-
-/** Split the Kana subject's own facts into Hiragana and Katakana, by
- * factType()'s existing script predicate — the same test that already drives
- * the Practice type chooser's Hiragana/Katakana chips. */
-function splitKanaSubject(
-  subject: Subject,
-): { hiragana: Subject; katakana: Subject } {
-  const hiraganaFacts = subject.facts.filter((f) => factType(f) === "hiragana");
-  const katakanaFacts = subject.facts.filter((f) => factType(f) === "katakana");
-  return {
-    hiragana: buildSubject(KANA_HIRAGANA_ID, "Hiragana", hiraganaFacts),
-    katakana: buildSubject(KANA_KATAKANA_ID, "Katakana", katakanaFacts),
-  };
-}
-
-type Row =
-  | { kind: "subject"; subject: Subject }
-  | { kind: "group"; label: string; children: Subject[] };
-
-/** SUBJECTS in render order, with Kana split into a Hiragana/Katakana group,
- * Radicals/Kanji/Words collected into a Vocabulary group, and the counting
- * facts carved out of Words into a Counting group placed right after it.
- * Everything else (Grammar, Verb pairs, Keigo) keeps its exact original row
- * and order. */
-const ROWS: Row[] = (() => {
-  const out: Row[] = [];
-  let vocabularyChildren: Subject[] | null = null;
-  for (const s of SUBJECTS) {
-    if (s.id === KANA_SUBJECT) {
-      const { hiragana, katakana } = splitKanaSubject(s);
-      out.push({ kind: "group", label: "Kana", children: [hiragana, katakana] });
-      continue;
-    }
-    if (s.id === VOCAB_SUBJECT) {
-      const { words, numbers, counters } = splitWordSubject(s);
-      if (!vocabularyChildren) {
-        vocabularyChildren = [];
-        out.push({ kind: "group", label: "Vocabulary", children: vocabularyChildren });
-      }
-      vocabularyChildren.push(words);
-      out.push({ kind: "group", label: "Counting", children: [numbers, counters] });
-      continue;
-    }
-    if (VOCABULARY_CHILD_IDS.includes(s.id)) {
-      if (!vocabularyChildren) {
-        vocabularyChildren = [];
-        out.push({ kind: "group", label: "Vocabulary", children: vocabularyChildren });
-      }
-      vocabularyChildren.push(s);
-      continue;
-    }
-    out.push({ kind: "subject", subject: s });
-  }
-  return out;
-})();
+const EMPTY_ARGS: [] = [];
 
 export function BySubject({
   facts,
@@ -297,34 +123,54 @@ export function BySubject({
   } | null>(null);
   const onOpen = (label: string, groups: { standing: Standing; entries: EntryId[] }[]) =>
     setOpen({ label, groups });
+
+  // SAK-104: the ROWS structure — a static walk over the (now server-only)
+  // fact registry — is fetched once via a Server Action instead of being
+  // built at module scope. Every visitor gets the identical structure (see
+  // getStatsRows's own header), so one fetch per mount, cached like
+  // library-page.tsx's getLibraryShelves, is the whole cost.
+  const statsData = useServerLookup(getStatsRows, EMPTY_ARGS);
+  const rows = statsData?.rows ?? [];
+  const sentenceTierCount = statsData?.sentenceTierCount ?? 0;
+
   return (
     <section>
       <Lbl>By subject</Lbl>
       <table className="w-full border-collapse text-[13px]">
         <tbody>
-          {ROWS.map((row) =>
-            row.kind === "subject" ? (
-              <SubjectRow
-                key={row.subject.id}
-                subject={row.subject}
-                facts={facts}
-                claims={claims}
-                now={now}
-                onOpen={onOpen}
-              />
-            ) : (
-              <GroupRow
-                key={row.label}
-                label={row.label}
-                subjects={row.children}
-                facts={facts}
-                claims={claims}
-                now={now}
-                onOpen={onOpen}
-              />
-            ),
+          {!statsData ? (
+            <tr>
+              <td className="py-2 text-[13px] text-text-muted">Loading…</td>
+            </tr>
+          ) : (
+            rows.map((row: StatsRow) =>
+              row.kind === "subject" ? (
+                <SubjectRow
+                  key={row.subject.id}
+                  subject={withLabel(row.subject)}
+                  facts={facts}
+                  claims={claims}
+                  now={now}
+                  onOpen={onOpen}
+                />
+              ) : (
+                <GroupRow
+                  key={row.label}
+                  label={row.label}
+                  subjects={row.children.map(withLabel)}
+                  facts={facts}
+                  claims={claims}
+                  now={now}
+                  onOpen={onOpen}
+                />
+              ),
+            )
           )}
-          <SentenceSubjectRow learnedIds={learnedSentenceIds} onOpen={onOpen} />
+          <SentenceSubjectRow
+            learnedIds={learnedSentenceIds}
+            total={sentenceTierCount}
+            onOpen={onOpen}
+          />
         </tbody>
       </table>
       <EntryBreakdown
@@ -370,12 +216,15 @@ export function BySubject({
  * standing on it. */
 function SentenceSubjectRow({
   learnedIds,
+  total,
   onOpen,
 }: {
   learnedIds: string[];
+  /** SENTENCE_ORDERING_TIERS.length — fetched via getStatsRows (SAK-104),
+   * since data/assembly.ts is guarded (it imports lib/facts.ts). */
+  total: number;
   onOpen?: (label: string, groups: { standing: Standing; entries: EntryId[] }[]) => void;
 }) {
-  const total = SENTENCE_ORDERING_TIERS.length;
   const learned = learnedIds.length;
   // A tier's Library page is a MARK entry, not `sentenceTierEntry`'s own id
   // (see entry-breakdown.tsx's file header for the full reasoning) — marks.ts
@@ -458,7 +307,7 @@ function metEntries(
   claims: Claims,
 ): EntryId[] {
   return subject.entries.filter((e) =>
-    (subject.entryFacts.get(e) ?? []).some((f) => facts[f]?.seen || claims[f]),
+    (subject.entryFacts[e as unknown as string] ?? []).some((f) => facts[f]?.seen || claims[f]),
   );
 }
 
@@ -476,7 +325,7 @@ function metGroups(
 ): { standing: Standing; entries: EntryId[] }[] {
   return groupEntriesByStanding(
     metEntries(subject, facts, claims),
-    (e) => subject.entryFacts.get(e) ?? [],
+    (e) => subject.entryFacts[e as unknown as string] ?? [],
     facts,
     claims,
     now,
@@ -495,12 +344,18 @@ function metGroupsForSubjects(
   claims: Claims,
   now: number,
 ): { standing: Standing; entries: EntryId[] }[] {
-  const lookup = new Map<EntryId, FactId[]>();
+  const lookup: Record<string, readonly FactId[]> = {};
   for (const s of subjects) {
-    for (const [e, fs] of s.entryFacts) lookup.set(e, fs);
+    for (const [e, fs] of Object.entries(s.entryFacts)) lookup[e] = fs;
   }
   const entries = subjects.flatMap((s) => metEntries(s, facts, claims));
-  return groupEntriesByStanding(entries, (e) => lookup.get(e) ?? [], facts, claims, now);
+  return groupEntriesByStanding(
+    entries,
+    (e) => lookup[e as unknown as string] ?? [],
+    facts,
+    claims,
+    now,
+  );
 }
 
 function SubjectRow({

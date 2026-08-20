@@ -39,13 +39,15 @@ import { PitchReading } from "@/components/library/pitch-mark";
 import { HintBody } from "@/components/quiz/hint-content";
 import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
+import { entryId, factId } from "@/lib/fact-id";
+import { VOCAB_KIND } from "@/lib/library/kinds";
 import {
-  legacyUnqualifiedReading,
-  VOCAB_SUBJECT,
-  isWordReadingFact,
-  vocabRow,
-  wordMeaningFactId,
-} from "@/data/vocab";
+  getWordReadingFactSet,
+  resolveFactInfos,
+  resolveLegacyUnqualifiedReadings,
+  resolveSpeechForFacts,
+  resolveVocabRows,
+} from "@/lib/library/server-lookups";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
@@ -96,8 +98,6 @@ import {
   constructionConfigForFact,
   isConstructionFact,
 } from "@/data/counter-categories";
-import { entryOf, factInfo } from "@/lib/facts";
-import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
 import { confusionKnownFacts } from "@/lib/confusion-search";
 import { meaningMustShowGlyph } from "@/lib/homophone";
@@ -121,13 +121,14 @@ import { anchorForFact, isReadingFact, quizzableFacts } from "@/lib/word-unlock"
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type {
-
   Direction,
   EntryId,
   FactId,
+  FactInfo,
   SessionStats,
   ShowingPresentation,
 } from "@/types";
+import type { VocabRow } from "@/data/vocab";
 
 import { DrillDrawer } from "./drill-drawer";
 import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
@@ -367,13 +368,21 @@ function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
  * offers GLYPHS. Which is the same asymmetry the prompt has, in reverse — the
  * option side always shows whatever the prompt side is not.
  */
-function labelOf(fact: FactId, dir: Direction, ctx?: PromptContext): string {
+/** SAK-104: factInfo reads lib/facts.ts (server-only), so this reads the
+ * caller's own locally-resolved fact map instead of importing it — see
+ * DrillScreen's `localFactInfo`/`ensureFactsLoaded`. */
+function labelOf(
+  fact: FactId,
+  dir: Direction,
+  ctx: PromptContext | undefined,
+  factInfoOf: (id: FactId) => FactInfo | undefined,
+): string {
   // A subject may override the visible text per showing — grammar production
   // shows the pattern built on this card's vehicle (食べたい, not the baked
   // 行きたい). Everyone else has no optionLabel and falls to glyph/answer.
   const shown = questionsFor(fact).optionLabel?.(fact, dir, ctx);
   if (shown != null) return shown;
-  const info = factInfo(fact);
+  const info = factInfoOf(fact);
   if (!info) return "";
   return dir === "en2jp" ? info.glyph : (info.answers[0] ?? "");
 }
@@ -588,6 +597,121 @@ export function DrillScreen() {
    * here so they always see the closures from the latest render. */
   const handlersRef = useRef<DrillHandlers | null>(null);
 
+  // ---------- SAK-104: locally-resolved fact registry ----------
+  //
+  // factInfo/entryOf/vocabRow/isWordReadingFact/legacyUnqualifiedReading all
+  // read server-only modules now (the ~9.5MB dictionary they draw from must
+  // never reach the client bundle), so this screen — the deepest, hottest
+  // per-question render path in the app — keeps its own small, locally
+  // resolved slice instead of importing them. THE ZERO-LATENCY CONTRACT IS
+  // KEPT by batching, not by skipping: the whole leg's fact pool (rt.pool,
+  // frozen at deck-build — see onMount) is fetched ONCE, in one round trip,
+  // before the first card is drawn, and every per-question render below reads
+  // this map SYNCHRONOUSLY, never awaiting a server action mid-question.
+  //
+  // The one case the leg's own pool cannot predict is an MC board's
+  // DISTRACTORS: a subject's confusable pool often reaches outside today's
+  // deck (kana confusables, kanji reading siblings, the ALL_FACTS backstop —
+  // see lib/engine's buildMcOptions). Those are fetched incrementally, once
+  // per question when a new board is drawn (presentCard, below) rather than
+  // once per render — a small, DOCUMENTED gap: an option's label can render
+  // blank for a frame on a freshly-drawn card until that fetch resolves,
+  // almost always hidden inside the reveal-pause beat between cards.
+  // State, not refs: labelOf/promptPitch/revealPitch/wordContext all read
+  // this SYNCHRONOUSLY during render (that's the whole zero-latency point —
+  // see above), and a ref read during render is unsound under the React
+  // Compiler (its memoization assumes render is pure). Kept as flat maps
+  // merged via a functional updater, the same shape a ref would have held.
+  const [factMap, setFactMap] = useState<Record<string, FactInfo>>({});
+  const [vocabRowMap, setVocabRowMap] = useState<Record<string, VocabRow>>({});
+  const [legacyReadingMap, setLegacyReadingMap] = useState<Record<string, string | null>>({});
+  const [wordReadingFacts, setWordReadingFacts] = useState<ReadonlySet<string>>(new Set());
+  const [speechMap, setSpeechMap] = useState<Record<string, string>>({});
+
+  /** Synchronous read of the locally-resolved registry — the hot-path
+   * replacement for `factInfo` from lib/facts.ts. */
+  function localFactInfo(id: FactId): FactInfo | undefined {
+    return factMap[id as unknown as string];
+  }
+  /** The hot-path replacement for `entryOf`. Null (rather than a guess) when
+   * the fact hasn't been resolved locally yet — see the module header above;
+   * callers already treat "no confusion claimed" as a normal outcome. */
+  function localEntryOf(id: FactId): EntryId | null {
+    return localFactInfo(id)?.entry ?? null;
+  }
+  function localIsWordReadingFact(id: FactId): boolean {
+    return wordReadingFacts.has(id as unknown as string);
+  }
+  /** wordMeaningFactId, minted locally: it is a pure id-build (entryId + factId,
+   * both plain unguarded helpers in lib/fact-id.ts, the same ones data/vocab.ts
+   * itself calls), never a data lookup, so there is nothing to fetch. */
+  function localWordMeaningFactId(keb: string): FactId {
+    return factId(entryId(VOCAB_KIND, keb), "meaning");
+  }
+
+  /** Batch-fetch factInfo for any of `ids` not already resolved, merging the
+   * result into `factMap` and re-rendering once it lands. Safe to call with
+   * ids already covered — a no-op past the first call for any given id.
+   * Reads `factMap` from the enclosing render's closure (a snapshot, not a
+   * ref), so two calls in the same tick before that render's state commits
+   * can both miss and both fetch — a harmless duplicate round trip, not a
+   * correctness issue, and never on the per-render hot path itself. */
+  function ensureFactsLoaded(ids: readonly FactId[]) {
+    const missing = ids.filter((id) => !(id as unknown as string in factMap));
+    if (!missing.length) return;
+    void resolveFactInfos(missing).then((res) => {
+      setFactMap((prev) => ({ ...prev, ...res }));
+    });
+  }
+
+  /** Batch-fetch vocabRow + legacyUnqualifiedReading for `kebs` not already
+   * resolved. Called only for word-subject facts, and only for the CURRENT
+   * showing's own fact (q.f) — never for MC distractors, which never reach
+   * the pitch-display code paths this feeds. */
+  function ensureVocabLoaded(kebs: readonly string[]) {
+    const missing = [...new Set(kebs)].filter((k) => !(k in vocabRowMap));
+    if (!missing.length) return;
+    void Promise.all([
+      resolveVocabRows(missing),
+      resolveLegacyUnqualifiedReadings(missing),
+    ]).then(([rows, readings]) => {
+      setVocabRowMap((prev) => ({ ...prev, ...rows }));
+      setLegacyReadingMap((prev) => ({ ...prev, ...readings }));
+    });
+  }
+
+  /** The whole leg's fact pool — fetched once at deck-build/resume (onMount)
+   * so every q.f the leg can ever draw already has factInfo, and (for word
+   * facts) vocabRow/legacyUnqualifiedReading/isWordReadingFact resolved
+   * before the first card renders. */
+  function ensurePoolLoaded(pool: readonly FactId[]) {
+    const missing = pool.filter((id) => !(id as unknown as string in factMap));
+    if (missing.length) {
+      void resolveFactInfos(missing).then((res) => {
+        setFactMap((prev) => ({ ...prev, ...res }));
+        const kebs = missing
+          .map((id) => res[id as unknown as string])
+          .filter((info): info is FactInfo => !!info && info.subject === VOCAB_KIND)
+          .map((info) => info.glyph);
+        if (kebs.length) ensureVocabLoaded(kebs);
+      });
+    }
+    void getWordReadingFactSet(pool).then((res) => {
+      if (!res.length) return;
+      setWordReadingFacts((prev) => {
+        const next = new Set(prev);
+        for (const f of res) next.add(f as unknown as string);
+        return next;
+      });
+    });
+    const missingSpeech = pool.filter((id) => !(id as unknown as string in speechMap));
+    if (missingSpeech.length) {
+      void resolveSpeechForFacts(missingSpeech).then((res) => {
+        setSpeechMap((prev) => ({ ...prev, ...res }));
+      });
+    }
+  }
+
   const reducedMotion = usePrefersReducedMotion();
   const rt = active ? (active.runtime as unknown as DrillRuntime) : null;
   const limited =
@@ -697,7 +821,9 @@ export function DrillScreen() {
         endQuiz();
         return;
       }
-      rt.deck = rt.deck.concat(spread(rt.pool.slice(), entryOf));
+      rt.deck = rt.deck.concat(
+        spread(rt.pool.slice(), (f) => localEntryOf(f) ?? (f as unknown as string)),
+      );
       rt.forms = rt.forms.concat(rt.pool.map(() => null));
     }
     const f = rt.deck[rt.pos];
@@ -936,6 +1062,14 @@ export function DrillScreen() {
       // `hinted` and `choicesShown` just above.
       textRevealed: false,
     };
+    // SAK-104: `f` is already covered (the whole leg's pool was fetched at
+    // deck-build — see ensurePoolLoaded), but `mc`/`choicesBoard` are built
+    // from each subject's OWN distractor pool, which often reaches beyond
+    // that pool (kana confusables, kanji reading siblings, the rare ALL_FACTS
+    // backstop). Fetching them here — right as the card is built, before it
+    // is shown — gives the round trip the whole reveal-pause beat to resolve
+    // before the learner needs to read the board.
+    ensureFactsLoaded([...(mc ?? []), ...(choicesBoard ?? [])]);
     // Creates the stat, and deliberately advances NOTHING. `seen` used to tick
     // here, which put it in the same unit as `asked` while every numerator was
     // in the unit of `resolved` — see src/lib/drill-stats.ts for what that cost.
@@ -1031,7 +1165,7 @@ export function DrillScreen() {
       particleDrillPick === undefined &&
       particleMarkerPick === undefined;
     const credited =
-      typed && q.dir === "jp2en" && isWordReadingFact(q.f)
+      typed && q.dir === "jp2en" && localIsWordReadingFact(q.f)
         ? wordReadingCredit(q.f, given)
         : null;
     const ok =
@@ -1087,7 +1221,7 @@ export function DrillScreen() {
     } else {
       rt.streak = 0; // any miss, including a timeout
       st.misses++;
-      const mcSaid = picked != null ? labelOf(picked, q.dir, ctxFor(q)) : null;
+      const mcSaid = picked != null ? labelOf(picked, q.dir, ctxFor(q), localFactInfo) : null;
       const typedSaid = given && given !== "(time)" ? given : null;
       const recognitionSaid =
         recognitionPick !== undefined && q.recognition
@@ -1115,12 +1249,19 @@ export function DrillScreen() {
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
       if (picked !== undefined && picked !== q.f) {
-        const said = entryOf(picked);
+        // SAK-104: entryOf reads lib/facts.ts (server-only) — `picked` is an
+        // MC-option fact, which can reach outside this leg's locally-resolved
+        // pool (a subject's distractor pool, or the rare ALL_FACTS backstop —
+        // see this component's fact-registry header). `said` is null, and the
+        // confusion is silently NOT claimed, on the rare miss where that
+        // option's factInfo hasn't resolved locally yet — the same "silence
+        // beats invention" the confusion-search itself already practices.
+        const said = localEntryOf(picked);
         // Two facts of ONE entry are not a confusion: picking 生's ショウ card
         // when the answer was 生's セイ card is a wrong answer about 生, not
         // mixing 生 up with something. `confused` is keyed by entry precisely
         // so this distinction has somewhere to live.
-        if (said !== entryOf(q.f)) {
+        if (said && said !== localEntryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
           // Same fact, remembered for the reveal rather than only counted. See
           // DrillQuestion.confused for why it is not cleared by a later try.
@@ -1149,7 +1290,7 @@ export function DrillScreen() {
         // check means. Skipped here, not upstream, so every other typed
         // path is untouched.
         const said = confusedWith(q.f, given, rt.deck, confusionKnownFacts(history));
-        if (said && said !== entryOf(q.f)) {
+        if (said && said !== localEntryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
           q.confused = said;
         }
@@ -1322,7 +1463,7 @@ export function DrillScreen() {
         return;
       const index = parseInt(e.key, 10) - 1;
       const opt = rt.q.mc?.[index];
-      if (opt) submit(labelOf(opt, rt.q.dir, ctxFor(rt.q)), opt);
+      if (opt) submit(labelOf(opt, rt.q.dir, ctxFor(rt.q), localFactInfo), opt);
       else if (rt.q.recognition?.options[index]) {
         submit(rt.q.recognition.options[index], undefined, index);
       }
@@ -1403,19 +1544,25 @@ export function DrillScreen() {
         rt.deck = buildDeck(rt.pool, { ...cfg, ...active.snapshot });
         rt.forms = rt.deck.map(() => null);
       }
+      // SAK-104: the whole leg's fact pool is now resolved from a server
+      // action rather than imported (see this component's fact-registry
+      // header) — kicked off here, once, before the first card is asked.
+      ensurePoolLoaded(rt.pool);
       // Warm every clip this deck can speak, up front and rate-limited, so a
       // listening card's audio is ready before it appears instead of being
       // synthesized on the spot. Only when audio prompts are on (a text-only run
       // speaks nothing), and over the DISTINCT facts (rt.pool), not the shuffled
       // deck's repeats. prefetchClips is a no-op unless a pack voice is in use.
+      // SAK-104: speechForFact reads several guarded subject modules, so this
+      // is its own round trip (resolveSpeechForFacts) rather than a client-side
+      // call over the resolved factInfo map.
       if (cfg.audioPrompts) {
-        const texts = rt.pool
-          .map((f) => {
-            const info = factInfo(f);
-            return info ? speechForFact(info) : "";
-          })
-          .filter((t): t is string => !!t);
-        prefetchClips(texts, cfg.voiceName);
+        void resolveSpeechForFacts(rt.pool).then((res) => {
+          const texts = rt.pool
+            .map((f) => res[f as unknown as string] ?? "")
+            .filter((t): t is string => !!t);
+          prefetchClips(texts, cfg.voiceName);
+        });
       }
       rt.pos = 0;
       rt.asked = 0;
@@ -1434,6 +1581,10 @@ export function DrillScreen() {
     if (!Array.isArray(rt.pool)) {
       rt.pool = active.facts.filter((f) => usableForms(f).length > 0);
     }
+    // Resuming (tab switch / remount / refresh): the local fact-registry map
+    // is in-memory state, so it starts empty on THIS mount even though rt
+    // itself survived — re-fetch the pool the same way a fresh quiz does.
+    ensurePoolLoaded(rt.pool);
     // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
     // A showing in flight from before the hint existed was not hinted. Reading
@@ -1617,16 +1768,18 @@ export function DrillScreen() {
     if (!live || !live.listen || live.listenPlayed) return;
     live.listenPlayed = true;
     const current = rt?.q;
-    const info = factInfo(listenPlayFact);
     // A construction HEAR card plays the ROLLED reading (さんぼん), not the fact's
-    // category glyph — speechForFact(info) would say the bare counter. The reading
-    // lives on the frozen item, so the audio matches exactly what is graded.
+    // category glyph — speechForFact(listenPlayFact) would say the bare counter.
+    // The reading lives on the frozen item, so the audio matches exactly what is
+    // graded. SAK-104: speechForFact reads several guarded subject modules, so
+    // this reads the leg's own pre-fetched speech map (ensurePoolLoaded) rather
+    // than importing it — listenPlayFact is always a pool fact.
     const text = current?.numberItem
       ? current.numberItem.reading
       : current?.form.source === "sentence" &&
           current.form.response === "definition"
         ? current.recognition?.jp
-        : info && speechForFact(info);
+        : speechMap[listenPlayFact as unknown as string];
     if (text) speak(text, cfg.voiceName);
     // Fires only when a NEW listening card appears. The fact and voice are
     // stable for one `asked`, so keying on the card is the whole intent.
@@ -1784,13 +1937,13 @@ export function DrillScreen() {
   // pitch shows nothing extra.
   const promptPitch = (() => {
     if (listenVisible || q.dir !== "jp2en") return null;
-    const info = factInfo(q.f);
-    if (!info || info.subject !== VOCAB_SUBJECT) return null;
-    if (wordMeaningFactId(info.glyph) !== q.f) return null;
+    const info = localFactInfo(q.f);
+    if (!info || info.subject !== VOCAB_KIND) return null;
+    if (localWordMeaningFactId(info.glyph) !== q.f) return null;
     if (!meaningMustShowGlyph(q.f, history)) return null;
-    const row = vocabRow(info.glyph);
+    const row = vocabRowMap[info.glyph];
     if (!row) return null;
-    const reading = legacyUnqualifiedReading(row.keb);
+    const reading = legacyReadingMap[row.keb];
     if (!reading) return null;
     const downstep = wordPitch(row.keb);
     return downstep == null ? null : { reading, downstep };
@@ -1813,11 +1966,11 @@ export function DrillScreen() {
   //                           SAME predicate (usableForms / the coverage keep), so
   //                           in practice this reaches the `null` arm; the glyph
   //                           arm is belt-and-braces should that filter ever lift.
-  const wordInfo = factInfo(q.f);
-  const isWordCard = !!wordInfo && wordInfo.subject === VOCAB_SUBJECT;
+  const wordInfo = localFactInfo(q.f);
+  const isWordCard = !!wordInfo && wordInfo.subject === VOCAB_KIND;
   const wordContext: ReactNode = (() => {
     if (!isWordCard) return null;
-    if (isWordReadingFact(q.f)) {
+    if (localIsWordReadingFact(q.f)) {
       // An AUDIO reading card is dictation — you HEAR the word and type the
       // kana — so the meaning adds nothing and would wrongly imply "produce the
       // reading from the meaning." Only the VISUAL reading card (or a listening
@@ -1958,7 +2111,9 @@ export function DrillScreen() {
   // left — you are still answering, and the app telling you what you nearly
   // confused it with would be handing you the answer mid-question.
   const mixup =
-    revealing && q.confused ? confusionNote(entryOf(q.f), q.confused) : null;
+    revealing && q.confused && localEntryOf(q.f)
+      ? confusionNote(localEntryOf(q.f)!, q.confused)
+      : null;
   // The reveal that shows a word's READING is the moment the app confirms how
   // the word sounds — exactly where a wrong pitch habit would set. So when the
   // revealed answer is a word's reb and that word has a verified pitch, draw the
@@ -1968,11 +2123,11 @@ export function DrillScreen() {
   // src/data/pitch.ts and pitch-mark.tsx. DISPLAY only — never graded.
   const revealPitch = (() => {
     if (!revealing) return null;
-    const info = factInfo(q.f);
-    if (!info || info.subject !== VOCAB_SUBJECT) return null;
-    const row = vocabRow(info.glyph);
+    const info = localFactInfo(q.f);
+    if (!info || info.subject !== VOCAB_KIND) return null;
+    const row = vocabRowMap[info.glyph];
     if (!row) return null;
-    const reading = legacyUnqualifiedReading(row.keb);
+    const reading = legacyReadingMap[row.keb];
     if (!reading || revealFor(q.f, q.dir, ctx) !== reading) return null;
     const downstep = wordPitch(row.keb);
     return downstep == null ? null : { reading, downstep };
@@ -2198,12 +2353,11 @@ export function DrillScreen() {
           // the same glyph a non-listening twin of this card would show.
           listen={listenVisible}
           onListen={() => {
-            const info = factInfo(q.f);
             const text = q.numberItem
               ? q.numberItem.reading
               : q.form.source === "sentence" && q.form.response === "definition"
                 ? q.recognition?.jp
-                : info && speechForFact(info);
+                : speechMap[q.f as unknown as string];
             if (text) speak(text, cfg.voiceName);
           }}
           sentenceFrame={selectionFrame ?? undefined}
@@ -2445,7 +2599,7 @@ export function DrillScreen() {
             {q.mc?.map((opt, i) => (
               <button
                 key={opt}
-                onClick={() => submit(labelOf(opt, q.dir, ctx), opt)}
+                onClick={() => submit(labelOf(opt, q.dir, ctx, localFactInfo), opt)}
                 className={cx(
                   "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
                   // The option you should have picked, lit alongside the reveal.
@@ -2464,7 +2618,7 @@ export function DrillScreen() {
                     : undefined
                 }
               >
-                <span>{labelOf(opt, q.dir, ctx)}</span>
+                <span>{labelOf(opt, q.dir, ctx, localFactInfo)}</span>
                 <span className="text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}

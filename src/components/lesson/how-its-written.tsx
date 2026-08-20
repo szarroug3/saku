@@ -45,8 +45,8 @@ import type { LessonItem } from "@/lib/lesson-items";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 import { useLessonPref } from "@/lib/lesson-prefs";
 import { useGlyphStrokes } from "@/lib/strokes";
-import { entryHref } from "@/lib/library/href";
-import { kanjiEntry } from "@/lib/library/library-index";
+import { resolveKanjiPartLinks } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 
 /** Both of `strokeFallbackOf`'s answers for one glyph (normal + reference mode),
  * precomputed — see scripts/build-library-index.mjs's `strokeFallback`. Passing
@@ -92,6 +92,17 @@ function WholeShapeFallback({
 }) {
   const fallback = strokeFallbackOf(reference, precomputedFallback);
 
+  // SAK-104: entryHref/kanjiEntry read server-only modules now, so this small
+  // (2-4 element) parts breakdown resolves its hrefs in one batched round trip
+  // instead of importing them. `useServerLookup` is called unconditionally
+  // above any early return this component might otherwise take, per the Rules
+  // of Hooks — WholeShapeFallback has no other branch, so this is its only
+  // return.
+  const partLinks = useServerLookup(
+    resolveKanjiPartLinks,
+    fallback.show === "parts" ? [fallback.parts.map((p) => p.c)] : null,
+  );
+
   if (fallback.show === "parts") {
     return (
       <div className="text-[13px]">
@@ -101,7 +112,7 @@ function WholeShapeFallback({
             <span key={`${p.c}-${i}`} className="flex items-center gap-2">
               {i > 0 ? <span className="text-text-muted">+</span> : null}
               <Link
-                href={entryHref(kanjiEntry(p.c))}
+                href={partLinks?.[p.c] ?? "#"}
                 className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-text no-underline hover:bg-panel"
               >
                 <span className="text-[20px] leading-none">{p.c}</span>
