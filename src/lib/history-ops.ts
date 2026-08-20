@@ -115,10 +115,33 @@ export function applyClaims(
  * a zero, so an absent key keeps meaning "never claimed". Always returns a
  * clone, even when nothing was present to delete: history.ts's dropClaims always
  * writes, so matching that keeps the two paths identical.
+ *
+ * ALSO deletes `history.facts[f]` — the quiz-performance aggregate, not just the
+ * claim (SAK-103). Withdrawing a claim on a fact that had ALSO been
+ * independently quizzed used to leave its aggregate behind: `effectiveState`
+ * (claims.ts) reads `lastTested` from `agg?.lastTested` FIRST, so a fact with a
+ * real aggregate stayed "tested" — and therefore permanently invisible to
+ * `isFactFresh` — even after its claim was gone, regardless of any visit-order
+ * priority the walk gives regressions, because the unit was never even in the
+ * due set. Kana never showed this because kana facts carry no aggregate at all
+ * (claims/learnedAt only), so dropping their claim already fell straight
+ * through to a true fresh state; a vocab/kanji word independently drilled into
+ * `facts` did not. Deleting `facts[f]` here is what makes "mark as not known"
+ * mean what Sam intends: brand new, not "reset except for what I already proved
+ * I know" — mirroring, for one fact, what applyDeleteSessions already does for
+ * the whole file (rebuild `facts` from what survives).
+ *
+ * `learnedAt[f]` is deliberately LEFT ALONE — it is the permanent "this was met
+ * at some point" record (see its own doc above, and unit-scheduler-core.ts's
+ * `isRegression`), used for Progress/Stats display and for giving a reset fact
+ * visit-priority over never-met material in the lesson walk. Dropping a claim
+ * answers "is this due" (claims + facts); `learnedAt` answers "was this ever
+ * met", a different question this call was never asked to unmeet.
  */
 export function applyDropClaims(hist: HistoryFile, facts: FactId[]): HistoryFile {
   const next = structuredClone(hist);
   if (next.claims) for (const f of facts) delete next.claims[f];
+  if (next.facts) for (const f of facts) delete next.facts[f];
   return next;
 }
 
