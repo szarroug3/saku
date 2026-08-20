@@ -5,7 +5,6 @@ import { Analytics } from "@vercel/analytics/next";
 
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
-import { LibraryPrefetch } from "@/components/library/library-prefetch";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
@@ -305,12 +304,17 @@ export default async function RootLayout({
                                 progress is replayed into the account and the local
                                 copy cleared — once, best effort. Renders nothing. */}
                             <LocalMigration signedIn={authEnabled && signedIn} />
-                            {/* SAK-111: warm the Library's shelf data on every
-                                app page load, not just on first /library
-                                visit — see library-prefetch.tsx. Renders
-                                nothing; the Server Action call it kicks off
-                                runs in the background after mount. */}
-                            <LibraryPrefetch />
+                            {/* SAK-111 mounted a LibraryPrefetch here to warm
+                                getLibraryShelves' client-side cache ahead of
+                                LibraryPageClient's own useServerLookup call.
+                                SAK-121 moved that call server-side (the
+                                /library page itself now `await`s it, off the
+                                same unstable_cache entry), so
+                                LibraryPageClient no longer fetches it
+                                client-side at all — nothing is left to warm,
+                                so the prefetcher (and the POST it fired on
+                                every app page load) was removed rather than
+                                kept as dead weight. */}
                             {children}
                           </div>
                         </div>
