@@ -2589,9 +2589,16 @@ export function DrillScreen() {
           <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col items-center gap-2 overflow-y-auto text-center">
             {revealAnswer && revealTmpl ? (
               <>
-                <p className="max-w-[420px] wrap-break-word text-lg font-semibold text-text">
+                <p className="min-h-[38px] max-w-[420px] wrap-break-word text-lg font-semibold text-text">
+                  {/* Re-states what was actually on screen (the prompt face,
+                      not the answer face — they differ in en2jp) ahead of the
+                      answer sentence, so the reveal names what was ASKED
+                      rather than leaving the learner to infer it from the
+                      card above. See revealFor / the module doc up top. */}
+                  <span className="text-lg">{prompt.glyph}</span>
+                  {" — "}
                   {revealTmpl.prefix}
-                  <span className="text-accent">{revealAnswer.node}</span>
+                  <span className="text-danger">{revealAnswer.node}</span>
                   {revealTmpl.suffix}
                 </p>
                 {mixup ? (
