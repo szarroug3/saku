@@ -96,7 +96,8 @@ export async function GET(request: Request): Promise<Response> {
   let bytes: ArrayBuffer;
   try {
     bytes = await synthesizeWordWav(reading, downstep, v.speakerId);
-  } catch {
+  } catch (err) {
+    console.error(`pitch-tts: synthesis failed for "${reading}" (downstep ${downstep})`, err);
     return new Response("synthesis failed", { status: 502 });
   }
 

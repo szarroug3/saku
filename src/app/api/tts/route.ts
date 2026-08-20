@@ -82,7 +82,12 @@ export async function GET(request: Request): Promise<Response> {
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-  } catch {
+  } catch (err) {
+    // SAK-108: this used to be a bare `catch {}` that swallowed the real
+    // error (e.g. VOICEVOX failure vs. the encodeOpus/ffmpeg step failing) —
+    // logging it is the only way a future prod failure is diagnosable from
+    // Vercel logs without the kind of manual sleuthing SAK-108 needed.
+    console.error(`tts: synthesis/encode failed for "${text}" (voice ${voiceId})`, err);
     return new Response("synthesis failed", { status: 502 });
   }
 }
