@@ -16,16 +16,22 @@
 // exists to demonstrate.
 
 import { SoundIcon } from "@/components/ui";
-import { pitchApiUrl } from "@/lib/pitch-audio";
+import { DEFAULT_PITCH_VOICE_ID, pitchApiUrl } from "@/lib/pitch-audio";
 
 export function PitchHearButton({
   reading,
   downstep,
+  voiceId = DEFAULT_PITCH_VOICE_ID,
   className = "",
 }: {
   reading: string;
   /** The mora position of the downstep — see src/lib/pitch.ts. */
   downstep: number;
+  /** The learner's saved pitch voice (SAK-99, `cfg.pitchVoiceId`) — a roster
+   * id from src/lib/pitch-audio.ts's PITCH_VOICES, resolved by the caller.
+   * Defaults to the shipped voice so callers that haven't been threaded
+   * through Settings yet (if any) still work. */
+  voiceId?: string;
   className?: string;
 }) {
   return (
@@ -33,7 +39,7 @@ export function PitchHearButton({
       type="button"
       aria-label={`Hear ${reading} with its pitch accent`}
       onClick={() => {
-        const audio = new Audio(pitchApiUrl(reading, downstep));
+        const audio = new Audio(pitchApiUrl(reading, downstep, voiceId));
         void audio.play().catch(() => {
           // No fallback on purpose — see the module header.
         });

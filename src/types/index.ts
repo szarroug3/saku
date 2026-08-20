@@ -257,6 +257,16 @@ export interface QuizConfig {
   fonts: string[];
   blurSubmit: boolean;
   voiceName: string;
+  /**
+   * The learner's chosen VOICEVOX voice for pitch-accent "Hear it" audio
+   * (SAK-99) — a roster id from src/lib/pitch-audio.ts's PITCH_VOICES, NOT a
+   * raw VOICEVOX speaker number. Independent of `voiceName` above: that picks
+   * the general speech voice (pack or browser), this picks only the one used
+   * to demonstrate a word's real pitch contour. Defaults to "nana" (speaker
+   * id 30), the sole voice SAK-98 hardcoded, so an existing learner's clips
+   * keep playing the same voice until they actively pick another.
+   */
+  pitchVoiceId: string;
 
   // ---------- what the numbers mean (used everywhere) ----------
   /** Show practice volume next to accuracy, so 88%-from-4-tries can't lie. */

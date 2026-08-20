@@ -25,9 +25,6 @@
 
 import { pitchPattern } from "@/lib/pitch";
 
-/** "No.7 アナウンス" — kept in sync with pitch-audio.ts's cache-key constant. */
-export const PITCH_SPEAKER_ID = 30;
-
 // A short, common phrase, guaranteed to carry several voiced moras across a
 // real pitch swing, used only to measure the voice's natural pitch range.
 const FILLER_TEXT = "おはようございます";
@@ -61,8 +58,12 @@ interface VoicevoxAudioQuery {
   [key: string]: unknown;
 }
 
-async function audioQuery(base: string, text: string): Promise<VoicevoxAudioQuery> {
-  const url = `${base}/audio_query?speaker=${PITCH_SPEAKER_ID}&text=${encodeURIComponent(text)}`;
+async function audioQuery(
+  base: string,
+  text: string,
+  speakerId: number,
+): Promise<VoicevoxAudioQuery> {
+  const url = `${base}/audio_query?speaker=${speakerId}&text=${encodeURIComponent(text)}`;
   const res = await fetch(url, { method: "POST" });
   if (!res.ok) throw new Error(`VOICEVOX audio_query ${res.status} ${res.statusText}`);
   return (await res.json()) as VoicevoxAudioQuery;
@@ -75,41 +76,51 @@ function flatMoras(query: VoicevoxAudioQuery): VoicevoxMora[] {
   return query.accent_phrases.flatMap((p) => p.moras);
 }
 
-// The voice's own natural pitch range, measured once per server instance (a
-// running server's VOICEVOX voice does not change between requests) and
-// reused for every synthesis after the first.
-let cachedRange: { min: number; max: number } | null = null;
+// Each voice's own natural pitch range, measured once per server instance (a
+// running server's VOICEVOX voices do not change between requests) and reused
+// for every synthesis after the first. Keyed by speaker id now that SAK-99
+// offers more than one voice — a range measured for one voice is meaningless
+// applied to another's pitch values.
+const cachedRanges = new Map<number, { min: number; max: number }>();
 
-async function naturalRange(base: string): Promise<{ min: number; max: number }> {
-  if (cachedRange) return cachedRange;
-  const query = await audioQuery(base, FILLER_TEXT);
+async function naturalRange(base: string, speakerId: number): Promise<{ min: number; max: number }> {
+  const cached = cachedRanges.get(speakerId);
+  if (cached) return cached;
+  const query = await audioQuery(base, FILLER_TEXT, speakerId);
   const pitches = flatMoras(query)
     .map((m) => m.pitch)
     .filter((p) => p > 0); // 0 marks a silent/devoiced mora, not a real pitch
   if (pitches.length === 0) throw new Error("VOICEVOX filler query returned no voiced moras");
   const range = { min: Math.min(...pitches), max: Math.max(...pitches) };
-  cachedRange = range;
+  cachedRanges.set(speakerId, range);
   return range;
 }
 
 /**
  * Synthesize `reading` (kana) at its own pitch-accent pattern (`downstep`, the
- * mora position of the drop — see src/lib/pitch.ts) to WAV bytes.
+ * mora position of the drop — see src/lib/pitch.ts) to WAV bytes, using the
+ * given VOICEVOX speaker id (SAK-99: the caller — /api/pitch-tts — resolves
+ * and validates this from the curated roster in pitch-audio.ts before it ever
+ * reaches here).
  *
  * Throws on any failure (unconfigured engine, unreachable, bad response) so
  * the route can turn that into a clean 503/502 rather than an unhandled
  * error — never let a raw exception escape to the caller.
  */
-export async function synthesizePitchWav(reading: string, downstep: number): Promise<ArrayBuffer> {
+export async function synthesizePitchWav(
+  reading: string,
+  downstep: number,
+  speakerId: number,
+): Promise<ArrayBuffer> {
   const base = engineUrl();
   if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
 
-  const { min, max } = await naturalRange(base);
+  const { min, max } = await naturalRange(base, speakerId);
   const margin = (max - min) * RANGE_MARGIN_FRACTION;
   const lowTarget = min + margin;
   const highTarget = max - margin;
 
-  const query = await audioQuery(base, reading);
+  const query = await audioQuery(base, reading, speakerId);
   const moras = flatMoras(query);
   const pattern = pitchPattern(reading, downstep);
   const n = Math.min(moras.length, pattern.length);
@@ -120,7 +131,7 @@ export async function synthesizePitchWav(reading: string, downstep: number): Pro
     moras[i].pitch = pattern[i].high ? highTarget : lowTarget;
   }
 
-  const res = await fetch(`${base}/synthesis?speaker=${PITCH_SPEAKER_ID}`, {
+  const res = await fetch(`${base}/synthesis?speaker=${speakerId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(query),
