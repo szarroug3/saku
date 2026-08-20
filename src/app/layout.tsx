@@ -13,6 +13,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
+import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
 import { loadProgressSeeds } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
 import { ListsProvider } from "@/lib/lists-provider";
@@ -200,6 +201,12 @@ export default async function RootLayout({
             (src/components/landing.tsx) instead of globally, where it would go
             unused on every other route. */}
         <link rel="preload" as="image" href="/brand/saku-wordmark.png" />
+        {/* SAK-112: use-server-lookup.ts's IndexedDB persistence reads this to
+            key/validate its cache, instead of importing @/lib/content/
+            learn-index (and its multi-megabyte learn-index.json) into a
+            "use client" module every page would then bundle. A plain server-
+            rendered meta tag costs nothing beyond the string itself. */}
+        <meta name="curriculum-version" content={CURRICULUM_VERSION} />
       </head>
       <body>
         {/* Server-synced settings, seeded above. Outermost of the client
