@@ -28,6 +28,7 @@ import {
   emptyHistory,
   withBackfilledLearnedAt,
 } from "@/lib/history-ops";
+import { isFactFresh } from "@/lib/content/unit-scheduler-core";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
 const fid = (s: string) => s as unknown as FactId;
@@ -89,6 +90,57 @@ test("applyDropClaims removes a claim and always returns a fresh object", () => 
   // Dropping a fact that was never claimed changes nothing but still clones.
   const noop = applyDropClaims(emptyHistory(), [fid("never")]);
   assert.deepEqual(noop.claims ?? {}, {});
+});
+
+// ---------- SAK-103: dropping a claim must also clear the fact's aggregate ----------
+
+test("applyDropClaims also deletes history.facts[f] — a claim withdrawal on an independently-quizzed fact goes back to true fresh", () => {
+  // Mirrors a real prod record (word:だ/meaning): quizzed 9 times to a real
+  // aggregate, THEN claimed, THEN the claim withdrawn via Library "mark as not
+  // known". Before SAK-103's fix, claims went away but facts[f] did not, so
+  // effectiveState (claims.ts) kept reading it as tested via agg.lastTested and
+  // isFactFresh (unit-scheduler-core.ts) never saw it as due again.
+  const quizzed = applySession(emptyHistory(), {
+    ts: 5_000,
+    mode: "drill",
+    redrill: false,
+    total: 1,
+    forgivingPct: 100,
+    strictPct: 100,
+    facts: {
+      [fid("word:だ/meaning")]: { seen: 9, missed: 0, correct: 9, firstTry: 9 },
+    } as QuizSessionRecord["facts"],
+  });
+  assert.ok(quizzed.facts[fid("word:だ/meaning")]?.lastTested, "a real aggregate exists");
+
+  const claimed = applyClaims(quizzed, [fid("word:だ/meaning")], 6_000);
+  const dropped = applyDropClaims(claimed, [fid("word:だ/meaning")]);
+
+  assert.equal("word:だ/meaning" in (dropped.claims ?? {}), false, "claim is gone");
+  assert.equal(
+    "word:だ/meaning" in dropped.facts,
+    false,
+    "the quiz aggregate is ALSO gone, not just the claim",
+  );
+  assert.notEqual(dropped, claimed, "still a clone");
+  // The input is untouched, per the pure-transform contract.
+  assert.ok(claimed.facts[fid("word:だ/meaning")], "input's aggregate is unaffected");
+
+  const fresh = isFactFresh(fid("word:だ/meaning"), dropped);
+  assert.equal(fresh, true, "isFactFresh now reports the reset word as due again");
+});
+
+test("applyDropClaims on a fact with NO facts aggregate (kana-like) still behaves as before — regression guard", () => {
+  // Kana facts in real history are tracked purely via claims/learnedAt and never
+  // get an independent facts[] aggregate, which is why the bug never showed up
+  // there. Dropping such a claim should be unaffected by the new facts-delete.
+  const claimed = applyClaims(emptyHistory(), [fid("hira-a")], 1_000);
+  assert.equal("hira-a" in claimed.facts, false, "no aggregate, exactly like real kana history");
+
+  const dropped = applyDropClaims(claimed, [fid("hira-a")]);
+  assert.deepEqual(dropped.claims ?? {}, {});
+  assert.deepEqual(dropped.facts, {}, "still nothing there — nothing to delete, nothing added");
+  assert.equal(isFactFresh(fid("hira-a"), dropped), true, "fresh, as it always was for kana");
 });
 
 // ---------- seen ----------
