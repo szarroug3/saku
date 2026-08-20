@@ -889,7 +889,7 @@ export function AssemblyScreen() {
                 draggable={!resolved}
                 disabled={resolved}
                 aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
-                className={`kq-material cursor-grab rounded-xl border border-border bg-card py-3 pr-4 text-center text-lg shadow-chip motion-safe:transition-opacity motion-safe:duration-150 ${
+                className={`kq-material cursor-grab rounded-xl border border-border bg-card py-3 pr-4 text-center text-lg motion-safe:transition-opacity motion-safe:duration-150 ${
                   isBeingDragged ? "opacity-40" : ""
                 } ${gloss ? "pl-8" : "pl-4"}`}
                 onClick={() => place(surface)}
