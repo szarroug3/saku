@@ -42,15 +42,27 @@ test("/stats renders the by-subject bar and the knowledge-base card", async ({
   await expect(
     page.getByText("Nothing yet. Drill something and it will show up here."),
   ).toHaveCount(0);
-  await expect(page.getByText("claimed", { exact: true })).toBeVisible();
+  // SAK-78 title-cased the bucket labels ("a count sits under a BUTTON now,
+  // not a sentence" — tally.ts's BUCKET_LABEL), so the card reads "Claimed",
+  // not "claimed".
+  await expect(page.getByText("Claimed", { exact: true })).toBeVisible();
 
   // The By subject card: its label, the Kana row, and that row's coverage count.
   // Three kana facts claimed means the Kana row reads "3 of <total>"; no other
   // subject has a record, so "3 of" is unambiguous.
   await expect(page.getByText("By subject")).toBeVisible();
-  // The subject name is a <th scope="row">, i.e. a rowheader.
-  await expect(page.getByRole("rowheader", { name: "Kana" })).toBeVisible();
-  await expect(page.getByText(/\b3 of [\d,]+/)).toBeVisible();
+  // The subject name is a <th scope="row">, i.e. a rowheader. SAK-25 grouped
+  // Kana into its own group row (Hiragana/Katakana as children beneath it),
+  // so a substring match on "Kana" now also catches "Katakana" — exact:true
+  // pins it to the group row this claim actually landed on. The same split
+  // means "3 of <n>" now appears on BOTH the Kana group row and its Hiragana
+  // child row (the three claimed facts are hiragana), so the coverage count
+  // is read from within the Kana row itself rather than matched loose on the
+  // page.
+  const kanaRowheader = page.getByRole("rowheader", { name: "Kana", exact: true });
+  await expect(kanaRowheader).toBeVisible();
+  const kanaRow = page.locator("tr", { has: kanaRowheader });
+  await expect(kanaRow.getByText(/\b3 of [\d,]+/)).toBeVisible();
 });
 
 /**
