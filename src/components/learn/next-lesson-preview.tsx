@@ -108,12 +108,12 @@ export function NextLessonPreview({
     // data-learn-card is the stable hook the e2e suite finds a lesson card by —
     // the styling classes are not a contract.
     <div className={separated ? CARD_SEPARATED : CARD_FLUSH} data-learn-card>
+      <h3 className="text-[22px] font-semibold leading-tight text-text">{title}</h3>
       {positionLabel ? (
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-accent/80">
+        <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.12em] text-accent/80">
           {positionLabel}
         </p>
       ) : null}
-      <h3 className="mt-1 text-[22px] font-semibold leading-tight text-text">{title}</h3>
       <p className="mt-1.5 max-w-prose text-[13px] leading-relaxed text-text-muted">
         {why.lede.strong}
         {why.lede.rest ? ` ${why.lede.rest}` : ""}
