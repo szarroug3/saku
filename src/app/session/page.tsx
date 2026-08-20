@@ -15,10 +15,10 @@ import { useEffect, useMemo, useRef } from "react";
 import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
 import {
-  SentenceOrderingTeachWalk,
-  sentenceOrderingTeachSteps,
+  SentenceRuleEntryView,
+  sentenceRuleEntrySteps,
   type SentenceOrderingTierId,
-} from "@/components/session/sentence-ordering-teach-walk";
+} from "@/components/library/sentence-rule-entry-view";
 import { LessonRail } from "@/components/session/lesson-rail";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
@@ -303,7 +303,7 @@ export default function SessionPage() {
     const sentenceOrderingTeaching = session.snapshot.mode === "assembly";
     const sentenceTier = sentenceTierFromLabel(session.what);
     const total = sentenceOrderingTeaching
-      ? sentenceOrderingTeachSteps(sentenceTier ?? "simple")
+      ? sentenceRuleEntrySteps(sentenceTier ?? "simple")
       : teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
     // Leave the lesson for the drill. Named here because two controls fire it:
@@ -432,7 +432,7 @@ export default function SessionPage() {
           <div className="flex min-h-full items-start justify-center gap-8 py-2">
             <div className="min-w-0 max-w-2xl flex-1">
               {sentenceOrderingTeaching ? (
-                <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
+                <SentenceRuleEntryView step={at} tierId={sentenceTier} />
               ) : (
                 <TeachWalk
                   facts={session.teach}
