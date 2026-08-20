@@ -123,6 +123,7 @@ const DEV_PAGES: Array<{ href: string; label: string }> = [
   { href: "/dev/numbers", label: "Numbers" },
   { href: "/dev/swatches", label: "Swatches" },
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
+  { href: "/dev/pitch-accent", label: "Pitch accent" },
 ];
 
 export function Sidebar({
