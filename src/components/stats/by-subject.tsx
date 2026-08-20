@@ -136,7 +136,11 @@ export function BySubject({
   // built at module scope. Every visitor gets the identical structure (see
   // getStatsRows's own header), so one fetch per mount, cached like
   // library-page.tsx's getLibraryShelves, is the whole cost.
-  const statsData = useServerLookup(getStatsRows, EMPTY_ARGS);
+  // SAK-120: now ALSO persisted like getLibraryShelves, not just in-memory —
+  // same EMPTY_ARGS, build-content-pure shape (server-lookup-action-names.ts
+  // already groups getStatsRows with getLibraryShelves/getLearnIndexData), so a
+  // repeat visit to Progress reads it from IndexedDB instead of refetching.
+  const statsData = useServerLookup(getStatsRows, EMPTY_ARGS, { persist: true });
   const rows = statsData?.rows ?? [];
   const sentenceTierCount = statsData?.sentenceTierCount ?? 0;
 

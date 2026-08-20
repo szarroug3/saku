@@ -301,7 +301,11 @@ export function HomeFeed() {
   // — see this file's own import comment and getLearnIndexData's header). Every
   // computation below that used to call straight into learn-index.ts now calls
   // the same learn-scheduler.ts functions with this snapshot instead.
-  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS);
+  // SAK-120: persisted like getLibraryShelves — same EMPTY_ARGS, build-content-
+  // pure, multi-megabyte shape (see server-lookup-action-names.ts, which already
+  // groups these two with getStatsRows) — so a repeat visit to Home reads it
+  // from IndexedDB instead of refetching on every load.
+  const index = useServerLookup(getLearnIndexData, EMPTY_ARGS, { persist: true });
 
   const trackMap = useMemo(
     () => (index ? trackIdOfFactMap(index.tracks) : new Map<FactId, string>()),

@@ -235,8 +235,15 @@ export function Shelf({
     () => (kind === GRAMMAR_SUBJECT ? sections.flatMap((s) => s.entries.map((e) => e.id)) : []),
     [kind, sections],
   );
+  // SAK-120: persisted — resolveHrefs over ~97 grammar entries is exactly the
+  // large, content-pure, hot-path payload use-server-lookup.ts's `persist`
+  // option exists for (see its header): a repeat /library visit (or a tab
+  // switch back to the Grammar shelf) reads straight from IndexedDB instead of
+  // refetching this batch over the network every time.
   const grammarHrefs =
-    useServerLookup(resolveHrefs, kind === GRAMMAR_SUBJECT ? [grammarEntryIds] : null) ?? {};
+    useServerLookup(resolveHrefs, kind === GRAMMAR_SUBJECT ? [grammarEntryIds] : null, {
+      persist: true,
+    }) ?? {};
 
   // The grammar shelf uses the shared GrammarShelfRow (the same row the cluster
   // families use), not EntryRow — the pattern, its gloss, the tick-to-drill and
