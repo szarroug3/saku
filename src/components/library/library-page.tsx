@@ -200,8 +200,14 @@ export function LibraryPageClient({
   // see the EMPTY_SECTIONS note above. `undefined` until the first response
   // lands (a real network round trip on first /library visit now, where this
   // used to be instant off the bundle); the render below shows a loading
-  // state rather than an empty shelf while it's in flight.
-  const shelvesByKind = useServerLookup(getLibraryShelves, EMPTY_ARGS);
+  // state rather than an empty shelf while it's in flight. Usually already
+  // resolved by the time this mounts, via LibraryPrefetch (SAK-111) warming
+  // the same cache key from layout.tsx. persist: true (SAK-112) — same
+  // IndexedDB-backed key LibraryPrefetch's own call uses, so a hard reload or
+  // a fresh tab can seed from disk instead of the network.
+  const shelvesByKind = useServerLookup(getLibraryShelves, EMPTY_ARGS, {
+    persist: true,
+  });
   const shelvesLoaded = shelvesByKind !== undefined;
   const shelfFor = useCallback(
     (k: Kind): { sections: readonly ShelfSection[] } => ({
