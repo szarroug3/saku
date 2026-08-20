@@ -46,7 +46,11 @@ import { TrackIntroCard } from "@/components/learn/track-intro-card";
 // (nextLearnLesson, startedLearnTracks, …) runs from learn-scheduler.ts, the
 // same plain functions learn-index.ts itself binds to its own module-scope
 // index, just parameterized over the fetched snapshot instead.
-import { getLearnIndexData } from "@/lib/library/server-lookups";
+import {
+  getLearnFrontier,
+  getLearnIndexData,
+  type LearnHistorySlice,
+} from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import {
   nextLearnLesson,
@@ -336,19 +340,58 @@ export function HomeFeed() {
     new Set(),
   );
 
+  // SAK-116 (Phase 3): the /learn frontier walk itself (the potentially
+  // expensive part — the vocab track alone scans 14k+ units) is precomputed
+  // server-side and cached by hash(known-set, range) + curriculumVersion —
+  // see server-lookups.ts's getLearnFrontier for the full rationale. It is
+  // keyed off a small slice of `history` (facts/claims/seen/learnedAt, not
+  // the sessions array) via useServerLookup, so a RETURNING learner whose
+  // known-set hasn't changed since their last visit (the common case) skips
+  // the local walk entirely once this resolves.
+  //
+  // What it does NOT replace: `history` changes on every interaction this
+  // frame (a claim, a "quiz me", a session round) via optimistic local
+  // writes, and there is no round trip budget for that — see
+  // learn-scheduler.ts's own header. So `frontierArgs`'s key changes with
+  // `history`, `serverFrontier` reads back `undefined` for that NEW key until
+  // the round trip resolves, and the local walk below runs instantly in the
+  // meantime — the exact same nextLearnLesson/nextSentenceLearnLesson calls
+  // this file always made, now used as the live fallback rather than the sole
+  // source. Both paths are the same deterministic function of
+  // (known-set, range), so swapping to the server-resolved value once it
+  // lands is never visible.
+  const knownSet: LearnHistorySlice = useMemo(
+    () => ({
+      facts: history.facts,
+      claims: history.claims,
+      seen: history.seen,
+      learnedAt: history.learnedAt,
+    }),
+    [history.facts, history.claims, history.seen, history.learnedAt],
+  );
+  const frontierArgs = useMemo<[LearnHistorySlice, typeof range] | null>(
+    () => (index ? [knownSet, range] : null),
+    [index, knownSet, range],
+  );
+  const serverFrontier = useServerLookup(getLearnFrontier, frontierArgs);
+
   // Each track's precomputed order (units are history-independent) and its live
-  // next lesson, computed over the index by the content-free scheduler.
+  // next lesson: the server-cached frontier when it has resolved for THIS
+  // known-set/range, else the local content-free scheduler walk (see above).
   const frontiers = useMemo(
     () =>
       (index?.tracks ?? []).map((track) => {
         const order = track.units;
+        const cached = serverFrontier?.byTrack[track.id];
         const frontier =
-          track.id === "sentence"
-            ? nextSentenceLearnLesson(order, history, index!)
-            : nextLearnLesson(order, history, range, index!);
+          cached !== undefined
+            ? cached
+            : track.id === "sentence"
+              ? nextSentenceLearnLesson(order, history, index!)
+              : nextLearnLesson(order, history, range, index!);
         return { track, order, frontier };
       }),
-    [index, history, range],
+    [index, history, range, serverFrontier],
   );
 
   // The lesson runs that can pin a track's card to Continue: an in-progress
