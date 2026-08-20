@@ -433,6 +433,18 @@ export function AssemblyScreen() {
   const [mismatch, setMismatch] = useState<AssemblyMismatch | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
+  // Mirrors `dragging.current`, updated at every site that writes the ref
+  // (see below). The ref alone is enough for the event-handler reads
+  // (onDragOver/onDrop fire rapidly and must not trigger a re-render per
+  // event — that's the whole reason this is a ref, not state), but a few
+  // spots below need the CURRENT dragged piece to affect what gets
+  // rendered (the preview tray order, the dimmed/preview styling on a
+  // piece) — React refs are not allowed to be read during render (they can
+  // go stale under the compiler/concurrent rendering), so those specific
+  // reads use this state twin instead.
+  const [draggingSurface, setDraggingSurface] = useState<
+    { from: "pool" | "tray"; surface: string } | null
+  >(null);
   // Where the dragged piece would land in the tray if dropped right now,
   // or null when nothing's being dragged over the tray. Display-only; drop
   // still commits through dropInTray. Cleared on drop, drag-end, and
@@ -550,6 +562,7 @@ export function AssemblyScreen() {
     setHintOpen(false);
     setMismatch(null);
     dragging.current = null;
+    setDraggingSurface(null);
     setDragOverIndex(null);
     if (rt.pos + 1 >= rt.cards.length) {
       finishQuiz(rt.stats);
@@ -564,7 +577,7 @@ export function AssemblyScreen() {
   // Equal to card.tray when nothing's being dragged over the tray.
   const previewTray = previewTrayOrder(
     card.tray,
-    dragging.current?.surface ?? null,
+    draggingSurface?.surface ?? null,
     dragOverIndex,
   );
 
@@ -580,6 +593,7 @@ export function AssemblyScreen() {
     setHintOpen(false);
     setMismatch(null);
     dragging.current = null;
+    setDraggingSurface(null);
     setDragOverIndex(null);
     saveNow();
     rerender();
@@ -687,6 +701,7 @@ export function AssemblyScreen() {
             const d = dragging.current;
             if (d) dropInTray(d.surface, dragOverIndex);
             dragging.current = null;
+            setDraggingSurface(null);
             setDragOverIndex(null);
           }}
           onDragLeave={(e) => {
@@ -703,7 +718,7 @@ export function AssemblyScreen() {
               const gloss = pieceGloss(pieceBySurface.get(surface)?.h ?? null, history);
               const committedIdx = card.tray.indexOf(surface);
               const isPreviewSlot =
-                dragOverIndex !== null && dragging.current?.surface === surface;
+                dragOverIndex !== null && draggingSurface?.surface === surface;
               return (
               <li key={surface} className="group relative">
                 <button
@@ -723,7 +738,10 @@ export function AssemblyScreen() {
                           ? "border-dashed border-accent bg-accent-bg opacity-70"
                           : "border-border bg-card"
                   } ${resolved ? "" : "cursor-grab"}`}
-                  onDragStart={(e) => startDrag(e, dragging, "tray", surface)}
+                  onDragStart={(e) => {
+                    startDrag(e, dragging, "tray", surface);
+                    setDraggingSurface({ from: "tray", surface });
+                  }}
                   onDragOver={(e) => {
                     if (!dragging.current) return;
                     e.preventDefault();
@@ -758,10 +776,12 @@ export function AssemblyScreen() {
                     const d = dragging.current;
                     if (d) dropInTray(d.surface, dragOverIndex);
                     dragging.current = null;
+                    setDraggingSurface(null);
                     setDragOverIndex(null);
                   }}
                   onDragEnd={() => {
                     dragging.current = null;
+                    setDraggingSurface(null);
                     setDragOverIndex(null);
                   }}
                   onKeyDown={(e) => {
@@ -848,6 +868,7 @@ export function AssemblyScreen() {
             const d = dragging.current;
             if (d?.from === "tray") unplace(d.surface);
             dragging.current = null;
+            setDraggingSurface(null);
             setDragOverIndex(null);
           }}
         >
@@ -858,8 +879,8 @@ export function AssemblyScreen() {
             // dashed preview slot over there.
             const isBeingDragged =
               dragOverIndex !== null &&
-              dragging.current?.from === "pool" &&
-              dragging.current.surface === surface;
+              draggingSurface?.from === "pool" &&
+              draggingSurface.surface === surface;
             return (
             <li key={surface} className="relative">
               <button
@@ -872,9 +893,13 @@ export function AssemblyScreen() {
                   isBeingDragged ? "opacity-40" : ""
                 } ${gloss ? "pl-8" : "pl-4"}`}
                 onClick={() => place(surface)}
-                onDragStart={(e) => startDrag(e, dragging, "pool", surface)}
+                onDragStart={(e) => {
+                  startDrag(e, dragging, "pool", surface);
+                  setDraggingSurface({ from: "pool", surface });
+                }}
                 onDragEnd={() => {
                   dragging.current = null;
+                  setDraggingSurface(null);
                   setDragOverIndex(null);
                 }}
                 onKeyDown={(e) => {
