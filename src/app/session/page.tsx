@@ -518,7 +518,7 @@ export default function SessionPage() {
       <div className="kq-center-frame">
         <SessionHud
           label={session.what}
-          where={`round ${session.round} of ${roundTargetOf(session)} · done`}
+          where={`Round ${session.round} of ${roundTargetOf(session)} · Done`}
           pct={100}
           onDone={pauseSession}
           onEnd={endSession}
