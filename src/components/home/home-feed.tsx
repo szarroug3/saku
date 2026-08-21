@@ -518,12 +518,18 @@ export function HomeFeed() {
     const facts = factsOfLesson(lesson);
     const isNumbers = trackId === "numbers";
     const seeded = teach ? [] : newlySeen(facts);
+    // The rest screen and resume cards read `session.what` as the track's
+    // display name (SAK-127-adjacent fix — it used to fall back to
+    // countWhat's bare item count for every track but Numbers). Numbers keeps
+    // its own literal "Counting" — the resume detector above matches that
+    // exact string, not the track's real title ("Numbers & counters").
+    const trackTitle = index?.tracks.find((t) => t.id === trackId)?.title;
     startTransition(() => {
       if (!teach) markSeen(facts);
       startSession(
         facts,
         teach ? facts : [],
-        isNumbers ? "Counting" : undefined,
+        isNumbers ? "Counting" : trackTitle,
         "lesson",
         seeded,
         isNumbers ? "drill" : undefined,
