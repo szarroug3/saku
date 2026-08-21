@@ -145,14 +145,18 @@ async function synthesize(base: string, speakerId: number, query: VoicevoxAudioQ
  * Throws on any failure (unconfigured engine, unreachable, bad response) so
  * the route can turn that into a clean 503/502 rather than an unhandled error.
  */
-export async function synthesizeWordWav(
+/** Render `query`'s moras to `downstep`'s H/L pattern, in place, and
+ * synthesize. Shared by `synthesizeWordWav` and
+ * `synthesizeWrongPitchWordWav` — the two-strategies-one-path discipline this
+ * module's header describes, one level down: both ultimately want "this
+ * exact downstep, hand-set, inside the voice's natural range," they just
+ * disagree about WHICH downstep. */
+async function synthesizeAtDownstep(
+  base: string,
+  speakerId: number,
   reading: string,
   downstep: number,
-  speakerId: number,
 ): Promise<ArrayBuffer> {
-  const base = engineUrl();
-  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
-
   const { low, high } = await targetRange(base, speakerId);
   const query = await audioQuery(base, reading, speakerId);
   const moras = flatMoras(query);
@@ -161,8 +165,88 @@ export async function synthesizeWordWav(
     if (moras[i].pitch <= 0) continue;
     moras[i].pitch = pattern[i].high ? high : low;
   }
-
   return synthesize(base, speakerId, query);
+}
+
+/**
+ * Synthesize `reading` (kana) at its own EXACT, already-known pitch-accent
+ * pattern (`downstep`, the mora position of the drop — see src/lib/pitch.ts)
+ * to WAV bytes. The caller (the word page, via /api/pitch-tts) has already
+ * resolved and validated `downstep` against a verified Kanjium row, so every
+ * mora in the query gets that one pattern — no fuzzy matching, unlike
+ * `synthesizeSentenceWav`.
+ *
+ * Throws on any failure (unconfigured engine, unreachable, bad response) so
+ * the route can turn that into a clean 503/502 rather than an unhandled error.
+ */
+export async function synthesizeWordWav(
+  reading: string,
+  downstep: number,
+  speakerId: number,
+): Promise<ArrayBuffer> {
+  const base = engineUrl();
+  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
+  return synthesizeAtDownstep(base, speakerId, reading, downstep);
+}
+
+/**
+ * The pitch pattern a WRONG-pitch quiz distractor should render (SAK-128,
+ * SAK-6's research thread) — deliberately different from `correct`, so a
+ * learner who knows the word's real pattern can tell them apart, but never
+ * pushed to an extreme VOICEVOX can't render inside its natural range (that
+ * is what targetRange/RANGE_MARGIN_FRACTION already bound; this only picks
+ * WHICH of the two clean shapes to ask for).
+ *
+ * heiban (0) and atamadaka (1) are the two patterns furthest apart in FEEL —
+ * heiban stays low on mora 1 then rises, atamadaka is high on mora 1 then
+ * falls immediately — so this simply swaps between them: heiban's word gets
+ * atamadaka, anything else gets heiban. Both are always valid patterns for
+ * any reading with at least 2 morae (pitchPatternForLength never rejects a
+ * downstep), so the only real failure mode is a 1-MORA reading, where heiban
+ * and atamadaka render IDENTICALLY (mora 1 is the whole word either way) —
+ * that word has no honest wrong-pitch clip to offer, and this returns null
+ * rather than manufacture an inaudible "wrong" answer.
+ */
+export function wrongDownstepFor(
+  correct: number,
+  moraCount: number,
+): number | null {
+  if (moraCount < 2) return null;
+  return correct === 0 ? 1 : 0;
+}
+
+/**
+ * Synthesize a DELIBERATELY WRONG pitch-accent clip of `reading` — the same
+ * word, a different (and clearly different-sounding) downstep than its real
+ * one — for SAK-128's "correct vs synthetically wrong" quiz mechanic. See
+ * `wrongDownstepFor` for which pattern that is.
+ *
+ * Throws under the same discipline as `synthesizeWordWav` — unconfigured or
+ * unreachable engine, bad response — AND when the reading has too few morae
+ * for a wrong pattern to be distinguishable (see `wrongDownstepFor`); the
+ * caller (the route) turns any of these into a clean non-2xx rather than an
+ * unhandled error.
+ */
+export async function synthesizeWrongPitchWordWav(
+  reading: string,
+  correctDownstep: number,
+  speakerId: number,
+): Promise<ArrayBuffer> {
+  const base = engineUrl();
+  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
+  // A first query just to learn the mora count would double the synthesis
+  // cost for every request; instead ask VOICEVOX once and use its own mora
+  // count both to pick the wrong pattern and to render it — mirroring how
+  // synthesizeAtDownstep already sizes the pattern off the query's own moras
+  // rather than a separately computed moraeOf(reading).
+  const probeQuery = await audioQuery(base, reading, speakerId);
+  const wrong = wrongDownstepFor(correctDownstep, flatMoras(probeQuery).length);
+  if (wrong == null) {
+    throw new Error(
+      `"${reading}" has too few morae for a distinguishable wrong pitch pattern`,
+    );
+  }
+  return synthesizeAtDownstep(base, speakerId, reading, wrong);
 }
 
 export interface SentenceSynthResult {

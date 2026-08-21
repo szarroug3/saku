@@ -48,8 +48,11 @@ import {
   type QuestionType,
 } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
+import { buildPitchShowing, rollPitchQuestion } from "@/lib/pitch-quiz";
+import { DEFAULT_VOICE_ID } from "@/lib/voice";
 import type { Direction, FactId } from "@/types";
 import { ParticleTapPreview } from "./particle-tap-preview";
+import { PitchPreview } from "./pitch-preview";
 
 // ── sample facts, reusing the same real content the /dev/views gallery does ──
 
@@ -127,6 +130,23 @@ const NUMBER_HEAR: NumberQuizItem | null = makeItem(3, "hon", "hear");
 // in src/lib/grammar/readable.ts) rolls one from a learner's known vocabulary; a
 // dev gallery has no history to roll against, so this is a fixed stand-in of the
 // exact shape src/lib/listen-sentence.ts's RecognitionItem carries.
+// SAK-128's two mechanics, each forced deterministically (rng always 0) so the
+// gallery always shows the same clip order/partner rather than reshuffling on
+// every load — a reference sheet, not a live roll.
+// "pair": 箸 (chopsticks, downstep 1) really does share はし with 橋 (bridge,
+// downstep 2) in the curriculum's own homophone-pair table (SAK-128's ingest).
+const PITCH_PAIR_QUESTION = rollPitchQuestion("箸", () => 0);
+const PITCH_PAIR_SHOWING = PITCH_PAIR_QUESTION
+  ? buildPitchShowing(PITCH_PAIR_QUESTION, DEFAULT_VOICE_ID, () => 0)
+  : null;
+// "wrong": お金 (money) carries verified pitch but has no homophone partner in
+// the curriculum, so it resolves to the correct-vs-synthetically-mispitched
+// fallback rather than the pair mechanic above.
+const PITCH_WRONG_QUESTION = rollPitchQuestion("お金", () => 0);
+const PITCH_WRONG_SHOWING = PITCH_WRONG_QUESTION
+  ? buildPitchShowing(PITCH_WRONG_QUESTION, DEFAULT_VOICE_ID, () => 0)
+  : null;
+
 const SENTENCE_RECOGNITION = {
   jp: "ラジオをつけてください。",
   answer: "Please turn on the radio.",
@@ -513,6 +533,31 @@ export default function QuizGalleryDevPage() {
                 }))}
               />
             </div>
+          </Card>
+        </div>
+      </Section>
+
+      <Section title="Word pitch accent (SAK-128)">
+        <p className="mb-3 text-xs text-text-muted">
+          Not a track of its own (SAK-98) — folded into the word track&apos;s jp2en
+          meaning card, ~35% of eligible showings (see PITCH_QUESTION_CHANCE),
+          only for a word with verified pitch data, and only when Audio prompts
+          is on.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <Card label="pair mode (real homophone partner: 箸 vs 橋, both はし)">
+            {PITCH_PAIR_SHOWING ? (
+              <PitchPreview showing={PITCH_PAIR_SHOWING} />
+            ) : (
+              <Missing label="no pair example available" />
+            )}
+          </Card>
+          <Card label="wrong mode (no curriculum partner: real vs. synthetically mis-pitched お金)">
+            {PITCH_WRONG_SHOWING ? (
+              <PitchPreview showing={PITCH_WRONG_SHOWING} />
+            ) : (
+              <Missing label="no wrong-mode example available" />
+            )}
           </Card>
         </div>
       </Section>
