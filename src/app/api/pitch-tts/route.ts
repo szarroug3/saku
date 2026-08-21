@@ -13,7 +13,7 @@
 // pitch-quiz distractor (src/lib/pitch-quiz.ts). `d` is still the word's
 // CORRECT downstep in this mode; the route derives which wrong pattern to
 // render from it (tts-synth.ts's wrongDownstepFor) and caches the result
-// under its own `pitchwrong-` sub-namespace (voice.ts's
+// under its own `pitchwrong2-` sub-namespace (voice.ts's
 // pitchWrongObjectPath), so it can never collide with — or be served instead
 // of — the real clip at that same (reading, downstep, voice).
 //

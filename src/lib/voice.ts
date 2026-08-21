@@ -137,17 +137,24 @@ export function pitchObjectPath(reading: string, downstep: number, voiceId: stri
  * src/lib/tts-synth.ts's synthesizeWrongPitchWordWav and
  * src/lib/pitch-quiz.ts). Keyed on the same (reading, CORRECT downstep,
  * voice) as the real clip's own pitchObjectPath, but in its own
- * `pitchwrong-` sub-namespace, so it can never collide with — or be served
- * in place of — the correct clip. The actual wrong pattern synthesized is a
- * deterministic function of the correct downstep and the reading's mora
- * count (see tts-synth.ts's wrongDownstepFor), so this key is stable without
- * having to name the wrong pattern itself. */
+ * `pitchwrong2-` sub-namespace, so it can never collide with — or be served
+ * in place of — the correct clip.
+ *
+ * The `2` is a cache-busting version bump (SAK-133 changes-requested pass):
+ * `wrongDownstepFor`'s distractor-selection algorithm changed under SAK-129
+ * (pairing against atamadaka instead of heiban, to fix odaka/heiban clips
+ * rendering acoustically identical), but this key used to be a plain
+ * function of (reading, downstep, voice) with no version in it — so any clip
+ * already cached under the OLD algorithm kept being served as a 302 cache
+ * hit forever, silently masking that fix for every word tested before it
+ * landed. Bump this suffix again if the wrong-pattern algorithm ever changes
+ * again. */
 export function pitchWrongObjectPath(
   reading: string,
   downstep: number,
   voiceId: string,
 ): string {
-  return `voices/${voiceId}/pitchwrong-${voiceKey(`${reading}:${downstep}`)}.opus`;
+  return `voices/${voiceId}/pitchwrong2-${voiceKey(`${reading}:${downstep}`)}.opus`;
 }
 
 function supabaseUrl(): string | undefined {
