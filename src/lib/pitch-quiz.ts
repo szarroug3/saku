@@ -33,7 +33,7 @@
 // rule src/data/pitch.ts documents. A word with none simply never offers a
 // pitch question; `rollPitchQuestion` returns null.
 
-import { legacyUnqualifiedReading, vocabRow } from "@/data/vocab";
+import { legacyUnqualifiedGloss, legacyUnqualifiedReading } from "@/data/vocab";
 import { wordPitch } from "@/data/pitch";
 import { pitchPairsFor } from "@/data/pitch-pairs";
 import { pitchApiUrl, pitchWrongApiUrl } from "@/lib/voice";
@@ -70,8 +70,11 @@ export function rollPitchQuestion(
   const downstep = wordPitch(keb);
   if (downstep == null) return null;
   const reading = legacyUnqualifiedReading(keb);
-  const row = vocabRow(keb);
-  const gloss = row?.glosses[0];
+  // SAK-129: pull the gloss from the SAME sense `legacyUnqualifiedReading`
+  // resolved its reading from — never the base VocabRow's own gloss, which
+  // for a multi-sense spelling (e.g. 人: ひと/じん/にん) can belong to a
+  // different sense entirely and mismatch the reading being quizzed.
+  const gloss = legacyUnqualifiedGloss(keb);
   if (!reading || !gloss) return null;
 
   const pairs = pitchPairsFor(keb);

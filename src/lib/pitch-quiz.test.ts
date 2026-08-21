@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { legacyUnqualifiedReading } from "../data/vocab.ts";
 import { wordPitch } from "../data/pitch.ts";
 import {
   buildPitchShowing,
@@ -18,6 +19,21 @@ describe("rollPitchQuestion — which mechanic a word's pitch question uses", ()
     assert.ok(q!.partnerKeb === "橋" || q!.partnerKeb === "端");
     assert.equal(q!.downstep, wordPitch("箸"));
     assert.notEqual(q!.partnerDownstep, q!.downstep);
+  });
+
+  test("SAK-129: a multi-sense word's gloss agrees with the sense its reading resolves to", () => {
+    // 人 has three real senses at the same spelling — ひと "person", じん
+    // "-ian/-ite", にん (a counter) — and its base VocabRow happens to be
+    // じん's row. legacyUnqualifiedReading("人") correctly resolves to ひと
+    // (sense 0, the one wordPitch() was verified against at ingest), so the
+    // gloss paired with it must be ひと's gloss too, never じん's.
+    const reading = legacyUnqualifiedReading("人");
+    assert.equal(reading, "ひと");
+    const q = rollPitchQuestion("人");
+    assert.ok(q);
+    assert.equal(q!.reading, "ひと");
+    assert.equal(q!.gloss, "person");
+    assert.notEqual(q!.gloss, "-ian (e.g. Italian)");
   });
 
   test("水 (no curriculum homophone partner) falls back to wrong mode", () => {
