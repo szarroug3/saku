@@ -39,25 +39,6 @@ const firstKanjiReading = READING_INDEX.keys().next().value!;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 test.describe("Unreachable settings combinations", () => {
-  test("kana with audio produces no cards", async ({
-    page,
-  }) => {
-    await seedQuiz(page, {
-      seen: [kanaFact(kanaChar)],
-      cfg: {
-        ...STEADY_CFG,
-        ...ask({
-          jpPrompts: ["audio"],
-          jpResponses: ["romaji"],
-          jpAnswers: ["mc"],
-        }),
-      },
-    });
-    await page.goto("/practice");
-    const start = page.getByRole("button", { name: "Start", exact: true });
-    await expect(start).toBeDisabled();
-  });
-
   test("kanji reading with audio produces no cards (kanji reading not listenable)", async ({
     page,
   }) => {
@@ -139,6 +120,32 @@ test.describe("Unreachable settings combinations", () => {
 });
 
 test.describe("Multiple settings paths to same format (text vs audio)", () => {
+  test("kana with audio produces a dictation card (SAK-16, no longer unreachable)", async ({
+    page,
+  }) => {
+    // enabledFormsFor's isKanaFact branch wires kana dictation (hear あ, type/
+    // pick the romaji) through the SAME "japanese" jp2en/romaji shape text kana
+    // already uses, gated by the one audioPrompts toggle — so audio-only kana
+    // now produces exactly the dictation form instead of nothing.
+    await seedQuiz(page, {
+      seen: [kanaFact(kanaChar)],
+      cfg: {
+        ...STEADY_CFG,
+        ...ask({
+          jpPrompts: ["audio"],
+          jpResponses: ["romaji"],
+          jpAnswers: ["mc"],
+        }),
+      },
+    });
+    await startQuizDrill(page);
+
+    // An audio-prompt card: the halo glyph is the empty speaker stand-in (no
+    // written kana to look at), and a speaker control plays the sound.
+    const speaker = page.locator('[aria-label*="Play"], [aria-label*="Repeat"]').first();
+    await expect(speaker).toBeVisible();
+  });
+
   test("word reading with text prompt shows a card", async ({ page }) => {
     await seedQuiz(page, {
       seen: [wordReading],

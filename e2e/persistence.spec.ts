@@ -173,14 +173,12 @@ test("a round committed mid-session is not counted again at the end", async ({
   // the session (calls endSession); see the "Pause from the ... phase" tests
   // below for the other path (pauseSession).
   await page.getByRole("button", { name: "End session", exact: true }).click();
+  // SAK-52 removed the "Complete session" button and the write it used to
+  // trigger (session-complete.tsx: "The screen the 'Complete session' button
+  // never had") — every round already wrote itself as it closed, so this
+  // final screen has nothing left to commit and no navigation to wait for.
+  // It only shows the retry/claim controls over what already happened.
   await expect(page.locator("body")).toContainText("Session complete");
-  await page
-    .getByRole("button", { name: "Complete session", exact: true })
-    .click();
-  // Complete session lands on /learn (finishSession → router.push("/learn"), the
-  // next lesson), signed in or out. It used to bounce to "/" — a guard clobbered
-  // the /learn push — which this line used to encode; that's the bug now fixed.
-  await page.waitForURL("**/learn");
 
   // Two rounds of five, once each. Fifteen would mean the session was written
   // on top of its own rounds; five would mean a round went missing.

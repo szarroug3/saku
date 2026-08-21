@@ -29,9 +29,14 @@ const grammarFact = patternMeaningFactId(RECIPES[0].id);
 // ---------------------------------------------------------------------------
 // Audio-only asks: no questions on non-listenable facts
 
-test("audio-only with kana makes no questions, not 'solid'", async ({
+test("audio-only with kana makes a dictation question, not 'nothing selected'", async ({
   page,
 }) => {
+  // SAK-16 wired kana dictation (hear the kana, type/pick the romaji) through
+  // the SAME "japanese" jp2en/romaji shape text-prompt kana already uses (see
+  // enabledFormsFor's isKanaFact branch and listen.ts's own header comment),
+  // so audio-only kana is no longer an unreachable combination — it produces
+  // exactly the one dictation form. Start bar and Start button reflect that.
   await seedQuiz(page, {
     seen: [kanaFact(kanaChar)],
     cfg: {
@@ -42,11 +47,11 @@ test("audio-only with kana makes no questions, not 'solid'", async ({
   await page.goto("/practice");
 
   const bar = page.locator("[data-start-bar]");
-  await expect(bar).toContainText("Nothing is selected");
+  await expect(bar).not.toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
   const start = page.getByRole("button", { name: "Start", exact: true });
-  await expect(start).toBeDisabled();
+  await expect(start).toBeEnabled();
 });
 
 test("audio-only with kanji reading makes no questions, not 'solid'", async ({

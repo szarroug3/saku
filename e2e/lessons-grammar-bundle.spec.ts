@@ -1,4 +1,4 @@
-import { test, expect, KANA_FACTS, lessonCard } from "./helpers/lessons";
+import { test, expect, KANA_FACTS, lessonCard, isVisibleSoon } from "./helpers/lessons";
 
 import { nextGrammarLesson } from "@/lib/grammar-lesson";
 import { patternMeaningFactId } from "@/data/grammar";
@@ -54,7 +54,7 @@ test("a pattern-only sitting hands out three patterns, and the session walks the
   // (〜てもいい) is reachable by stepping forward — the proof a sitting teaches
   // more than the first pattern.
   const third = page.getByText("〜てもいい", { exact: false }).first();
-  for (let i = 0; i < 20 && !(await third.isVisible()); i++) {
+  for (let i = 0; i < 20 && !(await isVisibleSoon(third)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(third).toBeVisible();
