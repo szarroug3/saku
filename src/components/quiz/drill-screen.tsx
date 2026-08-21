@@ -613,6 +613,12 @@ export function DrillScreen() {
   // Runtime mutations don't go through setState — bump this to re-render.
   const [, force] = useReducer((x: number) => x + 1, 0);
   const [typed, setTyped] = useState("");
+  // SAK-133: which pitch clip is currently selected — tapping a clip PLAYS
+  // it and marks it selected, but does not submit; only a subsequent Enter
+  // (or the Check button) grades the selection. null until the learner has
+  // tapped/pressed one. Reset alongside `typed` in presentCard for every new
+  // card, pitch or not.
+  const [pitchPick, setPitchPick] = useState<0 | 1 | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [controlsAwake, setControlsAwake] = useState(false);
 
@@ -1058,11 +1064,9 @@ export function DrillScreen() {
     //     an audio prompt (you cannot ask "which one did you hear" without
     //     playing it), so it obeys the exact gate every other listening form
     //     already obeys (see usableForms), never a separate opt-in.
-    //   - not on every eligible showing: PITCH_QUESTION_CHANCE keeps the
-    //     word's everyday meaning card in circulation too, the same "second
-    //     form, part of the time" balance particleMarker's own coin flip
-    //     strikes for は/が/を (lib/engine/particle-drill.ts) rather than
-    //     replacing the ordinary card outright.
+    //   - ADDITIVE, never a substitute (SAK-129): every eligible showing of
+    //     the word's own meaning card queues one extra pitch card a few
+    //     slots later (queuePitchCard) rather than replacing anything.
     //   - only for a word that still carries a VERIFIED wordPitch() entry —
     //     rollPitchQuestion itself returns null otherwise (no guessed pitch,
     //     ever — the same rule src/data/pitch.ts documents).
@@ -1203,6 +1207,7 @@ export function DrillScreen() {
     if (cfg.timer) startCountdown(cfg.timerSec);
     else rt.timerLeft = null;
     setTyped("");
+    setPitchPick(null);
     syncProgress();
     force();
   }
@@ -1617,6 +1622,15 @@ export function DrillScreen() {
       if (v.trim()) submit(v);
       return;
     }
+    // SAK-133: a pitch board needs its OWN Enter path — it has no text input
+    // to focus, so the plain "Enter while waiting" case above already
+    // handles the reveal pause, but answering it takes a SELECTED clip
+    // (pitchPick), not a keystroke into a box. Digits 1/2 only PLAY and
+    // select the clip below; Enter is what actually grades it.
+    if (e.key === "Enter" && rt.q.pitch && pitchPick !== null) {
+      submit(`clip ${pitchPick + 1}`, undefined, undefined, undefined, undefined, pitchPick);
+      return;
+    }
     if ((rt.q.mc || rt.q.recognition || rt.q.pitch) && /^[1-9]$/.test(e.key)) {
       // Don't hijack digits typed into a field (e.g. the drawer's timer box).
       const t = e.target;
@@ -1632,7 +1646,7 @@ export function DrillScreen() {
         submit(rt.q.recognition.options[index], undefined, index);
       } else if (rt.q.pitch && (index === 0 || index === 1)) {
         playPitchClip(rt.q.pitch.clips[index]);
-        submit(`clip ${index + 1}`, undefined, undefined, undefined, undefined, index);
+        setPitchPick(index);
       }
     }
   }
@@ -2737,45 +2751,47 @@ export function DrillScreen() {
             ))}
           </div>
         ) : q.pitch ? (
-          // SAK-128: two audio clips, tap the one that answers the prompt.
-          // Deliberately minimal — no text label beyond the option number
-          // that would give either clip away, just a speaker icon per clip.
-          // A tap both PLAYS the clip and SUBMITS it as the answer, exactly
-          // like clicking any other MC option submits immediately; there is
-          // no separate "preview" step, matching every other drill board's
-          // one-tap-decides interaction.
-          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-3">
-            {q.pitch.clips.map((clip, i) => (
-              <button
-                key={clip}
-                onClick={() => {
-                  playPitchClip(clip);
-                  submit(
-                    `clip ${i + 1}`,
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    i as 0 | 1,
-                  );
-                }}
-                aria-label={`Play clip ${i + 1}`}
-                className={cx(
-                  "flex min-h-20 shrink-0 grow-0 basis-[calc((100%-12px)/2)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-3 text-center",
-                  revealing && i === q.pitch?.correct
-                    ? "border-success bg-success-bg text-success"
-                    : // The wrong pick stays selected in red alongside the
-                      // correct clip's green (SAK-50 changes-requested
-                      // follow-up) — see DrillQuestion.pitchWrongPick.
-                      revealing && i === q.pitchWrongPick
-                      ? "border-danger bg-danger-bg text-danger"
-                      : "border-border bg-card text-text hover:bg-panel",
-                )}
-              >
-                <SoundIcon className="size-8" />
-                <span className="text-[10px] text-text-muted">{i + 1}</span>
-              </button>
-            ))}
+          // SAK-133: two audio clips — tap either one to PLAY it and mark it
+          // selected (repeatable, no commit), then press Check (or Enter) to
+          // grade the currently selected clip. Unlike a text/kanji MC board,
+          // where every option is already fully visible before any tap, the
+          // two options here ARE audio: comparing them requires being able
+          // to play both before deciding, so a tap can no longer also submit.
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-3">
+              {q.pitch.clips.map((clip, i) => (
+                <button
+                  key={clip}
+                  onClick={() => {
+                    playPitchClip(clip);
+                    setPitchPick(i as 0 | 1);
+                  }}
+                  aria-label={`Play clip ${i + 1}`}
+                  aria-pressed={pitchPick === i}
+                  className={cx(
+                    "flex min-h-20 shrink-0 grow-0 basis-[calc((100%-12px)/2)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-3 text-center",
+                    revealing && i === q.pitch?.correct
+                      ? "border-success bg-success-bg text-success"
+                      : // The wrong pick stays selected in red alongside the
+                        // correct clip's green (SAK-50 changes-requested
+                        // follow-up) — see DrillQuestion.pitchWrongPick.
+                        revealing && i === q.pitchWrongPick
+                        ? "border-danger bg-danger-bg text-danger"
+                        : !revealing && pitchPick === i
+                          ? "border-accent bg-panel text-text"
+                          : "border-border bg-card text-text hover:bg-panel",
+                  )}
+                >
+                  <SoundIcon className="size-8" />
+                  <span className="text-[10px] text-text-muted">{i + 1}</span>
+                </button>
+              ))}
+            </div>
+            {!revealing ? (
+              <span className="text-[11px] text-text-muted">
+                tap either clip to hear it, then Check
+              </span>
+            ) : null}
           </div>
         ) : typedMode ? (
           // Box and the line that says what goes in it, as one unit: a tight
@@ -2957,6 +2973,32 @@ export function DrillScreen() {
         >
           <span className="flex flex-col items-center gap-3">
             <span className="flex items-center justify-center gap-3">
+              {/* SAK-133: a pitch board's own submit — its two options are
+                  audio, tapped to PLAY rather than to answer, so grading
+                  needs an explicit action instead of the tap itself. Same
+                  Enter shortcut as the typed board (see onKeyDown), disabled
+                  until a clip has actually been selected. */}
+              {q.pitch ? (
+                <Btn
+                  go
+                  className="w-20"
+                  disabled={pitchPick === null}
+                  onClick={() => {
+                    if (pitchPick === null) return;
+                    submit(
+                      `clip ${pitchPick + 1}`,
+                      undefined,
+                      undefined,
+                      undefined,
+                      undefined,
+                      pitchPick,
+                    );
+                  }}
+                  title="Check (Enter)"
+                >
+                  Check
+                </Btn>
+              ) : null}
               <Btn
                 className="w-20"
                 onClick={skipQuestion}
