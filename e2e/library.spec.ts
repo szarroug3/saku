@@ -284,8 +284,19 @@ test("the complete library and current-session nav are present before hydration"
 test("filter chips still work after a back/forward/back through a detail page", async ({
   page,
 }) => {
-  const chip = (name: string) =>
-    page.getByRole("button", { name, exact: true });
+  // SAK-63's second round turned the Kind/Status chip ROWS into two
+  // checklist DROPDOWNS (FilterDropdown): a trigger chip ("Kind", "Kind · 1",
+  // "Kind · none" depending on how much is checked) opens a popover of
+  // checkboxes, Clear unchecks everything, and a single remaining checked
+  // item is what still round-trips through the URL as `?kind=word` /
+  // `?state=known` (kindsFromParams/statesFromParams — a comma-free single
+  // token is read the same as it always was). So narrowing to exactly one
+  // kind/status now takes trigger → Clear → check-the-one-item, not a single
+  // flat click.
+  const openDropdown = (label: string) =>
+    page.getByRole("button", { name: new RegExp(`^${label}( · .+)?$`) }).click();
+  const clearDropdown = () => page.getByRole("button", { name: "Clear", exact: true }).click();
+  const check = (name: string) => page.getByRole("checkbox", { name, exact: true }).check();
 
   await page.goto("/library?kind=kanji");
   // 人 is the first kanji in curriculum order and always visible at the top.
@@ -301,16 +312,27 @@ test("filter chips still work after a back/forward/back through a detail page", 
   await page.goBack();
   await expect(page).toHaveURL(/\?kind=kanji$/);
 
-  // The kind chip must still move the shelf.
-  await chip("Words").click();
+  // The Kind dropdown must still move the shelf.
+  await openDropdown("Kind");
+  await clearDropdown();
+  await check("Words");
+  await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\?kind=word$/);
   await expect(page.locator('a[href^="/library/word/"]').first()).toBeVisible();
 
-  // And so must the knowledge filter (the other search-params-only control).
-  await chip("Known").click();
+  // And so must the Status dropdown (the other search-params-only control).
+  await openDropdown("Status");
+  await clearDropdown();
+  await check("Known");
+  await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/state=known/);
 
-  // Back still steps through the choices the chips pushed.
+  // Back still steps through the choices the dropdowns pushed. Narrowing to
+  // one item is Clear-then-check (two toggles, two pushes) rather than the
+  // old chip's one click, so the state one step back is the Status dropdown's
+  // own intermediate Clear ("state=none"), still carrying the Kind change —
+  // proving the history stack advanced by real pushState calls, not one
+  // that silently dropped and left this a no-op.
   await page.goBack();
-  await expect(page).toHaveURL(/\?kind=word$/);
+  await expect(page).toHaveURL(/kind=word&state=none$/);
 });

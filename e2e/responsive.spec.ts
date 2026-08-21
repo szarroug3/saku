@@ -36,6 +36,13 @@ test("the primary lesson action is reachable at phone width", async ({ page, see
   await seed({});
   await page.setViewportSize(PHONE);
   await page.goto("/learn");
+  // SAK-28: empty history opens on the kana track's one-time "card 0" intro
+  // teaser (TrackIntroCard) in place of the ordinary lesson card; "Start
+  // track" only dismisses it (on screen and reachable at phone width too),
+  // revealing the real lesson card whose own "Start" leads into the session.
+  const startTrack = page.getByRole("button", { name: "Start track", exact: true });
+  await expect(startTrack).toBeVisible();
+  await startTrack.click();
   // Start is on screen and can begin a session even on a narrow phone.
   const start = page.getByRole("button", { name: "Start", exact: true });
   await expect(start).toBeVisible();

@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type Locator, type Page } from "@playwright/test";
 
 import { defaultAsk } from "@/lib/ask-config";
 import { factInfo } from "@/lib/facts";
@@ -198,6 +198,30 @@ export async function drillReady(page: Page) {
   const glyph = page.locator(".kq-glyph").first();
   await expect(glyph).toBeVisible();
   return glyph;
+}
+
+/**
+ * Poll-once-with-a-short-window visibility check, for "click Next until X
+ * shows up" loops.
+ *
+ * A bare `locator.isVisible()` is a single synchronous DOM snapshot — no
+ * retry. Right after a "Next" click that swaps a step's content via React
+ * state (no navigation, so nothing for Playwright's own auto-waiting to hook
+ * into), the new content can still be a frame or two from painting, so an
+ * immediate `isVisible()` intermittently reads the OLD (or not-yet-updated)
+ * DOM as "not there" and fires another click — skipping straight past the
+ * step being looked for. `waitFor` polls, so it rides out that gap instead of
+ * racing it, while still resolving `false` quickly (default 750ms — well
+ * under a step render, comfortably under the loops' own per-iteration budget)
+ * when the target genuinely isn't on this step.
+ */
+export async function isVisibleSoon(locator: Locator, timeout = 750): Promise<boolean> {
+  try {
+    await locator.waitFor({ state: "visible", timeout });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** The drill's typed answer box, whichever direction produced it. */

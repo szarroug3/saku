@@ -42,10 +42,18 @@ test("Library shelf 'Teach me N' builds a multi-card teach walk over the slice",
   await seed({ seen: [], cfg: {} });
   await page.goto("/library?kind=kanji");
 
+  // entry-tile.tsx: "VIEW IS THE DEFAULT CLICK; SELECT IS AN OPT-IN" — a plain
+  // click on a tile/row now opens its entry page, so building a selection
+  // needs "Select multiple" turned on first; only then does the row's whole
+  // body (ShelfRow, aria-pressed) toggle into the selection instead.
+  await page.getByRole("button", { name: "Select multiple", exact: true }).click();
+
   // Select the kanji row on the shelf (reached through search — the browse shelf
   // mounts distant sections lazily). Selecting builds the slice the bar acts on.
   await page.getByPlaceholder(/Search anything/).fill(MULTI_FACT_KANJI);
-  await page.getByText(MULTI_FACT_KANJI, { exact: true }).first().click();
+  const row = page.getByRole("button", { name: new RegExp(`^${MULTI_FACT_KANJI}`) }).first();
+  await expect(row).toBeVisible();
+  await row.click();
   await expect(
     page.getByRole("button", { name: /Clear \d+ selected/ }),
   ).toBeVisible();

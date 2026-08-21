@@ -52,9 +52,11 @@ test("claiming the first group advances AND leaves the items claimed, not solid"
   await page.goto("/stats");
   // The de-boxed "What you know" card is now a bare <section> (its Lbl heading +
   // the bucket counts), no kq-material wrapper. Anchor to that section.
+  // SAK-78 title-cased the bucket labels ("Claimed" / "Solid"), so match that
+  // casing rather than the pre-SAK-78 lowercase wording.
   const knowledge = page
     .locator("section")
     .filter({ hasText: "What you know" });
-  await expect(knowledge).toContainText("claimed");
-  await expect(knowledge).not.toContainText("solid");
+  await expect(knowledge).toContainText("Claimed");
+  await expect(knowledge).not.toContainText("Solid");
 });

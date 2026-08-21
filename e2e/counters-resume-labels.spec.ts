@@ -55,7 +55,9 @@ test("counters prep lesson shows Numbers label and resumes from counters card", 
   await page.waitForURL("**/session");
 
   // Teaching HUD must stay counters-oriented, not "Kanji" from prereq-first facts.
-  await expect(page.getByText(/^Numbers$/, { exact: true })).toBeVisible();
+  // SAK-7 unified this track's learner-facing name to "Counting" everywhere
+  // (session HUD included); "Numbers" is now an internal sub-type label only.
+  await expect(page.getByText(/^Counting$/, { exact: true })).toBeVisible();
 
   await page.goto("/learn");
 
