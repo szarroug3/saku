@@ -539,8 +539,8 @@ export default function QuizGalleryDevPage() {
 
       <Section title="Word pitch accent (SAK-128)">
         <p className="mb-3 text-xs text-text-muted">
-          Not a track of its own (SAK-98) — folded into the word track&apos;s jp2en
-          meaning card, ~35% of eligible showings (see PITCH_QUESTION_CHANCE),
+          Not a track of its own (SAK-98) — an ADDITIONAL card queued right
+          after a word&apos;s jp2en meaning card, every time it&apos;s shown,
           only for a word with verified pitch data, and only when Audio prompts
           is on.
         </p>

@@ -110,20 +110,6 @@ export function rollPitchQuestion(
   };
 }
 
-/** How often a showing that IS otherwise eligible (see drill-screen.tsx's
- * gate: japanese-source jp2en MEANING card, Audio prompts on, a word with
- * verified pitch) queues an ADDITIONAL pitch-question card a few slots later
- * in the deck (drill-screen.tsx's queuePitchCard) — SAK-129: never a
- * substitute for this showing's own ordinary card, which always renders
- * exactly as it always has. Not 100%: without this gate, EVERY eligible
- * showing would queue one more pitch card, ballooning a pitch-verified
- * word's presence in the deck; keeping it a coin flip means only some
- * showings add one, the same restraint particleMarker's own 50/50 flip
- * exercises over its base tap-drill form (lib/engine/particle-drill.ts) —
- * though that one still picks between two forms for the SAME showing, where
- * this one decides whether to grow the deck at all. */
-export const PITCH_QUESTION_CHANCE = 0.35;
-
 /** One pitch question, frozen onto a showing — plain data, so it rides the
  * drill's serialized runtime exactly like a RecognitionItem does. */
 export interface PitchShowing {
