@@ -8,6 +8,7 @@ import {
   progressPill,
   answerBox,
   answerTypedCorrectly,
+  isVisibleSoon,
 } from "./helpers/app";
 import { factInfo } from "@/lib/facts";
 import type { FactId } from "@/types";
@@ -74,7 +75,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
     const hero = page
       .locator("article .font-light.leading-none")
       .filter({ hasText: new RegExp(`^${v}$`) });
-    for (let i = 0; i < 12 && !(await hero.first().isVisible()); i++) {
+    for (let i = 0; i < 12 && !(await isVisibleSoon(hero.first())); i++) {
       await page.getByRole("button", { name: "Next", exact: true }).click();
     }
     await expect(hero.first(), `the walk never taught ${v}`).toBeVisible();
@@ -119,11 +120,21 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // the first try, none missed. This is the end-to-end check that grading,
   // scoring and the session loop agree with each other — a unit test can prove
   // any one of them in isolation and still miss this.
+  //
+  // The old literal "N forms · N solid · N needs work" header is gone —
+  // round-complete.tsx shares results-card.tsx's ring/headline/counts sentence
+  // with every other results screen now (see round-complete-states.spec.ts's
+  // comment for the full story). All five first-try is the "Perfect run"
+  // headline; Needs work never renders (Board returns null on an empty facts
+  // list), and Solid carries all five as unselected cells (Solid starts
+  // untouched).
   await expect(page.locator("body")).toContainText("round 1 of 3 · done");
-  await expect(page.locator("body")).toContainText("5 forms");
-  await expect(page.locator("body")).toContainText("5 solid");
-  // The summary counts DISTINCT FORMS, not showings: five forms, all first-try,
-  // so five Solid and none needing work. `needs work` is `total - solid`, so the
-  // line adds up by construction.
-  await expect(page.locator("body")).toContainText("0 needs work");
+  await expect(page.locator("body")).toContainText("Perfect run");
+  await expect(page.locator("body")).toContainText("5 shown · 5 correct · 0 incorrect · 0 not answered");
+  const solid = page.getByText(/^Solid/);
+  await expect(solid).toBeVisible();
+  await expect(page.getByText(/^Needs work/)).toHaveCount(0);
+  await expect(page.locator("body")).toContainText("Solid · 0 selected");
+  const solidCells = solid.locator("xpath=ancestor::div[2]").locator("button[aria-pressed]");
+  await expect(solidCells).toHaveCount(VOWELS.length);
 });

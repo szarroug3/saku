@@ -62,5 +62,8 @@ test("results shows Needs work rows when summary reports another pass", async ({
   await expect(page.getByText("ちゅ").first()).toBeVisible();
 
   // Redrill count matches the seeded selection and does not collapse to zero.
-  await expect(page.getByRole("button", { name: /Redrill 1 selected/ })).toBeVisible();
+  // triage-board.tsx's button copy is "Retry N selected" now (unified with
+  // round-complete.tsx's own retry button wording); "Redrill" survives only
+  // as the mechanism's/prop's name, not learner-facing copy.
+  await expect(page.getByRole("button", { name: /Retry 1 selected/ })).toBeVisible();
 });

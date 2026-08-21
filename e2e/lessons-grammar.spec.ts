@@ -3,6 +3,7 @@ import {
   expect,
   KANA_FACTS,
   lessonCard,
+  isVisibleSoon,
 } from "./helpers/lessons";
 
 import { patternMeaningFactId } from "@/data/grammar";
@@ -38,6 +39,18 @@ test("the grammar track's first sitting introduces adjective forms", async ({
 
   await seed({ claims: KANA_FACTS, cfg: {} });
   await page.goto("/learn");
+
+  // SAK-28: a track with no met fact yet opens with a one-time "card 0" intro
+  // teaser (TrackIntroCard, heading = the track's proper name) in place of its
+  // ordinary lesson card. Grammar has no met fact from this seed, so its slot
+  // shows that teaser first; "Start track" only dismisses it for this page
+  // load (it does not start a lesson), after which the real lesson card
+  // renders in the same slot.
+  const introCard = page
+    .locator("[data-learn-card][data-track-intro]")
+    .filter({ hasText: "Grammar" });
+  await expect(introCard).toHaveCount(1);
+  await introCard.getByRole("button", { name: "Start track", exact: true }).click();
 
   // "grammar" alone matches the sentence card too (its why says "…words and
   // grammar into sentences…"); the grammar card's tiles carry the "grammar rule"
@@ -111,14 +124,14 @@ test("the second grammar sitting teaches building the て-form", async ({ page, 
   // "Verb Types" is page 2 of the te-form sitting (page 1 is the "what a form is"
   // intro), so step forward until it appears rather than expecting it first.
   const verbTypes = page.getByText("Verb Types", { exact: true });
-  for (let i = 0; i < 8 && !(await verbTypes.isVisible()); i++) {
+  for (let i = 0; i < 8 && !(await isVisibleSoon(verbTypes)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(verbTypes).toBeVisible();
 
   // Step forward until the て-form build pages appear.
   const building = page.getByRole("heading", { name: "Verbs", exact: true });
-  for (let i = 0; i < 8 && !(await building.isVisible()); i++) {
+  for (let i = 0; i < 8 && !(await isVisibleSoon(building)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(building).toBeVisible();
@@ -129,7 +142,7 @@ test("the second grammar sitting teaches building the て-form", async ({ page, 
     name: "Adjectives",
     exact: true,
   });
-  for (let i = 0; i < 5 && !(await adjectiveBuild.isVisible()); i++) {
+  for (let i = 0; i < 5 && !(await isVisibleSoon(adjectiveBuild)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(adjectiveBuild).toBeVisible();
