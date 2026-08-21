@@ -898,6 +898,33 @@ export function DrillScreen() {
     presentCard(f, form);
   }
 
+  /** SAK-129: queue ONE additive pitch-accent card for `f` a few slots ahead
+   * of the current position — an EXTRA deck entry, never a replacement of
+   * the fact's own ordinary showing (that keeps drawing/rendering exactly as
+   * it always has; see presentCard's pitch block, which only ever builds a
+   * `pitch` board off a slot THIS function pinned). Spliced with the same
+   * `requeueGap()` spacing the wrong-answer requeue below uses, so it lands
+   * a few cards later rather than clumped against the showing that queued
+   * it. A no-op if this fact already has a pending pitch card queued ahead —
+   * the deck should never carry more than one at a time per fact. */
+  function queuePitchCard(f: FactId) {
+    if (!rt) return;
+    const alreadyQueued = rt.deck.some(
+      (deckFact, i) => i >= rt.pos && deckFact === f && rt.forms[i]?.pitch,
+    );
+    if (alreadyQueued) return;
+    const at = Math.min(rt.deck.length, rt.pos + requeueGap());
+    rt.deck.splice(at, 0, f);
+    rt.forms.splice(at, 0, {
+      source: "japanese",
+      response: jp2enResponse(f),
+      listen: false,
+      dir: "jp2en",
+      answer: "typed",
+      pitch: true,
+    });
+  }
+
   /** Build and show the card for fact `f` in `form` — direction, typed/MC,
    * grammar vehicle, options, the audio flag, then the stat and timer. Split out
    * of nextQuestion so onAudioOff can REDRAW the current fact as a text card
@@ -1040,20 +1067,41 @@ export function DrillScreen() {
     //   - only for a word that still carries a VERIFIED wordPitch() entry —
     //     rollPitchQuestion itself returns null otherwise (no guessed pitch,
     //     ever — the same rule src/data/pitch.ts documents).
+    //
+    // SAK-129: ADDITIVE, not a substitute. A pitch question used to REPLACE
+    // this showing's ordinary meaning card on the PITCH_QUESTION_CHANCE coin
+    // flip — so the word's everyday "what does this mean" practice partially
+    // stopped happening. Now the coin flip decides whether to QUEUE a
+    // separate, extra card later in the deck (queuePitchCard, above) instead
+    // — this showing always renders its own ordinary card. `pitch` below is
+    // therefore non-null on ONE showing only: the pinned slot a previous
+    // showing's queuePitchCard call spliced in (`form.pitch === true`) —
+    // never rolled fresh here.
     const pitchEligibleInfo =
       !construction && !audioOff && form.source === "japanese" && dir === "jp2en"
         ? localFactInfo(f)
         : undefined;
-    const pitchQuestion =
+    const pitchEligibleGlyph =
       pitchEligibleInfo &&
       pitchEligibleInfo.subject === VOCAB_KIND &&
-      localWordMeaningFactId(pitchEligibleInfo.glyph) === f &&
-      Math.random() < PITCH_QUESTION_CHANCE
-        ? rollPitchQuestion(pitchEligibleInfo.glyph)
+      localWordMeaningFactId(pitchEligibleInfo.glyph) === f
+        ? pitchEligibleInfo.glyph
+        : null;
+    const pitchQuestion =
+      form.pitch && pitchEligibleGlyph
+        ? rollPitchQuestion(pitchEligibleGlyph)
         : null;
     const pitch: PitchShowing | null = pitchQuestion
       ? buildPitchShowing(pitchQuestion, cfg.voiceName || DEFAULT_VOICE_ID)
       : null;
+    // Not a pinned pitch slot: this is an ordinary showing of an eligible
+    // word's meaning card. Queue one ADDITIONAL pitch card a few slots ahead
+    // (never on every eligible showing — PITCH_QUESTION_CHANCE keeps that
+    // occasional, so eligible words don't always balloon to +1 card) and let
+    // THIS showing render its ordinary card untouched.
+    if (!form.pitch && pitchEligibleGlyph && Math.random() < PITCH_QUESTION_CHANCE) {
+      queuePitchCard(f);
+    }
     // A kanji MEANING card asked en2jp may, this showing, test the character's
     // VARIANT form instead of its English gloss — show 亻, ask which character it
     // is a form of, still grading against 人. Rolled here once (like the vehicle
