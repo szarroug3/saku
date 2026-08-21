@@ -37,9 +37,7 @@ export function SessionHud({
   hideBar?: boolean;
   /** Bar fill, 0–100. */
   pct: number;
-  /** The bar's colour. The rest's bar is deliberately grey: it is elapsing,
-   * not progressing, and painting it accent would make waiting look like
-   * achieving. */
+  /** The bar's colour. */
   tone?: "accent" | "muted" | "success";
   /**
    * Float the strip at the top of the viewport instead of scrolling away with

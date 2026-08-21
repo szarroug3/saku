@@ -545,10 +545,10 @@ export default function SessionPage() {
       // branch above — same floor-height centering, same reason.
       <div className="kq-center-frame">
         <SessionHud
-          label={label}
+          label={session.what}
           where={`resting before round ${Math.min(roundTargetOf(session), session.round + 1)}`}
           pct={pct}
-          tone="muted"
+          tone="accent"
           onDone={pauseSession}
           onEnd={endSession}
         />
