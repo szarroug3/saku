@@ -70,55 +70,47 @@ export function EntryView({
 
   return (
     <FlatSurfaceProvider>
-      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom): a short entry
-          (a two-line word) still fills the column, so the sticky bar below
-          settles at the viewport's bottom instead of riding right under two
-          lines of content. */}
-      <div className="flex min-h-[calc(100vh-3rem)] flex-col">
-        <div>
-          <p className="mb-3 text-[11.5px] text-text-muted">
-            <Link href="/library" className="text-text-muted no-underline">
-              Library
-            </Link>
-            {" › "}
-            {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
-                construction page browses on the counters shelf, so its crumb
-                links there — resolved server-side via shelfKindOf. */}
-            <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
-              {breadcrumbKindLabel}
-            </Link>
-            {" › "}
-            {entryName}
-          </p>
+      {/* pb-20 clears the fixed bar below so its last lines are never hidden
+          under it. */}
+      <div className="pb-20">
+        <p className="mb-3 text-[11.5px] text-text-muted">
+          <Link href="/library" className="text-text-muted no-underline">
+            Library
+          </Link>
+          {" › "}
+          {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
+              construction page browses on the counters shelf, so its crumb
+              links there — resolved server-side via shelfKindOf. */}
+          <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
+            {breadcrumbKindLabel}
+          </Link>
+          {" › "}
+          {entryName}
+        </p>
 
-          <GroupNav groupNav={groupNav} />
+        <GroupNav groupNav={groupNav} />
 
-          <EntryBody entry={entryId} kind={entryKind} />
-        </div>
+        <EntryBody entry={entryId} kind={entryKind} />
+      </div>
 
-        {/* Frozen in place at the bottom of the viewport while the entry
-            content scrolls past it, not just parked after the last line —
-            `sticky` rather than `fixed inset-x-0`: it sticks within THIS
-            column's own box, so it never spans over the sidebar the way a
-            viewport-wide fixed bar would (see slice-bar.tsx's note on that).
-            kq-band gives it the same occluding frost the quiz screens' reveal
-            bar uses, so scrolled content doesn't show through underneath it. */}
-        <div className="kq-band sticky bottom-0 z-10 mt-auto pt-5">
-          <SliceBar
-            variant="entry"
-            slice={{ label: entryName, entries: [entryId] }}
-            showLabel={false}
-            // The committed aggregate on purpose: the bar plans a drill, which
-            // is a query over what you durably know, not the run you are in.
-            facts={history.facts}
-            claims={claims}
-            history={history}
-            now={now}
-            onClaim={claim}
-            onUnclaim={unclaim}
-            progressReady={historyLoaded}
-          />
-        </div>
+      {/* Frozen at the bottom of the viewport, same as the quiz screens' own
+          reveal bar (drill-screen.tsx) — always in the same place, never
+          moving with the entry's own scroll. */}
+      <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
+        <SliceBar
+          variant="entry"
+          slice={{ label: entryName, entries: [entryId] }}
+          showLabel={false}
+          // The committed aggregate on purpose: the bar plans a drill, which
+          // is a query over what you durably know, not the run you are in.
+          facts={history.facts}
+          claims={claims}
+          history={history}
+          now={now}
+          onClaim={claim}
+          onUnclaim={unclaim}
+          progressReady={historyLoaded}
+        />
       </div>
     </FlatSurfaceProvider>
   );

@@ -235,27 +235,20 @@ export function SliceBar({
     if (!canQuiz && !canUnclaim) return null;
     return (
       <>
-        {/* Pinned to the bottom of the entry COLUMN, not just the end of its
-            content — page.tsx wraps the entry in a min-height flex column and
-            gives this bar `mt-auto`, so a short entry (a two-line word)
-            doesn't strand the button far above a dead gap. Deliberately NOT
-            `fixed inset-x-0` like the quiz screens' reveal bar: that spans the
-            full viewport and would sit on top of the sidebar's own bottom
-            content (its sign-in notice), which has no reason to make room for
-            a bar that belongs to the entry column beside it, not the sidebar. */}
-        <div className="kq-band border-t border-border px-4 py-3">
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {canUnclaim ? (
-              <Btn onClick={() => onUnclaim?.(claimedFacts)}>
-                Mark as not known
-              </Btn>
-            ) : null}
-            {canQuiz ? (
-              <Btn sel onClick={() => setQuizzing(true)}>
-                Quiz me {quizCount}
-              </Btn>
-            ) : null}
-          </div>
+        {/* The fixed-bar chrome (kq-band, border, padding) lives on
+            entry-view.tsx's wrapper, matching the quiz screens' own reveal
+            bar exactly — this is just its content. */}
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {canUnclaim ? (
+            <Btn onClick={() => onUnclaim?.(claimedFacts)}>
+              Mark as not known
+            </Btn>
+          ) : null}
+          {canQuiz ? (
+            <Btn sel onClick={() => setQuizzing(true)}>
+              Quiz me {quizCount}
+            </Btn>
+          ) : null}
         </div>
         <QuizPreStart
           open={quizzing}
