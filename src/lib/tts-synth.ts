@@ -197,22 +197,33 @@ export async function synthesizeWordWav(
  * is what targetRange/RANGE_MARGIN_FRACTION already bound; this only picks
  * WHICH of the two clean shapes to ask for).
  *
- * heiban (0) and atamadaka (1) are the two patterns furthest apart in FEEL —
- * heiban stays low on mora 1 then rises, atamadaka is high on mora 1 then
- * falls immediately — so this simply swaps between them: heiban's word gets
- * atamadaka, anything else gets heiban. Both are always valid patterns for
- * any reading with at least 2 morae (pitchPatternForLength never rejects a
- * downstep), so the only real failure mode is a 1-MORA reading, where heiban
- * and atamadaka render IDENTICALLY (mora 1 is the whole word either way) —
- * that word has no honest wrong-pitch clip to offer, and this returns null
- * rather than manufacture an inaudible "wrong" answer.
+ * Atamadaka (1) is the ONLY pattern where mora 1 itself is HIGH — heiban (0),
+ * every nakadaka, AND odaka (downstep === the word's own mora count, where
+ * the drop lands on a following particle that does not exist when the word
+ * is synthesized alone) are all LOW on mora 1 within an isolated word. See
+ * `pitchPatternForLength` (src/lib/pitch.ts): heiban and odaka produce the
+ * IDENTICAL mora-by-mora high/low sequence in isolation (both low on mora 1,
+ * high on every mora after) — only the `.drop` flag differs, which
+ * `synthesizeAtDownstep` never reads. So pairing the distractor against
+ * heiban whenever `correct` isn't heiban itself (the old `correct === 0 ? 1
+ * : 0` swap) would render an odaka word's "wrong" clip ACOUSTICALLY IDENTICAL
+ * to its correct one. Pairing against atamadaka instead is guaranteed
+ * distinguishable on mora 1 from ANY other real pattern (heiban, every
+ * nakadaka, odaka) for any reading of at least 2 morae — so the distractor is
+ * always atamadaka, except when the correct answer already IS atamadaka, in
+ * which case it pairs against heiban (unchanged from before). Both are always
+ * valid patterns for any reading with at least 2 morae (pitchPatternForLength
+ * never rejects a downstep), so the only real failure mode is a 1-MORA
+ * reading, where heiban and atamadaka render IDENTICALLY (mora 1 is the whole
+ * word either way) — that word has no honest wrong-pitch clip to offer, and
+ * this returns null rather than manufacture an inaudible "wrong" answer.
  */
 export function wrongDownstepFor(
   correct: number,
   moraCount: number,
 ): number | null {
   if (moraCount < 2) return null;
-  return correct === 0 ? 1 : 0;
+  return correct === 1 ? 0 : 1;
 }
 
 /**
