@@ -30,7 +30,6 @@ import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
 import { PitchReading } from "@/components/library/pitch-mark";
-import { TermLink } from "@/components/library/term-link";
 import { Callout } from "@/components/lesson/callout";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { HearButton } from "@/components/ui/hear-button";
@@ -414,14 +413,6 @@ export function CharacterEntryView({
                                   downstep={pitchDownstep!}
                                   className="font-kana text-text"
                                 />
-                                {/* The overline is drawn but never named on the
-                                    page; this is the one way to what it is. */}
-                                <TermLink
-                                  id="pitch-accent"
-                                  className="text-[11px] text-accent no-underline hover:underline"
-                                >
-                                  pitch accent
-                                </TermLink>
                               </>
                             ) : (
                               <>
