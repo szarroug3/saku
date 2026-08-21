@@ -635,6 +635,24 @@ export function vocabRow(keb: string): VocabRow | undefined {
   return BY_KEB.get(keb);
 }
 
+/**
+ * The gloss for the SAME sense `legacyUnqualifiedReading` resolves its
+ * reading from — `SENSES[keb]?.[0]?.glosses[0]` — falling back to the base
+ * `VocabRow`'s own gloss only when `keb` has no `SENSES` entry (the common
+ * single-sense word, unaffected either way).
+ *
+ * A multi-sense spelling's base `VocabRow` (`vocabRow(keb)?.glosses`) can
+ * belong to a DIFFERENT sense than sense 0 — see `WordSense`'s own doc
+ * comment on 人 (ひと "person" vs じん "-ian" vs にん, the counter). Pairing
+ * `legacyUnqualifiedReading`'s reading with `vocabRow(keb)?.glosses[0]`
+ * directly can therefore mismatch reading and gloss (SAK-129); this is the
+ * sense-correct alternative any caller pairing a gloss with
+ * `legacyUnqualifiedReading` should use instead.
+ */
+export function legacyUnqualifiedGloss(keb: string): string | null {
+  return SENSES[keb]?.[0]?.glosses[0] ?? vocabRow(keb)?.glosses[0] ?? null;
+}
+
 /** keb OR reb → the vocabulary rows spelled that way. Built once. Mirrors
  * `lemmaKnown`'s own dual-spelling index (src/lib/grammar/readable.ts) so a
  * caller that already has a corpus lemma (not a `keb`) can resolve its

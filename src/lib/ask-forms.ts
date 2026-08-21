@@ -73,6 +73,13 @@ export interface CardForm {
   listen: boolean;
   dir: Direction;
   answer: AnswerStyle;
+  /** SAK-129: set only on a form the drill screen PINS into the deck itself
+   * (see drill-screen.tsx's queuePitchCard) to force one specific slot to
+   * render as a pitch-accent question — an ADDITIONAL card for an eligible
+   * word's fact, never a substitute for its ordinary meaning-card showing.
+   * Never set by enabledFormsFor/buildCoverageDeck/buildDeck; those still
+   * produce only ordinary forms, exactly as before. */
+  pitch?: boolean;
 }
 
 /** Whether this fact is a kanji reading fact (keyed on kanji+anchor word). */

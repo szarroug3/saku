@@ -33,7 +33,7 @@
 // rule src/data/pitch.ts documents. A word with none simply never offers a
 // pitch question; `rollPitchQuestion` returns null.
 
-import { legacyUnqualifiedReading, vocabRow } from "@/data/vocab";
+import { legacyUnqualifiedGloss, legacyUnqualifiedReading } from "@/data/vocab";
 import { wordPitch } from "@/data/pitch";
 import { pitchPairsFor } from "@/data/pitch-pairs";
 import { pitchApiUrl, pitchWrongApiUrl } from "@/lib/voice";
@@ -70,8 +70,11 @@ export function rollPitchQuestion(
   const downstep = wordPitch(keb);
   if (downstep == null) return null;
   const reading = legacyUnqualifiedReading(keb);
-  const row = vocabRow(keb);
-  const gloss = row?.glosses[0];
+  // SAK-129: pull the gloss from the SAME sense `legacyUnqualifiedReading`
+  // resolved its reading from — never the base VocabRow's own gloss, which
+  // for a multi-sense spelling (e.g. 人: ひと/じん/にん) can belong to a
+  // different sense entirely and mismatch the reading being quizzed.
+  const gloss = legacyUnqualifiedGloss(keb);
   if (!reading || !gloss) return null;
 
   const pairs = pitchPairsFor(keb);
@@ -109,11 +112,16 @@ export function rollPitchQuestion(
 
 /** How often a showing that IS otherwise eligible (see drill-screen.tsx's
  * gate: japanese-source jp2en MEANING card, Audio prompts on, a word with
- * verified pitch) rolls a pitch question instead of its ordinary card form.
- * Not 100%: a word with a pitch question keeps getting asked its everyday
- * meaning/reading most of the time too, exactly the way particleMarker's own
- * 50/50 coin flip keeps its base tap-drill form in circulation (see
- * lib/engine/particle-drill.ts) rather than replacing it outright. */
+ * verified pitch) queues an ADDITIONAL pitch-question card a few slots later
+ * in the deck (drill-screen.tsx's queuePitchCard) — SAK-129: never a
+ * substitute for this showing's own ordinary card, which always renders
+ * exactly as it always has. Not 100%: without this gate, EVERY eligible
+ * showing would queue one more pitch card, ballooning a pitch-verified
+ * word's presence in the deck; keeping it a coin flip means only some
+ * showings add one, the same restraint particleMarker's own 50/50 flip
+ * exercises over its base tap-drill form (lib/engine/particle-drill.ts) —
+ * though that one still picks between two forms for the SAME showing, where
+ * this one decides whether to grow the deck at all. */
 export const PITCH_QUESTION_CHANCE = 0.35;
 
 /** One pitch question, frozen onto a showing — plain data, so it rides the
