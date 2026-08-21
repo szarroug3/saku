@@ -52,6 +52,7 @@ import {
   type LearnHistorySlice,
 } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
+import { isSignedIn } from "@/lib/auth-mode";
 import {
   nextLearnLesson,
   nextSentenceLearnLesson,
@@ -364,18 +365,55 @@ export function HomeFeed() {
   // source. Both paths are the same deterministic function of
   // (known-set, range), so swapping to the server-resolved value once it
   // lands is never visible.
-  const knownSet: LearnHistorySlice = useMemo(
-    () => ({
-      facts: history.facts,
+  const knownSet: LearnHistorySlice = useMemo(() => {
+    // SAK-125: reduce each fact to its own FactState (stability + lastTested)
+    // before this ever becomes a Server Action's wire payload — see
+    // LearnHistorySlice's own header in server-lookups.ts for why those two
+    // fields are the whole of what the walk reads off a fact's aggregate. A
+    // learner with a large share of the curriculum's facts touched (this
+    // repo's e2e suite exercises exactly that, via seenToReachCurriculum)
+    // otherwise ships every fact's full counts + up to 10 recentRuns apiece,
+    // which is what pushed this call past Next's 1MB Server Action body
+    // limit.
+    const facts: Record<string, { stability: number; lastTested: number }> = {};
+    for (const [id, agg] of Object.entries(history.facts)) {
+      facts[id] = { stability: agg.stability, lastTested: agg.lastTested };
+    }
+    return {
+      facts: facts as LearnHistorySlice["facts"],
       claims: history.claims,
       seen: history.seen,
       learnedAt: history.learnedAt,
+    };
+  }, [history.facts, history.claims, history.seen, history.learnedAt]);
+  // SAK-125, PART 1: a SIGNED-IN learner's own known-set never crosses the
+  // wire at all — getLearnFrontier reads it straight from their Supabase row
+  // server-side instead (see that function's own header), so `knownSet`
+  // above is only ever actually SENT for a signed-out visitor, whose
+  // progress lives solely in this browser's localStorage and has no other
+  // server-side source of truth. `knownSetFingerprint` stands in for it on
+  // the signed-in path — four small counts, not the known-set itself — purely
+  // so `useServerLookup`'s cache key (JSON.stringify(args)) still changes
+  // when a fact newly becomes met, without ever putting the real per-fact
+  // data back on the wire. See KnownSetFingerprint's own header for why
+  // counts alone are the right (and sufficient) signal here.
+  const knownSetFingerprint = useMemo(
+    () => ({
+      facts: Object.keys(history.facts).length,
+      claims: Object.keys(history.claims ?? {}).length,
+      seen: Object.keys(history.seen ?? {}).length,
+      learnedAt: Object.keys(history.learnedAt ?? {}).length,
     }),
     [history.facts, history.claims, history.seen, history.learnedAt],
   );
-  const frontierArgs = useMemo<[LearnHistorySlice, typeof range] | null>(
-    () => (index ? [knownSet, range] : null),
-    [index, knownSet, range],
+  const frontierArgs = useMemo<
+    [LearnHistorySlice | null, typeof range, typeof knownSetFingerprint] | null
+  >(
+    () =>
+      index
+        ? [isSignedIn() ? null : knownSet, range, knownSetFingerprint]
+        : null,
+    [index, knownSet, range, knownSetFingerprint],
   );
   const serverFrontier = useServerLookup(getLearnFrontier, frontierArgs);
 
