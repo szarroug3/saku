@@ -37,7 +37,6 @@
 // one cannot have it: leaving during a rest is free, because nothing is in
 // flight.
 
-import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import {
   formatCountdown,
@@ -114,25 +113,11 @@ export function RestScreen({
         )}
       </Card>
 
-      {/* How the NEXT round will run, and one tap to change it. This does not
-          break the rule at the top of this file: the rule bars anything you
-          could REHEARSE with — the items, the answers, a preview of what's
-          coming. Config is none of that. It is mode / direction / style /
-          length, a statement of how you'll be asked, not of what — nothing to
-          study off. Putting it here is what makes the config visible at a launch
-          point that otherwise just resumes drilling with settings you can't see.
-          The re-snapshot per round already lands any change on the next round,
-          so editing during the break is the natural time to do it.
-
-          This Card is the ONLY box around the config. ConfigPreview is
-          container-neutral (it draws no border or fill of its own), which is
-          what stopped it double-boxing here — the Card and ConfigPreview's own
-          recessed panel used to draw two near-concentric borders. The config
-          now reads as one clean Card, sibling to the hints Card below. */}
-      <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
-        <ConfigPreview />
-      </Card>
-
+      {/* The config editor used to live here (a Card wrapping ConfigPreview,
+          with a "Change" toggle) so the next round's mode/direction/style
+          could be adjusted mid-session. Removed: users should not be able to
+          edit quiz settings in between lessons — the config for a round is
+          decided once, not mid-break. */}
       <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
         {/* Each hint gets its own block. Hint is a <span> (see ui.tsx), so two
             of them side by side ran together into "…if you need to.Your
@@ -142,7 +127,7 @@ export function RestScreen({
             elsewhere and this card is the only place two of them stack. */}
         <p>
           <Hint>
-            Spacing works best when you do the rests, but you can complete early
+            Spacing works best when you do the rests, but you can start early
             if you need to.
           </Hint>
         </p>
