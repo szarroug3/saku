@@ -2589,12 +2589,19 @@ export function DrillScreen() {
           // the written word the learner just heard. `listenVisible`, not
           // `q.listen`, so pressing "Show text" (SAK-51) swaps the speaker for
           // the same glyph a non-listening twin of this card would show.
-          // A pitch showing (SAK-128) hides the glyph too — showing 箸 while
-          // asking "which clip means chopsticks" would just answer the
-          // question — but has its OWN two-clip buttons below, not the
-          // halo's single speaker: onListen is a no-op here so pressing the
-          // halo's centre icon can never play (and so leak) either clip.
-          listen={listenVisible || !!q.pitch}
+          // SAK-133 changes-requested: a pitch showing used to also force
+          // the halo into listening mode (blank, speaker-only — no glyph),
+          // on the theory that showing 箸 while asking "which clip means
+          // chopsticks" would answer the question. It doesn't: which clip is
+          // correct is purely acoustic (the downstep), and the glyph/gloss
+          // never says that — hiding it just left the halo looking broken
+          // (an empty box with one faint icon, no sign of what word is even
+          // being asked about). So a pitch showing now renders its glyph
+          // exactly like any other jp2en meaning card; onListen stays a
+          // no-op for it regardless, since the halo's centre icon has no
+          // business playing (or leaking) either clip — that's what the
+          // pitch board's own two buttons below are for.
+          listen={listenVisible}
           onListen={() => {
             if (q.pitch) return;
             const text = q.numberItem
