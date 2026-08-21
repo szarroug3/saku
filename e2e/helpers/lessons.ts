@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "./app";
+import { test, expect, isVisibleSoon, type Page } from "./app";
 
 import { KANA_GROUPS } from "@/lib/lesson";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
@@ -21,7 +21,7 @@ import type { FactId } from "@/types";
  * exactly and fail loudly (not silently) if a target ever leaves the curriculum.
  */
 
-export { test, expect };
+export { test, expect, isVisibleSoon };
 export type { Page };
 
 /** Every kana fact — a kana-complete history, which is what opens the curriculum
@@ -118,7 +118,7 @@ export function headword(page: Page, glyph: string) {
  */
 export async function stepToHeadword(page: Page, glyph: string, max = 16) {
   const target = headword(page, glyph);
-  for (let i = 0; i < max && !(await target.isVisible()); i++) {
+  for (let i = 0; i < max && !(await isVisibleSoon(target)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(
