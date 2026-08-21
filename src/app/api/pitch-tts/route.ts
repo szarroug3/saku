@@ -62,6 +62,22 @@ import {
 /** Longest reading we'll synthesize — words, not sentences. */
 const MAX_READING = 20;
 
+/**
+ * In-flight synthesis de-duplication, keyed by Storage object path (SAK-132).
+ * VOICEVOX synthesis is genuinely slow (multiple seconds), and SAK-133 made
+ * it normal for a learner to tap the SAME clip repeatedly (play it again to
+ * compare) before it has finished its first upload. Without this, N
+ * concurrent requests for a clip that isn't cached YET each independently
+ * see a cache miss and each kick off their own multi-second synthesis+upload
+ * — observed in practice as four back-to-back 3-9s synthesis calls for the
+ * literal same (reading, downstep, voice, wrong) query, which was enough to
+ * starve the browser's connection pool and stall ordinary page navigation
+ * behind them. Concurrent requests for the same path now await the SAME
+ * in-flight synthesis instead of starting their own; the entry is removed
+ * once settled (success or failure) so a transient failure doesn't cache a
+ * permanent one, and so this never grows unbounded across distinct clips. */
+const inFlightSynthesis = new Map<string, Promise<Response>>();
+
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const reading = (searchParams.get("r") ?? "").trim();
@@ -109,51 +125,66 @@ export async function GET(request: Request): Promise<Response> {
     return Response.redirect(publicUrl, 302);
   }
 
-  // Miss → synthesize, try to cache, and return the bytes regardless. The
-  // upload is a SEPARATE try: a caching failure should not stop the learner
-  // hearing the word. It costs a re-synthesis on every play until fixed, but
-  // that is a config fix for the bucket owner, not a reason to 502 here.
-  let bytes: ArrayBuffer;
-  try {
-    bytes = wrong
-      ? await synthesizeWrongPitchWordWav(reading, downstep, v.speakerId)
-      : await synthesizeWordWav(reading, downstep, v.speakerId);
-  } catch (err) {
-    console.error(
-      `pitch-tts: ${wrong ? "wrong-pitch " : ""}synthesis failed for "${reading}" (downstep ${downstep})`,
-      err,
-    );
-    return new Response("synthesis failed", { status: 502 });
-  }
+  // Miss → synthesize, try to cache, and return the bytes regardless — but
+  // only ONE synthesis in flight per path at a time (see inFlightSynthesis's
+  // doc comment). A concurrent request for the same not-yet-cached clip
+  // clones this one's eventual response instead of starting its own.
+  const already = inFlightSynthesis.get(path);
+  if (already) return (await already).clone();
 
-  let opusBytes: Buffer | null = null;
-  try {
-    opusBytes = await encodeOpus(bytes);
-  } catch (err) {
-    console.error("pitch-tts: opus encode failed, serving uncompressed WAV uncached", err);
-  }
+  const run = (async (): Promise<Response> => {
+    // The upload is a SEPARATE try: a caching failure should not stop the
+    // learner hearing the word. It costs a re-synthesis on every play until
+    // fixed, but that is a config fix for the bucket owner, not a reason to
+    // 502 here.
+    let bytes: ArrayBuffer;
+    try {
+      bytes = wrong
+        ? await synthesizeWrongPitchWordWav(reading, downstep, v.speakerId)
+        : await synthesizeWordWav(reading, downstep, v.speakerId);
+    } catch (err) {
+      console.error(
+        `pitch-tts: ${wrong ? "wrong-pitch " : ""}synthesis failed for "${reading}" (downstep ${downstep})`,
+        err,
+      );
+      return new Response("synthesis failed", { status: 502 });
+    }
 
-  if (opusBytes === null) {
-    return new Response(new Blob([bytes], { type: "audio/wav" }), {
+    let opusBytes: Buffer | null = null;
+    try {
+      opusBytes = await encodeOpus(bytes);
+    } catch (err) {
+      console.error("pitch-tts: opus encode failed, serving uncompressed WAV uncached", err);
+    }
+
+    if (opusBytes === null) {
+      return new Response(new Blob([bytes], { type: "audio/wav" }), {
+        headers: {
+          "Content-Type": "audio/wav",
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
+    try {
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
+      if (error) throw error;
+    } catch (err) {
+      console.error("pitch-tts: cache upload failed, serving uncached", err);
+    }
+    return new Response(new Blob([new Uint8Array(opusBytes)], { type: AUDIO_CONTENT_TYPE }), {
       headers: {
-        "Content-Type": "audio/wav",
+        "Content-Type": AUDIO_CONTENT_TYPE,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-  }
-
+  })();
+  inFlightSynthesis.set(path, run);
   try {
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
-    if (error) throw error;
-  } catch (err) {
-    console.error("pitch-tts: cache upload failed, serving uncached", err);
+    return (await run).clone();
+  } finally {
+    inFlightSynthesis.delete(path);
   }
-  return new Response(new Blob([new Uint8Array(opusBytes)], { type: AUDIO_CONTENT_TYPE }), {
-    headers: {
-      "Content-Type": AUDIO_CONTENT_TYPE,
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
-  });
 }
