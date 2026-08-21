@@ -22,6 +22,46 @@ const nextConfig: NextConfig = {
     "/api/tts/**": ["./bin/ffmpeg"],
     "/api/pitch-tts/**": ["./bin/ffmpeg"],
   },
+
+  // SAK-125: several Server Actions in src/lib/library/server-lookups.ts
+  // (getQuizzableFacts, resolveWeakestFacts, getComponentUses,
+  // getKnownWordsUsing, getActiveMixupEntries, resolveLessonSteps) take a
+  // learner's `history` as a literal Server Action argument, and that
+  // argument IS the request body Next measures against its default 1MB
+  // Server Action limit. Reproduced directly: a real e2e run's captured
+  // network trace showed a Server Action call carrying `seen` alone with
+  // 16,402/26,758 curriculum facts (src/data/generated/learn-index.json) at
+  // ~1.2MB — already over the default before `facts`/`claims`/`learnedAt`
+  // are even counted — and the server log showed the resulting 413 twice in
+  // that same run.
+  //
+  // getLearnFrontier, the action this ticket started on, no longer has this
+  // problem for a SIGNED-IN learner at all — server-lookups.ts's own
+  // signedInSlice reads their known-set straight from Supabase server-side
+  // instead of receiving it as an argument, so nothing crosses the wire for
+  // that path (see that function's header, and its `facts` was separately
+  // trimmed to just `{stability, lastTested}` per fact for the SIGNED-OUT
+  // path, which still has to send something). What THIS number bounds is:
+  // (a) a signed-out learner's own known-set (localStorage is the only
+  // source of truth there, so it must still be sent), and (b) the sibling
+  // actions above, which still take the full, untrimmed HistoryFile and
+  // have no slice to trim down to, for EITHER a signed-in or signed-out
+  // caller.
+  //
+  // Grounded in the curriculum's real fact count (26,758, from
+  // learn-index.json) rather than a guess: a known-set can never exceed
+  // roughly one record per curriculum fact. At ~73 bytes/entry (the actual
+  // measured rate from the trace above), a signed-out learner who has
+  // touched literally every fact across `seen`+`claims`+`learnedAt`
+  // (~2MB apiece) plus the trimmed `facts` slice (~1.9MB) tops out around
+  // ~7.8MB. 10MB leaves real headroom above that computed ceiling — not
+  // "exactly at the line" — while staying a deliberate, bounded number
+  // rather than an arbitrarily large escape hatch.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
 export default nextConfig;
