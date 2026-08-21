@@ -37,7 +37,7 @@ import {
 
 import { PitchReading } from "@/components/library/pitch-mark";
 import { HintBody } from "@/components/quiz/hint-content";
-import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
+import { Btn, ScrollCue, SmallBtn, SoundIcon } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import { entryId, factId } from "@/lib/fact-id";
 import { VOCAB_KIND } from "@/lib/library/kinds";
@@ -106,6 +106,13 @@ import {
   type RecognitionItem,
 } from "@/lib/listen-sentence";
 import {
+  buildPitchShowing,
+  gradePitchPick,
+  PITCH_QUESTION_CHANCE,
+  rollPitchQuestion,
+  type PitchShowing,
+} from "@/lib/pitch-quiz";
+import {
   buildCoverageDeck,
   enabledFormsFor,
   formIsMc,
@@ -116,6 +123,7 @@ import { isKatakana, toKana } from "@/lib/romaji";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { prefetchClips, speak } from "@/lib/speech";
+import { DEFAULT_VOICE_ID } from "@/lib/voice";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact, isReadingFact, quizzableFacts } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -204,6 +212,15 @@ interface DrillQuestion {
   /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
+  /**
+   * SAK-128: a pitch-accent question rolled for THIS showing — hear two real
+   * clips, tap the one that answers the prompt. Rolled once at ask time
+   * exactly like `recognition` and `numberItem`, so a remount cannot reroll
+   * it or reshuffle which clip is which. null for every card that is not a
+   * pitch showing — see presentCard's eligibility gate. Plain data (audio
+   * URLs are strings), so it rides the serialized runtime.
+   */
+  pitch: PitchShowing | null;
   /** Whether the card's typed answer is KATAKANA — frozen at ask time so the
    * live romaji→kana input converts to katakana (チャ) not hiragana. */
   katakana: boolean;
@@ -288,6 +305,9 @@ interface DrillQuestion {
    * recipeId of the option picked wrong.
    */
   particleMarkerWrongPick: string | null;
+  /** Same idea as `mcWrongPick`, for the `pitch` board — the wrong clip
+   * INDEX picked. */
+  pitchWrongPick: 0 | 1 | null;
   /**
    * Whether the learner has pressed "Show text" on an audio-prompt showing —
    * SAK-51's fallback for a card that would otherwise be a blank box with a
@@ -327,22 +347,28 @@ interface DrillQuestion {
 function showingOf(q: DrillQuestion): ShowingPresentation {
   return {
     dir: q.dir,
-    mode: q.mc || q.recognition || q.particleDrill || q.particleMarker ? "mc" : "typed",
+    mode:
+      q.mc || q.recognition || q.particleDrill || q.particleMarker || q.pitch
+        ? "mc"
+        : "typed",
     listen: q.listen,
   };
 }
 
-/** How many buttons this showing's option board has — `mc`, `recognition` and
- * `particleMarker` are the three board shapes (see DrillQuestion), always
- * mutually exclusive on one showing. null for a typed card and for
+/** How many buttons this showing's option board has — `mc`, `recognition`,
+ * `particleMarker` and `pitch` are the four board shapes (see DrillQuestion),
+ * always mutually exclusive on one showing. null for a typed card and for
  * `particleDrill` (a tap-the-sentence board, not an option grid): neither has
  * a retry-pip/second-guess mechanic this count is meant to gate. Fed to
  * `effectiveRetries` (lib/engine) to scope the SAK-54 binary-board retry
- * skip to exactly this showing's board, not the run's cfg. */
+ * skip to exactly this showing's board, not the run's cfg — a `pitch` board
+ * is always 2, so it already skips retries the same way any other binary
+ * board (a transitivity pair) does. */
 function mcOptionCount(q: DrillQuestion): number | null {
   if (q.mc) return q.mc.length;
   if (q.recognition) return q.recognition.options.length;
   if (q.particleMarker) return q.particleMarker.options.length;
+  if (q.pitch) return q.pitch.clips.length;
   return null;
 }
 
@@ -758,7 +784,7 @@ export function DrillScreen() {
   function showChoices() {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     // Already a board (or a card that was drawn as one) — nothing to convert.
-    if (rt.q.mc || rt.q.recognition || rt.q.choicesShown) return;
+    if (rt.q.mc || rt.q.recognition || rt.q.pitch || rt.q.choicesShown) return;
     // The board was precomputed at ask time; the ≤1 guard is defense in depth —
     // a one-option board is not a question, so do nothing (no forfeit either).
     const board = rt.q.choicesBoard;
@@ -989,6 +1015,45 @@ export function DrillScreen() {
       form.response === "definition"
         ? pickRecognitionForFact(f, history)
         : null;
+    // SAK-128: a pitch-accent question — hear two REAL clips, tap the one
+    // that answers the prompt — folded in as ONE MORE THING a word's
+    // ordinary japanese-source, jp2en MEANING card can ask, never a track of
+    // its own (SAK-98's design note ruled that out). Scoped tightly:
+    //   - only a japanese-source, jp2en form. The interaction IS "hear it,
+    //     pick it", which only stands in for the meaning card's jp2en
+    //     showing — not an en2jp production card (there is nothing to
+    //     produce) and not a reading card (the reading is the thing a
+    //     verified downstep hangs off, not what is being asked).
+    //   - only the word's own MEANING fact (localWordMeaningFactId), never a
+    //     reading fact, and never a counter/construction card — those are
+    //     also subject `word` (COUNTER_FACTS/CONSTRUCTION_CATEGORY_FACTS)
+    //     but `numberItem` already owns their whole showing.
+    //   - only when Audio prompts is ON (`!audioOff`) — a pitch question IS
+    //     an audio prompt (you cannot ask "which one did you hear" without
+    //     playing it), so it obeys the exact gate every other listening form
+    //     already obeys (see usableForms), never a separate opt-in.
+    //   - not on every eligible showing: PITCH_QUESTION_CHANCE keeps the
+    //     word's everyday meaning card in circulation too, the same "second
+    //     form, part of the time" balance particleMarker's own coin flip
+    //     strikes for は/が/を (lib/engine/particle-drill.ts) rather than
+    //     replacing the ordinary card outright.
+    //   - only for a word that still carries a VERIFIED wordPitch() entry —
+    //     rollPitchQuestion itself returns null otherwise (no guessed pitch,
+    //     ever — the same rule src/data/pitch.ts documents).
+    const pitchEligibleInfo =
+      !construction && !audioOff && form.source === "japanese" && dir === "jp2en"
+        ? localFactInfo(f)
+        : undefined;
+    const pitchQuestion =
+      pitchEligibleInfo &&
+      pitchEligibleInfo.subject === VOCAB_KIND &&
+      localWordMeaningFactId(pitchEligibleInfo.glyph) === f &&
+      Math.random() < PITCH_QUESTION_CHANCE
+        ? rollPitchQuestion(pitchEligibleInfo.glyph)
+        : null;
+    const pitch: PitchShowing | null = pitchQuestion
+      ? buildPitchShowing(pitchQuestion, cfg.voiceName || DEFAULT_VOICE_ID)
+      : null;
     // A kanji MEANING card asked en2jp may, this showing, test the character's
     // VARIANT form instead of its English gloss — show 亻, ask which character it
     // is a form of, still grading against 人. Rolled here once (like the vehicle
@@ -1012,15 +1077,17 @@ export function DrillScreen() {
     // property of the fact and these are a property of the sentence. They are
     // still FactIds, so everything downstream — grading by which option, the
     // reveal, confusion tracking — is the untouched existing path.
-    const built = recognition
+    const built = pitch
       ? null
-      : particleDrill || particleMarker
+      : recognition
         ? null
-        : grammarSelection
-          ? grammarSelection.choices.slice()
-          : typedMode
-            ? null
-            : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
+        : particleDrill || particleMarker
+          ? null
+          : grammarSelection
+            ? grammarSelection.choices.slice()
+            : typedMode
+              ? null
+              : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
     const mc = built && built.length > 1 ? built : null;
     // The board "Show choices" would convert this text card into, built ONCE now
     // with the SAME call the MC ask path uses above, so a click swaps the box for
@@ -1028,9 +1095,10 @@ export function DrillScreen() {
     // can convert (a card already MC/recognition is one), and a ≤1-option board
     // is not a question, so both cases store null and hide the button.
     // A construction category never gets a "Show choices" board either — strictly
-    // typed-input, so the button stays hidden and no count is ever offered.
+    // typed-input, so the button stays hidden and no count is ever offered. Nor
+    // does a pitch showing: it is never a typed card to begin with.
     const choicesBuilt =
-      typedMode && !construction
+      typedMode && !construction && !pitch
         ? buildMcOptions(f, dir, ctx, confusionKnownFacts(history))
         : null;
     const choicesBoard =
@@ -1048,6 +1116,7 @@ export function DrillScreen() {
       numberItem,
       variant,
       recognition,
+      pitch,
       particleDrill,
       particleMarker,
       katakana: isKatakana(revealFor(f, dir, ctx)),
@@ -1066,6 +1135,7 @@ export function DrillScreen() {
       mcWrongPick: null,
       recognitionWrongPick: null,
       particleMarkerWrongPick: null,
+      pitchWrongPick: null,
       // "Show text" has not been pressed on a new showing. Same rule as
       // `hinted` and `choicesShown` just above.
       textRevealed: false,
@@ -1142,17 +1212,32 @@ export function DrillScreen() {
     );
   }
 
+  /** Play one pitch-question clip (SAK-128) — a plain URL, not a glyph to
+   * resolve through lib/speech.ts's Auto/roster tiering, so this is the same
+   * bare `new Audio(url).play()` HearButton's own EXACT PITCH mode uses (see
+   * src/components/ui/hear-button.tsx): this clip has exactly one source, so
+   * on failure it just stays silent rather than substituting a different
+   * voice, which would lose the very pitch contrast the question is testing. */
+  function playPitchClip(url: string) {
+    const audio = new Audio(url);
+    void audio.play().catch(() => {
+      // No fallback on purpose — see above.
+    });
+  }
+
   /** Legacy submit (plus the streak, which is the same first-try question
    * `firstTryCorrect` already answers). `picked` is the option FACT for MC
    * clicks (both dirs); `particleDrillPick` is the tapped chunk id for a
    * particle tap-drill card; `particleMarkerPick` is the chosen particle's
-   * recipe id for its marker-choice sibling. */
+   * recipe id for its marker-choice sibling; `pitchPick` is the tapped
+   * clip's index (0 or 1) for a pitch-question board. */
   function submit(
     given: string,
     picked?: FactId,
     recognitionPick?: number,
     particleDrillPick?: string,
     particleMarkerPick?: string,
+    pitchPick?: 0 | 1,
   ) {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     const q = rt.q;
@@ -1171,23 +1256,26 @@ export function DrillScreen() {
       recognitionPick === undefined &&
       picked === undefined &&
       particleDrillPick === undefined &&
-      particleMarkerPick === undefined;
+      particleMarkerPick === undefined &&
+      pitchPick === undefined;
     const credited =
       typed && q.dir === "jp2en" && localIsWordReadingFact(q.f)
         ? wordReadingCredit(q.f, given)
         : null;
     const ok =
-      particleMarkerPick !== undefined && q.particleMarker
-        ? gradeParticleMarkerChoice(q.particleMarker, particleMarkerPick)
-        : particleDrillPick !== undefined && q.particleDrill
-          ? gradeParticleDrillTap(q.particleDrill, particleDrillPick)
-          : recognitionPick !== undefined && q.recognition
-            ? recognitionPick === q.recognition.correct
-            : picked !== undefined
-              ? picked === q.f
-              : credited
-                ? credited.ok
-                : checkTyped(q.f, given, q.dir, ctxFor(q));
+      pitchPick !== undefined && q.pitch
+        ? gradePitchPick(q.pitch, pitchPick)
+        : particleMarkerPick !== undefined && q.particleMarker
+          ? gradeParticleMarkerChoice(q.particleMarker, particleMarkerPick)
+          : particleDrillPick !== undefined && q.particleDrill
+            ? gradeParticleDrillTap(q.particleDrill, particleDrillPick)
+            : recognitionPick !== undefined && q.recognition
+              ? recognitionPick === q.recognition.correct
+              : picked !== undefined
+                ? picked === q.f
+                : credited
+                  ? credited.ok
+                  : checkTyped(q.f, given, q.dir, ctxFor(q));
     // SAK-122: a TYPED miss that looks like the wrong script/format for what
     // this card wants (English on a Japanese-answer card, Japanese on an
     // English-answer card, kana typed where the card wants romaji) is not
@@ -1262,15 +1350,16 @@ export function DrillScreen() {
       recordMissedPhrase(st, phrase, saidText);
       // The wrong pick to keep lit red at the reveal (SAK-50 changes-requested
       // follow-up), overwritten on every attempt like `saidText` above — only
-      // one of the three can be non-null on any given miss, since `mc`,
-      // `recognition` and `particleMarker` are mutually exclusive board
-      // shapes for one showing (see DrillQuestion). A typed miss or a
+      // one of the four can be non-null on any given miss, since `mc`,
+      // `recognition`, `particleMarker` and `pitch` are mutually exclusive
+      // board shapes for one showing (see DrillQuestion). A typed miss or a
       // particleDrill tap sets none of them; particleDrill already shows its
       // own wrong tap red via particle-tap-card.tsx's `outcome` state.
       q.mcWrongPick = picked !== undefined ? picked : null;
       q.recognitionWrongPick = recognitionPick !== undefined ? recognitionPick : null;
       q.particleMarkerWrongPick =
         particleMarkerPick !== undefined ? particleMarkerPick : null;
+      q.pitchWrongPick = pitchPick !== undefined ? pitchPick : null;
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
@@ -1296,6 +1385,7 @@ export function DrillScreen() {
       } else if (
         particleDrillPick === undefined &&
         particleMarkerPick === undefined &&
+        pitchPick === undefined &&
         given &&
         given !== "(time)"
       ) {
@@ -1479,7 +1569,7 @@ export function DrillScreen() {
       if (v.trim()) submit(v);
       return;
     }
-    if ((rt.q.mc || rt.q.recognition) && /^[1-9]$/.test(e.key)) {
+    if ((rt.q.mc || rt.q.recognition || rt.q.pitch) && /^[1-9]$/.test(e.key)) {
       // Don't hijack digits typed into a field (e.g. the drawer's timer box).
       const t = e.target;
       if (
@@ -1492,6 +1582,9 @@ export function DrillScreen() {
       if (opt) submit(labelOf(opt, rt.q.dir, ctxFor(rt.q), localFactInfo), opt);
       else if (rt.q.recognition?.options[index]) {
         submit(rt.q.recognition.options[index], undefined, index);
+      } else if (rt.q.pitch && (index === 0 || index === 1)) {
+        playPitchClip(rt.q.pitch.clips[index]);
+        submit(`clip ${index + 1}`, undefined, undefined, undefined, undefined, index);
       }
     }
   }
@@ -1637,6 +1730,7 @@ export function DrillScreen() {
     if (rt.q && rt.q.mcWrongPick === undefined) rt.q.mcWrongPick = null;
     if (rt.q && rt.q.recognitionWrongPick === undefined) rt.q.recognitionWrongPick = null;
     if (rt.q && rt.q.particleMarkerWrongPick === undefined) rt.q.particleMarkerWrongPick = null;
+    if (rt.q && rt.q.pitchWrongPick === undefined) rt.q.pitchWrongPick = null;
     // A showing in flight from before SAK-51's fallback existed has not had
     // "Show text" pressed. Same tidiness rule as `confused` above. (The
     // similar `answered` backfill this used to sit beside was removed with
@@ -1644,6 +1738,9 @@ export function DrillScreen() {
     // "You answered" line.)
     if (rt.q && typeof rt.q.textRevealed !== "boolean") rt.q.textRevealed = false;
     if (rt.q && rt.q.recognition === undefined) rt.q.recognition = null;
+    // A showing in flight from before the pitch question existed had none.
+    // Same tidiness rule as `recognition` just above.
+    if (rt.q && rt.q.pitch === undefined) rt.q.pitch = null;
     // A showing in flight from before the variant quiz existed had no variant.
     // Null, not undefined: ctxFor reads it through `?? undefined`, so this is
     // tidiness rather than load-bearing.
@@ -1883,8 +1980,13 @@ export function DrillScreen() {
   // that is MC and was NOT converted (choicesShown marks the conversion; a
   // recognition/grammar-selection card born MC has it false, which is correct —
   // those still get no hint via hintReady below).
+  // A pitch showing (SAK-128) gets no hint at all, regardless of the MC gate
+  // above: the mnemonic for q.f's own kanji/reading would hand the learner
+  // exactly the thing the two-clip board is testing — unlike a recognition
+  // board's hint (safe: it is about a grammar pattern, not which sentence is
+  // playing), a pitch hint has no safe half to offer.
   const hint =
-    active && rt?.q && !(rt.q.mc && !rt.q.choicesShown)
+    active && rt?.q && !rt.q.pitch && !(rt.q.mc && !rt.q.choicesShown)
       ? hintFor(
           rt.q.f,
           rt.q.dir,
@@ -1962,7 +2064,12 @@ export function DrillScreen() {
   // aids without leaking the English answer. Display only; a word with no verified
   // pitch shows nothing extra.
   const promptPitch = (() => {
-    if (listenVisible || q.dir !== "jp2en") return null;
+    // A pitch SHOWING (q.pitch) already IS the pitch question — this DISPLAY-
+    // only reading line exists for an ordinary meaning card that merely sits
+    // beside an ambiguous homophone (SAK-98) and must never appear on a
+    // showing that is actually grading which clip the learner picked; it
+    // would draw the exact pattern the two clips are testing right on screen.
+    if (q.pitch || listenVisible || q.dir !== "jp2en") return null;
     const info = localFactInfo(q.f);
     if (!info || info.subject !== VOCAB_KIND) return null;
     if (localWordMeaningFactId(info.glyph) !== q.f) return null;
@@ -1995,6 +2102,13 @@ export function DrillScreen() {
   const wordInfo = localFactInfo(q.f);
   const isWordCard = !!wordInfo && wordInfo.subject === VOCAB_KIND;
   const wordContext: ReactNode = (() => {
+    // Same reasoning as promptPitch just above: a pitch showing's whole
+    // question is "which clip is which word" — its reading, and (in "pair"
+    // mode) which written word it belongs to, are exactly what is being
+    // graded, so none of this card's ordinary reading/glyph context may
+    // appear until the reveal (which draws its own pitch-marked answer, see
+    // revealAnswer's `q.pitch` arm below).
+    if (q.pitch) return null;
     if (!isWordCard) return null;
     if (localIsWordReadingFact(q.f)) {
       // An AUDIO reading card is dictation — you HEAR the word and type the
@@ -2036,6 +2150,14 @@ export function DrillScreen() {
       ? "Which particle marks this word?"
       : q.recognition
         ? "Pick the sentence's meaning."
+        : q.pitch
+          ? // SAK-128's two mechanics ask two different questions over the
+            // same two-clip board: "pair" names the CURRENT word's meaning
+            // ("which one means X" — the other clip is a different word
+            // entirely); "wrong" asks the learner to judge the pitch itself.
+            q.pitch.mode === "pair"
+            ? `Which one means "${q.pitch.promptGloss}"?`
+            : "Which one sounds right?"
       : q.numberItem
       ? // A construction card asks for a count, not a word meaning — its generic
         // instruction ("what does this word mean") would be a lie. A READ card
@@ -2063,7 +2185,8 @@ export function DrillScreen() {
   // which control to show — deriving it from the style again could disagree
   // with what was built (e.g. an MC-style card that fell back for want of
   // distractors).
-  const typedMode = !q.mc && !q.recognition && !q.particleDrill && !q.particleMarker;
+  const typedMode =
+    !q.mc && !q.recognition && !q.particleDrill && !q.particleMarker && !q.pitch;
   // Live romaji→kana exactly when the ANSWER is Japanese, which is not the same
   // question as which direction the card faces. Keyed on direction alone this
   // was wrong both ways: a jp2en kanji reading wants せい and got a latin box,
@@ -2155,7 +2278,11 @@ export function DrillScreen() {
   // including en2jp where the reveal is the kanji, falls through untouched. See
   // src/data/pitch.ts and pitch-mark.tsx. DISPLAY only — never graded.
   const revealPitch = (() => {
-    if (!revealing) return null;
+    // A pitch showing draws its OWN reveal (see revealAnswer's `q.pitch` arm
+    // below, off q.pitch.reading/correctDownstep) — this generic reading-
+    // reveal is for an ORDINARY reading card that happens to have verified
+    // pitch, a different case entirely.
+    if (q.pitch || !revealing) return null;
     const info = localFactInfo(q.f);
     if (!info || info.subject !== VOCAB_KIND) return null;
     const row = vocabRowMap[info.glyph];
@@ -2201,7 +2328,23 @@ export function DrillScreen() {
           }
         : q.recognition
           ? { node: q.recognition.answer as ReactNode, isSound: false, isMeaning: true }
-          : {
+          : q.pitch
+            ? {
+                // The pitch showing's own reveal: the CORRECT clip's reading,
+                // drawn with its overline — same DISPLAY convention
+                // revealPitch uses for an ordinary reading card, just off
+                // this showing's own frozen (reading, correctDownstep)
+                // rather than a fresh lookup.
+                node: (
+                  <PitchReading
+                    reading={q.pitch.reading}
+                    downstep={q.pitch.correctDownstep}
+                  />
+                ),
+                isSound: true,
+                isMeaning: false,
+              }
+            : {
               node: revealPitch ? (
                 // Same answer text, drawn with its pitch-accent overline. See
                 // revealPitch above: only ever a word reading that has a
@@ -2384,8 +2527,14 @@ export function DrillScreen() {
           // the written word the learner just heard. `listenVisible`, not
           // `q.listen`, so pressing "Show text" (SAK-51) swaps the speaker for
           // the same glyph a non-listening twin of this card would show.
-          listen={listenVisible}
+          // A pitch showing (SAK-128) hides the glyph too — showing 箸 while
+          // asking "which clip means chopsticks" would just answer the
+          // question — but has its OWN two-clip buttons below, not the
+          // halo's single speaker: onListen is a no-op here so pressing the
+          // halo's centre icon can never play (and so leak) either clip.
+          listen={listenVisible || !!q.pitch}
           onListen={() => {
+            if (q.pitch) return;
             const text = q.numberItem
               ? q.numberItem.reading
               : q.form.source === "sentence" && q.form.response === "definition"
@@ -2535,6 +2684,47 @@ export function DrillScreen() {
                 )}
               >
                 <span lang="ja">{option.label}</span>
+                <span className="text-[10px] text-text-muted">{i + 1}</span>
+              </button>
+            ))}
+          </div>
+        ) : q.pitch ? (
+          // SAK-128: two audio clips, tap the one that answers the prompt.
+          // Deliberately minimal — no text label beyond the option number
+          // that would give either clip away, just a speaker icon per clip.
+          // A tap both PLAYS the clip and SUBMITS it as the answer, exactly
+          // like clicking any other MC option submits immediately; there is
+          // no separate "preview" step, matching every other drill board's
+          // one-tap-decides interaction.
+          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-3">
+            {q.pitch.clips.map((clip, i) => (
+              <button
+                key={clip}
+                onClick={() => {
+                  playPitchClip(clip);
+                  submit(
+                    `clip ${i + 1}`,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    i as 0 | 1,
+                  );
+                }}
+                aria-label={`Play clip ${i + 1}`}
+                className={cx(
+                  "flex min-h-20 shrink-0 grow-0 basis-[calc((100%-12px)/2)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-3 text-center",
+                  revealing && i === q.pitch?.correct
+                    ? "border-success bg-success-bg text-success"
+                    : // The wrong pick stays selected in red alongside the
+                      // correct clip's green (SAK-50 changes-requested
+                      // follow-up) — see DrillQuestion.pitchWrongPick.
+                      revealing && i === q.pitchWrongPick
+                      ? "border-danger bg-danger-bg text-danger"
+                      : "border-border bg-card text-text hover:bg-panel",
+                )}
+              >
+                <SoundIcon className="size-8" />
                 <span className="text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}
