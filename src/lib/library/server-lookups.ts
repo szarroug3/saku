@@ -20,7 +20,7 @@
 // resolveFactInfos) so a deck/list/breakdown resolves in ONE round trip built
 // once, not one request per row.
 
-import type { EntryId, FactId, FactInfo, HistoryFile } from "@/types";
+import type { EntryId, FactId, FactInfo, FactState, HistoryFile } from "@/types";
 import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import type { Recipe } from "@/data/grammar/recipes";
 import type { StrokeFallback } from "@/lib/lesson-roles";
@@ -92,6 +92,8 @@ import type { LearnIndex, IndexUnit } from "@/lib/content/learn-index-types";
 import { nextLearnLesson, nextSentenceLearnLesson } from "@/lib/content/learn-scheduler";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import type { LessonRange } from "@/lib/lesson-sizing";
+import { currentUserId } from "@/lib/auth";
+import { loadHistory } from "@/lib/history";
 
 /* -------------------------------------------------------------------------
  * /LEARN HOME FEED — SAK-115. home-feed.tsx (its per-track frontier) and
@@ -151,8 +153,40 @@ export async function getLearnIndexData(): Promise<LearnIndex> {
  * output, so it rides in the cache key alongside the known-set. */
 
 /** The slice of HistoryFile the /learn frontier walk actually reads. See this
- * section's header for why `sessions`/`clearedMixups` are excluded. */
-export type LearnHistorySlice = Pick<HistoryFile, "facts" | "claims" | "seen" | "learnedAt">;
+ * section's header for why `sessions`/`clearedMixups` are excluded.
+ *
+ * `facts` is reduced client-side (see home-feed.tsx's `knownSet`) to EACH
+ * fact's own `FactState` (`stability` + `lastTested`) rather than the whole
+ * `FactAggregate` HistoryFile["facts"] carries — the only two fields
+ * `effectiveState` (lib/claims.ts), and therefore every walk function that
+ * routes through it (isFactFresh/isRegression/factKnown/factMet), ever reads
+ * off a fact's aggregate. `seen`/`missed`/`firstTry`/`correct`/`recentRuns`
+ * (FactCounts + the run log) are display-only counts the walk never touches —
+ * see this section's header's own note on `stability` for the same reasoning
+ * applied to the HASH key; this is that reduction applied to the WIRE payload
+ * itself, which the hash key never was. SAK-125: for a learner with a large
+ * chunk of the curriculum's ~26.8k facts touched, sending the full
+ * FactAggregate (recentRuns alone is up to 10 records per fact) for every one
+ * of them is what pushed this Server Action's request body past Next's
+ * default 1MB limit; this cuts the dominant per-fact payload down to exactly
+ * what the walk needs. */
+export type LearnHistorySlice = Pick<HistoryFile, "claims" | "seen" | "learnedAt"> & {
+  readonly facts: Readonly<Record<FactId, FactState>>;
+};
+
+/** A tiny, size-bounded stand-in for a signed-in learner's known-set, used only
+ * as home-feed.tsx's `useServerLookup` cache key (see getLearnFrontier's own
+ * `_knownSetFingerprint` param). Four counts change exactly when a fact
+ * transitions from unmet to met — a new key appears in `facts`/`claims`/
+ * `seen`/`learnedAt` — which is the only thing the frontier walk is sensitive
+ * to; re-testing an already-met fact touches none of these counts, so it
+ * correctly does not invalidate the cached frontier either. */
+export interface KnownSetFingerprint {
+  readonly facts: number;
+  readonly claims: number;
+  readonly seen: number;
+  readonly learnedAt: number;
+}
 
 /** Every /learn track's frontier lesson (or null, track exhausted/gated), keyed
  * by track id — the whole of what home-feed.tsx's `frontiers` needs per track
@@ -186,6 +220,10 @@ function stableSliceKey(slice: LearnHistorySlice, range: LessonRange): string {
   const factsLastTested = Object.keys(slice.facts ?? {})
     .sort()
     .map((k) => [k, slice.facts[k as FactId]?.lastTested ?? 0] as const);
+  // NOTE: `stability` is not folded into the hash key, only `lastTested` — see
+  // this file's own note above (LearnHistorySlice) for why the walk itself
+  // still needs `stability` in the WIRE payload (effectiveState reads it),
+  // even though it never changes which cached result two known-sets share.
   return JSON.stringify({
     facts: factsLastTested,
     claims: sortedEntries(slice.claims),
@@ -208,11 +246,21 @@ function hashKnownSet(slice: LearnHistorySlice, range: LessonRange): string {
 
 /** `history.facts`/`claims`/`seen`/`learnedAt` are all the walk reads (see this
  * section's header) — `sessions: []` is an unread stub so the slice satisfies
- * `HistoryFile`'s shape without shipping the field that dominates its size. */
+ * `HistoryFile`'s shape without shipping the field that dominates its size.
+ *
+ * `facts` arrives as `FactState`-only (see LearnHistorySlice); HistoryFile's
+ * own `facts` type is keyed by the full `FactAggregate` (FactState +
+ * FactCounts), so each entry is padded back out with zeroed FactCounts here.
+ * Safe because the walk never reads them (see LearnHistorySlice's header) —
+ * this is a shape fix for `effectiveState`'s caller, not a behavior change. */
 function toWalkHistory(slice: LearnHistorySlice): HistoryFile {
+  const facts: HistoryFile["facts"] = {};
+  for (const [id, state] of Object.entries(slice.facts) as [FactId, FactState][]) {
+    facts[id] = { ...state, seen: 0, missed: 0, firstTry: 0, correct: 0 };
+  }
   return {
     sessions: [],
-    facts: slice.facts,
+    facts,
     claims: slice.claims,
     seen: slice.seen,
     learnedAt: slice.learnedAt,
@@ -249,19 +297,76 @@ const cachedLearnFrontier = unstable_cache(
   { tags: ["learn-frontier"] },
 );
 
+const EMPTY_SLICE: LearnHistorySlice = { facts: {}, claims: {}, seen: {}, learnedAt: {} };
+
+/** A signed-in caller's own known-set, read straight from their Supabase row —
+ * see loadHistory (lib/history.ts), the same read GET /api/history uses.
+ * SAK-125, PART 1: this is the whole point of the signed-in branch below —
+ * the server already has the authoritative history for a signed-in learner,
+ * so there is no reason to ALSO have the client serialize and transmit it as
+ * this Server Action's own request body (the mechanism that overflowed
+ * Next's default 1MB limit in the first place). Reduced through the same
+ * per-fact FactState-only trim LearnHistorySlice's own header documents. */
+async function signedInSlice(userId: string): Promise<LearnHistorySlice> {
+  const history = await loadHistory(userId);
+  const facts: Record<string, FactState> = {};
+  for (const [id, agg] of Object.entries(history.facts)) {
+    facts[id] = { stability: agg.stability, lastTested: agg.lastTested };
+  }
+  return {
+    facts: facts as LearnHistorySlice["facts"],
+    claims: history.claims,
+    seen: history.seen,
+    learnedAt: history.learnedAt,
+  };
+}
+
 /** The /learn frontier for a known-set + lesson range, computed server-side
  * over the precomputed index and cached by hash(known-set, range) +
  * curriculumVersion — see this section's header for the full rationale and
  * home-feed.tsx for the client-side call site (which falls back to the local
  * walk, learn-scheduler.ts, whenever this hasn't resolved yet for the
  * CURRENT known-set, so an interactive history change is never gated on a
- * round trip). */
+ * round trip).
+ *
+ * SIGNED-IN vs SIGNED-OUT (SAK-125, PART 1): a signed-in caller's `slice`
+ * argument is IGNORED — their known-set is read server-side from their own
+ * Supabase row instead (signedInSlice above), because that is both the
+ * authoritative copy AND avoids ever putting it on the wire as this action's
+ * own request body. `slice` only matters for a SIGNED-OUT visitor, whose
+ * progress lives solely in this browser's localStorage (auth.ts's own
+ * header: "not signed in" is the absence of an account, not a history the
+ * server could read some other way) — there is no server-side source of
+ * truth to fall back to, so the client must still send it. See next.config.ts's
+ * own SAK-125 comment for why THAT payload is still bounded by
+ * `serverActions.bodySizeLimit` rather than needing this same DB-read
+ * treatment: a signed-out known-set can never exceed one record per
+ * curriculum fact, a fixed, computable ceiling, unlike an arbitrary Server
+ * Action argument.
+ *
+ * `_knownSetFingerprint` is never read here — it exists purely so
+ * home-feed.tsx's `useServerLookup` call (which cache-keys on
+ * `JSON.stringify(args)`) still gets a NEW key when a signed-in learner's
+ * known-set changes, without that key being the known-set itself. See that
+ * call site's own comment. */
 export async function getLearnFrontier(
-  slice: LearnHistorySlice,
+  slice: LearnHistorySlice | null,
   range: LessonRange,
+  _knownSetFingerprint?: KnownSetFingerprint,
 ): Promise<LearnFrontierResult> {
-  const hash = hashKnownSet(slice, range);
-  return cachedLearnFrontier(hash, slice, range);
+  const userId = await currentUserId();
+  // Falls back to EMPTY_SLICE rather than throwing on a signed-out caller
+  // with no slice yet: home-feed.tsx's own auth-mode signal defaults to
+  // "signed in" for a few milliseconds before the shell's real answer lands
+  // (see auth-mode.ts's own header — that default is deliberately optimistic
+  // for the WRITE path's safety, and this read path inherits it). Treating
+  // that brief window as "nothing known yet" self-corrects the moment the
+  // real args arrive, rather than rejecting the Server Action call — a
+  // rejection useServerLookup does not retry (see its own header), which
+  // would otherwise wedge the frontier for the rest of the page's session.
+  const resolvedSlice = userId ? await signedInSlice(userId) : (slice ?? EMPTY_SLICE);
+  const hash = hashKnownSet(resolvedSlice, range);
+  return cachedLearnFrontier(hash, resolvedSlice, range);
 }
 
 /* -------------------------------------------------------------------------
