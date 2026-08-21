@@ -517,7 +517,7 @@ export default function SessionPage() {
       // with the page.
       <div className="kq-center-frame">
         <SessionHud
-          label={label}
+          label={session.what}
           where={`round ${session.round} of ${roundTargetOf(session)} · done`}
           pct={100}
           onDone={pauseSession}
@@ -535,8 +535,7 @@ export default function SessionPage() {
   }
 
   if (session.phase === "resting") {
-    // The bar fills as the rest elapses — grey, because elapsing is not
-    // progress and painting it accent would make waiting look like achieving.
+    // The bar fills as the rest elapses.
     const left = now === null ? 0 : restLeftMs(session, now);
     const span = session.restUntil ? session.restUntil - session.lastActiveAt : 0;
     const pct = span > 0 ? 100 - (100 * left) / span : 100;
@@ -563,7 +562,7 @@ export default function SessionPage() {
     // .kq-center-frame (globals.css, SAK-10): see the round-complete branch
     // above — same floor-height centering, same reason.
     <div className="kq-center-frame">
-      <SessionHud label={label} where="complete" pct={100} tone="success" />
+      <SessionHud label={session.what} where="complete" pct={100} tone="success" />
       <div className="flex flex-1 flex-col justify-center mt-3.5">
         <SessionComplete
           session={session}
