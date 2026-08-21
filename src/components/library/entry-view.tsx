@@ -70,47 +70,55 @@ export function EntryView({
 
   return (
     <FlatSurfaceProvider>
-      {/* pb-20 clears the fixed bar below so its last lines are never hidden
-          under it. */}
-      <div className="pb-20">
-        <p className="mb-3 text-[11.5px] text-text-muted">
-          <Link href="/library" className="text-text-muted no-underline">
-            Library
-          </Link>
-          {" › "}
-          {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
-              construction page browses on the counters shelf, so its crumb
-              links there — resolved server-side via shelfKindOf. */}
-          <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
-            {breadcrumbKindLabel}
-          </Link>
-          {" › "}
-          {entryName}
-        </p>
+      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom): a short
+          entry (a two-line word) still fills the column, so the sticky bar
+          below reaches the viewport's bottom instead of settling right under
+          two lines of content with dead space beneath it. */}
+      <div className="flex min-h-[calc(100vh-3rem)] flex-col">
+        <div>
+          <p className="mb-3 text-[11.5px] text-text-muted">
+            <Link href="/library" className="text-text-muted no-underline">
+              Library
+            </Link>
+            {" › "}
+            {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
+                construction page browses on the counters shelf, so its crumb
+                links there — resolved server-side via shelfKindOf. */}
+            <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
+              {breadcrumbKindLabel}
+            </Link>
+            {" › "}
+            {entryName}
+          </p>
 
-        <GroupNav groupNav={groupNav} />
+          <GroupNav groupNav={groupNav} />
 
-        <EntryBody entry={entryId} kind={entryKind} />
-      </div>
+          <EntryBody entry={entryId} kind={entryKind} />
+        </div>
 
-      {/* Frozen at the bottom of the viewport, same as the quiz screens' own
-          reveal bar (drill-screen.tsx) — always in the same place, never
-          moving with the entry's own scroll. */}
-      <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
-        <SliceBar
-          variant="entry"
-          slice={{ label: entryName, entries: [entryId] }}
-          showLabel={false}
-          // The committed aggregate on purpose: the bar plans a drill, which
-          // is a query over what you durably know, not the run you are in.
-          facts={history.facts}
-          claims={claims}
-          history={history}
-          now={now}
-          onClaim={claim}
-          onUnclaim={unclaim}
-          progressReady={historyLoaded}
-        />
+        {/* Frozen at the bottom of the viewport — `sticky`, not `fixed
+            inset-x-0`: the page itself is the only scroll container (see
+            layout.tsx's note on that), so `sticky bottom-0` pins this exactly
+            like `fixed` the instant it reaches the bottom, but stays a normal
+            block inside <main>'s own column instead of stretching over the
+            sidebar the way a viewport-wide fixed bar would — the same
+            sticky-not-fixed choice layout.tsx's own top dock already makes. */}
+        <div className="kq-band sticky bottom-0 z-20 mt-auto border-t border-border px-4 py-3">
+          <SliceBar
+            variant="entry"
+            slice={{ label: entryName, entries: [entryId] }}
+            showLabel={false}
+            // The committed aggregate on purpose: the bar plans a drill, which
+            // is a query over what you durably know, not the run you are in.
+            facts={history.facts}
+            claims={claims}
+            history={history}
+            now={now}
+            onClaim={claim}
+            onUnclaim={unclaim}
+            progressReady={historyLoaded}
+          />
+        </div>
       </div>
     </FlatSurfaceProvider>
   );
