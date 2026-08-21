@@ -70,13 +70,10 @@ export function EntryView({
 
   return (
     <FlatSurfaceProvider>
-      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom) plus mt-auto
-          on the SliceBar wrapper below: a flex-column sticky footer, scoped
-          to THIS column, not the viewport. A short entry (a two-line word)
-          gets its Quiz me pushed to the bottom of the column instead of
-          stranded right under the content with a dead gap below it; a long
-          entry just gets an ordinary footer after its last line, the same as
-          before. See slice-bar.tsx for why this isn't `fixed inset-x-0`. */}
+      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom): a short entry
+          (a two-line word) still fills the column, so the sticky bar below
+          settles at the viewport's bottom instead of riding right under two
+          lines of content. */}
       <div className="flex min-h-[calc(100vh-3rem)] flex-col">
         <div>
           <p className="mb-3 text-[11.5px] text-text-muted">
@@ -99,7 +96,14 @@ export function EntryView({
           <EntryBody entry={entryId} kind={entryKind} />
         </div>
 
-        <div className="mt-auto pt-5">
+        {/* Frozen in place at the bottom of the viewport while the entry
+            content scrolls past it, not just parked after the last line —
+            `sticky` rather than `fixed inset-x-0`: it sticks within THIS
+            column's own box, so it never spans over the sidebar the way a
+            viewport-wide fixed bar would (see slice-bar.tsx's note on that).
+            kq-band gives it the same occluding frost the quiz screens' reveal
+            bar uses, so scrolled content doesn't show through underneath it. */}
+        <div className="kq-band sticky bottom-0 z-10 mt-auto pt-5">
           <SliceBar
             variant="entry"
             slice={{ label: entryName, entries: [entryId] }}

@@ -108,7 +108,6 @@ import {
 import {
   buildPitchShowing,
   gradePitchPick,
-  PITCH_QUESTION_CHANCE,
   rollPitchQuestion,
   type PitchShowing,
 } from "@/lib/pitch-quiz";
@@ -1095,11 +1094,12 @@ export function DrillScreen() {
       ? buildPitchShowing(pitchQuestion, cfg.voiceName || DEFAULT_VOICE_ID)
       : null;
     // Not a pinned pitch slot: this is an ordinary showing of an eligible
-    // word's meaning card. Queue one ADDITIONAL pitch card a few slots ahead
-    // (never on every eligible showing — PITCH_QUESTION_CHANCE keeps that
-    // occasional, so eligible words don't always balloon to +1 card) and let
-    // THIS showing render its ordinary card untouched.
-    if (!form.pitch && pitchEligibleGlyph && Math.random() < PITCH_QUESTION_CHANCE) {
+    // word's meaning card. Queue an ADDITIONAL pitch card a few slots ahead
+    // every time (no coin flip — a word with verified pitch always gets
+    // quizzed on it) and let THIS showing render its ordinary card untouched.
+    // queuePitchCard's own alreadyQueued guard is what keeps this from
+    // stacking more than one pending pitch card per fact at a time.
+    if (!form.pitch && pitchEligibleGlyph) {
       queuePitchCard(f);
     }
     // A kanji MEANING card asked en2jp may, this showing, test the character's
