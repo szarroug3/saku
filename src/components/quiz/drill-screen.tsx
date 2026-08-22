@@ -108,6 +108,7 @@ import {
 import {
   buildPitchShowing,
   gradePitchPick,
+  pitchInstruction,
   rollPitchQuestion,
   type PitchShowing,
 } from "@/lib/pitch-quiz";
@@ -2274,13 +2275,10 @@ export function DrillScreen() {
       : q.recognition
         ? "Pick the sentence's meaning."
         : q.pitch
-          ? // SAK-128's two mechanics ask two different questions over the
-            // same two-clip board: "pair" names the CURRENT word's meaning
-            // ("which one means X" — the other clip is a different word
-            // entirely); "wrong" asks the learner to judge the pitch itself.
-            q.pitch.mode === "pair"
-            ? `Which one means "${q.pitch.promptGloss}"?`
-            : "Which one sounds right?"
+          ? // See pitchInstruction's own doc for why this is the shared call
+            // and not a hand-copied ternary — the gallery preview calls the
+            // same function.
+            pitchInstruction(q.pitch)
       : q.numberItem
       ? // A construction card asks for a count, not a word meaning — its generic
         // instruction ("what does this word mean") would be a lie. A READ card

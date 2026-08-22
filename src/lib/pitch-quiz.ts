@@ -188,3 +188,17 @@ export function buildPitchShowing(
 export function gradePitchPick(showing: PitchShowing, chosen: 0 | 1): boolean {
   return chosen === showing.correct;
 }
+
+/** The question text a pitch showing asks — SAK-128's two mechanics ask two
+ * different questions over the same two-clip board: "pair" names the
+ * CURRENT word's meaning ("which one means X" — the other clip is a
+ * different word entirely); "wrong" asks the learner to judge the pitch
+ * itself. The one place this is computed: the live drill and the dev
+ * gallery preview both call this instead of each spelling out the same
+ * ternary (see SAK-131 — a hand-copy here is exactly the kind of drift that
+ * ticket was about, even though today both copies still agree). */
+export function pitchInstruction(showing: Pick<PitchShowing, "mode" | "promptGloss">): string {
+  return showing.mode === "pair"
+    ? `Which one means "${showing.promptGloss}"?`
+    : "Which one sounds right?";
+}

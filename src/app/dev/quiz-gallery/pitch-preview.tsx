@@ -16,7 +16,7 @@ import { useState } from "react";
 
 import { Btn } from "@/components/ui";
 import { PitchClipBoard } from "@/components/quiz/pitch-clip-board";
-import type { PitchShowing } from "@/lib/pitch-quiz";
+import { pitchInstruction, type PitchShowing } from "@/lib/pitch-quiz";
 
 function playClip(url: string) {
   const audio = new Audio(url);
@@ -28,13 +28,9 @@ function playClip(url: string) {
 export function PitchPreview({ showing }: { showing: PitchShowing }) {
   const [pick, setPick] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const instruction =
-    showing.mode === "pair"
-      ? `Which one means "${showing.promptGloss}"?`
-      : "Which one sounds right?";
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-[15px] text-text">{instruction}</p>
+      <p className="text-[15px] text-text">{pitchInstruction(showing)}</p>
       <PitchClipBoard
         clips={showing.clips}
         correct={showing.correct}
