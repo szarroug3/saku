@@ -20,16 +20,28 @@ export function QuizOptionsFields() {
       <Row
         label="Mode"
         info={
-          <>
-            Drill: one question at a time — you&apos;re shown a prompt and
-            type or pick the answer, with retries if you miss it. Match
-            pairs: a board of tiles — tap two that match (like a kana and its
-            reading) until every pair is found. Grid: every selected item at
-            once, each with its own box — fill in as many as you can; each
-            one checks as you answer it. Substitution: shown a sentence
-            pattern built on a verb you already know, then asked to write the
-            same pattern using a different verb you know.
-          </>
+          <div className="flex flex-col gap-2">
+            <p>
+              <span className="text-accent">Drill</span>: one question at a
+              time. You&apos;re shown a prompt and type or pick the answer,
+              with retries if you miss it.
+            </p>
+            <p>
+              <span className="text-accent">Match pairs</span>: a board of
+              tiles. Tap two that match (like a kana and its reading) until
+              every pair is found.
+            </p>
+            <p>
+              <span className="text-accent">Grid</span>: every selected item
+              at once, each with its own box. Fill in as many as you can;
+              each one checks as you answer it.
+            </p>
+            <p>
+              <span className="text-accent">Substitution</span>: shown a
+              sentence pattern built on a verb you already know, then asked
+              to write the same pattern using a different verb you know.
+            </p>
+          </div>
         }
       >
         <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
@@ -54,13 +66,19 @@ export function QuizOptionsFields() {
           <Row
             label="Length"
             info={
-              <>
-                Endless: keeps asking for as long as you keep playing —
-                there&apos;s no set end. Limited: stops after a fixed amount
-                instead of running forever — choose Full coverage to ask
-                everything currently selected exactly once, or a Count to say
-                how much.
-              </>
+              <div className="flex flex-col gap-2">
+                <p>
+                  <span className="text-accent">Endless</span>: keeps asking
+                  for as long as you keep playing. There&apos;s no set end.
+                </p>
+                <p>
+                  <span className="text-accent">Limited</span>: stops after a
+                  fixed amount instead of running forever. Choose{" "}
+                  <span className="text-accent">Full coverage</span> to ask
+                  everything currently selected exactly once, or a{" "}
+                  <span className="text-accent">Count</span> to say how much.
+                </p>
+              </div>
             }
           >
             <Chip
