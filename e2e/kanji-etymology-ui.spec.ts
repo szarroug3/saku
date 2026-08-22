@@ -11,10 +11,13 @@ import { test, expect } from "./helpers/app";
  *   - "On'yomi" / "Kun'yomi" — the reading groups, each reading with a Hear button.
  *
  * The redesign simplified this from the old KanjiBuiltFrom/OnyomiHint: the prose is
- * shown plain (no Wiktionary credit link, no More/Less clamp toggle), the piece
- * tiles no longer carry a lent-reading hint or an untaught-component footnote, and
- * the semantic piece is untagged. This spec pins what the redesigned page shows.
- * Everything here is a logged-out Library surface, so an empty seed is enough.
+ * shown plain (no Wiktionary credit link, no More/Less clamp toggle), and the piece
+ * tiles no longer carry an untaught-component footnote. SAK-137 reintroduced a lent-
+ * reading hint on the phonetic piece ("lends か") and gave the semantic piece its own
+ * DEFINITION tag, and its follow-up made only the glyph itself a link — the role tag
+ * and the lent reading are sibling text next to it, not part of the link. This spec
+ * pins what the current page shows. Everything here is a logged-out Library surface,
+ * so an empty seed is enough.
  *
  * Targets, chosen against the shipped data (src/data/generated):
  *   神 — phono-semantic with a LONG origin story (示 god + 申 lightning).
@@ -52,13 +55,23 @@ test("the 河 kanji page shows its etymology component pieces, the phonetic one 
   await expect(builtFromLbl).toBeVisible();
   const builtFrom = builtFromLbl.locator("..");
 
-  // 河 = 水 (semantic) + 可 (phonetic). Each piece is its own link; the non-semantic
-  // one wears its role. (The old lent-reading hint — か, 運河 — and the "meaning"
-  // tag on the semantic piece are gone.)
-  await expect(builtFrom.getByRole("link", { name: /水/ })).toBeVisible();
-  const phonetic = builtFrom.getByRole("link", { name: /phonetic/ });
-  await expect(phonetic).toBeVisible();
-  await expect(phonetic).toContainText("可");
+  // 河 = 水 (semantic) + 可 (phonetic). Only the glyph itself is a link now (SAK-137
+  // follow-up) — the role tag and the lent reading sit beside it as plain text, not
+  // inside the link, so a link's accessible name is just the bare glyph.
+  await expect(builtFrom.getByRole("link", { name: "水", exact: true })).toBeVisible();
+  const phoneticLink = builtFrom.getByRole("link", { name: "可", exact: true });
+  await expect(phoneticLink).toBeVisible();
+
+  // The phonetic piece's row carries the lent reading and the "phonetic" tag as
+  // sibling text beside the link, not inside it — the tag renders visually
+  // uppercase via CSS only, so its DOM text stays lowercase.
+  const phoneticRow = phoneticLink.locator("..");
+  await expect(phoneticRow).toContainText("lends か");
+  await expect(phoneticRow).toContainText("phonetic");
+
+  // The semantic piece's row carries the "definition" tag the same way.
+  const semanticRow = builtFrom.getByRole("link", { name: "水", exact: true }).locator("..");
+  await expect(semanticRow).toContainText("definition");
 });
 
 test("the 中 kanji page shows an Etymology story but no sub-component pieces", async ({
