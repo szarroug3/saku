@@ -21,11 +21,15 @@
 //   "wrong" — the fallback for every other word that still carries a
 //             verified pitch: the real clip plus a deliberately mis-pitched
 //             clip of the SAME word, at the distractor downstep
-//             src/lib/pitch.ts's wrongDownstepFor picks. "Which one sounds
-//             right?" Pitch audio is a pure function of (reading, downstep,
-//             voice) — the distractor is fetched through the exact same
-//             pitchApiUrl a real word's clip at that downstep would use,
-//             never a separate synthesis path or cache namespace.
+//             src/lib/pitch.ts's wrongDownstepFor picks. Asks the SAME
+//             prompt "pair" mode does ("which one means 'chopsticks'?") —
+//             a learner judging pitch by ear still needs to be told what
+//             word they're listening for, so the instruction never goes
+//             generic just because both clips are nominally the one word.
+//             Pitch audio is a pure function of (reading, downstep, voice) —
+//             the distractor is fetched through the exact same pitchApiUrl a
+//             real word's clip at that downstep would use, never a separate
+//             synthesis path or cache namespace.
 //
 // A word resolves to the SAME mode every time (mode is a property of the
 // data, not randomised) — WHETHER a pitch question is offered at all for a
@@ -133,8 +137,12 @@ export function rollPitchQuestion(
  * drill's serialized runtime exactly like a RecognitionItem does. */
 export interface PitchShowing {
   readonly mode: PitchQuizMode;
-  /** "pair" mode's prompt text (a gloss); null for "wrong" mode, whose
-   * instruction is fixed ("Which one sounds right?"). */
+  /** The word's own gloss — the prompt names it either way ("which one
+   * means X?"), pair mode and wrong mode alike (Sam: a learner should never
+   * be asked to judge a clip without being told what word it's supposed to
+   * be). Only ever null for the defensive case rollPitchQuestion itself
+   * already guards against (a missing gloss means no question is offered at
+   * all — see its own doc), never a real showing. */
   readonly promptGloss: string | null;
   /** The reading BOTH clips are spoken in (a homophone pair's shared reading,
    * or the one word's own reading in "wrong" mode) — carried so the reveal
@@ -172,7 +180,7 @@ export function buildPitchShowing(
   const correctFirst = rng() < 0.5;
   return {
     mode: question.mode,
-    promptGloss: question.mode === "pair" ? question.gloss : null,
+    promptGloss: question.gloss,
     reading: question.reading,
     correctDownstep: question.downstep,
     clips: correctFirst ? [correctClip, otherClip] : [otherClip, correctClip],
@@ -189,16 +197,15 @@ export function gradePitchPick(showing: PitchShowing, chosen: 0 | 1): boolean {
   return chosen === showing.correct;
 }
 
-/** The question text a pitch showing asks — SAK-128's two mechanics ask two
- * different questions over the same two-clip board: "pair" names the
- * CURRENT word's meaning ("which one means X" — the other clip is a
- * different word entirely); "wrong" asks the learner to judge the pitch
- * itself. The one place this is computed: the live drill and the dev
- * gallery preview both call this instead of each spelling out the same
- * ternary (see SAK-131 — a hand-copy here is exactly the kind of drift that
- * ticket was about, even though today both copies still agree). */
-export function pitchInstruction(showing: Pick<PitchShowing, "mode" | "promptGloss">): string {
-  return showing.mode === "pair"
-    ? `Which one means "${showing.promptGloss}"?`
-    : "Which one sounds right?";
+/** The question text a pitch showing asks — the SAME question either
+ * mechanic uses ("which one means X?"), naming the word being judged rather
+ * than leaving "wrong" mode's clip pair to speak for itself: a learner
+ * judging pitch by ear still needs to be told what word they're supposed to
+ * be hearing, the same as pair mode already tells them (Sam). The one place
+ * this is computed: the live drill and the dev gallery preview both call
+ * this instead of each spelling out the same string (see SAK-131 — a
+ * hand-copy here is exactly the kind of drift that ticket was about, even
+ * without a live symptom yet). */
+export function pitchInstruction(showing: Pick<PitchShowing, "promptGloss">): string {
+  return `Which one means "${showing.promptGloss}"?`;
 }
