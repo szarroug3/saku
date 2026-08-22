@@ -54,7 +54,8 @@ import {
   toggleSection as toggleSectionIn,
   type Selection,
 } from "@/lib/library/selection";
-import { entryIsKnown, entryStanding, standingOf, type Standing } from "@/lib/library/standing";
+import { standingOf, type Standing } from "@/lib/library/standing";
+import { isKnownForDisplay } from "@/lib/library/known-mark";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import type { Claims } from "@/lib/claims";
 import {
@@ -121,11 +122,13 @@ function statusPredicate(
 ): (entry: BrowseEntry) => boolean {
   if (value === "known" || value === "unknown") {
     const wantKnown = value === "known";
-    // isEntryKnownForDisplay's exact chain (known-mark.ts), just reading the
-    // fetched knownFacts field instead of calling the guarded knownFactsOf —
-    // see server-lookups.ts's BrowseEntry/withKnown.
+    // isKnownForDisplay (known-mark.ts) — the shared "known" definition, taking
+    // the fetched knownFacts field directly rather than calling the guarded
+    // knownFactsOf itself; see server-lookups.ts's BrowseEntry/withKnown, and
+    // known-mark.ts's own header for why this is the one other entry point
+    // into that chain.
     return (entry) =>
-      entryIsKnown(entryStanding(entry.knownFacts, liveFacts, claims, now)) === wantKnown;
+      isKnownForDisplay(entry.knownFacts, liveFacts, claims, now) === wantKnown;
   }
   if (value === "mixup") {
     return (entry) => activeMixupEntries.has(entry.id);
