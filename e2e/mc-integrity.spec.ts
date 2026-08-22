@@ -70,10 +70,24 @@ function correctLabelFor(prompt: string, pool: string[]): string[] {
   return faces(fact).filter((face) => face && face !== prompt);
 }
 
-/** Visible option labels with the trailing index badge stripped. */
+/**
+ * Visible option labels, with the trailing index badge stripped.
+ *
+ * Reads each button's first child span (the label) directly, polled until
+ * every option has real text — see grading.spec.ts's identical helper for
+ * the full story: reading by DOM structure instead of an innerText line
+ * break fixes one symptom of a button being counted "visible" a beat before
+ * its label actually paints, but the poll is what fixes the race itself.
+ */
 async function optionLabels(page: Page): Promise<string[]> {
-  const raw = await optionButtons(page).allInnerTexts();
-  return raw.map((t) => t.trim().split("\n")[0].trim());
+  const read = () =>
+    optionButtons(page).evaluateAll((buttons) =>
+      buttons.map((b) => b.querySelector("span")?.textContent?.trim() ?? ""),
+    );
+  await expect
+    .poll(async () => (await read()).every((l) => l.length > 0))
+    .toBe(true);
+  return read();
 }
 
 /**

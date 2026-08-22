@@ -264,10 +264,33 @@ const ANSWER_OF: Record<string, string> = {
   お: "o",
 };
 
-/** The visible option labels with their index badge stripped. */
+/**
+ * The visible option labels, with their index badge stripped.
+ *
+ * Reads each button's FIRST child span directly (the label; the index badge
+ * is the second) rather than the whole button's innerText split on "\n" —
+ * that line break is a rendered-LAYOUT fact (the two spans stack via the
+ * button's own `flex-col`), not a DOM one, and briefly not true yet the
+ * instant `options.first()` reports visible: caught this flaky in CI as one
+ * option's label and index badge landing on the same innerText line, which
+ * took the whole run as the "label".
+ *
+ * Reading the label span by DOM structure fixes THAT, but the deeper race is
+ * the same one showing a second way — a button can be laid out and counted
+ * as "visible" a beat before React has actually painted its label text, so
+ * the very first read can still catch a genuinely empty span. Polled here
+ * (not just read once) until every option has real text, which is the only
+ * fix that addresses the timing itself rather than a symptom of it.
+ */
 async function optionLabels(page: Page): Promise<string[]> {
-  const raw = await optionButtons(page).allInnerTexts();
-  return raw.map((t) => t.trim().split("\n")[0].trim());
+  const read = () =>
+    optionButtons(page).evaluateAll((buttons) =>
+      buttons.map((b) => b.querySelector("span")?.textContent?.trim() ?? ""),
+    );
+  await expect
+    .poll(async () => (await read()).every((l) => l.length > 0))
+    .toBe(true);
+  return read();
 }
 
 // ---------------------------------------------------------------------------
