@@ -26,6 +26,8 @@
 //     `PromptContext.grammarSelection`, exactly as a real showing rolls it.
 
 import { DrillHalo, GLYPH_PX } from "@/components/quiz/drill-halo";
+import { McOptionGrid, type McOptionGridItem } from "@/components/quiz/mc-option-grid";
+import { TypedAnswerBox } from "@/components/quiz/typed-answer-box";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId, readingFactId, READINGS } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
@@ -206,41 +208,28 @@ interface McOption {
   readonly correct: boolean;
 }
 
-/** The exact 3-column option grid drill-screen.tsx renders, minus the click
- * handlers — every option showing its number tag, the right one lit the way a
- * revealed miss lights it (`border-success bg-success-bg text-success`). */
+/** SAK-131: a thin wrapper over the shared `McOptionGrid` — the exact option
+ * board drill-screen.tsx renders, no hand-copied markup of its own anymore.
+ * Kept as `McGrid` so this page's call sites (and its `McOption` shape)
+ * didn't all need to change. `revealing` defaults to true on McOptionGrid,
+ * which is exactly this page's whole point: every card is a static, already-
+ * revealed reference, never a real drill. */
 function McGrid({ options }: { options: readonly McOption[] }) {
   return (
-    <div className="grid w-[min(92vw,480px)] auto-rows-fr grid-cols-3 gap-2">
-      {options.map((o, i) => (
-        <div
-          key={o.id}
-          className={`flex h-full min-h-15 flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word ${
-            o.correct
-              ? "border-success bg-success-bg text-success"
-              : "border-border bg-card text-text"
-          }`}
-        >
-          <span>{o.label}</span>
-          <span className="text-[10px] text-text-muted">{i + 1}</span>
-        </div>
-      ))}
-    </div>
+    <McOptionGrid
+      options={options.map(
+        (o): McOptionGridItem => ({ key: o.id, label: o.label, correct: o.correct }),
+      )}
+    />
   );
 }
 
-/** The exact typed-answer box, read-only and pre-filled with the correct
- * answer — the same input drill-screen.tsx renders, just not editable here. */
+/** SAK-131: a thin wrapper over the shared `TypedAnswerBox` — the exact
+ * input drill-screen.tsx renders, read-only and pre-filled with the correct
+ * answer since this is a reference sheet, not a real drill. */
 function TypedBox({ answer }: { answer: string }) {
   return (
-    <span className="flex flex-col items-center gap-1.5">
-      <input
-        readOnly
-        value={answer}
-        className="kq-material w-67.5 rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none"
-      />
-      <span className="text-[11px] text-text-muted">the correct answer, for reference</span>
-    </span>
+    <TypedAnswerBox value={answer} readOnly note="the correct answer, for reference" />
   );
 }
 
