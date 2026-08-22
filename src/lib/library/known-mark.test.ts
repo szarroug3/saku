@@ -40,7 +40,7 @@ import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { factsOf } from "@/lib/facts";
 import type { Claims } from "@/lib/claims";
 import { knownFactsOf, LIB_ENTRIES } from "@/lib/library/library-index";
-import { isEntryKnownForDisplay } from "@/lib/library/known-mark";
+import { isEntryKnownForDisplay, isKnownForDisplay } from "@/lib/library/known-mark";
 import { entryIsKnown, entryStanding } from "@/lib/library/standing";
 import type { EntryId, FactAggregate, FactId } from "@/types";
 
@@ -109,6 +109,20 @@ describe("isEntryKnownForDisplay — the grid mark agrees with entryIsKnown/entr
       assert.equal(isEntryKnownForDisplay(entry, NO_FACTS, claims, NOW), expected);
     }
   });
+
+  test("isKnownForDisplay (pre-fetched knownFacts) agrees with isEntryKnownForDisplay (bare entry)", () => {
+    // library-page.tsx's real call site (see the wiring describe below) only
+    // ever has an entry's knownFacts already resolved, never the bare entry —
+    // this is what pins the two entry points to the one chain rather than
+    // trusting the shared implementation detail alone.
+    for (const entry of LIB_ENTRIES.slice(0, 25)) {
+      const claims = claimAll(entry.id);
+      assert.equal(
+        isKnownForDisplay(knownFactsOf(entry), NO_FACTS, claims, NOW),
+        isEntryKnownForDisplay(entry, NO_FACTS, claims, NOW),
+      );
+    }
+  });
 });
 
 // ---------- wiring: the real call sites go through this function ----------
@@ -120,25 +134,31 @@ function readSrc(relPath: string): string {
   );
 }
 
-describe("wiring — the Known/Not-known filter is drawn through isEntryKnownForDisplay, not a new formula", () => {
-  test("library-page.tsx's filter calls isEntryKnownForDisplay, not entryIsKnown/entryStanding directly", () => {
+describe("wiring — the Known/Not-known filter is drawn through known-mark.ts, not a new formula", () => {
+  test("library-page.tsx's filter calls isKnownForDisplay, not entryIsKnown/entryStanding directly", () => {
     const src = readSrc("components/library/library-page.tsx");
+    // Not isEntryKnownForDisplay: that entry point calls the guarded
+    // knownFactsOf internally (library-index.ts, SAK-104's ~9.5MB dictionary
+    // kept server-only), and library-page.tsx already has an entry's known
+    // facts pre-fetched (server-lookups.ts's BrowseEntry/withKnown) — it uses
+    // isKnownForDisplay, the shared back half of the same chain, instead. See
+    // known-mark.ts's own header for why there are two entry points.
     assert.match(
       src,
-      /import\s*\{\s*isEntryKnownForDisplay\s*\}\s*from\s*"@\/lib\/library\/known-mark"/,
+      /import\s*\{\s*isKnownForDisplay\s*\}\s*from\s*"@\/lib\/library\/known-mark"/,
       "library-page.tsx must import the shared known-mark helper",
     );
     // The Known/Not-known branch of `keep` resolves through it.
-    const calls = src.match(/isEntryKnownForDisplay\(/g) ?? [];
+    const calls = src.match(/isKnownForDisplay\(/g) ?? [];
     assert.ok(
       calls.length >= 1,
-      "expected isEntryKnownForDisplay to be called by the filter's keep",
+      "expected isKnownForDisplay to be called by the filter's keep",
     );
     // No stray re-derivation via the raw standing chain elsewhere in the file.
     assert.doesNotMatch(
       src,
       /entryIsKnown\(\s*entryStanding\(/,
-      "library-page.tsx should route through isEntryKnownForDisplay rather than re-inlining entryIsKnown(entryStanding(...))",
+      "library-page.tsx should route through isKnownForDisplay rather than re-inlining entryIsKnown(entryStanding(...))",
     );
   });
 });

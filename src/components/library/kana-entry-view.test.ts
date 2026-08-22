@@ -175,10 +175,16 @@ test("KanaEntryView wires the sound-shift block and family confusables into the 
   );
 
   // Confusables: the family lookup is merged in, not swapped for the existing
-  // LOOKALIKES-based one — a derived kana keeps whatever kanaConfusables would
-  // have said (empty today) AND gains its family.
+  // LOOKALIKES-based one — a derived kana keeps whatever the LOOKALIKES lookup
+  // would have said (empty today) AND gains its family. The LOOKALIKES call
+  // itself moved server-side (SAK-104: getKanaAux's kanaConfusableIds, backed
+  // by kanaConfusables in library-index.ts) rather than a direct client call.
   assert.match(src, /derivedKanaConfusables\(glyph\)/, "should merge in the derived-kana family confusables");
-  assert.match(src, /kanaConfusables\(glyph\)/, "should still read the existing LOOKALIKES-based confusables too");
+  assert.match(
+    src,
+    /aux\?\.kanaConfusableIds/,
+    "should still read the existing LOOKALIKES-based confusables too, via the server-fetched aux",
+  );
 });
 
 test("が's Related links resolve to real entries — か and the Dakuten mark page", () => {
@@ -258,10 +264,16 @@ test("KanaEntryView wires the composition block and yōon confusables into the p
   assert.match(src, /COMBO_K/, "should reuse COMBO_K's prose for katakana combos");
 
   // Confusables: yoonConfusables is merged in alongside the dakuten family and
-  // the base LOOKALIKES lookup — never swapped for either.
+  // the base LOOKALIKES lookup — never swapped for either. The LOOKALIKES call
+  // itself moved server-side (SAK-104: getKanaAux's kanaConfusableIds, backed
+  // by kanaConfusables in library-index.ts) rather than a direct client call.
   assert.match(src, /yoonConfusables\(glyph\)/, "should merge in yōon confusables");
   assert.match(src, /derivedKanaConfusables\(glyph\)/, "should still merge in the dakuten family confusables too");
-  assert.match(src, /kanaConfusables\(glyph\)/, "should still read the existing LOOKALIKES-based confusables too");
+  assert.match(
+    src,
+    /aux\?\.kanaConfusableIds/,
+    "should still read the existing LOOKALIKES-based confusables too, via the server-fetched aux",
+  );
 });
 
 test("きゃ's Related links resolve to real entries — き, full-size や (not small ゃ), and the Yōon term page", () => {

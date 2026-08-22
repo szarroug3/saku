@@ -68,7 +68,13 @@ describe("the radical table is isolated from primitive pages", () => {
 
   test("ComponentUses uses the content-free precomputed component relation", () => {
     assert.doesNotMatch(uses, /<RadicalKanjiTable/);
-    assert.match(uses, /@\/lib\/library\/library-index/);
+    // SAK-104: the direct library-index import moved server-side — the
+    // client component now fetches its one combined payload through the
+    // Server Action wrapper (getComponentUses in server-lookups.ts, itself
+    // backed by usedAsPartIn/knownWordsUsing from library-index.ts) instead
+    // of importing the ~9.5MB dictionary into the client bundle directly.
+    assert.doesNotMatch(uses, /@\/lib\/library\/library-index/);
+    assert.match(uses, /@\/lib\/library\/server-lookups/);
   });
 
   test("the stepped lesson mounts it nowhere", () => {
