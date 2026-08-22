@@ -43,8 +43,8 @@ import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // the lesson and the hint must never disagree about what 明 is made of.
 import type { LessonItem } from "@/lib/lesson-items";
 import type { StrokeFallback } from "@/lib/lesson-roles";
-import { useLessonPref } from "@/lib/lesson-prefs";
-import { useGlyphStrokes } from "@/lib/strokes";
+import { useLessonPref } from "@/lib/use-lesson-pref";
+import { useGlyphStrokes } from "@/lib/use-glyph-strokes";
 import { resolveKanjiPartLinks } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 

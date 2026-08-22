@@ -1,7 +1,12 @@
-"use client";
-
 // Persisted lesson preferences: whether the "how it's written" and "readings"
 // sections open by default.
+//
+// PURE ON PURPOSE — see use-lesson-pref.ts for the hook. This file has no
+// React import so it can be unit-tested directly under Node's test runner
+// (see lesson-prefs.test.ts); a "use client" file importing `useEffect` at
+// module scope fails Node's ESM resolution outside Next's own build
+// pipeline, which is exactly what broke every test in this file before the
+// split.
 //
 // A PREFERENCE, NOT LESSON STATE — and that is the whole point.
 // ============================================================
@@ -27,8 +32,6 @@
 // differs, flips the state. The only visible cost is a section that was left
 // open flashing shut→open on a hard load — acceptable for a disclosure, and the
 // common case (closed) never flashes at all.
-
-import { useEffect, useState } from "react";
 
 import {
   LESSON_OPEN,
@@ -91,33 +94,4 @@ export function writeLessonPref(pref: LessonPref, open: boolean): void {
     // storage blocked — the toggle still works this session
   }
   pushSettings(settingsPatch(pref, open));
-}
-
-/**
- * A section's open state as a persisted toggle.
- *
- * Starts closed to match the server render, hydrates from storage after mount,
- * and writes every change back. Because the stepper remounts each section as you
- * step between items, the stored value is re-read for every item — which is
- * exactly "set once, every lesson respects it" with no shared provider to thread
- * through the tree.
- */
-export function useLessonPref(pref: LessonPref): [boolean, (open: boolean) => void] {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    // Post-mount hydration — SSR can't read localStorage. Only touch state when
-    // the stored value actually differs, so a closed section (the default)
-    // never triggers a second render.
-    const stored = readLessonPref(pref);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (stored) setOpen(true);
-  }, [pref]);
-
-  const set = (next: boolean) => {
-    setOpen(next);
-    writeLessonPref(pref, next);
-  };
-
-  return [open, set];
 }
