@@ -8,6 +8,7 @@ import { wordPitch } from "../data/pitch.ts";
 import {
   buildPitchShowing,
   gradePitchPick,
+  pitchInstruction,
   rollPitchQuestion,
 } from "./pitch-quiz.ts";
 
@@ -70,7 +71,9 @@ describe("buildPitchShowing — turning a decided question into a graded board",
     const question = rollPitchQuestion("水")!;
     const showing = buildPitchShowing(question, "nana", () => 0);
     assert.equal(showing.mode, "wrong");
-    assert.equal(showing.promptGloss, null);
+    // Same prompt either mode: the learner still needs to be told what word
+    // they're judging, even when both clips are nominally the one word.
+    assert.equal(showing.promptGloss, question.gloss);
     const correctClip = showing.clips[showing.correct];
     const wrongClip = showing.clips[1 - showing.correct];
     assert.ok(!correctClip.includes("w=1"));
@@ -96,5 +99,19 @@ describe("gradePitchPick", () => {
     assert.equal(gradePitchPick(showing, showing.correct), true);
     const wrong = showing.correct === 0 ? 1 : 0;
     assert.equal(gradePitchPick(showing, wrong), false);
+  });
+});
+
+describe("pitchInstruction — same prompt, either mechanic", () => {
+  test("pair mode names the word's gloss", () => {
+    const question = rollPitchQuestion("箸", () => 0)!;
+    const showing = buildPitchShowing(question, "nana", () => 0);
+    assert.equal(pitchInstruction(showing), 'Which one means "chopsticks"?');
+  });
+
+  test("wrong mode names the SAME word's gloss, not a generic prompt", () => {
+    const question = rollPitchQuestion("水")!;
+    const showing = buildPitchShowing(question, "nana", () => 0);
+    assert.equal(pitchInstruction(showing), `Which one means "${question.gloss}"?`);
   });
 });
