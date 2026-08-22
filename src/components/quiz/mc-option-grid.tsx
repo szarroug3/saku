@@ -40,12 +40,15 @@ export interface McOptionGridItem {
 export interface McOptionGridProps {
   readonly options: readonly McOptionGridItem[];
   /**
-   * Whether to show the graded reveal colors at all. Defaults to true — the
-   * gallery's static preview boards want the correct option lit green with
-   * no interaction, so they simply omit this rather than pass true every
-   * time. The live drill always passes its own `revealing` explicitly.
+   * Whether to show the graded reveal colors at all. REQUIRED, no default —
+   * see PitchClipBoard's identical choice. A shared component whose default
+   * happened to match the gallery's "always revealed" static-preview need
+   * would make the LIVE quiz's real behavior (never reveal until answered)
+   * the exception a caller has to remember to opt into, backwards from what
+   * matters: the live drill is the real app, the gallery is the preview of
+   * it. Every caller, live or gallery, states its own intent explicitly.
    */
-  revealing?: boolean;
+  revealing: boolean;
   /** Recognition options are full sentences and need to wrap and shrink
    * (`text-sm hyphens-auto`); every other board's options are a single short
    * token or glyph and want the larger `text-xl`. */
@@ -59,7 +62,7 @@ export interface McOptionGridProps {
 /** The exact option-tile row every MC-shaped quiz board renders. */
 export function McOptionGrid({
   options,
-  revealing = true,
+  revealing,
   size = "lg",
   onSelect,
 }: McOptionGridProps) {
