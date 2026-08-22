@@ -102,23 +102,26 @@ export function EntryView({
             like `fixed` the instant it reaches the bottom, but stays a normal
             block inside <main>'s own column instead of stretching over the
             sidebar the way a viewport-wide fixed bar would — the same
-            sticky-not-fixed choice layout.tsx's own top dock already makes. */}
-        <div className="kq-band sticky bottom-0 z-20 mt-auto border-t border-border px-4 py-3">
-          <SliceBar
-            variant="entry"
-            slice={{ label: entryName, entries: [entryId] }}
-            showLabel={false}
-            // The committed aggregate on purpose: the bar plans a drill, which
-            // is a query over what you durably know, not the run you are in.
-            facts={history.facts}
-            claims={claims}
-            history={history}
-            now={now}
-            onClaim={claim}
-            onUnclaim={unclaim}
-            progressReady={historyLoaded}
-          />
-        </div>
+            sticky-not-fixed choice layout.tsx's own top dock already makes.
+            The chrome itself (kq-band, border, padding, mt-auto) lives inside
+            SliceBar's own entry-variant branch, not here: an entry with
+            nothing to claim, unclaim or quiz renders no bar at all, and this
+            wrapper rendering it anyway would leave an empty bordered footer
+            sitting mid-column instead of nothing. */}
+        <SliceBar
+          variant="entry"
+          slice={{ label: entryName, entries: [entryId] }}
+          showLabel={false}
+          // The committed aggregate on purpose: the bar plans a drill, which
+          // is a query over what you durably know, not the run you are in.
+          facts={history.facts}
+          claims={claims}
+          history={history}
+          now={now}
+          onClaim={claim}
+          onUnclaim={unclaim}
+          progressReady={historyLoaded}
+        />
       </div>
     </FlatSurfaceProvider>
   );
