@@ -211,12 +211,13 @@ interface McOption {
 /** SAK-131: a thin wrapper over the shared `McOptionGrid` — the exact option
  * board drill-screen.tsx renders, no hand-copied markup of its own anymore.
  * Kept as `McGrid` so this page's call sites (and its `McOption` shape)
- * didn't all need to change. `revealing` defaults to true on McOptionGrid,
- * which is exactly this page's whole point: every card is a static, already-
- * revealed reference, never a real drill. */
+ * didn't all need to change. Passes `revealing` explicitly (required on
+ * McOptionGrid, no default — see its own doc comment): every card on this
+ * page is a static, already-revealed reference, never a real drill. */
 function McGrid({ options }: { options: readonly McOption[] }) {
   return (
     <McOptionGrid
+      revealing
       options={options.map(
         (o): McOptionGridItem => ({ key: o.id, label: o.label, correct: o.correct }),
       )}
