@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
+import { DockHeightVar } from "@/components/dock-height-var";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
@@ -273,6 +274,10 @@ export default async function RootLayout({
                             (not an inner frame) scrolls. Empty (and hidden) on pages
                             that dock nothing. */}
                         <div id="kq-dock-top" className="kq-dock sticky top-0 z-20 shrink-0 empty:hidden" />
+                        {/* Tracks these two docks' combined real height into
+                            --kq-dock-h — see the component's own header for why
+                            .kq-center-frame's fixed chrome constant can't. */}
+                        <DockHeightVar />
                         {/* The stage + the content that scrolls within it. The
                             stage absolutely fills this region, so it does NOT
                             scroll with the content in front of it.
