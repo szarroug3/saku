@@ -4,10 +4,17 @@
 // particle-tap-preview.tsx: a click handler that plays audio needs a Client
 // Component boundary, so it's split out to keep the gallery page itself a
 // Server Component. Renders the exact shared board drill-screen.tsx renders
-// (SAK-131: PitchClipBoard) with `revealing` permanently on — the correct
-// clip lit green, same option-tile geometry — rather than a hand-copied
-// second implementation that could silently drift from the live one.
+// (SAK-131: PitchClipBoard), driven through the SAME tap-to-pick,
+// Check-to-reveal interaction the live drill uses (SAK-133) — not a
+// permanently-revealed answer key. A static "always green" card looked
+// nothing like what the live quiz actually shows before you answer (neutral
+// tiles, no reveal until Check), which was the whole point SAK-131 asked
+// this page to stop missing. Reset re-arms the card so a repeat visitor can
+// replay the interaction without reloading the page.
 
+import { useState } from "react";
+
+import { Btn } from "@/components/ui";
 import { PitchClipBoard } from "@/components/quiz/pitch-clip-board";
 import type { PitchShowing } from "@/lib/pitch-quiz";
 
@@ -19,6 +26,8 @@ function playClip(url: string) {
 }
 
 export function PitchPreview({ showing }: { showing: PitchShowing }) {
+  const [pick, setPick] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const instruction =
     showing.mode === "pair"
       ? `Which one means "${showing.promptGloss}"?`
@@ -29,11 +38,40 @@ export function PitchPreview({ showing }: { showing: PitchShowing }) {
       <PitchClipBoard
         clips={showing.clips}
         correct={showing.correct}
-        revealing
-        pick={null}
-        onTap={(i) => playClip(showing.clips[i])}
+        revealing={revealed}
+        pick={pick}
+        onTap={(i) => {
+          playClip(showing.clips[i]);
+          if (!revealed) setPick(i);
+        }}
       />
-      <p className="text-[11px] text-text-muted">tap either clip to hear it</p>
+      {revealed ? (
+        <button
+          type="button"
+          className="cursor-pointer text-[11px] text-accent hover:underline"
+          onClick={() => {
+            setPick(null);
+            setRevealed(false);
+          }}
+        >
+          Reset
+        </button>
+      ) : (
+        <>
+          <p className="text-[11px] text-text-muted">
+            tap either clip to hear it, then Check
+          </p>
+          <Btn
+            go
+            className="w-20"
+            disabled={pick === null}
+            onClick={() => setRevealed(true)}
+            title="Check (Enter)"
+          >
+            Check
+          </Btn>
+        </>
+      )}
     </div>
   );
 }
