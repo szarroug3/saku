@@ -174,28 +174,16 @@ describe("an un-acknowledged write is not erased by a read the server has not ca
 });
 
 describe("legitimate corrections are preserved", () => {
-  test("a refused write (settle → refresh) still reverts", () => {
-    const preClaim = emptyHistory();
-    const model = new ProviderModel(seededState(preClaim));
-    const facts = model.card();
-
-    const settle = model.apply((h) => applyClaims(h, facts, 1_000));
-    assert.ok(model.state.history.claims, "claimed optimistically");
-
-    // The post came back NOT ok. reconcile settles (drops the op from the overlay)
-    // THEN refreshes — so the refresh reads the plain server truth with no refused
-    // op folded back on.
-    settle();
-    const landRefusalRefresh = model.issueRead();
-    landRefusalRefresh(server(preClaim));
-
-    assert.equal(
-      model.state.history.claims?.[facts[0]],
-      undefined,
-      "the refused claim was rolled back to the server's truth",
-    );
-    assert.deepEqual(model.card(), facts, "the card returned to the un-claimed lesson");
-  });
+  // A settle-then-refresh "refused write still reverts" case, and a "newer
+  // server state (another device) still wins" case, used to live here too —
+  // removed as pure duplicates once settled: with the overlay empty, both
+  // reduce exactly to history-sync.test.ts's equivalent scenarios (which
+  // never touch the pending overlay at all), and the one thing they added on
+  // top — that settle()/dequeuePending genuinely empties the overlay rather
+  // than leaving a stale entry behind — is already pinned directly by "the
+  // overlay primitives" describe block below (dequeuePending's own test).
+  // What's still worth a scenario here is the NOT-yet-settled cases, which
+  // this file is the only place that can exercise at all.
 
   test("a refused write NOT yet settled would still be held — the overlay only drops on settle", () => {
     // Guards the ordering the fix depends on: if a refresh landed BEFORE settle
@@ -213,32 +201,6 @@ describe("legitimate corrections are preserved", () => {
       model.state.history.claims?.[facts[0]],
       1_000,
       "an un-acked claim is held even against a bare server read",
-    );
-  });
-
-  test("a genuinely newer server state (another device) still wins", () => {
-    const preClaim = emptyHistory();
-    const model = new ProviderModel(seededState(preClaim));
-    const facts = model.card();
-
-    // Our claim, acknowledged: its op leaves the overlay.
-    const settle = model.apply((h) => applyClaims(h, facts, 1_000));
-    settle();
-
-    // Later — a read issued after our write — the server answers with a state
-    // that is genuinely newer: our claim PLUS another device's claim of the next
-    // set. With nothing pending, it replaces the copy outright.
-    const laterFacts = nextCurriculumLesson(applyClaims(preClaim, facts, 1_000), RANGE)?.facts;
-    assert.ok(laterFacts, "there is a lesson after the first");
-    const newer = applyClaims(applyClaims(preClaim, facts, 1_000), laterFacts, 2_000);
-
-    const landNewerRead = model.issueRead();
-    landNewerRead(server(newer));
-
-    assert.deepEqual(
-      model.state.history,
-      newer,
-      "the newer server truth replaced the local copy outright",
     );
   });
 
