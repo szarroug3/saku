@@ -490,6 +490,7 @@ interface DrillHandlers {
   onUnmount(): void;
   onTimerCfgChange(): void;
   onAudioOff(): void;
+  onPitchOff(): void;
 }
 
 /** The ring only wakes for the last few seconds — and if the whole timer is
@@ -763,6 +764,12 @@ export function DrillScreen() {
   // redraws the card on screen. Text is always on, so stripping audio never
   // empties a pool.
   const audioOff = !!active && ready && !cfg.audioPrompts;
+  // PITCH QUESTIONS, LIVE — same live-toggle discipline as audioOff above
+  // (SAK-138). Pitch questions ride the audio gate already (a pitch board IS
+  // an audio prompt), so this is a SEPARATE, additional off-switch, not a
+  // replacement: showing a pitch card requires both audioOff and pitchOff to
+  // be false. See the pitch-eligibility gate below and onPitchOff.
+  const pitchOff = !!active && ready && !cfg.pitchQuestions;
 
   // ---------- engine (fresh closures each render; legacy port) ----------
 
@@ -1081,7 +1088,11 @@ export function DrillScreen() {
     // showing's queuePitchCard call spliced in (`form.pitch === true`) —
     // never rolled fresh here.
     const pitchEligibleInfo =
-      !construction && !audioOff && form.source === "japanese" && dir === "jp2en"
+      !construction &&
+      !audioOff &&
+      !pitchOff &&
+      form.source === "japanese" &&
+      dir === "jp2en"
         ? localFactInfo(f)
         : undefined;
     const pitchEligibleGlyph =
@@ -1220,6 +1231,40 @@ export function DrillScreen() {
   function onAudioOff() {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     if (!rt.q.listen) return;
+    const f = rt.q.f;
+    const available = usableForms(f);
+    const form = available[Math.floor(Math.random() * available.length)] ?? {
+      source: "japanese" as const,
+      response: jp2enResponse(f),
+      listen: false,
+      dir: "jp2en" as const,
+      answer: "typed" as const,
+    };
+    presentCard(f, form);
+  }
+
+  /** The mid-drill Pitch-questions toggle went OFF (SAK-138). Pitch cards are
+   * ADDITIVE extras queuePitchCard splices into the deck (see there), never
+   * the current slot's own form the way a listening card is — so unlike
+   * onAudioOff, there are two separate things to undo: any not-yet-reached
+   * pitch-pinned slot is a pure extra and gets pulled out of the deck
+   * entirely (removing the prompt from this quiz, not leaving it to survive
+   * and redraw as a redundant duplicate meaning-card once reached); and if
+   * the card ON SCREEN right now is itself a pitch board, it's replaced with
+   * an ordinary card for the SAME fact, same discipline as onAudioOff. */
+  function onPitchOff() {
+    if (!rt) return;
+    // Splice from the end so earlier indices stay valid as later ones are
+    // removed. `rt.pos` itself is left alone — that slot's fate is decided
+    // by the redraw below, not by mutating the deck's record of it.
+    for (let i = rt.deck.length - 1; i > rt.pos; i--) {
+      if (rt.forms[i]?.pitch) {
+        rt.deck.splice(i, 1);
+        rt.forms.splice(i, 1);
+      }
+    }
+    if (!rt.q || rt.waiting || finishedRef.current) return;
+    if (!rt.q.pitch) return;
     const f = rt.q.f;
     const available = usableForms(f);
     const form = available[Math.floor(Math.random() * available.length)] ?? {
@@ -1876,6 +1921,7 @@ export function DrillScreen() {
       onUnmount,
       onTimerCfgChange,
       onAudioOff,
+      onPitchOff,
     };
   });
 
@@ -1930,6 +1976,18 @@ export function DrillScreen() {
     if (prev === null || prev === cfg.audioPrompts) return;
     if (!cfg.audioPrompts) handlersRef.current?.onAudioOff();
   }, [ready, cfg.audioPrompts]);
+
+  // React live to the Pitch-questions toggle going OFF (drawer or Settings
+  // tab), same value-diffed off-edge discipline as the Audio-prompts effect
+  // above (SAK-138).
+  const prevPitch = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    const prev = prevPitch.current;
+    prevPitch.current = cfg.pitchQuestions;
+    if (prev === null || prev === cfg.pitchQuestions) return;
+    if (!cfg.pitchQuestions) handlersRef.current?.onPitchOff();
+  }, [ready, cfg.pitchQuestions]);
 
   // Document-level keys (Enter to advance/submit, 1–9 for MC), legacy style.
   useEffect(() => {

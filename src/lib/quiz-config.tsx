@@ -54,6 +54,9 @@ export function defaultConfig(): QuizConfig {
     // because text is always present, production cards stay reachable either way.
     audioPrompts: true,
     ask: askFromAudioPrompts(true),
+    // SAK-138: a separate knob from audioPrompts (see types/index.ts's doc
+    // comment on pitchQuestions). Default ON, same reasoning as audioPrompts.
+    pitchQuestions: true,
     length: "limited",
     limType: "cov",
     limCount: 50,
