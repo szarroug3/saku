@@ -66,7 +66,7 @@ describe("buildPitchShowing — turning a decided question into a graded board",
     assert.ok(showing.clips[showing.correct].includes(`d=${question.downstep}`));
   });
 
-  test("wrong mode: the correct clip has no w=1, the distractor does", () => {
+  test("wrong mode: both clips are plain pitchApiUrl calls, differing only by downstep", () => {
     const question = rollPitchQuestion("水")!;
     const showing = buildPitchShowing(question, "nana", () => 0);
     assert.equal(showing.mode, "wrong");
@@ -74,7 +74,10 @@ describe("buildPitchShowing — turning a decided question into a graded board",
     const correctClip = showing.clips[showing.correct];
     const wrongClip = showing.clips[1 - showing.correct];
     assert.ok(!correctClip.includes("w=1"));
-    assert.ok(wrongClip.includes("w=1"));
+    assert.ok(!wrongClip.includes("w=1"));
+    assert.ok(correctClip.includes(`d=${question.downstep}`));
+    assert.ok(wrongClip.includes(`d=${question.wrongDownstep}`));
+    assert.notEqual(correctClip, wrongClip);
   });
 
   test("rng controls which slot is correct", () => {

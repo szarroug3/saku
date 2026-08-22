@@ -1,21 +1,17 @@
-// GET /api/pitch-tts?r=<reading>&d=<downstep>&v=<voiceId>[&w=1] — on-demand
-// EXACT pitch-accurate word audio (SAK-98, unified onto the one VOICEVOX
-// engine by SAK-100). A thin wrapper around the same synthesis module
-// /api/tts uses (src/lib/tts-synth.ts) — there is one VOICEVOX engine and one
-// Storage bucket behind both routes now, not two independently-maintained
-// pitch pipelines. This route exists separately from /api/tts because the
-// caller (the Library word page) already knows the EXACT verified downstep
-// for this reading and wants it applied with no fuzzy matching — see
-// synthesizeWordWav's doc comment.
-//
-// `w=1` (SAK-128): the caller wants the DELIBERATELY WRONG pitch clip for
-// this word instead of its real one — the "correct vs synthetically wrong"
-// pitch-quiz distractor (src/lib/pitch-quiz.ts). `d` is still the word's
-// CORRECT downstep in this mode; the route derives which wrong pattern to
-// render from it (tts-synth.ts's wrongDownstepFor) and caches the result
-// under its own `pitchwrong2-` sub-namespace (voice.ts's
-// pitchWrongObjectPath), so it can never collide with — or be served instead
-// of — the real clip at that same (reading, downstep, voice).
+// GET /api/pitch-tts?r=<reading>&d=<downstep>&v=<voiceId> — on-demand EXACT
+// pitch-accurate word audio (SAK-98, unified onto the one VOICEVOX engine by
+// SAK-100). A thin wrapper around the same synthesis module /api/tts uses
+// (src/lib/tts-synth.ts) — there is one VOICEVOX engine and one Storage
+// bucket behind both routes now, not two independently-maintained pitch
+// pipelines. This route exists separately from /api/tts because the caller
+// (the Library word page, or the pitch quiz — src/lib/pitch-quiz.ts) already
+// knows the EXACT downstep it wants applied, real or a deliberately
+// different quiz distractor, with no fuzzy matching — see synthesizeWordWav's
+// doc comment. Pitch audio is a pure function of (reading, downstep, voice)
+// with no notion of "correct" baked into the bytes, so a quiz distractor is
+// just this same route asked for a different `d` (see src/lib/pitch.ts's
+// wrongDownstepFor, and voice.ts's pitchObjectPath) — never a separate
+// synthesis path or cache namespace.
 //
 // Same two-tier shape as /api/tts: check the Storage bucket for an
 // already-cached clip first (302 to the CDN URL on a hit); on a miss,
@@ -44,20 +40,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
-import {
-  synthesizeWordWav,
-  synthesizeWrongPitchWordWav,
-  ttsConfigured,
-} from "@/lib/tts-synth";
-import {
-  DEFAULT_VOICE_ID,
-  pitchAudioUrl,
-  pitchObjectPath,
-  pitchWrongAudioUrl,
-  pitchWrongObjectPath,
-  voice,
-  voiceBucket,
-} from "@/lib/voice";
+import { synthesizeWordWav, ttsConfigured } from "@/lib/tts-synth";
+import { DEFAULT_VOICE_ID, pitchAudioUrl, pitchObjectPath, voice, voiceBucket } from "@/lib/voice";
 
 /** Longest reading we'll synthesize — words, not sentences. */
 const MAX_READING = 20;
@@ -70,7 +54,7 @@ const MAX_READING = 20;
  * concurrent requests for a clip that isn't cached YET each independently
  * see a cache miss and each kick off their own multi-second synthesis+upload
  * — observed in practice as four back-to-back 3-9s synthesis calls for the
- * literal same (reading, downstep, voice, wrong) query, which was enough to
+ * literal same (reading, downstep, voice) query, which was enough to
  * starve the browser's connection pool and stall ordinary page navigation
  * behind them. Concurrent requests for the same path now await the SAME
  * in-flight synthesis instead of starting their own; the entry is removed
@@ -89,7 +73,6 @@ export async function GET(request: Request): Promise<Response> {
   // Missing param ⇒ the shipped default, so old callers/URLs keep working.
   const voiceIdRaw = searchParams.get("v") ?? DEFAULT_VOICE_ID;
   const v = voice(voiceIdRaw);
-  const wrong = searchParams.get("w") === "1";
 
   if (
     !reading ||
@@ -105,16 +88,12 @@ export async function GET(request: Request): Promise<Response> {
   const bucket = voiceBucket();
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const publicUrl = wrong
-    ? pitchWrongAudioUrl(reading, downstep, voiceIdRaw)
-    : pitchAudioUrl(reading, downstep, voiceIdRaw);
+  const publicUrl = pitchAudioUrl(reading, downstep, voiceIdRaw);
   if (!bucket || !supaUrl || !serviceKey || !publicUrl || !ttsConfigured()) {
     return new Response("pitch tts not configured", { status: 503 });
   }
 
-  const path = wrong
-    ? pitchWrongObjectPath(reading, downstep, voiceIdRaw)
-    : pitchObjectPath(reading, downstep, voiceIdRaw);
+  const path = pitchObjectPath(reading, downstep, voiceIdRaw);
   const folder = path.slice(0, path.lastIndexOf("/"));
   const file = path.slice(path.lastIndexOf("/") + 1);
   const supabase = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });
@@ -139,14 +118,9 @@ export async function GET(request: Request): Promise<Response> {
     // 502 here.
     let bytes: ArrayBuffer;
     try {
-      bytes = wrong
-        ? await synthesizeWrongPitchWordWav(reading, downstep, v.speakerId)
-        : await synthesizeWordWav(reading, downstep, v.speakerId);
+      bytes = await synthesizeWordWav(reading, downstep, v.speakerId);
     } catch (err) {
-      console.error(
-        `pitch-tts: ${wrong ? "wrong-pitch " : ""}synthesis failed for "${reading}" (downstep ${downstep})`,
-        err,
-      );
+      console.error(`pitch-tts: synthesis failed for "${reading}" (downstep ${downstep})`, err);
       return new Response("synthesis failed", { status: 502 });
     }
 

@@ -146,11 +146,10 @@ async function synthesize(base: string, speakerId: number, query: VoicevoxAudioQ
  * the route can turn that into a clean 503/502 rather than an unhandled error.
  */
 /** Render `query`'s moras to `downstep`'s H/L pattern, in place, and
- * synthesize. Shared by `synthesizeWordWav` and
- * `synthesizeWrongPitchWordWav` — the two-strategies-one-path discipline this
- * module's header describes, one level down: both ultimately want "this
- * exact downstep, hand-set, inside the voice's natural range," they just
- * disagree about WHICH downstep. */
+ * synthesize. `downstep` is just a number here — the caller (a real word's
+ * verified pitch, or a quiz distractor's deliberately different one, see
+ * src/lib/pitch.ts's wrongDownstepFor) already decided which one it wants;
+ * this has no notion of "correct" or "wrong" pitch, only "this pattern." */
 async function synthesizeAtDownstep(
   base: string,
   speakerId: number,
@@ -187,77 +186,6 @@ export async function synthesizeWordWav(
   const base = engineUrl();
   if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
   return synthesizeAtDownstep(base, speakerId, reading, downstep);
-}
-
-/**
- * The pitch pattern a WRONG-pitch quiz distractor should render (SAK-128,
- * SAK-6's research thread) — deliberately different from `correct`, so a
- * learner who knows the word's real pattern can tell them apart, but never
- * pushed to an extreme VOICEVOX can't render inside its natural range (that
- * is what targetRange/RANGE_MARGIN_FRACTION already bound; this only picks
- * WHICH of the two clean shapes to ask for).
- *
- * Atamadaka (1) is the ONLY pattern where mora 1 itself is HIGH — heiban (0),
- * every nakadaka, AND odaka (downstep === the word's own mora count, where
- * the drop lands on a following particle that does not exist when the word
- * is synthesized alone) are all LOW on mora 1 within an isolated word. See
- * `pitchPatternForLength` (src/lib/pitch.ts): heiban and odaka produce the
- * IDENTICAL mora-by-mora high/low sequence in isolation (both low on mora 1,
- * high on every mora after) — only the `.drop` flag differs, which
- * `synthesizeAtDownstep` never reads. So pairing the distractor against
- * heiban whenever `correct` isn't heiban itself (the old `correct === 0 ? 1
- * : 0` swap) would render an odaka word's "wrong" clip ACOUSTICALLY IDENTICAL
- * to its correct one. Pairing against atamadaka instead is guaranteed
- * distinguishable on mora 1 from ANY other real pattern (heiban, every
- * nakadaka, odaka) for any reading of at least 2 morae — so the distractor is
- * always atamadaka, except when the correct answer already IS atamadaka, in
- * which case it pairs against heiban (unchanged from before). Both are always
- * valid patterns for any reading with at least 2 morae (pitchPatternForLength
- * never rejects a downstep), so the only real failure mode is a 1-MORA
- * reading, where heiban and atamadaka render IDENTICALLY (mora 1 is the whole
- * word either way) — that word has no honest wrong-pitch clip to offer, and
- * this returns null rather than manufacture an inaudible "wrong" answer.
- */
-export function wrongDownstepFor(
-  correct: number,
-  moraCount: number,
-): number | null {
-  if (moraCount < 2) return null;
-  return correct === 1 ? 0 : 1;
-}
-
-/**
- * Synthesize a DELIBERATELY WRONG pitch-accent clip of `reading` — the same
- * word, a different (and clearly different-sounding) downstep than its real
- * one — for SAK-128's "correct vs synthetically wrong" quiz mechanic. See
- * `wrongDownstepFor` for which pattern that is.
- *
- * Throws under the same discipline as `synthesizeWordWav` — unconfigured or
- * unreachable engine, bad response — AND when the reading has too few morae
- * for a wrong pattern to be distinguishable (see `wrongDownstepFor`); the
- * caller (the route) turns any of these into a clean non-2xx rather than an
- * unhandled error.
- */
-export async function synthesizeWrongPitchWordWav(
-  reading: string,
-  correctDownstep: number,
-  speakerId: number,
-): Promise<ArrayBuffer> {
-  const base = engineUrl();
-  if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
-  // A first query just to learn the mora count would double the synthesis
-  // cost for every request; instead ask VOICEVOX once and use its own mora
-  // count both to pick the wrong pattern and to render it — mirroring how
-  // synthesizeAtDownstep already sizes the pattern off the query's own moras
-  // rather than a separately computed moraeOf(reading).
-  const probeQuery = await audioQuery(base, reading, speakerId);
-  const wrong = wrongDownstepFor(correctDownstep, flatMoras(probeQuery).length);
-  if (wrong == null) {
-    throw new Error(
-      `"${reading}" has too few morae for a distinguishable wrong pitch pattern`,
-    );
-  }
-  return synthesizeAtDownstep(base, speakerId, reading, wrong);
 }
 
 export interface SentenceSynthResult {
