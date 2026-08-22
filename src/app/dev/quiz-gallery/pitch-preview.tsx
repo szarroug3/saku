@@ -11,12 +11,20 @@
 // tiles, no reveal until Check), which was the whole point SAK-131 asked
 // this page to stop missing. Reset re-arms the card so a repeat visitor can
 // replay the interaction without reloading the page.
+//
+// Also renders the same Halo glyph stage the live pitch card shows above its
+// question (SAK-133: a pitch showing renders its glyph exactly like any
+// other jp2en meaning card, never blanked) — `glyph` is passed in rather
+// than carried on `PitchShowing` itself, since it's a display-only concern
+// this gallery needs and the live drill already derives its own from the
+// broader question it's showing, not from the pitch data.
 
 import { useState } from "react";
 
 import { Btn } from "@/components/ui";
 import { PitchClipBoard } from "@/components/quiz/pitch-clip-board";
 import { pitchInstruction, type PitchShowing } from "@/lib/pitch-quiz";
+import { Halo } from "./halo-preview";
 
 function playClip(url: string) {
   const audio = new Audio(url);
@@ -25,11 +33,18 @@ function playClip(url: string) {
   });
 }
 
-export function PitchPreview({ showing }: { showing: PitchShowing }) {
+export function PitchPreview({
+  glyph,
+  showing,
+}: {
+  glyph: string;
+  showing: PitchShowing;
+}) {
   const [pick, setPick] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   return (
     <div className="flex flex-col items-center gap-3">
+      <Halo glyph={glyph} jp />
       <p className="text-[15px] text-text">{pitchInstruction(showing)}</p>
       <PitchClipBoard
         clips={showing.clips}
@@ -53,20 +68,15 @@ export function PitchPreview({ showing }: { showing: PitchShowing }) {
           Reset
         </button>
       ) : (
-        <>
-          <p className="text-[11px] text-text-muted">
-            tap either clip to hear it, then Check
-          </p>
-          <Btn
-            go
-            className="w-20"
-            disabled={pick === null}
-            onClick={() => setRevealed(true)}
-            title="Check (Enter)"
-          >
-            Check
-          </Btn>
-        </>
+        <Btn
+          go
+          className="w-20"
+          disabled={pick === null}
+          onClick={() => setRevealed(true)}
+          title="Check (Enter)"
+        >
+          Check
+        </Btn>
       )}
     </div>
   );

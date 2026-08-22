@@ -2819,24 +2819,17 @@ export function DrillScreen() {
           // where every option is already fully visible before any tap, the
           // two options here ARE audio: comparing them requires being able
           // to play both before deciding, so a tap can no longer also submit.
-          <div className="flex flex-col items-center gap-3">
-            <PitchClipBoard
-              clips={q.pitch.clips}
-              correct={q.pitch.correct}
-              revealing={revealing}
-              pick={pitchPick}
-              wrongPick={q.pitchWrongPick}
-              onTap={(i) => {
-                playPitchClip(q.pitch!.clips[i]);
-                setPitchPick(i as 0 | 1);
-              }}
-            />
-            {!revealing ? (
-              <span className="text-[11px] text-text-muted">
-                tap either clip to hear it, then Check
-              </span>
-            ) : null}
-          </div>
+          <PitchClipBoard
+            clips={q.pitch.clips}
+            correct={q.pitch.correct}
+            revealing={revealing}
+            pick={pitchPick}
+            wrongPick={q.pitchWrongPick}
+            onTap={(i) => {
+              playPitchClip(q.pitch!.clips[i]);
+              setPitchPick(i as 0 | 1);
+            }}
+          />
         ) : typedMode ? (
           // Box and the line that says what goes in it, as one unit: a tight
           // gap between them rather than the stage's gap-4, so the sentence

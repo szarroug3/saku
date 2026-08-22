@@ -25,7 +25,6 @@
 //     (src/lib/grammar/questions.ts) directly and threaded through
 //     `PromptContext.grammarSelection`, exactly as a real showing rolls it.
 
-import { DrillHalo, GLYPH_PX } from "@/components/quiz/drill-halo";
 import { McOptionGrid, type McOptionGridItem } from "@/components/quiz/mc-option-grid";
 import { TypedAnswerBox } from "@/components/quiz/typed-answer-box";
 import { kanaFact } from "@/data/characters";
@@ -53,6 +52,7 @@ import { factInfo } from "@/lib/facts";
 import { buildPitchShowing, rollPitchQuestion } from "@/lib/pitch-quiz";
 import { DEFAULT_VOICE_ID } from "@/lib/voice";
 import type { Direction, FactId } from "@/types";
+import { Halo } from "./halo-preview";
 import { ParticleTapPreview } from "./particle-tap-preview";
 import { PitchPreview } from "./pitch-preview";
 
@@ -161,46 +161,8 @@ const SENTENCE_RECOGNITION = {
   correct: 0,
 };
 
-// ── the real halo + option-grid + typed-box, lifted from drill-screen.tsx ──
-
-/** The glyph/sentence stage, at rest — no timer, no animation, always the
- * card's first attempt. Same component, same geometry as a live drill. */
-function Halo({
-  glyph,
-  jp,
-  listen,
-  sentenceFrame,
-  context,
-  body,
-}: {
-  glyph: string;
-  jp: boolean;
-  listen?: boolean;
-  sentenceFrame?: string;
-  context?: React.ReactNode;
-  body?: React.ReactNode;
-}) {
-  const size = jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6);
-  return (
-    <DrillHalo
-      state="resting"
-      cardKey="gallery"
-      timerLeft={0}
-      drainWindow={5}
-      glyph={glyph}
-      jp={jp}
-      font=""
-      fontSize={size}
-      maxFontSize={size}
-      crossFade={false}
-      listen={listen}
-      sentenceFrame={sentenceFrame}
-      context={context}
-      body={body}
-      paused
-    />
-  );
-}
+// ── the real halo (halo-preview.tsx) + option-grid + typed-box, lifted from
+// drill-screen.tsx ──
 
 interface McOption {
   readonly id: string;
@@ -537,14 +499,14 @@ export default function QuizGalleryDevPage() {
         <div className="flex flex-wrap gap-4">
           <Card label="pair mode (real homophone partner: 箸 vs 橋, both はし)">
             {PITCH_PAIR_SHOWING ? (
-              <PitchPreview showing={PITCH_PAIR_SHOWING} />
+              <PitchPreview glyph="箸" showing={PITCH_PAIR_SHOWING} />
             ) : (
               <Missing label="no pair example available" />
             )}
           </Card>
           <Card label="wrong mode (no curriculum partner: real vs. synthetically mis-pitched お金)">
             {PITCH_WRONG_SHOWING ? (
-              <PitchPreview showing={PITCH_WRONG_SHOWING} />
+              <PitchPreview glyph="お金" showing={PITCH_WRONG_SHOWING} />
             ) : (
               <Missing label="no wrong-mode example available" />
             )}
