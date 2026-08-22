@@ -744,11 +744,19 @@ body {
  * the floor simply grows the frame past it — there is no fixed/percentage
  * height anywhere in the chain for the overflow to fight, so a wide grid or a
  * long lesson card grows the page and scrolls with it exactly as before,
- * rather than clipping against a forced single screen height. */
+ * rather than clipping against a forced single screen height.
+ *
+ * --kq-dock-h (src/components/dock-height-var.tsx) is the other real chrome
+ * ABOVE this frame that the fixed 120px can't see: the signed-out banner and
+ * a page's own top dock, both dynamic (present or not, tall or not) rather
+ * than a layout constant. Skipping it used to floor the frame too tall
+ * whenever either dock had content — nearly every screen a signed-out
+ * learner sees — leaving trailing empty space below a short card's content
+ * that ScrollCue (ui.tsx) then misread as "more below" to scroll to. */
 .kq-center-frame {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 120px);
+  min-height: calc(100dvh - 120px - var(--kq-dock-h, 0px));
 }
 
 @keyframes gshake {
