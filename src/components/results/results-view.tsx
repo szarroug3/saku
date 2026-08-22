@@ -258,15 +258,23 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    * you just did. Same button, same word, different set — and you would only
    * notice if you had changed the selection since.
    *
-   * A past session is a named list of keys, so this is one field on an empty
-   * query and no new code path. It goes through resolve() like everything else,
-   * which is also what makes it self-correcting: a fact the data no longer has
-   * drops out here rather than being queued for a question nobody can render.
+   * `results.planned` — the run's own frozen `ActiveQuiz.facts` — is Rerun's
+   * real answer to "what did this session ask": it exists independent of
+   * whether anything was ever resolved, so it survives a run where nothing
+   * was answered (which is exactly when history.sessions has no record at
+   * all — see buildSessionRecord, and Sam's SAK-135 note that Rerun and
+   * Retry are two different buttons with two different premises). Only a
+   * session stored before this field existed falls back to resolving it by
+   * ts (self-correcting there — a fact the data no longer has drops out —
+   * but that self-correction was never the point; `planned` not existing
+   * yet was the only reason this path was here at all).
    */
   const rerunFacts = useMemo(
     (): FactId[] =>
-      resolve({ ...emptySelection(), session: results.ts }, history),
-    [history, results.ts],
+      results.planned
+        ? [...results.planned]
+        : resolve({ ...emptySelection(), session: results.ts }, history),
+    [history, results.ts, results.planned],
   );
 
   /** Turn this finished session into a saved list, so its exact items can be

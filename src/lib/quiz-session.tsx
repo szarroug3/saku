@@ -203,6 +203,19 @@ export interface ResultsPayload {
   stats: SessionStats;
   /** Set when reopening an old stored session that has no detail. */
   summaryOnly?: { forgivingPct: number; strictPct: number };
+  /**
+   * The FULL fact list this run started with — `ActiveQuiz.facts`/the stored
+   * record's own `planned`, never narrowed by what was actually answered.
+   * Rerun is not Retry: "rerun the full facts list that originally started
+   * the quiz" holds even when nothing was answered (Sam, SAK-135), so this
+   * has to survive independently of whatever ended up in `stats` or in a
+   * durably committed history.sessions record (buildSessionRecord discards
+   * the record entirely for a run with zero resolved facts — see its own
+   * doc — which must not also mean Rerun has nothing to replay). Undefined
+   * only for a stored session old enough to predate this field, in which
+   * case Rerun falls back to what that session's own record shows it asked.
+   */
+  planned?: readonly FactId[];
 }
 
 interface QuizSessionContextValue {
@@ -1818,6 +1831,10 @@ export function QuizSessionProvider({
         redrill: quiz.redrill,
         ts: record?.ts ?? Date.now(),
         stats: completedStats,
+        // The quiz's own frozen pool, not `record?.planned` — a run with
+        // nothing resolved gets no record at all (buildSessionRecord), and
+        // Rerun still needs this to replay the original facts.
+        planned: quiz.facts,
       });
       router.push("/results");
     },
@@ -1878,6 +1895,10 @@ export function QuizSessionProvider({
         ts: record.ts,
         stats,
         summaryOnly,
+        // Old enough records may predate this field — Rerun falls back to
+        // resolving the session by ts (selection.ts) in that case, same as
+        // before this existed.
+        planned: record.planned,
       });
       router.push("/results");
     },
