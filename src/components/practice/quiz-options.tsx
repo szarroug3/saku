@@ -9,7 +9,7 @@
 // lesson. The prompt-format and requeue toggles moved to Settings because they
 // are environmental preferences, not per-run choices.
 
-import { Chip, Info, Row, SmallBtn } from "@/components/ui";
+import { Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 
 export function QuizOptionsFields() {
@@ -17,75 +17,64 @@ export function QuizOptionsFields() {
 
   return (
     <div className="mb-6">
-      <Row label="Mode">
-        <span className="inline-flex items-center gap-0.5">
-          <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
-            Drill
-          </Chip>
-          <Info>
-            One question at a time — you&apos;re shown a prompt and type or
-            pick the answer, with retries if you miss it.
-          </Info>
-        </span>
-        <span className="inline-flex items-center gap-0.5">
-          <Chip on={cfg.mode === "pairs"} onClick={() => update({ mode: "pairs" })}>
-            Match pairs
-          </Chip>
-          <Info>
-            A board of tiles — tap two that match (like a kana and its
-            reading) until every pair is found.
-          </Info>
-        </span>
-        <span className="inline-flex items-center gap-0.5">
-          <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
-            Grid
-          </Chip>
-          <Info>
-            Every selected item at once, each with its own box — fill in as
-            many as you can; each one checks as you answer it.
-          </Info>
-        </span>
-        <span className="inline-flex items-center gap-0.5">
-          <Chip
-            on={cfg.mode === "substitution"}
-            onClick={() => update({ mode: "substitution" })}
-          >
-            Substitution
-          </Chip>
-          <Info>
-            Shown a sentence pattern built on a verb you already know, then
-            asked to write the same pattern using a different verb you know.
-          </Info>
-        </span>
+      <Row
+        label="Mode"
+        info={
+          <>
+            Drill: one question at a time — you&apos;re shown a prompt and
+            type or pick the answer, with retries if you miss it. Match
+            pairs: a board of tiles — tap two that match (like a kana and its
+            reading) until every pair is found. Grid: every selected item at
+            once, each with its own box — fill in as many as you can; each
+            one checks as you answer it. Substitution: shown a sentence
+            pattern built on a verb you already know, then asked to write the
+            same pattern using a different verb you know.
+          </>
+        }
+      >
+        <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
+          Drill
+        </Chip>
+        <Chip on={cfg.mode === "pairs"} onClick={() => update({ mode: "pairs" })}>
+          Match pairs
+        </Chip>
+        <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
+          Grid
+        </Chip>
+        <Chip
+          on={cfg.mode === "substitution"}
+          onClick={() => update({ mode: "substitution" })}
+        >
+          Substitution
+        </Chip>
       </Row>
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (
         <>
-          <Row label="Length">
-            <span className="inline-flex items-center gap-0.5">
-              <Chip
-                on={cfg.length === "endless"}
-                onClick={() => update({ length: "endless" })}
-              >
-                Endless
-              </Chip>
-              <Info>
-                Keeps asking for as long as you keep playing — there&apos;s no
-                set end.
-              </Info>
-            </span>
-            <span className="inline-flex items-center gap-0.5">
-              <Chip
-                on={cfg.length === "limited"}
-                onClick={() => update({ length: "limited" })}
-              >
-                Limited
-              </Chip>
-              <Info>
-                Stops after a fixed amount instead of running forever — choose
-                Full coverage or a Count below to say how much.
-              </Info>
-            </span>
+          <Row
+            label="Length"
+            info={
+              <>
+                Endless: keeps asking for as long as you keep playing —
+                there&apos;s no set end. Limited: stops after a fixed amount
+                instead of running forever — choose Full coverage to ask
+                everything currently selected exactly once, or a Count to say
+                how much.
+              </>
+            }
+          >
+            <Chip
+              on={cfg.length === "endless"}
+              onClick={() => update({ length: "endless" })}
+            >
+              Endless
+            </Chip>
+            <Chip
+              on={cfg.length === "limited"}
+              onClick={() => update({ length: "limited" })}
+            >
+              Limited
+            </Chip>
             {cfg.length === "limited" ? (
               // Full coverage/Count are a MODE of Limited, not a third top-level
               // choice beside Endless/Limited — cfg.limType only exists once
@@ -99,18 +88,12 @@ export function QuizOptionsFields() {
               // kana-entry-view.tsx) — here it visually hangs this pair off the
               // Limited chip it belongs to instead of floating beside it.
               <span className="flex flex-wrap items-center gap-1.5 border-l-2 border-accent pl-2.5">
-                <span className="inline-flex items-center gap-0.5">
-                  <SmallBtn
-                    sel={cfg.limType === "cov"}
-                    onClick={() => update({ limType: "cov" })}
-                  >
-                    Full coverage
-                  </SmallBtn>
-                  <Info>
-                    Asks everything currently selected exactly once, then
-                    ends.
-                  </Info>
-                </span>
+                <SmallBtn
+                  sel={cfg.limType === "cov"}
+                  onClick={() => update({ limType: "cov" })}
+                >
+                  Full coverage
+                </SmallBtn>
                 <SmallBtn
                   sel={cfg.limType === "count"}
                   onClick={() => update({ limType: "count" })}
