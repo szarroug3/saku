@@ -260,3 +260,44 @@ describe('dueFacts — the "Practice what\'s due" one-click pool', () => {
     assert.deepEqual(dueFacts(allQuiet, [], NOW), []);
   });
 });
+
+describe("session — Rerun replays what a session SHOWED, not what you separately know", () => {
+  const SESSION_TS = NOW - 1000;
+
+  /** A session record with `ids` in `facts` — shown, whether or not any of
+   * them were ever actually answered (unresolved cards get seen: 0; see
+   * session-record.ts's projectSessionFacts). */
+  function withSession(ids: FactId[]): HistoryFile {
+    return history({
+      sessions: [
+        {
+          ts: SESSION_TS,
+          mode: "drill",
+          redrill: false,
+          total: ids.length,
+          forgivingPct: 0,
+          strictPct: 0,
+          facts: Object.fromEntries(
+            ids.map((id) => [id, { seen: 0, missed: 0, firstTry: 0, correct: 0 }]),
+          ) as HistoryFile["sessions"][number]["facts"],
+        },
+      ],
+    });
+  }
+
+  test("a fact the session showed but nobody ever answered still comes back", () => {
+    // The exact SAK-134/135 repro: a quiz started and ended with nothing
+    // answered. The session record still names every fact it put on screen;
+    // none of them independently qualify as `knownFacts` (seen stays 0
+    // everywhere else in history too), yet Rerun must still name all of them —
+    // that IS what this session showed.
+    const ids = KANA_IDS.slice(0, 3);
+    const h = withSession(ids);
+    assert.deepEqual(resolve({ ...emptySelection(), session: SESSION_TS }, h).sort(), [...ids].sort());
+  });
+
+  test("a session that no longer exists names nothing, not everything", () => {
+    const h = history();
+    assert.deepEqual(resolve({ ...emptySelection(), session: SESSION_TS }, h), []);
+  });
+});
