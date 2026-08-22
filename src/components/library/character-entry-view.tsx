@@ -312,21 +312,29 @@ export function CharacterEntryView({
                   <SubLabel>Sub-components</SubLabel>
                   <div className="flex flex-col gap-1.5">
                     {parts.map((p) => (
-                      <EntryLink
-                        key={p.glyph}
-                        id={p.entry}
-                        className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
-                      >
-                        <span className="font-kana text-[18px] leading-none">{p.glyph}</span>
+                      <div key={p.glyph} className="flex items-baseline gap-2.5 text-[14px]">
+                        {/* Only the glyph itself navigates — the sense/role
+                           text beside it is read, not tapped, so the row no
+                           longer swallows a tap anywhere along its width. */}
+                        <EntryLink
+                          id={p.entry}
+                          className="font-kana text-[18px] leading-none text-text no-underline"
+                        >
+                          {p.glyph}
+                        </EntryLink>
                         <span className="min-w-0 flex-1 truncate text-text-muted">
                           {p.sense}
-                          {p.role && p.role !== "semantic" ? (
+                          {p.role === "phonetic" ? (
                             <span className="ml-1.5 text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
-                              {p.role}
+                              phonetic
+                            </span>
+                          ) : p.role === "semantic" ? (
+                            <span className="ml-1.5 text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
+                              definition
                             </span>
                           ) : null}
                         </span>
-                      </EntryLink>
+                      </div>
                     ))}
                   </div>
                 </div>
