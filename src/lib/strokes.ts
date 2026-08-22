@@ -1,6 +1,10 @@
-"use client";
-
 // Stroke-order data: lazy access to the KanjiVG-derived asset.
+//
+// PURE ON PURPOSE — see use-glyph-strokes.ts for the hook. This file has no
+// React import so it can be unit-tested directly under Node's test runner
+// (see strokes.test.ts); a "use client" file importing `useEffect` at module
+// scope fails Node's ESM resolution outside Next's own build pipeline, which
+// is exactly what broke every test in this file before the split.
 //
 // WHY IT LOADS THE WAY IT DOES
 // ============================
@@ -33,8 +37,6 @@
 // bundler needs in order to split them live in the GENERATED index beside the
 // chunks (src/data/generated/strokes/kanji-index.ts), written by the same ingest
 // run, so the list cannot fall behind the files it names.
-
-import { useEffect, useState } from "react";
 
 import {
   CHUNK_LOADERS,
@@ -130,8 +132,9 @@ const cache: Partial<Record<StrokeAsset, Promise<StrokeMap>>> = {};
  * for, never at page load, and only the one asset in use is fetched.
  *
  * The JSON infers `numbers` as number[][]; the pairs are [x, y] by construction
- * (scripts/ingest/kanjivg.mjs), so narrow through unknown. */
-function loadStrokes(asset: StrokeAsset): Promise<StrokeMap> {
+ * (scripts/ingest/kanjivg.mjs), so narrow through unknown. Exported for
+ * use-glyph-strokes.ts's hook. */
+export function loadStrokes(asset: StrokeAsset): Promise<StrokeMap> {
   const hit = cache[asset];
   if (hit) return hit;
   // The kana specifiers are literal so the bundler can see and split both; a
@@ -156,42 +159,3 @@ function loadStrokes(asset: StrokeAsset): Promise<StrokeMap> {
 export type StrokeLoad =
   | { status: "loading" }
   | { status: "ready"; data: GlyphStrokes | null };
-
-/**
- * Stroke data for one glyph, lazily. Returns `loading` until the asset resolves,
- * then `ready` with the glyph's strokes — or `ready` with `null` when this glyph
- * isn't in the ingested set (a non-jōyō kanji, punctuation), which the caller
- * renders as the whole-shape fallback rather than a diagram.
- */
-export function useGlyphStrokes(glyph: string): StrokeLoad {
-  const [state, setState] = useState<StrokeLoad>({ status: "loading" });
-
-  useEffect(() => {
-    let live = true;
-    // Reset to loading when the glyph changes, so a new glyph never shows the
-    // previous one's diagram for a frame. Same synchronous-in-effect shape as
-    // lesson-prefs.ts's hydration, and disabled for the same reason.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState({ status: "loading" });
-    const asset = scriptOf(glyph);
-    if (!asset) {
-      // Nothing ingested for this glyph — settle straight to the fallback
-      // rather than fetching a chunk that couldn't contain it.
-      setState({ status: "ready", data: null });
-      return;
-    }
-    loadStrokes(asset)
-      .then((map) => {
-        if (live) setState({ status: "ready", data: map[glyph] ?? null });
-      })
-      .catch(() => {
-        // Asset failed to load — degrade to the whole-shape fallback, no throw.
-        if (live) setState({ status: "ready", data: null });
-      });
-    return () => {
-      live = false;
-    };
-  }, [glyph]);
-
-  return state;
-}
