@@ -37,7 +37,7 @@ import {
 
 import { PitchReading } from "@/components/library/pitch-mark";
 import { HintBody } from "@/components/quiz/hint-content";
-import { Btn, ScrollCue, SmallBtn, SoundIcon } from "@/components/ui";
+import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import { entryId, factId } from "@/lib/fact-id";
 import { VOCAB_KIND } from "@/lib/library/kinds";
@@ -139,8 +139,11 @@ import type { VocabRow } from "@/data/vocab";
 
 import { DrillDrawer } from "./drill-drawer";
 import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
+import { McOptionGrid, type McOptionGridItem } from "./mc-option-grid";
 import { ParticleTapCard } from "./particle-tap-card";
 import { ParticleMarkerSentence } from "./particle-marker-card";
+import { PitchClipBoard } from "./pitch-clip-board";
+import { TypedAnswerBox } from "./typed-answer-box";
 
 // ---------- runtime shape (lives in active.runtime) ----------
 
@@ -2786,35 +2789,31 @@ export function DrillScreen() {
         </p>
 
         {q.particleDrill ? null : q.particleMarker ? (
-          // Same 3-per-row option board every other MC board uses (see the
-          // long comment on the recognition/mc board below for why this is a
-          // wrapping FLEX row rather than a fixed CSS grid) — options built
-          // from the marker-choice board (recipe id + display pattern) rather
-          // than FactIds — see lib/engine/particle-drill.ts's header for why
-          // this is a bespoke board, not a run through the ordinary
-          // FactId-keyed distractor machinery.
-          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-2">
-            {q.particleMarker.options.map((option, i) => (
-              <button
-                key={option.recipeId}
-                onClick={() => submit(option.label, undefined, undefined, undefined, option.recipeId)}
-                className={cx(
-                  "flex min-h-15 shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
-                  revealing && option.recipeId === q.particleMarker?.recipeId
-                    ? "border-success bg-success-bg text-success"
-                    : // The wrong pick stays selected in red alongside the
-                      // correct option's green (SAK-50 changes-requested
-                      // follow-up) — see DrillQuestion.particleMarkerWrongPick.
-                      revealing && option.recipeId === q.particleMarkerWrongPick
-                      ? "border-danger bg-danger-bg text-danger"
-                      : "border-border bg-card text-text hover:bg-panel",
-                )}
-              >
-                <span lang="ja">{option.label}</span>
-                <span className="text-[10px] text-text-muted">{i + 1}</span>
-              </button>
-            ))}
-          </div>
+          // Same 3-per-row option board every other MC board uses — see
+          // McOptionGrid's header comment for why this is a wrapping FLEX row
+          // rather than a fixed CSS grid (SAK-54). Options built from the
+          // marker-choice board (recipe id + display pattern) rather than
+          // FactIds — see lib/engine/particle-drill.ts's header for why this
+          // is a bespoke board, not a run through the ordinary FactId-keyed
+          // distractor machinery.
+          <McOptionGrid
+            revealing={revealing}
+            options={q.particleMarker.options.map(
+              (option): McOptionGridItem => ({
+                key: option.recipeId,
+                label: <span lang="ja">{option.label}</span>,
+                correct: option.recipeId === q.particleMarker?.recipeId,
+                // The wrong pick stays selected in red alongside the correct
+                // option's green (SAK-50 changes-requested follow-up) — see
+                // DrillQuestion.particleMarkerWrongPick.
+                wrong: option.recipeId === q.particleMarkerWrongPick,
+              }),
+            )}
+            onSelect={(_key, i) => {
+              const option = q.particleMarker?.options[i];
+              if (option) submit(option.label, undefined, undefined, undefined, option.recipeId);
+            }}
+          />
         ) : q.pitch ? (
           // SAK-133: two audio clips — tap either one to PLAY it and mark it
           // selected (repeatable, no commit), then press Check (or Enter) to
@@ -2823,35 +2822,17 @@ export function DrillScreen() {
           // two options here ARE audio: comparing them requires being able
           // to play both before deciding, so a tap can no longer also submit.
           <div className="flex flex-col items-center gap-3">
-            <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-3">
-              {q.pitch.clips.map((clip, i) => (
-                <button
-                  key={clip}
-                  onClick={() => {
-                    playPitchClip(clip);
-                    setPitchPick(i as 0 | 1);
-                  }}
-                  aria-label={`Play clip ${i + 1}`}
-                  aria-pressed={pitchPick === i}
-                  className={cx(
-                    "flex min-h-20 shrink-0 grow-0 basis-[calc((100%-12px)/2)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-3 text-center",
-                    revealing && i === q.pitch?.correct
-                      ? "border-success bg-success-bg text-success"
-                      : // The wrong pick stays selected in red alongside the
-                        // correct clip's green (SAK-50 changes-requested
-                        // follow-up) — see DrillQuestion.pitchWrongPick.
-                        revealing && i === q.pitchWrongPick
-                        ? "border-danger bg-danger-bg text-danger"
-                        : !revealing && pitchPick === i
-                          ? "border-accent bg-panel text-text"
-                          : "border-border bg-card text-text hover:bg-panel",
-                  )}
-                >
-                  <SoundIcon className="size-8" />
-                  <span className="text-[10px] text-text-muted">{i + 1}</span>
-                </button>
-              ))}
-            </div>
+            <PitchClipBoard
+              clips={q.pitch.clips}
+              correct={q.pitch.correct}
+              revealing={revealing}
+              pick={pitchPick}
+              wrongPick={q.pitchWrongPick}
+              onTap={(i) => {
+                playPitchClip(q.pitch!.clips[i]);
+                setPitchPick(i as 0 | 1);
+              }}
+            />
             {!revealing ? (
               <span className="text-[11px] text-text-muted">
                 tap either clip to hear it, then Check
@@ -2863,130 +2844,84 @@ export function DrillScreen() {
           // gap between them rather than the stage's gap-4, so the sentence
           // reads as belonging to the field and not as another piece of the
           // question.
-            <span className="flex flex-col items-center gap-1.5">
-            <input
-              key={rt.asked}
-              ref={inputRef}
-              autoFocus
-              autoComplete="off"
-              spellCheck={false}
-              inputMode={numericInput ? "numeric" : undefined}
-              placeholder={guide?.placeholder}
-              value={typed}
-              readOnly={revealing}
-              // Convert-as-you-type for the Japanese side: the user sees これ /
-              // せんせい form in the box (live mode leaves an incomplete trailing
-              // run — "sens" → せんs — as latin). The value stays kana, so the
-              // grader receives kana and an IME user who typed it directly is
-              // unaffected. Idempotent on kana, so re-running on the field's own
-              // value only reconverts the latin tail.
-              onChange={(e) =>
-                setTyped(
-                  romajiInput
-                    ? toKana(e.target.value, { live: true, katakana: q.katakana })
-                    : e.target.value,
-                )
-              }
-              // Wide enough for the placeholder to read in full — the old card
-              // clipped it at 230px.
-              className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
-            />
-            {/* Says what kind of answer this card wants, and keeps saying it —
-                the placeholder above is gone from the first keystroke, which is
-                exactly when the romaji line starts mattering. Quiet: it is
-                standing instruction, not part of the question.
-                SAK-122: a wrong-script/format retype (rt.feedback.kind ===
-                "warn") takes this slot instead — it is a MORE useful thing to
-                say right now than the standing note, and the card is not
-                resolved (no reveal, no miss), so this is the only place the
-                warning has to go. */}
-            <span
-              className={cx(
-                "text-[11px]",
-                rt.feedback?.kind === "warn" ? "text-warning" : "text-text-muted",
-              )}
-            >
-              {rt.feedback?.kind === "warn" ? rt.feedback.message : guide?.note}
-            </span>
-            </span>
-          ) : (
-          // A UNIFORM OPTION ROW, up to 3 per line. Every option box is the
-          // same fixed width (basis-[(100%-gaps)/3]) and wraps onto a new
-          // line past 3, so a six-option keigo board is a clean 2×3.
-          //
-          // This is a wrapping FLEX row, not a CSS grid — deliberately, and
-          // that is the SAK-54 fix. A `grid-cols-3` with `1fr` tracks always
-          // reserves all three column tracks regardless of how many cells are
-          // filled, so a 2-option board (real: transitivity pairs run
-          // maxOptions: 2) occupied columns 1–2 and left column 3 empty,
-          // reading as pinned to the left instead of centered under the
-          // prompt. `justify-content: center` cannot fix that in grid: it
-          // centers the TRACK SET, and the track set is still three columns
-          // wide whether or not the third one holds anything.
-          //
-          // Flex has no such reserved-but-empty third slot: each row only
-          // exists for as many items as actually flow into it, so
-          // `justify-center` centers the row that's really there — one row of
-          // two, a clean 2×3, or anything between. Fewer options just fill
-          // fewer boxes in a shorter, centered row — a two-option verb-pair
-          // board is one centered row of two, not a padded 2×3 with holes.
-          // `shrink-0 grow-0` keep every box the same size regardless of row
-          // fill (the old grid's "SAME box" guarantee); `basis-[...]` reserves
-          // the same three-per-row width the grid's `1fr` tracks gave.
-          // Height parity across a wrapped line comes for free — flex-wrap's
-          // default `align-items: stretch` sizes every item in a line to that
-          // line's tallest, the same job `auto-rows-fr` used to do. Long
-          // option text ("eat / drink (honorific)") still wraps inside the
-          // fixed box rather than widening it. Selection/answer states, the
-          // number labels and the click handlers are exactly as before.
-          <div className="flex w-[min(92vw,480px)] flex-wrap justify-center gap-2">
-            {q.recognition?.options.map((option, i) => (
-              <button
-                key={`${i}-${option}`}
-                onClick={() => submit(option, undefined, i)}
-                className={cx(
-                  "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-sm wrap-break-word hyphens-auto",
-                  revealing && i === q.recognition?.correct
-                    ? "border-success bg-success-bg text-success"
-                    : // The wrong pick stays selected in red alongside the
+          <TypedAnswerBox
+            resetKey={rt.asked}
+            ref={inputRef}
+            autoFocus
+            inputMode={numericInput ? "numeric" : undefined}
+            placeholder={guide?.placeholder}
+            value={typed}
+            readOnly={revealing}
+            // Convert-as-you-type for the Japanese side: the user sees これ /
+            // せんせい form in the box (live mode leaves an incomplete trailing
+            // run — "sens" → せんs — as latin). The value stays kana, so the
+            // grader receives kana and an IME user who typed it directly is
+            // unaffected. Idempotent on kana, so re-running on the field's own
+            // value only reconverts the latin tail.
+            onChange={(v) =>
+              setTyped(
+                romajiInput
+                  ? toKana(v, { live: true, katakana: q.katakana })
+                  : v,
+              )
+            }
+            // Says what kind of answer this card wants, and keeps saying it —
+            // the placeholder above is gone from the first keystroke, which is
+            // exactly when the romaji line starts mattering. Quiet: it is
+            // standing instruction, not part of the question.
+            // SAK-122: a wrong-script/format retype (rt.feedback.kind ===
+            // "warn") takes this slot instead — it is a MORE useful thing to
+            // say right now than the standing note, and the card is not
+            // resolved (no reveal, no miss), so this is the only place the
+            // warning has to go.
+            note={rt.feedback?.kind === "warn" ? rt.feedback.message : guide?.note}
+            noteTone={rt.feedback?.kind === "warn" ? "warning" : "muted"}
+          />
+        ) : (
+          // A UNIFORM OPTION ROW, up to 3 per line — see McOptionGrid's header
+          // comment for the full SAK-54 wrapping-flex-row rationale. Recognition
+          // options are full sentences (size="sm", wraps/hyphenates); MC options
+          // are a single short token or glyph (size="lg").
+          <McOptionGrid
+            revealing={revealing}
+            size={q.recognition ? "sm" : "lg"}
+            options={
+              q.recognition
+                ? q.recognition.options.map(
+                    (option, i): McOptionGridItem => ({
+                      key: `${i}-${option}`,
+                      label: option,
+                      correct: i === q.recognition?.correct,
+                      // The wrong pick stays selected in red alongside the
                       // correct option's green (SAK-50 changes-requested
                       // follow-up) — see DrillQuestion.recognitionWrongPick.
-                      revealing && i === q.recognitionWrongPick
-                      ? "border-danger bg-danger-bg text-danger"
-                      : "border-border bg-card text-text hover:bg-panel",
-                )}
-              >
-                <span>{option}</span>
-                <span className="text-[10px] text-text-muted">{i + 1}</span>
-              </button>
-            ))}
-            {q.mc?.map((opt, i) => (
-              <button
-                key={opt}
-                onClick={() => submit(labelOf(opt, q.dir, ctx, localFactInfo), opt)}
-                className={cx(
-                  "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
-                  // The option you should have picked, lit alongside the reveal.
-                  revealing && opt === q.f
-                    ? "border-success bg-success-bg text-success"
-                    : // The wrong pick stays selected in red alongside the
+                      wrong: i === q.recognitionWrongPick,
+                    }),
+                  )
+                : (q.mc ?? []).map(
+                    (opt, i): McOptionGridItem => ({
+                      key: opt,
+                      label: labelOf(opt, q.dir, ctx, localFactInfo),
+                      // The option you should have picked, lit alongside the reveal.
+                      correct: opt === q.f,
+                      // The wrong pick stays selected in red alongside the
                       // correct option's green (SAK-50 changes-requested
                       // follow-up) — see DrillQuestion.mcWrongPick.
-                      revealing && opt === q.mcWrongPick
-                      ? "border-danger bg-danger-bg text-danger"
-                      : "border-border bg-card text-text hover:bg-panel",
-                )}
-                style={
-                  q.dir === "en2jp" && q.mcFonts
-                    ? { fontFamily: q.mcFonts[i] }
-                    : undefined
-                }
-              >
-                <span>{labelOf(opt, q.dir, ctx, localFactInfo)}</span>
-                <span className="text-[10px] text-text-muted">{i + 1}</span>
-              </button>
-            ))}
-          </div>
+                      wrong: opt === q.mcWrongPick,
+                      fontFamily: q.dir === "en2jp" && q.mcFonts ? q.mcFonts[i] : undefined,
+                    }),
+                  )
+            }
+            onSelect={(_key, i) => {
+              if (q.recognition) {
+                const option = q.recognition.options[i];
+                if (option !== undefined) submit(option, undefined, i);
+              } else if (q.mc) {
+                const opt = q.mc[i];
+                if (opt) submit(labelOf(opt, q.dir, ctx, localFactInfo), opt);
+              }
+            }}
+          />
         )}
 
         {/* On a short viewport the 3-column option grid can run past the
