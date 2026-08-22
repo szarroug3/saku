@@ -47,6 +47,12 @@ export function DrillDrawer({ onClose }: { onClose: () => void }) {
               }
             />
           </Row>
+          <Row label="Pitch questions" dim={!draft.audioPrompts}>
+            <OnOff
+              on={draft.pitchQuestions}
+              toggle={() => patch({ pitchQuestions: !draft.pitchQuestions })}
+            />
+          </Row>
           <Row label="Timer">
             {draft.timer ? (
               <>

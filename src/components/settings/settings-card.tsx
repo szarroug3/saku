@@ -408,6 +408,17 @@ export function SettingsCard() {
         </Row>
 
         <Row
+          label="Pitch questions"
+          info="Adds a pitch-accent question after an eligible word's meaning card: hear two clips and pick the one with the word's real pitch. Requires Audio prompts to be on — a pitch question is itself an audio prompt."
+          dim={!cfg.audioPrompts}
+        >
+          <Toggle
+            on={cfg.pitchQuestions}
+            onClick={() => update({ pitchQuestions: !cfg.pitchQuestions })}
+          />
+        </Row>
+
+        <Row
           label="Requeue when wrong"
           info="A card you get wrong comes back later in the same run. Off means the run moves on and doesn't re-show it."
         >

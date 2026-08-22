@@ -240,6 +240,14 @@ export interface QuizConfig {
    * it is environmental (does this machine have a TTS voice?), not per-run.
    */
   audioPrompts: boolean;
+  /**
+   * Whether an eligible word's meaning card queues an additional pitch-accent
+   * question (SAK-128/138) — a second, separate knob from `audioPrompts`,
+   * since a pitch board IS an audio prompt: audio off already implies no
+   * pitch, but audio on doesn't imply pitch on. Default ON. Lives on
+   * Settings, not Practice, same reasoning as `audioPrompts`.
+   */
+  pitchQuestions: boolean;
   length: "endless" | "limited";
   limType: "cov" | "count";
   limCount: number;
