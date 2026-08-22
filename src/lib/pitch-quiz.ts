@@ -20,8 +20,12 @@
 //             asked about — never the partner.
 //   "wrong" — the fallback for every other word that still carries a
 //             verified pitch: the real clip plus a deliberately mis-pitched
-//             clip of the SAME word (src/lib/tts-synth.ts's
-//             synthesizeWrongPitchWordWav). "Which one sounds right?"
+//             clip of the SAME word, at the distractor downstep
+//             src/lib/pitch.ts's wrongDownstepFor picks. "Which one sounds
+//             right?" Pitch audio is a pure function of (reading, downstep,
+//             voice) — the distractor is fetched through the exact same
+//             pitchApiUrl a real word's clip at that downstep would use,
+//             never a separate synthesis path or cache namespace.
 //
 // A word resolves to the SAME mode every time (mode is a property of the
 // data, not randomised) — WHETHER a pitch question is offered at all for a
@@ -36,7 +40,8 @@
 import { legacyUnqualifiedGloss, legacyUnqualifiedReading } from "@/data/vocab";
 import { wordPitch } from "@/data/pitch";
 import { pitchPairsFor } from "@/data/pitch-pairs";
-import { pitchApiUrl, pitchWrongApiUrl } from "@/lib/voice";
+import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
+import { pitchApiUrl } from "@/lib/voice";
 
 export type PitchQuizMode = "pair" | "wrong";
 
@@ -54,6 +59,11 @@ export interface PitchQuestion {
   /** Only set in "pair" mode: the OTHER word's written form and downstep. */
   readonly partnerKeb: string | null;
   readonly partnerDownstep: number | null;
+  /** Only set in "wrong" mode: the distractor's own downstep, already
+   * resolved by `wrongDownstepFor` (src/lib/pitch.ts) so `buildPitchShowing`
+   * never recomputes it and can't disagree with the guard below that decided
+   * "wrong" mode was viable at all. Null in "pair" mode. */
+  readonly wrongDownstep: number | null;
 }
 
 /**
@@ -96,9 +106,17 @@ export function rollPitchQuestion(
         gloss,
         partnerKeb: chosen.partner,
         partnerDownstep,
+        wrongDownstep: null,
       };
     }
   }
+
+  // "wrong" mode needs a distractor downstep that actually SOUNDS different
+  // (see wrongDownstepFor) — a word too short for one (1 mora) has no honest
+  // wrong-pitch question to offer, so it gets none at all rather than a
+  // button that silently fails to play.
+  const wrongDownstep = wrongDownstepFor(downstep, moraeOf(reading).length);
+  if (wrongDownstep == null) return null;
 
   return {
     mode: "wrong",
@@ -107,6 +125,7 @@ export function rollPitchQuestion(
     gloss,
     partnerKeb: null,
     partnerDownstep: null,
+    wrongDownstep,
   };
 }
 
@@ -143,10 +162,13 @@ export function buildPitchShowing(
   rng: () => number = Math.random,
 ): PitchShowing {
   const correctClip = pitchApiUrl(question.reading, question.downstep, voiceId);
-  const otherClip =
-    question.mode === "pair" && question.partnerDownstep != null
-      ? pitchApiUrl(question.reading, question.partnerDownstep, voiceId)
-      : pitchWrongApiUrl(question.reading, question.downstep, voiceId);
+  const otherDownstep =
+    question.mode === "pair" ? question.partnerDownstep : question.wrongDownstep;
+  // Both branches of rollPitchQuestion already guarantee this is set for the
+  // mode they return (a "pair" always has a partnerDownstep, a "wrong" always
+  // has a wrongDownstep, or the question itself is null) — the correctDownstep
+  // fallback below is unreachable in practice, not a real answer.
+  const otherClip = pitchApiUrl(question.reading, otherDownstep ?? question.downstep, voiceId);
   const correctFirst = rng() < 0.5;
   return {
     mode: question.mode,
@@ -159,10 +181,10 @@ export function buildPitchShowing(
 }
 
 /** Did the learner tap the right clip? Graded by INDEX — the two clips can
- * never share a URL (a pair's two words have different downsteps, and a
- * synthetic wrong clip lives in its own cache namespace — see
- * src/lib/voice.ts's pitchWrongObjectPath), so index and URL agree, but index
- * is what the tap actually reports. */
+ * never share a URL (a pair's two words always have different downsteps by
+ * construction, and wrongDownstepFor always picks a downstep different from
+ * `correct`), so index and URL agree, but index is what the tap actually
+ * reports. */
 export function gradePitchPick(showing: PitchShowing, chosen: 0 | 1): boolean {
   return chosen === showing.correct;
 }

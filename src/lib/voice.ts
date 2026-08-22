@@ -127,34 +127,19 @@ export function voiceObjectPath(voiceId: string, text: string): string {
  * to hash the same text under fuzzy sentence-level correction (see
  * src/lib/sentence-pitch.ts). `downstep` is part of the key: a caller asking
  * for the same reading under a different accent (a bug, or the Kanjium data
- * changing on a re-ingest) must not collide with an existing clip. */
+ * changing on a re-ingest) must not collide with an existing clip.
+ *
+ * This is ALSO the address the pitch quiz's "wrong" mode distractor clips use
+ * (SAK-128, unified here in a later pass) — pitch audio is a pure function of
+ * (reading, downstep, voice), with no notion of "correct" baked into the
+ * bytes, so a distractor is just a real clip at a different downstep, not a
+ * separate kind of object. Segregating it into its own namespace used to mean
+ * the same audio could get synthesized and stored TWICE — once here under
+ * some other real word's legitimate downstep, once again under a
+ * distractor's own key — whenever a chosen "wrong" downstep happened to
+ * coincide with an actual taught word's real one at the same reading. */
 export function pitchObjectPath(reading: string, downstep: number, voiceId: string): string {
   return `voices/${voiceId}/pitch-${voiceKey(`${reading}:${downstep}`)}.opus`;
-}
-
-/** The Storage object path for a word's DELIBERATELY WRONG pitch clip (SAK-
- * 128's "correct vs synthetically wrong" quiz mechanic — see
- * src/lib/tts-synth.ts's synthesizeWrongPitchWordWav and
- * src/lib/pitch-quiz.ts). Keyed on the same (reading, CORRECT downstep,
- * voice) as the real clip's own pitchObjectPath, but in its own
- * `pitchwrong2-` sub-namespace, so it can never collide with — or be served
- * in place of — the correct clip.
- *
- * The `2` is a cache-busting version bump (SAK-133 changes-requested pass):
- * `wrongDownstepFor`'s distractor-selection algorithm changed under SAK-129
- * (pairing against atamadaka instead of heiban, to fix odaka/heiban clips
- * rendering acoustically identical), but this key used to be a plain
- * function of (reading, downstep, voice) with no version in it — so any clip
- * already cached under the OLD algorithm kept being served as a 302 cache
- * hit forever, silently masking that fix for every word tested before it
- * landed. Bump this suffix again if the wrong-pattern algorithm ever changes
- * again. */
-export function pitchWrongObjectPath(
-  reading: string,
-  downstep: number,
-  voiceId: string,
-): string {
-  return `voices/${voiceId}/pitchwrong2-${voiceKey(`${reading}:${downstep}`)}.opus`;
 }
 
 function supabaseUrl(): string | undefined {
@@ -196,19 +181,6 @@ export function pitchAudioUrl(reading: string, downstep: number, voiceId: string
   return `${base}/storage/v1/object/public/${bucket}/${pitchObjectPath(reading, downstep, voiceId)}`;
 }
 
-/** The public CDN URL for a word's deliberately-wrong pitch clip. See
- * `pitchWrongObjectPath`. */
-export function pitchWrongAudioUrl(
-  reading: string,
-  downstep: number,
-  voiceId: string,
-): string | null {
-  const base = supabaseUrl();
-  const bucket = voiceBucket();
-  if (!base || !bucket) return null;
-  return `${base}/storage/v1/object/public/${bucket}/${pitchWrongObjectPath(reading, downstep, voiceId)}`;
-}
-
 /** The app's own on-demand route: generate-if-missing, cache, then serve. Used
  * by speech.ts as the second tier when the CDN clip isn't there yet. A
  * relative URL, so it resolves against the app origin in the browser. Same
@@ -227,19 +199,4 @@ export function pitchApiUrl(
   voiceId: string = DEFAULT_VOICE_ID,
 ): string {
   return `/api/pitch-tts?r=${encodeURIComponent(reading)}&d=${downstep}&v=${encodeURIComponent(voiceId)}`;
-}
-
-/** The app's on-demand route for a word's DELIBERATELY WRONG pitch clip
- * (SAK-128) — same route as `pitchApiUrl`, with `w=1` telling it to
- * synthesize (and cache, under pitchWrongObjectPath) the wrong pattern
- * instead of the real one. `downstep` here is still the word's CORRECT
- * downstep — the route derives the wrong pattern from it, deterministically
- * (see tts-synth.ts's wrongDownstepFor), so the caller never has to know or
- * name the wrong pattern itself. */
-export function pitchWrongApiUrl(
-  reading: string,
-  downstep: number,
-  voiceId: string = DEFAULT_VOICE_ID,
-): string {
-  return `/api/pitch-tts?r=${encodeURIComponent(reading)}&d=${downstep}&v=${encodeURIComponent(voiceId)}&w=1`;
 }

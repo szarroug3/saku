@@ -106,3 +106,44 @@ export function accentName(downstep: number): string {
   if (downstep === 1) return "atamadaka (drops after the first mora)";
   return `drops after mora ${downstep}`;
 }
+
+/**
+ * The pitch pattern a WRONG-pitch quiz distractor should render (SAK-128,
+ * SAK-6's research thread) — deliberately different from `correct`, so a
+ * learner who knows the word's real pattern can tell them apart, but never
+ * pushed to an extreme VOICEVOX can't render inside its natural range.
+ *
+ * Atamadaka (1) is the ONLY pattern where mora 1 itself is HIGH — heiban (0),
+ * every nakadaka, AND odaka (downstep === the word's own mora count, where
+ * the drop lands on a following particle that does not exist when the word
+ * is synthesized alone) are all LOW on mora 1 within an isolated word. See
+ * `pitchPatternForLength` above: heiban and odaka (and anything past it, see
+ * pitch.test.ts's downstep-collapse regression) produce the IDENTICAL
+ * mora-by-mora high/low sequence in isolation (both low on mora 1, high on
+ * every mora after) — only the `.drop` flag differs, which synthesis never
+ * reads. So pairing the distractor against heiban whenever `correct` isn't
+ * heiban itself (the old `correct === 0 ? 1 : 0` swap) would render an odaka
+ * word's "wrong" clip ACOUSTICALLY IDENTICAL to its correct one. Pairing
+ * against atamadaka instead is guaranteed distinguishable on mora 1 from ANY
+ * other real pattern (heiban, every nakadaka, odaka) for any reading of at
+ * least 2 morae — so the distractor is always atamadaka, except when the
+ * correct answer already IS atamadaka, in which case it pairs against heiban
+ * (unchanged from before). Both are always valid patterns for any reading
+ * with at least 2 morae (pitchPatternForLength never rejects a downstep), so
+ * the only real failure mode is a 1-MORA reading, where heiban and atamadaka
+ * render IDENTICALLY (mora 1 is the whole word either way) — that word has no
+ * honest wrong-pitch clip to offer, and this returns null rather than
+ * manufacture an inaudible "wrong" answer.
+ *
+ * Pure and client-safe (no VOICEVOX dependency) so callers can decide a
+ * word's wrong-pitch quiz eligibility, and which clip to fetch, entirely from
+ * data already in hand — `moraCount` comes from this module's own `moraeOf`,
+ * never a live engine probe.
+ */
+export function wrongDownstepFor(
+  correct: number,
+  moraCount: number,
+): number | null {
+  if (moraCount < 2) return null;
+  return correct === 1 ? 0 : 1;
+}
