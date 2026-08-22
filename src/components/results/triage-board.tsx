@@ -101,6 +101,7 @@ export function TriageSection({
   weakest,
   onRedrill,
   onRerun,
+  canRerun,
   onDrillWeakest,
   extraSelectedFacts,
 }: {
@@ -111,6 +112,10 @@ export function TriageSection({
   weakest: FactId[];
   onRedrill: (facts: FactId[]) => void;
   onRerun: () => void;
+  /** Whether onRerun would actually resolve to anything. False for a session
+   * that recorded no facts (started and immediately ended) — Retry all has
+   * nothing to retry there, so it must not render rather than fire on empty. */
+  canRerun: boolean;
   onDrillWeakest: () => void;
   extraSelectedFacts?: ReadonlySet<FactId>;
 }) {
@@ -195,9 +200,11 @@ export function TriageSection({
       <div className="flex flex-wrap gap-2">
         {nothingToFix ? (
           <>
-            <SmallBtn sel onClick={onRerun}>
-              Retry all
-            </SmallBtn>
+            {canRerun ? (
+              <SmallBtn sel onClick={onRerun}>
+                Retry all
+              </SmallBtn>
+            ) : null}
             {weakest.length ? (
               <SmallBtn onClick={onDrillWeakest}>
                 Drill your weakest {weakest.length}
@@ -209,7 +216,7 @@ export function TriageSection({
             <SmallBtn sel disabled={!n} onClick={() => onRedrill(mergedFacts)}>
               Retry {n} selected
             </SmallBtn>
-            <SmallBtn onClick={onRerun}>Retry all</SmallBtn>
+            {canRerun ? <SmallBtn onClick={onRerun}>Retry all</SmallBtn> : null}
           </>
         )}
       </div>
