@@ -318,12 +318,14 @@ export function CharacterEntryView({
                         className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
                       >
                         <span className="font-kana text-[18px] leading-none">{p.glyph}</span>
-                        <span className="min-w-0 flex-1 truncate text-text-muted">{p.sense}</span>
-                        {p.role && p.role !== "semantic" ? (
-                          <span className="text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
-                            {p.role}
-                          </span>
-                        ) : null}
+                        <span className="min-w-0 flex-1 truncate text-text-muted">
+                          {p.sense}
+                          {p.role && p.role !== "semantic" ? (
+                            <span className="ml-1.5 text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
+                              {p.role}
+                            </span>
+                          ) : null}
+                        </span>
                       </EntryLink>
                     ))}
                   </div>
