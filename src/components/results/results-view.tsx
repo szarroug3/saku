@@ -263,8 +263,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    * which is also what makes it self-correcting: a fact the data no longer has
    * drops out here rather than being queued for a question nobody can render.
    */
-  const rerunFacts = (): FactId[] =>
-    resolve({ ...emptySelection(), session: results.ts }, history);
+  const rerunFacts = useMemo(
+    (): FactId[] =>
+      resolve({ ...emptySelection(), session: results.ts }, history),
+    [history, results.ts],
+  );
 
   /** Turn this finished session into a saved list, so its exact items can be
    * drilled again later. A past session is a DERIVED list whose query selects
@@ -509,8 +512,9 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
             mode: results.mode,
           })
         }
+        canRerun={rerunFacts.length > 0}
         onRerun={() =>
-          void startFacts(rerunFacts(), "That session", {
+          void startFacts(rerunFacts, "That session", {
             mode: results.mode,
             coverage: true,
           })
