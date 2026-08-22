@@ -145,7 +145,7 @@ test("a round committed mid-session is not counted again at the end", async ({
   for (const round of [1, 2]) {
     await playRound(page, VOWELS.length);
     await expect(page.locator("body")).toContainText(
-      `round ${round} of 3 · done`,
+      `Round ${round} of 3 · Done`,
     );
     await page
       .getByRole("button", { name: "Complete round", exact: true })
@@ -235,7 +235,7 @@ test("Pause from the round-complete phase returns to Learn", async ({
   await playRound(page, VOWELS.length);
   // The fork shown right after a round finishes, before "Complete round" is
   // pressed.
-  await expect(page.locator("body")).toContainText("round 1 of 3 · done");
+  await expect(page.locator("body")).toContainText("Round 1 of 3 · Done");
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.waitForURL("**/learn");
 });

@@ -85,7 +85,7 @@ test("a session plays all three rounds through to Session complete", async ({
   for (let round = 1; round <= 3; round++) {
     await playRound(page, VOWELS.length);
     await expect(page.locator("body")).toContainText(
-      `round ${round} of 3 · done`,
+      `Round ${round} of 3 · Done`,
     );
 
     if (round < 3) {

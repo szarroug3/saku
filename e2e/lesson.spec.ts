@@ -128,7 +128,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // headline; Needs work never renders (Board returns null on an empty facts
   // list), and Solid carries all five as unselected cells (Solid starts
   // untouched).
-  await expect(page.locator("body")).toContainText("round 1 of 3 · done");
+  await expect(page.locator("body")).toContainText("Round 1 of 3 · Done");
   await expect(page.locator("body")).toContainText("Perfect run");
   await expect(page.locator("body")).toContainText("5 shown · 5 correct · 0 incorrect · 0 not answered");
   const solid = page.getByText(/^Solid/);

@@ -154,7 +154,7 @@ test("a session that lost its leg recovers instead of deadlocking", async ({
 
   // And the learner lands somewhere with controls on it — the round's fork,
   // reporting whatever the round actually banked.
-  await expect(page.locator("body")).toContainText("round 1 of 3 · done");
+  await expect(page.locator("body")).toContainText("Round 1 of 3 · Done");
 
   // Most importantly: they can now get OUT.
   await page.getByRole("button", { name: "Pause", exact: true }).click();
