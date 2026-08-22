@@ -231,14 +231,30 @@ export function SliceBar({
     // action besides Quiz me, and it only appears when there is something on
     // THIS entry to reverse. Everything else about the entry variant (no
     // band, no Add to list, no claim/teach) is unchanged.
+    const canClaim = claimOrder.length > 0;
     const canUnclaim = Boolean(onUnclaim) && claimedFacts.length > 0;
-    if (!canQuiz && !canUnclaim) return null;
+    if (!canQuiz && !canClaim && !canUnclaim) return null;
     return (
-      <>
-        {/* The fixed-bar chrome (kq-band, border, padding) lives on
-            entry-view.tsx's wrapper, matching the quiz screens' own reveal
-            bar exactly — this is just its content. */}
+      <div className="kq-band sticky bottom-0 z-20 mt-auto border-t border-border px-4 py-3">
+        {/* The fixed-bar chrome (kq-band, border, padding) lives HERE, not on
+            entry-view.tsx's wrapper — this component is the one place that
+            knows whether it has anything to show, so it is the one place that
+            gets to decide whether the sticky footer chrome exists at all. An
+            entry with nothing to claim, unclaim or quiz renders neither the
+            buttons nor the empty bordered bar around them (the null return
+            above), matching the quiz screens' own reveal bar exactly. */}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {/* "Mark as known" and "Mark as not known" are mutually exclusive on
+             an entry page's own facts: claimOrder is exactly the not-yet-claimed
+             ones and claimedFacts is exactly the claimed ones, so at most one of
+             these two ever shows for a fully-claimed or fully-unclaimed entry —
+             the same "dependent on current state" rule the bulk bar already
+             follows below. */}
+          {canClaim ? (
+            <Btn onClick={() => onClaim(claimOrder)}>
+              ✓ I know {claimOrder.length === 1 ? "this" : "these"}
+            </Btn>
+          ) : null}
           {canUnclaim ? (
             <Btn onClick={() => onUnclaim?.(claimedFacts)}>
               Mark as not known
@@ -270,7 +286,7 @@ export function SliceBar({
             }
           }}
         />
-      </>
+      </div>
     );
   }
 
