@@ -6,7 +6,7 @@
 // detail pages deserialize its exact output instead of rebuilding it in the
 // browser (which would pull the curriculum dictionary into their bundle).
 
-import { etymologyOf } from "@/data/kanji-etymology";
+import { etymologyOf, phoneticReading } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { vocabRow, wordSenseRegister } from "@/data/vocab";
@@ -127,7 +127,20 @@ export function characterEntryPayload(item: ContentItem): CharacterEntryPayload 
       ? etymology.components.map((c) => ({
           glyph: c.glyph,
           entry: builtPieceEntryId(c.glyph),
-          sense: c.sense ?? "",
+          // A phonetic component's raw crawled `sense` is empty (SAK-137) — it
+          // was chosen for its SOUND, not a meaning, so there is nothing there
+          // to show. Show the reading it actually lends instead (never
+          // invented — phoneticReading only returns an on-reading the app's
+          // own data already confirms the host shares), same "phonetic" role
+          // tag either way. Falls back to the bare tag, no invented text, when
+          // no shared on-reading exists (see phoneticReading's own doc).
+          sense:
+            c.function === "phonetic"
+              ? (() => {
+                  const reading = phoneticReading(glyph, c.glyph);
+                  return reading ? `lends ${reading}` : "";
+                })()
+              : (c.sense ?? ""),
           role: c.function ?? null,
         }))
       : (teachableParts(glyph) ?? []).map((p) => ({
