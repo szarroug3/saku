@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { wordPitch } from "../data/pitch.ts";
-import { accentName, moraeOf, pitchPattern } from "./pitch.ts";
+import { accentName, moraeOf, pitchPattern, pitchPatternForLength } from "./pitch.ts";
 
 /** Compact "H"/"L" string of the pattern, and where the drop sits. */
 function shape(reading: string, downstep: number) {
@@ -68,6 +68,30 @@ describe("pitchPattern — the textbook minimal set", () => {
   });
   test("out-of-range downstep never throws and yields no drop", () => {
     assert.equal(shape("はし", 9).dropAt, -1);
+  });
+});
+
+describe("pitchPatternForLength — downstep collapse past word end", () => {
+  test("downstep === length (true odaka) and downstep > length render IDENTICAL high/low", () => {
+    // Both a genuine odaka word and any downstep beyond the word's own mora
+    // count produce the same LOW,HIGH,HIGH,HIGH shape for a 4-mora word,
+    // because `high(i)` only ever checks `pos <= downstep` — nothing here
+    // reads how far past `length` the downstep sits. `.drop` is the only
+    // field that would distinguish them, and synthesizeAtDownstep (tts-
+    // synth.ts) never reads `.drop`, only `.high` — so audio synthesized at
+    // downstep === length is acoustically indistinguishable from audio at
+    // any downstep > length. This is why `wrongDownstepFor` must never pick
+    // a downstep >= the word's own mora count when it wants a distractor
+    // that actually SOUNDS different from a same-length real word's clip.
+    const asHl = (p: { high: boolean }[]) => p.map((m) => (m.high ? "H" : "L")).join("");
+    const odaka = pitchPatternForLength(4, 4);
+    const pastEnd = pitchPatternForLength(4, 5);
+    const wayPastEnd = pitchPatternForLength(4, 9);
+    assert.equal(asHl(odaka), "LHHH");
+    assert.equal(asHl(pastEnd), "LHHH");
+    assert.equal(asHl(wayPastEnd), "LHHH");
+    assert.equal(asHl(odaka), asHl(pastEnd));
+    assert.equal(asHl(odaka), asHl(wayPastEnd));
   });
 });
 
