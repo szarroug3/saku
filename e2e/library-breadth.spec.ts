@@ -22,7 +22,12 @@ import { test, expect, type Page } from "./helpers/app";
  * the section HEADER and not the always-present kind chip, which is a <button>
  * with the same text. */
 function groupHeader(page: Page, name: string) {
-  return page.locator("p.font-semibold.uppercase").filter({ hasText: name });
+  // The header is either bare (e.g. "Kanji") or the name immediately
+  // followed by "· N matches" (no space) — never a substring match, which
+  // would also catch an unrelated compound label like "Kanji parts".
+  return page.locator("p.font-semibold.uppercase", {
+    hasText: new RegExp(`^${name}(·.*)?$`),
+  });
 }
 
 /** The search box — matched on a stable fragment of its long placeholder rather

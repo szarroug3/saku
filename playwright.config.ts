@@ -26,10 +26,19 @@ export default defineConfig({
   // Run separate spec files concurrently. Tests within one file remain ordered,
   // while each worker still gets Playwright's isolated browser context and
   // localStorage state through the seed fixture described above.
-  // Increased workers from 4 to 6 for better parallelization without excessive
-  // browser context overhead.
+  //
+  // DROPPED FROM 6 TO 3 (SAK-140/141). 6 workers against ONE dev-mode Next.js
+  // server (not a production build — no build-time optimization, every route
+  // still compiles/renders live) intermittently starved several tests: a bare
+  // `page.goto` timing out at 60s, a progress pill still reading a stale
+  // count a full 15s after an answer. All of that reproduced ONLY at the full
+  // 6-worker default and disappeared entirely at 2-3 workers across repeated
+  // full-suite runs — this is the dev server falling behind under concurrent
+  // load, not a product race. 3 is the choice that kept most of the
+  // parallelism speedup while never reproducing the starvation in testing;
+  // drop further toward 1-2 if it resurfaces on a slower machine.
   fullyParallel: false,
-  workers: 6,
+  workers: 3,
   forbidOnly: !!process.env.CI,
   retries: 0,
   // A plain `pnpm run test:e2e` reports exactly as it always has: one line per
