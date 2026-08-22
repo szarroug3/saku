@@ -202,7 +202,7 @@ export function TriageSection({
           <>
             {canRerun ? (
               <SmallBtn sel onClick={onRerun}>
-                Retry all
+                Rerun
               </SmallBtn>
             ) : null}
             {weakest.length ? (
@@ -216,7 +216,7 @@ export function TriageSection({
             <SmallBtn sel disabled={!n} onClick={() => onRedrill(mergedFacts)}>
               Retry {n} selected
             </SmallBtn>
-            {canRerun ? <SmallBtn onClick={onRerun}>Retry all</SmallBtn> : null}
+            {canRerun ? <SmallBtn onClick={onRerun}>Rerun</SmallBtn> : null}
           </>
         )}
       </div>

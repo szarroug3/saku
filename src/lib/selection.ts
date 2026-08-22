@@ -294,18 +294,38 @@ export function resolve(
 ): FactId[] {
   const now = context.now ?? Date.now();
   const graduateRuns = context.graduateRuns ?? 10;
-  // The starting pool: a list if one is named, otherwise everything you know.
-  // NOT the whole dictionary — untaught material is learned, not drilled here.
+  // A session that is gone names nothing, rather than everything. Rerunning a
+  // deleted session must give you an empty selection you can see, not the
+  // whole dictionary.
+  const sessionFacts = (ts: number): FactId[] => {
+    const record = history.sessions.find((s) => s.ts === ts);
+    return Object.keys(record?.facts ?? {}) as FactId[];
+  };
+
+  // The starting pool: a list if one is named; otherwise, for a PURE session
+  // query (Rerun — see "That session" in whatSentence, and results-view.tsx's
+  // rerunFacts), the session's own recorded facts directly — every fact it put
+  // on screen, answered or not, per session-record.ts's projectSessionFacts
+  // ("a card put on screen but not yet resolved has seen === 0 here... that
+  // is the point"). Narrowing that pool through knownFacts instead (as a plain
+  // filter, below) used to mean a fact shown but never answered — never having
+  // banked a seen count anywhere else — silently dropped out of its own
+  // Rerun, which is exactly backwards: Rerun's whole premise is "what this
+  // session put in front of you," not "of that, what you separately already
+  // know." Otherwise (no session, or a list further narrowed BY a session),
+  // fall back to knownFacts — the ordinary "everything you know" baseline.
   let pool: FactId[] = sel.list
     ? factsOfList(sel.list, lists, history, depth, context)
-    : knownFacts(history);
+    : sel.session !== null
+      ? sessionFacts(sel.session)
+      : knownFacts(history);
 
-  if (sel.session !== null) {
-    const record = history.sessions.find((s) => s.ts === sel.session);
-    // A session that is gone names nothing, rather than everything. Rerunning a
-    // deleted session must give you an empty selection you can see, not the
-    // whole dictionary.
-    const inSession = new Set<string>(Object.keys(record?.facts ?? {}));
+  // A list ALSO narrowed to one session (not the common Rerun case, but a
+  // real composition — see the module header's "session is just another
+  // filter") still intersects, since the pool above came from the list, not
+  // the session, in that combination.
+  if (sel.list && sel.session !== null) {
+    const inSession = new Set<string>(sessionFacts(sel.session));
     pool = pool.filter((f) => inSession.has(f));
   }
 
