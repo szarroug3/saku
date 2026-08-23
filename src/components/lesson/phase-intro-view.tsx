@@ -20,6 +20,7 @@ import { Fragment } from "react";
 // can't see, and the walk's forward button looks broken rather than patient.
 
 import { Callout } from "@/components/lesson/callout";
+import { PitchReading } from "@/components/library/pitch-mark";
 import { HearButton } from "@/components/ui/hear-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -34,6 +35,7 @@ import type {
   IntroExample,
   IntroPara,
   PhaseIntro,
+  PitchExampleRow,
   PunctuationRow,
   SentenceExample,
   TransitivityPairRow,
@@ -157,6 +159,9 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
                 </p>
                 <SentenceExampleView example={intro.sentenceExample} />
               </div>
+            ) : null}
+            {intro.pitchExamples?.length ? (
+              <IntroPitchExamples sets={intro.pitchExamples} />
             ) : null}
           </div>
         )}
@@ -423,6 +428,40 @@ export function IntroExamples({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * Sets of same-reading, different-pitch words — bare hear-it + pitch-line +
+ * kanji + gloss rows, no prose or label around them (see `pitchExamples` on
+ * `PhaseIntro` for why: the words sharing a reading already say what they have
+ * in common). Reuses the exact pair the Library word page already ships for a
+ * verified-pitch reading (character-entry-view.tsx): `HearButton` with the
+ * word's exact `downstep` — the /api/pitch-tts clip, not the fuzzy sentence
+ * match every plain Hear button falls back to — beside `PitchReading` drawing
+ * that same downstep's overline. A blank gap separates each set from the next;
+ * within a set the rows are packed tight, the same way a Library entry's own
+ * reading rows are.
+ */
+export function IntroPitchExamples({ sets }: { sets: readonly (readonly PitchExampleRow[])[] }) {
+  return (
+    <div className="space-y-5">
+      {sets.map((rows, i) => (
+        <div key={i} className="space-y-2">
+          {rows.map((row) => (
+            <div key={row.word} className="flex flex-wrap items-center gap-2 text-[15px]" lang="ja">
+              <HearButton glyph={row.reading} downstep={row.downstep} />
+              <PitchReading reading={row.reading} downstep={row.downstep} className="font-kana text-text" />
+              <span className="text-text">{row.word}</span>
+              <span className="text-text-muted/70">·</span>
+              <span lang="en" className="text-[13px] text-text-muted">
+                {row.gloss}
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
