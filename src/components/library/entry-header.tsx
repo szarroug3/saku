@@ -17,8 +17,6 @@
 import type { ReactNode } from "react";
 
 import { PageTitle, SoundIcon } from "@/components/ui";
-import { PitchReading } from "@/components/library/pitch-mark";
-import { TermLink } from "@/components/library/term-link";
 import { japaneseFontClass } from "@/lib/japanese-text";
 
 export function EntryHeader({
@@ -58,15 +56,14 @@ export function EntryHeader({
    * wherever there is nothing to say: a grammar pattern is a shape rather than a
    * sound, and a diacritic has no pronunciation at all.
    *
-   * `pitch` is the word's downstep position (see src/lib/pitch.ts). When set,
-   * the reading is drawn in the standard pitch-accent overline notation instead
-   * of plain — DISPLAY only, so a learner does not fix a wrong habit. Left
-   * undefined wherever there is no verified pitch, which is a third of words and
-   * every kana/kanji page; the reading then prints plainly, never with a guessed
-   * mark. */
-  sound?:
-    | { readonly text: string; readonly speak: string; readonly pitch?: number | null }
-    | null;
+   * No pitch-accent rendering here (see SAK-170) — this prop currently has no
+   * caller at all, and the one candidate caller (PrimitiveView) shows kanji
+   * parts, which have no word-level pitch to draw. The one page that DOES have
+   * a verified pitch to show (the "As a word" row in character-entry-view.tsx)
+   * draws its own reading + HearButton inline instead of going through this
+   * header. If a future caller needs a pitch-marked reading here, look at that
+   * pattern rather than reintroducing a `pitch` field speculatively. */
+  sound?: { readonly text: string; readonly speak: string } | null;
   onSpeak?: (text: string) => void;
 }) {
   return (
@@ -128,19 +125,7 @@ export function EntryHeader({
               >
                 <SoundIcon />
               </button>
-              {sound.pitch == null ? (
-                <span>{sound.text}</span>
-              ) : (
-                <>
-                  <PitchReading reading={sound.text} downstep={sound.pitch} />
-                  {/* The line over the reading is drawn but never named on the
-                      page; this is the one way to the page that says what it is.
-                      Only ever rendered where a pitch mark actually is. */}
-                  <TermLink id="pitch-accent" className="text-[11px] text-accent no-underline hover:underline">
-                    pitch accent
-                  </TermLink>
-                </>
-              )}
+              <span>{sound.text}</span>
             </p>
           ) : null}
         </div>

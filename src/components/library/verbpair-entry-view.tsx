@@ -18,9 +18,11 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface } from "@/components/library/entry-section";
+import { PitchReading } from "@/components/library/pitch-mark";
 import { Callout } from "@/components/lesson/callout";
 import { Info } from "@/components/ui";
 import { HearButton } from "@/components/ui/hear-button";
+import { wordPitch } from "@/data/pitch";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { hasKanji } from "@/lib/romaji";
 import type { ContentItem } from "@/lib/content/item";
@@ -84,29 +86,63 @@ export function VerbPairEntryView({
           tooltip. Just a divider under the header. */}
       <div className="mt-5 border-t border-border/50 pt-5">
         <div className="flex flex-col gap-5">
-          {sides.map((s) => (
-            <div key={s.m.word}>
-              <p className="mb-1.5 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
-                {s.label}
-                <Info>{s.help}</Info>
-              </p>
-              <div className="flex items-center gap-2.5">
-                <HearButton glyph={s.m.reading} />
-                <span className="font-kana text-[22px] leading-none text-text">{s.m.word}</span>
-                {/* Furigana glosses a kanji reading — an all-kana verb has
-                    nothing for it to add. See SAK-38. */}
-                {hasKanji(s.m.word) ? (
-                  <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
+          {sides.map((s) => {
+            // SAK-170: verb pairs are real JMdict entries (69 pairs / 138
+            // members checked against src/data/generated/pitch.json — 131 of
+            // 138, ~95%, carry a verified downstep), unlike keigo's mostly-new
+            // compound forms, so exact-pitch audio is a real, low-risk win
+            // here — same downstep-exact pattern as the "As a word" row in
+            // character-entry-view.tsx.
+            const pitch = wordPitch(s.m.word);
+            return (
+              <div key={s.m.word}>
+                <p className="mb-1.5 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+                  {s.label}
+                  <Info>{s.help}</Info>
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <HearButton glyph={s.m.reading} downstep={pitch ?? undefined} />
+                  {/* All-kana verb (e.g. くださる has no partner, but a
+                      handful of pairs are): the primary text IS the reading,
+                      so the pitch mark (when verified) goes straight on it.
+                      A kanji verb keeps its kanji as the primary text — the
+                      pitch mark moves to the furigana reading below instead,
+                      same split character-entry-view.tsx's kana-only rows
+                      already draw the mark on. */}
+                  {!hasKanji(s.m.word) && pitch !== null ? (
+                    <PitchReading
+                      reading={s.m.word}
+                      downstep={pitch}
+                      className="font-kana text-[22px] leading-none text-text"
+                    />
+                  ) : (
+                    <span className="font-kana text-[22px] leading-none text-text">
+                      {s.m.word}
+                    </span>
+                  )}
+                  {/* Furigana glosses a kanji reading — an all-kana verb has
+                      nothing for it to add. See SAK-38. */}
+                  {hasKanji(s.m.word) ? (
+                    pitch !== null ? (
+                      <PitchReading
+                        reading={s.m.reading}
+                        downstep={pitch}
+                        className="font-kana text-[13px] text-text-muted"
+                      />
+                    ) : (
+                      <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
+                    )
+                  ) : null}
+                </div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
+                {s.m.example ? (
+                  <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
+                    {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
+                  </p>
                 ) : null}
               </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{s.m.en}</p>
-              {s.m.example ? (
-                <p lang="ja" className="mt-1 font-kana text-[15px] leading-relaxed text-text">
-                  {highlightSpan(s.m.example.jp, s.m.example.highlightSpan)}
-                </p>
-              ) : null}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

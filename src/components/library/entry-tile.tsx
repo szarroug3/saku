@@ -76,6 +76,31 @@ import { subLabel } from "@/lib/library/sub-label";
 import { hasKanji } from "@/lib/romaji";
 import type { VerbPair } from "@/data/transitivity";
 
+// SAK-170: every HearButton in this file stays GENERIC (no `downstep`), and no
+// tile/row here draws a pitch line, on purpose. This file renders every
+// library kind — kana, kanji, marks, terms, grammar, sentences, words, keigo
+// sets, verb pairs — off one shared shell (EntryTile/EntryRow/ShelfRow) at
+// shelf scale (this file's own header: "a 2,136-tile kanji shelf or a
+// 12,553-tile word shelf"). Two things make wiring exact pitch in here a
+// different call than the single-entry detail pages (character-entry-view.tsx,
+// verbpair-entry-view.tsx):
+//   - EntryTile/EntryRow only ever have `entry.glyph`, not a word's verified
+//     kana reading or a pitch-compatibility flag — words-with.tsx needed a
+//     dedicated batched server lookup (resolveWordLinksByGlyph's
+//     `pitchCompatible`) just to get that for a capped 8-row list; doing the
+//     same per-tile across every kind on a multi-thousand-tile shelf is a
+//     materially bigger fetch, not a copy-paste of the existing pattern.
+//   - The shelf's own design already refuses per-tile decoration on purpose
+//     (see the file header's SAK-63 note: "that heat-map-of-your-own-memory
+//     was exactly what the design kept throwing out") — an overline pitch
+//     mark on some tiles and not others is exactly that kind of per-tile
+//     furniture, and deciding to add it belongs with that design call, not
+//     as a side effect of an audio-coverage ticket.
+// KeigoCell/PairCell (real dictionary words, and per SAK-170's investigation
+// verb pairs hit pitch ~95% of the time) are the one part of this file where
+// wiring `downstep` in later would be cheap — worth a small, separate
+// follow-up rather than folding into this pass.
+
 /** Whether an entry has a pronunciation worth a 🔊.
  *
  * A DIRECT FIELD READ, not a `kind` check. `kind` answers "which shelf" — it
