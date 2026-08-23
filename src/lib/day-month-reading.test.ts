@@ -1,16 +1,19 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/day-month-reading.test.ts
 //
 // day-month-reading.ts is the pure engine behind the 〜日/〜月 "how it's built"
-// reference page (src/data/day-month-construction.ts). The cross-check block
-// below is the correctness contract: it pins dayReading/monthReading to the
-// real readings src/data/counters.ts already ships (COUNTER_CURRICULUM's DAYS
-// and MONTHS forms) — if a derived reading ever drifted from what the app
-// actually teaches, this test would fail before a page could show it.
+// reference page (src/data/day-month-construction.ts) AND, since SAK-163
+// round 4, the generative "day"/"month" quiz round (number-quiz.ts's QuizKind).
+// The cross-check block below is the correctness contract: it pins
+// dayReading/monthReading to the real readings src/data/counters.ts's DAYS/
+// MONTHS arrays ship (reference-only data now — see that file's header; these
+// forms are no longer individually scheduled/drilled) — if a derived reading
+// ever drifted from what the app actually teaches, this test would fail before
+// a page could show it or a rolled quiz item could ask it.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { COUNTER_CURRICULUM } from "@/data/counters";
+import { DAYS, MONTHS } from "@/data/counters";
 import {
   dayReading,
   dayReadingParts,
@@ -20,8 +23,8 @@ import {
   monthReadingParts,
 } from "@/lib/day-month-reading";
 
-const DAY_FORMS = COUNTER_CURRICULUM.filter((f) => f.counter === "日");
-const MONTH_FORMS = COUNTER_CURRICULUM.filter((f) => f.counter === "月");
+const DAY_FORMS = DAYS;
+const MONTH_FORMS = MONTHS;
 
 describe("cross-check against src/data/counters.ts's shipped DAYS/MONTHS forms", () => {
   test("counters.ts ships exactly 31 day forms and 12 month forms, in order 1..n", () => {

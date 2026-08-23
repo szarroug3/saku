@@ -16,8 +16,11 @@ import {
   COUNTER_CURRICULUM,
   COUNTER_ENTRIES,
   COUNTER_FACTS,
+  COUNTER_KANJI_GLYPHS,
   CONSTRUCTION_CATEGORY_IDS,
   CONSTRUCTION_CATEGORY_ENTRIES,
+  DAYS,
+  MONTHS,
   SYSTEM_COUNTERS,
   TAIL_COUNTERS,
   constructionCategoryOfMarker,
@@ -36,8 +39,13 @@ import { ALL_FACTS } from "../lib/facts.ts";
 import { acceptableNumberReadings, counterReading } from "../lib/number-reading.ts";
 import { NUMBERS_COMPOSE } from "./phase-intros.ts";
 
+// byGlyph searches COUNTER_CURRICULUM (the scheduled/drilled forms) PLUS
+// DAYS/MONTHS (SAK-163 round 4: reference-only data, no longer in
+// COUNTER_CURRICULUM — see counters.ts's notes above DAYS/MONTHS) so the
+// "memorised readings are pinned" block below can still pin day/month's real
+// shipped readings even though they are no longer individually scheduled.
 const byGlyph = (g: string): CounterForm =>
-  COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
+  [...COUNTER_CURRICULUM, ...DAYS, ...MONTHS].find((f) => f.glyph === g)!;
 
 describe("the Sino numbers 1-10 are no longer rote forms", () => {
   test("〜つ is the very first thing in the track", () => {
@@ -117,24 +125,37 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
 
   test("the object counters are no longer taught as rote forms", () => {
     // The whole point of the conversion: no 一本…十本 rows, no per-counter form
-    // for 本/匹/枚 or the tail. The counted (non-kana) forms left are the one
-    // special reading a category cannot build (二十歳), plus the two closed,
-    // memorised sets SAK-163 adds — day-of-month and month-of-year — which are
-    // ALSO not generative categories (see the notes above DAYS and MONTHS in
-    // counters.ts for why: 二十日 breaks the shared engine's composition rule,
-    // and 〜月 never scales past 12).
+    // for 本/匹/枚 or the tail. SAK-163 round 4 extends this to day-of-month and
+    // month-of-year too — they are generative categories now (see the notes
+    // above DAYS and MONTHS in counters.ts), so their 43 forms are gone from
+    // COUNTER_CURRICULUM the same way 一本…十本 already are. 二十歳 (はたち) is
+    // the ONE reading left that no category can build.
     const counted = COUNTER_CURRICULUM.filter((f) => !isKanaForm(f));
     assert.deepEqual(
       counted.map((f) => f.glyph),
-      [
-        "二十歳",
-        "１日", "２日", "３日", "４日", "５日", "６日", "７日", "８日", "９日", "１０日",
-        "１１日", "１２日", "１３日", "１４日", "１５日", "１６日", "１７日", "１８日", "１９日", "２０日",
-        "２１日", "２２日", "２３日", "２４日", "２５日", "２６日", "２７日", "２８日", "２９日", "３０日", "３１日",
-        "１月", "２月", "３月", "４月", "５月", "６月", "７月", "８月", "９月", "１０月", "１１月", "１２月",
-      ],
-      "the memorised counted forms are 二十歳 plus every day-of-month and month-of-year reading",
+      ["二十歳"],
+      "the only memorised counted form left is 二十歳",
     );
+  });
+
+  test("DAYS/MONTHS survive only as reference data — not in COUNTER_CURRICULUM, but COUNTER_KANJI_GLYPHS still excludes them", () => {
+    // The precise split this round draws: gone from the scheduled/drilled
+    // curriculum, but still real DATA (for the reference page's worked table)
+    // and still excluded from the ordinary words track / Library Word shelf
+    // (or vocab.json's own day/month duplicates would resurface — the SAK-147
+    // bug COUNTER_KANJI_GLYPHS exists to prevent).
+    assert.equal(DAYS.length, 31);
+    assert.equal(MONTHS.length, 12);
+    for (const f of [...DAYS, ...MONTHS]) {
+      assert.ok(
+        !COUNTER_CURRICULUM.some((c) => c.key === f.key),
+        `${f.key} should not be individually scheduled any more`,
+      );
+      assert.ok(
+        COUNTER_KANJI_GLYPHS.has(f.glyph),
+        `${f.glyph} must still be excluded from the words track/Word shelf`,
+      );
+    }
   });
 
   test("〜人 ships NO rote forms — its irregulars are taught by the category", () => {
@@ -155,10 +176,10 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
 });
 
 describe("the generative categories", () => {
-  test("there is one category per number range and per system/tail counter", () => {
+  test("there is one category per number range, per system/tail counter, and day/month", () => {
     assert.deepEqual(
       [...CONSTRUCTION_CATEGORY_IDS],
-      ["tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"],
+      ["tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai", "day", "month"],
     );
   });
 

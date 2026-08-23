@@ -29,7 +29,6 @@ import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { termEntry } from "../data/terms.ts";
 import { TSU_INTRO } from "../data/track-intros.ts";
-import { DAY_RULE_INTRO, MONTH_RULE_INTRO } from "../data/day-month-construction.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
 import { packLessons } from "./kanji-lesson.ts";
@@ -664,18 +663,16 @@ describe("the つ counter intro rides the first つ-counter item", () => {
       COUNTER_FACTS.map((f) => f.id),
       BLANK,
     );
-    // Every non-つ form after ひとつ…とお — 二十歳, then the day-of-month and
-    // month-of-year forms SAK-163 added — in COUNTER_CURRICULUM order, with
-    // the two round-2 rule cards spliced in right where they fire: DAY_RULE_INTRO
-    // ahead of 十一日 (the first REGULAR day, 十一日's key counter:day:11 — the
-    // 1st-10th are memorised, so the rule card has nothing to say before then),
-    // and MONTH_RULE_INTRO ahead of 一月 (every month, including the
-    // irregulars, is built from a number, so there is no "wait for regular"
-    // gate the way DAYS has one).
+    // Every non-つ form after ひとつ…とお — just 二十歳 now (SAK-163 round 4):
+    // day-of-month and month-of-year are generative categories, gated by their
+    // own MARKER pseudo-fact, so they never appear in COUNTER_FACTS/
+    // COUNTER_CURRICULUM at all and cannot show up in a walk built from facts
+    // the way this test builds one. Their rule card is exercised by the
+    // generative-marker branch instead (see counter-categories.test.ts and
+    // day-month-construction.test.ts's "the lesson rule card is now DERIVED"),
+    // not by this fact-driven walk.
     const afterTsu: string[] = [];
     for (const f of COUNTER_CURRICULUM.filter((form) => form.counter !== "つ")) {
-      if (f.key === "counter:day:11") afterTsu.push(DAY_RULE_INTRO.id);
-      if (f.key === "counter:month:1") afterTsu.push(MONTH_RULE_INTRO.id);
       afterTsu.push(f.glyph);
     }
     assert.deepEqual(
