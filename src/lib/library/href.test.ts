@@ -86,7 +86,7 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
   }
   assert.deepEqual(
     [...kinds].sort(),
-    // "counter" is the numbers-and-counters shelf — its own kind segment even
+    // "counting" is the numbers-and-counters shelf — its own kind segment even
     // though the facts under it are `word` (see COUNTER_KIND in entries.ts).
     // "keigo" is the politeness shelf, a real subject of its own. "term" is the
     // glossary shelf (JLPT, kana, romaji, ...) — see TERM_KIND. "sentence-rule"
@@ -96,7 +96,7 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
     // GRAMMAR_CONCEPT_SUBJECT. "numbers" is the how-to-build-them construction
     // pages, which browse on the counters shelf but carry their own URL segment —
     // see NUMBER_CONSTRUCTION_KIND.
-    ["counter", "grammar", "grammar-concept", "hiragana", "kanji", "katakana", "keigo", "numbers", "primitive", "radical", "sentence-rule", "term", "transitivity", "word", "writing-rule"],
+    ["counting", "grammar", "grammar-concept", "hiragana", "kanji", "katakana", "keigo", "numbers", "primitive", "radical", "sentence-rule", "term", "transitivity", "word", "writing-rule"],
   );
 });
 

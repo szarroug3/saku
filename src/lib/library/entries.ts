@@ -151,7 +151,7 @@ import type { EntryId, FactId, FactInfo } from "@/types";
  * subjectLabel is driven by FactInfo.subject, which is `word`); it is a
  * browse-only label, exactly the "track label" the ruling asked for.
  */
-export const COUNTER_KIND = "counter";
+export const COUNTER_KIND = "counting";
 /**
  * The "how numbers and counts are built" reference pages' kind. Like COUNTER_KIND
  * it is a browse-only label, not a fact subject: a construction page mints no
