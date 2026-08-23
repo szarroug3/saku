@@ -13,6 +13,7 @@ import { SmallBtn } from "@/components/ui";
 export function SessionHud({
   label,
   sublabel,
+  plain,
   where,
   pct,
   tone = "accent",
@@ -24,12 +25,27 @@ export function SessionHud({
   endLabel = "End session",
   children,
 }: {
-  /** What's running — "Review · 20". */
+  /** What's running — "Review · 20". In `plain` mode this is the trailing half
+   * of the "Track · N of M" line — the teach phase's "N of M" position. */
   label: string;
   /** A quiet second pill beside the first — used by the teach phase to name the
-   * subject being taught ("Kanji", "Words") next to the "N of M" position.
-   * Same pill furniture as `label`; omitted when there's nothing to say. */
+   * TRACK being taught ("Kanji", "Vocabulary") next to the "N of M" position.
+   * Same pill furniture as `label`, unless `plain`. Omitted when there's
+   * nothing to say. */
   sublabel?: string;
+  /**
+   * SAK-145: the lesson header bar reads as plain text, not pills — the owner's
+   * call, since a pill implies something clickable or a status, and this is
+   * just a position ("Vocabulary · 4 of 10"). Scoped to the one caller that
+   * needs it (the teach phase's frozen top row in app/session/page.tsx) rather
+   * than changed on SessionHud generally: every other screen wearing this HUD
+   * (rest, complete, the three quiz HUDs) still wants `label`/`sublabel` as
+   * pills. When true, `sublabel` (the track) is printed BEFORE `label` (the
+   * count), joined by " · ", as one plain string — the reverse of the pill
+   * order, because "N of M" makes sense read after "Vocabulary" but a track
+   * pill beside a count pill had no such reading order to keep.
+   */
+  plain?: boolean;
   /** Where you are — "round 1 · done", "resting", "complete". */
   where: string;
   /** Drop the progress bar entirely — the teach phase conveys position with its
@@ -82,14 +98,23 @@ export function SessionHud({
   const body = (
     <div className={`px-3 py-1.5 ${float ? "border-b border-border" : ""}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
-        <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
-          {label}
-        </span>
-        {sublabel ? (
-          <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
-            {sublabel}
+        {plain ? (
+          <span className="tabular-nums">
+            {sublabel ? `${sublabel} · ` : ""}
+            {label}
           </span>
-        ) : null}
+        ) : (
+          <>
+            <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
+              {label}
+            </span>
+            {sublabel ? (
+              <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
+                {sublabel}
+              </span>
+            ) : null}
+          </>
+        )}
         <span className="tabular-nums">{where}</span>
         <span className="ml-auto flex items-center gap-1.5">
           {children}

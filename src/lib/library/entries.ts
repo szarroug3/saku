@@ -297,6 +297,42 @@ export function subjectLabel(info: FactInfo | undefined): string | undefined {
 }
 
 /**
+ * The coarser TRACK a fact's lesson belongs to (SAK-145) — the same seven
+ * names Home's track cards use (TRACK_TITLE, components/home/home-feed.tsx):
+ * "Kana", "Vocabulary", "Grammar", "Transitivity", "Keigo". Radicals, kanji
+ * and words are three different `subjectLabel` item-kinds ("Radical",
+ * "Kanji", "Word") but one track, "Vocabulary" — there is no separate
+ * radical/kanji track for a lesson to belong to. Not re-exported from
+ * home-feed.tsx on purpose: that module is part of the /learn bundle, and
+ * this is read from the session header on every lesson, so the two keep
+ * independent (small, easily-kept-in-sync) copies of the same seven names
+ * rather than share an import across that bundle boundary.
+ *
+ * Counting and sentence-ordering lessons are not resolved here — both share
+ * `word` or another non-distinct subject with ordinary vocab facts, and are
+ * already named by the session page's own `session.what`/mode checks before
+ * this is ever consulted. Undefined for a subject with no track of its own
+ * (marks, terms, grammar concepts, kanji parts — none of which a lesson
+ * teaches directly).
+ */
+const TRACK_LABEL: Partial<Record<Kind, string>> = {
+  [KANA_SUBJECT]: "Kana",
+  [RADICAL_SUBJECT]: "Vocabulary",
+  [KANJI_SUBJECT]: "Vocabulary",
+  [VOCAB_SUBJECT]: "Vocabulary",
+  [GRAMMAR_SUBJECT]: "Grammar",
+  [TRANSITIVITY_SUBJECT]: "Transitivity",
+  [KEIGO_SUBJECT]: "Keigo",
+};
+
+/** The session header's track name for a fact — "Vocabulary" rather than
+ * `subjectLabel`'s "Word". See TRACK_LABEL. */
+export function trackLabel(info: FactInfo | undefined): string | undefined {
+  if (!info) return undefined;
+  return TRACK_LABEL[info.subject as Kind];
+}
+
+/**
  * One thing you can look up.
  *
  * The whole of what a Library screen is allowed to know. Everything
