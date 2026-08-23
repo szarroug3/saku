@@ -57,6 +57,12 @@ import type { EntryId } from "@/types";
 // `NumberConstruction` TYPE only (erased at compile time, see `import type`
 // there), so this is not a runtime circular dependency.
 import { DAY, MONTH } from "@/data/day-month-construction";
+// SAK-172: はたち's REAL shipped CounterForm, read straight off the curriculum
+// (never re-spelled) for 〜歳's Irregular row — the same "byte-correct" rule
+// day-month-construction.ts follows reading DAYS/MONTHS off @/data/counters.
+// counters.ts does not import this file (only number-construction-id.ts), so
+// this is not a cycle either.
+import { COUNTER_CURRICULUM, type CounterForm } from "@/data/counters";
 
 export { NUMBER_CONSTRUCTION_SUBJECT, numberConstructionEntry };
 
@@ -131,6 +137,16 @@ interface CounterSpec {
    * show the count mapping straight to the word instead. A sound-shift counter
    * (本, 匹 …) leaves this unset: its equation genuinely shows the shift. */
   readonly suppletive?: boolean;
+  /**
+   * SAK-172: a suppletive Irregular row OUTSIDE the 1–10 sweep — 〜歳's only
+   * case, 二十歳/はたち (count 20). counterGroups' derived 1..10 loop cannot
+   * produce this on its own (it only walks counts 1-10, and the reading engine
+   * deliberately does not model count 20 for "sai" — see number-reading.test.ts's
+   * cross-check skip), so it is appended afterward, straight off the REAL
+   * shipped CounterForm (never re-spelled) the same way day-month-
+   * construction.ts's dayRow reads 20日's suppletive はつか off DAYS. Undefined
+   * for every other counter. */
+  readonly extraIrregular?: { readonly count: number; readonly form: CounterForm };
 }
 
 /** counterReading, non-null asserted — every count 1..10 reads for every counter
@@ -189,12 +205,31 @@ function counterRow(n: number, spec: CounterSpec, base: string, suppletive: bool
   };
 }
 
+/** One suppletive Irregular row OUTSIDE the 1-10 sweep — 〜歳's はたち (count
+ * 20). Like a 〜人 suppletive row (counterRow's `suppletive` branch) and
+ * day-month-construction.ts's toBuild for 20日's はつか, there is no additive
+ * equation to show: the word is not number + counter at all, so `build` is
+ * empty and the view renders the count mapping straight to the word. */
+function extraIrregularRow(spec: CounterSpec, count: number, form: CounterForm): CountRow {
+  const [, plural] = spec.noun;
+  return {
+    label: `${count} ${plural}`,
+    word: form.glyph,
+    reading: form.reading,
+    build: [],
+    result: { kana: form.reading, value: String(count) },
+  };
+}
+
 /** The example tables for a counter — counts 1 to 10 split into a Regular table
  * and an Irregular table, the way grammar splits regular conjugation from its
  * exceptions. A count is irregular exactly when counterIrregulars() names it (the
  * sound shift the counter exists to teach); the title carries what "(shift)" used
  * to say inline, and is shown only when both tables exist. A counter with no
- * shifts (〜枚, 〜台) yields only Regular, rendered untitled. */
+ * shifts (〜枚, 〜台) yields only Regular, rendered untitled. `extraIrregular`
+ * (only 〜歳's はたち, SAK-172) appends one more Irregular row beyond the 1-10
+ * sweep — a genuinely suppletive whole word, the same treatment day-of-month's
+ * table already gives 20日's はつか. */
 function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   const shifts = new Set(counterIrregulars(spec.kind));
   const base = counterBase(spec.kind);
@@ -207,6 +242,9 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
     // counts still build additively, so the flag rides only on the shifting rows.
     const suppletive = spec.suppletive === true && isIrregular;
     (isIrregular ? irregular : regular).push(counterRow(n, spec, base, suppletive));
+  }
+  if (spec.extraIrregular) {
+    irregular.push(extraIrregularRow(spec, spec.extraIrregular.count, spec.extraIrregular.form));
   }
   const groups: IntroCountGroup[] = [{ title: "Regular", counter: true, examples: regular }];
   if (irregular.length) groups.push({ title: "Irregular", counter: true, examples: irregular });
@@ -302,6 +340,11 @@ const TENS_GROUPS: readonly IntroCountGroup[] = [
 // (人 本 匹 枚) first, then the tail (個 台 冊 杯 回 歳). 〜つ is deliberately
 // absent: it is native memorisation (ひとつ…とお), not a generative construction,
 // so there is no rule to show and no round to launch.
+/** 二十歳's real shipped CounterForm (counters.ts's COUNTER_CURRICULUM/TAIL),
+ * read once here so the sai spec below and extraIrregularRow never re-spell
+ * its glyph/reading. */
+const HATACHI: CounterForm = COUNTER_CURRICULUM.find((f) => f.key === "counter:sai:20")!;
+
 const COUNTER_SPECS: readonly CounterSpec[] = [
   {
     kind: "nin",
@@ -423,10 +466,15 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     glyph: "歳",
     name: "Years of age (〜歳)",
     noun: ["year old", "years old"],
+    // SAK-172: 二十歳/はたち folded in as a genuine Irregular row (below), the
+    // same treatment day-of-month's table gives 20日's suppletive はつか. The
+    // sound paragraph no longer needs its own parenthetical naming it — the
+    // table row now says so directly.
+    extraIrregular: { count: 20, form: HATACHI },
     sound: [
       {
         lead: "It doubles after 1, 8 and 10.",
-        text: "A small っ lands before 歳 there, so 一歳 is いっさい and 八歳 is はっさい. 六歳 stays regular at ろくさい, and there is no voicing after 3. (二十歳, twenty years old, has its own reading はたち.)",
+        text: "A small っ lands before 歳 there, so 一歳 is いっさい and 八歳 is はっさい. 六歳 stays regular at ろくさい, and there is no voicing after 3.",
       },
     ],
   },
@@ -548,26 +596,12 @@ export function numberConstructionRow(id: string): NumberConstruction | undefine
   return BY_ID.get(id);
 }
 
-/**
- * The construction ("how it's built") page for a counted FORM's counter glyph
- * (歳 → 〜歳), or undefined when that counter has no generative rule page. Every
- * counter page's own `glyph` is minted as `〜${spec.glyph}` by counterConstruction
- * above, so this is a plain reverse lookup against that same field — no new
- * mapping, no new data.
- *
- * WHY THIS EXISTS: a memorised counted form (@/data/counters's CounterForm, e.g.
- * 二十歳) and its counter's construction page (〜歳) are TWO separate Library
- * entries today (see counter-entry-view.tsx's header comment — a page is one
- * shape or the other, never both), so a reader on 二十歳's own page has no way to
- * reach the 〜歳 page that already explains, in its authored prose, exactly why
- * はたち is irregular ("二十歳, twenty years old, has its own reading はたち").
- * This join lets 二十歳's page LINK to that existing explanation instead of the
- * generic counted-form boilerplate pretending nothing counter-specific applies.
- *
- * Native 〜つ counting (ひとつ…とお) correctly resolves to undefined here — it is
- * memorisation, not a generative rule, so there is genuinely no construction
- * page for it to link to (see the NUMBER_CONSTRUCTIONS note above).
- */
-export function numberConstructionForCounterGlyph(glyph: string): NumberConstruction | undefined {
-  return NUMBER_CONSTRUCTIONS.find((c) => c.glyph === `〜${glyph}`);
-}
+// SAK-172: numberConstructionForCounterGlyph (SAK-35) used to let a memorised
+// counted form's own standalone page (二十歳) link OUT to its counter's
+// construction page (〜歳), which already explained はたち's irregularity in
+// prose. That gap is closed differently now: はたち is a genuine Irregular row
+// ON the 〜歳 page itself (see the `sai` CounterSpec's `extraIrregular` above),
+// and 二十歳 no longer has a standalone page to link FROM (see
+// COUNTER_TAIL_FORM_ALIASES in counters.ts and entries.ts's COUNTER_CURRICULUM
+// walk). Nothing calls this join any more — counter-entry-view.tsx's Related
+// section was its only reader — so it was removed rather than left dead.
