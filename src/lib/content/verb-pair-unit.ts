@@ -46,7 +46,7 @@ import { buildItem } from "./build-item.ts";
 import { pairEntry, pairForEntry, sharedStem } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { wordEntry } from "@/data/vocab";
-import { curriculumPosition } from "@/lib/curriculum-order";
+import { curriculumPosition } from "@/lib/curriculum-sequence";
 import type { ContentItem } from "./item.ts";
 import type { VerbPairUnit } from "./teach-unit.ts";
 

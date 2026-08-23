@@ -64,7 +64,7 @@ import { wordMeaningFactId } from "@/data/vocab";
 import { TRACK_INTROS } from "@/data/track-intros";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { effectiveState } from "@/lib/claims";
-import { CURRICULUM_SEQUENCE, type CurriculumRole } from "@/lib/curriculum-order";
+import { CURRICULUM_SEQUENCE, type CurriculumRole } from "@/lib/curriculum-sequence";
 import { ROLE_ORDER } from "@/lib/character-role";
 import type { FactId, HistoryFile } from "@/types";
 

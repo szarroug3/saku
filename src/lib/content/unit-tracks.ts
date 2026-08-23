@@ -14,7 +14,7 @@
 // This is the registry the scheduling dev view iterates, including the sentence
 // units whose additional history-dependent gate is applied by the /learn index.
 
-import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
+import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-sequence";
 import { VOCAB_FACTS } from "@/data/vocab";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { orderedUnits, teachUnitsOf, isUnitDue } from "./teach-unit";
