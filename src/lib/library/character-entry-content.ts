@@ -88,7 +88,7 @@ export interface CharacterEntryPayload {
 }
 
 const POSITION: Record<string, { en: string; rank: number }> = {
-  "": { en: "normal", rank: 0 },
+  "": { en: "alternate", rank: 0 },
   kanmuri: { en: "top", rank: 1 },
   hen: { en: "left", rank: 2 },
   tsukuri: { en: "right", rank: 3 },
