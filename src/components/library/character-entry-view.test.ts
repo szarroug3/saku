@@ -33,6 +33,8 @@ import { describe, test } from "node:test";
 import { RADICALS, radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { kanjiRow } from "@/data/kanji";
 import { characterRoles } from "@/lib/character-role";
+import { buildGlyphItem } from "@/lib/content/build-item.ts";
+import { characterEntryPayload } from "@/lib/library/character-entry-content.ts";
 
 const SOURCE = readFileSync(
   fileURLToPath(new URL("./character-entry-view.tsx", import.meta.url)),
@@ -95,6 +97,34 @@ describe("SAK-146 — the radical section for a multi-type unit", () => {
       SOURCE,
       /const hasRadical = isRadical/,
       "hasRadical should render whenever the glyph plays the radical role",
+    );
+  });
+});
+
+// ---- SAK-155: the "As a radical" block renders the single-radical tip ----
+//
+// Same constraint as SAK-146 above (no React harness for this "use client"
+// module): verified behaviourally (the payload 勹's page actually gets has a
+// non-null radicalTip) and structurally (the source renders it).
+
+describe("SAK-155 — 勹's radical page renders its recognition tip", () => {
+  test("勹's own payload carries a non-null radicalTip", () => {
+    const item = buildGlyphItem("勹");
+    assert.ok(item, "勹 should build a ContentItem");
+    const payload = characterEntryPayload(item!);
+    assert.ok(payload.radicalTip, "勹 should carry a radicalTip");
+  });
+
+  test("the source destructures and renders radicalTip inside the radical block", () => {
+    assert.match(
+      SOURCE,
+      /const \{ kanjiMeaning, radicalMeaning, radicalTip \} = payload;/,
+      "CharacterEntryView should read radicalTip off the payload",
+    );
+    assert.match(
+      SOURCE,
+      /\{radicalTip \? \(/,
+      "the 'As a radical' block should conditionally render radicalTip",
     );
   });
 });
