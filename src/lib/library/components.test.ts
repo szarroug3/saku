@@ -20,6 +20,7 @@ import { describe, test } from "node:test";
 
 import { isPrimitive, PRIMITIVE_STROKES, primitiveStrokes } from "../../data/components.ts";
 import { KANJI, kanjiRow, meaningFactId } from "../../data/kanji.ts";
+import { isNumberKanji } from "../../data/number-kanji.ts";
 import { wordMeaningFactId } from "../../data/vocab.ts";
 import {
   allComponents,
@@ -59,10 +60,13 @@ describe("the index covers every component the depth-1 decomposition attests", (
   });
 
   test("the counts match a straight recount of the data", () => {
-    // Recomputed here the naive way — one pass, deduped per kanji — so the
-    // index cannot agree with itself.
+    // Recomputed here the naive way — one pass, deduped per kanji, skipping the
+    // ten number kanji (SAK-148: their comps are shape-only and never counted
+    // as "using" a component — see the header and the dedicated describe block
+    // below) — so the index cannot agree with itself.
     const counts = new Map<string, number>();
     for (const k of KANJI) {
+      if (isNumberKanji(k.c)) continue;
       for (const c of new Set(k.comps)) counts.set(c, (counts.get(c) ?? 0) + 1);
     }
     for (const [c, n] of counts) assert.equal(usedAsPartIn(c).length, n, c);
@@ -98,6 +102,36 @@ describe("the index covers every component the depth-1 decomposition attests", (
   test("the list is deduped — 品's three 口 count once", () => {
     const uses = usedAsPartIn("口");
     assert.equal(new Set(uses).size, uses.length);
+  });
+});
+
+describe("SAK-148: a number kanji never appears as a component's user", () => {
+  // 四's KanjiVG comps are 囗+儿, shape-only (see src/data/number-kanji.ts):
+  // 四's own "Built from" section is suppressed for exactly this reason
+  // (entries.ts's builtFrom, isNumberKanji-gated), so 囗's reverse "used as a
+  // part in" list must not claim 四 as a user either — the relationship this
+  // index reports must never be one-directional.
+  test("囗 and 儿 (四's raw comps) do not list 四", () => {
+    assert.ok(!usedAsPartIn("囗").includes("四"));
+    assert.ok(!usedAsPartIn("儿").includes("四"));
+  });
+
+  test("no component anywhere lists a number kanji as a user", () => {
+    for (const c of allComponents()) {
+      for (const user of usedAsPartIn(c)) {
+        assert.ok(!isNumberKanji(user), `${c} lists number kanji ${user}`);
+      }
+    }
+  });
+
+  test("a number kanji with real components (三 = 一+一+一) still isn't listed", () => {
+    // 三 itself IS a compound (BUILT_PIECES_OVERRIDE even teaches it as 一+一+一
+    // in the lesson), but it is still one of the ten number kanji whose OWN
+    // "Built from" the Library suppresses, so the reverse index must not name
+    // it as one of 一's users either — same rule, no exceptions for the two
+    // number kanji that happen to have a real shape story.
+    assert.ok(!usedAsPartIn("一").includes("三"));
+    assert.ok(!usedAsPartIn("一").includes("七"));
   });
 });
 

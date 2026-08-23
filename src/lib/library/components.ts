@@ -28,8 +28,25 @@
 // A KANJI IS NEVER ITS OWN COMPONENT in this data (measured: 0 of 2,136), so no
 // row here has to filter itself out. `how-its-written.tsx` filters `!== glyph`
 // defensively and that stays; this index simply has nothing to drop.
+//
+// THE NUMBER KANJI CONTRIBUTE NOTHING HERE — SAK-148. 四…十's KanjiVG comps
+// (囗+儿, 二, 亠+八, …) are SHAPE-ONLY, the exact reason `builtFrom` in
+// entries.ts suppresses their own "Built from" section (see
+// src/data/number-kanji.ts): they are memorised wholes, not compositions, and
+// showing 囗+儿 there would teach a learner a relationship the character does
+// not carry. Before this fix, THIS index still walked their raw comps
+// unfiltered, so 囗's own "Used as a part in" page named 四 as a user while
+// 四's own page named no components back — a one-directional relationship a
+// reader could only read as "enclosure is a prerequisite of 4", which nothing
+// in the curriculum actually enforces (`teachableParts`/`builtPieces`, the
+// data the scheduler's prereq graph reads, has always agreed with `builtFrom`
+// that 四 owes nothing). Filtering the CONTRIBUTING kanji here — not the
+// received component's OTHER users, which stay — makes the two directions
+// agree: a component page never claims a number kanji as a user unless
+// `builtFrom` would draw the arrow back.
 
 import { KANJI, kanjiRow, orderRow } from "@/data/kanji";
+import { isNumberKanji } from "@/data/number-kanji";
 import { VOCAB, vocabRow } from "@/data/vocab";
 import { wordKnown } from "@/lib/word-unlock";
 import type { HistoryFile } from "@/types";
@@ -52,6 +69,9 @@ const USED_IN: ReadonlyMap<string, readonly string[]> = buildUsedIn();
 function buildUsedIn(): ReadonlyMap<string, string[]> {
   const map = new Map<string, string[]>();
   for (const k of KANJI) {
+    // A number kanji's comps are shape-only (see the header) — it is never
+    // recorded as a "user" of the shapes it happens to be drawn with.
+    if (isNumberKanji(k.c)) continue;
     // Deduped per kanji: a kanji can list a shape twice (林 is 木 + 木), and 林
     // must count as ONE of 木's users, not two.
     for (const c of new Set(k.comps)) {
