@@ -101,6 +101,7 @@ import {
   radicalMeaningFactId,
 } from "@/data/radicals";
 import { primitiveEntry, PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveStrokes } from "@/data/components";
+import { radicalConfusablePartner } from "@/data/radical-tips";
 import { cluster } from "@/data/grammar/clusters";
 import {
   RECIPES,
@@ -1275,12 +1276,25 @@ function builtPieceMeaning(c: string, id: EntryId): string {
  * Entries this one might get mixed up with — A GUESS, and the screen must say
  * so.
  *
- * Shape only: LOOK_GROUP for kana, CONFUSABLE_WITH for kanji. It is not a record
- * of anything you have done. What you have ACTUALLY mixed up is a different
- * question with a different source (src/lib/confusions.ts, over history); this
- * is the app guessing before it has evidence, which is the only time a guess is
- * worth anything — and the entry page prints that in as many words, because a
- * guess must never read as a report.
+ * Shape only: LOOK_GROUP for kana, CONFUSABLE_WITH for kanji, plus (SAK-155)
+ * RADICAL_CONFUSABLE_PAIRS's hand-authored radical lookalikes (口/囗, 日/曰). It
+ * is not a record of anything you have done. What you have ACTUALLY mixed up
+ * is a different question with a different source (src/lib/confusions.ts, over
+ * history); this is the app guessing before it has evidence, which is the only
+ * time a guess is worth anything — and the entry page prints that in as many
+ * words, because a guess must never read as a report.
+ *
+ * WHY THE RADICAL PAIR CHECK RUNS FOR BOTH KANJI_SUBJECT AND RADICAL_SUBJECT
+ * ============================================================================
+ * A radical pair is a relationship between two GLYPHS, but which SUBJECT this
+ * function sees for a given glyph depends on whether that radical is merged
+ * into its own kanji card (isRadicalTaughtAsKanji, src/data/radicals.ts): 口
+ * (mouth) is merged, so its one Library page is a KANJI_SUBJECT entry; 囗
+ * (enclosure) has no kanji role at all, so its page is a RADICAL_SUBJECT entry.
+ * Checking only one branch would make the pair show up on just one glyph's
+ * page — checking `entry.glyph` (not `entry.kind`) against the pair table in
+ * both branches keeps it symmetric regardless of which side happens to be
+ * merged.
  */
 export function confusableWith(entry: LibEntry): EntryId[] {
   if (entry.kind === KANA_SUBJECT) {
@@ -1288,10 +1302,18 @@ export function confusableWith(entry: LibEntry): EntryId[] {
       .filter((c) => CHAR_INDEX[c])
       .map((c) => kanaEntry(c));
   }
+  const radicalPartner = radicalConfusablePartner(entry.glyph);
+  const radicalPair = radicalPartner ? [builtPieceEntryId(radicalPartner.glyph)] : [];
   if (entry.kind === KANJI_SUBJECT) {
-    return (CONFUSABLE_WITH.get(entry.glyph) ?? [])
-      .filter((c) => kanjiRow(c))
-      .map((c) => kanjiEntry(c));
+    return [
+      ...radicalPair,
+      ...(CONFUSABLE_WITH.get(entry.glyph) ?? [])
+        .filter((c) => kanjiRow(c))
+        .map((c) => kanjiEntry(c)),
+    ];
+  }
+  if (entry.kind === RADICAL_SUBJECT) {
+    return radicalPair;
   }
   return [];
 }

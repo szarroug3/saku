@@ -24,13 +24,20 @@ import type { EntryId } from "@/types";
 function ConfusableRow({ row }: { row: ConfusableRowData | undefined }) {
   if (!row) return null;
   return (
-    <Link
-      href={row.href}
-      className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
-    >
-      <span className={`${japaneseFontClass(row.glyph)} text-[18px] leading-none`}>{row.glyph}</span>
-      {row.gloss ? <span className="min-w-0 flex-1 truncate text-text-muted">{row.gloss}</span> : null}
-    </Link>
+    <div className="flex flex-col gap-1">
+      <Link
+        href={row.href}
+        className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
+      >
+        <span className={`${japaneseFontClass(row.glyph)} text-[18px] leading-none`}>{row.glyph}</span>
+        {row.gloss ? <span className="min-w-0 flex-1 truncate text-text-muted">{row.gloss}</span> : null}
+      </Link>
+      {/* SAK-155: the hand-authored contrastive tip for a radical lookalike
+          pair (口/囗, 日/曰) — dense rows elsewhere in this list stay a single
+          truncated line, but a tip is the whole point of the row, so it wraps
+          in full rather than clamping. */}
+      {row.tip ? <p className="text-[12px] leading-relaxed text-text-muted">{row.tip}</p> : null}
+    </div>
   );
 }
 
@@ -53,11 +60,19 @@ function TileRow({
 export function ConfusionSection({
   confusables,
   confused = [],
+  glyph,
 }: {
   confusables: readonly EntryId[];
   /** What history says you actually mixed this up with (a report). Optional —
    * the gallery has none. Anything here is removed from the shape line below. */
   confused?: readonly EntryId[];
+  /** This page's OWN glyph (SAK-155) — passed through to resolveConfusableRows
+   * so a hand-authored radical-pair tip (口/囗, 日/曰) attaches only to the row
+   * that is actually this glyph's own pair partner, never to an unrelated row
+   * that merely happens to share a target glyph (see that function's own doc).
+   * Optional: a caller with no single "self" glyph just gets untipped rows,
+   * the same rendering this component has always had. */
+  glyph?: string;
 }) {
   const confusedSet = new Set(confused);
   const lookalike = confusables.filter((id) => !confusedSet.has(id));
@@ -66,7 +81,7 @@ export function ConfusionSection({
   // (always small — shape lookalikes) set instead of a synchronous read per
   // row.
   const allIds = [...confused, ...lookalike];
-  const rows = useServerLookup(resolveConfusableRows, [allIds]) ?? {};
+  const rows = useServerLookup(resolveConfusableRows, [allIds, glyph]) ?? {};
   if (confused.length === 0 && lookalike.length === 0) return null;
   return (
     <>
