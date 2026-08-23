@@ -82,14 +82,13 @@ export interface NumberConstruction {
    * it to earn its place). */
   readonly exampleGroups: readonly IntroCountGroup[];
   /** The generative number-reading round the page's "Quiz me" button launches,
-   * scoped to this category (the tens quiz numbers to 99, the 本 quiz counts 本).
-   * Absent for a page with no generative round to launch — day-of-month and
-   * month-of-year (src/data/day-month-construction.ts) are closed, fixed-size
-   * sets whose every count already ships as its own real, drillable
-   * CounterForm (see that file's header for why they take no CounterKind on
-   * the shared engine); their practice comes from the ordinary word-fact
-   * Drill, not a rolled round, so they carry no quizConfig and (per
-   * counter-shelf.test.ts) mint no category fact for one. */
+   * scoped to this category (the tens quiz numbers to 99, the 本 quiz counts 本,
+   * day/month quiz 1-31/1-12 — src/data/day-month-construction.ts's DAY/MONTH
+   * roll through their own engine, day-month-reading.ts, rather than this
+   * module's counterReading(); see that file's header for why). Optional only
+   * because the interface is shared with a hypothetical reference-only page;
+   * every page in NUMBER_CONSTRUCTIONS today sets one, and counter-categories.ts's
+   * buildCategory() asserts as much. */
   readonly quizConfig?: NumberQuizConfig;
   /** Extra strings search matches but the screen never renders. */
   readonly searchAlso?: readonly string[];
@@ -515,12 +514,13 @@ const BIG: NumberConstruction = {
 };
 
 /** Every construction page, in shelf order: the two ranges, the counters, then
- * DAY and MONTH last — SAK-163's round-2 addition. They sit at the end because
- * they are the two closed, fixed-size sets built on everything above them (a
- * day/month reading is a plain number plus にち/がつ), matching
- * counter-lesson.ts's own schedule order ("day-of-month and month-of-year,
- * last"). See src/data/day-month-construction.ts for why they carry no
- * quizConfig and mint no drillable category fact, unlike every page above. */
+ * DAY and MONTH last. They sit at the end because a day/month reading builds
+ * on everything above it (a plain number plus にち/がつ), matching
+ * counter-lesson.ts's own schedule order — and, like every page above them,
+ * they carry a quizConfig and mint their own drillable category fact (see
+ * counter-categories.ts); day-month-construction.ts's header explains why
+ * that round is rolled through a sibling engine (day-month-reading.ts) rather
+ * than this file's shared counterReading(). */
 export const NUMBER_CONSTRUCTIONS: readonly NumberConstruction[] = [
   TENS,
   BIG,

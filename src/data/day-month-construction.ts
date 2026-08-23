@@ -1,50 +1,52 @@
 // DAY-OF-MONTH AND MONTH-OF-YEAR — the "how it's built" reference pages for
-// 〜日 and 〜月, SAK-163's round-2 fix.
+// 〜日 and 〜月.
 //
 // WHY THIS EXISTS
 // ================
-// The first SAK-163 round shipped DAYS and MONTHS (src/data/counters.ts) as 43
-// flat, independent CounterForm entries — every one of them individually
-// memorised, with no card anywhere saying that most of them actually follow a
-// rule. Review feedback (Changes Requested): a learner staring at 31 unrelated
-// day tiles has no way to see that 11th-31st is almost entirely "[number] +
-// にち", and the app already teaches every OTHER generative counter (〜本, 〜匹,
-// the tens, the big words) with exactly that shape — a rule card plus a named
-// Irregular table — via src/data/number-construction.ts. This file gives
-// day/month the SAME reference-page shape.
+// SAK-163 round 1 shipped DAYS and MONTHS (src/data/counters.ts) as 43 flat,
+// independent CounterForm entries — every one of them individually memorised,
+// with no card anywhere saying that most of them actually follow a rule.
+// Review feedback (Changes Requested): a learner staring at 31 unrelated day
+// tiles has no way to see that 11th-31st is almost entirely "[number] + にち",
+// and the app already teaches every OTHER generative counter (〜本, 〜匹, the
+// tens, the big words) with exactly that shape — a rule card plus a named
+// Irregular table — via src/data/number-construction.ts. Round 2 gave day/month
+// this SAME reference-page shape, but stopped short of a generative round (see
+// below). Round 4 finishes the job: day/month are now taught EXACTLY like every
+// other counter — one rule card, then a rolled, live-generated round — and this
+// file's DAY/MONTH objects carry the quizConfig that makes that round.
 //
-// WHY THIS IS A SIBLING FILE, NOT MORE ENTRIES IN COUNTER_CATEGORIES
-// ======================================================================
-// Every OTHER construction page (src/data/number-construction.ts's
-// COUNTER_SPECS) pairs with a src/data/counter-categories.ts CATEGORY: a
-// MARKER-gated generative round that drills freshly ROLLED counts through
-// number-reading.ts's counterReading() engine. Day/month cannot take that path
-// — see day-month-reading.ts's header for why bolting a "day" CounterKind onto
-// that shared engine is the wrong move, not just an omission. And day/month do
-// not NEED a generative round: every one of the 31/12 possible counts already
-// ships as its own real, drillable CounterForm (counters.ts's DAYS/MONTHS,
-// unchanged by this file), so the ordinary word-fact Drill already covers them.
-// What was missing was never "more drilling" — it was the missing RULE. So
-// these two pages carry a body + exampleGroups exactly like every other
-// construction page (and slot into the very same NUMBER_CONSTRUCTIONS array —
-// see number-construction.ts, where DAY/MONTH are appended), but their
-// `quizConfig` is absent: there is no generative round to launch, and the
-// interface's `quizConfig` was loosened to optional for exactly this case (see
-// number-construction.ts's NumberConstruction doc comment).
+// WHY THIS IS A SIBLING FILE, NOT MORE COUNTER_SPECS IN number-construction.ts
+// ===============================================================================
+// Every OTHER construction page (number-construction.ts's COUNTER_SPECS) rolls
+// its counts through number-reading.ts's shared counterReading() engine — a
+// PREFIX + LAST UNIT mechanism built for counters whose irregularity is a sound
+// shift on the ones digit. Day-of-month does not have that shape (20日's はつか
+// is a whole suppletive word, not a digit-driven shift), so it needs its OWN
+// engine (day-month-reading.ts) rather than a "day" CounterKind bolted onto the
+// shared one — see that file's header for the fuller argument. Round 4 wires
+// that separate engine into the SAME generative-quiz machinery every other
+// counter uses (number-quiz.ts's QuizKind dispatches to it), so this file still
+// earns its keep as a sibling of number-construction.ts rather than folding in:
+// the READING logic is different, even though the TEACHING shape is now
+// identical.
 //
 // DERIVED, NOT HAND-TYPED
 // ========================
 // Every reading below comes from day-month-reading.ts's dayReadingParts /
-// monthReadingParts — the pure engine, cross-checked in
-// day-month-reading.test.ts against counters.ts's real shipped forms — and
-// every WORD (the kanji-plus-digit spelling, 十四日) is read straight off the
-// real CounterForm the learner will actually meet (COUNTER_CURRICULUM's DAYS/
-// MONTHS), not re-spelled here. So this page, like every other construction
-// page, can never state a reading — or a glyph — the app does not also ship.
+// monthReadingParts — the pure engine, cross-checked in day-month-reading.test.ts
+// against counters.ts's DAYS/MONTHS — and every WORD (the kanji-plus-digit
+// spelling, 十四日) is read straight off DAYS/MONTHS's own glyph, not re-spelled
+// here. DAYS/MONTHS are no longer scheduled/drilled as individual forms (see
+// counters.ts's note above DAYS) — they survive purely as this reference data —
+// but they are still the REAL data a rolled quiz item and this page's example
+// row are both built from, so a reading can never be shown here, or asked in a
+// drill, that the app's own data does not equally ship.
 
-import { COUNTER_CURRICULUM, type CounterForm } from "@/data/counters";
+import { DAYS, MONTHS, type CounterForm } from "@/data/counters";
 import type { NumberConstruction } from "@/data/number-construction";
-import type { CountBuildPiece, CountRow, IntroCountGroup, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import type { CountBuildPiece, CountRow, IntroCountGroup, IntroPara } from "@/data/phase-intros";
+import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import {
   dayReading,
   dayReadingParts,
@@ -58,8 +60,8 @@ import {
 // Real forms, looked up rather than re-spelled — see the header note above.
 // ---------------------------------------------------------------------------
 
-const DAY_FORMS: readonly CounterForm[] = COUNTER_CURRICULUM.filter((f) => f.counter === "日");
-const MONTH_FORMS: readonly CounterForm[] = COUNTER_CURRICULUM.filter((f) => f.counter === "月");
+const DAY_FORMS: readonly CounterForm[] = DAYS;
+const MONTH_FORMS: readonly CounterForm[] = MONTHS;
 
 /** Day n's real shipped form (1-31) — counters.ts lists all 31 in order, so
  * index n-1 names the same count with no key parsing. */
@@ -142,9 +144,6 @@ const DAY_IRREGULAR_GROUP: IntroCountGroup = {
   examples: Array.from({ length: 21 }, (_, i) => i + 11).filter(isDayException).map(dayRow),
 };
 
-// Mutable (IntroPara[], not readonly): shared verbatim by DAY.body (which
-// wants readonly IntroPara[]) AND DAY_RULE_INTRO.body (PhaseIntro's own body
-// field is mutable IntroPara[]) — a mutable array satisfies both.
 const DAY_BODY: IntroPara[] = [
   {
     lead: "The 1st through the 10th are their own words.",
@@ -164,6 +163,19 @@ const DAY_BODY: IntroPara[] = [
   },
 ];
 
+/** The generative round the "day" category rolls: counts 1-31, mixed
+ * read/write/hear, drawn LIVE from day-month-reading.ts's dayReading — never a
+ * lookup table. Irregular-first coverage (buildNumberRound in number-quiz.ts)
+ * guarantees a round of sufficient count surfaces every one of the seven
+ * exception counts (IRREGULAR_COUNTS.day there): 14, 17, 19, 20, 24, 27, 29. */
+const DAY_QUIZ_CONFIG: NumberQuizConfig = {
+  count: 10,
+  includeCounters: true,
+  counters: ["day"],
+  numberMax: 31,
+  directions: ["read", "write", "hear"],
+};
+
 export const DAY: NumberConstruction = {
   id: "day",
   name: "Day of the month (〜日)",
@@ -172,6 +184,7 @@ export const DAY: NumberConstruction = {
   glyph: "〜日",
   body: DAY_BODY,
   exampleGroups: [DAY_MEMORIZED_GROUP, DAY_REGULAR_GROUP, DAY_IRREGULAR_GROUP],
+  quizConfig: DAY_QUIZ_CONFIG,
   searchAlso: ["day of the month", "にち", "日", "calendar day", "dates", "counting days"],
 };
 
@@ -206,6 +219,16 @@ const MONTH_BODY: IntroPara[] = [
   },
 ];
 
+/** The generative round the "month" category rolls: counts 1-12, mixed
+ * read/write/hear, drawn LIVE from day-month-reading.ts's monthReading. */
+const MONTH_QUIZ_CONFIG: NumberQuizConfig = {
+  count: 10,
+  includeCounters: true,
+  counters: ["month"],
+  numberMax: 12,
+  directions: ["read", "write", "hear"],
+};
+
 export const MONTH: NumberConstruction = {
   id: "month",
   name: "Month of the year (〜月)",
@@ -213,35 +236,16 @@ export const MONTH: NumberConstruction = {
   glyph: "〜月",
   body: MONTH_BODY,
   exampleGroups: [MONTH_REGULAR_GROUP, MONTH_IRREGULAR_GROUP],
+  quizConfig: MONTH_QUIZ_CONFIG,
   searchAlso: ["month of the year", "がつ", "月", "calendar month", "months"],
 };
 
-// ---------------------------------------------------------------------------
-// LESSON RULE CARDS — shown once, right before the material they explain,
-// the same "non-term additional intro page" shape as TSU_INTRO
-// (src/data/track-intros.ts). PROSE ONLY, no countTables: unlike a generative
-// category's rule card (which is the only place a learner sees a worked
-// table before the drill rolls random counts), day/month's individual forms
-// are taught right around this same card in a fixed 1st..31st / 1月..12月
-// sequence, so restating the whole table here would only repeat what the next
-// dozen-plus cards already show one at a time. The full worked table lives on
-// the Library reference page (DAY/MONTH above) for a reader who lands there
-// out of lesson order. Body text is shared verbatim with DAY/MONTH so the
-// lesson card and the reference page cannot drift apart in wording.
-// ---------------------------------------------------------------------------
-
-export const DAY_RULE_INTRO: PhaseIntro = {
-  id: "intro-day-rule",
-  setId: "",
-  eyebrow: "How day-of-month readings work",
-  title: "The 1st through the 10th are memorized; the 11th and up build from the number.",
-  body: DAY_BODY,
-};
-
-export const MONTH_RULE_INTRO: PhaseIntro = {
-  id: "intro-month-rule",
-  setId: "",
-  eyebrow: "How month readings work",
-  title: "A month is almost always just the number plus 〜月.",
-  body: MONTH_BODY,
-};
+// The lesson's own rule card for day/month is no longer authored here as a
+// separate PhaseIntro (DAY_RULE_INTRO/MONTH_RULE_INTRO, round 2 through round
+// 3): a generative category's rule card is now derived automatically, the
+// same way every other counter's is — counter-categories.ts's counterIntro()
+// builds it straight from DAY.body/MONTH.body plus DAY.exampleGroups/
+// MONTH.exampleGroups (rendered as the same worked table this reference page
+// shows), so there is no second card to keep in sync by hand. See
+// lesson-steps.ts's generative-marker branch and counter-lesson.ts's
+// GENERATIVE_UNITS.

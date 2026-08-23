@@ -1,5 +1,10 @@
 // day-month-reading.ts — the pure kana-reading engine for day-of-month (〜日)
-// and month-of-year (〜月), SAK-163's round-2 fix.
+// and month-of-year (〜月). Originally SAK-163 round-2's "how it's built"
+// engine for a closed, memorised set; round 4 promotes day/month to a
+// GENERATIVE category (one rule card, then a rolled round — see
+// counter-categories.ts and the "SAK-163 round 4" note below), and this
+// engine is now what number-quiz.ts rolls its counts through, exactly the
+// role counterReading() plays for 〜本/〜人/the tens.
 //
 // WHY THIS IS ITS OWN FILE, NOT A CounterKind ON number-reading.ts's ENGINE
 // ==========================================================================
@@ -12,23 +17,28 @@
 // 1-31 that never composes past a month, not an unbounded counted range. Bolting
 // a "day" CounterKind onto that shared engine would mean leaking a
 // one-multiple-of-ten special case into a mechanism built for a different shape
-// of irregularity, and buying nothing: the engine's whole point is generating an
-// UNBOUNDED range from a rule, and day/month never need more than 31/12 values,
-// all of which the app already ships as real forms (src/data/counters.ts's DAYS
-// and MONTHS). See counters.ts's own note above DAYS for the fuller argument;
-// this file is the "verify it yourself" the SAK-163 round-2 brief asked for.
+// of irregularity, and buying nothing in return: the engine's whole point is
+// generating an UNBOUNDED range from a rule, and day/month are a fixed 31/12.
+// So the SEPARATION still stands even now that day/month ARE drilled
+// generatively: number-quiz.ts (see its QuizKind type) dispatches to THIS
+// engine for a "day"/"month" item and to number-reading.ts's counterReading()
+// for everything else, rather than widening CounterKind to fit a shape it was
+// never built for. See counters.ts's note above the (now reference-only) DAYS
+// array for the fuller argument.
 //
 // WHAT THIS FILE ACTUALLY DOES
 // =============================
-// It derives the SAME 31 day readings and 12 month readings counters.ts ships,
-// from a base rule (number + にち / number + がつ) plus NAMED exceptions, so the
-// Library's "how it's built" reference page for 〜日/〜月 (see
-// src/data/day-month-construction.ts) can show its worked table from a REAL
-// function instead of a second hand-typed copy of counters.ts's strings.
+// It derives the day/month readings from a base rule (number + にち / number +
+// がつ) plus NAMED exceptions — the same 31/12 readings src/data/counters.ts's
+// DAYS/MONTHS arrays ship as reference data for the Library's "how it's built"
+// page (src/data/day-month-construction.ts), so that page's worked table comes
+// from a REAL function, never a second hand-typed copy of counters.ts's
+// strings, and so a learner's rolled quiz item and the reference page's example
+// row can never state two different readings for the same count.
 // day-month-construction.test.ts and this file's own test cross-check both
-// dayReading/monthReading AND the exception predicates against the real DAYS/
-// MONTHS forms — so a reading can never be shown on the reference page that the
-// app does not also ship as a real, drillable word.
+// dayReading/monthReading AND the exception predicates against those DAYS/
+// MONTHS arrays — so a reading can never be rolled or shown that the app's own
+// reference data does not also carry.
 //
 // THE RULE, AND THE EXCEPTIONS — VERIFIED AGAINST THE SHIPPED DATA
 // ====================================================================
@@ -158,4 +168,38 @@ export function monthReading(n: number): string | null {
  * (し/しち/く) instead of the default よん/なな/きゅう. */
 export function isMonthException(n: number): boolean {
   return n === 4 || n === 7 || n === 9;
+}
+
+// ---------------------------------------------------------------------------
+// GRADING SETS — SAK-163 round 4. Day/month are now taught GENERATIVELY (one
+// rule card each, then a rolled round — see counter-categories.ts and
+// number-quiz.ts's QuizKind), the same shape 〜本/〜人/the tens already teach
+// with. number-quiz.ts's grader needs an "every acceptable typed answer" set
+// for a rolled day/month item, exactly the shape acceptableCounterReadings
+// gives an ordinary CounterKind (number-reading.ts) — these are that, for this
+// file's own engine.
+// ---------------------------------------------------------------------------
+
+/**
+ * Every reading a learner may legitimately type for day n (1-31).
+ *
+ * Unlike a sound-shifting counter (〜本 ↔ じゅっぽん/じっぽん), a day-of-month
+ * reading carries no spelling alternate — every one of the three exception
+ * shapes (the memorised 1st-10th, the よっか reuse at 14/24, はつか at 20, and
+ * the branch digit at 17/19/27/29) is idiomatically fixed, and a plain -にち
+ * count has no branch digit left to alternate (4/7/9 are already the
+ * exceptions that consume it). So this is always the single canonical
+ * reading, or [] out of range — mirrors acceptableCounterReadings' shape so
+ * number-quiz.ts's grader can treat a day item exactly like a counter item.
+ */
+export function acceptableDayReadings(n: number): string[] {
+  const r = dayReading(n);
+  return r === null ? [] : [r];
+}
+
+/** Every reading a learner may legitimately type for month n (1-12). Same "one
+ * canonical reading" rule as acceptableDayReadings, for the same reason. */
+export function acceptableMonthReadings(n: number): string[] {
+  const r = monthReading(n);
+  return r === null ? [] : [r];
 }

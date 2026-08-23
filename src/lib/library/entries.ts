@@ -761,12 +761,16 @@ function build(): LibEntry[] {
   }
 
   for (const w of VOCAB) {
-    // SAK-147: a kanji-written counter form (day-of-month, month-of-year, 二十歳
-    // — COUNTER_KANJI_GLYPHS, see its doc comment in src/data/counters.ts) is
-    // NOT a plain word here. It already gets its own row below, under
+    // SAK-147: a kanji-written counter glyph (day-of-month, month-of-year,
+    // 二十歳 — COUNTER_KANJI_GLYPHS, see its doc comment in src/data/counters.ts)
+    // is NOT a plain word here. 二十歳 gets its own row below, under
     // COUNTER_KIND, from the COUNTER_CURRICULUM walk a few dozen lines down —
-    // built off the exact same glyph, so skipping it here does not drop it from
-    // the Library, only from the Words shelf it does not belong on. This is the
+    // built off the exact same glyph. Day/month's 43 glyphs no longer do (SAK-
+    // 163 round 4 made them generative categories, so they are reference data
+    // now, not individual COUNTER_CURRICULUM forms); they instead browse via
+    // the single 〜日/〜月 NUMBER_CONSTRUCTION_KIND row every generative counter
+    // gets. Either way, skipping the glyph here does not drop it from the
+    // Library, only from the Words shelf it does not belong on. This is the
     // same exclusion word-lesson.ts applies to the teaching spine
     // (CURRICULUM_WORDS); both read the one set so neither can drift ahead of
     // the other the way this bug started.
