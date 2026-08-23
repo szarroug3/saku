@@ -25,21 +25,45 @@
 // KIND AND STATUS ARE MULTI-SELECT NOW (SAK-63, second round). The owner:
 // "make the two labels 'kind' and 'status' drop downs with the items... all
 // items should be checked by default." A single chosen tab widened to a
-// CHECKED SET — `?kind=kanji,word` browses/searches Kanji and Words only — and
-// the encoding keeps the same "garbage is not an error, the default is
-// omitted" discipline the single-value version already had:
+// CHECKED SET — `?kind=kanji,word` browses/searches Kanji and Words only.
 //
-//   missing/empty/`all` ......... every kind (or status) checked — the default,
-//                                 and what a plain `/library` opens on.
-//   `none` ....................... every kind (or status) UNCHECKED — the
-//                                 Kind/Status dropdown's Clear button. Needs
-//                                 its own token because an omitted param and an
-//                                 empty comma-list would otherwise collide.
+// SAK-167 FLIPPED WHAT "CHECKED" MEANS. The original design (directly above,
+// still true of the mechanics below) defaulted to every box checked and let
+// Clear narrow a dimension down to literally nothing — "explicitly empty" was
+// a real, distinct state from "param absent". In practice that read backwards:
+// an unchecked box looks like "off"/"not filtering", not "hide everything",
+// and a learner clearing every kind expecting to see more instead saw a dead
+// end. So the meaning is now inverted — UNCHECKED IS THE DEFAULT, and it means
+// "no filter for this dimension, show everything":
+//
+//   missing/empty ................ no kind (or status) checked — the default,
+//                                 what a plain `/library` opens on, AND what
+//                                 shows every entry (no filtering applied).
+//   `all` ......................... every kind (or status) explicitly checked
+//                                 — a real, distinct state from the default
+//                                 above (it round-trips through the URL so a
+//                                 shared "everything, deliberately selected"
+//                                 link still reads as checked in the UI), but
+//                                 functionally the same "show everything"
+//                                 result as the empty default.
 //   a comma list ................. exactly those, each validated the same way
 //                                 a single value always was; an unrecognised
 //                                 token is dropped, and if NONE of them survive
-//                                 that the whole thing falls back to "every kind
-//                                 checked" rather than reading as `none`.
+//                                 that the whole thing falls back to the empty
+//                                 default (garbage is not a deliberate
+//                                 narrowing, so it should show everything too).
+//
+// THE OLD `none` TOKEN — "every box explicitly unchecked", kept apart from a
+// missing param — no longer has a role. Unchecked already IS the default now,
+// so there is nothing left for a dedicated "explicitly nothing" state to mean;
+// the one thing the old design could express that this one cannot is "filter
+// this dimension down to showing zero entries", and nothing in the app asked
+// for that as its own feature — it was a side effect of the checked-by-default
+// model, not a request in its own right. `none` is still ACCEPTED on read (an
+// old shared link keeps working) and is treated exactly like an absent param;
+// it is just never written any more, and there is no dropdown control that
+// produces it. If a real "show nothing" affordance is wanted later, it needs
+// its own name/control now that plain unchecked means unfiltered.
 //
 // `kindFromParams` — a single, always-real `Kind` — is kept exactly as it was:
 // it answers a different question ("what ONE shelf does a lookup need") than
@@ -99,19 +123,21 @@ export function queryFromParams(params: ReadableParams): string {
 
 // ---------- KIND, as the Library's own multi-select ----------
 
-/** A literal token for "nothing checked" — the Kind/Status dropdown's Clear
- * button. Needed because an OMITTED param already means "everything checked"
- * (the default); without a distinct token for empty, clearing a dropdown down
- * to zero items could never round-trip through the URL — an empty comma-list
- * and a missing param would parse identically. */
+/** The old "explicitly every box unchecked" sentinel. Still ACCEPTED on read
+ * (see the file header's SAK-167 note) so a link written before the flip
+ * keeps working, but treated exactly like a missing param — both are now the
+ * same "no filter" default — and `libraryUrl` never writes it any more. */
 const NONE_TOKEN = "none";
-/** The old single-select "All tab"'s sentinel, still honoured so a link
- * written before this became a checklist (`/library?kind=all`) keeps meaning
- * what it always meant: every kind. */
+/** The single-select "All tab"'s old sentinel, and now also the token
+ * `libraryUrl` writes for "every kind explicitly checked" (SAK-167): a real,
+ * distinct, round-tripping state from the empty default, even though both
+ * show the same "every entry" result. A link written before this became a
+ * checklist (`/library?kind=all`) keeps meaning what it always meant. */
 const ALL_TOKEN = "all";
 
-/** Every kind, checked — the default selection, and what a plain `/library`
- * browses and searches. Reach-equivalent to the old "All" tab. */
+/** Every kind, checked — what the Kind dropdown's "Select all" button
+ * produces, and the explicit (as opposed to default-by-omission) way to check
+ * every box. NOT the default any more (SAK-167) — see the file header. */
 export const ALL_KINDS: ReadonlySet<Kind> = new Set(KINDS);
 
 /**
@@ -119,19 +145,22 @@ export const ALL_KINDS: ReadonlySet<Kind> = new Set(KINDS);
  *
  * `?kind=kanji,word` checks Kanji and Words only; `?kind=kanji` (no comma) is
  * exactly the breadcrumb link the entry page has always written, and still
- * checks Kanji alone. A missing, empty, or literal `all` param is every kind
- * checked; `none` is every kind UNCHECKED. Anything else is read token by
- * token, each validated against KINDS the same way a single value always was —
- * an unrecognised token is dropped, and if the whole list turns out empty
- * (`?kind=banana`, `?kind=,,`) that is garbage, not a deliberate Clear, so it
- * falls back to every kind checked rather than being mistaken for `none`.
+ * checks Kanji alone. A missing or empty param is the SAK-167 default — no
+ * kind checked, which callers read as "no filter, show every kind" (see
+ * `isNoKindFilter` below) — and the old `none` token reads identically, kept
+ * only so a pre-flip link still round-trips. The literal `all` token is every
+ * kind explicitly checked. Anything else is read token by token, each
+ * validated against KINDS the same way a single value always was — an
+ * unrecognised token is dropped, and if the whole list turns out empty
+ * (`?kind=banana`, `?kind=,,`) that is garbage, not a deliberate selection, so
+ * it falls back to the same "no filter" default as an absent param.
  */
 export function kindsFromParams(params: ReadableParams): ReadonlySet<Kind> {
   const raw = params.get(KIND_PARAM);
-  if (raw === null || raw === "" || raw === ALL_TOKEN) return ALL_KINDS;
-  if (raw === NONE_TOKEN) return new Set();
+  if (raw === null || raw === "" || raw === NONE_TOKEN) return new Set();
+  if (raw === ALL_TOKEN) return ALL_KINDS;
   const picked = raw.split(",").filter((tok) => KINDS.includes(tok as Kind));
-  return picked.length > 0 ? new Set(picked as Kind[]) : ALL_KINDS;
+  return picked.length > 0 ? new Set(picked as Kind[]) : new Set();
 }
 
 // ---------- STATUS, as the Library's own multi-select ----------
@@ -140,7 +169,9 @@ export function kindsFromParams(params: ReadableParams): ReadonlySet<Kind> {
  * The knowledge-filter values the Status dropdown offers as checkboxes.
  * There is deliberately no `all` item any more — the owner's own reasoning:
  * "multi-select with everything checked already IS all", so a dedicated All
- * button is redundant once every item defaults to checked.
+ * button is redundant once checking every item is reach-equivalent to no
+ * filter at all (SAK-167 made that reach-equivalence exact: unchecked now
+ * means the same "every entry passes" default that all-checked always did).
  */
 export type StatusFilter =
   | "known"
@@ -161,29 +192,31 @@ const STATUS_VALUES: readonly StatusFilter[] = [
   "slipping",
 ];
 
-/** Every status, checked — the default, equivalent to the old "All" filter
- * chip (known and unknown alone already partition every entry, so checking
- * every item here filters nothing, exactly like the old default did). */
+/** Every status, checked explicitly — what the Status dropdown's "Select
+ * all" button produces (known and unknown alone already partition every
+ * entry, so checking every item here filters nothing — reach-equivalent to
+ * the default). NOT the default any more (SAK-167) — see the file header. */
 export const ALL_STATES: ReadonlySet<StatusFilter> = new Set(STATUS_VALUES);
 
 /**
  * The set of statuses a URL's `?state=` asks for. Same shape as
- * `kindsFromParams`: a missing/empty/literal-`all` param is every status
- * checked, `none` is every status unchecked (the dropdown's Clear), a comma
- * list is read token by token with unrecognised tokens dropped, and an
- * all-garbage list falls back to every status checked rather than reading as
- * a deliberate Clear.
+ * `kindsFromParams`: a missing or empty param (or the old `none` token,
+ * accepted for back-compat) is the SAK-167 default — no status checked, read
+ * as "no filter, every status passes" (see `isNoStateFilter` below) — the
+ * literal `all` token is every status explicitly checked, a comma list is
+ * read token by token with unrecognised tokens dropped, and an all-garbage
+ * list falls back to the same "no filter" default as an absent param.
  */
 export function statesFromParams(
   params: ReadableParams,
 ): ReadonlySet<StatusFilter> {
   const raw = params.get(STATE_PARAM);
-  if (raw === null || raw === "" || raw === ALL_TOKEN) return ALL_STATES;
-  if (raw === NONE_TOKEN) return new Set();
+  if (raw === null || raw === "" || raw === NONE_TOKEN) return new Set();
+  if (raw === ALL_TOKEN) return ALL_STATES;
   const picked = raw
     .split(",")
     .filter((tok) => STATUS_VALUES.includes(tok as StatusFilter));
-  return picked.length > 0 ? new Set(picked as StatusFilter[]) : ALL_STATES;
+  return picked.length > 0 ? new Set(picked as StatusFilter[]) : new Set();
 }
 
 function setEquals<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
@@ -192,52 +225,74 @@ function setEquals<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
   return true;
 }
 
-/** Whether `kinds` is exactly "every kind checked" — the fast path callers use
- * to skip filtering entirely, and the line between "behaves like the old All
- * tab" and "behaves like All-but-filtered-to-a-subset". */
+/** Whether `kinds` is exactly "every kind explicitly checked" — the state
+ * `libraryUrl` writes the `all` token for, and the line between "every item
+ * literally on" and "a checked subset that happens to include everything".
+ * NOT the "no filter" fast path any more — that is `isNoKindFilter`, below. */
 export function isEveryKind(kinds: ReadonlySet<Kind>): boolean {
   return setEquals(kinds, ALL_KINDS);
 }
 
-/** Whether `states` is exactly "every status checked" — same fast path, for
- * the Status dropdown. */
+/** Whether `states` is exactly "every status explicitly checked" — same role
+ * as `isEveryKind`, for the Status dropdown. */
 export function isEveryState(states: ReadonlySet<StatusFilter>): boolean {
   return setEquals(states, ALL_STATES);
+}
+
+/** Whether `kinds` means "no filter for this dimension" — SAK-167's fast
+ * path callers use to skip kind filtering entirely and show every kind, the
+ * role `isEveryKind` used to fill before the empty/full meanings flipped. The
+ * empty set is the only value this is true for; a fully-checked set still
+ * goes through the ordinary per-kind path (see `isEveryKind` above) even
+ * though the two produce the same visible result. */
+export function isNoKindFilter(kinds: ReadonlySet<Kind>): boolean {
+  return kinds.size === 0;
+}
+
+/** Whether `states` means "no filter for this dimension" — same fast path,
+ * for the Status dropdown's checked set. */
+export function isNoStateFilter(states: ReadonlySet<StatusFilter>): boolean {
+  return states.size === 0;
 }
 
 /**
  * The Library URL for a given state.
  *
- * Every-kind-checked, an empty query, and every-status-checked are OMITTED, so
- * the plain `/library` stays plain: a page that rewrote itself to
+ * No kind checked, an empty query, and no status checked are OMITTED (SAK-167:
+ * that is now the default, unchecked-by-default state), so the plain
+ * `/library` stays plain: a page that rewrote itself to
  * `/library?kind=…&q=&state=…` the moment it mounted would put a URL in the
  * address bar the user never asked for, and make the first Back press a no-op
- * that only undoes our own tidying. The two multi-select params serialise in
- * KINDS/STATUS_VALUES order (not selection order), so the same checked set
- * always writes the same URL regardless of the order the boxes were ticked in.
+ * that only undoes our own tidying. An explicitly fully-checked dimension
+ * still round-trips — it writes the `all` token rather than being folded into
+ * the same omission as empty — so a "select all" link keeps reading as
+ * checked in the UI even though it shows the same entries the default does.
+ * The two multi-select params serialise in KINDS/STATUS_VALUES order (not
+ * selection order), so the same checked set always writes the same URL
+ * regardless of the order the boxes were ticked in.
  */
 export function libraryUrl({
-  kinds = ALL_KINDS,
+  kinds = new Set(),
   query,
-  states = ALL_STATES,
+  states = new Set(),
 }: {
   kinds?: ReadonlySet<Kind>;
   query: string;
   states?: ReadonlySet<StatusFilter>;
 }): string {
   const params = new URLSearchParams();
-  if (!isEveryKind(kinds)) {
+  if (kinds.size > 0) {
     params.set(
       KIND_PARAM,
-      kinds.size === 0 ? NONE_TOKEN : KINDS.filter((k) => kinds.has(k)).join(","),
+      isEveryKind(kinds) ? ALL_TOKEN : KINDS.filter((k) => kinds.has(k)).join(","),
     );
   }
   if (query !== "") params.set(QUERY_PARAM, query);
-  if (!isEveryState(states)) {
+  if (states.size > 0) {
     params.set(
       STATE_PARAM,
-      states.size === 0
-        ? NONE_TOKEN
+      isEveryState(states)
+        ? ALL_TOKEN
         : STATUS_VALUES.filter((s) => states.has(s)).join(","),
     );
   }

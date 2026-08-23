@@ -47,15 +47,18 @@ export function FilterDropdown<T extends string>({
   return (
     <PopoverPrimitive.Root>
       <PopoverPrimitive.Trigger asChild>
-        {/* `on` when every item is checked (the default, and the dropdown's own
-            "behaves like nothing is filtered" state) — `partial`, the same
-            dashed/amber language a shelf section's select-all button already
-            wears (see shelves.tsx's sectionState), for anything in between. A
-            fully-cleared dropdown is neither: it reads as a plain unselected
-            chip, the same as "not filtering by this at all" would. */}
-        <Chip type="button" on={allOn} partial={!allOn && !noneOn}>
+        {/* SAK-167 FLIPPED THIS: unchecked is now the default and means "no
+            filter for this dimension", so the chip reads inactive/plain in
+            that state instead of highlighted. `on` when ANYTHING is checked —
+            a real, active narrowing, even if every box happens to be checked
+            — `partial`, the same dashed/amber language a shelf section's
+            select-all button already wears (see shelves.tsx's sectionState),
+            for a checked-but-not-every-item subset. A fully-cleared dropdown
+            is the one state that reads as a plain unselected chip, because it
+            is the one state that is actually unfiltered now. */}
+        <Chip type="button" on={!noneOn} partial={!noneOn && !allOn}>
           {label}
-          {allOn ? null : noneOn ? " · none" : ` · ${checkedCount}`}
+          {noneOn ? null : allOn ? " · all" : ` · ${checkedCount}`}
         </Chip>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
