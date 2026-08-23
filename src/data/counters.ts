@@ -167,18 +167,23 @@ const TSU: readonly CounterForm[] = [
 // teaches, so they are gone from the curriculum. Everything else in 〜人 is the
 // plain number plus にん, which the category builds. See counter-categories.ts.
 
-// ─── 11 and up, AND every object counter — TAUGHT GENERATIVELY ─────────────
+// ─── 11 and up, AND every object counter, AND day/month — TAUGHT GENERATIVELY ─
 // The teens, tens, hundreds and thousands are NOT shipped as memorised forms,
-// and neither are the object counters (一本…十本, 一匹…十匹, 一枚…十枚, the tail).
-// They are regular composition — にじゅういち = に + じゅう + いち, さんぼん = さん +
-// (voiced)本 — so drilling spelled-out rows taught nothing the compose/attach
-// rule does not. Instead each is a GENERATIVE CATEGORY: a rule taught once, then
-// counts generated over the reading engine (src/lib/number-reading.ts, which
-// ships every one of these readings). Two number-range categories (tens, big)
-// and one per counter (人, 本, 匹, 枚, 個, 台, 冊, 杯, 回, 歳) — see
+// and neither are the object counters (一本…十本, 一匹…十匹, 一枚…十匹, the tail),
+// nor day-of-month/month-of-year (SAK-163 round 4). They are regular
+// composition — にじゅういち = に + じゅう + いち, さんぼん = さん + (voiced)本,
+// じゅうごにち = じゅうご + にち — so drilling spelled-out rows taught nothing the
+// compose/attach rule does not. Instead each is a GENERATIVE CATEGORY: a rule
+// taught once, then counts generated LIVE — over number-reading.ts's shared
+// engine for the number ranges and every object counter, or over
+// day-month-reading.ts's separate engine for day/month (see that file's header
+// for why it is not a CounterKind on the shared one). Two number-range
+// categories (tens, big), one per object counter (人, 本, 匹, 枚, 個, 台, 冊, 杯,
+// 回, 歳), and two closed-range categories (day, month) — see
 // src/data/counter-categories.ts for the facts and src/data/number-construction.ts
-// for the pages. Each is gated by a MARKER pseudo-fact (counter:gen:*, below)
-// claimed when its rule lesson begins, not by a run of forms.
+// (via day-month-construction.ts for day/month) for the pages. Each is gated
+// by a MARKER pseudo-fact (counter:gen:*, below) claimed when its rule lesson
+// begins, not by a run of forms.
 
 // ─── Phase 3 · the one memorised tail form ─────────────────────────────────
 // 二十歳 はたち is the special reading for "twenty years old" — it is not the
@@ -188,27 +193,37 @@ const TAIL: readonly CounterForm[] = [
   counted("counter:sai:20", "二十歳", "はたち", "twenty years old", "歳", "二", 3),
 ];
 
-// ─── Phase 3 · day-of-month (〜日), a CLOSED set — memorised, not generated ──
-// SAK-163: day-of-month readings are irregular from the 1st through the 10th
-// (ついたち, ふつか, みっか, …), irregular again at the 14th/24th (じゅうよっか /
-// にじゅうよっか — the よっか branch, not よん+にち) and at the 20th (はつか — a
-// standalone word, not に+とお+か), and only regular -にち in between and after
-// (11th-13th, 15th-19th, 21st-23rd, 25th-31st). That 20日 breaks the SAME
-// tens-plus-ones composition every other counter follows (see counterReading's
-// d===0 branch in number-reading.ts) is why this is NOT a generative CounterKind
-// there: the engine's prefix+unit mechanism has no way to special-case one
-// multiple-of-ten inside an otherwise-regular range without a day-specific hack
-// leaking into a shared, unbounded-range engine built for counters that never
-// have that shape. Day-of-month also never scales past 31 — there is no "regular
-// composition" argument for generating it (see the note above GENERATIVE
-// categories) — so it ships the same way TSU and TAIL do: a memorised, pinned
-// list. The readings are sourced verbatim from vocab.json (JMdict already carries
-// all 31 as plain VOCAB entries, which is the SAK-147 bug this ticket's caller
-// exists to fix — see the file header); duplicating them here under a namespaced
-// key follows the same "brief duplication" pattern as 一つ/一人/一匹/一台/一冊/一杯
-// (see the header note). SAK-164 removes the vocab originals from the words
-// track; this file only builds the destination.
-const DAYS: readonly CounterForm[] = [
+// ─── day-of-month (〜日) and month-of-year (〜月) — REFERENCE DATA ONLY ──────
+// SAK-163 round 4: day-of-month and month-of-year are now taught the SAME way
+// as every other object counter — one GENERATIVE category each ("day"/"month"
+// in CONSTRUCTION_CATEGORY_IDS below), a single rule card, then a rolled round
+// drawn LIVE from day-month-reading.ts's dayReading/monthReading, never from a
+// lookup table. That engine is a sibling to number-reading.ts's counterReading
+// rather than a CounterKind on it — see day-month-reading.ts's header for why
+// 20日's suppletive はつか breaks that engine's tens+unit composition — and
+// number-quiz.ts's QuizKind dispatches to it exactly the way it dispatches to
+// counterReading for 本/人/… .
+//
+// DAYS and MONTHS below are NOT curriculum forms any more (they are absent
+// from COUNTER_CURRICULUM), so no individual "counter:day:14" fact is minted
+// or separately scheduled/drilled — the same treatment いっぽん/さんぼん/…
+// already get: those irregular counts exist ONLY as data (IRREGULAR_COUNTS in
+// number-quiz.ts) that biases which count a rolled round favours, never as
+// their own drillable fact. DAYS/MONTHS survive as plain DATA for two reasons
+// that are NOT "still taught individually":
+//   1. day-month-construction.ts's reference page reads the real glyph/reading
+//      off these arrays to render its worked example table (the "byte-correct,
+//      never a second hand-typed copy" rule every construction page follows).
+//   2. COUNTER_KANJI_GLYPHS (below) must keep excluding these 43 glyphs from
+//      the ordinary words track and the Library's Word shelf even though they
+//      no longer route through COUNTER_CURRICULUM — otherwise vocab.json's own
+//      day/month duplicates would resurface there, which is exactly the SAK-147
+//      bug this data was introduced to fix in the first place.
+// The readings are sourced verbatim from vocab.json (JMdict already carries all
+// 31/12 as plain VOCAB entries — the SAK-147 bug); duplicating them here under
+// a namespaced key follows the same "brief duplication" pattern as
+// 一つ/一人/一匹/一台/一冊/一杯 (see the header note).
+export const DAYS: readonly CounterForm[] = [
   counted("counter:day:1", "１日", "ついたち", "the 1st day of the month", "日", "日", 3),
   counted("counter:day:2", "２日", "ふつか", "the 2nd day of the month", "日", "日", 3),
   counted("counter:day:3", "３日", "みっか", "the 3rd day of the month", "日", "日", 3),
@@ -242,24 +257,16 @@ const DAYS: readonly CounterForm[] = [
   counted("counter:day:31", "３１日", "さんじゅういちにち", "the 31st day of the month", "日", "日", 3),
 ];
 
-// ─── Phase 3 · month-of-year (〜月), a CLOSED set — memorised, not generated ─
-// SAK-163: month-of-year is almost entirely regular (number + がつ), but a
-// generative CounterKind exists in this codebase specifically for ranges that
-// keep composing past their first ten counts (1-99, 1-9999 — see the header
-// note on the generative categories). 月 never does: there is no 13月, so there
-// is nothing for a compose rule to generate beyond the 12 forms below, and
-// building a whole ConstructionCategory (a Library "how it's built" page, a
-// NumberQuizConfig, a marker-gated unit) for a fixed 12-item lookup would be
-// the exact over-engineering the header note warns against ("drilling
-// spelled-out rows taught nothing the compose/attach rule does not"). Unlike
-// the truly regular counters, 月 also carries three of its own irregular
-// readings (４月 しがつ, ７月 しちがつ, ９月 くがつ — the SAME alternate branch
-// readings that NUMBERS_COMPOSE already teaches for し/しち/く, but here they are
-// the ONLY correct reading, not an alternate), so it is memorised the same way
-// TSU and TAIL are, matching precedent for a small closed set. Sourced verbatim
-// from vocab.json, duplicating the existing VOCAB entries under a namespaced key
-// (see the DAYS note above and the file header); SAK-164 removes the originals.
-const MONTHS: readonly CounterForm[] = [
+// ─── month-of-year (〜月) — REFERENCE DATA ONLY, see the note above DAYS ─────
+// Month-of-year is almost entirely regular (number + がつ), with three of its
+// own irregular readings (４月 しがつ, ７月 しちがつ, ９月 くがつ — the SAME
+// alternate branch readings NUMBERS_COMPOSE teaches for し/しち/く, but here
+// they are the ONLY correct reading, not an alternate) — the "month" generative
+// category (CONSTRUCTION_CATEGORY_IDS below) teaches that rule and rolls a
+// live round the same way "day" does. Sourced verbatim from vocab.json,
+// duplicating the existing VOCAB entries under a namespaced key (see the DAYS
+// note above and the file header).
+export const MONTHS: readonly CounterForm[] = [
   counted("counter:month:1", "１月", "いちがつ", "January", "月", "月", 3),
   counted("counter:month:2", "２月", "にがつ", "February", "月", "月", 3),
   counted("counter:month:3", "３月", "さんがつ", "March", "月", "月", 3),
@@ -284,39 +291,47 @@ const MONTHS: readonly CounterForm[] = [
  * and the counter:gen:* markers below), which the scheduler runs as rule-then-round
  * units. The only memorised form left is the one special tail reading (二十歳
  * はたち), which no category can build. 〜人's ひとり/ふたり/よにん are taught by the
- * 〜人 category (see the note above). DAYS (〜日) and MONTHS (〜月) are two more
- * closed, memorised sets — see the notes above DAYS and MONTHS for why they are
- * forms, not generative categories.
+ * 〜人 category (see the note above). DAYS (〜日) and MONTHS (〜月) are ALSO
+ * generative categories now (SAK-163 round 4) — see the notes above DAYS and
+ * MONTHS — so their 43 forms are excluded here too; DAYS/MONTHS survive only as
+ * reference data (see COUNTER_KANJI_GLYPHS below and day-month-construction.ts).
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...TAIL,
-  ...DAYS,
-  ...MONTHS,
 ];
 
 /**
- * The KANJI-written forms in COUNTER_CURRICULUM, keyed by their glyph — 二十歳,
- * every day-of-month (１日…３１日) and every month-of-year (１月…１２月). Kana-only
+ * The KANJI-written forms COUNTER_KANJI_GLYPHS names — every glyph the counters
+ * track owns and the words track/Library Word shelf must therefore NOT teach a
+ * second time: 二十歳 (COUNTER_CURRICULUM's one remaining kanji form) plus every
+ * day-of-month (１日…３１日) and month-of-year (１月…１２月) glyph — the latter two
+ * read straight off DAYS/MONTHS (above) even though those forms are no longer
+ * in COUNTER_CURRICULUM (SAK-163 round 4 made them generative categories; see
+ * the notes above DAYS/MONTHS). This union is deliberate, not an oversight: were
+ * this derived from COUNTER_CURRICULUM alone, the 43 day/month glyphs would drop
+ * out and vocab.json's own duplicates of them would resurface in the word
+ * track/Library — the exact SAK-147 bug this set exists to prevent. Kana-only
  * forms (ひとつ, とお, …) are excluded, so this cannot be mistaken for "every
  * counter form" and used to match an unrelated kana word (に, さん — the number
  * kanji's OWN word role is what teaches those; see COUNTER_TRACK_KEBS in
  * word-lesson.ts).
  *
- * Derived here, once, because it is a fact about THIS DATA (which forms happen
- * to be kanji-written), not about either of its two consumers. word-lesson.ts
- * reads it to keep the words track from teaching a glyph the counters track
- * already owns; src/lib/library/entries.ts reads the SAME set to keep the
- * Library's word-kind shelf from listing a row the counters shelf already
- * carries under its own COUNTER_KIND entry (built from this same
- * COUNTER_CURRICULUM, a few lines below in entries.ts's build()). A local copy
- * in either consumer is exactly how SAK-147 happened: entries.ts had no way to
- * know SAK-163 had widened this set to include day/month forms. One export,
- * two readers, cannot drift.
+ * Derived here, once, because it is a fact about THIS DATA, not about either of
+ * its two consumers. word-lesson.ts reads it to keep the words track from
+ * teaching a glyph the counters track already owns; src/lib/library/entries.ts
+ * reads the SAME set to keep the Library's word-kind shelf from listing a row
+ * the counters shelf already carries under its own COUNTER_KIND entry (built
+ * from this same COUNTER_CURRICULUM, a few lines below in entries.ts's
+ * build()). A local copy in either consumer is exactly how SAK-147 happened:
+ * entries.ts had no way to know SAK-163 had widened this set to include
+ * day/month forms. One export, two readers, cannot drift.
  */
-export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set(
-  COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
-);
+export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
+  ...DAYS.map((f) => f.glyph),
+  ...MONTHS.map((f) => f.glyph),
+  ...COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
+]);
 
 /** The five counters taught AS A SYSTEM — each carries the sound-change rule or
  * a key irregular. Not a seventh subject; a labelled set within this track. */
@@ -444,10 +459,14 @@ export function counterForm(entry: EntryId): CounterForm | undefined {
 /**
  * Every construction category, in teaching order: the two bare-number ranges
  * (tens, big), then one per counter in the order the counter pages are shown
- * (人, 本, 匹, 枚, then the tail 個, 台, 冊, 杯, 回, 歳). The ids match the
- * NumberConstruction ids in src/data/number-construction.ts one-to-one, so a
- * category, its Library page, its rule card and its drill config all name the
- * same thing.
+ * (人, 本, 匹, 枚, then the tail 個, 台, 冊, 杯, 回, 歳), then day-of-month and
+ * month-of-year last (SAK-163 round 4 — they were a closed, memorised pair of
+ * form lists through round 3; they are generative categories now, taught the
+ * same way every counter above them is, and scheduled last because they build
+ * on the number system and kanji every category above them already teaches).
+ * The ids match the NumberConstruction ids in src/data/number-construction.ts
+ * (via day-month-construction.ts's DAY/MONTH) one-to-one, so a category, its
+ * Library page, its rule card and its drill config all name the same thing.
  */
 export const CONSTRUCTION_CATEGORY_IDS = [
   "tens",
@@ -462,6 +481,8 @@ export const CONSTRUCTION_CATEGORY_IDS = [
   "hai",
   "kai",
   "sai",
+  "day",
+  "month",
 ] as const;
 
 export type ConstructionCategoryId = (typeof CONSTRUCTION_CATEGORY_IDS)[number];

@@ -24,7 +24,26 @@ import {
   numberReading,
   type CounterKind,
 } from "@/lib/number-reading";
+import {
+  acceptableDayReadings,
+  acceptableMonthReadings,
+  dayReading,
+  monthReading,
+} from "@/lib/day-month-reading";
 import { romajiMatches } from "@/lib/romaji";
+
+/**
+ * Every "counter" a generative round can roll: the ordinary sound-shifting
+ * CounterKinds (number-reading.ts), PLUS "day"/"month" — SAK-163 round 4's
+ * generative day-of-month/month-of-year categories. Day/month are a SEPARATE
+ * union member, not folded into CounterKind itself, because they run on a
+ * different reading engine (day-month-reading.ts) with a different shape of
+ * irregularity (a suppletive word at 20日, not a sound shift) — see that
+ * file's header. This type is the one seam that lets makeItem/buildNumberRound
+ * dispatch to the right engine while everything downstream (NumberQuizItem,
+ * the drill, the grader) stays engine-agnostic.
+ */
+export type QuizKind = CounterKind | "day" | "month";
 
 /** Injectable random source — () => [0,1). Same shape as the grammar engine's. */
 export type Rng = () => number;
@@ -45,8 +64,9 @@ export interface NumberQuizItem {
   readonly kind: "number" | "counter";
   /** The count / value being asked. */
   readonly n: number;
-  /** The counter for a counted form, or null for a bare number. */
-  readonly counter: CounterKind | null;
+  /** The counter for a counted form (an ordinary CounterKind, or "day"/"month"
+   * — see QuizKind), or null for a bare number. */
+  readonly counter: QuizKind | null;
   /** READ: shown digits, answer is the reading. WRITE: shown reading, answer is
    * the digits. HEAR: the reading is PLAYED (glyph hidden), answer is the digits
    * — WRITE's audio twin, graded identically. */
@@ -70,7 +90,7 @@ export interface NumberQuizConfig {
   /** Whether counted forms may appear at all. */
   readonly includeCounters: boolean;
   /** The counters in play (ignored when includeCounters is false). */
-  readonly counters: CounterKind[];
+  readonly counters: QuizKind[];
   /** Upper bound (inclusive) for bare numbers. */
   readonly numberMax: number;
   /** Directions the round may draw from. */
@@ -82,9 +102,22 @@ export interface NumberQuizConfig {
  * sound change and so MUST be drilled. mai/dai are perfectly regular (none).
  * "tsu" is not composed at all (native ひとつ…とお); it is pure memorization, so
  * its "irregulars" are a representative sampler rather than derived shifts.
- * Every value here is ≤ 10, inside both counters' valid ranges.
+ * Every value here is ≤ 10, inside both counters' valid ranges — EXCEPT
+ * day/month, whose exceptions land past 10 (14/17/19/20/24/27/29 for day) and
+ * whose own max is smaller than 99 (31/12); counterMax below is what actually
+ * bounds them, not this table.
+ *
+ * day: the three exception SHAPES day-month-reading.ts names — よっか reuse
+ * (14, 24), the suppletive はつか (20), and the branch digit (17, 19, 27, 29).
+ * The memorised 1st-10th (isDayException() false for n ≤ 10) are not listed:
+ * they are a TIER, not exceptions to a rule in force for them, the same
+ * reason `tsu`'s 1-10 count as the sampler above rather than derived shifts —
+ * and they are already guaranteed coverage by counterMax capping a round at
+ * ≤ 31, which the round's regular-fill draws from just as readily.
+ * month: exactly 4, 7, 9 — the branch-digit reading (day-month-reading.ts's
+ * isMonthException).
  */
-const IRREGULAR_COUNTS: Record<CounterKind, readonly number[]> = {
+const IRREGULAR_COUNTS: Record<QuizKind, readonly number[]> = {
   tsu: [1, 2, 3, 5, 8, 10],
   nin: [1, 2, 4],
   hon: [1, 3, 6, 8, 10],
@@ -96,6 +129,8 @@ const IRREGULAR_COUNTS: Record<CounterKind, readonly number[]> = {
   hai: [1, 3, 6, 8, 10],
   kai: [1, 6, 8, 10],
   sai: [1, 8, 10],
+  day: [14, 17, 19, 20, 24, 27, 29],
+  month: [4, 7, 9],
 };
 
 /** The bare numbers whose reading shifts sound: 三百 さんびゃく, 六百 ろっぴゃく,
@@ -103,9 +138,10 @@ const IRREGULAR_COUNTS: Record<CounterKind, readonly number[]> = {
 const BARE_SHIFTS: readonly number[] = [300, 600, 800, 3000, 8000];
 
 /** The irregular counts of a counter — the drill-worthy sound shifts (or, for
- * tsu, the memorization sampler). Exported so the round's guarantee is
- * unit-testable: a per-counter round of sufficient count contains all of these. */
-export function counterIrregulars(counter: CounterKind): number[] {
+ * tsu, the memorization sampler; or, for day/month, the exception counts).
+ * Exported so the round's guarantee is unit-testable: a per-counter round of
+ * sufficient count contains all of these. */
+export function counterIrregulars(counter: QuizKind): number[] {
   return [...IRREGULAR_COUNTS[counter]];
 }
 
@@ -120,19 +156,57 @@ function shuffle<T>(xs: T[], rng: Rng): T[] {
   return xs;
 }
 
-/** The largest count a counter can take: tsu tops out at 10, the rest at 99. */
-function counterMax(counter: CounterKind): number {
-  return counter === "tsu" ? 10 : 99;
+/** The largest count a counter can take: tsu tops out at 10, day at 31, month
+ * at 12, the rest at 99. */
+function counterMax(counter: QuizKind): number {
+  if (counter === "tsu") return 10;
+  if (counter === "day") return 31;
+  if (counter === "month") return 12;
+  return 99;
+}
+
+/** ASCII digits → full-width (０-９) — the convention counters.ts's DAYS/MONTHS
+ * reference forms spell a date in (１４日, not 十四日 or 14日: a calendar date is
+ * written with the numeral, never the kanji spelling numberToKanji gives an
+ * ordinary counted form like 三本). The READ prompt for a rolled day/month item
+ * must match that convention, not countToKanji's kanji-numeral spelling. */
+function toFullWidthDigits(n: number): string {
+  return String(n).replace(/[0-9]/g, (d) =>
+    String.fromCharCode(d.charCodeAt(0) - 0x30 + 0xff10),
+  );
+}
+
+/** The READ-prompt spelling of a day/month count — full-width digits plus the
+ * suffix kanji (１４日, ７月), matching counters.ts's DAYS/MONTHS glyphs exactly
+ * (day-month-reading.test.ts pins the two against each other). */
+function dayMonthPromptKanji(n: number, counter: "day" | "month"): string {
+  return `${toFullWidthDigits(n)}${counter === "day" ? "日" : "月"}`;
 }
 
 /** Build an item from (n, counter, direction), or null when the reading engine
  * refuses the pair (out of range). The reading and grading set come straight
- * from the engine — never hand-rolled here. */
+ * from the engine — never hand-rolled here. "day"/"month" dispatch to
+ * day-month-reading.ts's separate engine (see QuizKind's doc comment); every
+ * other counter, and a bare number, go through number-reading.ts as before. */
 export function makeItem(
   n: number,
-  counter: CounterKind | null,
+  counter: QuizKind | null,
   direction: NumberDirection,
 ): NumberQuizItem | null {
+  if (counter === "day" || counter === "month") {
+    const reading = counter === "day" ? dayReading(n) : monthReading(n);
+    if (reading === null) return null;
+    return {
+      kind: "counter",
+      n,
+      counter,
+      direction,
+      reading,
+      accept: counter === "day" ? acceptableDayReadings(n) : acceptableMonthReadings(n),
+      digits: String(n),
+      promptKanji: dayMonthPromptKanji(n, counter),
+    };
+  }
   if (counter) {
     const reading = counterReading(n, counter);
     if (reading === null) return null;
@@ -173,7 +247,7 @@ function numberWithOnes(ones: number, max: number, rng: Rng): number {
 
 interface Slot {
   readonly n: number;
-  readonly counter: CounterKind | null;
+  readonly counter: QuizKind | null;
 }
 
 function slotKey(slot: Slot): string {
