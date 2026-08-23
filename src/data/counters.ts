@@ -295,6 +295,29 @@ export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...MONTHS,
 ];
 
+/**
+ * The KANJI-written forms in COUNTER_CURRICULUM, keyed by their glyph — 二十歳,
+ * every day-of-month (１日…３１日) and every month-of-year (１月…１２月). Kana-only
+ * forms (ひとつ, とお, …) are excluded, so this cannot be mistaken for "every
+ * counter form" and used to match an unrelated kana word (に, さん — the number
+ * kanji's OWN word role is what teaches those; see COUNTER_TRACK_KEBS in
+ * word-lesson.ts).
+ *
+ * Derived here, once, because it is a fact about THIS DATA (which forms happen
+ * to be kanji-written), not about either of its two consumers. word-lesson.ts
+ * reads it to keep the words track from teaching a glyph the counters track
+ * already owns; src/lib/library/entries.ts reads the SAME set to keep the
+ * Library's word-kind shelf from listing a row the counters shelf already
+ * carries under its own COUNTER_KIND entry (built from this same
+ * COUNTER_CURRICULUM, a few lines below in entries.ts's build()). A local copy
+ * in either consumer is exactly how SAK-147 happened: entries.ts had no way to
+ * know SAK-163 had widened this set to include day/month forms. One export,
+ * two readers, cannot drift.
+ */
+export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set(
+  COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
+);
+
 /** The five counters taught AS A SYSTEM — each carries the sound-change rule or
  * a key irregular. Not a seventh subject; a labelled set within this track. */
 export const SYSTEM_COUNTERS: readonly string[] = ["つ", "人", "本", "枚", "匹"];

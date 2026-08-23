@@ -70,7 +70,7 @@
 
 import { kanjiKnown } from "@/lib/kanji-known";
 import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
-import { COUNTER_CURRICULUM } from "@/data/counters";
+import { COUNTER_KANJI_GLYPHS } from "@/data/counters";
 import type { HistoryFile } from "@/types";
 
 // The words-per-lesson default and clamp live in the DATA-FREE
@@ -132,11 +132,10 @@ export function isKanaOnlyWord(w: VocabRow): boolean {
  * form in COUNTER_CURRICULUM.
  */
 
-// Kanji counter forms derive from COUNTER_CURRICULUM; kana-only forms (ひとつ,
-// いち …) are omitted here to avoid matching unrelated kana words (に, さん …).
-const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set(
-  COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
-);
+// Kanji counter forms — COUNTER_KANJI_GLYPHS, imported above from
+// src/data/counters.ts (see its doc comment there for why it lives on the data
+// module rather than here): derived from COUNTER_CURRICULUM, kana-only forms
+// (ひとつ, いち …) omitted to avoid matching unrelated kana words (に, さん …).
 
 // Counting words that are already covered by the counters track, so the words
 // track does not teach them a second time.
