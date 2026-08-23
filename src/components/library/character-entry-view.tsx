@@ -34,6 +34,7 @@ import { Callout } from "@/components/lesson/callout";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { HearButton } from "@/components/ui/hear-button";
 import { EntryLink } from "@/components/library/entry-link";
+import { PRIMITIVE_SUBJECT } from "@/data/components";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
 import { useContentEntry } from "@/lib/library/content-entries";
 import { getLegacyUnqualifiedReading } from "@/lib/library/server-lookups";
@@ -350,13 +351,23 @@ export function CharacterEntryView({
                       <div key={p.glyph} className="flex items-baseline gap-2.5 text-[14px]">
                         {/* Only the glyph itself navigates — the sense/role
                            text beside it is read, not tapped, so the row no
-                           longer swallows a tap anywhere along its width. */}
-                        <EntryLink
-                          id={p.entry}
-                          className="font-kana text-[18px] leading-none text-text no-underline"
-                        >
-                          {p.glyph}
-                        </EntryLink>
+                           longer swallows a tap anywhere along its width.
+                           A PRIMITIVE (SAK-165) has no Library entry of its
+                           own by design (see href.ts's radicalHref header) —
+                           linking it produced a dead /library/primitive:X
+                           URL, so it renders as plain, unlinked text instead. */}
+                        {p.entry.startsWith(`${PRIMITIVE_SUBJECT}:`) ? (
+                          <span className="font-kana text-[18px] leading-none text-text">
+                            {p.glyph}
+                          </span>
+                        ) : (
+                          <EntryLink
+                            id={p.entry}
+                            className="font-kana text-[18px] leading-none text-text no-underline"
+                          >
+                            {p.glyph}
+                          </EntryLink>
+                        )}
                         <span className="min-w-0 flex-1 truncate text-text-muted">
                           {p.sense}
                           {p.role === "phonetic" ? (
