@@ -160,7 +160,7 @@ export function markEntry(id: string): EntryId {
 
 /** The counter kind constant — byte-identical to library/entries.ts's
  * `COUNTER_KIND`. A literal, re-declared for the same reason. */
-export const COUNTER_KIND = "counter";
+export const COUNTER_KIND = "counting";
 
 /** The number-construction kind constant — imported straight from its own
  * content-free source (data/number-construction-id.ts), which is what
