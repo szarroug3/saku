@@ -58,6 +58,7 @@ import {
 } from "@/data/vocab";
 import { KANA_SUBJECT } from "@/data/characters";
 import { RADICAL_SUBJECT } from "@/data/radicals";
+import { radicalConfusableTip } from "@/data/radical-tips";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { factType } from "@/lib/practice-types";
 import { counterForm, isBareNumber, COUNTER_ENTRIES } from "@/data/counters";
@@ -1206,11 +1207,18 @@ export async function resolveCharacterEntryPayload(
 /** One row of ConfusionSection's "commonly mixed up with" / "you've mixed up
  * with" tiles (confusion-section.tsx) — glyph, one gloss, and the link, batch-
  * resolved for the whole (always small — shape lookalikes) confusables/
- * confused set in one call instead of one libEntry/entryHref pair per tile. */
+ * confused set in one call instead of one libEntry/entryHref pair per tile.
+ *
+ * `tip` (SAK-155) is present only for a hand-authored radical lookalike pair
+ * (口/囗, 日/曰) — short contrastive prose explaining how to tell the two
+ * apart, e.g. "囗 is never on its own: it's a wall built around something
+ * else." Absent for every other row, including the kana/kanji lookalikes this
+ * component has always shown, which carry no prose of their own. */
 export interface ConfusableRowData {
   readonly glyph: string;
   readonly gloss: string;
   readonly href: string;
+  readonly tip?: string;
 }
 
 /** Just the URL for a batch of entries — for callers (like PatternFamily)
@@ -1225,17 +1233,33 @@ export async function resolveHrefs(
   return out;
 }
 
+/**
+ * `sourceGlyph` (SAK-155) is the glyph of the page THIS confusables list is
+ * rendering on — e.g. 口 when 囗 shows up in 口's own "commonly mixed up
+ * with" list. It is what lets `tip` be attached correctly: the shared tip
+ * text for a hand-authored radical pair names both glyphs and only makes
+ * sense for THAT specific pair, so it is looked up by (sourceGlyph, row
+ * glyph) together, not by the row's glyph alone — 日 is also a target on 目's
+ * page (the older, unrelated 日/目 kanji lookalike), and a lookup keyed only
+ * on the target would wrongly print the 日/曰 tip there too. Omitted by kana
+ * confusables (kana-entry-view.tsx doesn't pass it) and by any other caller
+ * with no single "self" glyph, which simply gets no tip on any row — the
+ * existing untipped rendering.
+ */
 export async function resolveConfusableRows(
   ids: readonly EntryId[],
+  sourceGlyph?: string,
 ): Promise<Record<string, ConfusableRowData>> {
   const out: Record<string, ConfusableRowData> = {};
   for (const id of [...new Set(ids)]) {
     const e = libEntryOf(id);
     if (!e) continue;
+    const tip = sourceGlyph ? radicalConfusableTip(sourceGlyph, e.glyph) : undefined;
     out[id as unknown as string] = {
       glyph: e.glyph,
       gloss: e.meanings[0] ?? e.readings[0] ?? "",
       href: entryHref(id),
+      ...(tip ? { tip } : {}),
     };
   }
   return out;

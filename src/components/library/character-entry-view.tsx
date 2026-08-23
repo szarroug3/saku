@@ -246,7 +246,7 @@ export function CharacterEntryView({
   // The DEFINITION belongs to each role, not the header — a glyph that plays
   // several roles can mean different things in each (生 = "life" as a kanji, なま
   // "raw" as a word), so each role block carries its own meaning.
-  const { kanjiMeaning, radicalMeaning } = payload;
+  const { kanjiMeaning, radicalMeaning, radicalTip } = payload;
 
   // Which role blocks have something to show, and whether to LABEL them: a
   // single-role glyph drops the "As a …" label (see RoleBlock). Each block that
@@ -290,8 +290,17 @@ export function CharacterEntryView({
         {hasRadical ? (
           <RoleBlock title="As a radical" labelled={labelled}>
             {radicalMeaning ? (
-              <p className={`text-[14px] text-text-muted ${variants.length > 0 ? "mb-4" : ""}`}>
+              <p className={`text-[14px] text-text-muted ${radicalTip || variants.length > 0 ? "mb-4" : ""}`}>
                 It means <span className="text-text">{radicalMeaning}</span>.
+              </p>
+            ) : null}
+            {/* SAK-155: how to RECOGNISE this radical's role inside a kanji —
+                a single-glyph tip (勹 wraps), distinct from the lookalike-pair
+                tips ConfusionSection renders further down the page. Styled
+                like the kanji block's own Etymology paragraph below. */}
+            {radicalTip ? (
+              <p className={`text-[13px] leading-relaxed text-text-muted ${variants.length > 0 ? "mb-4" : ""}`}>
+                {radicalTip}
               </p>
             ) : null}
             {variants.length > 0 ? (
@@ -565,7 +574,10 @@ export function CharacterEntryView({
         {/* Shape lookalikes, above "how it's written" — the reference before the
             "how to draw it". Only a character (single glyph) has them; a multi-char
             word is kind "word" with none. */}
-        <ConfusionSection confusables={item.kind === "character" ? item.confusables : []} />
+        <ConfusionSection
+          confusables={item.kind === "character" ? item.confusables : []}
+          glyph={glyph}
+        />
 
         {/* Collapsed by default: the "we don't recommend learning to write early"
             notice with a Show button that expands the real stroke diagram. A

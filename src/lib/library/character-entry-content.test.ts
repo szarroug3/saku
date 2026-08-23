@@ -13,7 +13,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { derivePosition } from "./character-entry-content.ts";
+import { buildGlyphItem } from "@/lib/content/build-item.ts";
+import { characterEntryPayload, derivePosition } from "./character-entry-content.ts";
 
 test("にょう (bottom-left) suffix is detected — the confirmed SAK-158 gap", () => {
   // 旡, bushu name むにょう (radical 71) — the real instance the ticket found
@@ -78,4 +79,27 @@ test("suffix checks don't collide with each other", () => {
   // and must win over any other suffix that happens to be a substring.
   assert.equal(derivePosition("むにょう").en, "Bottom Left");
   assert.notEqual(derivePosition("むにょう").en, "Bottom");
+});
+
+// ---- radicalTip: 勹's single-radical recognition tip (SAK-155) ----
+//
+// Not a lookalike pair (that's ConfusionSection's `tip`, tested separately in
+// entries.test.ts/confusion-section) — this is the "As a radical" block's own
+// paragraph, for a radical with a recognisable role but no specific partner to
+// contrast against.
+
+test("勹's payload carries its own hand-authored recognition tip", () => {
+  const item = buildGlyphItem("勹");
+  assert.ok(item, "勹 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  assert.ok(payload.radicalTip, "勹 should have a radicalTip");
+  assert.match(payload.radicalTip!, /wrapped around/);
+  assert.match(payload.radicalTip!, /包/);
+});
+
+test("a radical with no authored tip (口) carries radicalTip: null", () => {
+  const item = buildGlyphItem("口");
+  assert.ok(item, "口 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  assert.equal(payload.radicalTip, null);
 });
