@@ -441,7 +441,7 @@ export function KanaEntryView({
         ) : null}
         {/* Shape lookalikes, above the stroke diagram — the reference before the
             "how to draw it" that closes the page. */}
-        <ConfusionSection confusables={confusables} />
+        <ConfusionSection confusables={confusables} glyph={glyph} />
         {/* Collapsed by default, like every other page: the "we don't recommend
             learning to write early" notice, Show expands the stroke diagram.
             ABSENT for a yōon combo (yoonRow non-null — Sam's correction): she

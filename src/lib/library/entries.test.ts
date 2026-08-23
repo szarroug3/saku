@@ -21,6 +21,7 @@ import test, { describe } from "node:test";
 import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
 import {
   builtFrom,
+  confusableWith,
   factRows,
   factsColumnHeader,
   factsTitle,
@@ -40,7 +41,7 @@ import { factInfo } from "@/lib/facts.ts";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/data/vocab";
-import { RADICAL_SUBJECT } from "@/data/radicals";
+import { RADICAL_SUBJECT, radicalEntry } from "@/data/radicals";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { TERM_SUBJECT } from "@/data/terms";
@@ -344,4 +345,56 @@ test("a radical and a kanji part are shapes, not sounds — no speaker either", 
   const primitive = LIB_ENTRIES.find((e) => e.kind === PRIMITIVE_SUBJECT);
   assert.ok(primitive, "expected at least one kanji-part entry");
   assert.equal(primitive!.speakable, false);
+});
+
+// ---- confusableWith: hand-authored radical lookalike pairs (SAK-155) ----
+//
+// 口 (mouth, Kangxi 30) is merged into its own kanji card (isRadicalTaughtAs-
+// Kanji), so its one Library page is a KANJI_SUBJECT entry; 囗 (enclosure,
+// Kangxi 31) has no kanji role at all, so its page is RADICAL_SUBJECT. The
+// pair must show up on BOTH pages regardless of which SUBJECT each glyph
+// happens to resolve to — see confusableWith's own "WHY THE RADICAL PAIR
+// CHECK RUNS FOR BOTH..." doc. Same shape for 日 (sun, merged) / 曰 (say,
+// radical-only), which additionally already carries an UNRELATED existing
+// kanji lookalike (目) that must survive alongside the new pairing.
+
+describe("SAK-155 — 口/囗 and 日/曰 radical lookalike pairs", () => {
+  test("口's page (a KANJI_SUBJECT entry, since 口 is merged) lists 囗", () => {
+    const mouth = need(libEntry(kanjiEntry("口")));
+    assert.equal(mouth.kind, KANJI_SUBJECT);
+    assert.ok(
+      confusableWith(mouth).includes(radicalEntry("囗")),
+      "口's confusables should include 囗's radical entry",
+    );
+  });
+
+  test("囗's page (a RADICAL_SUBJECT entry — no kanji role) lists 口", () => {
+    const enclosure = need(libEntry(radicalEntry("囗")));
+    assert.equal(enclosure.kind, RADICAL_SUBJECT);
+    assert.ok(
+      confusableWith(enclosure).includes(kanjiEntry("口")),
+      "囗's confusables should include 口's kanji entry",
+    );
+  });
+
+  test("日's page keeps its existing 目 lookalike AND picks up 曰", () => {
+    const sun = need(libEntry(kanjiEntry("日")));
+    assert.equal(sun.kind, KANJI_SUBJECT);
+    const ids = confusableWith(sun);
+    assert.ok(ids.includes(kanjiEntry("目")), "日 should still list its existing 目 pairing");
+    assert.ok(ids.includes(radicalEntry("曰")), "日 should also list its new 曰 pairing");
+  });
+
+  test("曰's page (radical-only) lists 日, and only 日 — no unrelated 目 leak", () => {
+    const say = need(libEntry(radicalEntry("曰")));
+    assert.equal(say.kind, RADICAL_SUBJECT);
+    const ids = confusableWith(say);
+    assert.deepEqual(ids, [kanjiEntry("日")]);
+  });
+
+  test("an unrelated radical (勹) has no pair partner — confusableWith stays empty", () => {
+    const wrap = need(libEntry(radicalEntry("勹")));
+    assert.equal(wrap.kind, RADICAL_SUBJECT);
+    assert.deepEqual(confusableWith(wrap), []);
+  });
 });

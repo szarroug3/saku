@@ -9,6 +9,7 @@
 import { etymologyOf, phoneticReading } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
+import { radicalTipFor } from "@/data/radical-tips";
 import { readingUnits, vocabRow, wordSenseRegister, wordUnitFacts } from "@/data/vocab";
 import { exampleFor, type WordExample } from "@/data/word-examples";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
@@ -109,6 +110,13 @@ export interface CharacterEntryPayload {
   readonly example: WordExample | null;
   readonly kanjiMeaning: string | null;
   readonly radicalMeaning: string | null;
+  /** SAK-155: a single radical's own hand-authored recognition tip (勹 wraps
+   * around another radical almost every time) — how to SPOT its role inside a
+   * kanji, not a lookalike contrast (those go through `confusables`/`tip` on
+   * the ConfusionSection rows instead, see radical-tips.ts's own header for
+   * why the two are different mechanisms). Null when the radical has none
+   * authored, which is most of the 214 — absence is normal, not an error. */
+  readonly radicalTip: string | null;
   readonly usedIn: readonly CharacterUsedIn[];
   readonly strokeFallback: PrecomputedStrokeFallback;
 }
@@ -348,6 +356,7 @@ export function characterEntryPayload(
     example: isWord ? exampleFor(glyph) : null,
     kanjiMeaning: isKanji ? (kanjiRow(glyph)?.meanings.join(", ") ?? null) : null,
     radicalMeaning: isRadical ? (radicalByGlyph(glyph)?.meaning ?? null) : null,
+    radicalTip: isRadical ? (radicalTipFor(glyph) ?? null) : null,
     usedIn,
     strokeFallback: {
       normal: strokeFallbackOf(strokeItem, false),
