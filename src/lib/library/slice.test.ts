@@ -164,17 +164,70 @@ describe("a zero-item drill is never offered", () => {
 // repeating "nothing here to drill".
 describe("sliceSentence — an empty slice has no sentence", () => {
   test("total 0 returns the empty string", () => {
-    assert.equal(sliceSentence({ drillable: 0, total: 0, seen: 0, solid: 0 }), "");
+    assert.equal(
+      sliceSentence({ drillable: 0, total: 0, seen: 0, solid: 0, slipping: 0 }),
+      "",
+    );
   });
 
   test("a non-empty slice still gets its sentence", () => {
     assert.equal(
-      sliceSentence({ drillable: 3, total: 3, seen: 0, solid: 0 }),
+      sliceSentence({ drillable: 3, total: 3, seen: 0, solid: 0, slipping: 0 }),
       "3 questions · not seen yet",
     );
     assert.equal(
-      sliceSentence({ drillable: 0, total: 4, seen: 4, solid: 4 }),
+      sliceSentence({ drillable: 0, total: 4, seen: 4, solid: 4, slipping: 0 }),
       "all 4 solid, nothing to ask",
     );
+  });
+});
+
+// SAK-157: a slipping fact (seen before, decayed to `teach`) is not "not
+// known" and drillPlan must not offer to re-teach it — see standing.ts's
+// "you had it. It's gone." and drillPlan's own doc comment for why `probe`
+// isn't the fix either (rank() refuses a teach-status candidate outright).
+describe("drillPlan — a slipping fact is neither taught nor probed", () => {
+  const now = Date.UTC(2026, 0, 1);
+
+  // A fact decayed to `teach` (p ~ 0) with real showings behind it: seen
+  // (and passed) before, but tested long enough ago at low enough stability
+  // that recall has decayed past SCORING.teachBelow. Same shape standing.test.ts
+  // uses for its own "slipping" case.
+  const decayed: FactAggregate = {
+    seen: 8,
+    missed: 0,
+    firstTry: 8,
+    correct: 8,
+    stability: 5,
+    lastTested: now - 60 * 86_400_000,
+  };
+
+  test("a never-seen fact enters `teach`", () => {
+    const ids = factsOf(kanji.id);
+    const facts: Record<FactId, FactAggregate> = {};
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+    const plan = drillPlan(slice, facts, {}, now);
+    assert.deepEqual([...plan.teach].sort(), [...ids].sort());
+    assert.equal(plan.probe.length, 0);
+  });
+
+  test("a decayed, previously-seen fact enters neither `teach` nor `probe`", () => {
+    const ids = factsOf(kanji.id);
+    const facts: Record<FactId, FactAggregate> = {};
+    for (const id of ids) facts[id] = decayed;
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+    const plan = drillPlan(slice, facts, {}, now);
+    assert.equal(plan.teach.length, 0, "slipping facts must not be re-taught");
+    assert.equal(plan.probe.length, 0, "rank() would refuse them anyway");
+  });
+
+  test("a mixed slice teaches only the genuinely-new fact", () => {
+    const ids = factsOf(kanji.id);
+    assert.ok(ids.length > 1, "need at least two facts for a mixed case");
+    const facts: Record<FactId, FactAggregate> = { [ids[0]]: decayed };
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+    const plan = drillPlan(slice, facts, {}, now);
+    assert.deepEqual([...plan.teach].sort(), ids.slice(1).sort());
+    assert.equal(plan.probe.length, 0);
   });
 });

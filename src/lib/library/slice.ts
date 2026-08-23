@@ -118,6 +118,36 @@ export function hasMultipleQuizForms(facts: readonly FactId[]): boolean {
  *
  * `quiet` never appears. That is the whole default.
  *
+ * SAK-157: `teach` status is ambiguous between two facts that look identical
+ * to the arithmetic — never met, and lost to decay (scoring.ts's UNMET
+ * comment: both read p → 0 by the same formula, on purpose, "there is no
+ * cold-start branch"). standing.ts already resolves that ambiguity for the
+ * per-row word: a fact with real showings behind it (`seen > 0`) that has
+ * decayed to `teach` is "slipping", not "not seen" — you had it, it's gone.
+ * The Library's "Teach me" button must not blur that distinction back
+ * together (that was the bug: a genuinely-new kana and a decayed-but-once-
+ * known word both landed in `teach` and both read as "not known"). So this
+ * loop applies the SAME seen-count check standing.ts uses, on the SAME
+ * `FactAggregate`, rather than re-deriving a slightly different rule: only a
+ * fact with `seen === 0` enters `teach`.
+ *
+ * A slipping fact is not moved to `probe` instead — that would look like a
+ * fix and not be one. `rank` (scoring.ts) recomputes `statusAt(p)` itself and
+ * `continue`s past anything that isn't `"probe"`, so a `teach`-status
+ * candidate handed to `rank` is silently dropped right back out; and even if
+ * it weren't, `weakness` is ~0 at p → 0 by construction (it peaks at p = 0.5),
+ * so it would sort to the bottom of a list capped by the slice's own size —
+ * buried, not asked. So a slipping fact is dropped from the plan entirely.
+ * Its standing is still visible (the Library's "slipping" status filter,
+ * standing.ts) and Practice's "Slipping" chip (selection.ts) is where a
+ * learner actually drills it back up — the Library's teach/probe split is not
+ * the only door in the app, and re-teaching is not what a slipping fact
+ * needs (it doesn't need TEACHING, scoring.ts's own header says as much for
+ * `teach` in general: "testing someone on what they don't know is not
+ * teaching" — the flip side holds too, re-teaching someone who once knew this
+ * is not what closes the gap; testing it is, and Practice is where that
+ * happens).
+ *
  * EXCEPT when you asked for these by name. `includeSolid` is the one seam that
  * bends the default, and only for an EXPLICIT selection: you toggled these five
  * things and pressed Drill, so "don't re-drill what you know" stops being a
@@ -146,7 +176,11 @@ export function drillPlan(
         probe.push({ id, state });
         break;
       case "teach":
-        teach.push(id);
+        // SAK-157: `seen === 0` is standing.ts's own test for "not seen" vs
+        // "slipping" (standingOf), read off the same FactAggregate rather
+        // than re-derived. Never-seen enters `teach`; a decayed-but-once-seen
+        // fact is dropped from the plan entirely (see the doc comment above).
+        if ((facts[id]?.seen ?? 0) === 0) teach.push(id);
         break;
       case "quiet":
         // The default drops this; an explicit selection asks it anyway.
@@ -199,6 +233,16 @@ export interface SliceCount {
   /** Facts the model is sure of — what `drillable` leaves out, named so the bar
    * can explain itself rather than just be smaller than you expected. */
   readonly solid: number;
+  /** SAK-157: facts `drillable` also leaves out, for the opposite reason from
+   * `solid` — a decayed-but-once-seen ("slipping", standing.ts) fact is not
+   * something the model is sure of, it is the thing this whole feature exists
+   * to stop mislabelling as unknown. `drillPlan` drops it from the Library's
+   * teach/probe split entirely (see its doc comment) whether or not
+   * `includeSolid` is set, so it is excluded here on the same terms — named,
+   * not folded into `solid`, so the bar can say something TRUE about it
+   * instead of a count that is merely smaller than `total` for an
+   * unexplained reason. */
+  readonly slipping: number;
 }
 
 export function sliceCount(
@@ -211,17 +255,27 @@ export function sliceCount(
   const all = sliceFacts(slice);
   let seen = 0;
   let solid = 0;
+  let slipping = 0;
   for (const id of all) {
     const forms = quizFormCount([id]);
-    if ((facts[id]?.seen ?? 0) > 0) seen += forms;
-    if (status(effectiveState(facts[id], claims[id]), now) === "quiet") solid += forms;
+    const everSeen = (facts[id]?.seen ?? 0) > 0;
+    if (everSeen) seen += forms;
+    const s = status(effectiveState(facts[id], claims[id]), now);
+    if (s === "quiet") solid += forms;
+    // Mirrors drillPlan's own seen-count check — a decayed fact only counts
+    // as "slipping" (and only leaves `drillable`) when it has real showings
+    // behind it; a decayed fact with none is plain never-seen and stays in
+    // `drillable` via the arithmetic below.
+    else if (s === "teach" && everSeen) slipping += forms;
   }
   const total = quizFormCount(all);
   // An explicit selection drills its solid facts too, so they are not the
-  // number the button "deliberately isn't": drillable is everything, and the
-  // bar has no solid remainder to explain away.
-  if (includeSolid) return { drillable: total, total, seen, solid: 0 };
-  return { drillable: total - solid, total, seen, solid };
+  // number the button "deliberately isn't": drillable is everything but
+  // slipping, and the bar has no solid remainder to explain away. Slipping
+  // stays excluded even under includeSolid — that seam rescues `quiet` facts
+  // only (see drillPlan), never a `teach`-status one.
+  if (includeSolid) return { drillable: total - slipping, total, seen, solid: 0, slipping };
+  return { drillable: total - solid - slipping, total, seen, solid, slipping };
 }
 
 /**
@@ -236,6 +290,14 @@ export function sliceCount(
  *                        drill that is entirely new material.
  *   the mixed case .... "everything here that isn't solid · 9 questions".
  *
+ * SAK-157 adds one more thing `drillable` can leave out — `slipping` — and it
+ * gets its own words rather than being folded into `solid`'s: a slipping fact
+ * is not one the model is sure of, it is the opposite, and saying "solid" of
+ * it would be exactly the mislabel this feature exists to stop. When it is
+ * the ONLY thing standing between `drillable` and `total`, the sentence names
+ * it outright ("all 3 slipping, nothing to teach here") rather than reusing
+ * the solid wording for a case that is not solid.
+ *
  * An empty slice (no facts at all) returns "": there is nothing to summarise and
  * the surface it sits on already shows its own empty-shelf/empty-search message,
  * so the bar stays quiet rather than repeating "nothing here to drill".
@@ -243,15 +305,23 @@ export function sliceCount(
 export function sliceSentence(c: SliceCount): string {
   if (c.total === 0) return "";
   if (c.drillable === 0) {
-    return `all ${c.total} solid, nothing to ask`;
+    if (c.slipping === 0) return `all ${c.total} solid, nothing to ask`;
+    if (c.solid === 0) return `all ${c.total} slipping, nothing to teach here`;
+    return `${c.solid} solid, ${c.slipping} slipping, nothing to teach here`;
   }
   if (c.seen === 0) {
     return `${c.drillable} question${c.drillable === 1 ? "" : "s"} · not seen yet`;
   }
-  if (c.solid === 0) {
+  if (c.solid === 0 && c.slipping === 0) {
     return `${c.drillable} question${c.drillable === 1 ? "" : "s"}`;
   }
-  return `everything here that isn't solid · ${c.drillable} question${
+  const excluded =
+    c.solid > 0 && c.slipping > 0
+      ? "solid or slipping"
+      : c.slipping > 0
+        ? "slipping"
+        : "solid";
+  return `everything here that isn't ${excluded} · ${c.drillable} question${
     c.drillable === 1 ? "" : "s"
   }`;
 }
