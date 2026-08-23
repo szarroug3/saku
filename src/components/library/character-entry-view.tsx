@@ -206,21 +206,37 @@ export function CharacterEntryView({
   const { parts, story, groups, variants, wordRows: allWordRows } = payload;
   // SAK-150: the lesson shows only the reading(s) `readingUnits` actually
   // scores a fact for (`taught`, computed in character-entry-content.ts) — the
-  // SAME set curriculum-lesson.ts's factsOf schedules into this same lesson
+  // SAME set the curriculum's fact enumeration schedules into this same lesson
   // step. A word with one spoken form still shows one row, unchanged; a word
   // with two real, independently-scored pronunciations (七: しち AND なな) now
   // shows both, so the drill can never quiz a reading this screen never
   // taught. The Library (lesson=false) keeps showing every sense, taught or
   // reference-tier, for its own full-dictionary purpose. The lead below reads
   // off THIS list, so it stays right either way.
-  // Falls back to the old one-row cap when nothing is marked taught (a stale
-  // payload from before SAK-150, or a genuinely untaught word) rather than
-  // rendering an empty "As a word" block on a page that clearly has one.
+  //
+  // SAK-157: within the taught rows, prefer the ones that are actually
+  // `fresh` right now — being introduced in THIS lesson, not a sibling
+  // reading taught in some earlier one that merely rode along because the
+  // word's OTHER reading is what made this step due. A word due only for a
+  // new reading (七 due again for なな, having taught しち long ago) must not
+  // reprint しち as if it, too, were new. `fresh` mirrors `taught` whenever
+  // the payload was built with no learner history to check (the Library
+  // route's cached payload, /dev/views), so this filter is a no-op there.
+  //
+  // Falls back a step at a time — fresh-and-taught, then just taught, then the
+  // old one-row cap — rather than ever rendering an empty "As a word" block on
+  // a page that clearly has one: an edge case where the payload's freshness
+  // signal disagrees with what actually put this word in the lesson (a stale
+  // payload, or a word with no fact-level scoring signal at all) should still
+  // show SOMETHING, not nothing.
   const taughtWordRows = allWordRows.filter((w) => w.taught);
+  const freshWordRows = taughtWordRows.filter((w) => w.fresh);
   const wordRows = lesson
-    ? taughtWordRows.length > 0
-      ? taughtWordRows
-      : allWordRows.slice(0, 1)
+    ? freshWordRows.length > 0
+      ? freshWordRows
+      : taughtWordRows.length > 0
+        ? taughtWordRows
+        : allWordRows.slice(0, 1)
     : allWordRows;
   // A multi-char word shows the kanji it's written with; a single glyph doesn't
   // split into itself. The example sentence lives in the word block.

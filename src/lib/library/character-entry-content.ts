@@ -9,17 +9,18 @@
 import { etymologyOf, phoneticReading } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
-import { readingUnits, vocabRow, wordSenseRegister } from "@/data/vocab";
+import { readingUnits, vocabRow, wordSenseRegister, wordUnitFacts } from "@/data/vocab";
 import { exampleFor, type WordExample } from "@/data/word-examples";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
+import { isFactFresh } from "@/lib/content/unit-scheduler-core";
 import { strokeFallbackOf } from "@/lib/lesson-roles";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
 import type { PrecomputedStrokeFallback } from "@/components/lesson/how-its-written";
-import type { EntryId } from "@/types";
+import type { EntryId, HistoryFile } from "@/types";
 
 interface CharacterPart {
   readonly glyph: string;
@@ -65,6 +66,20 @@ export interface CharacterWordReading {
    * screen never displayed.
    */
   readonly taught: boolean;
+  /**
+   * SAK-157: whether this TAUGHT reading is the one actually being freshly
+   * introduced right now, as opposed to a sibling reading of the same word
+   * that was taught in some earlier lesson and is merely being re-displayed
+   * because the word re-entered a lesson step for its OTHER, genuinely-new
+   * reading (七 taught しち long ago; this lesson introduces なな — しち must
+   * not print again as if it were new). Computed via `isFactFresh` (the same
+   * "no record at all" test the scheduler itself uses to decide dueness) when
+   * `characterEntryPayload` is given a `history`; otherwise mirrors `taught`,
+   * which is the correct behaviour for every caller that has no learner
+   * history to check against (the Library route's cached, history-independent
+   * payload, and /dev/views) — see `characterEntryPayload`'s own doc.
+   */
+  readonly fresh: boolean;
 }
 
 interface CharacterWordPiece {
@@ -124,8 +139,24 @@ function positionOf(v: {
 /**
  * The exact live derivation CharacterEntryView renders. Seed code calls this
  * function too; no part of the fetched payload is independently reimplemented.
+ *
+ * `history` is OPTIONAL and, when given, is read for exactly one thing: each
+ * word row's `fresh` flag (SAK-157) — whether ITS OWN reading-unit fact(s) are
+ * still `isFactFresh`, the identical test the lesson scheduler
+ * (unit-scheduler-core.ts) already used to decide the word's UNIT is due. A
+ * multi-reading word can be due because only ONE of its readings is new; this
+ * is what lets the lesson-mode filter in CharacterEntryView show that reading
+ * alone instead of every reading the word has ever taught. Omitted by the
+ * Library route's cached, history-independent payload (scripts/seed-content-
+ * entries.mjs) and by /dev/views, both of which have no live learner history
+ * to check — `fresh` mirrors `taught` in that case, which is a no-op for
+ * lesson-mode filtering (see CharacterEntryView) and irrelevant to every other
+ * caller, which never reads `fresh` at all.
  */
-export function characterEntryPayload(item: ContentItem): CharacterEntryPayload {
+export function characterEntryPayload(
+  item: ContentItem,
+  history?: HistoryFile,
+): CharacterEntryPayload {
   const glyph = item.glyph;
   const single = [...glyph].length === 1;
   const isKanji = item.roles.includes("kanji");
@@ -235,12 +266,22 @@ export function characterEntryPayload(item: ContentItem): CharacterEntryPayload 
     // taught so a row this page would otherwise print is never silently
     // dropped from the lesson for a reason that has nothing to do with SAK-150.
     const taughtRebs = new Set(readingUnits(word).map((u) => u.reb));
-    for (const [reading, meanings] of byReading)
-      wordRows.push({
-        reading,
-        meanings,
-        taught: taughtRebs.size === 0 || taughtRebs.has(reading),
-      });
+    // SAK-157: per-reading fact ids (reading fact + meaning fact), so `fresh`
+    // can ask the SAME `isFactFresh` the scheduler used to decide this word's
+    // unit was due — never re-derived or guessed, just read off the one
+    // enumeration (`wordUnitFacts`) that mints these ids in the first place.
+    const factsByReb = new Map(wordUnitFacts(word.keb).map((u) => [u.unit.reb, u]));
+    for (const [reading, meanings] of byReading) {
+      const taught = taughtRebs.size === 0 || taughtRebs.has(reading);
+      const unitFacts = factsByReb.get(reading);
+      const fresh = !history
+        ? taught
+        : taught &&
+          (!unitFacts ||
+            (unitFacts.reading ? isFactFresh(unitFacts.reading, history) : false) ||
+            isFactFresh(unitFacts.meaning, history));
+      wordRows.push({ reading, meanings, taught, fresh });
+    }
   }
 
   const wordPieces: CharacterWordPiece[] =

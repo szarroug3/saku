@@ -14,15 +14,23 @@ import { CharacterEntryView as CharacterEntryRenderer } from "@/components/libra
 import { resolveCharacterEntryPayload } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { ContentItem } from "@/lib/content/item";
+import type { HistoryFile } from "@/types";
 
 export function CharacterEntryView({
   item,
   lesson = false,
+  history,
 }: {
   item: ContentItem;
   lesson?: boolean;
+  /** SAK-157: threaded through to `resolveCharacterEntryPayload` so a
+   * multi-reading word's rows carry a real `fresh` flag instead of merely
+   * `taught` — see character-entry-content.ts's `characterEntryPayload`. Only
+   * the teach walk (teach-item-view.tsx) has a learner history to pass;
+   * /dev/views omits it, same as before this fix. */
+  history?: HistoryFile;
 }) {
-  const live = useServerLookup(resolveCharacterEntryPayload, [item]);
+  const live = useServerLookup(resolveCharacterEntryPayload, [item, history]);
   return (
     <CharacterEntryRenderer
       item={item}
