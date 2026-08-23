@@ -137,8 +137,13 @@ describe("the word total is the material, and does not move", () => {
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
     // 12,540 minus the 10 particles PARTICLE_TRACK_KEBS now excludes (か/は/が/
-    // に/で/を/へ/まで/だけ/しか — until they moved to the grammar track only).
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12530);
+    // に/で/を/へ/まで/だけ/しか — until they moved to the grammar track only),
+    // minus the 43 day-of-month/month-of-year vocab.json entries COUNTER_KANJI_GLYPHS
+    // (above) now excludes automatically: SAK-163 added their kanji forms
+    // (１日…３１日, １月…１２月) to COUNTER_CURRICULUM, and this filter derives from
+    // that list, so the same de-duplication every other counted counter form
+    // already got (二十歳, 一本…) now applies to these too — see counters.ts.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12487);
   });
 });
 
