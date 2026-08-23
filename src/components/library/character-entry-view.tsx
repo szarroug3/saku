@@ -386,6 +386,13 @@ export function CharacterEntryView({
                 </div>
               ) : null}
 
+              {story ? (
+                <div>
+                  <SubLabel>Etymology</SubLabel>
+                  <p className="text-[13px] leading-relaxed text-text-muted">{story}</p>
+                </div>
+              ) : null}
+
               {groups.length > 0 ? (
                 <div>
                   <Lead>
@@ -416,13 +423,6 @@ export function CharacterEntryView({
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : null}
-
-              {story ? (
-                <div>
-                  <SubLabel>Etymology</SubLabel>
-                  <p className="text-[13px] leading-relaxed text-text-muted">{story}</p>
                 </div>
               ) : null}
             </div>
