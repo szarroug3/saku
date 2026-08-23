@@ -2298,6 +2298,30 @@ export function DrillScreen() {
           // the way the grammar form-name folded into its instruction.
           "Which of these is this a form of?"
         : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
+  // SAK-153: is THIS showing a pronunciation question — one whose instruction
+  // above reads "how this X is said" rather than "what this X means" (or a
+  // recognition/production/count question with no reading to leak at all)?
+  // "Show text" (below) reveals the glyph/word `listen` was hiding, and on a
+  // card that is asking the learner to PRODUCE OR RECOGNIZE the reading, that
+  // glyph is the answer — so the escape hatch SAK-51 added must not be offered
+  // there. Mirrors the exact branching `instruction` just used, rather than
+  // calling `isSound` bare: `isSound` alone answers true for every jp2en fact
+  // (a jp2en Japanese answer is a reading by construction — see its own doc),
+  // which would wrongly catch a word's MEANING card (also fixedDir jp2en) were
+  // `answerIsMeaning` not checked too, and would wrongly catch a numberItem
+  // HEAR card ("Type the number you hear" — the count, not the reading) or a
+  // particle/pitch/recognition/variant showing, none of which asks for a
+  // reading at all, were their own branches above not excluded here the same
+  // way `instruction`'s ternary already excludes them.
+  const isPronunciationQuestion =
+    !q.particleDrill &&
+    !q.particleMarker &&
+    !q.recognition &&
+    !q.pitch &&
+    !q.numberItem &&
+    !q.variant &&
+    isSound(q.f, q.dir) &&
+    !answerIsMeaning(q.f, q.dir);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
@@ -2722,8 +2746,14 @@ export function DrillScreen() {
             swaps its speaker for the glyph a text card would show, same as
             turning the setting off would draw fresh — but for THIS card only,
             with no reset of tries or credit. Gone the instant it's pressed
-            (`!q.textRevealed`), and absent entirely on a non-listening card. */}
-        {q.listen && !q.textRevealed ? (
+            (`!q.textRevealed`), and absent entirely on a non-listening card.
+            SAK-153: also absent on a PRONUNCIATION listening card — the text
+            it would reveal is the very reading the card is testing, so the
+            escape hatch would just hand over the answer. Every other listening
+            card (a meaning card, a numberItem HEAR count, a recognition pick)
+            is unaffected: `isPronunciationQuestion` is false for all of them,
+            same as today. */}
+        {q.listen && !q.textRevealed && !isPronunciationQuestion ? (
           <SmallBtn
             onClick={showListenText}
             title="Show the word as text instead of relying on audio"
