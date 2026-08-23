@@ -84,6 +84,7 @@ import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
   COUNTER_KANJI_GLYPHS,
+  COUNTER_TAIL_FORM_ALIASES,
   COUNTER_VOCAB_DUPLICATE_KEBS,
   counterEntry,
   counterForm,
@@ -559,17 +560,23 @@ export function knownFactsOf(entry: LibEntry): readonly FactId[] {
 // ---------- the index ----------
 
 /**
- * SAK-169: the reverse of COUNTER_VOCAB_DUPLICATE_KEBS — which extra kebs
- * (一つ, 一人, …) a given counting/construction entry duplicates, so build()
- * below can carry them as searchAlso aliases. Built once, off the one exported
- * map, so this file and counters.ts cannot disagree about which keb maps to
+ * SAK-169 (extended by SAK-172): the reverse of COUNTER_VOCAB_DUPLICATE_KEBS
+ * and COUNTER_TAIL_FORM_ALIASES together — which extra strings (一つ, 一人,
+ * 二十歳, …) a given counting/construction entry duplicates, so build() below
+ * can carry them as searchAlso aliases. Built once, off the two exported maps,
+ * so this file and counters.ts cannot disagree about which string maps to
  * which entry (the same "one export, cannot drift" reasoning
- * COUNTER_VOCAB_DUPLICATE_KEBS's own doc comment gives). Defined ahead of
- * LIB_ENTRIES/build() below, which reads it while building.
+ * COUNTER_VOCAB_DUPLICATE_KEBS's own doc comment gives). The two source maps
+ * stay separate in counters.ts (see COUNTER_TAIL_FORM_ALIASES's own doc
+ * comment for why), but they feed this ONE combined lookup, since build()'s
+ * two consumers (the VOCAB walk and the COUNTER_CURRICULUM walk, below) both
+ * just want "what aliases duplicate this entry" regardless of which source
+ * map they came from. Defined ahead of LIB_ENTRIES/build() below, which reads
+ * it while building.
  */
 const COUNTER_KANJI_DUPLICATE_SEARCH: ReadonlyMap<EntryId, readonly string[]> = (() => {
   const byEntry = new Map<EntryId, string[]>();
-  for (const [keb, target] of COUNTER_VOCAB_DUPLICATE_KEBS) {
+  for (const [keb, target] of [...COUNTER_VOCAB_DUPLICATE_KEBS, ...COUNTER_TAIL_FORM_ALIASES]) {
     const kebs = byEntry.get(target) ?? [];
     kebs.push(keb);
     byEntry.set(target, kebs);
@@ -828,17 +835,18 @@ function build(): LibEntry[] {
   for (const w of VOCAB) {
     // SAK-147: a kanji-written counter glyph (day-of-month, month-of-year,
     // 二十歳 — COUNTER_KANJI_GLYPHS, see its doc comment in src/data/counters.ts)
-    // is NOT a plain word here. 二十歳 gets its own row below, under
-    // COUNTER_KIND, from the COUNTER_CURRICULUM walk a few dozen lines down —
-    // built off the exact same glyph. Day/month's 43 glyphs no longer do (SAK-
+    // is NOT a plain word here. Day/month's 43 glyphs browse via the single
+    // 〜日/〜月 NUMBER_CONSTRUCTION_KIND row every generative counter gets (SAK-
     // 163 round 4 made them generative categories, so they are reference data
-    // now, not individual COUNTER_CURRICULUM forms); they instead browse via
-    // the single 〜日/〜月 NUMBER_CONSTRUCTION_KIND row every generative counter
-    // gets. Either way, skipping the glyph here does not drop it from the
-    // Library, only from the Words shelf it does not belong on. This is the
-    // same exclusion word-lesson.ts applies to the teaching spine
-    // (CURRICULUM_WORDS); both read the one set so neither can drift ahead of
-    // the other the way this bug started.
+    // now, not individual COUNTER_CURRICULUM forms). 二十歳 no longer gets its
+    // own COUNTER_KIND row either (SAK-172): its CounterForm is skipped in the
+    // COUNTER_CURRICULUM walk a few dozen lines down (COUNTER_TAIL_FORM_ALIASES)
+    // and it instead browses via the 〜歳 NUMBER_CONSTRUCTION_KIND row, whose
+    // Irregular table now shows はたち as a real row. Either way, skipping the
+    // glyph here does not drop it from the Library, only from the Words shelf
+    // it does not belong on. This is the same exclusion word-lesson.ts applies
+    // to the teaching spine (CURRICULUM_WORDS); both read the one set so
+    // neither can drift ahead of the other the way this bug started.
     if (COUNTER_KANJI_GLYPHS.has(w.keb)) continue;
     // SAK-169: 一人/二人 and the native 〜つ counting words (一つ…九つ) are
     // kanji-written VOCAB duplicates of a fact the counters track already
@@ -995,6 +1003,17 @@ function build(): LibEntry[] {
   // ("one thing"). A counted form (一本) shows its reading (いっぽん), the sound
   // the shelf exists to teach — findable in search and printed under the glyph.
   COUNTER_CURRICULUM.forEach((f, i) => {
+    // SAK-172: 二十歳 (TAIL's one memorised form) no longer mints its own
+    // standalone Library page — はたち is now a real Irregular row on 〜歳's
+    // construction page instead (number-construction.ts's `sai` CounterSpec),
+    // the same treatment day-of-month's page gives 20日's suppletive はつか.
+    // Its CounterForm/facts stay exactly as they were (teaching and quizzing
+    // read COUNTER_CURRICULUM directly — see TAIL's own doc comment in
+    // counters.ts); only this Library entry is skipped, and "二十歳" rides as
+    // a searchAlso alias on the 〜歳 entry instead (COUNTER_TAIL_FORM_ALIASES,
+    // folded into COUNTER_KANJI_DUPLICATE_SEARCH above), so search/navigation
+    // still lands somewhere real.
+    if (COUNTER_TAIL_FORM_ALIASES.has(f.glyph)) return;
     const kana = isKanaCounterForm(f);
     const id = counterEntry(f);
     // SAK-169: 一つ…九つ's kanji VOCAB spelling is skipped from the Words shelf

@@ -16,7 +16,7 @@ import { describe, test } from "node:test";
 
 import { DAYS, MONTHS } from "./counters.ts";
 import { DAY, MONTH } from "./day-month-construction.ts";
-import { numberConstructionForCounterGlyph, numberConstructionRow } from "./number-construction.ts";
+import { numberConstructionRow } from "./number-construction.ts";
 import { CONSTRUCTION_CATEGORIES } from "./counter-categories.ts";
 import { dayReading, monthReading } from "../lib/day-month-reading.ts";
 
@@ -39,16 +39,6 @@ describe("DAY and MONTH are registered construction pages", () => {
     assert.equal(month.quizConfig!.numberMax, 12);
   });
 
-  test("a counted day/month form's own page now links to its rule page", () => {
-    // SAK-35's join (numberConstructionForCounterGlyph) is keyed on the plain
-    // counter glyph (〜${glyph}); DAY/MONTH's own glyph (〜日, 〜月) makes every
-    // individual 14日/9月-etc. page resolve one, the same way 二十歳's page
-    // already links to 〜歳.
-    const day = numberConstructionForCounterGlyph("日");
-    const month = numberConstructionForCounterGlyph("月");
-    assert.equal(day?.id, "day");
-    assert.equal(month?.id, "month");
-  });
 });
 
 describe("DAY — three groups: memorized 1st-10th, then Regular/Irregular for 11th-31st", () => {

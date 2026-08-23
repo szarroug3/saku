@@ -16,6 +16,7 @@ import { describe, test } from "node:test";
 
 import {
   COUNTER_CURRICULUM,
+  COUNTER_TAIL_FORM_ALIASES,
   counterEntry,
 } from "../../data/counters.ts";
 import {
@@ -50,6 +51,13 @@ const NUMBER_KANJI = ["一", "二", "三", "四", "五", "六", "七", "八", "�
 
 const byGlyph = (g: string) => COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
+// SAK-172: 二十歳 is still a real COUNTER_CURRICULUM form (teaching/quizzing is
+// unchanged — see counters.test.ts), but it no longer mints its own shelf tile
+// or Library page; it folded into 〜歳's construction page as an Irregular row
+// instead. Every shelf/index count below that used to be COUNTER_CURRICULUM.length
+// is now that minus this one folded-in form.
+const SHELVED_CURRICULUM = COUNTER_CURRICULUM.filter((f) => !COUNTER_TAIL_FORM_ALIASES.has(f.glyph));
+
 describe("the shelf exists and lists the counters", () => {
   test("Counting is a shelf of its own", () => {
     assert.ok(KINDS.includes(COUNTER_KIND), "COUNTER_KIND is a browse kind");
@@ -64,9 +72,11 @@ describe("the shelf exists and lists the counters", () => {
       .flatMap((s) => s.entries)
       .filter((e) => e.kind === COUNTER_KIND)
       .map((e) => e.id);
-    assert.equal(counterIds.length, COUNTER_CURRICULUM.length, "one tile per curriculum form");
+    // SAK-172: 二十歳 is folded into 〜歳's page instead of a tile of its own —
+    // one fewer tile than a full curriculum walk.
+    assert.equal(counterIds.length, SHELVED_CURRICULUM.length, "one tile per shelved curriculum form");
     assert.equal(new Set(counterIds).size, counterIds.length, "no entry listed twice");
-    const expected = new Set(COUNTER_CURRICULUM.map(counterEntry));
+    const expected = new Set(SHELVED_CURRICULUM.map(counterEntry));
     assert.equal(new Set(counterIds).size, expected.size);
     for (const id of counterIds) assert.ok(expected.has(id), `${id} is a counter entry`);
   });
@@ -94,9 +104,10 @@ describe("the shelf exists and lists the counters", () => {
       }
     }
     // And the counters are in the global index under that kind, so search and
-    // slice see them.
+    // slice see them. SAK-172: one fewer than the full curriculum — 二十歳
+    // folded into 〜歳's page instead.
     const inIndex = LIB_ENTRIES.filter((e) => e.kind === COUNTER_KIND);
-    assert.equal(inIndex.length, COUNTER_CURRICULUM.length);
+    assert.equal(inIndex.length, SHELVED_CURRICULUM.length);
   });
 
   test("the Sino numbers 1-10 have a 'Numbers' section of their word pages", () => {
@@ -114,16 +125,16 @@ describe("the shelf exists and lists the counters", () => {
       assert.match(entryHref(e.id), /^\/library\/word\//);
       assert.equal(subLabel(e), e.meanings.join(", "));
     }
-    // It sits between the native 〜つ group and the tail, the teaching order.
+    // It sits right after the native 〜つ group, the teaching order. (SAK-172
+    // removed the "tail" group entirely — 二十歳/はたち folded into 〜歳's own
+    // construction page instead of a shelf tile of its own — so the numbers no
+    // longer sit "between 〜つ and the tail"; they simply follow 〜つ.)
     const ids = sections.map((s) => s.id);
     assert.ok(
       ids.indexOf("counters-tsu") < ids.indexOf("counters-numbers"),
       "〜つ leads the numbers",
     );
-    assert.ok(
-      ids.indexOf("counters-numbers") < ids.indexOf("counters-tail"),
-      "the numbers precede the tail",
-    );
+    assert.ok(!ids.includes("counters-tail"), "the tail group no longer exists");
   });
 
   test("4 and 7 carry both spoken number readings on their word pages", () => {
@@ -167,9 +178,10 @@ describe("the shelf exists and lists the counters", () => {
 
 describe("a counter entry resolves to a real Library page", () => {
   test("its URL round-trips to the same id", () => {
-    // A 〜つ kana form and the one memorised counted form; the bare Sino numbers
-    // (に …) are no longer counter forms — the number kanji carry them.
-    for (const glyph of ["ひとつ", "とお", "二十歳"]) {
+    // A 〜つ kana form; the bare Sino numbers (に …) are no longer counter
+    // forms (the number kanji carry them), and 二十歳 no longer has a page of
+    // its own (SAK-172 — see the describe block below).
+    for (const glyph of ["ひとつ", "とお"]) {
       const id = counterEntry(byGlyph(glyph));
       assert.ok(libEntry(id), `${glyph} has a LibEntry`);
       const href = entryHref(id);
@@ -179,23 +191,38 @@ describe("a counter entry resolves to a real Library page", () => {
     }
   });
 
-  test("a counted form's page shows its reading; a kana form's does not", () => {
-    // 二十歳 · はたち — the special reading is the whole point of viewing. (The
-    // regular counted forms are generated now, so this is the one counted form
-    // left with a page of its own.)
-    const hon = libEntry(counterEntry(byGlyph("二十歳")))!;
-    const honRows = factRows(hon);
-    const reading = honRows.find((r) => r.label === "Reading");
-    assert.ok(reading, "二十歳 has a reading row");
-    assert.equal(reading!.answer, "はたち");
-    assert.equal(reading!.speak, "はたち", "the reading is spoken, not the kanji");
-    assert.equal(factsTitle(hon, honRows), "Reading and meaning");
-
-    // ひとつ IS its reading, so there is no reading row — meaning alone.
+  test("a kana form's page shows only its meaning, never a redundant reading row", () => {
+    // ひとつ IS its reading, so there is no reading row — meaning alone. (The
+    // one counted form that DID carry its own reading, 二十歳/はたち, no longer
+    // has a page of its own — see "SAK-172" below for where it went instead.)
     const tsu = libEntry(counterEntry(byGlyph("ひとつ")))!;
     const tsuRows = factRows(tsu);
     assert.ok(!tsuRows.some((r) => r.label === "Reading"), "ひとつ has no reading row");
     assert.equal(tsuRows.find((r) => r.label === "Meaning")!.answer, "one thing");
     assert.equal(factsTitle(tsu, tsuRows), "Meaning");
+  });
+});
+
+describe("SAK-172: 二十歳/はたち folds into 〜歳's Irregular table instead of its own page", () => {
+  test("二十歳 no longer resolves to its own COUNTER_KIND LibEntry", () => {
+    const id = counterEntry(byGlyph("二十歳"));
+    assert.equal(libEntry(id), undefined, "二十歳's own entry should no longer mint a Library page");
+  });
+
+  test("二十歳 no longer has its own row on the Counting shelf", () => {
+    const sections = counterShelfSections();
+    const onShelf = sections
+      .flatMap((s) => s.entries)
+      .some((e) => e.kind === COUNTER_KIND && e.glyph === "二十歳");
+    assert.equal(onShelf, false, "二十歳 must not appear as its own shelf row");
+  });
+
+  test("〜歳's construction page carries はたち as a real Irregular row, the same way 〜日's page shows はつか", () => {
+    const sai = NUMBER_CONSTRUCTIONS.find((c) => c.id === "sai")!;
+    const irregular = sai.exampleGroups.find((g) => g.title === "Irregular")!;
+    const row = irregular.examples.find((r) => r.word === "二十歳");
+    assert.ok(row, "〜歳's Irregular table must carry a 二十歳 row");
+    assert.equal(row!.reading, "はたち");
+    assert.equal(row!.build.length, 0, "はたち is suppletive — no additive equation");
   });
 });
