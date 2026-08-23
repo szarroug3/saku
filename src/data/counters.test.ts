@@ -117,13 +117,23 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
 
   test("the object counters are no longer taught as rote forms", () => {
     // The whole point of the conversion: no 一本…十本 rows, no per-counter form
-    // for 本/匹/枚 or the tail. The only counted (kanji) form left is the one
-    // special reading a category cannot build.
+    // for 本/匹/枚 or the tail. The counted (non-kana) forms left are the one
+    // special reading a category cannot build (二十歳), plus the two closed,
+    // memorised sets SAK-163 adds — day-of-month and month-of-year — which are
+    // ALSO not generative categories (see the notes above DAYS and MONTHS in
+    // counters.ts for why: 二十日 breaks the shared engine's composition rule,
+    // and 〜月 never scales past 12).
     const counted = COUNTER_CURRICULUM.filter((f) => !isKanaForm(f));
     assert.deepEqual(
       counted.map((f) => f.glyph),
-      ["二十歳"],
-      "the only memorised counted form is 二十歳 はたち",
+      [
+        "二十歳",
+        "１日", "２日", "３日", "４日", "５日", "６日", "７日", "８日", "９日", "１０日",
+        "１１日", "１２日", "１３日", "１４日", "１５日", "１６日", "１７日", "１８日", "１９日", "２０日",
+        "２１日", "２２日", "２３日", "２４日", "２５日", "２６日", "２７日", "２８日", "２９日", "３０日", "３１日",
+        "１月", "２月", "３月", "４月", "５月", "６月", "７月", "８月", "９月", "１０月", "１１月", "１２月",
+      ],
+      "the memorised counted forms are 二十歳 plus every day-of-month and month-of-year reading",
     );
   });
 
@@ -190,6 +200,53 @@ describe("the memorised readings are pinned", () => {
   // above, since the category, not a rote form, now teaches them.)
   const PINNED: Readonly<Record<string, string>> = {
     二十歳: "はたち", // the special "twenty years old" reading
+    // Day-of-month (SAK-163) — irregular 1st-10th, irregular again at 14/20/24,
+    // regular -にち everywhere else. Sourced verbatim from vocab.json (JMdict).
+    "１日": "ついたち",
+    "２日": "ふつか",
+    "３日": "みっか",
+    "４日": "よっか",
+    "５日": "いつか",
+    "６日": "むいか",
+    "７日": "なのか",
+    "８日": "ようか",
+    "９日": "ここのか",
+    "１０日": "とおか",
+    "１１日": "じゅういちにち",
+    "１２日": "じゅうににち",
+    "１３日": "じゅうさんにち",
+    "１４日": "じゅうよっか",
+    "１５日": "じゅうごにち",
+    "１６日": "じゅうろくにち",
+    "１７日": "じゅうしちにち",
+    "１８日": "じゅうはちにち",
+    "１９日": "じゅうくにち",
+    "２０日": "はつか",
+    "２１日": "にじゅういちにち",
+    "２２日": "にじゅうににち",
+    "２３日": "にじゅうさんにち",
+    "２４日": "にじゅうよっか",
+    "２５日": "にじゅうごにち",
+    "２６日": "にじゅうろくにち",
+    "２７日": "にじゅうしちにち",
+    "２８日": "にじゅうはちにち",
+    "２９日": "にじゅうくにち",
+    "３０日": "さんじゅうにち",
+    "３１日": "さんじゅういちにち",
+    // Month-of-year (SAK-163) — regular number+がつ, bar 4/7/9's own irregular
+    // readings (しがつ/しちがつ/くがつ). Sourced verbatim from vocab.json.
+    "１月": "いちがつ",
+    "２月": "にがつ",
+    "３月": "さんがつ",
+    "４月": "しがつ",
+    "５月": "ごがつ",
+    "６月": "ろくがつ",
+    "７月": "しちがつ",
+    "８月": "はちがつ",
+    "９月": "くがつ",
+    "１０月": "じゅうがつ",
+    "１１月": "じゅういちがつ",
+    "１２月": "じゅうにがつ",
   };
 
   for (const [glyph, reading] of Object.entries(PINNED)) {
