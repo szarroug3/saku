@@ -188,6 +188,92 @@ const TAIL: readonly CounterForm[] = [
   counted("counter:sai:20", "二十歳", "はたち", "twenty years old", "歳", "二", 3),
 ];
 
+// ─── Phase 3 · day-of-month (〜日), a CLOSED set — memorised, not generated ──
+// SAK-163: day-of-month readings are irregular from the 1st through the 10th
+// (ついたち, ふつか, みっか, …), irregular again at the 14th/24th (じゅうよっか /
+// にじゅうよっか — the よっか branch, not よん+にち) and at the 20th (はつか — a
+// standalone word, not に+とお+か), and only regular -にち in between and after
+// (11th-13th, 15th-19th, 21st-23rd, 25th-31st). That 20日 breaks the SAME
+// tens-plus-ones composition every other counter follows (see counterReading's
+// d===0 branch in number-reading.ts) is why this is NOT a generative CounterKind
+// there: the engine's prefix+unit mechanism has no way to special-case one
+// multiple-of-ten inside an otherwise-regular range without a day-specific hack
+// leaking into a shared, unbounded-range engine built for counters that never
+// have that shape. Day-of-month also never scales past 31 — there is no "regular
+// composition" argument for generating it (see the note above GENERATIVE
+// categories) — so it ships the same way TSU and TAIL do: a memorised, pinned
+// list. The readings are sourced verbatim from vocab.json (JMdict already carries
+// all 31 as plain VOCAB entries, which is the SAK-147 bug this ticket's caller
+// exists to fix — see the file header); duplicating them here under a namespaced
+// key follows the same "brief duplication" pattern as 一つ/一人/一匹/一台/一冊/一杯
+// (see the header note). SAK-164 removes the vocab originals from the words
+// track; this file only builds the destination.
+const DAYS: readonly CounterForm[] = [
+  counted("counter:day:1", "１日", "ついたち", "the 1st day of the month", "日", "日", 3),
+  counted("counter:day:2", "２日", "ふつか", "the 2nd day of the month", "日", "日", 3),
+  counted("counter:day:3", "３日", "みっか", "the 3rd day of the month", "日", "日", 3),
+  counted("counter:day:4", "４日", "よっか", "the 4th day of the month", "日", "日", 3),
+  counted("counter:day:5", "５日", "いつか", "the 5th day of the month", "日", "日", 3),
+  counted("counter:day:6", "６日", "むいか", "the 6th day of the month", "日", "日", 3),
+  counted("counter:day:7", "７日", "なのか", "the 7th day of the month", "日", "日", 3),
+  counted("counter:day:8", "８日", "ようか", "the 8th day of the month", "日", "日", 3),
+  counted("counter:day:9", "９日", "ここのか", "the 9th day of the month", "日", "日", 3),
+  counted("counter:day:10", "１０日", "とおか", "the 10th day of the month", "日", "日", 3),
+  counted("counter:day:11", "１１日", "じゅういちにち", "the 11th day of the month", "日", "日", 3),
+  counted("counter:day:12", "１２日", "じゅうににち", "the 12th day of the month", "日", "日", 3),
+  counted("counter:day:13", "１３日", "じゅうさんにち", "the 13th day of the month", "日", "日", 3),
+  counted("counter:day:14", "１４日", "じゅうよっか", "the 14th day of the month", "日", "日", 3),
+  counted("counter:day:15", "１５日", "じゅうごにち", "the 15th day of the month", "日", "日", 3),
+  counted("counter:day:16", "１６日", "じゅうろくにち", "the 16th day of the month", "日", "日", 3),
+  counted("counter:day:17", "１７日", "じゅうしちにち", "the 17th day of the month", "日", "日", 3),
+  counted("counter:day:18", "１８日", "じゅうはちにち", "the 18th day of the month", "日", "日", 3),
+  counted("counter:day:19", "１９日", "じゅうくにち", "the 19th day of the month", "日", "日", 3),
+  counted("counter:day:20", "２０日", "はつか", "the 20th day of the month", "日", "日", 3),
+  counted("counter:day:21", "２１日", "にじゅういちにち", "the 21st day of the month", "日", "日", 3),
+  counted("counter:day:22", "２２日", "にじゅうににち", "the 22nd day of the month", "日", "日", 3),
+  counted("counter:day:23", "２３日", "にじゅうさんにち", "the 23rd day of the month", "日", "日", 3),
+  counted("counter:day:24", "２４日", "にじゅうよっか", "the 24th day of the month", "日", "日", 3),
+  counted("counter:day:25", "２５日", "にじゅうごにち", "the 25th day of the month", "日", "日", 3),
+  counted("counter:day:26", "２６日", "にじゅうろくにち", "the 26th day of the month", "日", "日", 3),
+  counted("counter:day:27", "２７日", "にじゅうしちにち", "the 27th day of the month", "日", "日", 3),
+  counted("counter:day:28", "２８日", "にじゅうはちにち", "the 28th day of the month", "日", "日", 3),
+  counted("counter:day:29", "２９日", "にじゅうくにち", "the 29th day of the month", "日", "日", 3),
+  counted("counter:day:30", "３０日", "さんじゅうにち", "the 30th day of the month", "日", "日", 3),
+  counted("counter:day:31", "３１日", "さんじゅういちにち", "the 31st day of the month", "日", "日", 3),
+];
+
+// ─── Phase 3 · month-of-year (〜月), a CLOSED set — memorised, not generated ─
+// SAK-163: month-of-year is almost entirely regular (number + がつ), but a
+// generative CounterKind exists in this codebase specifically for ranges that
+// keep composing past their first ten counts (1-99, 1-9999 — see the header
+// note on the generative categories). 月 never does: there is no 13月, so there
+// is nothing for a compose rule to generate beyond the 12 forms below, and
+// building a whole ConstructionCategory (a Library "how it's built" page, a
+// NumberQuizConfig, a marker-gated unit) for a fixed 12-item lookup would be
+// the exact over-engineering the header note warns against ("drilling
+// spelled-out rows taught nothing the compose/attach rule does not"). Unlike
+// the truly regular counters, 月 also carries three of its own irregular
+// readings (４月 しがつ, ７月 しちがつ, ９月 くがつ — the SAME alternate branch
+// readings that NUMBERS_COMPOSE already teaches for し/しち/く, but here they are
+// the ONLY correct reading, not an alternate), so it is memorised the same way
+// TSU and TAIL are, matching precedent for a small closed set. Sourced verbatim
+// from vocab.json, duplicating the existing VOCAB entries under a namespaced key
+// (see the DAYS note above and the file header); SAK-164 removes the originals.
+const MONTHS: readonly CounterForm[] = [
+  counted("counter:month:1", "１月", "いちがつ", "January", "月", "月", 3),
+  counted("counter:month:2", "２月", "にがつ", "February", "月", "月", 3),
+  counted("counter:month:3", "３月", "さんがつ", "March", "月", "月", 3),
+  counted("counter:month:4", "４月", "しがつ", "April", "月", "月", 3),
+  counted("counter:month:5", "５月", "ごがつ", "May", "月", "月", 3),
+  counted("counter:month:6", "６月", "ろくがつ", "June", "月", "月", 3),
+  counted("counter:month:7", "７月", "しちがつ", "July", "月", "月", 3),
+  counted("counter:month:8", "８月", "はちがつ", "August", "月", "月", 3),
+  counted("counter:month:9", "９月", "くがつ", "September", "月", "月", 3),
+  counted("counter:month:10", "１０月", "じゅうがつ", "October", "月", "月", 3),
+  counted("counter:month:11", "１１月", "じゅういちがつ", "November", "月", "月", 3),
+  counted("counter:month:12", "１２月", "じゅうにがつ", "December", "月", "月", 3),
+];
+
 /**
  * The whole counters curriculum, in teaching order.
  *
@@ -198,11 +284,15 @@ const TAIL: readonly CounterForm[] = [
  * and the counter:gen:* markers below), which the scheduler runs as rule-then-round
  * units. The only memorised form left is the one special tail reading (二十歳
  * はたち), which no category can build. 〜人's ひとり/ふたり/よにん are taught by the
- * 〜人 category (see the note above).
+ * 〜人 category (see the note above). DAYS (〜日) and MONTHS (〜月) are two more
+ * closed, memorised sets — see the notes above DAYS and MONTHS for why they are
+ * forms, not generative categories.
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...TAIL,
+  ...DAYS,
+  ...MONTHS,
 ];
 
 /** The five counters taught AS A SYSTEM — each carries the sound-change rule or

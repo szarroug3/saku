@@ -677,7 +677,9 @@ describe("the つ counter intro rides the first つ-counter item", () => {
         String(termEntry("counter")),
         TSU_INTRO.id,
         ...COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => f.glyph),
-        "二十歳",
+        // Every non-つ form after — 二十歳, then the day-of-month and
+        // month-of-year forms SAK-163 added — in COUNTER_CURRICULUM order.
+        ...COUNTER_CURRICULUM.filter((f) => f.counter !== "つ").map((f) => f.glyph),
       ],
     );
   });
