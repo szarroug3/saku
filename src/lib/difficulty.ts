@@ -45,7 +45,7 @@ import {
   CURRICULUM_SEQUENCE,
   curriculumPosition,
   type CurriculumRole,
-} from "@/lib/curriculum-order";
+} from "@/lib/curriculum-sequence";
 
 /**
  * The difficulty of a glyph given the roles it plays: 1 per shape role (radical,

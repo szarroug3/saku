@@ -14,6 +14,21 @@
 // no history, no config, no clock, no user. The sequence is a property of the
 // curriculum data, so it is computed once at module load and shared.
 //
+// RUNTIME CODE SHOULD NOT IMPORT THIS MODULE (SAK-161). buildSequence() below
+// is cheap in isolation, but "computed once at module load" means once per
+// Vercel serverless cold start on the server, and once per client bundle load
+// in the browser — this module has no server/client boundary of its own to stop
+// either. scripts/build-curriculum-sequence.mjs runs this walk once, at build
+// time, and serializes CURRICULUM_SEQUENCE to curriculum-sequence.json; every
+// runtime consumer (server or client) should read that frozen array via
+// @/lib/curriculum-sequence instead, which exposes the same CURRICULUM_SEQUENCE
+// / curriculumPosition shape as data. This file remains the SOURCE the build
+// script reads from, and the place types (CurriculumItem, CurriculumRole) are
+// defined — curriculum-sequence.ts re-exports both, type-only.
+//
+// (See curriculum-sequence.equiv.test.ts for the byte-for-byte equivalence
+// check between this module's live output and the frozen artifact.)
+//
 // THE SHAPE OF THE SEQUENCE
 // =========================
 // Words lead, because a word is the only item here a learner has a reason to
