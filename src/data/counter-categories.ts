@@ -108,7 +108,12 @@ function buildCategory(id: ConstructionCategoryId): ConstructionCategory {
     marker: constructionMarker(id),
     glyph: c.glyph,
     name: c.name,
-    config: c.quizConfig,
+    // Non-null: quizConfig is optional on NumberConstruction only for the two
+    // pages (day, month — see number-construction.ts's doc comment) that are
+    // NOT in CONSTRUCTION_CATEGORY_IDS and so never reach buildCategory. Every
+    // id this function is actually called with (this file's own
+    // CONSTRUCTION_CATEGORY_IDS.map(buildCategory) below) always sets one.
+    config: c.quizConfig!,
     intro: introFor(c),
   };
 }

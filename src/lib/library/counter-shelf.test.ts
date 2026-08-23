@@ -152,10 +152,16 @@ describe("the shelf exists and lists the counters", () => {
       assert.equal(entry.name, c.name);
       assert.equal(entry.meanings[0], c.name);
       assert.equal(entryName(entry), c.glyph);
-      // The reference does not print a generic facts table, but its visible entry
-      // owns the category fact used by the normal Drill.
+      // The reference does not print a generic facts table, either way.
       assert.deepEqual(factRows(entry), []);
-      assert.equal(factsOf(entry.id).length, 1);
+      // Every GENERATIVE page (a bare-number range or a counter) owns the one
+      // category fact the normal Drill rolls a round from. day/month
+      // (SAK-163 round 2) are the one exception: closed, fixed-size sets with
+      // no generative round of their own — their practice is the 43 real
+      // CounterForm facts already on the shelf below, not a category fact on
+      // THIS entry — so they mint none. See day-month-construction.ts's header.
+      const isGenerative = c.id !== "day" && c.id !== "month";
+      assert.equal(factsOf(entry.id).length, isGenerative ? 1 : 0, c.id);
     }
     // The tens and big range pages lead, then the counters.
     assert.equal(first.entries[0].name, "Numbers 11–99");
