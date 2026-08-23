@@ -26,7 +26,10 @@ import { Btn, SmallBtn } from "@/components/ui";
 import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
 import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-shown";
-import { getTeachSubjectLabel, resolveLessonSteps } from "@/lib/library/server-lookups";
+import {
+  getTeachTrackLabel,
+  resolveLessonSteps,
+} from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import type { LessonStep } from "@/lib/lesson-steps";
@@ -174,8 +177,8 @@ export default function SessionPage() {
   // subject label (used by the top bar below) is fetched once per lesson
   // rather than imported directly.
   const teachHeadFact = session?.teach.length ? session.teach[0] : null;
-  const teachHeadSubjectLabel = useServerLookup(
-    getTeachSubjectLabel,
+  const teachHeadTrackLabel = useServerLookup(
+    getTeachTrackLabel,
     teachHeadFact ? [teachHeadFact] : null,
   );
   // Where the walk is now lives on the SESSION (session.teachStep), not in this
@@ -358,16 +361,18 @@ export default function SessionPage() {
     // On the last item the walk's own forward button already says "Quiz me", so
     // the bar drops its copy rather than showing the same words twice.
     const onLast = total > 0 && at === total - 1;
-    // What KIND of thing this lesson teaches — "Hiragana", "Kanji", "Word". A
-    // lesson is single-subject, so the first teach fact names it for all of
-    // them; there's no subject on the session to read, so we resolve it from the
-    // fact and let the Library turn it into the specific lesson-type label
-    // (kana splits by script) rather than restating that mapping here.
-    const subjectLabel =
+    // What TRACK this lesson belongs to — "Kana", "Vocabulary", "Grammar" (SAK-145:
+    // was the item's own kind, "Hiragana"/"Kanji"/"Word", which is a different and
+    // more granular thing — a radical, kanji or word lesson is all "Vocabulary" at
+    // the track grain). A lesson is single-subject, so the first teach fact names
+    // it for all of them; there's no subject on the session to read, so we resolve
+    // it from the fact and let the Library turn it into the track name rather than
+    // restating that mapping here.
+    const trackLabel =
       /^Counting\b/i.test(session.what)
         ? "Counting"
         : session.teach.length
-          ? teachHeadSubjectLabel
+          ? teachHeadTrackLabel
           : undefined;
     return (
       // THE LESSON IS ITS OWN VIEWPORT-TALL FRAME, like the Library (see
@@ -397,7 +402,8 @@ export default function SessionPage() {
         <div className="shrink-0 border-b border-border">
           <SessionHud
             label={total > 0 ? `${at + 1} of ${total}` : label}
-            sublabel={subjectLabel}
+            sublabel={trackLabel}
+            plain
             where=""
             pct={0}
             hideBar
