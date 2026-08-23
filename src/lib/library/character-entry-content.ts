@@ -104,7 +104,7 @@ const POSITION: Record<string, { en: string; rank: number }> = {
   hen: { en: "left", rank: 2 },
   tsukuri: { en: "right", rank: 3 },
   ashi: { en: "bottom", rank: 4 },
-  nyou: { en: "bottom-left", rank: 5 },
+  nyou: { en: "Bottom Left", rank: 5 },
 };
 
 function derivePosition(nameKana: string): { en: string; rank: number } {
