@@ -47,7 +47,7 @@ import {
 import { entryHref } from "@/lib/library/href";
 import { termHref } from "@/lib/library/term-href";
 import { subLabel } from "@/lib/library/sub-label";
-import { subjectLabel as subjectLabelOf } from "@/lib/library/entries";
+import { trackLabel as trackLabelOf } from "@/lib/library/entries";
 import { speechForFact } from "@/lib/fact-speech";
 import { ALL_FACTS, entryOf, factInfo, factsOf, glyphOf } from "@/lib/facts";
 import {
@@ -1120,14 +1120,16 @@ export async function resolveKanjiPartLinks(
   return out;
 }
 
-/** app/session/page.tsx's teach-set header label — "Word", "Kanji", "Keigo
- * set", … for the first fact of a teach set. subjectLabel (library/entries.ts)
- * reads the guarded FactInfo shape, so this is the one round trip the session
- * header needs. */
-export async function getTeachSubjectLabel(
+/** app/session/page.tsx's teach-set header TRACK name (SAK-145) — "Vocabulary",
+ * "Kana", "Grammar", … for the first fact of a teach set. Was the item-kind
+ * name ("Word", "Kanji", "Keigo set") via subjectLabel until SAK-145 swapped
+ * the header to the coarser track name; see trackLabel (library/entries.ts)
+ * for what maps to what. factInfo reads the guarded FactInfo shape, so this
+ * is the one round trip the session header needs. */
+export async function getTeachTrackLabel(
   fact: FactId,
 ): Promise<string | undefined> {
-  return subjectLabelOf(factInfo(fact));
+  return trackLabelOf(factInfo(fact));
 }
 
 /** Batched TTS text (`speechForFact`) for a set of facts — the drill screen's
