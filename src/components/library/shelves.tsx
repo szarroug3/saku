@@ -246,9 +246,9 @@ export function Shelf({
     }) ?? {};
 
   // The grammar shelf uses the shared GrammarShelfRow (the same row the cluster
-  // families use), not EntryRow — the pattern, its gloss, the tick-to-drill and
-  // the open ↗, compact and column-aligned. `note` (entry.sub) rides a sub-line
-  // only when it differs from the gloss.
+  // families use), not EntryRow — the pattern, its gloss and the tick-to-drill,
+  // compact and column-aligned. `note` (entry.sub) rides a sub-line only when
+  // it differs from the gloss.
   const grammarRow = (entry: LibEntry) => (
     <GrammarShelfRow
       key={entry.id}
@@ -542,17 +542,25 @@ function FilterEmpty({ filter }: { filter: string }) {
 // ONE row for every GRAMMAR-shelf table piece — the cluster families AND the
 // form patterns — so the whole shelf reads as a single table. A compact line,
 // tabbed in under its section header (the pl gutter), whose columns
-// (lead · gloss · open-↗) line up down the list. NO visible tick: the whole row
-// is the select target and its accent highlight is the state, so `select` still
-// wires tick-to-drill without a checkbox. A cluster with no members omits it, so
-// the whole row is the link to its map instead. The trailing ↗ — the open
-// control — is revealed on hover only.
-// No px on the grid itself — that insets the row's accent wash too, leaving the
-// text/↗ flush to the highlight edges. Instead the wash spans full width and the
-// FIRST cell (lead) and LAST cell (↗) carry the inset, so content sits off the
-// highlight's sides. pl-6 on the lead keeps the tab-in under the section header.
+// (lead · gloss) line up down the list. NO visible tick: the whole row is the
+// select target and its accent highlight is the state, so `select` still
+// wires tick-to-drill without a checkbox. A cluster with no members omits it,
+// so the whole row is the link to its map instead.
+//
+// SAK-149 removed the hover-only ↗ "peek" this row used to carry in a third
+// column — open-without-losing-your-selection in select mode, and a dead
+// decorative echo of the same glyph off select mode, on rows that already
+// open on click regardless. Select mode is select-only now, with no peek
+// escape hatch, and a row that already opens by default never needed a
+// decorative arrow saying so. The third grid column went with it.
+//
+// No px on the grid itself — that insets the row's accent wash too, leaving
+// the text flush to the highlight edges. Instead the wash spans full width
+// and the cells carry their own inset: pl-6 on the lead keeps the tab-in
+// under the section header, pr-3 on the gloss keeps it off the highlight's
+// right edge.
 const GRAMMAR_ROWS =
-  "grid grid-cols-[max-content_minmax(0,1fr)_auto] items-baseline gap-x-2.5";
+  "grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-2.5";
 
 function GrammarShelfRow({
   lead,
@@ -577,14 +585,9 @@ function GrammarShelfRow({
 }) {
   // The row's own layout — a subgrid band of the shared GRAMMAR_ROWS grid — on
   // top of the shared ShelfRow shell (accent hover + selected wash, hairline, the
-  // whole-row select target with no checkbox). The pl-6/pr-3 horizontal inset
-  // lives on the parent GRAMMAR_ROWS grid, so the lead and ↗ sit off the edges.
+  // whole-row select target with no checkbox). The pl-6 horizontal inset lives
+  // on the parent GRAMMAR_ROWS grid, so the lead sits off the left edge.
   const layout = "col-span-full grid grid-cols-subgrid items-baseline py-1.5";
-  // ↗ reveals on ROW hover, or on the arrow's OWN keyboard focus — never on the
-  // row's focus (clicking to select focuses the row, and group-focus-within kept
-  // the ↗ stuck on the last-selected row).
-  const arrowCls =
-    "mr-4 inline-flex size-5 flex-none items-center justify-center self-center rounded-md text-[11px] leading-none text-text-muted no-underline opacity-0 transition-opacity hover:text-text group-hover:opacity-100 focus-visible:opacity-100";
   const cells = (
     <>
       <span
@@ -592,32 +595,12 @@ function GrammarShelfRow({
       >
         {lead}
       </span>
-      <span className="min-w-0 text-[13px] text-text-muted">
+      <span className="min-w-0 pr-3 text-[13px] text-text-muted">
         <span className="block truncate">{gloss}</span>
         {note && note !== gloss ? (
           <span className="block truncate text-text-muted/70">{note}</span>
         ) : null}
       </span>
-      {select ? (
-        // Only rendered while selecting — a "peek" so the entry can be opened
-        // without dropping the selection being built. Off select mode the row
-        // itself already opens the entry (see the `select` branch below), so
-        // this slot renders nothing rather than a now-redundant arrow.
-        selectMode ? (
-          <Link
-            href={href}
-            aria-label={`Open ${lead}`}
-            onClick={(e) => e.stopPropagation()}
-            className={`relative z-10 ${arrowCls}`}
-          >
-            ↗
-          </Link>
-        ) : null
-      ) : (
-        <span aria-hidden className={arrowCls}>
-          ↗
-        </span>
-      )}
     </>
   );
   if (select) {

@@ -18,29 +18,174 @@ function TooltipProvider({
   )
 }
 
+// SAK-149: Radix's Tooltip.Root only opens on hover (`pointermove` — it
+// explicitly ignores `pointerType === "touch"`) or keyboard focus. A
+// tap-and-release fires neither, so on a touch device every tooltip in the
+// app (all 12 call sites, since they all funnel through this one file) was
+// permanently unreachable — not slow to open, literally dead.
+//
+// Rather than reimplement Radix's hover/keyboard/Escape machinery, `Tooltip`
+// lifts `open` into state it owns and shares with `TooltipTrigger` and
+// `TooltipContent` via context, so those two can layer an explicit tap
+// toggle ON TOP of Radix's existing behavior instead of replacing it. Every
+// branch that does this is gated on the pointerdown's `pointerType` being
+// "touch" or "pen" — a mouse click or a keyboard Enter/Space (which also
+// fire `click`, but with no `pointerType: touch` pointerdown ahead of them)
+// never enters any of it, so hover-to-open, focus-to-open and Escape-to-close
+// are byte-for-byte what they were before this file changed.
+//
+// Three edits, one per open/close path a tap needs to win against:
+//
+//   TooltipTrigger's onPointerDown — Radix's own Trigger closes an
+//   already-open tooltip right on pointerdown. On a mouse that IS the
+//   "click to dismiss" behavior this file wants to keep; on touch it fires
+//   before the tap's matching `click` even exists, racing the toggle below.
+//   Blocked for touch/pen only.
+//
+//   TooltipTrigger's onFocus — some browsers focus a tapped <button> before
+//   its `click` fires, and Radix opens on any focus unconditionally. Left
+//   alone, a tap would open it via focus and then the toggle below would
+//   immediately read that as "already open" and close it again. Blocked for
+//   touch/pen only (keyboard Tab never sets the pointerType this checks, so
+//   real keyboard focus is untouched).
+//
+//   TooltipContent's onPointerDownOutside — a tap on the TRIGGER counts as
+//   "outside" the content panel by Radix's own logic, so left alone it
+//   closes the tooltip on pointerdown, before the trigger's own onClick can
+//   toggle it — which is exactly the "second tap closes it" behavior this
+//   file wants, just arriving one event too early and leaving onClick to
+//   read a stale "still open" state and reopen what just closed. Suppressed
+//   only when the outside tap landed on the trigger itself; a tap anywhere
+//   else still closes the tooltip exactly as before.
+//
+// With all three narrowly blocked, TooltipTrigger's onClick is left as the
+// single source of truth for a tap: block Radix's default "click always
+// closes" (same touch/pen-only gate) and flip `ctx.open` — closed to open on
+// the first tap, open to closed on the next — with a real, un-raced read of
+// the current state.
+const TooltipOpenContext = React.createContext<{
+  open: boolean
+  setOpen: (open: boolean) => void
+  triggerRef: React.RefObject<HTMLElement | null>
+} | null>(null)
+
 function Tooltip({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
+  const open = openProp ?? uncontrolledOpen
+  const triggerRef = React.useRef<HTMLElement | null>(null)
+
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      setUncontrolledOpen(next)
+      onOpenChange?.(next)
+    },
+    [onOpenChange],
+  )
+
+  const contextValue = React.useMemo(
+    () => ({ open, setOpen, triggerRef }),
+    [open, setOpen],
+  )
+
+  return (
+    <TooltipOpenContext.Provider value={contextValue}>
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        open={open}
+        onOpenChange={setOpen}
+        {...props}
+      />
+    </TooltipOpenContext.Provider>
+  )
+}
+
+/** Assign one DOM node to several refs at once — TooltipTrigger needs the
+ * node itself (so TooltipContent's onPointerDownOutside above can tell "a
+ * tap on the trigger" apart from "a tap outside it") without taking over the
+ * ref slot from a caller that also passes its own. */
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>): React.RefCallback<T> {
+  return (node) => {
+    for (const ref of refs) {
+      if (!ref) continue
+      if (typeof ref === "function") ref(node)
+      else (ref as React.RefObject<T | null>).current = node
+    }
+  }
 }
 
 function TooltipTrigger({
+  ref,
+  onPointerDown,
+  onFocus,
+  onClick,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  const ctx = React.useContext(TooltipOpenContext)
+  // Set on every pointerdown, read by the focus/click handlers that follow
+  // it in the same gesture, cleared once the click is handled. A mouse click
+  // or a keyboard Enter/Space never has a touch/pen pointerdown ahead of it,
+  // so they always read this as neither and fall through untouched.
+  const pointerTypeRef = React.useRef<string | undefined>(undefined)
+
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      ref={mergeRefs(ref, ctx?.triggerRef)}
+      onPointerDown={(event) => {
+        pointerTypeRef.current = event.pointerType
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+          event.preventDefault()
+        }
+        onPointerDown?.(event)
+      }}
+      onFocus={(event) => {
+        if (pointerTypeRef.current === "touch" || pointerTypeRef.current === "pen") {
+          event.preventDefault()
+        }
+        onFocus?.(event)
+      }}
+      onClick={(event) => {
+        if (pointerTypeRef.current === "touch" || pointerTypeRef.current === "pen") {
+          event.preventDefault()
+          ctx?.setOpen(!ctx.open)
+          pointerTypeRef.current = undefined
+        }
+        onClick?.(event)
+      }}
+      {...props}
+    />
+  )
 }
 
 function TooltipContent({
   className,
   sideOffset = 0,
+  onPointerDownOutside,
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  const ctx = React.useContext(TooltipOpenContext)
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}
+        onPointerDownOutside={(event) => {
+          const target = event.target
+          if (
+            ctx?.triggerRef.current &&
+            target instanceof Node &&
+            ctx.triggerRef.current.contains(target)
+          ) {
+            event.preventDefault()
+          }
+          onPointerDownOutside?.(event)
+        }}
         className={cn(
           // THE TOOLTIP IS A CARD.
           //
