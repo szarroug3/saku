@@ -34,6 +34,7 @@
 // page) before it is a data structure.
 
 import { CHAR_INDEX } from "@/data/characters";
+import { digitVariants } from "@/lib/engine/en-match";
 import { KIND_LABEL, KINDS, LIB_ENTRIES } from "@/lib/library/library-index";
 import type { Kind, LibEntry } from "@/lib/library/entries";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
@@ -369,16 +370,45 @@ function matchesRomaji(
  * gloss's tokens: every token before the last exactly, the last as a prefix (so
  * "line of te" still reaches "...text"). A single token is just the length-one
  * case of that, so the old behavior is preserved exactly.
+ *
+ * DIGIT FORM OF A SPELLED NUMBER (SAK-168). A digit query — "4" — also finds a
+ * gloss that spells the number out — "four" — the same way the quiz grader
+ * accepts a digit in place of a spelled number (en-match.ts's `digitVariants`,
+ * its layer 3; see that file for `isNumberToken`/`runValue`, the token-level
+ * parsing it composes). Reused, not reimplemented: `digitVariants` is run over
+ * the GLOSS's own tokens — already split the same word-boundary way the plain
+ * match above uses — and each digit-composed variant is tried as a token run
+ * against the query exactly like the raw gloss tokens are. Gated on the query
+ * itself containing a digit, both to skip the extra work on the overwhelming
+ * majority of queries that could never match this way, and because a query
+ * with no digit has nothing for this branch to find (a spelled-word query
+ * against a spelled-word gloss is already the plain match above).
+ *
+ * ONE DIRECTION ONLY, DELIBERATELY. The reverse — typing "four" to find a
+ * gloss that already says "4" — was considered and left out: every entry in
+ * the current data that carries a bare-digit gloss ("1", "10,000", …) already
+ * carries the spelled form as a sibling gloss on the SAME entry ("one", "ten
+ * thousand", …), so the plain match above already finds it — the reverse
+ * parse would be dead code against real data, not a real gap.
  */
 function matchesMeaning(entry: LibEntry, lower: string): boolean {
-  if (!lower || !/[a-z]/.test(lower)) return false;
+  // A Latin letter OR a digit — the digit half is SAK-168: "4" alone has no
+  // letter, and it must still reach the digit-variant branch below rather than
+  // bail out here the way a Japanese-only query (no letters, no digits) does.
+  if (!lower || !/[a-z0-9]/.test(lower)) return false;
   const qTokens = lower.split(/[^a-z0-9]+/).filter(Boolean);
   if (qTokens.length === 0) return false;
+  const qHasDigit = /\d/.test(lower);
   // The glosses, plus a grammar entry's cluster title — "seems" finds the whole
   // evidential family, not just the one member whose gloss happens to say it.
   for (const m of [...entry.meanings, ...(entry.searchAlso ?? [])]) {
     const gTokens = m.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
     if (phraseRun(gTokens, qTokens)) return true;
+    if (qHasDigit) {
+      for (const variant of digitVariants(gTokens.join(" "))) {
+        if (phraseRun(variant.split(" "), qTokens)) return true;
+      }
+    }
   }
   return false;
 }
