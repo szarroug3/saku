@@ -240,8 +240,17 @@ describe("each card lands in its anchor's lesson, ahead of the anchor", () => {
 
       test("exactly one lesson holds the anchor", () => {
         assert.ok(at >= 0, `no lesson holds ${anchor.role}'s anchor`);
+        // Matched on the ROLE the anchor is about, not the bare glyph string
+        // (SAK-162): a word taught with more than one reading (人: ひと, にん,
+        // じん) now has an item in more than one lesson sharing that glyph, but
+        // only the FIRST — the one that actually teaches the shape — ever
+        // carries the kanji/radical role the anchor is anchored to. A later
+        // reading's own item is `roles: ["word"]` alone and is not a second
+        // holder of THIS card.
         const holders = GROUPS.filter((g) =>
-          g.items.some((it) => it.glyph === anchor.glyph),
+          g.items.some(
+            (it) => it.glyph === anchor.glyph && ANCHOR_SHAPE[anchor.role](it.roles, it.glyph),
+          ),
         );
         assert.equal(holders.length, 1);
       });
@@ -563,9 +572,22 @@ describe("the orphan tails introduce nothing", () => {
   const shown = new Set(CARD_IDS);
 
   test("the tails are past every anchor", () => {
+    // Matched on the ROLE (SAK-162), not the bare glyph: the anchor's own shape
+    // — kanji anchored to 人, say — is taught on lesson 1, but 人 is also a
+    // three-reading word, and its OTHER readings (にん, じん) are ranked by their
+    // own CEJC frequency and land right before the orphan-kanji tail (see
+    // curriculum-order.ts's header), which can genuinely fall inside the last 40
+    // groups this test samples. That later item is `roles: ["word"]` alone — it
+    // is not the anchor, and its presence here says nothing about whether the
+    // CARD fired late. Only a later item that still carries the anchor's own
+    // role would mean that.
     for (const anchor of SPINE_ANCHORS) {
       assert.ok(
-        !tail.some((g) => g.items.some((it) => it.glyph === anchor.glyph)),
+        !tail.some((g) =>
+          g.items.some(
+            (it) => it.glyph === anchor.glyph && ANCHOR_SHAPE[anchor.role](it.roles, it.glyph),
+          ),
+        ),
         `${anchor.role}'s anchor is in the tail`,
       );
     }

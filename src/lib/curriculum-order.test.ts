@@ -32,18 +32,34 @@ import {
   radicalOfKanji,
 } from "../data/radicals.ts";
 import { CURRICULUM_WORDS, wordKanji } from "./word-lesson.ts";
-import { vocabRow } from "../data/vocab.ts";
+import { readingUnits, vocabRow } from "../data/vocab.ts";
 import {
   CURRICULUM_SEQUENCE,
   curriculumPosition,
+  curriculumReadingPosition,
   type CurriculumRole,
 } from "./curriculum-order.ts";
 
-/** Position of every glyph, computed off the array so the tests never lean on
- * the module's own index to check the module's own order. */
-const AT: ReadonlyMap<string, number> = new Map(
-  CURRICULUM_SEQUENCE.map((it, i) => [it.glyph, i]),
-);
+/**
+ * Where each glyph FIRST sits in the sequence, computed off the array so the
+ * tests never lean on the module's own index to check the module's own order.
+ *
+ * FIRST occurrence wins (SAK-162): a word taught with more than one reading
+ * (七) now occupies more than one item sharing a glyph, one per reading (see
+ * curriculum-order.ts's header). The first is always that word's PRIMARY
+ * reading — folded into its kanji item for a single-character word — which is
+ * what every prerequisite/ordering test here actually means by "where is c
+ * taught": the shape and the earliest meeting of the word, not a later,
+ * shapeless re-reading of it.
+ */
+const AT: ReadonlyMap<string, number> = (() => {
+  const map = new Map<string, number>();
+  for (let i = 0; i < CURRICULUM_SEQUENCE.length; i++) {
+    const glyph = CURRICULUM_SEQUENCE[i]!.glyph;
+    if (!map.has(glyph)) map.set(glyph, i);
+  }
+  return map;
+})();
 
 const has = (glyph: string, role: CurriculumRole): boolean =>
   CURRICULUM_SEQUENCE[AT.get(glyph)!]?.roles.includes(role) ?? false;
@@ -108,13 +124,23 @@ const KANJI_IN_WORDS: ReadonlySet<string> = new Set(
 );
 
 describe("CURRICULUM_SEQUENCE structure", () => {
-  test("nothing is emitted twice", () => {
-    const seen = new Set<string>();
+  test("nothing is emitted twice — no (glyph, reading) pair repeats, and a glyph's SHAPE (radical/kanji role) is never taught twice", () => {
+    // SAK-162: a glyph can legitimately repeat now — once per taught reading of
+    // a word (七 as しち, again as なな) — so "emitted twice" no longer means
+    // "the glyph appears twice"; it means either the exact SAME (glyph, reading)
+    // pair appears twice, or the glyph's SHAPE — its radical/kanji role, which
+    // never has more than one reading — is taught more than once.
+    const seenPairs = new Set<string>();
+    const seenShapes = new Set<string>();
     for (const it of CURRICULUM_SEQUENCE) {
-      assert.ok(!seen.has(it.glyph), `${it.glyph} appears twice`);
-      seen.add(it.glyph);
+      const pairKey = `${it.glyph} ${it.reading ?? ""}`;
+      assert.ok(!seenPairs.has(pairKey), `${it.glyph}/${it.reading} appears twice`);
+      seenPairs.add(pairKey);
+      if (it.roles.includes("radical") || it.roles.includes("kanji")) {
+        assert.ok(!seenShapes.has(it.glyph), `${it.glyph}'s shape is taught twice`);
+        seenShapes.add(it.glyph);
+      }
     }
-    assert.equal(seen.size, CURRICULUM_SEQUENCE.length);
   });
 
   test("every item carries at least one role, and only known roles", () => {
@@ -145,14 +171,26 @@ describe("CURRICULUM_SEQUENCE structure", () => {
 
   test("a both-role character is never a separate radical item", () => {
     // 人, 大, 乙 merge already; 火 and 玉 are the ones the kanji track still
-    // teaches twice, and here they are one item wearing both roles.
+    // teaches twice, and here they are one item wearing both roles — at its
+    // FIRST occurrence. SAK-162: several of these (人, 大, 小) are ALSO
+    // multi-reading words, so the glyph can still occupy more than one item
+    // overall — just never a second one carrying the radical or kanji role,
+    // which readingUnits(row).length pins exactly (one item per reading, only
+    // the first bearing the shape).
     for (const g of ["人", "大", "乙", "火", "玉", "八", "小", "己"]) {
       assert.ok(has(g, "radical"), `${g} should carry the radical role`);
       assert.ok(has(g, "kanji"), `${g} should carry the kanji role`);
+      const items = CURRICULUM_SEQUENCE.filter((it) => it.glyph === g);
+      const shapeItems = items.filter(
+        (it) => it.roles.includes("radical") || it.roles.includes("kanji"),
+      );
+      assert.equal(shapeItems.length, 1, `${g}'s shape is taught more than once`);
+      const row = vocabRow(g);
+      const expectedItems = row ? readingUnits(row).length : 1;
       assert.equal(
-        CURRICULUM_SEQUENCE.filter((it) => it.glyph === g).length,
-        1,
-        `${g} is taught more than once`,
+        items.length,
+        expectedItems,
+        `${g} has ${items.length} items but ${expectedItems} teachable readings`,
       );
     }
   });
@@ -161,6 +199,21 @@ describe("CURRICULUM_SEQUENCE structure", () => {
     assert.equal(curriculumPosition(CURRICULUM_SEQUENCE[0]!.glyph), 0);
     assert.equal(curriculumPosition("山"), AT.get("山"));
     assert.equal(curriculumPosition("ヲ"), -1);
+  });
+
+  test("curriculumReadingPosition finds each of a multi-reading word's own items", () => {
+    // 人 (SAK-162) occupies one item per teachable reading; each must be
+    // findable at its OWN position, not just the first (curriculumPosition's
+    // job).
+    const items = CURRICULUM_SEQUENCE.map((it, i) => ({ ...it, i })).filter(
+      (it) => it.glyph === "人",
+    );
+    assert.ok(items.length > 1, "人 needs more than one reading for this test");
+    for (const it of items) {
+      assert.equal(curriculumReadingPosition("人", it.reading!), it.i);
+    }
+    assert.equal(curriculumReadingPosition("人", "not-a-real-reading"), -1);
+    assert.equal(curriculumReadingPosition("not-a-real-glyph-xyz", "ひと"), -1);
   });
 });
 
@@ -254,11 +307,25 @@ describe("prerequisite invariants", () => {
     }
   });
 
-  test("every curriculum word is delivered exactly once", () => {
+  test("every curriculum word is delivered exactly once PER TAUGHT READING (SAK-162)", () => {
+    // A word is no longer one item total: it is one item per reading-unit
+    // (readingUnits), each carrying the word role and naming that reading. 何
+    // (なに/なん) is delivered twice; a single-reading word (先生) is still
+    // delivered exactly once, same as before SAK-162.
     for (const w of CURRICULUM_WORDS) {
       const items = CURRICULUM_SEQUENCE.filter((it) => it.glyph === w.keb);
-      assert.equal(items.length, 1, `${w.keb} delivered ${items.length} times`);
-      assert.ok(items[0]!.roles.includes("word"), `${w.keb} lacks the word role`);
+      const expected = readingUnits(w).length;
+      assert.equal(
+        items.length,
+        expected,
+        `${w.keb} delivered ${items.length} times, wanted ${expected} (its reading count)`,
+      );
+      const readingsSeen = new Set<string | null>();
+      for (const it of items) {
+        assert.ok(it.roles.includes("word"), `${w.keb} lacks the word role`);
+        assert.ok(!readingsSeen.has(it.reading), `${w.keb}/${it.reading} delivered twice`);
+        readingsSeen.add(it.reading);
+      }
     }
     // And nothing wears the word role that is neither a scheduled word nor a
     // single Han character the dictionary teaches as a word on its own (十, 羊):
@@ -430,7 +497,7 @@ describe("variant forms", () => {
 });
 
 describe("the single-kanji fold", () => {
-  test("a single-kanji word is one item carrying word and kanji", () => {
+  test("a single-kanji word's PRIMARY reading is one item carrying word and kanji", () => {
     const single = CURRICULUM_WORDS.filter(
       (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
     );
@@ -441,10 +508,18 @@ describe("the single-kanji fold", () => {
     for (const w of single) {
       assert.ok(has(w.keb, "word"), `${w.keb} lacks the word role`);
       assert.ok(has(w.keb, "kanji"), `${w.keb} lacks the kanji role`);
+      // SAK-162: the fold still delivers exactly one item wearing kanji AND
+      // word — its PRIMARY reading — but a word with more than one teachable
+      // reading (人) now has further items past that one, each `roles: ["word"]`
+      // alone, one per remaining reading. Exactly one item ever carries the
+      // kanji role, and the glyph's total item count matches its reading count.
+      const items = CURRICULUM_SEQUENCE.filter((it) => it.glyph === w.keb);
+      const kanjiItems = items.filter((it) => it.roles.includes("kanji"));
+      assert.equal(kanjiItems.length, 1, `${w.keb}'s kanji role is taught more than once`);
       assert.equal(
-        CURRICULUM_SEQUENCE.filter((it) => it.glyph === w.keb).length,
-        1,
-        `${w.keb} appears twice`,
+        items.length,
+        readingUnits(w).length,
+        `${w.keb} has ${items.length} items but ${readingUnits(w).length} teachable readings`,
       );
     }
   });
@@ -573,10 +648,22 @@ describe("the tail", () => {
   test("the sequence is words, then orphan kanji, then orphan radicals", () => {
     const lastKanji = Math.max(...KANJI.map((k) => AT.get(k.c)!));
     assert.ok(lastWord < lastKanji);
+    // SAK-162: a word no longer costs exactly one item — it costs one per
+    // teachable reading (readingUnits) — so "words" in this total is no longer
+    // CURRICULUM_WORDS.length, less the 672 single-kanji folds; it is that same
+    // shape PLUS every extra reading beyond a word's first (its primary, the
+    // one the fold or its own item already counts).
+    const folds = CURRICULUM_WORDS.filter(
+      (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
+    ).length;
+    const extraReadingItems = CURRICULUM_WORDS.reduce(
+      (n, w) => n + (readingUnits(w).length - 1),
+      0,
+    );
     assert.equal(
       CURRICULUM_SEQUENCE.length,
-      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 672,
-      "total is kanji + radical-only shapes + words, less the folds",
+      KANJI.length + RADICAL_ONLY.length + (CURRICULUM_WORDS.length - folds) + extraReadingItems,
+      "total is kanji + radical-only shapes + words (less folds, plus every word's extra readings)",
     );
   });
 });
@@ -597,8 +684,19 @@ describe("roles", () => {
     assert.deepEqual(CURRICULUM_SEQUENCE[AT.get("あなた")!]!.roles, ["word"]);
   });
 
-  test("roles are pure membership over the three tables", () => {
+  test("radical/kanji roles are pure membership over the tables, ONLY at a glyph's first (shape) occurrence", () => {
+    // SAK-162: a glyph's radical/kanji role is still pure membership — but only
+    // AT THE ITEM THAT TEACHES THE SHAPE. A later item for the same glyph (何's
+    // second reading, なん) carries `roles: ["word"]` alone: the shape was
+    // already taught at the first occurrence, so re-asserting the kanji role
+    // there would claim the kanji is taught twice, which "nothing is emitted
+    // twice" above already rules out. So this checks radical/kanji membership
+    // only at the FIRST item for each glyph (AT), which is always where the
+    // shape is taught if the glyph plays that role at all.
+    const shapeChecked = new Set<string>();
     for (const it of CURRICULUM_SEQUENCE) {
+      if (shapeChecked.has(it.glyph)) continue;
+      shapeChecked.add(it.glyph);
       assert.equal(
         it.roles.includes("radical"),
         radicalByGlyph(it.glyph) !== undefined,
@@ -609,6 +707,18 @@ describe("roles", () => {
         kanjiRow(it.glyph) !== undefined,
         `${it.glyph} kanji role`,
       );
+    }
+  });
+
+  test("a word role's later (non-first) items for the same glyph carry the word role alone", () => {
+    const seenGlyph = new Set<string>();
+    for (const it of CURRICULUM_SEQUENCE) {
+      if (!it.roles.includes("word")) continue;
+      if (!seenGlyph.has(it.glyph)) {
+        seenGlyph.add(it.glyph);
+        continue; // first occurrence: may legitimately also carry radical/kanji
+      }
+      assert.deepEqual(it.roles, ["word"], `${it.glyph}'s later item re-teaches its shape`);
     }
   });
 });

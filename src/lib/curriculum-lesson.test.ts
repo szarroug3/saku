@@ -66,11 +66,19 @@ const GROUPS = curriculum(RANGE);
  * lesson of its own, which is the worst case the weld has to survive. */
 const RANGES: readonly LessonRange[] = [RANGE, { min: 3, max: 6 }, { min: 1, max: 1 }];
 
-/** Where each glyph sits in the packing: which lesson, and where inside it. */
+/** Where each glyph FIRST sits in the packing: which lesson, and where inside
+ * it. FIRST occurrence wins (SAK-162): a word taught with more than one reading
+ * (七) now occupies more than one item sharing a glyph, one per reading, and
+ * only the first (its primary reading, folded into its kanji item when it is a
+ * single-character word) is what "is c taught before/with this glyph" ever
+ * means for a prerequisite check — the kanji is taught there, not at a later
+ * secondary-reading item that carries no shape role at all. */
 function locate(groups: ReturnType<typeof packLessons>) {
   const at = new Map<string, { g: number; i: number }>();
   groups.forEach((group, g) =>
-    group.items.forEach((it, i) => at.set(it.glyph, { g, i })),
+    group.items.forEach((it, i) => {
+      if (!at.has(it.glyph)) at.set(it.glyph, { g, i });
+    }),
   );
   return at;
 }
@@ -267,41 +275,87 @@ describe("the lesson length is a setting, and the packing honours it", () => {
   });
 });
 
-describe("what a word costs is its reading-units, summed across its roles", () => {
-  test("a word-only item costs one per reading-unit, not a flat price", () => {
-    // A word is not a drawn shape: its kanji were taught earlier in this same
-    // sequence, so there is nothing left to learn to draw. What is left to learn
-    // is its readings, one skill per reading-unit, so that is what it costs.
-    // Usually one (先生 reads one way), but a word read several ways costs one
-    // per reading (開ける costs 2), and the price tracks the row, not a constant.
+describe("what a word costs is its reading-units, one item at a time (SAK-162)", () => {
+  test("a word-only item always costs exactly 1: one item, one reading-unit", () => {
+    // SAK-162: a word is no longer one item pricing every reading-unit it has —
+    // each reading-unit is now its OWN item (curriculum-order.ts's header), so a
+    // word-only item never has more than one reading-unit left to price. A word
+    // read several ways (開ける) is several word-only items, one per reading,
+    // each costing 1 — never one item costing 2.
     const wordOnly = GROUPS.flatMap((g) => g.items).filter(
       (it) => it.roles.length === 1 && it.roles[0] === "word",
     );
     assert.ok(wordOnly.length > 0);
     for (const it of wordOnly) {
-      assert.equal(it.cost, readingUnits(vocabRow(it.glyph)!).length, it.glyph);
+      assert.equal(it.cost, 1, `${it.glyph} (reading ${it.reading}) is not priced at 1`);
+      const row = vocabRow(it.glyph);
+      const kana = row ? row.keb === row.reb : false;
+      assert.equal(it.facts.length, kana ? 1 : 2, `${it.glyph}/${it.reading} fact count`);
     }
-    // The price is genuinely per-reading, not "1 dressed up": both a
-    // single-reading word (cost 1) and a multi-reading one (cost > 1) are in range.
-    assert.ok(wordOnly.some((it) => it.cost === 1), "no single-reading word-only item");
-    assert.ok(wordOnly.some((it) => it.cost > 1), "no multi-reading word-only item");
   });
 
-  test("a folded item pays for its shape AND every reading-unit of its word", () => {
-    // 人 is a radical, a kanji and a three-reading word in one item, and teaching
-    // it does all three jobs, so it costs one for each shape role it wears plus
-    // one per reading-unit — never just the shape, never just the word.
+  test("a multi-reading word's items sum to its full reading-unit count", () => {
+    // The word-level total this file's OLD "one item, one price" test used to
+    // check directly is still true — just spread across N items instead of
+    // charged on one. Group every word-role item by glyph and confirm the sum
+    // of costs for a multi-reading word equals readingUnits(row).length.
+    const byGlyph = new Map<string, number>();
+    for (const it of GROUPS.flatMap((g) => g.items)) {
+      if (!it.roles.includes("word")) continue;
+      byGlyph.set(it.glyph, (byGlyph.get(it.glyph) ?? 0) + 1);
+    }
+    let sawMultiReading = false;
+    for (const [glyph, wordItemCount] of byGlyph) {
+      const row = vocabRow(glyph);
+      if (!row) continue;
+      assert.equal(
+        wordItemCount,
+        readingUnits(row).length,
+        `${glyph} has ${wordItemCount} word items but ${readingUnits(row).length} reading-units`,
+      );
+      if (wordItemCount > 1) sawMultiReading = true;
+    }
+    assert.ok(sawMultiReading, "no multi-reading word split across items in range");
+  });
+
+  test("a standalone (non-kanji-tile, non-kana) word-role item names the reading it teaches, and readings never repeat for a glyph", () => {
+    // `CurriculumLessonItem.reading` (readingOf, curriculum-lesson.ts) is
+    // deliberately null in two cases, both unchanged from before SAK-162: a
+    // KANA word (its reading IS the printed glyph) and a word folded into its
+    // KANJI tile (人: the reading is what a later word will ask for, and a card
+    // that shows the answer has spent the question). For every other word-role
+    // item it now names THIS item's own pronunciation, and no two items for the
+    // same glyph ever name the same one.
+    const readingsOf = new Map<string, Set<string>>();
+    for (const it of GROUPS.flatMap((g) => g.items)) {
+      if (!it.roles.includes("word")) continue;
+      if (it.roles.includes("kanji")) continue;
+      const row = vocabRow(it.glyph);
+      const kana = row ? row.keb === row.reb : false;
+      if (kana) {
+        assert.equal(it.reading, null, `${it.glyph} is kana but names a reading`);
+        continue;
+      }
+      assert.ok(it.reading !== null, `${it.glyph} carries the word role but no reading`);
+      const seen = readingsOf.get(it.glyph) ?? new Set<string>();
+      assert.ok(!seen.has(it.reading), `${it.glyph}/${it.reading} taught twice`);
+      seen.add(it.reading);
+      readingsOf.set(it.glyph, seen);
+    }
+  });
+
+  test("a folded item pays for its shape AND its own one reading-unit, never every reading of its word", () => {
+    // 人 is a radical, a kanji and a word in one item at its PRIMARY reading
+    // (ひと), and teaching it does all three jobs at that position — but its
+    // other readings (にん, じん) are separate items elsewhere, each with their
+    // own cost, not folded into this one's price.
     const folded = GROUPS.flatMap((g) => g.items).filter(
       (it) => it.roles.includes("kanji") && it.roles.includes("word"),
     );
     assert.ok(folded.length > 0);
     for (const it of folded) {
       const shape = (it.roles.includes("radical") ? 1 : 0) + 1; // kanji always
-      assert.equal(
-        it.cost,
-        shape + readingUnits(vocabRow(it.glyph)!).length,
-        `${it.glyph} was not charged for its shape and every reading`,
-      );
+      assert.equal(it.cost, shape + 1, `${it.glyph} was not charged shape + one reading`);
       assert.ok(it.facts.length >= 2, `${it.glyph} teaches only one fact`);
     }
     // And the rad+kanji+word fold really occurs, so the "+ radical" arm above is
@@ -329,16 +383,22 @@ describe("the totals are counted off the data, never typed in", () => {
     const radicalOnly = RADICALS.filter((r) => kanjiRow(r.glyph) === undefined);
     assert.equal(CURRICULUM_TOTALS.radical, radicalOnly.length);
     assert.equal(CURRICULUM_TOTALS.kanji, KANJI.length);
-    // The word total is the scheduled words UNION the single Han characters the
-    // dictionary teaches as words on their own (十, 羊 …), which are taught whole
-    // where their kanji already sits rather than scheduled as new word items. So
-    // it is CURRICULUM_WORDS plus the ~93 such characters not among them, counted
-    // off the tables, never typed in.
+    // SAK-162: the word total is no longer one count per glyph. Every scheduled
+    // word UNION the single Han characters the dictionary teaches as words on
+    // their own (十, 羊 …) now contributes one item PER TAUGHT READING
+    // (readingUnits), because each reading is its own curriculum item — see
+    // curriculum-order.ts's header. So the denominator is the sum of every such
+    // glyph's reading-unit count, not the count of glyphs itself.
     const singleCharWords = VOCAB.filter(
       (w) => [...w.keb].length === 1 && /\p{Script=Han}/u.test(w.keb),
     ).map((w) => w.keb);
     const wordGlyphs = new Set([...CURRICULUM_WORDS.map((w) => w.keb), ...singleCharWords]);
-    assert.equal(CURRICULUM_TOTALS.word, wordGlyphs.size);
+    let expectedWordItems = 0;
+    for (const glyph of wordGlyphs) {
+      const row = vocabRow(glyph);
+      if (row) expectedWordItems += readingUnits(row).length;
+    }
+    assert.equal(CURRICULUM_TOTALS.word, expectedWordItems);
   });
 
   // The word total rose from 7,589 to 12,543 when CURRICULUM_WORDS widened to
@@ -350,11 +410,13 @@ describe("the totals are counted off the data, never typed in", () => {
   // word-lesson.ts's COUNTER_KANJI_GLYPHS derives from that list, so their 43
   // vocab.json duplicates (１日…３１日, １月…１２月) are now excluded from the word
   // spine the same way 二十歳/一本/… already were — not a new exclusion SAK-163
-  // wrote, a pre-existing generic one that picked them up automatically.
-  test("and today those counts are 90, 2,136 and 12,490", () => {
+  // wrote, a pre-existing generic one that picked them up automatically. It rose
+  // to 12,588 with SAK-162: the word denominator counts taught READINGS now, not
+  // glyphs, and 98 words in the curriculum carry more than one teachable reading.
+  test("and today those counts are 90, 2,136 and 12,588", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12490);
+    assert.equal(CURRICULUM_TOTALS.word, 12588);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -362,7 +424,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12490, 12490);
+        assert.equal(g.position.word?.total ?? 12588, 12588);
       }
     }
   });
@@ -539,10 +601,22 @@ describe("out-of-order Library claims never corrupt a position (SAK-13)", () => 
     // frontier would naturally reach it, exactly "Library → I already know
     // this" on material far ahead of the normal delivery order — alongside
     // every EARLIER lesson's facts, walked in normally so the frontier actually
-    // arrives at the target lesson rather than stopping short of it.
+    // arrives at the target lesson rather than stopping short of it. Plus the
+    // two class-word gate prerequisites (て-form, adjective-prenominal): this
+    // test is about out-of-order-claim POSITION correctness, not the unrelated
+    // class gate (see "a る-ending verb waits on the て-form" / "adjective words
+    // wait…" above), and SAK-162 moved which lesson this dynamically-found
+    // index lands on — it can now land on one holding a gated adjective
+    // (すごい), which would otherwise vanish off the card for a reason this
+    // test has nothing to do with.
     const earlierFacts = GROUPS.slice(0, targetIndex).flatMap((g) => g.facts);
     const outOfOrderItem = target.items[0];
-    const claimedNow = [...earlierFacts, ...outOfOrderItem.facts];
+    const claimedNow = [
+      ...earlierFacts,
+      ...outOfOrderItem.facts,
+      patternMeaningFactId("te-sequence"),
+      patternMeaningFactId("prenominal-form"),
+    ];
 
     const lesson = nextCurriculumLesson(history(claimedNow), RANGE)!;
     assert.equal(lesson.group.index, target.index);

@@ -137,8 +137,8 @@
 // future loop into an arbitrary break instead of a stack overflow, and as the
 // guard for self-reference (a radical filed under itself: 八 小 己 火 玉 示 肉 阜).
 //
-// ONE ITEM PER GLYPH, AND ROLES INSTEAD OF KINDS
-// ==============================================
+// ONE ITEM PER GLYPH — EXCEPT A WORD, WHICH IS ONE ITEM PER READING (SAK-162)
+// =============================================================================
 // 山 is a Kangxi radical, a jōyō kanji, and a curriculum word. In three separate
 // tracks it is three cards. Here it is ONE item that carries all three roles,
 // because the learner meets the character once and everything else is a label on
@@ -157,8 +157,47 @@
 //     round. Hundreds of words arrive this way, most of them early, which is
 //     the point: the run-up to a compound is paying for words too.
 //
+// A WORD OWES ONE ITEM PER READING IT IS TAUGHT WITH, NOT ONE ITEM TOTAL. 七 is
+// spoken both しち and なな (`readingUnits`, SAK-150), and each is its own scored
+// fact, so each earns its own slot: `reading` on the item names which one. The
+// radical/kanji roles never repeat — a glyph's shape is taught exactly once,
+// whichever reading arrives first — so `reading` is null on every item except a
+// word occupying its own item, where it is always set.
+//
+//   - The FIRST reading a word is taught with — its VocabRow's own `.reb`, the
+//     same primary reading `readingOf`/`meaningOf`/the word's Library page
+//     already show — rides wherever the word's kanji arrive: folded into the
+//     kanji item for a single-character word, or its own item for a
+//     multi-character one, in `CURRICULUM_WORDS` (teachingRank) order. This is
+//     BYTE-IDENTICAL to the pre-SAK-162 sequence for the ~94% of words with only
+//     one taught reading, and it is what keeps the CEJC-curated bootstrap +
+//     core/essential interleave (scripts/ingest/cejc_reading_frequency.py's
+//     `scheduled_teaching_rows`) exactly where it was: that cadence is a
+//     PER-WORD ordinal, and every word's primary reading still rides it.
+//   - A word's OTHER readings (なな, once しち has ridden 七's kanji item) owe
+//     NOTHING further — the kanji is already taught, so only the reading's own
+//     word item enters the sequence — and they are not interleaved into the
+//     main word walk at all. They are collected as they are found and appended,
+//     sorted by their OWN CEJC `readingFrequency` (a rare second reading trails
+//     a common one), right after the main word pass and before the orphan kanji
+//     tail. This is a deliberate choice over globally re-ranking every reading
+//     by raw frequency: `content/teach-unit.ts`'s `orderedUnits` already does
+//     that for the separate /learn "vocab" track, and the header on
+//     `curriculumGlyphs` in learn-index-types.ts documents exactly why that
+//     shape is wrong for a lesson-sized budget — a frequency sort has no idea
+//     the curated cadence exists and would happily bunch every bootstrap word's
+//     rare second reading at the very front, or scatter the core/essential
+//     interleave across it. Keeping every word's PRIMARY reading on the curated
+//     ordinal and only re-ranking the leftover, secondary readings by frequency
+//     gets the real ask — 七 is taught twice, なな arriving well after しち when
+//     their counts differ — without touching the cadence measurably: it is
+//     unchanged for every word with one reading, and reordered only among the
+//     minority of extra readings, which is exactly the part the interleave was
+//     never covering as a single position of its own.
+//
 // Nothing is emitted twice. Every one of the 2,136 kanji, every radical-only
-// shape, and every curriculum word appears exactly once in CURRICULUM_SEQUENCE.
+// shape, and every (word, reading) pair CEJC teaches appears exactly once in
+// CURRICULUM_SEQUENCE.
 
 import { kanjiRow, kanjiTeachOrder, variantOriginal } from "@/data/kanji";
 import {
@@ -168,7 +207,13 @@ import {
   type RadicalRow,
 } from "@/data/radicals";
 import { RADICAL_TEACHING_ORDER } from "@/lib/radical-order";
-import { isSingleCharWordGlyph } from "@/data/vocab";
+import {
+  isSingleCharWordGlyph,
+  readingFrequency,
+  readingUnits,
+  vocabRow,
+  type VocabRow,
+} from "@/data/vocab";
 import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
 
 /**
@@ -200,6 +245,21 @@ export interface CurriculumItem {
    * between it and the character that wanted it.
    */
   readonly tiedTo: string | null;
+  /**
+   * Which reading this item teaches the word as, when `roles` includes "word";
+   * null for every other item. `roles.includes("word") === (reading !== null)`
+   * always — a word role never rides without naming which pronunciation it is.
+   *
+   * A word with N teachable readings (`readingUnits`) occupies N separate items,
+   * each with this field set to a different `reb`: 七 is `{glyph: "七", ...,
+   * reading: "しち"}` at one position and `{glyph: "七", ..., reading: "なな"}`
+   * at a later one. See the header (A WORD OWES ONE ITEM PER READING) for why
+   * they can land far apart. A glyph's radical/kanji roles never repeat across
+   * these items — only the first (primary-reading) item for a folded
+   * single-character word carries them; every later reading of the same glyph
+   * is a `roles: ["word"]` item, because the shape is already taught.
+   */
+  readonly reading: string | null;
 }
 
 /** The curriculum words by written form, for the membership question this module
@@ -327,15 +387,125 @@ function componentsOf(c: string): Components {
   return out;
 }
 
+/** A word's PRIMARY reading — the one its VocabRow's own `.reb` names (the same
+ * CEJC-preferred, dominant-POS-aware pick `readingOf`/the word's Library page
+ * already show), guarded against a `.reb` that `readingUnits` itself does not
+ * carry (should not happen — `withSenses` always selects from the row's own
+ * senses — but a missing match falls back to the first teachable reading rather
+ * than naming a reading the sequence never schedules a fact for). */
+function primaryReadingOf(row: VocabRow): string {
+  const units = readingUnits(row);
+  if (units.some((u) => u.reb === row.reb)) return row.reb;
+  return units[0]?.reb ?? row.reb;
+}
+
+/** One (word, reading) pair still owed a position — queued by `queueSecondary`
+ * as its word's other readings are found, and flushed (sorted, then pushed) once
+ * the pass that found them is done. See the header, A WORD OWES ONE ITEM PER
+ * READING. */
+interface PendingSecondaryReading {
+  readonly keb: string;
+  readonly reb: string;
+  /** CEJC's count for this exact (word, reading) pair — the sort key: a rarer
+   * second reading trails a common one. */
+  readonly freq: number;
+  /** The word's own beginnerRank, the tie-break when two secondary readings
+   * (of different words) share a frequency — keeps the flush deterministic
+   * without leaning on object/Map iteration order. */
+  readonly rank: number;
+}
+
 /** The whole spine, built once. */
 function buildSequence(): CurriculumItem[] {
   const items: CurriculumItem[] = [];
   const taughtKanji = new Set<string>();
   const taughtRadicals = new Set<number>();
-  const deliveredWords = new Set<string>();
+  // Every (keb, reading) pair already given a position — the reading-grained
+  // twin of the old `deliveredWords`. Keyed on both halves because a word can
+  // now occupy more than one position, one per reading; see the header.
+  const deliveredReadings = new Set<string>();
+  const readingKey = (keb: string, reb: string) => `${keb} ${reb}`;
 
-  const push = (glyph: string, tiedTo: string | null) => {
-    items.push({ glyph, roles: rolesOf(glyph), tiedTo });
+  const push = (
+    glyph: string,
+    tiedTo: string | null,
+    roles: readonly CurriculumRole[],
+    reading: string | null,
+  ) => {
+    items.push({ glyph, roles, tiedTo, reading });
+  };
+
+  // Readings still owed a position once the pass that found them finishes —
+  // see PendingSecondaryReading. Module-scope to this build, flushed (sorted by
+  // freq, then pushed) after each pass so a later pass's own finds do not race
+  // an earlier pass's sort.
+  let secondaryReadings: PendingSecondaryReading[] = [];
+
+  /** Queue every OTHER teachable reading of `row` (not `primary`, already
+   * delivered by the caller) for a later, frequency-ordered position. Guarded
+   * against a reading somehow already delivered, so a caller never has to know
+   * whether this word has been seen from another angle first. */
+  const queueSecondary = (keb: string, row: VocabRow, primary: string) => {
+    for (const unit of readingUnits(row)) {
+      if (unit.reb === primary) continue;
+      if (deliveredReadings.has(readingKey(keb, unit.reb))) continue;
+      secondaryReadings.push({
+        keb,
+        reb: unit.reb,
+        freq: readingFrequency(keb, unit.reb),
+        rank: row.beginnerRank,
+      });
+    }
+  };
+
+  /** Sort the queued secondary readings (most-spoken first, then the word's own
+   * rank, then plain string order — never object/Map iteration — so the flush
+   * is deterministic run to run) and push each as its own `roles: ["word"]`
+   * item: the glyph's shape is already taught, so nothing here re-teaches it. */
+  const flushSecondary = () => {
+    if (!secondaryReadings.length) return;
+    const batch = secondaryReadings;
+    secondaryReadings = [];
+    batch.sort(
+      (a, b) =>
+        b.freq - a.freq ||
+        a.rank - b.rank ||
+        (a.reb < b.reb ? -1 : a.reb > b.reb ? 1 : 0) ||
+        (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0),
+    );
+    for (const sr of batch) {
+      const key = readingKey(sr.keb, sr.reb);
+      if (deliveredReadings.has(key)) continue;
+      deliveredReadings.add(key);
+      push(sr.keb, null, ["word"], sr.reb);
+    }
+  };
+
+  /** Push a radical-only shape or a kanji, first-time-taught: `rolesOf` alone
+   * when it plays no word role, or — when it does (a folded single-character
+   * word, 山, or an un-scheduled dictionary character, 十, see
+   * `isSingleCharWordGlyph`) — that role set WITH the word's primary reading
+   * folded in, its other readings queued for later. Called exactly once per
+   * glyph (the caller's `taughtKanji`/`taughtRadicals` guard), so there is no
+   * risk of queuing the same word's secondary readings twice. */
+  const pushGlyph = (glyph: string, tiedTo: string | null) => {
+    const roles = rolesOf(glyph);
+    if (!roles.includes("word")) {
+      push(glyph, tiedTo, roles, null);
+      return;
+    }
+    const row = vocabRow(glyph);
+    if (!row) {
+      // Cannot happen — rolesOf's own word test requires a vocab row — but an
+      // item that claims the role needs something to read a reading from, and
+      // an honest miss (no reading) beats a crash.
+      push(glyph, tiedTo, roles, null);
+      return;
+    }
+    const primary = primaryReadingOf(row);
+    deliveredReadings.add(readingKey(glyph, primary));
+    push(glyph, tiedTo, roles, primary);
+    queueSecondary(glyph, row, primary);
   };
 
   const teachKanji = (c: string) => {
@@ -352,12 +522,13 @@ function buildSequence(): CurriculumItem[] {
     for (const rad of parts.radicals) {
       if (taughtRadicals.has(rad.num)) continue;
       taughtRadicals.add(rad.num);
-      push(rad.glyph, c);
+      pushGlyph(rad.glyph, c);
     }
-    // THE FOLD. If the character is itself a curriculum word, this item delivers
-    // the word as well, and the word's own turn later will find it already paid.
-    if (WORD_KEBS.has(c)) deliveredWords.add(c);
-    push(c, null);
+    // THE FOLD. If the character is itself a curriculum word, this item
+    // delivers the word's PRIMARY reading as well (pushGlyph), and the word's
+    // own turn later will find that reading already paid — only its other
+    // readings, if it has any, still owe a position.
+    pushGlyph(c, null);
   };
 
   for (const w of CURRICULUM_WORDS) {
@@ -365,18 +536,32 @@ function buildSequence(): CurriculumItem[] {
     // iteration mark 々, which is a writing rule and not a kanji to teach), so
     // the spine and the gate cannot disagree about a word's prerequisites.
     for (const c of wordKanji(w.keb)) teachKanji(c);
-    // Folded already: a single-kanji word was delivered by its kanji item, at
-    // the point some earlier word first needed the character (or, for a word
-    // reached before anything else needs it, one line above).
-    if (deliveredWords.has(w.keb)) continue;
-    deliveredWords.add(w.keb);
-    push(w.keb, null);
+    const primary = primaryReadingOf(w);
+    const primaryKey = readingKey(w.keb, primary);
+    // Folded already: a single-kanji word's primary reading was delivered by
+    // its kanji item, at the point some earlier word first needed the
+    // character (or, for a word reached before anything else needs it, one
+    // line above). A multi-character word is never folded, so this always
+    // fires for it.
+    if (deliveredReadings.has(primaryKey)) continue;
+    deliveredReadings.add(primaryKey);
+    push(w.keb, null, rolesOf(w.keb), primary);
+    queueSecondary(w.keb, w, primary);
   }
+  // Every secondary reading the main word pass found, ranked by its own CEJC
+  // count. Flushed here — in the WORD region, ahead of the orphan kanji tail —
+  // rather than at the very end, so a rare second reading still reads as a word
+  // position and not as leftover completeness material.
+  flushSecondary();
 
   // THE ORPHAN KANJI. The jōyō kanji no curriculum word is written with and no
   // taught character is built from. They follow every word, in the everyday
-  // order, which is the ramp the kanji track already teaches by.
+  // order, which is the ramp the kanji track already teaches by. One of these
+  // can rarely itself be an un-scheduled dictionary word with more than one
+  // reading (百, 千, 万 — excluded from CURRICULUM_WORDS by the counters track,
+  // see word-lesson.ts), so a second flush catches anything that pass queues.
   for (const c of kanjiTeachOrder("everyday")) teachKanji(c);
+  flushSecondary();
 
   // THE ORPHAN RADICALS. Every kanji is taught by now, so any radical-only shape
   // still missing is in nothing at all (爿 瓜 韭 …) and has no first consumer to
@@ -387,14 +572,17 @@ function buildSequence(): CurriculumItem[] {
     if (kanjiRow(r.glyph) !== undefined) continue;
     if (taughtRadicals.has(r.num)) continue;
     taughtRadicals.add(r.num);
-    push(r.glyph, null);
+    pushGlyph(r.glyph, null);
   }
+  flushSecondary();
 
   return items;
 }
 
 /**
- * Every item the curriculum teaches, in order. Words in beginnerRank order with
+ * Every item the curriculum teaches, in order. Words in beginnerRank order
+ * (each word's primary reading; its other readings, if any, ranked among
+ * themselves by CEJC frequency and appended right after — see the header) with
  * their prerequisites woven in ahead of them, then the orphan kanji, then the
  * orphan radicals.
  *
@@ -404,12 +592,49 @@ function buildSequence(): CurriculumItem[] {
  */
 export const CURRICULUM_SEQUENCE: readonly CurriculumItem[] = buildSequence();
 
-/** Where a glyph sits in the spine, or -1 for anything the curriculum does not
- * teach. One item per glyph, so the position is unambiguous. */
-const POSITION: ReadonlyMap<string, number> = new Map(
-  CURRICULUM_SEQUENCE.map((it, i) => [it.glyph, i]),
-);
+/**
+ * Where a glyph FIRST becomes taught in the spine, or -1 for anything the
+ * curriculum does not teach.
+ *
+ * A radical-only shape or a kanji occupies exactly one item, so this is
+ * unambiguous for it, same as before SAK-162. A word with more than one taught
+ * reading (七) now occupies more than one item — this returns the EARLIEST one
+ * (first occurrence wins), which is always the word's PRIMARY reading: the
+ * right answer for "when does this glyph's shape/meaning become available",
+ * which is what every existing caller (glyphDifficulty, the Library shelves,
+ * the transitivity track's ordering) actually asks. A caller that wants ONE
+ * specific reading's own position uses `curriculumReadingPosition` instead.
+ */
+const POSITION: ReadonlyMap<string, number> = (() => {
+  const map = new Map<string, number>();
+  for (let i = 0; i < CURRICULUM_SEQUENCE.length; i++) {
+    const glyph = CURRICULUM_SEQUENCE[i].glyph;
+    if (!map.has(glyph)) map.set(glyph, i);
+  }
+  return map;
+})();
 
 export function curriculumPosition(glyph: string): number {
   return POSITION.get(glyph) ?? -1;
+}
+
+/**
+ * Where ONE specific (word, reading) pair sits in the spine, or -1 when the
+ * curriculum does not teach that glyph as that reading. For a glyph with only
+ * one taught reading this agrees with `curriculumPosition`; for 七 (しち, なな)
+ * it is the one way to ask "where specifically is なな", which
+ * `curriculumPosition("七")` (first-occurrence) cannot answer on its own.
+ */
+const READING_POSITION: ReadonlyMap<string, number> = (() => {
+  const map = new Map<string, number>();
+  for (let i = 0; i < CURRICULUM_SEQUENCE.length; i++) {
+    const item = CURRICULUM_SEQUENCE[i];
+    if (item.reading === null) continue;
+    map.set(`${item.glyph} ${item.reading}`, i);
+  }
+  return map;
+})();
+
+export function curriculumReadingPosition(glyph: string, reading: string): number {
+  return READING_POSITION.get(`${glyph} ${reading}`) ?? -1;
 }

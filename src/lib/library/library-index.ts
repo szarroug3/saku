@@ -244,9 +244,22 @@ export function grammarConceptEntry(id: string): EntryId {
  * `GRAMMAR_CONCEPTS.map(c => c.id)`. */
 export const GRAMMAR_CONCEPT_IDS: readonly string[] = INDEX.grammarConceptIds;
 
-const CURRICULUM_POSITION: ReadonlyMap<string, number> = new Map(
-  CURRICULUM_GLYPHS.map((glyph, i) => [glyph, i]),
-);
+// FIRST occurrence wins (SAK-162): CURRICULUM_GLYPHS is CURRICULUM_SEQUENCE's
+// glyphs in spine order, and a word taught with more than one reading (七) now
+// repeats its glyph there, once per reading — see curriculum-order.ts's header.
+// The first occurrence is always that word's PRIMARY reading, which is the
+// right answer for "where does this glyph FIRST become taught" (the only
+// question curriculumRank/climbRank ever ask); a naive `new Map(pairs)` would
+// instead keep the LAST occurrence, silently reporting a rare second reading's
+// position as if it were the glyph's own.
+const CURRICULUM_POSITION: ReadonlyMap<string, number> = (() => {
+  const map = new Map<string, number>();
+  for (let i = 0; i < CURRICULUM_GLYPHS.length; i++) {
+    const glyph = CURRICULUM_GLYPHS[i];
+    if (!map.has(glyph)) map.set(glyph, i);
+  }
+  return map;
+})();
 
 /** Where a glyph sits in the curriculum spine, or -1 for anything the
  * curriculum does not teach — the content-free twin of curriculum-order.ts's
