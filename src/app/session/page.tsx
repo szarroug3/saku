@@ -524,6 +524,13 @@ export default function SessionPage() {
       <div className="kq-center-frame">
         <SessionHud
           label={session.what}
+          // SAK-145 round 2: `where` already read as plain text here ("Round 1
+          // of 3 · Done" is not, and never was, a pill) — only `label` (the
+          // track name, "Vocabulary") was still boxed. `plain` drops that pill
+          // with no `sublabel` to fold in, so it prints the track name alone,
+          // same as `where` beside it: the results screen ends up all plain
+          // text, matching the teach phase's header.
+          plain
           where={`Round ${session.round} of ${roundTargetOf(session)} · Done`}
           pct={100}
           onDone={pauseSession}

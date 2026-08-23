@@ -203,7 +203,9 @@ export function SentenceListenScreen() {
     // normally if the card ever needs more room.
     <div className="kq-center-frame mx-auto w-full max-w-xl justify-center">
       <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
-        <span className="rounded-full border border-border bg-accent-bg px-3 py-1 text-[13px] font-medium text-accent tabular-nums">
+        {/* SAK-145 round 2: plain text, not a pill — matches the other quiz
+            HUDs' identical fix. A position ("N of M") isn't a status. */}
+        <span className="text-[13px] font-medium text-accent tabular-nums">
           {rt.pos + 1} / {rt.cards.length}
         </span>
         <span className="tabular-nums" aria-hidden>

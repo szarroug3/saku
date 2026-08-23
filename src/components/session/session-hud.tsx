@@ -36,14 +36,20 @@ export function SessionHud({
   /**
    * SAK-145: the lesson header bar reads as plain text, not pills — the owner's
    * call, since a pill implies something clickable or a status, and this is
-   * just a position ("Vocabulary · 4 of 10"). Scoped to the one caller that
-   * needs it (the teach phase's frozen top row in app/session/page.tsx) rather
-   * than changed on SessionHud generally: every other screen wearing this HUD
-   * (rest, complete, the three quiz HUDs) still wants `label`/`sublabel` as
-   * pills. When true, `sublabel` (the track) is printed BEFORE `label` (the
-   * count), joined by " · ", as one plain string — the reverse of the pill
-   * order, because "N of M" makes sense read after "Vocabulary" but a track
-   * pill beside a count pill had no such reading order to keep.
+   * just a position ("Vocabulary · 4 of 10"). When true, `sublabel` (the
+   * track) is printed BEFORE `label` (the count), joined by " · ", as one
+   * plain string — the reverse of the pill order, because "N of M" makes
+   * sense read after "Vocabulary" but a track pill beside a count pill had no
+   * such reading order to keep.
+   *
+   * SAK-145 round 2: also passed by the round-complete results screen
+   * (app/session/page.tsx), where there's no `sublabel` to fold in — `plain`
+   * there just drops the border/background off `label` (the track name), and
+   * prints it bare beside `where` (which was already plain text, never a
+   * pill, on every caller). `rest` and the final `complete` screen still pass
+   * neither `plain` nor `sublabel`, so `label` there is still a pill — Sam's
+   * round-2 feedback named only the quiz/drill screen and the round-complete
+   * results screen, not those two.
    */
   plain?: boolean;
   /** Where you are — "round 1 · done", "resting", "complete". */
