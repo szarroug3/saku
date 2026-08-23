@@ -228,3 +228,40 @@ describe("meaning search — a partial English PHRASE finds a gloss", () => {
     assert.ok(meaningHits("tele").includes("電話"), "tele must still find 電話");
   });
 });
+
+describe("meaning search — digit form of a spelled-out number (SAK-168)", () => {
+  const meaningHits = (q: string) =>
+    searchAll(q)
+      .filter((h) => h.why === "meaning")
+      .map((h) => h.entry.glyph);
+
+  test('"4" finds the kanji 四, whose gloss is the bare word "four"', () => {
+    // 四 (kind: kanji) has meanings: ["four"] — no digit anywhere in its own
+    // gloss, so before this change nothing found it by typing "4". This is
+    // the exact gap the ticket describes, on real data (not a hypothetical
+    // "four (4)" gloss, which this corpus doesn't use).
+    assert.ok(meaningHits("4").includes("四"), '"4" should reach 四 ("four")');
+  });
+
+  test('"1" finds 一 ("one")', () => {
+    assert.ok(meaningHits("1").includes("一"), '"1" should reach 一 ("one")');
+  });
+
+  test('"10" finds 十 ("ten")', () => {
+    assert.ok(meaningHits("10").includes("十"), '"10" should reach 十 ("ten")');
+  });
+
+  test('a digit query does not pull in an unrelated number ("4" does not find "one")', () => {
+    assert.ok(!meaningHits("4").includes("一"), '"4" must not match "one"');
+  });
+
+  test('"four" still finds 四 directly (unchanged plain token match)', () => {
+    assert.ok(meaningHits("four").includes("四"), "the un-converted path must survive");
+  });
+
+  test("a bare digit query is not fuzzed into an unrelated word", () => {
+    // Guards against the digit-variant path accidentally reopening a typo-style
+    // match — "9" must not, say, land on a short/adjacent gloss by accident.
+    assert.ok(!meaningHits("9").includes("四"), '"9" must not match "four"');
+  });
+});
