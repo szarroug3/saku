@@ -17,12 +17,17 @@
 //   exactly a checked set of one.
 //
 //   THE STRANGER CASE. An absent, empty, misspelled or hostile `kind`/`state`
-//   must read as "everything checked" — the default — never throw, and never
-//   be mistaken for the dropdown's own Clear button (`none`).
+//   must read as "nothing checked" — the SAK-167 default — never throw, and
+//   never be mistaken for the dropdown's own "every box checked" state
+//   (`all`).
 //
-//   THE CLEAR CASE. Checking every box off in a dropdown is a real, distinct
-//   state from never having touched it — `none` is the one token that means
-//   "nothing checked", kept apart from a missing param ("everything checked").
+//   THE ALL CASE. Checking every box in a dropdown is a real, distinct state
+//   from never having touched it — `all` is the token that means "everything
+//   explicitly checked", kept apart from a missing param ("nothing checked",
+//   which shows the same entries but is not the same URL state). The old
+//   `none` token ("everything explicitly unchecked") is still ACCEPTED for a
+//   pre-SAK-167 link, but reads identically to a missing param now — there is
+//   no longer a distinct "explicitly nothing checked" state to preserve.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -36,8 +41,8 @@ import {
   ALL_KINDS,
   ALL_STATES,
   DEFAULT_KIND,
-  isEveryKind,
-  isEveryState,
+  isNoKindFilter,
+  isNoStateFilter,
   kindFromParams,
   kindsFromParams,
   libraryUrl,
@@ -105,24 +110,33 @@ describe("kindsFromParams — the Kind dropdown's checked set", () => {
     assert.ok(got.has(KANJI_SUBJECT));
   });
 
-  test("missing, empty, or the literal `all` token is every kind checked", () => {
-    assert.ok(isEveryKind(kindsFromParams(params(""))));
-    assert.ok(isEveryKind(kindsFromParams(params("?q=shi"))));
-    assert.ok(isEveryKind(kindsFromParams(params("?kind="))));
-    assert.ok(isEveryKind(kindsFromParams(params("?kind=all"))));
+  test("missing or empty is no kind checked — the SAK-167 default", () => {
+    assert.ok(isNoKindFilter(kindsFromParams(params(""))));
+    assert.ok(isNoKindFilter(kindsFromParams(params("?q=shi"))));
+    assert.ok(isNoKindFilter(kindsFromParams(params("?kind="))));
   });
 
-  test("`none` is every kind UNCHECKED — the dropdown's Clear button, not a fallback", () => {
+  test("the literal `all` token is every kind explicitly checked", () => {
+    const got = kindsFromParams(params("?kind=all"));
+    assert.equal(got.size, KINDS.length);
+    assert.ok(!isNoKindFilter(got));
+    for (const k of KINDS) assert.ok(got.has(k));
+  });
+
+  test("`none` (the old Clear token) reads the same as a missing param, for back-compat", () => {
     const got = kindsFromParams(params("?kind=none"));
+    assert.ok(isNoKindFilter(got));
     assert.equal(got.size, 0);
   });
 
-  test("garbage that leaves nothing real falls back to every kind, not to `none`", () => {
-    // A `none` round-trip is a deliberate Clear; a query the page can't read at
-    // all must not be mistaken for one — it shows the whole Library instead.
-    assert.ok(isEveryKind(kindsFromParams(params("?kind=banana"))));
-    assert.ok(isEveryKind(kindsFromParams(params("?kind=,,"))));
-    assert.ok(isEveryKind(kindsFromParams(params("?kind=__proto__"))));
+  test("garbage that leaves nothing real falls back to no kind checked, same as absent", () => {
+    // Pre-SAK-167 this fell back to "every kind checked"; now the default
+    // itself is the empty/no-filter state, so garbage lands on the same
+    // fallback a missing or `none` param does — it still shows the whole
+    // Library, just via the unchecked state rather than an all-checked one.
+    assert.ok(isNoKindFilter(kindsFromParams(params("?kind=banana"))));
+    assert.ok(isNoKindFilter(kindsFromParams(params("?kind=,,"))));
+    assert.ok(isNoKindFilter(kindsFromParams(params("?kind=__proto__"))));
   });
 });
 
@@ -145,12 +159,21 @@ describe("queryFromParams", () => {
 });
 
 describe("libraryUrl", () => {
-  test("the default state stays a plain /library", () => {
+  test("the default (nothing checked) state stays a plain /library", () => {
     // So mounting the page cannot rewrite the address bar to something the user
     // never asked for, and Back is never spent undoing our own tidying.
-    assert.equal(libraryUrl({ kinds: ALL_KINDS, query: "" }), "/library");
-    // Omitting kinds/states entirely means the same default.
+    // SAK-167: nothing checked IS the default now, so an explicit empty set
+    // and an omitted one write the same plain URL.
+    assert.equal(libraryUrl({ kinds: new Set(), query: "" }), "/library");
     assert.equal(libraryUrl({ query: "" }), "/library");
+  });
+
+  test("every kind explicitly checked writes the `all` token, not the default", () => {
+    // SAK-167 flipped which end is the default: fully checked used to be
+    // omitted, now it is the state that has to be spelled out so a "select
+    // all" link keeps reading as checked rather than collapsing into the
+    // (now different) unchecked default.
+    assert.equal(libraryUrl({ kinds: ALL_KINDS, query: "" }), "/library?kind=all");
   });
 
   test("carries whichever halves are not default", () => {
@@ -158,7 +181,7 @@ describe("libraryUrl", () => {
       libraryUrl({ kinds: new Set([KANJI_SUBJECT]), query: "" }),
       "/library?kind=kanji",
     );
-    assert.equal(libraryUrl({ kinds: ALL_KINDS, query: "shi" }), "/library?q=shi");
+    assert.equal(libraryUrl({ kinds: new Set(), query: "shi" }), "/library?q=shi");
   });
 
   test("a checked kind and a query survive together", () => {
@@ -199,32 +222,32 @@ describe("libraryUrl", () => {
     );
   });
 
-  test("every kind unchecked writes the `none` token, not an omitted param", () => {
-    assert.equal(
-      libraryUrl({ kinds: new Set(), query: "" }),
-      "/library?kind=none",
-    );
+  test("every kind unchecked (the default) is an omitted param, not the old `none` token", () => {
+    // SAK-167: the empty set no longer needs its own token to round-trip —
+    // it IS what an absent param already means now, so `libraryUrl` never
+    // has a reason to write `none` any more.
+    assert.equal(libraryUrl({ kinds: new Set(), query: "" }), "/library");
   });
 
-  test("the all-status default is omitted, the two narrowings are carried", () => {
+  test("the no-status default is omitted, a real narrowing is carried", () => {
     assert.equal(
-      libraryUrl({ kinds: ALL_KINDS, query: "", states: ALL_STATES }),
+      libraryUrl({ kinds: new Set(), query: "", states: new Set() }),
       "/library",
     );
     assert.equal(
-      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set(["known"]) }),
+      libraryUrl({ kinds: new Set(), query: "", states: new Set(["known"]) }),
       "/library?state=known",
     );
     assert.equal(
-      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set(["unknown"]) }),
+      libraryUrl({ kinds: new Set(), query: "", states: new Set(["unknown"]) }),
       "/library?state=unknown",
     );
   });
 
-  test("every status unchecked writes the `none` token, not an omitted param", () => {
+  test("every status explicitly checked writes the `all` token, not the default", () => {
     assert.equal(
-      libraryUrl({ kinds: ALL_KINDS, query: "", states: new Set() }),
-      "/library?state=none",
+      libraryUrl({ kinds: new Set(), query: "", states: ALL_STATES }),
+      "/library?state=all",
     );
   });
 
@@ -269,22 +292,28 @@ describe("statesFromParams — the Status dropdown's checked set", () => {
     assert.ok(got.has("solid"));
   });
 
-  test("an absent, empty, or literal-all value is every status checked", () => {
-    assert.ok(isEveryState(statesFromParams(params(""))));
-    assert.ok(isEveryState(statesFromParams(params("?kind=kanji"))));
-    assert.ok(isEveryState(statesFromParams(params("?state="))));
-    assert.ok(isEveryState(statesFromParams(params("?state=all"))));
+  test("an absent or empty value is no status checked — the SAK-167 default", () => {
+    assert.ok(isNoStateFilter(statesFromParams(params(""))));
+    assert.ok(isNoStateFilter(statesFromParams(params("?kind=kanji"))));
+    assert.ok(isNoStateFilter(statesFromParams(params("?state="))));
   });
 
-  test("`none` is every status UNCHECKED, not a fallback", () => {
+  test("the literal `all` value is every status explicitly checked", () => {
+    const got = statesFromParams(params("?state=all"));
+    assert.equal(got.size, ALL_STATES.size);
+    assert.ok(!isNoStateFilter(got));
+  });
+
+  test("`none` (the old Clear token) reads the same as a missing param, for back-compat", () => {
     const got = statesFromParams(params("?state=none"));
+    assert.ok(isNoStateFilter(got));
     assert.equal(got.size, 0);
   });
 
-  test("a hostile or all-unrecognised value falls back to every status, not to `none`", () => {
-    assert.ok(isEveryState(statesFromParams(params("?state=KNOWN"))));
-    assert.ok(isEveryState(statesFromParams(params("?state=banana"))));
-    assert.ok(isEveryState(statesFromParams(params("?state=__proto__"))));
+  test("a hostile or all-unrecognised value falls back to no status checked, same as absent", () => {
+    assert.ok(isNoStateFilter(statesFromParams(params("?state=KNOWN"))));
+    assert.ok(isNoStateFilter(statesFromParams(params("?state=banana"))));
+    assert.ok(isNoStateFilter(statesFromParams(params("?state=__proto__"))));
   });
 
   test("a fallback is a fallback, not a throw", () => {
