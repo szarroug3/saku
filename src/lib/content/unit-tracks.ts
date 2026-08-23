@@ -56,9 +56,18 @@ function vocabLearned(): HistoryFile {
 }
 
 /** The vocab/pronunciation spine, unit-ordered by spoken frequency across every
- * curriculum glyph — the one track whose order is finer than its items. */
+ * curriculum glyph — the one track whose order is finer than its items.
+ *
+ * DEDUPED (SAK-162): CURRICULUM_SEQUENCE can now repeat a glyph — a word taught
+ * with more than one reading (七) occupies more than one item, one per reading
+ * (see curriculum-order.ts's header) — but `orderedUnits` already expands ONE
+ * glyph into ALL of its pronunciation units (`pronunciationUnitsOf`), every
+ * reading included. Feeding it the same glyph twice would build and re-sort the
+ * same units twice, duplicating every multi-reading word's units on this track.
+ * A `Set` restores the one-call-per-glyph shape `.map` alone used to guarantee
+ * back when CURRICULUM_SEQUENCE never repeated a glyph at all. */
 function vocabUnits(): readonly TeachingUnit[] {
-  return orderedUnits(CURRICULUM_SEQUENCE.map((i) => i.glyph));
+  return orderedUnits(new Set(CURRICULUM_SEQUENCE.map((i) => i.glyph)));
 }
 
 /** Every track, in the order the app introduces them. */

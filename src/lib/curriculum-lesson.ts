@@ -41,20 +41,19 @@
 // wrong axis for a lesson budget that is really counting how much there is to
 // KNOW. So the budget now costs an item in READING-UNITS, the owner's difficulty
 // model (see src/lib/difficulty.ts): 1 for a radical meaning, 1 for a kanji
-// meaning, and one per reading-unit for the word (a reading plus the union of the
-// glosses read that way — "day, days" under one reading is 1, 日's ひ and か are
-// 2). The number is summed across every role the item plays and is a property of
-// the glyph, the same whatever context prices it.
+// meaning, and (SAK-162) 1 for the word role, because a word role now names
+// exactly ONE reading-unit — `item.reading` — never the word's whole reading-unit
+// count. The number is summed across every role the item plays.
 //
-// A FOLDED ITEM PAYS FOR EVERY ROLE. 山 is a radical, a kanji and a word in one
-// item (see curriculum-order.ts), and teaching it is genuinely all of that work:
-// its facts go into the drill. So its cost is radical(1) + kanji(1) + its word's
-// reading-units, never one of the three. 日 is 1 + 1 + 2 = 4. This is exactly
-// rolesDifficulty over the item's own roles, so the packer and glyphDifficulty
-// price a glyph identically by construction.
-//
-// A word no longer has a flat price: it costs its reading-unit count, summed
-// across its roles like every other item (see costOf and src/lib/difficulty.ts).
+// A FOLDED ITEM PAYS FOR EVERY ROLE IT CARRIES AT THAT POSITION. 山 is a
+// radical, a kanji and a word in one item (see curriculum-order.ts), and
+// teaching it is genuinely all of that work: its facts go into the drill. So its
+// cost is radical(1) + kanji(1) + word(1) = 3. A word with more than one taught
+// reading (七, 日) no longer pays for every reading at its first item: しち's
+// item costs kanji(1) + word(1) = 2, and なな's own, later item costs word(1)
+// more — 3 total across the two, still exactly `glyphDifficulty`'s
+// kanji(1) + readingUnits(2) = 3 (src/lib/difficulty.ts), just no longer
+// collected at one position. See `costOf`'s own comment for the split.
 //
 // THE WORD GATE IS GONE, BECAUSE THE ORDER ATE IT
 // ===============================================
@@ -77,11 +76,11 @@ import {
 import { radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import {
   isKanaWord,
+  readingUnits,
   vocabRow,
   wordTeachingMetadata,
   wordUnitFacts,
 } from "@/data/vocab";
-import { rolesDifficulty } from "@/lib/difficulty";
 import {
   CURRICULUM_SEQUENCE,
   type CurriculumItem,
@@ -199,50 +198,77 @@ function countsAsRadical(roles: readonly CurriculumRole[]): boolean {
  * mints BOTH the kanji meaning fact and the radical meaning fact, so a radical
  * definition can still be quizzed when it differs from the kanji meaning.
  *
- * The word role teaches EVERY reading-unit, not just the primary one: 日 is
- * taught (and drilled) as both ひ (day) and か (a day-counter), each its own
- * scored skill. `wordUnitFacts` is the one enumeration `buildVocabFacts` mints
- * from, so this teaches exactly the registry's facts for the word. Meaning
- * before reading within each unit, primary unit first; a kana word has no
- * reading fact, because it is its own reading (see buildVocabFacts).
+ * SAK-162: the word role teaches ONLY `item.reading`'s own facts, not every
+ * reading-unit of the word. 日 used to be one item minting both its ひ (day) and
+ * か (a day-counter) facts at once; now each reading is its own item (see
+ * curriculum-order.ts's header), so this item's word facts are whichever single
+ * reading-unit `wordUnitFacts` reports for `item.reading` — the other reading
+ * mints its own facts at ITS OWN item, later in the sequence. A kana word has
+ * no reading fact, because it is its own reading (see buildVocabFacts).
  */
 function factsOf(item: CurriculumItem): FactId[] {
   const facts: FactId[] = [];
   if (item.roles.includes("kanji")) facts.push(meaningFactId(item.glyph));
   if (item.roles.includes("radical")) facts.push(radicalMeaningFactId(item.glyph));
-  if (item.roles.includes("word")) {
-    for (const { reading, meaning } of wordUnitFacts(item.glyph)) {
-      facts.push(meaning);
-      if (reading) facts.push(reading);
+  if (item.roles.includes("word") && item.reading !== null) {
+    const unit = wordUnitFacts(item.glyph).find((u) => u.unit.reb === item.reading);
+    if (unit) {
+      facts.push(unit.meaning);
+      if (unit.reading) facts.push(unit.reading);
     }
   }
   return facts;
 }
 
-/** What the item costs the lesson budget: its reading-unit difficulty, summed
- * over every role it plays (radical 1, kanji 1, word one per reading-unit). The
- * item's own `roles`, so this is glyphDifficulty for the same glyph by
- * construction. See src/lib/difficulty.ts. */
+/**
+ * What the item costs the lesson budget: 1 per shape role (radical, kanji) plus
+ * 1 for the word role, since a word role now names exactly ONE reading-unit
+ * (`item.reading`) rather than every reading-unit of the word — see factsOf.
+ *
+ * This is `rolesDifficulty`-shaped (src/lib/difficulty.ts) but NOT the same
+ * function: `glyphDifficulty` prices a whole GLYPH (every reading-unit the word
+ * has, summed, for a caller like the keigo packer that has no per-reading
+ * grain), while this prices a SINGLE curriculum ITEM. The two still agree in
+ * TOTAL for any one glyph — a two-reading word costs kanji(1) + word(1) + word(1)
+ * = 3 split across its two items, exactly `glyphDifficulty`'s kanji(1) +
+ * readingUnits(2) = 3 — they just no longer agree item by item, because there
+ * is no longer one item to agree over.
+ */
 function costOf(item: CurriculumItem): number {
-  return rolesDifficulty(item.roles, item.glyph);
+  let cost = 0;
+  if (item.roles.includes("radical")) cost += 1;
+  if (item.roles.includes("kanji")) cost += 1;
+  if (item.roles.includes("word")) cost += 1;
+  return cost;
 }
 
 /** What to print under the glyph. The kanji's meaning when there is one, because
- * the tile is a character first; the word's first gloss when there is not. */
+ * the tile is a character first; otherwise the radical's meaning, or — for a
+ * word-only item — THIS item's own reading-unit gloss (not the word's first
+ * gloss overall, which may belong to a different reading entirely: にん's gloss
+ * is "counter for people", not ひと's "person"). */
 function meaningOf(item: CurriculumItem): string {
   if (item.roles.includes("kanji")) return kanjiRow(item.glyph)?.meanings[0] ?? "";
   if (item.roles.includes("radical")) return radicalByGlyph(item.glyph)?.meaning ?? "";
-  return vocabRow(item.glyph)?.glosses[0] ?? "";
+  const row = vocabRow(item.glyph);
+  if (row && item.reading !== null) {
+    const unit = readingUnits(row).find((u) => u.reb === item.reading);
+    if (unit) return unit.glosses[0] ?? "";
+  }
+  return row?.glosses[0] ?? "";
 }
 
 /** The reading to print: a word's, and only when the word is not itself kana and
- * not a single character being taught as its kanji. See `reading`. */
+ * not a single character being taught as its kanji. See `reading`. Prints
+ * `item.reading` — THIS item's own pronunciation — not the word's overall
+ * primary reading, so a secondary-reading item (七 taught again as なな) shows
+ * the reading it actually teaches. */
 function readingOf(item: CurriculumItem): string | null {
   if (!item.roles.includes("word")) return null;
   if (item.roles.includes("kanji")) return null;
   const row = vocabRow(item.glyph);
   if (!row || isKanaWord(row)) return null;
-  return row.reb;
+  return item.reading;
 }
 
 function lessonItem(item: CurriculumItem): CurriculumLessonItem {
