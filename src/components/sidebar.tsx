@@ -77,9 +77,10 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
   { href: "/practice", label: "Practice" },
   // "Progress", not "Statistics" — the page stopped being statistics. Nothing
   // on it is a rate, an average or a trend any more; it is three counts of
-  // things you own. The route is still /stats and deliberately so: renaming it
-  // would break every link anyone has, to buy a tidier URL nobody reads.
-  { href: "/stats", label: "Progress" },
+  // things you own. SAK-152: the route is now /progress, matching that label;
+  // the old /stats path still works (src/app/stats/page.tsx redirects here),
+  // so nobody's bookmark or old link breaks.
+  { href: "/progress", label: "Progress" },
   { href: "/library", label: "Library" },
   { href: "/lists", label: "Lists" },
   // "Recent sessions" is NOT in this static list. It rides directly under Learn

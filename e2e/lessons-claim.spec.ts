@@ -49,7 +49,7 @@ test("claiming the first group advances AND leaves the items claimed, not solid"
   // The knowledge base reflects the claim as CLAIMED, not SOLID. Nothing has been
   // drilled, so there is no solid bucket at all — the "What you know" card shows a
   // claimed count and never the word "solid".
-  await page.goto("/stats");
+  await page.goto("/progress");
   // The de-boxed "What you know" card is now a bare <section> (its Lbl heading +
   // the bucket counts), no kq-material wrapper. Anchor to that section.
   // SAK-78 title-cased the bucket labels ("Claimed" / "Solid"), so match that

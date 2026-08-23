@@ -6,7 +6,7 @@ const routes = {
   "/library/primitive/[glyph]": ".next/server/app/library/primitive/[glyph]/page_client-reference-manifest.js",
   "/lists": ".next/server/app/lists/page_client-reference-manifest.js",
   "/learn": ".next/server/app/learn/page_client-reference-manifest.js",
-  "/stats": ".next/server/app/stats/page_client-reference-manifest.js",
+  "/progress": ".next/server/app/progress/page_client-reference-manifest.js",
   "/session": ".next/server/app/session/page_client-reference-manifest.js",
   "/current": ".next/server/app/current/page_client-reference-manifest.js",
   "/dev/scheduling": ".next/server/app/dev/scheduling/page_client-reference-manifest.js",
