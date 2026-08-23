@@ -50,12 +50,14 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { NumberConstructionView } from "@/components/library/number-construction-view";
+import { PitchReading } from "@/components/library/pitch-mark";
 import { RelatedSection, type RelatedLink } from "@/components/library/related-section";
 import { HearButton } from "@/components/ui/hear-button";
 import {
   counterForm,
   isBareNumber,
 } from "@/data/counters";
+import { wordPitch } from "@/data/pitch";
 import {
   numberConstructionEntry,
   numberConstructionFor,
@@ -141,8 +143,34 @@ export function CounterEntryView({
               <tr>
                 <td className="whitespace-nowrap py-1 pr-6 align-top">
                   <span className="flex items-center gap-1.5">
-                    <HearButton glyph={form.reading} />
-                    <span className="font-kana text-text">{form.reading}</span>
+                    {/* SAK-170: most counted forms (ひとつ, さんぼん …) are
+                        namespaced entry-key inventions, never real JMdict kanji
+                        (see the "entry KEYS are namespaced" note at this file's
+                        top), so wordPitch(form.glyph) is null for them — but a
+                        real minority ARE ordinary JMdict headwords (whole
+                        calendar dates, 二十歳): 15 of the 54 forms checked
+                        against src/data/generated/pitch.json (~28%) carry a
+                        verified downstep, so this is wired the same
+                        downstep-exact way as character-entry-view.tsx rather
+                        than skipped as "doesn't apply here". */}
+                    {(() => {
+                      const pitch = wordPitch(form.glyph);
+                      return pitch !== null ? (
+                        <>
+                          <HearButton glyph={form.reading} downstep={pitch} />
+                          <PitchReading
+                            reading={form.reading}
+                            downstep={pitch}
+                            className="font-kana text-text"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <HearButton glyph={form.reading} />
+                          <span className="font-kana text-text">{form.reading}</span>
+                        </>
+                      );
+                    })()}
                     {/* A second reading the same number branches into — く beside
                         きゅう. It is a READING, so it rides beside the primary reading,
                         never in the meaning. Absent (empty) for every current form. */}

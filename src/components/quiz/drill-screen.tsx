@@ -2007,6 +2007,18 @@ export function DrillScreen() {
   // like" the teach screens use — a word speaks its own glyph — and the voice is
   // the learner's configured one, which "Auto" now resolves away from Eddy. The
   // halo's speaker is the only other way to hear it again.
+  //
+  // SAK-170: stays on the generic `speak()` path, deliberately not exact-pitch
+  // downstep synthesis. Two reasons, not just "drills don't need it": (1) `text`
+  // here is frequently NOT an isolated word reading — a definition-recognition
+  // card plays a full sentence (`recognition?.jp`) and a counter card plays a
+  // rolled reading (さんぼん) — and HearButton's downstep mode requires exactly
+  // the word's own kana reading, nothing else, or the synthesis is simply wrong
+  // for what's playing; (2) pitch discrimination already has its own dedicated
+  // board (`PitchShowing`/`rollPitchQuestion`, SAK-128/129, a few lines below)
+  // built specifically to test it — an ordinary listening card's job is
+  // recognition/meaning, not pitch, so leaving it generic here doesn't leave a
+  // real gap the way words-with.tsx's missing HearButton did.
   const listenPlayKey = rt?.q?.listen ? rt.asked : null;
   const listenPlayFact = rt?.q?.listen ? rt.q.f : null;
   useEffect(() => {
