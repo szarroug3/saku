@@ -574,13 +574,13 @@ describe("the orphan tails introduce nothing", () => {
   test("the tails are past every anchor", () => {
     // Matched on the ROLE (SAK-162), not the bare glyph: the anchor's own shape
     // — kanji anchored to 人, say — is taught on lesson 1, but 人 is also a
-    // three-reading word, and its OTHER readings (にん, じん) are ranked by their
-    // own CEJC frequency and land right before the orphan-kanji tail (see
-    // curriculum-order.ts's header), which can genuinely fall inside the last 40
-    // groups this test samples. That later item is `roles: ["word"]` alone — it
-    // is not the anchor, and its presence here says nothing about whether the
-    // CARD fired late. Only a later item that still carries the anchor's own
-    // role would mean that.
+    // three-reading word, and its OTHER readings (にん, じん) are woven into the
+    // sequence at their own genuine frequency-derived position (see
+    // curriculum-order.ts's header, THE WEAVE) — nowhere near the anchor's own
+    // lesson, and in principle anywhere at all, including this tail sample.
+    // That later item is `roles: ["word"]` alone — it is not the anchor, and
+    // its presence here says nothing about whether the CARD fired late. Only a
+    // later item that still carries the anchor's own role would mean that.
     for (const anchor of SPINE_ANCHORS) {
       assert.ok(
         !tail.some((g) =>

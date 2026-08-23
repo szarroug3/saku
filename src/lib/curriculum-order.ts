@@ -173,27 +173,64 @@
 //     one taught reading, and it is what keeps the CEJC-curated bootstrap +
 //     core/essential interleave (scripts/ingest/cejc_reading_frequency.py's
 //     `scheduled_teaching_rows`) exactly where it was: that cadence is a
-//     PER-WORD ordinal, and every word's primary reading still rides it.
-//   - A word's OTHER readings (なな, once しち has ridden 七's kanji item) owe
+//     PER-WORD ordinal over PRIMARY readings only, and nothing below ever moves
+//     one primary reading relative to another — the weave only ever inserts
+//     extra items between them.
+//   - A word's OTHER readings (しち, once なな has ridden 七's kanji item) owe
 //     NOTHING further — the kanji is already taught, so only the reading's own
-//     word item enters the sequence — and they are not interleaved into the
-//     main word walk at all. They are collected as they are found and appended,
-//     sorted by their OWN CEJC `readingFrequency` (a rare second reading trails
-//     a common one), right after the main word pass and before the orphan kanji
-//     tail. This is a deliberate choice over globally re-ranking every reading
-//     by raw frequency: `content/teach-unit.ts`'s `orderedUnits` already does
-//     that for the separate /learn "vocab" track, and the header on
-//     `curriculumGlyphs` in learn-index-types.ts documents exactly why that
-//     shape is wrong for a lesson-sized budget — a frequency sort has no idea
-//     the curated cadence exists and would happily bunch every bootstrap word's
-//     rare second reading at the very front, or scatter the core/essential
-//     interleave across it. Keeping every word's PRIMARY reading on the curated
-//     ordinal and only re-ranking the leftover, secondary readings by frequency
-//     gets the real ask — 七 is taught twice, なな arriving well after しち when
-//     their counts differ — without touching the cadence measurably: it is
-//     unchanged for every word with one reading, and reordered only among the
-//     minority of extra readings, which is exactly the part the interleave was
-//     never covering as a single position of its own.
+//     word item enters the sequence — but they are not batched into one tail
+//     block sorted among themselves, either. An earlier cut of this module did
+//     exactly that (collect every extra reading as the main pass finds it, sort
+//     the whole batch by its own CEJC count, append it as one run right after
+//     the main word pass), and it breaks the actual point of pronunciation-
+//     frequency teaching: a second reading spoken more often than half the
+//     curriculum would still sit in that one run, waiting for every other
+//     word's extra readings to be found first. Each secondary reading is now
+//     WOVEN into its own genuine frequency-derived position instead, mixed in
+//     among primary readings and everything else — see THE WEAVE below.
+//
+// THE WEAVE: A SECONDARY READING HAS NO CURATED RANK OF ITS OWN
+// ===============================================================
+// `teachingRank` is a CURATED ordinal — the bootstrap-and-interleave cadence
+// `scheduled_teaching_rows` bakes in — not a raw frequency sort, and it is
+// minted once per WORD, never for a reading past the first. So a secondary
+// reading cannot simply be sorted into the curated order by its own
+// `readingFrequency(keb, reb)` count: that count lives on a different scale
+// than an ordinal position, and comparing them directly is comparing a speed to
+// a rank.
+//
+// The bridge is the one thing every PRIMARY reading already carries: its own
+// raw `readingFrequency(keb, primaryReb)`, sitting right where the curated
+// order put it. Read across every primary reading in curated order, that is a
+// DISTRIBUTION — one raw count per curated position — and a secondary reading's
+// own raw count can be measured against it the way a percentile is read off a
+// curve: count how many primary readings CEJC observed MORE often than this
+// one, and that count IS the position — insert the secondary reading
+// immediately before the primary reading holding that rank. A secondary
+// reading spoken more often than the top 12 primary readings lands among the
+// first 12 items; one CEJC never observed as that specific reading lands
+// wherever the curriculum's own observed-frequency data runs dry (deep in
+// CEJC_HEAD, well ahead of the un-ranked JLPT/OpenSubtitles fallback words that
+// never had a count to begin with, only a dictionary rank). 七's two readings
+// show the ordinary case: なな (673 CEJC occurrences) is the word's primary and
+// rides 七's own kanji item as always; しち (328) is roughly half as common and
+// is woven in among the primary readings CEJC observed a similar number of
+// times — nowhere near なな, and nowhere near the very end of the curriculum
+// either, which is what the old batched tail would have done to it.
+//
+// ONE GUARD: A READING NEVER PRECEDES ITS OWN WORD. The primary reading is
+// chosen by dominant part-of-speech and definition order (`withSenses`), not by
+// which reading CEJC counted most — so the reading picked "primary" is
+// sometimes NOT the one CEJC observed most often. 何's primary is なに (5,253
+// CEJC occurrences); its other reading なん is spoken almost five times more
+// often (26,067). Ranked purely by that count, なん would land ahead of なに
+// itself — asking a learner to read a pronunciation of a word whose kanji have
+// not been taught yet, which is not a position, it is a bug. So the rank-
+// derived position is a TARGET, clamped to never sit earlier than immediately
+// after the word's own primary-reading item: なん still gets pulled as early as
+// a secondary reading this common deserves, right up against なに and no
+// earlier — the same "pulled forward, never past what it owes" shape the fold
+// itself already uses for a single-kanji word.
 //
 // Nothing is emitted twice. Every one of the 2,136 kanji, every radical-only
 // shape, and every (word, reading) pair CEJC teaches appears exactly once in
@@ -400,19 +437,142 @@ function primaryReadingOf(row: VocabRow): string {
 }
 
 /** One (word, reading) pair still owed a position — queued by `queueSecondary`
- * as its word's other readings are found, and flushed (sorted, then pushed) once
- * the pass that found them is done. See the header, A WORD OWES ONE ITEM PER
- * READING. */
+ * as its word's other readings are found, and woven into the base sequence once
+ * (see `weaveSecondaryReadings`) after every primary reading has a fixed index.
+ * See the header, THE WEAVE. */
 interface PendingSecondaryReading {
   readonly keb: string;
   readonly reb: string;
-  /** CEJC's count for this exact (word, reading) pair — the sort key: a rarer
-   * second reading trails a common one. */
+  /** CEJC's count for this exact (word, reading) pair — the value the weave
+   * ranks against the DISTRIBUTION of every primary reading's own count. */
   readonly freq: number;
   /** The word's own beginnerRank, the tie-break when two secondary readings
-   * (of different words) share a frequency — keeps the flush deterministic
-   * without leaning on object/Map iteration order. */
+   * (of different words) land at the same computed rank — keeps the weave
+   * deterministic without leaning on object/Map iteration order. */
   readonly rank: number;
+  /** The index, in the base (pre-weave) sequence, of this word's OWN primary
+   * reading item — the earliest position this secondary reading may ever sit,
+   * since nothing can teach a reading of a word before the word (and the kanji
+   * it rides in on) has been taught. See the header, ONE GUARD. */
+  readonly primaryIndex: number;
+}
+
+/**
+ * Weave every queued secondary reading into `base` (the primary-only sequence:
+ * every kanji, every radical-only shape, and every word's PRIMARY reading, each
+ * already at its final index) by genuine frequency, and return the combined
+ * array. See the header, THE WEAVE.
+ *
+ * THE DISTRIBUTION. `base`'s own word-role items — one per taught word, in
+ * curated order — each carry their glyph's PRIMARY reading, and each has its
+ * own raw `readingFrequency`. Read off in curated order and then sorted
+ * descending, those counts are the scale a secondary reading's raw count is
+ * measured against: `rankOf(f)` counts how many primary readings CEJC observed
+ * MORE often than `f`, by binary search over the sorted counts. That count IS
+ * the position — the secondary reading is inserted immediately before the
+ * primary-reading item holding that rank in `base`'s own (curated, not
+ * frequency-sorted) order, `wordItemIndex[rankOf(f)]`. A count higher than
+ * every primary reading's own (rank 0) inserts before the very first word item;
+ * a count of 0 inserts wherever `base`'s own primary counts hit 0 — deep in
+ * CEJC_HEAD's tail, well ahead of the un-ranked JLPT/OpenSubtitles fallback
+ * words that never had a CEJC count at all.
+ *
+ * THE GUARD. That rank-derived index is a TARGET, not a promise: it can land
+ * earlier than the reading's OWN word's primary-reading item when the "other"
+ * reading is the one CEJC actually observed more (何's なん outranks なに this
+ * way). Nothing may teach a reading of a word before the word itself, so the
+ * target is clamped to `max(target, primaryIndex + 1)` — pulled forward as far
+ * as its own frequency earns, never past what it owes.
+ *
+ * THE OTHER GUARD: A WELD IS ATOMIC. `base` can hold a radical-only shape
+ * immediately before the kanji it is welded to (`tiedTo`), and the packer's one
+ * hard promise is that nothing ever comes between them — see the header, THE
+ * PREREQUISITE RULE. A rank-derived target can land exactly on that boundary
+ * (要's own word item is a wordItemIndex entry, and 襾 rides tied immediately
+ * before it), so a target that would separate a tied item from what it is tied
+ * to is pushed forward past the whole weld run instead: the boundary before a
+ * tied item is never a valid insertion point, only the boundary before or
+ * after the run as a whole is.
+ *
+ * DETERMINISM. Insertions are computed independently (no insertion shifts
+ * another's target index, because targets are read off `base`'s fixed indices,
+ * not the growing output), then merged into `base` in one left-to-right pass.
+ * Two secondary readings landing at the same target index keep the order
+ * `ordered` already gives them: most-spoken first, then the tie-breaks below.
+ */
+function weaveSecondaryReadings(
+  base: readonly CurriculumItem[],
+  pending: readonly PendingSecondaryReading[],
+): CurriculumItem[] {
+  if (pending.length === 0) return [...base];
+
+  const wordItemIndex: number[] = [];
+  for (let i = 0; i < base.length; i++) {
+    if (base[i]!.reading !== null) wordItemIndex.push(i);
+  }
+  // Every primary reading's own raw CEJC count, sorted most-spoken first, so
+  // `rankOf` can binary-search "how many are greater than f" in O(log n).
+  const primaryFreqsDesc = wordItemIndex
+    .map((i) => readingFrequency(base[i]!.glyph, base[i]!.reading!))
+    .sort((a, b) => b - a);
+
+  const rankOf = (f: number): number => {
+    let lo = 0;
+    let hi = primaryFreqsDesc.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (primaryFreqsDesc[mid]! > f) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+
+  // Most-spoken first, then the word's own rank, then plain string order —
+  // never object/Map iteration — so the weave is deterministic run to run, and
+  // so two readings sharing a target index keep this order in the output.
+  const ordered = [...pending].sort(
+    (a, b) =>
+      b.freq - a.freq ||
+      a.rank - b.rank ||
+      (a.reb < b.reb ? -1 : a.reb > b.reb ? 1 : 0) ||
+      (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0),
+  );
+
+  // Never a valid insertion boundary: splitting a tied item from what it is
+  // tied to. Pushed forward past the whole run, to the boundary right after it.
+  const pastWeld = (index: number): number => {
+    let i = index;
+    while (i > 0 && i <= base.length && base[i - 1]!.tiedTo !== null) i++;
+    return i;
+  };
+
+  const insertions: { index: number; item: CurriculumItem }[] = ordered.map((sr) => {
+    const target =
+      rankOf(sr.freq) < wordItemIndex.length ? wordItemIndex[rankOf(sr.freq)]! : base.length;
+    return {
+      index: pastWeld(Math.max(target, sr.primaryIndex + 1)),
+      item: { glyph: sr.keb, roles: ["word"], tiedTo: null, reading: sr.reb },
+    };
+  });
+  // Stable: equal-index insertions keep `ordered`'s relative order (Array#sort
+  // has been a stable sort since ES2019, and the whole toolchain here targets
+  // Node 24 / modern browsers, both well past that).
+  insertions.sort((a, b) => a.index - b.index);
+
+  const out: CurriculumItem[] = [];
+  let ii = 0;
+  for (let i = 0; i < base.length; i++) {
+    while (ii < insertions.length && insertions[ii]!.index === i) {
+      out.push(insertions[ii]!.item);
+      ii++;
+    }
+    out.push(base[i]!);
+  }
+  while (ii < insertions.length) {
+    out.push(insertions[ii]!.item);
+    ii++;
+  }
+  return out;
 }
 
 /** The whole spine, built once. */
@@ -435,49 +595,28 @@ function buildSequence(): CurriculumItem[] {
     items.push({ glyph, roles, tiedTo, reading });
   };
 
-  // Readings still owed a position once the pass that found them finishes —
-  // see PendingSecondaryReading. Module-scope to this build, flushed (sorted by
-  // freq, then pushed) after each pass so a later pass's own finds do not race
-  // an earlier pass's sort.
-  let secondaryReadings: PendingSecondaryReading[] = [];
+  // Readings still owed a position, queued as `pushGlyph`/the main word loop
+  // finds them and woven into `items` in one pass once the base sequence (every
+  // primary reading at its final index) is complete. See `weaveSecondaryReadings`.
+  const pendingSecondary: PendingSecondaryReading[] = [];
 
   /** Queue every OTHER teachable reading of `row` (not `primary`, already
-   * delivered by the caller) for a later, frequency-ordered position. Guarded
-   * against a reading somehow already delivered, so a caller never has to know
-   * whether this word has been seen from another angle first. */
-  const queueSecondary = (keb: string, row: VocabRow, primary: string) => {
+   * delivered by the caller and already at `primaryIndex` in `items`) for the
+   * weave. Guarded against a reading somehow already delivered, so a caller
+   * never has to know whether this word has been seen from another angle
+   * first. */
+  const queueSecondary = (keb: string, row: VocabRow, primary: string, primaryIndex: number) => {
     for (const unit of readingUnits(row)) {
       if (unit.reb === primary) continue;
       if (deliveredReadings.has(readingKey(keb, unit.reb))) continue;
-      secondaryReadings.push({
+      deliveredReadings.add(readingKey(keb, unit.reb));
+      pendingSecondary.push({
         keb,
         reb: unit.reb,
         freq: readingFrequency(keb, unit.reb),
         rank: row.beginnerRank,
+        primaryIndex,
       });
-    }
-  };
-
-  /** Sort the queued secondary readings (most-spoken first, then the word's own
-   * rank, then plain string order — never object/Map iteration — so the flush
-   * is deterministic run to run) and push each as its own `roles: ["word"]`
-   * item: the glyph's shape is already taught, so nothing here re-teaches it. */
-  const flushSecondary = () => {
-    if (!secondaryReadings.length) return;
-    const batch = secondaryReadings;
-    secondaryReadings = [];
-    batch.sort(
-      (a, b) =>
-        b.freq - a.freq ||
-        a.rank - b.rank ||
-        (a.reb < b.reb ? -1 : a.reb > b.reb ? 1 : 0) ||
-        (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0),
-    );
-    for (const sr of batch) {
-      const key = readingKey(sr.keb, sr.reb);
-      if (deliveredReadings.has(key)) continue;
-      deliveredReadings.add(key);
-      push(sr.keb, null, ["word"], sr.reb);
     }
   };
 
@@ -485,7 +624,7 @@ function buildSequence(): CurriculumItem[] {
    * when it plays no word role, or — when it does (a folded single-character
    * word, 山, or an un-scheduled dictionary character, 十, see
    * `isSingleCharWordGlyph`) — that role set WITH the word's primary reading
-   * folded in, its other readings queued for later. Called exactly once per
+   * folded in, its other readings queued for the weave. Called exactly once per
    * glyph (the caller's `taughtKanji`/`taughtRadicals` guard), so there is no
    * risk of queuing the same word's secondary readings twice. */
   const pushGlyph = (glyph: string, tiedTo: string | null) => {
@@ -505,7 +644,7 @@ function buildSequence(): CurriculumItem[] {
     const primary = primaryReadingOf(row);
     deliveredReadings.add(readingKey(glyph, primary));
     push(glyph, tiedTo, roles, primary);
-    queueSecondary(glyph, row, primary);
+    queueSecondary(glyph, row, primary, items.length - 1);
   };
 
   const teachKanji = (c: string) => {
@@ -546,22 +685,16 @@ function buildSequence(): CurriculumItem[] {
     if (deliveredReadings.has(primaryKey)) continue;
     deliveredReadings.add(primaryKey);
     push(w.keb, null, rolesOf(w.keb), primary);
-    queueSecondary(w.keb, w, primary);
+    queueSecondary(w.keb, w, primary, items.length - 1);
   }
-  // Every secondary reading the main word pass found, ranked by its own CEJC
-  // count. Flushed here — in the WORD region, ahead of the orphan kanji tail —
-  // rather than at the very end, so a rare second reading still reads as a word
-  // position and not as leftover completeness material.
-  flushSecondary();
 
   // THE ORPHAN KANJI. The jōyō kanji no curriculum word is written with and no
   // taught character is built from. They follow every word, in the everyday
   // order, which is the ramp the kanji track already teaches by. One of these
   // can rarely itself be an un-scheduled dictionary word with more than one
   // reading (百, 千, 万 — excluded from CURRICULUM_WORDS by the counters track,
-  // see word-lesson.ts), so a second flush catches anything that pass queues.
+  // see word-lesson.ts), and its extra readings are queued exactly the same way.
   for (const c of kanjiTeachOrder("everyday")) teachKanji(c);
-  flushSecondary();
 
   // THE ORPHAN RADICALS. Every kanji is taught by now, so any radical-only shape
   // still missing is in nothing at all (爿 瓜 韭 …) and has no first consumer to
@@ -574,21 +707,29 @@ function buildSequence(): CurriculumItem[] {
     taughtRadicals.add(r.num);
     pushGlyph(r.glyph, null);
   }
-  flushSecondary();
 
-  return items;
+  // Every primary reading now sits at its final index — `items` is the base
+  // sequence THE WEAVE (header) measures every secondary reading's own CEJC
+  // count against — so every secondary reading found across all three passes
+  // above is woven in now, in one pass, genuinely interleaved by frequency
+  // rather than batched. See `weaveSecondaryReadings`.
+  return weaveSecondaryReadings(items, pendingSecondary);
 }
 
 /**
  * Every item the curriculum teaches, in order. Words in beginnerRank order
- * (each word's primary reading; its other readings, if any, ranked among
- * themselves by CEJC frequency and appended right after — see the header) with
- * their prerequisites woven in ahead of them, then the orphan kanji, then the
- * orphan radicals.
+ * (each word's primary reading) with their prerequisites woven in ahead of
+ * them, then the orphan kanji, then the orphan radicals — and, woven genuinely
+ * into all of that by frequency rather than batched onto the end of it, every
+ * word's OTHER readings, each at the position its own CEJC count earns against
+ * the distribution of every primary reading's own count (see the header, THE
+ * WEAVE).
  *
  * Computed once at module load, like KANJI_ORDER and RADICAL_TEACHING_ORDER: it
  * is a property of the shipped data, no user input reaches it, and building it
- * is one walk of the CEJC word curriculum and 2,136 kanji against hash sets.
+ * is one walk of the CEJC word curriculum and 2,136 kanji against hash sets,
+ * plus one weave of the (small — 98 today) set of extra readings found along
+ * the way.
  */
 export const CURRICULUM_SEQUENCE: readonly CurriculumItem[] = buildSequence();
 
