@@ -68,7 +68,8 @@ for (const route of routes.static) {
     expect(response!.status(), `bad status for ${route}`).toBeLessThan(400);
 
     // Several routes are guards that redirect: /quiz and /session go to /learn
-    // when there is no quiz in progress, and /chart goes to /library. "/" itself
+    // when there is no quiz in progress, /chart goes to /library, and /stats
+    // (SAK-152) goes to /progress. "/" itself
     // no longer redirects here: the suite runs SIGNED OUT (see
     // playwright.config.ts), and "/" is the landing for a signed-out visitor — it
     // renders in place rather than redirecting to /learn. That the landing still
