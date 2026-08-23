@@ -56,7 +56,10 @@ describe("the curriculum is essentially all of VOCAB, in beginnerRank order", ()
     }
     // The words excluded are exactly the counter-owned ones — spot-check both
     // families named in COUNTER_TRACK_KEBS/COUNTER_KANJI_GLYPHS.
-    for (const excluded of ["百", "千", "万", "一つ", "二つ", "一人", "二人"]) {
+    for (const excluded of [
+      "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
+      "百", "千", "万", "一つ", "二つ", "一人", "二人",
+    ]) {
       assert.ok(!curriculumKebs.has(excluded), `${excluded} should be excluded (counter track owns it)`);
     }
   });
@@ -143,7 +146,12 @@ describe("the word total is the material, and does not move", () => {
     // (１日…３１日, １月…１２月) to COUNTER_CURRICULUM, and this filter derives from
     // that list, so the same de-duplication every other counted counter form
     // already got (二十歳, 一本…) now applies to these too — see counters.ts.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12487);
+    // Minus 10 more with SAK-164: the bare Sino numbers 一…十 joined 百/千/万 in
+    // COUNTER_TRACK_KEBS (see its doc comment) — a CURRICULUM_WORDS/bookkeeping
+    // cut only, since curriculum-order.ts's isSingleCharWordGlyph fold keeps
+    // teaching them regardless (CURRICULUM_TOTALS.word in curriculum-lesson.ts,
+    // the number actually shown on a lesson card, is unaffected — see its test).
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12477);
   });
 });
 
