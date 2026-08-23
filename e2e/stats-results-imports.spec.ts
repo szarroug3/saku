@@ -4,9 +4,9 @@ import { test, expect, type Page } from "./helpers/app";
  * STATS + RESULTS + IMPORTS — the read-only surfaces the mirror specs skip.
  *
  * progress.spec.ts is about mid-quiz PERSISTENCE, not these pages. Nothing else
- * in the suite renders /stats, /results or the settings pages, so this covers:
+ * in the suite renders /progress, /results or the settings pages, so this covers:
  *
- *   /stats ............ the By-subject bar (met vs standing, claimed drawn grey)
+ *   /progress ......... the By-subject bar (met vs standing, claimed drawn grey)
  *                       and the "What you know" knowledge-base card.
  *   /results .......... the results board — reachable two ways, both asserted:
  *                       its no-session guard redirect, and a seeded board render.
@@ -24,14 +24,14 @@ import { test, expect, type Page } from "./helpers/app";
  * so `met` for the Kana row is exactly this many. */
 const CLAIMED = ["kana:あ/reading", "kana:い/reading", "kana:う/reading"];
 
-test("/stats renders the by-subject bar and the knowledge-base card", async ({
+test("/progress renders the by-subject bar and the knowledge-base card", async ({
   page,
   seed,
 }) => {
   await seed({ claims: CLAIMED });
-  await page.goto("/stats");
+  await page.goto("/progress");
 
-  // The page is titled "Progress" (the route is /stats; the heading is not).
+  // The page is titled "Progress" (SAK-152: the route matches now too).
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Progress");
 
   // The knowledge-base card is populated, not its empty state, and it shows the
