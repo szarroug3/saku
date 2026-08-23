@@ -63,7 +63,7 @@ import {
 } from "@/data/kanji";
 import { RADICALS, RADICAL_SUBJECT } from "@/data/radicals";
 import { variantsOf } from "@/data/variant-forms";
-import { curriculumPosition } from "@/lib/curriculum-order";
+import { curriculumPosition } from "@/lib/curriculum-sequence";
 import {
   VOCAB,
   VOCAB_SUBJECT,

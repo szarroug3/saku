@@ -86,7 +86,7 @@ import {
   CURRICULUM_SEQUENCE,
   type CurriculumItem,
   type CurriculumRole,
-} from "@/lib/curriculum-order";
+} from "@/lib/curriculum-sequence";
 import { type LessonRange } from "@/lib/lesson-sizing";
 import { advancePosition } from "@/lib/lesson-position";
 import type { CompositePosition, LessonPosition } from "@/lib/lesson-position";
