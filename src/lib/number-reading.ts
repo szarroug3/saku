@@ -195,6 +195,15 @@ export function counterReading(n: number, counter: CounterKind): string | null {
 }
 
 /**
+ * The ones-digit ALTERNATE reading each of these three numbers also carries —
+ * 4 し, 7 しち, 9 く, beside the default よん/なな/きゅう. Exported so a caller
+ * outside this file (src/lib/day-month-reading.ts, whose day/month readings
+ * are built from these exact alternates, never a second hand-typed table) can
+ * share the one branch table instead of re-declaring it and risking drift.
+ */
+export const ONES_BRANCH: Readonly<Record<number, string>> = { 4: "し", 7: "しち", 9: "く" };
+
+/**
  * Every reading a learner may legitimately type for a bare number.
  *
  * Beyond numberReading(n), the isolated/ones-position branch alternates are
@@ -206,14 +215,13 @@ export function acceptableNumberReadings(n: number): string[] {
   const readings = [primary];
 
   const o = n % 10;
-  const branch: Record<number, string> = { 4: "し", 7: "しち", 9: "く" };
-  if (o in branch && n % 100 !== 0) {
+  if (o in ONES_BRANCH && n % 100 !== 0) {
     // Only branch when the ones digit is actually pronounced as a bare ones
     // reading — i.e. the reading ends in ONES[o]. (n % 10 !== 0 already, and we
     // guard n%100 so e.g. no false trigger; the tail always ends in ONES[o].)
     const suffix = ONES[o];
     if (primary.endsWith(suffix)) {
-      readings.push(primary.slice(0, primary.length - suffix.length) + branch[o]);
+      readings.push(primary.slice(0, primary.length - suffix.length) + ONES_BRANCH[o]);
     }
   }
 
