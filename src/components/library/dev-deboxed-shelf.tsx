@@ -18,6 +18,13 @@
 // long scroll. Section ids start with "hiragana"/"katakana", the same grouping
 // key shelves.tsx uses.
 
+// SAK-170: HearButtons on this shelf stay generic (no `downstep`/pitch line),
+// same call as entry-tile.tsx and for the same reasons — a dev-only,
+// mixed-kind, dense tile/row comparison shelf is the wrong place to introduce
+// per-tile pitch decoration; see entry-tile.tsx's header comment for the full
+// reasoning (per-tile fetch cost + the shelf's own deliberate no-decoration
+// design call).
+
 import { useMemo, useState } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";

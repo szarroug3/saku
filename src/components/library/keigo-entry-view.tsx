@@ -170,6 +170,16 @@ export function KeigoEntryView({
                   <p className="mb-2 text-[13px] leading-relaxed text-text">{reg.desc}</p>
                 ) : null}
                 <div className="flex items-center gap-2.5">
+                  {/* SAK-170: left generic on purpose, not an oversight. Keigo
+                      forms are their own new words (see KEIGO_HELP above),
+                      largely honorific/humble compounds JMdict itself rarely
+                      pitch-verifies — checked all 17 forms in data/keigo.ts
+                      against src/data/generated/pitch.json and only 申す
+                      (もうす) hits. Wiring exact-pitch audio here would almost
+                      always fall through to the same generic HearButton
+                      anyway, for real cost (an extra wordPitch/PitchReading
+                      branch on every row) and no visible benefit. Revisit if
+                      Kanjium ever grows honorific-form coverage. */}
                   <HearButton glyph={w.reading} />
                   <span className="font-kana text-[22px] leading-none text-text">{w.word}</span>
                   {/* Furigana glosses a kanji reading — a word already written
