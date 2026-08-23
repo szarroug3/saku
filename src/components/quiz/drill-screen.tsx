@@ -2569,12 +2569,20 @@ export function DrillScreen() {
                 used to print a bare "18 answered": a number with no second half
                 reads like a total that went missing rather than a quiz that
                 does not have one. */}
+            {/* SAK-145 round 2: this used to be a pill (kq-material rounded-full
+                border bg-accent-bg), the exact chip Sam flagged — "0 / 15" read
+                as something clickable or a status when it is just a position.
+                Plain text now, keeping the size/weight/colour that made it the
+                one loud chip in this HUD (see the comment above), just without
+                the box around it. */}
             {total ? (
-              <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+              <span className="text-[13px] font-semibold tabular-nums text-accent">
                 {rt.resolved} / {total}
               </span>
             ) : (
-              <Pill>{rt.resolved} answered · endless</Pill>
+              <span className="text-[13px] font-semibold tabular-nums text-accent">
+                {rt.resolved} answered · endless
+              </span>
             )}
             {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {cfg.showAccuracy && accuracy !== null ? (

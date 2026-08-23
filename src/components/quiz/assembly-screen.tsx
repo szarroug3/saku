@@ -611,7 +611,10 @@ export function AssemblyScreen() {
       <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span className="flex flex-wrap items-center gap-1.5">
-            <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+            {/* SAK-145 round 2: plain text, not a pill — matches the drill,
+                grid and pairs HUDs' identical fix. A position ("N of M")
+                isn't a status. */}
+            <span className="text-[13px] font-semibold tabular-nums text-accent">
               {done} / {total}
             </span>
             {rt.streak >= 2 ? (

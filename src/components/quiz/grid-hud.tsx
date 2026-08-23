@@ -183,9 +183,11 @@ export function GridHud({
             something true to say. An empty pill is worse than no pill: "—
             correct" and "🔥 0" both report an absence as if it were data. */}
         <span className="flex flex-wrap items-center gap-1.5">
-          <Pill>
+          {/* SAK-145 round 2: plain text, not a Pill — matches the drill and
+              pairs HUDs' identical fix. A position ("N of M") isn't a status. */}
+          <span className="text-[11px] tabular-nums text-text-muted">
             {done} / {total}
-          </Pill>
+          </span>
           {cfg.showAccuracy && accuracy !== null ? (
             <Pill tone="accent">
               {formatAccuracy(accuracy)} correct
