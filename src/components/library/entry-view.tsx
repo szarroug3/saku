@@ -182,7 +182,7 @@ function EntryBody({ entry, kind }: { entry: EntryId; kind: Kind }) {
     case "radical":
     case "word":
       return <CharacterEntryView entry={entry} />;
-    case "counter":
+    case "counting":
     case "numbers":
       return <CounterEntryView entry={entry} />;
     case "keigo":

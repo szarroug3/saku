@@ -177,7 +177,7 @@ describe("a counter entry resolves to a real Library page", () => {
       const id = counterEntry(byGlyph(glyph));
       assert.ok(libEntry(id), `${glyph} has a LibEntry`);
       const href = entryHref(id);
-      assert.ok(href.startsWith("/library/counter/"), `${glyph} lives under /counter`);
+      assert.ok(href.startsWith("/library/counting/"), `${glyph} lives under /counting`);
       const [, , kind, slug] = href.split("/");
       assert.equal(entryFromSlug(kind, slug), id, `${glyph} URL round-trips`);
     }
