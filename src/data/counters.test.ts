@@ -17,6 +17,7 @@ import {
   COUNTER_ENTRIES,
   COUNTER_FACTS,
   COUNTER_KANJI_GLYPHS,
+  COUNTER_VOCAB_DUPLICATE_KEBS,
   CONSTRUCTION_CATEGORY_IDS,
   CONSTRUCTION_CATEGORY_ENTRIES,
   DAYS,
@@ -172,6 +173,44 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
     assert.equal(counterReading(1, "nin"), "ひとり");
     assert.equal(counterReading(2, "nin"), "ふたり");
     assert.equal(counterReading(4, "nin"), "よにん");
+  });
+});
+
+describe("SAK-169: COUNTER_VOCAB_DUPLICATE_KEBS names the kanji VOCAB duplicates COUNTER_KANJI_GLYPHS cannot catch", () => {
+  test("〜つ's nine kanji spellings each map to their own TSU entry", () => {
+    for (const [n, keb] of [
+      [1, "一つ"], [2, "二つ"], [3, "三つ"], [4, "四つ"], [5, "五つ"],
+      [6, "六つ"], [7, "七つ"], [8, "八つ"], [9, "九つ"],
+    ] as const) {
+      const form = byGlyph(["", "ひとつ", "ふたつ", "みっつ", "よっつ", "いつつ", "むっつ", "ななつ", "やっつ", "ここのつ"][n]);
+      assert.equal(
+        COUNTER_VOCAB_DUPLICATE_KEBS.get(keb),
+        counterEntry(form),
+        `${keb} must map to its own kana TSU entry`,
+      );
+    }
+  });
+
+  test("一人/二人 have no individual CounterForm any more, so both map to the 〜人 construction entry", () => {
+    const nin = numberConstructionEntry("nin");
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("一人"), nin);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("二人"), nin);
+  });
+
+  test("none of these kebs are also in COUNTER_KANJI_GLYPHS — the two sets are disjoint by construction", () => {
+    // COUNTER_KANJI_GLYPHS matches by a CounterForm's OWN glyph; none of these
+    // eleven kebs is any CounterForm's glyph (TSU's glyphs are kana, and 一人/
+    // 二人 have no CounterForm at all), so a keb never needs to appear in both.
+    for (const keb of COUNTER_VOCAB_DUPLICATE_KEBS.keys()) {
+      assert.ok(!COUNTER_KANJI_GLYPHS.has(keb), `${keb} should not also be in COUNTER_KANJI_GLYPHS`);
+    }
+  });
+
+  test("exactly the eleven kebs the ticket named, no more, no fewer", () => {
+    assert.deepEqual(
+      [...COUNTER_VOCAB_DUPLICATE_KEBS.keys()].sort(),
+      ["一つ", "一人", "七つ", "三つ", "九つ", "二つ", "二人", "五つ", "八つ", "六つ", "四つ"].sort(),
+    );
   });
 });
 

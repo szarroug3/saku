@@ -84,6 +84,7 @@ import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
   COUNTER_KANJI_GLYPHS,
+  COUNTER_VOCAB_DUPLICATE_KEBS,
   counterEntry,
   counterForm,
   counterMeaningFactId,
@@ -556,6 +557,25 @@ export function knownFactsOf(entry: LibEntry): readonly FactId[] {
 
 // ---------- the index ----------
 
+/**
+ * SAK-169: the reverse of COUNTER_VOCAB_DUPLICATE_KEBS — which extra kebs
+ * (一つ, 一人, …) a given counting/construction entry duplicates, so build()
+ * below can carry them as searchAlso aliases. Built once, off the one exported
+ * map, so this file and counters.ts cannot disagree about which keb maps to
+ * which entry (the same "one export, cannot drift" reasoning
+ * COUNTER_VOCAB_DUPLICATE_KEBS's own doc comment gives). Defined ahead of
+ * LIB_ENTRIES/build() below, which reads it while building.
+ */
+const COUNTER_KANJI_DUPLICATE_SEARCH: ReadonlyMap<EntryId, readonly string[]> = (() => {
+  const byEntry = new Map<EntryId, string[]>();
+  for (const [keb, target] of COUNTER_VOCAB_DUPLICATE_KEBS) {
+    const kebs = byEntry.get(target) ?? [];
+    kebs.push(keb);
+    byEntry.set(target, kebs);
+  }
+  return byEntry;
+})();
+
 /** Every entry in the app, in browse order: kana, then kanji, then words. */
 export const LIB_ENTRIES: readonly LibEntry[] = build();
 
@@ -724,14 +744,22 @@ function build(): LibEntry[] {
   // only action is the Quiz me button. Search finds it by its name, its summary,
   // or a searchAlso alias (the counter glyph, "hundreds", "man"…).
   for (const c of NUMBER_CONSTRUCTIONS) {
+    const id = numberConstructionEntry(c.id);
+    // SAK-169: 一人/二人's kanji VOCAB rows are skipped from the Words shelf
+    // above and ride here instead — the 〜人 page ("nin") is where ひとり/ふたり
+    // are actually taught (its Irregular table), so typing 一人 or 二人 should
+    // find this page. See COUNTER_VOCAB_DUPLICATE_KEBS/COUNTER_KANJI_DUPLICATE_SEARCH.
+    const kanjiDuplicates = COUNTER_KANJI_DUPLICATE_SEARCH.get(id);
     out.push({
-      id: numberConstructionEntry(c.id),
+      id,
       kind: NUMBER_CONSTRUCTION_KIND,
       glyph: c.glyph,
       name: c.name,
       readings: [],
       meanings: [c.name],
-      searchAlso: c.searchAlso,
+      searchAlso: kanjiDuplicates
+        ? [...(c.searchAlso ?? []), ...kanjiDuplicates]
+        : c.searchAlso,
       sub: c.summary,
       // Beside marks, terms and concepts (1): a reference entry worth leading
       // with when a query hits it, and never numerous enough to bury anything.
@@ -811,6 +839,16 @@ function build(): LibEntry[] {
     // (CURRICULUM_WORDS); both read the one set so neither can drift ahead of
     // the other the way this bug started.
     if (COUNTER_KANJI_GLYPHS.has(w.keb)) continue;
+    // SAK-169: 一人/二人 and the native 〜つ counting words (一つ…九つ) are
+    // kanji-written VOCAB duplicates of a fact the counters track already
+    // teaches, but COUNTER_KANJI_GLYPHS' glyph-equality check cannot catch
+    // them — see COUNTER_VOCAB_DUPLICATE_KEBS's doc comment in
+    // src/data/counters.ts for why. Skipping here does not drop them from the
+    // Library: each keb rides as a searchAlso alias on the counting/
+    // construction entry it duplicates (COUNTER_KANJI_DUPLICATE_SEARCH,
+    // below), so "一つ" still finds ひとつ's page and "一人" still finds the
+    // 〜人 construction page whose Irregular table already shows it.
+    if (COUNTER_VOCAB_DUPLICATE_KEBS.has(w.keb)) continue;
     out.push({
       id: wordEntry(w.keb),
       kind: VOCAB_SUBJECT,
@@ -957,8 +995,13 @@ function build(): LibEntry[] {
   // the shelf exists to teach — findable in search and printed under the glyph.
   COUNTER_CURRICULUM.forEach((f, i) => {
     const kana = isKanaCounterForm(f);
+    const id = counterEntry(f);
+    // SAK-169: 一つ…九つ's kanji VOCAB spelling is skipped from the Words shelf
+    // above and rides here instead, so typing the kanji still finds this exact
+    // kana entry. See COUNTER_VOCAB_DUPLICATE_KEBS/COUNTER_KANJI_DUPLICATE_SEARCH.
+    const kanjiDuplicates = COUNTER_KANJI_DUPLICATE_SEARCH.get(id);
     out.push({
-      id: counterEntry(f),
+      id,
       kind: COUNTER_KIND,
       glyph: f.glyph,
       readings: kana ? [] : [f.reading],
@@ -966,6 +1009,7 @@ function build(): LibEntry[] {
       // What it is, in one word, for the search-row note. A bare number says so;
       // everything else is a counter (the specific counter is the shelf section).
       sub: f.counter === "" ? "Number" : "Counter",
+      ...(kanjiDuplicates ? { searchAlso: kanjiDuplicates } : {}),
       // Below everyday words (10,000+): a bare number like に collides on glyph
       // with the particle に, and the word should lead — a counter is the
       // specialist answer, surfaced but not ahead of the vocabulary. Curriculum

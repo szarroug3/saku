@@ -16,7 +16,7 @@
 //    the meaning row it sat above.
 
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { describe } from "node:test";
 
 import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
 import {
@@ -282,6 +282,48 @@ test("SAK-79: a counter construction page (〜枚) is silent, a real counted wor
   const kanaForm = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "ひとつ");
   assert.ok(kanaForm, "expected the kana form ひとつ to exist");
   assert.equal(kanaForm!.speakable, true, "a kana form's glyph IS its reading");
+});
+
+describe("SAK-169: 一人/二人/一つ…九つ no longer duplicate onto the Words shelf", () => {
+  const DUPLICATE_KEBS = [
+    "一人", "二人", "一つ", "二つ", "三つ", "四つ", "五つ", "六つ", "七つ", "八つ", "九つ",
+  ];
+
+  test("none of them is a VOCAB_SUBJECT (\"word\") entry any more", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.equal(asWord, undefined, `${keb} must not appear on the Words shelf`);
+    }
+  });
+
+  test("each is still reachable — a searchAlso alias on the entry it duplicates", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const holder = LIB_ENTRIES.find((e) => e.searchAlso?.includes(keb));
+      assert.ok(holder, `${keb} must ride as a searchAlso alias somewhere, not vanish`);
+    }
+  });
+
+  test("〜つ's kanji spellings alias their OWN kana counter entry, not a stranger's", () => {
+    const kebToKana: Record<string, string> = {
+      一つ: "ひとつ", 二つ: "ふたつ", 三つ: "みっつ", 四つ: "よっつ", 五つ: "いつつ",
+      六つ: "むっつ", 七つ: "ななつ", 八つ: "やっつ", 九つ: "ここのつ",
+    };
+    for (const [keb, kana] of Object.entries(kebToKana)) {
+      const holder = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.searchAlso?.includes(keb));
+      assert.ok(holder, `${keb} must alias a COUNTER_KIND entry`);
+      assert.equal(holder!.glyph, kana, `${keb} must alias its own kana form ${kana}, not another`);
+    }
+  });
+
+  test("一人/二人 alias the 〜人 construction page, where their irregular readings are shown", () => {
+    for (const keb of ["一人", "二人"]) {
+      const holder = LIB_ENTRIES.find(
+        (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.searchAlso?.includes(keb),
+      );
+      assert.ok(holder, `${keb} must alias the 〜人 construction page`);
+      assert.equal(holder!.glyph, "〜人");
+    }
+  });
 });
 
 test("a verb pair and a keigo set are not speakable as one entry — each names more than one word", () => {
