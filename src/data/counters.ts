@@ -333,6 +333,52 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
   ...COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
 ]);
 
+/**
+ * SAK-169: the kanji-written VOCAB duplicates COUNTER_KANJI_GLYPHS' glyph-
+ * equality filter CANNOT catch, mapped to the counter/construction entry each
+ * one duplicates.
+ *
+ * COUNTER_KANJI_GLYPHS works by comparing a CounterForm's own glyph against a
+ * VOCAB keb — it catches 二十歳 and the 43 day/month glyphs because those
+ * CounterForms are THEMSELVES written in kanji. It cannot catch these two
+ * families, because neither has a kanji-glyphed CounterForm to match against:
+ *
+ *   - 一つ…九つ: TSU's CounterForms are deliberately kana (ひとつ…ここのつ, see
+ *     the comment above TSU) — phase 1 is taught kana-first, on purpose. The
+ *     kanji spelling is a real, separate JMdict VOCAB row (一つ keb, ひとつ reb)
+ *     that duplicates the same taught fact under a different string.
+ *   - 一人/二人: these carry NO individual CounterForm at all any more — ひとり/
+ *     ふたり are taught only inside the 〜人 category's Irregular table (see the
+ *     comment above TAIL, "〜人's irregulars are NOT rote forms any more"). The
+ *     kanji VOCAB rows (一人/二人) duplicate exactly the two irregular rows that
+ *     table already shows, so they map to that category's own construction
+ *     entry rather than to a per-form entry that does not exist.
+ *
+ * word-lesson.ts already cuts every one of these kebs from CURRICULUM_WORDS
+ * via its own COUNTER_TRACK_KEBS (a broader, hand-maintained bookkeeping set
+ * that also covers the bare number/base kanji this map does not need to know
+ * about) — that teaching-spine cut is unrelated to and unaffected by this map.
+ * This map exists purely so src/lib/library/entries.ts can (a) skip these kebs
+ * when it walks VOCAB for the Words shelf, the same way COUNTER_KANJI_GLYPHS
+ * makes it skip 二十歳/day/month, and (b) attach each keb as a searchAlso alias
+ * on the entry it duplicates, so "一つ" or "一人" still finds the counting page
+ * that already teaches it — reclassified, never silently dropped. One export,
+ * one reader, cannot drift the way the original SAK-147 bug did.
+ */
+export const COUNTER_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Map([
+  ["一つ", counterEntry(TSU[0])],
+  ["二つ", counterEntry(TSU[1])],
+  ["三つ", counterEntry(TSU[2])],
+  ["四つ", counterEntry(TSU[3])],
+  ["五つ", counterEntry(TSU[4])],
+  ["六つ", counterEntry(TSU[5])],
+  ["七つ", counterEntry(TSU[6])],
+  ["八つ", counterEntry(TSU[7])],
+  ["九つ", counterEntry(TSU[8])],
+  ["一人", numberConstructionEntry("nin")],
+  ["二人", numberConstructionEntry("nin")],
+]);
+
 /** The five counters taught AS A SYSTEM — each carries the sound-change rule or
  * a key irregular. Not a seventh subject; a labelled set within this track. */
 export const SYSTEM_COUNTERS: readonly string[] = ["つ", "人", "本", "枚", "匹"];
