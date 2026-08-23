@@ -140,12 +140,28 @@ export function isKanaOnlyWord(w: VocabRow): boolean {
 // Counting words that are already covered by the counters track, so the words
 // track does not teach them a second time.
 //
-// The Sino numbers 一…十 are NOT here: the counters track no longer ships a spoken
-// number form (いち/に … were duplicates), so their reading and meaning are taught
-// by their WORD role here — 二 = に = two, 四 = し = four. 百/千/万 stay excluded:
-// the counters track's `big` unit still teaches those as base words with their own
-// rule card, so a words-track copy would duplicate them.
+// SAK-164: the Sino numbers 一…十 ARE now here, reversing an earlier call on this
+// same file (see git history) that kept them out because "the counters track no
+// longer ships a spoken number form, so their reading and meaning are taught by
+// their WORD role here". That reasoning was checked against SAK-163 (which made
+// the counters track's day/month teaching generative) and turned out to depend on
+// something else entirely, unrelated to SAK-163: curriculum-order.ts's `rolesOf`
+// grants the WORD role to any single-Han-character dictionary word
+// (`isSingleCharWordGlyph`) REGARDLESS of CURRICULUM_WORDS membership — the exact
+// mechanism that already keeps 百/千/万 fully taught (meaning AND reading, via
+// their kanji item's fold) despite their own exclusion below. So removing
+// 一…十 from CURRICULUM_WORDS does not drop their "二 = に = two" teaching: it still
+// rides in on the kanji item the moment 二 is first needed (as a component of
+// some other word, or in the counters track's own `tens` unit prereqs — see
+// UNIT_KANJI in counter-lesson.ts), exactly like 百/千/万 already do. What
+// excluding them here changes is bookkeeping only — they stop being counted or
+// listed as their own CURRICULUM_WORDS entry — never the actual teaching.
 const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
+  // Bare Sino numbers — counters track's `tens` unit teaches these kanji as its
+  // own prereqs, and (like 百/千/万 below) their word-role reading/meaning still
+  // rides in on the kanji item via isSingleCharWordGlyph even though they are cut
+  // from CURRICULUM_WORDS here.
+  "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
   // Big base words — counters track's `big` unit teaches these with their rule.
   "百", "千", "万",
   // Native 〜つ counting words (counters track: ひとつ〜ここのつ)

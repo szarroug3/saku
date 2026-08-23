@@ -32,7 +32,7 @@ import {
   radicalOfKanji,
 } from "../data/radicals.ts";
 import { CURRICULUM_WORDS, wordKanji } from "./word-lesson.ts";
-import { readingUnits, vocabRow } from "../data/vocab.ts";
+import { VOCAB, isSingleCharWordGlyph, readingUnits, vocabRow } from "../data/vocab.ts";
 import {
   CURRICULUM_SEQUENCE,
   curriculumPosition,
@@ -503,8 +503,11 @@ describe("the single-kanji fold", () => {
     );
     // Rose from 594 to 672 when CURRICULUM_WORDS widened to essentially all of
     // VOCAB — more single-Han-character words are now taught, so more of them
-    // land on a kanji row and fold. See word-lesson.ts.
-    assert.equal(single.length, 672);
+    // land on a kanji row and fold. See word-lesson.ts. Dropped to 662 with
+    // SAK-164: 一…十 joined COUNTER_TRACK_KEBS, a CURRICULUM_WORDS-membership cut
+    // only — they still fold exactly the same way via isSingleCharWordGlyph
+    // (see "a CURRICULUM_WORDS-excluded single-kanji word still folds" below).
+    assert.equal(single.length, 662);
     for (const w of single) {
       assert.ok(has(w.keb, "word"), `${w.keb} lacks the word role`);
       assert.ok(has(w.keb, "kanji"), `${w.keb} lacks the kanji role`);
@@ -521,6 +524,35 @@ describe("the single-kanji fold", () => {
         readingUnits(w).length,
         `${w.keb} has ${items.length} items but ${readingUnits(w).length} teachable readings`,
       );
+    }
+  });
+
+  test("a CURRICULUM_WORDS-excluded single-kanji word still folds (SAK-164)", () => {
+    // 百/千/万/一…十 are cut from CURRICULUM_WORDS (word-lesson.ts's
+    // COUNTER_TRACK_KEBS), but every one of them is a single-Han-character
+    // dictionary word, so rolesOf's isSingleCharWordGlyph branch grants the word
+    // role back regardless of that cut. This is the fact SAK-164 hinges on: their
+    // reading/meaning teaching is not dropped by the exclusion, only their
+    // CURRICULUM_WORDS membership (bookkeeping) is.
+    for (const glyph of ["百", "千", "万", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
+      assert.ok(!CURRICULUM_WORDS.some((w) => w.keb === glyph), `${glyph} unexpectedly still in CURRICULUM_WORDS`);
+      assert.ok(isSingleCharWordGlyph(glyph), `${glyph} is not a single-char dictionary word`);
+      assert.ok(has(glyph, "word"), `${glyph} lacks the word role despite isSingleCharWordGlyph`);
+      assert.ok(has(glyph, "kanji"), `${glyph} lacks the kanji role`);
+      const row = vocabRow(glyph)!;
+      const items = CURRICULUM_SEQUENCE.filter((it) => it.glyph === glyph);
+      const kanjiItems = items.filter((it) => it.roles.includes("kanji"));
+      assert.equal(kanjiItems.length, 1, `${glyph}'s kanji role is taught more than once`);
+      assert.equal(
+        items.length,
+        readingUnits(row).length,
+        `${glyph} has ${items.length} items but ${readingUnits(row).length} teachable readings`,
+      );
+      // Every reading unit actually carries its meaning+reading facts through
+      // the fold — not just the shape.
+      for (const it of items) {
+        assert.ok(it.reading !== null, `${glyph} item is missing its reading`);
+      }
     }
   });
 
@@ -572,9 +604,15 @@ describe("the tail", () => {
 
   // Shrank from 293 to 110 when CURRICULUM_WORDS widened to essentially all of
   // VOCAB — far fewer kanji are left with no word to ride in on. See
-  // word-lesson.ts.
-  test("the orphan kanji are the 110 the widened curriculum leaves, and follow every word", () => {
-    assert.equal(orphanKanji.length, 110);
+  // word-lesson.ts. Rose to 111 with SAK-164: 六 joined COUNTER_TRACK_KEBS and,
+  // unlike the other nine digits, is not a component of any OTHER CURRICULUM_WORDS
+  // word either (no multi-kanji word here is written with 六), so KANJI_IN_WORDS
+  // (built off CURRICULUM_WORDS alone) no longer names it. It is still taught in
+  // full — meaning AND reading, via isSingleCharWordGlyph's fold, see "a
+  // CURRICULUM_WORDS-excluded single-kanji word still folds" above — just via the
+  // orphan-kanji tail path (kanjiTeachOrder) rather than riding in on a word.
+  test("the orphan kanji are the 111 the widened curriculum leaves, and follow every word", () => {
+    assert.equal(orphanKanji.length, 111);
     // The ones no earlier character reached for. Everything else is a component
     // debt that was paid at the point it was owed.
     const tail = orphanKanji.filter((c) => !pulledAsComponent(c));
@@ -650,19 +688,35 @@ describe("the tail", () => {
     assert.ok(lastWord < lastKanji);
     // SAK-162: a word no longer costs exactly one item — it costs one per
     // teachable reading (readingUnits) — so "words" in this total is no longer
-    // CURRICULUM_WORDS.length, less the 672 single-kanji folds; it is that same
+    // CURRICULUM_WORDS.length, less the single-kanji folds; it is that same
     // shape PLUS every extra reading beyond a word's first (its primary, the
     // one the fold or its own item already counts).
-    const folds = CURRICULUM_WORDS.filter(
+    //
+    // SAK-164: the "words" universe this total counts is not CURRICULUM_WORDS
+    // alone any more. rolesOf's isSingleCharWordGlyph branch folds a single-Han-
+    // character dictionary word's reading(s) in REGARDLESS of CURRICULUM_WORDS
+    // membership — 百/千/万 already relied on this, and 一…十 (COUNTER_TRACK_KEBS,
+    // word-lesson.ts) do now too. Four of them (一 いち/ひと, 四 よん/し, 七 なな/
+    // しち, 九 く/きゅう) carry two teachable readings each, so excluding them from
+    // CURRICULUM_WORDS would silently undercount this formula by 4 items unless
+    // the same union curriculum-lesson.test.ts's CURRICULUM_TOTALS check already
+    // uses (CURRICULUM_WORDS ∪ every single-char VOCAB word) is used here too.
+    const singleCharWordKebs = VOCAB.filter((w) => isSingleCharWordGlyph(w.keb)).map(
+      (w) => w.keb,
+    );
+    const wordUniverse = [
+      ...new Set([...CURRICULUM_WORDS.map((w) => w.keb), ...singleCharWordKebs]),
+    ].map((keb) => vocabRow(keb)!);
+    const folds = wordUniverse.filter(
       (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
     ).length;
-    const extraReadingItems = CURRICULUM_WORDS.reduce(
+    const extraReadingItems = wordUniverse.reduce(
       (n, w) => n + (readingUnits(w).length - 1),
       0,
     );
     assert.equal(
       CURRICULUM_SEQUENCE.length,
-      KANJI.length + RADICAL_ONLY.length + (CURRICULUM_WORDS.length - folds) + extraReadingItems,
+      KANJI.length + RADICAL_ONLY.length + (wordUniverse.length - folds) + extraReadingItems,
       "total is kanji + radical-only shapes + words (less folds, plus every word's extra readings)",
     );
   });
