@@ -46,6 +46,21 @@ export const RADICAL_CONFUSABLE_PAIRS: readonly RadicalConfusablePair[] = [
     b: "曰", // say (Kangxi 73) — radical-only, no jōyō kanji of its own
     tip: "日 (sun) is a tall, narrow box. 曰 (say) is short and squashed flat, like a mouth opened wide to speak. A box that looks stretched short and wide rather than tall is “say,” not “sun.”",
   },
+  {
+    a: "土", // earth (Kangxi 32) — also the jōyō kanji 土, taught as that kanji card
+    b: "士", // scholar (Kangxi 33) — also the jōyō kanji 士, taught as that kanji card
+    tip: "土 (earth) and 士 (scholar) are the same cross with one stroke stretched. Earth (土) stretches its bottom stroke, like a wide field underfoot. Scholar (士) stretches its top stroke, like a wide hat over a narrower stance below. If the bottom line is the long one, it's earth; if the top line is the long one, it's scholar.",
+  },
+  {
+    a: "犬", // dog (Kangxi 94) — also the jōyō kanji 犬, taught as that kanji card
+    b: "大", // big (Kangxi 37) — also the jōyō kanji 大, taught as that kanji card
+    tip: "犬 (dog) is 大 (big) plus one small dot. Picture a big, spread-armed person (大) getting a dog and drawing one little spot near its leg, and that's 犬 (dog). No dot is big; one stray dot is dog.",
+  },
+  {
+    a: "广", // dotted cliff (Kangxi 53) — radical-only, no jōyō kanji of its own
+    b: "厂", // cliff (Kangxi 27) — radical-only, no jōyō kanji of its own
+    tip: "厂 (cliff) is a bare slanted roof over open space. 广 (dotted cliff) is the same roof with one small dot added at the top-left corner, like a drop of rain leaking through. No dot under the roof is the plain cliff; a dot at the top is the dotted one.",
+  },
 ];
 
 /**
