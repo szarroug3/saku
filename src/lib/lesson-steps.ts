@@ -69,6 +69,7 @@ import {
 import { COUNTER_ENTRIES, counterForm } from "@/data/counters";
 import { termEntry } from "@/data/terms";
 import { TRACK_INTROS, TSU_INTRO, type TrackId } from "@/data/track-intros";
+import { DAY_RULE_INTRO, MONTH_RULE_INTRO } from "@/data/day-month-construction";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
@@ -420,6 +421,15 @@ export function lessonSteps(
   // of the form that first needs it. Non-term (no "〜つ" glossary word), so it
   // is a plain intro card rather than a term step. See TSU_INTRO.
   let markedTsu = false;
+  // The day-of-month rule rides the first REGULAR day form (十一日, the 11th) —
+  // not the 1st, which opens the memorised 1st-10th tier the rule card has
+  // nothing to say about yet. Non-term, prose-only, same shape as TSU_INTRO;
+  // see day-month-construction.ts's DAY_RULE_INTRO.
+  let markedDayRule = false;
+  // The month rule rides the first month form (一月) — every month, including
+  // the irregulars, is built from a number, so there is no "regular tier"
+  // to wait for the way DAYS has one. See MONTH_RULE_INTRO.
+  let markedMonthRule = false;
   // The pitch card rides the first word carrying a verified pitch, so the overline
   // is taught before it is first drawn (on that word's reveal). ONCE EVER, not per
   // lesson: it is a concept card whose id lives in CONCEPT_CARD_IDS, so a learner
@@ -518,6 +528,17 @@ export function lessonSteps(
     if (!markedTsu && counterForm(item.entry)?.counter === "つ") {
       markedTsu = true;
       steps.push({ type: "intro", key: TSU_INTRO.id, intro: TSU_INTRO });
+    }
+    // Keyed on the exact form (its key, not a glyph/parse), the same
+    // discipline the rest of this walk holds to — see counters.ts's
+    // "counter:day:11" / "counter:month:1".
+    if (!markedDayRule && counterForm(item.entry)?.key === "counter:day:11") {
+      markedDayRule = true;
+      steps.push({ type: "intro", key: DAY_RULE_INTRO.id, intro: DAY_RULE_INTRO });
+    }
+    if (!markedMonthRule && counterForm(item.entry)?.key === "counter:month:1") {
+      markedMonthRule = true;
+      steps.push({ type: "intro", key: MONTH_RULE_INTRO.id, intro: MONTH_RULE_INTRO });
     }
     // The counter sound-change rule is no longer form-gated here: each object
     // counter is a generative CATEGORY that carries its own rule card (attach +

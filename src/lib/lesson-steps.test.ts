@@ -29,6 +29,7 @@ import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { termEntry } from "../data/terms.ts";
 import { TSU_INTRO } from "../data/track-intros.ts";
+import { DAY_RULE_INTRO, MONTH_RULE_INTRO } from "../data/day-month-construction.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
 import { packLessons } from "./kanji-lesson.ts";
@@ -663,6 +664,20 @@ describe("the つ counter intro rides the first つ-counter item", () => {
       COUNTER_FACTS.map((f) => f.id),
       BLANK,
     );
+    // Every non-つ form after ひとつ…とお — 二十歳, then the day-of-month and
+    // month-of-year forms SAK-163 added — in COUNTER_CURRICULUM order, with
+    // the two round-2 rule cards spliced in right where they fire: DAY_RULE_INTRO
+    // ahead of 十一日 (the first REGULAR day, 十一日's key counter:day:11 — the
+    // 1st-10th are memorised, so the rule card has nothing to say before then),
+    // and MONTH_RULE_INTRO ahead of 一月 (every month, including the
+    // irregulars, is built from a number, so there is no "wait for regular"
+    // gate the way DAYS has one).
+    const afterTsu: string[] = [];
+    for (const f of COUNTER_CURRICULUM.filter((form) => form.counter !== "つ")) {
+      if (f.key === "counter:day:11") afterTsu.push(DAY_RULE_INTRO.id);
+      if (f.key === "counter:month:1") afterTsu.push(MONTH_RULE_INTRO.id);
+      afterTsu.push(f.glyph);
+    }
     assert.deepEqual(
       steps.map((s) =>
         s.type === "intro"
@@ -677,9 +692,7 @@ describe("the つ counter intro rides the first つ-counter item", () => {
         String(termEntry("counter")),
         TSU_INTRO.id,
         ...COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => f.glyph),
-        // Every non-つ form after — 二十歳, then the day-of-month and
-        // month-of-year forms SAK-163 added — in COUNTER_CURRICULUM order.
-        ...COUNTER_CURRICULUM.filter((f) => f.counter !== "つ").map((f) => f.glyph),
+        ...afterTsu,
       ],
     );
   });
