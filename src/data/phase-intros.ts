@@ -149,6 +149,31 @@ export interface IntroExample {
 }
 
 /**
+ * One row of a pitch-accent worked example: a real word with its VERIFIED
+ * downstep (off `wordPitch()`, src/data/pitch.ts), rendered with the app's
+ * real hear-it + pitch-line pair — the exact same `HearButton`+`downstep` and
+ * `PitchReading` combination already shipped on the Library word page (see
+ * character-entry-view.tsx). This is deliberately its own type rather than an
+ * `IntroExample`: that shape is an algebraic from/to equation with a generic
+ * `say` that plays through the plain, fuzzy-matched speech path, and it has no
+ * field for drawing an overline. A pitch example is not an equation — it is
+ * one word, its exact sound, and its line — so it gets its own small shape and
+ * its own tiny renderer (`IntroPitchExamples` in phase-intro-view.tsx) instead
+ * of overloading a type built for something else.
+ */
+export interface PitchExampleRow {
+  /** The word in kanji: "箸". */
+  readonly word: string;
+  /** The kana reading, spoken exactly as read (no kanji inference): "はし". */
+  readonly reading: string;
+  /** The word's verified downstep, straight off `wordPitch(word)` — never a
+   *  guess, and checked against src/data/generated/pitch.json at write time. */
+  readonly downstep: number;
+  /** The plain-language gloss: "chopsticks". */
+  readonly gloss: string;
+}
+
+/**
  * One piece of a construction row's "how it's built" equation. A piece is a run
  * of kana with an OPTIONAL numeric annotation shown in parentheses and the accent
  * colour: a numeric piece (じゅう, に, にひゃく) carries its VALUE ("10", "2",
@@ -503,6 +528,18 @@ export interface PhaseIntro {
    * chosen ones. Absent, not empty, for a pattern the corpus has not tagged.
    */
   sentenceExample?: SentenceExample;
+  /**
+   * Sets of same-reading, different-pitch words, each row a bare hear-it +
+   * pitch-line + kanji + gloss line with no prose around it — the exact pattern
+   * already shipped on the Library word page (character-entry-view.tsx: a
+   * `HearButton` with an exact `downstep` beside a `PitchReading` with that same
+   * downstep). Grouped into sets (箸/橋/端 all read はし; 昨日/機能 both read
+   * きのう) rendered by `IntroPitchExamples` with a gap between sets and no
+   * label on either, since the words carrying the same reading already say
+   * that. Currently used only by PITCH_INTRO — see the note there for why this
+   * is a separate field from `examples` rather than a reuse of it.
+   */
+  pitchExamples?: readonly (readonly PitchExampleRow[])[];
 }
 
 /**
@@ -1182,13 +1219,12 @@ export const NUMBERS_BIG: PhaseIntro = {
 // PITCH ACCENT — a pronunciation card, and this file's first card about how a
 // word SOUNDS rather than how it is written.
 // =========================================================================
-// ⚠️ DRAFT COPY — Sam to finalize. ⚠️ Every `title`, `lead` and `text` below is
-// placeholder prose written to prove the mechanism and land the three jobs (what
-// pitch is, how it helps, why now), in the same status as the track intros and
-// the counter/keigo cards. The STRUCTURE is the deliverable; the sentences are
-// scaffolding for the owner's voice pass. The 箸/橋 pair and the glossary term it
-// echoes (src/data/terms.ts, "pitch-accent") are the fixed facts; the wording is
-// not. Every draft string here is quoted in the task report.
+// FINAL COPY. Shown once, ahead of the first word a learner meets that carries
+// verified pitch data, teaching what the overline over a reading means and why
+// it is there. Pitch is not display-only: a "Pitch questions" quiz toggle
+// (`pitchQuestions`, src/types/index.ts) can grade it when the data exists, so
+// this card says the line is shown wherever the data exists and may sometimes
+// be quizzed, rather than promising it never is.
 //
 // WHY IT EXISTS AND WHERE IT FIRES
 // --------------------------------
@@ -1203,10 +1239,6 @@ export const NUMBERS_BIG: PhaseIntro = {
 // ~69% of words carry pitch, so re-firing it per lesson would put it ahead of
 // almost every word lesson. Script-neutral (NO_SCRIPT): pitch is a sound, not a
 // spelling of one script.
-//
-// DISPLAY, NEVER GRADED. The card says outright that the app never asks the
-// learner to produce or pick a pitch — the overline is shown so a wrong habit is
-// not set, and that is the whole of its job. See pitch-mark.tsx.
 export const PITCH_INTRO: PhaseIntro = {
   id: "intro-pitch",
   setId: NO_SCRIPT,
@@ -1226,9 +1258,20 @@ export const PITCH_INTRO: PhaseIntro = {
       text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. We show the line so you learn that difference from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
     },
     {
-      lead: "The audio does not include the pitch.",
-      text: "The “hear it” speaker is a synthesized voice, and it uses its own accent rather than the word's real one. So trust the LINE over the reading, not the sound, when you want the accent. The sound is there to teach you the word, and the line is there to teach you its pitch.",
+      lead: "We show it where we have it.",
+      text: "We don't have pitch data for everything but where we have it, we will show it. For those where we have the data, you might see a quiz for it or you might not because sometimes, the audio clip is hard to distinguish from other homophones.",
     },
+  ],
+  pitchExamples: [
+    [
+      { word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" },
+      { word: "橋", reading: "はし", downstep: 2, gloss: "bridge" },
+      { word: "端", reading: "はし", downstep: 0, gloss: "edge" },
+    ],
+    [
+      { word: "昨日", reading: "きのう", downstep: 2, gloss: "yesterday" },
+      { word: "機能", reading: "きのう", downstep: 1, gloss: "function" },
+    ],
   ],
 };
 

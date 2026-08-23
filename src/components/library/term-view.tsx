@@ -42,6 +42,7 @@
 import {
   IntroBody,
   IntroExamples,
+  IntroPitchExamples,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { bodyFor, scriptLabel } from "@/data/marks";
@@ -119,6 +120,11 @@ export function TermView({ term }: { term: TermViewData }) {
                       and a second cap on top of it is the early wrap the mark
                       pages had. */}
                   <IntroBody body={body} measure="" />
+                  {card.pitchExamples?.length ? (
+                    <div className="mt-4">
+                      <IntroPitchExamples sets={card.pitchExamples} />
+                    </div>
+                  ) : null}
                 </Card>
                 {card.examples?.length ? (
                   // A hairline divider off the prose above it when the column is
