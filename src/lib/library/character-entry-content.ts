@@ -9,7 +9,7 @@
 import { etymologyOf, phoneticReading } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
-import { vocabRow, wordSenseRegister } from "@/data/vocab";
+import { readingUnits, vocabRow, wordSenseRegister } from "@/data/vocab";
 import { exampleFor, type WordExample } from "@/data/word-examples";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -54,6 +54,17 @@ export interface CharacterWordReading {
   readonly reading: string;
   /** One entry per distinct sense. */
   readonly meanings: readonly CharacterWordMeaning[];
+  /**
+   * SAK-150: whether this reading is one `readingUnits` actually mints a
+   * scored fact for — the same reading the drill can be quizzed on, not
+   * merely a JMdict sense variant this row's glosses were sourced from. A
+   * multi-reading word (七: しち AND なな, both real spoken forms) can have
+   * MORE than one taught row; `lesson` mode below filters to exactly these,
+   * so the teach screen never shows a pronunciation the quiz can never ask
+   * about, and never teaches one while silently also scheduling a sibling the
+   * screen never displayed.
+   */
+  readonly taught: boolean;
 }
 
 interface CharacterWordPiece {
@@ -210,7 +221,26 @@ export function characterEntryPayload(item: ContentItem): CharacterEntryPayload 
         },
       ]);
     }
-    for (const [reading, meanings] of byReading) wordRows.push({ reading, meanings });
+    // SAK-150: the readings `readingUnits` actually mints a scored fact for —
+    // the ONE authoritative enumeration `wordUnitFacts`/`buildVocabFacts` and
+    // the curriculum walk (curriculum-lesson.ts's factsOf) already read. A
+    // `byReading` row not in this set is a reference-tier or unscored sense
+    // variant: real for the Library's full dictionary view, but never
+    // something the drill can ask about, so `lesson` mode must not teach it
+    // either. `readingUnits` wants a `VocabRow`, which `word` already is.
+    //
+    // Empty `taughtRebs` (the defensive `byReading.size === 0` branch just
+    // above, or any other edge `readingUnits` declines to score) means "no
+    // scoring signal available" rather than "nothing is taught" — treated as
+    // taught so a row this page would otherwise print is never silently
+    // dropped from the lesson for a reason that has nothing to do with SAK-150.
+    const taughtRebs = new Set(readingUnits(word).map((u) => u.reb));
+    for (const [reading, meanings] of byReading)
+      wordRows.push({
+        reading,
+        meanings,
+        taught: taughtRebs.size === 0 || taughtRebs.has(reading),
+      });
   }
 
   const wordPieces: CharacterWordPiece[] =

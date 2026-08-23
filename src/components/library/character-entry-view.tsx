@@ -204,9 +204,24 @@ export function CharacterEntryView({
   const isWord = item.roles.includes("word") || item.kind === "word";
 
   const { parts, story, groups, variants, wordRows: allWordRows } = payload;
-  // The lesson teaches one pronunciation, so it shows one reading; the Library
-  // shows every reading. The lead below reads off THIS list, so it stays right.
-  const wordRows = lesson ? allWordRows.slice(0, 1) : allWordRows;
+  // SAK-150: the lesson shows only the reading(s) `readingUnits` actually
+  // scores a fact for (`taught`, computed in character-entry-content.ts) — the
+  // SAME set curriculum-lesson.ts's factsOf schedules into this same lesson
+  // step. A word with one spoken form still shows one row, unchanged; a word
+  // with two real, independently-scored pronunciations (七: しち AND なな) now
+  // shows both, so the drill can never quiz a reading this screen never
+  // taught. The Library (lesson=false) keeps showing every sense, taught or
+  // reference-tier, for its own full-dictionary purpose. The lead below reads
+  // off THIS list, so it stays right either way.
+  // Falls back to the old one-row cap when nothing is marked taught (a stale
+  // payload from before SAK-150, or a genuinely untaught word) rather than
+  // rendering an empty "As a word" block on a page that clearly has one.
+  const taughtWordRows = allWordRows.filter((w) => w.taught);
+  const wordRows = lesson
+    ? taughtWordRows.length > 0
+      ? taughtWordRows
+      : allWordRows.slice(0, 1)
+    : allWordRows;
   // A multi-char word shows the kanji it's written with; a single glyph doesn't
   // split into itself. The example sentence lives in the word block.
   const { wordPieces, example } = payload;
