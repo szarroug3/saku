@@ -194,10 +194,23 @@ function met(fact: FactId, history: HistoryFile): boolean {
 const SPINE_KINDS: ReadonlySet<string> = new Set(ROLE_ORDER);
 
 /** Every curriculum item by glyph, so the walk's glyphs can be asked what roles
- * they play. Built once; the sequence is shipped data. */
-const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = new Map(
-  CURRICULUM_SEQUENCE.map((it) => [it.glyph, it]),
-);
+ * they play. Built once; the sequence is shipped data.
+ *
+ * FIRST occurrence wins (SAK-162): a word taught with more than one reading (七)
+ * now occupies more than one CURRICULUM_SEQUENCE item sharing the same glyph,
+ * and only the FIRST — the fold/primary item — ever carries the radical/kanji
+ * roles; a later reading's own item is `roles: ["word"]` alone, because the
+ * shape is already taught there. ANCHOR_RULE only ever asks "does 七 carry role
+ * X AT ALL", so the richer, first-occurrence roles are always the right answer:
+ * the last-occurrence item this map used to keep (before a glyph could repeat)
+ * would silently drop the kanji/radical role off a multi-reading word here. */
+const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = (() => {
+  const map = new Map<string, (typeof CURRICULUM_SEQUENCE)[number]>();
+  for (const it of CURRICULUM_SEQUENCE) {
+    if (!map.has(it.glyph)) map.set(it.glyph, it);
+  }
+  return map;
+})();
 
 /**
  * WHERE EACH DUE CARD GOES IN ONE WALK: item index to the cards owed ahead of it.

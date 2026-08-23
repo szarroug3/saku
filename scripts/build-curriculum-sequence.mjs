@@ -11,12 +11,25 @@
 // The same "compute once at build, read as data" pattern word-rank.json already
 // uses over word-rank.ts (VOCAB.beginnerRank / CURRICULUM_WORDS membership).
 //
-// BYTE-CORRECTNESS IS NON-NEGOTIABLE. This is a pure refactor (SAK-161): the
-// ordering algorithm itself does not change here (that is SAK-162, blocked on
-// this ticket). So this script NEVER re-derives — it calls curriculum-order.ts's
-// own CURRICULUM_SEQUENCE and serializes exactly what it returns.
-// curriculum-sequence.equiv.test.ts asserts the precomputed sequence is
-// byte-for-byte the live one.
+// BYTE-CORRECTNESS IS NON-NEGOTIABLE. This script NEVER re-derives — it calls
+// curriculum-order.ts's own CURRICULUM_SEQUENCE and serializes exactly what it
+// returns, whatever the live ordering algorithm currently does (SAK-161 moved
+// WHERE it runs; SAK-162 changed the algorithm itself to one item per taught
+// word READING rather than one item per word — see curriculum-order.ts's
+// header). curriculum-sequence.equiv.test.ts asserts the precomputed sequence
+// is byte-for-byte the live one.
+//
+// A STANDALONE STEP. This is the only build script curriculum-order.ts feeds:
+// it reads no other generated JSON and writes only curriculum-sequence.json, so
+// it can run in any order relative to build-learn-index.mjs, build-library-
+// index.mjs, build-word-rank.mjs or build-scheduling-preview.mjs without
+// colliding with what any of them read or write. (build-learn-index.mjs also
+// imports CURRICULUM_SEQUENCE, but straight from curriculum-order.ts's own live
+// computation, not from this script's output — the two are independent, not
+// sequenced.) Deterministic by construction: buildSequence() sorts every
+// queued item on plain numeric/string comparisons over frozen source arrays,
+// never Date.now(), Math.random(), or Set/Map iteration order, so re-running
+// this script over the same source data always writes the same bytes.
 //
 // Run with the test harness's loader so Node resolves the app's `@/` alias and
 // `.ts` imports:
@@ -31,6 +44,7 @@ const sequence = CURRICULUM_SEQUENCE.map((item) => ({
   glyph: item.glyph,
   roles: [...item.roles],
   tiedTo: item.tiedTo,
+  reading: item.reading,
 }));
 
 const outPath = fileURLToPath(
