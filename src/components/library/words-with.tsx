@@ -19,6 +19,7 @@ import { useState } from "react";
 
 import { PitchReading } from "@/components/library/pitch-mark";
 import { Card, Lbl } from "@/components/ui";
+import { HearButton } from "@/components/ui/hear-button";
 import { wordPitch } from "@/data/pitch";
 import { resolveWordLinksByGlyph } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
@@ -66,6 +67,7 @@ export function WordsWith({
           // here — display only, and only where a pitch is verified; a word with
           // none shows the plain reading, unchanged. See pitch-mark.tsx.
           const pitch = wordPitch(w);
+          const showPitch = row?.reading != null && pitch != null && row.pitchCompatible;
           return (
             <div key={w} className="flex flex-wrap items-baseline gap-2 text-[13px]">
               {row ? (
@@ -75,12 +77,19 @@ export function WordsWith({
               ) : (
                 <span className="text-[16px]">{w}</span>
               )}
-              {row?.reading && pitch != null && row.pitchCompatible ? (
-                <PitchReading
-                  reading={row.reading}
-                  downstep={pitch}
-                  className="text-text-muted"
-                />
+              {showPitch ? (
+                <span className="flex items-center gap-1">
+                  {/* EXACT PITCH mode (SAK-100/SAK-170): same verified-downstep
+                      pattern as the word's own entry (character-entry-view.tsx)
+                      — this list used to draw the pitch line with no audio
+                      behind it at all. */}
+                  <HearButton glyph={row!.reading!} downstep={pitch!} />
+                  <PitchReading
+                    reading={row!.reading!}
+                    downstep={pitch!}
+                    className="text-text-muted"
+                  />
+                </span>
               ) : (
                 <span className="text-text-muted">{row?.reading}</span>
               )}
