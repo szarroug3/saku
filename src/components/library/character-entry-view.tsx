@@ -218,10 +218,14 @@ export function CharacterEntryView({
 
   // Which role blocks have something to show, and whether to LABEL them: a
   // single-role glyph drops the "As a …" label (see RoleBlock). Each block that
-  // renders leads with its own "It means …". The radical block renders when it has
-  // variant forms, or — when radical is the SOLE role (a pure radical like 禾) — to
-  // carry the meaning nothing else would.
-  const hasRadical = variants.length > 0 || (isRadical && !isKanji && !isWord);
+  // renders leads with its own "It means …". SAK-146: the radical block must
+  // render whenever the glyph plays the radical role, whatever ELSE it plays —
+  // a multi-role glyph (水 = radical · kanji · word) shows every one of its role
+  // blocks, not just the ones that happen to carry variant forms. `radicalMeaning`
+  // is populated whenever `isRadical` is true (every radical row has a required
+  // meaning), so this only ever hides an empty block for a glyph that isn't a
+  // radical at all.
+  const hasRadical = isRadical && (radicalMeaning !== null || variants.length > 0);
   const hasKanji = isKanji;
   const hasWord = wordRows.length > 0;
   const labelled = [hasRadical, hasKanji, hasWord].filter(Boolean).length > 1;
