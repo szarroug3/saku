@@ -139,7 +139,7 @@ export function TeachWalk({
           ) : current.type === "conversion" ? (
             <ConversionCard key={current.key} row={current.row} />
           ) : (
-            <TeachItemView key={current.key} item={current.item} />
+            <TeachItemView key={current.key} item={current.item} history={history} />
           )}
         </FlatSurfaceProvider>
       </div>
