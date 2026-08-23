@@ -83,6 +83,7 @@ import { isNumberKanji } from "@/data/number-kanji";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
+  COUNTER_KANJI_GLYPHS,
   counterEntry,
   counterForm,
   counterMeaningFactId,
@@ -760,6 +761,16 @@ function build(): LibEntry[] {
   }
 
   for (const w of VOCAB) {
+    // SAK-147: a kanji-written counter form (day-of-month, month-of-year, 二十歳
+    // — COUNTER_KANJI_GLYPHS, see its doc comment in src/data/counters.ts) is
+    // NOT a plain word here. It already gets its own row below, under
+    // COUNTER_KIND, from the COUNTER_CURRICULUM walk a few dozen lines down —
+    // built off the exact same glyph, so skipping it here does not drop it from
+    // the Library, only from the Words shelf it does not belong on. This is the
+    // same exclusion word-lesson.ts applies to the teaching spine
+    // (CURRICULUM_WORDS); both read the one set so neither can drift ahead of
+    // the other the way this bug started.
+    if (COUNTER_KANJI_GLYPHS.has(w.keb)) continue;
     out.push({
       id: wordEntry(w.keb),
       kind: VOCAB_SUBJECT,
