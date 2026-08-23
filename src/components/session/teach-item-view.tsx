@@ -30,8 +30,19 @@ import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { numberConstructionFor } from "@/data/number-construction";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import type { LessonItem } from "@/lib/lesson-items";
+import type { HistoryFile } from "@/types";
 
-export function TeachItemView({ item }: { item: LessonItem }) {
+export function TeachItemView({
+  item,
+  history,
+}: {
+  item: LessonItem;
+  /** SAK-157: threaded through to CharacterEntryView so a multi-reading
+   * word's "As a word" block can show only the reading actually being freshly
+   * introduced right now, not a sibling reading taught in an earlier lesson —
+   * see live-character-entry-view.tsx and character-entry-content.ts. */
+  history?: HistoryFile;
+}) {
   const built = useServerLookup(resolveTeachItem, [item]);
   if (!built) return null;
 
@@ -45,7 +56,7 @@ export function TeachItemView({ item }: { item: LessonItem }) {
     // the pronunciation being taught.
     case "radical":
     case "kanji":
-      return <CharacterEntryView item={built} lesson />;
+      return <CharacterEntryView item={built} lesson history={history} />;
     case "word":
       // A COUNTER shares the `word` fact subject but is a different page — the
       // numbers track teaches 〜つ natives (ひとつ) and generative rules (11–99,
@@ -56,7 +67,7 @@ export function TeachItemView({ item }: { item: LessonItem }) {
       if (numberConstructionFor(item.entry) || COUNTER_ENTRIES.has(item.entry)) {
         return <CounterEntryView item={built} />;
       }
-      return <CharacterEntryView item={built} lesson />;
+      return <CharacterEntryView item={built} lesson history={history} />;
     case "grammar":
       return <GrammarEntryView item={built} />;
     case "transitivity":
