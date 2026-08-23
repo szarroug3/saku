@@ -17,6 +17,7 @@ import {
   COUNTER_ENTRIES,
   COUNTER_FACTS,
   COUNTER_KANJI_GLYPHS,
+  COUNTER_TAIL_FORM_ALIASES,
   COUNTER_VOCAB_DUPLICATE_KEBS,
   CONSTRUCTION_CATEGORY_IDS,
   CONSTRUCTION_CATEGORY_ENTRIES,
@@ -36,7 +37,7 @@ import {
 import { numberConstructionEntry } from "./number-construction-id.ts";
 import { VOCAB_SUBJECT } from "./vocab.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
-import { ALL_FACTS } from "../lib/facts.ts";
+import { ALL_FACTS, factsOf } from "../lib/facts.ts";
 import { acceptableNumberReadings, counterReading } from "../lib/number-reading.ts";
 import { NUMBERS_COMPOSE } from "./phase-intros.ts";
 
@@ -211,6 +212,41 @@ describe("SAK-169: COUNTER_VOCAB_DUPLICATE_KEBS names the kanji VOCAB duplicates
       [...COUNTER_VOCAB_DUPLICATE_KEBS.keys()].sort(),
       ["一つ", "一人", "七つ", "三つ", "九つ", "二つ", "二人", "五つ", "八つ", "六つ", "四つ"].sort(),
     );
+  });
+});
+
+describe("SAK-172: COUNTER_TAIL_FORM_ALIASES folds 二十歳's own standalone entry into 〜歳's page", () => {
+  test("二十歳 maps to the 〜歳 construction entry, not a page of its own", () => {
+    assert.equal(COUNTER_TAIL_FORM_ALIASES.get("二十歳"), numberConstructionEntry("sai"));
+  });
+
+  test("exactly one alias — the one CounterForm-minted entry this ticket folds in", () => {
+    assert.deepEqual([...COUNTER_TAIL_FORM_ALIASES.keys()], ["二十歳"]);
+  });
+
+  test("二十歳 IS its own CounterForm's glyph — the opposite of COUNTER_VOCAB_DUPLICATE_KEBS's kebs", () => {
+    // The reason this is a SEPARATE map: COUNTER_VOCAB_DUPLICATE_KEBS's kebs are
+    // deliberately disjoint from COUNTER_KANJI_GLYPHS (see the test above), because
+    // none of them is a CounterForm's own glyph. 二十歳 is exactly that case — it
+    // IS TAIL's own CounterForm glyph — so it could never join that map without
+    // breaking its disjointness invariant.
+    assert.ok(COUNTER_KANJI_GLYPHS.has("二十歳"), "二十歳 is still a real CounterForm glyph");
+    const tail = COUNTER_CURRICULUM.find((f) => f.key === "counter:sai:20")!;
+    assert.equal(tail.glyph, "二十歳");
+  });
+
+  test("TAIL's CounterForm/facts are UNCHANGED — this map is a Library display concern only", () => {
+    // The whole point: はたち must still be teachable/quizzable. Its entry, its
+    // meaning fact and its reading fact all still exist exactly as before —
+    // nothing about COUNTER_CURRICULUM, counterEntry, or COUNTER_FACTS reads
+    // this map.
+    const tail = COUNTER_CURRICULUM.find((f) => f.key === "counter:sai:20")!;
+    const entry = counterEntry(tail);
+    assert.ok(COUNTER_ENTRIES.has(entry), "はたち's entry is still a track entry");
+    const facts = factsOf(entry);
+    assert.ok(facts.some((id) => id.endsWith("/meaning")), "はたち still carries a meaning fact");
+    assert.ok(facts.some((id) => id.endsWith("/reading")), "はたち still carries a reading fact");
+    assert.ok(ALL_FACTS.includes(factsOf(entry)[0]), "its facts are registered in ALL_FACTS");
   });
 });
 

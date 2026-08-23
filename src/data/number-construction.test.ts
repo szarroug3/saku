@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { numberConstructionForCounterGlyph, numberConstructionRow } from "./number-construction.ts";
+import { numberConstructionRow } from "./number-construction.ts";
 import { countGroupHasBuild } from "./phase-intros.ts";
 import { counterIrregulars } from "../lib/engine/number-quiz.ts";
 import {
@@ -95,6 +95,11 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
     for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai"] as const) {
       for (const g of groupsOf(kind)) {
         for (const r of g.examples) {
+          // SAK-172: 〜歳's extra はたち row (count 20) is a genuinely suppletive
+          // word OUTSIDE the 1-10 sweep countOf/counterReading model — the whole
+          // point of the row is that it does NOT equal the engine's generated
+          // にじゅっさい. See the dedicated "〜歳's Irregular table" describe block.
+          if (r.word === "二十歳") continue;
           const n = countOf(r.word);
           assert.equal(r.reading, counterReading(n, kind), `${kind} ${r.word} reading`);
         }
@@ -122,6 +127,9 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
     for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
       for (const group of groupsOf(kind)) {
         for (const row of group.examples) {
+          // SAK-172: はたち has no engine-accepted-alternates set — it is not a
+          // count acceptableCounterReadings/counterReading model at all.
+          if (row.word === "二十歳") continue;
           const n = countOf(row.word);
           assert.deepEqual(
             [row.reading, ...(row.alternateReadings ?? [])],
@@ -195,6 +203,10 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
       for (const g of groupsOf(kind)) {
         for (const r of g.examples) {
+          // SAK-172: 〜歳's はたち row (二十歳, count 20) is checked separately —
+          // it is outside the 1-10 sweep countOf/counterReading model, and its
+          // suppletive build=[] is pinned in the dedicated describe block above.
+          if (r.word === "二十歳") continue;
           const n = countOf(r.word);
           assert.equal(r.result.kana, counterReading(n, kind), `${kind} ${r.word} result`);
           assert.equal(r.result.value, String(n), `${kind} ${r.word} total`);
@@ -285,6 +297,12 @@ describe("the counter pages split by the engine's irregular counts", () => {
       const irregular = groups.find((g) => g.title === "Irregular");
       if (irregular) {
         for (const r of irregular.examples) {
+          // SAK-172: 〜歳's はたち row (二十歳, count 20) is an EXTRA suppletive
+          // row appended beyond the 1-10 sweep counterIrregulars() models — it
+          // is irregular by definition (a whole different word), not because
+          // some digit d in 1-10 shifted, so countOf/shifts cannot classify it.
+          // Pinned separately in the dedicated describe block above.
+          if (r.word === "二十歳") continue;
           assert.ok(shifts.has(countOf(r.word)), `${kind} ${r.word} should be irregular`);
         }
       }
@@ -292,43 +310,34 @@ describe("the counter pages split by the engine's irregular counts", () => {
   });
 });
 
-// SAK-35: a memorised counted form (二十歳 · はたち, @/data/counters) and its
-// counter's construction page (〜歳) are two separate Library entries. This
-// join is what lets 二十歳's own page LINK to 〜歳's already-authored explanation
-// of why はたち is irregular, instead of showing generic boilerplate with no
-// counter-specific content at all. See counter-entry-view.tsx.
-describe("numberConstructionForCounterGlyph — a counted form's link to its counter's rule page", () => {
-  test("歳 resolves to the 〜歳 page, which already names 二十歳's irregular はたち", () => {
-    const page = numberConstructionForCounterGlyph("歳");
-    assert.ok(page, "〜歳 should resolve for the glyph 歳");
-    assert.equal(page!.id, "sai");
-    assert.equal(page!.glyph, "〜歳");
-    // The exact existing prose 二十歳's page links out to — proves the target
-    // page really does carry counter-specific irregular content, not more
-    // boilerplate.
-    const soundText = page!.body.map((p) => p.text).join(" ");
-    assert.match(soundText, /二十歳/, "〜歳's prose should call out 二十歳 by name");
-    assert.match(soundText, /はたち/, "〜歳's prose should name the irregular reading はたち");
+// SAK-172: 二十歳/はたち no longer has a standalone Library page to LINK from —
+// numberConstructionForCounterGlyph (SAK-35's join for that link) was removed
+// as dead code alongside it (see number-construction.ts's note where the
+// function used to live). はたち is now a genuine ROW on 〜歳's own page
+// instead — pinned below, the same way day-of-month's page already pins
+// 20日's suppletive はつか (day-month-construction.test.ts).
+describe("〜歳's Irregular table carries 二十歳/はたち as a real row (SAK-172)", () => {
+  const sai = () => numberConstructionRow("sai")!;
+  const irregular = () => sai().exampleGroups.find((g) => g.title === "Irregular")!;
+
+  test("the row exists, reads はたち, and is fully suppletive (no additive equation)", () => {
+    const row = irregular().examples.find((r) => r.word === "二十歳");
+    assert.ok(row, "〜歳's Irregular table must carry a 二十歳 row");
+    assert.equal(row!.label, "20 years old");
+    assert.equal(row!.reading, "はたち");
+    assert.deepEqual(row!.build, [], "はたち is its own word, not 二十 + さい");
+    assert.deepEqual(row!.result, { kana: "はたち", value: "20" });
   });
 
-  test("every real counter glyph (人, 本, 匹, 枚, 個, 台, 冊, 杯, 回, 歳) resolves", () => {
-    for (const glyph of ["人", "本", "匹", "枚", "個", "台", "冊", "杯", "回", "歳"]) {
-      assert.ok(
-        numberConstructionForCounterGlyph(glyph),
-        `${glyph} should resolve to its 〜${glyph} construction page`,
-      );
-    }
+  test("it sits alongside the sound-shift irregulars 1/8/10, not in place of them", () => {
+    const words = irregular().examples.map((r) => r.word);
+    assert.deepEqual(words, ["一歳", "八歳", "十歳", "二十歳"]);
   });
 
-  test("〜つ has no construction page — native memorisation, no rule to link to", () => {
-    assert.equal(
-      numberConstructionForCounterGlyph("つ"),
-      undefined,
-      "つ is native memorisation (see NUMBER_CONSTRUCTIONS's own note), so no 〜つ rule page exists",
-    );
-  });
-
-  test("a stranger glyph resolves to undefined, not a throw", () => {
-    assert.equal(numberConstructionForCounterGlyph("犬"), undefined);
+  test("countGroupHasBuild is still true for 〜歳's Irregular group — the sound-shift rows still build", () => {
+    // Mixed group: 一歳/八歳/十歳 build additively, 二十歳 does not. The column
+    // stays because SOME row has a real derivation (see countGroupHasBuild's
+    // own doc comment) — only an ALL-suppletive group (〜人's) drops it.
+    assert.equal(countGroupHasBuild(irregular().examples), true);
   });
 });

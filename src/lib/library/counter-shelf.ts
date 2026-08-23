@@ -2,10 +2,10 @@
 //
 // A shelf is cut where the cut MEANS something to the reader (see shelves.tsx).
 // The counters carry that cut in their own data — the `counter` a form belongs
-// to (〜つ, 〜人, 〜本…) and the `phase` that separates the taught-as-a-system
-// counters from the ungated tail — so the sections are those groups, in teaching
-// order: the native 〜つ escape hatch first, then the numbers, then the counters
-// built on them, then the long tail.
+// to (〜つ, 〜人, 〜本…) — so the sections are those groups, in teaching order:
+// the native 〜つ escape hatch first, then the Sino numbers. Everything past
+// that (the object counters, and 〜歳's はたち since SAK-172) is generative —
+// see the "How to build them" reference section below.
 //
 // It lives in a .ts, not beside the JSX in shelves.tsx, so the test runner (no
 // JSX) can hold the property that matters here: the shelf lists every counter
@@ -44,27 +44,28 @@ interface CounterGroup {
 
 // The object counters (本, 匹, 枚, and the tail) are no longer rote-form sections:
 // each is a generative CATEGORY whose "How to build them" page (below) carries the
-// rule, so tiling 一本…十本 would only repeat what the page generates. The groups
-// that remain are the MEMORISED material a page cannot build: the native 〜つ escape
-// hatch, the Sino numbers 1-10, and the handful of irregulars (〜人's ひとり/ふたり/
-// よにん, 二十歳 はたち) that are their own words.
+// rule, so tiling 一本…十本 would only repeat what the page generates. The group
+// that remains is the MEMORISED material a page cannot build: the native 〜つ
+// escape hatch and the Sino numbers 1-10.
+//
+// SAK-172: 二十歳/はたち used to have its own "tail" tile group here (phase===3,
+// counter 歳 — the sole remaining kanji-written CounterForm). It no longer
+// does: はたち folded into 〜歳's own "How to build them" page as a real
+// Irregular row (number-construction.ts's `sai` CounterSpec), the same
+// treatment day-of-month's page already gives 20日's suppletive はつか, so
+// there is nothing left for a "tail" group to list — it would always resolve
+// to zero entries (libEntry(counterEntry(f)) now returns undefined for it;
+// see src/lib/library/entries.ts's COUNTER_CURRICULUM walk) and drop out via
+// the empty-group filter below anyway, so the dead group was removed outright
+// rather than left to silently always be empty.
 const GROUPS: readonly CounterGroup[] = [
   // 〜つ leads, because it is the escape hatch taught first (see counters.ts).
   { id: "tsu", label: "Native numbers (〜つ)", keep: (f) => f.counter === "つ" },
   // The bare Sino numbers 1..10 are no longer curriculum FORMS (the dedupe removed
   // counter:num:1..10); the number kanji 一…十 carry them, injected below as their
-  // own section (numberKanjiSection) between 〜つ and the tail. 〜人's regular
-  // counts are generated and its irregulars ride the 〜人 category, so no bare
-  // number or 〜人 form remains to group here.
-  // The one memorised tail reading, 二十歳 はたち — the sole remaining
-  // kanji-written CounterForm. Day-of-month and month-of-year used to have
-  // their own memorised-tile groups here (phase===3, like 歳); SAK-163 round 4
-  // made them generative categories instead (see counters.ts's notes above
-  // DAYS/MONTHS), so their 43 forms are gone from COUNTER_CURRICULUM and there
-  // is nothing left for a "day"/"month" group to list — they browse via the
-  // "How to build them" reference section below, the same as every other
-  // generative counter (〜本, 〜人, …), not a shelf tile group of their own.
-  { id: "tail", label: "More counters", keep: (f) => f.phase === 3 && f.counter === "歳" },
+  // own section (numberKanjiSection) after 〜つ. 〜人's regular counts are
+  // generated and its irregulars ride the 〜人 category, so no bare number or
+  // 〜人 form remains to group here.
 ];
 
 /**
@@ -128,10 +129,10 @@ export function counterShelfSections(): ShelfSection[] {
       ]
     : [];
 
-  // The Sino numbers 一…十 sit between the native 〜つ and the tail — the teaching
-  // order this file documents (〜つ escape hatch, then the numbers, then what is
-  // built on them). Injected after the 〜つ group by id so it lands in place even
-  // if the group set changes; dropped whole if no number kanji resolves.
+  // The Sino numbers 一…十 sit right after the native 〜つ — the teaching order
+  // this file documents (〜つ escape hatch, then the numbers). Injected after
+  // the 〜つ group by id so it lands in place even if the group set changes;
+  // dropped whole if no number kanji resolves.
   const numbers = numberKanjiSection();
   const withNumbers =
     numbers.entries.length > 0
