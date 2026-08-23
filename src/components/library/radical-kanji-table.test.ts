@@ -44,10 +44,13 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
       assert.ok(idx[i - 1] <= idx[i], `out of order at ${i}: ${idx.join(",")}`);
     }
 
-    // 乞 (very early) leads; 七 (much later) is not first even though it is a
-    // common kanji — a frequency or raw sort would not guarantee this.
+    // 乞 (very early) leads; 孔 (much later) is not first even though it is a
+    // common kanji — a frequency or raw sort would not guarantee this. (七 used
+    // to be the example here, but SAK-148 dropped the number kanji from every
+    // component's "used in" list — see components.ts's isNumberKanji filter —
+    // so 乙's list no longer includes it at all.)
     assert.equal(sorted[0], "乞");
-    assert.ok(sorted.indexOf("乞") < sorted.indexOf("七"));
+    assert.ok(sorted.indexOf("乞") < sorted.indexOf("孔"));
   });
 });
 
