@@ -11,8 +11,6 @@
 //   header
 //   How you say it   — the reading(s) + meaning of a counted form (form only)
 //   How it's built    — the construction rule + worked examples (rule only)
-//   Related          — a counted form's link to its counter's rule page, when
-//                       one exists (form only; see numberConstructionForCounterGlyph)
 //
 // A given item is one OR the other, never both: an entry either resolves to a
 // counterForm (the form shape) or a numberConstructionFor (the rule shape), so
@@ -25,15 +23,19 @@
 // `libEntry` (checked to match buildItem's own glyph for both these kinds,
 // unlike transitivity) rather than needing its own seed field.
 //
-// SAK-35: a counted form's "How you say it" section is deliberately generic —
-// it says what a counting word IS, not what is irregular about this one, and
-// that irregular content (人's suppletive ひとり/ふたり/よにん, 本/匹/杯's hardening,
-// …) already lives entirely on the counter's OWN "how it's built" page, wired
-// from number-construction.ts's counterIrregulars()-derived prose. The one gap
-// was 二十歳: a genuinely irregular counted form with a sibling rule page (〜歳)
-// that already explains はたち, but no link from 二十歳's own page to it. The
-// Related section below closes that gap with the EXISTING 〜歳 prose, not new
-// copy — see numberConstructionForCounterGlyph's doc comment.
+// SAK-35 wired a counted form's genuinely irregular content (人's suppletive
+// ひとり/ふたり/よにん, 本/匹/杯's hardening, …) onto the counter's OWN "how it's
+// built" page, via number-construction.ts's counterIrregulars()-derived prose
+// — a counted form's own "How you say it" section stays deliberately generic.
+// The one gap that left, 二十歳 (irregular, but with no link to 〜歳's existing
+// explanation of はたち), was closed by a Related section here that pointed
+// out to that page. SAK-172 closed it differently: はたち is now a genuine
+// Irregular row ON 〜歳's own page (number-construction.ts's `sai` spec), and
+// 二十歳 no longer has a standalone page of its own to carry a Related link
+// FROM (see COUNTER_TAIL_FORM_ALIASES in @/data/counters and entries.ts's
+// COUNTER_CURRICULUM walk) — so the Related section, now unreachable by every
+// remaining counted form (every other one is a 〜つ native with no rule page
+// to link to), was removed rather than left dead.
 //
 // The teach walk (TeachItemView) and /dev/views already build a live
 // ContentItem for every kind they show, so this also accepts an `item` prop
@@ -51,20 +53,15 @@ import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { NumberConstructionView } from "@/components/library/number-construction-view";
 import { PitchReading } from "@/components/library/pitch-mark";
-import { RelatedSection, type RelatedLink } from "@/components/library/related-section";
 import { HearButton } from "@/components/ui/hear-button";
 import {
   counterForm,
   isBareNumber,
 } from "@/data/counters";
 import { wordPitch } from "@/data/pitch";
-import {
-  numberConstructionEntry,
-  numberConstructionFor,
-  numberConstructionForCounterGlyph,
-} from "@/data/number-construction";
+import { numberConstructionFor } from "@/data/number-construction";
 import { useContentEntry } from "@/lib/library/content-entries";
-import { getEntryHref, getLibEntry } from "@/lib/library/server-lookups";
+import { getLibEntry } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
@@ -88,11 +85,10 @@ export function CounterEntryView({
   const fetched = useContentEntry<Headline>(item ? null : (entry ?? null));
   const headline = item ? liveHeadline : fetched;
   const resolvedEntry = item ? item.entry : entry!;
-  // SAK-104: libEntry/entryHref live in server-only modules now, so the
-  // fallback glyph lookup and the related-construction href are fetched
-  // instead of imported. Both are called unconditionally (React hook rules) —
-  // skipped (null args) once `item` already supplies the glyph directly, or
-  // there's no related construction to link.
+  // SAK-104: libEntry lives in a server-only module now, so the fallback
+  // glyph lookup is fetched instead of imported — called unconditionally
+  // (React hook rules), skipped (null args) once `item` already supplies the
+  // glyph directly.
   const fetchedEntry = useServerLookup(getLibEntry, item ? null : [resolvedEntry]);
   const glyph = item ? item.glyph : fetchedEntry?.glyph;
 
@@ -101,23 +97,6 @@ export function CounterEntryView({
   // entry names no form), so at most one of these is non-null.
   const form = counterForm(resolvedEntry);
   const construction = numberConstructionFor(resolvedEntry);
-
-  // A memorised counted form's own "how it's built" page, when its counter has
-  // one — 二十歳's page links to 〜歳, which already explains (in its own,
-  // already-authored prose) that はたち is the one irregular count 〜歳 has. A
-  // bare number (isBareNumber) and every 〜つ form correctly find nothing here:
-  // 〜つ is native memorisation with no rule page (see
-  // numberConstructionForCounterGlyph's own doc comment).
-  const relatedConstruction =
-    form && !isBareNumber(form) ? numberConstructionForCounterGlyph(form.counter) : undefined;
-  const relatedHref = useServerLookup(
-    getEntryHref,
-    relatedConstruction ? [numberConstructionEntry(relatedConstruction.id)] : null,
-  );
-  const relatedLinks: RelatedLink[] =
-    relatedConstruction && relatedHref
-      ? [{ label: relatedConstruction.name, href: relatedHref }]
-      : [];
 
   if (headline === undefined || headline === null || !glyph) return null;
   if (!form && !construction) return null;
@@ -199,11 +178,6 @@ export function CounterEntryView({
           <NumberConstructionView construction={construction} />
         </Section>
       ) : null}
-
-      {/* A counted form's link to its counter's own "how it's built" page —
-          absent (RelatedSection renders nothing) for a bare number and for
-          every 〜つ form, which has no rule page to link to. */}
-      <RelatedSection links={relatedLinks} />
     </EntrySurface>
   );
 }

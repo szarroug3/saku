@@ -271,18 +271,19 @@ test("SAK-79: a counter construction page (〜枚) is silent, a real counted wor
   assert.ok(construction, "expected the 〜枚 construction page to exist");
   assert.equal(construction!.speakable, false, "a rule page has no pronunciation");
 
-  // COUNTER_CURRICULUM's only counted (non-kana) form today is 二十歳 (はたち) —
-  // see COUNTER_CURRICULUM's TAIL. A kana form (ひとつ…) carries the same
-  // speakable=true but no separate `readings` entry (its glyph IS its reading),
-  // so this specifically checks the counted-form branch.
-  const countedWord = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "二十歳");
-  assert.ok(countedWord, "expected the real counted word 二十歳 to exist");
-  assert.equal(countedWord!.readings.length, 1, "a counted form carries its own reading");
-  assert.equal(countedWord!.speakable, true, "a real counted word has one");
-
+  // SAK-172: COUNTER_CURRICULUM's one counted (non-kana) form, 二十歳 (はたち —
+  // see COUNTER_CURRICULUM's TAIL), no longer mints its own COUNTER_KIND Library
+  // entry at all (it folded into 〜歳's construction page as an Irregular row
+  // instead — see entries.test.ts's "SAK-172" describe block below). So every
+  // remaining COUNTER_KIND entry is a kana form (ひとつ…), whose glyph IS its
+  // reading; the "counted form carries its own separate reading" half of the
+  // SAK-79 regression this test pins is now covered structurally by the
+  // exhaustive, non-vacuous "every entry's speakable flag matches its kind"
+  // test above, not by a single named example here any more.
   const kanaForm = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "ひとつ");
   assert.ok(kanaForm, "expected the kana form ひとつ to exist");
   assert.equal(kanaForm!.speakable, true, "a kana form's glyph IS its reading");
+  assert.equal(kanaForm!.readings.length, 0, "a kana form's reading IS its glyph — no separate entry");
 });
 
 describe("SAK-169: 一人/二人/一つ…九つ no longer duplicate onto the Words shelf", () => {
@@ -324,6 +325,26 @@ describe("SAK-169: 一人/二人/一つ…九つ no longer duplicate onto the Wo
       assert.ok(holder, `${keb} must alias the 〜人 construction page`);
       assert.equal(holder!.glyph, "〜人");
     }
+  });
+});
+
+describe("SAK-172: 二十歳 no longer has a standalone Library page — it aliases into 〜歳's page", () => {
+  test("二十歳 is not a COUNTER_KIND entry any more", () => {
+    const own = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.glyph === "二十歳");
+    assert.equal(own, undefined, "二十歳 must not appear on the Counting shelf as its own entry");
+  });
+
+  test("二十歳 is not any kind of standalone entry — no glyph collision elsewhere either", () => {
+    const anyEntry = LIB_ENTRIES.find((e) => e.glyph === "二十歳");
+    assert.equal(anyEntry, undefined, "二十歳 must not mint a Library entry under any kind");
+  });
+
+  test("二十歳 is still reachable — a searchAlso alias on 〜歳's construction page", () => {
+    const holder = LIB_ENTRIES.find(
+      (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.searchAlso?.includes("二十歳"),
+    );
+    assert.ok(holder, "二十歳 must ride as a searchAlso alias, not vanish");
+    assert.equal(holder!.glyph, "〜歳", "二十歳 must alias 〜歳's own page, not another counter's");
   });
 });
 
