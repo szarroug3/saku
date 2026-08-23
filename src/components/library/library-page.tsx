@@ -61,8 +61,8 @@ import type { Claims } from "@/lib/claims";
 import {
   ALL_KINDS,
   ALL_STATES,
-  isEveryKind,
-  isEveryState,
+  isNoKindFilter,
+  isNoStateFilter,
   kindsFromParams,
   libraryUrl,
   queryFromParams,
@@ -140,12 +140,15 @@ function statusPredicate(
     );
 }
 
-/** The active Status selection, as words — "known, solid", or "no status" for
- * a fully-cleared dropdown. Only ever built for the empty-state copy (search's
- * "No … entries match", a shelf's FilterEmpty): the predicate itself
- * (`keep`, below) does the actual filtering. */
+/** The active Status selection, as words — "known, solid". Only ever built
+ * for the narrowed-copy case (search's "No … entries match", a shelf's
+ * FilterEmpty): the predicate itself (`keep`, below) does the actual
+ * filtering. SAK-167: every call site now guards with `isNoStateFilter`
+ * first, so this is never reached with an empty set in practice — the
+ * "unfiltered" fallback below is a safety net, not a real UI string, since an
+ * empty selection no longer means "matches nothing" the way it used to. */
 function statesLabel(states: ReadonlySet<StatusFilter>): string {
-  if (states.size === 0) return "no status";
+  if (states.size === 0) return "unfiltered";
   return STATUS_ITEMS.filter((i) => states.has(i.value))
     .map((i) => FILTER_LABEL[i.value])
     .join(", ");
@@ -274,21 +277,23 @@ export function LibraryPageClient({
     },
     [],
   );
-  // THE CHECKED KINDS — the Kind dropdown's own selection, every kind checked by
-  // default. Every kind checked spans every subject (browse) and buckets a
-  // search by type, exactly like the old "All" tab; a narrower set behaves like
-  // that same All view filtered down to only the checked subjects — see
-  // `isEveryKind` and the render below, which generalise the old All-tab code
-  // path (allTabBrowseKinds) rather than duplicating it for the narrowed case.
+  // THE CHECKED KINDS — the Kind dropdown's own selection, NO kind checked by
+  // default (SAK-167: unchecked means unfiltered now). No kind checked spans
+  // every subject (browse) and buckets a search by type, exactly like the old
+  // "All" tab; a narrower (non-empty) set behaves like that same All view
+  // filtered down to only the checked subjects — see `isNoKindFilter` and the
+  // render below, which generalise the old All-tab code path
+  // (allTabBrowseKinds) rather than duplicating it for the narrowed case.
   const kinds = urlState.kinds;
   const urlQuery = urlState.query;
-  // THE CHECKED STATUSES — the Status dropdown's own selection, every status
-  // checked by default (which filters nothing — "known" and "not known" alone
-  // already partition every entry, so a full check-set is reach-equivalent to
-  // the old "All" chip). Like the kinds, it lives in the URL so a link carries
-  // it and Back steps through it, and it spans every kind: it governs both the
-  // browse shelf and the search results, so "which kanji don't I know" is the
-  // same question whether you are browsing or searching.
+  // THE CHECKED STATUSES — the Status dropdown's own selection, NO status
+  // checked by default (SAK-167). An empty check-set filters nothing (same as
+  // the old fully-checked default did — "known" and "not known" alone already
+  // partition every entry, so there is nothing left to narrow). Like the
+  // kinds, it lives in the URL so a link carries it and Back steps through it,
+  // and it spans every kind: it governs both the browse shelf and the search
+  // results, so "which kanji don't I know" is the same question whether you
+  // are browsing or searching.
   const states = urlState.states;
 
   // THE BOX IS TYPED INTO AND THE URL IS NOT TYPED INTO, so the box keeps a
@@ -347,6 +352,14 @@ export function LibraryPageClient({
   // REPLACES/CHECKING A BOX PUSHES note above): a checkbox click carries
   // whatever is in the box RIGHT NOW, not whatever the debounce last got
   // around to writing, or the new history entry would disagree with the screen.
+  //
+  // SAK-167: `clear*` now pushes the SAME empty set the page defaults to
+  // (unfiltered — every entry shows), not a "hide everything" state the way
+  // it did before the flip; `selectAll*` still writes every box explicitly
+  // checked (ALL_KINDS/ALL_STATES), a distinct-but-reach-equivalent state that
+  // round-trips through the URL as `all` — see url-state.ts's file header for
+  // why an explicit "select nothing" affordance was dropped rather than kept
+  // under a new name.
   const toggleKind = useCallback(
     (k: Kind) => {
       if (debounce.current) clearTimeout(debounce.current);
@@ -461,13 +474,14 @@ export function LibraryPageClient({
   }, [lists]);
 
   // THE STATUS FILTER AS A PREDICATE, in one place, so search and browse apply
-  // the identical test. Undefined when every status is checked — the callers
-  // treat "no keep" as "keep everything", so the common (default) case adds no
-  // per-entry work. Otherwise an entry passes if it matches ANY checked status
-  // (a union, not an intersection — checking both Known and Solid means "known
-  // OR solid", the same "widen what you see" reading multi-select checkboxes
-  // always have): each status resolves through the same predicates the single-
-  // select filter always used, just OR'd together instead of switched on one.
+  // the identical test. Undefined when no status is checked (SAK-167: that is
+  // now the default, unfiltered state) — the callers treat "no keep" as "keep
+  // everything", so the common (default) case adds no per-entry work.
+  // Otherwise an entry passes if it matches ANY checked status (a union, not
+  // an intersection — checking both Known and Solid means "known OR solid",
+  // the same "widen what you see" reading multi-select checkboxes always
+  // have): each status resolves through the same predicates the single-select
+  // filter always used, just OR'd together instead of switched on one.
   //
   // WHICH facts define "known" is `knownFactsOf`'s call, not this predicate's:
   // all of them for most kinds, but a KANJI on its MEANING alone — the fact the
@@ -475,11 +489,10 @@ export function LibraryPageClient({
   // what makes 人 ("Meaning: you know this" on its page) filter as Known here,
   // instead of failing because its ten unlearned readings looked like work.
   const keep = useMemo(() => {
-    if (isEveryState(states)) return undefined;
-    // Every box unchecked is not "no filter", it is "filter everything out" —
-    // the Status dropdown's Clear button, taken at its word. An empty
-    // `predicates` array falls straight out of `.some()` below (vacuously
-    // false for every entry), so that case needs no branch of its own.
+    // No box checked is "no filter" (SAK-167), same fast path every-checked
+    // used to fill — the predicates loop below only ever runs for a genuine,
+    // non-empty narrowing, so an empty `states` never needs a branch there.
+    if (isNoStateFilter(states)) return undefined;
     const predicates = [...states].map((value) =>
       statusPredicate(value, liveFacts, claims, now, activeMixupEntries),
     );
@@ -494,11 +507,12 @@ export function LibraryPageClient({
   // SEARCH FOLLOWS THE CHECKED KINDS. Exactly one kind checked keeps today's
   // richer single-subject search, sectioned by HOW you matched (exact / prefix
   // / means that / …) — the same experience narrowing to one subject has always
-  // given. Two or more (including every kind, the default) reuses the All-tab's
-  // grouping BY TYPE — a Kanji block, a Words block, in teaching order —
-  // restricted to whichever kinds are still checked; "every kind checked
-  // behaves like the old All tab, a subset behaves like All-but-filtered" is
-  // the same rule the browse view below follows. Both come back as
+  // given. Anything else — no kind checked (the SAK-167 default) or two-plus
+  // checked — reuses the All-tab's grouping BY TYPE — a Kanji block, a Words
+  // block, in teaching order — restricted to whichever kinds are checked, or
+  // to every kind when none are (`isNoKindFilter`); "no filter behaves like
+  // the old All tab, a checked subset behaves like All-but-filtered" is the
+  // same rule the browse view below follows. Both come back as
   // `{ key, label, hits }` so one render draws either.
   //
   // SAK-104: the actual match-finding moved into two Server Actions
@@ -518,14 +532,17 @@ export function LibraryPageClient({
   );
   const byTypeHits = useServerLookup(
     searchLibraryByType,
-    q && kinds.size > 1 ? [q, pinnedArr] : null,
+    // Every case that is not "exactly one kind checked" — zero (no filter) or
+    // two-plus — reads the grouped-by-type search, same as onlyKind above
+    // reads the narrow one; the two are mutually exclusive and exhaustive.
+    q && kinds.size !== 1 ? [q, pinnedArr] : null,
   );
   const resultSections = useMemo(() => {
-    if (!q || kinds.size === 0) return [];
+    if (!q) return [];
     const raw =
       kinds.size === 1
         ? (oneKindHits ?? [])
-        : (byTypeHits ?? []).filter((s) => kinds.has(s.kind));
+        : (byTypeHits ?? []).filter((s) => isNoKindFilter(kinds) || kinds.has(s.kind));
     return raw
       .map((s) => ({
         key: s.key,
@@ -560,15 +577,17 @@ export function LibraryPageClient({
   // across sections (and, in search, across kinds), which is the order a range
   // follows.
   //
-  // ONE FORMULA COVERS EVERY CHECKED-KIND SIZE — zero, one, a subset, or every
-  // kind — because `allTabBrowseKinds` already enumerates in teaching order and
-  // drops whatever the Status filter emptied; filtering ITS output by which
-  // kinds are checked is the "All-tab-but-filtered-to-a-subset" rule applied to
+  // ONE FORMULA COVERS EVERY CHECKED-KIND SIZE — zero (SAK-167: no filter, so
+  // every kind stays in), one, a subset, or every kind checked explicitly —
+  // because `allTabBrowseKinds` already enumerates in teaching order and drops
+  // whatever the Status filter emptied; filtering ITS output by which kinds
+  // are checked (or keeping all of it when none are) is the "no filter is the
+  // old All tab, a checked subset is All-but-filtered" rule applied to
   // Shift-range order the same way it is applied to the render below.
   const visibleIds = useMemo<EntryId[]>(() => {
     if (q) return resultSections.flatMap((s) => s.hits.map((h) => h.entry.id));
     return allTabBrowseKinds(keep, (k) => shelfFor(k).sections)
-      .filter((k) => kinds.has(k))
+      .filter((k) => isNoKindFilter(kinds) || kinds.has(k))
       .flatMap((k) => visibleShelfIds(k, shelfFor(k).sections, keep));
   }, [q, resultSections, kinds, keep, shelfFor]);
 
@@ -610,11 +629,12 @@ export function LibraryPageClient({
   //   searching ...... the results. The sections already show every hit, and the
   //                    bar means the same set: you asked for で and the bar means で.
   //   browsing ....... whatever the checked kinds currently show — the whole
-  //                    library when every kind is checked, or the union of the
-  //                    checked subjects' shelves otherwise.
+  //                    library when no kind is checked (SAK-167's unfiltered
+  //                    default), or the union of the checked subjects'
+  //                    shelves otherwise.
   // SAK-104: the two branches below that need the FULL entry list (a built
-  // selection, in canonical library order; "Everything", every kind checked
-  // and nothing selected) now fetch it via Server Actions instead of reading
+  // selection, in canonical library order; "Everything", no kind checked and
+  // nothing selected) now fetch it via Server Actions instead of reading
   // the bundled LIB_ENTRIES. The "Everything, no status filter" case (the
   // page's DEFAULT state) is given a stable cache key that ignores
   // liveFacts/claims — getEverythingSlice doesn't need them for that case
@@ -624,13 +644,12 @@ export function LibraryPageClient({
     getSelectionSlice,
     selected.size > 0 ? [selectedIdsArr] : null,
   );
-  const everyStateChecked = isEveryState(states);
-  const wantEverything =
-    selected.size === 0 && !q && kinds.size > 0 && isEveryKind(kinds);
+  const noStateFilter = isNoStateFilter(states);
+  const wantEverything = selected.size === 0 && !q && isNoKindFilter(kinds);
   const everythingSliceFetched = useServerLookup(
     getEverythingSlice,
     wantEverything
-      ? everyStateChecked
+      ? noStateFilter
         ? [[], true, {}, {}, 0, []]
         : [[...states], false, liveFacts, claims, now, [...activeMixupEntries]]
       : null,
@@ -645,18 +664,22 @@ export function LibraryPageClient({
       // results, reusing the computed hit set.
       return { label: q, entries: resultHits.map((h) => h.entry.id) };
     }
-    if (kinds.size === 0) return { label: "Nothing", entries: [] };
-    // Every kind checked, nothing selected: the bar is the whole library (the
-    // "drill everything" a single checked kind's shelf generalises to). Reads
-    // straight off LIB_ENTRIES rather than summing every kind's own
-    // visibleShelfIds: the counters shelf's sections weave in entries from
-    // other kinds (see counter-shelf.ts), so a per-kind sum only matters once
-    // the checked set stops being "everything" and the union actually needs
-    // deriving from what's on screen — see the branches below.
-    if (isEveryKind(kinds)) {
+    // No kind checked, nothing selected (SAK-167's unfiltered default): the
+    // bar is the whole library (the "drill everything" a single checked
+    // kind's shelf generalises to). Reads straight off LIB_ENTRIES rather
+    // than summing every kind's own visibleShelfIds: the counters shelf's
+    // sections weave in entries from other kinds (see counter-shelf.ts), so a
+    // per-kind sum only matters once the checked set stops being "everything"
+    // and the union actually needs deriving from what's on screen — see the
+    // branch below. A fully, explicitly checked set (every box literally
+    // ticked) does NOT take this fast path any more — it falls through to the
+    // generic checked-subset branch below, which happens to sum to the same
+    // entries.
+    if (isNoKindFilter(kinds)) {
       return { label: "Everything", entries: everythingSliceFetched ?? [] };
     }
-    // A checked subset: the bar means exactly what the checked shelves SHOW —
+    // A checked subset (including "every box literally checked"): the bar
+    // means exactly what the checked shelves SHOW —
     // the same visible, keep-filtered id list a Shift-range selects over
     // (visibleIds above), not each kind's raw LIB_ENTRIES_BY_KIND set. The two
     // diverge on "Counting", whose sections are assembled from
@@ -885,21 +908,14 @@ export function LibraryPageClient({
           graphite's `[class~="sticky"] + card` lit-hairline rule and so never
           wears the active-quiz detail. */}
       <div className="kq-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto">
-        {kinds.size === 0 ? (
-          // No kind is checked at all — nothing to browse or search, and a
-          // distinct message from "the Status filter emptied everything": this
-          // one names the OTHER dropdown, so it never reads as a dead end.
-          <Card>
-            <p className="text-[13px] text-text-muted">
-              No kind is selected.{" "}
-              <Hint>Check at least one in the Kind dropdown to browse or search.</Hint>
-            </p>
-          </Card>
-        ) : q ? (
+        {/* SAK-167: no kind checked is the unfiltered default now, not a dead
+            end — it browses/searches every kind, so there is no longer a
+            branch here for "nothing to browse or search". */}
+        {q ? (
           resultSections.length === 0 ? (
             <Card>
               <p className="text-[13px]">
-                {isEveryState(states) ? (
+                {isNoStateFilter(states) ? (
                   <>
                     Nothing matches <b>{q}</b>.
                   </>
@@ -912,7 +928,7 @@ export function LibraryPageClient({
               </p>
               <p className="mt-1.5">
                 <Hint>
-                  {isEveryState(states) ? (
+                  {isNoStateFilter(states) ? (
                     <>
                       Searching an inflected form won&rsquo;t find its dictionary
                       word yet. 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
@@ -970,17 +986,19 @@ export function LibraryPageClient({
           )
         ) : (
           // THE BROWSE — every checked kind with something to show, in teaching
-          // order, each its own shelf. A subject the filter empties drops out
-          // entirely (allTabBrowseKinds), so no empty headers; if the checked
-          // set or the filter empties them ALL, one message stands in. This is
-          // the SAME render every kind checked always used (the old All tab),
-          // now just restricted to whichever kinds are checked — see the file
-          // header's note on generalising rather than duplicating this path.
+          // order, each its own shelf, or every kind when none are checked
+          // (SAK-167's unfiltered default). A subject the filter empties drops
+          // out entirely (allTabBrowseKinds), so no empty headers; if the
+          // checked set or the filter empties them ALL, one message stands in.
+          // This is the SAME render the unfiltered default always used (the
+          // old All tab), now just restricted to whichever kinds are checked
+          // when any are — see the file header's note on generalising rather
+          // than duplicating this path.
           (() => {
             const shownKinds = allTabBrowseKinds(
               keep,
               (k) => shelfFor(k).sections,
-            ).filter((k) => kinds.has(k));
+            ).filter((k) => isNoKindFilter(kinds) || kinds.has(k));
             if (shownKinds.length === 0) {
               return (
                 <Card>
