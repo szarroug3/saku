@@ -202,24 +202,38 @@ export function useServerLookup<Args extends readonly unknown[], T>(
         const version = curriculumVersion();
         if (version) {
           const stored = await idbGet(k, version);
-          // Re-check cache.has: another mount (or the network path below, in
-          // a slower tab) may have already resolved this key while the
-          // IndexedDB read was in flight.
-          if (stored !== undefined && !cache.has(k)) {
+          if (stored !== undefined) {
+            // Every concurrent mount for this key runs this same function
+            // (that's the point of the dedup below) and each needs its OWN
+            // forceRender once the value is known — `cache.set` is
+            // idempotent (this hook's whole cache-forever contract is that
+            // a given key always resolves to the SAME value, see header),
+            // but re-rendering is NOT: it's per-component state. Gating
+            // this on `!cache.has(k)` used to mean whichever concurrent
+            // caller lost the race to observe the value first (which could
+            // easily be an already-unmounted one, e.g. React StrictMode's
+            // phantom effect) "claimed" the cache write and every other
+            // still-mounted caller silently never re-rendered — the page
+            // stays on its loading state forever, until something else
+            // (e.g. a remount) forces a fresh render that reads `cache` in
+            // the hook's return statement directly. SAK-143.
             cache.set(k, stored);
             if (alive) forceRender((n) => n + 1);
+            return; // pure function of build content — no fetch needed
           }
-          if (stored !== undefined) return; // pure function of build content — no fetch needed
         }
       }
+      // Two mounts (siblings sharing the same args, or React StrictMode's
+      // double-effect in dev) resolving the same key concurrently share this
+      // ONE fetch — but each still runs its own `await` below and must still
+      // notify ITS OWN component when it settles, independent of whichever
+      // caller happens to observe/write the cache first.
       const inFlight = pending.get(k) ?? fn(...a);
       pending.set(k, inFlight);
       const value = await inFlight;
       pending.delete(k);
-      if (!cache.has(k)) {
-        cache.set(k, value);
-        if (alive) forceRender((n) => n + 1);
-      }
+      cache.set(k, value);
+      if (alive) forceRender((n) => n + 1);
       if (persist) {
         const version = curriculumVersion();
         if (version) void idbSet(k, version, value);
