@@ -1196,8 +1196,9 @@ export async function resolveWeakestFacts(
  * the same payload by id through useContentEntry/content-entries.ts. */
 export async function resolveCharacterEntryPayload(
   item: ContentItem,
+  history?: HistoryFile,
 ): Promise<CharacterEntryPayload> {
-  return characterEntryPayload(item);
+  return characterEntryPayload(item, history);
 }
 
 /** One row of ConfusionSection's "commonly mixed up with" / "you've mixed up
