@@ -178,12 +178,28 @@ const counterRows = COUNTER_CURRICULUM.map((form) => {
   return row(entry, COUNTER_KIND, itemHeadline(item));
 }).filter((r) => r != null);
 
+// DAY and MONTH (src/data/day-month-construction.ts) mint no drillable category
+// fact — unlike every other construction (tens, big, the ten counters), which
+// each get one real `word` fact from counter-categories.ts. buildItem correctly
+// returns undefined for an entry with zero facts (build-item.ts's general, and
+// otherwise-untouched, "no facts, no item" contract), so DAY/MONTH's entries
+// have no ContentItem to run through itemHeadline. Rather than silently
+// dropping their rows (the bug: SAK-163 round 3 — the seeded Library pages
+// rendered nothing at all), fall back to a headline built straight from the
+// NumberConstruction object. This matches what itemHeadline ALREADY produces
+// for every other construction: "generative-rule" has no case in itemHeadline's
+// switch, so it falls to the shared default branch, `firstDefinition(item) ??
+// item.glyph` — which resolves to the category fact's `meaning`, which is
+// exactly the construction's own `name` (see
+// CONSTRUCTION_CATEGORY_FACTS in counter-categories.ts). So `{ text: c.name,
+// speak: null }` is the same headline a fact-bearing construction would get,
+// not a new convention.
 const constructionRows = NUMBER_CONSTRUCTIONS.map((c) => {
   const entry = numberConstructionEntry(c.id);
   const item = buildItem(entry, "generative-rule");
-  if (!item) return null;
-  return row(entry, NUMBER_CONSTRUCTION_KIND, itemHeadline(item));
-}).filter((r) => r != null);
+  const headline = item ? itemHeadline(item) : { text: c.name, speak: null };
+  return row(entry, NUMBER_CONSTRUCTION_KIND, headline);
+});
 
 // ---- keigo -----------------------------------------------------------------
 // Same shape as transitivity: keigoSetForEntry (data/keigo.ts, self-contained,
