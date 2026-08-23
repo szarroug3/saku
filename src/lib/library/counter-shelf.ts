@@ -56,14 +56,15 @@ const GROUPS: readonly CounterGroup[] = [
   // own section (numberKanjiSection) between 〜つ and the tail. 〜人's regular
   // counts are generated and its irregulars ride the 〜人 category, so no bare
   // number or 〜人 form remains to group here.
-  // The one memorised tail reading, 二十歳 はたち. Keyed on the counter glyph
-  // (not just phase===3) so DAYS/MONTHS below — also phase 3 — don't double up
-  // into this group too; every group here must stay mutually exclusive.
+  // The one memorised tail reading, 二十歳 はたち — the sole remaining
+  // kanji-written CounterForm. Day-of-month and month-of-year used to have
+  // their own memorised-tile groups here (phase===3, like 歳); SAK-163 round 4
+  // made them generative categories instead (see counters.ts's notes above
+  // DAYS/MONTHS), so their 43 forms are gone from COUNTER_CURRICULUM and there
+  // is nothing left for a "day"/"month" group to list — they browse via the
+  // "How to build them" reference section below, the same as every other
+  // generative counter (〜本, 〜人, …), not a shelf tile group of their own.
   { id: "tail", label: "More counters", keep: (f) => f.phase === 3 && f.counter === "歳" },
-  // Day-of-month (SAK-163): its own closed, memorised set — see counters.ts.
-  { id: "day", label: "Day of the month (〜日)", keep: (f) => f.counter === "日" },
-  // Month-of-year (SAK-163): its own closed, memorised set — see counters.ts.
-  { id: "month", label: "Month of the year (〜月)", keep: (f) => f.counter === "月" },
 ];
 
 /**

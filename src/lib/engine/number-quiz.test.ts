@@ -11,6 +11,10 @@
 //   - the grader accepts a correct reading (kana AND a romaji spelling) and a
 //     correct written count (ASCII and full-width digits), and rejects wrong;
 //   - a seeded rng makes the round deterministic.
+// SAK-163 round 4 adds "day"/"month" to the counters a round can roll — see the
+// dedicated describe block below, which pins the same round-shape/grader
+// contract against day-month-reading.ts's separate engine across the FULL
+// 1-31 / 1-12 range.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -19,6 +23,7 @@ import {
   buildNumberRound,
   counterIrregulars,
   gradeNumberItem,
+  makeItem,
   type NumberQuizConfig,
   type NumberQuizItem,
 } from "./number-quiz.ts";
@@ -30,6 +35,13 @@ import {
   numberReading,
   type CounterKind,
 } from "@/lib/number-reading";
+import {
+  acceptableDayReadings,
+  acceptableMonthReadings,
+  dayReading,
+  monthReading,
+} from "@/lib/day-month-reading";
+import { DAYS as dayForms, MONTHS as monthForms } from "@/data/counters";
 
 function seeded(seed: number): () => number {
   let s = seed >>> 0;
@@ -98,7 +110,11 @@ describe("buildNumberRound — round shape", () => {
         assert.ok(it.n >= 1 && it.n <= 99, `counted ${it.n} out of range`);
       }
       // Every counted item must actually read (engine agrees it's in range).
-      if (it.counter) {
+      // This round's counters are all ordinary CounterKinds (ALL_COUNTERS has
+      // no "day"/"month"), so a narrow-away guard is enough for the compiler;
+      // day/month's own round-shape coverage lives in its own describe block
+      // below, against day-month-reading.ts's dayReading/monthReading instead.
+      if (it.counter && it.counter !== "day" && it.counter !== "month") {
         assert.equal(counterReading(it.n, it.counter), it.reading);
       }
     }
@@ -202,6 +218,136 @@ describe("buildNumberRound — round shape", () => {
     const a = buildNumberRound(cfg, seeded(99));
     const b = buildNumberRound(cfg, seeded(99));
     assert.deepEqual(a, b);
+  });
+});
+
+// SAK-163 round 4: day-of-month (〜日) and month-of-year (〜月) are generative
+// categories now, rolled through day-month-reading.ts's SEPARATE engine (see
+// that file's header) rather than number-reading.ts's counterReading — but
+// through the SAME QuizKind-dispatching makeItem/buildNumberRound every other
+// counter uses. These pin that the round-shape guarantee (irregular-first
+// coverage) and the readings/grading are correct across the FULL 1-31 / 1-12
+// range, including every named exception.
+describe("buildNumberRound — day/month (SAK-163 round 4)", () => {
+  test("a day round of sufficient count contains every one of the 7 exceptions", () => {
+    const cfg: NumberQuizConfig = {
+      count: 31,
+      includeCounters: true,
+      counters: ["day"],
+      numberMax: 31,
+      directions: ["read", "write"],
+    };
+    const round = buildNumberRound(cfg, seeded(13));
+    const present = new Set(round.map((it) => it.n));
+    for (const k of [14, 17, 19, 20, 24, 27, 29]) {
+      assert.ok(present.has(k), `day round is missing irregular ${k}`);
+    }
+  });
+
+  test("a month round of sufficient count contains every one of the 3 exceptions", () => {
+    const cfg: NumberQuizConfig = {
+      count: 12,
+      includeCounters: true,
+      counters: ["month"],
+      numberMax: 12,
+      directions: ["read", "write"],
+    };
+    const round = buildNumberRound(cfg, seeded(13));
+    const present = new Set(round.map((it) => it.n));
+    for (const k of [4, 7, 9]) {
+      assert.ok(present.has(k), `month round is missing irregular ${k}`);
+    }
+  });
+
+  test("day items are capped at 31, never n=0 or n>31", () => {
+    const cfg: NumberQuizConfig = {
+      count: 60,
+      includeCounters: true,
+      counters: ["day"],
+      numberMax: 999, // a generous cfg cap must still be clamped by counterMax
+      directions: ["read", "write", "hear"],
+    };
+    const round = buildNumberRound(cfg, seeded(21));
+    assert.ok(round.length > 0, "day round is empty");
+    for (const it of round) {
+      assert.equal(it.counter, "day");
+      assert.ok(it.n >= 1 && it.n <= 31, `day ${it.n} out of range`);
+      assert.equal(it.reading, dayReading(it.n), `day ${it.n} reading mismatch`);
+    }
+  });
+
+  test("month items are capped at 12, never n=0 or n>12", () => {
+    const cfg: NumberQuizConfig = {
+      count: 30,
+      includeCounters: true,
+      counters: ["month"],
+      numberMax: 999,
+      directions: ["read", "write", "hear"],
+    };
+    const round = buildNumberRound(cfg, seeded(21));
+    assert.ok(round.length > 0, "month round is empty");
+    for (const it of round) {
+      assert.equal(it.counter, "month");
+      assert.ok(it.n >= 1 && it.n <= 12, `month ${it.n} out of range`);
+      assert.equal(it.reading, monthReading(it.n), `month ${it.n} reading mismatch`);
+    }
+  });
+
+  test("makeItem reproduces dayReading/monthReading for the FULL range, every direction", () => {
+    for (let n = 1; n <= 31; n++) {
+      for (const dir of ["read", "write", "hear"] as const) {
+        const item = makeItem(n, "day", dir);
+        assert.ok(item, `day ${n} (${dir}) should build`);
+        assert.equal(item!.reading, dayReading(n), `day ${n} reading`);
+        assert.deepEqual(item!.accept, acceptableDayReadings(n), `day ${n} accept set`);
+        assert.equal(item!.digits, String(n));
+        assert.equal(item!.promptKanji, dayForms[n - 1].glyph, `day ${n} promptKanji matches the shipped glyph`);
+      }
+    }
+    for (let n = 1; n <= 12; n++) {
+      for (const dir of ["read", "write", "hear"] as const) {
+        const item = makeItem(n, "month", dir);
+        assert.ok(item, `month ${n} (${dir}) should build`);
+        assert.equal(item!.reading, monthReading(n), `month ${n} reading`);
+        assert.deepEqual(item!.accept, acceptableMonthReadings(n), `month ${n} accept set`);
+        assert.equal(item!.digits, String(n));
+        assert.equal(item!.promptKanji, monthForms[n - 1].glyph, `month ${n} promptKanji matches the shipped glyph`);
+      }
+    }
+  });
+
+  test("makeItem refuses out-of-range day/month counts", () => {
+    assert.equal(makeItem(0, "day", "read"), null);
+    assert.equal(makeItem(32, "day", "read"), null);
+    assert.equal(makeItem(0, "month", "read"), null);
+    assert.equal(makeItem(13, "month", "read"), null);
+  });
+
+  test("gradeNumberItem grades a rolled day/month READ item correctly", () => {
+    // 十四日 じゅうよっか — the よっか-reuse exception.
+    const day14 = makeItem(14, "day", "read")!;
+    assert.equal(day14.reading, "じゅうよっか");
+    assert.ok(gradeNumberItem(day14, "じゅうよっか"));
+    assert.ok(!gradeNumberItem(day14, "じゅうよんにち"));
+    // 二十日 はつか — the fully suppletive exception.
+    const day20 = makeItem(20, "day", "read")!;
+    assert.equal(day20.reading, "はつか");
+    assert.ok(gradeNumberItem(day20, "はつか"));
+    // 七月 しちがつ — the branch-digit exception.
+    const month7 = makeItem(7, "month", "read")!;
+    assert.equal(month7.reading, "しちがつ");
+    assert.ok(gradeNumberItem(month7, "しちがつ"));
+    assert.ok(!gradeNumberItem(month7, "なながつ"));
+  });
+
+  test("gradeNumberItem grades a rolled day/month WRITE/HEAR item against digits", () => {
+    const day20 = makeItem(20, "day", "write")!;
+    assert.ok(gradeNumberItem(day20, "20"));
+    assert.ok(gradeNumberItem(day20, "２０")); // full-width
+    assert.ok(!gradeNumberItem(day20, "はつか"));
+    const month7 = makeItem(7, "month", "hear")!;
+    assert.ok(gradeNumberItem(month7, "7"));
+    assert.ok(!gradeNumberItem(month7, "9"));
   });
 });
 
