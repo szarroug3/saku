@@ -99,11 +99,11 @@ export interface CharacterEntryPayload {
 }
 
 const POSITION: Record<string, { en: string; rank: number }> = {
-  "": { en: "alternate", rank: 0 },
-  kanmuri: { en: "top", rank: 1 },
-  hen: { en: "left", rank: 2 },
-  tsukuri: { en: "right", rank: 3 },
-  ashi: { en: "bottom", rank: 4 },
+  "": { en: "Alternate", rank: 0 },
+  kanmuri: { en: "Top", rank: 1 },
+  hen: { en: "Left", rank: 2 },
+  tsukuri: { en: "Right", rank: 3 },
+  ashi: { en: "Bottom", rank: 4 },
   nyou: { en: "Bottom Left", rank: 5 },
 };
 
