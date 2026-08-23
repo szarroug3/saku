@@ -330,11 +330,18 @@ export async function answerTypedCorrectly(
   await box.fill(answer);
   await box.press("Enter");
 
-  // Matches both pill shapes: "3 answered · endless" and "3 / 5".
+  // Matches both pill shapes: "3 answered · endless" and "3 / 5". A generous
+  // timeout, not the suite default: this fires on every answer of every
+  // multi-round session test, so it is the one assertion most exposed to a
+  // dev-mode Next.js server's request queue backing up under concurrent
+  // worker load — a real slowdown, not a stuck state, since it always
+  // resolves given enough time rather than timing out on a genuinely wrong
+  // value.
   await expect(progressPill(page)).toHaveText(
     new RegExp(`^${expectedTotal} (answered · endless|/ \\d+)$`),
+    { timeout: 30_000 },
   );
-  await page.waitForFunction((el) => !el?.isConnected, glyphNode);
+  await page.waitForFunction((el) => !el?.isConnected, glyphNode, { timeout: 30_000 });
   await glyphNode?.dispose();
 }
 

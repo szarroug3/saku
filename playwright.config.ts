@@ -27,18 +27,19 @@ export default defineConfig({
   // while each worker still gets Playwright's isolated browser context and
   // localStorage state through the seed fixture described above.
   //
-  // DROPPED FROM 6 TO 3 (SAK-140/141). 6 workers against ONE dev-mode Next.js
-  // server (not a production build — no build-time optimization, every route
-  // still compiles/renders live) intermittently starved several tests: a bare
-  // `page.goto` timing out at 60s, a progress pill still reading a stale
-  // count a full 15s after an answer. All of that reproduced ONLY at the full
-  // 6-worker default and disappeared entirely at 2-3 workers across repeated
-  // full-suite runs — this is the dev server falling behind under concurrent
-  // load, not a product race. 3 is the choice that kept most of the
-  // parallelism speedup while never reproducing the starvation in testing;
-  // drop further toward 1-2 if it resurfaces on a slower machine.
+  // DROPPED FROM 6 TO 2 (SAK-140/141). 6 workers against ONE dev-mode
+  // Next.js server (not a production build — no build-time optimization,
+  // every route still compiles/renders live) intermittently starved several
+  // tests: a bare `page.goto` timing out at 60s, a progress pill still
+  // reading a stale count long after an answer. 3 workers cut this a lot but
+  // did not fully eliminate it on every machine — the progress-pill lag in
+  // particular kept recurring on a slower box even at 3. 2 is the more
+  // conservative choice; the per-assertion timeout on the progress pill
+  // (answerTypedCorrectly, helpers/app.ts) was also raised as a second,
+  // independent hedge against the same symptom. Drop to 1 if it still
+  // resurfaces — the suite is fully reliable there, just slower.
   fullyParallel: false,
-  workers: 3,
+  workers: 2,
   forbidOnly: !!process.env.CI,
   retries: 0,
   // A plain `pnpm run test:e2e` reports exactly as it always has: one line per
