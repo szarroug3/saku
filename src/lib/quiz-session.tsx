@@ -1009,6 +1009,35 @@ export function QuizSessionProvider({
   // ever clear the FOCUSED run — parked runs live until you finish or discard
   // them from the Current sessions page.
 
+  /**
+   * Take back the seen marks a session's START laid down — a discard, and now
+   * also a finish that did not choose to mark the material known (see
+   * finishSession) and a park of an already-"complete" session (see
+   * parkIfActive).
+   *
+   * The start advanced the Learn frontier by marking the lesson (and the kanji
+   * readings its words prove) seen; scoring nothing (or nothing confirmed) means
+   * that advance has to come off with it — "it should not advance until I
+   * complete the session [and say so]". postUnseen is the inverse of the
+   * start's markSeen and reaches the server too, so this device rolling it back
+   * cannot leave another device seeing the advance. Only what the start ADDED is
+   * rolled back (seededSeen is that exact set), so a reading unlocked by an
+   * earlier lesson is untouched. A session that DID commit real results (or a
+   * claim) keeps its advance regardless of this: `effectiveState` (claims.ts)
+   * reads history and claims directly, not the seen mark, so calling this
+   * alongside a commit is redundant, never wrong — but finishSession only calls
+   * it on the branch that commits nothing at all.
+   *
+   * Declared here, ahead of parkIfActive, rather than down by finishSession
+   * where it originally lived — parkIfActive now needs it too, and a callback
+   * used inside another callback's body has to exist before that body can
+   * name it in its own dependency array.
+   */
+  const rollbackSeededSeen = useCallback((s: StudySession | null) => {
+    const seen = s?.seededSeen;
+    if (seen && seen.length) void postUnseen(seen);
+  }, []);
+
   /** Set the focused run aside if there is one, so a new run can take focus
    * without overwriting it. Reads the live state from `latest` so it's correct
    * inside a click handler, and clears the focused slots. No-op when nothing is
@@ -1016,6 +1045,19 @@ export function QuizSessionProvider({
   const parkIfActive = useCallback(() => {
     const cur = latest.current;
     if (!cur.active && !cur.session) return;
+    // A session already at "complete" has nothing left to resume — `runs`
+    // excludes it (SAK-144, see its own note above), so parking it here would
+    // only bury it in `parked` forever: invisible to Current Sessions, never
+    // continuable, never discardable. Drop it instead of parking it, the same
+    // as any other unconfirmed "complete" state (finishSession(false) already
+    // leaves a single-round session's pendingRecord uncommitted the same way).
+    if (cur.session && cur.session.phase === "complete") {
+      rollbackSeededSeen(cur.session);
+      setActive(null);
+      setSession(null);
+      setProgress(null);
+      return;
+    }
     setParked((prev) => [
       {
         id: genRunId(),
@@ -1029,7 +1071,7 @@ export function QuizSessionProvider({
     setActive(null);
     setSession(null);
     setProgress(null);
-  }, []);
+  }, [rollbackSeededSeen]);
 
   /** Start one leg of drilling. A leg is a quiz; a session is many legs. */
   const beginLeg = useCallback(
@@ -1457,29 +1499,6 @@ export function QuizSessionProvider({
   }, [session, closeRound, router]);
 
   /**
-   * Take back the seen marks a session's START laid down — a discard, and now
-   * also a finish that did not choose to mark the material known (see
-   * finishSession).
-   *
-   * The start advanced the Learn frontier by marking the lesson (and the kanji
-   * readings its words prove) seen; scoring nothing (or nothing confirmed) means
-   * that advance has to come off with it — "it should not advance until I
-   * complete the session [and say so]". postUnseen is the inverse of the
-   * start's markSeen and reaches the server too, so this device rolling it back
-   * cannot leave another device seeing the advance. Only what the start ADDED is
-   * rolled back (seededSeen is that exact set), so a reading unlocked by an
-   * earlier lesson is untouched. A session that DID commit real results (or a
-   * claim) keeps its advance regardless of this: `effectiveState` (claims.ts)
-   * reads history and claims directly, not the seen mark, so calling this
-   * alongside a commit is redundant, never wrong — but finishSession only calls
-   * it on the branch that commits nothing at all.
-   */
-  const rollbackSeededSeen = useCallback((s: StudySession | null) => {
-    const seen = s?.seededSeen;
-    if (seen && seen.length) void postUnseen(seen);
-  }, []);
-
-  /**
    * Session complete → the learner's explicit choice, made on the SAME
    * screen: write history and clear either way.
    *
@@ -1698,17 +1717,35 @@ export function QuizSessionProvider({
   }, [rollbackSeededSeen]);
 
   /** Every run in progress, focused-first then most-recently-parked. Screens
-   * read this instead of the leg/session split. */
+   * read this instead of the leg/session split.
+   *
+   * A session at phase "complete" is EXCLUDED — SAK-144. "complete" means
+   * "finished for good, the screen that says what you did" (session.ts):
+   * every round that ran already committed its record via closeRound, so
+   * there is nothing left in it that is honestly "in progress". A taught
+   * session (Path A on session-complete.tsx) has no explicit finish button —
+   * by design, since there is nothing left to claim or discard, only an
+   * optional "Quiz again" — so without this filter a completed lesson stayed
+   * in `runs` (and so in Current Sessions, the sidebar count, and Practice's
+   * resume card) forever, or until parked/discarded by hand. Home's own
+   * lesson-card matching already carried this exact `phase !== "complete"`
+   * filter locally (see lessonRuns in home-feed.tsx); moving it to the one
+   * shared source fixes every other reader at once instead of leaving them to
+   * duplicate it themselves. */
   const runs = useMemo<RunInfo[]>(() => {
     const out: RunInfo[] = [];
     if (session) {
-      out.push(sessionRunInfo(FOCUSED_RUN, session, progress, true));
+      if (session.phase !== "complete") {
+        out.push(sessionRunInfo(FOCUSED_RUN, session, progress, true));
+      }
     } else if (active) {
       out.push(quizRunInfo(FOCUSED_RUN, active, progress, active.startedAt ?? 0, true));
     }
     for (const r of parked) {
       if (r.session) {
-        out.push(sessionRunInfo(r.id, r.session, r.progress, false));
+        if (r.session.phase !== "complete") {
+          out.push(sessionRunInfo(r.id, r.session, r.progress, false));
+        }
       } else if (r.active) {
         out.push(quizRunInfo(r.id, r.active, r.progress, r.parkedAt, false));
       }
