@@ -161,7 +161,51 @@ describe("the word total is the material, and does not move", () => {
     // COUNTER_TRACK_KEBS once the wari/floor/en generative categories shipped,
     // the same "the counters track already teaches this" reason 一人/二人 etc
     // were cut above.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12463);
+    // Minus 27 more with SAK-175: から/ので/のに/たら/たり/ながら/にくい/たい/
+    // たがる/させる/らしい/かもしれない/でしょう/ませんか/ましょうか/こと
+    // ができる/ことにする/ことになる/なければならない/なくてはならない/
+    // なくてはいけない/ために/おかげで/ようになる/ようにする/について/として
+    // joined PARTICLE_TRACK_KEBS — the same EXACT-recipe-pattern cut まで/だけ/
+    // しか already got, extended to every OTHER particle/connective confirmed
+    // against recipes.ts (see PARTICLE_TRACK_KEBS's own doc comment). そう/
+    // そうだ/つもり/はず/なら matched a recipe too but were checked and kept —
+    // each has a real independent sense the recipe does not teach — so they
+    // are NOT part of this cut.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12436);
+  });
+});
+
+describe("SAK-175: particles/connectives with an EXACT grammar-recipe match are cut, real vocabulary is not", () => {
+  const CUT_KEBS = [
+    "まで", "だけ", "しか", "から", "ので", "のに", "たら", "たり", "ながら",
+    "にくい", "たい", "たがる", "させる", "らしい", "かもしれない", "でしょう",
+    "ませんか", "ましょうか", "ことができる", "ことにする", "ことになる",
+    "なければならない", "なくてはならない", "なくてはいけない",
+    "ために", "おかげで", "ようになる", "ようにする", "について", "として",
+  ];
+
+  test("every confirmed match is gone from CURRICULUM_WORDS", () => {
+    for (const keb of CUT_KEBS) {
+      assert.ok(
+        !CURRICULUM_WORDS.some((w) => w.keb === keb),
+        `${keb} must no longer be in CURRICULUM_WORDS — it duplicates a grammar recipe`,
+      );
+    }
+  });
+
+  test("every confirmed match is still a real VOCAB row (only the teaching spine cut it, not the dictionary)", () => {
+    for (const keb of CUT_KEBS) {
+      assert.ok(VOCAB.some((w) => w.keb === keb), `${keb} should still exist in VOCAB itself`);
+    }
+  });
+
+  test("checked-but-kept: そう/そうだ/つもり/はず/なら matched a recipe too but have a real independent sense", () => {
+    for (const keb of ["そう", "そうだ", "つもり", "はず", "なら"]) {
+      assert.ok(
+        CURRICULUM_WORDS.some((w) => w.keb === keb),
+        `${keb} has a real standalone sense a recipe does not teach and must stay in CURRICULUM_WORDS`,
+      );
+    }
   });
 });
 
