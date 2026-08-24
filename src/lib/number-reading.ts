@@ -73,7 +73,14 @@ export function numberReading(n: number): string {
  * SAK-177 adds three: "wari" (〜割, tenths/percent), "floor" (〜階, floors of a
  * building — its OWN id, deliberately not "kai", because it is a DIFFERENT
  * counter from 回 that merely shares 回's base reading; see UNIT.floor's doc
- * comment for the one count where the two diverge), and "en" (〜円, yen). */
+ * comment for the one count where the two diverge), and "en" (〜円, yen).
+ *
+ * SAK-171 adds "ji" (〜時, telling the hour). It slots onto this SAME shared
+ * PREFIX+LAST UNIT engine rather than needing its own sibling engine the way
+ * day-month-reading.ts does for 〜日/〜月 — see UNIT.ji's doc comment for why
+ * that call is right for 時 specifically (unlike 20日's はつか, 時 has no
+ * suppletive word that breaks composition; every count, including 11時/12時,
+ * is genuinely prefix+unit). */
 export type CounterKind =
   | "tsu"
   | "nin"
@@ -88,7 +95,8 @@ export type CounterKind =
   | "sai"
   | "wari"
   | "floor"
-  | "en";
+  | "en"
+  | "ji";
 
 /** Digit → its kanji, indexed 0–10 (0 unused). The SAME table the construction
  * pages spell their Word column with, kept here in the pure engine so the quiz's
@@ -115,6 +123,7 @@ const COUNTER_KANJI: Record<CounterKind, string> = {
   wari: "割",
   floor: "階",
   en: "円",
+  ji: "時",
 };
 
 /** The counter kanji of a CounterKind (本, 人, …). */
@@ -199,6 +208,22 @@ const UNIT: Record<CounterKind, readonly string[]> = {
   // SAK-177: 円 (yen) begins with え, a vowel, so it NEVER shifts — same shape
   // as 割/枚/台 above. Hand-verified against real Japanese (一円…十円).
   en: ["", "いちえん", "にえん", "さんえん", "よんえん", "ごえん", "ろくえん", "ななえん", "はちえん", "きゅうえん", "じゅうえん"],
+  // SAK-171: 〜時 (telling the hour) never hardens/voices — じ stays じ after
+  // every number — but 4, 7 and 9 read on a BRANCH, the same shape 〜月 already
+  // has (四月 しがつ, 七月 しちがつ, 九月 くがつ). 7 and 9 reuse the exact branch
+  // digit ONES_BRANCH already names (しち, く) — no new table needed for those.
+  // 4 does NOT: 四時 is よじ, and よ is a THIRD reading of "4" that exists
+  // nowhere else in this file — not よん (the default), not し (ONES_BRANCH's
+  // branch alternate). It is hand-verified real Japanese, entered directly as
+  // this UNIT row's own count-4 value rather than bolted onto the shared
+  // ONES_BRANCH table (which numberReading()/acceptableNumberReadings() and
+  // every OTHER counter also read from) — a 時-only reading has no business
+  // leaking into a table those unrelated call sites share. Curriculum scope is
+  // capped at 1-12 (see number-construction.ts's `ji` CounterSpec `range`), but
+  // the engine itself composes correctly past that too — 13時 じゅうさんじ,
+  // 14時 じゅうよじ are equally real Japanese (24-hour time), unlike a
+  // suppletive day-of-month word that stops composing at all.
+  ji: ["", "いちじ", "にじ", "さんじ", "よじ", "ごじ", "ろくじ", "しちじ", "はちじ", "くじ", "じゅうじ"],
 };
 
 /**
