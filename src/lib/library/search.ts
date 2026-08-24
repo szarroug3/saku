@@ -33,7 +33,6 @@
 // ever stops being affordable, the fix is `useDeferredValue` (already on the
 // page) before it is a data structure.
 
-import { CHAR_INDEX } from "@/data/characters";
 import { digitVariants } from "@/lib/engine/en-match";
 import { KIND_LABEL, KINDS, LIB_ENTRIES } from "@/lib/library/library-index";
 import type { Kind, LibEntry } from "@/lib/library/entries";
@@ -432,21 +431,6 @@ function phraseRun(gTokens: string[], qTokens: string[]): boolean {
     if (ok) return true;
   }
   return false;
-}
-
-/**
- * Is this query Japanese? Used by the page to decide whether "Means that" is
- * even worth a chip. Cheap and approximate on purpose — being wrong costs an
- * empty section, which the renderer already drops.
- */
-export function isJapanese(q: string): boolean {
-  return /[぀-ヿ㐀-鿿]/.test(q);
-}
-
-/** True when the query is a kana character the app teaches — the one case where
- * the chart's romaji index is the right answer and the entry index is not. */
-export function isKnownKana(q: string): boolean {
-  return Boolean(CHAR_INDEX[q]);
 }
 
 // ---------- THE DEINFLECTION SEAM ----------

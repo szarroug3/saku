@@ -9,23 +9,17 @@
 // the table still renders, just in the wrong order, so the order is pinned here
 // against the data.
 //
-// WHO CALLS IT NOW. The stepped lesson used to, capped at 5. It does not any
-// more: on the step where a shape is first met, a list of the kanji built on it
-// is 22 characters the reader has not learned, and the trim moved that catalogue
-// to the Library alone. So the callers are the two Library surfaces, the kanji
-// entry's "seen as a part of" and the radical entry's table at cap 30, and the
-// wiring pinned below is theirs.
+// SAK-159: the old RadicalKanjiTable/ComponentUses rendering this fed is gone —
+// the redesigned CharacterEntryView shows a radical's "used as a part in" list
+// off `usedAsPartIn` directly (see character-entry-content.ts). The ordering
+// invariant below still holds for that list, so it stays pinned here against
+// the data even though the component it used to describe does not exist.
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { orderRow } from "../../data/kanji.ts";
 import { usedAsPartIn } from "../../lib/library/components.ts";
-
-const read = (rel: string) =>
-  readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8");
 
 const learningOrder = (glyph: string) =>
   [...usedAsPartIn(glyph)].sort(
@@ -51,48 +45,5 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
     // so 乙's list no longer includes it at all.)
     assert.equal(sorted[0], "乞");
     assert.ok(sorted.indexOf("乞") < sorted.indexOf("孔"));
-  });
-});
-
-describe("the radical table is isolated from primitive pages", () => {
-  const table = read("./radical-kanji-table.tsx");
-  const uses = read("./component-uses.tsx");
-  // The teach walk's item view is TeachItemView now (it dispatches to the shared
-  // *-entry-view components); the old LessonItemView is gone.
-  const lesson = read("../session/teach-item-view.tsx");
-  // The redesigned radical reference page is CharacterEntryView; its "used as a
-  // part in" list is off usedAsPartIn now, not ComponentUses/RadicalKanjiTable.
-  const characterView = read("./character-entry-view.tsx");
-  const characterContent = read("../../lib/library/character-entry-content.ts");
-
-  test("the table sorts on the curriculum index", () => {
-    assert.match(table, /orderRow\(/);
-  });
-
-  test("ComponentUses uses the content-free precomputed component relation", () => {
-    assert.doesNotMatch(uses, /<RadicalKanjiTable/);
-    // SAK-104: the direct library-index import moved server-side — the
-    // client component now fetches its one combined payload through the
-    // Server Action wrapper (getComponentUses in server-lookups.ts, itself
-    // backed by usedAsPartIn/knownWordsUsing from library-index.ts) instead
-    // of importing the ~9.5MB dictionary into the client bundle directly.
-    assert.doesNotMatch(uses, /@\/lib\/library\/library-index/);
-    assert.match(uses, /@\/lib\/library\/server-lookups/);
-  });
-
-  test("the stepped lesson mounts it nowhere", () => {
-    // The JSX, not the name: the view's own header explains where the table
-    // went, and that sentence has to be allowed to name it.
-    assert.doesNotMatch(lesson, /<RadicalKanjiTable/);
-    assert.doesNotMatch(lesson, /from "@\/components\/library\/radical-kanji-table"/);
-  });
-
-  test("the Library radical entry still lists the kanji built on the shape", () => {
-    // The redesign shows this as a "used as a part in" list in CharacterEntryView
-    // (capped in the view, the approved gallery behaviour) rather than the old
-    // 30-row ComponentUses table. The invariant that survives: a radical page
-    // still joins up the kanji written with it.
-    assert.match(characterView, /payload\.usedIn/);
-    assert.match(characterContent, /usedAsPartIn/);
   });
 });

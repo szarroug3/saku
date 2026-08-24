@@ -28,11 +28,6 @@ import type {
   SessionStats,
 } from "@/types";
 
-/** The hero's own words for the score. */
-export function metricWords(): string {
-  return "score";
-}
-
 function s(n: number): string {
   return n === 1 ? "" : "s";
 }

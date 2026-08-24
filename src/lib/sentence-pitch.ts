@@ -83,13 +83,6 @@ function index(): ReadonlyMap<string, number> {
   return readingIndex;
 }
 
-/** Reset the memoized index — test-only seam (the index is built once per
- * server process; a unit test wants a fresh build against whatever fixture
- * data is loaded). No production caller has a reason to call this. */
-export function __resetReadingIndexForTest(): void {
-  readingIndex = null;
-}
-
 export interface PhraseMatch {
   /** How many of the phrase's LEADING morae the match covers — apply the
    * pitch pattern to exactly this many, leave the rest untouched. */

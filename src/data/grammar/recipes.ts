@@ -1821,10 +1821,6 @@ export function isPrimaryPatternRecipe(r: Recipe): boolean {
   return primaryPatternRecipe(r.id)?.id === r.id;
 }
 
-export function recipesInCluster(cluster: string): Recipe[] {
-  return RECIPES.filter((r) => r.cluster === cluster);
-}
-
 /**
  * The pattern with its sense appended, for the STRING-ONLY surfaces that cannot
  * render a second styled span — the drill's MC prompt, option labels and reveal,
