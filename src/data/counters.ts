@@ -394,6 +394,20 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
  *     kanji, real separate vocabulary the words track still teaches, exactly
  *     like bare 本 ("book") sits beside the 〜本 counter without either one
  *     excluding the other.
+ *   - SAK-171: 一時/４時/７時 — vocab.json's real series for 〜時 (telling the
+ *     hour), confirmed by grepping vocab.json for every keb matching a digit
+ *     run (kanji or full-width) immediately followed by 時: only 3 of the 12
+ *     possible o'clock forms exist as standalone JMdict rows at all (the other
+ *     9 — 2時, 3時, 5時, 6時, 8時, 9時, 10時, 11時, 12時 — are not in the
+ *     dictionary as their own words). None of the three has a CounterForm
+ *     (〜時 is a pure generative category, like 〜割/〜階/〜円, with no rote
+ *     forms of its own), so — same gap as the 割/階/円 family above — they map
+ *     straight to the "ji" construction page (numberConstructionEntry("ji")).
+ *     Note 一時's keb is the KANJI 一, not a full-width digit (unlike ４時/７時)
+ *     — vocab.json spells it that way, so the alias matches that exact string,
+ *     not a re-spelling. 何時 (なんじ, "what time") is a genuine independent
+ *     interrogative word, not a counted form of this rule, and is NOT in this
+ *     map — it needs no dedup and no change at all.
  *
  * word-lesson.ts already cuts every one of the 一つ…九つ/一人/二人 kebs from
  * CURRICULUM_WORDS via its own COUNTER_TRACK_KEBS (a broader, hand-maintained
@@ -434,6 +448,12 @@ export const COUNTER_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Ma
   ["二階", numberConstructionEntry("floor")],
   ["一円", numberConstructionEntry("en")],
   ["１０００円", numberConstructionEntry("en")],
+  // SAK-171: 〜時's real vocab.json series — see the doc comment above. 一時's
+  // keb is spelled with kanji 一 (not a full-width digit), matching vocab.json
+  // exactly.
+  ["一時", numberConstructionEntry("ji")],
+  ["４時", numberConstructionEntry("ji")],
+  ["７時", numberConstructionEntry("ji")],
 ]);
 
 /**
@@ -620,6 +640,12 @@ export const CONSTRUCTION_CATEGORY_IDS = [
   "wari",
   "floor",
   "en",
+  // SAK-171: 〜時 (telling the hour) — also not an object counter, also a real
+  // generative category. Sits right before day/month: like them it is about
+  // telling time, and like them it is a CLOSED range (1-12) rather than the
+  // open 1-99 every counter above it composes to — see number-construction.ts's
+  // `ji` CounterSpec (`range: 12`) for the mechanism.
+  "ji",
   "day",
   "month",
 ] as const;

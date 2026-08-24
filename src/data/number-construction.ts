@@ -104,9 +104,6 @@ export interface NumberConstruction {
 // COUNTER PAGES — derived from the reading engine.
 // ---------------------------------------------------------------------------
 
-/** Digit → its kanji. Used to spell the Word column: 三 in 三本, 十 in 十本. */
-const KANJI_DIGIT = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
-
 /** The full kanji spelling of an integer this file shows in the Word column — the
  * tens (11-99) and the big bases (100 … 100000): 十一, 三十四, 二百, 一万, 十万.
  * Delegates to the engine's numberToKanji so the reference tables and the quiz's
@@ -159,6 +156,21 @@ interface CounterSpec {
    * reading is not a valid suffix at every magnitude the way a clean one's is.
    * Undefined for every other counter. */
   readonly extraRegular?: { readonly count: number };
+  /**
+   * SAK-171: caps this counter's WHOLE range at N — both the Regular/Irregular
+   * table's sweep (ordinarily 1-10) AND the "Quiz me" round's numberMax
+   * (ordinarily 99) — 〜時's only case. Every other counter here composes
+   * indefinitely (二十三本, きゅうじゅうきゅう人 are real, valid Japanese), so a
+   * 1-10 table plus an up-to-99 quiz is the right shape. 〜時 is genuinely
+   * CLOSED instead: Japanese clock hours run 1-12, the same closed shape
+   * day-month-construction.ts's MONTH already teaches (1-12) — so its table
+   * must show 11時/12時 as real rows (not just imply them via a wider quiz),
+   * and its quiz must never roll a count past 12. `extraRegular`/
+   * `extraIrregular` above solve a DIFFERENT problem (one extra worked
+   * example beyond an otherwise-open sweep); this solves "the sweep itself
+   * is smaller than 10, not larger." Undefined for every other counter.
+   */
+  readonly range?: number;
 }
 
 /** counterReading, non-null asserted — every count 1..10 reads for every counter
@@ -207,7 +219,13 @@ function counterRow(n: number, spec: CounterSpec, base: string, suppletive: bool
   const reading = counterReading(n, spec.kind)!;
   return {
     label: `${n} ${n === 1 ? singular : plural}`,
-    word: `${KANJI_DIGIT[n]}${spec.glyph}`,
+    // SAK-171: numberKanji(n) (the engine's own numberToKanji) — this sweep
+    // now runs past 10 for a closed-range counter like 〜時 (CounterSpec's
+    // `range`), so a single-digit table would silently spell "undefined時" for
+    // 十一時/十二時. numberKanji(n) matches what a single-digit table would
+    // have given for every n it used to cover (1-10), so this is a no-op for
+    // every other counter here.
+    word: `${numberKanji(n)}${spec.glyph}`,
     reading,
     alternateReadings: acceptableCounterReadings(n, spec.kind).filter(
       (candidate) => candidate !== reading,
@@ -269,7 +287,9 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   const base = counterBase(spec.kind);
   const regular: CountRow[] = [];
   const irregular: CountRow[] = [];
-  for (let n = 1; n <= 10; n++) {
+  // SAK-171: a closed-range counter (only 〜時 today) sweeps to its own
+  // `range` instead of the ordinary 1-10 — see that field's doc comment.
+  for (let n = 1; n <= (spec.range ?? 10); n++) {
     if (counterReading(n, spec.kind) === null) continue;
     const isIrregular = shifts.has(n);
     // A suppletive counter's irregular counts are their own words; its regular
@@ -390,13 +410,13 @@ const TENS_GROUPS: readonly IntroCountGroup[] = [
   { title: "Regular", counter: false, examples: TENS_SPREAD.map(tensRow) },
 ];
 
-// The thirteen counters, in the shelf's teaching order: the taught-as-a-system
+// The fourteen counters, in the shelf's teaching order: the taught-as-a-system
 // set (人 本 匹 枚) first, then the tail (個 台 冊 杯 回 歳), then SAK-177's three
-// (割 階 円) — none of which is an object counter, so none belongs in
-// SYSTEM_COUNTERS/TAIL_COUNTERS (counters.ts), but each gets the identical
-// rule-card-then-round treatment. 〜つ is deliberately absent: it is native
-// memorisation (ひとつ…とお), not a generative construction, so there is no
-// rule to show and no round to launch.
+// (割 階 円), then SAK-171's 〜時 — none of which is an object counter, so none
+// belongs in SYSTEM_COUNTERS/TAIL_COUNTERS (counters.ts), but each gets the
+// identical rule-card-then-round treatment. 〜つ is deliberately absent: it is
+// native memorisation (ひとつ…とお), not a generative construction, so there is
+// no rule to show and no round to launch.
 /** 二十歳's real shipped CounterForm (counters.ts's COUNTER_CURRICULUM/TAIL),
  * read once here so the sai spec below and extraIrregularRow never re-spell
  * its glyph/reading. */
@@ -588,16 +608,39 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     // includes 100億.
     extraRegular: { count: 1000 },
   },
+  // SAK-171: 〜時 (telling the hour) — a genuine generative category, same
+  // rule-card-then-round shape as every counter above it, but with two things
+  // neither wari/floor/en nor the object-counter tail has: a CLOSED range
+  // (`range: 12` — see that field's doc comment) and a NEW irregular reading
+  // (よじ) that exists nowhere else in the app. Only 3 of the 12 possible forms
+  // (一時, ４時, ７時) are real vocab.json rows at all — see
+  // COUNTER_VOCAB_DUPLICATE_KEBS in counters.ts for the dedup side of this.
+  // 何時 (なんじ, "what time") is a genuine independent interrogative word,
+  // unrelated to this counting rule, and is untouched by any of this.
+  {
+    kind: "ji",
+    glyph: "時",
+    name: "Telling the hour (〜時)",
+    noun: ["o'clock", "o'clock"],
+    range: 12,
+    sound: [
+      {
+        lead: "4, 7 and 9 read differently.",
+        text: "四時 is よじ — its own irregular reading, not よん plus じ. 七時 is しちじ and 九時 is くじ, the same alternate reading of 7 and 9 that 〜月 uses. Every other count, including 十一時 and 十二時, is the plain number plus じ.",
+      },
+    ],
+  },
 ];
 
 /** The generative round a counter page's "Quiz me" launches: this counter's
- * counts to 99, mixed read / write / hear. */
-function counterQuizConfig(kind: CounterKind): NumberQuizConfig {
+ * counts to 99 (or, for a closed-range counter like 〜時 — see CounterSpec's
+ * `range` — to that lower cap instead), mixed read / write / hear. */
+function counterQuizConfig(kind: CounterKind, numberMax = 99): NumberQuizConfig {
   return {
     count: 10,
     includeCounters: true,
     counters: [kind],
-    numberMax: 99,
+    numberMax,
     directions: ["read", "write", "hear"],
   };
 }
@@ -610,7 +653,7 @@ function counterConstruction(spec: CounterSpec): NumberConstruction {
     glyph: `〜${spec.glyph}`,
     body: [spec.attach ?? attachPara(spec.kind, spec.glyph), ...spec.sound],
     exampleGroups: counterGroups(spec),
-    quizConfig: counterQuizConfig(spec.kind),
+    quizConfig: counterQuizConfig(spec.kind, spec.range),
     searchAlso: [spec.kind, `〜${spec.glyph}`, spec.glyph, "counter", "counting"],
   };
 }

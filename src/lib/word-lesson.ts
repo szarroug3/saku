@@ -174,6 +174,12 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
   // same cut). Bare 円/階 (the ordinary nouns "yen"/"floor") are NOT here —
   // only the counted forms these categories generate are duplicates.
   "１割", "二割", "１階", "二階", "一円", "１０００円",
+  // SAK-171: vocab.json's real 一時/４時/７時 series — now taught generatively
+  // by the counters track's "ji" (〜時) category (see counters.ts's
+  // COUNTER_VOCAB_DUPLICATE_KEBS for the matching Library-dedup side of this
+  // same cut). 何時 (なんじ, "what time") is a separate, genuinely independent
+  // word and is deliberately NOT here.
+  "一時", "４時", "７時",
 ]);
 
 // The core case/binding particles (か/は/が/に/で/を/へ/まで/だけ/しか), so the words

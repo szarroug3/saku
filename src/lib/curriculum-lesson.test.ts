@@ -428,10 +428,14 @@ describe("the totals are counted off the data, never typed in", () => {
   // について/として — まで/だけ/しか were already excluded before this ticket),
   // each a single-reading word — same mechanism as the SAK-163/174/177 drops
   // above.
-  test("and today those counts are 90, 2,136 and 12,547", () => {
+  // It dropped to 12,544 with SAK-171: COUNTER_TRACK_KEBS pulled the three
+  // real vocab.json duplicates of the new "ji" (〜時) generative category
+  // (一時/４時/７時) out to the counters track, each a single-reading word —
+  // same mechanism as the SAK-163/174/177 drops above.
+  test("and today those counts are 90, 2,136 and 12,544", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12547);
+    assert.equal(CURRICULUM_TOTALS.word, 12544);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -439,7 +443,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12547, 12547);
+        assert.equal(g.position.word?.total ?? 12544, 12544);
       }
     }
   });

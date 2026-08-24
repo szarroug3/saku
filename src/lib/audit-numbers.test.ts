@@ -121,6 +121,9 @@ describe("counterReading — every counter, counts 1–10", () => {
     floor: ["いっかい", "にかい", "さんがい", "よんかい", "ごかい", "ろっかい", "ななかい", "はっかい", "きゅうかい", "じゅっかい"],
     // SAK-177: clean — え is a vowel onset, so no shift at all
     en: ["いちえん", "にえん", "さんえん", "よんえん", "ごえん", "ろくえん", "ななえん", "はちえん", "きゅうえん", "じゅうえん"],
+    // SAK-171: never hardens/voices, but 4/7/9 branch — よじ is 時's OWN new
+    // reading of 4 (not よん, not し); 7/9 reuse the ordinary branch (しち, く).
+    ji: ["いちじ", "にじ", "さんじ", "よじ", "ごじ", "ろくじ", "しちじ", "はちじ", "くじ", "じゅうじ"],
   };
 
   for (const kind of Object.keys(TABLE) as CounterKind[]) {
@@ -191,6 +194,18 @@ describe("counterReading — compound counts 11–99", () => {
     [30, "floor", "さんじゅっかい"],
     [58, "floor", "ごじゅうはっかい"],
     [63, "floor", "ろくじゅうさんがい"],
+    // SAK-171 — 〜時: never hardens/voices, so it composes with zero surprises
+    // like mai/dai/wari/en, EXCEPT the ones-place branch at 4/7/9 rides into a
+    // compound too — 十四時 is じゅうよじ (not じゅうよんじ), matching real
+    // 24-hour Japanese clock time, the same way 階's voicing at 3 rides into a
+    // compound. Curriculum scope stops at 12 (see number-construction.ts's
+    // `ji` CounterSpec), but the engine itself is correct past that too.
+    [11, "ji", "じゅういちじ"],
+    [12, "ji", "じゅうにじ"],
+    [14, "ji", "じゅうよじ"],
+    [17, "ji", "じゅうしちじ"],
+    [19, "ji", "じゅうくじ"],
+    [23, "ji", "にじゅうさんじ"],
   ];
   for (const [n, kind, expected] of cases) {
     test(`(${n}, ${kind}) → ${expected}`, () => {
