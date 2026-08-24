@@ -103,13 +103,18 @@ describe("the pitch card fires ahead of the first pitch word", () => {
   });
 });
 
-/** Find a pitchExamples row by its kanji word, across every group. */
-function pitchExampleRow(word: string): PitchExampleRow {
+/** Find a pitchExamples row by its kanji word, across every group. 橋/端 now
+ * appear TWICE (bare in the first group, +から in the "you may have noticed"
+ * group) — `variant` picks which one; omit it for a word with only one row. */
+function pitchExampleRow(word: string, variant?: "bare" | "followUp"): PitchExampleRow {
+  const matches: PitchExampleRow[] = [];
   for (const group of PITCH_INTRO.pitchExamples ?? []) {
-    const row = group.rows.find((r) => r.word === word);
-    if (row) return row;
+    for (const row of group.rows) if (row.word === word) matches.push(row);
   }
-  throw new Error(`no PITCH_INTRO.pitchExamples row for ${word}`);
+  if (matches.length === 0) throw new Error(`no PITCH_INTRO.pitchExamples row for ${word}`);
+  if (variant === "bare") return matches.find((r) => !r.followUp) ?? matches[0];
+  if (variant === "followUp") return matches.find((r) => r.followUp) ?? matches[0];
+  return matches[0];
 }
 
 /** The "H"/"L" shape plus drop index for what a row ACTUALLY sends to
@@ -129,8 +134,14 @@ describe("PITCH_INTRO.pitchExamples — はし set, SAK-142 round 2's follow-up-
   test("premise check: bare はし really does collide for 橋 and 端", () => {
     // If this fails, the bug this fix addresses is no longer real and the
     // followUp mechanism (and this whole test file) needs re-examining.
-    const bridge = pitchPatternForLength(moraeOf("はし").length, pitchExampleRow("橋").downstep);
-    const edge = pitchPatternForLength(moraeOf("はし").length, pitchExampleRow("端").downstep);
+    const bridge = pitchPatternForLength(
+      moraeOf("はし").length,
+      pitchExampleRow("橋", "bare").downstep,
+    );
+    const edge = pitchPatternForLength(
+      moraeOf("はし").length,
+      pitchExampleRow("端", "bare").downstep,
+    );
     assert.deepEqual(
       bridge.map((m) => m.high),
       edge.map((m) => m.high),
@@ -138,34 +149,57 @@ describe("PITCH_INTRO.pitchExamples — はし set, SAK-142 round 2's follow-up-
     );
   });
 
-  test("橋 (odaka) carries が and its own real downstep (2), unchanged", () => {
-    const row = pitchExampleRow("橋");
+  test("橋 and 端 appear bare first, alongside 箸, in their own un-noted group", () => {
+    const bareGroup = PITCH_INTRO.pitchExamples?.[0];
+    assert.ok(bareGroup, "the first pitchExamples group should exist");
+    assert.equal(bareGroup!.note, undefined, "no explanation yet — this group is the 'problem' half");
+    assert.deepEqual(
+      bareGroup!.rows.map((r) => r.word),
+      ["箸", "橋", "端"],
+    );
+    assert.equal(bareGroup!.rows.find((r) => r.word === "橋")!.followUp, undefined);
+    assert.equal(bareGroup!.rows.find((r) => r.word === "端")!.followUp, undefined);
+  });
+
+  test("橋 (odaka) carries から and its own real downstep (2), unchanged", () => {
+    const row = pitchExampleRow("橋", "followUp");
     assert.equal(row.reading, "はし");
-    assert.equal(row.followUp, "が");
+    assert.equal(row.followUp, "から");
     assert.equal(row.downstep, 2);
+    assert.equal(row.gloss, "from the bridge", "the gloss follows the phrase actually spoken");
   });
 
-  test("端 (heiban) carries が and its own real downstep (0), unchanged", () => {
-    const row = pitchExampleRow("端");
+  test("端 (heiban) carries から and its own real downstep (0), unchanged", () => {
+    const row = pitchExampleRow("端", "followUp");
     assert.equal(row.reading, "はし");
-    assert.equal(row.followUp, "が");
+    assert.equal(row.followUp, "から");
     assert.equal(row.downstep, 0);
+    assert.equal(row.gloss, "from the edge", "the gloss follows the phrase actually spoken");
   });
 
-  test("橋+が genuinely drops: low, high (drop), low", () => {
-    const shape = spokenShape(pitchExampleRow("橋"));
-    assert.equal(shape.hl, "LHL");
-    assert.equal(shape.dropAt, 1, "the drop lands on the 2nd mora (し), the last high mora before が");
+  // から (2 morae) rather than が (1 mora): a single trailing mora's pitch is
+  // too brief to reliably perceive against VOICEVOX's own natural declining
+  // contour (confirmed live — both the raw pitch values and a byte-diff of
+  // the actual synthesized clips showed a real but easy-to-miss difference
+  // concentrated on one syllable). Two trailing morae at a sustained level
+  // give the ear more to hold onto.
+  test("橋+から genuinely drops, and stays low for both trailing morae", () => {
+    const shape = spokenShape(pitchExampleRow("橋", "followUp"));
+    assert.equal(shape.hl, "LHLL");
+    assert.equal(shape.dropAt, 1, "the drop lands on the 2nd mora (し), the last high mora before から");
   });
 
-  test("端+が stays level: low, high, high — no drop", () => {
-    const shape = spokenShape(pitchExampleRow("端"));
-    assert.equal(shape.hl, "LHH");
+  test("端+から stays level across all three trailing morae — no drop", () => {
+    const shape = spokenShape(pitchExampleRow("端", "followUp"));
+    assert.equal(shape.hl, "LHHH");
     assert.equal(shape.dropAt, -1);
   });
 
-  test("橋+が and 端+が are now genuinely different, audible patterns", () => {
-    assert.notDeepEqual(spokenShape(pitchExampleRow("橋")), spokenShape(pitchExampleRow("端")));
+  test("橋+から and 端+から are now genuinely different, audible patterns", () => {
+    assert.notDeepEqual(
+      spokenShape(pitchExampleRow("橋", "followUp")),
+      spokenShape(pitchExampleRow("端", "followUp")),
+    );
   });
 
   test("箸 (atamadaka) needs no follow-up — its drop is already internal and audible alone", () => {
@@ -177,9 +211,11 @@ describe("PITCH_INTRO.pitchExamples — はし set, SAK-142 round 2's follow-up-
     assert.equal(shape.dropAt, 0);
   });
 
-  test("the はし group carries an explanation naming both 橋 and 端", () => {
-    const group = PITCH_INTRO.pitchExamples?.find((g) => g.rows.some((r) => r.word === "橋"));
-    assert.ok(group?.note, "the 橋/端 group should explain why they need が");
+  test("the から group carries an explanation naming both 橋 and 端", () => {
+    const group = PITCH_INTRO.pitchExamples?.find((g) =>
+      g.rows.some((r) => r.word === "橋" && r.followUp),
+    );
+    assert.ok(group?.note, "the 橋/端 +から group should explain why they need から");
     assert.match(group!.note!, /橋/);
     assert.match(group!.note!, /端/);
   });
