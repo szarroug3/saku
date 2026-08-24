@@ -35,6 +35,7 @@ import {
   type CounterForm,
 } from "./counters.ts";
 import { numberConstructionEntry } from "./number-construction-id.ts";
+import { numberReading } from "../lib/number-reading.ts";
 import { VOCAB_SUBJECT } from "./vocab.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
 import { ALL_FACTS, factsOf } from "../lib/facts.ts";
@@ -200,18 +201,50 @@ describe("SAK-169: COUNTER_VOCAB_DUPLICATE_KEBS names the kanji VOCAB duplicates
 
   test("none of these kebs are also in COUNTER_KANJI_GLYPHS — the two sets are disjoint by construction", () => {
     // COUNTER_KANJI_GLYPHS matches by a CounterForm's OWN glyph; none of these
-    // eleven kebs is any CounterForm's glyph (TSU's glyphs are kana, and 一人/
-    // 二人 have no CounterForm at all), so a keb never needs to appear in both.
+    // fifteen kebs is any CounterForm's glyph (TSU's glyphs are kana, 一人/二人
+    // have no CounterForm at all, and the SAK-176 big-number kebs are full-
+    // width-digit VOCAB rows with no CounterForm either), so a keb never needs
+    // to appear in both.
     for (const keb of COUNTER_VOCAB_DUPLICATE_KEBS.keys()) {
       assert.ok(!COUNTER_KANJI_GLYPHS.has(keb), `${keb} should not also be in COUNTER_KANJI_GLYPHS`);
     }
   });
 
-  test("exactly the eleven kebs the ticket named, no more, no fewer", () => {
+  test("exactly the eleven original kebs plus SAK-176's four big-number kebs, no more, no fewer", () => {
     assert.deepEqual(
       [...COUNTER_VOCAB_DUPLICATE_KEBS.keys()].sort(),
-      ["一つ", "一人", "七つ", "三つ", "九つ", "二つ", "二人", "五つ", "八つ", "六つ", "四つ"].sort(),
+      [
+        "一つ", "一人", "七つ", "三つ", "九つ", "二つ", "二人", "五つ", "八つ", "六つ", "四つ",
+        "１万", "１０万", "１００万", "１００億",
+      ].sort(),
     );
+  });
+});
+
+describe("SAK-176: COUNTER_VOCAB_DUPLICATE_KEBS extends to the big-number VOCAB duplicates", () => {
+  const big = numberConstructionEntry("big");
+
+  test("１万/１０万/１００万/１００億 all map to the big-numbers construction entry", () => {
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１万"), big);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１０万"), big);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１００万"), big);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１００億"), big);
+  });
+
+  test("their real vocab.json readings match numberReading() exactly, for the value each keb names", () => {
+    // Hand-verified against src/data/generated/vocab.json directly (SAK-176):
+    // 数値 → 読み pairs the app actually ships. This pins the Library-dedup
+    // side of the ticket to the SAME values number-reading.test.ts's own
+    // 億-scale fixtures prove the engine computes correctly.
+    const cases: ReadonlyArray<readonly [number, string]> = [
+      [10_000, "いちまん"],
+      [100_000, "じゅうまん"],
+      [1_000_000, "ひゃくまん"],
+      [10_000_000_000, "ひゃくおく"],
+    ];
+    for (const [n, expected] of cases) {
+      assert.equal(numberReading(n), expected, `numberReading(${n}) must equal the shipped vocab reading`);
+    }
   });
 });
 

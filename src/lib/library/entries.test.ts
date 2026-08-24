@@ -348,6 +348,27 @@ describe("SAK-172: 二十歳 no longer has a standalone Library page — it alia
   });
 });
 
+describe("SAK-176: １万/１０万/１００万/１００億 no longer duplicate onto the Words shelf", () => {
+  const DUPLICATE_KEBS = ["１万", "１０万", "１００万", "１００億"];
+
+  test("none of them is a VOCAB_SUBJECT (\"word\") entry any more", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.equal(asWord, undefined, `${keb} must not appear on the Words shelf`);
+    }
+  });
+
+  test("each aliases the big-numbers construction page, where its exact reading is shown", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const holder = LIB_ENTRIES.find(
+        (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.searchAlso?.includes(keb),
+      );
+      assert.ok(holder, `${keb} must ride as a searchAlso alias, not vanish`);
+      assert.equal(holder!.glyph, "百〜", `${keb} must alias the big-numbers page, not another`);
+    }
+  });
+});
+
 test("a verb pair and a keigo set are not speakable as one entry — each names more than one word", () => {
   const pair = LIB_ENTRIES.find((e) => e.kind === TRANSITIVITY_SUBJECT);
   assert.ok(pair, "expected at least one verb pair entry");
