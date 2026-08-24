@@ -25,6 +25,7 @@ import { HearButton } from "@/components/ui/hear-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { hasKanji } from "@/lib/romaji";
+import { moraeOf } from "@/lib/pitch";
 import { countGroupHasBuild } from "@/data/phase-intros";
 import type {
   CountBuildPiece,
@@ -35,7 +36,7 @@ import type {
   IntroExample,
   IntroPara,
   PhaseIntro,
-  PitchExampleRow,
+  PitchExampleGroup,
   PunctuationRow,
   SentenceExample,
   TransitivityPairRow,
@@ -433,33 +434,61 @@ export function IntroExamples({
 }
 
 /**
- * Sets of same-reading, different-pitch words — bare hear-it + pitch-line +
- * kanji + gloss rows, no prose or label around them (see `pitchExamples` on
- * `PhaseIntro` for why: the words sharing a reading already say what they have
- * in common). Reuses the exact pair the Library word page already ships for a
+ * Groups of same-reading, different-pitch words — bare hear-it + pitch-line +
+ * kanji + gloss rows (see `pitchExamples` on `PhaseIntro` for why: the words
+ * sharing a reading already say what they have in common, so most groups need
+ * no label). Reuses the exact pair the Library word page already ships for a
  * verified-pitch reading (character-entry-view.tsx): `HearButton` with the
  * word's exact `downstep` — the /api/pitch-tts clip, not the fuzzy sentence
  * match every plain Hear button falls back to — beside `PitchReading` drawing
- * that same downstep's overline. A blank gap separates each set from the next;
- * within a set the rows are packed tight, the same way a Library entry's own
- * reading rows are.
+ * that same downstep's overline. A blank gap separates each group from the
+ * next; within a group the rows are packed tight, the same way a Library
+ * entry's own reading rows are.
+ *
+ * A row with `followUp` (SAK-142 round 2 — the はし set's 橋/端, whose bare
+ * two-mora はし renders identically for odaka and heiban) has that kana
+ * appended to what's actually spoken and drawn — `reading + followUp` goes to
+ * both `HearButton` and `PitchReading`, with `downstep` unchanged — so the
+ * real drop (or its absence) lands on an audible mora. `PitchReading`'s
+ * `wordMoraCount` keeps the follow-up visually muted within the reading, so
+ * it reads as "add this to hear it," not as part of the word.
  */
-export function IntroPitchExamples({ sets }: { sets: readonly (readonly PitchExampleRow[])[] }) {
+export function IntroPitchExamples({ sets }: { sets: readonly PitchExampleGroup[] }) {
   return (
     <div className="space-y-5">
-      {sets.map((rows, i) => (
+      {sets.map((group, i) => (
         <div key={i} className="space-y-2">
-          {rows.map((row) => (
-            <div key={row.word} className="flex flex-wrap items-center gap-2 text-[15px]" lang="ja">
-              <HearButton glyph={row.reading} downstep={row.downstep} />
-              <PitchReading reading={row.reading} downstep={row.downstep} className="font-kana text-text" />
-              <span className="text-text">{row.word}</span>
-              <span className="text-text-muted/70">·</span>
-              <span lang="en" className="text-[13px] text-text-muted">
-                {row.gloss}
-              </span>
-            </div>
-          ))}
+          {group.note ? (
+            <p className="max-w-[64ch] text-[15px] leading-relaxed text-text">{group.note}</p>
+          ) : null}
+          {group.rows.map((row) => {
+            const spoken = row.reading + (row.followUp ?? "");
+            const wordMoraCount = row.followUp ? moraeOf(row.reading).length : undefined;
+            return (
+              <div key={row.word} className="flex flex-wrap items-center gap-2 text-[15px]" lang="ja">
+                <HearButton
+                  glyph={spoken}
+                  downstep={row.downstep}
+                  label={
+                    row.followUp
+                      ? `Hear ${row.reading} with ${row.followUp} added, with its pitch accent`
+                      : undefined
+                  }
+                />
+                <PitchReading
+                  reading={spoken}
+                  downstep={row.downstep}
+                  wordMoraCount={wordMoraCount}
+                  className="font-kana text-text"
+                />
+                <span className="text-text">{row.word}</span>
+                <span className="text-text-muted/70">·</span>
+                <span lang="en" className="text-[13px] text-text-muted">
+                  {row.gloss}
+                </span>
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
