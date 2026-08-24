@@ -401,6 +401,41 @@ describe("SAK-177: １割/二割/１階/二階/一円/１０００円 no longer 
   });
 });
 
+describe("SAK-171: 一時/４時/７時 no longer duplicate onto the Words shelf", () => {
+  const DUPLICATE_KEBS = ["一時", "４時", "７時"];
+
+  test("none of them is a VOCAB_SUBJECT (\"word\") entry any more", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.equal(asWord, undefined, `${keb} must not appear on the Words shelf`);
+    }
+  });
+
+  test("each aliases the 〜時 construction page, where its exact reading is shown", () => {
+    for (const keb of DUPLICATE_KEBS) {
+      const holder = LIB_ENTRIES.find(
+        (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.searchAlso?.includes(keb),
+      );
+      assert.ok(holder, `${keb} must ride as a searchAlso alias, not vanish`);
+      assert.equal(holder!.glyph, "〜時", `${keb} must alias the ji construction page, not another`);
+    }
+  });
+
+  test("何時 (なんじ, \"what time\") is untouched — still an ordinary Words-shelf entry", () => {
+    // The ticket's own explicit carve-out: 何時 is a genuine independent
+    // interrogative word, unrelated to the 〜時 counting rule, and needs no
+    // dedup, no alias, and no change at all.
+    const nanji = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === "何時");
+    assert.ok(nanji, "何時 must still appear on the Words shelf");
+    assert.deepEqual(nanji!.readings, ["なんじ"]);
+    // And it must NOT ride as a searchAlso alias of the 〜時 construction page —
+    // it is not a duplicate of anything that page teaches.
+    const ji = LIB_ENTRIES.find((e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.glyph === "〜時");
+    assert.ok(ji, "the 〜時 construction page must exist");
+    assert.ok(!ji!.searchAlso?.includes("何時"), "何時 must not alias 〜時's page");
+  });
+});
+
 describe("SAK-175: grammar-covered particles/connectives no longer duplicate onto the Words shelf", () => {
   // Every kana-only, multi-character VOCAB keb confirmed (by exact match
   // against src/data/grammar/recipes.ts, then checked for a real independent

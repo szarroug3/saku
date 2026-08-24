@@ -68,6 +68,14 @@ describe("the categories are well-formed", () => {
       assert.deepEqual(cat.config.counters, [id]);
     }
   });
+
+  test("SAK-171: ji (〜時) is a real category too, scoped to its own counter and capped at 12", () => {
+    const cat = CONSTRUCTION_CATEGORIES.find((c) => c.id === "ji")!;
+    assert.ok(cat, "ji category exists");
+    assert.equal(cat.config.includeCounters, true);
+    assert.deepEqual(cat.config.counters, ["ji"]);
+    assert.equal(cat.config.numberMax, 12, "closed 1-12 range, not the ordinary 99");
+  });
 });
 
 describe("a category becomes known when its construction is taught", () => {

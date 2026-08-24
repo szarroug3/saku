@@ -430,3 +430,64 @@ describe("〜円's Regular table carries 1000円/せんえん as an extra worked
     assert.equal(floorRowCount, 10);
   });
 });
+
+// SAK-171: 〜時 (telling the hour) is a CLOSED range — 1-12, matching real
+// Japanese clock hours — rather than the ordinary 1-10 table + up-to-99 quiz
+// every OTHER counter here gets (see CounterSpec's `range` field). These pin
+// the whole table the ticket specifies: 1,2,3,5,6,8,10,11,12 Regular;
+// 4 (よじ), 7 (しちじ), 9 (くじ) Irregular — and that 11時/12時 (past the
+// ordinary 1-10 sweep) spell correctly, the exact bug a single-digit lookup
+// table would have hit silently (see number-construction.ts's counterRow).
+describe("〜時's table is the CLOSED 1-12 range the ticket specifies (SAK-171)", () => {
+  // countOf (above) reads only the FIRST kanji character, so it mis-parses a
+  // two-character spelling like 十一 (11) as 10 — every OTHER counter's table
+  // never reaches past 10, so that gap never showed up before. 〜時's own rows
+  // parse their count off `label` ("11 o'clock") instead, which is exact at
+  // any count.
+  const nOf = (row: { label: string }) => Number.parseInt(row.label, 10);
+
+  test("Regular carries exactly 1,2,3,5,6,8,10,11,12", () => {
+    assert.deepEqual(rowsOf("ji", "Regular").map(nOf), [1, 2, 3, 5, 6, 8, 10, 11, 12]);
+  });
+
+  test("Irregular carries exactly 4, 7, 9 with the correct readings よじ/しちじ/くじ", () => {
+    const irregular = rowsOf("ji", "Irregular");
+    assert.deepEqual(irregular.map(nOf), [4, 7, 9]);
+    assert.deepEqual(irregular.map((r) => r.reading), ["よじ", "しちじ", "くじ"]);
+  });
+
+  test("every row's reading is the engine's, never a re-spelling", () => {
+    for (const title of ["Regular", "Irregular"] as const) {
+      for (const row of rowsOf("ji", title)) {
+        const n = nOf(row);
+        assert.equal(row.reading, counterReading(n, "ji"), `count ${n}`);
+      }
+    }
+  });
+
+  test("11時/12時 spell correctly (十一時/十二時) — past the ordinary 1-10 sweep every other counter caps at", () => {
+    const words = rowsOf("ji", "Regular").map((r) => r.word);
+    assert.ok(words.includes("十一時"), "11時 must spell 十一時, not undefined時");
+    assert.ok(words.includes("十二時"), "12時 must spell 十二時, not undefined時");
+  });
+
+  test("the Irregular rows show the naive number+じ equation, with the result carrying the true shift", () => {
+    // Same teaching device every other sound-shift irregular row uses (see
+    // counterRow's doc comment): the BUILD pieces are the naive number + base,
+    // and the RESULT is the actual (branch-shifted) reading.
+    const irregular = rowsOf("ji", "Irregular");
+    const four = irregular.find((r) => nOf(r) === 4)!;
+    assert.deepEqual(four.build, [{ kana: "よん", value: "4" }, { kana: "じ" }]);
+    assert.deepEqual(four.result, { kana: "よじ", value: "4" });
+    const seven = irregular.find((r) => nOf(r) === 7)!;
+    assert.deepEqual(seven.build, [{ kana: "なな", value: "7" }, { kana: "じ" }]);
+    assert.deepEqual(seven.result, { kana: "しちじ", value: "7" });
+    const nine = irregular.find((r) => nOf(r) === 9)!;
+    assert.deepEqual(nine.build, [{ kana: "きゅう", value: "9" }, { kana: "じ" }]);
+    assert.deepEqual(nine.result, { kana: "くじ", value: "9" });
+  });
+
+  test("the 'Quiz me' round is capped at 12, never 99", () => {
+    assert.equal(numberConstructionRow("ji")!.quizConfig!.numberMax, 12);
+  });
+});
