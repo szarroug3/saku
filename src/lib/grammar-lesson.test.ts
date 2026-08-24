@@ -274,7 +274,13 @@ describe("the pattern total is the whole authored table", () => {
     // 105 = 101 + the four core case particles は/が/に/で, each a meaning-only
     // recipe added to the particles allowlist (taught by multiple choice).
     // 106 = 105 + か, the sentence-final question particle, added the same way.
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 106);
+    // 114 = 106 + SAK-174's eight bare copula/particle rows (da, desu, to-and,
+    // mo, ne, yo, tte, ga-nai) — the bare forms of だ/です/ね/も/よ/って/と/ない,
+    // added once CEJC's own corpus classified all eight as grammar, not
+    // vocabulary (see cejc_reading_frequency.py's teaching_category), and the
+    // Grammar track was found to have never taught the bare word, only
+    // compound patterns built on top of it.
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 114);
     // The drillable set is a strict subset — production is the second half of
     // some lessons' quiz, not the gate on whether a pattern is taught.
     assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
@@ -302,7 +308,15 @@ describe("the pattern total is the whole authored table", () => {
     // they bundle into runs of <=3 alongside neighboring N5 pattern lessons
     // instead of opening sittings of their own — one fewer sitting overall
     // than when they trailed the table.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 46);
+    // 48 = 46 + two more sittings from SAK-174. Seven of its eight new rows
+    // (da/desu/mo/ne/yo/tte/ga-nai) are new N5 pattern lessons bundling in
+    // runs of <=3 among the neighboring N5 lessons; the eighth, to-and, is
+    // NOT a new lesson at all — its written pattern 〜と already belongs to
+    // to-conditional (N4), and recipes.ts's one-lesson-per-written-pattern
+    // rule folds it into that existing lesson's own sitting instead (see
+    // to-and's note in recipes.ts). Net change is curriculum-derived, not a
+    // hand count — this test only pins the number that fell out.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 48);
     // Every lesson lands in exactly one sitting. A shared written pattern may
     // carry several meaning facts, but it is taught in one lesson.
     const covered = GRAMMAR_SITTINGS.flat();
