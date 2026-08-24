@@ -56,6 +56,7 @@ import {
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
+  GRAMMAR_VOCAB_DUPLICATE_KEBS,
   SPECIAL_ADJ_ROWS,
   SPECIAL_VERB_ROWS,
   classProductionFactId,
@@ -584,6 +585,23 @@ const COUNTER_KANJI_DUPLICATE_SEARCH: ReadonlyMap<EntryId, readonly string[]> = 
   return byEntry;
 })();
 
+/**
+ * SAK-175: the reverse of GRAMMAR_VOCAB_DUPLICATE_KEBS — which extra VOCAB
+ * kebs (まで, だけ, しか, …) a given grammar pattern's entry duplicates, so
+ * build() below can carry them as searchAlso aliases on that pattern's own
+ * Library page. Same "one export, cannot drift" shape as
+ * COUNTER_KANJI_DUPLICATE_SEARCH above.
+ */
+const GRAMMAR_KEB_DUPLICATE_SEARCH: ReadonlyMap<EntryId, readonly string[]> = (() => {
+  const byEntry = new Map<EntryId, string[]>();
+  for (const [keb, target] of GRAMMAR_VOCAB_DUPLICATE_KEBS) {
+    const kebs = byEntry.get(target) ?? [];
+    kebs.push(keb);
+    byEntry.set(target, kebs);
+  }
+  return byEntry;
+})();
+
 /** Every entry in the app, in browse order: kana, then kanji, then words. */
 export const LIB_ENTRIES: readonly LibEntry[] = build();
 
@@ -858,6 +876,14 @@ function build(): LibEntry[] {
     // below), so "一つ" still finds ひとつ's page and "一人" still finds the
     // 〜人 construction page whose Irregular table already shows it.
     if (COUNTER_VOCAB_DUPLICATE_KEBS.has(w.keb)) continue;
+    // SAK-175: a kana-only, multi-character VOCAB keb that is an EXACT
+    // duplicate of a grammar recipe's own pattern (まで, だけ, しか, …) is not
+    // a plain word here either — see GRAMMAR_VOCAB_DUPLICATE_KEBS's doc
+    // comment in src/data/grammar/index.ts for how each one was confirmed.
+    // Skipping here does not drop it from the Library: it rides as a
+    // searchAlso alias on the pattern's own entry (GRAMMAR_KEB_DUPLICATE_
+    // SEARCH, below), so "だけ" still finds 〜だけ's page.
+    if (GRAMMAR_VOCAB_DUPLICATE_KEBS.has(w.keb)) continue;
     out.push({
       id: wordEntry(w.keb),
       kind: VOCAB_SUBJECT,
@@ -919,6 +945,9 @@ function build(): LibEntry[] {
       searchAlso: [
         ...senses.flatMap((sense) => (sense.sense ? [sense.sense] : [])),
         ...clusterTitles,
+        // SAK-175: the bare VOCAB kebs this pattern's page now stands in for
+        // (だけ, しか, まで, …) — see GRAMMAR_VOCAB_DUPLICATE_KEBS's doc comment.
+        ...(GRAMMAR_KEB_DUPLICATE_SEARCH.get(id) ?? []),
       ],
       // JLPT level is internal curriculum metadata, not a useful explanation
       // of what the row is. Keep a meaningful family cue ("after", "must",

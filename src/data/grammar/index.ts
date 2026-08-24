@@ -555,6 +555,78 @@ function mintSpecialWordFacts(
 }
 
 
+/**
+ * SAK-175: kana-only, multi-character VOCAB kebs that are EXACT duplicates of
+ * a grammar recipe's own pattern — a particle or connective JMdict also
+ * lists as its own dictionary word — mapped to the Library entry the pattern
+ * already owns. Same "reclassify, don't delete" shape as
+ * COUNTER_VOCAB_DUPLICATE_KEBS in src/data/counters.ts: src/lib/library/
+ * entries.ts skips each keb when it walks VOCAB for the Words shelf and
+ * instead carries it as a searchAlso alias on the pattern's own entry, so
+ * "だけ" still finds 〜だけ's page — reclassified, never silently dropped.
+ *
+ * HOW A KEB GOT ON THIS LIST
+ * ==========================
+ * Every recipe's `pattern`, stripped of its leading 〜 (and, for a WRAP
+ * pattern, truncated at the wrap's own internal 〜 placeholder — see the
+ * Wrap doc comment in recipes.ts for why that placeholder marks a slot
+ * rather than more of the string; しか〜ない's opening half is しか, and that
+ * is what the attach table's own `add: "しか"` already says literally) was
+ * cross-referenced against every kana-only, multi-character VOCAB keb for an
+ * EXACT string match. That mechanical pass found ~35 candidates; each one
+ * was then checked — same bar SAK-174 used for だ/です/ね/も/よ/って — against
+ * word-senses.json (does JMdict actually split this glyph into more than one
+ * sense?) and cejc-reading-frequency.json's teaching classification (does
+ * the corpus call this glyph "core" vocabulary or "grammar"?), not against
+ * anyone's linguistic intuition about how the word "feels".
+ *
+ * Five exact matches were CHECKED AND KEPT, precisely because that lookup
+ * found a real independent sense the recipe does not teach: そう (word-senses
+ * splits it into the appearance auxiliary AND a separate "in that way, thus"
+ * adverb; CEJC classifies it "core"), そうだ (the same auxiliary/interjection
+ * split — "that's right!" as a standalone reply is not sou-hearsay's "I hear
+ * that X"), つもり and はず (both CEJC "core", both a real common noun —
+ * "intention", "expectation" — independent of the 〜つもり/〜はず construction),
+ * and なら (CEJC "core", dominant POS noun). None of those five is here.
+ *
+ * だ/です/ね/も/よ/って/と/ない are ALSO not here, deliberately: SAK-174 owns
+ * them (new grammar cards built the same day that ticket landed), and this
+ * ticket is scoped to patterns that already had grammar coverage before that
+ * — see word-lesson.ts's PARTICLE_TRACK_KEBS doc comment for the same split.
+ */
+export const GRAMMAR_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Map([
+  ["まで", patternEntry("made")],
+  ["だけ", patternEntry("dake")],
+  ["しか", patternEntry("shika-nai")],
+  ["から", patternEntry("kara-reason")],
+  ["ので", patternEntry("node")],
+  ["のに", patternEntry("noni")],
+  ["たら", patternEntry("tara")],
+  ["たり", patternEntry("tari-tari")],
+  ["ながら", patternEntry("nagara")],
+  ["にくい", patternEntry("nikui")],
+  ["たい", patternEntry("tai")],
+  ["たがる", patternEntry("tagaru")],
+  ["させる", patternEntry("causative")],
+  ["らしい", patternEntry("rashii")],
+  ["かもしれない", patternEntry("kamoshirenai")],
+  ["でしょう", patternEntry("deshou")],
+  ["ませんか", patternEntry("masen-ka")],
+  ["ましょうか", patternEntry("mashou-ka")],
+  ["ことができる", patternEntry("koto-ga-dekiru")],
+  ["ことにする", patternEntry("koto-ni-suru")],
+  ["ことになる", patternEntry("koto-ni-naru")],
+  ["なければならない", patternEntry("nakereba-naranai")],
+  ["なくてはならない", patternEntry("nakute-wa-naranai")],
+  ["なくてはいけない", patternEntry("nakute-wa-ikenai")],
+  ["ために", patternEntry("tame-ni")],
+  ["おかげで", patternEntry("okage-de")],
+  ["ようになる", patternEntry("you-ni-naru")],
+  ["ようにする", patternEntry("you-ni-suru")],
+  ["について", patternEntry("ni-tsuite")],
+  ["として", patternEntry("to-shite")],
+]);
+
 /** The recipe a MEANING fact asks about, or null. A lookup, never a parse. */
 export function grammarMeaning(fact: FactId): { recipe: Recipe } | null {
   const id = MEANING_OF.get(fact);

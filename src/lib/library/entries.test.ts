@@ -401,6 +401,90 @@ describe("SAK-177: １割/二割/１階/二階/一円/１０００円 no longer 
   });
 });
 
+describe("SAK-175: grammar-covered particles/connectives no longer duplicate onto the Words shelf", () => {
+  // Every kana-only, multi-character VOCAB keb confirmed (by exact match
+  // against src/data/grammar/recipes.ts, then checked for a real independent
+  // sense — see GRAMMAR_VOCAB_DUPLICATE_KEBS's doc comment in
+  // src/data/grammar/index.ts) to be a pure duplicate of a recipe's own
+  // pattern, mapped to the pattern's own Library glyph.
+  const KEB_TO_PATTERN: Record<string, string> = {
+    "まで": "〜まで",
+    "だけ": "〜だけ",
+    "しか": "〜しか〜ない",
+    // から shares its bare pattern with kara-source (起点); kara-reason (理由)
+    // is the primary (first-in-array) recipe, so its own SENSE-qualified label
+    // is what the entry's glyph actually renders — see entries.ts's grammar
+    // loop, which reads glyph off the entry's first fact (patternLabel(r)).
+    "から": "〜から (理由)",
+    "ので": "〜ので",
+    "のに": "〜のに",
+    "たら": "〜たら",
+    "たり": "〜たり〜たり",
+    "ながら": "〜ながら",
+    "にくい": "〜にくい",
+    "たい": "〜たい",
+    "たがる": "〜たがる",
+    "させる": "〜させる",
+    "らしい": "〜らしい",
+    "かもしれない": "〜かもしれない",
+    "でしょう": "〜でしょう",
+    "ませんか": "〜ませんか",
+    "ましょうか": "〜ましょうか",
+    "ことができる": "〜ことができる",
+    "ことにする": "〜ことにする",
+    "ことになる": "〜ことになる",
+    "なければならない": "〜なければならない",
+    "なくてはならない": "〜なくてはならない",
+    "なくてはいけない": "〜なくてはいけない",
+    "ために": "〜ために",
+    "おかげで": "〜おかげで",
+    "ようになる": "〜ようになる",
+    "ようにする": "〜ようにする",
+    "について": "〜について",
+    "として": "〜として",
+  };
+
+  test("none of the 30 confirmed matches is a VOCAB_SUBJECT (\"word\") entry any more", () => {
+    for (const keb of Object.keys(KEB_TO_PATTERN)) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.equal(asWord, undefined, `${keb} must not appear on the Words shelf`);
+    }
+  });
+
+  test("each is still reachable — a searchAlso alias on its own recipe's Grammar entry", () => {
+    for (const [keb, pattern] of Object.entries(KEB_TO_PATTERN)) {
+      const holder = LIB_ENTRIES.find(
+        (e) => e.kind === GRAMMAR_SUBJECT && e.searchAlso?.includes(keb),
+      );
+      assert.ok(holder, `${keb} must ride as a searchAlso alias, not vanish`);
+      assert.equal(holder!.glyph, pattern, `${keb} must alias its OWN recipe, not a stranger's`);
+    }
+  });
+
+  test("そう/そうだ/つもり/はず/なら matched a recipe too but were checked and kept — real vocabulary, untouched", () => {
+    // Each has a genuine independent sense the matching recipe does not
+    // teach (see GRAMMAR_VOCAB_DUPLICATE_KEBS's doc comment for the
+    // word-senses.json / CEJC evidence for each). They must still be plain
+    // Words-shelf entries, not aliases.
+    for (const keb of ["そう", "そうだ", "つもり", "はず", "なら"]) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.ok(asWord, `${keb} must still appear on the Words shelf — it has a real standalone sense`);
+    }
+  });
+
+  test("genuine standalone vocabulary that merely LOOKS particle-ish is untouched", () => {
+    // The large majority of kana-only multi-character words are real
+    // vocabulary with no matching recipe at all — spot-check a few so this
+    // fix cannot silently widen into judgment calls on words that only
+    // "feel" grammatical. あそこ/うさぎ/しんどい/きゅうり are the ticket's own
+    // named examples of what must NOT be touched.
+    for (const keb of ["あそこ", "うさぎ", "しんどい", "きゅうり"]) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.ok(asWord, `${keb} is genuine vocabulary and must still appear on the Words shelf`);
+    }
+  });
+});
+
 test("a verb pair and a keigo set are not speakable as one entry — each names more than one word", () => {
   const pair = LIB_ENTRIES.find((e) => e.kind === TRANSITIVITY_SUBJECT);
   assert.ok(pair, "expected at least one verb pair entry");
