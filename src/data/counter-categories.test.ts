@@ -59,6 +59,15 @@ describe("the categories are well-formed", () => {
     const tens = CONSTRUCTION_CATEGORIES.find((c) => c.id === "tens")!;
     assert.equal(tens.config.includeCounters, false);
   });
+
+  test("SAK-177: wari/floor/en are real categories too, each scoped to its own counter", () => {
+    for (const id of ["wari", "floor", "en"] as const) {
+      const cat = CONSTRUCTION_CATEGORIES.find((c) => c.id === id)!;
+      assert.ok(cat, `${id} category exists`);
+      assert.equal(cat.config.includeCounters, true);
+      assert.deepEqual(cat.config.counters, [id]);
+    }
+  });
 });
 
 describe("a category becomes known when its construction is taught", () => {

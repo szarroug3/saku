@@ -210,14 +210,50 @@ describe("SAK-169: COUNTER_VOCAB_DUPLICATE_KEBS names the kanji VOCAB duplicates
     }
   });
 
-  test("exactly the eleven original kebs plus SAK-176's four big-number kebs, no more, no fewer", () => {
+  test("exactly the eleven original kebs, SAK-176's four big-number kebs, and SAK-177's six 割/階/円 kebs, no more, no fewer", () => {
     assert.deepEqual(
       [...COUNTER_VOCAB_DUPLICATE_KEBS.keys()].sort(),
       [
         "一つ", "一人", "七つ", "三つ", "九つ", "二つ", "二人", "五つ", "八つ", "六つ", "四つ",
         "１万", "１０万", "１００万", "１００億",
+        "１割", "二割", "１階", "二階", "一円", "１０００円",
       ].sort(),
     );
+  });
+});
+
+describe("SAK-177: COUNTER_VOCAB_DUPLICATE_KEBS extends to 割/階/円's real vocab.json duplicates", () => {
+  const wari = numberConstructionEntry("wari");
+  const floor = numberConstructionEntry("floor");
+  const en = numberConstructionEntry("en");
+
+  test("１割/二割 map to the wari construction entry, １階/二階 to floor, 一円/１０００円 to en", () => {
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１割"), wari);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("二割"), wari);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１階"), floor);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("二階"), floor);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("一円"), en);
+    assert.equal(COUNTER_VOCAB_DUPLICATE_KEBS.get("１０００円"), en);
+  });
+
+  test("their real vocab.json readings match the engine exactly", () => {
+    // Hand-verified against src/data/generated/vocab.json directly (SAK-177):
+    // １割 いちわり, 二割 にわり, １階 いっかい, 二階 にかい, 一円 いちえん,
+    // １０００円 せんえん — the exact rows the app ships.
+    assert.equal(counterReading(1, "wari"), "いちわり");
+    assert.equal(counterReading(2, "wari"), "にわり");
+    assert.equal(counterReading(1, "floor"), "いっかい");
+    assert.equal(counterReading(2, "floor"), "にかい");
+    assert.equal(counterReading(1, "en"), "いちえん");
+    assert.equal(numberReading(1000) + "えん", "せんえん");
+  });
+
+  test("bare 円 and bare 階 (the ordinary nouns) are NOT in the dedup map", () => {
+    // Only the COUNTED forms duplicate a generated reading; the bare nouns
+    // "yen" and "floor/story" are real, separate vocabulary the words track
+    // still teaches — see the doc comment on COUNTER_VOCAB_DUPLICATE_KEBS.
+    assert.ok(!COUNTER_VOCAB_DUPLICATE_KEBS.has("円"));
+    assert.ok(!COUNTER_VOCAB_DUPLICATE_KEBS.has("階"));
   });
 });
 
@@ -284,10 +320,13 @@ describe("SAK-172: COUNTER_TAIL_FORM_ALIASES folds 二十歳's own standalone en
 });
 
 describe("the generative categories", () => {
-  test("there is one category per number range, per system/tail counter, and day/month", () => {
+  test("there is one category per number range, per system/tail counter, SAK-177's 割/階/円, and day/month", () => {
     assert.deepEqual(
       [...CONSTRUCTION_CATEGORY_IDS],
-      ["tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai", "day", "month"],
+      [
+        "tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai",
+        "wari", "floor", "en", "day", "month",
+      ],
     );
   });
 
