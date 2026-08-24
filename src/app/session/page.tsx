@@ -575,7 +575,7 @@ export default function SessionPage() {
     // .kq-center-frame (globals.css, SAK-10): see the round-complete branch
     // above — same floor-height centering, same reason.
     <div className="kq-center-frame">
-      <SessionHud label={session.what} where="complete" pct={100} tone="success" />
+      <SessionHud label={session.what} plain where="Lesson complete" pct={100} tone="success" />
       <div className="flex flex-1 flex-col justify-center mt-3.5">
         <SessionComplete
           session={session}

@@ -42,14 +42,12 @@ export function SessionHud({
    * sense read after "Vocabulary" but a track pill beside a count pill had no
    * such reading order to keep.
    *
-   * SAK-145 round 2: also passed by the round-complete results screen
-   * (app/session/page.tsx), where there's no `sublabel` to fold in — `plain`
-   * there just drops the border/background off `label` (the track name), and
-   * prints it bare beside `where` (which was already plain text, never a
-   * pill, on every caller). `rest` and the final `complete` screen still pass
-   * neither `plain` nor `sublabel`, so `label` there is still a pill — Sam's
-   * round-2 feedback named only the quiz/drill screen and the round-complete
-   * results screen, not those two.
+   * SAK-145 round 2: also passed by the round-complete results screen and
+   * (round 3) the final session-complete screen (both in app/session/page.tsx),
+   * where there's no `sublabel` to fold in — `plain` there just drops the
+   * border/background off `label` (the track name), printed bare beside
+   * `where` (plain text on every caller already). `rest` is the one screen
+   * that still passes neither — nobody has asked for it there yet.
    */
   plain?: boolean;
   /** Where you are — "round 1 · done", "resting", "complete". */
