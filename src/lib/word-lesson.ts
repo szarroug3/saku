@@ -198,9 +198,27 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
 // their OTHER existing grammar coverage too (to-conditional's "whenever" と,
 // nai-form's negative-verb-suffix ない) — this only removes their bare-vocab
 // duplicate now that ga-nai/to-and cover the sense that was actually missing.
+//
+// SAK-175 adds the OTHER multi-character particles/connectives that already
+// had grammar coverage BEFORE SAK-174 landed — から/ので/のに/たら/たり/ながら/
+// にくい/たい/たがる/させる/らしい/かもしれない/でしょう/ませんか/ましょうか/
+// ことができる/ことにする/ことになる/なければならない/なくてはならない/
+// なくてはいけない/ために/おかげで/ようになる/ようにする/について/として — each
+// an EXACT match against a recipe in recipes.ts (see GRAMMAR_VOCAB_DUPLICATE_
+// KEBS's doc comment in src/data/grammar/index.ts for the full method: pattern
+// cross-reference, then a check against word-senses.json and cejc-reading-
+// frequency.json's classification, same bar SAK-174 used). Five exact matches
+// were checked and deliberately KEPT here because that check found a real
+// independent sense the recipe does not teach — そう, そうだ, つもり, はず, なら
+// — so those five stay in CURRICULUM_WORDS untouched.
 const PARTICLE_TRACK_KEBS: ReadonlySet<string> = new Set([
   "か", "は", "が", "に", "で", "を", "へ", "まで", "だけ", "しか",
   "だ", "です", "ね", "も", "よ", "って", "と", "ない",
+  "から", "ので", "のに", "たら", "たり", "ながら", "にくい", "たい", "たがる",
+  "させる", "らしい", "かもしれない", "でしょう", "ませんか", "ましょうか",
+  "ことができる", "ことにする", "ことになる",
+  "なければならない", "なくてはならない", "なくてはいけない",
+  "ために", "おかげで", "ようになる", "ようにする", "について", "として",
 ]);
 
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]

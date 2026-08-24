@@ -420,10 +420,18 @@ describe("the totals are counted off the data, never typed in", () => {
   // vocab.json duplicates of the new 割/階/円 generative categories (１割/二割/
   // １階/二階/一円/１０００円) out to the counters track, each a single-reading
   // word — same mechanism as the SAK-163/SAK-174 drops above.
-  test("and today those counts are 90, 2,136 and 12,574", () => {
+  // It dropped to 12,547 with SAK-175: PARTICLE_TRACK_KEBS pulled 27 more
+  // particles/connectives out to the grammar track (from/ので/のに/たら/たり/
+  // ながら/にくい/たい/たがる/させる/らしい/かもしれない/でしょう/ませんか/
+  // ましょうか/ことができる/ことにする/ことになる/なければならない/
+  // なくてはならない/なくてはいけない/ために/おかげで/ようになる/ようにする/
+  // について/として — まで/だけ/しか were already excluded before this ticket),
+  // each a single-reading word — same mechanism as the SAK-163/174/177 drops
+  // above.
+  test("and today those counts are 90, 2,136 and 12,547", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12574);
+    assert.equal(CURRICULUM_TOTALS.word, 12547);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -431,7 +439,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12574, 12574);
+        assert.equal(g.position.word?.total ?? 12547, 12547);
       }
     }
   });
