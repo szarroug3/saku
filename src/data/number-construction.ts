@@ -315,37 +315,56 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
 // page splits the plain hundreds/thousands from the five that harden.
 // ---------------------------------------------------------------------------
 
-/** The build equation for a big base value — one annotated piece against its base
- * word, then the total. The base word reads whole (にひゃく), so the piece is that
- * whole reading annotated with its decomposition: 200 is "2 × 100", 100 is "100",
- * 100000 is "10 × 10000", 10_000_000_000 (100億) is "100 × 100000000". The
- * result repeats the reading with the plain total.
+/** The build equation for a big base value — the count and the base word as TWO
+ * pieces, joined by "×" (a genuine multiplication, ご × ひゃく → ごひゃく, not the
+ * additive じゅう + さい every other build table shows), then the total. The
+ * pieces show the naive, unfused readings; the result carries the true fused
+ * pronunciation when the seam hardens/voices (さん × ひゃく → さんびゃく).
+ *
+ * 百/千 elide the leading いち in speech (ひゃく, せん — not いちひゃく/いちせん), so at
+ * count 1 there is no multiplier morpheme to show: the build is the bare base
+ * word alone, one piece, no "×". 万/億 do NOT elide いち (いちまん, いちおく really
+ * are said with いち — see numberReading's own header comment), so even at
+ * count 1 they get the full two-piece ×: いち × まん → いちまん.
  *
  * SAK-176: a fourth tier (n ≥ 100_000_000) mirrors the engine's own group2/おく
  * tier in numberReading — the same 億 base word 万 already got at the 10000
  * tier, one step up. */
 function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiece } {
-  const kana = numberReading(n);
-  let value: string;
+  const result = { kana: numberReading(n), value: String(n) };
+  let m: number;
+  let unitKana: string;
+  let unitValue: string;
+  let elidesOne: boolean;
   if (n < 1000) {
-    // 百/千 elide the leading いち in speech (ひゃく, せん — not いちひゃく/いちせん),
-    // so a lone base value shows no multiplication: it IS the bare reading.
-    const m = n / 100;
-    value = m === 1 ? "100" : `${m} × 100`;
+    m = n / 100;
+    unitKana = "ひゃく";
+    unitValue = "100";
+    elidesOne = true;
   } else if (n < 10000) {
-    const m = n / 1000;
-    value = m === 1 ? "1000" : `${m} × 1000`;
+    m = n / 1000;
+    unitKana = "せん";
+    unitValue = "1000";
+    elidesOne = true;
   } else if (n < 100_000_000) {
-    // 万/億 do NOT elide いち (いちまん, いちおく really are said with いち — see
-    // numberReading's own header comment), so unlike the two tiers above, a
-    // lone base value here is a real 1 × N composition, not a bare reading.
-    const m = n / 10000;
-    value = `${m} × 10000`;
+    m = n / 10000;
+    unitKana = "まん";
+    unitValue = "10000";
+    elidesOne = false;
   } else {
-    const m = n / 100_000_000;
-    value = `${m} × 100000000`;
+    m = n / 100_000_000;
+    unitKana = "おく";
+    unitValue = "100000000";
+    elidesOne = false;
   }
-  return { build: [{ kana, value }], result: { kana, value: String(n) } };
+  if (m === 1 && elidesOne) {
+    return { build: [{ kana: unitKana, value: unitValue }], result };
+  }
+  const build: CountBuildPiece[] = [
+    { kana: numberReading(m), value: String(m) },
+    { kana: unitKana, value: unitValue, op: "×" },
+  ];
+  return { build, result };
 }
 
 function bigRow(n: number): CountRow {

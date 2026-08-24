@@ -756,7 +756,7 @@ function CountBuild({
     <>
       {build.map((p, i) => (
         <Fragment key={i}>
-          {i > 0 ? <span className="text-text-muted"> + </span> : null}
+          {i > 0 ? <span className="text-text-muted"> {p.op ?? "+"} </span> : null}
           {piece(p)}
         </Fragment>
       ))}
