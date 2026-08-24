@@ -171,6 +171,41 @@ export interface PitchExampleRow {
   readonly downstep: number;
   /** The plain-language gloss: "chopsticks". */
   readonly gloss: string;
+  /**
+   * A follow-up piece of kana appended to `reading` before it is fed to the
+   * exact-pitch `HearButton` and the `PitchReading` overline — NOT part of
+   * the taught word (SAK-142 round 2).
+   *
+   * Odaka's downstep sits AT the word's own mora count, so its drop only
+   * ever lands on whatever mora comes right after the word — see
+   * `pitchPatternForLength`'s doc in src/lib/pitch.ts. Said alone, an odaka
+   * word and a heiban word of the same length render the IDENTICAL
+   * high/low sequence: 橋 (downstep 2, odaka) and 端 (downstep 0, heiban)
+   * both come out low-then-high across their bare two morae, so はし alone
+   * cannot demonstrate the difference the card claims exists.
+   *
+   * Setting `followUp: "が"` on 橋/端's rows extends what is actually
+   * synthesized and drawn to はしが, while `downstep` stays each word's own
+   * real, unchanged value — 橋 (2) now audibly drops on が, 端 (0) stays
+   * level through it. `word`/`gloss` still name only the bare word;
+   * `IntroPitchExamples` renders the follow-up kana in a visibly muted
+   * trailing style so it reads as "add this to hear it," never as if it
+   * were part of the word itself.
+   */
+  readonly followUp?: string;
+}
+
+/**
+ * One group of a pitch-example set: an optional short line of prose (the same
+ * plain, direct voice as the card's own body paragraphs) shown above its rows,
+ * then the rows themselves. Most groups carry no note — the shared reading
+ * already says what the rows have in common. The はし set (SAK-142 round 2)
+ * uses a note to explain why 橋/端 are shown with a follow-up が, and again to
+ * bridge into the きのう set's mid-word drop.
+ */
+export interface PitchExampleGroup {
+  readonly note?: string;
+  readonly rows: readonly PitchExampleRow[];
 }
 
 /**
@@ -529,17 +564,19 @@ export interface PhaseIntro {
    */
   sentenceExample?: SentenceExample;
   /**
-   * Sets of same-reading, different-pitch words, each row a bare hear-it +
-   * pitch-line + kanji + gloss line with no prose around it — the exact pattern
-   * already shipped on the Library word page (character-entry-view.tsx: a
-   * `HearButton` with an exact `downstep` beside a `PitchReading` with that same
-   * downstep). Grouped into sets (箸/橋/端 all read はし; 昨日/機能 both read
-   * きのう) rendered by `IntroPitchExamples` with a gap between sets and no
-   * label on either, since the words carrying the same reading already say
-   * that. Currently used only by PITCH_INTRO — see the note there for why this
-   * is a separate field from `examples` rather than a reuse of it.
+   * Groups of same-reading, different-pitch words, each row a bare hear-it +
+   * pitch-line + kanji + gloss line — the exact pattern already shipped on the
+   * Library word page (character-entry-view.tsx: a `HearButton` with an exact
+   * `downstep` beside a `PitchReading` with that same downstep). Grouped into
+   * sets (箸/橋/端 all read はし; 昨日/機能 both read きのう) rendered by
+   * `IntroPitchExamples` with a gap between groups; a group with no `note`
+   * carries no label, since the words sharing a reading already say what they
+   * have in common. Currently used only by PITCH_INTRO — see the note there
+   * for why this is a separate field from `examples` rather than a reuse of
+   * it, and for why the はし group (SAK-142 round 2) carries notes and a
+   * `followUp` on some rows while きのう does not.
    */
-  pitchExamples?: readonly (readonly PitchExampleRow[])[];
+  pitchExamples?: readonly PitchExampleGroup[];
 }
 
 /**
@@ -1263,15 +1300,30 @@ export const PITCH_INTRO: PhaseIntro = {
     },
   ],
   pitchExamples: [
-    [
-      { word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" },
-      { word: "橋", reading: "はし", downstep: 2, gloss: "bridge" },
-      { word: "端", reading: "はし", downstep: 0, gloss: "edge" },
-    ],
-    [
-      { word: "昨日", reading: "きのう", downstep: 2, gloss: "yesterday" },
-      { word: "機能", reading: "きのう", downstep: 1, gloss: "function" },
-    ],
+    {
+      rows: [{ word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" }],
+    },
+    {
+      // SAK-142 round 2: 橋 (odaka, downstep 2) and 端 (heiban, downstep 0)
+      // render the IDENTICAL high/low sequence when はし is said alone — see
+      // the `followUp` doc on `PitchExampleRow`. が is appended so the drop
+      // (or its absence) has a mora to land on.
+      note: "You may have noticed 橋 (bridge) and 端 (edge) sound identical. That's because 橋's drop is only evident when something follows the word. が is added below so you can hear it.",
+      rows: [
+        { word: "橋", reading: "はし", downstep: 2, gloss: "bridge", followUp: "が" },
+        { word: "端", reading: "はし", downstep: 0, gloss: "edge", followUp: "が" },
+      ],
+    },
+    {
+      // Unchanged from before SAK-142 round 2: nakadaka's (昨日) and
+      // atamadaka's (機能) drops are both internal to the bare 3-mora word,
+      // so neither needs a follow-up word to become audible.
+      note: "A pitch drop may also happen in the middle of the word.",
+      rows: [
+        { word: "昨日", reading: "きのう", downstep: 2, gloss: "yesterday" },
+        { word: "機能", reading: "きのう", downstep: 1, gloss: "function" },
+      ],
+    },
   ],
 };
 
