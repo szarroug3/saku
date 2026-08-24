@@ -7,9 +7,11 @@
 //
 // POLYMORPHIC over the BASE unit. The walk reads only the base contract (`item`,
 // `facts`, `cost`) via `isUnitDue`/`unitCost`, so a due unit can be ANY kind. The
-// ORDER is the caller's — the pronunciation track interleaves by frequency
-// (`orderedUnits`), every other track supplies its curriculum sequence. The
-// scheduler never orders; it fills, gates, and dedupes.
+// ORDER is the caller's — the pronunciation (vocab) track supplies
+// CURRICULUM_SEQUENCE's own order (`curriculumOrderedUnits`, teach-unit.ts;
+// SAK-162's per-pronunciation-frequency interleave already lives in that
+// sequence), every other track supplies its curriculum sequence. The scheduler
+// never orders; it fills, gates, and dedupes.
 //
 // THE WALK ITSELF LIVES IN unit-scheduler-core.ts, content-free. This module is
 // the CONTENT-BACKED BINDING of it: it supplies the three touch-points the walk
@@ -128,9 +130,13 @@ export function nextTrackLesson(
 }
 
 /**
- * The next lesson's worth of teaching units for a curriculum glyph sequence — the
- * PRONUNCIATION track's entry, ordered by how often each reading is spoken
- * (`orderedUnits`). A thin wrapper over `nextTrackLesson` with that ordering.
+ * The next lesson's worth of teaching units for an arbitrary glyph set, RAW-
+ * FREQUENCY ordered (`orderedUnits`) — a thin wrapper over `nextTrackLesson`
+ * with that ordering. Not the live VOCAB track's own entry point any more
+ * (that's `unit-tracks.ts`'s `vocabUnits`, over `curriculumOrderedUnits` —
+ * see SAK-173); this remains a convenient, deterministic fixture for testing
+ * the scheduler's own algorithm (dueness, prereqs, budget, depth gate) against
+ * a small, easy-to-reason-about glyph set.
  */
 export function nextUnitLesson(
   glyphs: readonly string[],

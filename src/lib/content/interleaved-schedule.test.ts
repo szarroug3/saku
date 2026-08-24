@@ -49,7 +49,7 @@ import test from "node:test";
 
 import { UNIT_TRACKS } from "./unit-tracks.ts";
 import { nextTrackLesson } from "./unit-scheduler.ts";
-import { isUnitDue, orderedUnits } from "./teach-unit.ts";
+import { isUnitDue } from "./teach-unit.ts";
 import { isFactFresh } from "./unit-scheduler-core.ts";
 import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order.ts";
@@ -60,10 +60,11 @@ import type { ContentItem } from "./item.ts";
 import type { FactId, HistoryFile } from "@/types";
 
 test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable unit", () => {
-  // The vocab track's own order-builder — verbatim what unit-tracks.ts's
-  // vocabUnits() calls — so this catches exactly what the real track would
-  // silently drop, not a reimplementation that could disagree with it.
-  const units = orderedUnits(CURRICULUM_SEQUENCE.map((i) => i.glyph));
+  // The vocab track's own order — UNIT_TRACKS's actual "vocab" entry, straight
+  // from unit-tracks.ts's vocabUnits() — so this catches exactly what the real
+  // track would silently drop, not a reimplementation that could disagree with
+  // it (SAK-173: vocabUnits() now calls curriculumOrderedUnits, not orderedUnits).
+  const units = UNIT_TRACKS.find((t) => t.id === "vocab")!.units(emptyHistory());
   const covered = new Set(units.map((u) => u.item.glyph));
   const uncovered = CURRICULUM_SEQUENCE.map((i) => i.glyph).filter((g) => !covered.has(g));
   const multiChar = uncovered.filter((g) => [...g].length > 1);
@@ -72,9 +73,9 @@ test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable
     { multiCharUncovered: multiChar.length, singleCharUncovered: singleChar.length },
     { multiCharUncovered: 0, singleCharUncovered: 0 },
     `${uncovered.length}/${CURRICULUM_SEQUENCE.length} curriculum glyphs produce ZERO teaching ` +
-      `units and can never be scheduled or taught — buildGlyphItem (which orderedUnits builds on) ` +
-      `is single-Han-character only, so every multi-character glyph in CURRICULUM_SEQUENCE is ` +
-      `silently dropped`,
+      `units and can never be scheduled or taught — buildGlyphItem (which curriculumOrderedUnits ` +
+      `builds on) is single-Han-character only, so every multi-character glyph in CURRICULUM_SEQUENCE ` +
+      `is silently dropped`,
   );
 });
 

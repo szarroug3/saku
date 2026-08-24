@@ -265,22 +265,25 @@ function kanaScriptFacts(
  * with 10 already known — not the wide static-order-rank span this briefly
  * printed instead.
  *
- * THE CAVEAT THIS RESURRECTS, KEPT BECAUSE IT STILL MATTERS: the vocab track
- * schedules by SPOKEN FREQUENCY, not curriculum (Built-from) order, so a
- * lesson's due word can need a kanji-component prerequisite that sits FAR AWAY
- * in that SAME frequency-ranked `order` — two items can sit next to each other
- * in frequency and thousands of positions apart in the curriculum. The
- * static-order-rank span this used to print (`lessonSpanInTrack`, since
- * removed — see track-completion.ts) reported that gap honestly and
- * unconditionally-safely: "11–3,301 of 14,084" for a 6-item lesson, wide but
- * never wrong under an out-of-order Library claim. Shipped, seen live on
- * exactly this shape, and rejected: a learner cannot use "11–3,301" as a
- * position, however truthfully it was computed. `lessonSpan`'s tight "11–16"
- * is the number that was chosen instead, on purpose — see `lessonSpan`'s own
- * comment in track-completion.ts for precisely what this gives up (a static
- * out-of-order claim elsewhere in vocab can, in theory, leave this span
- * describing material other than what is literally on the card again) to get
- * a number a learner can actually read. */
+ * THE CAVEAT THIS RESURRECTS, KEPT BECAUSE IT STILL MATTERS (though it bites
+ * less often since SAK-173): the vocab track's own `order` is CURRICULUM_
+ * SEQUENCE's order (unit-tracks.ts's vocabUnits, over curriculumOrderedUnits),
+ * which already teaches a word's kanji-component prerequisites ahead of it —
+ * but "ahead of" is not "adjacent to": the sequence's own tail (orphan kanji,
+ * orphan radicals) and its frequency-woven secondary readings can still place
+ * a due word's prerequisite far from the word itself in `order`. Two items
+ * can therefore still sit next to each other in a lesson and thousands of
+ * positions apart in `order`. The static-order-rank span this used to print
+ * (`lessonSpanInTrack`, since removed — see track-completion.ts) reported that
+ * gap honestly and unconditionally-safely: "11–3,301 of 14,084" for a 6-item
+ * lesson, wide but never wrong under an out-of-order Library claim. Shipped,
+ * seen live on exactly this shape, and rejected: a learner cannot use
+ * "11–3,301" as a position, however truthfully it was computed. `lessonSpan`'s
+ * tight "11–16" is the number that was chosen instead, on purpose — see
+ * `lessonSpan`'s own comment in track-completion.ts for precisely what this
+ * gives up (a static out-of-order claim elsewhere in vocab can, in theory,
+ * leave this span describing material other than what is literally on the
+ * card again) to get a number a learner can actually read. */
 function vocabPositionLabel(
   lesson: LearnLesson,
   order: readonly IndexUnit[],
