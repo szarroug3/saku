@@ -356,12 +356,3 @@ function speakBrowser(text: string, voiceName: string): void {
   }
   speakNow(text, voiceName);
 }
-
-/** Subscribe to voice-list changes; returns an unsubscribe. */
-export function onVoicesChanged(fn: () => void): () => void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-    return () => {};
-  }
-  speechSynthesis.addEventListener("voiceschanged", fn);
-  return () => speechSynthesis.removeEventListener("voiceschanged", fn);
-}

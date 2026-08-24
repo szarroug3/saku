@@ -48,20 +48,6 @@ import type {
 import { emptySelection } from "@/lib/selection-empty";
 export { emptySelection };
 
-/** True when the query narrows nothing — used to say "Everything" rather than
- * printing a filter list that is empty. */
-export function isEverything(sel: Selection): boolean {
-  return (
-    !sel.subjects.length &&
-    !sel.types.length &&
-    !sel.list &&
-    !sel.states.length &&
-    !sel.text.trim() &&
-    sel.session === null &&
-    !(sel.learned && (sel.learned.from != null || sel.learned.to != null))
-  );
-}
-
 // ---------- how well you know something ----------
 
 /**

@@ -67,12 +67,6 @@ export function useFlatSurface(): boolean {
   return useContext(FlatSurfaceContext) !== null;
 }
 
-/** True when the surface wants NO box at all (border + radius + padding dropped),
- * not just the fill — the redesigned entry pages under EntrySurface. */
-export function useBorderlessSurface(): boolean {
-  return useContext(FlatSurfaceContext) === "borderless";
-}
-
 /**
  * A section of content on the page — NO fill, NO border, NO radius, NO shadow
  * (SAK-80 round 2). Every screen used to reach for <Card> to draw a bordered,
@@ -357,18 +351,6 @@ export function Chip({
         className,
       )}
     />
-  );
-}
-
-/** Thin progress bar; pct=null renders full (endless mode). */
-export function ProgressBar({ pct }: { pct: number | null }) {
-  return (
-    <div className="mb-[18px] h-(--bar-h) rounded-full bg-panel">
-      <div
-        className="h-(--bar-h) rounded-full bg-accent transition-[width] duration-200"
-        style={{ width: `${pct === null ? 100 : Math.min(100, pct)}%` }}
-      />
-    </div>
   );
 }
 

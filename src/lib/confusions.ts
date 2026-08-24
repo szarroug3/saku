@@ -104,16 +104,6 @@ function emptyPair(key: PairKey): RunPair {
   return { key, a, b, aAsB: 0, bAsA: 0, total: 0 };
 }
 
-/** Every pair one run's detail mixed up, most mix-ups first. */
-export function pairsThisRun(
-  stats: SessionStats,
-  entryOf: EntryOf,
-): RunPair[] {
-  return [...indexPairs(stats, entryOf).values()].sort(
-    (p, q) => q.total - p.total || p.key.localeCompare(q.key),
-  );
-}
-
 /**
  * key → counts for one session's detail.
  *

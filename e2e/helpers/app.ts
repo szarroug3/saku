@@ -84,19 +84,6 @@ export function style(dir: "jp2en" | "en2jp", s: "typed" | "mc"): ConfigSeed {
   return dir === "jp2en" ? { styleJp2en: s } : { styleEn2jp: s };
 }
 
-/** Narrow the drillable pool to facts whose glyph/meaning/answers match. */
-export function textFilter(text: string): ConfigSeed {
-  return {
-    selection: {
-      subjects: [],
-      list: null,
-      states: [],
-      text,
-      session: null,
-    },
-  };
-}
-
 /** The signed-out history blob for a set of "quiz me" facts, shaped like the
  * HistoryFile the client reads back from `saku-local-history`. */
 function historyWith(seen: string[], claims: string[]): string {
