@@ -4,8 +4,9 @@ import {
   STEADY_CFG,
   answerBox,
   answeredPill,
-  answeredText,
+  answeredTextRe,
   progressPill,
+  progressText,
   type Page,
 } from "./helpers/app";
 import {
@@ -54,7 +55,7 @@ test("an audio → romaji card plays the word, hides the glyph, and grades the r
   const box = answerBox(page);
   await box.fill("denwa");
   await box.press("Enter");
-  await expect(answeredPill(page)).toHaveText(answeredText(1));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
 });
 
 test("an audio → meaning card asks for the meaning and hints the written word, not the gloss", async ({
@@ -125,7 +126,7 @@ test("full coverage guarantees the audio card when Audio is enabled", async ({
   // coverage slot MUST be the audio card. Either way the speaker is guaranteed.
   if (!(await listenSpeaker(page).isVisible())) {
     await answerReadingCard(page);
-    await expect(progressPill(page)).toHaveText("1 / 2");
+    await expect(progressPill(page)).toHaveText(progressText(1, 2));
   }
   await expect(listenSpeaker(page)).toBeVisible();
 });

@@ -8,8 +8,9 @@ import {
   drillReady,
   answerBox,
   answeredPill,
-  answeredText,
+  answeredTextRe,
   progressPill,
+  progressText,
   reveal,
 } from "./helpers/app";
 
@@ -194,7 +195,7 @@ test("an endless quiz says it is endless", async ({ page, seed }) => {
   await startPractice(page);
   await drillReady(page);
 
-  await expect(answeredPill(page)).toHaveText(answeredText(0));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(0));
 });
 
 /** A limited quiz shows how far off the end is, on the drill itself rather than
@@ -207,7 +208,7 @@ test("a limited quiz shows x / y on the drill", async ({ page, seed }) => {
   await startPractice(page);
   await drillReady(page);
 
-  await expect(progressPill(page)).toHaveText("0 / 2");
+  await expect(progressPill(page)).toHaveText(progressText(0, 2));
   // And it is the loud one: the accent colour is what makes it read before the
   // quiet chips beside it.
   await expect(progressPill(page)).toHaveClass(/text-accent/);

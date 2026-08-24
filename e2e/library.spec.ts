@@ -330,9 +330,11 @@ test("filter chips still work after a back/forward/back through a detail page", 
   // Back still steps through the choices the dropdowns pushed. Narrowing to
   // one item is Clear-then-check (two toggles, two pushes) rather than the
   // old chip's one click, so the state one step back is the Status dropdown's
-  // own intermediate Clear ("state=none"), still carrying the Kind change —
-  // proving the history stack advanced by real pushState calls, not one
-  // that silently dropped and left this a no-op.
+  // own intermediate Clear, still carrying the Kind change — proving the
+  // history stack advanced by real pushState calls, not one that silently
+  // dropped and left this a no-op. libraryUrl omits `state` entirely for an
+  // empty set rather than writing an explicit "none" token (SAK-167 — an
+  // empty set IS the unfiltered default), so the intermediate URL is bare.
   await page.goBack();
-  await expect(page).toHaveURL(/kind=word&state=none$/);
+  await expect(page).toHaveURL(/\?kind=word$/);
 });

@@ -9,7 +9,7 @@ import {
   optionButtons,
   reveal,
   answeredPill,
-  answeredText,
+  answeredTextRe,
   requeuedPill,
   type Page,
 } from "./helpers/app";
@@ -39,7 +39,7 @@ import {
 
 /** Assert the last answer was accepted. */
 async function expectAccepted(page: Page) {
-  await expect(answeredPill(page)).toHaveText(answeredText(1));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
   // The re-queued pill is rendered only when something has been re-queued, so
   // its absence is the assertion that nothing was marked wrong.
   await expect(requeuedPill(page)).toHaveCount(0);

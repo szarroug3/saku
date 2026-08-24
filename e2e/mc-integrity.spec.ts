@@ -7,7 +7,7 @@ import {
   startPractice,
   optionButtons,
   answeredPill,
-  answeredText,
+  answeredTextRe,
   type Page,
 } from "./helpers/app";
 import { factInfo } from "@/lib/facts";
@@ -142,7 +142,7 @@ async function walkCards(page: Page, pool: string[], cards: number) {
 
     const card = await page.locator(".kq-glyph").first().elementHandle();
     await options.nth(index).click();
-    await expect(answeredPill(page)).toHaveText(answeredText(i + 1));
+    await expect(answeredPill(page)).toHaveText(answeredTextRe(i + 1));
     await page.waitForFunction((el) => !el?.isConnected, card);
     await card?.dispose();
   }

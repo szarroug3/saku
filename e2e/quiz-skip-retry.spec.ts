@@ -6,7 +6,7 @@ import {
   style,
   answerBox,
   answeredPill,
-  answeredText,
+  answeredTextRe,
   requeuedPill,
   reveal,
 } from "./helpers/app";
@@ -45,7 +45,7 @@ test("skipping an untried card re-queues it for free and draws the next", async 
   await expect(page.locator(".kq-glyph").first()).not.toHaveText(first);
   // The skip re-queued a card but scored nothing: nothing is "answered".
   await expect(requeuedPill(page)).toHaveText("1 re-queued");
-  await expect(answeredPill(page)).toHaveText(answeredText(0));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(0));
 });
 
 test("a retry keeps the card up; only running out of goes resolves it", async ({
@@ -70,7 +70,7 @@ test("a retry keeps the card up; only running out of goes resolves it", async ({
   // no reveal, the box still open for another attempt.
   await box.fill("zzz");
   await box.press("Enter");
-  await expect(answeredPill(page)).toHaveText(answeredText(0));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(0));
   await expect(reveal(page).answer).toHaveCount(0);
   await expect(answerBox(page)).toBeVisible();
 
@@ -78,7 +78,7 @@ test("a retry keeps the card up; only running out of goes resolves it", async ({
   // the reveal finally shows the answer.
   await answerBox(page).fill("zzz");
   await answerBox(page).press("Enter");
-  await expect(answeredPill(page)).toHaveText(answeredText(1));
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
   await expect(requeuedPill(page)).toHaveText("1 re-queued");
   await expect(reveal(page).answer).toBeVisible();
 });

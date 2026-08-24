@@ -6,6 +6,7 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
   answerBox,
 } from "./helpers/app";
 import { kanaFact } from "@/data/characters";
@@ -46,7 +47,7 @@ test("Rerun appears after ending a quiz early and replays every original fact", 
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/quiz");
   await drillReady(page);
-  await expect(progressPill(page)).toHaveText("0 / 3");
+  await expect(progressPill(page)).toHaveText(progressText(0, 3));
 
   // Answer only the first card, correctly, then end the quiz early — two of
   // the three original facts are never shown at all.
@@ -66,5 +67,5 @@ test("Rerun appears after ending a quiz early and replays every original fact", 
   await page.waitForURL("**/quiz");
   await drillReady(page);
   // All three original facts, not just the one this run actually answered.
-  await expect(progressPill(page)).toHaveText("0 / 3");
+  await expect(progressPill(page)).toHaveText(progressText(0, 3));
 });

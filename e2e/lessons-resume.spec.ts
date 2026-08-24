@@ -5,6 +5,7 @@ import {
   lessonCard,
   stepToHeadword,
   headword,
+  teachPosition,
 } from "./helpers/lessons";
 
 /**
@@ -36,7 +37,7 @@ test("leaving a lesson mid-walk and continuing resumes the same step", async ({
   // Walk to the 人 card (past the intro card that precedes it) and record the
   // HUD position there.
   await stepToHeadword(page, "人");
-  const position = await page.getByText(/^\d+ of \d+$/).innerText();
+  const position = await teachPosition(page).innerText();
 
   // Leave the walk for Home. The session is not ended — it rests where it is.
   await page.goto("/learn");
@@ -52,5 +53,5 @@ test("leaving a lesson mid-walk and continuing resumes the same step", async ({
   // Back on the EXACT card, not item 1: the 人 headword is on screen and the HUD
   // reads the same "N of M" it did before.
   await expect(headword(page, "人")).toBeVisible();
-  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(position);
+  await expect(teachPosition(page)).toHaveText(position);
 });

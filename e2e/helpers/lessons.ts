@@ -1,4 +1,4 @@
-import { test, expect, isVisibleSoon, type Page } from "./app";
+import { test, expect, isVisibleSoon, teachPosition, type Page } from "./app";
 
 import { KANA_GROUPS } from "@/lib/lesson";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
@@ -21,7 +21,7 @@ import type { FactId } from "@/types";
  * exactly and fail loudly (not silently) if a target ever leaves the curriculum.
  */
 
-export { test, expect, isVisibleSoon };
+export { test, expect, isVisibleSoon, teachPosition };
 export type { Page };
 
 /** Every kana fact — a kana-complete history, which is what opens the curriculum

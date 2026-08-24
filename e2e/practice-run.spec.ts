@@ -6,6 +6,7 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
   answerBox,
   answerTypedCorrectly,
 } from "./helpers/app";
@@ -55,7 +56,7 @@ test("a practice run started from the selector plays through to results", async 
 
   await drillReady(page);
   // Full coverage over the five vowels: five questions, none answered yet.
-  await expect(progressPill(page)).toHaveText("0 / 5");
+  await expect(progressPill(page)).toHaveText(progressText(0, 5));
 
   // Answer the first four; each call waits for the next card to be drawn.
   for (let i = 1; i < VOWELS.length; i++) {

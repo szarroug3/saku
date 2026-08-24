@@ -6,6 +6,7 @@ import {
   stepToHeadword,
   headword,
   teachMeFromShelf,
+  teachPosition,
 } from "./helpers/lessons";
 
 /**
@@ -62,7 +63,7 @@ test("Library shelf 'Teach me N' builds a multi-card teach walk over the slice",
   // stepped walk (not a straight drill), told by the teach HUD's "N of M". See
   // teachMeFromShelf for why the click retries.
   await teachMeFromShelf(page);
-  const hud = page.getByText(/^\d+ of \d+$/);
+  const hud = teachPosition(page);
   await expect(hud).toBeVisible();
 
   // The slice added its material: a folded character's walk has more than one
@@ -93,7 +94,7 @@ test("leaving on the last teach card and continuing resumes that same card", asy
   // position there. 人 is the final teach card, so this is resume at the boundary
   // with the quiz.
   await stepToHeadword(page, "人");
-  const position = await page.getByText(/^\d+ of \d+$/).innerText();
+  const position = await teachPosition(page).innerText();
 
   // Leave the walk for Home WITHOUT ending it: the session rests where it is.
   await page.goto("/learn");
@@ -109,5 +110,5 @@ test("leaving on the last teach card and continuing resumes that same card", asy
   // Back on the EXACT card, not item 1: 人 is on screen and the HUD reads the same
   // "N of M" it did before leaving.
   await expect(headword(page, "人")).toBeVisible();
-  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(position);
+  await expect(teachPosition(page)).toHaveText(position);
 });
