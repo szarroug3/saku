@@ -1306,26 +1306,24 @@ export const PITCH_INTRO: PhaseIntro = {
   ],
   pitchExamples: [
     {
-      // 箸/橋/端 all bare — this is the set the "same-sounding words apart"
-      // paragraph above is talking about. 橋 and 端 render the IDENTICAL
-      // high/low sequence said alone (see the `followUp` doc on
-      // `PitchExampleRow`), which the next group explains and fixes.
+      // SAK-142 round 3: 箸/橋/端 (はし) is GONE from the audio examples —
+      // 橋 and 端 render the IDENTICAL high/low sequence said alone (odaka
+      // and heiban only ever diverge on the word's own last mora), and a
+      // follow-up word doesn't reliably fix it either: VOICEVOX's own
+      // utterance-final pitch declination overwhelms a forced "stay high"
+      // request on a late mora. This exactly matches SAK-128's homophone
+      // pitch-quiz work (src/data/pitch-pairs.ts) — a human listening study
+      // there found EVERY heiban-vs-non-atamadaka pair (28/28, 橋/端 named
+      // explicitly) unreliable, and every pair the quiz actually uses is
+      // required to involve an atamadaka word for exactly this reason.
+      // 切る/着る follows that same rule: atamadaka diverges on mora 1, the
+      // longest and most durationally prominent syllable, so the two
+      // patterns are opposite across BOTH morae (HIGH-LOW vs LOW-HIGH) and
+      // need no follow-up trick at all. 箸/橋 stay in the prose above as the
+      // illustrative pair (their pitch, not their audio, is the point there).
       rows: [
-        { word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" },
-        { word: "橋", reading: "はし", downstep: 2, gloss: "bridge" },
-        { word: "端", reading: "はし", downstep: 0, gloss: "edge" },
-      ],
-    },
-    {
-      // SAK-142 round 2: から is appended so 橋's drop (or 端's lack of one)
-      // has morae to land on — a single trailing mora (が) turned out too
-      // brief to reliably hear against VOICEVOX's own declining contour, so
-      // this uses two trailing morae for a longer, more sustained contrast.
-      // The gloss follows the phrase actually spoken, not the bare word.
-      note: "You may have noticed 橋 (bridge) and 端 (edge) sound identical above. That's because 橋's drop is only evident when something follows the word. から is added below so you can hear it.",
-      rows: [
-        { word: "橋", reading: "はし", downstep: 2, gloss: "from the bridge", followUp: "から" },
-        { word: "端", reading: "はし", downstep: 0, gloss: "from the edge", followUp: "から" },
+        { word: "切る", reading: "きる", downstep: 1, gloss: "to cut" },
+        { word: "着る", reading: "きる", downstep: 0, gloss: "to wear" },
       ],
     },
     {

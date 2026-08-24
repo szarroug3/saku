@@ -103,18 +103,13 @@ describe("the pitch card fires ahead of the first pitch word", () => {
   });
 });
 
-/** Find a pitchExamples row by its kanji word, across every group. 橋/端 now
- * appear TWICE (bare in the first group, +から in the "you may have noticed"
- * group) — `variant` picks which one; omit it for a word with only one row. */
-function pitchExampleRow(word: string, variant?: "bare" | "followUp"): PitchExampleRow {
-  const matches: PitchExampleRow[] = [];
+/** Find a pitchExamples row by its kanji word, across every group. */
+function pitchExampleRow(word: string): PitchExampleRow {
   for (const group of PITCH_INTRO.pitchExamples ?? []) {
-    for (const row of group.rows) if (row.word === word) matches.push(row);
+    const row = group.rows.find((r) => r.word === word);
+    if (row) return row;
   }
-  if (matches.length === 0) throw new Error(`no PITCH_INTRO.pitchExamples row for ${word}`);
-  if (variant === "bare") return matches.find((r) => !r.followUp) ?? matches[0];
-  if (variant === "followUp") return matches.find((r) => r.followUp) ?? matches[0];
-  return matches[0];
+  throw new Error(`no PITCH_INTRO.pitchExamples row for ${word}`);
 }
 
 /** The "H"/"L" shape plus drop index for what a row ACTUALLY sends to
@@ -130,98 +125,46 @@ function spokenShape(row: PitchExampleRow) {
   };
 }
 
-describe("PITCH_INTRO.pitchExamples — はし set, SAK-142 round 2's follow-up-word fix", () => {
-  test("premise check: bare はし really does collide for 橋 and 端", () => {
-    // If this fails, the bug this fix addresses is no longer real and the
-    // followUp mechanism (and this whole test file) needs re-examining.
-    const bridge = pitchPatternForLength(
-      moraeOf("はし").length,
-      pitchExampleRow("橋", "bare").downstep,
-    );
-    const edge = pitchPatternForLength(
-      moraeOf("はし").length,
-      pitchExampleRow("端", "bare").downstep,
-    );
-    assert.deepEqual(
-      bridge.map((m) => m.high),
-      edge.map((m) => m.high),
-      "heiban and odaka must collide on the bare word for this fix to be necessary",
-    );
+describe("PITCH_INTRO.pitchExamples — SAK-142 round 3: 橋/端 replaced by 切る/着る", () => {
+  test("橋/端 (はし) no longer appear in the audio examples at all", () => {
+    const words = (PITCH_INTRO.pitchExamples ?? []).flatMap((g) => g.rows.map((r) => r.word));
+    assert.ok(!words.includes("橋"), "橋 was pulled — odaka never survives a bare/follow-up render");
+    assert.ok(!words.includes("端"), "端 was pulled for the same reason");
+    assert.ok(!words.includes("箸"), "箸's own group went with it — it had no partner left to contrast against");
   });
 
-  test("橋 and 端 appear bare first, alongside 箸, in their own un-noted group", () => {
-    const bareGroup = PITCH_INTRO.pitchExamples?.[0];
-    assert.ok(bareGroup, "the first pitchExamples group should exist");
-    assert.equal(bareGroup!.note, undefined, "no explanation yet — this group is the 'problem' half");
-    assert.deepEqual(
-      bareGroup!.rows.map((r) => r.word),
-      ["箸", "橋", "端"],
-    );
-    assert.equal(bareGroup!.rows.find((r) => r.word === "橋")!.followUp, undefined);
-    assert.equal(bareGroup!.rows.find((r) => r.word === "端")!.followUp, undefined);
+  test("切る and 着る carry their own real, verified downsteps", () => {
+    const cut = pitchExampleRow("切る");
+    const wear = pitchExampleRow("着る");
+    assert.equal(cut.reading, "きる");
+    assert.equal(wear.reading, "きる");
+    assert.equal(cut.downstep, wordPitch("切る"));
+    assert.equal(wear.downstep, wordPitch("着る"));
+    assert.equal(cut.downstep, 1, "atamadaka");
+    assert.equal(wear.downstep, 0, "heiban");
   });
 
-  test("橋 (odaka) carries から and its own real downstep (2), unchanged", () => {
-    const row = pitchExampleRow("橋", "followUp");
-    assert.equal(row.reading, "はし");
-    assert.equal(row.followUp, "から");
-    assert.equal(row.downstep, 2);
-    assert.equal(row.gloss, "from the bridge", "the gloss follows the phrase actually spoken");
+  test("neither needs a follow-up word — the patterns already diverge on mora 1", () => {
+    assert.equal(pitchExampleRow("切る").followUp, undefined);
+    assert.equal(pitchExampleRow("着る").followUp, undefined);
   });
 
-  test("端 (heiban) carries から and its own real downstep (0), unchanged", () => {
-    const row = pitchExampleRow("端", "followUp");
-    assert.equal(row.reading, "はし");
-    assert.equal(row.followUp, "から");
-    assert.equal(row.downstep, 0);
-    assert.equal(row.gloss, "from the edge", "the gloss follows the phrase actually spoken");
-  });
-
-  // から (2 morae) rather than が (1 mora): a single trailing mora's pitch is
-  // too brief to reliably perceive against VOICEVOX's own natural declining
-  // contour (confirmed live — both the raw pitch values and a byte-diff of
-  // the actual synthesized clips showed a real but easy-to-miss difference
-  // concentrated on one syllable). Two trailing morae at a sustained level
-  // give the ear more to hold onto.
-  test("橋+から genuinely drops, and stays low for both trailing morae", () => {
-    const shape = spokenShape(pitchExampleRow("橋", "followUp"));
-    assert.equal(shape.hl, "LHLL");
-    assert.equal(shape.dropAt, 1, "the drop lands on the 2nd mora (し), the last high mora before から");
-  });
-
-  test("端+から stays level across all three trailing morae — no drop", () => {
-    const shape = spokenShape(pitchExampleRow("端", "followUp"));
-    assert.equal(shape.hl, "LHHH");
-    assert.equal(shape.dropAt, -1);
-  });
-
-  test("橋+から and 端+から are now genuinely different, audible patterns", () => {
-    assert.notDeepEqual(
-      spokenShape(pitchExampleRow("橋", "followUp")),
-      spokenShape(pitchExampleRow("端", "followUp")),
-    );
-  });
-
-  test("箸 (atamadaka) needs no follow-up — its drop is already internal and audible alone", () => {
-    const row = pitchExampleRow("箸");
-    assert.equal(row.followUp, undefined);
-    assert.equal(row.downstep, 1);
-    const shape = spokenShape(row);
-    assert.equal(shape.hl, "HL");
-    assert.equal(shape.dropAt, 0);
-  });
-
-  test("the から group carries an explanation naming both 橋 and 端", () => {
-    const group = PITCH_INTRO.pitchExamples?.find((g) =>
-      g.rows.some((r) => r.word === "橋" && r.followUp),
-    );
-    assert.ok(group?.note, "the 橋/端 +から group should explain why they need から");
-    assert.match(group!.note!, /橋/);
-    assert.match(group!.note!, /端/);
+  // Unlike 橋/端 (which only ever diverge on the word's own LAST mora — too
+  // faint to hear, per SAK-128's human listening study), atamadaka diverges
+  // on mora 1, the longest and most durationally prominent syllable, so the
+  // two patterns are opposite across BOTH morae, not just one.
+  test("切る starts high and drops; 着る starts low and rises — opposite on every mora", () => {
+    const cut = spokenShape(pitchExampleRow("切る"));
+    const wear = spokenShape(pitchExampleRow("着る"));
+    assert.equal(cut.hl, "HL");
+    assert.equal(cut.dropAt, 0);
+    assert.equal(wear.hl, "LH");
+    assert.equal(wear.dropAt, -1);
+    assert.notDeepEqual(cut, wear);
   });
 });
 
-describe("PITCH_INTRO.pitchExamples — きのう set is unaffected by the はし fix", () => {
+describe("PITCH_INTRO.pitchExamples — きのう set is unaffected by the 橋/端 swap", () => {
   test("昨日 (nakadaka) and 機能 (atamadaka) carry no follow-up word", () => {
     const yesterday = pitchExampleRow("昨日");
     const func = pitchExampleRow("機能");
