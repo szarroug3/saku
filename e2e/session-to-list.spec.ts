@@ -6,6 +6,7 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
   answerBox,
   answerTypedCorrectly,
 } from "./helpers/app";
@@ -39,7 +40,7 @@ test("a finished session can be saved as a list", async ({ page, seed }) => {
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/quiz");
   await drillReady(page);
-  await expect(progressPill(page)).toHaveText("0 / 5");
+  await expect(progressPill(page)).toHaveText(progressText(0, 5));
   for (let i = 1; i < VOWELS.length; i++) {
     await answerTypedCorrectly(page, VOWEL_FACTS, i);
   }

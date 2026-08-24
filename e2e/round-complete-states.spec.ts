@@ -5,6 +5,7 @@ import {
   direction,
   style,
   progressPill,
+  progressText,
   startVowelLessonDrill,
   answerDrillCard,
 } from "./helpers/app";
@@ -54,7 +55,7 @@ test("round complete reports a mix of solid and needs-work forms", async ({
 }) => {
   await seed({ seen: [], cfg: CFG });
   await startVowelLessonDrill(page);
-  await expect(progressPill(page)).toHaveText(`0 / ${FORMS}`);
+  await expect(progressPill(page)).toHaveText(progressText(0, FORMS));
 
   // Miss the FIRST card, answer the other four correctly. One wrong first try is
   // enough to send that form to needs-work; the rest land solid.
@@ -111,7 +112,7 @@ test("round complete reports every form as needs work", async ({
 }) => {
   await seed({ seen: [], cfg: CFG });
   await startVowelLessonDrill(page);
-  await expect(progressPill(page)).toHaveText(`0 / ${FORMS}`);
+  await expect(progressPill(page)).toHaveText(progressText(0, FORMS));
 
   // Every card wrong on its first (and only) try.
   for (let i = 0; i < FORMS; i++) {

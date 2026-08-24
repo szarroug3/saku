@@ -6,6 +6,7 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
   answerBox,
   answerTypedCorrectly,
   type Page,
@@ -62,7 +63,7 @@ async function totalSeen(page: Page): Promise<number> {
  * waiting for a next card that is never drawn. Same shape as session-loop's. */
 async function playRound(page: Page, size: number) {
   await drillReady(page);
-  await expect(progressPill(page)).toHaveText(`0 / ${size}`);
+  await expect(progressPill(page)).toHaveText(progressText(0, size));
   for (let i = 1; i < size; i++) {
     await answerTypedCorrectly(page, VOWEL_FACTS, i);
   }

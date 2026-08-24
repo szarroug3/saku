@@ -1,4 +1,4 @@
-import { test, expect, stepToHeadword, teachMeFromShelf } from "./helpers/lessons";
+import { test, expect, stepToHeadword, teachMeFromShelf, teachPosition } from "./helpers/lessons";
 
 /**
  * THE "TEACH ME N" PATH: a lesson started from the Library SHELF, not the Home
@@ -51,7 +51,7 @@ test("Library shelf 'Teach me N' opens the teach walk for the selected slice", a
   // walk — not a straight quiz. See teachMeFromShelf for why the click retries.
   await teachMeFromShelf(page);
   // The teach HUD's position, proving this is the stepped walk and not the drill.
-  await expect(page.getByText(/^\d+ of \d+$/)).toBeVisible();
+  await expect(teachPosition(page)).toBeVisible();
   // The walk teaches 生 (it may open on a concept-card intro first).
   await stepToHeadword(page, MULTI_FACT_KANJI);
 });

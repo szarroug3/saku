@@ -6,6 +6,9 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
+  teachPosition,
+  teachPositionText,
   answerBox,
   answerTypedCorrectly,
   isVisibleSoon,
@@ -63,7 +66,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // scripts are), and the content-model walk interleaves a couple of concept cards
   // among the five vowels, so the group is eight steps in all. The HUD counts the
   // position through the walk. Asserted by what the intro TEACHES.
-  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("1 of 8");
+  await expect(teachPosition(page)).toHaveText(teachPositionText(1, 8));
   await expect(page.locator("body")).toContainText("kana");
   await expect(page.locator("body")).toContainText("sound-based scripts");
 
@@ -95,7 +98,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
   await page.getByRole("button", { name: "Quiz me", exact: true }).click();
   await page.waitForURL("**/quiz");
   await drillReady(page);
-  await expect(progressPill(page)).toHaveText("0 / 5");
+  await expect(progressPill(page)).toHaveText(progressText(0, 5));
 
   // Answer the first four correctly, each waiting for the next card.
   for (let i = 1; i < VOWELS.length; i++) {

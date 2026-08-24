@@ -252,7 +252,14 @@ export function answeredText(n: number): string {
   return `${n} answered · endless`;
 }
 
-const ANSWERED_RE = /^\d+ answered · endless$/;
+// SAK-145 round 3: a single-subject quiz prefixes the pill with its track
+// name ("Vowels · 3 / 5"), the same "Track · position" shape the teach-phase
+// header uses — omitted (bare position, as before) when the fact pool is
+// mixed-subject. The prefix is optional here for that reason, not because
+// its presence is untested: which shape a given seeded pool renders is a
+// content fact, not something these regexes should have to track.
+const TRACK_PREFIX = "(?:[^·]+ · )?";
+const ANSWERED_RE = new RegExp(`^${TRACK_PREFIX}\\d+ answered · endless$`);
 
 /**
  * The resolved-count pill, in EITHER of the two shapes the drill uses: an
@@ -261,7 +268,39 @@ const ANSWERED_RE = /^\d+ answered · endless$/;
  * shape, because the shape is a config choice.
  */
 export function progressPill(page: Page) {
-  return page.getByText(/^(\d+ answered · endless|\d+ \/ \d+)$/);
+  return page.getByText(
+    new RegExp(`^${TRACK_PREFIX}(\\d+ answered · endless|\\d+ \\/ \\d+)$`),
+  );
+}
+
+/**
+ * `answeredText`, tolerant of the optional track prefix above — for
+ * `toHaveText` assertions, which (given a string) require an exact match.
+ * `answeredText`'s plain string is still right for `getByText`, a substring
+ * match by default.
+ */
+export function answeredTextRe(n: number): RegExp {
+  return new RegExp(`^${TRACK_PREFIX}${n} answered · endless$`);
+}
+
+/** `${n} / ${total}`, tolerant of the optional track prefix — see `answeredTextRe`. */
+export function progressText(n: number, total: number): RegExp {
+  return new RegExp(`^${TRACK_PREFIX}${n} \\/ ${total}$`);
+}
+
+/**
+ * The teach header's position pill — "4 of 10", optionally prefixed by its
+ * track the same way a quiz's progress pill is (SAK-145 round 1 predates
+ * round 3's quiz prefix, but the shape — and the reason a test should not
+ * hardcode it away — is the same).
+ */
+export function teachPosition(page: Page) {
+  return page.getByText(new RegExp(`^${TRACK_PREFIX}\\d+ of \\d+$`));
+}
+
+/** `${n} of ${total}`, tolerant of the optional track prefix — see `progressText`. */
+export function teachPositionText(n: number, total: number): RegExp {
+  return new RegExp(`^${TRACK_PREFIX}${n} of ${total}$`);
 }
 
 export function requeuedPill(page: Page) {
@@ -325,7 +364,7 @@ export async function answerTypedCorrectly(
   // resolves given enough time rather than timing out on a genuinely wrong
   // value.
   await expect(progressPill(page)).toHaveText(
-    new RegExp(`^${expectedTotal} (answered · endless|/ \\d+)$`),
+    new RegExp(`^${TRACK_PREFIX}${expectedTotal} (answered · endless|/ \\d+)$`),
     { timeout: 30_000 },
   );
   await page.waitForFunction((el) => !el?.isConnected, glyphNode, { timeout: 30_000 });

@@ -1,4 +1,4 @@
-import { test, expect } from "./helpers/app";
+import { test, expect, teachPosition } from "./helpers/app";
 
 import { COUNTER_CURRICULUM, counterMeaningFactId } from "@/data/counters";
 import { KANA_GROUPS } from "@/lib/lesson";
@@ -57,7 +57,10 @@ test("counters prep lesson shows Numbers label and resumes from counters card", 
   // Teaching HUD must stay counters-oriented, not "Kanji" from prereq-first facts.
   // SAK-7 unified this track's learner-facing name to "Counting" everywhere
   // (session HUD included); "Numbers" is now an internal sub-type label only.
-  await expect(page.getByText(/^Counting$/, { exact: true })).toBeVisible();
+  // SAK-145 round 1 folded the sublabel into the same plain-text span as the
+  // "N of M" position ("Counting · 1 of 8"), so this checks the merged text
+  // rather than a standalone "Counting" node.
+  await expect(teachPosition(page)).toHaveText(/^Counting · \d+ of \d+$/);
 
   await page.goto("/learn");
 
