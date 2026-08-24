@@ -110,16 +110,17 @@ export function trackCompletion(
 // (lesson-position.ts's header): "freeze positions over the static order
 // first, look them up by group second."
 //
-// It shipped, and it was also frequently WIDE, specifically for vocab: vocab's
-// `order` is sorted by SPOKEN FREQUENCY, but a word's kanji-component
-// prerequisite resolves by curriculum Built-from edges (see
-// vocabPositionLabel's comment in home-feed.tsx), so a prerequisite pulled in
-// from far away in that SAME frequency-ranked order routinely produced spans
-// like "11–3,301 of 14,084" for a 6-item lesson — confirmed by simulation in
-// track-completion.test.ts as the common shape past the first couple of
-// lessons, not a rare edge case. Seen live, it read as broken rather than
-// honest: a learner cannot use "11–3,301" as a position, however truthfully it
-// was computed.
+// It shipped, and it was also frequently WIDE, specifically for vocab: at the
+// time, vocab's `order` was sorted by raw SPOKEN FREQUENCY (a bug fixed in
+// SAK-173 — vocab's order is CURRICULUM_SEQUENCE's own order today, see
+// unit-tracks.ts's vocabUnits), but a word's kanji-component prerequisite
+// resolves by curriculum Built-from edges (see vocabPositionLabel's comment in
+// home-feed.tsx), so a prerequisite pulled in from far away in that
+// frequency-ranked order routinely produced spans like "11–3,301 of 14,084"
+// for a 6-item lesson — confirmed by simulation in track-completion.test.ts as
+// the common shape past the first couple of lessons, not a rare edge case.
+// Seen live, it read as broken rather than honest: a learner cannot use
+// "11–3,301" as a position, however truthfully it was computed.
 //
 // So this reverts to the TIGHT SEQUENTIAL span this ticket originally shipped
 // with — `from = known + 1`, `to = known + (distinct items this lesson

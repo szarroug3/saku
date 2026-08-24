@@ -108,7 +108,10 @@ for (const track of tracks) {
   }
 }
 
-// ── Curriculum glyph spine: the vocab card counts positions in this order. ─────
+// ── Curriculum glyph spine: CURRICULUM_SEQUENCE's own glyphs, one per item
+//    (repeats included — a multi-reading word occupies more than one, see
+//    curriculum-order.ts's header). Currently unused by any card — see the
+//    long comment on `curriculumGlyphs` in learn-index-types.ts. ──────────────
 const curriculumGlyphs = CURRICULUM_SEQUENCE.map((it) => it.glyph);
 
 // ── Sentence tier gates: the old planner's pool-size and ANY-of grammar gates,
