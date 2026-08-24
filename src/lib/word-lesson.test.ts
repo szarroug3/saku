@@ -151,7 +151,11 @@ describe("the word total is the material, and does not move", () => {
     // cut only, since curriculum-order.ts's isSingleCharWordGlyph fold keeps
     // teaching them regardless (CURRICULUM_TOTALS.word in curriculum-lesson.ts,
     // the number actually shown on a lesson card, is unaffected — see its test).
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12477);
+    // Minus 8 more with SAK-174: だ/です/ね/も/よ/って/と/ない joined PARTICLE_TRACK_KEBS
+    // once their own bare-form grammar recipes shipped (recipes.ts), for the
+    // same "already a MEANING recipe in the grammar track" reason は/が/... etc
+    // were cut above.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12469);
   });
 });
 

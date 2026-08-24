@@ -188,6 +188,20 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
   "kara-source",
   "shika-nai",
   "ka",
+  // SAK-174's bare copula/sentence-final/particle rows. Same reasoning as
+  // ka above: だ/です are register choices (both grammatical, so a cloze
+  // between them is often unanswerable without more context, は/が-shaped),
+  // ね/よ are the sentence-final-feel pair this file's own header already
+  // names, and と(-and)/も have no evidence a cloze choice among them is
+  // ever safely unambiguous either. Absent from PARTICLE_ALLOWLIST too, so
+  // all default to recognition-only, never a selection distractor or answer.
+  "da",
+  "desu",
+  "to-and",
+  "mo",
+  "ne",
+  "yo",
+  "tte",
 ]);
 
 /**

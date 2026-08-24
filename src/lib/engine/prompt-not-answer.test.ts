@@ -142,8 +142,9 @@ describe("the two shapes that do NOT hold it yet", () => {
     // like the kana one, and the same fix shape would serve it.
     // The full grammar recipe table, including the standalone adjective noun
     // form and the five core particles は/が/に/で/か, carries one meaning card
-    // per recipe.
-    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 106);
+    // per recipe. 114 = 106 + SAK-174's eight new bare copula/particle rows
+    // (da, desu, to-and, mo, ne, yo, tte, ga-nai).
+    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 114);
   });
 });
 

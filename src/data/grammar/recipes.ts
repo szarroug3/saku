@@ -637,6 +637,132 @@ export const RECIPES: readonly Recipe[] = [
     ],
   },
 
+  // --- copulas & sentence-final particles: SAK-174 ------------------------
+  // だ/です/ね/も/よ/って/と/ない are grammar in CEJC's own corpus classification
+  // (see scripts/ingest/cejc_reading_frequency.py's teaching_category), not
+  // vocabulary — だ alone occurs 115,059 times as a copula against 1 lone
+  // core-tagged instance, and ね/も/って have ZERO core-tagged occurrences at
+  // all. They were taught nowhere correctly before this: not as real
+  // vocabulary (they aren't), and Grammar only ever taught compound patterns
+  // built ON TOP of them (〜そうだ, 〜ようだ, 〜と conditional, 〜ない negative verb
+  // form), never the bare word. These rows are that missing bare form, in the
+  // same shape が/に/で above already use: a MEANING recipe with no production
+  // fact (isVacuous — nothing conjugates, the word/particle is just added).
+  // Placed here, right after か, so they sit with their fellow N5
+  // sentence-enders instead of scattered by hand elsewhere in the table.
+  // と's bare form (to-and) is NOT here — its bare pattern string 〜と already
+  // belongs to to-conditional (N4, in the conditionals cluster below), and
+  // recipes.ts's one-lesson-per-written-pattern rule means a same-pattern
+  // sibling has to live at that recipe's level and sit right after it in this
+  // array. See to-and's own note for why and what that costs. ない's bare
+  // predicate sense (ga-nai) IS here, at 〜がない, a different written pattern
+  // from nai-form's 〜ない, so it has no such constraint.
+  {
+    id: "da",
+    pattern: "〜だ",
+    gloss: "plain copula: “is / am / are”",
+    level: "N5",
+    attach: [
+      { host: "noun", form: null, add: "だ" },
+      { host: "adj-na", form: null, add: "だ" },
+    ],
+    note:
+      "い-adjectives never take だ (高いだ is not Japanese — 高い alone is the " +
+      "complete plain predicate), so this row has no adj-i host. です is the " +
+      "polite register of the SAME copula, not a different word — see desu.",
+  },
+  {
+    id: "desu",
+    pattern: "〜です",
+    gloss: "polite copula: “is / am / are”",
+    level: "N5",
+    attach: [
+      { host: "noun", form: null, add: "です" },
+      { host: "adj-na", form: null, add: "です" },
+      { host: "adj-i", form: "dictionary", add: "です" },
+    ],
+    note:
+      "Unlike だ, です also attaches straight onto an い-adjective's own " +
+      "complete predicate for politeness (高いです) — the adjective does not " +
+      "change, です only raises the register, which is why the form stays " +
+      "\"dictionary\" (trivial) rather than a real conjugation.",
+  },
+  {
+    id: "mo",
+    pattern: "〜も",
+    gloss: "also / too",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "も" }],
+    note:
+      "Replaces は/が/を on the noun it marks, the same way だけ/しか do — 私も " +
+      "行く, not 私がも行く. Zero core-tagged occurrences in CEJC (all 36,116 " +
+      "are grammar); it was already correctly falling to category:\"grammar\" " +
+      "before this ticket's priority fix, but had no card of its own until now.",
+  },
+  {
+    id: "ne",
+    pattern: "〜ね",
+    gloss: "seeking agreement (“right?”)",
+    level: "N5",
+    attach: [
+      { host: "verb", form: "dictionary", add: "ね" },
+      { host: "adj-i", form: "dictionary", add: "ね" },
+      { host: "adj-na", form: null, add: "だね" },
+      { host: "noun", form: null, add: "だね" },
+    ],
+    note:
+      "Sentence-final, so it closes a whole predicate like か does — but " +
+      "unlike か it keeps だ in front of a noun/な-adjective predicate " +
+      "(学生だね, not 学生ね), where か's own table correctly drops it (学生か). " +
+      "Not on PARTICLE_ALLOWLIST (see questions.ts): ね/よ are sentence-final " +
+      "feel, not a fact a cloze can grade — that file's own header already " +
+      "names this pair as the reason.",
+  },
+  {
+    id: "yo",
+    pattern: "〜よ",
+    gloss: "asserting new information (“I’m telling you”)",
+    level: "N5",
+    attach: [
+      { host: "verb", form: "dictionary", add: "よ" },
+      { host: "adj-i", form: "dictionary", add: "よ" },
+      { host: "adj-na", form: null, add: "だよ" },
+      { host: "noun", form: null, add: "だよ" },
+    ],
+    note: "Same shape as ne — see that row's note on why noun/な-adjective keep だ.",
+  },
+  {
+    id: "tte",
+    pattern: "〜って",
+    gloss: "I heard that X / they say X",
+    level: "N5",
+    attach: [
+      { host: "verb", form: "dictionary", add: "って" },
+      { host: "adj-i", form: "dictionary", add: "って" },
+      { host: "adj-na", form: null, add: "だって" },
+      { host: "noun", form: null, add: "だって" },
+    ],
+    note:
+      "Casual spoken hearsay/quotation, the conversational stand-in for " +
+      "そうだ/と言っていた — 明日休みだって ('I heard tomorrow's a holiday'). " +
+      "って also does casual topic-marking (これって) and casual quoting before " +
+      "a verb of speech (verb+って言う); this row keeps the single most-taught " +
+      "sense rather than splitting a beginner's first って three ways.",
+  },
+  {
+    id: "ga-nai",
+    pattern: "〜がない",
+    gloss: "there isn’t X / doesn’t have X",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "がない" }],
+    note:
+      "ない's own PREDICATE sense — 'nonexistent', the negative of ある — " +
+      "distinct from nai-form above, which is ない as a SUFFIX negating a " +
+      "different verb (食べない). Bare ない cannot follow a noun alone (本ない " +
+      "is not Japanese; 本がない is), so the pattern is がない, not ない, and " +
+      "that is why this is not simply another nai-form host.",
+  },
+
   {
     id: "te-shimau",
     pattern: "〜てしまう",
@@ -1253,10 +1379,50 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "to-conditional",
     pattern: "〜と",
+    sense: "条件",
     gloss: "whenever X",
     level: "N4",
     cluster: "conditionals",
     attach: [{ host: "verb", form: "dictionary", add: "と" }],
+    note:
+      "SAK-174 gave と a bare-form sibling, to-and (並列, 'and'), which shares " +
+      "this exact pattern string — so this row now carries `sense` too, the " +
+      "same fix kara-reason/kara-source and potential/passive already needed " +
+      "for the identical reason: two facts, one bare pattern, must not render " +
+      "as the same unlabeled button.",
+  },
+  {
+    id: "to-and",
+    pattern: "〜と",
+    sense: "並列",
+    gloss: "and / together with (connects nouns)",
+    level: "N4",
+    attach: [{ host: "noun", form: null, add: "と" }],
+    note:
+      "SPLIT from to-conditional by SENSE, same as kara-reason/kara-source: " +
+      "this と lists nouns (私と彼 — 'me and him'), the conditional と attaches " +
+      "to a verb's dictionary form and means 'whenever'. と is grammar in " +
+      "CEJC 41,653 times against 2 core-tagged instances; neither of those 2 " +
+      "settles which sense they favor, so this row and to-conditional between " +
+      "them are the fuller account of what と actually does — と's own bare " +
+      "'and' use had no card at all before this row. LEVEL AND POSITION ARE " +
+      "NOT FREE HERE, unlike this ticket's other five bare rows: recipes.ts's " +
+      "one-lesson-per-written-pattern rule (see patternGroup/isPrimaryPattern" +
+      "Recipe below) merges every same-`pattern` recipe into ONE lesson keyed " +
+      "on whichever is FIRST in this array, and every existing same-pattern " +
+      "sibling pair in this table (kara-reason/-source, sou-hearsay/-appearance, " +
+      "potential/passive) already shares one level for exactly this reason — " +
+      "splitting levels breaks grammar-order.ts's level-monotone teaching " +
+      "order, verified by actually trying N5 here first and watching " +
+      "src/lib/library/grammar-order.test.ts fail. と's listing 'and' sense is " +
+      "genuinely N5-appropriate on its own pedagogical merits (Japanese " +
+      "beginners meet 私と彼 long before と-conditional), but this row is kept " +
+      "at N4 and placed directly after to-conditional — never renumbered ahead " +
+      "of it — so to-conditional stays first-in-array and therefore stays the " +
+      "existing lesson's canonical id/URL, unchanged by this ticket. Splitting " +
+      "と's 'and' sense into its own earlier N5 lesson is possible but needs a " +
+      "change to the pattern-grouping model itself, not a recipe-table edit; " +
+      "flagged for the ticket owner rather than attempted here.",
   },
   {
     id: "nara",
