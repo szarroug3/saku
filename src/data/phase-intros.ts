@@ -1306,17 +1306,26 @@ export const PITCH_INTRO: PhaseIntro = {
   ],
   pitchExamples: [
     {
-      rows: [{ word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" }],
+      // 箸/橋/端 all bare — this is the set the "same-sounding words apart"
+      // paragraph above is talking about. 橋 and 端 render the IDENTICAL
+      // high/low sequence said alone (see the `followUp` doc on
+      // `PitchExampleRow`), which the next group explains and fixes.
+      rows: [
+        { word: "箸", reading: "はし", downstep: 1, gloss: "chopsticks" },
+        { word: "橋", reading: "はし", downstep: 2, gloss: "bridge" },
+        { word: "端", reading: "はし", downstep: 0, gloss: "edge" },
+      ],
     },
     {
-      // SAK-142 round 2: 橋 (odaka, downstep 2) and 端 (heiban, downstep 0)
-      // render the IDENTICAL high/low sequence when はし is said alone — see
-      // the `followUp` doc on `PitchExampleRow`. が is appended so the drop
-      // (or its absence) has a mora to land on.
-      note: "You may have noticed 橋 (bridge) and 端 (edge) sound identical. That's because 橋's drop is only evident when something follows the word. が is added below so you can hear it.",
+      // SAK-142 round 2: から is appended so 橋's drop (or 端's lack of one)
+      // has morae to land on — a single trailing mora (が) turned out too
+      // brief to reliably hear against VOICEVOX's own declining contour, so
+      // this uses two trailing morae for a longer, more sustained contrast.
+      // The gloss follows the phrase actually spoken, not the bare word.
+      note: "You may have noticed 橋 (bridge) and 端 (edge) sound identical above. That's because 橋's drop is only evident when something follows the word. から is added below so you can hear it.",
       rows: [
-        { word: "橋", reading: "はし", downstep: 2, gloss: "bridge", followUp: "が" },
-        { word: "端", reading: "はし", downstep: 0, gloss: "edge", followUp: "が" },
+        { word: "橋", reading: "はし", downstep: 2, gloss: "from the bridge", followUp: "から" },
+        { word: "端", reading: "はし", downstep: 0, gloss: "from the edge", followUp: "から" },
       ],
     },
     {

@@ -459,7 +459,7 @@ export function IntroPitchExamples({ sets }: { sets: readonly PitchExampleGroup[
       {sets.map((group, i) => (
         <div key={i} className="space-y-2">
           {group.note ? (
-            <p className="max-w-[64ch] text-[15px] leading-relaxed text-text">{group.note}</p>
+            <p className="text-[15px] leading-relaxed text-text">{group.note}</p>
           ) : null}
           {group.rows.map((row) => {
             const spoken = row.reading + (row.followUp ?? "");
