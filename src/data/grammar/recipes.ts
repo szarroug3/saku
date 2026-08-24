@@ -660,7 +660,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "da",
     pattern: "〜だ",
-    gloss: "plain copula: “is / am / are”",
+    gloss: "“is / am / are” (casual)",
     level: "N5",
     attach: [
       { host: "noun", form: null, add: "だ" },
@@ -674,7 +674,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "desu",
     pattern: "〜です",
-    gloss: "polite copula: “is / am / are”",
+    gloss: "“is / am / are” (polite)",
     level: "N5",
     attach: [
       { host: "noun", form: null, add: "です" },
