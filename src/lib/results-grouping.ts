@@ -69,11 +69,6 @@ export function outcomeOf(st?: FactSessionDetail): Outcome {
   return "recovered";
 }
 
-/** True for the two outcomes that count as a miss you might want to redrill. */
-export function isMiss(outcome: Outcome): boolean {
-  return outcome === "missed";
-}
-
 /**
  * The entries you answered INSTEAD on this fact — what you confused it for,
  * most-confused first. Keyed by entry, because a confusion is a failure to tell

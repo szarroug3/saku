@@ -55,8 +55,3 @@ const MAP = REGISTRY as Record<string, string>;
 export function canonicalMeaningId(factId: FactId, gloss: string): MeaningId {
   return (MAP[factId] ?? gloss) as MeaningId;
 }
-
-/** Whether the registry has placed this fact yet (vs the gloss fallback). */
-export function isRegisteredMeaning(factId: FactId): boolean {
-  return factId in MAP;
-}
