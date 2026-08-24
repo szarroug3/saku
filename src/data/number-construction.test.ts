@@ -183,23 +183,46 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     ]);
   });
 
-  test("a big row is the base word annotated with its make-up, then the total", () => {
+  test("a big row is the count and base word as two × pieces, then the total", () => {
     const rows = groupsOf("big").flatMap((g) => g.examples);
     const at = (label: string) => rows.find((r) => r.label === label)!;
+    // 百/千 elide いち in real speech (ひゃく, せん — not いちひゃく/いちせん), so count 1
+    // is a single bare piece, no "×"; every other count is a real ご × ひゃく pair.
     assert.deepEqual(at("100").build, [{ kana: "ひゃく", value: "100" }]);
-    assert.deepEqual(at("200").build, [{ kana: "にひゃく", value: "2 × 100" }]);
-    assert.deepEqual(at("2000").build, [{ kana: "にせん", value: "2 × 1000" }]);
+    assert.deepEqual(at("500").build, [
+      { kana: "ご", value: "5" },
+      { kana: "ひゃく", value: "100", op: "×" },
+    ]);
+    assert.deepEqual(at("200").build, [
+      { kana: "に", value: "2" },
+      { kana: "ひゃく", value: "100", op: "×" },
+    ]);
+    assert.deepEqual(at("2000").build, [
+      { kana: "に", value: "2" },
+      { kana: "せん", value: "1000", op: "×" },
+    ]);
     // 万/億 don't elide いち the way 百/千 do (いちまん, いちおく really are said with
     // いち — numberReading's own header comment says so), so unlike 100/1000
-    // above, a lone 万/億 value is a real 1 × N composition, not a bare reading.
-    assert.deepEqual(at("10000").build, [{ kana: "いちまん", value: "1 × 10000" }]);
-    assert.deepEqual(at("100000").build, [{ kana: "じゅうまん", value: "10 × 10000" }]);
+    // above, even count 1 is a real いち × まん pair, not a bare reading.
+    assert.deepEqual(at("10000").build, [
+      { kana: "いち", value: "1" },
+      { kana: "まん", value: "10000", op: "×" },
+    ]);
+    assert.deepEqual(at("100000").build, [
+      { kana: "じゅう", value: "10" },
+      { kana: "まん", value: "10000", op: "×" },
+    ]);
     assert.deepEqual(at("300").result, { kana: "さんびゃく", value: "300" });
-    // SAK-176: the 億 tier's build annotations — 1億 as "1 × 100000000", and
-    // 100億 annotated as "100 × 100000000", the same digit-in-front shape
-    // 100000 ("10 × 10000") already shows one tier down.
-    assert.deepEqual(at("100000000").build, [{ kana: "いちおく", value: "1 × 100000000" }]);
-    assert.deepEqual(at("10000000000").build, [{ kana: "ひゃくおく", value: "100 × 100000000" }]);
+    // SAK-176: the 億 tier — 1億 as いち × おく, 100億 as ひゃく × おく, the same
+    // digit-in-front shape 100000 (じゅう × まん) already shows one tier down.
+    assert.deepEqual(at("100000000").build, [
+      { kana: "いち", value: "1" },
+      { kana: "おく", value: "100000000", op: "×" },
+    ]);
+    assert.deepEqual(at("10000000000").build, [
+      { kana: "ひゃく", value: "100" },
+      { kana: "おく", value: "100000000", op: "×" },
+    ]);
     assert.deepEqual(at("10000000000").result, { kana: "ひゃくおく", value: "10000000000" });
   });
 

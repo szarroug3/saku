@@ -222,6 +222,11 @@ export interface CountBuildPiece {
   /** The numeric annotation shown in parens, accent-coloured — "10", "2 × 10",
    * "11". Absent for a non-numeric piece such as a counter reading. */
   readonly value?: string;
+  /** The operator joining this piece to the one before it. Defaults to "+"
+   * (every existing build table is additive: じゅう + さい, にじゅう + よん). "×" is
+   * for a genuinely multiplicative pair — ご × ひゃく → ごひゃく — where showing
+   * "+" would misstate the relationship. Ignored on the first piece. */
+  readonly op?: "+" | "×";
 }
 
 /**
