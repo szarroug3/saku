@@ -26,7 +26,9 @@ import {
   factsColumnHeader,
   factsTitle,
   libEntry,
+  quizTrackLabel,
   subjectLabel,
+  trackLabel,
   LIB_ENTRIES,
   COUNTER_KIND,
   NUMBER_CONSTRUCTION_KIND,
@@ -41,7 +43,7 @@ import { factInfo } from "@/lib/facts.ts";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/data/vocab";
-import { RADICAL_SUBJECT, radicalEntry } from "@/data/radicals";
+import { RADICAL_SUBJECT, radicalEntry, radicalMeaningFactId } from "@/data/radicals";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { TERM_SUBJECT } from "@/data/terms";
@@ -49,6 +51,7 @@ import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
+import type { FactInfo } from "@/types";
 
 const need = (e: LibEntry | undefined): LibEntry => {
   assert.ok(e);
@@ -589,5 +592,99 @@ describe("SAK-155 — 口/囗 and 日/曰 radical lookalike pairs", () => {
     const wrap = need(libEntry(radicalEntry("勹")));
     assert.equal(wrap.kind, RADICAL_SUBJECT);
     assert.deepEqual(confusableWith(wrap), []);
+  });
+});
+
+// ---- quizTrackLabel: SAK-145 round 3 — the quiz/drill HUDs' track name over
+// a WHOLE fact pool, not a lesson's single teach fact ----
+//
+// A no-track fixture for the "skip, don't disagree" cases below. None of
+// TERM_SUBJECT/GRAMMAR_CONCEPT_SUBJECT/MARK_SUBJECT/PRIMITIVE_SUBJECT mints
+// its own FactId (see TRACK_LABEL's own doc — none of those is directly
+// askable), so there is no real fact to look up; a hand-built FactInfo with
+// the bare `subject` this function actually reads is the only way to name one
+// in a test at all, and it is enough — quizTrackLabel never looks past
+// `subject`.
+function untrackedInfo(subject: string): FactInfo {
+  return {
+    id: "untracked" as unknown as FactInfo["id"],
+    entry: "untracked" as unknown as FactInfo["entry"],
+    glyph: "x",
+    answers: ["x"],
+    subject,
+    meaning: null,
+  };
+}
+
+describe("quizTrackLabel — the quiz HUDs' track name over a fact pool", () => {
+  test("an empty pool has no track", () => {
+    assert.equal(quizTrackLabel([]), undefined);
+  });
+
+  test("a pool of only unresolved facts has no track", () => {
+    assert.equal(quizTrackLabel([undefined, undefined]), undefined);
+  });
+
+  test("a single-subject pool (all kana) names its track", () => {
+    const infos = [factInfo(kanaFact("し")), factInfo(kanaFact("か"))];
+    assert.equal(quizTrackLabel(infos), "Kana");
+  });
+
+  test("kanji and word facts are DIFFERENT kinds but the SAME track — still names it", () => {
+    // Exactly the point of TRACK_LABEL's own doc: radicals, kanji and words
+    // are three different subjectLabel kinds but one track, "Vocabulary" — a
+    // quiz mixing a kanji reading and a word from the same lesson must still
+    // read as one track, not bail out as "mixed" the way a genuine kana+
+    // vocab mix does below.
+    const infos = [factInfo(meaningFactId("一")), factInfo(wordMeaningFactId("先生"))];
+    assert.equal(quizTrackLabel(infos), "Vocabulary");
+  });
+
+  test("a genuinely mixed pool (kana + vocabulary) has no single track", () => {
+    // The real-world case this exists for: Practice's "Due for review"
+    // one-click shortcut pulls due facts across every list at once, which is
+    // routinely kana AND vocabulary in the same run. Naming it after either
+    // would be a wrong label, not just an imprecise one, so this must return
+    // undefined rather than guess.
+    const infos = [factInfo(kanaFact("し")), factInfo(wordMeaningFactId("先生"))];
+    assert.equal(quizTrackLabel(infos), undefined);
+  });
+
+  test("a mixed pool stays mixed even when one side also has an untracked fact riding along", () => {
+    const infos = [
+      factInfo(kanaFact("し")),
+      factInfo(wordMeaningFactId("先生")),
+      untrackedInfo(TERM_SUBJECT),
+    ];
+    assert.equal(quizTrackLabel(infos), undefined);
+  });
+
+  test("an untracked fact (grammar concept, term, mark, kanji part) does not disagree — it is skipped", () => {
+    // A pool that is otherwise single-track must not lose its label just
+    // because one confusable-distractor fact along for the ride has no track
+    // of its own — see quizTrackLabel's own doc.
+    const infos = [
+      factInfo(meaningFactId("一")),
+      untrackedInfo(GRAMMAR_CONCEPT_SUBJECT),
+      untrackedInfo(TERM_SUBJECT),
+      untrackedInfo(MARK_SUBJECT),
+      untrackedInfo(PRIMITIVE_SUBJECT),
+    ];
+    assert.equal(quizTrackLabel(infos), "Vocabulary");
+  });
+
+  test("a pool of ONLY untracked facts has no track", () => {
+    const infos = [untrackedInfo(TERM_SUBJECT), untrackedInfo(MARK_SUBJECT)];
+    assert.equal(quizTrackLabel(infos), undefined);
+  });
+
+  test("a radical and a kanji fact together still read as one Vocabulary track", () => {
+    const infos = [factInfo(radicalMeaningFactId("勹")), factInfo(meaningFactId("一"))];
+    assert.equal(quizTrackLabel(infos), "Vocabulary");
+  });
+
+  test("agrees with trackLabel for a single fact — same function, no separate mapping to drift", () => {
+    const info = factInfo(meaningFactId("一"));
+    assert.equal(quizTrackLabel([info]), trackLabel(info));
   });
 });

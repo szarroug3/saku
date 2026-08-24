@@ -337,6 +337,43 @@ export function trackLabel(info: FactInfo | undefined): string | undefined {
 }
 
 /**
+ * The session header's track name for a QUIZ's whole fact pool (SAK-145
+ * round 3) — the drill/grid/pairs/assembly/substitution/listen-sentence HUDs'
+ * equivalent of `trackLabel` above.
+ *
+ * A LESSON's teach set is always one subject (the session page's own
+ * `trackLabel` comment says so, and resolves the track from the first teach
+ * fact alone) — but a QUIZ is not always a lesson's drill. Practice's "Due
+ * for review" one-click shortcut (app/practice/page.tsx's `startDue`) pulls
+ * `dueFacts` across every list at once — kana, vocabulary and grammar in the
+ * same run — and the Practice builder's own Selection can check more than one
+ * Kind too. Naming a mixed pool after its first fact would be actively
+ * WRONG, not just imprecise (a "Grammar" label over a run that is half kana),
+ * so this checks every fact instead of assuming the first names them all: it
+ * returns a track only when EVERY fact that resolves to one resolves to the
+ * SAME one, and undefined otherwise — the HUDs fall back to showing no track
+ * name at all, exactly what they render today, rather than guess.
+ *
+ * A fact with no track of its own (see TRACK_LABEL's "undefined for a
+ * subject with no track" case — marks, terms, grammar concepts, kanji parts)
+ * is skipped rather than treated as a disagreement: those never drive a quiz
+ * on their own, and a pool that is otherwise single-track should not lose its
+ * label because one confusable-distractor fact along for the ride has none.
+ */
+export function quizTrackLabel(
+  infos: readonly (FactInfo | undefined)[],
+): string | undefined {
+  let label: string | undefined;
+  for (const info of infos) {
+    const l = trackLabel(info);
+    if (!l) continue;
+    if (label === undefined) label = l;
+    else if (label !== l) return undefined; // genuinely mixed — no single track
+  }
+  return label;
+}
+
+/**
  * One thing you can look up.
  *
  * The whole of what a Library screen is allowed to know. Everything

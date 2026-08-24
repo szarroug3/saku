@@ -101,6 +101,13 @@ export interface GridHudProps {
   /** Cards answered right. */
   done: number;
   total: number;
+  /** SAK-145 round 3: the track this leg's whole fact pool belongs to
+   * ("Vocabulary", "Kana", …), or undefined when the pool is still loading or
+   * is genuinely mixed-subject — see quizTrackLabel (library/entries.ts).
+   * Prefixed onto the position, same "Track · position" shape the
+   * teach-phase header uses, and omitted entirely when there's nothing
+   * single-subject to say. */
+  trackLabel?: string;
   /** Live per-character stats — the accuracy pill reads through them. */
   stats: SessionStats;
   /** Cards answered right on the first try, in a row. */
@@ -115,6 +122,7 @@ export interface GridHudProps {
 export function GridHud({
   done,
   total,
+  trackLabel,
   stats,
   streak,
   onFinish,
@@ -184,8 +192,12 @@ export function GridHud({
             correct" and "🔥 0" both report an absence as if it were data. */}
         <span className="flex flex-wrap items-center gap-1.5">
           {/* SAK-145 round 2: plain text, not a Pill — matches the drill and
-              pairs HUDs' identical fix. A position ("N of M") isn't a status. */}
+              pairs HUDs' identical fix. A position ("N of M") isn't a status.
+              SAK-145 round 3: prefixed with the track name (see the prop's
+              own doc) — omitted when the leg's pool has no single track to
+              name. */}
           <span className="text-[11px] tabular-nums text-text-muted">
+            {trackLabel ? `${trackLabel} · ` : ""}
             {done} / {total}
           </span>
           {cfg.showAccuracy && accuracy !== null ? (
