@@ -70,6 +70,8 @@ import {
   SentencePartBoxes,
 } from "@/components/quiz/sentence-part-breakdown";
 import { useHistory } from "@/lib/use-history";
+import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import {
@@ -454,6 +456,16 @@ export function AssemblyScreen() {
   const rt =
     active && loaded ? ensureRuntime(active, history, session?.what) : null;
 
+  // SAK-145 round 3: the HUD's track name over the whole leg's fact pool —
+  // see quizTrackLabel (library/entries.ts) and drill-screen.tsx's identical
+  // hook for why this is a pool check, not a first-fact guess. undefined
+  // (omitted below) both while loading and when the pool is genuinely
+  // mixed-subject.
+  const quizTrackLabel = useServerLookup(
+    getQuizTrackLabel,
+    active ? [active.facts] : null,
+  );
+
   const done = rt ? rt.cards.filter((c) => c.state !== "open").length : 0;
   const total = rt?.cards.length ?? 0;
   useEffect(() => {
@@ -613,8 +625,12 @@ export function AssemblyScreen() {
           <span className="flex flex-wrap items-center gap-1.5">
             {/* SAK-145 round 2: plain text, not a pill — matches the drill,
                 grid and pairs HUDs' identical fix. A position ("N of M")
-                isn't a status. */}
+                isn't a status.
+                SAK-145 round 3: prefixed with the track name — see
+                drill-screen.tsx's identical comment; omitted when the leg's
+                pool has no single track to name. */}
             <span className="text-[13px] font-semibold tabular-nums text-accent">
+              {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
               {done} / {total}
             </span>
             {rt.streak >= 2 ? (
