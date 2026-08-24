@@ -96,6 +96,11 @@ export interface PairsHudProps {
   asked: number;
   /** Deck size, or null when endless. */
   total: number | null;
+  /** SAK-145 round 3: the track this leg's whole fact pool belongs to
+   * ("Vocabulary", "Kana", …), or undefined when the pool is still loading or
+   * is genuinely mixed-subject — see quizTrackLabel (library/entries.ts) and
+   * grid-hud.tsx's identical prop. */
+  trackLabel?: string;
   /** Live per-character stats — the accuracy pill reads through them. */
   stats: SessionStats;
   /** Pairs matched first try, in a row. */
@@ -109,6 +114,7 @@ export interface PairsHudProps {
 export function PairsHud({
   asked,
   total,
+  trackLabel,
   stats,
   streak,
   onEnd,
@@ -167,8 +173,12 @@ export function PairsHud({
             correct" and "🔥 0" both report an absence as if it were data. */}
         <span className="flex flex-wrap items-center gap-1.5">
           {/* SAK-145 round 2: plain text, not a Pill — matches the drill and
-              grid HUDs' identical fix. A position ("N of M") isn't a status. */}
+              grid HUDs' identical fix. A position ("N of M") isn't a status.
+              SAK-145 round 3: prefixed with the track name (see the prop's
+              own doc) — omitted when the leg's pool has no single track to
+              name. */}
           <span className="text-[11px] tabular-nums text-text-muted">
+            {trackLabel ? `${trackLabel} · ` : ""}
             {total !== null ? `${asked} / ${total}` : `${asked} characters`}
           </span>
           {cfg.showAccuracy && accuracy !== null ? (

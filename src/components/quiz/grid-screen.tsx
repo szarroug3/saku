@@ -48,6 +48,8 @@ import {
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { gridBoards } from "@/lib/grid-facts";
+import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -239,6 +241,15 @@ export function GridScreen() {
   const responses = active?.snapshot.gridResponses ?? cfg.gridResponses;
   const g = active ? ensureRuntime(active, responses, cfg.fonts) : null;
 
+  // SAK-145 round 3: the HUD's track name over the whole leg's fact pool —
+  // see quizTrackLabel (library/entries.ts) and drill-screen.tsx's identical
+  // hook. undefined (omitted below) both while loading and when the pool is
+  // genuinely mixed-subject.
+  const quizTrackLabel = useServerLookup(
+    getQuizTrackLabel,
+    active ? [active.facts] : null,
+  );
+
   // Transient shake state: cards mid-shake right now, keyed like the board.
   const [shaking, setShaking] = useState<Record<string, boolean>>({});
   const shakeTimers = useRef<Record<string, number>>({});
@@ -389,6 +400,7 @@ export function GridScreen() {
       <GridHud
         done={done}
         total={total}
+        trackLabel={quizTrackLabel}
         stats={g.stats}
         streak={g.streak}
         onFinish={() => finishQuiz(g.stats)}
