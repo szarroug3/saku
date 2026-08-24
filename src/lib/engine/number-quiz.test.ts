@@ -63,6 +63,10 @@ const ALL_COUNTERS: CounterKind[] = [
   "hai",
   "kai",
   "sai",
+  // SAK-177
+  "wari",
+  "floor",
+  "en",
 ];
 
 describe("buildNumberRound — round shape", () => {
@@ -124,7 +128,7 @@ describe("buildNumberRound — round shape", () => {
     // The people-counter bug: a 〜人 round must attach 人 to every item ("17 人",
     // read じゅうしちにん), never show a bare "17". So a round scoped to a counter
     // yields only that counter's counted items, with no bare-number slots.
-    for (const counter of ["nin", "hon", "mai", "sai"] as CounterKind[]) {
+    for (const counter of ["nin", "hon", "mai", "sai", "floor"] as CounterKind[]) {
       const cfg: NumberQuizConfig = {
         count: 12,
         includeCounters: true,

@@ -129,6 +129,13 @@ const IRREGULAR_COUNTS: Record<QuizKind, readonly number[]> = {
   hai: [1, 3, 6, 8, 10],
   kai: [1, 6, 8, 10],
   sai: [1, 8, 10],
+  // SAK-177: wari/en are perfectly regular (no shift at all — わ/え are not
+  // h/k-row onsets), same as mai/dai above. floor hardens 1/6/8/10 exactly
+  // like kai PLUS voices at 3 (さんがい, unlike kai's さんかい) — that extra
+  // irregular is the whole reason it needs its own CounterKind.
+  wari: [],
+  floor: [1, 3, 6, 8, 10],
+  en: [],
   day: [14, 17, 19, 20, 24, 27, 29],
   month: [4, 7, 9],
 };

@@ -59,6 +59,8 @@ describe("the curriculum is essentially all of VOCAB, in beginnerRank order", ()
     for (const excluded of [
       "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
       "百", "千", "万", "一つ", "二つ", "一人", "二人",
+      // SAK-177: the counters track's new 割/階/円 categories own these too.
+      "１割", "二割", "１階", "二階", "一円", "１０００円",
     ]) {
       assert.ok(!curriculumKebs.has(excluded), `${excluded} should be excluded (counter track owns it)`);
     }
@@ -155,7 +157,11 @@ describe("the word total is the material, and does not move", () => {
     // once their own bare-form grammar recipes shipped (recipes.ts), for the
     // same "already a MEANING recipe in the grammar track" reason は/が/... etc
     // were cut above.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12469);
+    // Minus 6 more with SAK-177: １割/二割/１階/二階/一円/１０００円 joined
+    // COUNTER_TRACK_KEBS once the wari/floor/en generative categories shipped,
+    // the same "the counters track already teaches this" reason 一人/二人 etc
+    // were cut above.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12463);
   });
 });
 

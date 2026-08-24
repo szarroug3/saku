@@ -416,10 +416,14 @@ describe("the totals are counted off the data, never typed in", () => {
   // It dropped to 12,580 with SAK-174: PARTICLE_TRACK_KEBS pulled だ/です/ね/も/よ/
   // って/と/ない out to the grammar track too (word-lesson.ts), each a single-
   // reading word, so 8 fewer readings — same mechanism as the 12,533 drop above.
-  test("and today those counts are 90, 2,136 and 12,580", () => {
+  // It dropped to 12,574 with SAK-177: COUNTER_TRACK_KEBS pulled the six real
+  // vocab.json duplicates of the new 割/階/円 generative categories (１割/二割/
+  // １階/二階/一円/１０００円) out to the counters track, each a single-reading
+  // word — same mechanism as the SAK-163/SAK-174 drops above.
+  test("and today those counts are 90, 2,136 and 12,574", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12580);
+    assert.equal(CURRICULUM_TOTALS.word, 12574);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -427,7 +431,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12580, 12580);
+        assert.equal(g.position.word?.total ?? 12574, 12574);
       }
     }
   });
