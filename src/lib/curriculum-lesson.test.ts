@@ -413,10 +413,13 @@ describe("the totals are counted off the data, never typed in", () => {
   // wrote, a pre-existing generic one that picked them up automatically. It rose
   // to 12,588 with SAK-162: the word denominator counts taught READINGS now, not
   // glyphs, and 98 words in the curriculum carry more than one teachable reading.
-  test("and today those counts are 90, 2,136 and 12,588", () => {
+  // It dropped to 12,580 with SAK-174: PARTICLE_TRACK_KEBS pulled だ/です/ね/も/よ/
+  // って/と/ない out to the grammar track too (word-lesson.ts), each a single-
+  // reading word, so 8 fewer readings — same mechanism as the 12,533 drop above.
+  test("and today those counts are 90, 2,136 and 12,580", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12588);
+    assert.equal(CURRICULUM_TOTALS.word, 12580);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -424,7 +427,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12588, 12588);
+        assert.equal(g.position.word?.total ?? 12580, 12580);
       }
     }
   });

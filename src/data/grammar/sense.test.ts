@@ -19,12 +19,13 @@ import { RECIPES, patternLabel, recipe } from "./recipes";
 const SHARED_FORM_PAIRS: readonly [string, string][] = [
   ["potential", "passive"], // both 〜られる
   ["kara-reason", "kara-source"], // both 〜から
+  ["to-conditional", "to-and"], // both 〜と — SAK-174 added to-and
 ];
 
 describe("grammar sense labels", () => {
   test("a sense-bearing recipe keeps its sense out of the pattern string", () => {
     const sensed = RECIPES.filter((r) => r.sense);
-    assert.equal(sensed.length, 6, "expected exactly six sense-bearing recipes");
+    assert.equal(sensed.length, 8, "expected exactly eight sense-bearing recipes");
     for (const r of sensed) {
       assert.ok(
         !r.pattern.includes(r.sense!),
