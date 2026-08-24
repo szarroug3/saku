@@ -183,6 +183,9 @@ def jmdict_pos_families(tags):
     return families
 
 
+CATEGORY_TIE_PRIORITY = ("core", "conversation-essential", "grammar", "excluded")
+
+
 def scheduled_teaching_rows(category_counts, family_counts, candidates):
     """Build the approved deterministic core/essential word sequence."""
     rows = {}
@@ -195,15 +198,30 @@ def scheduled_teaching_rows(category_counts, family_counts, candidates):
         if keb in BOOTSTRAP_ESSENTIALS:
             category = "conversation-essential"
             count = essential
-        elif core > 0 or essential > 0:
-            category = "conversation-essential" if essential > core else "core"
-            count = max(core, essential)
-        elif grammar > 0:
-            category = "grammar"
-            count = grammar
-        elif excluded > 0:
-            category = "excluded"
-            count = excluded
+        elif core or essential or grammar or excluded:
+            # Categorize by whichever CEJC-observed role is actually
+            # dominant for this word, not by "any core/essential tag beats
+            # any grammar count regardless of magnitude." The old rule let a
+            # single-digit core tally outrank a far larger grammar tally
+            # (e.g. だ: core=1 vs grammar=115,059; です: 5 vs 29,750; と: 2 vs
+            # 41,653; よ: 1 vs 34,443), spuriously scheduling pure grammar
+            # words (copulas/particles/auxiliaries) into the core vocab
+            # track instead of correctly falling to category "grammar" the
+            # way ね/も/って/ない (which have zero core/essential tags) already
+            # did. Ties are broken by a fixed priority — core over
+            # conversation-essential over grammar over excluded — which
+            # matches the previous tie behavior where a core/essential tie
+            # resolved to core.
+            tallies = {
+                "core": core,
+                "conversation-essential": essential,
+                "grammar": grammar,
+                "excluded": excluded,
+            }
+            count = max(tallies.values())
+            category = next(
+                name for name in CATEGORY_TIE_PRIORITY if tallies[name] == count
+            )
         else:
             category = "unobserved"
             count = 0

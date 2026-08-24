@@ -178,8 +178,23 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
 // is a worse copy of a lesson the grammar track already owns, not a second one
 // worth keeping. までに is not excluded: it has a grammar recipe but no VOCAB
 // row of its own, so there's nothing here to duplicate it.
+//
+// SAK-174 adds だ/です/ね/も/よ/って/と/ない for the exact same reason, once their
+// own bare-form recipes shipped (da/desu/ne/yo/mo/tte/to-and/ga-nai in
+// recipes.ts). Membership here is what actually keeps a word out of the live
+// Vocab track — CEJC's category:"grammar"/teachingRank:null (cejc-reading-
+// -frequency.json, fixed by this same ticket) only demotes a word's CEJC-
+// frequency PRIORITY within CURRICULUM_WORDS, it does not exclude the word;
+// orderedUnits() in lib/content/teach-unit.ts resorts by raw CEJC occurrence
+// count regardless of category, so without this exclusion these 8 words (tens
+// of thousands of raw occurrences each) would land at/near the TOP of the live
+// Vocab track by frequency alone, category fix notwithstanding. と/ない keep
+// their OTHER existing grammar coverage too (to-conditional's "whenever" と,
+// nai-form's negative-verb-suffix ない) — this only removes their bare-vocab
+// duplicate now that ga-nai/to-and cover the sense that was actually missing.
 const PARTICLE_TRACK_KEBS: ReadonlySet<string> = new Set([
   "か", "は", "が", "に", "で", "を", "へ", "まで", "だけ", "しか",
+  "だ", "です", "ね", "も", "よ", "って", "と", "ない",
 ]);
 
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
