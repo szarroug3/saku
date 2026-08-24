@@ -136,6 +136,10 @@ const IRREGULAR_COUNTS: Record<QuizKind, readonly number[]> = {
   wari: [],
   floor: [1, 3, 6, 8, 10],
   en: [],
+  // SAK-171: 〜時 never hardens/voices (じ stays じ), but 4/7/9 branch — the
+  // same shape as month's own [4, 7, 9] below (しちじ/くじ reuse ONES_BRANCH;
+  // よじ is 時's own new count-4 reading — see number-reading.ts's UNIT.ji).
+  ji: [4, 7, 9],
   day: [14, 17, 19, 20, 24, 27, 29],
   month: [4, 7, 9],
 };
@@ -164,11 +168,15 @@ function shuffle<T>(xs: T[], rng: Rng): T[] {
 }
 
 /** The largest count a counter can take: tsu tops out at 10, day at 31, month
- * at 12, the rest at 99. */
+ * and ji (SAK-171: 〜時 is a closed 1-12 range, Japanese clock hours — same
+ * shape as month) at 12, the rest at 99. This is a defensive second guard —
+ * ji's own NumberQuizConfig (number-construction.ts's `ji` CounterSpec) already
+ * sets numberMax: 12, so a round is bounded either way, matching the same
+ * belt-and-braces pattern day/month already use. */
 function counterMax(counter: QuizKind): number {
   if (counter === "tsu") return 10;
   if (counter === "day") return 31;
-  if (counter === "month") return 12;
+  if (counter === "month" || counter === "ji") return 12;
   return 99;
 }
 

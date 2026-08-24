@@ -61,6 +61,8 @@ describe("the curriculum is essentially all of VOCAB, in beginnerRank order", ()
       "百", "千", "万", "一つ", "二つ", "一人", "二人",
       // SAK-177: the counters track's new 割/階/円 categories own these too.
       "１割", "二割", "１階", "二階", "一円", "１０００円",
+      // SAK-171: the counters track's new "ji" (〜時) category owns these too.
+      "一時", "４時", "７時",
     ]) {
       assert.ok(!curriculumKebs.has(excluded), `${excluded} should be excluded (counter track owns it)`);
     }
@@ -171,7 +173,10 @@ describe("the word total is the material, and does not move", () => {
     // そうだ/つもり/はず/なら matched a recipe too but were checked and kept —
     // each has a real independent sense the recipe does not teach — so they
     // are NOT part of this cut.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12436);
+    // Minus 3 more with SAK-171: 一時/４時/７時 joined COUNTER_TRACK_KEBS once
+    // the "ji" (〜時) generative category shipped — the same "the counters
+    // track already teaches this" reason 一人/二人/割/階/円 etc were cut above.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12433);
   });
 });
 

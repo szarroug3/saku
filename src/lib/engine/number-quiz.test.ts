@@ -67,6 +67,8 @@ const ALL_COUNTERS: CounterKind[] = [
   "wari",
   "floor",
   "en",
+  // SAK-171
+  "ji",
 ];
 
 describe("buildNumberRound — round shape", () => {
@@ -222,6 +224,48 @@ describe("buildNumberRound — round shape", () => {
     const a = buildNumberRound(cfg, seeded(99));
     const b = buildNumberRound(cfg, seeded(99));
     assert.deepEqual(a, b);
+  });
+
+  // SAK-171: 〜時 rolls through the SAME shared engine every other counter
+  // above does (unlike day/month's separate engine below), but it is a CLOSED
+  // range (1-12, real clock hours) — this pins that cap independently of the
+  // generic ALL_COUNTERS sweep above.
+  test("ji (〜時) items are capped at 12, never n=0 or n>12, even with a generous cfg cap", () => {
+    const cfg: NumberQuizConfig = {
+      count: 30,
+      includeCounters: true,
+      counters: ["ji"],
+      numberMax: 999, // must still be clamped by counterMax, like day/month
+      directions: ["read", "write", "hear"],
+    };
+    const round = buildNumberRound(cfg, seeded(21));
+    assert.ok(round.length > 0, "ji round is empty");
+    for (const it of round) {
+      assert.equal(it.counter, "ji");
+      assert.ok(it.n >= 1 && it.n <= 12, `ji ${it.n} out of range`);
+      assert.equal(it.reading, counterReading(it.n, "ji"), `ji ${it.n} reading mismatch`);
+    }
+  });
+
+  test("a ji (〜時) round of sufficient count contains all 3 irregulars (よじ/しちじ/くじ)", () => {
+    const cfg: NumberQuizConfig = {
+      count: 12,
+      includeCounters: true,
+      counters: ["ji"],
+      numberMax: 12,
+      directions: ["read", "write"],
+    };
+    const round = buildNumberRound(cfg, seeded(13));
+    const present = new Set(round.map((it) => it.n));
+    for (const k of [4, 7, 9]) {
+      assert.ok(present.has(k), `ji round is missing irregular ${k}`);
+    }
+    const four = round.find((it) => it.n === 4)!;
+    assert.equal(four.reading, "よじ");
+    const seven = round.find((it) => it.n === 7)!;
+    assert.equal(seven.reading, "しちじ");
+    const nine = round.find((it) => it.n === 9)!;
+    assert.equal(nine.reading, "くじ");
   });
 });
 
