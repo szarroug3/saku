@@ -147,6 +147,18 @@ interface CounterSpec {
    * construction.ts's dayRow reads 20日's suppletive はつか off DAYS. Undefined
    * for every other counter. */
   readonly extraIrregular?: { readonly count: number; readonly form: CounterForm };
+  /**
+   * SAK-177: an extra REGULAR row OUTSIDE the 1–10 sweep — 〜円's only case,
+   * 1000円/せんえん, the real vocab.json duplicate (COUNTER_VOCAB_DUPLICATE_KEBS)
+   * that motivates showing it. Unlike extraIrregular above this is not a
+   * suppletive word: せんえん is exactly numberReading(1000) + 円's own base
+   * reading, so it is computed directly (extraRegularRow, below) rather than
+   * through counterReading, which caps at 99 for the ordinary 1-10/tens sweep
+   * every other page uses. Only ever set for a counter with ZERO shifts (円 is
+   * one; see its CounterSpec's `sound`), because a shifting counter's base
+   * reading is not a valid suffix at every magnitude the way a clean one's is.
+   * Undefined for every other counter. */
+  readonly extraRegular?: { readonly count: number };
 }
 
 /** counterReading, non-null asserted — every count 1..10 reads for every counter
@@ -221,6 +233,28 @@ function extraIrregularRow(spec: CounterSpec, count: number, form: CounterForm):
   };
 }
 
+/**
+ * SAK-177: 円's own extra worked example OUTSIDE the 1-10 sweep — 1000円, the
+ * real vocab.json duplicate (COUNTER_VOCAB_DUPLICATE_KEBS). Computed straight
+ * from numberReading + the counter's own base reading rather than through
+ * counterReading (which caps at 99, the ordinary 1-10/tens sweep every other
+ * page uses) — safe here because 円 never shifts (see the `en` CounterSpec's
+ * `sound`), so its reading at ANY magnitude is exactly numberReading(n) +
+ * base. A shifting counter could not reuse this: its base is only a valid
+ * suffix for the counts the shift table already covers. */
+function extraRegularRow(spec: CounterSpec, count: number, base: string): CountRow {
+  const [, plural] = spec.noun;
+  const numeral = numberReading(count);
+  const reading = `${numeral}${base}`;
+  return {
+    label: `${count} ${plural}`,
+    word: `${numberKanji(count)}${spec.glyph}`,
+    reading,
+    build: [{ kana: numeral, value: String(count) }, { kana: base }],
+    result: { kana: reading, value: String(count) },
+  };
+}
+
 /** The example tables for a counter — counts 1 to 10 split into a Regular table
  * and an Irregular table, the way grammar splits regular conjugation from its
  * exceptions. A count is irregular exactly when counterIrregulars() names it (the
@@ -245,6 +279,9 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   }
   if (spec.extraIrregular) {
     irregular.push(extraIrregularRow(spec, spec.extraIrregular.count, spec.extraIrregular.form));
+  }
+  if (spec.extraRegular) {
+    regular.push(extraRegularRow(spec, spec.extraRegular.count, base));
   }
   const groups: IntroCountGroup[] = [{ title: "Regular", counter: true, examples: regular }];
   if (irregular.length) groups.push({ title: "Irregular", counter: true, examples: irregular });
@@ -353,10 +390,13 @@ const TENS_GROUPS: readonly IntroCountGroup[] = [
   { title: "Regular", counter: false, examples: TENS_SPREAD.map(tensRow) },
 ];
 
-// The ten counters, in the shelf's teaching order: the taught-as-a-system set
-// (人 本 匹 枚) first, then the tail (個 台 冊 杯 回 歳). 〜つ is deliberately
-// absent: it is native memorisation (ひとつ…とお), not a generative construction,
-// so there is no rule to show and no round to launch.
+// The thirteen counters, in the shelf's teaching order: the taught-as-a-system
+// set (人 本 匹 枚) first, then the tail (個 台 冊 杯 回 歳), then SAK-177's three
+// (割 階 円) — none of which is an object counter, so none belongs in
+// SYSTEM_COUNTERS/TAIL_COUNTERS (counters.ts), but each gets the identical
+// rule-card-then-round treatment. 〜つ is deliberately absent: it is native
+// memorisation (ひとつ…とお), not a generative construction, so there is no
+// rule to show and no round to launch.
 /** 二十歳's real shipped CounterForm (counters.ts's COUNTER_CURRICULUM/TAIL),
  * read once here so the sai spec below and extraIrregularRow never re-spell
  * its glyph/reading. */
@@ -494,6 +534,59 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
         text: "A small っ lands before 歳 there, so 一歳 is いっさい and 八歳 is はっさい. 六歳 stays regular at ろくさい, and there is no voicing after 3.",
       },
     ],
+  },
+  // SAK-177: three more generative categories — 割 (tenths/percent), 階
+  // (floors of a building), 円 (yen). vocab.json carries only the thinnest real
+  // coverage of any of them (two entries each for 割/階 — 一割/二割, 一階/二階 —
+  // and just 一円 plus 1000円 for 円), but every count here is still DERIVED
+  // from the engine, never hand-typed, so a page can never state a reading the
+  // app does not also compute — exactly like every counter above it.
+  {
+    kind: "wari",
+    glyph: "割",
+    name: "Tenths and percent (〜割)",
+    noun: ["tenth", "tenths"],
+    sound: [
+      {
+        lead: "It never shifts.",
+        text: "割 begins with わ, not an h-sound, so it stays わり after every number: 一割 is いちわり and 三割 is さんわり. Read every count as the plain number plus わり — 1 割 is 10%, so 3割 is 30%.",
+      },
+    ],
+  },
+  {
+    // SAK-177: its OWN id, deliberately NOT "kai" — see the CounterKind doc
+    // comment in number-reading.ts. 階 and 回 (times) share a base reading and
+    // the same 1/6/8/10 hardening, but 階 additionally VOICES after 3
+    // (さんがい), which 回 never does (回's own spec explicitly reads "no
+    // voicing after 3") — real, hand-verified Japanese, not an assumption.
+    kind: "floor",
+    glyph: "階",
+    name: "Floors of a building (〜階)",
+    noun: ["floor", "floors"],
+    sound: [
+      {
+        lead: "It hardens after 1, 6, 8 and 10 — and VOICES after 3.",
+        text: "階 becomes a small っ plus かい there, so 一階 is いっかい and 八階 is はっかい, exactly like 回 (times). But 三階 is さんがい, not さんかい — after 3 it voices instead of just hardening. 回 has no such voicing (三回 stays さんかい), so 階 needs its own rule even though the two sound identical at every other count.",
+      },
+    ],
+  },
+  {
+    kind: "en",
+    glyph: "円",
+    name: "Yen amounts (〜円)",
+    noun: ["yen", "yen"],
+    sound: [
+      {
+        lead: "It never shifts.",
+        text: "円 begins with え, a vowel, so it stays えん after every number: 一円 is いちえん and 三円 is さんえん. Read every count as the plain number plus えん — the same rule at any scale, so 1000円 is せんえん.",
+      },
+    ],
+    // 1000円 is the real vocab.json duplicate (COUNTER_VOCAB_DUPLICATE_KEBS)
+    // this category dedups off the Words shelf; showing it here as a genuine
+    // worked example is what makes landing on this page after that alias
+    // actually explain the word, the same reason the "big" page's table
+    // includes 100億.
+    extraRegular: { count: 1000 },
   },
 ];
 

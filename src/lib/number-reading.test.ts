@@ -134,6 +134,50 @@ describe("counterReading — counted-form fixtures", () => {
   });
 });
 
+// SAK-177: three new CounterKinds — wari (〜割, never shifts), floor (〜階, its
+// own id — hardens exactly like kai/回 EXCEPT it voices after 3, which 回 never
+// does), en (〜円, never shifts). Hand-verified against real Japanese (see the
+// ticket), the same "independent gold standard" bar audit-numbers.test.ts's
+// bigger table holds every counter to.
+describe("counterReading — wari/floor/en fixtures (SAK-177)", () => {
+  const cases: ReadonlyArray<readonly [number, CounterKind, string]> = [
+    [1, "wari", "いちわり"],
+    [2, "wari", "にわり"],
+    [3, "wari", "さんわり"], // never shifts — わ is not an h/k-row onset
+    [6, "wari", "ろくわり"],
+    [8, "wari", "はちわり"],
+    [10, "wari", "じゅうわり"],
+    [23, "wari", "にじゅうさんわり"],
+    [1, "floor", "いっかい"], // hardens, same as kai
+    [2, "floor", "にかい"],
+    [3, "floor", "さんがい"], // VOICES — the one count that differs from kai
+    [4, "floor", "よんかい"],
+    [6, "floor", "ろっかい"], // hardens, same as kai
+    [8, "floor", "はっかい"], // hardens, same as kai
+    [10, "floor", "じゅっかい"], // hardens, same as kai
+    [13, "floor", "じゅうさんがい"], // the voicing rides the ones place in a compound
+    [1, "en", "いちえん"],
+    [3, "en", "さんえん"], // never shifts — え is a vowel onset
+    [10, "en", "じゅうえん"],
+  ];
+
+  for (const [n, counter, expected] of cases) {
+    test(`(${n}, ${counter}) → ${expected}`, () => {
+      assert.equal(counterReading(n, counter), expected);
+    });
+  }
+
+  test("floor and kai agree everywhere except count 3", () => {
+    for (let n = 1; n <= 10; n++) {
+      if (n === 3) {
+        assert.notEqual(counterReading(n, "floor"), counterReading(n, "kai"));
+      } else {
+        assert.equal(counterReading(n, "floor"), counterReading(n, "kai"), `count ${n}`);
+      }
+    }
+  });
+});
+
 describe("acceptableNumberReadings — branch alternates on the ones digit only", () => {
   test("isolated ones get し / しち / く", () => {
     assert.deepEqual(acceptableNumberReadings(4), ["よん", "し"]);
@@ -167,6 +211,10 @@ describe("acceptableCounterReadings — じゅっ↔じっ and 7人 alternates",
       "さんじっかい",
     ]);
     assert.deepEqual(acceptableCounterReadings(20, "hon"), ["にじゅっぽん", "にじっぽん"]);
+  });
+
+  test("SAK-177: 10階 offers じゅっ↔じっ, same as kai", () => {
+    assert.deepEqual(acceptableCounterReadings(10, "floor"), ["じゅっかい", "じっかい"]);
   });
 
   test("7人 accepts しちにん and ななにん", () => {

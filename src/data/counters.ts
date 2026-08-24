@@ -376,6 +376,24 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
  *     number-construction.ts). Confirmed by grepping vocab.json for every keb
  *     matching a digit run immediately followed by 万/億/兆: these four are the
  *     full set — no 兆-scale duplicate exists because no 兆-scale word ships.
+ *   - SAK-177: １割/二割, １階/二階, 一円/１０００円 — vocab.json's real series for
+ *     the three new generative categories (割/階/円), confirmed by grepping
+ *     every keb matching a digit run immediately followed by 割/階/円: this is
+ *     the FULL set for all three — 割 and 階 each have exactly two real
+ *     entries (counts 1 and 2), and 円 has exactly these two (there is no
+ *     二円…九円 series in vocab.json at all). None of the six has a CounterForm
+ *     (割/階/円 are pure generative categories, like 本/匹/回, with no rote
+ *     forms of their own), so — same gap as every family above — they map
+ *     straight to their own construction page (numberConstructionEntry("wari"
+ *     / "floor" / "en")). 1000円 is why 円's page carries an `extraRegular`
+ *     worked example beyond the ordinary 1-10 sweep (see its CounterSpec in
+ *     number-construction.ts) — the same "the page a learner lands on must
+ *     actually explain the word" reasoning the "big" page's 100億 row follows.
+ *     Bare 円 (the word "yen") and bare 階 (the word "floor/story") are NOT
+ *     duplicates — they are the ordinary, ungenerated noun senses of those
+ *     kanji, real separate vocabulary the words track still teaches, exactly
+ *     like bare 本 ("book") sits beside the 〜本 counter without either one
+ *     excluding the other.
  *
  * word-lesson.ts already cuts every one of the 一つ…九つ/一人/二人 kebs from
  * CURRICULUM_WORDS via its own COUNTER_TRACK_KEBS (a broader, hand-maintained
@@ -409,6 +427,13 @@ export const COUNTER_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Ma
   ["１０万", numberConstructionEntry("big")],
   ["１００万", numberConstructionEntry("big")],
   ["１００億", numberConstructionEntry("big")],
+  // SAK-177: 割/階/円's real vocab.json series — see the doc comment above.
+  ["１割", numberConstructionEntry("wari")],
+  ["二割", numberConstructionEntry("wari")],
+  ["１階", numberConstructionEntry("floor")],
+  ["二階", numberConstructionEntry("floor")],
+  ["一円", numberConstructionEntry("en")],
+  ["１０００円", numberConstructionEntry("en")],
 ]);
 
 /**
@@ -586,6 +611,15 @@ export const CONSTRUCTION_CATEGORY_IDS = [
   "hai",
   "kai",
   "sai",
+  // SAK-177: three more — 割 (tenths/percent), 階 (floors, its own id, NOT
+  // "kai" — see number-reading.ts's CounterKind doc comment), 円 (yen). None
+  // is an object counter (so none joins SYSTEM_COUNTERS/TAIL_COUNTERS below),
+  // but each is a real generative category, taught the same rule-then-round
+  // way as every counter above it. Sit after the object-counter tail and
+  // before day/month, which build on the whole number system taught by then.
+  "wari",
+  "floor",
+  "en",
   "day",
   "month",
 ] as const;

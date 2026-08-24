@@ -43,9 +43,18 @@ describe("a single-group page renders untitled; the title needs both groups", ()
     assert.equal(groupsOf("dai").length, 1);
   });
 
+  test("SAK-177: 〜割 and 〜円 have no shifts either, so a single group", () => {
+    assert.equal(groupsOf("wari").length, 1);
+    assert.equal(groupsOf("en").length, 1);
+  });
+
   test("the big page and 〜本 carry both groups, so their titles show", () => {
     assert.deepEqual(titles("big"), ["Regular", "Irregular"]);
     assert.deepEqual(titles("hon"), ["Regular", "Irregular"]);
+  });
+
+  test("SAK-177: 〜階 carries both groups too — it has a real irregular (3)", () => {
+    assert.deepEqual(titles("floor"), ["Regular", "Irregular"]);
   });
 });
 
@@ -101,7 +110,7 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
   });
 
   test("counter rows spell 数 + counter and read from counterReading", () => {
-    for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai"] as const) {
+    for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai", "wari", "floor", "en"] as const) {
       for (const g of groupsOf(kind)) {
         for (const r of g.examples) {
           // SAK-172: 〜歳's extra はたち row (count 20) is a genuinely suppletive
@@ -109,6 +118,9 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
           // point of the row is that it does NOT equal the engine's generated
           // にじゅっさい. See the dedicated "〜歳's Irregular table" describe block.
           if (r.word === "二十歳") continue;
+          // SAK-177: 円's extra 1000円/せんえん row (count 1000) is likewise
+          // OUTSIDE the 1-10 sweep countOf/counterReading model.
+          if (r.word === "千円") continue;
           const n = countOf(r.word);
           assert.equal(r.reading, counterReading(n, kind), `${kind} ${r.word} reading`);
         }
@@ -133,12 +145,13 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
   });
 
   test("counter examples expose their context-specific accepted alternatives", () => {
-    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
+    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai", "wari", "floor", "en"] as const) {
       for (const group of groupsOf(kind)) {
         for (const row of group.examples) {
           // SAK-172: はたち has no engine-accepted-alternates set — it is not a
           // count acceptableCounterReadings/counterReading model at all.
           if (row.word === "二十歳") continue;
+          if (row.word === "千円") continue;
           const n = countOf(row.word);
           assert.deepEqual(
             [row.reading, ...(row.alternateReadings ?? [])],
@@ -215,13 +228,16 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     // The additive equation is shown for every row EXCEPT 〜人's suppletive counts
     // (ひとり / ふたり / よにん), which have no build to show.
     const NIN_SUPPLETIVE = new Set(["一人", "二人", "四人"]);
-    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
+    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai", "wari", "floor", "en"] as const) {
       for (const g of groupsOf(kind)) {
         for (const r of g.examples) {
           // SAK-172: 〜歳's はたち row (二十歳, count 20) is checked separately —
           // it is outside the 1-10 sweep countOf/counterReading model, and its
           // suppletive build=[] is pinned in the dedicated describe block above.
           if (r.word === "二十歳") continue;
+          // SAK-177: 円's extra 1000円/せんえん row (count 1000) is likewise
+          // OUTSIDE the 1-10 sweep countOf/counterReading model.
+          if (r.word === "千円") continue;
           const n = countOf(r.word);
           assert.equal(r.result.kana, counterReading(n, kind), `${kind} ${r.word} result`);
           assert.equal(r.result.value, String(n), `${kind} ${r.word} total`);
@@ -281,7 +297,7 @@ describe("every table declares which header its first column takes", () => {
     for (const id of ["tens", "big"]) {
       for (const g of groupsOf(id)) assert.equal(g.counter, false, `${id} is a number table`);
     }
-    for (const kind of ["nin", "hon", "mai", "dai"]) {
+    for (const kind of ["nin", "hon", "mai", "dai", "wari", "floor", "en"]) {
       for (const g of groupsOf(kind)) assert.equal(g.counter, true, `${kind} is a counter table`);
     }
   });
@@ -302,8 +318,26 @@ describe("the counter pages split by the engine's irregular counts", () => {
     );
   });
 
+  test("SAK-177: 〜階 puts its shifting counts (1,3,6,8,10) in the Irregular table — 3 for VOICING, not hardening", () => {
+    const irregular = rowsOf("floor", "Irregular");
+    assert.deepEqual(irregular.map((r) => r.word), ["一階", "三階", "六階", "八階", "十階"]);
+    assert.deepEqual(irregular.map((r) => r.reading), [
+      "いっかい", "さんがい", "ろっかい", "はっかい", "じゅっかい",
+    ]);
+    const regular = rowsOf("floor", "Regular").map((r) => r.word);
+    assert.deepEqual(regular, ["二階", "四階", "五階", "七階", "九階"]);
+  });
+
+  test("SAK-177: 〜割 and 〜円 have no Irregular table at all — clean counters", () => {
+    assert.equal(numberConstructionRow("wari")!.exampleGroups.length, 1);
+    assert.equal(
+      numberConstructionRow("wari")!.exampleGroups[0]!.title,
+      "Regular",
+    );
+  });
+
   test("the split matches counterIrregulars for every counter", () => {
-    for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai"] as const) {
+    for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai", "wari", "floor", "en"] as const) {
       const shifts = new Set(counterIrregulars(kind));
       const groups = groupsOf(kind);
       for (const r of groups.find((g) => g.title === "Regular")!.examples) {
@@ -318,6 +352,9 @@ describe("the counter pages split by the engine's irregular counts", () => {
           // some digit d in 1-10 shifted, so countOf/shifts cannot classify it.
           // Pinned separately in the dedicated describe block above.
           if (r.word === "二十歳") continue;
+          // SAK-177: 円's extra 1000円/せんえん row (count 1000) is likewise
+          // OUTSIDE the 1-10 sweep countOf/counterReading model.
+          if (r.word === "千円") continue;
           assert.ok(shifts.has(countOf(r.word)), `${kind} ${r.word} should be irregular`);
         }
       }
@@ -354,5 +391,42 @@ describe("〜歳's Irregular table carries 二十歳/はたち as a real row (SA
     // stays because SOME row has a real derivation (see countGroupHasBuild's
     // own doc comment) — only an ALL-suppletive group (〜人's) drops it.
     assert.equal(countGroupHasBuild(irregular().examples), true);
+  });
+});
+
+// SAK-177: 円 never shifts, so its 1-10 sweep is a single Regular table (no
+// Irregular table exists to append to, unlike 〜歳's はたち above) — the extra
+// worked example (1000円/せんえん, the real vocab.json duplicate this category
+// dedups) is instead appended to the REGULAR table via CounterSpec's new
+// `extraRegular`, computed straight from numberReading + 円's own base reading
+// rather than through counterReading (which caps at 99).
+describe("〜円's Regular table carries 1000円/せんえん as an extra worked row (SAK-177)", () => {
+  const en = () => numberConstructionRow("en")!;
+  const regular = () => en().exampleGroups.find((g) => g.title === "Regular")!;
+
+  test("the row exists, reads せんえん, and builds additively (1000 is fully regular)", () => {
+    const row = regular().examples.find((r) => r.word === "千円");
+    assert.ok(row, "〜円's Regular table must carry a 千円 row");
+    assert.equal(row!.label, "1000 yen");
+    assert.equal(row!.reading, "せんえん");
+    assert.equal(row!.reading, numberReading(1000) + "えん", "matches the engine directly");
+    assert.deepEqual(row!.build, [{ kana: "せん", value: "1000" }, { kana: "えん" }]);
+    assert.deepEqual(row!.result, { kana: "せんえん", value: "1000" });
+  });
+
+  test("it sits alongside the ordinary 1-10 sweep, not in place of it", () => {
+    const words = regular().examples.map((r) => r.word);
+    assert.deepEqual(words.slice(0, 10), [
+      "一円", "二円", "三円", "四円", "五円", "六円", "七円", "八円", "九円", "十円",
+    ]);
+    assert.equal(words[10], "千円");
+  });
+
+  test("〜割 and 〜階 carry no such extra row — only 円 has a real big-number duplicate", () => {
+    const wariRegular = numberConstructionRow("wari")!.exampleGroups.find((g) => g.title === "Regular")!;
+    assert.equal(wariRegular.examples.length, 10);
+    const floorGroups = numberConstructionRow("floor")!.exampleGroups;
+    const floorRowCount = floorGroups.reduce((sum, g) => sum + g.examples.length, 0);
+    assert.equal(floorRowCount, 10);
   });
 });
