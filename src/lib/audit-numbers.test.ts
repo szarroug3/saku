@@ -114,6 +114,13 @@ describe("counterReading — every counter, counts 1–10", () => {
     kai: ["いっかい", "にかい", "さんかい", "よんかい", "ごかい", "ろっかい", "ななかい", "はっかい", "きゅうかい", "じゅっかい"],
     // さ-row gemination at 1/8/10 (no shift at 6 — ろくさい)
     sai: ["いっさい", "にさい", "さんさい", "よんさい", "ごさい", "ろくさい", "ななさい", "はっさい", "きゅうさい", "じゅっさい"],
+    // SAK-177: clean — わ is not an h/k-row onset, so no shift at all
+    wari: ["いちわり", "にわり", "さんわり", "よんわり", "ごわり", "ろくわり", "ななわり", "はちわり", "きゅうわり", "じゅうわり"],
+    // SAK-177: か-row gemination at 1/6/8/10 (identical to kai) PLUS voicing
+    // after 3 (さんがい, unlike kai's さんかい) — the one count that diverges.
+    floor: ["いっかい", "にかい", "さんがい", "よんかい", "ごかい", "ろっかい", "ななかい", "はっかい", "きゅうかい", "じゅっかい"],
+    // SAK-177: clean — え is a vowel onset, so no shift at all
+    en: ["いちえん", "にえん", "さんえん", "よんえん", "ごえん", "ろくえん", "ななえん", "はちえん", "きゅうえん", "じゅうえん"],
   };
 
   for (const kind of Object.keys(TABLE) as CounterKind[]) {
@@ -172,6 +179,18 @@ describe("counterReading — compound counts 11–99", () => {
     [40, "mai", "よんじゅうまい"],
     [47, "dai", "よんじゅうななだい"],
     [90, "dai", "きゅうじゅうだい"],
+    // SAK-177 — 割/円 compose with zero surprises, same as mai/dai
+    [23, "wari", "にじゅうさんわり"],
+    [70, "wari", "ななじゅうわり"],
+    [23, "en", "にじゅうさんえん"],
+    [70, "en", "ななじゅうえん"],
+    // SAK-177 — 階: hardens at ×10 and at ones 1/6/8 exactly like 回, but the
+    // ones-place voicing at 3 rides into a compound too (13階 じゅうさんがい,
+    // not じゅうさんかい).
+    [13, "floor", "じゅうさんがい"],
+    [30, "floor", "さんじゅっかい"],
+    [58, "floor", "ごじゅうはっかい"],
+    [63, "floor", "ろくじゅうさんがい"],
   ];
   for (const [n, kind, expected] of cases) {
     test(`(${n}, ${kind}) → ${expected}`, () => {

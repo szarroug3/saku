@@ -369,6 +369,38 @@ describe("SAK-176: １万/１０万/１００万/１００億 no longer duplicat
   });
 });
 
+describe("SAK-177: １割/二割/１階/二階/一円/１０００円 no longer duplicate onto the Words shelf", () => {
+  const KEB_TO_GLYPH: Record<string, string> = {
+    "１割": "〜割", "二割": "〜割",
+    "１階": "〜階", "二階": "〜階",
+    "一円": "〜円", "１０００円": "〜円",
+  };
+
+  test("none of them is a VOCAB_SUBJECT (\"word\") entry any more", () => {
+    for (const keb of Object.keys(KEB_TO_GLYPH)) {
+      const asWord = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT && e.glyph === keb);
+      assert.equal(asWord, undefined, `${keb} must not appear on the Words shelf`);
+    }
+  });
+
+  test("bare 円 and 階 (the ordinary nouns) still DO appear on the Words shelf", () => {
+    // Only the counted forms are excluded — the bare nouns are real, separate
+    // vocabulary the words track still teaches (see counters.ts's doc comment).
+    assert.ok(LIB_ENTRIES.some((e) => e.kind === VOCAB_SUBJECT && e.glyph === "円"));
+    assert.ok(LIB_ENTRIES.some((e) => e.kind === VOCAB_SUBJECT && e.glyph === "階"));
+  });
+
+  test("each aliases its own construction page, where its exact reading is shown", () => {
+    for (const [keb, glyph] of Object.entries(KEB_TO_GLYPH)) {
+      const holder = LIB_ENTRIES.find(
+        (e) => e.kind === NUMBER_CONSTRUCTION_KIND && e.searchAlso?.includes(keb),
+      );
+      assert.ok(holder, `${keb} must ride as a searchAlso alias, not vanish`);
+      assert.equal(holder!.glyph, glyph, `${keb} must alias its own counter's page, not another`);
+    }
+  });
+});
+
 test("a verb pair and a keigo set are not speakable as one entry — each names more than one word", () => {
   const pair = LIB_ENTRIES.find((e) => e.kind === TRANSITIVITY_SUBJECT);
   assert.ok(pair, "expected at least one verb pair entry");

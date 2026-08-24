@@ -68,7 +68,12 @@ export function numberReading(n: number): string {
   return out;
 }
 
-/** The counters this engine can read. */
+/** The counters this engine can read.
+ *
+ * SAK-177 adds three: "wari" (〜割, tenths/percent), "floor" (〜階, floors of a
+ * building — its OWN id, deliberately not "kai", because it is a DIFFERENT
+ * counter from 回 that merely shares 回's base reading; see UNIT.floor's doc
+ * comment for the one count where the two diverge), and "en" (〜円, yen). */
 export type CounterKind =
   | "tsu"
   | "nin"
@@ -80,7 +85,10 @@ export type CounterKind =
   | "satsu"
   | "hai"
   | "kai"
-  | "sai";
+  | "sai"
+  | "wari"
+  | "floor"
+  | "en";
 
 /** Digit → its kanji, indexed 0–10 (0 unused). The SAME table the construction
  * pages spell their Word column with, kept here in the pure engine so the quiz's
@@ -104,6 +112,9 @@ const COUNTER_KANJI: Record<CounterKind, string> = {
   hai: "杯",
   kai: "回",
   sai: "歳",
+  wari: "割",
+  floor: "階",
+  en: "円",
 };
 
 /** The counter kanji of a CounterKind (本, 人, …). */
@@ -173,6 +184,21 @@ const UNIT: Record<CounterKind, readonly string[]> = {
   hai: ["", "いっぱい", "にはい", "さんばい", "よんはい", "ごはい", "ろっぱい", "ななはい", "はっぱい", "きゅうはい", "じゅっぱい"],
   kai: ["", "いっかい", "にかい", "さんかい", "よんかい", "ごかい", "ろっかい", "ななかい", "はっかい", "きゅうかい", "じゅっかい"],
   sai: ["", "いっさい", "にさい", "さんさい", "よんさい", "ごさい", "ろくさい", "ななさい", "はっさい", "きゅうさい", "じゅっさい"],
+  // SAK-177: 割 (tenths/percent) begins with わ, never an h/k-row onset, so it
+  // NEVER shifts — hand-verified against real Japanese (一割…十割) and cross-
+  // checked by audit-numbers.test.ts's independent gold table. Same shape as
+  // mai/dai above.
+  wari: ["", "いちわり", "にわり", "さんわり", "よんわり", "ごわり", "ろくわり", "ななわり", "はちわり", "きゅうわり", "じゅうわり"],
+  // SAK-177: 階 (floors of a building) hardens after 1, 6, 8, 10 — IDENTICAL to
+  // 回 (kai, above) at every one of those counts — but VOICES after 3 (さんがい,
+  // not さんかい), which 回 never does. That one divergent count is the entire
+  // reason this is its OWN CounterKind rather than reusing "kai": every other
+  // count is byte-identical to UNIT.kai. Hand-verified against real Japanese
+  // (see the ticket) and cross-checked by audit-numbers.test.ts.
+  floor: ["", "いっかい", "にかい", "さんがい", "よんかい", "ごかい", "ろっかい", "ななかい", "はっかい", "きゅうかい", "じゅっかい"],
+  // SAK-177: 円 (yen) begins with え, a vowel, so it NEVER shifts — same shape
+  // as 割/枚/台 above. Hand-verified against real Japanese (一円…十円).
+  en: ["", "いちえん", "にえん", "さんえん", "よんえん", "ごえん", "ろくえん", "ななえん", "はちえん", "きゅうえん", "じゅうえん"],
 };
 
 /**

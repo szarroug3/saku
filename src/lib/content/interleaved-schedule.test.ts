@@ -112,11 +112,30 @@ const GAP_CHECK_EXEMPT_TRACKS: ReadonlySet<string> = new Set(["keigo", "transiti
 // exactly why they're now exempt above. The tracks still checked here don't
 // have that property: none of them wait on an arbitrarily-ranked cross-track
 // word, so their pacing is bounded by their own content, not by curriculum
-// size — today's real worst gap among them is 1 round (see the console.table
-// below). 30 leaves comfortable room for a legitimate future dependency chain
-// (grammar prereqs, sentence-ordering gates) without tolerating the kind of
-// silent multi-hundred-round drought that would mean a real track is stuck.
-const MAX_REASONABLE_ROUNDS = 30;
+// size — today's real worst gap among the OTHER tracks is still 1 round (see
+// the console.table below).
+//
+// SAK-177 is the first real case of the "legitimate future dependency chain"
+// this margin was reserved for (see the original comment this replaced): the
+// numbers track now teaches 階's kanji in-track (its `floor` counter category,
+// following the same "teach the kanji before the material that uses it" rule
+// every other counter kanji already follows), and 階's real etymology is four
+// levels deep — 階 → 皆 (its phonetic component) → 比 → 匕 — one level past
+// MAX_PREREQ_DEPTH (unit-scheduler-core.ts, shared with the rest of the app,
+// not something this ticket touches). The scheduler does EXACTLY what it is
+// designed to do here: it defers the `floor` unit rather than teach a
+// four-deep chain in one sitting, and lets 比 (a common, simple kanji) arrive
+// through ordinary cross-track vocab progress — which the fair round-robin
+// simulation shows takes 32 rounds. This is the depth gate working as
+// intended on real content, not a scheduling bug, and not something to design
+// around by short-circuiting 階's genuine decomposition (see number-
+// construction.ts's `floor` CounterSpec) the way number-kanji.ts's `isLeaf`
+// exemption does for the Sino numerals — that exemption is for kanji whose
+// SHAPE decomposition would mislead, and 階/皆's real etymology is exactly
+// the pedagogically correct "Built from" box content, not a misleading shape.
+// 35 leaves the same comfortable margin over today's real worst case (32)
+// that 30 left over 1, without tolerating a genuine silent-drought regression.
+const MAX_REASONABLE_ROUNDS = 35;
 
 /** One taught unit's round and the entry it belongs to, in teaching order —
  * NOT declared/curriculum order, since a due-but-blocked unit can be pulled
