@@ -26,22 +26,54 @@ import { pitchPattern, accentName } from "@/lib/pitch";
  * `className` styles the reading text (size, colour) exactly as the plain
  * reading it replaces would have been; the overline inherits that colour via
  * `border-current`, so it never becomes a colour-only cue.
+ *
+ * `wordMoraCount` (SAK-142 round 2) marks how many morae from the START of
+ * `reading` belong to the word actually being taught. Set it when `reading`
+ * has been extended past the word with a follow-up mora purely so an odaka
+ * word's drop has something to land on (see `PitchExampleRow.followUp` in
+ * src/data/phase-intros.ts) — the trailing morae still take part in the
+ * pattern (the overline must run through them to show the real drop) but
+ * render in a visibly muted colour and are named separately in the
+ * `aria-label`, so neither sight nor a screen reader mistakes the follow-up
+ * for part of the word. Omitted (the common case) when `reading` already IS
+ * the whole word.
  */
 export function PitchReading({
   reading,
   downstep,
   className,
+  wordMoraCount,
 }: {
   reading: string;
   downstep: number;
   className?: string;
+  wordMoraCount?: number;
 }) {
   const morae = pitchPattern(reading, downstep);
+  const hasFollowUp = wordMoraCount !== undefined && wordMoraCount < morae.length;
+  const wordText = hasFollowUp
+    ? morae
+        .slice(0, wordMoraCount)
+        .map((m) => m.text)
+        .join("")
+    : reading;
+  const followUpText = hasFollowUp
+    ? morae
+        .slice(wordMoraCount)
+        .map((m) => m.text)
+        .join("")
+    : "";
   return (
     <span
       className={className}
-      // The reading, then the plain-language accent for anyone not seeing the line.
-      aria-label={`${reading}, pitch accent: ${accentName(downstep)}`}
+      // The reading, then the plain-language accent for anyone not seeing the
+      // line. When a follow-up mora is present, name it separately so the
+      // announcement doesn't imply it's part of the word.
+      aria-label={
+        hasFollowUp
+          ? `${wordText} (+${followUpText} added to hear the drop), pitch accent: ${accentName(downstep)}`
+          : `${reading}, pitch accent: ${accentName(downstep)}`
+      }
     >
       <span aria-hidden="true" className="inline-flex">
         {morae.map((mora, i) => (
@@ -51,6 +83,7 @@ export function PitchReading({
               "inline-block leading-tight",
               mora.high ? "border-t border-current" : "",
               mora.drop ? "border-r border-current" : "",
+              hasFollowUp && i >= wordMoraCount! ? "text-text-muted/70" : "",
             ]
               .filter(Boolean)
               .join(" ")}
