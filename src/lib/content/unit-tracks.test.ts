@@ -81,26 +81,21 @@ test("vocab track order matches CURRICULUM_SEQUENCE verbatim, position for posit
   }
 });
 
-test("だ/です/と/よ/ね/も/って — punted particles land at their real (late) curriculum position, not near the front", () => {
+test("だ/です/と/よ/ね/も/って — punted particles are taught as Grammar, not Vocab at all", () => {
   // Surfaced live (SAK-173): a fresh account's first 10 Vocabulary words
   // included だ, ね, と, も, よ, って, です — a raw-frequency artifact. Every one
-  // of these is a bound particle/copula CEJC scores as extremely common
-  // SPOKEN, but CURRICULUM_SEQUENCE (which SAK-174 will decide whether to
-  // teach as Vocab at all) places them thousands of positions in, once far
-  // more of the core vocabulary is already taught.
+  // of these is a bound particle/copula, not a content word. SAK-173 fixed
+  // the ORDERING bug (the vocab track now follows CURRICULUM_SEQUENCE); SAK-174
+  // then decided these seven have no real vocabulary sense at all and pulled
+  // them out of CURRICULUM_WORDS entirely (word-lesson.ts's PARTICLE_TRACK_KEBS),
+  // so they don't surface anywhere on the Vocab track any more — they're taught
+  // as bare Grammar recipes instead (da/desu/mo/ne/yo/tte/to-and/ga-nai).
   const vocab = UNIT_TRACKS.find((t) => t.id === "vocab")!;
   const units = vocab.units(emptyHistory()) as readonly PronunciationUnit[];
   const positionOf = (glyph: string) => units.findIndex((u) => u.glyph === glyph);
 
   for (const glyph of ["だ", "です", "と", "よ", "ね", "も", "って"]) {
-    const pos = positionOf(glyph);
-    assert.ok(pos >= 0, `${glyph} is taught somewhere on the vocab track`);
-    assert.ok(
-      pos > 1000,
-      `${glyph} sits at position ${pos} — expected far past the first lesson (was ` +
-        `top-10 before the fix, matching the Library's own ranking, which puts it in the ` +
-        `thousands)`,
-    );
+    assert.equal(positionOf(glyph), -1, `${glyph} is no longer taught on the vocab track`);
   }
 
   // The curated conversational bootstrap that WAS already correct must stay
