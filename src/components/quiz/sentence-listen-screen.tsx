@@ -31,6 +31,8 @@ import {
   pickRecognition,
   type RecognitionItem,
 } from "@/lib/listen-sentence";
+import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -137,6 +139,15 @@ export function SentenceListenScreen() {
   // items and wrongly show the empty state.
   const rt = active && loaded ? ensureRuntime(active, history) : null;
 
+  // SAK-145 round 3: the HUD's track name over the whole leg's fact pool —
+  // see quizTrackLabel (library/entries.ts) and drill-screen.tsx's identical
+  // hook. undefined (omitted below) both while loading and when the pool is
+  // genuinely mixed-subject.
+  const quizTrackLabel = useServerLookup(
+    getQuizTrackLabel,
+    active ? [active.facts] : null,
+  );
+
   const done = rt ? rt.cards.filter((c) => c.state !== "open").length : 0;
   const total = rt?.cards.length ?? 0;
   useEffect(() => {
@@ -204,8 +215,12 @@ export function SentenceListenScreen() {
     <div className="kq-center-frame mx-auto w-full max-w-xl justify-center">
       <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
         {/* SAK-145 round 2: plain text, not a pill — matches the other quiz
-            HUDs' identical fix. A position ("N of M") isn't a status. */}
+            HUDs' identical fix. A position ("N of M") isn't a status.
+            SAK-145 round 3: prefixed with the track name — see
+            drill-screen.tsx's identical comment; omitted when the leg's pool
+            has no single track to name. */}
         <span className="text-[13px] font-medium text-accent tabular-nums">
+          {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
           {rt.pos + 1} / {rt.cards.length}
         </span>
         <span className="tabular-nums" aria-hidden>

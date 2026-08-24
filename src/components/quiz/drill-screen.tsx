@@ -42,12 +42,14 @@ import { wordPitch } from "@/data/pitch";
 import { entryId, factId } from "@/lib/fact-id";
 import { VOCAB_KIND } from "@/lib/library/kinds";
 import {
+  getQuizTrackLabel,
   getWordReadingFactSet,
   resolveFactInfos,
   resolveLegacyUnqualifiedReadings,
   resolveSpeechForFacts,
   resolveVocabRows,
 } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote, mismatchWarning } from "@/lib/drill-guidance";
@@ -614,6 +616,18 @@ export function DrillScreen() {
   // (grammar/readable.ts). Both move what is SHOWN; the fact asked and the score
   // recorded are untouched by either.
   const { history } = useHistory();
+
+  // SAK-145 round 3: the HUD's track name, over the WHOLE leg's fact pool —
+  // see quizTrackLabel (library/entries.ts) for why this is a pool check
+  // rather than the teach header's "first fact names them all" (a quiz is not
+  // always a lesson's drill; Practice's "Due for review" pulls facts across
+  // every list at once). undefined both while loading and when the pool is
+  // genuinely mixed-subject — either way the HUD below just omits it, same as
+  // it does today.
+  const quizTrackLabel = useServerLookup(
+    getQuizTrackLabel,
+    active ? [active.facts] : null,
+  );
 
   // Runtime mutations don't go through setState — bump this to re-render.
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -2574,13 +2588,20 @@ export function DrillScreen() {
                 as something clickable or a status when it is just a position.
                 Plain text now, keeping the size/weight/colour that made it the
                 one loud chip in this HUD (see the comment above), just without
-                the box around it. */}
+                the box around it.
+
+                SAK-145 round 3: prefixed with the track name, same "Track ·
+                position" shape the teach-phase header uses (session-hud.tsx's
+                `plain` mode) — omitted (falls back to the bare position, as
+                before) when quizTrackLabel has nothing single-subject to say. */}
             {total ? (
               <span className="text-[13px] font-semibold tabular-nums text-accent">
+                {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
                 {rt.resolved} / {total}
               </span>
             ) : (
               <span className="text-[13px] font-semibold tabular-nums text-accent">
+                {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
                 {rt.resolved} answered · endless
               </span>
             )}

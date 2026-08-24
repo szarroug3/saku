@@ -47,7 +47,10 @@ import {
 import { entryHref } from "@/lib/library/href";
 import { termHref } from "@/lib/library/term-href";
 import { subLabel } from "@/lib/library/sub-label";
-import { trackLabel as trackLabelOf } from "@/lib/library/entries";
+import {
+  quizTrackLabel as quizTrackLabelOf,
+  trackLabel as trackLabelOf,
+} from "@/lib/library/entries";
 import { speechForFact } from "@/lib/fact-speech";
 import { ALL_FACTS, entryOf, factInfo, factsOf, glyphOf } from "@/lib/facts";
 import {
@@ -1131,6 +1134,18 @@ export async function getTeachTrackLabel(
   fact: FactId,
 ): Promise<string | undefined> {
   return trackLabelOf(factInfo(fact));
+}
+
+/** The quiz/drill HUDs' TRACK name (SAK-145 round 3) — the same track names
+ * getTeachTrackLabel resolves for a lesson's single teach fact, but over a
+ * whole quiz leg's fact pool (`active.facts`), which is not always
+ * single-subject the way a lesson's teach set always is. See quizTrackLabel
+ * (library/entries.ts) for the exact reasoning: undefined when the pool is
+ * empty or genuinely mixed, never a guessed/averaged label. */
+export async function getQuizTrackLabel(
+  facts: readonly FactId[],
+): Promise<string | undefined> {
+  return quizTrackLabelOf(facts.map((f) => factInfo(f)));
 }
 
 /** Batched TTS text (`speechForFact`) for a set of facts — the drill screen's

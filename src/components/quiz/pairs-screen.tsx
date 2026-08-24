@@ -21,6 +21,8 @@ import { useEffect, useRef, useState } from "react";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { newFactStat, shuffle } from "@/lib/engine";
 import { entryOf } from "@/lib/facts";
+import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import {
   dropClippedTail,
   playablePairBoards,
@@ -319,6 +321,15 @@ export function PairsScreen() {
   // quiz (guarded, so StrictMode re-renders and remounts reuse it).
   const p = active ? ensureRuntime(active, cfg, history) : null;
 
+  // SAK-145 round 3: the HUD's track name over the whole leg's fact pool —
+  // see quizTrackLabel (library/entries.ts) and drill-screen.tsx's identical
+  // hook. undefined (omitted below) both while loading and when the pool is
+  // genuinely mixed-subject.
+  const quizTrackLabel = useServerLookup(
+    getQuizTrackLabel,
+    active ? [active.facts] : null,
+  );
+
   // Transient mismatch flash: board indices currently flashing danger.
   const [flash, setFlash] = useState<number[]>([]);
   const flashTimer = useRef<number | undefined>(undefined);
@@ -387,6 +398,7 @@ export function PairsScreen() {
       <PairsHud
         asked={asked}
         total={total}
+        trackLabel={quizTrackLabel}
         stats={p.stats}
         streak={p.streak}
         onEnd={() => finishQuiz(p.stats)}
