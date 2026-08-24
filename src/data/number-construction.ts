@@ -261,7 +261,12 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
 /** The build equation for a big base value — one annotated piece against its base
  * word, then the total. The base word reads whole (にひゃく), so the piece is that
  * whole reading annotated with its decomposition: 200 is "2 × 100", 100 is "100",
- * 100000 is "10 × 10000". The result repeats the reading with the plain total. */
+ * 100000 is "10 × 10000", 10_000_000_000 (100億) is "100 × 100000000". The
+ * result repeats the reading with the plain total.
+ *
+ * SAK-176: a fourth tier (n ≥ 100_000_000) mirrors the engine's own group2/おく
+ * tier in numberReading — the same 億 base word 万 already got at the 10000
+ * tier, one step up. */
 function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiece } {
   const kana = numberReading(n);
   let value: string;
@@ -271,9 +276,12 @@ function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiec
   } else if (n < 10000) {
     const m = n / 1000;
     value = m === 1 ? "1000" : `${m} × 1000`;
-  } else {
+  } else if (n < 100_000_000) {
     const m = n / 10000;
     value = m === 1 ? "10000" : `${m} × 10000`;
+  } else {
+    const m = n / 100_000_000;
+    value = m === 1 ? "100000000" : `${m} × 100000000`;
   }
   return { build: [{ kana, value }], result: { kana, value: String(n) } };
 }
@@ -292,8 +300,17 @@ function bigRow(n: number): CountRow {
 }
 
 /** The big page's Regular then Irregular tables. Regular = the plain hundreds,
- * thousands and myriads; Irregular = the five that harden at the seam. */
-const BIG_REGULAR = [100, 200, 400, 500, 700, 1000, 2000, 4000, 5000, 7000, 10000, 100000];
+ * thousands, myriads and (SAK-176) hundred-millions; Irregular = the five that
+ * harden at the seam. 100_000_000 (1億) introduces the 億 base word the same
+ * way 10000 (1万) introduces 万 above it; 10_000_000_000 (100億) is the ticket's
+ * named worked example, matching the digit-in-front build 100000 (10万) already
+ * shows one tier down — and matching the real vocab.json duplicate word １００億
+ * (see COUNTER_VOCAB_DUPLICATE_KEBS in src/data/counters.ts), so the page a
+ * learner lands on when that word is aliased in actually explains it. */
+const BIG_REGULAR = [
+  100, 200, 400, 500, 700, 1000, 2000, 4000, 5000, 7000, 10000, 100000,
+  100_000_000, 10_000_000_000,
+];
 const BIG_IRREGULAR = [300, 600, 800, 3000, 8000];
 
 const BIG_GROUPS: readonly IntroCountGroup[] = [

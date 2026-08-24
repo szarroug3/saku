@@ -351,8 +351,8 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
  *
  * COUNTER_KANJI_GLYPHS works by comparing a CounterForm's own glyph against a
  * VOCAB keb — it catches 二十歳 and the 43 day/month glyphs because those
- * CounterForms are THEMSELVES written in kanji. It cannot catch these two
- * families, because neither has a kanji-glyphed CounterForm to match against:
+ * CounterForms are THEMSELVES written in kanji. It cannot catch these three
+ * families, because none has a kanji-glyphed CounterForm to match against:
  *
  *   - 一つ…九つ: TSU's CounterForms are deliberately kana (ひとつ…ここのつ, see
  *     the comment above TSU) — phase 1 is taught kana-first, on purpose. The
@@ -364,17 +364,34 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
  *     kanji VOCAB rows (一人/二人) duplicate exactly the two irregular rows that
  *     table already shows, so they map to that category's own construction
  *     entry rather than to a per-form entry that does not exist.
+ *   - SAK-176: １万/１０万/１００万/１００億 — full-width-digit VOCAB rows whose
+ *     reading (いちまん/じゅうまん/ひゃくまん/ひゃくおく) is exactly what
+ *     numberReading() already computes for 10000/100000/1000000/10_000_000_000.
+ *     These are not CounterForms at all (there is no per-value CounterForm for
+ *     bare numbers past ten), so there is nothing for COUNTER_KANJI_GLYPHS to
+ *     match against either — same gap as the two families above, closed the
+ *     same way: map straight to the "big" NUMBER_CONSTRUCTIONS page
+ *     (numberConstructionEntry("big")), the one page whose Regular/Irregular
+ *     table already shows all four exact readings (see BIG_REGULAR in
+ *     number-construction.ts). Confirmed by grepping vocab.json for every keb
+ *     matching a digit run immediately followed by 万/億/兆: these four are the
+ *     full set — no 兆-scale duplicate exists because no 兆-scale word ships.
  *
- * word-lesson.ts already cuts every one of these kebs from CURRICULUM_WORDS
- * via its own COUNTER_TRACK_KEBS (a broader, hand-maintained bookkeeping set
- * that also covers the bare number/base kanji this map does not need to know
- * about) — that teaching-spine cut is unrelated to and unaffected by this map.
+ * word-lesson.ts already cuts every one of the 一つ…九つ/一人/二人 kebs from
+ * CURRICULUM_WORDS via its own COUNTER_TRACK_KEBS (a broader, hand-maintained
+ * bookkeeping set that also covers the bare number/base kanji this map does
+ * not need to know about) — that teaching-spine cut is unrelated to and
+ * unaffected by this map. The four SAK-176 kebs need no such cut: they were
+ * never in CURRICULUM_WORDS' teaching spine to begin with (no big-number VOCAB
+ * row above 千 was ever taught there), so this map is a pure Library-display
+ * concern for them, exactly like the other two families.
  * This map exists purely so src/lib/library/entries.ts can (a) skip these kebs
  * when it walks VOCAB for the Words shelf, the same way COUNTER_KANJI_GLYPHS
  * makes it skip 二十歳/day/month, and (b) attach each keb as a searchAlso alias
- * on the entry it duplicates, so "一つ" or "一人" still finds the counting page
- * that already teaches it — reclassified, never silently dropped. One export,
- * one reader, cannot drift the way the original SAK-147 bug did.
+ * on the entry it duplicates, so "一つ" or "一人" or "１００億" still finds the
+ * counting page that already teaches it — reclassified, never silently
+ * dropped. One export, one reader, cannot drift the way the original SAK-147
+ * bug did.
  */
 export const COUNTER_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Map([
   ["一つ", counterEntry(TSU[0])],
@@ -388,6 +405,10 @@ export const COUNTER_VOCAB_DUPLICATE_KEBS: ReadonlyMap<string, EntryId> = new Ma
   ["九つ", counterEntry(TSU[8])],
   ["一人", numberConstructionEntry("nin")],
   ["二人", numberConstructionEntry("nin")],
+  ["１万", numberConstructionEntry("big")],
+  ["１０万", numberConstructionEntry("big")],
+  ["１００万", numberConstructionEntry("big")],
+  ["１００億", numberConstructionEntry("big")],
 ]);
 
 /**
