@@ -213,9 +213,11 @@ export function isUnitDue(unit: TeachingUnit, history: HistoryFile): boolean {
   return unit.facts.some((id) => isFactFresh(id, history));
 }
 
-// ── PRONUNCIATION-track ordering (CEJC frequency — a pronunciation-only notion) ──
-/** How often this unit's pronunciation is spoken (CEJC). The pronunciation track
- * orders by this; other tracks order their own way. */
+// ── PRONUNCIATION-track ordering ────────────────────────────────────────────
+/** How often this unit's pronunciation is spoken (CEJC). Used to pick a
+ * glyph's PRIMARY reading (unit-scheduler.ts's `primaryUnit`, for prereq
+ * resolution) and by the raw-frequency helpers just below. The live VOCAB
+ * track itself no longer orders by this — see `curriculumOrderedUnits`. */
 export function unitFrequency(unit: PronunciationUnit): number {
   return unit.reading ? readingFrequency(unit.glyph, unit.reading) : 0;
 }
@@ -225,8 +227,8 @@ export function byFrequencyDesc(a: PronunciationUnit, b: PronunciationUnit): num
   return unitFrequency(b) - unitFrequency(a);
 }
 
-/** The pronunciation curriculum sequence: every glyph's pronunciation units,
- * frequency-ordered across the set. (Dueness, prereqs, and budget layer on top.)
+/** A glyph's own `character` (single Han) or `word` (kana/multi-char) item —
+ * the fallback every pronunciation-unit builder below needs.
  *
  * `buildGlyphItem` is single-Han-character only (it aggregates a glyph's
  * radical/kanji/word ROLES, which only a single character plays — see
@@ -237,13 +239,80 @@ export function byFrequencyDesc(a: PronunciationUnit, b: PronunciationUnit): num
  * `CURRICULUM_SEQUENCE` (6,906 of 9,140 glyphs) silently produced zero
  * teaching units and could never be scheduled — see
  * docs/interleaved-schedule-findings.md. */
+function glyphItem(glyph: string): ContentItem | undefined {
+  return buildGlyphItem(glyph) ?? buildItem(wordEntry(glyph), "word");
+}
+
+/**
+ * Every pronunciation unit of an arbitrary glyph set, RAW-FREQUENCY ordered —
+ * a general-purpose helper (test fixtures, ad hoc glyph lists), NOT the live
+ * vocab track's own order any more. SAK-173: that used to be `unit-tracks.ts`'s
+ * `vocabUnits()`, and it was a bug — a global resort by raw CEJC frequency that
+ * threw away CURRICULUM_SEQUENCE's prerequisite-aware, per-pronunciation-
+ * frequency-interleaved order (SAK-162) entirely, so the live lesson and the
+ * Library's own ranking disagreed about what came next. `curriculumOrderedUnits`
+ * below is what `vocabUnits()` calls today. */
 export function orderedUnits(glyphs: Iterable<string>): PronunciationUnit[] {
   const units: PronunciationUnit[] = [];
   for (const glyph of glyphs) {
-    const item = buildGlyphItem(glyph) ?? buildItem(wordEntry(glyph), "word");
+    const item = glyphItem(glyph);
     if (item) units.push(...pronunciationUnitsOf(item));
   }
   return units.sort(byFrequencyDesc);
+}
+
+/** One (glyph, reading) position in an external spine — the minimal shape
+ * `curriculumOrderedUnits` needs off a `CurriculumItem` (curriculum-order.ts /
+ * curriculum-sequence.ts), kept local so this module doesn't have to import
+ * either. */
+export interface GlyphReadingPosition {
+  readonly glyph: string;
+  /** The position's specific pronunciation (a word-role item), or null for a
+   * radical/kanji-only item — see curriculum-order.ts's header, "ONE ITEM PER
+   * GLYPH — EXCEPT A WORD". */
+  readonly reading: string | null;
+}
+
+/**
+ * The VOCAB track's real order (SAK-173): pronunciation units built in EXACTLY
+ * `sequence`'s own order — no frequency re-sort. `sequence` is
+ * CURRICULUM_SEQUENCE (or its frozen twin, curriculum-sequence.ts) — the
+ * prerequisite-aware order that already carries SAK-162's per-pronunciation-
+ * frequency interleave, one entry per (glyph, reading): a glyph with N
+ * teachable readings occupies N separate entries, each naming which reading it
+ * is; a radical/kanji-only glyph occupies exactly one, with `reading: null`.
+ *
+ * A glyph's full pronunciation-unit set (`pronunciationUnitsOf` — one unit per
+ * reading it has any facts for, or a single null-reading unit for a glyph with
+ * no word role) is built once and cached; every `sequence` entry for that
+ * glyph — its first (radical/kanji-only, or a folded/standalone word's PRIMARY
+ * reading) and every later entry for one of its OTHER readings — looks up its
+ * own `reading` out of that cached set and emits it once, at its own position.
+ * Nothing is re-sorted and nothing is deduped away first: `sequence`'s repeats
+ * are the point, not a hazard the old `new Set(...)` wrapper around
+ * `orderedUnits` had to guard against.
+ *
+ * A `sequence` entry whose (glyph, reading) matches no built unit is skipped,
+ * not thrown — the same "an item that claims a role needs something to read
+ * from, and an honest miss beats a crash" posture curriculum-order.ts's own
+ * `pushGlyph` takes.
+ */
+export function curriculumOrderedUnits(
+  sequence: readonly GlyphReadingPosition[],
+): PronunciationUnit[] {
+  const cache = new Map<string, readonly PronunciationUnit[]>();
+  const out: PronunciationUnit[] = [];
+  for (const { glyph, reading } of sequence) {
+    let units = cache.get(glyph);
+    if (units === undefined) {
+      const item = glyphItem(glyph);
+      units = item ? pronunciationUnitsOf(item) : [];
+      cache.set(glyph, units);
+    }
+    const unit = units.find((u) => u.reading === reading);
+    if (unit) out.push(unit);
+  }
+  return out;
 }
 
 /**

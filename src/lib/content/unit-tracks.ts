@@ -4,9 +4,13 @@
 // prerequisites, budget, depth gate — uniformly over the base `TeachingUnit`.
 //
 // ORDER IS PER-TRACK, and it lives at different grains:
-//   - The PRONUNCIATION (vocab) track orders at the UNIT grain: readings across
-//     glyphs interleave by how often each is spoken (`orderedUnits`). A word's
-//     units can be split across the sequence by frequency.
+//   - The PRONUNCIATION (vocab) track orders at the UNIT grain: one entry per
+//     (glyph, reading), in exactly CURRICULUM_SEQUENCE's own order
+//     (`curriculumOrderedUnits`, SAK-173) — the prerequisite-aware order that
+//     already carries SAK-162's per-pronunciation-frequency interleave. A
+//     word's units can still be split across the sequence, one per taught
+//     reading, but WHERE each one lands is the curriculum spine's call, not a
+//     raw-frequency resort's.
 //   - Every other track orders at the ITEM grain: its items in curriculum/data
 //     order, each expanded to its units in place (`teachUnitsOf`). One unit per
 //     item for keigo/grammar/verb-pair; one per kana; the number track's mix.
@@ -17,7 +21,7 @@
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-sequence";
 import { VOCAB_FACTS } from "@/data/vocab";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
-import { orderedUnits, teachUnitsOf, isUnitDue } from "./teach-unit";
+import { curriculumOrderedUnits, teachUnitsOf, isUnitDue } from "./teach-unit";
 import { kanaItems } from "./kana-unit";
 import { keigoItems } from "./keigo-unit";
 import { grammarItems } from "./grammar-unit";
@@ -55,19 +59,23 @@ function vocabLearned(): HistoryFile {
   );
 }
 
-/** The vocab/pronunciation spine, unit-ordered by spoken frequency across every
- * curriculum glyph — the one track whose order is finer than its items.
+/** The vocab/pronunciation spine, unit-ordered by CURRICULUM_SEQUENCE itself —
+ * the one track whose order is finer than its items (one entry per reading, not
+ * per glyph).
  *
- * DEDUPED (SAK-162): CURRICULUM_SEQUENCE can now repeat a glyph — a word taught
- * with more than one reading (七) occupies more than one item, one per reading
- * (see curriculum-order.ts's header) — but `orderedUnits` already expands ONE
- * glyph into ALL of its pronunciation units (`pronunciationUnitsOf`), every
- * reading included. Feeding it the same glyph twice would build and re-sort the
- * same units twice, duplicating every multi-reading word's units on this track.
- * A `Set` restores the one-call-per-glyph shape `.map` alone used to guarantee
- * back when CURRICULUM_SEQUENCE never repeated a glyph at all. */
+ * FOLLOWS CURRICULUM_SEQUENCE DIRECTLY (SAK-173). This used to dedup
+ * CURRICULUM_SEQUENCE's glyphs through a `Set` and hand them to `orderedUnits`,
+ * which built every glyph's units and then re-sorted the WHOLE track by raw
+ * CEJC frequency — discarding CURRICULUM_SEQUENCE's prerequisite-aware,
+ * per-pronunciation-frequency-interleaved order entirely, so the live lesson
+ * and the Library's own ranking taught the same words in two different orders.
+ * `curriculumOrderedUnits` takes CURRICULUM_SEQUENCE's actual array instead —
+ * repeats and all, each at its own (glyph, reading) position — and never
+ * re-sorts, so no dedup step is needed: a glyph taught with more than one
+ * reading (七) simply supplies one unit per CURRICULUM_SEQUENCE entry that
+ * names it, in the position each entry already has. */
 function vocabUnits(): readonly TeachingUnit[] {
-  return orderedUnits(new Set(CURRICULUM_SEQUENCE.map((i) => i.glyph)));
+  return curriculumOrderedUnits(CURRICULUM_SEQUENCE);
 }
 
 /** Every track, in the order the app introduces them. */
