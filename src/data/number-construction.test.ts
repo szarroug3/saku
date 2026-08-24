@@ -55,6 +55,10 @@ describe("column 1 — the number, or the count with its English noun", () => {
       "100", "200", "400", "500", "700",
       "1000", "2000", "4000", "5000", "7000",
       "10000", "100000",
+      // SAK-176: the 億 tier's two worked examples — 1億 (base word) and 100億
+      // (the ticket's named example, and the value the real vocab.json
+      // duplicate １００億 spells out).
+      "100000000", "10000000000",
     ]);
     assert.deepEqual(labels("big", "Irregular"), ["300", "600", "800", "3000", "8000"]);
     assert.deepEqual(labels("tens", "Regular"), [
@@ -86,6 +90,11 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
     assert.equal(b.find((r) => r.label === "200")!.word, "二百");
     assert.equal(b.find((r) => r.label === "10000")!.word, "一万");
     assert.equal(b.find((r) => r.label === "100000")!.word, "十万");
+    // SAK-176: the 億 tier — 1億 keeps its 一 (一億, same rule as 一万), and
+    // 100億 is 百億, matching the real vocab.json duplicate keb's implied
+    // numeral spelling.
+    assert.equal(b.find((r) => r.label === "100000000")!.word, "一億");
+    assert.equal(b.find((r) => r.label === "10000000000")!.word, "百億");
     for (const r of [...t, ...b]) {
       assert.equal(r.reading, numberReading(Number(r.label)), `${r.label} reading`);
     }
@@ -170,6 +179,12 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     assert.deepEqual(at("10000").build, [{ kana: "いちまん", value: "10000" }]);
     assert.deepEqual(at("100000").build, [{ kana: "じゅうまん", value: "10 × 10000" }]);
     assert.deepEqual(at("300").result, { kana: "さんびゃく", value: "300" });
+    // SAK-176: the 億 tier's build annotations — 1億 alone ("100000000"), and
+    // 100億 annotated as "100 × 100000000", the same digit-in-front shape
+    // 100000 ("10 × 10000") already shows one tier down.
+    assert.deepEqual(at("100000000").build, [{ kana: "いちおく", value: "100000000" }]);
+    assert.deepEqual(at("10000000000").build, [{ kana: "ひゃくおく", value: "100 × 100000000" }]);
+    assert.deepEqual(at("10000000000").result, { kana: "ひゃくおく", value: "10000000000" });
   });
 
   test("every number row's result is the whole reading with the plain total, and each build piece is annotated", () => {

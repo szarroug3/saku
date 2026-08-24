@@ -44,16 +44,25 @@ function groupReading(value: number): string {
 }
 
 /**
- * The bare kana reading of an integer 1 ≤ n < 100_000_000 (10^8).
+ * The bare kana reading of an integer 1 ≤ n < 1_000_000_000_000 (10^12,
+ * i.e. up to but not including 兆-scale).
  *
- * Splits into 4-digit groups from the right; group1 (×10000) carries the myriad
- * name まん. 万 does NOT drop the 1 (10000 = いちまん). Zero groups are skipped.
+ * Splits into 4-digit groups from the right: group0 is the bare group, group1
+ * (×10000) carries the myriad name まん, and group2 (×100_000_000) carries the
+ * hundred-million name おく. Neither 万 nor 億 drops the 1 (10000 = いちまん,
+ * 100_000_000 = いちおく) — same rule, same reason: the app has no bare "just
+ * まん"/"just おく" reading to fall back to, so the leading count is always
+ * spoken. Zero groups are skipped. No 兆-scale (10^12) grouping exists because
+ * no 兆-scale word ships in vocab.json (SAK-176 confirmed this directly) — a
+ * fourth tier would be dead code.
  */
 export function numberReading(n: number): string {
   const group0 = n % 10000;
   const group1 = Math.floor(n / 10000) % 10000;
+  const group2 = Math.floor(n / 100_000_000) % 10000;
 
   let out = "";
+  if (group2 !== 0) out += groupReading(group2) + "おく";
   if (group1 !== 0) out += groupReading(group1) + "まん";
   if (group0 !== 0) out += groupReading(group0);
   return out;
@@ -103,10 +112,18 @@ export function counterKanji(counter: CounterKind): string {
 }
 
 /**
- * The kanji spelling of an integer 1 ≤ n < 10^8 — 17 → 十七, 300 → 三百, 8000 →
- * 八千, 100000 → 十万. The written twin of numberReading: same 4-digit grouping
- * with 万, the tens/hundreds/thousands "1" dropped (十, not 一十) while 万 keeps
- * its 一 (一万), so it lines up with the readings the app already ships.
+ * The kanji spelling of an integer 1 ≤ n < 10^12 — 17 → 十七, 300 → 三百, 8000 →
+ * 八千, 100000 → 十万, 10_000_000_000 → 百億. The written twin of numberReading:
+ * same 4-digit-group / 万 / 億 tiers (see numberReading's doc comment for why
+ * there is no fourth 兆 tier), the tens/hundreds/thousands "1" dropped (十, not
+ * 一十) while 万 and 億 keep their 一 (一万, 一億), so it lines up with the
+ * readings the app already ships.
+ *
+ * Non-recursive by tier (group() only ever encodes one 0–9999 chunk) rather
+ * than the old man-only version's `numberToKanji(man)` self-call — that self-
+ * call happened to be equivalent to group(man) only because man was always
+ * < 10000 in the old < 10^8 range; naively adding an 億 tier on top of that
+ * recursion would have produced 百万万 for 10_000_000_000 instead of 百億.
  */
 export function numberToKanji(n: number): string {
   const group = (v: number): string => {
@@ -121,10 +138,12 @@ export function numberToKanji(n: number): string {
     if (o) out += KANJI_DIGIT[o];
     return out;
   };
-  const man = Math.floor(n / 10000);
+  const oku = Math.floor(n / 100_000_000) % 10000;
+  const man = Math.floor(n / 10000) % 10000;
   const rest = n % 10000;
   let out = "";
-  if (man) out += (man === 1 ? "一" : numberToKanji(man)) + "万";
+  if (oku) out += (oku === 1 ? "一" : group(oku)) + "億";
+  if (man) out += (man === 1 ? "一" : group(man)) + "万";
   if (rest) out += group(rest);
   return out;
 }

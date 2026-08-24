@@ -15,6 +15,7 @@ import {
   acceptableNumberReadings,
   counterReading,
   numberReading,
+  numberToKanji,
 } from "@/lib/number-reading";
 import type { CounterKind } from "@/lib/number-reading";
 
@@ -57,6 +58,46 @@ describe("numberReading — bare number fixtures", () => {
   for (const [n, expected] of cases) {
     test(`${n} → ${expected}`, () => {
       assert.equal(numberReading(n), expected);
+    });
+  }
+});
+
+// SAK-176: extends the engine past 万 (10^4) to 億 (10^8) — the third 4-digit
+// group, group2 in numberReading. 100_000_000 (いちおく) and 10_000_000_000
+// (ひゃくおく, 100億) are hand-verified against the real vocab.json readings for
+// １万/１０万/１００万/１００億 (see src/data/counters.ts's
+// COUNTER_VOCAB_DUPLICATE_KEBS and its test coverage for the Library-dedup
+// side of this ticket). The others below prove the general tier — not just the
+// one named 100億 example — the same way the 万 tier's fixtures above cover
+// more than just 10000.
+describe("numberReading — 億-scale fixtures (SAK-176)", () => {
+  const cases: ReadonlyArray<readonly [number, string]> = [
+    [100_000_000, "いちおく"], // 1億 — 億 does NOT drop the 1, same rule as 万.
+    [1_000_000_000, "じゅうおく"], // 10億
+    [10_000_000_000, "ひゃくおく"], // 100億 — the ticket's named example.
+    [100_010_000, "いちおくいちまん"], // 1億1万 — おく tier plus a nonzero まん group.
+    [100_000_001, "いちおくいち"], // 1億1 — おく tier plus a nonzero bare group.
+  ];
+
+  for (const [n, expected] of cases) {
+    test(`${n} → ${expected}`, () => {
+      assert.equal(numberReading(n), expected);
+    });
+  }
+});
+
+describe("numberToKanji — 億-scale fixtures (SAK-176)", () => {
+  const cases: ReadonlyArray<readonly [number, string]> = [
+    [100_000_000, "一億"],
+    [1_000_000_000, "十億"],
+    [10_000_000_000, "百億"],
+    [100_010_000, "一億一万"],
+    [100_000_001, "一億一"],
+  ];
+
+  for (const [n, expected] of cases) {
+    test(`${n} → ${expected}`, () => {
+      assert.equal(numberToKanji(n), expected);
     });
   }
 });
