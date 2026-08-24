@@ -328,17 +328,22 @@ function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiec
   const kana = numberReading(n);
   let value: string;
   if (n < 1000) {
+    // 百/千 elide the leading いち in speech (ひゃく, せん — not いちひゃく/いちせん),
+    // so a lone base value shows no multiplication: it IS the bare reading.
     const m = n / 100;
     value = m === 1 ? "100" : `${m} × 100`;
   } else if (n < 10000) {
     const m = n / 1000;
     value = m === 1 ? "1000" : `${m} × 1000`;
   } else if (n < 100_000_000) {
+    // 万/億 do NOT elide いち (いちまん, いちおく really are said with いち — see
+    // numberReading's own header comment), so unlike the two tiers above, a
+    // lone base value here is a real 1 × N composition, not a bare reading.
     const m = n / 10000;
-    value = m === 1 ? "10000" : `${m} × 10000`;
+    value = `${m} × 10000`;
   } else {
     const m = n / 100_000_000;
-    value = m === 1 ? "100000000" : `${m} × 100000000`;
+    value = `${m} × 100000000`;
   }
   return { build: [{ kana, value }], result: { kana, value: String(n) } };
 }
