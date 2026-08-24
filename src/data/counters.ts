@@ -687,24 +687,11 @@ export const NUMBER_UNIT_TENS_MARKER = constructionMarker("tens");
 /** The "big" unit's marker — claimed once the 100-9999 range is taught. */
 export const NUMBER_UNIT_BIG_MARKER = constructionMarker("big");
 
-/** Both bare-number unit markers, in curriculum order (tens, then big). */
-export const NUMBER_UNIT_MARKERS: readonly FactId[] = [
-  NUMBER_UNIT_TENS_MARKER,
-  NUMBER_UNIT_BIG_MARKER,
-];
-
 /** Is this fact one of the generative NUMBER-range markers (tens / big)? Kept as
  * the narrow bare-number predicate the lesson walk and tests already use; the
  * general counter-category predicate is constructionCategoryOfMarker. */
 export function isNumberUnitMarker(fact: FactId): boolean {
   return fact === NUMBER_UNIT_TENS_MARKER || fact === NUMBER_UNIT_BIG_MARKER;
-}
-
-/** Which bare-number unit a marker names ("tens" | "big"), or null. */
-export function numberUnitKind(fact: FactId): "tens" | "big" | null {
-  if (fact === NUMBER_UNIT_TENS_MARKER) return "tens";
-  if (fact === NUMBER_UNIT_BIG_MARKER) return "big";
-  return null;
 }
 
 const BY_ENTRY: ReadonlyMap<EntryId, CounterForm> = new Map(

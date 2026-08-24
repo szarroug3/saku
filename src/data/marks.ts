@@ -863,8 +863,6 @@ export const MARKS: readonly Mark[] = RAW_MARKS.map((mark) => {
   };
 });
 
-const BY_ID: ReadonlyMap<string, Mark> = new Map(MARKS.map((m) => [m.id, m]));
-
 /** The mark an entry id names, or undefined. A lookup, like every other id
  * resolution in the app — this never takes an id apart. */
 export function markFor(entry: EntryId): Mark | undefined {
@@ -874,11 +872,6 @@ export function markFor(entry: EntryId): Mark | undefined {
 const BY_ENTRY: ReadonlyMap<EntryId, Mark> = new Map(
   MARKS.map((m) => [markEntry(m.id), m]),
 );
-
-/** A mark by its short id — for tests and for anything holding the id itself. */
-export function markRow(id: string): Mark | undefined {
-  return BY_ID.get(id);
-}
 
 /**
  * "hiragana" → "In hiragana". A mark's intro already carries which script it

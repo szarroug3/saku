@@ -23,7 +23,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Card, Hint, Lbl } from "@/components/ui";
+import { Card, Lbl } from "@/components/ui";
 import { getGlyphLink } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import type { Mixups } from "@/lib/library/mixups";
@@ -106,9 +106,3 @@ export function EntryLinks({
 }
 
 export { LinkRow };
-
-/** "not on any — the bar below can file it" and friends. Re-exported so the
- * page's list row reads the same as the rest of the card. */
-export function NoLinks({ children }: { children: ReactNode }) {
-  return <Hint>{children}</Hint>;
-}

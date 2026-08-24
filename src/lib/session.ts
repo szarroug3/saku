@@ -348,11 +348,6 @@ export function restLeftMs(session: StudySession, now: number): number {
   return Math.max(0, session.restUntil - now);
 }
 
-/** Is the rest over (or was there never one)? */
-export function restIsOver(session: StudySession, now: number): boolean {
-  return restLeftMs(session, now) === 0;
-}
-
 /** "3:18" — the only thing the rest screen says. */
 export function formatCountdown(ms: number): string {
   const total = Math.ceil(ms / 1000);
@@ -691,12 +686,3 @@ export function sameAsStarted(first: RoundSummary, last: RoundSummary): boolean 
  * has to think about would be a worse app, not a more configurable one.
  */
 export const COLD_AFTER_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Has the session gone cold? Drives WHICH of Home's two buttons is emphasised
- * — never whether they exist. Both are always there and neither ever moves;
- * only the emphasis swaps, once, and a sentence says why.
- */
-export function isCold(session: StudySession, now: number): boolean {
-  return now - session.lastActiveAt >= COLD_AFTER_MS;
-}

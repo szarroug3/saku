@@ -62,9 +62,6 @@ export const KIND_LABEL: Readonly<Record<Kind, string>> = INDEX.kindLabel as Rea
   Record<Kind, string>
 >;
 
-/** The content hash of the index. */
-export const LIBRARY_INDEX_VERSION: string = INDEX.libraryIndexVersion;
-
 /** Every entry in the app, in browse order — the precomputed twin of
  * `LIB_ENTRIES`. */
 export const LIB_ENTRIES: readonly IndexLibEntry[] = INDEX.entries;

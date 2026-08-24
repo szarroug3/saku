@@ -1209,36 +1209,6 @@ export function recipesOf(entry: LibEntry): readonly Recipe[] {
 
 // ---------- the links ----------
 
-/** kanji glyph → every everyday word containing it, in vocab order. The join
- * that makes 人生 both a word AND the evidence for 生's セイ. */
-const APPEARS_IN: ReadonlyMap<string, readonly string[]> = buildAppearsIn();
-
-function buildAppearsIn(): Map<string, string[]> {
-  const map = new Map<string, string[]>();
-  for (const w of VOCAB) {
-    for (const c of new Set(w.keb)) {
-      if (!kanjiRow(c)) continue;
-      const list = map.get(c);
-      if (list) list.push(w.keb);
-      else map.set(c, [w.keb]);
-    }
-  }
-  return map;
-}
-
-/**
- * The words an entry appears inside.
- *
- * For a kanji, every everyday word written with it — 生 has ~219. For a word or
- * a kana, nothing: containment is a KANJI relation here, because that is the one
- * the data attests. A kana appears in nearly every reading in the language,
- * which is not a link, it is noise.
- */
-export function appearsIn(entry: LibEntry): readonly string[] {
-  if (entry.kind !== KANJI_SUBJECT) return [];
-  return APPEARS_IN.get(entry.glyph) ?? [];
-}
-
 /**
  * The DIRECT components a kanji is written with — 休 = 亻 + 木, 時 = 日 + 寺.
  * From KanjiVG's depth-1 element hierarchy (see KanjiRow.comps).

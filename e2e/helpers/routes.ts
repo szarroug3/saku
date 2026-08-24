@@ -1,5 +1,5 @@
 import { readdirSync, existsSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 
 const APP_DIR = join(process.cwd(), "src", "app");
 
@@ -53,9 +53,4 @@ export function appRoutes(): AppRoutes {
   out.static.sort();
   out.dynamic.sort();
   return out;
-}
-
-/** Present a filesystem path like src/app/grammar/[cluster] readably. */
-export function describeRoute(route: string): string {
-  return route.split(sep).join("/");
 }
