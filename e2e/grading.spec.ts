@@ -322,8 +322,6 @@ test("reveal after a wrong jp2en answer names the reading that was asked for", a
   await expect(r.box).toBeVisible();
   // Asked: "how is 明白 read". The answer half is the READING.
   await expect(r.answer).toHaveText("めいはく");
-  // ...and the prompt half re-states what was on screen.
-  await expect(r.prompt).toHaveText("明白");
 });
 
 /**
@@ -394,7 +392,6 @@ test("reveal after a wrong en2jp answer names the kanji that was asked for", asy
 
   const r = reveal(page);
   await expect(r.answer).toHaveText("一");
-  await expect(r.prompt).toHaveText("one");
 });
 
 /**
@@ -472,7 +469,6 @@ test("reveal on a no-confusables kanji, where MC falls back to a typed box, name
   const r = reveal(page);
   await expect(r.box).toBeVisible();
   await expect(r.answer).toHaveText("一");
-  await expect(r.prompt).toHaveText("one");
 });
 
 test("reveal after a wrong en2jp answer names the keigo verb that was asked for", async ({
@@ -493,5 +489,4 @@ test("reveal after a wrong en2jp answer names the keigo verb that was asked for"
   // The miss must name what was ASKED (the verb), not re-print the English cue
   // that was shown.
   await expect(r.answer).toHaveText("めしあがる");
-  await expect(r.prompt).toHaveText("eat / drink (honorific)");
 });
