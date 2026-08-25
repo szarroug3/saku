@@ -1276,6 +1276,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "." },
     ],
     example: { word: "はな", reading: "hana", gloss: "flower", hitIndex: 0 },
+    approximate: "は changes its sound to “wa” when it’s used as a grammar particle.",
   },
 
   ハ: {
@@ -1398,6 +1399,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "lens, high in the sky covered in clouds." },
     ],
     example: { word: "へや", reading: "heya", gloss: "room", hitIndex: 0 },
+    approximate: "へ changes its sound to “eh” when it’s used as a grammar particle.",
   },
 
   ヘ: {
