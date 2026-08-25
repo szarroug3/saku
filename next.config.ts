@@ -1,4 +1,13 @@
 import type { NextConfig } from "next";
+import createBundleAnalyzer from "@next/bundle-analyzer";
+
+// SAK-188: build-time bundle composition, gated behind an env flag so it never
+// runs on a normal build. `ANALYZE=true pnpm build` writes an HTML treemap per
+// bundle (client/nodejs/edge) to `<distDir>/analyze/` instead of the usual
+// build output.
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   // A production E2E build may run while the maintainer has `pnpm dev` open.
@@ -64,4 +73,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
