@@ -180,6 +180,22 @@ SIGNATURES = {
         "host": VERB_RENYOU,
         "seq": [{"lemma": "て", "pos1": "助詞"}, {"lemma": "も"}, {"lemma_in": ("良い", "好い")}],
     },
+    "te-prohibition": {
+        # てはいけない — "must not". いける's negative いけない tokenises as 行く
+        # (lemma) + ない, the SAME lemma として the ikenai family below (行ける is
+        # derived from 行く) — verified directly against the tagger, not assumed:
+        # 食べては{いけない,いけません} both give いけ = 行く/動詞, cForm varying with
+        # what follows (未然形 before ない, 連用形 before ます), which is why the
+        # signature does not pin a cForm on it, exactly like nakute-wa-ikenai's
+        # own 行く token below. No cForm/pos1 requirement on は matches that same
+        # entry's は.
+        "host": VERB_RENYOU,
+        "seq": [
+            {"lemma": "て", "pos1": "助詞"},
+            {"lemma": "は"},
+            {"lemma": "行く"},
+        ],
+    },
     "te-iru": {
         "host": VERB_RENYOU,
         "seq": [{"lemma": "て", "pos1": "助詞"}, {"lemma": "居る"}],
