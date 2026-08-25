@@ -580,14 +580,26 @@ const kanaQuestions: QuestionType = {
   // learner's known/seen fact ids, threaded in by buildMcOptions from the
   // same list that already ranks kanji reading siblings (see `preferKnown`
   // there) — splits both "lookalike" and "same-script fill" into a known and
-  // an unseen half, and known always outranks unseen: a KNOWN lookalike (か
-  // for カ) is the single sharpest wrong answer there is, so it leads even
+  // an unseen half, and known always outranks unseen: a KNOWN lookalike (シ
+  // for ツ) is the single sharpest wrong answer there is, so it leads even
   // ahead of an unseen same-row neighbor. Within "known" and within "unseen"
   // alike, same GOJŪON ROW (`sec`) outranks the rest of the same script —
   // the fallback order the ticket asks for. An unseen lookalike still beats
   // the untouched same-set fill, preserving the old "shape signal always
   // shown" behaviour for a brand-new learner with nothing known yet, whose
   // board should look close to what it always did (same-row, then same-set).
+  //
+  // SAK-186: LOOKALIKES used to also pair か with カ, や with ヤ, and six more
+  // hiragana/katakana twins that share their exact romaji (both read "ka",
+  // etc.) — a KNOWN lookalike here was offered as a wrong-answer OPTION, so か
+  // could show カ as a distractor with `check()` grading only the one exact
+  // glyph right. `hint` ("give the hiragana") is the only thing in the prompt
+  // that disambiguates the two, and `hint` is explicitly decoration a learner
+  // can turn off (cfg.scriptLabel, off by default meaning "work it out
+  // yourself") — so with that setting off, a board carrying both か and カ for
+  // the same "ka" prompt had no way to be answered correctly on the merits.
+  // Those eight pairs are gone from LOOKALIKES now, so this distractor pool no
+  // longer draws a fact's own cross-script twin against it at all.
   distractors(fact, n, ctx) {
     const c = glyphOfFact(fact);
     const info = CHAR_INDEX[c];
