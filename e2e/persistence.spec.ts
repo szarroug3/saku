@@ -177,9 +177,15 @@ test("a round committed mid-session is not counted again at the end", async ({
   // SAK-52 removed the "Complete session" button and the write it used to
   // trigger (session-complete.tsx: "The screen the 'Complete session' button
   // never had") — every round already wrote itself as it closed, so this
-  // final screen has nothing left to commit and no navigation to wait for.
-  // It only shows the retry/claim controls over what already happened.
-  await expect(page.locator("body")).toContainText("Session complete");
+  // final navigation has nothing left to commit.
+  //
+  // SAK-183: a taught session's End session no longer stops on the
+  // Session-complete screen at all (it used to land there and show the
+  // retry/claim controls over what already happened) — it now finishes the
+  // run inline and lands straight on /learn, same as ending early always
+  // should have. This is a navigation change only; the two rounds already
+  // banked above are unaffected by where the session lands afterward.
+  await page.waitForURL("**/learn");
 
   // Two rounds of five, once each. Fifteen would mean the session was written
   // on top of its own rounds; five would mean a round went missing.

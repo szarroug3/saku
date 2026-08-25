@@ -1406,11 +1406,28 @@ export function QuizSessionProvider({
     if (!session) return;
     const now = Date.now();
     if (session.round >= roundTargetOf(session)) {
-      setSession({
-        ...closeRound(session, now),
-        phase: "complete",
-        restUntil: null,
-      });
+      const closed = closeRound(session, now);
+      // SAK-183: this button ("Complete session") lives only on RoundComplete,
+      // which in the ordinary flow only ever renders for a taught session —
+      // an untaught Quiz-me's one round finishes straight to "complete"
+      // without stopping at round-complete first (see the isTaughtSession
+      // check in the leg-boundary handler above, and its own long comment on
+      // why that branch is load-bearing). But recoverLostLeg is a deadlock
+      // breaker that can force ANY session's lost "drilling" phase to
+      // "round-complete" regardless of teach/round-target, so an untaught
+      // session recovered that way CAN still reach this button. Branching on
+      // isTaughtSession here — the same guard endSession uses — keeps that
+      // rare recovered-Quiz-me case landing on Path B exactly as its normal
+      // one-round finish would, instead of assuming this call site is
+      // taught-only and skipping the complete screen unconditionally.
+      if (isTaughtSession(closed)) {
+        setSession(null);
+        setActive(null);
+        setProgress(null);
+        router.push("/learn");
+        return;
+      }
+      setSession({ ...closed, phase: "complete", restUntil: null });
       setActive(null);
       setProgress(null);
       router.push("/session");
@@ -1491,6 +1508,30 @@ export function QuizSessionProvider({
     if (isTaughtSession(banked)) {
       const target = sessionKnownClaimTarget(banked);
       if (target.length) void postClaim(target, true);
+      // SAK-183: a taught session's End session never lands on the
+      // Session-complete screen — that screen's ring/stats/boards and its
+      // "I already know these" / "Take me to the lesson" fork (Path B) exist
+      // only for an untaught Quiz-me run, and this is never one of those. The
+      // known-claim just above already did everything that screen could have
+      // offered a taught session, so finish inline here instead of routing
+      // through it: clear the run and go straight to /learn, the same
+      // terminal shape finishSession ends on for its own paths.
+      //
+      // This is NOT a call to finishSession itself. finishSession's two
+      // branches are Path-B-specific — markKnown:true would re-run the exact
+      // claim just made above a second time, and markKnown:false calls
+      // rollbackSeededSeen, which exists to undo the seen marks a Quiz-me
+      // start seeds (StudySession.seededSeen). A taught start never seeds
+      // that field — every startSession call site only ever passes a
+      // non-empty `seededSeen` on a Quiz-me (teach: false) launch — so a
+      // taught session's seededSeen is always empty and rollbackSeededSeen
+      // would be a no-op anyway. Skipping the call entirely says that
+      // plainly instead of paying for a lookup that can never find anything.
+      setSession(null);
+      setActive(null);
+      setProgress(null);
+      router.push("/learn");
+      return;
     }
     setSession({ ...banked, phase: "complete", restUntil: null });
     setActive(null);
