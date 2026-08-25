@@ -190,7 +190,7 @@ describe("summarize: nothing shown at all is not a 'perfect run'", () => {
     // not just clean. `missed.length` and `totalMisses` are both trivially 0
     // here, same as a genuinely perfect run; without an explicit empty guard
     // the cascade falls all the way to "Your first perfect run" over a
-    // literal 0 shown · 0 correct · 0 incorrect · 0 not answered line.
+    // literal 0 shown · 0 correct · 0 never landed · 0 not answered line.
     const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats: {} });
     const summary = summarize(run, {}, EMPTY_HISTORY, []);
     assert.notEqual(summary.headline, "Perfect run");
@@ -232,12 +232,12 @@ describe("not-answered facts are neither scored nor solid", () => {
     [f("mya")]: detail(unresolved()),
   };
 
-  it("splits into shown / correct / incorrect / not-answered, matching the board", () => {
+  it("splits into shown / correct / never-landed / not-answered, matching the board", () => {
     const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats });
 
     assert.equal(run.facts.length, 5, "shown");
     assert.equal(run.correctFacts, 2, "correct");
-    assert.deepEqual(run.missed, [f("yo")], "incorrect");
+    assert.deepEqual(run.missed, [f("yo")], "never landed");
     assert.deepEqual(new Set(run.notAnswered), new Set([f("a"), f("mya")]));
 
     // Exhaustive and disjoint: every shown fact lands in exactly one of
@@ -259,7 +259,7 @@ describe("not-answered facts are neither scored nor solid", () => {
     const run = deriveRun({ mode: "drill", redrill: false, ts: 0, stats });
     const summary = summarize(run, stats, EMPTY_HISTORY, []);
     const line = summary.counts.map((b) => b.t).join("");
-    assert.equal(line, "5 shown · 2 correct · 1 incorrect · 2 not answered");
+    assert.equal(line, "5 shown · 2 correct · 1 never landed · 2 not answered");
     // And the headline still names only the genuine miss — needsWork, not
     // the contaminated old `missed` list, decides the count.
     assert.equal(summary.headline, "1 thing needs another pass");
