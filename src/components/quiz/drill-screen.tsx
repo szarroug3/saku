@@ -485,6 +485,17 @@ interface DrillRuntime {
   feedback: DrillFeedback | null;
   /** Remaining countdown seconds; null when the timer is off. */
   timerLeft: number | null;
+  /** SAK-180: every fact a pitch card has EVER been queued for this round,
+   * via queuePitchCard — tracked for the round's whole lifetime, not just
+   * the deck's pending suffix. A word's meaning fact can trigger
+   * queuePitchCard from BOTH its listen:false and listen:true showings
+   * (two separate, uncoordinated call sites in presentCard); once the first
+   * queued slot has been drawn and resolved, a deck scan restricted to
+   * `i >= rt.pos` no longer sees it, so the second showing would queue a
+   * second phantom card for the same fact. This list is the guard that
+   * survives past rt.pos. Optional/possibly-missing on a runtime
+   * serialized before this field existed — see the resume backfill below. */
+  pitchQueued?: FactId[];
 }
 
 interface DrillHandlers {
@@ -935,14 +946,21 @@ export function DrillScreen() {
    * `pitch` board off a slot THIS function pinned). Spliced with the same
    * `requeueGap()` spacing the wrong-answer requeue below uses, so it lands
    * a few cards later rather than clumped against the showing that queued
-   * it. A no-op if this fact already has a pending pitch card queued ahead —
-   * the deck should never carry more than one at a time per fact. */
+   * it. A no-op if this fact has EVER had a pitch card queued for it this
+   * round — see rt.pitchQueued. SAK-180: this used to scan only the deck's
+   * PENDING suffix (`i >= rt.pos`), which stopped seeing a fact's queued
+   * slot the moment that slot was drawn — a word's meaning fact fires this
+   * function from BOTH its listen:false and listen:true showings
+   * (uncoordinated call sites in presentCard), and if those two showings
+   * are spaced further apart than requeueGap() in the deck, the second call
+   * would queue a SECOND phantom pitch card for the same fact. rt.pitchQueued
+   * tracks every fact ever queued for the round's whole lifetime, not just
+   * the pending suffix, so it catches that case. */
   function queuePitchCard(f: FactId) {
     if (!rt) return;
-    const alreadyQueued = rt.deck.some(
-      (deckFact, i) => i >= rt.pos && deckFact === f && rt.forms[i]?.pitch,
-    );
-    if (alreadyQueued) return;
+    if (!Array.isArray(rt.pitchQueued)) rt.pitchQueued = [];
+    if (rt.pitchQueued.includes(f)) return;
+    rt.pitchQueued.push(f);
     const at = Math.min(rt.deck.length, rt.pos + requeueGap());
     rt.deck.splice(at, 0, f);
     rt.forms.splice(at, 0, {
@@ -1092,9 +1110,19 @@ export function DrillScreen() {
     //   - ADDITIVE, never a substitute (SAK-129): every eligible showing of
     //     the word's own meaning card queues one extra pitch card a few
     //     slots later (queuePitchCard) rather than replacing anything.
-    //   - only for a word that still carries a VERIFIED wordPitch() entry —
-    //     rollPitchQuestion itself returns null otherwise (no guessed pitch,
-    //     ever — the same rule src/data/pitch.ts documents).
+    //   - only for a word that still carries a VERIFIED wordPitch() entry.
+    //     SAK-180: checked HERE, in eligibility, not just later at draw time
+    //     inside rollPitchQuestion — a word with no verified downstep must
+    //     never be considered eligible in the first place, or the ELIGIBLE
+    //     branch below (queuePitchCard) queues an extra deck slot for it
+    //     that rollPitchQuestion then resolves to null, and presentCard
+    //     falls back to an ordinary jp2en typed card: a silent, uncounted
+    //     duplicate of a form already asked (invisible in the results
+    //     screen's per-form dedup, but a real extra draw in rt.asked and the
+    //     live "X of Y" progress count). rollPitchQuestion still re-checks
+    //     wordPitch() itself as its own floor, never trusting this gate
+    //     alone (no guessed pitch, ever — the same rule src/data/pitch.ts
+    //     documents).
     //
     // SAK-129: ADDITIVE, not a substitute. A pitch question used to REPLACE
     // this showing's ordinary meaning card on the PITCH_QUESTION_CHANCE coin
@@ -1116,7 +1144,8 @@ export function DrillScreen() {
     const pitchEligibleGlyph =
       pitchEligibleInfo &&
       pitchEligibleInfo.subject === VOCAB_KIND &&
-      localWordMeaningFactId(pitchEligibleInfo.glyph) === f
+      localWordMeaningFactId(pitchEligibleInfo.glyph) === f &&
+      wordPitch(pitchEligibleInfo.glyph) !== null
         ? pitchEligibleInfo.glyph
         : null;
     const pitchQuestion =
@@ -1818,6 +1847,7 @@ export function DrillScreen() {
       rt.waiting = false;
       rt.feedback = null;
       rt.timerLeft = null;
+      rt.pitchQueued = [];
       nextQuestion();
       return;
     }
@@ -1825,6 +1855,11 @@ export function DrillScreen() {
     if (!Array.isArray(rt.pool)) {
       rt.pool = active.facts.filter((f) => usableForms(f).length > 0);
     }
+    // SAK-180: resuming a runtime written before this field existed (or a
+    // fresh runtime object whose fresh-init branch above didn't run this
+    // mount). Default to empty rather than undefined so queuePitchCard's own
+    // `Array.isArray` guard is belt-and-braces, not load-bearing.
+    if (!Array.isArray(rt.pitchQueued)) rt.pitchQueued = [];
     // Resuming (tab switch / remount / refresh): the local fact-registry map
     // is in-memory state, so it starts empty on THIS mount even though rt
     // itself survived — re-fetch the pool the same way a fresh quiz does.
