@@ -435,7 +435,16 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
  * showing: a fact re-asked after a miss is one card here, matching the row
  * count on the board below, not the showing count "score" used to report. */
 function countLine(run: RunFacts): string {
-  return `${run.facts.length} shown · ${run.correctFacts} correct · ${run.missed.length} incorrect · ${run.notAnswered.length} not answered`;
+  // "never landed" (not "incorrect"): `missed` means a fact that was
+  // attempted and NEVER once landed correct across this run's whole scope —
+  // see isMissed. A fact that took a wrong attempt but recovered on a retry
+  // is excluded from this count, yet still shows up on the "Needs work"
+  // board below (word-table-keys.ts's misses>0 read). "Incorrect" reads as
+  // "you got this wrong", which contradicts a "Needs work" row that shows a
+  // real recovery — "never landed" is the same phrase worstBits already uses
+  // for this exact meaning (see the "never" branch above), so the line and
+  // the diagnosis agree instead of coining a second word for one idea.
+  return `${run.facts.length} shown · ${run.correctFacts} correct · ${run.missed.length} never landed · ${run.notAnswered.length} not answered`;
 }
 
 /** The counts line: how the run reads under the chosen chip, plus anything the
@@ -443,8 +452,9 @@ function countLine(run: RunFacts): string {
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
   const beaten = progress.length;
   return [
-    // A stored session counted nothing per fact, so a shown/correct/incorrect
-    // breakdown would be an invention. Report the two percentages it did keep.
+    // A stored session counted nothing per fact, so a shown/correct/never-
+    // landed breakdown would be an invention. Report the two percentages it
+    // did keep.
     run.stored ? { t: `${run.stored.forgivingPct}% score` } : { t: countLine(run) },
     ...(beaten
       ? [
