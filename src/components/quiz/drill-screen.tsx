@@ -3162,17 +3162,16 @@ export function DrillScreen() {
           into. */}
       {revealPause ? (
         <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
-          <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col items-center gap-2 overflow-y-auto text-center">
+          <div className="mx-auto flex max-h-[45vh] max-w-2xl flex-col items-center gap-2 overflow-y-auto text-center">
             {revealAnswer && revealTmpl ? (
               <>
-                <p className="min-h-[38px] max-w-[420px] wrap-break-word text-lg font-semibold text-text">
-                  {/* Re-states what was actually on screen (the prompt face,
-                      not the answer face — they differ in en2jp) ahead of the
-                      answer sentence, so the reveal names what was ASKED
-                      rather than leaving the learner to infer it from the
-                      card above. See revealFor / the module doc up top. */}
-                  <span className="text-lg">{prompt.glyph}</span>
-                  {" — "}
+                <p className="min-h-[38px] max-w-[600px] wrap-break-word text-lg font-semibold text-text">
+                  {/* No restated prompt glyph ahead of the sentence: the
+                      question is still visible on the card above this bar,
+                      so naming it again here was pure repetition. Starts
+                      straight in with the answer sentence (see revealFor /
+                      the module doc up top for how the sentence itself is
+                      chosen). */}
                   {revealTmpl.prefix}
                   <span className="text-danger">{revealAnswer.node}</span>
                   {revealTmpl.suffix}
