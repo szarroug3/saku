@@ -162,12 +162,15 @@ export function SessionComplete({
 
   // The SAME ring/headline/counts sentence and needs-work/solid board every
   // results screen renders (results-card.tsx, triage-board.tsx, summary.ts) —
-  // Path A over `session.teach`, Path B over `session.facts` (its `teach` is
-  // empty). `subsetStats` pads to EVERY fact in that set, real entry or a
-  // zero stub — a lesson item the quiz never reached at all still belongs on
-  // the board, reading "not shown", not silently missing from it. `totalStats`
-  // can carry review material beyond this path's own set, which is exactly
-  // what this narrows away.
+  // Path A over `session.teach` (dead since SAK-183: a taught session never
+  // reaches this screen any more), Path B over `session.facts` (its `teach`
+  // is empty). `subsetStats` narrows `totalStats` down to this path's own
+  // scope AND to facts genuinely drawn on screen — a fact merely IN the
+  // declared scope but never shown is left out entirely (see subsetStats's
+  // own comment, summary.ts, for why the old "pad every declared fact"
+  // behavior was wrong for Path B). `totalStats` can also carry review
+  // material beyond this path's own set, which `subsetStats` narrows away
+  // too.
   const pathFacts = taught ? session.teach : session.facts;
   const stats = useMemo(
     () => subsetStats(session.totalStats, pathFacts),

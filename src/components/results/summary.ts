@@ -174,32 +174,49 @@ export function runAggregate(stats: SessionStats): FactCounts {
  * session-complete.tsx). `pct` is always measured here (there is no
  * summary-only shortcut mid-session), and `stored` is always unset.
  */
-const ZERO_DETAIL: FactSessionDetail = {
-  seen: 0,
-  misses: 0,
-  everCorrect: false,
-  firstTryCorrect: null,
-  firstTryCount: 0,
-  correct: 0,
-  confused: {},
-};
-
 /**
- * `stats` narrowed to exactly `facts` — for a screen (round-complete,
- * session-complete) that only wants runFactsFromSession's read of ONE part of
- * a wider SessionStats object (e.g. `session.teach` out of `session.totalStats`,
- * which also carries review material the current board has no section for).
+ * `stats` narrowed to exactly the facts genuinely SHOWN within `facts` — for
+ * a screen (session-complete, currently its only caller) that only wants
+ * runFactsFromSession's read of ONE part of a wider SessionStats object (e.g.
+ * `session.facts` or `session.teach` out of `session.totalStats`, which also
+ * carries review material the current board has no section for).
  *
- * EVERY fact in `facts` gets an entry, real or a zero stub — a fact this path
- * never reached at all (not merely shown-then-abandoned) still belongs in the
- * board's "not answered" pile, same as one that WAS shown but left
- * unresolved. Dropping it instead (the earlier version of this function) made
- * an untouched lesson item vanish off session-complete's board entirely,
- * rather than reading "not shown" the way it always has.
+ * Only a fact already keyed in `stats` is copied through — `f in stats`,
+ * checked BEFORE any fallback, not iteration over the full declared `facts`
+ * scope. A key only exists once statForShowing (drill-stats.ts) has put that
+ * fact on screen, so this is the line that decides "shown" for the board and
+ * for countLine's "N shown": genuinely drawn, not merely selected.
+ *
+ * THIS USED TO backfill a zero stub (`stats[f] ?? ZERO_DETAIL`) for every fact
+ * in the declared scope, so `run.facts.length` was the size of the pool the
+ * run was ALLOWED to draw from, not what it actually drew. That was harmless
+ * while this fed session-complete's Path A (a taught lesson's own board),
+ * where `facts` is `session.teach` and every taught item really was on
+ * screen at some point during the lesson that preceded it — the backfill's
+ * whole job there was making a fact the QUIZ phase itself never reached
+ * still read "not shown" instead of vanishing. SAK-183 removed taught
+ * sessions' only route to this screen entirely (endSession/completeRound now
+ * finish a taught session straight to /learn — see quiz-session.tsx), so
+ * Path A is dead code here and Path B (`session.facts`, a "Quiz me" pool
+ * nothing has taught yet) is the only scope this narrows in practice. For
+ * Path B the backfill was actively wrong: ending a session after one drawn
+ * card still reported the whole selected pool as "shown" (SAK-181 follow-up
+ * — an 11-fact Quiz-me that showed exactly 1 read "11 shown"). A fact that
+ * WAS drawn and then abandoned is not lost by this change — statForShowing
+ * gives it a real zero-valued key in `stats` the instant it lands on screen,
+ * before resolveShowing ever runs, so `f in stats` still keeps it (and
+ * runFactsFromSession's notAnswered still reads it off `seen === 0`, same as
+ * always). Only a fact that was never drawn at all — no key, nothing to find
+ * — is now left out, where it used to be manufactured.
+ *
+ * round-complete.tsx does NOT call this: it reads `session.roundStats`
+ * directly, unnarrowed, which already only ever holds keys for facts a round
+ * genuinely put on screen (see statForShowing) — so it never had a "shown"
+ * count to fix, and nothing here changes its board.
  */
 export function subsetStats(stats: SessionStats, facts: readonly FactId[]): SessionStats {
   const out: SessionStats = {};
-  for (const f of facts) out[f] = stats[f] ?? ZERO_DETAIL;
+  for (const f of facts) if (f in stats) out[f] = stats[f];
   return out;
 }
 
@@ -435,16 +452,29 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
  * showing: a fact re-asked after a miss is one card here, matching the row
  * count on the board below, not the showing count "score" used to report. */
 function countLine(run: RunFacts): string {
-  // "never landed" (not "incorrect"): `missed` means a fact that was
-  // attempted and NEVER once landed correct across this run's whole scope —
-  // see isMissed. A fact that took a wrong attempt but recovered on a retry
-  // is excluded from this count, yet still shows up on the "Needs work"
-  // board below (word-table-keys.ts's misses>0 read). "Incorrect" reads as
-  // "you got this wrong", which contradicts a "Needs work" row that shows a
-  // real recovery — "never landed" is the same phrase worstBits already uses
-  // for this exact meaning (see the "never" branch above), so the line and
-  // the diagnosis agree instead of coining a second word for one idea.
-  return `${run.facts.length} shown · ${run.correctFacts} correct · ${run.missed.length} never landed · ${run.notAnswered.length} not answered`;
+  // "incorrect" (SAK-181 relabeled this to "never landed", then SAK-181's own
+  // follow-up reverted it here — read both before touching the word again).
+  //
+  // The original relabel's reasoning was real at the time: `run.facts` was
+  // padded by subsetStats to the run's whole DECLARED scope, not what was
+  // genuinely drawn (see subsetStats above), and "N incorrect" over a shown
+  // count that was mostly manufactured stubs read as a flat contradiction —
+  // a Quiz-me ended after one card could say "11 shown · 1 incorrect" for a
+  // run that only ever asked one question. Renaming to "never landed" (the
+  // same phrase worstBits already used for this meaning) papered over that,
+  // but the actual bug was the shown count, not the word.
+  //
+  // Now that subsetStats only carries facts genuinely shown (`f in stats`,
+  // not a backfilled stub — see its own comment), `run.facts` is what was
+  // truly asked, and `missed` (isMissed) is exactly the subset of THOSE that
+  // were attempted and never once landed correct. "Incorrect" is an accurate
+  // word for that again: every fact in this count was actually asked and
+  // actually gotten wrong every time, nothing manufactured. A fact that
+  // missed once and recovered on a retry is still correctly excluded from
+  // this count (isMissed requires zero corrects, not zero misses), yet still
+  // correctly shows on the "Needs work" board below — that was never the
+  // part that was confusing; the shown-count bug was.
+  return `${run.facts.length} shown · ${run.correctFacts} correct · ${run.missed.length} incorrect · ${run.notAnswered.length} not answered`;
 }
 
 /** The counts line: how the run reads under the chosen chip, plus anything the
@@ -452,9 +482,8 @@ function countLine(run: RunFacts): string {
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
   const beaten = progress.length;
   return [
-    // A stored session counted nothing per fact, so a shown/correct/never-
-    // landed breakdown would be an invention. Report the two percentages it
-    // did keep.
+    // A stored session counted nothing per fact, so a shown/correct/incorrect
+    // breakdown would be an invention. Report the two percentages it did keep.
     run.stored ? { t: `${run.stored.forgivingPct}% score` } : { t: countLine(run) },
     ...(beaten
       ? [
