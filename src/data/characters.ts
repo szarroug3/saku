@@ -276,14 +276,16 @@ export const LOOKALIKES: string[][] = [
   ["き", "さ"],
   ["た", "な"],
   ["あ", "お"],
-  ["か", "カ"],
-  ["や", "ヤ"],
-  ["も", "モ"],
-  ["り", "リ"],
-  ["せ", "セ"],
-  ["き", "キ"],
-  ["に", "ニ"],
-  ["へ", "ヘ"],
+  // SAK-186: か/カ, や/ヤ, も/モ, り/リ, せ/セ, き/キ, に/ニ, へ/ヘ used to live
+  // here — eight pairs that are the exact same mora, hiragana vs katakana, not
+  // a genuinely different-sound/shape confusable. "Commonly mixed up with"
+  // read oddly for a pair that is correct either way, so Sam had all eight
+  // removed rather than displayed alongside real traps like シ/ツ or は/ほ. Each
+  // hiragana/katakana twin is still shown elsewhere (the family/related
+  // section derives it live off the Unicode codepoint offset, in
+  // lib/library/kana-family.ts) — this table no longer claims it as a
+  // "watch out" pairing, and, as of this change, carries no cross-script pair
+  // at all.
 ];
 
 /** char → flattened info (set/section labels, romaji). */
