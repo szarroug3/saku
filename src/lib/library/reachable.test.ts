@@ -9,6 +9,18 @@
 // real curriculum data (TERMS' own `related` array, LOOK_GROUP's real か/カ
 // pair), not a hand-built stand-in, so a change to either table that breaks the
 // gate's assumptions fails here too.
+//
+// SAK-186 UPDATE: か/カ (and 7 other same-sound hiragana/katakana pairs) were
+// removed from LOOKALIKES entirely — they were the same mora in two scripts,
+// not a genuine confusable, so か's "commonly mixed up with" no longer
+// mentions カ at all (see characters.ts). That retires the confusables half of
+// this file's own precondition: LOOKALIKES carries no cross-script pair any
+// more, so the "commonly mixed up with a not-yet-reached script" scenario
+// cannot happen via LOOK_GROUP today. `kanaGlyphReachable` itself is still
+// exercised directly below (it also gates the Related section and the
+// Hiragana term's related links, both still real, still cross-script), so the
+// gate mechanism keeps real coverage — only its confusables-specific worked
+// example is gone.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -33,14 +45,46 @@ function met(facts: readonly FactId[]): HistoryFile {
 
 // ---------------------------------------------------------------------------
 // か's "commonly mixed up with" showing カ before katakana has started.
+//
+// SAK-186: か's confusables no longer include カ at all (see the file header
+// note above), so the "would show a not-yet-reached script" precondition this
+// section used to verify off real LOOKALIKES data no longer holds — asserted
+// directly below, replacing the old "か and カ are real shape neighbours"
+// precondition test. `kanaGlyphReachable` itself is unaffected: it is a
+// generic glyph-vs-history-track check that never read LOOKALIKES, so it is
+// tested directly against カ as a glyph, and it still gates the Related
+// section's dakuten/yōon links elsewhere on the same page.
 // ---------------------------------------------------------------------------
 
-test("か and カ are real shape neighbours (the precondition for this example)", () => {
+test("SAK-186: か's confusables no longer include カ (same-sound cross-script pairs were removed)", () => {
   const lookalikes = kanaConfusables("か");
   assert.ok(
-    lookalikes.includes(kanaEntry("カ")),
-    "カ must be in か's real lookalike list for this ticket's example to mean anything",
+    !lookalikes.includes(kanaEntry("カ")),
+    "カ must no longer be in か's LOOKALIKES-derived confusable list",
   );
+});
+
+test("SAK-186: none of the 8 removed same-sound pairs appear in each other's LOOK_GROUP confusables", () => {
+  const pairs: Array<[string, string]> = [
+    ["か", "カ"],
+    ["や", "ヤ"],
+    ["も", "モ"],
+    ["り", "リ"],
+    ["せ", "セ"],
+    ["き", "キ"],
+    ["に", "ニ"],
+    ["へ", "ヘ"],
+  ];
+  for (const [hira, kata] of pairs) {
+    assert.ok(
+      !kanaConfusables(hira).includes(kanaEntry(kata)),
+      `${hira}'s confusables must not include ${kata}`,
+    );
+    assert.ok(
+      !kanaConfusables(kata).includes(kanaEntry(hira)),
+      `${kata}'s confusables must not include ${hira}`,
+    );
+  }
 });
 
 test("SAK-30 example: カ does not gate as reachable before katakana starts", () => {
