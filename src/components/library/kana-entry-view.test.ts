@@ -333,3 +333,68 @@ test("KanaEntryView drops the stroke-order section entirely for a yōon combo, b
   // svg-path.ts primitives are gone from this file and from the codebase.
   assert.doesNotMatch(src, /composeGlyphStrokes/, "the composed-diagram call must be gone");
 });
+
+// SAK-179: ん's page showed a "Heads up." note TWICE — a short one right under
+// the analogy line, from `Mnemonic.approximate` in mnemonics.ts, and a longer
+// one much further down the page, from kana-context.ts's own standalone
+// section. Both described the same rule (ん borrows the sound that follows
+// it). Consolidated into one: `approximate` is dropped from ん/ン (mnemonics.ts
+// keeps it for every other kana that still uses it for its original,
+// different purpose — an English-approximation caveat, not a following-sound
+// rule), and the context rules now render exactly once, through
+// MnemonicView's own `soundNote` slot (built for this, per that component's
+// own doc, and previously unused by any caller).
+
+test("ん/ン no longer carry Mnemonic.approximate — the context rules already cover the same ground", () => {
+  for (const g of ["ん", "ン"]) {
+    const m = getMnemonic(g);
+    assert.ok(m, `${g} should still have a mnemonic`);
+    assert.equal(
+      m!.approximate,
+      undefined,
+      `${g}'s approximate field should be gone — it duplicated kana-context.ts's own rules`,
+    );
+    assert.ok(contextPronunciation(g), `${g} should still carry its context rules`);
+  }
+});
+
+test("っ/ッ carry context rules but no mnemonic of their own — the page's no-mnemonic fallback is for them", () => {
+  for (const g of ["っ", "ッ"]) {
+    assert.equal(getMnemonic(g), null, `${g} has no MNEMONICS row — the sokuon isn't a taught base kana`);
+    assert.ok(contextPronunciation(g), `${g} should still carry its context rules`);
+  }
+});
+
+test("KanaEntryView renders the context rules exactly once — via MnemonicView's soundNote when a mnemonic exists, or a standalone fallback only when it doesn't", () => {
+  const src = readFileSync(
+    fileURLToPath(new URL("./kana-entry-view.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  // THE BUG, verbatim: a standalone JSX block rendered whenever `context` was
+  // non-null on its own, with no regard for whether MnemonicView (via
+  // `m.approximate`) was already showing a heads-up note for the same glyph.
+  // That is exactly how ん/ン ended up with two.
+  assert.doesNotMatch(
+    src,
+    /\{context \? \(/,
+    "the standalone context block must no longer render unconditionally whenever `context` is non-null",
+  );
+
+  // THE FIX, part one: the context rules are threaded into MnemonicView's
+  // soundNote slot, so a glyph with its own mnemonic (ん/ン) shows them in
+  // that one spot, right under the analogy line — matching where は/へ's own
+  // particle-reading note renders.
+  assert.match(src, /soundNote=\{soundNote/, "MnemonicView should receive the context rules as soundNote");
+
+  // THE FIX, part two: the standalone fallback survives only for a context
+  // kana with NO mnemonic to carry the slot (っ/ッ — see the test above), and
+  // is explicitly gated on the mnemonic's absence, not just context's
+  // presence — so it can never double up with the MnemonicView block for the
+  // same glyph.
+  assert.match(
+    src,
+    /\{!m && soundNote \? \(/,
+    "the standalone fallback must be gated on the absence of a mnemonic (`!m`), not just the presence of context",
+  );
+});
