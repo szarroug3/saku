@@ -321,6 +321,30 @@ export function KanaEntryView({
   // rather than a reused, relabelled one.
   const m = getMnemonic(glyph);
   const context = contextPronunciation(glyph);
+  // How its sound bends to what follows it (ん borrows the next place, っ
+  // doubles the next consonant) — the content of MnemonicView's `soundNote`
+  // slot (SAK-179: this used to also render, verbatim, as its own standalone
+  // "Heads up." section further down the page — a second call-out repeating
+  // the first, from a completely separate system. Built once here and reused
+  // by whichever of the two spots below actually needs it). Spans, not
+  // block-level p/div, because this is going to sit inside <Callout>'s own
+  // <p> (either directly, in MnemonicView, or in the no-mnemonic fallback
+  // right below) and a div/p nested in a p gets silently hoisted out of the
+  // callout's left-rule border by the browser's own parser.
+  const soundNote = context ? (
+    <>
+      {context.summary}
+      <span className="mt-2.5 flex flex-col gap-1.5">
+        {context.rules.map((rule) => (
+          <span key={rule.when} className="block text-[13px] leading-relaxed text-text-muted">
+            <span className="text-text">{rule.when}</span> &rarr; said{" "}
+            <span className="font-medium text-accent">{rule.sounds}</span>
+            <span className="ml-1.5 font-kana">{rule.example}</span>
+          </span>
+        ))}
+      </span>
+    </>
+  ) : null;
 
   // Base-kana lookalikes (kanaConfusables, from the hand-curated LOOKALIKES
   // table) plus, for a derived kana, its own family — the base plus any other
@@ -415,28 +439,24 @@ export function KanaEntryView({
             its keep. */}
         {m ? (
           <div className="mt-5 border-t border-border/50 pt-6">
-            <MnemonicView m={m} glyph={glyph} />
+            {/* soundNote (ん/ン's context rules) renders right under the
+                analogy line, in the same slot は/へ's particle-reading note
+                uses (SAK-179) — one "Heads up.", not the two this page used
+                to show. undefined, not null, when this glyph carries no
+                context rule (every kana but ん/ン/っ/ッ), matching every
+                other optional MnemonicView prop. */}
+            <MnemonicView m={m} glyph={glyph} soundNote={soundNote ?? undefined} />
           </div>
         ) : null}
-        {/* How its sound bends to what follows it (ん borrows the next place, っ
-            doubles the next consonant), as a heads-up aside — the same left-rule
-            "Heads up." treatment other pages use for a rule with a wrinkle. Only
-            ん/っ carry rules; every other kana has context null and shows nothing. */}
-        {context ? (
-          <div className="mt-5 border-l-2 border-accent pl-3.5">
-            <p className="text-[13px] leading-relaxed text-text-muted">
-              <span className="font-medium text-text">Heads up. </span>
-              {context.summary}
-            </p>
-            <div className="mt-2.5 flex flex-col gap-1.5">
-              {context.rules.map((rule) => (
-                <p key={rule.when} className="text-[13px] leading-relaxed text-text-muted">
-                  <span className="text-text">{rule.when}</span> &rarr; said{" "}
-                  <span className="font-medium text-accent">{rule.sounds}</span>
-                  <span className="ml-1.5 font-kana">{rule.example}</span>
-                </p>
-              ))}
-            </div>
+        {/* Fallback for a context kana with NO mnemonic of its own — っ/ッ,
+            the sokuon, which has no row in MNEMONICS (see that file's
+            header) so the block above never renders. ん/ン both have a
+            mnemonic and get their Heads-up note through the soundNote slot
+            above instead, so this and that block are never both showing the
+            same content — see this file's `m` check. */}
+        {!m && soundNote ? (
+          <div className="mt-5">
+            <Callout>{soundNote}</Callout>
           </div>
         ) : null}
         {/* Shape lookalikes, above the stroke diagram — the reference before the
