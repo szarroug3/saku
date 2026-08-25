@@ -71,6 +71,8 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
 import { CHAR_INDEX } from "@/data/characters";
+import { autoPatternPage } from "@/data/grammar/auto-page";
+import { RECIPES } from "@/data/grammar/recipes";
 import { READINGS } from "@/data/kanji";
 import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
@@ -130,6 +132,54 @@ function pitchItems() {
   return items;
 }
 
+/** SAK-182: every distinct string a grammar pattern page's DERIVE table (the
+ * VERB/FORM/PATTERN build table — e.g. 〜ている showing たべる → たべて →
+ * たべている) puts a Hear button on, across every auto-generated recipe page.
+ *
+ * `deriveRows`/`EXAMPLES.verb` inside auto-page.ts build that table entirely
+ * at RENDER time (conjugating live via the conjugation engine) — nothing
+ * about the Form or Pattern column is persisted anywhere else this script
+ * could enumerate it from, unlike `words` (VOCAB.reb) or `sentences`
+ * (grammarCorpus). Rather than re-deriving the conjugation logic a second
+ * time here (and risking it drifting from what the page actually renders),
+ * this calls the SAME `autoPatternPage` the page component calls and reads
+ * the literal strings back off its own output — read-only reuse, no changes
+ * to auto-page.ts itself.
+ *
+ * Walks exactly the two fields phase-intro-view.tsx's `IntroDeriveTable`
+ * puts a `<Say>` on (see its `r.form`/`r.result` — `verb` is the dictionary
+ * form already covered by the `words` set above, so it's not repeated here):
+ *   - `IntroDeriveRow.form` — the FORM column (たべて), when the pattern
+ *     attaches to a conjugated form rather than the word unchanged. Present
+ *     on both the flat `deriveRules` shape and every `deriveTables[].rules`
+ *     section (a pattern that works on more than one host, e.g. verb + い-
+ *     adjective, gets one derive table per host).
+ *   - `IntroDeriveRow.result` — the finished PATTERN column (たべている),
+ *     unconditional whenever a derive row exists at all.
+ *
+ * Deliberately NOT `buildRules`/`buildTables` (the standalone Ending·Change
+ * tables te-form/volitional/potential/passive/causative/ば/たら pages show):
+ * out of this ticket's measured scope (111/114 recipes, 23 form + 155
+ * pattern words via deriveRules/deriveTables only — matches exactly what
+ * this walks). `textSet`'s own `[...new Set(...)]` handles the ~19 strings
+ * that turn up as both a Form value in one recipe and a Pattern value in
+ * another, same as any other set's internal dedup. */
+function grammarDeriveTexts() {
+  const texts = [];
+  function collect(rows) {
+    for (const row of rows) {
+      if (row.form) texts.push(row.form);
+      texts.push(row.result);
+    }
+  }
+  for (const r of RECIPES) {
+    const page = autoPatternPage(r);
+    if (page.deriveRules) collect(page.deriveRules);
+    for (const table of page.deriveTables ?? []) collect(table.rules);
+  }
+  return texts;
+}
+
 /** Each set describes how to enumerate, cache-path, label, and synthesize its
  * own items — the run/upload/skip/limit machinery below (`runPool`,
  * `seedOneWithRetry`) is generic over all four, so a new set (a new content
@@ -152,6 +202,12 @@ const SETS = {
   // it hashes to the same Storage path, so the second sighting is just a
   // cache hit, not wasted synthesis.
   "word-examples": textSet(() => Object.values(wordExamples).map((row) => row[1])),
+  // SAK-182: the grammar pattern pages' derive table — the Form and Pattern
+  // columns of the VERB/FORM/PATTERN build table shown on every auto-generated
+  // recipe page (111 of 114 in RECIPES), e.g. 〜ている's たべて/たべている. See
+  // grammarDeriveTexts' own comment for why this reuses autoPatternPage
+  // instead of re-deriving the conjugations.
+  "grammar-derive": textSet(grammarDeriveTexts),
   // SAK-107: the EXACT-pitch cache `/api/pitch-tts` reads/writes — the
   // settings voice-picker preview and every Library word's pitch "hear it"
   // button. Different item shape (reading+downstep, not free text), different
