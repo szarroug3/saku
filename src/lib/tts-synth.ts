@@ -54,6 +54,32 @@ import {
 // real pitch swing, used only to measure the voice's natural pitch range.
 const FILLER_TEXT = "おはようございます";
 
+// VOICEVOX's own text analyzer (OpenJTalk) reads a BARE は or へ — no
+// sentence around it to disambiguate — as the topic/direction PARTICLE
+// (わ/え), not the plain mora (は/へ). Verified live against the engine
+// (SAK-178): audio_query on "は" alone comes back with mora text "ワ"; on "ハ"
+// (katakana) it comes back "ハ", the reading actually wanted. Same story for
+// へ → "エ" vs ヘ → "ヘ". A real word CONTAINING one of these characters
+// (はな, へや, ...) is unaffected either way — OpenJTalk already resolves the
+// correct mora from the surrounding characters (audio_query on "はな" already
+// returns ["ハ","ナ"] whether or not this map is applied) — so this only
+// needs to fire for the single-character case a bare kana Hear button (the
+// kana teaching card, mnemonic-view.tsx) actually sends. Katakana has no
+// particle reading to default to, so substituting it sidesteps the analyzer's
+// ambiguity without touching what the learner sees: only the string handed to
+// VOICEVOX changes, never the glyph rendered in the UI or matched elsewhere.
+const BARE_KANA_PARTICLE_MISREADING: ReadonlyMap<string, string> = new Map([
+  ["は", "ハ"],
+  ["へ", "ヘ"],
+]);
+
+/** Swap only an EXACT, standalone は/へ for its katakana twin before it
+ * reaches VOICEVOX — never a substring match, so a real word or sentence that
+ * merely contains one of these characters passes through untouched. */
+function textForBareKanaFix(text: string): string {
+  return BARE_KANA_PARTICLE_MISREADING.get(text) ?? text;
+}
+
 // How far in from each end of the measured natural range a High/Low target
 // sits. 0 would use the extremes themselves (the scratchy-audio failure mode
 // SAK-6 hit); this is the margin that spike's listening tests landed on.
@@ -216,7 +242,10 @@ export async function synthesizeSentenceWav(
   if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
 
   const target = await targetRange(base, speakerId);
-  const query = await audioQuery(base, text, speakerId);
+  // Only the general (non-exact-pitch) path takes this fix — synthesizeWordWav
+  // always gets a caller-supplied dictionary READING (never a bare kana glyph
+  // spoken for its own sake), so it has no version of this ambiguity to guard.
+  const query = await audioQuery(base, textForBareKanaFix(text), speakerId);
   const { totalPhrases, matchedPhrases } = correctSentencePitch(
     query.accent_phrases as AccentPhraseLike[],
     target,
