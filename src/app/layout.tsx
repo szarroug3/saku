@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
@@ -340,6 +341,7 @@ export default async function RootLayout({
         </ThemeProvider>
         </SettingsProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
