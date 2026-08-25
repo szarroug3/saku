@@ -7,7 +7,7 @@
   "counts": {
     "japanese": 248802,
     "withEnglish": 232666,
-    "kept": 9504
+    "kept": 9672
   },
   "perPattern": {
     "ba": 257,
@@ -66,6 +66,7 @@
     "te-morau": 216,
     "te-oku": 214,
     "te-permission": 203,
+    "te-prohibition": 168,
     "te-request": 291,
     "te-shimau": 222,
     "to-omou": 243,
@@ -136,6 +137,7 @@
     "te-morau": 494,
     "te-oku": 330,
     "te-permission": 428,
+    "te-prohibition": 168,
     "te-request": 1537,
     "te-shimau": 638,
     "to-omou": 1572,
@@ -186,7 +188,7 @@
       "node",
       "ta-tokoro"
     ],
-    "droppedExamples": 9,
-    "droppedSentences": 9
+    "droppedExamples": 0,
+    "droppedSentences": 0
   }
 }
