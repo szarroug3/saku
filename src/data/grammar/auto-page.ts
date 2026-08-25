@@ -568,8 +568,14 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   const buildTables = verbSuffix && !r.wrap?.close?.length ? patternRuleTables(r) : [];
   // The "how to build it" formula: the form in a dashed box, then + the suffix —
   // [ない-form] + でください. A pattern that TRIMS the form first shows the drop too —
-  // [ます-form] − ます + ましょう — so the formula stays honest.
-  const buildFormula =
+  // [ます-form] − ます + ましょう — so the formula stays honest. Nulled below,
+  // alongside `build`, when deriveTables end up carrying the page instead: each
+  // section renders this exact same formula again right above its own table
+  // (see `formula` in the deriveTables map below), so showing it a second time
+  // at the top of the page repeated the pattern's whole build for no reason
+  // (the 〜ている page, single-host, was the visible case: the same "て-form +
+  // いる" pill once under the title and again above the "Verbs" table).
+  let buildFormula =
     verbSuffix && !r.wrap?.close?.length && formLabel && add
       ? { base: formLabel, add, ...(attach?.trim ? { trim: attach.trim } : {}) }
       : undefined;
@@ -624,7 +630,10 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
         })
         .filter((table) => table.rules.length > 0);
 
-  if (deriveTables.length) build = "";
+  if (deriveTables.length) {
+    build = "";
+    buildFormula = undefined;
+  }
 
   const sentenceExample = sentenceExampleFor(r);
 
