@@ -2117,7 +2117,6 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: " in one smooth stroke." },
     ],
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
-    approximate: "The “n” sound, but it shifts toward “m” or “ng” to match the sound right after it.",
   },
 
   ン: {
@@ -2138,7 +2137,6 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: " sweeps a long ink line upward." },
     ],
     example: { word: "ペン", reading: "pen", gloss: "pen", hitIndex: 1 },
-    approximate: "The “n” sound, but it shifts toward “m” or “ng” to match the sound right after it.",
   },
 };
 
