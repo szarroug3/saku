@@ -205,6 +205,22 @@ export default function SessionPage() {
     if (restored && !session && !finishingRef.current) router.replace("/");
   }, [restored, session, router]);
 
+  // SAK-183: endSession and completeRound (quiz-session.tsx) now finish a
+  // TAUGHT session inline — null the session and push /learn themselves —
+  // the same terminal shape finishSession already used, and the same reason
+  // this guard needs telling about it in advance. Setting the flag ahead of
+  // an UNTAUGHT call is harmless: that path leaves session non-null (phase:
+  // "complete", still on /session), so the guard above never fires and the
+  // flag is simply never read before this page would unmount anyway.
+  const handleEnd = () => {
+    finishingRef.current = true;
+    endSession();
+  };
+  const handleCompleteRound = () => {
+    finishingRef.current = true;
+    completeRound();
+  };
+
   // Drilling belongs to /quiz. This is the other half of that same guard:
   // landing here mid-round sends you back to the round.
   //
@@ -408,7 +424,7 @@ export default function SessionPage() {
             pct={0}
             hideBar
             onDone={pauseSession}
-            onEnd={endSession}
+            onEnd={handleEnd}
           >
             {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
           </SessionHud>
@@ -534,13 +550,13 @@ export default function SessionPage() {
           where={`Round ${session.round} of ${roundTargetOf(session)} · Done`}
           pct={100}
           onDone={pauseSession}
-          onEnd={endSession}
+          onEnd={handleEnd}
         />
         <div className="flex flex-1 flex-col justify-center mt-3.5">
           <RoundComplete
             session={session}
             onRetry={(facts, boxes) => retryLeg(facts, boxes)}
-            onComplete={completeRound}
+            onComplete={handleCompleteRound}
           />
         </div>
       </div>
@@ -562,7 +578,7 @@ export default function SessionPage() {
           pct={pct}
           tone="accent"
           onDone={pauseSession}
-          onEnd={endSession}
+          onEnd={handleEnd}
         />
         <div className="flex flex-1 flex-col justify-center mt-3.5">
           <RestScreen session={session} now={now} onStart={startNextRound} />
@@ -571,6 +587,13 @@ export default function SessionPage() {
     );
   }
 
+  // SAK-183: falling through to here means session.phase is "complete" (every
+  // earlier branch above returns on its own phase), and since endSession and
+  // completeRound (quiz-session.tsx) both now skip straight to /learn for a
+  // taught session instead of ever setting phase: "complete", the only
+  // session that can still be sitting in "complete" when this renders is an
+  // untaught Quiz-me — this branch, and SessionComplete's Path B below it,
+  // should never be reached by a taught session again.
   return (
     // .kq-center-frame (globals.css, SAK-10): see the round-complete branch
     // above — same floor-height centering, same reason.

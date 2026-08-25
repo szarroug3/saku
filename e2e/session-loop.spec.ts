@@ -60,7 +60,7 @@ async function teachThenQuiz(page: Page) {
   await page.waitForURL("**/quiz");
 }
 
-test("a session plays all three rounds through to Session complete", async ({
+test("a session plays all three rounds through to /learn", async ({
   page,
   seed,
 }) => {
@@ -105,23 +105,11 @@ test("a session plays all three rounds through to Session complete", async ({
     }
   }
 
-  await expect(page.locator("body")).toContainText("complete");
+  // SAK-183: a taught session's Session-complete screen (ring/stats/boards,
+  // Retry/Retry all) is gone entirely — clicking "Complete session" on the
+  // last round now finishes the whole session inline, the same way ending
+  // early does, and lands straight on /learn instead of stopping on a
+  // results screen first.
+  await page.waitForURL("**/learn");
   expect(loopErrors).toEqual([]);
-
-  // THIS USED TO END WITH A SECOND "Complete session" CLICK ROUTING TO
-  // /learn — written (a78c466d) before SAK-52 split SessionComplete into two
-  // paths that "do not share controls" (see session-complete.tsx). A TAUGHT
-  // session (this one: `teach` non-empty) lands on Path A, which offers only
-  // Quiz-again controls — no "Complete session" button and no route back to
-  // /learn from here at all, deliberately: SAK-52's whole point was that
-  // ending a taught session must never silently claim its material known,
-  // which a generic "Complete session" exit would have done. Path B (a
-  // "Quiz me" run with no `teach`) is the one with "I already know these" /
-  // "Take me to the lesson", covered separately.
-  //
-  // Every card in this run was answered correctly, so `needsWorkBoxes` is
-  // empty and Path A's "Retry all" affordance is what actually renders here.
-  await expect(
-    page.getByRole("button", { name: "Retry all", exact: true }),
-  ).toBeVisible();
 });
