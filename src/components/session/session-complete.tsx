@@ -190,21 +190,11 @@ export function SessionComplete({
   return (
     <>
       <Card className="px-5 pb-[30px] pt-[38px]">
-        <h1 className="text-center text-[26px] font-light tracking-[-0.3px]">
+        <h1 className="text-[26px] font-light tracking-[-0.3px]">
           Session complete
         </h1>
 
-        {/* ResultsCard is a fixed ring+text ROW (see results-card.tsx) — its
-            headline/stat-line text reads left-to-right off the ring, so
-            text-center on the text alone would just leave the ring pinned to
-            the card's edge with centered text drifting away from it. Centering
-            the ROW AS A BLOCK (flex justify-center; Card itself has no width
-            class, so as a flex item it shrinks to its content instead of
-            stretching) is what actually lines it up under the centered title,
-            without touching the shared component's own left-to-right layout —
-            the same "shrink the block, don't fight the row" move round-complete
-            and results-view don't need because their titles aren't centered. */}
-        <div className="mt-5.5 flex justify-center">
+        <div className="mt-5.5">
           <ResultsCard
             pct={run.pct}
             headline={summary.headline}
@@ -213,15 +203,15 @@ export function SessionComplete({
           />
         </div>
 
-        {/* Deliberately NOT centered, and NOT wrapped in a narrower
-            max-width column. Board's rows are word · form · form · form —
-            tabular, left-to-right reading content that gets harder to scan
-            the moment it's forced to center (and every screen that renders
-            this same Board — round-complete.tsx, results-view.tsx — already
-            lets it fill the card's full width). The centered title above and
-            the centered ResultsCard/prose below it are the "hero" parts of
-            this screen; the board is the "data" part, and it stays full-width
-            and left-aligned the same way it does everywhere else it's used. */}
+        {/* Not wrapped in a narrower max-width column. Board's rows are
+            word · form · form · form — tabular, left-to-right reading content
+            that gets harder to scan the moment it's forced into a column
+            (and every screen that renders this same Board — round-complete.tsx,
+            results-view.tsx — already lets it fill the card's full width).
+            Left-aligned the same way as the title, ResultsCard, and prose
+            above and below it — one alignment convention for the whole
+            screen, not a centered "hero" against a left-aligned "data"
+            section. */}
         {needsWorkBoxes.size ? (
           <div className="mt-3.5 border-t border-border pt-3">
             <Board
@@ -254,12 +244,9 @@ export function SessionComplete({
 
         {taught ? (
           // Unreachable today (SAK-183 routes every taught session away from
-          // this screen before it can render) but kept alignment-consistent
-          // with Path B below rather than left stale — the same
-          // justify-center rest-screen's own button rows use (see
-          // rest-screen.tsx) so a centered board-picker button doesn't
-          // suddenly go flush-left if Path A ever comes back.
-          <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2">
+          // this screen before it can render) but kept in place rather than
+          // left stale, in case Path A ever comes back.
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
             <SmallBtn
               sel
               autoFocus
@@ -279,16 +266,11 @@ export function SessionComplete({
           </div>
         ) : (
           <>
-            {/* This line and the buttons below it are short, single-line
-                content with nothing to read left-to-right against (unlike the
-                board's rows) — text-center/justify-center lines them up under
-                the centered title, the same way rest-screen centers its own
-                short prose + button row (see rest-screen.tsx). */}
-            <p className="mx-auto mt-3.5 max-w-[36ch] text-center text-[13px] text-text-muted">
+            <p className="mt-3.5 max-w-[36ch] text-[13px] text-text-muted">
               Know {items === 1 ? "this" : "these"} already, or want the
               lesson?
             </p>
-            <div className="mt-2.5 flex flex-wrap justify-center gap-2">
+            <div className="mt-2.5 flex flex-wrap gap-2">
               <Btn onClick={onMarkKnown}>
                 I already know {items === 1 ? "this" : `these ${items}`}
               </Btn>
@@ -300,12 +282,6 @@ export function SessionComplete({
         )}
       </Card>
 
-      {/* Left-aligned on purpose, not an oversight left over from the rest of
-          this screen's centering pass: it's a footer disclaimer, not part of
-          the centered "hero" card above, and rest-screen's own footer Card
-          (the "Spacing works best…" / "Your finished rounds are saved" one)
-          stays left-aligned the same way even when ITS main card centers
-          everything above it. One footer convention, not two. */}
       <Card className="mt-3.5 border-t border-border px-[15px] pb-[13px] pt-3">
         <Hint>
           {taught ? (
