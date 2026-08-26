@@ -311,6 +311,11 @@ export function requeuedPill(page: Page) {
  * The wrong-answer reveal paragraph, or an empty locator when nothing is
  * revealed. The app renders the reveal in the one `min-h-[38px]` paragraph
  * under the input; the expected answer is its `.text-danger` span.
+ *
+ * SAK-190 dropped the restated-prompt-glyph span this used to expose as
+ * `.prompt` — the reveal sentence no longer re-states what was asked (the
+ * question is still visible on the card above), so there is nothing left for
+ * a locator to target there.
  */
 export function reveal(page: Page) {
   const box = page.locator("p.min-h-\\[38px\\]");
@@ -318,8 +323,6 @@ export function reveal(page: Page) {
     box,
     /** The span holding what the answer SHOULD have been. */
     answer: box.locator("span.text-danger"),
-    /** The span re-showing the prompt glyph that was asked. */
-    prompt: box.locator("span.text-lg").first(),
   };
 }
 
