@@ -406,9 +406,9 @@ const TE_FORM_INTRO: GrammarIntro = {
     {
       title: "Irregular verbs",
       rules: [
-        { ending: "exception", verb: "いく", drop: "く", add: "って" },
-        { ending: "irregular", verb: "する", drop: "する", add: "して" },
-        { ending: "irregular", verb: "くる", drop: "くる", add: "きて" },
+        { ending: "Exception", verb: "いく", drop: "く", add: "って" },
+        { ending: "Irregular", verb: "する", drop: "する", add: "して" },
+        { ending: "Irregular", verb: "くる", drop: "くる", add: "きて" },
       ],
     },
     {
@@ -421,7 +421,7 @@ const TE_FORM_INTRO: GrammarIntro = {
     {
       title: "Irregular adjectives",
       rules: [
-        { ending: "exception", verb: "いい", drop: "いい", add: "よくて" },
+        { ending: "Exception", verb: "いい", drop: "いい", add: "よくて" },
       ],
     },
   ],
