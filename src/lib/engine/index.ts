@@ -13,6 +13,9 @@ import {
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { isConstructionFact } from "@/data/counter-categories";
 import { spread } from "@/lib/engine/spread";
+import { pairsKept } from "@/lib/budget";
+import { grammarVehicleBucketOf, grammarVehicleSlotOf } from "@/lib/grammar/host-group";
+import { spreadGrammarVehicles } from "@/lib/grammar/vehicle-spread";
 import type {
   Direction,
   EntryId,
@@ -96,6 +99,25 @@ export { spread };
  *
  * Facts, not characters: a deck of 生 is not one card, it is however many of
  * 生's readings you selected, and each is separately gradeable.
+ *
+ * SAK-203: the CUT ITSELF is coverage-aware for grammar production facts.
+ * `deck.slice(0, cfg.limCount)` used to be a plain truncation of an already
+ * shuffled pool — fine for a subject where every fact is its own island, but
+ * grammar production now mints one fact per conjugation class AND per
+ * irregular word for a single recipe (classProductionFactId /
+ * specialVerbProductionFactId, data/grammar/index.ts), so a naive cut can keep
+ * one class and quietly drop the other nine, which reads as "this pattern
+ * only ever asks about 行く" even though every class fact was equally in the
+ * pool. `pairsKept` (budget.ts, SAK-192, UNCHANGED) already solves exactly
+ * this shape of problem — "never drop an already-present sibling the cap
+ * would cut" — for (recipe, host) slots; `grammarVehicleSlotOf` (SAK-203)
+ * feeds it the finer (recipe, class-or-word) slot instead, so the same
+ * mechanism now protects ending coverage, not just host coverage. `deck`'s
+ * own shuffled order stands in for `ranked` — the SAME reuse `planSession`'s
+ * `random` branch already makes of `pairsKept` for a non-ranked pool. This is
+ * a complete no-op for every other subject: `grammarVehicleSlotOf` returns
+ * null for anything that is not a grammar production fact, so `pairsKept`
+ * finds nothing to protect and returns the plain slice unchanged.
  */
 export function buildDeck(facts: FactId[], cfg: QuizConfig): FactId[] {
   let deck = shuffle(facts.slice());
@@ -105,14 +127,22 @@ export function buildDeck(facts: FactId[], cfg: QuizConfig): FactId[] {
         deck = deck.concat(shuffle(facts.slice()));
       }
     }
-    deck = deck.slice(0, cfg.limCount);
+    deck = pairsKept(deck, cfg.limCount, grammarVehicleSlotOf);
   }
   // Spread AFTER the count-fill: count mode concatenates whole shuffled copies
   // of the fact list, so a fact's repeats share an entry and must be pushed
   // apart too, not just its sibling cards. Keying on entryOf keeps any two cards
   // of the same word (reading/meaning, and a word's per-reading cards) from
   // landing adjacent.
-  return spread(deck, entryOf);
+  //
+  // SAK-203: a SECOND pass fixes what entryOf's spread cannot see — two
+  // DIFFERENT patterns pinning the SAME vehicle word (every て-form recipe
+  // mints its own @iku fact; see vehicle-spread.ts's header). Runs after, not
+  // instead of, the entry spread, and never undoes it — see
+  // spreadGrammarVehicles's doc comment. A no-op deck-wide for every other
+  // subject, for the same reason the cut above is: grammarVehicleBucketOf is
+  // null for anything that isn't a grammar production fact.
+  return spreadGrammarVehicles(spread(deck, entryOf), grammarVehicleBucketOf, entryOf);
 }
 
 /** Random requeue gap: BEHAVIOR.requeueMin–requeueMax inclusive. */
