@@ -4,14 +4,25 @@
 // drill-screen.tsx so the reveal on a miss can show "whatever content a Hint
 // would have shown for this same question" without duplicating the four-way
 // kind switch. Used two places now: the Hint button's own drawer (gated on
-// q.hinted, unchanged) and the reveal's answer panel (shown unconditionally
-// once the answer is out, since there is nothing left to protect by hiding
-// it). Both pass the same `Hint` value hintFor() already builds; this
-// component only decides how to DRAW it.
+// q.hinted) and the reveal's answer panel (shown unconditionally once the
+// answer is out, since there is nothing left to protect by hiding it). Both
+// pass the same `Hint` value hintFor() already builds; this component
+// decides how to DRAW it.
+//
+// `revealed` (SAK-198) is the one place that draw decision depends on WHICH
+// of the two call sites is asking. Every kind but `derivation` draws the same
+// thing either way: image/formula/written/text never named the built answer
+// in the first place (see hint.ts's header, "THE ANSWER IS NEVER IN THE
+// HINT"), so sharing was always safe for them. `derivation` is the exception.
+// Its full step-by-step equations spell the built answer out, which is fine
+// on the reveal panel (the answer is already on screen there) but was a
+// straight leak on the Hint button's own drawer, where the card is still
+// live. `revealed` lets this one branch diverge without splitting the
+// component in two.
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import type { Hint } from "@/lib/engine/hint";
-import type { DerivationEquation } from "@/lib/grammar/derivation";
+import { derivationNudge, type DerivationEquation } from "@/lib/grammar/derivation";
 
 /**
  * One derivation equation — "たかい − い + くて → たかくて", or the
@@ -41,7 +52,19 @@ function DerivationRow({ eq }: { eq: DerivationEquation }) {
   );
 }
 
-export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
+export function HintBody({
+  hint,
+  font,
+  revealed,
+}: {
+  hint: Hint;
+  font?: string;
+  /** True on the reveal panel, false on the Hint button's own drawer; see
+   * the module header. Required, not defaulted: every call site should say
+   * explicitly which context it is in rather than silently inheriting
+   * whichever behavior happens to be the default. */
+  revealed: boolean;
+}) {
   if (hint.kind === "image") {
     return (
       <MnemonicImage
@@ -73,6 +96,31 @@ export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
   }
   if (hint.kind === "derivation") {
     const { derivation } = hint;
+    // SAK-198: THE ANSWER IS NEVER IN THE HINT (hint.ts's header). The full
+    // "word becomes ANSWER" line and both equations below end in the built
+    // answer, which is only safe to print once the reveal panel already has
+    // it on screen. Before that, on the Hint button's own drawer with the
+    // card still live, this renders the SAFE class + pattern nudge instead
+    // (derivationNudge, lib/grammar/derivation.ts): the same two facts the
+    // pre-SAK-194 flat hint named as two lines, fused into one sentence, and
+    // never the built answer.
+    if (!revealed) {
+      const nudge = derivationNudge(derivation);
+      return (
+        <p className="max-w-[320px] text-center text-[12px] text-text-muted">
+          {nudge.kind === "class" ? (
+            <>
+              This is <span className="text-accent">{nudge.classPhrase}</span>, using{" "}
+              <span className="text-accent">{nudge.pattern}</span>.
+            </>
+          ) : (
+            <>
+              This is the <span className="text-accent">{nudge.pattern}</span> pattern.
+            </>
+          )}
+        </p>
+      );
+    }
     return (
       <span className="flex max-w-[360px] flex-col items-center gap-2">
         <p className="flex flex-wrap items-center justify-center gap-1 text-[12px] text-text-muted">

@@ -21,6 +21,7 @@ import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { firstTryCredit } from "@/lib/engine/index";
 import { hintFor } from "@/lib/engine/hint";
+import { derivationNudge } from "@/lib/grammar/derivation";
 
 /** The text of a text hint, or a failure that says what came back instead. */
 function textOf(hint: ReturnType<typeof hintFor>, what: string): string {
@@ -300,6 +301,64 @@ test("the wrap recipe (shika-nai) has no derivation, so a vehicle still falls ba
     "This is the 〜しか〜ない pattern. 食べる is a る-verb",
   );
 });
+
+// ---------- SAK-198: the Hint button's un-revealed derivation nudge ----------
+//
+// hintFor/grammarHint hands back the FULL Derivation (word, answer, both
+// equations) regardless of call site; it has to, since the reveal panel
+// needs every field of it. The leak this ticket fixes was never in this
+// data; it was in HintBody rendering that data unconditionally on the Hint
+// button's own drawer, where the card is still live. The un-revealed
+// rendering now goes through derivationNudge (see derivation.ts and its own
+// test file), which takes the SAME Derivation this file already gets from
+// hintFor and returns only the class phrase and the pattern name. These
+// tests confirm that hand-off never carries the built answer along.
+
+test("行く + 〜てもいい: the un-revealed nudge never contains the built answer", () => {
+  // The exact shape of the reported regression: 行く + 〜てください, hinted
+  // mid-retry, used to show 行ってください twice. 〜てもいい exercises the
+  // same two-step derivation path (whole-word step 1, add-only step 2). 行く
+  // is one of the SPECIAL_VERBS (its て-form is irregular on every て-based
+  // recipe), so its production fact is a specialVerbProductionFactId, not a
+  // classProductionFactId: v5k-s is deliberately absent from CLASS_ANCHOR
+  // (see index.ts) for exactly this reason.
+  const KNOWN = { surface: "行く", kana: "いく", cls: "v5k-s", known: true } as const;
+  const hint = hintFor(
+    specialVerbProductionFactId("te-permission", "iku"),
+    "en2jp",
+    undefined,
+    false,
+    KNOWN,
+  );
+  assert.ok(hint, "expected a hint for te-permission + known 行く");
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.answer, "行ってもいい");
+  const nudge = derivationNudge(hint.derivation);
+  assert.deepEqual(nudge, {
+    kind: "class",
+    classPhrase: "an irregular う-verb",
+    pattern: "〜てもいい",
+  });
+  assert.ok(
+    !JSON.stringify(nudge).includes("行ってもいい"),
+    "the un-revealed nudge must never contain the built answer",
+  );
+  // The REVEALED path is untouched by this fix: hint.derivation itself still
+  // carries the full answer and both equations, exactly as before SAK-198.
+  // It is HintBody's rendering that now branches on `revealed`, not the data.
+  assert.ok(hint.derivation.step1);
+  assert.ok(hint.derivation.step2);
+  assert.equal(hint.derivation.step2.to, "行ってもいい");
+});
+
+// The "no title" fallback (a noun host, cls === null) is covered directly
+// against deriveProduction/derivationNudge in derivation.test.ts rather than
+// through hintFor here: every noun attachment in recipes.ts is a trivial one
+// (form: null, no trim; see isTrivialAttachment), so productionHosts() never
+// registers a noun production fact and hintFor can never actually reach this
+// branch through real data. deriveProduction itself still guards it rather
+// than assuming, exactly as it already does for the shika-nai wrap case.
 
 // ---------- the cards with no hint ----------
 
