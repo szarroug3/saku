@@ -8,6 +8,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
   type ReactNode,
@@ -398,54 +399,76 @@ export function PageTitle({
 
 /**
  * "There's more below" — a quiet, fixed hint at the bottom of the viewport,
- * shown only while the page has content past the fold. THE PAGE SCROLLS, NOT
- * AN INNER FRAME (see layout.tsx), so scrolling always works; this exists
- * for the learner who has never had to on a quiz card before and, on a short
+ * shown only while the page has content past the fold. Shown for the learner
+ * who has never had to scroll on a quiz card before and, on a short
  * viewport, may not realise a multiple-choice grid runs past what's visible.
  *
+ * SAK-204: the app shell's own scroll owner is `.kq-scroll`, a bounded
+ * middle row, not the window (see app/layout.tsx) — a `sentinel` ref (a
+ * zero-size marker always rendered, since this component has nothing else to
+ * attach a ref to before the scroller exists) finds that ancestor on mount,
+ * and scroll/resize are tracked on IT instead of `window`.
+ *
  * Self-hiding: it tracks scroll/resize (via isNearPageBottom, kept pure and
- * DOM-free for testing) and disappears the moment the page IS scrolled to
- * its end, so it never sits over content once there's nothing left to
+ * DOM-free for testing) and disappears the moment the scroller IS scrolled
+ * to its end, so it never sits over content once there's nothing left to
  * scroll to. `pointer-events-none` — it is a hint, never a tap target, so it
  * can't shadow a genuine option button sitting near the bottom edge.
  */
 export function ScrollCue() {
   const [visible, setVisible] = useState(false);
+  const sentinel = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    const scroller = sentinel.current?.closest(".kq-scroll");
+    if (!scroller) return;
     const check = () => {
-      const doc = document.documentElement;
       setVisible(
-        !isNearPageBottom(window.scrollY, window.innerHeight, doc.scrollHeight),
+        !isNearPageBottom(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight),
       );
     };
     check();
-    window.addEventListener("scroll", check, { passive: true });
+    scroller.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check);
     // The grid's own height can change after mount (fonts, images), so a
-    // resize observer on the document catches that too, not just viewport
+    // resize observer on the scroller catches that too, not just viewport
     // resizes.
     const ro = new ResizeObserver(check);
-    ro.observe(document.documentElement);
+    ro.observe(scroller);
     return () => {
-      window.removeEventListener("scroll", check);
+      scroller.removeEventListener("scroll", check);
       window.removeEventListener("resize", check);
       ro.disconnect();
     };
   }, []);
 
-  if (!visible) return null;
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-10 flex justify-center pb-2"
-    >
-      {/* No shadow — this sits over content that is actively scrolling, and a
-          box-shadow there is exactly the jank the de-boxed pass exists to
-          avoid. The border + kq-material fill are enough to read as a pill. */}
-      <span className="kq-material flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-muted">
-        more below <span aria-hidden="true">↓</span>
-      </span>
-    </div>
+    <>
+      {/* Zero-size, always rendered — the ONLY reason this exists is to give
+          the effect above a DOM node to find `.kq-scroll` from before the
+          pill itself has anything to render (its own visibility is what that
+          effect computes). */}
+      <span ref={sentinel} aria-hidden="true" className="hidden" />
+      {visible ? (
+        <div
+          aria-hidden="true"
+          // SAK-204: `sticky bottom-2`, not `fixed inset-x-0 bottom-0` — fixed
+          // anchored to the true viewport bottom, which the reveal bar's own
+          // footer dock now ALSO sits at (a real collision, caught live: the
+          // pill rendered right on top of the Continue button). `sticky` scopes
+          // this to its nearest scrolling ancestor (`.kq-scroll`) instead, so it
+          // hugs the bottom of the visible SCROLLED content and can't reach
+          // past kq-scroll's own box into the separate footer row below it.
+          className="pointer-events-none sticky bottom-2 z-10 flex justify-center"
+        >
+          {/* No shadow — this sits over content that is actively scrolling, and a
+              box-shadow there is exactly the jank the de-boxed pass exists to
+              avoid. The border + kq-material fill are enough to read as a pill. */}
+          <span className="kq-material flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[10px] text-text-muted">
+            more below <span aria-hidden="true">↓</span>
+          </span>
+        </div>
+      ) : null}
+    </>
   );
 }
