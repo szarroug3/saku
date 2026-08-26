@@ -72,6 +72,9 @@ export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
     const { derivation } = hint;
     return (
       <span className="flex max-w-[360px] flex-col items-center gap-2">
+        {derivation.title ? (
+          <p className="text-[12px] font-semibold text-text">{derivation.title}</p>
+        ) : null}
         <p className="flex flex-wrap items-center justify-center gap-1 text-[12px] text-text-muted">
           <span lang="ja" className="font-kana text-[15px] text-text">
             {derivation.word}

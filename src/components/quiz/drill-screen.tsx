@@ -58,6 +58,7 @@ import {
   isRevealPause,
   resolveAnsweredText,
   revealTemplate,
+  showsRevealSentence,
   type RevealFeedbackKind,
 } from "@/lib/drill-reveal";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
@@ -3159,23 +3160,32 @@ export function DrillScreen() {
           question — reused, not reinvented, and shown unconditionally here
           since the answer is already out. No "You answered" line: the
           learner's own answer is still sitting in the input she typed it
-          into. */}
+          into.
+
+          SAK-194 changes-requested: the sentence is SUPPRESSED when this
+          card's hint is a derivation ({ kind: "derivation" }) — its own "X
+          becomes Y" lead line already says the same thing the sentence would
+          ("This is said …"), so printing both stacked the answer twice.
+          Every other hint kind (image/formula/written/text) and a card with
+          no hint at all keep the sentence exactly as before. */}
       {revealPause ? (
         <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
           <div className="mx-auto flex max-h-[45vh] max-w-2xl flex-col items-center gap-2 overflow-y-auto text-center">
             {revealAnswer && revealTmpl ? (
               <>
-                <p className="min-h-[38px] max-w-[600px] wrap-break-word text-lg font-semibold text-text">
-                  {/* No restated prompt glyph ahead of the sentence: the
-                      question is still visible on the card above this bar,
-                      so naming it again here was pure repetition. Starts
-                      straight in with the answer sentence (see revealFor /
-                      the module doc up top for how the sentence itself is
-                      chosen). */}
-                  {revealTmpl.prefix}
-                  <span className="text-danger">{revealAnswer.node}</span>
-                  {revealTmpl.suffix}
-                </p>
+                {showsRevealSentence(hint?.kind) ? (
+                  <p className="min-h-[38px] max-w-[600px] wrap-break-word text-lg font-semibold text-text">
+                    {/* No restated prompt glyph ahead of the sentence: the
+                        question is still visible on the card above this bar,
+                        so naming it again here was pure repetition. Starts
+                        straight in with the answer sentence (see revealFor /
+                        the module doc up top for how the sentence itself is
+                        chosen). */}
+                    {revealTmpl.prefix}
+                    <span className="text-danger">{revealAnswer.node}</span>
+                    {revealTmpl.suffix}
+                  </p>
+                ) : null}
                 {mixup ? (
                   <p className="max-w-[320px] text-center text-[11px] text-text-muted">
                     {mixup}
