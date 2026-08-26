@@ -34,9 +34,9 @@ import { gridFacts } from "@/lib/grid-facts";
 import { playablePairBoards } from "@/lib/pair-facts";
 import { hasSubstitutionMaterial } from "@/lib/engine/substitution";
 import {
-  buildCoverageDeck,
   configIsReachable,
   enabledFormsFor,
+  realQuestionCount,
 } from "@/lib/ask-forms";
 import {
   englishSentenceAsksOrdering,
@@ -220,18 +220,19 @@ export default function PracticePage() {
     }
     if (cfg.mode === "pairs") return planned.count;
     if (cfg.mode === "grid") return planned.facts.length;
-    if (cfg.length === "limited" && cfg.limType === "cov") {
-      return buildCoverageDeck(planned.facts, cfg.ask).deck.length;
-    }
-
-    if (cfg.length === "limited" && cfg.limType === "count") {
-      return cfg.limCount;
-    }
-
-    return planned.facts.reduce(
-      (sum, fact) => sum + enabledFormsFor(fact, cfg.ask).length,
-      0,
-    );
+    // SAK-210: cov/count/endless all delegate to the SAME arithmetic
+    // drill-screen.tsx's onMount and engine/index.ts's buildDeck use to size
+    // the actual deck — see realQuestionCount's own doc comment. This used to
+    // be a second, hand-rolled copy of that logic (and undercounted a
+    // construction category's coverage repeats, and overcounted endless mode
+    // by summing forms instead of usable facts) rather than the deck build's
+    // own number.
+    return realQuestionCount(planned.facts, {
+      length: cfg.length,
+      limType: cfg.limType,
+      limCount: cfg.limCount,
+      ask: cfg.ask,
+    });
   }, [
     cfg.mode,
     cfg.length,
