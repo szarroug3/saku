@@ -94,13 +94,24 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const path = pitchObjectPath(reading, downstep, voiceIdRaw);
-  const folder = path.slice(0, path.lastIndexOf("/"));
-  const file = path.slice(path.lastIndexOf("/") + 1);
   const supabase = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });
 
   // Cache hit → hand the browser the CDN URL (cheaper than proxying bytes).
-  const { data: existing } = await supabase.storage.from(bucket).list(folder, { search: file });
-  if (existing?.some((f) => f.name === file)) {
+  // A HEAD on the already-computed public URL hits the CDN edge directly, no
+  // Postgres round trip (SAK-196 — the old supabase.storage.list(search:)
+  // check ran storage.search(), which became 38% of all DB query time as the
+  // bucket grew). Unlike that Supabase SDK call, a plain fetch() can THROW
+  // (DNS hiccup, CDN blip) rather than just resolve non-2xx — caught here and
+  // treated exactly like a miss, since a miss is always a safe fallback (it
+  // only costs a synthesis instead of a redirect); nothing here may turn a
+  // transient network failure into a 500.
+  let cached = false;
+  try {
+    cached = (await fetch(publicUrl, { method: "HEAD" })).ok;
+  } catch {
+    // Fall through to synthesize, same as a non-2xx HEAD.
+  }
+  if (cached) {
     return Response.redirect(publicUrl, 302);
   }
 
