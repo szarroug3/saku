@@ -91,6 +91,12 @@ export interface DerivationEquation {
   readonly whole?: boolean;
   /** The equation's result. */
   readonly to: string;
+  /** What this equation DOES, in words — "Dictionary form → て-form",
+   * "て-form → Pattern". A static caption above the equation, not a dynamic
+   * sentence: it names the two ends of the step rather than instructing
+   * ("put X into Y"), the same register the Library's own build-table
+   * headers ("Ending", "Change") already use. */
+  readonly label: string;
 }
 
 /**
@@ -202,13 +208,15 @@ export function deriveProduction(
     if (conjugated.value !== word) {
       const p = prefixLen(word, conjugated.value);
       const whole = IRREGULAR_STEP1_CLASSES.has(cls) || p === 0;
+      const label = `Dictionary form → ${formula.formLabel}`;
       step1 = whole
-        ? { from: word, to: conjugated.value, whole: true }
+        ? { from: word, to: conjugated.value, whole: true, label }
         : {
             from: word,
             to: conjugated.value,
             trim: word.slice(p) || undefined,
             add: conjugated.value.slice(p) || undefined,
+            label,
           };
       base = conjugated.value;
     }
@@ -216,13 +224,22 @@ export function deriveProduction(
 
   // STEP 2 — skipped when the recipe adds nothing and trims nothing: the
   // built FORM already IS the pattern (te-sequence, nai-form, ba, tara, …).
+  //
+  // Its label's LEFT side is step1's target form when there was a step1
+  // ("て-form → 〜てもいい"), or "Dictionary form" when there wasn't — a noun
+  // attachment or a dictionary-form attachment both leave `base` as the bare
+  // word, so this is the step that turns IT into the pattern. The RIGHT side
+  // is the recipe's own pattern name (`recipe.pattern`, e.g. "〜てもいい"),
+  // not the generic word "pattern" — the point of the label is to say WHICH
+  // pattern, not just that one exists.
   let step2: DerivationEquation | undefined;
   const trim = formula.trim ?? undefined;
   const add = formula.add ?? undefined;
   if (trim || add) {
     if (trim && !base.endsWith(trim)) return null;
     const to = (trim ? base.slice(0, base.length - trim.length) : base) + (add ?? "");
-    step2 = { from: base, trim, add, to };
+    const from = step1 ? formula.formLabel : "Dictionary form";
+    step2 = { from: base, trim, add, to, label: `${from} → ${recipe.pattern}` };
   }
 
   const answer = step2?.to ?? step1?.to;

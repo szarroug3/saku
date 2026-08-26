@@ -23,18 +23,21 @@ import type { DerivationEquation } from "@/lib/grammar/derivation";
  */
 function DerivationRow({ eq }: { eq: DerivationEquation }) {
   return (
-    <p
-      lang="ja"
-      className="flex flex-wrap items-center justify-center gap-1.5 font-kana text-[15px]"
-    >
-      <span className="rounded-md border border-dashed border-text-muted/60 px-2 py-0.5 text-text">
-        {eq.from}
-      </span>
-      {!eq.whole && eq.trim ? <span className="text-text-muted">− {eq.trim}</span> : null}
-      {!eq.whole && eq.add ? <span className="text-text-muted">+ {eq.add}</span> : null}
-      <span className="text-text-muted">→</span>
-      <span className="text-accent">{eq.to}</span>
-    </p>
+    <span className="flex flex-col items-center gap-0.5">
+      <p className="text-[10px] uppercase tracking-[0.06em] text-text-muted">{eq.label}</p>
+      <p
+        lang="ja"
+        className="flex flex-wrap items-center justify-center gap-1.5 font-kana text-[15px]"
+      >
+        <span className="rounded-md border border-dashed border-text-muted/60 px-2 py-0.5 text-text">
+          {eq.from}
+        </span>
+        {!eq.whole && eq.trim ? <span className="text-text-muted">− {eq.trim}</span> : null}
+        {!eq.whole && eq.add ? <span className="text-text-muted">+ {eq.add}</span> : null}
+        <span className="text-text-muted">→</span>
+        <span className="text-accent">{eq.to}</span>
+      </p>
+    </span>
   );
 }
 
@@ -72,9 +75,6 @@ export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
     const { derivation } = hint;
     return (
       <span className="flex max-w-[360px] flex-col items-center gap-2">
-        {derivation.title ? (
-          <p className="text-[12px] font-semibold text-text">{derivation.title}</p>
-        ) : null}
         <p className="flex flex-wrap items-center justify-center gap-1 text-[12px] text-text-muted">
           <span lang="ja" className="font-kana text-[15px] text-text">
             {derivation.word}
@@ -84,7 +84,10 @@ export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
             {derivation.answer}
           </span>
         </p>
-        <span className="flex flex-col items-center gap-1.5">
+        {derivation.title ? (
+          <p className="text-[12px] font-semibold text-text">{derivation.title}</p>
+        ) : null}
+        <span className="flex flex-col items-center gap-2">
           {derivation.step1 ? <DerivationRow eq={derivation.step1} /> : null}
           {derivation.step2 ? <DerivationRow eq={derivation.step2} /> : null}
         </span>
