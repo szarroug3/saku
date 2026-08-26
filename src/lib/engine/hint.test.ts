@@ -140,35 +140,39 @@ test("a grammar meaning hints with what the pattern attaches to", () => {
   );
 });
 
-test("a grammar production hints with the form it builds on", () => {
+test("a grammar production hints with the pattern name and the form it builds on", () => {
   // Never the built answer: knowing 〜てから takes the て-form does not tell you
   // 買ってから. te-kara's production is per-ending now, so this asks its te-utsu
-  // fact — the hint is the same "uses the て-form" for every ending.
+  // fact — the hint is the same "uses the て-form" for every ending, now led by
+  // the pattern name (SAK-193): the quiz instruction asks in gloss terms
+  // ("How do you say 'after 買う'?") and no longer names the pattern itself.
   const text = textOf(
     hintFor(classProductionFactId("te-kara", "v5u"), "jp2en"),
     "〜てから's production",
   );
-  assert.equal(text, "uses the て-form");
+  assert.equal(text, "This is the 〜てから pattern. uses the て-form");
   assert.ok(!text.includes("買"), "the hint must not contain the built form");
 });
 
-test("a FORM recipe's production has NO hint — it would restate the question", () => {
-  // te-sequence IS the て-form. On a card asking the learner to BUILD the て-form,
-  // "uses the て-form" is the prompt restated, not a nudge — the same tautology
-  // the dictionary-form guard refuses. It used to render a button that said
-  // nothing. The te-form IRREGULARS are the same skill (produce 行って), so they
-  // are silent too. A pattern that USES the form (te-kara, above) still hints.
-  assert.equal(
+test("a FORM recipe's production still hints with its pattern name, but no form nudge", () => {
+  // te-sequence IS the て-form. On a card asking the learner to BUILD the
+  // て-form, "uses the て-form" is the prompt restated, not a nudge — the same
+  // tautology the dictionary-form guard refuses, so formHintText stays silent.
+  // But the pattern-name line (SAK-193) is not a tautology — it survives, so a
+  // FORM recipe's production is no longer the one production card with no hint
+  // at all. The te-form IRREGULARS are the same skill (produce 行って), so they
+  // get the same bare pattern-name hint.
+  assert.deepEqual(
     hintFor(classProductionFactId("te-sequence", "v5u"), "jp2en"),
-    null,
+    { kind: "text", text: "This is the 〜て pattern" },
   );
-  assert.equal(
+  assert.deepEqual(
     hintFor(specialVerbProductionFactId("te-sequence", "iku"), "jp2en"),
-    null,
+    { kind: "text", text: "This is the 〜て pattern" },
   );
 });
 
-test("a KNOWN る-verb adds its class to the hint, on top of the form nudge", () => {
+test("a KNOWN る-verb adds its class to the hint, on top of the pattern and form nudges", () => {
   // The learner has met 食べる, so its class is NOT in the instruction (see
   // quiz-instruction.ts) — the reminder rides here instead, added to whatever the
   // pattern's form hint already says.
@@ -178,7 +182,7 @@ test("a KNOWN る-verb adds its class to the hint, on top of the form nudge", ()
       hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, KNOWN),
       "tai + known 食べる",
     ),
-    "uses the stem. 食べる is a る-verb",
+    "This is the 〜たい pattern. uses the stem. 食べる is a る-verb",
   );
 });
 
@@ -189,7 +193,7 @@ test("an UNKNOWN る-verb's class is NOT in the hint — the instruction carries
       hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN),
       "tai + unknown 食べる",
     ),
-    "uses the stem",
+    "This is the 〜たい pattern. uses the stem",
   );
 });
 
@@ -206,13 +210,13 @@ test("a KNOWN adjective adds its class to the hint", () => {
       ),
       "te-sequence + known 静か",
     ),
-    "静か is a な-adjective",
+    "This is the 〜て pattern. 静か is a な-adjective",
   );
 });
 
 test("an UNKNOWN adjective's class is NOT repeated in the hint", () => {
   const UNKNOWN = { surface: "静か", kana: "しずか", cls: "adj-na", known: false } as const;
-  assert.equal(
+  assert.deepEqual(
     hintFor(
       patternProductionFactId("te-sequence", "adj-na"),
       "en2jp",
@@ -220,20 +224,21 @@ test("an UNKNOWN adjective's class is NOT repeated in the hint", () => {
       false,
       UNKNOWN,
     ),
-    null,
+    { kind: "text", text: "This is the 〜て pattern" },
   );
 });
 
-test("a FORM recipe + KNOWN る-verb hints with the class ALONE", () => {
+test("a FORM recipe + KNOWN る-verb hints with the pattern name and the class", () => {
   // nai-form is a form recipe (no form nudge of its own), so a known る-verb's
-  // only hint is its class — exactly what a learner who forgot the class needs.
+  // hint is the pattern name plus its class — exactly what a learner who forgot
+  // the class needs, alongside which pattern this even is.
   const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
   assert.equal(
     textOf(
       hintFor(classProductionFactId("nai-form", "v1"), "en2jp", undefined, false, KNOWN),
       "nai-form + known 食べる",
     ),
-    "食べる is a る-verb",
+    "This is the 〜ない pattern. 食べる is a る-verb",
   );
 });
 

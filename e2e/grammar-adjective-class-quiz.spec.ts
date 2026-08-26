@@ -36,7 +36,11 @@ test("the first grammar form quizzes な before a noun", async ({ page }) => {
   await expect(instruction(page)).toHaveText(
     "Type this な-adjective describing みせ.",
   );
-  await expect(hintButton(page)).toHaveCount(0);
+  // SAK-193: the Hint now always names the pattern itself, so a card that
+  // used to offer NO hint at all (a FORM recipe, and prenominal-form is one,
+  // has no form nudge of its own to give) still gets this one.
+  await hintButton(page).click();
+  await expect(page.getByText("This is the 〜な pattern", { exact: true })).toBeVisible();
 });
 
 test("the first grammar form also quizzes the unchanged い-adjective", async ({ page }) => {
@@ -47,17 +51,22 @@ test("the first grammar form also quizzes the unchanged い-adjective", async ({
     "Type this い-adjective describing みせ.",
   );
   await expect(page.locator(".kq-glyph").first()).toHaveText("たかい");
-  await expect(hintButton(page)).toHaveCount(0);
+  await hintButton(page).click();
+  await expect(page.getByText("This is the 〜な pattern", { exact: true })).toBeVisible();
 });
 
 test("an unknown adjective's class is part of the quiz instruction", async ({ page }) => {
   await seedQuiz(page, { seen: [TE_ADJ_NA], cfg: EN2JP_TYPED });
   await startQuizDrill(page);
 
+  // SAK-193: the instruction now asks in the pattern's own gloss terms, with
+  // the vehicle's own (unknown, so kana) word filled into X, and its class
+  // named at the end rather than swapped in for "word".
   await expect(instruction(page)).toHaveText(
-    "Type how this な-adjective is said in the 〜て form.",
+    'How do you say "げんき, and then / because げんき" for this な-adjective?',
   );
-  await expect(hintButton(page)).toHaveCount(0);
+  await hintButton(page).click();
+  await expect(page.getByText("This is the 〜て pattern", { exact: true })).toBeVisible();
 });
 
 test("an unchanged adjective attachment still gets its own quiz card", async ({ page }) => {
@@ -65,9 +74,10 @@ test("an unchanged adjective attachment still gets its own quiz card", async ({ 
   await startQuizDrill(page);
 
   await expect(instruction(page)).toHaveText(
-    "Type how this い-adjective is said in the 〜ので form.",
+    'How do you say "because たかい" for this い-adjective?',
   );
-  await expect(hintButton(page)).toHaveCount(0);
+  await hintButton(page).click();
+  await expect(page.getByText("This is the 〜ので pattern", { exact: true })).toBeVisible();
 });
 
 test("a known adjective keeps a plain instruction and offers its class as a hint", async ({
@@ -80,9 +90,13 @@ test("a known adjective keeps a plain instruction and offers its class as a hint
   });
   await startQuizDrill(page);
 
+  // Known, so no class tag on the instruction and the surface script (静か,
+  // not しずか) fills X.
   await expect(instruction(page)).toHaveText(
-    "Type how this word is said in the 〜て form.",
+    'How do you say "静か, and then / because 静か"?',
   );
   await hintButton(page).click();
-  await expect(page.getByText("静か is a な-adjective", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("This is the 〜て pattern. 静か is a な-adjective", { exact: true }),
+  ).toBeVisible();
 });
