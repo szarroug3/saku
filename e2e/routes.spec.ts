@@ -36,12 +36,15 @@ for (const route of routes.static) {
         if (text.includes("webpack-hmr")) return;
         if (text.includes("WebSocket")) return;
         // Vercel Web Analytics (<Analytics/>) injects /_vercel/insights/script.js,
-        // which only exists on Vercel's platform — a local `next start` answers
-        // 404 and the browser logs a generic "Failed to load resource". Infra
-        // noise, not the app: the script is absent everywhere off Vercel and its
+        // and Speed Insights (<SpeedInsights/>, SAK-188) injects
+        // /_vercel/speed-insights/script.js — both only exist on Vercel's
+        // platform, so a local `next start` answers 404 for each and the
+        // browser logs a generic "Failed to load resource". Infra noise, not
+        // the app: both scripts are absent everywhere off Vercel and their
         // absence says nothing about whether the page rendered. Matched on the
         // failing resource's URL, since the console text itself is generic.
         if (m.location().url.includes("/_vercel/insights/")) return;
+        if (m.location().url.includes("/_vercel/speed-insights/")) return;
         // Signed-out data probes. The suite runs signed out, and hooks like
         // useLists read the server first and fall back to this browser's
         // localStorage on 401 (the documented pattern — see progress-fetch.ts).
