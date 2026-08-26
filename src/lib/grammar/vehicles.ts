@@ -38,8 +38,8 @@
 // fixed-vehicle path honours it.
 
 import { apply } from "./apply.ts";
-import { vocabRow } from "../../data/vocab.ts";
-import { isIntransitive, isTransitive, ruVerbKindOf } from "../word-forms.ts";
+import { VOCAB, vocabRow, wordSenseRegister, type VocabRow } from "../../data/vocab.ts";
+import { isIntransitive, isTransitive, ruVerbKindOf, wordClassOf } from "../word-forms.ts";
 import { vehicleInBucket, type VehicleBucket } from "./te-endings.ts";
 import type { Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
@@ -126,35 +126,180 @@ function verb(surface: string, kana: string, cls: WordClass): Vehicle {
 }
 
 /**
- * The verb pool: common verbs, one per conjugation class the engine drives, so
- * every 音便 shape is exercised. 行く leads — it is the class whose て-form is
- * irregular (行って, not 行いて), the same reason example.ts fixes on it — and the
- * rest are the everyday verbs a beginner meets first.
+ * SAK-214: the REGULAR classes, wired to the real corpus rather than hand-typed.
+ *
+ * THE BUG THIS CLOSES
+ * ====================
+ * Six of the nine regular godan classes (v5k, v5s, v5t, v5n, v5b, v5r) had
+ * EXACTLY ONE pool member each — 話す was not merely "over-picked" the day Sam
+ * saw it drilled twice in one session, it was v5s's entire pool, the same shape
+ * SAK-203 round 2 already found and fixed for v5g (泳ぐ / 急ぐ). SAK-203's
+ * session-aware dedup (`usedInDeck`, `pickVehicle` below) is correct but
+ * structurally powerless against a class with nothing to dedupe against.
+ *
+ * The fix is not "hand-add a second word per thin class" — that is the same
+ * hand-typed artifact that produced the gap, just delayed. `wordClassOf`
+ * (word-forms.ts) already classifies any VOCAB row into this exact class
+ * system, because the drill's production facts are minted per-class off the
+ * SAME classifier (data/grammar/index.ts). The pool was simply never wired to
+ * it. `REGULAR_VERB_CLASSES` is every class that classifier resolves for a
+ * verb whose 音便 has NO irregularity — v5u through v5r, plus v1 — computed
+ * from VOCAB once at import time (filter + sort + slice; no build step, see
+ * this file's own header on why that stays true here).
+ *
+ * WHY THIS DOES NOT WEAKEN "a vehicle must be a word she knows cold"
+ * =====================================================================
+ * `pickVehicle` (below) already prefers a KNOWN vehicle and only falls back to
+ * `showableWhenUnknown` — a genuinely restrictive gate, unaffected by this
+ * change — when she knows none of the pool. Growing the pool only grows the
+ * KNOWN side's headroom (a class she has studied deeply now has real
+ * alternatives to dedupe across) and the unknown-fallback's variety within the
+ * SAME restrictive gate. It does not touch which side `pickVehicle` tries
+ * first, or what `showableWhenUnknown` admits.
+ *
+ * WHAT IT DOES REINTRODUCE, AND HOW THAT IS HANDLED
+ * ====================================================
+ * `showableWhenUnknown`'s fallback path has NO commonness filter of its own —
+ * it trusted the old pool to already BE common words. Naively admitting every
+ * VOCAB row of a class would hand an unmet learner something like 承る or
+ * 召し上がる (honorific-register verbs, real JMdict hits in these classes) as
+ * an unlabeled filler, which reads as bizarre precisely because she has never
+ * been taught to use it that way. `corpusPoolFor` below excludes any sense
+ * whose SOLE register is honorific/humble (`wordSenseRegister`), and keeps
+ * only each class's most common ~`MAX_POOL_PER_CLASS` members by
+ * `beginnerRank` — see that constant's own comment for the exact number and
+ * why.
+ */
+const REGULAR_VERB_CLASSES: readonly WordClass[] = [
+  "v5u",
+  "v1",
+  "v5k",
+  "v5g",
+  "v5s",
+  "v5t",
+  "v5n",
+  "v5b",
+  "v5m",
+  "v5r",
+];
+
+/**
+ * How many of a class's most-common corpus members make the pool, most-common
+ * (lowest `beginnerRank`) first.
+ *
+ * WHY 25, NOT "EVERYTHING"
+ * ========================
+ * v5r has 350 corpus members after the quality filters below and v1 has 475 —
+ * unbounded, `showableWhenUnknown`'s fallback path (see the header above) would
+ * eventually reach a beginnerRank in the thousands, well past what an early
+ * learner has any business meeting as an UNLABELED filler. 25 keeps every
+ * class inside a band that stays recognizably early: even v1 and v5s's 25th
+ * member sits under beginnerRank ~2000 (立てる, 暮らす), the same
+ * everyday-conversational neighbourhood the six thin classes' original single
+ * hand-picked member came from, not a corpus straggler.
+ *
+ * 25 is also comfortably past what dedup headroom needs. SAK-203's own
+ * scenario is two or three grammar recipes independently rolling the same
+ * class in one session — that needs 2-3 distinct members to have somewhere
+ * to go, not 25 — so this leaves deliberate ROOM for known-word variety to
+ * grow as a learner studies further into a class, rather than cutting it to
+ * the dedup minimum.
+ *
+ * WHY NOT LOWER (e.g. the suggested range's floor, ~20)
+ * ======================================================
+ * Some classes (v5t, v5b, v5g) have fewer than 25 corpus members even before
+ * the cap applies — 25 is generous enough that a mid-size class like v5t
+ * (23 after the transitivity filter below) is barely touched by the cap, so
+ * the number is doing real work only on the three large classes (v5m, v5r,
+ * v1) where a lower cutoff would not meaningfully change quality but would
+ * needlessly shrink the known-word variety those classes can offer once a
+ * learner has studied a lot of vocabulary.
+ *
+ * Classes with fewer than this many QUALIFYING members (see `corpusPoolFor`)
+ * simply take everything they have — v5n is the extreme case: the entire
+ * common-word corpus has exactly ONE v5n verb, 死ぬ, so that class stays a
+ * single-member pool no matter the cutoff. That is not a data gap this
+ * change can close; it is what "regular ぬ-ending verb" means in the corpus
+ * the app teaches from. Session-aware dedup has nothing to work with there
+ * either way, same as any of the pinned irregulars below.
+ */
+const MAX_POOL_PER_CLASS = 25;
+
+/**
+ * Is `row`'s indexed sense honorific- or humble-ONLY (`wordSenseRegister`)?
+ *
+ * A sense that carries no register tag at all, or one that carries honorific
+ * /humble ALONGSIDE a plainer register, is left alone — only the sole-register
+ * case reads as a word she was never taught to use this way (承る, "to hear",
+ * humble-only; 召し上がる, "to eat/drink", honorific-only). `VocabRow`'s
+ * row-level `glosses`/`reb` are CEJC's first teachable sense (see its own doc
+ * comment), so this checks exactly the sense a vehicle built from `row.keb` /
+ * `row.reb` would actually be teaching.
+ */
+function isHonorificOrHumbleOnly(row: VocabRow): boolean {
+  const register = wordSenseRegister(row.keb, row.reb, row.glosses);
+  return register.length > 0 && register.every((r) => r === "honorific" || r === "humble");
+}
+
+/**
+ * The corpus-derived pool for one REGULAR class: every VOCAB row `wordClassOf`
+ * resolves to `cls`, minus honorific/humble-only senses (see above) and minus
+ * any row `transitivityOf` cannot resolve at all — a handful of compound
+ * EXPRESSIONS that happen to end in a regular godan/ichidan shape (役に立つ,
+ * "to be useful"; 責任を持つ, "to be responsible") but carry neither JMdict's
+ * vt nor vi tag, because they are phrases, not the kind of single verb this
+ * pool means to hand a recipe. (This filter also keeps the invariant
+ * transitivity.test.ts already asserts — every pool vehicle resolves to a
+ * transitivity — true by construction rather than by accident.) Kept to the
+ * `MAX_POOL_PER_CLASS` most common by `beginnerRank`, ascending.
+ *
+ * A PLAIN MODULE-LEVEL COMPUTATION, done once when this module loads — filter,
+ * sort, slice — not a build step. See this file's own header on why that
+ * matters here.
+ */
+function corpusPoolFor(cls: WordClass): Vehicle[] {
+  return VOCAB.filter(
+    (row) =>
+      wordClassOf(row) === cls &&
+      !isHonorificOrHumbleOnly(row) &&
+      transitivityOf(row.keb) !== null,
+  )
+    .slice()
+    .sort((a, b) => a.beginnerRank - b.beginnerRank)
+    .slice(0, MAX_POOL_PER_CLASS)
+    .map((row) => verb(row.keb, row.reb, cls));
+}
+
+/**
+ * The verb pool. 行く leads — it is the class whose て-form is irregular
+ * (行って, not 行いて), the same reason example.ts fixes on it — followed by
+ * every REGULAR class's corpus-derived members (`corpusPoolFor`, SAK-214), and
+ * closed by the three remaining irregulars.
+ *
+ * `REGULAR_VERB_CLASSES`' ORDER IS NOT ARBITRARY. Two existing call sites walk
+ * `VERB_VEHICLES` in ARRAY order and depend on what leads it:
+ *   - `exampleVerb`'s fallback (below) takes the first vehicle a restricted
+ *     recipe still accepts. 〜に行く blocks 行く itself (`notOn`), so it has
+ *     always fallen through to 言う — v5u leads for exactly this, and 言う is
+ *     also v5u's own most-common corpus member, so leading with v5u preserves
+ *     it with no special-casing.
+ *   - `recipeFormula`'s worked examples (formula.test.ts) take the first
+ *     THREE vehicles with distinct 音便 classes to prove the pattern
+ *     generalises — 行く, then 言う, then a THIRD class, which has always been
+ *     v1 (食べる). v1 leads `REGULAR_VERB_CLASSES` right after v5u so that
+ *     stays true.
+ *
+ * THE SPECIAL/IRREGULAR CLASSES (v5k-s, v5u-s, v5aru, v5r-i, v1-s, vz, vs-i,
+ * vs-s, vk) ARE DELIBERATELY NOT HERE — they keep exactly the single
+ * hand-picked canonical word they always had (行く above; する, 来る, ある
+ * below). They are irregular precisely because there is essentially one
+ * commonly-taught representative, and `DEFAULT_VERB` / `RESTRICTED_VERB` /
+ * `exampleVerb()` all anchor on 行く / 書く specifically for reasons explained
+ * in this file's own header — none of that changes here.
  */
 export const VERB_VEHICLES: readonly Vehicle[] = [
   verb("行く", "いく", "v5k-s"), // て-form irregular
-  verb("言う", "いう", "v5u"),
-  verb("食べる", "たべる", "v1"),
-  verb("見る", "みる", "v1"),
-  verb("起きる", "おきる", "v1"),
-  verb("書く", "かく", "v5k"),
-  verb("泳ぐ", "およぐ", "v5g"),
-  // SAK-203 round 2: v5g's SECOND pool member. Before this, v5g had exactly
-  // one — 泳ぐ was not merely "over-picked", it was the class's entire pool,
-  // so no session-aware dedup mechanism could have avoided repeating it
-  // across two recipes (Sam's "is およぐ" / "please およぐ" report is a
-  // straight consequence of that, not an algorithm bug). beginnerRank 605 vs
-  // 泳ぐ's 494, so 泳ぐ still wins the earliest-taught tie-break by default —
-  // 急ぐ only surfaces when 泳ぐ has already been used elsewhere in the deck.
-  verb("急ぐ", "いそぐ", "v5g"),
-  verb("話す", "はなす", "v5s"),
-  verb("待つ", "まつ", "v5t"),
-  verb("死ぬ", "しぬ", "v5n"),
-  verb("遊ぶ", "あそぶ", "v5b"),
-  verb("飲む", "のむ", "v5m"),
-  verb("読む", "よむ", "v5m"),
-  verb("帰る", "かえる", "v5r"),
-  verb("買う", "かう", "v5u"),
+  ...REGULAR_VERB_CLASSES.flatMap(corpusPoolFor),
   verb("する", "する", "vs-i"),
   verb("来る", "くる", "vk"),
   verb("ある", "ある", "v5r-i"),
