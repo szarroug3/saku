@@ -100,48 +100,71 @@ export interface McOptionGridProps {
  * (`h-[6.25rem]` below — see MC_OPTION_TILE_HEIGHT_REM in mc-option-fit.ts
  * for the full derivation), not a `min-h` floor, and EVERY `lg` option — not
  * just the ones with word breaks — is allowed to both wrap AND shrink to fit
- * inside it. The mechanism is uniform now: `white-space: normal` and
- * `word-break: keep-all` (Tailwind's `break-keep`, static classes on the
- * label span below, no longer a per-option JS branch) apply to every option
- * alike. `word-break: keep-all` is what makes a single unbreakable JP token
- * (no spaces, so no valid break point under `keep-all`) behave exactly like
- * round 2's dedicated no-wrap case: it stays on one line because `keep-all`
- * gives it nowhere to break, not because anything forces `nowrap` on it —
- * while a real multi-word phrase still wraps at its own word boundaries.
- * `overflow-wrap` stays the browser default (`normal`) either way — that's
- * round 1's fix and it never changes: no mid-word breaks, ever.
+ * inside it, never mid-word (round 1's fix, unchanged: `overflow-wrap` stays
+ * the browser default `normal`, never `wrap-break-word`).
  *
- * The fit search runs height-first, from the TRUE CEILING
- * (`MC_OPTION_MAX_FONT_REM`), via `shrinkFontToFitHeight` (in
+ * measure() below still branches per option on whether the text has a real
+ * word break (a space) — same `canWrap` test round 2 used — but what that
+ * branch now decides is narrower and more honest than round 2's version:
+ * ONLY which CSS makes a break impossible for the no-space case, never
+ * whether shrinking happens. Both branches share the same fixed box and the
+ * same "shrink AND wrap as needed" goal; only the WRAP-PREVENTION mechanism
+ * for a spaceless token differs from the wrap-ALLOWING mechanism for
+ * everything else.
+ *
+ * That per-option branch exists because of a real bug caught in LIVE review
+ * (not code-reading) after an earlier version of this fix tried to make the
+ * CSS itself fully uniform via `word-break: keep-all` (Tailwind's
+ * `break-keep`) for every option, banking on "a token with no spaces has no
+ * valid break point under `keep-all`, so it can't usefully wrap anyway."
+ * That's wrong: `keep-all` only forbids a break BETWEEN TWO CJK IDEOGRAPHS —
+ * it explicitly still allows one adjacent to a non-ideographic character.
+ * 〜 (U+301C WAVE DASH, a symbol) leads nearly every grammar pattern in this
+ * app, and 〜てはいけない was actually rendering as "〜" alone on one line
+ * and "てはいけない" on the next — two lines that both fit within the tile,
+ * so the width-based residual fix never even saw an overflow to correct.
+ * There's no way to tell `word-break` "treat this specific symbol as glued
+ * to its neighbor" — it only ever classifies break OPPORTUNITIES by script.
+ * `white-space: nowrap` is the only thing that makes a break impossible
+ * ANYWHERE in a string regardless of adjacent characters, so a genuinely
+ * unbreakable option (no whitespace anywhere in its OWN text) gets that
+ * instead — see measure()'s `canWrap` branch below.
+ *
+ * For the no-space branch, only WIDTH constrains the result (forced
+ * single-line content trivially satisfies any height budget in range), so it
+ * skips the height search entirely and goes straight to the same direct
+ * width-based fit (`fitFontSizeRem` in mc-option-fit.ts) rounds 1/2 used.
+ *
+ * For the has-a-space branch, the fit search runs height-first, from the
+ * TRUE CEILING (`MC_OPTION_MAX_FONT_REM`), via `shrinkFontToFitHeight` (in
  * mc-option-fit.ts — read its own header comment for why height can't be
  * solved directly the way width can): it steps the font size down,
  * remeasuring the WRAPPED text's real `scrollHeight` at each step, until it
  * fits the tile's fixed available height or the floor
- * (`MC_OPTION_MIN_FONT_REM`) is reached. Most options fit on the very first
- * measurement and never shrink at all — with wrapping allowed at full size,
- * only text that's genuinely too tall even once wrapped needs to shrink.
- * (Deliberately NOT starting from a width-based single-line approximation:
- * that would pre-shrink perfectly wrappable text before wrapping even gets a
- * chance to solve the fit for free — precisely round 2's own regression,
- * reintroduced from the other direction. See fitFontSizeRem's own comment.)
+ * (`MC_OPTION_MIN_FONT_REM`) is reached. Most such options fit on the very
+ * first measurement and never shrink at all — with wrapping allowed at full
+ * size, only text that's genuinely too tall even once wrapped needs to
+ * shrink. (Deliberately NOT starting from a width-based single-line
+ * approximation: that would pre-shrink perfectly wrappable text before
+ * wrapping even gets a chance to solve the fit for free — precisely round
+ * 2's own regression, reintroduced from the other direction. See
+ * fitFontSizeRem's own comment.) A width-based residual check still runs
+ * afterwards as defense (an embedded word longer than the tile even once
+ * wrapped around, or ordinary kerning drift) — correctly-wrapped content
+ * should never actually trip it, since a wrapped line is never wider than
+ * its container by definition.
  *
- * That height search alone is blind to one case: a single unbreakable token
- * (a JP pattern like 〜てはいけない) has no valid break point under
- * `break-keep`, so it measures as exactly ONE line at any font size — the
- * search sees that line "fit" and stops at the ceiling, never noticing it
- * overflows sideways. A width-based residual check afterwards (the same
- * `fitFontSizeRem` math rounds 1/2 already used, in mc-option-fit.ts) is
- * what actually constrains that case — see measure() below. A short option
- * just ends up with extra empty space (centered — `justify-center` on the
- * tile) in the same fixed box a long option fills after shrinking and/or
- * wrapping.
+ * A short option just ends up with extra empty space (centered —
+ * `justify-center` on the tile) in the same fixed box a long option fills
+ * after shrinking and/or wrapping.
  *
  * fitFontSizeRem's own sizing math IS unit-tested (mc-option-fit.test.ts);
  * shrinkFontToFitHeight's SEARCH MECHANICS are too, via a fake
- * `measureHeightPx`. What isn't, either round: the DOM measurement itself —
- * a headless node:test has no layout engine to measure `scrollWidth` /
- * `scrollHeight` / `clientWidth` / `clientHeight` against, so this half is
- * verified by reading, not by a test.
+ * `measureHeightPx`. What isn't, any round: the DOM measurement itself, and
+ * the exact CSS line-breaking behavior around characters like 〜 — a
+ * headless node:test has no layout engine to check either against, so this
+ * half is verified by reading (and, this round, by live browser
+ * verification that caught what reading alone missed), not by a test.
  *
  * WHY useLayoutEffect: it runs after the DOM is up but before the browser
  * paints, so the shrink is applied before the first frame the learner sees —
@@ -182,9 +205,6 @@ function useShrinkToFit(
     const measure = () => {
       if (cancelled) return;
       for (const el of labelRefs.current.values()) {
-        // SAK-207 round 3: `whiteSpace: normal` + `wordBreak: keep-all` are
-        // now static classes on the label span (see the JSX below) — every
-        // option gets the same uniform mechanism, no per-option branch.
         const button = el.parentElement;
         const indexLabel = el.nextElementSibling as HTMLElement | null;
         if (!button) continue;
@@ -206,15 +226,76 @@ function useShrinkToFit(
         const availableHeight =
           button.clientHeight - paddingY - gapPx - indexHeight;
 
-        // Height-fit search, starting at the TRUE CEILING
-        // (MC_OPTION_MAX_FONT_REM) — deliberately NOT a width-based
-        // single-line approximation. `whitespace-normal break-keep` (static
-        // classes below) already let any wrappable text wrap freely at full
-        // size, so most options fit on this very first measurement and never
-        // shrink at all. Starting from a "would fit on one line" guess
-        // instead would pointlessly pre-shrink text that wraps just fine at
-        // full size — exactly round 2's own regression (needlessly shrinking
-        // legible, breakable text), reintroduced from the other direction.
+        // SAK-207 round 3, corrected after live verification caught a real
+        // regression: `word-break: keep-all` (the static `break-keep` class
+        // below) does NOT make a spaceless token unbreakable in general — it
+        // only forbids a break BETWEEN TWO CJK IDEOGRAPHS. It explicitly
+        // still permits one adjacent to a non-ideographic character, and
+        // 〜 (U+301C WAVE DASH — a symbol, not a CJK ideograph) leads nearly
+        // every grammar pattern in this app. Live-verified in the browser:
+        // 〜てはいけない was rendering as "〜" alone on its own line and
+        // "てはいけない" below it — TWO lines, both narrower than the tile,
+        // so `scrollWidth > clientWidth` was false and the width-based
+        // residual fix (below) never even engaged. There's no CSS knob that
+        // tells `word-break` to treat a specific symbol as glued to its
+        // neighbor — it only ever classifies break OPPORTUNITIES by script.
+        // The one thing that makes a break truly impossible anywhere in a
+        // string, regardless of what characters are adjacent, is
+        // `white-space: nowrap` — which is what round 1/2 used originally,
+        // and what a genuinely unbreakable option (no whitespace ANYWHERE in
+        // its own text — the only thing `keep-all` was ever trying to
+        // approximate) needs here too, unconditionally.
+        const canWrap = /\s/.test(el.textContent ?? "");
+
+        if (!canWrap) {
+          // `nowrap` guarantees zero line breaks anywhere in this token, so
+          // only WIDTH constrains it — the height search below is
+          // meaningless here (forced single-line content trivially fits the
+          // box's height budget at any font size) and is skipped entirely in
+          // favor of the same direct width-based fit rounds 1/2 used.
+          el.style.whiteSpace = "nowrap";
+          // Reset to the ceiling before reading: scrollWidth reflects
+          // whatever font-size is currently applied, and a stale,
+          // already-shrunk value from a previous pass would understate how
+          // wide the text actually wants to be.
+          el.style.fontSize = `${MC_OPTION_MAX_FONT_REM}rem`;
+          const naturalWidth = el.scrollWidth;
+          // `- 1`: found while verifying round 2 — clientWidth/scrollWidth
+          // are both integer-rounded by the browser's own layout APIs, so a
+          // target landing EXACTLY at the rounded available width can still
+          // be a genuine sub-pixel over in actual (fractional) rendering —
+          // e.g. 〜てはいけない silently losing its last two characters even
+          // though the measurement read as an exact fit. A 1px margin
+          // absorbs that.
+          const availableWidth = el.clientWidth - 1;
+          let target = fitFontSizeRem(naturalWidth, availableWidth);
+          el.style.fontSize = `${target}rem`;
+          if (target < MC_OPTION_MAX_FONT_REM) {
+            // One re-check, not a loop: glyph advance widths scale with
+            // font-size closely but not perfectly (kerning), so the single
+            // computed size can land a hair over on some fonts. A second
+            // measurement at the applied size catches that; see
+            // fitFontSizeRem's comment on why this stays a single extra step
+            // rather than iterating until convergence.
+            const stillOverflowing = el.scrollWidth > el.clientWidth;
+            if (stillOverflowing) {
+              target = fitFontSizeRem(el.scrollWidth, availableWidth, target);
+              el.style.fontSize = `${target}rem`;
+            }
+          }
+          continue;
+        }
+
+        // Breakable text (has real word breaks): allow it to wrap at its own
+        // word boundaries, and let the HEIGHT-FIRST search decide whether it
+        // ALSO needs to shrink — the round 3 fix, unchanged from before.
+        // Starting at the TRUE CEILING (MC_OPTION_MAX_FONT_REM), not a
+        // width-based single-line approximation: most options fit on the
+        // very first measurement and never shrink at all, since a
+        // width-only guess would pointlessly pre-shrink text that wraps
+        // just fine at full size (round 2's own regression, reintroduced
+        // from the other direction — see fitFontSizeRem's own comment).
+        el.style.whiteSpace = "normal";
         const finalRem = shrinkFontToFitHeight(
           (candidateRem) => {
             el.style.fontSize = `${candidateRem}rem`;
@@ -225,48 +306,30 @@ function useShrinkToFit(
         );
         el.style.fontSize = `${finalRem}rem`;
 
-        // Width-based residual fix. For a single unbreakable token (a JP
-        // pattern like 〜てはいけない — `break-keep` gives it no valid break
-        // point), this is the ONLY thing that actually constrains it: it has
-        // nowhere to wrap, so it measures as exactly one line at ANY font
-        // size, and the height search above always sees that one line fit
-        // and returns the ceiling untouched — blind to it overflowing
-        // sideways. `el.scrollWidth` here already reads the right thing
-        // either way: the widest wrapped line for breakable text (never
-        // wider than `clientWidth`, since that's what correct wrapping
-        // means) or the whole natural width for a token `break-keep` gave no
-        // wrap point to. `fitFontSizeRem`'s width-based math (round 1/2's
-        // original fix) is what actually answers "how small does this need
-        // to be" for that case.
+        // Width-based residual fix — defense for the rarer case a breakable
+        // phrase still overflows sideways (e.g. one embedded word longer
+        // than the tile itself even after wrapping around it), plus the same
+        // kerning-drift guard as the no-wrap branch above. Ordinary wrapped
+        // text should never actually trip this: `scrollWidth` for correctly
+        // wrapped content is never wider than `clientWidth` by definition.
         if (
           el.scrollWidth > el.clientWidth &&
           finalRem > MC_OPTION_MIN_FONT_REM
         ) {
-          // `- 1`: found while verifying round 2 — clientWidth/scrollWidth
-          // are both integer-rounded by the browser's own layout APIs, so a
-          // target landing EXACTLY at the rounded available width can still
-          // be a genuine sub-pixel over in actual (fractional) rendering —
-          // e.g. 〜てはいけない silently losing its last two characters even
-          // though the measurement read as an exact fit. A 1px margin
-          // absorbs that.
           const availableWidth = el.clientWidth - 1;
-          let recheckRem = fitFontSizeRem(el.scrollWidth, availableWidth, finalRem);
+          let recheckRem = fitFontSizeRem(
+            el.scrollWidth,
+            availableWidth,
+            finalRem,
+          );
           el.style.fontSize = `${recheckRem}rem`;
-          if (recheckRem < finalRem) {
-            // One re-check, not a loop (round 2's same guard): glyph advance
-            // widths scale with font-size closely but not perfectly
-            // (kerning), so the single computed size can land a hair over on
-            // some fonts. A second measurement at the applied size catches
-            // that; see fitFontSizeRem's comment on why this stays a single
-            // extra step rather than iterating until convergence.
-            if (el.scrollWidth > el.clientWidth) {
-              recheckRem = fitFontSizeRem(
-                el.scrollWidth,
-                availableWidth,
-                recheckRem,
-              );
-              el.style.fontSize = `${recheckRem}rem`;
-            }
+          if (recheckRem < finalRem && el.scrollWidth > el.clientWidth) {
+            recheckRem = fitFontSizeRem(
+              el.scrollWidth,
+              availableWidth,
+              recheckRem,
+            );
+            el.style.fontSize = `${recheckRem}rem`;
           }
         }
       }
@@ -362,18 +425,23 @@ export function McOptionGrid({
             // items blockify per spec, so `w-full` applies even though a
             // `span` is inline by default.
             //
-            // SAK-207 round 3: `whitespace-normal break-keep` are now static
-            // — every `lg` option gets the SAME mechanism, not a per-option
-            // branch. `break-keep` (`word-break: keep-all`) is what makes a
-            // single unbreakable token (a JP pattern like 〜てはいけない, no
-            // spaces) behave like round 2's dedicated no-wrap case: `keep-all`
-            // gives it no valid break point, so it stays on one line on its
-            // own, without needing `white-space: nowrap` to force it. An
-            // option with real word breaks (an English phrase like "describe
-            // a noun") wraps at those word boundaries instead. `overflow-wrap`
-            // is left at its browser default (`normal`) either way — never
-            // `wrap-break-word`, which is what broke a single JP token
-            // mid-character in round 1.
+            // SAK-207 round 3: `whitespace-normal break-keep` here are just
+            // the pre-measurement DEFAULT (this static class briefly applies
+            // before useLayoutEffect's first synchronous pass, which always
+            // runs before paint) — measure() below OVERRIDES `white-space`
+            // per option every pass via inline style, since `break-keep`
+            // (`word-break: keep-all`) alone turned out NOT to be enough to
+            // keep a spaceless token unbreakable (live-verified regression:
+            // `keep-all` only forbids a break between two CJK ideographs, and
+            // still allows one next to a symbol like 〜, U+301C WAVE DASH,
+            // which leads nearly every grammar pattern here — see
+            // useShrinkToFit's header comment for the full story). A real
+            // word break (an English phrase like "describe a noun") wraps at
+            // its own word boundaries; a token with none gets `nowrap`
+            // forced instead, unconditional on what characters it contains.
+            // `overflow-wrap` is left at its browser default (`normal`)
+            // either way — never `wrap-break-word`, which is what broke a
+            // single JP token mid-character in round 1.
             className={isLg ? "w-full whitespace-normal break-keep" : undefined}
           >
             {o.label}

@@ -110,15 +110,17 @@ export const MC_OPTION_TILE_HEIGHT_REM = 6.25;
  * question — it has no idea how many lines wrapped text will take, and
  * forcing every option through it BEFORE wrapping is even considered would
  * reintroduce round 2's own regression (needlessly shrinking text that would
- * have fit fine once allowed to wrap). So the caller no longer starts its
- * height search here: it starts shrinkFontToFitHeight below from the true
- * ceiling (MC_OPTION_MAX_FONT_REM) instead, and only reaches for THIS
- * function afterwards, as a residual fix — see mc-option-grid.tsx's
- * measure() for why: a single unbreakable token (no wrap points under
- * `break-keep`) always measures as exactly one line no matter its font size,
- * so the height search alone can never detect it's too WIDE, only too TALL.
- * This function is what actually answers that question for it, using
- * whatever width the height search's chosen size rendered at.
+ * have fit fine once allowed to wrap). So mc-option-grid.tsx's measure() only
+ * reaches for this function directly — skipping the height search in
+ * shrinkFontToFitHeight below entirely — for an option with NO whitespace in
+ * its own text, forced onto one line via `white-space: nowrap` (not
+ * `word-break: keep-all`; an earlier version of this fix tried relying on
+ * `keep-all` alone and shipped a real regression — see measure()'s own
+ * comment for the live-verified 〜-adjacent-break story). For an option WITH
+ * whitespace, this function is used only as a residual fix AFTER the height
+ * search, catching the rarer case a wrapped phrase still overflows sideways
+ * (an embedded word wider than the tile) — see mc-option-grid.tsx's
+ * measure() for both call sites.
  */
 export function fitFontSizeRem(
   naturalWidthPx: number,
@@ -183,13 +185,19 @@ export const MC_OPTION_MAX_SHRINK_STEPS = 8;
  * This function doesn't reset `startRem` to MC_OPTION_MAX_FONT_REM itself —
  * it refines downward from wherever the caller starts it, clamped into
  * [minRem, MC_OPTION_MAX_FONT_REM] defensively. Real usage in
- * mc-option-grid.tsx always starts from MC_OPTION_MAX_FONT_REM (the true
- * ceiling), NOT a pre-shrunk width-based approximation: with
- * `whitespace-normal break-keep` letting any wrappable text wrap freely,
- * most options already fit at the ceiling and this search exits after its
- * very first measurement — starting from a smaller "would fit on one line"
- * guess would pointlessly shrink text that wraps just fine at full size,
- * exactly round 2's own regression, reintroduced from the other direction.
+ * mc-option-grid.tsx's measure() only calls this for an option whose text
+ * HAS a real word break — `white-space: normal` lets it wrap freely, and the
+ * call always starts from MC_OPTION_MAX_FONT_REM (the true ceiling), NOT a
+ * pre-shrunk width-based approximation: most such options already fit at the
+ * ceiling and this search exits after its very first measurement — starting
+ * from a smaller "would fit on one line" guess would pointlessly shrink text
+ * that wraps just fine at full size, exactly round 2's own regression,
+ * reintroduced from the other direction. An option with NO word break skips
+ * this function entirely (see measure()'s `canWrap` branch) — it's forced
+ * onto one line via `white-space: nowrap` instead, since `word-break:
+ * keep-all` alone doesn't reliably prevent a break in every real string (a
+ * leading 〜, for one — see measure()'s header comment for the live-verified
+ * regression that taught us this).
  *
  * Pulled out here (rather than left inline in mc-option-grid.tsx) so the
  * SEARCH MECHANICS — start point, step size, floor, iteration bound, early
