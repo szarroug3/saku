@@ -196,7 +196,7 @@ export function SliceBar({
   const quizLaunchCfg = hasGenerator
     ? { ...cfg, length: "limited" as const, limType: "cov" as const }
     : cfg;
-  const quizCount = realQuestionCount(effectiveQuizOrder, quizLaunchCfg);
+  const quizCount = realQuestionCount(effectiveQuizOrder, quizLaunchCfg, history);
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every

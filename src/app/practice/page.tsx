@@ -227,12 +227,16 @@ export default function PracticePage() {
     // construction category's coverage repeats, and overcounted endless mode
     // by summing forms instead of usable facts) rather than the deck build's
     // own number.
-    return realQuestionCount(planned.facts, {
-      length: cfg.length,
-      limType: cfg.limType,
-      limCount: cfg.limCount,
-      ask: cfg.ask,
-    });
+    return realQuestionCount(
+      planned.facts,
+      {
+        length: cfg.length,
+        limType: cfg.limType,
+        limCount: cfg.limCount,
+        ask: cfg.ask,
+      },
+      history,
+    );
   }, [
     cfg.mode,
     cfg.length,
@@ -244,6 +248,7 @@ export default function PracticePage() {
     sentenceQuestionCount,
     planned.count,
     planned.facts,
+    history,
   ]);
 
   // Check if the current settings are reachable for drill mode with facts selected

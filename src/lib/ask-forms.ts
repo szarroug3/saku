@@ -48,11 +48,14 @@ import {
 import { entryOf, factInfo } from "@/lib/facts";
 import { spread } from "@/lib/engine/spread";
 import { listenKind } from "@/lib/listen";
+import { meaningMustShowGlyph } from "@/lib/homophone";
+import { pickRecognitionForFact } from "@/lib/listen-sentence";
 import type {
   AnswerStyle,
   AskConfig,
   Direction,
   FactId,
+  HistoryFile,
   QuizConfig,
   ResponseKind,
 } from "@/types";
@@ -362,6 +365,42 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   return dedup(fact, dropRedundantMc(fact, out));
 }
 
+/**
+ * SAK-210 round 2: does THIS form survive the post-hoc, history-dependent drop
+ * the real deck build applies on top of `enabledFormsFor`'s structural check?
+ *
+ * Mirrors — CONDITION FOR CONDITION — the two history-dependent tests in
+ * drill-screen.tsx's `onMount` (`keep`, the coverage branch) and its
+ * `usableForms` (the count/endless branch): a listening card whose meaning
+ * must show its glyph (`meaningMustShowGlyph`, homophone collision), and a
+ * corpus sentence-recognition card with no safe board to draw
+ * (`pickRecognitionForFact` returning null). `isBoxSelected` — the THIRD
+ * condition in `keep` — is deliberately NOT mirrored here: it depends on a
+ * retry run's `retryBoxes`, which no caller of `coverageQuestionCount` /
+ * `realQuestionCount` ever has in hand (the retry buttons in
+ * round-complete.tsx / session-complete.tsx label themselves off the raw
+ * picked/box count via `retryButtonLabel`, never off this module) — see
+ * those two call sites and `retryLeg` in quiz-session.tsx.
+ *
+ * `pickRecognitionForFact` takes an `rng`; `() => 0` matches `onMount`'s own
+ * choice for this same "does one exist at all" check, so the count is
+ * deterministic across renders for the same history — not `Math.random`.
+ */
+function formSurvivesHistory(
+  fact: FactId,
+  form: CardForm,
+  history: HistoryFile,
+): boolean {
+  return !(
+    (form.source === "japanese" &&
+      form.listen &&
+      meaningMustShowGlyph(fact, history)) ||
+    (form.source === "sentence" &&
+      form.response === "definition" &&
+      pickRecognitionForFact(fact, history, () => 0) === null)
+  );
+}
+
 /** A coverage deck: cards and their pinned forms, index-aligned. The drill
  * screen carries these two arrays side by side (a card is a fact + a form). */
 export interface CoverageDeck {
@@ -411,21 +450,29 @@ export function buildCoverageDeck(
  * generates more than one card per slot silently outgrows any count that
  * skipped it.
  *
- * Deliberately ignorant of `history` and box selection: the coverage branch
- * also drops a handful of showings post-hoc (a listening card whose meaning
- * must show its glyph, an assembly card with no recognition option, a retry
- * run's unselected box) — narrow, per-showing exceptions that need the
- * runtime state a button's count is computed without. Undercounting THOSE by
- * a card or two is the one gap this function knowingly leaves; the count this
- * produces is otherwise exactly `built.deck.length` before that filter.
+ * SAK-210 ROUND 2: also applies the SAME history-dependent drop `onMount`'s
+ * `keep` array applies to `built.deck` — a listening card a homophone
+ * collision must not ask, a sentence-recognition card with no safe corpus
+ * board to draw (see `formSurvivesHistory`, above). Round 1 shipped this
+ * function ignorant of `history` on the theory that gap was "a card or two";
+ * a live repro (two grammar patterns, "Quiz me 34" vs an actual 30-card
+ * coverage run) proved that theory wrong at real scale — the recognition
+ * check in particular varies with how much of a pattern's tagged corpus the
+ * learner can currently read, which is not a small, constant-per-fact
+ * discount. `isBoxSelected` (a retry run's unselected box) is still not
+ * checked — see `formSurvivesHistory`'s own doc for why that one is out of
+ * scope rather than silently ignored.
  */
 export function coverageQuestionCount(
   facts: readonly FactId[],
   ask: AskConfig,
+  history: HistoryFile,
 ): number {
   let total = 0;
   for (const fact of facts) {
-    const forms = enabledFormsFor(fact, ask).length;
+    const forms = enabledFormsFor(fact, ask).filter((form) =>
+      formSurvivesHistory(fact, form, history),
+    ).length;
     const repeats = constructionConfigForFact(fact)?.count ?? 1;
     total += forms * repeats;
   }
@@ -442,17 +489,33 @@ export function coverageQuestionCount(
  * `buildDeck` use to decide how big the deck is — not a second guess at their
  * number:
  *
- *   cov   — full coverage: `coverageQuestionCount`, above.
- *   count — `buildDeck`'s repeat-fill tops a non-empty pool up to `limCount`
- *           exactly (drill mode; see its own doc comment), so the answer is
- *           the configured count itself.
+ *   cov   — full coverage: `coverageQuestionCount`, above. History-aware
+ *           since SAK-210 round 2.
+ *   count — `buildDeck`'s repeat-fill tops a non-empty POST-FILTER pool up to
+ *           `limCount` exactly (drill mode; see its own doc comment), so the
+ *           answer is the configured count itself REGARDLESS of history —
+ *           `onMount`'s `usableForms` filter (the same history-dependent
+ *           checks `coverageQuestionCount` now applies) runs on `rt.pool`
+ *           BEFORE `buildDeck` sees it, but the repeat-fill still lands
+ *           exactly on `limCount` for any non-empty post-filter pool, so
+ *           there is nothing for this branch to thread `history` into. (A
+ *           pool that history-filters down to fully empty would under-fill —
+ *           a pre-existing edge this ticket did not introduce and is not
+ *           the reported bug: it already happens today for a *structurally*
+ *           empty pool, with no history involved at all, e.g. an ask config
+ *           under which every selected fact has zero enabled forms.)
  *   endless — no cap, no fill, and — unlike coverage — NO per-fact form
  *           expansion either: outside the coverage branch, drill-screen.tsx's
- *           `onMount` keeps `rt.pool` as ONE entry per fact (filtered to
- *           facts with at least one usable form) and rolls a single form for
- *           it per showing (see ask-forms.ts's own header, "Endless/Count —
- *           rolls ONE of them per showing"). So this counts facts with at
- *           least one enabled form, not their forms.
+ *           `onMount` keeps `rt.pool` as ONE entry per fact, filtered through
+ *           `usableForms` — the SAME two history-dependent checks
+ *           `coverageQuestionCount` applies, at fact granularity rather than
+ *           per-form — and rolls a single form for it per showing (see
+ *           ask-forms.ts's own header, "Endless/Count — rolls ONE of them per
+ *           showing"). SAK-210 round 2: this branch is ALSO history-aware now
+ *           — a fact whose only enabled forms are all history-blocked (e.g.
+ *           an ask config offering only Audio for a word whose meaning
+ *           collides with a known homophone) no longer counts as an askable
+ *           card, matching `usableForms` exactly.
  *
  * BOARD MODES ("pairs", "grid") are NOT covered — their card count comes from
  * page-specific board-building (`playablePairBoards`, `gridFacts`) this
@@ -462,15 +525,20 @@ export function coverageQuestionCount(
 export function realQuestionCount(
   facts: readonly FactId[],
   cfg: Pick<QuizConfig, "length" | "limType" | "limCount" | "ask">,
+  history: HistoryFile,
 ): number {
   if (facts.length === 0) return 0;
   if (cfg.length === "limited" && cfg.limType === "cov") {
-    return coverageQuestionCount(facts, cfg.ask);
+    return coverageQuestionCount(facts, cfg.ask, history);
   }
   if (cfg.length === "limited" && cfg.limType === "count") {
     return cfg.limCount;
   }
-  return facts.filter((f) => enabledFormsFor(f, cfg.ask).length > 0).length;
+  return facts.filter((f) =>
+    enabledFormsFor(f, cfg.ask).some((form) =>
+      formSurvivesHistory(f, form, history),
+    ),
+  ).length;
 }
 
 function fisherYates<T>(a: T[]): T[] {
