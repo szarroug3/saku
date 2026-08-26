@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { Dock } from "@/components/dock";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
@@ -70,44 +71,32 @@ export function EntryView({
 
   return (
     <FlatSurfaceProvider>
-      {/* min-h-[calc(100vh-3rem)] (the shell's py-6 top+bottom): a short
-          entry (a two-line word) still fills the column, so the sticky bar
-          below reaches the viewport's bottom instead of settling right under
-          two lines of content with dead space beneath it. */}
-      <div className="flex min-h-[calc(100vh-3rem)] flex-col">
-        <div>
-          <p className="mb-3 text-[11.5px] text-text-muted">
-            <Link href="/library" className="text-text-muted no-underline">
-              Library
-            </Link>
-            {" › "}
-            {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
-                construction page browses on the counters shelf, so its crumb
-                links there — resolved server-side via shelfKindOf. */}
-            <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
-              {breadcrumbKindLabel}
-            </Link>
-            {" › "}
-            {entryName}
-          </p>
+      {/* SAK-204: renders straight into the shell's shared 3-row frame now
+          (app/layout.tsx) — no frame of its own to build. The bar docks into
+          the shell's bottom slot, a plain sibling below whatever scrolls,
+          so there is nothing for it to recede from the way `sticky bottom-0`
+          once did (see the shell's own comment on why sticky can't do this
+          for the bar's own last [bar-height] px of scroll range). */}
+      <p className="mb-3 text-[11.5px] text-text-muted">
+        <Link href="/library" className="text-text-muted no-underline">
+          Library
+        </Link>
+        {" › "}
+        {/* `breadcrumbKindHref/Label`, not `entry.kind` directly: a
+            construction page browses on the counters shelf, so its crumb
+            links there — resolved server-side via shelfKindOf. */}
+        <Link href={breadcrumbKindHref} className="text-text-muted no-underline">
+          {breadcrumbKindLabel}
+        </Link>
+        {" › "}
+        {entryName}
+      </p>
 
-          <GroupNav groupNav={groupNav} />
+      <GroupNav groupNav={groupNav} />
 
-          <EntryBody entry={entryId} kind={entryKind} />
-        </div>
+      <EntryBody entry={entryId} kind={entryKind} />
 
-        {/* Frozen at the bottom of the viewport — `sticky`, not `fixed
-            inset-x-0`: the page itself is the only scroll container (see
-            layout.tsx's note on that), so `sticky bottom-0` pins this exactly
-            like `fixed` the instant it reaches the bottom, but stays a normal
-            block inside <main>'s own column instead of stretching over the
-            sidebar the way a viewport-wide fixed bar would — the same
-            sticky-not-fixed choice layout.tsx's own top dock already makes.
-            The chrome itself (kq-band, border, padding, mt-auto) lives inside
-            SliceBar's own entry-variant branch, not here: an entry with
-            nothing to claim, unclaim or quiz renders no bar at all, and this
-            wrapper rendering it anyway would leave an empty bordered footer
-            sitting mid-column instead of nothing. */}
+      <Dock slot="bottom">
         <SliceBar
           variant="entry"
           slice={{ label: entryName, entries: [entryId] }}
@@ -122,7 +111,7 @@ export function EntryView({
           onUnclaim={unclaim}
           progressReady={historyLoaded}
         />
-      </div>
+      </Dock>
     </FlatSurfaceProvider>
   );
 }

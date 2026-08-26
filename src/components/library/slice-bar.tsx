@@ -235,12 +235,16 @@ export function SliceBar({
     const canUnclaim = Boolean(onUnclaim) && claimedFacts.length > 0;
     if (!canQuiz && !canClaim && !canUnclaim) return null;
     return (
-      <div className="kq-band sticky bottom-0 z-20 mt-auto border-t border-border px-4 py-3">
-        {/* The fixed-bar chrome (kq-band, border, padding) lives HERE, not on
-            entry-view.tsx's wrapper — this component is the one place that
-            knows whether it has anything to show, so it is the one place that
-            gets to decide whether the sticky footer chrome exists at all. An
-            entry with nothing to claim, unclaim or quiz renders neither the
+      <div className="border-t border-border px-4 py-3">
+        {/* SAK-204: no more kq-band/sticky/mt-auto — entry-view.tsx's frame
+            now keeps this bar frozen as a plain shrink-0 sibling below its
+            own scroll region, so nothing scrolls behind it to occlude and
+            nothing to stick to a viewport edge either. Just the border/padding
+            chrome, same as this. The fixed-bar chrome (border, padding) lives
+            HERE, not on entry-view.tsx's wrapper — this component is the one
+            place that knows whether it has anything to show, so it is the one
+            place that gets to decide whether the footer chrome exists at all.
+            An entry with nothing to claim, unclaim or quiz renders neither the
             buttons nor the empty bordered bar around them (the null return
             above), matching the quiz screens' own reveal bar exactly. */}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
