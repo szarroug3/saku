@@ -268,23 +268,31 @@ export function deriveProduction(
 /**
  * How a `derivationTitle()` category reads INLINE, mid-sentence: "an
  * irregular う-verb", not the heading's own "Irregular う-verb / godan".
+ * `article` and `phrase` are kept SEPARATE, not pre-joined, because only
+ * `phrase` renders accented (`text-accent`) — "a"/"an" is connective tissue,
+ * not a fact worth highlighting, and joining them here would force the
+ * renderer to either accent the article too or split the string back apart
+ * to avoid it, the exact display-text-parsing mistake this file's other
+ * doc comments already refuse to make.
  *
  * HARDCODED, like HOST_ARTICLE in ./formula.ts, and for the same reason that
  * table gives for itself: the labels start with kana and mix in slashes, so
- * an a/an-by-first-letter rule would get "an い-adjective" wrong, and a
- * strip-the-"/ godan"-suffix rule is one more sentence to get right for no
- * gain over just writing the seven strings out. Keyed off the exact category
- * strings `derivationTitle` above already produces; add a row here whenever
- * that function's own table grows.
+ * an a/an-by-first-LETTER rule would get every one of these wrong (they all
+ * start with kana or "Irregular"), and a by-SOUND rule still has to know that
+ * う and い read as vowels in English (an う-verb, an い-adjective) while る
+ * and な read as consonants (a る-verb, a な-adjective) — which is just this
+ * table by another name. Keyed off the exact category strings
+ * `derivationTitle` above already produces; add a row here whenever that
+ * function's own table grows.
  */
-const DERIVATION_CLASS_PHRASE: Readonly<Record<string, string>> = {
-  "Irregular い-adjective": "an irregular い-adjective",
-  "い-adjective": "an い-adjective",
-  "な-adjective": "a な-adjective",
-  "Irregular う-verb / godan": "an irregular う-verb",
-  "う-verb / godan": "a う-verb",
-  "る-verb / ichidan": "a る-verb",
-  "Irregular verb": "an irregular verb",
+const DERIVATION_CLASS_PHRASE: Readonly<Record<string, { article: string; phrase: string }>> = {
+  "Irregular い-adjective": { article: "an", phrase: "irregular い-adjective" },
+  "い-adjective": { article: "an", phrase: "い-adjective" },
+  "な-adjective": { article: "a", phrase: "な-adjective" },
+  "Irregular う-verb / godan": { article: "an", phrase: "irregular う-verb" },
+  "う-verb / godan": { article: "an", phrase: "う-verb" },
+  "る-verb / ichidan": { article: "a", phrase: "る-verb" },
+  "Irregular verb": { article: "an", phrase: "irregular verb" },
 };
 
 /**
@@ -310,14 +318,18 @@ const DERIVATION_CLASS_PHRASE: Readonly<Record<string, string>> = {
  * no-class case.
  */
 export type DerivationNudge =
-  | { readonly kind: "class"; readonly classPhrase: string; readonly pattern: string }
+  | {
+      readonly kind: "class";
+      /** "a" / "an" — plain text, never accented; see DERIVATION_CLASS_PHRASE. */
+      readonly article: string;
+      readonly classPhrase: string;
+      readonly pattern: string;
+    }
   | { readonly kind: "pattern-only"; readonly pattern: string };
 
 export function derivationNudge(derivation: Derivation): DerivationNudge {
-  const classPhrase = derivation.title
-    ? DERIVATION_CLASS_PHRASE[derivation.title]
-    : undefined;
-  return classPhrase
-    ? { kind: "class", classPhrase, pattern: derivation.pattern }
+  const entry = derivation.title ? DERIVATION_CLASS_PHRASE[derivation.title] : undefined;
+  return entry
+    ? { kind: "class", article: entry.article, classPhrase: entry.phrase, pattern: derivation.pattern }
     : { kind: "pattern-only", pattern: derivation.pattern };
 }

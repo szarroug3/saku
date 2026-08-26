@@ -110,8 +110,8 @@ export function HintBody({
         <p className="max-w-[320px] text-center text-[12px] text-text-muted">
           {nudge.kind === "class" ? (
             <>
-              This is <span className="text-accent">{nudge.classPhrase}</span>, using{" "}
-              <span className="text-accent">{nudge.pattern}</span>.
+              This is {nudge.article} <span className="text-accent">{nudge.classPhrase}</span>,
+              using <span className="text-accent">{nudge.pattern}</span>.
             </>
           ) : (
             <>
