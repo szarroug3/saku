@@ -303,14 +303,19 @@ export function SliceBar({
           onDone={() => setAdding(false)}
         />
       ) : null}
-      {/* DE-BOXED: no band, border, fill or shadow. The bar is a layout sibling
-          BELOW the scroll box (nothing scrolls behind it), so it needs no
-          occluding material — it sits on the page mesh like every other de-boxed
-          surface, set off from the shelf above by a single flat hairline. It is
-          only mounted at all while rows are selected (see the hasSelection gate),
-          so this row IS the "you have a selection, here's what you can do with
-          it" state. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.08] pt-3">
+      {/* SAK-213: was a de-boxed `border-white/[0.08]` hairline + `pt-3` — no
+          band, fill or shadow, since the bar is a layout sibling BELOW the
+          scroll box and needs no occluding material. That border was
+          rendering correctly (a real, if very subtle, 8%-opacity hairline —
+          not a bug), it just read as "missing" next to every OTHER footer in
+          the app, which since SAK-204 all dock into this same shared bottom
+          slot with a much more visible `border-border px-4 py-3` chrome.
+          Matched here too: this bar is now structurally identical to those
+          (same Dock, same "footer of a scrollable page" role), so it gets
+          the same visible separation. It is only mounted at all while rows
+          are selected (see the hasSelection gate), so this row IS the "you
+          have a selection, here's what you can do with it" state. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-3">
         <div className="min-w-0 flex-1 text-[13px] text-text-muted">
           {/* An empty slice has no sentence (see sliceSentence): show nothing
               here at all rather than a lone label with a trailing comma and no
