@@ -172,73 +172,104 @@ test("a FORM recipe's production still hints with its pattern name, but no form 
   );
 });
 
-test("a KNOWN る-verb adds its class to the hint, on top of the pattern and form nudges", () => {
-  // The learner has met 食べる, so its class is NOT in the instruction (see
-  // quiz-instruction.ts) — the reminder rides here instead, added to whatever the
-  // pattern's form hint already says.
+// SAK-194: given a VEHICLE, a production hint now tries the structured
+// two-step derivation FIRST (see deriveProduction / grammarHint), and it
+// replaces the flat "pattern + form + class" sentence entirely when it
+// succeeds — which is every ordinary verb/adjective card. The old
+// known/unknown class-nudge tests below are rewritten to check the
+// derivation's own fields instead of a sentence that no longer renders once
+// a vehicle is on hand; the flat-text class nudge itself is now reachable
+// only when deriveProduction declines (see the wrap test further down).
+
+test("a KNOWN る-verb's production derives the two-step equation, not the flat sentence", () => {
+  // 食べる (v1) -> 食べ (stem, − る) -> 食べたい (+ たい).
   const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
-  assert.equal(
-    textOf(
-      hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, KNOWN),
-      "tai + known 食べる",
-    ),
-    "This is the 〜たい pattern. uses the stem. 食べる is a る-verb",
-  );
+  const hint = hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, KNOWN);
+  assert.ok(hint, "expected a hint for tai + known 食べる");
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.word, "食べる");
+  assert.equal(hint.derivation.answer, "食べたい");
+  assert.deepEqual(hint.derivation.step1, { from: "食べる", trim: "る", add: undefined, to: "食べ" });
+  assert.deepEqual(hint.derivation.step2, { from: "食べ", trim: undefined, add: "たい", to: "食べたい" });
 });
 
-test("an UNKNOWN る-verb's class is NOT in the hint — the instruction carries it", () => {
+test("an UNKNOWN る-verb's derivation reads in kana — every other surface on the card does too", () => {
+  // GrammarVehicle.known === false means the whole showing is drawn in kana
+  // (see its doc in question.ts): building on the real 食べる would print a
+  // word the learner has only ever seen as たべる on this exact card.
   const UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
-  assert.equal(
-    textOf(
-      hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN),
-      "tai + unknown 食べる",
-    ),
-    "This is the 〜たい pattern. uses the stem",
-  );
+  const hint = hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN);
+  assert.ok(hint);
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.word, "たべる");
+  assert.equal(hint.derivation.answer, "たべたい");
 });
 
-test("a KNOWN adjective adds its class to the hint", () => {
+test("a KNOWN な-adjective's production derives a single equation (te-sequence adds nothing)", () => {
+  // 静か (adj-na) -> 静かで (+ で). te-sequence's suffix is "", so the built
+  // て-form IS the whole answer: one equation, no step 2.
   const KNOWN = { surface: "静か", kana: "しずか", cls: "adj-na", known: true } as const;
-  assert.equal(
-    textOf(
-      hintFor(
-        patternProductionFactId("te-sequence", "adj-na"),
-        "en2jp",
-        undefined,
-        false,
-        KNOWN,
-      ),
-      "te-sequence + known 静か",
-    ),
-    "This is the 〜て pattern. 静か is a な-adjective",
+  const hint = hintFor(
+    patternProductionFactId("te-sequence", "adj-na"),
+    "en2jp",
+    undefined,
+    false,
+    KNOWN,
   );
+  assert.ok(hint);
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.word, "静か");
+  assert.equal(hint.derivation.answer, "静かで");
+  assert.deepEqual(hint.derivation.step1, { from: "静か", trim: undefined, add: "で", to: "静かで" });
+  assert.equal(hint.derivation.step2, undefined);
 });
 
-test("an UNKNOWN adjective's class is NOT repeated in the hint", () => {
+test("an UNKNOWN な-adjective's derivation also reads in kana", () => {
   const UNKNOWN = { surface: "静か", kana: "しずか", cls: "adj-na", known: false } as const;
-  assert.deepEqual(
-    hintFor(
-      patternProductionFactId("te-sequence", "adj-na"),
-      "en2jp",
-      undefined,
-      false,
-      UNKNOWN,
-    ),
-    { kind: "text", text: "This is the 〜て pattern" },
+  const hint = hintFor(
+    patternProductionFactId("te-sequence", "adj-na"),
+    "en2jp",
+    undefined,
+    false,
+    UNKNOWN,
   );
+  assert.ok(hint);
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.word, "しずか");
+  assert.equal(hint.derivation.answer, "しずかで");
 });
 
-test("a FORM recipe + KNOWN る-verb hints with the pattern name and the class", () => {
-  // nai-form is a form recipe (no form nudge of its own), so a known る-verb's
-  // hint is the pattern name plus its class — exactly what a learner who forgot
-  // the class needs, alongside which pattern this even is.
+test("a FORM recipe + KNOWN る-verb also derives — 食べる − る + ない → 食べない", () => {
+  // nai-form is a form recipe (no form nudge of its own in the OLD flat text),
+  // but deriveProduction does not special-case form recipes: building the
+  // ない-form IS the derivation, so it still gets one equation.
+  const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
+  const hint = hintFor(classProductionFactId("nai-form", "v1"), "en2jp", undefined, false, KNOWN);
+  assert.ok(hint);
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.derivation.word, "食べる");
+  assert.equal(hint.derivation.answer, "食べない");
+  assert.deepEqual(hint.derivation.step1, { from: "食べる", trim: "る", add: "ない", to: "食べない" });
+  assert.equal(hint.derivation.step2, undefined);
+});
+
+test("the wrap recipe (shika-nai) has no derivation, so a vehicle still falls back to the flat text", () => {
+  // しか〜ない's drilled host is the CLOSING verb slot, which lives on
+  // recipe.wrap.close rather than recipe.attach — deriveProduction can't see
+  // it (same as formHintText already can't), so grammarHint's fallback runs
+  // and the class nudge is exactly where it used to be.
   const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
   assert.equal(
     textOf(
-      hintFor(classProductionFactId("nai-form", "v1"), "en2jp", undefined, false, KNOWN),
-      "nai-form + known 食べる",
+      hintFor(classProductionFactId("shika-nai", "v1"), "en2jp", undefined, false, KNOWN),
+      "shika-nai + known 食べる",
     ),
-    "This is the 〜ない pattern. 食べる is a る-verb",
+    "This is the 〜しか〜ない pattern. 食べる is a る-verb",
   );
 });
 
