@@ -308,9 +308,20 @@ export function requeuedPill(page: Page) {
 }
 
 /**
- * The wrong-answer reveal paragraph, or an empty locator when nothing is
- * revealed. The app renders the reveal in the one `min-h-[38px]` paragraph
- * under the input; the expected answer is its `.text-danger` span.
+ * The wrong-answer reveal, or an empty locator when nothing is revealed. The
+ * app renders the reveal sentence in the one `min-h-[38px]` paragraph under
+ * the input, with the expected answer in its `.text-danger` span — EXCEPT for
+ * a card whose hint is a derivation (SAK-194 changes-requested,
+ * showsRevealSentence in lib/drill-reveal.ts): that paragraph is suppressed
+ * entirely there, because the derivation's own "X becomes Y" line already
+ * says what the sentence would, and the equations (HintBody, hint-content.tsx)
+ * render straight into the reveal band in its place. `box` matches whichever
+ * one is actually on screen — the sentence paragraph when it renders, or the
+ * fixed reveal band itself when it doesn't — via a `:not(:has())` guard
+ * rather than an OR of two locators, since both a sentence card and a
+ * derivation card always have SOME `.kq-band` on screen (the drill also has a
+ * sticky top HUD band with that same class) and only one of the two selectors
+ * should ever be live at once.
  *
  * SAK-190 dropped the restated-prompt-glyph span this used to expose as
  * `.prompt` — the reveal sentence no longer re-states what was asked (the
@@ -318,10 +329,16 @@ export function requeuedPill(page: Page) {
  * a locator to target there.
  */
 export function reveal(page: Page) {
-  const box = page.locator("p.min-h-\\[38px\\]");
+  const sentence = "p.min-h-\\[38px\\]";
+  const box = page.locator(
+    `${sentence}, div.kq-band.fixed:not(:has(${sentence}))`,
+  );
   return {
     box,
-    /** The span holding what the answer SHOULD have been. */
+    /** The span holding what the answer SHOULD have been. Only present on
+     * the sentence-shaped reveal — a derivation-hint card has no
+     * `.text-danger` span, its own accented span (`.text-accent`) is the
+     * equivalent there. */
     answer: box.locator("span.text-danger"),
   };
 }
