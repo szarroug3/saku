@@ -51,14 +51,14 @@ test("skipping an untried card re-queues it for free and draws the next", async 
 test("a retry keeps the card up; only running out of goes resolves it", async ({
   page,
 }) => {
-  // retryN 2 = two attempts (one real retry). The pips show, and the label names
-  // them.
+  // retryN 1 = two attempts (one real retry): a card locks once tries exceeds
+  // retryN, not once tries reaches it. The pips show, and the label names them.
   await seedQuiz(page, {
     seen: ["kana:あ/reading"],
     cfg: {
       ...JP2EN_TYPED,
       retries: "lim",
-      retryN: 2,
+      retryN: 1,
       showRetryPips: true,
     },
   });
