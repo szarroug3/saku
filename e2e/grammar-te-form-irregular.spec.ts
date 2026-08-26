@@ -35,18 +35,13 @@ test("the te-form's 行く card is kana, has no dead hint, and reveals the deriv
 
   // 2. The Hint button no longer says "uses the て-form" — that on a card asking
   //    for the て-form IS the prompt restated, so the form recipe's own form
-  //    nudge stays silent. But SAK-194 shows the derivation instead (a
-  //    whole-word equation, since 行く's te-form is one of the inherently
-  //    irregular classes with no shared-prefix rule to spell out — see
-  //    IRREGULAR_STEP1_CLASSES, lib/grammar/derivation.ts) rather than the
-  //    total silence this card used to get. The word/arrow/result spans sit
-  //    flush together with no text-node space (only CSS gap), so the
-  //    rendered text runs "becomes" and "→" together with no surrounding
-  //    space.
+  //    nudge stays silent. SAK-194 introduced the derivation; SAK-198 then
+  //    found it was leaking the built answer (いって) on the Hint button
+  //    itself, so this now shows the SAFE class+pattern nudge instead — never
+  //    total silence, and never the built form either.
   await hintButton(page).click();
-  await expect(page.getByText("いくbecomesいって", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Irregular う-verb / godan", { exact: true }),
+    page.getByText("This is an irregular う-verb, using 〜て."),
   ).toBeVisible();
 
   // 3. Miss it, and the reveal shows that same derivation. An unknown vehicle
