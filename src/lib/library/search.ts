@@ -330,11 +330,40 @@ function stripTilde(s: string): string {
  * わてr), so only a query that converts CLEANLY to kana travels this path —
  * exactly the set someone typed as sound. Folded to hiragana so the kana we hand
  * back compares equal against a katakana reading downstream.
+ *
+ * ONE DANGLING CONSONANT IS TOLERATED (SAK-212). Typing "desu" one letter at a
+ * time passes through "des": "de" converts cleanly to で, but "s" alone is not
+ * a complete mora yet (it needs a vowel — su/shi/sa/se/so), so toKana leaves it
+ * as a literal latin letter and the WHOLE string ("でs") used to fail the
+ * isKanaOnly gate above — not just the incomplete tail, the entire query's
+ * romaji interpretation, which dropped the search to a plain English substring
+ * match against meaning text ("des" coincidentally hit "describe"). If the only
+ * thing keeping `kana` from being kana-only is a single bare consonant at the
+ * very end, drop it and read the rest as the romaji reading instead — "des"
+ * behaves like "de" for matching purposes, and the next keystroke ("desu")
+ * lands the real, more specific match on its own.
+ *
+ * A vowel or "n" at the end never reaches this: toKana already resolves those
+ * in place (a vowel completes the mora it's part of; a bare trailing "n" folds
+ * to ん on its own, see toKana's ん handling), so there is nothing dangling to
+ * strip in the first place — this only ever fires on a genuine consonant that
+ * has no vowel yet.
  */
 function romajiReading(lower: string): string | null {
   if (!/[a-z]/.test(lower)) return null;
   const kana = toKana(lower);
-  return isKanaOnly(kana) ? toHiragana(kana) : null;
+  if (isKanaOnly(kana)) return toHiragana(kana);
+  const last = kana[kana.length - 1];
+  if (!isDanglingConsonant(last)) return null;
+  const stem = kana.slice(0, -1);
+  return isKanaOnly(stem) ? toHiragana(stem) : null;
+}
+
+/** A latin consonant — romaji letter that isn't a vowel or "n" (ん can stand
+ * alone; every other consonant needs a vowel to complete a mora, which is
+ * exactly what makes it "still typing" rather than "not romaji"). */
+function isDanglingConsonant(c: string | undefined): boolean {
+  return !!c && c >= "a" && c <= "z" && !"aeioun".includes(c);
 }
 
 /** Does the entry's kana (its glyph or any reading, folded to hiragana) relate
