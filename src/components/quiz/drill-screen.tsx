@@ -1565,7 +1565,7 @@ export function DrillScreen() {
       // unaffected: `left` still reads the live configured retries exactly
       // as before.
       const left = effectiveRetries(cfg, mcOptionCount(q)) - q.tries;
-      if (left > 0) {
+      if (left >= 0) {
         // Red pulse + one fewer pip says "wrong, go again" without a sentence.
         // A timeout needs no words either: the ring visibly ran out.
         rt.feedback = { kind: "bad" };
