@@ -102,5 +102,5 @@ jobs:
       - name: Seed content_entries
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-content-entries.mjs

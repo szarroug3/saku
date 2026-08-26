@@ -60,10 +60,7 @@ import { characterEntryPayload } from "@/lib/library/character-entry-content";
 import { contentRowsNeedingUpsert } from "@/lib/library/content-seed-delta";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-// SUPABASE_SECRET_KEY (sb_secret_...) once set, else the legacy service_role
-// key — both work simultaneously during Supabase's publishable/secret key
-// migration, see src/lib/supabase/secret-key.ts.
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SECRET_KEY;
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   throw new Error(
     "seed-content-entries: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY not set — run with --env-file=.env.local",

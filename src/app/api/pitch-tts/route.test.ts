@@ -13,7 +13,7 @@ import { GET } from "./route.ts";
 const ENV_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_VOICE_AUDIO_BUCKET",
-  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_SECRET_KEY",
   "VOICEVOX_ENGINE_URL",
 ] as const;
 
@@ -23,7 +23,7 @@ beforeEach(() => {
   saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://fake.supabase.co";
   process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET = "tts-voice";
-  process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-role-key";
+  process.env.SUPABASE_SECRET_KEY = "fake-secret-key";
   // Never actually dialed — fetch is mocked in every test below — this only
   // needs to be non-empty so ttsConfigured() lets the request past the 503
   // gate and into the cache check under test.
