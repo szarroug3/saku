@@ -127,15 +127,15 @@ describe("no recipe is served a vehicle it forbids", () => {
   test("〜てある still has verbs enough to drill on", () => {
     assert.ok(TE_ARU);
     const dealt = vehiclesFor(TE_ARU, "verb");
-    // Eleven of the pool's 19 survive, across eight conjugation classes. A
-    // pattern narrowed to one or two vehicles would be a pattern that cannot
-    // be practised, and the number is asserted rather than assumed.
-    //
-    // SAK-203 round 2 moved this from 10 to 11: 急ぐ joined VERB_VEHICLES as
-    // v5g's second pool member (JMdict tags it both vi AND vt, which
-    // transitivityOf resolves to transitive — see vehicles.ts — so it is now
-    // a legal 〜てある vehicle same as any other dual-tagged verb here).
-    assert.equal(dealt.length, 11);
+    // SAK-214 moved this from 11 to 136: VERB_VEHICLES's regular classes are
+    // now drawn from the real corpus (up to 25 most-common members per class,
+    // see vehicles.ts's MAX_POOL_PER_CLASS) rather than hand-typed one or two
+    // per class, so the transitive share of that much larger pool is much
+    // larger too — a pattern narrowed to one or two vehicles would be a
+    // pattern that cannot be practised, and the number is asserted rather
+    // than assumed so a future pool change that quietly starves this pattern
+    // fails here, loudly, instead of shipping unnoticed.
+    assert.equal(dealt.length, 136);
     assert.ok(new Set(dealt.map((v) => v.cls)).size >= 4);
   });
 

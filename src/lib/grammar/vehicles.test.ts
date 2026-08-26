@@ -125,12 +125,16 @@ describe("first-learned verb across a run", () => {
 // the first place. `usedInDeck` is the fix: a session-aware preference
 // threaded into `pickVehicle` for a word not already picked elsewhere.
 describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
-  test("v5g really did have exactly one pool member before this change", () => {
+  test("v5g had exactly one pool member before this change — SAK-214 grew it further", () => {
     // Confirms およぐ's repeat was PARTLY a data gap, not only an algorithm
     // gap: with only one v5g word in the pool, no session-awareness has
-    // anything to dedupe against. 急ぐ is the fix's second pool member.
+    // anything to dedupe against. SAK-203 round 2 added 急ぐ by hand as a
+    // second member; SAK-214 replaced that hand-typed pair with the class's
+    // whole corpus-derived pool (vehicles.ts's corpusPoolFor), so both
+    // reported words are still in it, alongside many more.
     const v5g = VERB_VEHICLES.filter((v) => v.cls === "v5g").map((v) => v.surface);
-    assert.deepEqual(v5g, ["泳ぐ", "急ぐ"]);
+    assert.ok(v5g.length > 2, `v5g should have grown past its SAK-203 size of 2: got ${v5g.length}`);
+    assert.ok(v5g.includes("泳ぐ") && v5g.includes("急ぐ"), "the SAK-203 pair should still be in the pool");
   });
 
   test("a class with a real pool alternative is not re-picked once used", () => {
@@ -149,13 +153,35 @@ describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
   });
 
   test("v5g specifically: 泳ぐ used first, 急ぐ picked second — the exact reported pair", () => {
+    // Un-gated (no `known` predicate), pickVehicle's earliest-taught tie-break
+    // now reaches past 泳ぐ/急ぐ into the rest of SAK-214's larger v5g pool —
+    // this scopes to the SAK-203 pair specifically with a known-word gate, the
+    // way the live drill actually would once a learner has met exactly these
+    // two. The un-gated, whole-pool shape of this same mechanism is covered
+    // by the class-agnostic test above and the v5s test below.
     const r = recipe("te-iru")!;
     const bucket = { kind: "class", cls: "v5g" } as const;
-    const first = pickVehicle(r, () => 0, "verb", undefined, bucket)!;
+    const known = (s: string) => s === "泳ぐ" || s === "急ぐ";
+    const first = pickVehicle(r, () => 0, "verb", known, bucket)!;
     assert.equal(first.surface, "泳ぐ");
     const usedInDeck = new Set(["泳ぐ"]);
-    const second = pickVehicle(r, () => 0, "verb", undefined, bucket, usedInDeck)!;
+    const second = pickVehicle(r, () => 0, "verb", known, bucket, usedInDeck)!;
     assert.equal(second.surface, "急ぐ", "did not fall back to the pool's second member");
+  });
+
+  test("SAK-214: 話す (v5s) is no longer forced to repeat — the ticket's own reported bug", () => {
+    // The exact live report this ticket exists to fix: はなす (話す) picked
+    // independently for both "please 話す" and "is 話す" in one session,
+    // because v5s — like v5g before SAK-203 round 2 — had exactly ONE pool
+    // member. vehicles.ts's corpusPoolFor now gives v5s real alternatives.
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v5s" } as const;
+    const first = pickVehicle(r, () => 0, "verb", undefined, bucket)!;
+    assert.equal(first.surface, "話す"); // still earliest-taught, unchanged default
+    const usedInDeck = new Set([first.surface]);
+    const second = pickVehicle(r, () => 0, "verb", undefined, bucket, usedInDeck);
+    assert.notEqual(second!.surface, "話す", "re-picked 話す despite an unused pool alternative");
+    assert.equal(second!.cls, "v5s");
   });
 
   test("an irregular's one-word pool still repeats — not a bug", () => {
@@ -169,15 +195,19 @@ describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
   });
 
   test("a genuinely single-member class pool still repeats — not a bug", () => {
-    // v5k has exactly one pool member (書く). Confirmed empirically, not
-    // assumed: this test fails the day a second v5k word is added, which is
-    // the point — it should be revisited then, not silently pass either way.
-    assert.deepEqual(VERB_VEHICLES.filter((v) => v.cls === "v5k").map((v) => v.surface), ["書く"]);
+    // v5k had exactly one pool member (書く) before SAK-214; corpusPoolFor now
+    // gives it 25. v5n is the one regular class SAK-214 could NOT deepen: the
+    // entire common-word corpus (VOCAB) has exactly one ぬ-ending verb, 死ぬ —
+    // see vehicles.ts's MAX_POOL_PER_CLASS comment. Confirmed empirically, not
+    // assumed: this test fails the day JMdict's common cut gains a second v5n
+    // verb, which is the point — it should be revisited then, not silently
+    // pass either way.
+    assert.deepEqual(VERB_VEHICLES.filter((v) => v.cls === "v5n").map((v) => v.surface), ["死ぬ"]);
     const r = recipe("te-iru")!;
-    const bucket = { kind: "class", cls: "v5k" } as const;
-    const usedInDeck = new Set(["書く"]);
+    const bucket = { kind: "class", cls: "v5n" } as const;
+    const usedInDeck = new Set(["死ぬ"]);
     const v = pickVehicle(r, Math.random, "verb", undefined, bucket, usedInDeck);
-    assert.equal(v?.surface, "書く", "v5k's only pool member should still be offered");
+    assert.equal(v?.surface, "死ぬ", "v5n's only pool member should still be offered");
   });
 
   test("dedup composes with the known-word preference: known+unused beats known+used", () => {
@@ -208,6 +238,75 @@ describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
       const withEmpty = pickVehicle(r, seq([x]), undefined, undefined, undefined, new Set())!
         .surface;
       assert.equal(withEmpty, plain);
+    }
+  });
+});
+
+// SAK-214: VERB_VEHICLES's regular classes are drawn from the real corpus
+// (src/data/vocab.ts) via `wordClassOf`, rather than hand-typed — see
+// vehicles.ts's own header on the fix and its `MAX_POOL_PER_CLASS` comment on
+// the cutoff/quality reasoning. These tests check the shape of the RESULT:
+// the six previously single-member classes actually grew, the irregulars that
+// were deliberately left alone actually stayed put, and the quality filters
+// (register, resolvable transitivity) actually excluded what they claim to.
+describe("SAK-214: the verb pool is drawn from the corpus, not hand-typed", () => {
+  test("the six previously single-member regular classes all have multiple pool members now", () => {
+    // v5k, v5s, v5t, v5b, v5r: exactly one pool member each before this
+    // change (話す's repeat, reported for this ticket, is v5s's instance of
+    // this). v5n is excluded here — see its own dedicated test above: the
+    // corpus genuinely has only one common v5n verb, so it is expected to
+    // stay a single-member pool, not a bug this change could fix.
+    for (const cls of ["v5k", "v5s", "v5t", "v5b", "v5r"] as const) {
+      const members = VERB_VEHICLES.filter((v) => v.cls === cls).map((v) => v.surface);
+      assert.ok(members.length > 1, `${cls} is still a single-member pool: ${members.join(", ")}`);
+    }
+  });
+
+  test("v5u, v5g and v1 — not thin, but also deepened for the same dedup headroom", () => {
+    // Called out explicitly in the ticket: v5u/v5g had 2 members and v1 had 3,
+    // not single, but still worth the same corpus-derived treatment.
+    for (const cls of ["v5u", "v5g", "v1"] as const) {
+      const members = VERB_VEHICLES.filter((v) => v.cls === cls).map((v) => v.surface);
+      assert.ok(members.length > 3, `${cls} did not grow past its pre-SAK-214 size: ${members.length}`);
+    }
+  });
+
+  test("the irregular/special classes are UNCHANGED — still pinned to one canonical word each", () => {
+    // v5k-s, vs-i, vk, v5r-i are the only special classes actually reachable
+    // through VERB_VEHICLES (the rest — v5u-s, v5aru, v1-s, vz, vs-s — have no
+    // representative in this pool at all, exactly as before SAK-214). None of
+    // this should ever grow: these are irregular precisely because there is
+    // essentially one commonly-taught representative, and DEFAULT_VERB /
+    // RESTRICTED_VERB / exampleVerb() all anchor on 行く / 書く specifically —
+    // see this file's own header. A future change that quietly starts pulling
+    // these from the corpus too would break that anchor silently; this test
+    // is the tripwire.
+    const irregularClasses = ["v5k-s", "vs-i", "vk", "v5r-i"] as const;
+    const bySurface: Record<string, string> = {
+      "v5k-s": "行く",
+      "vs-i": "する",
+      vk: "来る",
+      "v5r-i": "ある",
+    };
+    for (const cls of irregularClasses) {
+      const members = VERB_VEHICLES.filter((v) => v.cls === cls).map((v) => v.surface);
+      assert.deepEqual(members, [bySurface[cls]], `${cls} grew past its one pinned word`);
+    }
+    // And no OTHER special class snuck a member in either.
+    for (const cls of ["v5u-s", "v5aru", "v1-s", "vz", "vs-s"] as const) {
+      assert.deepEqual(VERB_VEHICLES.filter((v) => v.cls === cls), [], `${cls} should have no pool member`);
+    }
+  });
+
+  test("no honorific/humble-only word made it into the pool", () => {
+    // Spot-checked against real JMdict hits the exclusion has to catch:
+    // 伺う (v5u, humble "to call on"), 召し上がる/まいる/おる/承る/ご覧になる
+    // (v5r, honorific/humble), 召す/申す/いたす (v5s, honorific/humble). None
+    // of these should be an unlabeled filler a learner who has never studied
+    // keigo is handed to conjugate — see vehicles.ts's isHonorificOrHumbleOnly.
+    const surfaces = VERB_VEHICLES.map((v) => v.surface);
+    for (const w of ["伺う", "召し上がる", "まいる", "おる", "承る", "ご覧になる", "召す", "申す", "いたす"]) {
+      assert.ok(!surfaces.includes(w), `${w} is honorific/humble-only and should have been excluded`);
     }
   });
 });
