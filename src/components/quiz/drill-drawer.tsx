@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { PrimaryBtn, Btn, Row, SmallBtn } from "@/components/ui";
+import { PrimaryBtn, Btn, Chip, Row, SmallBtn } from "@/components/ui";
 import { askFromAudioPrompts } from "@/lib/ask-config";
 import { useQuizConfig } from "@/lib/quiz-config";
 
@@ -85,25 +85,32 @@ export function DrillDrawer({ onClose }: { onClose: () => void }) {
             <OnOff on={draft.timer} toggle={() => patch({ timer: !draft.timer })} />
           </Row>
           <Row label="Retries">
-            <SmallBtn
-              onClick={() => {
-                if (draft.retries === "lim" && draft.retryN > 1)
-                  patch({ retryN: draft.retryN - 1 });
-              }}
-            >
-              −
-            </SmallBtn>
-            <span>
-              {draft.retries === "unl" ? "∞" : draft.retries === "none" ? "0" : draft.retryN}
-            </span>
-            <SmallBtn
-              onClick={() => {
-                if (draft.retries === "lim" && draft.retryN < 9)
-                  patch({ retryN: draft.retryN + 1 });
-              }}
-            >
-              +
-            </SmallBtn>
+            <Chip on={draft.retries === "none"} onClick={() => patch({ retries: "none" })}>
+              None
+            </Chip>
+            <Chip on={draft.retries === "lim"} onClick={() => patch({ retries: "lim" })}>
+              Limited
+            </Chip>
+            <Chip on={draft.retries === "unl"} onClick={() => patch({ retries: "unl" })}>
+              Unlimited
+            </Chip>
+            {draft.retries === "lim" ? (
+              <>
+                <SmallBtn
+                  disabled={draft.retryN <= 1}
+                  onClick={() => patch({ retryN: draft.retryN - 1 })}
+                >
+                  −
+                </SmallBtn>
+                <span className="tabular-nums">{draft.retryN}</span>
+                <SmallBtn
+                  disabled={draft.retryN >= 9}
+                  onClick={() => patch({ retryN: draft.retryN + 1 })}
+                >
+                  +
+                </SmallBtn>
+              </>
+            ) : null}
           </Row>
           <Row label="Show correct answer">
             <OnOff on={draft.showAnswer} toggle={() => patch({ showAnswer: !draft.showAnswer })} />
