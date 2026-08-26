@@ -2587,25 +2587,20 @@ export function DrillScreen() {
     // scrolling with the page) for a card tall enough to need it — the
     // drawer opening, or a long reveal/hint stack.
     //
-    // SAK-199: mx-auto w-full max-w-4xl added here. This frame had no width
-    // rule of its own, so with no explicit align-items it stretched
-    // (the flex default) to whatever width its ancestors gave it: main's own
-    // max-w-[1400px] cap (app/layout.tsx), stretched further by the
-    // kq-scroll/relative wrappers between them, none of which set a width
-    // either. The HUD bar spanned that whole span edge to edge while the
-    // actual card below it (a glyph, a ~270px input, MC boards up to 480px)
-    // stayed centered in the middle of it (`items-center` on the stage div
-    // below). Nothing was too narrow; the card was just small content
-    // floating in a much bigger box, which is what read as a narrow column
-    // with dead space beside it rather than a screen actually using its
-    // room. Capped here at a width wide enough to give the HUD, the MC
-    // boards and the fixed reveal bar's own max-w-2xl content shared,
-    // proportionate room, while stopping well short of main's 1400px so the
-    // card itself never has to stretch to fill it. Matches the max-w-xl
-    // substitution-screen.tsx and sentence-listen-screen.tsx already put on
-    // their own kq-center-frame for the identical reason; wider here because
-    // this screen's HUD and MC boards need more room than those two
-    // screens' single sentence or blank.
+    // SAK-199 round 2: this frame's OWN `mx-auto w-full max-w-4xl` caps only
+    // the CARD below — a glyph, a ~270px input, MC boards up to 480px — so it
+    // never has to stretch across a wide monitor to fill the space. The HUD
+    // is a different question: it used to be capped at this SAME max-w-4xl
+    // too (living inside this frame, pre-SAK-204), which read as a narrow
+    // bar with dead space beside it rather than a header actually using its
+    // room. Now that the HUD docks into the shell's own shared top slot
+    // (SAK-204), it spans that slot's FULL width — same as the Library's or
+    // a lesson's own header — independent of how narrow the card underneath
+    // stays. Matches the max-w-xl substitution-screen.tsx and
+    // sentence-listen-screen.tsx already put on their own kq-center-frame
+    // for the identical reason; wider here because this screen's card and MC
+    // boards need more room than those two screens' single sentence or
+    // blank.
     <div className="kq-center-frame mx-auto w-full max-w-4xl">
       {/* px-3 to inset the HUD's contents off both edges — the same value
           pairs and grid use, so the three screens agree.
@@ -2624,7 +2619,7 @@ export function DrillScreen() {
           where the band stops. Same treatment the session's lesson bar wears
           (session/session-hud.tsx), for the same reason and by the same name. */}
       <Dock slot="top">
-      <div className="mx-auto w-full max-w-4xl border-b border-border px-3 py-1.5">
+      <div className="border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           {/* Information — always quiet, and only ever present when it has
               something true to say. An empty pill is worse than no pill: "—
