@@ -29,10 +29,10 @@ import { AddToList } from "@/components/library/add-to-list";
 import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Hint } from "@/components/ui";
 import { constructionConfigForFact } from "@/data/counter-categories";
+import { realQuestionCount } from "@/lib/ask-forms";
 import {
   drillPlan,
   hasMultipleQuizForms,
-  quizFormCount,
   sliceCount,
   sliceFacts,
   sliceIsDrillable,
@@ -40,6 +40,7 @@ import {
   type Slice,
 } from "@/lib/library/slice";
 import { claimableFacts, quizzableFacts } from "@/lib/library/reading-proof-facts";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { Claims } from "@/lib/claims";
 import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
@@ -136,6 +137,10 @@ export function SliceBar({
   hasSelection?: boolean;
 }) {
   const { startSession, startQuiz, startQuizInMode } = useQuizSession();
+  // SAK-210: the live builder config startQuiz snapshots into the run — read
+  // here so the button's own count can be produced by the exact same
+  // question-count function the deck build uses, not a second guess at it.
+  const { cfg } = useQuizConfig();
   const [adding, setAdding] = useState(false);
   // "Quiz me" no longer drops straight into the drill. It opens a pre-start step
   // so the config that WILL run is visible and changeable first — the same gap
@@ -171,11 +176,27 @@ export function SliceBar({
   // everything it picked except a reading in a word you never learned.
   const quizOrder = quizzableFacts(sliceFacts(slice), history);
   const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
-  const quizCount = quizFormCount(effectiveQuizOrder);
   const canQuiz = hasMultipleQuizForms(effectiveQuizOrder);
   const hasGenerator = effectiveQuizOrder.some(
     (fact) => constructionConfigForFact(fact) !== null,
   );
+  // SAK-210: "Quiz me N" used to print quizFormCount's naive one-form-per-fact
+  // guess — right for a generator category (it already multiplies by the
+  // configured round) but wrong for anything else the moment the live config
+  // asks a fact more than one way (Prompt Format: Audio alone turns a single
+  // word reading into two jp→en cards — text and audio; see
+  // ask-forms.test.ts). The real deck, built in the coverage branch of
+  // drill-screen.tsx's onMount, is exactly `coverageQuestionCount`; outside
+  // coverage it is buildDeck's own count/endless arithmetic — `realQuestionCount`
+  // is both, chosen the identical way `startQuiz` below picks them: forced
+  // coverage for a generator pool (the hasGenerator branch always passes
+  // `coverage: true`), the live builder config otherwise. `quizMode` only
+  // swaps `mode`, which this arithmetic doesn't depend on, so it needs no
+  // separate case.
+  const quizLaunchCfg = hasGenerator
+    ? { ...cfg, length: "limited" as const, limType: "cov" as const }
+    : cfg;
+  const quizCount = realQuestionCount(effectiveQuizOrder, quizLaunchCfg);
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
