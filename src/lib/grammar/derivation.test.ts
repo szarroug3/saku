@@ -254,7 +254,7 @@ describe("derivationNudge", () => {
     });
   }
 
-  test("the exact class-phrase table (mirrors HOST_ARTICLE's hardcoded-article precedent)", () => {
+  test("the exact class-phrase table (mirrors HOST_ARTICLE's hardcoded-article precedent) — article and phrase apart, since only the phrase accents", () => {
     const teSequence = byId("te-sequence");
     const cases: readonly [string, WordClass][] = [
       ["いい", "adj-ix"],
@@ -264,13 +264,13 @@ describe("derivationNudge", () => {
       ["たべる", "v1"],
       ["する", "vs-i"],
     ];
-    const wantPhrase: Readonly<Record<string, string>> = {
-      いい: "an irregular い-adjective",
-      たかい: "an い-adjective",
-      行く: "an irregular う-verb",
-      かく: "a う-verb",
-      たべる: "a る-verb",
-      する: "an irregular verb",
+    const want: Readonly<Record<string, { article: string; phrase: string }>> = {
+      いい: { article: "an", phrase: "irregular い-adjective" },
+      たかい: { article: "an", phrase: "い-adjective" },
+      行く: { article: "an", phrase: "irregular う-verb" },
+      かく: { article: "an", phrase: "う-verb" },
+      たべる: { article: "a", phrase: "る-verb" },
+      する: { article: "an", phrase: "irregular verb" },
     };
     for (const [word, cls] of cases) {
       const host: Host = word === "いい" || word === "たかい" ? "adj-i" : "verb";
@@ -278,13 +278,15 @@ describe("derivationNudge", () => {
       assert.ok(d, `expected a derivation for ${word}`);
       const nudge = derivationNudge(d);
       assert.ok(nudge.kind === "class");
-      assert.equal(nudge.classPhrase, wantPhrase[word]);
+      assert.equal(nudge.article, want[word]!.article);
+      assert.equal(nudge.classPhrase, want[word]!.phrase);
     }
     const shizuka = deriveProduction(teSequence, "adj-na", "しずか", "adj-na");
     assert.ok(shizuka);
     const shizukaNudge = derivationNudge(shizuka);
     assert.ok(shizukaNudge.kind === "class");
-    assert.equal(shizukaNudge.classPhrase, "a な-adjective");
+    assert.equal(shizukaNudge.article, "a");
+    assert.equal(shizukaNudge.classPhrase, "な-adjective");
   });
 
   test("no title (noun attachment) falls back to naming the pattern alone", () => {
@@ -303,7 +305,12 @@ describe("derivationNudge", () => {
     assert.ok(d);
     assert.equal(d.answer, "行ってもいい");
     const nudge = derivationNudge(d);
-    assert.deepEqual(nudge, { kind: "class", classPhrase: "an irregular う-verb", pattern: "〜てもいい" });
+    assert.deepEqual(nudge, {
+      kind: "class",
+      article: "an",
+      classPhrase: "irregular う-verb",
+      pattern: "〜てもいい",
+    });
     assert.ok(!JSON.stringify(nudge).includes("行ってもいい"));
   });
 });

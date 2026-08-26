@@ -337,7 +337,8 @@ test("行く + 〜てもいい: the un-revealed nudge never contains the built a
   const nudge = derivationNudge(hint.derivation);
   assert.deepEqual(nudge, {
     kind: "class",
-    classPhrase: "an irregular う-verb",
+    article: "an",
+    classPhrase: "irregular う-verb",
     pattern: "〜てもいい",
   });
   assert.ok(
