@@ -148,8 +148,14 @@ function pageHost(r: Recipe): Host {
  * Meaning column reads as the pattern APPLIED. A verb's X takes whatever English
  * form its frame calls for — "after doing X" + eat = "after eating", "may do X" +
  * eat = "may eat" — so the scaffolding words ("do", "doing") do not survive into
- * the reading. A noun or adjective has no such frames, so it is filled plainly. A
- * gloss with no X slot is left as it is. */
+ * the reading. A noun or adjective is mostly filled plainly, but a few glosses
+ * are STILL phrased as if the vehicle were a verb — "do X, and then" (te-sequence),
+ * "may do X" (te-permission), "did X" (ta-form), or a verb-only leading half
+ * before " / too X" / " / looks X" (sugiru, sou-appearance) — and those get the
+ * inverse treatment: the scaffold word is swapped for the copula ("is X", "may be
+ * X", "was X") or its verb-only half is dropped, so a non-verb row never reads as
+ * if it were one ("do good" / "looks like it will good"). A gloss with no X slot
+ * is left as it is. */
 function appliedGloss(gloss: string, ex: ExampleWord): string {
   if (!/\bX\b/.test(gloss)) return gloss;
   if (!ex.ing) {
@@ -157,7 +163,23 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
     // book"); an adjective takes none ("too expensive", not "too a expensive").
     const filled =
       ex.cls === null ? `${/^[aeiou]/i.test(ex.en) ? "an" : "a"} ${ex.en}` : ex.en;
-    return gloss.replace(/\bX\b/g, filled);
+    return (
+      gloss
+        // A verb-only leading alternative (〜すぎる "do X too much / too X", 〜そう
+        // "looks like it will X / looks X") does not apply to a non-verb row; drop
+        // it so the X-only half stands alone — the inverse of the verb branch's
+        // own adjective-only-alt strip below.
+        .replace(/^.*? \/ (?=(?:too|looks?) X\b)/, "")
+        // "do X" is verb scaffolding a non-verb predicate cannot carry. At the
+        // start of a clause it reads as a finite verb ("is X, and then…"); after
+        // a modal ("may do X") it needs the bare copula the modal already calls
+        // for ("may be X"). "did X" is always the copula's past tense.
+        .replace(/^do X\b/, `is ${filled}`)
+        .replace(/\bdo X\b/g, `be ${filled}`)
+        .replace(/\bdid X\b/g, `was ${filled}`)
+        // Bare X is filled plainly.
+        .replace(/\bX\b/g, filled)
+    );
   }
   const base = ex.en;
   return (
