@@ -25,20 +25,22 @@ function byId(id: string) {
   return r;
 }
 
-/** [word, cls, host, expected て-form] — the SAK-194 approved category table. */
-const TE_FORM_TABLE: readonly [string, WordClass, Host, string][] = [
-  ["いい", "adj-ix", "adj-i", "よくて"], // irregular い-adjective
-  ["たかい", "adj-i", "adj-i", "たかくて"], // い-adjective
-  ["しずか", "adj-na", "adj-na", "しずかで"], // な-adjective
-  ["行く", "v5k-s", "verb", "行って"], // irregular う-verb/godan
-  ["かく", "v5k", "verb", "かいて"], // う-verb/godan
-  ["たべる", "v1", "verb", "たべて"], // る-verb/ichidan
-  ["する", "vs-i", "verb", "して"], // irregular verb
+/** [word, cls, host, expected て-form, expected title] — the SAK-194 approved
+ * category table, now also asserting the changes-requested category/class
+ * heading ("Irregular い-adjective", …) for each of the 7 rows. */
+const TE_FORM_TABLE: readonly [string, WordClass, Host, string, string][] = [
+  ["いい", "adj-ix", "adj-i", "よくて", "Irregular い-adjective"],
+  ["たかい", "adj-i", "adj-i", "たかくて", "い-adjective"],
+  ["しずか", "adj-na", "adj-na", "しずかで", "な-adjective"],
+  ["行く", "v5k-s", "verb", "行って", "Irregular う-verb / godan"],
+  ["かく", "v5k", "verb", "かいて", "う-verb / godan"],
+  ["たべる", "v1", "verb", "たべて", "る-verb / ichidan"],
+  ["する", "vs-i", "verb", "して", "Irregular verb"],
 ];
 
 describe("deriveProduction — the SAK-194 approved て-form table (te-sequence)", () => {
   const teSequence = byId("te-sequence");
-  for (const [word, cls, host, want] of TE_FORM_TABLE) {
+  for (const [word, cls, host, want, title] of TE_FORM_TABLE) {
     test(`${word} (${cls}) -> ${want}`, () => {
       const d = deriveProduction(teSequence, host, word, cls);
       assert.ok(d, `expected a derivation for ${word}`);
@@ -49,6 +51,7 @@ describe("deriveProduction — the SAK-194 approved て-form table (te-sequence)
       assert.equal(d.step2, undefined);
       assert.ok(d.step1, "expected a step 1 equation");
       assert.equal(d.step1.to, want);
+      assert.equal(d.title, title);
     });
   }
 
@@ -82,6 +85,35 @@ describe("deriveProduction — the SAK-194 approved て-form table (te-sequence)
   });
 });
 
+describe("deriveProduction — title, the v5r-i (ある) special case", () => {
+  // ある is godan (v5r-i) and its て-form is perfectly regular (あって) — the
+  // ONLY irregular thing about it is its suppletive negative (ない, not
+  // あらない). Since v5r-i is not in IRREGULAR_STEP1_CLASSES, its title
+  // should track whether THIS instance actually rendered whole-word, not a
+  // blanket "always irregular" or "never irregular" call.
+  const teSequence = byId("te-sequence");
+
+  test("ある's て-form (regular, whole=false) titles as plain う-verb / godan", () => {
+    const d = deriveProduction(teSequence, "verb", "ある", "v5r-i");
+    assert.ok(d);
+    assert.equal(d.answer, "あって");
+    assert.equal(d.step1?.whole, undefined);
+    assert.equal(d.title, "う-verb / godan");
+  });
+
+  test("ある's nai-form (suppletive, whole=true) titles as Irregular う-verb / godan", () => {
+    // nai-form: { host: "verb", form: "nai", add: "" } — the built FORM is
+    // the whole answer here (no step 2), and conjugate(ある, v5r-i, nai) is
+    // ない, which shares NO prefix with ある, so step 1 renders whole-word via
+    // the same generic safety net every other class uses.
+    const d = deriveProduction(byId("nai-form"), "verb", "ある", "v5r-i");
+    assert.ok(d);
+    assert.equal(d.answer, "ない");
+    assert.equal(d.step1?.whole, true);
+    assert.equal(d.title, "Irregular う-verb / godan");
+  });
+});
+
 describe("deriveProduction — a genuine two-step derivation (te-permission, 〜てもいい)", () => {
   const tePermission = byId("te-permission");
 
@@ -112,12 +144,13 @@ describe("deriveProduction — a genuine two-step derivation (te-permission, 〜
 });
 
 describe("deriveProduction — no BASE→FORM step: single-equation fallback", () => {
-  test("a noun attachment (dake, form: null) has no step 1", () => {
+  test("a noun attachment (dake, form: null) has no step 1, and no title", () => {
     const d = deriveProduction(byId("dake"), "noun", "本", null);
     assert.ok(d);
     assert.equal(d.word, "本");
     assert.equal(d.answer, "本だけ");
     assert.equal(d.step1, undefined);
+    assert.equal(d.title, undefined);
     assert.ok(d.step2);
     assert.equal(d.step2.from, "本");
     assert.equal(d.step2.add, "だけ");

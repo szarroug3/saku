@@ -104,6 +104,13 @@ export interface DerivationEquation {
  * ABSENT for a recipe that adds nothing and trims nothing — the standalone
  * form recipes (te-sequence, ba, tara, …), where the built FORM is the whole
  * answer. Both are never absent together: see `deriveProduction`.
+ *
+ * `title` is the category/class heading the mockup prints above the "becomes"
+ * line — "Irregular い-adjective", "い-adjective", "な-adjective", "Irregular
+ * う-verb / godan", "う-verb / godan", "る-verb / ichidan", "Irregular verb".
+ * Absent for a noun host (nothing to head — there is no step1 there either)
+ * and for any class the label table below does not name. See
+ * `derivationTitle`.
  */
 export interface Derivation {
   /** The word the card asks about, as shown. */
@@ -112,6 +119,49 @@ export interface Derivation {
   readonly answer: string;
   readonly step1?: DerivationEquation;
   readonly step2?: DerivationEquation;
+  readonly title?: string;
+}
+
+/**
+ * The category/class heading shown above a derivation's equations —
+ * "Irregular い-adjective", "う-verb / godan", and so on (see `Derivation`).
+ *
+ * `host` and `cls` determine every case on their own EXCEPT v5r-i (ある):
+ * its te-form (the form most recipes actually build) is a perfectly regular
+ * godan conjugation, and only its negative is the suppletive irregular
+ * (ない, not あらない) — so unlike every other class here, whether ある's
+ * label reads "Irregular" depends on whether THIS instance actually hit that
+ * irregular, whole-word form. That is exactly what step1's own `whole` flag
+ * already answers (see IRREGULAR_STEP1_CLASSES above), which is why `whole`
+ * is threaded in here rather than re-deriving irregularity a second way.
+ *
+ * Deliberately NOT built on `ruVerbKindOf`/`adjectiveKindOf`
+ * (src/lib/word-forms.ts): those two exist to label an AMBIGUOUS surface
+ * spelling (a る-ending verb could be v1 or v5r) and so only speak up when
+ * the surface ends in る — every other godan ending (書く, 話す, …) is
+ * "written on its face" and gets no label from them at all, by design. This
+ * function already has the resolved, unambiguous `cls` in hand (no spelling
+ * to disambiguate), so it needs a label for every class the table below
+ * names, not just the る-ending ones — hence its own direct `cls` mapping
+ * rather than reusing those two.
+ *
+ * Null for host "noun" (no step1 there either, so nothing to head) and for
+ * any class the vehicle pool does not currently produce for that host.
+ */
+function derivationTitle(host: Host, cls: WordClass | null, whole: boolean): string | null {
+  if (host === "noun" || cls === null) return null;
+  if (host === "adj-i") {
+    if (cls === "adj-ix") return "Irregular い-adjective";
+    return cls === "adj-i" ? "い-adjective" : null;
+  }
+  if (host === "adj-na") return cls === "adj-na" ? "な-adjective" : null;
+  // host === "verb"
+  if (cls === "v1" || cls === "v1-s") return "る-verb / ichidan";
+  if (cls === "vs-i" || cls === "vk") return "Irregular verb";
+  if (cls === "v5k-s" || cls === "v5u-s") return "Irregular う-verb / godan";
+  if (cls === "v5r-i") return whole ? "Irregular う-verb / godan" : "う-verb / godan";
+  if (cls.startsWith("v5") && !cls.includes("-")) return "う-verb / godan";
+  return null;
 }
 
 /**
@@ -178,5 +228,7 @@ export function deriveProduction(
   const answer = step2?.to ?? step1?.to;
   if (!answer || answer === word) return null;
 
-  return { word, answer, step1, step2 };
+  const title = derivationTitle(host, cls, step1?.whole ?? false) ?? undefined;
+
+  return { word, answer, step1, step2, title };
 }

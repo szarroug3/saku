@@ -192,6 +192,9 @@ test("a KNOWN る-verb's production derives the two-step equation, not the flat 
   assert.equal(hint.derivation.answer, "食べたい");
   assert.deepEqual(hint.derivation.step1, { from: "食べる", trim: "る", add: undefined, to: "食べ" });
   assert.deepEqual(hint.derivation.step2, { from: "食べ", trim: undefined, add: "たい", to: "食べたい" });
+  // Changes-requested (SAK-194 follow-up): the category/class heading flows
+  // all the way through grammarHint, not just deriveProduction directly.
+  assert.equal(hint.derivation.title, "る-verb / ichidan");
 });
 
 test("an UNKNOWN る-verb's derivation reads in kana — every other surface on the card does too", () => {
@@ -225,6 +228,7 @@ test("a KNOWN な-adjective's production derives a single equation (te-sequence 
   assert.equal(hint.derivation.answer, "静かで");
   assert.deepEqual(hint.derivation.step1, { from: "静か", trim: undefined, add: "で", to: "静かで" });
   assert.equal(hint.derivation.step2, undefined);
+  assert.equal(hint.derivation.title, "な-adjective");
 });
 
 test("an UNKNOWN な-adjective's derivation also reads in kana", () => {
