@@ -190,10 +190,14 @@ describe("every card says what it wants", () => {
 });
 
 describe("a production card names the class of an unknown class word", () => {
-  // A る-ending verb drawn in kana does not say ichidan or godan, and an
-  // adjective's spelling does not reliably say い or な. The instruction supplies
-  // that class for an unknown word. A known word keeps plain "word" because its
-  // class moves to the optional hint.
+  // SAK-193: the instruction now asks in the pattern's OWN gloss terms, with
+  // the vehicle's Japanese word filled into X — "How do you say 'want to
+  // たべる'?" — rather than naming a form. A る-ending verb drawn in kana still
+  // does not say ichidan or godan, and an adjective's spelling does not
+  // reliably say い or な, so the instruction still supplies that class for an
+  // unknown word — now as a trailing "for this る-verb" rather than swapping
+  // out the word "word". A known word carries no such tag; its class moves to
+  // the optional hint instead.
   const TAI_I = classProductionFactId("tai", "v1");
   const TAI_R = classProductionFactId("tai", "v5r");
   const ICHIDAN_UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
@@ -202,29 +206,35 @@ describe("a production card names the class of an unknown class word", () => {
   test("an unknown ichidan verb is called a る-verb", () => {
     assert.equal(
       quizInstruction(TAI_I, "en2jp", "typed", ICHIDAN_UNKNOWN),
-      "Type how this る-verb is said in the 〜たい form.",
+      'How do you say "want to たべる" for this る-verb?',
     );
   });
 
   test("an unknown godan-る verb is called a う-verb", () => {
     assert.equal(
       quizInstruction(TAI_R, "en2jp", "typed", GODAN_RU_UNKNOWN),
-      "Type how this う-verb is said in the 〜たい form.",
+      'How do you say "want to かえる" for this う-verb?',
     );
   });
 
-  test("a KNOWN る-verb keeps the plain 'word' — its class rides in the hint", () => {
+  test("a KNOWN る-verb takes its surface script and no class tag", () => {
     assert.equal(
       quizInstruction(TAI_I, "en2jp", "typed", { ...ICHIDAN_UNKNOWN, known: true }),
-      "Type how this word is said in the 〜たい form.",
+      'How do you say "want to 食べる"?',
     );
   });
 
-  test("no vehicle, and a non-る verb, both stay 'word'", () => {
+  test("no vehicle falls back to the old form-named phrasing", () => {
+    // Without a vehicle there is no Japanese word to fill X with, so the
+    // instruction falls back to naming the form instead — the same sentence
+    // this card used before SAK-193.
     assert.equal(
       quizInstruction(TAI_I, "en2jp", "typed"),
       "Type how this word is said in the 〜たい form.",
     );
+  });
+
+  test("a non-る verb takes its own script plainly, no class tag needed", () => {
     assert.equal(
       quizInstruction(classProductionFactId("tai", "v5k"), "en2jp", "typed", {
         surface: "書く",
@@ -232,7 +242,7 @@ describe("a production card names the class of an unknown class word", () => {
         cls: "v5k",
         known: false,
       }),
-      "Type how this word is said in the 〜たい form.",
+      'How do you say "want to かく"?',
     );
   });
 
@@ -243,41 +253,42 @@ describe("a production card names the class of an unknown class word", () => {
       quizInstruction(adjI, "en2jp", "typed", {
         surface: "高い", kana: "たかい", cls: "adj-i", known: false,
       }),
-      "Type how this い-adjective is said in the 〜すぎる form.",
+      'How do you say "たかい too much / too たかい" for this い-adjective?',
     );
     assert.equal(
       quizInstruction(adjNa, "en2jp", "typed", {
         surface: "静か", kana: "しずか", cls: "adj-na", known: false,
       }),
-      "Type how this な-adjective is said in the 〜ので form.",
+      'How do you say "because しずか" for this な-adjective?',
     );
   });
 
-  test("a KNOWN adjective keeps the plain 'word' — its class rides in the hint", () => {
+  test("a KNOWN adjective takes its surface script and no class tag — its class rides in the hint", () => {
     assert.equal(
       quizInstruction(patternProductionFactId("node", "adj-na"), "en2jp", "typed", {
         surface: "嫌い", kana: "きらい", cls: "adj-na", known: true,
       }),
-      "Type how this word is said in the 〜ので form.",
+      'How do you say "because 嫌い"?',
     );
   });
 });
 
-describe("a WRAP names its fixed word — the halo only shows the varying one", () => {
-  // 〜しか〜ない opens on a fixed noun (本) and closes on the varying verb; the
-  // halo shows only the verb, so "type this word" would be asking for half a
-  // sentence with no way to guess the other half.
+describe("a WRAP fills X with its fixed word — the halo only shows the varying one", () => {
+  // 〜しか〜ない opens on a fixed noun (本) and closes on the varying verb. Its
+  // gloss ("only X (nothing but)") is about the FIXED noun, not the verb, so
+  // SAK-193 fills X with 本 — never the vehicle — and the vehicle stays the
+  // halo's own word, not repeated in the sentence.
   const SHIKA_V1 = classProductionFactId("shika-nai", "v1");
   const KNOWN_TABERU = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
 
-  test("the fixed opening word is spelled out in the instruction", () => {
+  test("the fixed opening word, not the vehicle, fills the gloss's X", () => {
     assert.equal(
       quizInstruction(SHIKA_V1, "en2jp", "typed", KNOWN_TABERU),
-      'Type how "本 + this word" is said in the 〜しか〜ない form.',
+      'How do you say "only 本 (nothing but)"?',
     );
     assert.equal(
       quizInstruction(SHIKA_V1, "en2jp", "mc", KNOWN_TABERU),
-      'Which of these is how "本 + this word" is said in the 〜しか〜ない form?',
+      'Which of these is how you say "only 本 (nothing but)"?',
     );
   });
 });

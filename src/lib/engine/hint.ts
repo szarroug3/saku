@@ -322,10 +322,15 @@ function formHintText(
 function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
   const prod = grammarProduction(fact);
   if (prod) {
-    // TWO nudges, either or both. The FORM nudge is "uses the て-form"; the CLASS
-    // nudge is "食べる is a る-verb" or "嫌い is a な-adjective". They are
-    // combined into one line, and the hint
-    // is whatever survives — null when neither has anything to say.
+    // THREE nudges, any or all. The PATTERN nudge (SAK-193) names the pattern
+    // itself — "This is the 〜てもいい pattern." — which the quiz instruction no
+    // longer spells out now that it asks in gloss terms ("How do you say 'may
+    // 食べる'?") rather than by form name. The FORM nudge is "uses the て-form";
+    // the CLASS nudge is "食べる is a る-verb" or "嫌い is a な-adjective". They
+    // are combined into one line, and the pattern name means every production
+    // card now has SOMETHING true to say, even a FORM recipe (te-sequence IS
+    // the て-form) whose own form nudge stays silent as a tautology.
+    const patternText = `This is the ${prod.recipe.pattern} pattern`;
     const formText = formHintText(prod);
     // The class of a KNOWN ambiguous verb or adjective, as an extra reminder. An
     // UNKNOWN class word already carries its class in the instruction
@@ -337,7 +342,7 @@ function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
         ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)
         : null;
     const classText = kind ? `${vehicle!.surface} is a ${kind}` : null;
-    const text = [formText, classText].filter(Boolean).join(". ");
+    const text = [patternText, formText, classText].filter(Boolean).join(". ");
     return text ? { kind: "text", text } : null;
   }
   const mean = grammarMeaning(fact);
