@@ -139,6 +139,14 @@ export const VERB_VEHICLES: readonly Vehicle[] = [
   verb("起きる", "おきる", "v1"),
   verb("書く", "かく", "v5k"),
   verb("泳ぐ", "およぐ", "v5g"),
+  // SAK-203 round 2: v5g's SECOND pool member. Before this, v5g had exactly
+  // one — 泳ぐ was not merely "over-picked", it was the class's entire pool,
+  // so no session-aware dedup mechanism could have avoided repeating it
+  // across two recipes (Sam's "is およぐ" / "please およぐ" report is a
+  // straight consequence of that, not an algorithm bug). beginnerRank 605 vs
+  // 泳ぐ's 494, so 泳ぐ still wins the earliest-taught tie-break by default —
+  // 急ぐ only surfaces when 泳ぐ has already been used elsewhere in the deck.
+  verb("急ぐ", "いそぐ", "v5g"),
   verb("話す", "はなす", "v5s"),
   verb("待つ", "まつ", "v5t"),
   verb("死ぬ", "しぬ", "v5n"),
@@ -363,6 +371,23 @@ export function showableWhenUnknown(v: Vehicle): boolean {
  * 来る stay out of a free pick. Without a `known` predicate every legal vehicle is
  * eligible (a cluster page's worked examples). Null only when the resulting pool
  * is empty.
+ *
+ * `usedInDeck` is the SESSION-AWARE dedup gate (SAK-203 round 2). It names
+ * every vehicle SURFACE already picked for a DIFFERENT grammar-production
+ * fact earlier in this same deck/session — so a learner reviewing 〜ている and
+ * 〜てください in the same sitting does not get およぐ handed to both, just
+ * because each recipe's fact independently rolled its own pool. It is a
+ * PREFERENCE, not a second gate: applied to whichever pool the known/unknown
+ * split above already produced, after that split runs, so "prefer known"
+ * keeps deciding the partition and this only breaks ties within it. When
+ * every member of that partition is already used — an irregular's one-word
+ * pool, a class with a single pool member (see vehicles.ts's own header on
+ * why the pool stays small), or a short session that has cycled the whole
+ * thing — the filter drops out and a repeat is the pool's honest ceiling,
+ * not a bug this function can fix. Optional and defaulting to "nothing used
+ * yet" so every existing caller (a cluster page's worked examples, which
+ * wants the plain earliest-taught pick with no session to be aware of) is
+ * unaffected.
  */
 export function pickVehicle(
   r: Recipe,
@@ -370,6 +395,7 @@ export function pickVehicle(
   onHost?: Host,
   known?: (surface: string) => boolean,
   bucket?: VehicleBucket,
+  usedInDeck?: ReadonlySet<string>,
 ): Vehicle | null {
   // Every LEGAL vehicle for this recipe/host/bucket — do NOT gate by `known`
   // here, so the unknown-fallback below can still draw from the full legal pool.
@@ -399,6 +425,14 @@ export function pickVehicle(
     options = all;
   }
   if (options.length === 0) return null;
+  // SESSION-AWARE DEDUP (SAK-203 round 2). Prefer an option NOT already used
+  // for a different fact earlier in this deck — see the doc comment above.
+  // Filters the partition the known/unknown split just chose; falls back to
+  // the whole partition when every member is already spent.
+  if (usedInDeck && usedInDeck.size > 0) {
+    const unused = options.filter((v) => !usedInDeck.has(v.surface));
+    if (unused.length > 0) options = unused;
+  }
   // Prefer the FIRST-LEARNED verb (Sam): the known option with the lowest
   // beginnerRank — the earliest-taught, most-familiar word — so a grammar example
   // anchors on a verb the learner knows cold rather than a random known one.

@@ -498,6 +498,15 @@ interface DrillRuntime {
    * survives past rt.pos. Optional/possibly-missing on a runtime
    * serialized before this field existed — see the resume backfill below. */
   pitchQueued?: FactId[];
+  /** SAK-203 round 2: every grammar-production vehicle SURFACE already
+   * picked in this session, across every recipe/fact presentCard has drawn
+   * a card for so far — not scoped to one recipe, because the bug this
+   * exists to fix (およぐ picked independently for 〜ている AND 〜てください)
+   * is cross-recipe. presentCard reads it to steer pickVehicle away from a
+   * repeat when the pool has an alternative, and appends to it once a
+   * card's vehicle is known. Optional/possibly-missing on a runtime
+   * serialized before this field existed — see the resume backfill below. */
+  usedGrammarVehicles?: string[];
 }
 
 interface DrillHandlers {
@@ -1052,7 +1061,22 @@ export function DrillScreen() {
     // met. Null (she knows none of the pool yet) falls back to the baked vehicle.
     // Every conjugation class is its own fact, so the fact itself pins the
     // vehicle pool to the class or exceptional word being scored.
-    const grammarVehicle = grammarVehicleFor(f, history);
+    //
+    // SAK-203 round 2: SESSION-AWARE. `rt.usedGrammarVehicles` is every
+    // vehicle surface already picked for a DIFFERENT grammar-production fact
+    // earlier in THIS session (across every recipe, not just this one) — see
+    // pickVehicle's own doc comment on why this is a preference, not a second
+    // gate. Without it, two different recipes reviewed back to back (〜ている,
+    // 〜てください) could each independently roll the same word from their own
+    // pool, which reads as "the app keeps asking about およぐ" even though the
+    // pool had another option every time. Recorded below, once this card's
+    // pick is known.
+    if (!Array.isArray(rt.usedGrammarVehicles)) rt.usedGrammarVehicles = [];
+    const usedVehicles = new Set(rt.usedGrammarVehicles);
+    const grammarVehicle = grammarVehicleFor(f, history, Math.random, usedVehicles);
+    if (grammarVehicle && !usedVehicles.has(grammarVehicle.surface)) {
+      rt.usedGrammarVehicles.push(grammarVehicle.surface);
+    }
     // A grammar MEANING card may be asked as a SELECTION item instead — "which
     // pattern fills this blank in a real sentence", rather than "what does this
     // pattern mean". Same fact, same score, a harder and more honest showing.
@@ -1850,6 +1874,7 @@ export function DrillScreen() {
       rt.feedback = null;
       rt.timerLeft = null;
       rt.pitchQueued = [];
+      rt.usedGrammarVehicles = [];
       nextQuestion();
       return;
     }
@@ -1862,6 +1887,11 @@ export function DrillScreen() {
     // mount). Default to empty rather than undefined so queuePitchCard's own
     // `Array.isArray` guard is belt-and-braces, not load-bearing.
     if (!Array.isArray(rt.pitchQueued)) rt.pitchQueued = [];
+    // SAK-203 round 2: same belt-and-braces resume backfill as pitchQueued
+    // above — presentCard's own Array.isArray guard makes this non-load-
+    // bearing, but a runtime serialized before this field existed should
+    // still resume with an empty set rather than undefined.
+    if (!Array.isArray(rt.usedGrammarVehicles)) rt.usedGrammarVehicles = [];
     // Resuming (tab switch / remount / refresh): the local fact-registry map
     // is in-memory state, so it starts empty on THIS mount even though rt
     // itself survived — re-fetch the pool the same way a fresh quiz does.
