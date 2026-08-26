@@ -168,7 +168,24 @@ export function RoundComplete({
     // No FlatSurfaceProvider needed here any more (SAK-80 round 2) — Card
     // itself is now unconditionally de-boxed, so there is no context flag left
     // for this screen's one Card to read.
-    <>
+    //
+    // SAK-200: the outer wrapper is now a plain flex column, and the action
+    // row below is a sibling AFTER Card rather than Card's own last child, so
+    // it can be `sticky bottom-0` instead of sitting in normal flow at the
+    // true bottom of a potentially long results list. Sticky, not `fixed
+    // inset-x-0`: this screen renders inside the shell's single scroll owner
+    // (see layout.tsx's note on that), where a viewport-wide fixed bar would
+    // stretch across the sidebar exactly the way slice-bar.tsx's own
+    // entry-variant footer avoids (see its comment) by using this same
+    // sticky-not-fixed choice, and entry-view.tsx's caller comment explains
+    // why. Unlike that pair, this wrapper needs no min-height hack of its own
+    // to keep a short round's bar pinned near the bottom: session/page.tsx
+    // already wraps this screen in `.kq-center-frame` plus a `flex-1
+    // justify-center` div that gives a short round its floor height and
+    // vertical centering, so a plain flex column here is enough for the
+    // sticky bar to have room to engage once a round is long enough to
+    // actually scroll.
+    <div className="flex flex-col">
       <Card>
         <h1 className="mb-3 text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
@@ -235,8 +252,20 @@ export function RoundComplete({
             />
           </div>
         ) : null}
+      </Card>
 
-        <div className="mt-4 flex flex-wrap items-start justify-between gap-2">
+      {/* THE BAR. Same kq-band + sticky bottom-0 + border-t chrome as
+          slice-bar.tsx's entry-variant footer (see that file's comment on why
+          a sticky bar needs kq-band by name to occlude what scrolls behind
+          it), so a long round's retry controls and Complete button stay
+          reachable without scrolling past the whole results list to reach
+          them. mt-auto is a no-op here on a short round (this wrapper has no
+          extra height for it to consume, since the height that centers a
+          short round already comes from session/page.tsx's own frame) but
+          keeps the structure identical to that reference in case this screen
+          ever grows a height constraint of its own. */}
+      <div className="kq-band sticky bottom-0 z-20 mt-auto border-t border-border px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex flex-col items-start gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <SmallBtn
@@ -285,7 +314,7 @@ export function RoundComplete({
             </Hint>
           </div>
         </div>
-      </Card>
-    </>
+      </div>
+    </div>
   );
 }
