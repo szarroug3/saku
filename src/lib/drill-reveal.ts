@@ -3,6 +3,8 @@
 // session-accuracy.ts gives: branching logic buried in a .tsx cannot be unit
 // tested here (the runner has no JSX transform).
 
+import type { Hint } from "@/lib/engine/hint";
+
 /** The three things a resolved showing can be. "good" is the 650ms
  * auto-advance and never reveals — there is nothing to compare when you got
  * it right. "bad" is an out-of-retries miss. "skip" is the deferral: it
@@ -69,6 +71,23 @@ export function revealTemplate(opts: {
   if (opts.isMeaning) return { prefix: "This means ", suffix: "." };
   if (opts.isSound) return { prefix: 'This is said "', suffix: '".' };
   return { prefix: "The answer is ", suffix: "." };
+}
+
+/**
+ * Whether the reveal bar's own opening sentence ("This is said …" / "This
+ * means …") should print above the hint content, or whether the hint being
+ * shown already carries an equivalent "here's the answer" line of its own.
+ *
+ * SAK-194 changes-requested: a derivation hint's own lead line (たかい
+ * becomes たかくてもいい) already says what the sentence would, so printing
+ * both stacked said the answer twice — Sam's screenshot showed exactly that,
+ * against a mockup that REPLACES the sentence rather than appending below it.
+ * Every other hint kind (image/formula/written/text) and a card with no hint
+ * at all (`hintKind` null/undefined) keep the sentence exactly as before —
+ * this is a narrow, kind-gated exception, not a redesign of the reveal bar.
+ */
+export function showsRevealSentence(hintKind: Hint["kind"] | null | undefined): boolean {
+  return hintKind !== "derivation";
 }
 
 /**

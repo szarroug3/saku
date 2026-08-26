@@ -9,6 +9,7 @@ import {
   isRevealPause,
   resolveAnsweredText,
   revealTemplate,
+  showsRevealSentence,
 } from "@/lib/drill-reveal";
 
 describe("isRevealPause (SAK-50)", () => {
@@ -82,6 +83,24 @@ describe("revealTemplate (SAK-50 changes-requested pass)", () => {
       prefix: "The answer is ",
       suffix: ".",
     });
+  });
+});
+
+describe("showsRevealSentence (SAK-194 changes-requested)", () => {
+  test("a derivation hint suppresses the sentence — its own lead line carries that job", () => {
+    assert.equal(showsRevealSentence("derivation"), false);
+  });
+
+  test("every other hint kind keeps the sentence", () => {
+    assert.equal(showsRevealSentence("image"), true);
+    assert.equal(showsRevealSentence("formula"), true);
+    assert.equal(showsRevealSentence("written"), true);
+    assert.equal(showsRevealSentence("text"), true);
+  });
+
+  test("a card with no hint at all keeps the sentence too", () => {
+    assert.equal(showsRevealSentence(null), true);
+    assert.equal(showsRevealSentence(undefined), true);
   });
 });
 
