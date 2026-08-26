@@ -321,9 +321,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       {
         title: "Irregular verbs",
         rules: [
-          { label: "exception", verb: "いく", drop: "く", add: "って", gloss: WORD_GLOSS["いく"] },
-          { label: "irregular", verb: "する", to: "して", gloss: WORD_GLOSS["する"] },
-          { label: "irregular", verb: "くる", to: "きて", gloss: WORD_GLOSS["くる"] },
+          { label: "Exception", verb: "いく", drop: "く", add: "って", gloss: WORD_GLOSS["いく"] },
+          { label: "Irregular", verb: "する", to: "して", gloss: WORD_GLOSS["する"] },
+          { label: "Irregular", verb: "くる", to: "きて", gloss: WORD_GLOSS["くる"] },
         ],
         heads: { label: "" },
       },
@@ -354,7 +354,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         title: "Irregular adjectives",
         rules: [
           {
-            label: "exception",
+            label: "Exception",
             verb: "いい",
             to: "よくて",
             gloss: WORD_GLOSS["いい"],

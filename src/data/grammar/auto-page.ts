@@ -344,7 +344,7 @@ function standaloneRuleRows(form: Form): IntroBuildRule[] {
     if (p === 0) {
       // The whole word shifts (する→できる): no drop/add rule fits, so it is
       // shown whole and flagged irregular, the way the form intros do.
-      rows.push({ label: "irregular", verb: v.word, to: c.value, gloss: WORD_GLOSS[v.word] });
+      rows.push({ label: "Irregular", verb: v.word, to: c.value, gloss: WORD_GLOSS[v.word] });
     } else {
       rows.push({
         label: v.label,
@@ -396,10 +396,10 @@ const PATTERN_TABLE_GROUPS: {
     heads: { label: "" },
     irregular: true,
     verbs: [
-      { label: "exception", word: "いく", cls: "v5k-s", regular: "v5k" },
-      { label: "irregular", word: "する", cls: "vs-i", regular: "v1" },
-      { label: "irregular", word: "くる", cls: "vk", regular: "v1" },
-      { label: "exception", word: "ある", cls: "v5r-i", regular: "v5r" },
+      { label: "Exception", word: "いく", cls: "v5k-s", regular: "v5k" },
+      { label: "Irregular", word: "する", cls: "vs-i", regular: "v1" },
+      { label: "Irregular", word: "くる", cls: "vk", regular: "v1" },
+      { label: "Exception", word: "ある", cls: "v5r-i", regular: "v5r" },
     ],
   },
   {
@@ -420,7 +420,7 @@ const PATTERN_TABLE_GROUPS: {
     irregular: true,
     verbs: [
       {
-        label: "exception",
+        label: "Exception",
         word: "いい",
         cls: "adj-ix",
         regular: "adj-i",
