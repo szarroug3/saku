@@ -68,7 +68,7 @@ const BUCKET_INFO: Record<Standing, string> = {
     "At least 60% of your recent runs got it right, but under 80%.",
   shaky: "Under 60% of your recent runs got it right.",
   slipping:
-    "You've seen this before, but enough time has passed that the app now expects you've forgotten it — due to be re-taught, not re-tested.",
+    "You've seen this before, but enough time has passed that the app now expects you've forgotten it, so it's due to be re-taught, not re-tested.",
 };
 
 export function KnowledgeBase({
@@ -102,7 +102,7 @@ export function KnowledgeBase({
           <dl className="space-y-1.5">
             {BUCKETS.filter((b) => BUCKET_INFO[b]).map((b) => (
               <div key={b}>
-                <dt className="font-semibold">{BUCKET_LABEL[b]}</dt>
+                <dt className="font-semibold text-accent">{BUCKET_LABEL[b]}</dt>
                 <dd>{BUCKET_INFO[b]}</dd>
               </div>
             ))}
