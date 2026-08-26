@@ -257,7 +257,7 @@ describe("form tables mirror the separately scored production groups", () => {
     const adjectiveTable = tables("te-sequence").find((table) => table.title === "Adjectives");
     assert.equal(adjectiveTable?.heads?.label, "Type");
     assert.equal(byTitle.get("Irregular adjectives")?.length, 1);
-    assert.equal(byTitle.get("Irregular adjectives")?.[0]?.label, "exception");
+    assert.equal(byTitle.get("Irregular adjectives")?.[0]?.label, "Exception");
     assert.ok(
       byTitle.get("Irregular adjectives")?.every((row) => row.note === undefined),
       "the irregular-adjective table should not create a Note column",

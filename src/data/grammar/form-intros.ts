@@ -53,10 +53,10 @@ const FORM_TABLE_VERBS: {
     heads: { label: "" },
     irregular: true,
     verbs: [
-      { label: "exception", word: "いく", cls: "v5k-s", regular: "v5k" },
-      { label: "irregular", word: "する", cls: "vs-i", regular: "v1" },
-      { label: "irregular", word: "くる", cls: "vk", regular: "v1" },
-      { label: "exception", word: "ある", cls: "v5r-i", regular: "v5r" },
+      { label: "Exception", word: "いく", cls: "v5k-s", regular: "v5k" },
+      { label: "Irregular", word: "する", cls: "vs-i", regular: "v1" },
+      { label: "Irregular", word: "くる", cls: "vk", regular: "v1" },
+      { label: "Exception", word: "ある", cls: "v5r-i", regular: "v5r" },
     ],
   },
   {
@@ -77,7 +77,7 @@ const FORM_TABLE_VERBS: {
     heads: { label: "" },
     irregular: true,
     verbs: [
-      { label: "exception", word: "いい", cls: "adj-ix", regular: "adj-i" },
+      { label: "Exception", word: "いい", cls: "adj-ix", regular: "adj-i" },
     ],
   },
 ];
@@ -118,7 +118,7 @@ function formRuleTables(
       const note = FORM_RULE_NOTES[`${recipeId}:${v.cls}`];
       const gloss = WORD_GLOSS[v.word];
       if (g.irregular || p === 0) {
-        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value, note, gloss });
+        rules.push({ label: v.label || "Irregular", verb: v.word, to: c.value, note, gloss });
       } else {
         rules.push({
           label: v.label,
