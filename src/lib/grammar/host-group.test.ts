@@ -20,8 +20,16 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { classProductionFactId, patternProductionFactId } from "@/data/grammar";
-import { grammarHostGroupOf } from "./host-group.ts";
+import {
+  classProductionFactId,
+  patternProductionFactId,
+  specialVerbProductionFactId,
+} from "@/data/grammar";
+import {
+  grammarHostGroupOf,
+  grammarVehicleBucketOf,
+  grammarVehicleSlotOf,
+} from "./host-group.ts";
 import { planSession } from "@/lib/budget";
 import { dueFacts } from "@/lib/selection";
 import { rank } from "@/lib/scoring";
@@ -208,5 +216,82 @@ describe("planSession generalises past two hosts (te-sequence: verb + adj-i + ad
     assert.ok(paired.probe.includes(adjIFact));
     assert.ok(paired.probe.includes(adjNaFact));
     assert.equal(paired.probe.length, length);
+  });
+});
+
+// SAK-203: grammarHostGroupOf (above) stopped being fine-grained enough the
+// day production split per conjugation class — see host-group.ts's own
+// "SAK-203: vehicle coverage" section for the full "why". These tests prove
+// the two new lookups read the right thing off REAL fact ids; the buildDeck
+// integration tests (engine/build-deck-grammar.test.ts) prove wiring them
+// into pairsKept/spreadGrammarVehicles actually fixes the reported bug.
+
+describe("grammarVehicleBucketOf — the cross-recipe vehicle identity", () => {
+  test("the same conjugation CLASS, on different recipes, is the same bucket", () => {
+    const teKaraV5u = classProductionFactId("te-kara", "v5u");
+    const teRequestV5u = classProductionFactId("te-request", "v5u");
+    const a = grammarVehicleBucketOf(teKaraV5u);
+    const b = grammarVehicleBucketOf(teRequestV5u);
+    assert.ok(a !== null);
+    assert.equal(a, b, "one conjugation class draws the same word regardless of recipe");
+  });
+
+  test("the same irregular WORD, on different recipes, is the same bucket — SAK-203 example 1", () => {
+    // te-kara ("after 行く"), te-request ("please 行く"), te-prohibition
+    // ("must not 行く") — Sam's own reported three-in-a-row.
+    const iku1 = specialVerbProductionFactId("te-kara", "iku");
+    const iku2 = specialVerbProductionFactId("te-request", "iku");
+    const iku3 = specialVerbProductionFactId("te-prohibition", "iku");
+    const keys = [iku1, iku2, iku3].map(grammarVehicleBucketOf);
+    assert.ok(keys.every((k) => k !== null));
+    assert.equal(new Set(keys).size, 1, "all three recipes' @iku fact share one bucket");
+  });
+
+  test("different classes of the SAME recipe are different buckets", () => {
+    const v5u = grammarVehicleBucketOf(classProductionFactId("te-kara", "v5u"));
+    const v5m = grammarVehicleBucketOf(classProductionFactId("te-kara", "v5m"));
+    assert.ok(v5u !== null && v5m !== null);
+    assert.notEqual(v5u, v5m);
+  });
+
+  test("a class bucket and an irregular-word bucket never collide, even by string accident", () => {
+    // v5k's class key is "verb:v5k"; there is no irregular word literally
+    // named "v5k", so this is really asserting the "kind" tag is load-bearing
+    // rather than incidental — a future irregular surface could not
+    // coincide with a class name and silently merge two unrelated slots.
+    const v5k = grammarVehicleBucketOf(classProductionFactId("te-kara", "v5k"));
+    const iku = grammarVehicleBucketOf(specialVerbProductionFactId("te-kara", "iku"));
+    assert.notEqual(v5k, iku);
+  });
+
+  test("a MEANING fact is not a vehicle bucket", () => {
+    assert.equal(grammarVehicleBucketOf("grammar:te-kara/meaning" as FactId), null);
+  });
+
+  test("a fact from another subject entirely is not a vehicle bucket", () => {
+    assert.equal(grammarVehicleBucketOf("kana:あ/reading" as FactId), null);
+  });
+});
+
+describe("grammarVehicleSlotOf — pairsKept's finer-grained coverage key", () => {
+  test("two classes of ONE recipe are two different slots — both worth keeping", () => {
+    const v5u = grammarVehicleSlotOf(classProductionFactId("te-kara", "v5u"));
+    const v5m = grammarVehicleSlotOf(classProductionFactId("te-kara", "v5m"));
+    assert.ok(v5u && v5m);
+    assert.notDeepEqual(v5u, v5m);
+    assert.equal(v5u.recipeId, "te-kara");
+    assert.equal(v5m.recipeId, "te-kara");
+  });
+
+  test("the same class on two different recipes is still two different slots — coverage is per recipe", () => {
+    const teKara = grammarVehicleSlotOf(classProductionFactId("te-kara", "v5u"));
+    const teRequest = grammarVehicleSlotOf(classProductionFactId("te-request", "v5u"));
+    assert.ok(teKara && teRequest);
+    assert.notDeepEqual(teKara, teRequest);
+    assert.notEqual(teKara.recipeId, teRequest.recipeId);
+  });
+
+  test("a non-production fact is not a slot", () => {
+    assert.equal(grammarVehicleSlotOf("grammar:te-kara/meaning" as FactId), null);
   });
 });
