@@ -3133,7 +3133,9 @@ export function DrillScreen() {
                 takes over showing hint content at that point (unconditionally,
                 not gated on q.hinted — see revealAnswer), so keeping this copy
                 visible too would just be the same mnemonic twice on screen. */}
-            {q.hinted && hint && !revealPause ? <HintBody hint={hint} font={q.font} /> : null}
+            {q.hinted && hint && !revealPause ? (
+              <HintBody hint={hint} font={q.font} revealed={false} />
+            ) : null}
           </span>
         </span>
       </div>
@@ -3156,11 +3158,13 @@ export function DrillScreen() {
           "This means …" / the plain fallback (see revealTemplate,
           lib/drill-reveal.ts, chosen off the same isSound/answerIsMeaning
           axes the instruction line already uses), and the hint content below
-          it is the exact HintBody the Hint button would have shown for this
+          it is the same HintBody the Hint button would have shown for this
           question — reused, not reinvented, and shown unconditionally here
-          since the answer is already out. No "You answered" line: the
-          learner's own answer is still sitting in the input she typed it
-          into.
+          since the answer is already out (revealed={true}, unlike the Hint
+          button's own drawer above; SAK-198: the one kind that differs by
+          call site is `derivation`, whose full equations are safe here and
+          only here). No "You answered" line: the learner's own answer is
+          still sitting in the input she typed it into.
 
           SAK-194 changes-requested: the sentence is SUPPRESSED when this
           card's hint is a derivation ({ kind: "derivation" }) — its own "X
@@ -3191,7 +3195,9 @@ export function DrillScreen() {
                     {mixup}
                   </p>
                 ) : null}
-                {hintReady && hint ? <HintBody hint={hint} font={q.font} /> : null}
+                {hintReady && hint ? (
+                  <HintBody hint={hint} font={q.font} revealed={true} />
+                ) : null}
               </>
             ) : null}
             <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
