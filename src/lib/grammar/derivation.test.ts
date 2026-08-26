@@ -14,7 +14,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { deriveProduction } from "./derivation";
+import { deriveProduction, derivationNudge } from "./derivation";
 import { recipe } from "../../data/grammar/recipes";
 import type { WordClass } from "../conjugate/types";
 import type { Host } from "../../data/grammar/recipes";
@@ -203,5 +203,107 @@ describe("deriveProduction — refuses rather than fabricates", () => {
     // conjugation known to come back !ok.
     const d = deriveProduction(byId("volitional-form"), "verb", "できる", "v1");
     assert.equal(d, null);
+  });
+});
+
+// SAK-198: `pattern` rides on every Derivation, straight off recipe.pattern,
+// added so the Hint button's un-revealed nudge can name the pattern without
+// string-parsing step2.label to recover it (see the interface's own doc).
+
+describe("deriveProduction: pattern carries recipe.pattern directly", () => {
+  test("a two-step recipe (te-permission) carries its own pattern string", () => {
+    const d = deriveProduction(byId("te-permission"), "verb", "行く", "v5k-s");
+    assert.ok(d);
+    assert.equal(d.pattern, byId("te-permission").pattern);
+    assert.equal(d.pattern, "〜てもいい");
+  });
+
+  test("a FORM recipe (te-sequence, no step2) still carries pattern", () => {
+    const d = deriveProduction(byId("te-sequence"), "verb", "たべる", "v1");
+    assert.ok(d);
+    assert.equal(d.step2, undefined);
+    assert.equal(d.pattern, byId("te-sequence").pattern);
+  });
+
+  test("a noun attachment (dake, no title) still carries pattern", () => {
+    const d = deriveProduction(byId("dake"), "noun", "本", null);
+    assert.ok(d);
+    assert.equal(d.title, undefined);
+    assert.equal(d.pattern, byId("dake").pattern);
+  });
+});
+
+// SAK-198: derivationNudge, the SAFE, un-revealed nudge for the Hint
+// button's own drawer. Names the class and the pattern, never the built
+// answer (see hint.ts's header, "THE ANSWER IS NEVER IN THE HINT").
+
+describe("derivationNudge", () => {
+  for (const [word, cls, host, , title] of TE_FORM_TABLE) {
+    test(`${title} names its class phrase, not the built answer`, () => {
+      const teSequence = byId("te-sequence");
+      const d = deriveProduction(teSequence, host, word, cls);
+      assert.ok(d, `expected a derivation for ${word}`);
+      const nudge = derivationNudge(d);
+      assert.equal(nudge.kind, "class");
+      assert.ok(nudge.kind === "class");
+      assert.equal(nudge.pattern, d.pattern);
+      assert.ok(
+        !nudge.classPhrase.includes(d.answer) && !nudge.pattern.includes(d.answer),
+        `the un-revealed nudge for ${word} must not contain the built answer ${d.answer}`,
+      );
+    });
+  }
+
+  test("the exact class-phrase table (mirrors HOST_ARTICLE's hardcoded-article precedent)", () => {
+    const teSequence = byId("te-sequence");
+    const cases: readonly [string, WordClass][] = [
+      ["いい", "adj-ix"],
+      ["たかい", "adj-i"],
+      ["行く", "v5k-s"],
+      ["かく", "v5k"],
+      ["たべる", "v1"],
+      ["する", "vs-i"],
+    ];
+    const wantPhrase: Readonly<Record<string, string>> = {
+      いい: "an irregular い-adjective",
+      たかい: "an い-adjective",
+      行く: "an irregular う-verb",
+      かく: "a う-verb",
+      たべる: "a る-verb",
+      する: "an irregular verb",
+    };
+    for (const [word, cls] of cases) {
+      const host: Host = word === "いい" || word === "たかい" ? "adj-i" : "verb";
+      const d = deriveProduction(teSequence, host, word, cls);
+      assert.ok(d, `expected a derivation for ${word}`);
+      const nudge = derivationNudge(d);
+      assert.ok(nudge.kind === "class");
+      assert.equal(nudge.classPhrase, wantPhrase[word]);
+    }
+    const shizuka = deriveProduction(teSequence, "adj-na", "しずか", "adj-na");
+    assert.ok(shizuka);
+    const shizukaNudge = derivationNudge(shizuka);
+    assert.ok(shizukaNudge.kind === "class");
+    assert.equal(shizukaNudge.classPhrase, "a な-adjective");
+  });
+
+  test("no title (noun attachment) falls back to naming the pattern alone", () => {
+    const d = deriveProduction(byId("dake"), "noun", "本", null);
+    assert.ok(d);
+    assert.equal(d.title, undefined);
+    const nudge = derivationNudge(d);
+    assert.deepEqual(nudge, { kind: "pattern-only", pattern: "〜だけ" });
+  });
+
+  test("the two-step 〜てもいい case: nudge names the pattern, never 行ってもいい", () => {
+    // The exact regression from the ticket: 行く + 〜てください / 〜てもいい
+    // used to hand over the full built answer on the Hint button. The nudge
+    // here carries only the class and the pattern name.
+    const d = deriveProduction(byId("te-permission"), "verb", "行く", "v5k-s");
+    assert.ok(d);
+    assert.equal(d.answer, "行ってもいい");
+    const nudge = derivationNudge(d);
+    assert.deepEqual(nudge, { kind: "class", classPhrase: "an irregular う-verb", pattern: "〜てもいい" });
+    assert.ok(!JSON.stringify(nudge).includes("行ってもいい"));
   });
 });

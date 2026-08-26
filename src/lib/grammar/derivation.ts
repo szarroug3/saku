@@ -117,6 +117,18 @@ export interface DerivationEquation {
  * Absent for a noun host (nothing to head — there is no step1 there either)
  * and for any class the label table below does not name. See
  * `derivationTitle`.
+ *
+ * `pattern` is the recipe's own display name (`recipe.pattern`, e.g.
+ * "〜てもいい"), added for SAK-198. It already rides inside `step2.label` as
+ * the RIGHT side of a string like "て-form → 〜てもいい", but that label is a
+ * caption built for display, not a value to recover: string-parsing it back
+ * apart to pull the pattern out would be reading display text to recover a
+ * structural fact, the exact mistake formula.ts's own header records having
+ * made and undone. `pattern` gives the un-revealed hint nudge (see
+ * hint-content.tsx's derivationNudge) the pattern name directly, and it
+ * survives even when `step2` itself is absent (a FORM recipe, where the
+ * built form IS the whole answer and there is no step2 label to have parsed
+ * anyway).
  */
 export interface Derivation {
   /** The word the card asks about, as shown. */
@@ -126,6 +138,7 @@ export interface Derivation {
   readonly step1?: DerivationEquation;
   readonly step2?: DerivationEquation;
   readonly title?: string;
+  readonly pattern: string;
 }
 
 /**
@@ -247,5 +260,64 @@ export function deriveProduction(
 
   const title = derivationTitle(host, cls, step1?.whole ?? false) ?? undefined;
 
-  return { word, answer, step1, step2, title };
+  return { word, answer, step1, step2, title, pattern: recipe.pattern };
+}
+
+// ---------- SAK-198: the SAFE, un-revealed nudge ----------
+
+/**
+ * How a `derivationTitle()` category reads INLINE, mid-sentence: "an
+ * irregular う-verb", not the heading's own "Irregular う-verb / godan".
+ *
+ * HARDCODED, like HOST_ARTICLE in ./formula.ts, and for the same reason that
+ * table gives for itself: the labels start with kana and mix in slashes, so
+ * an a/an-by-first-letter rule would get "an い-adjective" wrong, and a
+ * strip-the-"/ godan"-suffix rule is one more sentence to get right for no
+ * gain over just writing the seven strings out. Keyed off the exact category
+ * strings `derivationTitle` above already produces; add a row here whenever
+ * that function's own table grows.
+ */
+const DERIVATION_CLASS_PHRASE: Readonly<Record<string, string>> = {
+  "Irregular い-adjective": "an irregular い-adjective",
+  "い-adjective": "an い-adjective",
+  "な-adjective": "a な-adjective",
+  "Irregular う-verb / godan": "an irregular う-verb",
+  "う-verb / godan": "a う-verb",
+  "る-verb / ichidan": "a る-verb",
+  "Irregular verb": "an irregular verb",
+};
+
+/**
+ * The SAFE one-line nudge for a derivation hint BEFORE the card resolves
+ * (SAK-198): the Hint button's own drawer, as opposed to the reveal panel,
+ * where the full step-by-step equations (rendered straight from `Derivation`
+ * by hint-content.tsx) are safe only because the answer is already out.
+ * Names the word's CLASS and the PATTERN, the same two facts the
+ * pre-SAK-194 flat hint used to name as two lines, now fused into one
+ * sentence, and never the built `answer`.
+ *
+ * Returns STRUCTURE, not a finished string, for the same reason
+ * `recipeFormula` in ./formula.ts returns structure rather than a pre-joined
+ * one: the class phrase and the pattern both need to render accented
+ * (`text-accent`) while the rest of the sentence stays muted, and splitting a
+ * finished string back apart to find which words to accent would be reading
+ * display text to recover a structural fact, the mistake this codebase
+ * keeps a name for and refuses to make twice.
+ *
+ * `title` absent (a noun or dictionary-form attachment, nothing to name a
+ * class for) falls back to naming the pattern alone, the same unconditional
+ * fallback the pre-SAK-194 flat hint's own `patternText` used for its
+ * no-class case.
+ */
+export type DerivationNudge =
+  | { readonly kind: "class"; readonly classPhrase: string; readonly pattern: string }
+  | { readonly kind: "pattern-only"; readonly pattern: string };
+
+export function derivationNudge(derivation: Derivation): DerivationNudge {
+  const classPhrase = derivation.title
+    ? DERIVATION_CLASS_PHRASE[derivation.title]
+    : undefined;
+  return classPhrase
+    ? { kind: "class", classPhrase, pattern: derivation.pattern }
+    : { kind: "pattern-only", pattern: derivation.pattern };
 }
