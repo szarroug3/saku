@@ -53,6 +53,7 @@ import {
 import { KANJI_SUBJECT, READING_INDEX, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
+import { deriveProduction, type Derivation } from "@/lib/grammar/derivation";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
 import type { GrammarVehicle } from "./question";
@@ -75,6 +76,11 @@ export type Hint =
   | { kind: "image"; src: string; glyph: string }
   | { kind: "text"; text: string }
   | { kind: "formula"; formula: ReadingFormula }
+  // SAK-194: a grammar PRODUCTION card's derivation, shown as an equation
+  // instead of named ("uses the て-form") — see deriveProduction and
+  // grammarHint below. Falls back to `text` when there is nothing to derive
+  // (a wrap, or a refused conjugation).
+  | { kind: "derivation"; derivation: Derivation }
   // The WRITTEN FORM of the word, shown big enough to READ. Only a listening
   // MEANING card produces this: the audio played the word and hid its glyph, so
   // the honest nudge is to reveal WHICH word was heard (電話), not to gloss its
@@ -322,6 +328,24 @@ function formHintText(
 function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
   const prod = grammarProduction(fact);
   if (prod) {
+    // SAK-194: SHOW THE DERIVATION, DON'T NAME IT. Given a vehicle for this
+    // showing, try the structured two-step equation first — "たかい − い +
+    // くて → たかくて" then "たかくて + もいい → たかくてもいい" — which
+    // replaces the flat sentence below entirely when it succeeds. It is
+    // null (falls through to the flat text) for a wrap (しか〜ない's verb
+    // host lives on `recipe.wrap.close`, invisible to deriveProduction
+    // exactly as it already is to formHintText) and for any conjugation the
+    // engine refuses.
+    //
+    // An UNKNOWN vehicle is shown in kana everywhere else on this card (see
+    // GrammarVehicle.known), so the derivation reads kana too — building on
+    // the real surface would show 食べる to a learner who has only ever seen
+    // たべる on this card.
+    if (vehicle) {
+      const word = vehicle.known ? vehicle.surface : vehicle.kana;
+      const derivation = deriveProduction(prod.recipe, prod.host, word, vehicle.cls);
+      if (derivation) return { kind: "derivation", derivation };
+    }
     // THREE nudges, any or all. The PATTERN nudge (SAK-193) names the pattern
     // itself — "This is the 〜てもいい pattern." — which the quiz instruction no
     // longer spells out now that it asks in gloss terms ("How do you say 'may

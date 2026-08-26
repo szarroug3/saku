@@ -11,6 +11,32 @@
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import type { Hint } from "@/lib/engine/hint";
+import type { DerivationEquation } from "@/lib/grammar/derivation";
+
+/**
+ * One derivation equation — "たかい − い + くて → たかくて", or the
+ * whole-word "いい → よくて" for an irregular build. The starting word sits
+ * in a dashed box (mirrors IntroBuildFormula on the Library's form pages);
+ * the trim/add operators are muted; the RESULT is accented, never the added
+ * suffix — a confirmed SAK-194 design call, since what a learner should
+ * notice is what the word BECAME.
+ */
+function DerivationRow({ eq }: { eq: DerivationEquation }) {
+  return (
+    <p
+      lang="ja"
+      className="flex flex-wrap items-center justify-center gap-1.5 font-kana text-[15px]"
+    >
+      <span className="rounded-md border border-dashed border-text-muted/60 px-2 py-0.5 text-text">
+        {eq.from}
+      </span>
+      {!eq.whole && eq.trim ? <span className="text-text-muted">− {eq.trim}</span> : null}
+      {!eq.whole && eq.add ? <span className="text-text-muted">+ {eq.add}</span> : null}
+      <span className="text-text-muted">→</span>
+      <span className="text-accent">{eq.to}</span>
+    </p>
+  );
+}
 
 export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
   if (hint.kind === "image") {
@@ -39,6 +65,26 @@ export function HintBody({ hint, font }: { hint: Hint; font?: string }) {
         ))}
         <span className="pb-0.5 text-[14px]">=</span>
         <span className="pb-0.5 text-xl text-text">{hint.formula.result}</span>
+      </span>
+    );
+  }
+  if (hint.kind === "derivation") {
+    const { derivation } = hint;
+    return (
+      <span className="flex max-w-[360px] flex-col items-center gap-2">
+        <p className="flex flex-wrap items-center justify-center gap-1 text-[12px] text-text-muted">
+          <span lang="ja" className="font-kana text-[15px] text-text">
+            {derivation.word}
+          </span>
+          <span>becomes</span>
+          <span lang="ja" className="font-kana text-[15px] text-accent">
+            {derivation.answer}
+          </span>
+        </p>
+        <span className="flex flex-col items-center gap-1.5">
+          {derivation.step1 ? <DerivationRow eq={derivation.step1} /> : null}
+          {derivation.step2 ? <DerivationRow eq={derivation.step2} /> : null}
+        </span>
       </span>
     );
   }
