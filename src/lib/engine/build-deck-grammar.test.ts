@@ -129,7 +129,6 @@ describe("buildDeck keeps full ENDING coverage under a tight length cap", () => 
     // function is the old plain-slice behaviour, and CAN drop several of the
     // five required facts for a fixed shuffle.
     const facts = [...teKaraFacts, ...filler];
-    const cfg = cfgOf({ limType: "count", limCount: 7 });
     let sawALoss = false;
     for (const seed of [0.05, 0.3, 0.55, 0.8, 0.15, 0.65, 0.9]) {
       const naive = withRandom([seed], () => {
