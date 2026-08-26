@@ -6,6 +6,7 @@ import {
   style,
   drillReady,
   progressPill,
+  progressText,
   startPractice,
   startVowelLessonDrill,
   answerDrillCard,
@@ -130,7 +131,11 @@ test("the practice results screen renders quickly after a drill", async ({
   // so they are the drillable pool.
   await seed({ seen: VOWEL_FACTS, cfg: FLOW_CFG });
   await startPractice(page);
-  await expect(progressPill(page)).toHaveText(`0 / ${FORMS}`);
+  // A single-subject pool prefixes the pill with its track name ("Kana ·
+  // 0 / 5" — see TRACK_PREFIX, helpers/app.ts), so match that tolerant shape
+  // rather than the bare "0 / 5" this used to assert before the prefix
+  // existed (SAK-187 restored this file from a point in history before then).
+  await expect(progressPill(page)).toHaveText(progressText(0, FORMS));
 
   for (let i = 0; i < FORMS - 1; i++) {
     await answerDrillCard(page, VOWEL_FACTS, {});
