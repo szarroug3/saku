@@ -24,7 +24,14 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANA_FACTS, kanaFact } from "../data/characters.ts";
-import { freshFacts, nextGroup, planSession } from "./budget.ts";
+import {
+  freshFacts,
+  groupedByPair,
+  nextGroup,
+  pairsKept,
+  planSession,
+  type HostGroupOf,
+} from "./budget.ts";
 import { CLAIMED_DAYS, claimedState, effectiveState, seenState } from "./claims.ts";
 import { KANA_GROUPS, KANA_GROUP_FACTS, nextLesson, setFacts } from "./lesson.ts";
 import { rank } from "./scoring.ts";
@@ -534,3 +541,200 @@ function nextLessonLinkFor(setId: string): string {
   });
   return nextLesson(h)!.learn.url;
 }
+
+// SAK-192: MULTI-HOST RECIPE PAIRING — THE GENERIC MECHANISM
+// ============================================================
+// budget.ts has no idea what a "recipe" or a "host" is (see PlanQuery's
+// `hostGroupOf` doc comment) — the grammar subject's own instance,
+// `grammarHostGroupOf`, is exercised against REAL recipes in
+// src/lib/grammar/host-group.test.ts. This block tests the mechanism itself
+// (`pairsKept`, `groupedByPair`, and `planSession` wired to a synthetic
+// grouping) on ids that are not real facts at all, so a failure here always
+// points at the scheduling logic and never at a re-cut of the grammar data.
+describe("SAK-192: a multi-host recipe's sibling facts are not left to chance", () => {
+  /** A stand-in "recipe" grouping: `pair:<recipe>:<host>:<n>` ids belong to
+   * `<recipe>`'s `<host>` slot; anything else (a plain "solo:n" id) has no
+   * group, same as a fact from a subject with no multi-host concept. */
+  const syntheticHostGroupOf: HostGroupOf = (id) => {
+    const m = /^pair:([^:]+):([^:]+):/.exec(id as string);
+    return m ? { recipeId: m[1], host: m[2] } : null;
+  };
+  const pairId = (recipe: string, host: string, n = 0): FactId =>
+    `pair:${recipe}:${host}:${n}` as FactId;
+
+  describe("pairsKept — never drops a due sibling the length cap would split off", () => {
+    test("both hosts due, naive rank splits them: the sibling is swapped back in", () => {
+      const a = pairId("R1", "x");
+      const b = pairId("R1", "y");
+      // `a` ranks first, `b` ranks fourth — a length-2 cap keeps `a` and one
+      // solo fact, and would drop `b` without the fix.
+      const ranked: FactId[] = [a, "solo:0" as FactId, "solo:1" as FactId, b, "solo:2" as FactId];
+      const naive = ranked.slice(0, 2);
+      assert.deepEqual(naive, [a, "solo:0" as FactId]); // premise: b is cut
+
+      const kept = pairsKept(ranked, 2, syntheticHostGroupOf);
+      assert.equal(kept.length, 2, "the length cap is still honoured");
+      assert.ok(kept.includes(a));
+      assert.ok(kept.includes(b), "the sibling must be swapped back in");
+      assert.ok(!kept.includes("solo:0" as FactId), "a solo fact makes room instead");
+    });
+
+    test("a 3-host recipe completes to three, not two", () => {
+      const a = pairId("R2", "x");
+      const b = pairId("R2", "y");
+      const c = pairId("R2", "z");
+      const ranked: FactId[] = [
+        a,
+        "solo:0" as FactId,
+        "solo:1" as FactId,
+        b,
+        "solo:2" as FactId,
+        "solo:3" as FactId,
+        c,
+      ];
+      const kept = pairsKept(ranked, 3, syntheticHostGroupOf);
+      assert.equal(kept.length, 3);
+      assert.ok(kept.includes(a) && kept.includes(b) && kept.includes(c));
+    });
+
+    test("no grouping present: behaves exactly like a plain slice", () => {
+      const ranked: FactId[] = ALL.slice(0, 10);
+      assert.deepEqual(
+        pairsKept(ranked, 4, () => null),
+        ranked.slice(0, 4),
+      );
+    });
+
+    test("only one host due (not in `ranked` at all): nothing is injected", () => {
+      // The resolved policy question, at the mechanism's own level: a
+      // sibling that never entered `ranked` — because the SRS itself never
+      // called it due — cannot be "completed" in, by construction. There is
+      // no code path here that looks anywhere but `ranked`.
+      const a = pairId("R3", "x");
+      const ranked: FactId[] = [a, "solo:0" as FactId, "solo:1" as FactId];
+      const kept = pairsKept(ranked, 1, syntheticHostGroupOf);
+      assert.deepEqual(kept, [a]);
+    });
+
+    test("when every current pick is itself required, a missing sibling is left out", () => {
+      // Two DIFFERENT multi-host recipes, each with a sibling just past the
+      // cap, and a length too small to complete both. This is the length
+      // being the user's to spend, not this rule's — see pairsKept's doc
+      // comment — asserted as a non-crash, non-overrun property rather than
+      // a specific winner.
+      const a1 = pairId("R4", "x");
+      const b1 = pairId("R4", "y");
+      const a2 = pairId("R5", "x");
+      const b2 = pairId("R5", "y");
+      const ranked: FactId[] = [a1, a2, b1, b2];
+      const kept = pairsKept(ranked, 2, syntheticHostGroupOf);
+      assert.equal(kept.length, 2, "never grows past the requested length");
+    });
+  });
+
+  describe("groupedByPair — presentation, not selection", () => {
+    test("sibling facts end up adjacent, everything else keeps its relative order", () => {
+      const a = pairId("R1", "x");
+      const b = pairId("R1", "y");
+      const ids: FactId[] = ["solo:0" as FactId, a, "solo:1" as FactId, "solo:2" as FactId, b];
+      const grouped = groupedByPair(ids, syntheticHostGroupOf);
+      assert.equal(new Set(grouped).size, ids.length, "adds and removes nothing");
+      assert.deepEqual(new Set(grouped), new Set(ids));
+      const ia = grouped.indexOf(a);
+      const ib = grouped.indexOf(b);
+      assert.equal(Math.abs(ia - ib), 1, "the pair sits next to each other");
+      // The solo facts keep their own relative order around the pair.
+      assert.ok(grouped.indexOf("solo:0" as FactId) < ia);
+    });
+
+    test("a 3-host group is grouped whole, not just pairwise", () => {
+      const a = pairId("R2", "x");
+      const b = pairId("R2", "y");
+      const c = pairId("R2", "z");
+      const ids: FactId[] = ["solo:0" as FactId, a, "solo:1" as FactId, b, "solo:2" as FactId, c];
+      const grouped = groupedByPair(ids, syntheticHostGroupOf);
+      const positions = [a, b, c].map((f) => grouped.indexOf(f)).sort((x, y) => x - y);
+      assert.equal(positions[2] - positions[0], 2, "all three sit in one contiguous run");
+    });
+
+    test("no grouping present: the order is untouched", () => {
+      const ids: FactId[] = ALL.slice(0, 6);
+      assert.deepEqual(groupedByPair(ids, () => null), ids);
+    });
+  });
+
+  describe("planSession, end to end, with a synthetic multi-host grouping", () => {
+    // 8 unrelated probe candidates plus a pair, spread with the same proven
+    // safe curve budget.test.ts's own random-cap block uses (stability 50d,
+    // 40..79 days elapsed → all probe, never quiet or teach).
+    const probeState = (i: number) => ({ stability: 50, lastTested: NOW - (40 + i) * DAY });
+    const solo: FactId[] = Array.from({ length: 8 }, (_, i) => `solo:${i}` as FactId);
+    const a = pairId("R1", "x");
+    const b = pairId("R1", "y");
+    const ids = [...solo, a, b]; // i = 0..9
+    const facts = Object.fromEntries(ids.map((id, i) => [id, probeState(i)]));
+    const h = history({ facts: facts as HistoryFile["facts"] });
+    const rankCands = ids.map((id, i) => ({ id, state: probeState(i) }));
+
+    test("without hostGroupOf, planSession is unchanged (default behaviour)", () => {
+      const plan = planSession({ candidates: ids, history: h, length: 5, now: NOW });
+      const weakest = rank({ facts: rankCands, limit: 5 }, NOW);
+      assert.deepEqual(plan.probe, weakest, "byte-for-byte the old ranked slice");
+    });
+
+    test("with hostGroupOf, a due pair a naive rank-and-cut would split lands together", () => {
+      const naturalOrder = rank({ facts: rankCands }, NOW);
+      const ia = naturalOrder.indexOf(a);
+      const ib = naturalOrder.indexOf(b);
+      const length = Math.min(ia, ib) + 1;
+      assert.ok(Math.max(ia, ib) >= length, "test setup: the cap must split the pair");
+
+      const plan = planSession({
+        candidates: ids,
+        history: h,
+        length,
+        now: NOW,
+        hostGroupOf: syntheticHostGroupOf,
+      });
+      assert.ok(plan.probe.includes(a));
+      assert.ok(plan.probe.includes(b));
+      assert.equal(plan.probe.length, length);
+    });
+
+    test("the unlimited path reorders for adjacency without changing membership", () => {
+      const unlimited = planSession({ candidates: ids, history: h, length: null, now: NOW });
+      const paired = planSession({
+        candidates: ids,
+        history: h,
+        length: null,
+        now: NOW,
+        hostGroupOf: syntheticHostGroupOf,
+      });
+      assert.deepEqual(new Set(paired.probe), new Set(unlimited.probe));
+      const ia = paired.probe.indexOf(a);
+      const ib = paired.probe.indexOf(b);
+      assert.equal(Math.abs(ia - ib), 1);
+    });
+
+    test("the random (user-built) path also completes a split pair", () => {
+      // Both hosts are due and the pair needs only 2 of the 3 slots, so —
+      // whatever the shuffle drew — completion always has room: run it many
+      // times and confirm BOTH sides land every single draw, not just "not
+      // exactly one".
+      for (let t = 0; t < 25; t++) {
+        const plan = planSession({
+          candidates: ids,
+          history: h,
+          length: 3,
+          now: NOW,
+          random: true,
+          hostGroupOf: syntheticHostGroupOf,
+        });
+        const picked = [...plan.teach, ...plan.probe];
+        assert.equal(picked.length, 3, "count still honoured");
+        assert.ok(picked.includes(a), `draw ${t}: missing host x`);
+        assert.ok(picked.includes(b), `draw ${t}: missing host y`);
+      }
+    });
+  });
+});

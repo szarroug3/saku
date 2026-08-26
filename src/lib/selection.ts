@@ -22,6 +22,8 @@
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { rangeLabel } from "@/lib/date-range";
 import { knownConstructionFacts } from "@/data/counter-categories";
+import { groupedByPair } from "@/lib/budget";
+import { grammarHostGroupOf } from "@/lib/grammar/host-group";
 import {
   ALL_FACTS,
   entryOf,
@@ -415,7 +417,7 @@ export function dueFacts(
   graduateRuns = 10,
 ): FactId[] {
   const pool = resolve(emptySelection(), history, lists, 0, { now, graduateRuns });
-  return pool.filter((f) => {
+  const due = pool.filter((f) => {
     const state = effectiveState(
       history.facts[f],
       history.claims?.[f],
@@ -423,6 +425,18 @@ export function dueFacts(
     );
     return status(state, now) === "probe";
   });
+  // SAK-192: a multi-host grammar recipe (〜てもいい on a verb AND on an
+  // い-adjective, say) mints one FactId per host, and this is an
+  // UNCAPPED due pull — both siblings are already in `due` the moment both
+  // are independently due, nothing here can lose one. What resolve()'s
+  // shuffle CAN do is scatter them far apart in the array a one-click "Due
+  // for review" run hands straight to the quiz (see practice/page.tsx's
+  // startDue), so a learner drilling due material sees the verb form and the
+  // adjective form nowhere near each other instead of back to back as the
+  // same rule. groupedByPair only reorders what's already here — see its
+  // doc comment in budget.ts, the one place this pairing concept is defined
+  // — so a fact that was due stays due and a fact that wasn't never appears.
+  return groupedByPair(due, grammarHostGroupOf);
 }
 
 // ---------- naming a selection ----------
