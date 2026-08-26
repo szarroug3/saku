@@ -422,9 +422,12 @@ async function main() {
   process.env.VOICEVOX_ENGINE_URL = base;
   const bucket = process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET;
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // SUPABASE_SECRET_KEY (sb_secret_...) once set, else the legacy
+  // service_role key — both work simultaneously during Supabase's
+  // publishable/secret key migration, see src/lib/supabase/secret-key.ts.
+  const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!bucket || !supaUrl || !serviceKey) {
-    console.error("Missing NEXT_PUBLIC_VOICE_AUDIO_BUCKET / NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY.");
+    console.error("Missing NEXT_PUBLIC_VOICE_AUDIO_BUCKET / NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY.");
     process.exit(1);
   }
   const supabase = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });

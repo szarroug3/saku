@@ -23,6 +23,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
+import { supabaseSecretKey } from "@/lib/supabase/secret-key";
 import { synthesizeSentenceWav, ttsConfigured } from "@/lib/tts-synth";
 import { voice, voiceAudioUrl, voiceBucket, voiceObjectPath } from "@/lib/voice";
 
@@ -43,7 +44,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const bucket = voiceBucket();
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = supabaseSecretKey();
   const publicUrl = voiceAudioUrl(voiceId, text);
   if (!bucket || !supaUrl || !serviceKey || !publicUrl || !ttsConfigured()) {
     return new Response("tts not configured", { status: 503 });

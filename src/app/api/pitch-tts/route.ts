@@ -40,6 +40,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
+import { supabaseSecretKey } from "@/lib/supabase/secret-key";
 import { synthesizeWordWav, ttsConfigured } from "@/lib/tts-synth";
 import { DEFAULT_VOICE_ID, pitchAudioUrl, pitchObjectPath, voice, voiceBucket } from "@/lib/voice";
 
@@ -87,7 +88,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const bucket = voiceBucket();
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = supabaseSecretKey();
   const publicUrl = pitchAudioUrl(reading, downstep, voiceIdRaw);
   if (!bucket || !supaUrl || !serviceKey || !publicUrl || !ttsConfigured()) {
     return new Response("pitch tts not configured", { status: 503 });

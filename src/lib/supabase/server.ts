@@ -14,12 +14,14 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
 
+import { supabasePublishableKey } from "@/lib/supabase/keys";
+
 // cache() memoizes per-request so multiple server functions share one client instance.
 export const createSupabaseServerClient = cache(async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabasePublishableKey()!,
     {
       cookies: {
         getAll() {

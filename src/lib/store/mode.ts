@@ -1,5 +1,7 @@
 import "server-only";
 
+import { supabasePublishableKey } from "@/lib/supabase/keys";
+
 // Whether Supabase is configured for this deployment — i.e. whether an account
 // can exist at all.
 //
@@ -24,8 +26,5 @@ export function isSupabaseStore(): boolean {
   // shared NEXT_PUBLIC_* variables (which also made every Library detail test
   // render an empty shell).
   if (process.env.SAKU_DISABLE_AUTH === "1") return false;
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  );
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && supabasePublishableKey());
 }
