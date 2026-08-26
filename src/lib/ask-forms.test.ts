@@ -20,10 +20,13 @@ import {
   formIsMc,
   configIsReachable,
   realQuestionCount,
+  type CardForm,
 } from "@/lib/ask-forms";
 import { ALL_FACTS, entryOf, factsOf } from "@/lib/facts";
 import { LIB_ENTRIES, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
-import type { AskConfig } from "@/types";
+import { meaningMustShowGlyph } from "@/lib/homophone";
+import { pickRecognitionForFact } from "@/lib/listen-sentence";
+import type { AskConfig, HistoryFile } from "@/types";
 
 const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);
@@ -36,6 +39,26 @@ const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
 // whole generated round (see slice.test.ts's own use of the same entry).
 const generatorEntry = LIB_ENTRIES.find((e) => e.kind === NUMBER_CONSTRUCTION_KIND)!;
 const generatorFact = factsOf(generatorEntry.id)[0];
+
+const NOW = 1_700_000_000_000;
+/** A learner with no history at all — the widest-reaching test double, since
+ * neither history-dependent drop (`meaningMustShowGlyph`,
+ * `pickRecognitionForFact`) ever fires against an empty history: no claimed
+ * homophone to collide with, and (per listen-sentence.test.ts) an empty
+ * history reads NO corpus sentence at all, so `readableRecognition` is always
+ * empty. Existing tests below that predate SAK-210 round 2's `history`
+ * parameter use this precisely because it is a no-op against every case they
+ * were already pinning. */
+const NOBODY: HistoryFile = { sessions: [], facts: {} };
+/** A learner who has CLAIMED these words and nothing else — same route
+ * homophone.test.ts uses, since `meaningMustShowGlyph` reads exactly this. */
+function claiming(...kebs: string[]): HistoryFile {
+  return {
+    sessions: [],
+    facts: {},
+    claims: Object.fromEntries(kebs.map((k) => [wordMeaningFactId(k), NOW])),
+  };
+}
 
 const ALL: AskConfig = {
   japanese: {
@@ -383,13 +406,13 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
     // + audio, per the enabledFormsFor test above), but a naive count keyed
     // on fact count alone would say 1.
     assert.equal(enabledFormsFor(reading, ALL).length, 2);
-    assert.equal(coverageQuestionCount([reading], ALL), 2);
+    assert.equal(coverageQuestionCount([reading], ALL, NOBODY), 2);
   });
 
   test("coverageQuestionCount matches buildCoverageDeck's own product, fact by fact", () => {
     const facts = [reading, meaning, firstKanjiReading];
     const base = buildCoverageDeck(facts, ALL, (pairs) => pairs);
-    assert.equal(coverageQuestionCount(facts, ALL), base.deck.length);
+    assert.equal(coverageQuestionCount(facts, ALL, NOBODY), base.deck.length);
   });
 
   // A narrow ask (text prompt, jp→en only, no english source) so the
@@ -411,7 +434,7 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
     // enabledFormsFor must resolve the category fact to exactly one form for
     // this to be a clean repeats-only check.
     assert.equal(enabledFormsFor(generatorFact, textOnlyJp2en).length, 1);
-    assert.equal(coverageQuestionCount([generatorFact], textOnlyJp2en), 10);
+    assert.equal(coverageQuestionCount([generatorFact], textOnlyJp2en, NOBODY), 10);
   });
 
   test("coverageQuestionCount composes: an ordinary fact next to a generator, each contributing its own multiplier", () => {
@@ -426,21 +449,21 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
     let expected = 0;
     for (const f of base.deck) expected += constructionConfigForFact(f)?.count ?? 1;
     assert.equal(expected, 11);
-    assert.equal(coverageQuestionCount(facts, textOnlyJp2en), 11);
+    assert.equal(coverageQuestionCount(facts, textOnlyJp2en, NOBODY), 11);
   });
 
   test("realQuestionCount, cov mode: delegates to coverageQuestionCount", () => {
     const cfg = { length: "limited" as const, limType: "cov" as const, limCount: 50, ask: ALL };
     assert.equal(
-      realQuestionCount([reading, generatorFact], cfg),
-      coverageQuestionCount([reading, generatorFact], ALL),
+      realQuestionCount([reading, generatorFact], cfg, NOBODY),
+      coverageQuestionCount([reading, generatorFact], ALL, NOBODY),
     );
   });
 
   test("realQuestionCount, count mode: the configured cap, exactly (buildDeck's repeat-fill+pairsKept always lands there for a non-empty pool)", () => {
     const cfg = { length: "limited" as const, limType: "count" as const, limCount: 7, ask: ALL };
-    assert.equal(realQuestionCount([reading, meaning], cfg), 7);
-    assert.equal(realQuestionCount([], cfg), 0, "an empty pool asks nothing, cap or not");
+    assert.equal(realQuestionCount([reading, meaning], cfg, NOBODY), 7);
+    assert.equal(realQuestionCount([], cfg, NOBODY), 0, "an empty pool asks nothing, cap or not");
   });
 
   test("realQuestionCount, endless mode: one card per fact with a usable form, NOT one per form", () => {
@@ -448,17 +471,165 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
     // (filtered to facts with ≥1 usable form) and rolls a single form per
     // showing — so `reading`'s two forms still cost exactly one card.
     const cfg = { length: "endless" as const, limType: "cov" as const, limCount: 50, ask: ALL };
-    assert.equal(realQuestionCount([reading, meaning], cfg), 2);
+    assert.equal(realQuestionCount([reading, meaning], cfg, NOBODY), 2);
     const noForms: AskConfig = {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
       english: { answers: [] },
     };
     assert.equal(
-      realQuestionCount([reading], { ...cfg, ask: noForms }),
+      realQuestionCount([reading], { ...cfg, ask: noForms }, NOBODY),
       0,
       "a fact with no enabled form contributes no card",
     );
+  });
+});
+
+// SAK-210 ROUND 2: round 1 made coverageQuestionCount count ENABLED forms —
+// right structurally, but the real coverage build (drill-screen.tsx's
+// onMount, `keep`) drops some of those enabled forms post-hoc based on the
+// LEARNER'S HISTORY, for reasons that have nothing to do with which forms are
+// enabled. A live repro (two grammar patterns, "Quiz me 34" against an actual
+// "Grammar · 0/30" run) proved that gap is not the "a card or two" round 1's
+// own doc comment assumed — it is exactly the sentence-recognition case
+// below, which scales with how much of a pattern's tagged corpus the learner
+// can currently read.
+describe("coverageQuestionCount / realQuestionCount are HISTORY-AWARE (SAK-210 round 2)", () => {
+  // 箸/橋/端 all read はし (see homophone.test.ts) — the same fixture, reused
+  // rather than invented, since it is exactly the collision
+  // meaningMustShowGlyph exists to detect.
+  const audioMeaningAsk: AskConfig = {
+    japanese: {
+      prompts: ["text", "audio"],
+      responses: ["definition", "romaji"],
+      answers: ["typed", "mc"],
+    },
+    sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
+    english: { answers: [] },
+  };
+
+  test("a homophone collision drops exactly the listening card(s) it blocks, not the whole fact", () => {
+    const hashiMeaning = wordMeaningFactId("箸");
+    const known = claiming("橋");
+    const forms = enabledFormsFor(hashiMeaning, audioMeaningAsk);
+    const blocked = forms.filter((f) => f.source === "japanese" && f.listen);
+    assert.ok(
+      blocked.length > 0,
+      "the ask must actually offer a listening card for this to be a real test of the drop",
+    );
+    // No collision yet (NOBODY has no claims): every enabled form survives —
+    // round 1's behaviour, still correct in the no-history-effect case.
+    assert.equal(
+      coverageQuestionCount([hashiMeaning], audioMeaningAsk, NOBODY),
+      forms.length,
+    );
+    // 橋 now known: はし's meaning card must show the glyph, so its listening
+    // form(s) are dropped — everything else (typed text jp→en) still counts.
+    assert.equal(
+      coverageQuestionCount([hashiMeaning], audioMeaningAsk, known),
+      forms.length - blocked.length,
+      "the collision must drop only the listening form(s), never the whole fact",
+    );
+  });
+
+  const sentenceRecognitionAsk: AskConfig = {
+    japanese: { prompts: [], responses: [], answers: [] },
+    sentence: {
+      prompts: ["text", "audio"],
+      responses: ["definition"],
+      answers: [],
+      englishResponses: [],
+    },
+    english: { answers: [] },
+  };
+
+  test("a sentence-definition form pickRecognitionForFact can't fill is dropped, not counted", () => {
+    const grammarFact = patternMeaningFactId(RECIPES[0].id);
+    const forms = enabledFormsFor(grammarFact, sentenceRecognitionAsk);
+    assert.ok(
+      forms.length > 0 &&
+        forms.every((f) => f.source === "sentence" && f.response === "definition"),
+      "this ask must enable ONLY the sentence-definition form, to isolate the drop",
+    );
+    // A learner with no history at all can read no corpus sentence at all
+    // (readableRecognition(NOBODY).length === 0 — listen-sentence.test.ts
+    // pins this directly), so every candidate board pickRecognitionForFact
+    // could draw for this fact fails, and the deterministic () => 0 rng
+    // onMount itself uses (not Math.random) makes that null deterministic too.
+    assert.equal(pickRecognitionForFact(grammarFact, NOBODY, () => 0), null);
+    assert.equal(
+      coverageQuestionCount([grammarFact], sentenceRecognitionAsk, NOBODY),
+      0,
+      "an enabled form with no safe board to draw must not be counted",
+    );
+  });
+
+  test("coverageQuestionCount matches a REAL coverage-deck build's post-history survivor count (the strongest regression guard: this exact gap has now shipped twice)", () => {
+    // Two real grammar-meaning facts, exactly the repro's shape (two selected
+    // grammar patterns). Both sources on, so this exercises the homophone AND
+    // recognition drops together over real library/corpus data, not a
+    // constructed edge case.
+    const facts = [
+      patternMeaningFactId(RECIPES[0].id),
+      patternMeaningFactId(RECIPES[1].id),
+    ];
+    const ask: AskConfig = {
+      japanese: {
+        prompts: ["text", "audio"],
+        responses: ["definition", "romaji"],
+        answers: ["typed", "mc"],
+      },
+      sentence: {
+        prompts: ["text", "audio"],
+        responses: ["definition"],
+        answers: [],
+        englishResponses: [],
+      },
+      english: { answers: ["typed", "mc"] },
+    };
+    // A beginner: every sentence-recognition form is unfillable (see the test
+    // above), which is exactly the shape of the live repro — the drop is not
+    // a rare edge, it is the DEFAULT state for anyone who hasn't yet read
+    // most of the corpus.
+    const history = NOBODY;
+    const base = buildCoverageDeck(facts, ask, (pairs) => pairs);
+    // Mirror onMount's construction-category repeat expansion exactly
+    // (drill-screen.tsx: `built`, the loop that turns `base.deck` into
+    // `built.deck`) — a no-op here since grammar-meaning facts carry no
+    // construction config, but mirrored anyway so this test tracks the real
+    // pipeline rather than a shortcut of it.
+    const built: { deck: typeof base.deck; forms: CardForm[] } = {
+      deck: [],
+      forms: [],
+    };
+    for (let i = 0; i < base.deck.length; i++) {
+      const fact = base.deck[i];
+      const repeats = constructionConfigForFact(fact)?.count ?? 1;
+      for (let n = 0; n < repeats; n++) {
+        built.deck.push(fact);
+        built.forms.push(base.forms[i]);
+      }
+    }
+    // Mirror onMount's `keep` exactly (drill-screen.tsx), minus
+    // `isBoxSelected` — not applicable outside a retry run (see
+    // formSurvivesHistory's own doc comment in ask-forms.ts for why).
+    const survivors = built.deck.filter((_, i) => {
+      const form = built.forms[i];
+      return !(
+        (form.source === "japanese" &&
+          form.listen &&
+          meaningMustShowGlyph(built.deck[i], history)) ||
+        (form.source === "sentence" &&
+          form.response === "definition" &&
+          pickRecognitionForFact(built.deck[i], history, () => 0) === null)
+      );
+    });
+    assert.ok(built.deck.length > 0, "the ask must produce a real deck to filter");
+    assert.ok(
+      survivors.length < built.deck.length,
+      "this scenario must actually exercise the drop, or it proves nothing",
+    );
+    assert.equal(coverageQuestionCount(facts, ask, history), survivors.length);
   });
 });
 
