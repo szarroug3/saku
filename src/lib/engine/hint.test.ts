@@ -190,8 +190,20 @@ test("a KNOWN る-verb's production derives the two-step equation, not the flat 
   assert.ok(hint.kind === "derivation");
   assert.equal(hint.derivation.word, "食べる");
   assert.equal(hint.derivation.answer, "食べたい");
-  assert.deepEqual(hint.derivation.step1, { from: "食べる", trim: "る", add: undefined, to: "食べ" });
-  assert.deepEqual(hint.derivation.step2, { from: "食べ", trim: undefined, add: "たい", to: "食べたい" });
+  assert.deepEqual(hint.derivation.step1, {
+    from: "食べる",
+    trim: "る",
+    add: undefined,
+    to: "食べ",
+    label: "Dictionary form → stem",
+  });
+  assert.deepEqual(hint.derivation.step2, {
+    from: "食べ",
+    trim: undefined,
+    add: "たい",
+    to: "食べたい",
+    label: "stem → 〜たい",
+  });
   // Changes-requested (SAK-194 follow-up): the category/class heading flows
   // all the way through grammarHint, not just deriveProduction directly.
   assert.equal(hint.derivation.title, "る-verb / ichidan");
@@ -226,7 +238,13 @@ test("a KNOWN な-adjective's production derives a single equation (te-sequence 
   assert.ok(hint.kind === "derivation");
   assert.equal(hint.derivation.word, "静か");
   assert.equal(hint.derivation.answer, "静かで");
-  assert.deepEqual(hint.derivation.step1, { from: "静か", trim: undefined, add: "で", to: "静かで" });
+  assert.deepEqual(hint.derivation.step1, {
+    from: "静か",
+    trim: undefined,
+    add: "で",
+    to: "静かで",
+    label: "Dictionary form → て-form",
+  });
   assert.equal(hint.derivation.step2, undefined);
   assert.equal(hint.derivation.title, "な-adjective");
 });
@@ -258,7 +276,13 @@ test("a FORM recipe + KNOWN る-verb also derives — 食べる − る + ない
   assert.ok(hint.kind === "derivation");
   assert.equal(hint.derivation.word, "食べる");
   assert.equal(hint.derivation.answer, "食べない");
-  assert.deepEqual(hint.derivation.step1, { from: "食べる", trim: "る", add: "ない", to: "食べない" });
+  assert.deepEqual(hint.derivation.step1, {
+    from: "食べる",
+    trim: "る",
+    add: "ない",
+    to: "食べない",
+    label: "Dictionary form → ない-form",
+  });
   assert.equal(hint.derivation.step2, undefined);
 });
 
