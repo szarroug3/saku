@@ -34,6 +34,7 @@ import {
   wordMeaningFactId,
 } from "@/data/vocab";
 import { KANA_SUBJECT } from "@/data/characters";
+import { constructionConfigForFact } from "@/data/counter-categories";
 import { grammarMeaning } from "@/data/grammar";
 import { READING_INDEX } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
@@ -52,6 +53,7 @@ import type {
   AskConfig,
   Direction,
   FactId,
+  QuizConfig,
   ResponseKind,
 } from "@/types";
 
@@ -396,6 +398,79 @@ export function buildCoverageDeck(
   // independently.
   const ordered = spread(shuffle(pairs), (p) => entryOf(p.f));
   return { deck: ordered.map((p) => p.f), forms: ordered.map((p) => p.form) };
+}
+
+/**
+ * SAK-210: the real size of a full-coverage deck — `buildCoverageDeck`'s own
+ * per-fact form expansion, PLUS the construction-category repeat multiplier
+ * the coverage branch of the drill screen applies on top of it (see
+ * drill-screen.tsx's `onMount`, the loop that turns `base.deck` into
+ * `built.deck` by repeating each entry `constructionConfigForFact(fact)?.count`
+ * times). Both callers of `buildCoverageDeck` for cards (drill-screen) and for
+ * counting (this) must apply that SAME multiplier, or a category whose config
+ * generates more than one card per slot silently outgrows any count that
+ * skipped it.
+ *
+ * Deliberately ignorant of `history` and box selection: the coverage branch
+ * also drops a handful of showings post-hoc (a listening card whose meaning
+ * must show its glyph, an assembly card with no recognition option, a retry
+ * run's unselected box) — narrow, per-showing exceptions that need the
+ * runtime state a button's count is computed without. Undercounting THOSE by
+ * a card or two is the one gap this function knowingly leaves; the count this
+ * produces is otherwise exactly `built.deck.length` before that filter.
+ */
+export function coverageQuestionCount(
+  facts: readonly FactId[],
+  ask: AskConfig,
+): number {
+  let total = 0;
+  for (const fact of facts) {
+    const forms = enabledFormsFor(fact, ask).length;
+    const repeats = constructionConfigForFact(fact)?.count ?? 1;
+    total += forms * repeats;
+  }
+  return total;
+}
+
+/**
+ * SAK-210: the real number of questions a quiz will ask, for a config already
+ * resolved to what the launch will actually run with (mode/length/limType
+ * included — see slice-bar.tsx's `startQuiz`, which snapshots the live
+ * builder config and, for a generator pool, forces `length: "limited",
+ * limType: "cov"` the same way this must be told to). This is the SAME
+ * three-way branch drill-screen.tsx's `onMount` and `engine/index.ts`'s
+ * `buildDeck` use to decide how big the deck is — not a second guess at their
+ * number:
+ *
+ *   cov   — full coverage: `coverageQuestionCount`, above.
+ *   count — `buildDeck`'s repeat-fill tops a non-empty pool up to `limCount`
+ *           exactly (drill mode; see its own doc comment), so the answer is
+ *           the configured count itself.
+ *   endless — no cap, no fill, and — unlike coverage — NO per-fact form
+ *           expansion either: outside the coverage branch, drill-screen.tsx's
+ *           `onMount` keeps `rt.pool` as ONE entry per fact (filtered to
+ *           facts with at least one usable form) and rolls a single form for
+ *           it per showing (see ask-forms.ts's own header, "Endless/Count —
+ *           rolls ONE of them per showing"). So this counts facts with at
+ *           least one enabled form, not their forms.
+ *
+ * BOARD MODES ("pairs", "grid") are NOT covered — their card count comes from
+ * page-specific board-building (`playablePairBoards`, `gridFacts`) this
+ * module doesn't own. A caller launching one of those should size its own
+ * button off the same board builder instead of this function.
+ */
+export function realQuestionCount(
+  facts: readonly FactId[],
+  cfg: Pick<QuizConfig, "length" | "limType" | "limCount" | "ask">,
+): number {
+  if (facts.length === 0) return 0;
+  if (cfg.length === "limited" && cfg.limType === "cov") {
+    return coverageQuestionCount(facts, cfg.ask);
+  }
+  if (cfg.length === "limited" && cfg.limType === "count") {
+    return cfg.limCount;
+  }
+  return facts.filter((f) => enabledFormsFor(f, cfg.ask).length > 0).length;
 }
 
 function fisherYates<T>(a: T[]): T[] {
