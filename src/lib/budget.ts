@@ -104,6 +104,146 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
+// ---------- SAK-192: multi-host recipe pairing ----------
+//
+// Some facts come in SETS rather than alone — a grammar recipe that attaches
+// to more than one host (see src/lib/grammar/host-group.ts's header for the
+// full picture) mints a separate FactId per host, and nothing before this
+// pointed the scheduler at that relationship. `hostGroupOf` on PlanQuery is
+// the opt-in: a caller who knows a subject with this shape passes a function
+// mapping a FactId to its group, and this file — which otherwise has no idea
+// what a "recipe" or a "host" is — uses it for two things below:
+//
+//   `pairsKept`     never drop a due sibling the length cap would otherwise
+//                   cut, PROVIDED it is already ranked (due) — see the policy
+//                   note on `pairsKept` for why this never reaches past what
+//                   the SRS already called due.
+//   `groupedByPair` cosmetic: once a set is going to be IN the session, sit
+//                   its members next to each other rather than wherever the
+//                   rank order or the shuffle happened to scatter them.
+//
+// Neither function has an opinion about WHAT a group is — a `recipeId` is
+// just a string two facts happen to share.
+
+export type HostGroupOf = (id: FactId) => { recipeId: string; host: string } | null;
+
+/**
+ * THE POLICY: pair only within what the SRS already selected.
+ *
+ * `ranked` is the full due-and-ranked candidate order (weakest first, no
+ * length cap yet — see the two call sites below, which both pass the
+ * UNLIMITED `rank()` result). Cutting it to `length` is what can split a
+ * pair: one host's fact ranks #3, its sibling ranks #40, and a
+ * length-10 session would show one and never the other.
+ *
+ * This never reaches for a fact `ranked` does not contain. A sibling that
+ * is not yet due — `status()` said "teach" or "quiet" for it — never enters
+ * `ranked` to begin with, so it can never be "completed" in here. That is
+ * the resolved policy question from the ticket: when one host of a recipe is
+ * overdue and the other is not yet due, this does NOT inject the not-due one
+ * early to force the pair. It only ever REORDERS/COMPLETES a selection the
+ * SRS's own due-date logic already assembled — never overrides it. The
+ * "only one side due" case in budget.test.ts is this rule's negative case:
+ * nothing here can make it fire when there is nothing to complete from.
+ *
+ * For each recipe with more than one host actually present in `ranked` (a
+ * 3-host recipe such as te-sequence completes to three, not two — nothing
+ * here is written assuming exactly two), the single BEST-ranked (earliest)
+ * fact per host is `required`: if the naive `ranked.slice(0, length)` cap
+ * left one out, this swaps it back in, bumping the WORST-ranked fact in the
+ * cut that is not itself required by some other pair. When every currently
+ * picked fact is required (a small `length` entirely spent on pairs
+ * already), a missing sibling is left out rather than growing the session
+ * past `length` — the length is the user's, not this rule's, to spend.
+ */
+export function pairsKept(
+  ranked: readonly FactId[],
+  length: number,
+  hostGroupOf: HostGroupOf,
+): FactId[] {
+  const picked = ranked.slice(0, length);
+  if (picked.length >= ranked.length) return picked; // nothing left to draw from
+
+  // The best (earliest = most due) representative of every (recipe, host)
+  // slot present anywhere in the due pool, and which hosts each recipe has
+  // due at all.
+  const bestOfSlot = new Map<string, FactId>();
+  const hostsOfRecipe = new Map<string, Set<string>>();
+  for (const id of ranked) {
+    const g = hostGroupOf(id);
+    if (!g) continue;
+    const slot = `${g.recipeId} ${g.host}`;
+    if (!bestOfSlot.has(slot)) bestOfSlot.set(slot, id);
+    let hosts = hostsOfRecipe.get(g.recipeId);
+    if (!hosts) hostsOfRecipe.set(g.recipeId, (hosts = new Set()));
+    hosts.add(g.host);
+  }
+
+  // A recipe only asks anything of this function once TWO of its hosts are
+  // both due — a recipe with just one host due right now has nothing to
+  // pair, same as a recipe with no grammar at all.
+  const required = new Set<FactId>();
+  for (const [recipeId, hosts] of hostsOfRecipe) {
+    if (hosts.size < 2) continue;
+    for (const host of hosts) {
+      required.add(bestOfSlot.get(`${recipeId} ${host}`)!);
+    }
+  }
+  if (!required.size) return picked;
+
+  const pickedSet = new Set(picked);
+  const missing = [...required].filter((id) => !pickedSet.has(id));
+  if (!missing.length) return picked;
+
+  const result = picked.slice();
+  for (const id of missing) {
+    let bumpIndex = -1;
+    for (let i = result.length - 1; i >= 0; i--) {
+      if (!required.has(result[i])) {
+        bumpIndex = i;
+        break;
+      }
+    }
+    // Every current pick is itself required by some pair — no room to
+    // complete this one without growing past `length`. Leave it out.
+    if (bumpIndex === -1) break;
+    result.splice(bumpIndex, 1, id);
+  }
+  return result;
+}
+
+/**
+ * Presentation only: once a set of sibling facts is going into the session
+ * (see `pairsKept` for how that gets decided), sit them next to each other
+ * instead of wherever rank order or the shuffle scattered them — "draw one
+ * example of each host" reads as a pair, not as two unrelated questions
+ * sessions apart. Adds and removes nothing; it is a stable regrouping of
+ * exactly the ids it was given.
+ */
+export function groupedByPair(
+  ids: readonly FactId[],
+  hostGroupOf: HostGroupOf,
+): FactId[] {
+  const placed = new Set<FactId>();
+  const out: FactId[] = [];
+  for (const id of ids) {
+    if (placed.has(id)) continue;
+    out.push(id);
+    placed.add(id);
+    const g = hostGroupOf(id);
+    if (!g) continue;
+    for (const other of ids) {
+      if (placed.has(other)) continue;
+      const og = hostGroupOf(other);
+      if (og && og.recipeId === g.recipeId) {
+        out.push(other);
+        placed.add(other);
+      }
+    }
+  }
+  return out;
+}
+
 export interface SessionPlan {
   /**
    * Facts to ASK, best question first — straight from `rank`. The order is the
@@ -173,6 +313,23 @@ export interface PlanQuery {
    */
   random?: boolean;
   now: number;
+  /**
+   * SAK-192: how to find a fact's multi-host GROUP, for subjects that have
+   * one — a grammar recipe that attaches to more than one host (verb, an
+   * adjective type, …) mints a separate FactId per host, and left alone
+   * those siblings are invisible to this file's ranking and to the
+   * `random` shuffle: a length cap or an unlucky shuffle can show you one
+   * host's fact and never the other, even when both are due. Absent =
+   * "this pool has no such grouping", the old behaviour, unchanged.
+   *
+   * budget.ts does not know or care what a "recipe" or a "host" IS — see
+   * src/lib/grammar/host-group.ts, which supplies the grammar-subject
+   * instance of this function (`grammarHostGroupOf`) without pulling this
+   * file into the grammar data's dependency graph. Two facts sharing a
+   * `recipeId` with a DIFFERENT `host` are siblings this file tries to keep
+   * together; see `pairsKept`'s doc comment for the exact policy.
+   */
+  hostGroupOf?: HostGroupOf;
 }
 
 /**
@@ -237,9 +394,36 @@ export function planSession(query: PlanQuery): SessionPlan {
     ];
     shuffle(drillable);
     const picked = length === null ? drillable : drillable.slice(0, length);
+
+    let probeIds = picked.filter((x) => !x.teach).map((x) => x.id);
+    const teachIds = picked.filter((x) => x.teach).map((x) => x.id);
+
+    // SAK-192: complete a multi-host pair the shuffle split across the cut —
+    // PROBE ONLY (see pairsKept's doc comment: a teach-side sibling is not
+    // yet due, and this never forces a not-due fact in). There is no rank
+    // here — it's a user-built, uniformly-shuffled pool — so `pairsKept`
+    // is fed the shuffle's own order as its preference order: already-picked
+    // probe ids first, then the rest of the shuffled probe pool it can draw
+    // a missing sibling from.
+    if (query.hostGroupOf && length !== null) {
+      const probeShuffleOrder = drillable
+        .filter((x) => !x.teach)
+        .map((x) => x.id);
+      const pickedProbeSet = new Set(probeIds);
+      probeIds = pairsKept(
+        [
+          ...probeIds,
+          ...probeShuffleOrder.filter((id) => !pickedProbeSet.has(id)),
+        ],
+        probeIds.length,
+        query.hostGroupOf,
+      );
+    }
+    if (query.hostGroupOf) probeIds = groupedByPair(probeIds, query.hostGroupOf);
+
     return {
-      probe: picked.filter((x) => !x.teach).map((x) => x.id),
-      teach: picked.filter((x) => x.teach).map((x) => x.id),
+      probe: probeIds,
+      teach: teachIds,
       short: length !== null && picked.length < length,
     };
   }
@@ -248,14 +432,23 @@ export function planSession(query: PlanQuery): SessionPlan {
   // a licence to hand over the whole curriculum at once. It caps the ASKING,
   // and the lesson was already one group before it got here.
   if (length === null) {
+    const probe = rank({ facts: probeCandidates }, now);
     return {
-      probe: rank({ facts: probeCandidates }, now),
+      probe: query.hostGroupOf ? groupedByPair(probe, query.hostGroupOf) : probe,
       teach: teachable,
       short: false,
     };
   }
 
-  const probe = rank({ facts: probeCandidates, limit: length }, now);
+  // Unlimited rank order — SAK-192's `pairsKept` does its own length cut
+  // below so it can pull a due sibling back in past a naive weakest-N slice;
+  // without a grouping function this is exactly `rank(..., limit: length)`
+  // (see rank()'s own body: `limit` is nothing but a slice).
+  const rankedProbe = rank({ facts: probeCandidates }, now);
+  let probe = query.hostGroupOf
+    ? pairsKept(rankedProbe, length, query.hostGroupOf)
+    : rankedProbe.slice(0, length);
+  if (query.hostGroupOf) probe = groupedByPair(probe, query.hostGroupOf);
   // Both halves of `teachable` are in candidate order, which is the
   // curriculum's order — the sequence the data file already puts kana in
   // (vowels, then K, then S…). Deliberately not shuffled and not ranked: `rank`
