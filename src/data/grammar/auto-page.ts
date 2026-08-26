@@ -14,6 +14,7 @@ import { conjugate, type Form, type WordClass } from "@/lib/conjugate";
 import { apply } from "@/lib/grammar/apply";
 import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
+import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor } from "@/data/grammar/corpus";
 import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
@@ -466,9 +467,13 @@ function patternRuleTables(
   return tables;
 }
 
-/** Sentence-case a gloss for the hero line: "after doing X" → "After doing X." */
+/** Sentence-case a gloss for the hero line: "after X" → "After X." — the gloss
+ * is shown here UNFILLED (X stays a literal placeholder; the page has no one
+ * vehicle to fill it with), and with its do/does/doing SCAFFOLDING dropped
+ * first (SAK-193): "must not do X" reads as a typo on its own line, "must not
+ * X" reads as the pattern's own header should. */
 function heroFromGloss(gloss: string): string {
-  const g = gloss.trim();
+  const g = dropDoScaffold(gloss).trim();
   const cap = g.charAt(0).toUpperCase() + g.slice(1);
   if (/[.!?…]$/.test(cap)) return cap;
   // A gloss that ENDS on a connective ("do X, and then") describes a link to a

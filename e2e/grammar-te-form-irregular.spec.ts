@@ -33,9 +33,13 @@ test("the te-form's 行く card is kana, has no dead hint, and reveals both scri
   //    met.
   await expect(glyph).toHaveText("いく");
 
-  // 2. No Hint button. "uses the て-form" on a card asking for the て-form is the
-  //    prompt restated, so the form recipe's production is silent.
-  await expect(hintButton(page)).toHaveCount(0);
+  // 2. The Hint button no longer says "uses the て-form" — that on a card asking
+  //    for the て-form IS the prompt restated, so the form recipe's own form
+  //    nudge stays silent. But SAK-193 adds a pattern-name line alongside it,
+  //    which is not a tautology, so the button is back (naming 〜て) rather than
+  //    the total silence this card used to get.
+  await hintButton(page).click();
+  await expect(page.getByText("This is the 〜て pattern", { exact: true })).toBeVisible();
 
   // 3. Miss it, and the reveal shows BOTH scripts — both are graded correct, so
   //    hiding one hid a right answer. Kana leads (what she typed), 行って rides

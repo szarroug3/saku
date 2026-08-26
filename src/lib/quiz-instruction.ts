@@ -43,14 +43,34 @@ import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { grammarProduction } from "@/data/grammar";
-import { patternLabel } from "@/data/grammar/recipes";
+import { patternLabel, type Host } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
 import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { isReadingFact } from "@/lib/word-unlock";
 import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
 import { openExample } from "@/lib/grammar/example";
+import { dropDoScaffold } from "@/lib/grammar/gloss";
 import type { Direction, FactId } from "@/types";
+
+/** A bare modal directly ahead of the X slot — "may X", "must (not) X", "can
+ * X", "had better (not) X". A VERB host needs nothing more ("may eat"), but an
+ * adjective or noun host still needs the copula English drops after "do"
+ * ("may be expensive", not "may expensive") — the same reason appliedGloss's
+ * own "do X" → "be X" branch exists for the teach page, applied here to the
+ * quiz instruction's Japanese-filled X instead of an English one. */
+const LEADING_MODAL = /^(?:may|must(?: not)?|can|had better(?: not)?) X\b/;
+
+/** The recipe's gloss, do/does/doing dropped (SAK-193), with X filled by
+ * `word` — the vehicle's own Japanese, not an English translation. A non-verb
+ * host filling a bare modal template gets "be" inserted ("may be いい"), the
+ * one case where the target word alone would read as broken English. */
+function filledGlossFor(template: string, host: Host, word: string): string {
+  if (host !== "verb" && LEADING_MODAL.test(template)) {
+    return template.replace(/\bX\b/g, `be ${word}`);
+  }
+  return template.replace(/\bX\b/g, word);
+}
 
 /** How the instruction names the thing you are being asked to produce.
  *
@@ -113,6 +133,42 @@ export function quizInstruction(
         ? `Which of these shows this ${noun} describing みせ?`
         : `Type this ${noun} describing みせ.`;
     }
+    // THE QUESTION NAMES THE PATTERN'S OWN MEANING, WITH THE VEHICLE'S OWN
+    // JAPANESE WORD FILLED IN — "must not 食べる", not "must not eat" and not
+    // "said in the 〜てはいけない form". SAK-193: take the recipe's gloss, drop
+    // its do/does/doing scaffolding (dropDoScaffold), then fill the X slot with
+    // the vehicle's own script — surface if she has met it, kana if not, the
+    // same `known` rule the halo itself draws by (see GrammarVehicle).
+    //
+    // A WRAP (shika-nai, the one producible one) fills X with its FIXED word
+    // (本), not the varying vehicle: the gloss's X is the fixed noun's role
+    // ("only X (nothing but)"), and the vehicle verb is the halo's own word,
+    // shown there rather than repeated in the sentence.
+    const template = dropDoScaffold(prod.recipe.gloss);
+    const wrap = prod.recipe.wrap;
+    const word = wrap
+      ? openExample(prod.recipe).surface
+      : vehicle
+        ? vehicle.known
+          ? vehicle.surface
+          : vehicle.kana
+        : undefined;
+    if (/\bX\b/.test(template) && word !== undefined) {
+      const fillHost = wrap ? (prod.recipe.attach[0]?.host ?? "noun") : prod.host;
+      const filled = filledGlossFor(template, fillHost, word);
+      // An UNKNOWN class word still needs its class named — the filled X is
+      // drawn in kana precisely because she has not met it, and kana alone
+      // does not say ichidan vs godan (see the `kind` note above). A known
+      // word carries no such tag; its class rides in the hint instead.
+      const named = kind ? ` for this ${kind}` : "";
+      return mode === "mc"
+        ? `Which of these is how you say "${filled}"${named}?`
+        : `How do you say "${filled}"${named}?`;
+    }
+    // Falls through for the 4 producible recipes with no X in their gloss
+    // (te-aru, stem-form, masu-form, volitional-form — prenominal-form is
+    // handled above) and for the untested case of no vehicle at all: the old,
+    // form-named phrasing, unchanged.
     const form = `${patternLabel(prod.recipe)} form`;
     // A WRAP's halo shows only ONE slot's word (the varying verb) — the other
     // slot (本, fixed) never appears on screen, so an instruction naming only
