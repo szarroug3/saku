@@ -1309,11 +1309,20 @@ function builtOn(
  * `effectiveState`), so a CLAIM makes a word a known vehicle exactly as a lesson
  * does. Null is now rare: only a wrap or a recipe no pooled word can host, in
  * which case the showing falls back to the fixed baked vehicle.
+ *
+ * `usedVehicles` is SAK-203 round 2's session-aware dedup gate — every
+ * vehicle surface already picked for a DIFFERENT grammar-production fact
+ * earlier in the SAME session, so this fact's pick avoids repeating one when
+ * `pickVehicle`'s pool has an alternative. Optional: omitted (or empty) is
+ * "nothing picked yet", the ordinary state for the first grammar card of a
+ * session. See `pickVehicle`'s own doc comment for how this composes with
+ * the known-word preference.
  */
 export function grammarVehicleFor(
   fact: FactId,
   history: HistoryFile,
   rng: Rng = Math.random,
+  usedVehicles?: ReadonlySet<string>,
 ): GrammarVehicle | null {
   const prod = grammarProduction(fact);
   if (!prod) return null;
@@ -1330,6 +1339,7 @@ export function grammarVehicleFor(
     prod.host,
     isKnown,
     prod.bucket,
+    usedVehicles,
   );
   return picked
     ? {

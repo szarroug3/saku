@@ -117,6 +117,101 @@ describe("first-learned verb across a run", () => {
   });
 });
 
+// SAK-203 round 2: Sam re-reported the same bug class with a fresh, concrete
+// example — およぐ picked independently for BOTH 〜ている ("is およぐ") and
+// 〜てください ("please およぐ") in one session. Round 1 only reordered cards
+// that already existed in a deck with a duplicate vehicle; it never stopped
+// two SEPARATE recipes' facts from independently rolling the same word in
+// the first place. `usedInDeck` is the fix: a session-aware preference
+// threaded into `pickVehicle` for a word not already picked elsewhere.
+describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
+  test("v5g really did have exactly one pool member before this change", () => {
+    // Confirms およぐ's repeat was PARTLY a data gap, not only an algorithm
+    // gap: with only one v5g word in the pool, no session-awareness has
+    // anything to dedupe against. 急ぐ is the fix's second pool member.
+    const v5g = VERB_VEHICLES.filter((v) => v.cls === "v5g").map((v) => v.surface);
+    assert.deepEqual(v5g, ["泳ぐ", "急ぐ"]);
+  });
+
+  test("a class with a real pool alternative is not re-picked once used", () => {
+    // v1 has three members (食べる/見る/起きる) — the exact shape of the class
+    // that repeated in Sam's たべる follow-up report. Scoped with a v1 bucket
+    // (the way a real classProductionFactId showing always is) so the pick
+    // is confined to the class under test, not the whole verb pool.
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v1" } as const;
+    const first = pickVehicle(r, () => 0, "verb", undefined, bucket)!;
+    assert.equal(first.surface, "食べる"); // earliest-taught, unchanged behaviour
+    const usedInDeck = new Set([first.surface]);
+    const second = pickVehicle(r, () => 0, "verb", undefined, bucket, usedInDeck);
+    assert.notEqual(second!.surface, first.surface, "re-picked an already-used vehicle");
+    assert.equal(second!.cls, "v1");
+  });
+
+  test("v5g specifically: 泳ぐ used first, 急ぐ picked second — the exact reported pair", () => {
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v5g" } as const;
+    const first = pickVehicle(r, () => 0, "verb", undefined, bucket)!;
+    assert.equal(first.surface, "泳ぐ");
+    const usedInDeck = new Set(["泳ぐ"]);
+    const second = pickVehicle(r, () => 0, "verb", undefined, bucket, usedInDeck)!;
+    assert.equal(second.surface, "急ぐ", "did not fall back to the pool's second member");
+  });
+
+  test("an irregular's one-word pool still repeats — not a bug", () => {
+    // @iku pins the fact to exactly one word; there is no alternative to fall
+    // back to, ever, regardless of what's already used.
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "verb", surface: "行く" } as const;
+    const usedInDeck = new Set(["行く"]);
+    const v = pickVehicle(r, Math.random, "verb", () => false, bucket, usedInDeck);
+    assert.equal(v?.surface, "行く", "an irregular has no other legal vehicle to fall back to");
+  });
+
+  test("a genuinely single-member class pool still repeats — not a bug", () => {
+    // v5k has exactly one pool member (書く). Confirmed empirically, not
+    // assumed: this test fails the day a second v5k word is added, which is
+    // the point — it should be revisited then, not silently pass either way.
+    assert.deepEqual(VERB_VEHICLES.filter((v) => v.cls === "v5k").map((v) => v.surface), ["書く"]);
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v5k" } as const;
+    const usedInDeck = new Set(["書く"]);
+    const v = pickVehicle(r, Math.random, "verb", undefined, bucket, usedInDeck);
+    assert.equal(v?.surface, "書く", "v5k's only pool member should still be offered");
+  });
+
+  test("dedup composes with the known-word preference: known+unused beats known+used", () => {
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v5g" } as const;
+    const known = (s: string) => s === "泳ぐ" || s === "急ぐ";
+    // Both known, 泳ぐ already used elsewhere in the deck: dedup steers to 急ぐ
+    // rather than the plain earliest-taught 泳ぐ.
+    const v = pickVehicle(r, () => 0, "verb", known, bucket, new Set(["泳ぐ"]));
+    assert.equal(v?.surface, "急ぐ");
+  });
+
+  test("dedup never crosses from known into unknown — known+used still beats unused+unknown", () => {
+    // Only 泳ぐ is known, and it's already used. There IS an unknown pool
+    // alternative (急ぐ), but the known-word gate must still win outright: a
+    // learner should never be handed an unmet word just to dodge a repeat.
+    const r = recipe("te-iru")!;
+    const bucket = { kind: "class", cls: "v5g" } as const;
+    const known = (s: string) => s === "泳ぐ";
+    const v = pickVehicle(r, () => 0, "verb", known, bucket, new Set(["泳ぐ"]));
+    assert.equal(v?.surface, "泳ぐ", "abandoned the known word for an unmet one");
+  });
+
+  test("an empty or absent usedInDeck set changes nothing (first grammar card of a session)", () => {
+    const r = recipe("te-kara")!;
+    for (const x of [0, 0.3, 0.6, 0.9]) {
+      const plain = pickVehicle(r, seq([x]))!.surface;
+      const withEmpty = pickVehicle(r, seq([x]), undefined, undefined, undefined, new Set())!
+        .surface;
+      assert.equal(withEmpty, plain);
+    }
+  });
+});
+
 /**
  * `except` rows that CANNOT be reached from the vehicle pool, and why each one
  * has to stay anyway.

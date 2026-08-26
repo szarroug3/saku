@@ -332,3 +332,61 @@ describe("grammarVehicleFor prefers known vehicles, fills with predictable unkno
     assert.equal(known?.known, true);
   });
 });
+
+describe("grammarVehicleFor is session-aware across DIFFERENT recipes (SAK-203 round 2)", () => {
+  // The exact live report: "is およぐ / is in the state of およぐ" (〜ている) and
+  // "please およぐ" (〜てください) in the SAME session — two DIFFERENT recipes'
+  // v5g fact both independently rolling 泳ぐ, because each call to
+  // grammarVehicleFor previously had zero visibility into what any other fact
+  // had already picked. `usedVehicles` closes that: the caller (drill-screen's
+  // presentCard) threads every surface picked so far in the session.
+  const TEIRU_V5G = classProductionFactId("te-iru", "v5g");
+  const TEREQUEST_V5G = classProductionFactId("te-request", "v5g");
+  const knowsBoth = knowing("泳ぐ", "急ぐ");
+
+  test("〜ている and 〜てください no longer both land on 泳ぐ once it's already used", () => {
+    const first = grammarVehicleFor(TEIRU_V5G, knowsBoth, () => 0);
+    assert.equal(first?.surface, "泳ぐ", "sanity: unaware pick is still the earliest-taught");
+    const usedVehicles = new Set([first!.surface]);
+    const second = grammarVehicleFor(TEREQUEST_V5G, knowsBoth, () => 0, usedVehicles);
+    assert.equal(second?.surface, "急ぐ", "picked 泳ぐ again despite an unused pool alternative");
+    assert.notEqual(second?.surface, first?.surface);
+  });
+
+  test("without usedVehicles threaded, the old bug reproduces (both roll 泳ぐ)", () => {
+    // Proves the test above is not vacuous — the two facts really do draw
+    // from the same pool with the same tie-break absent session-awareness.
+    const a = grammarVehicleFor(TEIRU_V5G, knowsBoth, () => 0);
+    const b = grammarVehicleFor(TEREQUEST_V5G, knowsBoth, () => 0);
+    assert.equal(a?.surface, "泳ぐ");
+    assert.equal(b?.surface, "泳ぐ");
+  });
+
+  test("行く-class irregulars still repeat across recipes — expected, not a regression", () => {
+    // 行く is hard-coded to ONE vehicle per recipe wherever it's irregular
+    // (mintSpecialWordFacts). No session-awareness can or should avoid this.
+    const iku1 = specialVerbProductionFactId("te-iru", "iku");
+    const iku2 = specialVerbProductionFactId("te-request", "iku");
+    const knows = knowing("行く");
+    const first = grammarVehicleFor(iku1, knows, () => 0);
+    assert.equal(first?.surface, "行く");
+    const second = grammarVehicleFor(iku2, knows, () => 0, new Set([first!.surface]));
+    assert.equal(second?.surface, "行く", "an irregular has no other legal vehicle");
+  });
+
+  test("a THIRD recipe on the same used-up pool falls back to a repeat honestly", () => {
+    // v5g now has two members. A third recipe's v5g fact, with both already
+    // used elsewhere in the session, has nowhere left to go — repeating one
+    // of them is the pool's real ceiling, not a bug.
+    const third = classProductionFactId("te-permission", "v5g");
+    const usedVehicles = new Set(["泳ぐ", "急ぐ"]);
+    const v = grammarVehicleFor(third, knowsBoth, () => 0, usedVehicles);
+    assert.ok(v && (v.surface === "泳ぐ" || v.surface === "急ぐ"), "v5g fact became unaskable");
+  });
+
+  test("an empty usedVehicles set behaves exactly like omitting the argument", () => {
+    const withNone = grammarVehicleFor(TAI, ALL_VEHICLES, () => 0.3);
+    const withEmpty = grammarVehicleFor(TAI, ALL_VEHICLES, () => 0.3, new Set());
+    assert.equal(withEmpty?.surface, withNone?.surface);
+  });
+});
