@@ -1,45 +1,51 @@
 "use client";
 
-// Keeps `--kq-dock-h` on <html> equal to the combined height of the two
-// frozen docks above the scrolling frame (#kq-dock-banner, #kq-dock-top) —
-// real chrome .kq-center-frame's own 120px constant (globals.css) never
-// accounted for, and structurally can't: whether the signed-out banner or a
-// page's own top dock has anything in it is dynamic, not a layout constant.
-// Without this, a short quiz card's centering frame floors itself too tall
-// on any page with a populated dock (chiefly: any signed-out learner, who
-// sees the banner on nearly every page), leaving trailing empty space below
-// the actual content — which ScrollCue then reads as "more below" when
-// there is nothing to scroll to.
+// SAK-204: keeps `--kq-scroll-h` on <html> equal to `.kq-scroll`'s own
+// clientHeight — the ONE scrolling row of the app shell's 3-row frame
+// (app/layout.tsx). `.kq-center-frame` (globals.css) uses it to floor a
+// short screen's content at the actual available height instead of a
+// fixed `100dvh` guess: since the header/banner/footer docks are now
+// separate flex ROWS outside kq-scroll entirely (not siblings inside the
+// same column any more), `100dvh` was never kq-scroll's real height to
+// begin with — it's whatever's left after the header/footer rows take
+// theirs, which only the browser's own flex layout actually knows.
+//
+// Without this, a short quiz/lesson screen's centering frame floors itself
+// to the WRONG height on any page with a populated header dock (chiefly:
+// any signed-out learner, who sees the banner on nearly every page),
+// leaving either dead space below the content or a forced scrollbar with
+// nothing real to scroll to — which ScrollCue then misreads as "more
+// below."
 
 import { useEffect } from "react";
 
 export function DockHeightVar() {
   useEffect(() => {
-    const banner = document.getElementById("kq-dock-banner");
-    const top = document.getElementById("kq-dock-top");
-    const targets = [banner, top].filter(
-      (el): el is HTMLElement => el !== null,
-    );
-    if (!targets.length) return;
+    const scroller = document.querySelector<HTMLElement>(".kq-scroll");
+    if (!scroller) return;
     const update = () => {
-      const total = targets.reduce((sum, el) => sum + el.offsetHeight, 0);
-      document.documentElement.style.setProperty("--kq-dock-h", `${total}px`);
+      document.documentElement.style.setProperty(
+        "--kq-scroll-h",
+        `${scroller.clientHeight}px`,
+      );
     };
     update();
     // Both observers, not just one. A dock's content arrives via
     // `createPortal` (see components/dock.tsx) a tick after this effect's own
     // first run — a mount that inserts a subtree doesn't reliably fire a
-    // ResizeObserver callback in every environment, so a MutationObserver on
-    // childList/subtree is what actually catches "the banner just appeared."
-    // ResizeObserver stays too, for a height that changes without a DOM
-    // mutation — a viewport resize that wraps the banner's text onto a
-    // second line, say.
+    // ResizeObserver callback in every environment (a populated header/footer
+    // dock changes kq-scroll's OWN height, since it's a flex sibling of
+    // both), so a MutationObserver on the docks' childList/subtree is what
+    // actually catches "the banner just appeared." ResizeObserver stays too,
+    // for a height that changes without a DOM mutation — a viewport resize
+    // that wraps the banner's text onto a second line, say.
     const ro = new ResizeObserver(update);
-    targets.forEach((el) => ro.observe(el));
+    ro.observe(scroller);
     const mo = new MutationObserver(update);
-    targets.forEach((el) =>
-      mo.observe(el, { childList: true, subtree: true }),
-    );
+    for (const id of ["kq-dock-banner", "kq-dock-top", "kq-dock-bottom"]) {
+      const el = document.getElementById(id);
+      if (el) mo.observe(el, { childList: true, subtree: true });
+    }
     return () => {
       ro.disconnect();
       mo.disconnect();
