@@ -2653,22 +2653,28 @@ export function DrillScreen() {
                 `plain` mode) — omitted (falls back to the bare position, as
                 before) when quizTrackLabel has nothing single-subject to say. */}
             {total ? (
-              <span className="text-[13px] font-semibold tabular-nums text-accent">
+              <span className="text-[13px] tabular-nums text-accent">
                 {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
                 {rt.resolved} / {total}
               </span>
             ) : (
-              <span className="text-[13px] font-semibold tabular-nums text-accent">
+              <span className="text-[13px] tabular-nums text-accent">
                 {quizTrackLabel ? `${quizTrackLabel} · ` : ""}
                 {rt.resolved} answered · endless
               </span>
             )}
-            {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
+            {/* SAK-211: was its own accent-toned Pill — the same "a pill
+                reads as clickable or a status when it's just a number"
+                complaint the position chip above already got the SAK-145
+                plain-text treatment for. Middot-joined into the same line,
+                foreground (not accent) so it doesn't compete with the
+                position chip for the one loud colour in this HUD. */}
             {cfg.showAccuracy && accuracy !== null ? (
-              <Pill tone="accent">
-                {formatAccuracy(accuracy)} correct
-              </Pill>
+              <span className="text-[13px] tabular-nums text-text">
+                · {formatAccuracy(accuracy)} correct
+              </span>
             ) : null}
+            {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {/* A streak isn't a streak until it's a streak. */}
             {cfg.showStreak && (rt.streak ?? 0) >= BEHAVIOR.streakMin ? (
               <Pill tone="warm">🔥 {rt.streak}</Pill>
