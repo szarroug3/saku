@@ -12,13 +12,17 @@ import { KEIGO_SETS, keigoWordFactId } from "@/data/keigo";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId } from "@/data/transitivity-facts";
 import { VOCAB, isKanaWord, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
+import { constructionConfigForFact } from "@/data/counter-categories";
 import {
   buildCoverageDeck,
+  coverageQuestionCount,
   enabledFormsFor,
   formIsMc,
   configIsReachable,
+  realQuestionCount,
 } from "@/lib/ask-forms";
-import { ALL_FACTS, entryOf } from "@/lib/facts";
+import { ALL_FACTS, entryOf, factsOf } from "@/lib/facts";
+import { LIB_ENTRIES, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
 import type { AskConfig } from "@/types";
 
 const word = VOCAB.find((w) => !isKanaWord(w))!;
@@ -28,6 +32,10 @@ const firstKanjiReading = READING_INDEX.keys().next().value!;
 const grammarProductionFact = classProductionFactId("tai", "v5k");
 const keigoFact = keigoWordFactId(KEIGO_SETS[0], KEIGO_SETS[0].words[0]);
 const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
+// A real number-construction category — one persisted fact that represents a
+// whole generated round (see slice.test.ts's own use of the same entry).
+const generatorEntry = LIB_ENTRIES.find((e) => e.kind === NUMBER_CONSTRUCTION_KIND)!;
+const generatorFact = factsOf(generatorEntry.id)[0];
 
 const ALL: AskConfig = {
   japanese: {
@@ -357,6 +365,100 @@ describe("buildCoverageDeck", () => {
         "distinct-entry cards must not sit adjacent when a spread is feasible",
       );
     }
+  });
+});
+
+// SAK-210: "Quiz me N" printed quizFormCount's naive one-form-per-fact guess
+// (slice.ts), while the coverage branch of drill-screen.tsx's onMount — the
+// DEFAULT run mode (quiz-config.tsx's defaultConfig has limType: "cov") —
+// actually builds from buildCoverageDeck's full per-fact form product, then
+// multiplies each entry by its construction-category repeat count. A word
+// reading alone (see "enabledFormsFor" above) is already two forms under
+// default settings, so any slice containing one was undercounted by one for
+// every such fact it held — the reported 28-vs-30 is that gap, not a
+// generator-only edge case.
+describe("coverageQuestionCount / realQuestionCount — the button's count must be the deck's count", () => {
+  test("an ordinary multi-form fact is undercounted by the naive one-per-fact guess", () => {
+    // The exact shape of the bug: `reading` alone produces 2 real cards (text
+    // + audio, per the enabledFormsFor test above), but a naive count keyed
+    // on fact count alone would say 1.
+    assert.equal(enabledFormsFor(reading, ALL).length, 2);
+    assert.equal(coverageQuestionCount([reading], ALL), 2);
+  });
+
+  test("coverageQuestionCount matches buildCoverageDeck's own product, fact by fact", () => {
+    const facts = [reading, meaning, firstKanjiReading];
+    const base = buildCoverageDeck(facts, ALL, (pairs) => pairs);
+    assert.equal(coverageQuestionCount(facts, ALL), base.deck.length);
+  });
+
+  // A narrow ask (text prompt, jp→en only, no english source) so the
+  // construction fact itself resolves to exactly one form — under `ALL` it is
+  // THREE (text jp→en, audio jp→en, en→jp; construction facts are ordinary
+  // bidirectional facts to enabledFormsFor), which would make the repeat
+  // multiplier's own contribution impossible to isolate from the form count's.
+  const textOnlyJp2en: AskConfig = {
+    japanese: { prompts: ["text"], responses: ["definition", "romaji"], answers: ["typed", "mc"] },
+    sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
+    english: { answers: [] },
+  };
+
+  test("a construction category's repeat count is preserved, not double-counted", () => {
+    // The generator keeps exactly one persisted fact (slice.test.ts asserts
+    // this too) representing a 10-item generated round.
+    assert.equal(factsOf(generatorEntry.id).length, 1);
+    assert.equal(constructionConfigForFact(generatorFact)?.count, 10);
+    // enabledFormsFor must resolve the category fact to exactly one form for
+    // this to be a clean repeats-only check.
+    assert.equal(enabledFormsFor(generatorFact, textOnlyJp2en).length, 1);
+    assert.equal(coverageQuestionCount([generatorFact], textOnlyJp2en), 10);
+  });
+
+  test("coverageQuestionCount composes: an ordinary fact next to a generator, each contributing its own multiplier", () => {
+    // Under textOnlyJp2en both facts resolve to one form each, so this
+    // isolates the repeat multiplier: 1 (reading, no repeats) + 10 (the
+    // generator's repeated round) = 11 — read off the coverage deck build
+    // itself (buildCoverageDeck + the same repeat loop drill-screen.tsx's
+    // onMount runs), not a hand-derived number.
+    const facts = [reading, generatorFact];
+    assert.equal(enabledFormsFor(reading, textOnlyJp2en).length, 1);
+    const base = buildCoverageDeck(facts, textOnlyJp2en, (pairs) => pairs);
+    let expected = 0;
+    for (const f of base.deck) expected += constructionConfigForFact(f)?.count ?? 1;
+    assert.equal(expected, 11);
+    assert.equal(coverageQuestionCount(facts, textOnlyJp2en), 11);
+  });
+
+  test("realQuestionCount, cov mode: delegates to coverageQuestionCount", () => {
+    const cfg = { length: "limited" as const, limType: "cov" as const, limCount: 50, ask: ALL };
+    assert.equal(
+      realQuestionCount([reading, generatorFact], cfg),
+      coverageQuestionCount([reading, generatorFact], ALL),
+    );
+  });
+
+  test("realQuestionCount, count mode: the configured cap, exactly (buildDeck's repeat-fill+pairsKept always lands there for a non-empty pool)", () => {
+    const cfg = { length: "limited" as const, limType: "count" as const, limCount: 7, ask: ALL };
+    assert.equal(realQuestionCount([reading, meaning], cfg), 7);
+    assert.equal(realQuestionCount([], cfg), 0, "an empty pool asks nothing, cap or not");
+  });
+
+  test("realQuestionCount, endless mode: one card per fact with a usable form, NOT one per form", () => {
+    // Outside coverage, drill-screen.tsx keeps rt.pool at one entry per fact
+    // (filtered to facts with ≥1 usable form) and rolls a single form per
+    // showing — so `reading`'s two forms still cost exactly one card.
+    const cfg = { length: "endless" as const, limType: "cov" as const, limCount: 50, ask: ALL };
+    assert.equal(realQuestionCount([reading, meaning], cfg), 2);
+    const noForms: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
+      english: { answers: [] },
+    };
+    assert.equal(
+      realQuestionCount([reading], { ...cfg, ask: noForms }),
+      0,
+      "a fact with no enabled form contributes no card",
+    );
   });
 });
 
