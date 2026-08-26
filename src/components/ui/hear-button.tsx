@@ -28,9 +28,21 @@
 // src/lib/sentence-pitch.ts) — `downstep` just skips that guesswork when the
 // exact answer is already in hand. In this mode the button plays straight from
 // /api/pitch-tts rather than through lib/speech.ts's Auto/roster tiering: this
-// clip has exactly one source, so on failure it just stays silent —
+// clip has exactly one source, so on failure there is no OTHER fallback —
 // substituting a different voice would lose the very thing the mode exists to
 // demonstrate.
+//
+// SAK-208: one retry, same source. A pitch-quiz "wrong" card's distractor
+// clip (src/lib/pitch-quiz.ts) is a SYNTHETIC mispitch — a (reading,
+// downstep) pair invented for the quiz, never a word's real verified accent
+// — so it can never appear in the seed script's pre-seeded set (that only
+// ever seeds real accents, see scripts/seed-voice-audio.mjs's pitchItems()).
+// Its first-ever play by anyone, anywhere, always hits /api/pitch-tts's
+// live-synthesis fallback cold, which can be slow enough (a Cloud Run
+// container spinning up) to fail outright rather than just feel slow — and
+// this button had no retry at all, so that read as "the clip is missing"
+// rather than "the first request was slow." A second attempt, right after
+// the first's rejection, almost always lands warm.
 
 import { SoundIcon } from "@/components/ui";
 import { prefetchClip, speak } from "@/lib/speech";
@@ -74,10 +86,13 @@ export function HearButton({
         type="button"
         onClick={(e) => {
           if (stopPropagation) e.stopPropagation();
-          const audio = new Audio(pitchApiUrl(glyph, downstep, voiceId));
-          void audio.play().catch(() => {
-            // No fallback on purpose — see the module header.
-          });
+          const url = pitchApiUrl(glyph, downstep, voiceId);
+          const attempt = () => new Audio(url).play();
+          // SAK-208: one retry, same URL, right after the first rejection —
+          // see the module header on why this is the one fallback that
+          // doesn't compromise "exactly one source." No fallback beyond
+          // that on purpose.
+          void attempt().catch(() => attempt().catch(() => {}));
           if (e.detail !== 0) e.currentTarget.blur();
         }}
         onPointerEnter={(e) => {
