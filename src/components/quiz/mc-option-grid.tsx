@@ -64,19 +64,40 @@ export interface McOptionGridProps {
 }
 
 /**
- * SAK-207: `size="lg"` options are meant to be a single short token or glyph
- * on one line — `wrap-break-word` (still used by `size="sm"` below) exists to
- * keep long text from overflowing its tile, but for `lg` it was doing that by
+ * SAK-207: `wrap-break-word` (still used by `size="sm"` below) exists to keep
+ * long text from overflowing its tile, but for `lg` it was doing that by
  * breaking a pattern like 〜てはいけない mid-character-run, which reads far
- * worse than the overflow it was preventing. The fix is real measurement, not
- * a CSS clamp: an arbitrary Japanese option's rendered width can't be known
- * ahead of time, so this hooks each `lg` tile's label span with a ref,
- * measures its natural (unwrapped) width against the tile's available width
- * after layout, and shrinks the font just enough to land it on one line — see
- * fitFontSizeRem in mc-option-fit.ts for the actual sizing math (split out
- * because that part IS unit-testable; this DOM-measurement half isn't — a
- * headless node:test has no layout engine to measure against, so this half is
- * verified by reading, not by a test).
+ * worse than the overflow it was preventing.
+ *
+ * ROUND 2: the original fix over-corrected the other way — it forced EVERY
+ * `lg` option onto one line (`white-space: nowrap`) and shrank the font to
+ * make that fit, even for options with real word breaks (an English meaning
+ * like "describe a noun"). That fought the tile's own fixed-width layout: a
+ * flex item's default `min-width: auto` respects an unbreakable nowrap
+ * label's full-width min-content, so a wide-enough option (before its OWN
+ * shrink pass had run) could force its tile past its `calc((100%-16px)/3)`
+ * basis, throwing off how many tiles fit per row — the reported "boxes
+ * aren't staying 2 row / 3 column" bug. `min-w-0` on the tile fixes that
+ * structurally (a fixed-basis flex item can no longer be forced wider by its
+ * own content), but the right fix for the wrapping question is per-option:
+ * an option whose rendered text contains NO whitespace (a single unbreakable
+ * token — a JP pattern, a glyph) keeps the original one-line shrink-to-fit
+ * treatment, since wrapping can't help it anyway. An option whose text DOES
+ * contain whitespace gets no shrink at all — it simply wraps at its own word
+ * boundaries within the tile's now-fixed width, which is what "shrink AND
+ * wrap, never mid-word" actually asks for: wrapping already solves the fit
+ * for breakable text, so forcing a shrink on top of it would just make
+ * already-legible text needlessly smaller.
+ *
+ * The fix is real measurement either way, not a CSS clamp: an arbitrary
+ * option's rendered width can't be known ahead of time, so this hooks each
+ * `lg` tile's label span with a ref, measures its natural (unwrapped) width
+ * against the tile's available width after layout, and — for the
+ * no-wrap-points case only — shrinks the font just enough to land it on one
+ * line. See fitFontSizeRem in mc-option-fit.ts for the actual sizing math
+ * (split out because that part IS unit-testable; this DOM-measurement half
+ * isn't — a headless node:test has no layout engine to measure against, so
+ * this half is verified by reading, not by a test).
  *
  * WHY useLayoutEffect: it runs after the DOM is up but before the browser
  * paints, so the shrink is applied before the first frame the learner sees —
@@ -117,13 +138,45 @@ function useShrinkToFit(
     const measure = () => {
       if (cancelled) return;
       for (const el of labelRefs.current.values()) {
+        // SAK-207 round 2: an option with a real word break wraps at full
+        // size and needs none of the shrink machinery below — reset it to
+        // the ceiling, let it wrap, and move on. Checked on every pass (not
+        // just once) since a re-measure can follow the SAME text swapping in
+        // via a different call (e.g. a resize while the board is up), and
+        // this stays cheap either way — one string scan, no layout read.
+        const canWrap = /\s/.test(el.textContent ?? "");
+        if (canWrap) {
+          el.style.whiteSpace = "normal";
+          el.style.overflow = "";
+          el.style.textOverflow = "";
+          el.style.fontSize = `${MC_OPTION_MAX_FONT_REM}rem`;
+          continue;
+        }
+        // No wrap points — the original one-line shrink-to-fit treatment.
+        // `white-space: nowrap` is what makes scrollWidth trustworthy as the
+        // text's true one-line width instead of a wrapped, container-
+        // clamped one; `overflow: hidden` + `text-overflow: ellipsis` is
+        // only a backstop for the (unexercised in practice, given the floor)
+        // case where even the minimum size doesn't fit — truncation, not a
+        // mid-word break, is the right failure there.
+        el.style.whiteSpace = "nowrap";
+        el.style.overflow = "hidden";
+        el.style.textOverflow = "ellipsis";
         // Reset to the ceiling before reading: scrollWidth reflects whatever
         // font-size is currently applied, and a stale, already-shrunk value
         // from a previous pass would understate how wide the text actually
         // wants to be.
         el.style.fontSize = `${MC_OPTION_MAX_FONT_REM}rem`;
         const natural = el.scrollWidth;
-        const available = el.clientWidth;
+        // `- 1`: found while verifying this fix — clientWidth/scrollWidth
+        // are both integer-rounded by the browser's own layout APIs, so a
+        // target that lands EXACTLY at the rounded available width can still
+        // be a genuine sub-pixel over in actual (fractional) rendering,
+        // which the ellipsis backstop then silently swallows a whole
+        // trailing character to fix — e.g. 〜てはいけない losing its last
+        // two characters even though this measurement read as an exact fit.
+        // A 1px margin costs nothing visible and absorbs that rounding gap.
+        const available = el.clientWidth - 1;
         let target = fitFontSizeRem(natural, available);
         el.style.fontSize = `${target}rem`;
         if (target < MC_OPTION_MAX_FONT_REM) {
@@ -201,7 +254,7 @@ export function McOptionGrid({
           onClick={onSelect ? () => onSelect(o.key, i) : undefined}
           style={o.fontFamily ? { fontFamily: o.fontFamily } : undefined}
           className={cx(
-            "flex min-h-[60px] shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center",
+            "flex min-h-[60px] min-w-0 shrink-0 grow-0 basis-[calc((100%-16px)/3)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center",
             size === "sm" ? "text-sm hyphens-auto wrap-break-word" : "text-xl",
             revealing && o.correct
               ? "border-success bg-success-bg text-success"
@@ -216,18 +269,20 @@ export function McOptionGrid({
             // text (a bare inline span sizes to content, which would make
             // clientWidth just track scrollWidth and always "fit"). Flex
             // items blockify per spec, so `w-full` applies even though a
-            // `span` is inline by default. `whitespace-nowrap` is what makes
-            // scrollWidth trustworthy as the text's true one-line width
-            // instead of a wrapped, container-clamped one; `overflow-hidden
-            // text-ellipsis` is only a backstop for the (unexercised in
-            // practice, given the floor) case where even the minimum size
-            // doesn't fit — truncation, not a mid-word break, is the right
-            // failure there.
-            className={
-              isLg
-                ? "w-full overflow-hidden text-ellipsis whitespace-nowrap"
-                : undefined
-            }
+            // `span` is inline by default.
+            //
+            // SAK-207 round 2: white-space/overflow/text-overflow are no
+            // longer set here — useShrinkToFit decides them PER OPTION, since
+            // whether wrapping is even possible depends on the option's own
+            // text, not on `size`. A single unbreakable token (a JP pattern
+            // like 〜てはいけない, no spaces to wrap at) still gets the
+            // original one-line shrink-to-fit treatment; an option with real
+            // word breaks (an English phrase like "describe a noun") gets
+            // NO shrink at all — it just wraps within the tile's fixed width,
+            // which was the whole ask (shrink AND wrap, never mid-word — see
+            // the ticket). Never wrap-break-word either way: that's what
+            // broke a single JP token mid-character in the first place.
+            className={isLg ? "w-full" : undefined}
           >
             {o.label}
           </span>
