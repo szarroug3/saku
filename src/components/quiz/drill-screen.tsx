@@ -35,6 +35,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { Dock } from "@/components/dock";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { HintBody } from "@/components/quiz/hint-content";
 import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
@@ -2622,7 +2623,8 @@ export function DrillScreen() {
           kiri, one filter for the screen and not one per card. The hairline is
           where the band stops. Same treatment the session's lesson bar wears
           (session/session-hud.tsx), for the same reason and by the same name. */}
-      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
+      <Dock slot="top">
+      <div className="mx-auto w-full max-w-4xl border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           {/* Information — always quiet, and only ever present when it has
               something true to say. An empty pill is worse than no pill: "—
@@ -2716,6 +2718,7 @@ export function DrillScreen() {
           )}
         </div>
       </div>
+      </Dock>
 
       {/* flex-1 + justify-center: takes whatever room .kq-center-frame's
           floor leaves below the HUD and centers the stage inside it. When
@@ -2723,13 +2726,11 @@ export function DrillScreen() {
           this simply grows past the floor — no fixed height here to clip
           against.
 
-          pb-28 is a CONSTANT reservation for the fixed reveal bar at the
-          bottom of the viewport (see the end of this component), present
-          whether or not that bar is actually showing right now — a constant
-          never changes, so it cannot be the thing that shifts the stage when
-          a miss resolves (SAK-50 changes-requested: that shift was exactly
-          Sam's complaint about the old in-flow reveal). */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4 pb-28">
+          SAK-204: no more pb-28 reservation — the reveal bar now docks into
+          the shell's own bottom slot (a true sibling row, never overlaying
+          this content), so there is nothing left for this stage to reserve
+          space against. */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4">
         <DrillHalo
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.
@@ -3193,7 +3194,8 @@ export function DrillScreen() {
           Every other hint kind (image/formula/written/text) and a card with
           no hint at all keep the sentence exactly as before. */}
       {revealPause ? (
-        <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
+        <Dock slot="bottom">
+        <div className="border-t border-border px-4 py-3">
           <div className="mx-auto flex max-h-[45vh] max-w-2xl flex-col items-center gap-2 overflow-y-auto text-center">
             {revealAnswer && revealTmpl ? (
               <>
@@ -3225,6 +3227,7 @@ export function DrillScreen() {
             </SmallBtn>
           </div>
         </div>
+        </Dock>
       ) : null}
 
       {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}

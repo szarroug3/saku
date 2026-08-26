@@ -37,6 +37,7 @@ import {
   type MutableRefObject,
 } from "react";
 
+import { Dock } from "@/components/dock";
 import { Btn, Info, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
@@ -620,7 +621,8 @@ export function AssemblyScreen() {
     // the top with a dead gap under it; still grows and scrolls normally
     // once the hint panel or a long piece pool needs more room.
     <div className="kq-center-frame">
-      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
+      <Dock slot="top">
+      <div className="border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span className="flex flex-wrap items-center gap-1.5">
             {/* SAK-145 round 2: plain text, not a pill — matches the drill,
@@ -663,12 +665,13 @@ export function AssemblyScreen() {
           />
         </div>
       </div>
+      </Dock>
 
       {/* flex-1 + justify-center centers the card in whatever room the
-          frame leaves below the HUD. pb-28 is a constant reservation for the
-          fixed reveal bar (see the end of this component) — constant, so it
-          cannot be the thing that shifts this stage when a card resolves. */}
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-4 pb-28">
+          frame leaves below the HUD. SAK-204: no more pb-28 reservation —
+          the reveal bar now docks into the shell's own bottom slot (a true
+          sibling row, never overlaying this content). */}
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-4">
         <DrillHalo
           key={`${item.id}-${card.tries}`}
           cardKey={`${item.id}-${card.tries}`}
@@ -1045,7 +1048,8 @@ export function AssemblyScreen() {
           doesn't line up with known chunk roles (roleSpans null) — the same
           case chunkRoleLabels already declines to guess a label for. */}
       {resolved ? (
-        <div className="kq-band fixed inset-x-0 bottom-0 z-20 border-t border-border px-4 py-3">
+        <Dock slot="bottom">
+        <div className="border-t border-border px-4 py-3">
           <div className="mx-auto flex max-h-[45vh] max-w-xl flex-col items-center gap-1 overflow-y-auto text-center">
             {roleSpans ? (
               <>
@@ -1069,6 +1073,7 @@ export function AssemblyScreen() {
             </Btn>
           </div>
         </div>
+        </Dock>
       ) : null}
       {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>

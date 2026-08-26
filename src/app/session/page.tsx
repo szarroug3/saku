@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef } from "react";
 
+import { Dock } from "@/components/dock";
 import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
 import {
@@ -391,97 +392,75 @@ export default function SessionPage() {
           ? teachHeadTrackLabel
           : undefined;
     return (
-      // THE LESSON IS ITS OWN VIEWPORT-TALL FRAME, like the Library (see
-      // library-page.tsx). The top bar is a STATIC row at the top and only the
-      // region below it scrolls, so the lesson content can never pass BEHIND the
-      // bar — the "nothing rolls under the frozen bar" the floating HUD couldn't
-      // guarantee (a sticky bar over the window scroll overlays what scrolls up
-      // under it, and a clear bar then showed that content through itself). No
-      // occluding fill is needed because nothing is ever behind it.
-      //
-      // The height math cancels the shell chrome exactly as the Library does:
-      // kq-scroll wraps the page in pt-3 pb-15 and the shell row adds py-6, so
-      // -mb-15 reclaims the 60px below and the height is 100dvh minus the 60px of
-      // top/bottom chrome. The document then equals the viewport: no window scroll
-      // to fight the frozen row.
-      <div className="-mb-15 flex h-[calc(100dvh-60px)] flex-col">
-        {/* The frozen top row. It carries the position through the lesson —
-            "1 of 5", updating as you step — in place of the item count and the
-            round (there is no round while teaching, and the count reads better as
+      <>
+        {/* SAK-204: docks into the shell's shared top/bottom slots
+            (app/layout.tsx) instead of building its own frame — "1 of 5",
+            updating as you step, in place of the item count and the round
+            (there is no round while teaching, and the count reads better as
             a place than a size). "Quiz me" lives here beside "Pause": both
-            are ways OUT of the lesson, so they belong together — the escape hatch,
-            not the screen's primary, so it wears the same small button.
+            are ways OUT of the lesson, so they belong together — the escape
+            hatch, not the screen's primary, so it wears the same small
+            button. */}
+        <Dock slot="top">
+          <div className="border-b border-border">
+            <SessionHud
+              label={total > 0 ? `${at + 1} of ${total}` : label}
+              sublabel={trackLabel}
+              plain
+              where=""
+              pct={0}
+              hideBar
+              onDone={pauseSession}
+              onEnd={handleEnd}
+            >
+              {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
+            </SessionHud>
+          </div>
+        </Dock>
 
-            shrink-0 keeps it at its natural height; it does not scroll and nothing
-            scrolls behind it, so it needs no occluding material. A hairline on its
-            bottom edge sets the frozen bar off from the lesson scrolling below. */}
-        <div className="shrink-0 border-b border-border">
-          <SessionHud
-            label={total > 0 ? `${at + 1} of ${total}` : label}
-            sublabel={trackLabel}
-            plain
-            where=""
-            pct={0}
-            hideBar
-            onDone={pauseSession}
-            onEnd={handleEnd}
-          >
-            {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
-          </SessionHud>
-        </div>
+        {/* items-start: the card top-aligns under the frozen bar instead of
+            drifting to mid-screen. Vertically centering this row (items-
+            center) was tried and reverted — on review it read as "the
+            header is in the middle" rather than a full-screen lesson
+            (SAK-10, round 2). justify-center is doing different, kept
+            work: it centers the (content + rail) PAIR horizontally as a
+            unit, which is the "main content centered on the page" part
+            that still holds.
 
-        {/* The ONLY thing that scrolls. min-h-0 lets it shrink inside the flex
-            column so its own overflow (not the window) takes the lesson's length. */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {/* items-start: the card top-aligns under the frozen bar instead of
-              drifting to mid-screen. Vertically centering this row (items-
-              center) was tried and reverted — on review it read as "the
-              header is in the middle" rather than a full-screen lesson
-              (SAK-10, round 2). justify-center is doing different, kept
-              work: it centers the (content + rail) PAIR horizontally as a
-              unit, which is the "main content centered on the page" part
-              that still holds. min-h-full (a FLOOR against this scroller's
-              own height, not a cap — never h-full, which would clip
-              overflowing content) just keeps the row from collapsing
-              shorter than the frame on a one-card lesson.
-
-              The row adds LessonRail in the side margin justify-center
-              opens up on a wide viewport, so it gets ambient "up next"
-              content instead of just whitespace (SAK-10 direction 2). The
-              rail sits beside the content, top-aligned with it, and
-              disappears below xl where there is no honest margin left to
-              put it in — see lesson-rail.tsx. */}
-          <div className="flex min-h-full items-start justify-center gap-8 py-2">
-            <div className="min-w-0 max-w-2xl flex-1">
-              {sentenceOrderingTeaching ? (
-                <SentenceRuleEntryView step={at} tierId={sentenceTier} />
-              ) : (
-                <TeachWalk
-                  facts={session.teach}
-                  history={history}
-                  // "Seen before" vs never met is a PRESENTATION difference and only
-                  // that — the budget put both here for the same reason and neither
-                  // is treated differently. History is the only thing that can tell
-                  // them apart, and it's read here rather than stored on the session
-                  // so it can't go stale against a deleted session.
-                  familiar={(f) => !!history.facts[f]?.seen}
-                  shownIntros={shownCards}
-                  step={at}
-                />
-              )}
-            </div>
-            {sentenceOrderingTeaching ? null : (
-              <LessonRail steps={teachItems} at={at} />
+            The row adds LessonRail in the side margin justify-center
+            opens up on a wide viewport, so it gets ambient "up next"
+            content instead of just whitespace (SAK-10 direction 2). The
+            rail sits beside the content, top-aligned with it, and
+            disappears below xl where there is no honest margin left to
+            put it in — see lesson-rail.tsx. */}
+        <div className="flex items-start justify-center gap-8 py-2">
+          <div className="min-w-0 max-w-2xl flex-1">
+            {sentenceOrderingTeaching ? (
+              <SentenceRuleEntryView step={at} tierId={sentenceTier} />
+            ) : (
+              <TeachWalk
+                facts={session.teach}
+                history={history}
+                // "Seen before" vs never met is a PRESENTATION difference and only
+                // that — the budget put both here for the same reason and neither
+                // is treated differently. History is the only thing that can tell
+                // them apart, and it's read here rather than stored on the session
+                // so it can't go stale against a deleted session.
+                familiar={(f) => !!history.facts[f]?.seen}
+                shownIntros={shownCards}
+                step={at}
+              />
             )}
           </div>
+          {sentenceOrderingTeaching ? null : (
+            <LessonRail steps={teachItems} at={at} />
+          )}
         </div>
 
-        {/* FROZEN STEP CONTROLS. Back and the forward button live in a STATIC
-            footer row of the frame, never in the scrolling lesson, so they hold
-            the exact same screen position on every step — you can page through a
-            whole lesson without moving the mouse. Like the top bar, nothing
-            scrolls behind it (it is a sibling of the scroll region), so it needs
-            no occluding fill; a hairline sets it off from the lesson above.
+        {/* FROZEN STEP CONTROLS. Back and the forward button dock into the
+            shell's own bottom slot, so they hold the exact same screen
+            position on every step — you can page through a whole lesson
+            without moving the mouse.
 
             The forward button IS the finishing button: "Next" until the last
             card, then "Quiz me" (a kana lesson splits it into the scope fork —
@@ -497,36 +476,38 @@ export default function SessionPage() {
           onForward={onLast ? undefined : () => setTeachStep(at + 1)}
           canBack={at > 0}
         />
-        <div className="shrink-0 border-t border-border">
-          <div className="px-3 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Btn
-                onClick={() => setTeachStep(at - 1)}
-                disabled={at === 0}
-                className="disabled:cursor-default disabled:opacity-40"
-              >
-                Back
-              </Btn>
-              {onLast && wider ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Btn onClick={wider.onStart}>{wider.label}</Btn>
-                  <Btn go autoFocus onClick={toDrill}>
-                    Quiz me on these only
-                  </Btn>
-                </div>
-              ) : (
+        <Dock slot="bottom">
+          <div className="border-t border-border">
+            <div className="px-3 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <Btn
-                  go
-                  autoFocus
-                  onClick={onLast ? toDrill : () => setTeachStep(at + 1)}
+                  onClick={() => setTeachStep(at - 1)}
+                  disabled={at === 0}
+                  className="disabled:cursor-default disabled:opacity-40"
                 >
-                  {onLast ? "Quiz me" : "Next"}
+                  Back
                 </Btn>
-              )}
+                {onLast && wider ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Btn onClick={wider.onStart}>{wider.label}</Btn>
+                    <Btn go autoFocus onClick={toDrill}>
+                      Quiz me on these only
+                    </Btn>
+                  </div>
+                ) : (
+                  <Btn
+                    go
+                    autoFocus
+                    onClick={onLast ? toDrill : () => setTeachStep(at + 1)}
+                  >
+                    {onLast ? "Quiz me" : "Next"}
+                  </Btn>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </Dock>
+      </>
     );
   }
 

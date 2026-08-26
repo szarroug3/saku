@@ -18,6 +18,7 @@ import {
   useState,
 } from "react";
 
+import { Dock } from "@/components/dock";
 import { EntryRow } from "@/components/library/entry-tile";
 import { FilterDropdown } from "@/components/library/filter-dropdown";
 import { Shelf } from "@/components/library/shelves";
@@ -813,31 +814,19 @@ export function LibraryPageClient({
   return (
     // THE LIBRARY IS ITS OWN THREE-ROW FRAME, NOT PART OF THE PAGE SCROLL.
     //
-    // The app's shell scrolls the window (see layout.tsx), and this page used to
-    // ride that: one window scroll, a `sticky top-0` header, and the shelves
-    // sliding up UNDER it — which is why the header had to occlude with a
-    // `kq-band` backdrop-filter that re-snapshotted the mesh every scroll frame.
-    // That per-frame snapshot was the kiri scroll lag.
-    //
-    // Instead this is a viewport-tall flex column: a fixed header, a middle
-    // region that is the ONLY thing that scrolls, and a fixed slice bar. Nothing
-    // ever passes behind the header or the bar (they are siblings of the scroll
-    // box, not over it), so there is nothing to occlude and NO backdrop-filter on
-    // the scroll path at all.
-    //
-    // The height math cancels the shell chrome we can't edit: kq-scroll wraps us
-    // in `pt-3 pb-15` and the flex row adds `py-6`, so `-mb-15` reclaims that
-    // 60px of dead space below the bar and the height is `100dvh` minus the
-    // remaining 24px (py-6 top) + 12px (pt-3) above and 24px (py-6) below = 60px.
-    // The whole document then equals the viewport: no window scroll to fight the
-    // frozen rows. Everything stays in this server-rendered tree (no portalling),
-    // so the SSR DOM and the hydrated DOM match and no control reflows on mount.
-    <div className="-mb-15 flex h-[calc(100dvh-60px)] flex-col">
-      {/* THE FROZEN HEADER. Title, search and filter controls. `shrink-0` keeps
-          it at its natural height at the top of the frame; it does not scroll
-          and nothing scrolls behind it, so it needs no occluding material. pb-2
-          sets it off from the scroll region below. */}
-        <div className="shrink-0 pb-2">
+    // SAK-204: every page shares ONE 3-row frame now (app/layout.tsx) — a
+    // frozen header, the one scrolling middle row, and a frozen footer, `main`
+    // itself pinned to exactly one viewport tall. This page used to build its
+    // OWN separate copy of that same frame (a `-mb-15 h-[calc(...)]` wrapper
+    // right here); now it just docks its header/footer into the shell's own
+    // slots and renders its middle content plainly — see `<Dock>`'s own header
+    // for why portalling AFTER the SSR/hydration paint doesn't reintroduce the
+    // header-flashing-in problem that once ruled portalling out here.
+    <>
+      <Dock slot="top">
+        {/* THE FROZEN HEADER. Title, search and filter controls. pb-2 sets it
+            off from the scroll region below. */}
+        <div className="pb-2">
           <PageTitle
             title="Library"
             sub="Every character, reading and word the app knows."
@@ -896,18 +885,15 @@ export function LibraryPageClient({
         </div>
         </StickySearch>
         </div>
+      </Dock>
 
-      {/* THE ONLY SCROLL REGION. It begins at the bottom of the frozen header
-          and ends at the top of the frozen slice bar, and its content is clipped
-          to that box — nothing passes behind the header or the bar. `flex-1
-          min-h-0` lets it take the remaining height and shrink below its content
-          so `overflow-y-auto` actually scrolls; `overflow-x-clip` keeps wide
-          shelves from bleeding sideways. `kq-scroll` gives it the app's thin
-          styled scrollbar. This div is also the load-bearing gap graphite needs:
-          it is NOT `sticky`, so the first result Card inside it never matches
-          graphite's `[class~="sticky"] + card` lit-hairline rule and so never
-          wears the active-quiz detail. */}
-      <div className="kq-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto">
+      {/* THE MIDDLE CONTENT. Renders straight into the shell's own shared
+          scroll region now (app/layout.tsx) — no wrapper of its own needed.
+          This is also the load-bearing gap graphite needs: the first result
+          Card here is not preceded by a `sticky` sibling any more, so it never
+          matches graphite's `[class~="sticky"] + card` lit-hairline rule and
+          so never wears the active-quiz detail. */}
+      <>
         {/* SAK-167: no kind checked is the unfiltered default now, not a dead
             end — it browses/searches every kind, so there is no longer a
             branch here for "nothing to browse or search". */}
@@ -1043,16 +1029,11 @@ export function LibraryPageClient({
             });
           })()
         )}
-      </div>
+      </>
 
-      {/* THE FROZEN SLICE BAR. The last row of the frame, `shrink-0` so it keeps
-          its height at the bottom while the region above scrolls. It stays in
-          this server-rendered tree (no portalling — that used to place it after
-          every shelf on the first response and visibly snap into view on
-          hydration), and it needs no sticky positioning now: as a sibling below
-          the scroll box it is frozen by the layout, and nothing scrolls behind
-          it. */}
-      <div className="shrink-0">
+      {/* THE FROZEN SLICE BAR — docked into the shell's own bottom slot
+          (app/layout.tsx), the same shared frame every other page uses now. */}
+      <Dock slot="bottom">
         <SliceBar
           slice={slice}
           facts={history.facts}
@@ -1075,7 +1056,7 @@ export function LibraryPageClient({
           teachPlan={sentenceRuleActions?.teachPlan}
           progressReady={historyLoaded}
         />
-      </div>
-    </div>
+      </Dock>
+    </>
   );
 }
