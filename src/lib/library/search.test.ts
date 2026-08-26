@@ -195,6 +195,113 @@ describe("romaji search — a query typed as sound finds the JP pronunciation", 
   });
 });
 
+describe("romaji search — a dangling trailing consonant (SAK-212)", () => {
+  // Helper: every glyph that matched, with the section that placed it.
+  const hits = (q: string) => searchAll(q).map((h) => `${h.entry.glyph}:${h.why}`);
+  // Only the hits that came from the romaji/kana path (exact + prefix). This
+  // is what the fallback under test actually changes; a "meaning" hit is a
+  // plain English-token match and legitimately differs between e.g. "ka" and
+  // "kak" (only "ka" happens to prefix an English gloss word like "kanji") —
+  // comparing that section here would test English tokenizing, not romaji.
+  const romajiHits = (q: string) => hits(q).filter((h) => /:(exact|prefix)$/.test(h));
+
+  test('"des" finds 〜です, the reported case', () => {
+    // "de" converts cleanly to で and "desu" converts cleanly to です, but "des"
+    // — the natural shape of typing "desu" one letter at a time — used to
+    // convert to "でs": a stray latin "s" (not a full mora; it needs a vowel)
+    // that failed isKanaOnly and dropped the WHOLE query's romaji
+    // interpretation, not just the incomplete tail. With no romaji path at
+    // all, "des" fell through to a plain English substring match and
+    // surfaced an unrelated entry instead (its gloss contains "describe").
+    // "des" is now expected to behave like "de": it finds 〜です by prefix
+    // (not exact — only "desu" is a whole-string match), and finds it ahead
+    // of any incidental English-substring hit.
+    const desHits = hits("des");
+    assert.ok(
+      desHits.includes("〜です:prefix"),
+      `"des" should prefix-match 〜です, got ${desHits}`,
+    );
+    // Confirms it lands in the same place "de" already does — the fix makes
+    // "des" degrade gracefully to "de", not to something novel. (Compared on
+    // the romaji-derived sections only: "de"/"des" happen to also share their
+    // "meaning" hits here, but that section is not what this fix touches —
+    // see romajiHits above.)
+    assert.deepEqual(
+      romajiHits("des"),
+      romajiHits("de"),
+      '"des" must romaji-match exactly like "de"',
+    );
+    // And "desu" — the completed word — still gets the tighter, better
+    // answer: an EXACT hit that "de"/"des" (both partial) do not get.
+    assert.ok(
+      hits("desu").includes("〜です:exact"),
+      '"desu" should still exact-match 〜です',
+    );
+  });
+
+  test("a dangling consonant behaves like its completed stem, across consonant families", () => {
+    // Mid-typing か's romaji "ka" one letter past the vowel — "kak", "kat",
+    // "kam", "kar", "kag", "kaz", "kab", "kap", "kas" — is exactly the same
+    // shape of bug as "des": a clean 2-letter stem ("ka" → か) plus one
+    // trailing bare consonant that isn't a complete mora yet (needs su/shi/
+    // sa/se/so for s, ka/ki/ku/ke/ko for k, ta/chi/tsu/te/to for t, and so
+    // on). Each of these tails hits a DIFFERENT branch of toKana's per-letter
+    // handling (its own doubled-consonant/table lookup path), so this checks
+    // every family the ticket called out individually rather than assuming
+    // one passing case proves the rest.
+    const base = romajiHits("ka");
+    assert.ok(base.length > 0, "ka must match something to compare against");
+    for (const c of ["k", "t", "m", "r", "g", "z", "b", "p", "s"]) {
+      const withTail = romajiHits("ka" + c);
+      assert.deepEqual(
+        withTail,
+        base,
+        `"ka${c}" should romaji-match exactly like "ka", got ${withTail}`,
+      );
+    }
+  });
+
+  test('"n" alone still resolves to ん (the one bare consonant that is a complete mora)', () => {
+    // toKana already special-cases a trailing "n" — it finalizes to ん rather
+    // than staying a dangling latin letter — so this must keep working
+    // untouched by the new dangling-consonant fallback (which only ever fires
+    // when something is LEFT unconverted, and here nothing is).
+    assert.ok(hits("n").includes("ん:exact"), '"n" alone must still exact-match ん');
+    // "kon" already converts cleanly (こん) for the same reason, and must not
+    // be reinterpreted by the fallback as "ko" + a dropped "n".
+    const kon = hits("kon");
+    assert.ok(kon.length > 0, '"kon" should still match something');
+    assert.ok(
+      !kon.some((h) => h.startsWith("こ:")),
+      '"kon" must not degrade to こ — trailing "n" already resolves to ん, nothing is dangling',
+    );
+  });
+
+  test("a genuine English word is NOT hijacked just because it ends in a consonant", () => {
+    // "sky" and "water" are both romaji-shaped (every letter is in a-z) and
+    // both END in a consonant, the exact shape the new fallback looks for —
+    // so they are the two cases most likely to regress if the fallback is too
+    // loose. Neither should produce a romaji-derived (exact/prefix) hit; both
+    // should keep finding only their English meaning.
+    for (const q of ["sky", "water"]) {
+      const all = hits(q);
+      assert.ok(all.length > 0, `${q} must still match something`);
+      assert.ok(
+        all.every((h) => h.endsWith(":meaning")),
+        `${q} must only produce meaning hits, got ${all}`,
+      );
+    }
+  });
+
+  test("a nonsense romaji query with a dangling consonant still returns nothing", () => {
+    // The fallback strips a trailing bare consonant and re-checks isKanaOnly
+    // on the stem — it does not manufacture a match out of nothing. A stem
+    // that itself fails to convert cleanly, or converts to kana no entry
+    // uses, still finds nothing.
+    assert.deepEqual(searchAll("burupers"), []);
+  });
+});
+
 describe("meaning search — a partial English PHRASE finds a gloss", () => {
   const meaningHits = (q: string) =>
     searchAll(q)
