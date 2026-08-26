@@ -116,9 +116,9 @@ const STATUS_INFO: Partial<Record<FactBand, string>> = {
     "At least 60% of your recent runs got it right, but under 80%.",
   shaky: "Under 60% of your recent runs got it right.",
   slipping:
-    "You've seen this before, but enough time has passed that the app now expects you've forgotten it — due to be re-taught, not re-tested.",
+    "You've seen this before, but enough time has passed that the app now expects you've forgotten it, so it's due to be re-taught, not re-tested.",
   mixup:
-    "You've been mixing it up with a specific other entry. A separate question from how well you know it on its own — a fact can be any status here while also being an active mix-up.",
+    "You've been mixing it up with a specific other entry. A separate question from how well you know it on its own; a fact can be any status here while also being an active mix-up.",
 };
 
 function sentenceScopeIsAvailable(sel: Selection): boolean {
@@ -507,7 +507,7 @@ export function PracticeSelector({
             <dl className="space-y-1.5">
               {STATUSES.map(({ id, label }) => (
                 <div key={id}>
-                  <dt className="font-semibold">{label}</dt>
+                  <dt className="font-semibold text-accent">{label}</dt>
                   <dd>{STATUS_INFO[id]}</dd>
                 </div>
               ))}
