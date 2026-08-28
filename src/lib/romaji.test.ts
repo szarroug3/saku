@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { hasKanji, isKanaOnly, romajiMatches, toHiragana, toKana } from "./romaji.ts";
+import { hasKanji, isKanaOnly, romajiMatches, toHiragana, toKana, toKatakana } from "./romaji.ts";
 
 describe("toKana — base kana and vowels", () => {
   test("plain syllables", () => {
@@ -168,6 +168,28 @@ describe("passthrough and script helpers", () => {
     assert.equal(toHiragana("コレ"), "これ");
     assert.equal(toHiragana("これ"), "これ");
     assert.equal(toHiragana("先生"), "先生");
+  });
+
+  test("toKatakana folds hiragana, leaves the rest (SAK-215)", () => {
+    // The reported bug case: 八's reading, hiragana → katakana.
+    assert.equal(toKatakana("はち"), "ハチ");
+    // Already katakana passes through unchanged.
+    assert.equal(toKatakana("ハチ"), "ハチ");
+    // Mixed script: only the hiragana half converts.
+    assert.equal(toKatakana("はチ"), "ハチ");
+    // Small kana (youon) map to their katakana forms.
+    assert.equal(toKatakana("きょう"), "キョウ");
+    assert.equal(toKatakana("いらっしゃいませ"), "イラッシャイマセ");
+    // Dakuten/handakuten forms are ordinary codepoints in the block.
+    assert.equal(toKatakana("がっこう"), "ガッコウ");
+    assert.equal(toKatakana("ぱん"), "パン");
+    // The long-vowel mark ー is already shared/katakana-only — untouched.
+    assert.equal(toKatakana("ぼーっと"), "ボーット");
+    // Kanji, punctuation and ASCII pass through untouched.
+    assert.equal(toKatakana("先生"), "先生");
+    assert.equal(toKatakana("これ!"), "コレ!");
+    assert.equal(toKatakana("OK"), "OK");
+    assert.equal(toKatakana(""), "");
   });
 
   test("isKanaOnly is true for kana, false for kanji and empty", () => {
