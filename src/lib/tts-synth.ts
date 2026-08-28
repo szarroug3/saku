@@ -92,7 +92,12 @@ import {
 // denial of the はえ reading this app actually wants, so there is no honest
 // mechanical answer for it either way; it is left unfixed rather than guessed.
 // Every reading below held its は/へ under context and is a confirmed bug.
-const CONFIRMED_BAD_READINGS: readonly string[] = [
+// Exported (SAK-217) so scripts/invalidate-stale-pitch-clips.mjs can compute
+// exactly which already-cached Storage clips were synthesized under the old,
+// broken pronunciation and need to be deleted before a re-seed can fix them —
+// re-typing this list a second time in the cleanup script would risk it
+// silently drifting from the one this file actually applies.
+export const CONFIRMED_BAD_READINGS: readonly string[] = [
   "はち", // 八 "eight" (SAK-215's reported bug), also 鉢 "bowl" / 蜂 "bee".
   "は", // 歯 "tooth", also 葉 "leaf".
   "はは", // 母 "mother".

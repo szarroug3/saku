@@ -375,7 +375,12 @@ async function runPool(items, limit, worker, onProgress) {
  * Checking existence per item instead (a `.list({ search })` call per clip)
  * is what made a ~160k-item dry run take hours before this even reaches a
  * synthesis call: pure network round-trip cost, no synthesis involved. */
-async function loadExistingKeys(supabase, bucket, voiceIds) {
+// Exported (SAK-217) so scripts/invalidate-stale-pitch-clips.mjs's dry-run
+// mode can check which of its computed stale-clip paths actually exist in
+// Storage right now, using the EXACT SAME listing mechanism this script
+// already uses to decide what to skip — rather than a second, potentially
+// divergent way of asking Storage "do you have this."
+export async function loadExistingKeys(supabase, bucket, voiceIds) {
   const PAGE = 1000;
   const byVoice = new Map();
   for (const voiceId of voiceIds) {
