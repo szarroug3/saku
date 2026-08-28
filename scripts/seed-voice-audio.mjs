@@ -67,6 +67,7 @@
 //   cat .logs/seed-voice-audio.progress.json
 
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -77,6 +78,7 @@ import { READINGS } from "@/data/kanji";
 import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
+import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { synthesizeWordWav } from "@/lib/tts-synth";
 import { pitchObjectPath, VOICE_PREVIEW, VOICES, voiceObjectPath } from "@/lib/voice";
 import grammarCorpus from "@/data/generated/grammar-corpus.json" with { type: "json" };
@@ -97,7 +99,9 @@ function textSet(getTexts) {
 }
 
 /** Every (reading, downstep) pair the EXACT-pitch cache (`pitchObjectPath`,
- * /api/pitch-tts) can ever be asked for — SAK-107. Two sources:
+ * /api/pitch-tts) can ever be asked for — SAK-107, extended by SAK-216 to
+ * also cover the live "wrong"-mode quiz's DISTRACTOR clip (src/lib/pitch-quiz.ts,
+ * mode "wrong"), not just each word's correct reading. Sources:
  *
  *   1. Every VOCAB row with a verified Kanjium accent. pitch.json (and
  *      `wordPitch`) is keyed on the WRITTEN form (`keb`, which may be kanji),
@@ -108,14 +112,28 @@ function textSet(getTexts) {
  *      word: VOICEVOX would read the kanji using ITS OWN guessed reading,
  *      which can disagree with the word's taught reb in mora count, so this
  *      walks VOCAB and reproduces that same keb→reb resolution rather than
- *      trusting pitch.json's keys as if they were kana.
+ *      trusting pitch.json's keys as if they were kana. For every such row,
+ *      ALSO adds the distractor downstep `wrongDownstepFor` (src/lib/pitch.ts)
+ *      picks for that same (downstep, mora count) — the exact same call and
+ *      inputs the live "wrong"-mode quiz uses (src/lib/pitch-quiz.ts's
+ *      `rollPitchQuestion`), so a re-run here can never disagree with what a
+ *      live learner's session would independently compute and request. Mirrors
+ *      that caller's null handling too: `wrongDownstepFor` returns null for a
+ *      1-mora reading (no honest wrong-pitch clip exists), and `rollPitchQuestion`
+ *      simply offers no "wrong"-mode question for that word — this skips
+ *      adding a distractor item the same way, rather than inventing one.
  *   2. The settings-page voice-preview reading (VOICE_PREVIEW) — fixed
- *      せんせい/downstep 3, confirmed NOT itself a pitch.json entry.
+ *      せんせい/downstep 3, confirmed NOT itself a pitch.json entry. No
+ *      distractor: the preview clip is never quizzed, only played once by
+ *      choice in Settings.
  *
  * Deduped by (reading, downstep): two different kanji spellings of the same
  * reading and accent (a true homophone pair) synthesize identically and must
- * not be seeded twice. */
-function pitchItems() {
+ * not be seeded twice — and a distractor downstep that happens to equal some
+ * OTHER word's own real downstep at the same reading collapses into that
+ * word's correct-item entry rather than seeding the same clip twice (see
+ * `pitchObjectPath`'s own comment on this). */
+export function pitchItems() {
   const seen = new Set();
   const items = [];
   function add(reading, downstep) {
@@ -126,7 +144,10 @@ function pitchItems() {
   }
   for (const row of VOCAB) {
     const downstep = wordPitch(row.keb);
-    if (downstep !== null) add(row.reb, downstep);
+    if (downstep === null) continue;
+    add(row.reb, downstep);
+    const wrongDownstep = wrongDownstepFor(downstep, moraeOf(row.reb).length);
+    if (wrongDownstep !== null) add(row.reb, wrongDownstep);
   }
   add(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep);
   return items;
@@ -493,4 +514,12 @@ async function main() {
   if (overall.failed > 0) process.exit(1);
 }
 
-main();
+// Guarded so a test can `import { pitchItems } from "./seed-voice-audio.mjs"`
+// (SAK-216) without also kicking off the real run — importing a module always
+// executes its top-level statements, and `main()` needs live Supabase/VOICEVOX
+// env that a unit test has no business requiring. Only run it when this file
+// is the process's actual entry point (`node scripts/seed-voice-audio.mjs`),
+// same check Node's own docs recommend for a dual runnable/importable module.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main();
+}
