@@ -446,6 +446,26 @@ async function main() {
   // throw "VOICEVOX not configured" for the pitch set. Writing the resolved
   // value back keeps both paths pointed at the exact same engine.
   process.env.VOICEVOX_ENGINE_URL = base;
+  // Loud, impossible-to-miss warning when this run is NOT pointed at the
+  // local Docker engine — this script defaults to localhost:50021, but
+  // .env.local's own VOICEVOX_ENGINE_URL (Cloud Run, for live traffic) wins
+  // whenever this is run the documented way (--env-file=.env.local), and a
+  // full pitch-set run is tens of thousands of requests against whatever
+  // engine `base` resolves to. Sam's standing preference (see this file's
+  // header) is local for exactly this reason — Cloud Run has a real spend
+  // cap a bulk job can eat into fast. A silent default here is the footgun
+  // this warns about; it does not block the run (a deliberate cloud run is
+  // still a legitimate choice), it just makes the choice visible up front.
+  const isLocalEngine = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(base);
+  if (!isLocalEngine) {
+    log(
+      `⚠️  VOICEVOX_ENGINE_URL is NOT local (${base}) — this run will hit that engine directly, ` +
+        `not your local Docker container. If that's not intended: ` +
+        `export VOICEVOX_ENGINE_URL=http://localhost:50021 (and make sure ` +
+        `\`docker run -d --name voicevox-local -p 50021:50021 voicevox/voicevox_engine:cpu-latest\` ` +
+        `is actually running) before re-running this script.`,
+    );
+  }
   const bucket = process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET;
   const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SECRET_KEY;
