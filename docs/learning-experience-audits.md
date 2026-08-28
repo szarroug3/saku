@@ -151,7 +151,7 @@ Not simulating a learner and not fact-checking content — paying close attentio
 
 ### The shortcut: `/dev/*` pages give near-total coverage without walking the curriculum
 
-The app already has dev-only reference pages built for exactly this (see [[dev-pages-are-kept]] — they're intentional, never delete them): `/dev/quiz-gallery` shows one example of every quiz question type in one place; `/dev/views`, `/dev/swatches`, `/dev/library`, `/dev/learn`, `/dev/scheduling`, `/dev/numbers`, `/dev/pitch-accent` cover the rest. Start a UX audit here, not by walking the full curriculum looking for every screen type to naturally show up — it's the same coverage in a fraction of the time. Supplement with a handful of real pages (a real lesson, a real quiz session end-to-end, Settings, Progress) to catch anything that only appears in a live flow, not a static gallery.
+The app already has dev-only reference pages built for exactly this (they're intentional and deliberately kept in the app — never delete them): `/dev/quiz-gallery` shows one example of every quiz question type in one place; `/dev/views`, `/dev/swatches`, `/dev/library`, `/dev/learn`, `/dev/scheduling`, `/dev/numbers`, `/dev/pitch-accent` cover the rest. Start a UX audit here, not by walking the full curriculum looking for every screen type to naturally show up — it's the same coverage in a fraction of the time. Supplement with a handful of real pages (a real lesson, a real quiz session end-to-end, Settings, Progress) to catch anything that only appears in a live flow, not a static gallery.
 
 ### What to check
 
@@ -160,7 +160,7 @@ The app already has dev-only reference pages built for exactly this (see [[dev-p
 - **Responsive/mobile**: use `resize_window`'s mobile/tablet presets — is anything cramped, overlapping, or unusable at small viewports?
 - **Interaction bugs**: dead clicks, missing focus states, broken keyboard navigation, janky/missing transitions.
 - **Accessibility**: missing accessible names on controls, color contrast, focus indicators legible in both themes.
-- **Light/dark theme**: check both — a color token defined in only one theme's block is a real, recurring class of bug in this codebase (see the artifact-design conventions this session already leans on for the same reason).
+- **Light/dark theme**: check both — a color token defined in only one theme's block (a `@media (prefers-color-scheme: dark)` rule, a `[data-theme]` selector) rather than as a value every theme redefines is a real, recurring class of bug in this codebase — the app renders correctly in whichever theme was tested and silently breaks in the other.
 - **Cross-page consistency**: does the same TYPE of screen (a lesson card, a quiz card, a settings row) feel like the same app everywhere, or do different corners feel like they were built at different times with different conventions?
 
 ### Execution shape
@@ -265,11 +265,11 @@ A prior pass at exactly this kind of audit (SAK-105, data-model/component-reuse 
 - API/data-fetching pattern consistency — consistent conventions for server actions, caching, error handling across the app.
 - Scalability — as the corpus/curriculum grows, do algorithms and data structures still hold up, or are there patterns that were fine at an old data size and are starting to strain?
 - Type-safety escape hatches — `any`/`unknown` misuse, non-null assertions clustering in ways that suggest fragile code, not principled ones.
-- Test coverage gaps in core modules the other six audits' fixes would need to rely on being solid.
+- Test coverage gaps in core modules the other nine audits' fixes would need to rely on being solid.
 
 ### Execution shape
 
-Pure code-reading and static analysis — the opposite end of the spectrum from Audit 3, no browser needed at all. Can lean on this session's existing `code-review` and `simplify` skills as components rather than building entirely from scratch. Splits naturally by layer (data, component, API) or by subsystem.
+Pure code-reading and static analysis — the opposite end of the spectrum from Audit 3, no browser needed at all. The `code-review` and `simplify` skills (invoke via the Skill tool) cover some of this ground already — lean on them as components rather than re-deriving the same checks from scratch. Splits naturally by layer (data, component, API) or by subsystem.
 
 ### Verify
 
