@@ -153,8 +153,9 @@ test("multiple choice offers NO hint", async ({ page }) => {
   });
   await startQuizDrill(page);
   // The board is up (options rendered), and there is no Hint button on it. The
-  // MC board moved to a uniform grid of min-h-[60px] cells (drill-screen.tsx),
-  // so the old min-w-[74px] row styling is gone.
-  await expect(page.locator("button.min-h-\\[60px\\]").first()).toBeVisible();
+  // MC board moved to a uniform grid of fixed-height cells (drill-screen.tsx);
+  // SAK-207 round 3 replaced the old min-h-[60px] floor with a genuinely fixed
+  // h-[6.25rem] tile (mc-option-grid.tsx), so this selector tracks that shape.
+  await expect(page.locator("button.h-\\[6\\.25rem\\]").first()).toBeVisible();
   await expect(hintButton(page)).toHaveCount(0);
 });

@@ -235,7 +235,7 @@ test.describe("Multiple settings paths to same format (text vs audio)", () => {
 
     // Both enabled forms (text and audio) are definition MC cards, so whichever
     // one endless rolls, the drill shows an MC board. The option buttons are
-    // button.min-h-[60px] (the optionButtons helper), not role="option", and the
+    // button.h-[6.25rem] (the optionButtons helper), not role="option", and the
     // board size is variable (buildMcOptions pads only as far as it has honest
     // distractors), so assert the board is present rather than a fixed count.
     await expect(optionButtons(page)).not.toHaveCount(0);
@@ -263,7 +263,7 @@ test.describe("Settings enforcement", () => {
 
     // Definition-only drops the reading fact (jp2enResponse of a word reading is
     // romaji, which is not selected), leaving only the meaning fact as a
-    // definition MC card. The board buttons are button.min-h-[60px] (the
+    // definition MC card. The board buttons are button.h-[6.25rem] (the
     // optionButtons helper), not role="option".
     await expect(optionButtons(page).first()).toBeVisible();
   });
