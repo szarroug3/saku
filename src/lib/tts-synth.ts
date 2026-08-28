@@ -45,10 +45,100 @@
 // the two callers).
 
 import { pitchPatternForLength } from "@/lib/pitch";
+import { toKatakana } from "@/lib/romaji";
 import {
   correctSentencePitch,
   type AccentPhraseLike,
 } from "@/lib/sentence-pitch";
+
+// Individual WORD readings (as opposed to the single bare kana glyph below)
+// where VOICEVOX's own text analyzer (OpenJTalk) mis-segments the hiragana
+// reading, confirmed live (SAK-215). This is NOT applied blanket to every
+// reading that passes through this path — an early version of this fix tried
+// exactly that (unconditional hiragana→katakana for every reading) and it
+// was WRONG: こんにちは/こんばんは are genuinely, correctly read コンニチワ/
+// コンバンワ by OpenJTalk's hiragana-mode analysis (は as a fossilized topic
+// particle is really pronounced わ there), and forcing katakana input breaks
+// them (コンニチハ literal, verified live). A blanket rule can't tell "OpenJTalk
+// is wrong" (八/はち) apart from "OpenJTalk is right about a real exception"
+// (こんにちは) from the mora text alone — both LOOK like a は→わ "mismatch."
+//
+// The mechanical test that DOES tell them apart: does the SAME word, spelled
+// with its real KANJI and dropped into a trivial sentence (`{keb}です`), still
+// analyze the target syllable as わ/え? A kanji spelling anchors OpenJTalk's
+// dictionary lookup, so context reliably resolves ordinary words to their
+// correct reading (verified live: これは八です → コレワハチデス, はちです →
+// ハチデス — even bare hiragana + a trailing copula is enough once there's
+// SOME context) — it's only the fully bare, context-free 2-character reading
+// `synthesizeAtDownstep` actually sends that OpenJTalk mis-segments. A
+// genuine lexicalized exception stays わ/え even WITH context (実は → verified
+// live ジツワイソガシイデス "実は忙しいです"; 願わくは → ネガワクワハレテホシイ
+// "願わくは晴れてほしい" — both still わ), because their わ-pronunciation is a
+// fact about that word, not an artifact of missing context.
+//
+// So the actual process for every entry below: pulled every reading in the
+// actually-seeded pitch word set (scripts/seed-voice-audio.mjs's
+// pitchItems(), ~8,000 distinct readings) where a bare hiragana query and a
+// bare katakana query disagree AND the disagreement is specifically a は→わ
+// or へ→え swap (the same class of error BARE_KANA_PARTICLE_MISREADING below
+// already fixes for a single bare glyph); EXCLUDED anything with no kanji
+// spelling (keb === reb — nothing here qualifies, but that's the line a
+// legitimate こんにちは-type exception would need to cross to even be
+// considered); then ran the `{keb}です` context test on every remaining
+// candidate. 実は and 願わくは kept わ under context and were dropped as
+// genuine exceptions. 栄え (はえ, a rarer reading of 栄える-family kanji) was
+// dropped as UNVERIFIABLE — its context test resolved to a different, more
+// common reading of the same kanji (さかえ) entirely, not a confirmation or
+// denial of the はえ reading this app actually wants, so there is no honest
+// mechanical answer for it either way; it is left unfixed rather than guessed.
+// Every reading below held its は/へ under context and is a confirmed bug.
+const CONFIRMED_BAD_READINGS: readonly string[] = [
+  "はち", // 八 "eight" (SAK-215's reported bug), also 鉢 "bowl" / 蜂 "bee".
+  "は", // 歯 "tooth", also 葉 "leaf".
+  "はは", // 母 "mother".
+  "はで", // 派手 "flashy".
+  "はば", // 幅 "width".
+  "はだ", // 肌 "skin".
+  "はてる", // 果てる "to come to an end".
+  "はやす", // 生やす "to grow (hair/beard)".
+  "はやめる", // 早める "to hasten".
+  "はきょく", // 破局 "breakup/catastrophe".
+  "はいこう", // 廃坑 "abandoned mine".
+  "はくがく", // 博学 "erudition".
+  "はきもの", // 履物 "footwear".
+  "はたいろ", // 旗色 "how the battle is going".
+  "はなしごえ", // 話し声 "the sound of talking".
+  "はみがき", // 歯磨き "toothbrushing".
+  "はブラシ", // 歯ブラシ "toothbrush".
+  "はっしょう", // 発症 "onset (of symptoms)".
+  "しはい", // 支配 "control/domination".
+  "このは", // 木の葉 "leaves of a tree".
+  "たいはいてき", // 退廃的 "decadent".
+  "へいはつ", // 併発 "co-occurrence (of symptoms)".
+  "へいこう", // 平衡 "equilibrium".
+  "へいきんてき", // 平均的 "average".
+  "いどうへいきん", // 移動平均 "moving average".
+  "ふこうへい", // 不公平 "unfairness".
+];
+
+// Each bad reading's katakana form is DERIVED via toKatakana rather than
+// hand-typed a second time, so the fix stays exactly what was verified live
+// (feed the SAME reading back in katakana) with no chance of a typo drifting
+// the two apart. Adding a newly-confirmed bad reading only ever means adding
+// one string to the list above.
+const WORD_READING_MISREADING: ReadonlyMap<string, string> = new Map(
+  CONFIRMED_BAD_READINGS.map((reading) => [reading, toKatakana(reading)]),
+);
+
+/** Swap an EXACT, individually-confirmed-bad word reading for its katakana
+ * form before it reaches VOICEVOX. Never a blanket hiragana→katakana
+ * conversion (see WORD_READING_MISREADING's comment for why that broke
+ * こんにちは-type words) — only the specific readings verified live to be
+ * mis-segmented by OpenJTalk get swapped; everything else passes through
+ * exactly as VOICEVOX's own hiragana-mode analysis already handles it. */
+function readingForMisreadingFix(reading: string): string {
+  return WORD_READING_MISREADING.get(reading) ?? reading;
+}
 
 // A short, common phrase, guaranteed to carry several voiced moras across a
 // real pitch swing, used only to measure the voice's natural pitch range.
@@ -183,7 +273,7 @@ async function synthesizeAtDownstep(
   downstep: number,
 ): Promise<ArrayBuffer> {
   const { low, high } = await targetRange(base, speakerId);
-  const query = await audioQuery(base, reading, speakerId);
+  const query = await audioQuery(base, readingForMisreadingFix(reading), speakerId);
   const moras = flatMoras(query);
   const pattern = pitchPatternForLength(moras.length, downstep);
   for (let i = 0; i < moras.length; i++) {
@@ -242,9 +332,18 @@ export async function synthesizeSentenceWav(
   if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
 
   const target = await targetRange(base, speakerId);
-  // Only the general (non-exact-pitch) path takes this fix — synthesizeWordWav
-  // always gets a caller-supplied dictionary READING (never a bare kana glyph
-  // spoken for its own sake), so it has no version of this ambiguity to guard.
+  // This bare-single-character fix stays narrow to this path, and stays
+  // SEPARATE from synthesizeAtDownstep's own WORD_READING_MISREADING map
+  // (SAK-215) rather than merging into one map or one blanket rule. `text`
+  // here is arbitrary — a full sentence, mixed kanji and kana, or a word not
+  // yet resolved to an exact downstep — and OpenJTalk's hiragana-mode
+  // analysis is frequently RIGHT about things a blanket katakana conversion
+  // would get wrong (こんにちは → コンニチワ is a real, correct, lexicalized
+  // は→わ exception; forcing katakana input renders it コンニチハ, verified
+  // live). Only the single bare-glyph case this map covers (a Hear button
+  // with no surrounding sentence to disambiguate は/へ) is unambiguous enough
+  // to fix blindly; everything else here is left for OpenJTalk's own
+  // judgment, same as before.
   const query = await audioQuery(base, textForBareKanaFix(text), speakerId);
   const { totalPhrases, matchedPhrases } = correctSentencePitch(
     query.accent_phrases as AccentPhraseLike[],
