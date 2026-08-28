@@ -225,8 +225,13 @@ export function answerBox(page: Page) {
 export function optionButtons(page: Page) {
   // The MC option buttons in the drill's 3-col board (drill-screen.tsx). The
   // board moved to a uniform grid in b9dad93, dropping the old `min-w-[74px]`
-  // row styling for `min-h-[60px]` cells; this selector tracks that shape.
-  return page.locator("button.min-h-\\[60px\\]");
+  // row styling for `min-h-[60px]` cells; this selector tracked that shape.
+  // SAK-207 round 3 replaced `min-h-[60px]` (a floor) with a genuinely fixed
+  // `h-[6.25rem]` (mc-option-grid.tsx, MC_OPTION_TILE_HEIGHT_REM in
+  // mc-option-fit.ts) so every tile in a row renders the same height instead
+  // of a wrapped option growing its own row taller than its siblings — this
+  // selector tracks that new shape. Unconditional on `size`, same as before.
+  return page.locator("button.h-\\[6\\.25rem\\]");
 }
 
 /**
