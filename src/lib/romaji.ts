@@ -246,6 +246,33 @@ export function toHiragana(str: string): string {
   return out;
 }
 
+/** The mirror of `toHiragana`: fold hiragana to katakana, character by
+ * character, over the same +0x60 codepoint offset (SAK-215). Used to hand
+ * VOICEVOX a reading in a script its analyzer (OpenJTalk) treats as an
+ * already-resolved phonetic transcription rather than lexical text to
+ * segment/guess at — see tts-synth.ts's `synthesizeAtDownstep` for why that
+ * matters. Anything already katakana, the long mark ー (U+30FC, shared by
+ * both scripts already), and anything outside the hiragana block (kanji,
+ * punctuation, ASCII) all pass through untouched — this only ever touches
+ * the hiragana block U+3041-U+3096, which covers small kana (ゃゅょ…),
+ * dakuten/handakuten forms (ば, ぱ, …) and ゔ/ゕ/ゖ, since those are ordinary
+ * codepoints within the block, not composed marks. */
+export function toKatakana(str: string): string {
+  let out = "";
+  for (const ch of str) {
+    const code = ch.codePointAt(0)!;
+    // Hiragana block from ぁ (U+3041) through ゖ (U+3096) — the actual kana
+    // letters, small kana and ゔ included. Stops short of the iteration marks
+    // ゝゞ (U+309D/309E), which a word reading never contains.
+    if (code >= 0x3041 && code <= 0x3096) {
+      out += String.fromCodePoint(code + 0x60);
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 /** True when every character is kana (either script), the small kana, or the
  * long mark — i.e. a string romaji could actually have produced. Empty is
  * false: nothing is not an answer. A kanji anywhere makes it false, which is
