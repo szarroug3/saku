@@ -92,6 +92,54 @@ import {
 // denial of the はえ reading this app actually wants, so there is no honest
 // mechanical answer for it either way; it is left unfixed rather than guessed.
 // Every reading below held its は/へ under context and is a confirmed bug.
+//
+// SAK-218 generalized this same mechanical test PAST the は/へ pattern: for
+// every distinct reading in the seeded pitch word set with a kanji spelling
+// (scripts/seed-voice-audio.mjs's pitchItems(), cross-referenced against
+// VOCAB for keb !== reb, same field-level check as above), compared the bare
+// reading's own hiragana analysis against BOTH (a) that reading's bare
+// KATAKANA analysis (toKatakana(reading) — a literal, no-particle-guessing
+// per-character reading, same oracle BARE_KANA_PARTICLE_MISREADING already
+// trusts below) and (b) the `{keb}です` context analysis, with no pre-filter
+// to any specific character. 7,880 distinct readings tested; 893 showed ANY
+// disagreement between bare-hiragana and kanji-context. The overwhelming
+// majority of those 893 were noise: 76 were the context template picking a
+// different, unintended reading of an ambiguous kanji spelling entirely
+// (e.g. この頃 resolving to コノコロデス instead of コノゴロデス — 頃 genuinely
+// has both readings; not a bare-reading bug) — unverifiable by this method
+// and left alone, same discipline as 栄え below. The rest — roughly 800 —
+// were long-vowel realization noise (おう/えい sequences alternating between
+// their literal moras and a merged long vowel, e.g. あっとう vs アットオ):
+// checked directly against the engine's own vowel-phoneme field (not just
+// mora text) and confirmed REAL at the phoneme level for several samples,
+// but the merge/no-merge direction flips inconsistently per word — some
+// words merge in hiragana bare and not katakana, others the reverse
+// (えいきょう vs めんどう, verified live) — with no reliable "hiragana is
+// wrong" story the way は/へ has one, and no way to confirm audibility
+// without literally listening. Left unfixed as unverified noise, matching
+// this ticket's own instruction not to count every disagreement as a bug.
+//
+// What was left after both filters: exactly 8 new confirmed bugs, all one
+// shared failure mode — a word-final bare mora that should carry a real
+// vowel comes out either voiceless/dropped (っ with no vowel: さつ-family)
+// or with the WRONG vowel quality entirely (う-ending verbs read with an
+// あ-vowel: つかう/あらう) — verified via BOTH toKatakana AND `{keb}です`
+// agreeing on the correct reading against the broken bare hiragana one,
+// same two-witness confirmation は/へ below already relies on:
+//   さつ 冊/札 (also 銃殺/毒殺/入札/分冊/競争入札, all share this exact
+//     failure): bare "さつ" analyzes as ["サ","ッ"] — a geminate stop with NO
+//     vowel, i.e. the word gets truncated/cut off; toKatakana("サツ") and
+//     "冊です" both correctly analyze as ["サ","ツ"]. Two different VOCAB
+//     words (冊 counter, 札 "bill") share this exact reading+downstep slot
+//     (pitchItems() dedup) — no conflict, both want サツ, neither has any
+//     reason to want the truncated form.
+//   つかう 使う "to use": bare analyzes as ["ツ","カ","ア"] — the dictionary-
+//     form verb ending う is read as あ, not う. toKatakana("ツカウ") and
+//     "使うです" both correctly give ["ツ","カ","ウ"].
+//   あらう 洗う "to wash": same failure as つかう, same fix (アラア → アラウ,
+//     confirmed via both toKatakana and "洗うです").
+// Every entry below held its bug under BOTH the katakana oracle and kanji
+// context — the same double-confirmation は/へ's 26 entries already use.
 const CONFIRMED_BAD_READINGS: readonly string[] = [
   "はち", // 八 "eight" (SAK-215's reported bug), also 鉢 "bowl" / 蜂 "bee".
   "は", // 歯 "tooth", also 葉 "leaf".
@@ -119,6 +167,16 @@ const CONFIRMED_BAD_READINGS: readonly string[] = [
   "へいきんてき", // 平均的 "average".
   "いどうへいきん", // 移動平均 "moving average".
   "ふこうへい", // 不公平 "unfairness".
+  // SAK-218's new confirmed bugs (see this comment block's header for the
+  // broader method):
+  "さつ", // 冊 "counter for bound volumes", also 札 "bill/note".
+  "つかう", // 使う "to use".
+  "じゅうさつ", // 銃殺 "shooting to death" — same さつ-final failure.
+  "あらう", // 洗う "to wash".
+  "どくさつ", // 毒殺 "poisoning to death" — same さつ-final failure.
+  "にゅうさつ", // 入札 "bid/tender" — same さつ-final failure.
+  "ぶんさつ", // 分冊 "separate volume" — same さつ-final failure.
+  "きょうそうにゅうさつ", // 競争入札 "competitive bidding" — same さつ-final failure.
 ];
 
 // Each bad reading's katakana form is DERIVED via toKatakana rather than

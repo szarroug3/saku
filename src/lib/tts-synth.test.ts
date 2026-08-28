@@ -82,6 +82,23 @@ test("another CONFIRMED-bad reading (はは, 母) is also converted; a merely SI
   assert.deepEqual(q2, ["おはようございます", "はな"], "はな is not on the exception list — must stay hiragana");
 });
 
+test("SAK-218: a newly-confirmed bad reading (さつ, 冊/札's shared word-final drop) is converted to katakana", async () => {
+  const { queried } = mockVoicevox();
+  await synthesizeWordWav("さつ", 0, 9006);
+  assert.deepEqual(queried, ["おはようございます", "サツ"]);
+});
+
+test("SAK-218: another newly-confirmed bad reading (つかう, 使う's dictionary-form verb ending misread as あ) is converted; a merely SIMILAR reading (つかれる) is not", async () => {
+  const { queried: q1 } = mockVoicevox();
+  await synthesizeWordWav("つかう", 0, 9007);
+  assert.deepEqual(q1, ["おはようございます", "ツカウ"]);
+
+  mock.restoreAll();
+  const { queried: q2 } = mockVoicevox();
+  await synthesizeWordWav("つかれる", 0, 9008);
+  assert.deepEqual(q2, ["おはようございます", "つかれる"], "つかれる is not on the exception list — must stay hiragana");
+});
+
 test("mora COUNT and pitch pattern are unaffected by the katakana swap", async () => {
   mockVoicevox();
   const calls: string[] = [];
