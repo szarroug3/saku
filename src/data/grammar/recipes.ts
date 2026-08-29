@@ -979,8 +979,8 @@ export const RECIPES: readonly Recipe[] = [
     attach: [{ host: "verb", form: "ta", add: "あとで" }],
     note:
       "CORPUS-SCARCE. Only 9 Tatoeba sentences at <=10 tokens: learners write " +
-      "、where a textbook writes で. Needs hand-authored examples; see " +
-      "src/data/grammar/examples.ts.",
+      "、where a textbook writes で. Hand-authored per SAK-276; see " +
+      "src/data/grammar/authored.ts.",
   },
   {
     id: "ta-hou-ga-ii",

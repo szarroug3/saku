@@ -590,6 +590,16 @@ NO_SIGNATURE = {
     "shika-nai": "しか〜ない spans arbitrary distance; not a contiguous signature.",
     "hou-ga-yori": "Comparison frames span the clause; not a contiguous signature.",
     "wa-yori": "See `hou-ga-yori`. And は is never quizzed regardless.",
+    # SAK-276: these two were never even ATTEMPTED — recipes.ts's `pattern`
+    # string for each is a display placeholder, not real Japanese text, so no
+    # sentence slice could ever equal it. Structural, not a tagging gap.
+    "stem-form": "recipes.ts's pattern label is '〜(stem)', but the stem has no "
+    "standalone written surface (かき/たべ only exist as the first half of a "
+    "longer conjugated word) — no sentence contains the literal text "
+    "'(stem)', so there is nothing here to match.",
+    "volitional-form": "recipes.ts's pattern label is '〜(よ)う', a "
+    "class-conditional spelling (godan 行こう has no よ; ichidan 食べよう does) "
+    "with no single fixed string — same structural reason as `stem-form`.",
 }
 
 # Patterns needing two hits in one sentence to count.

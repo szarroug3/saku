@@ -28,14 +28,29 @@ describe("GET /api/grammar-example", () => {
   });
 
   test("a pattern with no examples answers null, and does not 500", async () => {
-    // ta-ato-de is empty for a real reason and is the live case. A learner on
+    // stem-form is empty for a real, structural reason (see
+    // grammar.NO_SIGNATURE / CORPUS_META.noSignature: its `pattern` string is
+    // a display placeholder, not real text) and is the live case. A learner on
     // that lesson card must get a card without an example panel, not an error —
     // lesson-item-view.tsx renders nothing when the body is null, and PairedRow
     // collapses to its wide half. Nothing here is allowed to throw.
-    assert.equal(CORPUS_META.perPattern["ta-ato-de"], 0);
-    const res = await call("?recipe=ta-ato-de");
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(CORPUS_META.noSignature, "stem-form"),
+      "stem-form should still be a documented no-example recipe",
+    );
+    const res = await call("?recipe=stem-form");
     assert.equal(res.status, 200);
     assert.equal(await res.json(), null);
+  });
+
+  test("ta-ato-de now serves its SAK-276 hand-authored example, not null", async () => {
+    // Was the "a pattern with no examples" live case (CORPUS_META.perPattern
+    // still reports 0 real Tatoeba matches — it is genuinely corpus-scarce)
+    // until authored.ts gave it one hand-picked reference sentence.
+    assert.equal(CORPUS_META.perPattern["ta-ato-de"], 0);
+    const body = (await (await call("?recipe=ta-ato-de")).json()) as { jp: string } | null;
+    assert.ok(body, "ta-ato-de has a hand-authored example, so it must serve one");
+    assert.ok(body.jp.includes("たあとで"), `served as an example of たあとで: ${body?.jp}`);
   });
 
   test("an unknown recipe is the same shape, not an error", async () => {
