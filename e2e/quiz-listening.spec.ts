@@ -126,6 +126,57 @@ test("an audio → meaning card asks for the meaning and hints the written word,
 });
 
 /**
+ * SAK-289: "SHOW TEXT" MUST NOT DEAD-END THE CARD EITHER.
+ *
+ * Flagged as a follow-up to SAK-223 (same pattern: a plain <button> sibling
+ * to the answer input) and the worst case of the three, since the button
+ * UNMOUNTS ITSELF on press — it only renders while `!q.textRevealed`
+ * (drill-screen.tsx), so the very click that focuses it also flips the flag
+ * that removes it from the DOM on the next render. A browser drops focus to
+ * <body> when the focused element is removed, the same dead end as SAK-223's
+ * disabled-button case: every following keystroke on a typed listening card
+ * would go nowhere, and Enter would not submit (onKeyDown's Enter path only
+ * fires while the box itself is focused).
+ *
+ * Typed here through the KEYBOARD, deliberately, for the same reason SAK-223's
+ * regression test was: fill()/press() focus the box themselves and would pass
+ * even with the bug in place.
+ *
+ * An audio → MEANING card is the vehicle (not audio → reading): "Show text" is
+ * withheld entirely on a pronunciation question (SAK-153, the reading itself
+ * would be the answer), so a reading card never renders this button at all.
+ */
+test("answering still works after pressing Show text on a listening card", async ({
+  page,
+}) => {
+  await seedQuiz(page, {
+    seen: [wordMeaningFactId(word)],
+    cfg: {
+      ...STEADY_CFG,
+      ...ask({
+        jpPrompts: ["audio"],
+        jpResponses: ["definition"],
+        jpAnswers: ["typed"],
+      }),
+    },
+  });
+  await startQuizDrill(page);
+
+  await expect(listenSpeaker(page)).toBeVisible();
+  await page.getByRole("button", { name: "Show text" }).click();
+
+  // The word is now shown as text, and the replay hands focus straight back
+  // to the box, so the next keystroke lands there rather than nowhere.
+  await expect(page.getByText(word, { exact: true })).toBeVisible();
+  const box = answerBox(page);
+  await expect(box).toBeFocused();
+  await page.keyboard.type("telephone");
+  await expect(box).toHaveValue("telephone");
+  await page.keyboard.press("Enter");
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
+});
+
+/**
  * FULL COVERAGE asks EVERY enabled form (#30): with a Japanese source that has
  * both Text and Audio prompts on, a listening card is GUARANTEED to appear —
  * never left to a coin. The coverage deck expands 電話's reading into a text card

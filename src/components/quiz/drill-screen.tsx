@@ -837,6 +837,19 @@ export function DrillScreen() {
     if (!hintReadyRef.current) return;
     rt.q.hinted = true;
     force();
+    // SAK-289: HAND KEYBOARD FOCUS BACK TO THE ANSWER BOX, same fix as
+    // SAK-223's audio replay. The Hint button is a <button>, so clicking it
+    // moved focus onto it; taking the hint then renders the button
+    // `disabled={q.hinted}` (below), and browsers blur a focused element the
+    // instant it goes disabled — dropping focus to <body> with nothing to
+    // pick it back up. On a TYPED card that left every following keystroke
+    // going nowhere: Enter no longer submits (onKeyDown's Enter path only
+    // fires while the box itself is focused). `inputRef.current` is null on
+    // a board card (MC/recognition/pitch, or one already converted via
+    // Choices), so this is a no-op exactly where nothing was broken — a hint
+    // is available on those too (see `hint` above) but there is no box to
+    // return to.
+    inputRef.current?.focus();
   }
 
   /** Show the multiple-choice board on a card currently shown as a text box,
@@ -1725,6 +1738,17 @@ export function DrillScreen() {
     if (!rt.q.listen || rt.q.textRevealed) return;
     rt.q.textRevealed = true;
     force();
+    // SAK-289: HAND KEYBOARD FOCUS BACK TO THE ANSWER BOX, same fix as
+    // SAK-223's audio replay — and the worst instance of this bug class,
+    // since Show text unmounts ITSELF: the button only renders while
+    // `!q.textRevealed` (below), so the very click that focuses it also
+    // flips the flag that removes it from the DOM next render. A browser
+    // drops focus to <body> when the focused element is removed, same
+    // dead end as a disabled button — every following keystroke on a typed
+    // listening card would go nowhere. `inputRef.current` is null on a
+    // board-style listening card (recognition), so this is a no-op exactly
+    // where nothing was broken.
+    inputRef.current?.focus();
   }
 
   /** Legacy bindDrill document keydown: Enter advances while waiting, Enter

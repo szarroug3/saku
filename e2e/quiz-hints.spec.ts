@@ -159,3 +159,75 @@ test("multiple choice offers NO hint", async ({ page }) => {
   await expect(page.locator("button.h-\\[6\\.25rem\\]").first()).toBeVisible();
   await expect(hintButton(page)).toHaveCount(0);
 });
+
+/**
+ * SAK-289: PRESSING HINT MUST NOT DEAD-END THE CARD.
+ *
+ * Flagged as a follow-up to SAK-223 (same pattern: a plain <button> sibling
+ * to the answer input, no focus-return handling). Clicking Hint focuses the
+ * button; taking the hint then renders it `disabled={q.hinted}`
+ * (drill-screen.tsx), and browsers blur a focused element the instant it goes
+ * disabled — dropping focus to <body> with nothing to pick it back up. On a
+ * TYPED card that leaves every following keystroke going nowhere: Enter no
+ * longer submits (onKeyDown's Enter path only fires while the box itself is
+ * focused).
+ *
+ * Typed here through the KEYBOARD, deliberately, for the same reason SAK-223's
+ * regression test was: fill()/press() focus the box themselves and would pass
+ * even with the bug in place.
+ */
+test("answering still works after clicking Hint", async ({ page }) => {
+  await seedQuiz(page, { seen: [wordMeaningFactId("電話")], cfg: JP2EN_TYPED });
+  await startQuizDrill(page);
+
+  await hintButton(page).click();
+
+  const input = page.locator("input.kq-material");
+  await expect(input).toBeFocused();
+  await page.keyboard.type("telephone");
+  await expect(input).toHaveValue("telephone");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText(answeredText(1))).toBeVisible();
+});
+
+/**
+ * "CHOICES" — investigated alongside Hint and Show text for SAK-289 as the
+ * same suspected bug class, but it does NOT reproduce, and this pins down
+ * why: pressing Choices converts the card from a typed box into an MC board
+ * (`rt.q.mc = board`, drill-screen.tsx), which has no answer box left to lose
+ * focus FROM. Grading an MC option (click, or the digit-key shortcut in
+ * onKeyDown) never depends on `document.activeElement` — the digit path is a
+ * document-level keydown listener gated only on the event target not being an
+ * INPUT/TEXTAREA, which <body> is not. So although the click does move focus
+ * onto the (now-unmounted) button and it does end up on <body>, same as Hint
+ * and Show text, nothing is left needing that focus back — there is no typed
+ * answer to submit any more. No code change was needed here; this test is the
+ * live confirmation the ticket asked for, typed through a real digit
+ * KEYPRESS (not Playwright's click helpers) to exercise the exact path
+ * onKeyDown uses.
+ */
+test("SAK-289: a real digit keypress still grades an option after Choices is pressed", async ({
+  page,
+}) => {
+  await seedQuiz(page, { seen: [wordMeaningFactId("電話")], cfg: JP2EN_TYPED });
+  await startQuizDrill(page);
+
+  const choicesBtn = page.getByRole("button", { name: "Choices", exact: true });
+  await expect(choicesBtn).toBeVisible();
+  await choicesBtn.click();
+
+  // The board is up, replacing the typed box, and focus has indeed dropped to
+  // <body> — confirming the same click-steals-focus mechanics as the other
+  // two buttons, before showing that it doesn't matter here.
+  const board = page.locator("button.h-\\[6\\.25rem\\]");
+  await expect(board.first()).toBeVisible();
+  await expect(page.locator("input.kq-material")).toHaveCount(0);
+  await expect(page.evaluate(() => document.activeElement?.tagName)).resolves.toBe(
+    "BODY",
+  );
+
+  // "telephone" is 電話's own gloss, always option 1 for this fact/direction
+  // (see the other hint tests above). A real keypress, not a click.
+  await page.keyboard.press("1");
+  await expect(page.getByText(answeredText(1))).toBeVisible();
+});
