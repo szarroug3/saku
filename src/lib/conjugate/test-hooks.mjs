@@ -71,6 +71,17 @@ function withExtension(url) {
   return url;
 }
 
+/** Bare package SUBPATH specifiers (e.g. "next/cache") whose target package has
+ * no `exports` map: Node's ESM resolver, unlike a bundler, does not fill in the
+ * extension for these — `next/cache` fails with "did you mean next/cache.js?"
+ * even though the file is right there and Next's own bundler resolves it fine.
+ * Only reached once the default resolver has already thrown, so this can only
+ * turn a previously-unresolvable specifier into a resolved one — it never
+ * changes the outcome for a specifier that already worked. */
+function withPackageExtension(specifier) {
+  return /\.[a-z]+$/i.test(specifier) ? null : [".js", ".mjs", ".cjs"];
+}
+
 registerHooks({
   resolve(specifier, context, next) {
     if (specifier.startsWith("@/")) {
@@ -83,6 +94,24 @@ registerHooks({
         if (existsSync(fileURLToPath(candidate))) return next(`${specifier}.ts`, context);
       } catch {
         // fall through to the default resolver
+      }
+    }
+    if (!specifier.startsWith(".") && !specifier.startsWith("/")) {
+      const extensions = withPackageExtension(specifier);
+      if (extensions) {
+        try {
+          return next(specifier, context);
+        } catch (err) {
+          if (err?.code !== "ERR_MODULE_NOT_FOUND") throw err;
+          for (const ext of extensions) {
+            try {
+              return next(`${specifier}${ext}`, context);
+            } catch {
+              // try the next extension
+            }
+          }
+          throw err;
+        }
       }
     }
     return next(specifier, context);
