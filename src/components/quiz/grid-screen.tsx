@@ -46,16 +46,17 @@ import {
   retriesAllowed,
   shuffle,
 } from "@/lib/engine";
-import { entryOf, factInfo } from "@/lib/facts";
 import { gridBoards } from "@/lib/grid-facts";
-import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { getQuizTrackLabel, resolveFactInfos } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import type {
+  EntryId,
   FactId,
+  FactInfo,
   GridResponse,
   QuizConfig,
   SessionStats,
@@ -168,8 +169,24 @@ type CheckOutcome =
   | "locked" // wrong and out of retries — locked, shake
   | "retry"; // wrong but retryable — shake, stays open
 
+/** SAK-104/SAK-227: factInfo/entryOf read lib/facts.ts (server-only, the
+ * multi-megabyte dictionary), so checkCard/the card render take a locally-
+ * resolved slice instead of importing them — see the "SAK-104: locally-
+ * resolved fact registry" section below for how it's populated. Falls back to
+ * `null`/`undefined` (never a guess) if a fact somehow renders before its
+ * factInfo has resolved; the same tolerance drill-screen.tsx's identical
+ * pattern documents (a harmless, momentary gap, not a correctness issue). */
+function localEntryOf(factMap: Record<string, FactInfo>, f: FactId): EntryId | null {
+  return factMap[f as unknown as string]?.entry ?? null;
+}
+
 /** Legacy grid check(): score the card's current input against LIVE cfg. */
-function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
+function checkCard(
+  g: GridRuntime,
+  f: FactId,
+  cfg: QuizConfig,
+  factMap: Record<string, FactInfo>,
+): CheckOutcome {
   const card = g.cards[f];
   const typed = card.value.trim();
   const v = typed.toLowerCase();
@@ -210,7 +227,7 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   // facts. See FactSessionDetail. Scanned against the CURRENT board's cards —
   // the ones on screen the answer could have been meant for.
   const said = confusedWith(f, v, g.boards[g.bi]?.order ?? []);
-  if (said && said !== entryOf(f)) {
+  if (said && said !== localEntryOf(factMap, f)) {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }
   if (card.tries > retriesAllowed(cfg)) {
@@ -249,6 +266,36 @@ export function GridScreen() {
     getQuizTrackLabel,
     active ? [active.facts] : null,
   );
+
+  // ---------- SAK-104/SAK-227: locally-resolved fact registry ----------
+  //
+  // factInfo/entryOf read lib/facts.ts (the multi-megabyte dictionary) —
+  // drill-screen.tsx's identical section explains why a client quiz screen
+  // must never import them directly. The whole run's fact pool is fixed at
+  // Start (active.facts — allFacts(g) is built from exactly this set, see
+  // initGrid above), so it's fetched ONCE, in one round trip, and every
+  // check()/render below reads this map synchronously. Depends on
+  // `active.facts`, not `g` itself: `g` is a mutable runtime object (mutated
+  // in place elsewhere — bi++, card writes, …), and the immutability lint
+  // that guards effect-dependency values would otherwise fire the moment it
+  // appeared in a dependency array — the same reason substitution-screen.tsx
+  // passes its runtime into module-level mutators rather than closing over
+  // it. State, not a ref: the "wrong" card's answer reveal reads it during
+  // render.
+  const [factMap, setFactMap] = useState<Record<string, FactInfo>>({});
+  useEffect(() => {
+    if (!active) return;
+    const missing = active.facts.filter(
+      (id) => !(id as unknown as string in factMap),
+    );
+    if (!missing.length) return;
+    void resolveFactInfos(missing).then((res) => {
+      setFactMap((prev) => ({ ...prev, ...res }));
+    });
+    // Only re-run when the active leg itself changes — factMap is read, not
+    // depended on, to avoid re-fetching on every merge.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   // Transient shake state: cards mid-shake right now, keyed like the board.
   const [shaking, setShaking] = useState<Record<string, boolean>>({});
@@ -319,7 +366,7 @@ export function GridScreen() {
   const check = (f: FactId, fromBlur: boolean) => {
     if (!g) return;
     // Retries and show-answer are read live from cfg at check time.
-    const out = checkCard(g, f, cfg);
+    const out = checkCard(g, f, cfg, factMap);
     if (out === "noop") return;
     // Every outcome that changed the runtime hits the disk before the next
     // question is drawn — INCLUDING "retry", which is the one that used to be
@@ -530,7 +577,7 @@ export function GridScreen() {
                   unchanged) input — never swapped in over it. See SAK-91. */}
               {card.state === "wrong" && cfg.showAnswer ? (
                 <span className="mt-1 block text-[10px] leading-tight text-danger">
-                  {factInfo(f)?.answers[0] ?? ""}
+                  {factMap[f as unknown as string]?.answers[0] ?? ""}
                 </span>
               ) : null}
               {/* The dots are the whole retry counter now that colour isn't
