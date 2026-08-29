@@ -20,7 +20,7 @@
 // resolveFactInfos) so a deck/list/breakdown resolves in ONE round trip built
 // once, not one request per row.
 
-import type { EntryId, FactId, FactInfo, FactState, HistoryFile } from "@/types";
+import type { EntryId, FactId, FactInfo, FactState, HistoryFile, QuizMode } from "@/types";
 import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import type { Recipe } from "@/data/grammar/recipes";
 import type { StrokeFallback } from "@/lib/lesson-roles";
@@ -1141,11 +1141,20 @@ export async function getTeachTrackLabel(
  * whole quiz leg's fact pool (`active.facts`), which is not always
  * single-subject the way a lesson's teach set always is. See quizTrackLabel
  * (library/entries.ts) for the exact reasoning: undefined when the pool is
- * empty or genuinely mixed, never a guessed/averaged label. */
+ * empty or genuinely mixed, never a guessed/averaged label.
+ *
+ * `mode` (SAK-252) is a `QuizMode` — optional, and only assembly-screen.tsx
+ * passes it today (the literal "assembly", not `active.snapshot.mode`; see
+ * that call site for why), to name a sentence-ordering leg. See
+ * quizTrackLabel's own "COUNTING AND SENTENCE-ORDERING" doc for why the mode
+ * is the one signal that can tell an assembly leg's grammar facts apart from
+ * an ordinary Grammar quiz asking the exact same facts. Every other HUD omits
+ * it and gets today's fact-only behavior unchanged. */
 export async function getQuizTrackLabel(
   facts: readonly FactId[],
+  mode?: QuizMode,
 ): Promise<string | undefined> {
-  return quizTrackLabelOf(facts.map((f) => factInfo(f)));
+  return quizTrackLabelOf(facts.map((f) => factInfo(f)), mode);
 }
 
 /** Batched TTS text (`speechForFact`) for a set of facts — the drill screen's

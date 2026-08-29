@@ -462,9 +462,20 @@ export function AssemblyScreen() {
   // hook for why this is a pool check, not a first-fact guess. undefined
   // (omitted below) both while loading and when the pool is genuinely
   // mixed-subject.
+  //
+  // The literal "assembly" (SAK-252), not `active.snapshot.mode` — this
+  // component IS the assembly screen whenever it renders, even on the one leg
+  // whose STORED mode is "drill" (quizScreenKind's `sentenceOnlyDrill`
+  // fallback, for a sentence tier whose only facts are the non-registered
+  // tier-marker pseudo-fact). Reading `active.snapshot.mode` instead would
+  // silently miss that leg. An assembly leg's real facts are ordinary
+  // grammar-pattern meaning facts, indistinguishable from an ordinary Grammar
+  // quiz's — the mode is the one signal that names this "Sentences" rather
+  // than "Grammar"; see quizTrackLabel's own doc for why the facts alone
+  // can't.
   const quizTrackLabel = useServerLookup(
     getQuizTrackLabel,
-    active ? [active.facts] : null,
+    active ? [active.facts, "assembly" as const] : null,
   );
 
   const done = rt ? rt.cards.filter((c) => c.state !== "open").length : 0;

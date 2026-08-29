@@ -84,6 +84,7 @@ import { isNumberKanji } from "@/data/number-kanji";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
+  COUNTER_ENTRIES,
   COUNTER_KANJI_GLYPHS,
   COUNTER_TAIL_FORM_ALIASES,
   COUNTER_VOCAB_DUPLICATE_KEBS,
@@ -139,7 +140,7 @@ import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { deframe } from "@/lib/kanji-parts";
 import { factInfo, factsOf } from "@/lib/facts";
-import type { EntryId, FactId, FactInfo } from "@/types";
+import type { EntryId, FactId, FactInfo, QuizMode } from "@/types";
 
 /**
  * The counters shelf's kind — and the ONE Kind that is not a fact subject.
@@ -359,13 +360,51 @@ export function trackLabel(info: FactInfo | undefined): string | undefined {
  * is skipped rather than treated as a disagreement: those never drive a quiz
  * on their own, and a pool that is otherwise single-track should not lose its
  * label because one confusable-distractor fact along for the ride has none.
+ *
+ * COUNTING AND SENTENCE-ORDERING (SAK-252)
+ * =========================================
+ * TRACK_LABEL's own doc says these two are "not resolved [t]here" because the
+ * session page's teach-header applies its own `session.what`/mode override on
+ * top of `trackLabel`'s result. That override lives ONLY in the teach-phase
+ * branch of app/session/page.tsx — every quiz HUD (drill/grid/pairs/assembly/
+ * substitution/listen-sentence) reads `quizTrackLabel` raw, with no such
+ * override, so a Counting or Sentence-ordering QUIZ fell through to whatever
+ * `trackLabel` said about the underlying subject: "Vocabulary" for a counter
+ * (subject `word`, see COUNTER_ENTRIES/src/data/counters.ts) and "Grammar" for
+ * a sentence-ordering assembly leg (which drills ordinary grammar-pattern
+ * MEANING facts — assemblyFacts()/src/data/assembly.ts mints nothing of its
+ * own). Both are fixed HERE, the one place every quiz HUD already funnels
+ * through, rather than in six near-identical call sites:
+ *
+ *  - Counting is told apart PER FACT, the same test trackOfFact
+ *    (lib/track-open.ts) uses: a counter is a `word` fact whose ENTRY is in
+ *    COUNTER_ENTRIES, so it is checked before falling back to `trackLabel`'s
+ *    subject-only map. This is fact-content-safe — an entry is either a
+ *    counter or it isn't — so a pool that mixes counters with ordinary words
+ *    still correctly reports "genuinely mixed" (undefined) rather than
+ *    collapsing both into "Vocabulary".
+ *
+ *  - Sentence-ordering CANNOT be told apart per fact: assembly's meaning
+ *    facts are the exact same facts an ordinary Grammar quiz can ask, so two
+ *    quizzes over an identical fact pool need different labels depending on
+ *    which screen is asking. The one signal that actually distinguishes them
+ *    is the QUIZ MODE — "assembly" means sentence-ordering and nothing else
+ *    (home-feed.tsx's `trackKeyForRun` reads it the same way: `mode ===
+ *    "assembly"` before ever looking at a fact). So `mode` is an optional
+ *    second parameter, checked first and returned unconditionally: an
+ *    assembly leg's pool is always this one part of the sentence track, never
+ *    a genuine mix. Every other caller omits it and keeps today's fact-only
+ *    behavior.
  */
 export function quizTrackLabel(
   infos: readonly (FactInfo | undefined)[],
+  mode?: QuizMode,
 ): string | undefined {
+  if (mode === "assembly") return "Sentences";
   let label: string | undefined;
   for (const info of infos) {
-    const l = trackLabel(info);
+    if (!info) continue;
+    const l = COUNTER_ENTRIES.has(info.entry) ? "Counting" : trackLabel(info);
     if (!l) continue;
     if (label === undefined) label = l;
     else if (label !== l) return undefined; // genuinely mixed — no single track

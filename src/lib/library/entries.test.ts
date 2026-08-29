@@ -51,6 +51,9 @@ import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
+import { COUNTER_CURRICULUM, counterMeaningFactId } from "@/data/counters";
+import { patternMeaningFactId } from "@/data/grammar";
+import { RECIPES } from "@/data/grammar/recipes";
 import type { FactInfo } from "@/types";
 
 const need = (e: LibEntry | undefined): LibEntry => {
@@ -686,5 +689,48 @@ describe("quizTrackLabel — the quiz HUDs' track name over a fact pool", () => 
   test("agrees with trackLabel for a single fact — same function, no separate mapping to drift", () => {
     const info = factInfo(meaningFactId("一"));
     assert.equal(quizTrackLabel([info]), trackLabel(info));
+  });
+
+  // ---- SAK-252: Counting and Sentence-ordering quiz headers ----
+
+  test("a Counting-track quiz reads 'Counting', not 'Vocabulary' — SAK-252", () => {
+    // A counter fact carries subject `word` like any other vocabulary fact
+    // (see COUNTER_ENTRIES's own doc, src/data/counters.ts); quizTrackLabel
+    // must still tell it apart by its ENTRY, the way trackOfFact
+    // (lib/track-open.ts) already does for the track-open gate.
+    const info = factInfo(counterMeaningFactId(COUNTER_CURRICULUM[0]!));
+    assert.equal(quizTrackLabel([info]), "Counting");
+  });
+
+  test("a pool mixing a counter and an ordinary word is genuinely mixed, not 'Vocabulary'", () => {
+    // Both facts carry subject `word`, so before SAK-252 this silently
+    // collapsed to "Vocabulary" — now that Counting is a real, distinct
+    // label, a pool spanning both must correctly read as mixed (undefined),
+    // the same "do not guess" rule the kana+vocabulary case above exercises.
+    const infos = [
+      factInfo(counterMeaningFactId(COUNTER_CURRICULUM[0]!)),
+      factInfo(wordMeaningFactId("先生")),
+    ];
+    assert.equal(quizTrackLabel(infos), undefined);
+  });
+
+  test("an assembly-mode (sentence-ordering) pool reads 'Sentences', not 'Grammar' — SAK-252", () => {
+    // assemblyFacts() (src/data/assembly.ts) mints no facts of its own — a
+    // sentence-ordering leg drills the exact same grammar-pattern MEANING
+    // facts an ordinary Grammar quiz can ask, so the facts alone cannot tell
+    // the two apart. The quiz mode is the one signal that can: "assembly"
+    // means sentence-ordering and nothing else (see home-feed.tsx's
+    // trackKeyForRun, which reads it the same way).
+    const infos = [factInfo(patternMeaningFactId(RECIPES[0]!.id))];
+    assert.equal(quizTrackLabel(infos, "assembly"), "Sentences");
+  });
+
+  test("assembly mode wins even over a pool that would otherwise read 'Grammar'", () => {
+    assert.equal(quizTrackLabel([], "assembly"), "Sentences");
+  });
+
+  test("omitting mode keeps the old fact-only behavior — a plain Grammar quiz over the same facts", () => {
+    const infos = [factInfo(patternMeaningFactId(RECIPES[0]!.id))];
+    assert.equal(quizTrackLabel(infos), "Grammar");
   });
 });
