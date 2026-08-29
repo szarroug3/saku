@@ -169,12 +169,14 @@ describe("a kanji reading is asked only inside a multi-part word", () => {
   });
 
   test("learning a multi-part word makes its kanji's reading askable, framed on it", () => {
-    // 恋人 carries 人 as ひと and 外国人 carries it as じん; each is more than just
-    // the kanji, so each is a fair place to ask "how is 人 read HERE".
+    // 人違い carries 人 as ひと and 外国人 carries it as じん; each is more than
+    // just the kanji, so each is a fair place to ask "how is 人 read HERE".
+    // (Not 恋人 — 人 rendaku-voices to びと there, so SAK-230's surface guard
+    // correctly refuses to frame the ひと fact on it; see word-unlock.ts.)
     assert.equal(
-      anchorForFact(readingFactByBase("人", "ひと"), claiming([wordMeaningFactId("恋人")])),
-      "恋人",
-      "恋人 opens 人/ひと, framed on 恋人",
+      anchorForFact(readingFactByBase("人", "ひと"), claiming([wordMeaningFactId("人違い")])),
+      "人違い",
+      "人違い opens 人/ひと, framed on 人違い",
     );
     assert.equal(
       anchorForFact(readingFactByBase("人", "じん"), claiming([wordMeaningFactId("外国人")])),
@@ -272,5 +274,48 @@ describe("quizzableFacts: a reading is never asked in an unlearned word", () => 
       YAMA_MEANING,
     ];
     assert.deepEqual(quizzableFacts(nonReadings, h), nonReadings);
+  });
+});
+
+// SAK-230: 中's ちゅう bucket folds in every word that rendaku-voices it to
+// じゅう (一日中, 心中, 年中, …) — a legitimate grouping (see kanji.ts's ReadingRow
+// doc), but `words` is NOT "words read ちゅう", it is "words that attest the
+// ちゅう/じゅう FAMILY". Framing "中 read this way in ___" on one of the じゅう
+// members and then grading only ちゅう correct told a learner who typed the
+// word's real reading, じゅう, that they were wrong — the bucket's single label
+// asked as if every member word actually used it. `preferredAnchor` must skip
+// a candidate whose OWN surface isn't one the fact actually grades.
+describe("preferredAnchor never frames a reading on a word that surfaces differently (SAK-230)", () => {
+  const CHUU_FACT: FactId = readingFactByBase("中", "ちゅう");
+
+  test("中/ちゅう's fact grades only ちゅう — 中学 (unvoiced) is the ingest anchor", () => {
+    const row = READINGS.find((r) => r.k === "中" && r.base === "ちゅう");
+    assert.ok(row);
+    assert.equal(row.anchor, "中学");
+    assert.equal(row.surface, "ちゅう");
+  });
+
+  test("knowing only a じゅう-voiced member (一日中) does not open a wrong-answer frame", () => {
+    // 一日中 attests the family (it is in the bucket's `words`) but is itself
+    // read じゅう, not ちゅう — the only accepted answer for CHUU_FACT. Framing
+    // on it would be unanswerable-correctly, so it must not be chosen at all.
+    assert.equal(vocabRow("一日中")?.align?.find(([k]) => k === "中")?.[1], "じゅう");
+    const h = claiming([wordMeaningFactId("一日中")]);
+    assert.equal(anchorForFact(CHUU_FACT, h), undefined);
+    assert.ok(!readingAnchors(h).has(CHUU_FACT));
+  });
+
+  test("knowing a genuine ちゅう member (途中) opens the fact, framed on it", () => {
+    assert.equal(vocabRow("途中")?.align?.find(([k]) => k === "中")?.[1], "ちゅう");
+    const h = claiming([wordMeaningFactId("途中")]);
+    assert.equal(anchorForFact(CHUU_FACT, h), "途中");
+  });
+
+  test("knowing both, the genuine ちゅう member wins even if ranked later", () => {
+    const h = claiming([
+      wordMeaningFactId("一日中"),
+      wordMeaningFactId("途中"),
+    ]);
+    assert.equal(anchorForFact(CHUU_FACT, h), "途中");
   });
 });
