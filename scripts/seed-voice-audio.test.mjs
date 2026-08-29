@@ -18,12 +18,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { COUNTER_KINDS, counterReading, numberReading } from "@/lib/number-reading";
 import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { VOICE_PREVIEW } from "@/lib/voice";
 
-import { pitchItems } from "./seed-voice-audio.mjs";
+import { bareNumberTexts, countedNumberTexts, pitchItems } from "./seed-voice-audio.mjs";
 
 describe("pitchItems — SAK-216 distractor coverage", () => {
   test("every VOCAB word with a verified downstep gets both a correct item and (when honest) a distractor item", () => {
@@ -131,5 +132,58 @@ describe("pitchItems — SAK-216 distractor coverage", () => {
       expectedTotal > correctOnlyCount,
       "distractor items should add strictly more entries than correct-only seeding",
     );
+  });
+});
+
+// SAK-244: numbers and counters (さんにん, にじゅうごにち, …) were almost never
+// pre-generated — an exhaustive count found only 3% of counted-number forms
+// and 11% of bare numbers cached, meaning nearly every one triggered a live,
+// uncached synthesis call. These pin bareNumberTexts()/countedNumberTexts()
+// (the seed script's own enumeration of exactly what the "numbers"/"counters"
+// sets now cover) against the REAL number-reading.ts engine — the same
+// engine number-quiz.ts's makeItem and counter-entry-view.tsx's HearButton
+// read from live — so a pass here can't disagree with what a learner's
+// session would actually request.
+describe("bareNumberTexts / countedNumberTexts — SAK-244 counted-number coverage", () => {
+  test("bareNumberTexts covers exactly numberReading(1..99), the same primary reading a bare-number HEAR card speaks", () => {
+    const texts = bareNumberTexts();
+    const expected = [];
+    for (let n = 1; n <= 99; n++) expected.push(numberReading(n));
+
+    // Exactly 99 possible bare numbers, per the ticket's exhaustive count.
+    assert.equal(expected.length, 99);
+    assert.deepEqual(new Set(texts), new Set(expected));
+    for (const reading of expected) {
+      assert.ok(texts.includes(reading), `missing bare-number reading ${reading}`);
+    }
+  });
+
+  test("countedNumberTexts covers exactly counterReading(n, kind) for every kind × 1..99, skipping out-of-range nulls", () => {
+    const texts = countedNumberTexts();
+    const present = new Set(texts);
+
+    let expectedCount = 0;
+    for (const kind of COUNTER_KINDS) {
+      for (let n = 1; n <= 99; n++) {
+        const reading = counterReading(n, kind);
+        if (reading === null) continue;
+        expectedCount++;
+        assert.ok(present.has(reading), `missing counted-number reading ${reading} (${kind}, ${n})`);
+      }
+    }
+
+    // 15 counter kinds: 14 span 1-99, "tsu" caps at 10 (14*99 + 10 = 1,396) —
+    // the exact possible-form count the ticket's exhaustive audit found.
+    assert.equal(COUNTER_KINDS.length, 15);
+    assert.equal(expectedCount, 1396);
+    // A dedup-aware set (some readings coincide across counters/counts, e.g.
+    // にじゅう as a prefix does not collide since these are whole readings —
+    // this just guards the enumeration didn't silently drop real entries).
+    assert.ok(present.size > 0 && present.size <= expectedCount);
+  });
+
+  test("no null reading ever reaches the item list (counterReading's out-of-range guard is respected)", () => {
+    const texts = countedNumberTexts();
+    assert.ok(texts.every((t) => typeof t === "string" && t.length > 0));
   });
 });

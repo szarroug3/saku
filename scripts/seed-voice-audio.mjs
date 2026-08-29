@@ -78,6 +78,7 @@ import { READINGS } from "@/data/kanji";
 import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
+import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { synthesizeWordWav } from "@/lib/tts-synth";
 import { pitchObjectPath, VOICE_PREVIEW, VOICES, voiceObjectPath } from "@/lib/voice";
@@ -201,6 +202,44 @@ function grammarDeriveTexts() {
   return texts;
 }
 
+/** SAK-244: every bare-number reading 1-99 — the exact kana `numberReading(n)`
+ * gives for a lone count (いち, にじゅうご, …), independent of any counter. This
+ * is precisely the text a bare-number HEAR/quiz card speaks (number-quiz.ts's
+ * `makeItem`, the `reading` it freezes onto a rolled item) and the same text a
+ * Library number page's HearButton plays (counter-entry-view.tsx's bare-number
+ * form). An exhaustive audit found only 11/99 (11%) of this space pre-seeded
+ * before this set existed — nearly every bare number a learner hears was a
+ * live, uncached synthesis call. */
+export function bareNumberTexts() {
+  const texts = [];
+  for (let n = 1; n <= 99; n++) texts.push(numberReading(n));
+  return texts;
+}
+
+/** SAK-244: every counted-number reading `counterReading(n, kind)` can
+ * produce — n from 1 up to each kind's own ceiling (10 for "tsu", 99 for
+ * every object/time counter) × all 15 `COUNTER_KINDS`. This is precisely the
+ * text a counted-number HEAR/quiz card speaks (number-quiz.ts's `makeItem`)
+ * and a counter's Library "How you say it" section plays (both read the
+ * SAME primary reading `counterReading` returns — never one of the grading-
+ * only alternates `acceptableCounterReadings` adds, which no button ever
+ * speaks and this set correctly does not seed). An exhaustive audit found
+ * only 42/1,396 (3%) of this space pre-seeded before this set existed —
+ * nearly every counted number a learner hears was a live, uncached synthesis
+ * call, almost certainly the single largest source of live synthesis calls
+ * in the app. `counterReading` returns null out of range (e.g. n>10 for
+ * "tsu"), which this simply skips rather than pushing a null string. */
+export function countedNumberTexts() {
+  const texts = [];
+  for (const kind of COUNTER_KINDS) {
+    for (let n = 1; n <= 99; n++) {
+      const reading = counterReading(n, kind);
+      if (reading !== null) texts.push(reading);
+    }
+  }
+  return texts;
+}
+
 /** Each set describes how to enumerate, cache-path, label, and synthesize its
  * own items — the run/upload/skip/limit machinery below (`runPool`,
  * `seedOneWithRetry`) is generic over all four, so a new set (a new content
@@ -229,6 +268,16 @@ const SETS = {
   // grammarDeriveTexts' own comment for why this reuses autoPatternPage
   // instead of re-deriving the conjugations.
   "grammar-derive": textSet(grammarDeriveTexts),
+  // SAK-244: every bare number 1-99 (いち, にじゅうご, …) — see bareNumberTexts'
+  // own comment for why this exact text and why it was almost entirely
+  // uncached before this set existed.
+  numbers: textSet(bareNumberTexts),
+  // SAK-244: every counted-number form across all 15 counter kinds, 1-99 (or
+  // 1-10 for つ) — see countedNumberTexts' own comment. This is the single
+  // largest text set here (up to 1,396 distinct readings × voices) and was
+  // the ticket's whole point: almost every counted number a learner hears
+  // was a fresh, uncached synthesis call before this set existed.
+  counters: textSet(countedNumberTexts),
   // SAK-107: the EXACT-pitch cache `/api/pitch-tts` reads/writes — the
   // settings voice-picker preview and every Library word's pitch "hear it"
   // button. Different item shape (reading+downstep, not free text), different
