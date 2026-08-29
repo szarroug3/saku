@@ -5,7 +5,7 @@
 // ===============
 // scripts/ingest/grammar.py matches morphologically, not by regex, and its
 // docstring is right that this is the only defensible way to tag 8,689
-// sentences. But a UniDic token run is not a MEANING. Seven signatures match a
+// sentences. But a UniDic token run is not a MEANING. Nine signatures match a
 // token run that a different, real pattern also produces, and the tagger has no
 // way to tell them apart from the tokens alone:
 //
@@ -23,6 +23,24 @@
 //               differ AT ALL: like passive vs potential, the ambiguity is in
 //               Japanese, so the ONLY evidence is the linked human translation,
 //               which this one confound reads instead of the token span.
+//   to-omou     と + 思う is "I think that X" ONLY when the verb before it is
+//               plain. Put a VOLITIONAL verb there — 行こうと思う — and the
+//               sentence means "I intend to go", a different recipe
+//               (you-to-omou) that grammar.py's own NO_SIGNATURE table says is
+//               "folded into to-omou for this pass" rather than given its own
+//               signature. That admission is the confound: 9 of 243 shipped
+//               to-omou examples are the intention, not the opinion.
+//   noni        の + に is concessive のに ("even though X") ONLY when read
+//               that way. の (nominalizer) + に (purpose/use marker) produces
+//               the IDENTICAL two tokens for a completely different sentence:
+//               「これを使うのに便利だ」is "this is convenient FOR using", not
+//               "even though [X]". Pedagogy documents this as attaching to a
+//               closed set of predicates (役に立つ, 便利, 必要, 十分, かかる,
+//               忙しい, 苦労する, 慣れる, 成功する, 飽きる) — 48 of 212 shipped
+//               noni examples are this, not concessive. A further 3 are a
+//               third sense entirely: の as the pronoun "the one" + に as the
+//               choice-marking particle in 〜にする ("彼が食べてるのにします" —
+//               "I'll have what he's having" — decide-on-X, not "even though").
 //
 // The damage is not cosmetic. A learner shown 「ログアウトするんじゃなかったよ」
 // as an example of 〜ので has no other source for what ので means, and the
@@ -54,8 +72,14 @@ import type { Example } from "./corpus.ts";
 interface Confound {
   /** What the tagger actually matched. Ends up in the dropped-sentence record. */
   readonly why: string;
-  /** True when THIS example is the confound rather than the pattern. */
-  readonly holds: (ex: Example, span: string, after: string) => boolean;
+  /**
+   * True when THIS example is the confound rather than the pattern.
+   *
+   * `before` is appended rather than inserted, so every existing predicate
+   * above — written against (ex, span, after) — keeps meaning what it always
+   * meant; only a confound that needs the text ahead of the span reads it.
+   */
+  readonly holds: (ex: Example, span: string, after: string, before: string) => boolean;
 }
 
 const CONFOUNDS: Readonly<Record<string, Confound>> = {
@@ -115,6 +139,40 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
         ex.en,
       ) || /(位置につい|席につい|テーブルについ|の後につい)/.test(ex.jp),
   },
+
+  // 〜(よ)うと思う ("I intend to X") vs plain 〜と思う ("I think that X"). Both
+  // are host verb + と + 思う; the ONLY difference is the verb's form, and
+  // grammar.py's own NO_SIGNATURE entry for you-to-omou says as much: "folded
+  // into to-omou for this pass". だろう/でしょう is excluded even though it
+  // ends the same way — 彼は来るだろうと思う is genuinely "I think he'll
+  // probably come" (conjecture, not the speaker's own intention), because the
+  // volitional there belongs to the copula だ, not to a verb the speaker is
+  // resolving to do.
+  "to-omou": {
+    why: "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    holds: (_ex, _span, _after, before) =>
+      !/だろう$|でしょう$/.test(before) && /[おこそとのぼもろご]う$|よう$/.test(before),
+  },
+
+  // のに's two OTHER jobs, both built from the exact same two tokens as
+  // concessive のに ("even though X"):
+  //   purpose  の (nominalizer) + に (purpose/use). 「これを使うのに便利だ」is
+  //            "convenient FOR using this", not "even though". Documented in
+  //            Japanese pedagogy as attaching to a closed set of predicates —
+  //            useful-for, needed-for, takes-time-to, busy-with, difficulty-
+  //            in, accustomed-to, succeeded-in, tired-of.
+  //   choice   の as the pronoun "the one" + に as the particle in 〜にする
+  //            ("decide on X"). 「彼が食べてるのにします」is "I'll have what
+  //            he's having", not "even though".
+  // Neither is detectable from the span itself — の+に is identical in all
+  // three jobs — so this reads what immediately follows it, same as ta-tokoro
+  // reads what follows ところ.
+  noni: {
+    why: "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    holds: (_ex, _span, after) =>
+      /(役立|役に立|便利|使わ|使う|使われ|必要|十分|かか|掛か|忙し|苦労|四苦八苦|慣れ|成功|飽き)/.test(after) ||
+      /^(します|する)/.test(after),
+  },
 };
 
 /** Recipes this audit has an opinion about. Everything else passes untouched. */
@@ -134,5 +192,6 @@ export function confoundFor(ex: Example, pattern: string): string | null {
   if (!sp) return null;
   const span = ex.jp.slice(sp[0], sp[1]);
   const after = ex.jp.slice(sp[1]);
-  return c.holds(ex, span, after) ? c.why : null;
+  const before = ex.jp.slice(0, sp[0]);
+  return c.holds(ex, span, after, before) ? c.why : null;
 }
