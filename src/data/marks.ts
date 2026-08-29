@@ -379,50 +379,28 @@ const RAW_MARKS: readonly Mark[] = [
     rows: [],
     shelf: "writing",
   },
+  //
+  // The eleven "sentence" entries below author only what does not already
+  // live in src/data/sentence-ordering-guides.ts: the id, the shelf title, and
+  // the alias strings search should find it by. `summary` and `intros` are
+  // filled in from SENTENCE_ORDERING_GUIDES by the MARKS map below (see
+  // "sentence-rule-*" mapping at the bottom of this file), the same
+  // pointer-not-copy rule the "writing" entries above already follow with
+  // phase-intros.ts. An earlier version of this file authored a second,
+  // rigid Step-1/2/3 restatement of each rule inline here — it was always
+  // overwritten before render, so nobody reading the live app ever saw it,
+  // but it left this file itself teaching the SAME rule in two contradicting
+  // voices. Removed for SAK-268 rather than rewritten, because a duplicate
+  // is exactly the drift the top-of-file NOT A SECOND COPY OF THE LESSON
+  // section warns about — there is no version of "keep two copies in sync"
+  // that does not eventually fail the same way this one did.
   {
     id: "sentence-rule-simple",
     name: "Simple sentences",
     glyph: "",
-    summary: "Base sentence ordering: anchor the ending, then place core meaning and context around it.",
+    summary: "",
     searchAlso: ["simple sentences", "sentence ordering", "sov", "basic order", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-simple",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Simple sentences",
-        body: [
-          {
-            lead: "Step 1: Anchor the ending.",
-            text: "Find the final verb or statement-ending chunk first. It stabilizes the rest of the sentence.",
-          },
-          {
-            lead: "Step 2: Place core meaning.",
-            text: "Put the core object/place chunk before the ending, then frame with topic/time chunks on the left.",
-          },
-          {
-            lead: "Step 3: Use particles as labels.",
-            text: "Read は, が, を, に, で as role labels so chunk placement follows structure instead of English word order.",
-          },
-        ],
-        examples: [
-          {
-            from: "サクは店に",
-            to: "サクは店に行った",
-            reading: "さくは みせに いった",
-            gloss: "As for Saku, she went to the store.",
-            say: "サクは店に行った",
-          },
-          {
-            from: "サクは赤いボールで",
-            to: "サクは赤いボールで遊んだ",
-            reading: "さくは あかい ぼーるで あそんだ",
-            gloss: "As for Saku, she played with the red ball.",
-            say: "サクは赤いボールで遊んだ",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -430,46 +408,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-conditional",
     name: "Conditional sentences",
     glyph: "",
-    summary: "Use IF-boundary markers to keep condition and result chunks in the right order.",
+    summary: "",
     searchAlso: ["conditional sentences", "if clause", "たら", "ば", "なら", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-conditional",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Conditional sentences",
-        body: [
-          {
-            lead: "Step 1: Find the IF boundary.",
-            text: "Markers like たら, ば, and なら close the condition chunk. Keep that chunk intact.",
-          },
-          {
-            lead: "Step 2: Then place the result chunk.",
-            text: "After condition placement, build the main result clause and keep its ending anchored near the right edge.",
-          },
-          {
-            lead: "Step 3: Context still frames left.",
-            text: "Topic, time, and place chunks remain on the left side around the conditional structure.",
-          },
-        ],
-        examples: [
-          {
-            from: "雨が降ったら",
-            to: "雨が降ったら私は家にいる",
-            reading: "あめが ふったら わたしは いえに いる",
-            gloss: "If it rains, I stay home.",
-            say: "雨が降ったら私は家にいる",
-          },
-          {
-            from: "時間があれば",
-            to: "時間があれば私は行く",
-            reading: "じかんが あれば わたしは いく",
-            gloss: "If I have time, I will go.",
-            say: "時間があれば私は行く",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -477,46 +418,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-causal",
     name: "Because / so",
     glyph: "",
-    summary: "Cause/result ordering: place reason chunks and outcome chunks in a clear flow.",
+    summary: "",
     searchAlso: ["because / so", "because", "cause", "から", "ので", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-causal",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Because / so",
-        body: [
-          {
-            lead: "Step 1: Identify cause markers.",
-            text: "Use から and ので to locate reason chunks.",
-          },
-          {
-            lead: "Step 2: Order cause and result clearly.",
-            text: "Build reason and outcome as separate chunks so logical flow stays readable.",
-          },
-          {
-            lead: "Step 3: Keep the ending anchor.",
-            text: "Even with reason markers, the final predicate still closes the clause near the end.",
-          },
-        ],
-        examples: [
-          {
-            from: "雨だから",
-            to: "雨だから私は走らない",
-            reading: "あめだから わたしは はしらない",
-            gloss: "Because it is raining, I do not run.",
-            say: "雨だから私は走らない",
-          },
-          {
-            from: "疲れたので",
-            to: "疲れたのでサクは早く寝る",
-            reading: "つかれたので さくは はやく ねる",
-            gloss: "Because she is tired, Saku goes to bed early.",
-            say: "疲れたのでサクは早く寝る",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -524,46 +428,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-obligation",
     name: "Must / have to",
     glyph: "",
-    summary: "Obligation frames attach near the end and govern the action chunk before them.",
+    summary: "",
     searchAlso: ["must / have to", "must", "have to", "なければ", "ないといけない", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-obligation",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Must / have to",
-        body: [
-          {
-            lead: "Step 1: Spot obligation frames.",
-            text: "Patterns like なければならない, なければいけない, and ないといけない mark mandatory structure.",
-          },
-          {
-            lead: "Step 2: Attach them to the action chunk.",
-            text: "Place the action chunk first, then close with the obligation expression.",
-          },
-          {
-            lead: "Step 3: Keep topic/time outside the frame.",
-            text: "Context chunks stay left; do not split the obligation expression apart.",
-          },
-        ],
-        examples: [
-          {
-            from: "明日私は早く起き",
-            to: "明日私は早く起きなければならない",
-            reading: "あした わたしは はやく おきなければ ならない",
-            gloss: "Tomorrow I must wake up early.",
-            say: "明日私は早く起きなければならない",
-          },
-          {
-            from: "サクは宿題を終え",
-            to: "サクは宿題を終えなければいけない",
-            reading: "さくは しゅくだいを おえなければ いけない",
-            gloss: "Saku has to finish her homework.",
-            say: "サクは宿題を終えなければいけない",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -571,46 +438,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-sequential",
     name: "After / while doing",
     glyph: "",
-    summary: "Sequence markers connect action chunks and define event order.",
+    summary: "",
     searchAlso: ["after / while doing", "sequence", "てから", "ている", "てみる", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-sequential",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "After / while doing",
-        body: [
-          {
-            lead: "Step 1: Find sequence connectors.",
-            text: "Markers like てから and ている show how actions chain or continue.",
-          },
-          {
-            lead: "Step 2: Preserve event order.",
-            text: "Keep linked actions in the intended sequence before closing with the final predicate.",
-          },
-          {
-            lead: "Step 3: Do not split linked chunks.",
-            text: "Treat connector-bearing chunks as structural units while placing context around them.",
-          },
-        ],
-        examples: [
-          {
-            from: "宿題をしてから",
-            to: "宿題をしてから私は寝る",
-            reading: "しゅくだいを してから わたしは ねる",
-            gloss: "After doing homework, I sleep.",
-            say: "宿題をしてから私は寝る",
-          },
-          {
-            from: "図書館でサクは",
-            to: "図書館でサクは勉強している",
-            reading: "としょかんで さくは べんきょうしている",
-            gloss: "At the library, Saku is studying.",
-            say: "図書館でサクは勉強している",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -618,46 +448,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-desire",
     name: "Want to / easy / hard",
     glyph: "",
-    summary: "Desire/ease endings stay attached to action chunks they evaluate.",
+    summary: "",
     searchAlso: ["want to / easy / hard", "たい", "やすい", "にくい", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-desire",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Want to / easy / hard",
-        body: [
-          {
-            lead: "Step 1: Locate evaluation endings.",
-            text: "Markers like たい, やすい, and にくい show desire or ease/difficulty tied to an action.",
-          },
-          {
-            lead: "Step 2: Keep action and evaluation together.",
-            text: "Place the action chunk so its attached ending remains structurally connected.",
-          },
-          {
-            lead: "Step 3: Frame with topic/context as usual.",
-            text: "Context chunks stay left while the evaluated action closes near the end.",
-          },
-        ],
-        examples: [
-          {
-            from: "私は日本へ",
-            to: "私は日本へ行きたい",
-            reading: "わたしは にほんへ いきたい",
-            gloss: "I want to go to Japan.",
-            say: "私は日本へ行きたい",
-          },
-          {
-            from: "この本は",
-            to: "この本は読みやすい",
-            reading: "この ほんは よみやすい",
-            gloss: "This book is easy to read.",
-            say: "この本は読みやすい",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -665,46 +458,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-giving",
     name: "Giving and receiving",
     glyph: "",
-    summary: "Helper endings encode benefit direction between giver and receiver.",
+    summary: "",
     searchAlso: ["giving and receiving", "てあげる", "てくれる", "てもらう", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-giving",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Giving and receiving",
-        body: [
-          {
-            lead: "Step 1: Identify helper endings.",
-            text: "Use てあげる, てくれる, and てもらう to determine direction of benefit.",
-          },
-          {
-            lead: "Step 2: Place giver/receiver context clearly.",
-            text: "Keep who-does-what-for-whom readable around the final helper chunk.",
-          },
-          {
-            lead: "Step 3: Respect perspective.",
-            text: "These forms encode viewpoint, so chunk order should preserve beneficiary direction.",
-          },
-        ],
-        examples: [
-          {
-            from: "私は友達に本を貸して",
-            to: "私は友達に本を貸してあげる",
-            reading: "わたしは ともだちに ほんを かして あげる",
-            gloss: "I lend a book to my friend.",
-            say: "私は友達に本を貸してあげる",
-          },
-          {
-            from: "サクは私に夕飯を作って",
-            to: "サクは私に夕飯を作ってくれた",
-            reading: "さくは わたしに ゆうはんを つくって くれた",
-            gloss: "Saku made dinner for me.",
-            say: "サクは私に夕飯を作ってくれた",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -712,46 +468,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-reported",
     name: "I think / seems like",
     glyph: "",
-    summary: "Stance endings wrap a core statement with opinion or probability.",
+    summary: "",
     searchAlso: ["i think / seems like", "と思う", "らしい", "かもしれない", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-reported",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "I think / seems like",
-        body: [
-          {
-            lead: "Step 1: Separate proposition and stance.",
-            text: "Build the core statement chunk first, then attach the opinion/probability layer.",
-          },
-          {
-            lead: "Step 2: Read inside then outside.",
-            text: "The inner clause carries content; the ending carries confidence or viewpoint.",
-          },
-          {
-            lead: "Step 3: Keep stance marker position stable.",
-            text: "Markers like と思う and かもしれない belong near the sentence end where stance is expressed.",
-          },
-        ],
-        examples: [
-          {
-            from: "彼が来る",
-            to: "彼が来ると思う",
-            reading: "かれが くる と おもう",
-            gloss: "I think he will come.",
-            say: "彼が来ると思う",
-          },
-          {
-            from: "明日は雨",
-            to: "明日は雨かもしれない",
-            reading: "あしたは あめ かもしれない",
-            gloss: "It might rain tomorrow.",
-            say: "明日は雨かもしれない",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -759,46 +478,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-contrast",
     name: "Even though / without",
     glyph: "",
-    summary: "のに marks contrast; ないで links an action done without another action.",
+    summary: "",
     searchAlso: ["even though / without", "contrast", "のに", "ないで", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-contrast",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Even though / without",
-        body: [
-          {
-            lead: "Step 1: Identify the clause relationship.",
-            text: "のに sets up an expectation and contrasting result; ないで links an action done without another action.",
-          },
-          {
-            lead: "Step 2: Keep the first clause intact.",
-            text: "Treat the clause ending in のに or ないで as one unit before placing the main result.",
-          },
-          {
-            lead: "Step 3: Read the marker’s actual job.",
-            text: "のに means “even though”; ないで means “without doing.” Both connect a setup to the following action, but only のに expresses contrast.",
-          },
-        ],
-        examples: [
-          {
-            from: "雨なのに",
-            to: "雨なのに彼は出かけた",
-            reading: "あめなのに かれは でかけた",
-            gloss: "Even though it was raining, he went out.",
-            say: "雨なのに彼は出かけた",
-          },
-          {
-            from: "朝ごはんを食べないで",
-            to: "朝ごはんを食べないで私は出た",
-            reading: "あさごはんを たべないで わたしは でた",
-            gloss: "Without eating breakfast, I left.",
-            say: "朝ごはんを食べないで私は出た",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
@@ -806,46 +488,9 @@ const RAW_MARKS: readonly Mark[] = [
     id: "sentence-rule-request",
     name: "Requests and proposals",
     glyph: "",
-    summary: "Request/proposal endings close the sentence after the target action chunk.",
+    summary: "",
     searchAlso: ["requests and proposals", "てください", "ましょう", "request", "sentence rule"],
-    intros: [
-      {
-        id: "sentence-rule-request",
-        setId: "",
-        eyebrow: "Sentence rule",
-        title: "Requests and proposals",
-        body: [
-          {
-            lead: "Step 1: Find request/proposal endings.",
-            text: "Markers such as てください and ましょう carry instruction/proposal force.",
-          },
-          {
-            lead: "Step 2: Place target action first.",
-            text: "Build the object/action chunk before the final request/proposal expression.",
-          },
-          {
-            lead: "Step 3: Keep social function at the end.",
-            text: "The sentence-ending request frame is what makes the utterance polite, directive, or invitational.",
-          },
-        ],
-        examples: [
-          {
-            from: "この文を読んで",
-            to: "この文を読んでください",
-            reading: "この ぶんを よんで ください",
-            gloss: "Please read this sentence.",
-            say: "この文を読んでください",
-          },
-          {
-            from: "今始め",
-            to: "今始めましょう",
-            reading: "いま はじめましょう",
-            gloss: "Let us start now.",
-            say: "今始めましょう",
-          },
-        ],
-      },
-    ],
+    intros: [],
     rows: [],
     shelf: "sentence",
   },
