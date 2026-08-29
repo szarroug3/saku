@@ -18,13 +18,32 @@
 // when the server acknowledges it. So this is a statement of fact and an offer,
 // not an interruption — it must not stand between a learner and the next
 // question. It renders nothing at all in the normal case.
+//
+// SAK-242: A SECOND SOURCE, THE SAME ONE BANNER
+// ==============================================
+// Finished rounds are not the only write that can get stuck offline — claiming
+// a fact, marking one seen, and clearing a mixup pair (history-writes.ts) can
+// too, and until now showed nothing at all when they did: the optimistic
+// change just sat unconfirmed (or, before this fix, silently reverted — see
+// history-writes.ts's SAK-242 note). `usePendingHistoryWriteCount` is that
+// second source. It has no `retrySave` of its own to offer — those writes
+// retry themselves the moment the browser reports it is back online, with no
+// button to press — so when only this source is active the banner says so
+// without one.
 
 import { Btn } from "@/components/ui";
+import { usePendingHistoryWriteCount } from "@/lib/pending-history-writes";
 import { useQuizSession } from "@/lib/quiz-session";
 
 export function SaveStatus() {
   const { saveError, retrySave } = useQuizSession();
-  if (!saveError) return null;
+  const pendingWrites = usePendingHistoryWriteCount();
+  if (!saveError && pendingWrites === 0) return null;
+  const message =
+    saveError ??
+    (pendingWrites === 1
+      ? "A change hasn't saved yet. It will retry automatically once you're back online."
+      : "Some changes haven't saved yet. They will retry automatically once you're back online.");
   return (
     <div
       // `status`, not `alert`: assertive would interrupt a screen reader
@@ -32,8 +51,8 @@ export function SaveStatus() {
       role="status"
       className="kq-material mb-3.5 flex items-center gap-3 rounded-xl border border-danger/40 bg-card p-[18px]"
     >
-      <p className="min-w-0 flex-1 text-[13px] text-text-muted">{saveError}</p>
-      <Btn onClick={retrySave}>Try again</Btn>
+      <p className="min-w-0 flex-1 text-[13px] text-text-muted">{message}</p>
+      {saveError && <Btn onClick={retrySave}>Try again</Btn>}
     </div>
   );
 }
