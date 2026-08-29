@@ -58,6 +58,41 @@ test("an audio → romaji card plays the word, hides the glyph, and grades the r
   await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
 });
 
+/**
+ * SAK-223: REPLAYING THE AUDIO MUST NOT DEAD-END THE CARD.
+ *
+ * The centre speaker is a <button>, so pressing it took keyboard focus off the
+ * answer box — and the drill only submits on Enter while the box itself holds
+ * focus (drill-screen's onKeyDown). One replay therefore made a typed listening
+ * card unanswerable: every keystroke went to the speaker, Enter re-fired the
+ * speaker rather than submitting, nothing shook or said no, and Skip (which
+ * re-queues the card with no credit) was the only way out.
+ *
+ * Typed here through the KEYBOARD, deliberately — `fill()`/`press()` focus the
+ * box themselves and so would pass even with the bug in place, which is exactly
+ * why the existing spec above never caught it.
+ */
+test("answering still works after replaying the audio", async ({ page }) => {
+  await seedQuiz(page, {
+    seen: [wordReadingFactId(word)],
+    cfg: {
+      ...STEADY_CFG,
+      ...ask({ jpPrompts: ["audio"], jpResponses: ["romaji"], jpAnswers: ["typed"] }),
+    },
+  });
+  await startQuizDrill(page);
+
+  await listenSpeaker(page).click();
+
+  // The replay hands focus straight back, so the next keystroke lands in the box.
+  const box = answerBox(page);
+  await expect(box).toBeFocused();
+  await page.keyboard.type("denwa");
+  await expect(box).toHaveValue("でんわ");
+  await page.keyboard.press("Enter");
+  await expect(answeredPill(page)).toHaveText(answeredTextRe(1));
+});
+
 test("an audio → meaning card asks for the meaning and hints the written word, not the gloss", async ({
   page,
 }) => {

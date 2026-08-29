@@ -2822,6 +2822,21 @@ export function DrillScreen() {
                 ? q.recognition?.jp
                 : speechMap[q.f as unknown as string];
             if (text) speak(text, cfg.voiceName);
+            // SAK-223: HAND KEYBOARD FOCUS BACK TO THE ANSWER BOX.
+            // The speaker is an auxiliary control — it replays the prompt, it
+            // does not answer anything — but pressing it is a click on a
+            // <button>, so the browser moved focus onto it and left it there.
+            // The drill's Enter-to-submit path only submits while the answer
+            // box itself holds focus (see onKeyDown), so on a TYPED listening
+            // card one replay used to make the card unanswerable: every
+            // keystroke went to the speaker instead of the box, and Enter just
+            // re-activated the speaker and replayed the word again. Nothing
+            // shook, nothing said no, and Skip (which re-queues the card
+            // without credit) was the only way out.
+            // Null on a board card (MC, recognition, pitch), where there is no
+            // input to focus and nothing was ever broken — a click or a digit
+            // grades those whatever holds focus.
+            inputRef.current?.focus();
           }}
           sentenceFrame={selectionFrame ?? undefined}
           // The tap-drill's live sentence (and its marker-choice sibling's
