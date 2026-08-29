@@ -21,7 +21,7 @@ import type { VersionedRead } from "@/lib/history-mutate";
 import type { ListsVersionedRead } from "@/lib/lists-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
+import type { FactAggregate, FactId, HistoryFile, ListsFile, SettingsFile } from "@/types";
 
 export interface ProgressSeedRow {
   history: HistoryFile;
@@ -30,15 +30,36 @@ export interface ProgressSeedRow {
   lists: ListsFile;
 }
 
-function normalizeHistory(raw: unknown): HistoryFile {
+/**
+ * Merge the legacy jsonb `facts` (whatever `progress.history.facts` still
+ * carries — a full learner's history predating SAK-237, or a fact this account
+ * has not been touched since it moved to `progress_facts`) with the per-row
+ * table's contents, table WINNING on any key both sides have.
+ *
+ * Both sides only need to disagree on a key while a learner is mid-migration:
+ * before scripts/backfill-progress-facts.mjs runs, the table is empty and this
+ * is a pure passthrough of the legacy blob; after it runs (and thereafter, as
+ * saveSession/dropClaims/deleteSessions/resetAll write ONLY to the table — see
+ * history.ts), the table is authoritative for anything it has an entry for.
+ */
+function mergeFacts(
+  legacy: Record<FactId, FactAggregate>,
+  table: Record<FactId, FactAggregate>,
+): Record<FactId, FactAggregate> {
+  return { ...legacy, ...table };
+}
+
+async function normalizeHistory(raw: unknown, userId: string): Promise<HistoryFile> {
   const h = (raw ?? {}) as Partial<HistoryFile>;
   const sessions = Array.isArray(h.sessions) ? h.sessions : [];
+  const { facts: tableFacts } = await readFactsTable(userId);
+  const merged = mergeFacts((h.facts ?? {}) as Record<FactId, FactAggregate>, tableFacts);
   // Backfill learnedAt best-effort so every server read carries a populated map
   // (existing entries win — see withBackfilledLearnedAt). This is where legacy
   // history predating the field gets its first-learned stamps derived.
   return withBackfilledLearnedAt({
     sessions,
-    facts: hydrateRecentRuns(h.facts ?? {}, sessions),
+    facts: hydrateRecentRuns(merged, sessions),
     claims: h.claims ?? {},
     seen: h.seen ?? {},
     ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
@@ -58,7 +79,7 @@ export async function readProgressSeedRow(
   if (error) throw new Error(`reading progress seed failed: ${error.message}`);
   const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
-    history: normalizeHistory(data?.history),
+    history: await normalizeHistory(data?.history, userId),
     settings: normalizeSettings(data?.settings),
     session: normalizeEnvelope(data?.session),
     lists: { lists: rawLists?.lists ?? [] },
@@ -73,7 +94,7 @@ export async function readHistoryRow(userId: string): Promise<HistoryFile> {
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`reading progress.history failed: ${error.message}`);
-  return normalizeHistory(data?.history);
+  return normalizeHistory(data?.history, userId);
 }
 
 export async function writeHistoryRow(userId: string, hist: HistoryFile): Promise<void> {
@@ -85,6 +106,36 @@ export async function writeHistoryRow(userId: string, hist: HistoryFile): Promis
       { onConflict: "user_id" },
     );
   if (error) throw new Error(`writing progress.history failed: ${error.message}`);
+}
+
+/**
+ * The LEGACY-ONLY normalizer: `facts` comes straight from the jsonb column,
+ * with no `progress_facts` lookup. Deliberately NOT the same as
+ * `normalizeHistory` above.
+ *
+ * Used by `readHistoryRowVersioned` — the read half of the generic
+ * compare-and-set `saveClaims`/`saveSeen`/`dropSeen`/`clearMixup` mutators in
+ * history.ts, none of which ever read or write `.facts` (see history-ops.ts:
+ * applyClaims/applySeen/applyDropSeen/applyClearMixup). Merging in the table
+ * here would cost an extra query those callers get no use from, AND — for
+ * `saveSession`/`dropClaims`/`deleteSessions`'s own pre-migration FALLBACK
+ * branch (see history.ts), which still calls the original whole-document pure
+ * ops (applySession/applyDropClaims/applyDeleteSessions) — a merged value would
+ * be the wrong thing to fold onto: those ops must see the SAME legacy blob
+ * they always have, untouched, so the fallback path behaves exactly as it did
+ * before SAK-237.
+ */
+function normalizeHistoryLegacyOnly(raw: unknown): HistoryFile {
+  const h = (raw ?? {}) as Partial<HistoryFile>;
+  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
+  return withBackfilledLearnedAt({
+    sessions,
+    facts: hydrateRecentRuns((h.facts ?? {}) as Record<FactId, FactAggregate>, sessions),
+    claims: h.claims ?? {},
+    seen: h.seen ?? {},
+    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
+    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
+  });
 }
 
 /**
@@ -102,7 +153,7 @@ export async function readHistoryRowVersioned(userId: string): Promise<Versioned
     .maybeSingle();
   if (error) throw new Error(`reading progress.history failed: ${error.message}`);
   return {
-    history: normalizeHistory(data?.history),
+    history: normalizeHistoryLegacyOnly(data?.history),
     version: (data?.updated_at as string | null | undefined) ?? null,
     exists: data != null,
   };
@@ -163,6 +214,231 @@ export async function writeHistoryRowGuarded(
   const { data, error } = await guarded.select("user_id");
   if (error) throw new Error(`writing progress.history failed: ${error.message}`);
   return (data?.length ?? 0) > 0;
+}
+
+// ---------- progress_facts (SAK-237) ----------
+//
+// One row per (user_id, fact_id) instead of one entry in `progress.history`'s
+// `facts` blob — see scripts/sql/add-progress-facts-table.sql for the schema
+// and the full rationale. Every primitive below is written to be safe to call
+// BEFORE that migration is applied: a Postgres 42P01 ("relation does not
+// exist") is caught and reported through a `migrated: false` result (or, for
+// the void-returning deletes, simply swallowed — there is nothing to delete
+// from a table that is not there yet) rather than thrown, so history.ts's
+// callers can fall back to the pre-SAK-237 whole-document behaviour instead of
+// erroring every save in production the moment this code ships ahead of the
+// SQL.
+
+/** Postgres "relation does not exist" — thrown by every query below until
+ * scripts/sql/add-progress-facts-table.sql has been applied. */
+function isUndefinedTable(error: { code?: string }): boolean {
+  return error.code === "42P01";
+}
+
+/** ALL of a user's fact rows, assembled into the map shape `HistoryFile.facts`
+ * has always had. Used only by the full-document reads (readHistoryRow /
+ * readProgressSeedRow) that the app's initial load needs the complete picture
+ * for — NOT by any mutator, which would defeat the point of this table. */
+export async function readFactsTable(
+  userId: string,
+): Promise<{ facts: Record<FactId, FactAggregate>; migrated: boolean }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress_facts")
+    .select("fact_id, aggregate")
+    .eq("user_id", userId);
+  if (error) {
+    if (isUndefinedTable(error)) return { facts: {}, migrated: false };
+    throw new Error(`reading progress_facts failed: ${error.message}`);
+  }
+  const facts: Record<FactId, FactAggregate> = {};
+  for (const row of data ?? []) {
+    facts[row.fact_id as FactId] = row.aggregate as FactAggregate;
+  }
+  return { facts, migrated: true };
+}
+
+/** A versioned read of ONE fact row — the fold-and-CAS-retry unit `saveSession`
+ * (history.ts) builds on. `aggregate: null` + `exists: false` is a fact this
+ * table has never seen (not yet backfilled, or genuinely new). */
+export interface FactRowVersioned {
+  aggregate: FactAggregate | null;
+  version: string | null;
+  exists: boolean;
+}
+
+/**
+ * Versioned reads for a SET of fact ids — the ones one quiz session actually
+ * touched, never the learner's whole history. `migrated: false` means the
+ * table does not exist yet; callers must not trust the (empty) map in that
+ * case and should fall back to the whole-document path instead.
+ */
+export async function readFactRowsVersioned(
+  userId: string,
+  factIds: FactId[],
+): Promise<{ rows: Map<FactId, FactRowVersioned>; migrated: boolean }> {
+  const rows = new Map<FactId, FactRowVersioned>();
+  for (const id of factIds) rows.set(id, { aggregate: null, version: null, exists: false });
+  if (factIds.length === 0) return { rows, migrated: true };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress_facts")
+    .select("fact_id, aggregate, updated_at")
+    .eq("user_id", userId)
+    .in("fact_id", factIds);
+  if (error) {
+    if (isUndefinedTable(error)) return { rows, migrated: false };
+    throw new Error(`reading progress_facts failed: ${error.message}`);
+  }
+  for (const row of data ?? []) {
+    rows.set(row.fact_id as FactId, {
+      aggregate: row.aggregate as FactAggregate,
+      version: (row.updated_at as string | null) ?? null,
+      exists: true,
+    });
+  }
+  return { rows, migrated: true };
+}
+
+/** The same versioned read, narrowed to one fact — used to re-read after a
+ * lost CAS (see fact-store.ts's retry loop). */
+export async function readFactRowVersioned(
+  userId: string,
+  factId: FactId,
+): Promise<FactRowVersioned> {
+  const { rows } = await readFactRowsVersioned(userId, [factId]);
+  return rows.get(factId) ?? { aggregate: null, version: null, exists: false };
+}
+
+/**
+ * Write one fact's aggregate ONLY if the row still carries `expected` —
+ * optimistic concurrency scoped to a SINGLE fact instead of a learner's whole
+ * history, which is the entire point of SAK-237: two sessions folding
+ * DIFFERENT facts never contend with each other at all, and two folding the
+ * SAME fact serialize on one small row instead of the whole document.
+ *
+ * Same insert-vs-update-guarded-on-token shape as writeHistoryRowGuarded, and
+ * the same reasoning for forcing the new token strictly past the one guarded
+ * on. Returns false (never throws) for a genuine CAS miss; throws for anything
+ * else, INCLUDING a still-missing table — a caller that got this far already
+ * confirmed the table exists via an earlier `migrated` read this same request,
+ * so a 42P01 here would mean the table disappeared mid-request, which is not a
+ * condition to silently paper over.
+ */
+export async function writeFactRowGuarded(
+  userId: string,
+  factId: FactId,
+  aggregate: FactAggregate,
+  expected: FactRowVersioned,
+): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const prev = expected.version ? Date.parse(expected.version) : 0;
+  const nextTs = new Date(Math.max(Date.now(), prev + 1)).toISOString();
+
+  if (!expected.exists) {
+    const { error } = await supabase
+      .from("progress_facts")
+      .insert({ user_id: userId, fact_id: factId, aggregate, updated_at: nextTs });
+    if (error) {
+      if (isUniqueViolation(error)) return false;
+      throw new Error(`writing progress_facts failed: ${error.message}`);
+    }
+    return true;
+  }
+
+  const base = supabase
+    .from("progress_facts")
+    .update({ aggregate, updated_at: nextTs })
+    .eq("user_id", userId)
+    .eq("fact_id", factId);
+  const guarded =
+    expected.version == null ? base.is("updated_at", null) : base.eq("updated_at", expected.version);
+  const { data, error } = await guarded.select("user_id");
+  if (error) throw new Error(`writing progress_facts failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Delete specific fact rows outright — no read, no fold, just the rows a
+ * dropped claim named (see history.ts's dropClaims / SAK-103's "withdrawing a
+ * claim also forgets what quizzing it proved"). Returns `migrated: false`
+ * (and does nothing) when the table does not exist yet, so callers can fall
+ * back to deleting the same keys out of the whole-document blob instead.
+ */
+export async function deleteFactRows(
+  userId: string,
+  factIds: FactId[],
+): Promise<{ migrated: boolean }> {
+  if (factIds.length === 0) return { migrated: true };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("progress_facts")
+    .delete()
+    .eq("user_id", userId)
+    .in("fact_id", factIds);
+  if (error) {
+    if (isUndefinedTable(error)) return { migrated: false };
+    throw new Error(`deleting progress_facts rows failed: ${error.message}`);
+  }
+  return { migrated: true };
+}
+
+/** Wipe every fact row for a user — resetAll's full-history-reset counterpart.
+ * A missing table is simply nothing to clean up. */
+export async function deleteAllFactRows(userId: string): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("progress_facts").delete().eq("user_id", userId);
+  if (error && !isUndefinedTable(error)) {
+    throw new Error(`deleting progress_facts rows failed: ${error.message}`);
+  }
+}
+
+/**
+ * Replace a user's ENTIRE fact table with `facts` — delete-all then bulk
+ * insert. Used only by deleteSessions' rebuild-from-surviving-sessions, which
+ * is inherently a whole-account operation (an explicit, rare user action, not
+ * the per-answer hot path SAK-237 targets) bounded by the 200-session cap
+ * rather than lifetime fact count. Returns `migrated: false` when the table
+ * does not exist, so the caller can fall back to writing `facts` into the
+ * jsonb blob instead, exactly as it did before this table existed.
+ */
+export async function replaceAllFactRows(
+  userId: string,
+  facts: Record<FactId, FactAggregate>,
+): Promise<{ migrated: boolean }> {
+  const supabase = await createSupabaseServerClient();
+  const { error: deleteError } = await supabase.from("progress_facts").delete().eq("user_id", userId);
+  if (deleteError) {
+    if (isUndefinedTable(deleteError)) return { migrated: false };
+    throw new Error(`deleting progress_facts rows failed: ${deleteError.message}`);
+  }
+  const entries = Object.entries(facts);
+  if (entries.length === 0) return { migrated: true };
+  const now = new Date().toISOString();
+  const rows = entries.map(([factId, aggregate]) => ({
+    user_id: userId,
+    fact_id: factId,
+    aggregate,
+    updated_at: now,
+  }));
+  const { error: insertError } = await supabase.from("progress_facts").insert(rows);
+  if (insertError) throw new Error(`writing progress_facts rows failed: ${insertError.message}`);
+  return { migrated: true };
+}
+
+/** Cheap existence probe for the table, scoped to this user's rows so RLS
+ * still applies — used by deleteSessions, which (unlike saveSession/
+ * dropClaims) does not already know which fact ids it will touch before
+ * computing the rebuild, so it cannot fold a targeted read into its normal
+ * work the way those two do. */
+export async function factsTableMigrated(userId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("progress_facts").select("user_id").eq("user_id", userId).limit(1);
+  if (error) {
+    if (isUndefinedTable(error)) return false;
+    throw new Error(`checking progress_facts failed: ${error.message}`);
+  }
+  return true;
 }
 
 export async function readListsRow(userId: string): Promise<ListsFile> {

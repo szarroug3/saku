@@ -15,28 +15,39 @@
 
 import "server-only";
 
+import { foldSessions } from "@/lib/aggregate";
+import { upsertSessionFacts } from "@/lib/fact-store";
 import {
   applyClearMixup,
   applyClaims,
   applyDeleteSessions,
+  applyDeleteSessionsMeta,
   applyDropClaims,
+  applyDropClaimsMeta,
   applyDropSeen,
   applySeen,
   applySession,
+  applySessionMeta,
   emptyHistory,
 } from "@/lib/history-ops";
 import {
   mutateHistoryWithRetry,
+  mutateHistoryWithRetryTracked,
   type HistoryStore,
 } from "@/lib/history-mutate";
 import {
+  deleteAllFactRows,
+  deleteFactRows,
+  factsTableMigrated,
+  readFactRowsVersioned,
   readHistoryRow,
   readHistoryRowVersioned,
   readProgressSeedRow,
+  replaceAllFactRows,
   writeHistoryRow,
   writeHistoryRowGuarded,
 } from "@/lib/store/supabase-store";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId, HistoryFile, QuizSessionRecord, SessionFactCounts } from "@/types";
 
 /** The compare-and-set store the mutators below run their read-modify-write
  * through, so two overlapping requests cannot clobber each other's field (see
@@ -122,12 +133,25 @@ export async function saveSeen(
   return mutateHistory(userId, (hist) => applySeen(hist, facts, ts));
 }
 
-/** Withdraw claims — "actually, I don't". Deletes the record rather than
+/**
+ * Withdraw claims — "actually, I don't". Deletes the record rather than
  * writing a zero: a fact with no claim is the state the app starts in and the
  * one every reader already handles, and an absent key says "never claimed"
- * where `0` would have to be special-cased into meaning it. */
+ * where `0` would have to be special-cased into meaning it.
+ *
+ * ALSO deletes the fact's quiz-performance aggregate (SAK-103 — see
+ * applyDropClaims's doc for why). SAK-237: that delete no longer touches the
+ * whole `facts` blob — it is a direct `DELETE ... WHERE fact_id IN (...)`
+ * against progress_facts, checked FIRST so a not-yet-migrated account still
+ * gets the original one-shot whole-document behaviour (applyDropClaims)
+ * rather than silently losing the aggregate-delete half of this call.
+ */
 export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  return mutateHistory(userId, (hist) => applyDropClaims(hist, facts));
+  const { migrated } = await deleteFactRows(userId, facts);
+  if (!migrated) {
+    return mutateHistory(userId, (hist) => applyDropClaims(hist, facts));
+  }
+  return mutateHistory(userId, (hist) => applyDropClaimsMeta(hist, facts));
 }
 
 /** Withdraw "quiz me" records — the twin of dropClaims, used when a lesson is
@@ -166,22 +190,55 @@ export async function clearMixup(
  * matters more per session. Noted rather than fixed: the cap and the rebuild
  * have disagreed since the file was written, and reconciling them is its own
  * change.
+ *
+ * SAK-237: THE SESSION-SIZED WRITE. Before this, every call here read AND
+ * rewrote a learner's entire `facts` map — one round's dozen or so facts,
+ * priced as if it were their whole curriculum history. Now:
+ *
+ *   1. `applySessionMeta` appends/dedupes/caps `sessions` and stamps
+ *      `learnedAt`, WITHOUT touching `.facts` — a small, bounded document
+ *      (≤200 sessions) regardless of lifetime fact count.
+ *   2. Only the facts THIS session actually names get read (their current
+ *      row, if any), folded, and written back — via fact-store.ts's
+ *      upsertSessionFacts, each fact its own compare-and-set, in parallel.
+ *
+ * Both scale with the SESSION's size, not the account's. The one exception is
+ * an account whose progress_facts table has not been created yet (see
+ * store/supabase-store.ts's `migrated` flag): saveSession falls back to the
+ * original one-shot `applySession` so a deploy that lands before
+ * scripts/sql/add-progress-facts-table.sql does not break session saving.
  */
 export async function saveSession(
   userId: string,
   session: QuizSessionRecord,
 ): Promise<HistoryFile> {
-  // IDEMPOTENT ON `id`, and the dedup path must NOT write. The client queues
-  // records and retries them until the server acknowledges one, and a retry
-  // whose original DID land (the response was lost, not the request) would
-  // otherwise append the same round twice and double every count in it. The
-  // fold, the 200-cap and the id-dedup all live in applySession now (see
-  // history-ops.ts); when it returns the SAME object it was given, the record
-  // was already stored, so writing again is pointless churn on the row.
-  // applySession returns the SAME reference when the id is already stored;
-  // mutateHistory then writes nothing, preserving the dedup byte-for-byte across
-  // retries (a re-read after a lost CAS that now contains the record no-ops too).
-  return mutateHistory(userId, (hist) => applySession(hist, session));
+  const touched = Object.entries(session.facts ?? {}) as [FactId, SessionFactCounts][];
+
+  if (touched.length === 0) {
+    // Nothing to fold — the meta-only path is already the complete answer.
+    return mutateHistory(userId, (hist) => applySessionMeta(hist, session));
+  }
+
+  // Read the touched facts' current rows FIRST, before touching the small
+  // document — this is also how a not-yet-migrated account is detected, with
+  // no separate probe query.
+  const { rows, migrated } = await readFactRowsVersioned(userId, touched.map(([f]) => f));
+  if (!migrated) {
+    return mutateHistory(userId, (hist) => applySession(hist, session));
+  }
+
+  // IDEMPOTENT ON `id`, and the dedup path must NOT write and must NOT fold —
+  // a retried record whose original attempt already landed already folded its
+  // facts too. `applySessionMeta` returns the SAME reference in that case
+  // (mirroring applySession's own no-op contract); `wrote: false` is that
+  // signal surfacing through the tracked mutate.
+  const { history, wrote } = await mutateHistoryWithRetryTracked(store, userId, (hist) =>
+    applySessionMeta(hist, session),
+  );
+  if (wrote) {
+    await upsertSessionFacts(userId, touched, session.ts, rows);
+  }
+  return history;
 }
 
 /** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate
@@ -199,18 +256,32 @@ export async function deleteSessions(
   deleteAll: boolean,
 ): Promise<HistoryFile> {
   // A delete that selects NOTHING must change nothing AND must not write. The
-  // rebuild folds hist.facts from the SURVIVING sessions, but hist.facts is
-  // grown incrementally by saveSession and legitimately carries contributions
-  // from sessions the 200-cap has already evicted from hist.sessions — so
+  // rebuild folds facts from the SURVIVING sessions, but facts are grown
+  // incrementally by saveSession and legitimately carry contributions from
+  // sessions the 200-cap has already evicted from hist.sessions — so
   // rebuilding on an empty request would silently shrink the aggregate for a
-  // request that asked to delete nothing. applyDeleteSessions owns the guard, the
-  // id-vs-ts keying and the rebuild (see history-ops.ts) and returns the SAME
-  // object on the no-op, so `next !== hist` is exactly "did anything change":
-  // bail before writing when it did not.
-  // applyDeleteSessions returns the SAME reference for a delete that selected
-  // nothing; mutateHistory then writes nothing, keeping the "bail before touching
-  // the row" guarantee the incrementally-grown aggregate depends on.
-  return mutateHistory(userId, (hist) => applyDeleteSessions(hist, ids, deleteAll));
+  // request that asked to delete nothing. applyDeleteSessions(Meta) owns the
+  // guard, the id-vs-ts keying and (for the non-meta original) the rebuild,
+  // and returns the SAME object on the no-op, so `wrote` is exactly "did
+  // anything change": bail before writing/rebuilding when it did not.
+  //
+  // SAK-237: on a migrated account, the rebuild REPLACES the progress_facts
+  // table with `foldSessions` of the survivors — bounded by the 200-session
+  // cap, not by lifetime fact count, and the whole-document `facts` blob is
+  // never read OR written for this. A not-yet-migrated account falls back to
+  // the original one-shot applyDeleteSessions so the rebuild still lands
+  // somewhere.
+  if (!(await factsTableMigrated(userId))) {
+    return mutateHistory(userId, (hist) => applyDeleteSessions(hist, ids, deleteAll));
+  }
+  const { history, wrote } = await mutateHistoryWithRetryTracked(store, userId, (hist) =>
+    applyDeleteSessionsMeta(hist, ids, deleteAll),
+  );
+  if (wrote) {
+    const rebuilt = foldSessions(history.sessions);
+    await replaceAllFactRows(userId, rebuilt);
+  }
+  return history;
 }
 
 /**
@@ -228,5 +299,10 @@ export async function deleteSessions(
 export async function resetAll(userId: string): Promise<HistoryFile> {
   const empty = emptyHistory();
   await writeHistory(userId, empty);
+  // SAK-237: facts also live in progress_facts now — a reset has to wipe that
+  // table too, or a fact untouched by any later session would keep reading
+  // back from its old row forever. Best-effort no-op on a not-yet-migrated
+  // account (nothing there to delete).
+  await deleteAllFactRows(userId);
   return empty;
 }

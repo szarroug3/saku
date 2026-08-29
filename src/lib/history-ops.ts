@@ -272,3 +272,83 @@ export function applyDeleteSessions(
   next.facts = foldSessions(next.sessions);
   return next;
 }
+
+// ---------------------------------------------------------------------------
+// META-ONLY variants (SAK-237) — the three ops above that touch `.facts`, with
+// that part carved OFF, for the server's per-fact-table write path.
+//
+// WHY THESE EXIST, SEPARATE FROM THE OPS ABOVE. Once a fact's aggregate has its
+// own row (src/lib/store/supabase-store.ts's `progress_facts`), folding one
+// fact must never require touching (or even reading) the rest of a learner's
+// facts. `applySession`/`applyDropClaims`/`applyDeleteSessions` cannot do
+// that: `structuredClone(hist)` clones the WHOLE facts map even when only one
+// key is touched, and rebuilding `next.facts` (dropClaims' delete, or
+// deleteSessions' fold) reads it as one object. That clone/rebuild cost is
+// exactly what SAK-237 is about, so the server-only mutators in history.ts use
+// these META variants instead — same sessions/claims/seen/learnedAt semantics,
+// `.facts` simply left as whatever reference it already was (no clone, no
+// read, no write) — and fold or delete the touched fact ROWS themselves via
+// history.ts's own fact-store.ts, independently.
+//
+// UNUSED BY LOCAL STORAGE. store/local-progress.ts keeps calling the ORIGINAL
+// whole-document ops above, unchanged: a signed-out learner's history lives in
+// one browser's localStorage, a disposable cache with no network round trip
+// and no cross-device contention, so the whole-document cost this table exists
+// to avoid was never really being paid there — see that file's own comment.
+// Splitting its storage into per-key entries would trade one `JSON.stringify`
+// for many `localStorage.setItem` calls for no reduction in real cost, so it
+// is deliberately left alone.
+//
+// NOT pure in the same total sense as the ops above — `hist.facts` is carried
+// through by REFERENCE, not cloned — but every OTHER field is still produced
+// fresh, so a caller mutating a distinct field on the result never reaches back
+// into the input. A caller must simply never write into `.facts` on the result
+// of one of these (nothing here does, and nothing downstream should).
+
+/** The sessions/learnedAt half of `applySession`, with the facts-fold removed.
+ * Same id-dedup no-op contract: returns the SAME reference when `session.id`
+ * is already stored, so a caller (saveSession) knows not to fold facts either
+ * — the record, facts included, was already durable from the first attempt. */
+export function applySessionMeta(
+  hist: HistoryFile,
+  session: QuizSessionRecord,
+): HistoryFile {
+  if (session.id && hist.sessions.some((s) => s.id === session.id)) {
+    return hist;
+  }
+  const sessions = [...hist.sessions, session].slice(-200);
+  const learnedAt = { ...(hist.learnedAt ?? {}) };
+  for (const f of Object.keys(session.facts ?? {}) as FactId[]) {
+    const cur = learnedAt[f];
+    if (cur == null || session.ts < cur) learnedAt[f] = session.ts;
+  }
+  return { ...hist, sessions, learnedAt };
+}
+
+/** The claims half of `applyDropClaims`, with the `facts[f]` delete removed —
+ * that half is done by history.ts against `progress_facts` directly instead. */
+export function applyDropClaimsMeta(hist: HistoryFile, facts: FactId[]): HistoryFile {
+  const claims = { ...(hist.claims ?? {}) };
+  for (const f of facts) delete claims[f];
+  return { ...hist, claims };
+}
+
+/** The sessions half of `applyDeleteSessions`, with the facts-rebuild removed
+ * — history.ts folds the survivors via `foldSessions` and replaces the fact
+ * TABLE with the result instead of rebuilding the whole-document `facts` map.
+ * Same no-op contract: an empty selection returns the SAME reference. */
+export function applyDeleteSessionsMeta(
+  hist: HistoryFile,
+  ids: (number | string)[] | null,
+  deleteAll: boolean,
+): HistoryFile {
+  if (!deleteAll && (!ids || ids.length === 0)) return hist;
+  let sessions: QuizSessionRecord[];
+  if (deleteAll) {
+    sessions = [];
+  } else {
+    const drop = new Set(ids);
+    sessions = hist.sessions.filter((s) => !drop.has(s.id ?? s.ts));
+  }
+  return { ...hist, sessions };
+}

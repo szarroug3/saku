@@ -20,10 +20,13 @@ import {
   applyClearMixup,
   applyClaims,
   applyDeleteSessions,
+  applyDeleteSessionsMeta,
   applyDropClaims,
+  applyDropClaimsMeta,
   applyDropSeen,
   applySeen,
   applySession,
+  applySessionMeta,
   deriveLearnedAt,
   emptyHistory,
   withBackfilledLearnedAt,
@@ -338,4 +341,70 @@ test("withBackfilledLearnedAt fills a missing fact and tolerates empty history",
 
   const empty = withBackfilledLearnedAt({ sessions: [], facts: {} });
   assert.deepEqual(empty.learnedAt, {}, "empty history → empty map, no throw");
+});
+
+// ---------- SAK-237: the META-ONLY variants history.ts's server mutators use
+// to fold/delete facts against their OWN table instead of the whole document
+// (see fact-store.ts and store/supabase-store.ts's progress_facts). These must
+// match their whole-document counterparts on EVERY field except `.facts`,
+// which they must leave completely alone. ----------
+
+test("applySessionMeta matches applySession on sessions/learnedAt, but never touches facts", () => {
+  const start: HistoryFile = { ...emptyHistory(), facts: { [fid("preexisting")]: { seen: 9 } as HistoryFile["facts"][FactId] } };
+  const viaFull = applySession(start, seedSession(500, "s1"));
+  const viaMeta = applySessionMeta(start, seedSession(500, "s1"));
+
+  assert.deepEqual(viaMeta.sessions, viaFull.sessions);
+  assert.deepEqual(viaMeta.learnedAt, viaFull.learnedAt);
+  assert.equal(viaMeta.facts, start.facts, "the SAME reference — no clone, no fold, no read");
+});
+
+test("applySessionMeta honors the id-dedup no-op contract", () => {
+  const withOne = applySessionMeta(emptyHistory(), seedSession(500, "dup"));
+  const again = applySessionMeta(withOne, seedSession(999, "dup"));
+  assert.equal(again, withOne, "same reference: a retried id changes nothing");
+});
+
+test("applySessionMeta caps sessions at 200, exactly like applySession", () => {
+  let full = emptyHistory();
+  let meta = emptyHistory();
+  for (let i = 0; i < 205; i++) {
+    full = applySession(full, seedSession(i, `s${i}`));
+    meta = applySessionMeta(meta, seedSession(i, `s${i}`));
+  }
+  assert.equal(meta.sessions.length, 200);
+  assert.deepEqual(
+    meta.sessions.map((s) => s.id),
+    full.sessions.map((s) => s.id),
+  );
+});
+
+test("applyDropClaimsMeta drops the claim but leaves facts completely untouched", () => {
+  const start: HistoryFile = {
+    ...emptyHistory(),
+    claims: { [fid("a")]: 1, [fid("b")]: 2 } as HistoryFile["claims"],
+    facts: { [fid("a")]: { seen: 9 } as HistoryFile["facts"][FactId] },
+  };
+  const out = applyDropClaimsMeta(start, [fid("a")]);
+  assert.deepEqual(out.claims, { [fid("b")]: 2 });
+  assert.equal(out.facts, start.facts, "same reference — applyDropClaims' facts-delete is NOT done here");
+});
+
+test("applyDeleteSessionsMeta matches applyDeleteSessions' session filtering, but never touches facts", () => {
+  const start = applySession(
+    applySession(emptyHistory(), seedSession(100, "s1")),
+    { ...seedSession(200, "s2"), facts: { [fid("hira-b")]: { seen: 1, missed: 0, firstTry: 1, correct: 1 } } as QuizSessionRecord["facts"] },
+  );
+
+  const viaFull = applyDeleteSessions(start, ["s1"], false);
+  const viaMeta = applyDeleteSessionsMeta(start, ["s1"], false);
+
+  assert.deepEqual(viaMeta.sessions, viaFull.sessions);
+  assert.equal(viaMeta.facts, start.facts, "no rebuild — that half moves to replaceAllFactRows in history.ts");
+});
+
+test("applyDeleteSessionsMeta honors the empty-selection no-op contract", () => {
+  const start = applySession(emptyHistory(), seedSession(100, "s1"));
+  const out = applyDeleteSessionsMeta(start, [], false);
+  assert.equal(out, start, "same reference: nothing selected, nothing changes");
 });
