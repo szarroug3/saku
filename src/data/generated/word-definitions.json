@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "JMdict",
-    "rawSha256": "96f110138c3435daa1d16643fda1b94ee578c921a2808795b25cec3a06c88347",
+    "rawSha256": "935276ced947b1dc4b9e5fce70401f926f30ec512941a616a3da796c131633d1",
     "url": "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
   },
   "words": {
@@ -3999,6 +3999,23 @@
         ],
         "readings": [
           "おい"
+        ]
+      },
+      {
+        "glosses": [
+          "extra (afterwards)",
+          "additional",
+          "more"
+        ],
+        "id": "2872729:0",
+        "pos": [
+          "prefix"
+        ],
+        "readings": [
+          "おい"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -9962,6 +9979,40 @@
         ],
         "register": [
           "colloquial"
+        ]
+      }
+    ],
+    "きちっと": [
+      {
+        "glosses": [
+          "properly",
+          "accurately",
+          "exactly",
+          "precisely",
+          "regularly"
+        ],
+        "id": "1003390:0",
+        "pos": [
+          "adverb (fukushi)",
+          "noun or participle which takes the aux. verb suru"
+        ],
+        "readings": [
+          "きちっと"
+        ]
+      },
+      {
+        "glosses": [
+          "neatly",
+          "tidily",
+          "orderly"
+        ],
+        "id": "1003390:1",
+        "pos": [
+          "adverb (fukushi)",
+          "noun or participle which takes the aux. verb suru"
+        ],
+        "readings": [
+          "きちっと"
         ]
       }
     ],
@@ -17375,7 +17426,8 @@
         "glosses": [
           "that is (to say)",
           "namely",
-          "i.e."
+          "i.e.",
+          "or"
         ],
         "id": "1404100:0",
         "pos": [
@@ -17403,9 +17455,26 @@
       },
       {
         "glosses": [
-          "(and) then"
+          "if one does ..., then",
+          "in that case",
+          "then"
         ],
         "id": "1404100:2",
+        "pos": [
+          "conjunction"
+        ],
+        "readings": [
+          "すなわち"
+        ]
+      },
+      {
+        "glosses": [
+          "so",
+          "accordingly",
+          "thereupon",
+          "then"
+        ],
+        "id": "1404100:3",
         "pos": [
           "conjunction"
         ],
@@ -20112,7 +20181,8 @@
       },
       {
         "glosses": [
-          "free of charge"
+          "free of charge",
+          "free"
         ],
         "id": "1538900:1",
         "pos": [
@@ -20157,7 +20227,8 @@
         "glosses": [
           "but",
           "however",
-          "nevertheless"
+          "nevertheless",
+          "except"
         ],
         "id": "1538900:4",
         "pos": [
@@ -22268,6 +22339,22 @@
         ],
         "register": [
           "familiar"
+        ]
+      },
+      {
+        "glosses": [
+          "dad",
+          "father"
+        ],
+        "id": "2872881:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ちゃん"
+        ],
+        "register": [
+          "colloquial"
         ]
       }
     ],
@@ -25713,6 +25800,41 @@
         ],
         "readings": [
           "という"
+        ]
+      }
+    ],
+    "というわけ": [
+      {
+        "glosses": [
+          "this is why",
+          "that is the reason why",
+          "it is the case that"
+        ],
+        "id": "1008840:0",
+        "pos": [
+          "expressions (phrases, clauses, etc.)"
+        ],
+        "readings": [
+          "というわけ"
+        ]
+      },
+      {
+        "glosses": [
+          "so",
+          "thus",
+          "with that",
+          "for this reason",
+          "because of this",
+          "as such",
+          "therefore"
+        ],
+        "id": "1008840:1",
+        "pos": [
+          "expressions (phrases, clauses, etc.)",
+          "conjunction"
+        ],
+        "readings": [
+          "というわけ"
         ]
       }
     ],
@@ -39349,6 +39471,20 @@
         "readings": [
           "もう"
         ]
+      },
+      {
+        "glosses": [
+          "truly",
+          "really",
+          "extremely"
+        ],
+        "id": "1012480:4",
+        "pos": [
+          "interjection (kandoushi)"
+        ],
+        "readings": [
+          "もう"
+        ]
       }
     ],
     "もう一度": [
@@ -46128,6 +46264,39 @@
         ],
         "readings": [
           "ていねい"
+        ]
+      }
+    ],
+    "丁重": [
+      {
+        "glosses": [
+          "polite",
+          "courteous",
+          "hospitable",
+          "respectful"
+        ],
+        "id": "1427290:0",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ていちょう"
+        ]
+      },
+      {
+        "glosses": [
+          "careful",
+          "handled with great care",
+          "treated with attention"
+        ],
+        "id": "1427290:1",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ていちょう"
         ]
       }
     ],
@@ -98923,7 +99092,9 @@
     "女王": [
       {
         "glosses": [
-          "queen"
+          "queen",
+          "female monarch",
+          "female sovereign"
         ],
         "id": "1345020:0",
         "pos": [
@@ -98937,9 +99108,53 @@
       },
       {
         "glosses": [
-          "female champion"
+          "queen consort",
+          "consort of a king"
         ],
         "id": "1345020:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じょおう",
+          "じょうおう",
+          "にょおう"
+        ]
+      },
+      {
+        "glosses": [
+          "queen"
+        ],
+        "id": "1345020:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じょおう",
+          "じょうおう",
+          "にょおう"
+        ]
+      },
+      {
+        "glosses": [
+          "princess",
+          "title for female imperial family members three or more generations removed from an emperor"
+        ],
+        "id": "1345020:3",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じょおう",
+          "じょうおう",
+          "にょおう"
+        ]
+      },
+      {
+        "glosses": [
+          "female champion"
+        ],
+        "id": "1345020:4",
         "pos": [
           "noun (common) (futsuumeishi)"
         ],
@@ -100213,9 +100428,9 @@
     "嫌い": [
       {
         "glosses": [
-          "disliked",
-          "hated",
-          "disagreeable"
+          "disliking",
+          "hating",
+          "detesting"
         ],
         "id": "1257240:0",
         "pos": [
@@ -104649,6 +104864,90 @@
         ]
       }
     ],
+    "尋常": [
+      {
+        "glosses": [
+          "common",
+          "ordinary",
+          "usual",
+          "average",
+          "normal"
+        ],
+        "id": "1369960:0",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "nouns which may take the genitive case particle 'no'",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じんじょう"
+        ]
+      },
+      {
+        "glosses": [
+          "fair (e.g. fight)",
+          "gracious",
+          "honorable"
+        ],
+        "id": "1369960:1",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "nouns which may take the genitive case particle 'no'",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じんじょう"
+        ]
+      },
+      {
+        "glosses": [
+          "frank",
+          "open",
+          "tame",
+          "ready"
+        ],
+        "id": "1369960:2",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "nouns which may take the genitive case particle 'no'",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じんじょう"
+        ]
+      },
+      {
+        "glosses": [
+          "understated (e.g. facial features)",
+          "modest",
+          "pleasant",
+          "discreetly elegant",
+          "demure"
+        ],
+        "id": "1369960:3",
+        "pos": [
+          "adjectival nouns or quasi-adjectives (keiyodoshi)",
+          "nouns which may take the genitive case particle 'no'",
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じんじょう"
+        ]
+      },
+      {
+        "glosses": [
+          "elementary school (in Japan; 1886-1941)",
+          "primary school"
+        ],
+        "id": "1369960:4",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "じんじょう"
+        ]
+      }
+    ],
     "導く": [
       {
         "glosses": [
@@ -107320,7 +107619,7 @@
       {
         "glosses": [
           "maneuvering",
-          "manoeuvering"
+          "manoeuvring"
         ],
         "id": "1278100:2",
         "pos": [
@@ -126436,8 +126735,10 @@
     "抹殺": [
       {
         "glosses": [
-          "erasure",
-          "obliteration"
+          "elimination (of a person, group, etc.)",
+          "killing off",
+          "disposal",
+          "purging"
         ],
         "id": "1525190:0",
         "pos": [
@@ -126451,10 +126752,28 @@
       },
       {
         "glosses": [
-          "denial",
-          "ignoring (an opinion)"
+          "denial (of an opinion, fact, etc.)",
+          "ignoring",
+          "disregard",
+          "dismissal"
         ],
         "id": "1525190:1",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
+        ],
+        "readings": [
+          "まっさつ"
+        ]
+      },
+      {
+        "glosses": [
+          "erasure (of writing)",
+          "rubbing out",
+          "scrubbing out"
+        ],
+        "id": "1525190:2",
         "pos": [
           "noun (common) (futsuumeishi)",
           "noun or participle which takes the aux. verb suru",
@@ -129245,7 +129564,9 @@
         ],
         "id": "1610690:0",
         "pos": [
-          "noun (common) (futsuumeishi)"
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb"
         ],
         "readings": [
           "すえおき"
@@ -129301,9 +129622,11 @@
     "授かる": [
       {
         "glosses": [
+          "to be granted (e.g. a title)",
           "to be awarded (e.g. a prize)",
-          "to be given an award",
-          "to receive (e.g. a title)"
+          "to be gifted with (a talent)",
+          "to be blessed with (a child)",
+          "to be endowed with"
         ],
         "id": "1330270:0",
         "pos": [
@@ -129316,35 +129639,11 @@
       },
       {
         "glosses": [
-          "to be gifted or endowed (e.g. with a talent)"
+          "to be taught (e.g. a secret technique)",
+          "to be instructed",
+          "to be initiated"
         ],
         "id": "1330270:1",
-        "pos": [
-          "Godan verb with 'ru' ending",
-          "transitive verb"
-        ],
-        "readings": [
-          "さずかる"
-        ]
-      },
-      {
-        "glosses": [
-          "to be blessed (e.g. with a child)"
-        ],
-        "id": "1330270:2",
-        "pos": [
-          "Godan verb with 'ru' ending",
-          "transitive verb"
-        ],
-        "readings": [
-          "さずかる"
-        ]
-      },
-      {
-        "glosses": [
-          "to be initiated (e.g. into a secret)"
-        ],
-        "id": "1330270:3",
         "pos": [
           "Godan verb with 'ru' ending",
           "transitive verb"
@@ -137641,9 +137940,9 @@
     "時効": [
       {
         "glosses": [
+          "prescription",
           "statute of limitations",
-          "lapse of rights after a period of time",
-          "prescription (including acquisitive and extinctive prescription)"
+          "limitation period"
         ],
         "id": "1316210:0",
         "pos": [
@@ -137655,7 +137954,10 @@
       },
       {
         "glosses": [
-          "becoming invalid or void after a set time"
+          "lapsing with time (e.g. of an obligation)",
+          "no longer standing (e.g. of a promise)",
+          "becoming void (e.g. of a contract)",
+          "becoming bygones (e.g. of a mishap)"
         ],
         "id": "1316210:1",
         "pos": [
@@ -157561,8 +157863,8 @@
       {
         "glosses": [
           "to struggle in the water",
-          "to sink below the surface and become unable to breathe",
-          "to (nearly) drown"
+          "to be drowning",
+          "to sink below the surface and become unable to breathe"
         ],
         "id": "1437560:0",
         "pos": [
@@ -162143,16 +162445,37 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "ちち",
-          "ちゃん",
-          "てて",
-          "かぞ",
-          "かそ",
-          "しし",
-          "あて"
+          "ちち"
         ],
         "register": [
           "humble"
+        ]
+      },
+      {
+        "glosses": [
+          "father (e.g. of a discipline)",
+          "pioneer (e.g. of field of research)",
+          "founder"
+        ],
+        "id": "1497610:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ちち"
+        ]
+      },
+      {
+        "glosses": [
+          "God",
+          "Father"
+        ],
+        "id": "1497610:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ちち"
         ]
       }
     ],
@@ -166253,8 +166576,8 @@
       },
       {
         "glosses": [
-          "menstruation",
-          "one's period"
+          "one's period",
+          "menstruation"
         ],
         "id": "1379580:1",
         "pos": [
@@ -167756,6 +168079,61 @@
         ],
         "readings": [
           "ばん"
+        ]
+      }
+    ],
+    "番地": [
+      {
+        "glosses": [
+          "lot number",
+          "house number",
+          "street number"
+        ],
+        "id": "1482360:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ばんち"
+        ]
+      },
+      {
+        "glosses": [
+          "address",
+          "residence"
+        ],
+        "id": "1482360:1",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ばんち"
+        ]
+      },
+      {
+        "glosses": [
+          "address",
+          "memory address"
+        ],
+        "id": "1482360:2",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "ばんち"
+        ]
+      },
+      {
+        "glosses": [
+          "nth house (of a street, block, etc.)",
+          "nth plot of land"
+        ],
+        "id": "1482360:3",
+        "pos": [
+          "suffix"
+        ],
+        "readings": [
+          "ばんち"
         ]
       }
     ],
@@ -173839,6 +174217,50 @@
         ]
       }
     ],
+    "瞬間": [
+      {
+        "glosses": [
+          "moment",
+          "instant",
+          "second"
+        ],
+        "id": "1341210:0",
+        "pos": [
+          "noun (common) (futsuumeishi)"
+        ],
+        "readings": [
+          "しゅんかん"
+        ]
+      },
+      {
+        "glosses": [
+          "just then",
+          "right at that moment",
+          "at that instant"
+        ],
+        "id": "1341210:1",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "しゅんかん"
+        ]
+      },
+      {
+        "glosses": [
+          "for a moment",
+          "for an instant",
+          "momentarily"
+        ],
+        "id": "1341210:2",
+        "pos": [
+          "adverb (fukushi)"
+        ],
+        "readings": [
+          "しゅんかん"
+        ]
+      }
+    ],
     "瞳": [
       {
         "glosses": [
@@ -179212,6 +179634,7 @@
         "glosses": [
           "to drop by",
           "to stop by",
+          "to drop in",
           "to visit briefly (on the way somewhere)"
         ],
         "id": "1551300:0",
@@ -184949,11 +185372,15 @@
           "result",
           "consequence",
           "outcome",
-          "effect"
+          "effect",
+          "product"
         ],
         "id": "1254690:0",
         "pos": [
-          "noun (common) (futsuumeishi)"
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb",
+          "intransitive verb"
         ],
         "readings": [
           "けっか"
@@ -184961,10 +185388,11 @@
       },
       {
         "glosses": [
-          "as a result of ...",
-          "as a consequence of ...",
-          "after ...",
-          "following ..."
+          "consequently",
+          "as a result",
+          "hence",
+          "thus",
+          "accordingly"
         ],
         "id": "1254690:1",
         "pos": [
@@ -184976,10 +185404,25 @@
       },
       {
         "glosses": [
+          "as a result of",
+          "following",
+          "as a consequence of"
+        ],
+        "id": "1254690:2",
+        "pos": [
+          "particle",
+          "conjunction"
+        ],
+        "readings": [
+          "けっか"
+        ]
+      },
+      {
+        "glosses": [
           "bearing fruit",
           "fruiting"
         ],
-        "id": "1254690:2",
+        "id": "1254690:3",
         "pos": [
           "noun (common) (futsuumeishi)",
           "noun or participle which takes the aux. verb suru",
@@ -191045,34 +191488,6 @@
         ]
       }
     ],
-    "脇見": [
-      {
-        "glosses": [
-          "looking from the side"
-        ],
-        "id": "1518860:0",
-        "pos": [
-          "noun (common) (futsuumeishi)",
-          "noun or participle which takes the aux. verb suru"
-        ],
-        "readings": [
-          "わきみ"
-        ]
-      },
-      {
-        "glosses": [
-          "looking aside"
-        ],
-        "id": "1518860:1",
-        "pos": [
-          "noun (common) (futsuumeishi)",
-          "noun or participle which takes the aux. verb suru"
-        ],
-        "readings": [
-          "わきみ"
-        ]
-      }
-    ],
     "脈": [
       {
         "glosses": [
@@ -192534,6 +192949,58 @@
         ],
         "readings": [
           "じえいたい"
+        ]
+      }
+    ],
+    "自覚": [
+      {
+        "glosses": [
+          "self-awareness",
+          "awareness (of one's position, abilities, duty, etc.)",
+          "consciousness",
+          "realization"
+        ],
+        "id": "1317490:0",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb",
+          "intransitive verb"
+        ],
+        "readings": [
+          "じかく"
+        ]
+      },
+      {
+        "glosses": [
+          "perceiving (something)",
+          "taking in (a sensation)",
+          "sensing",
+          "feeling"
+        ],
+        "id": "1317490:1",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "transitive verb",
+          "intransitive verb"
+        ],
+        "readings": [
+          "じかく"
+        ]
+      },
+      {
+        "glosses": [
+          "self-consciousness"
+        ],
+        "id": "1317490:2",
+        "pos": [
+          "noun (common) (futsuumeishi)",
+          "noun or participle which takes the aux. verb suru",
+          "intransitive verb"
+        ],
+        "readings": [
+          "じかく"
         ]
       }
     ],
