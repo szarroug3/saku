@@ -4,9 +4,29 @@ You are the orchestrator for a run of the Saku learning-experience audits (`docs
 
 Whoever kicks off a run tells you which audits to run, at what depth, and any situational context (a background process already running, current git state, anything time-sensitive) — that's not in this file, since it changes every run. If a kickoff doesn't specify which audits or depth, that's worth asking about rather than assuming — this is a real scope decision, not something to default silently.
 
-## 1. Dispatch each audit
+## 1. Dispatch each audit — call `Workflow` yourself, directly, per audit
 
-For every audit you're running, start it with instructions to read exactly two files and nothing else in `docs/audits/`: `how-to-run-an-audit.md`, and its own numbered file (`01-naive-learner.md` through `10-multi-signal-disagreement.md`). Each audit runs as its own `Workflow` internally (per `how-to-run-an-audit.md`) and produces its own published report (an Artifact) as output — that's the unit you're waiting on, not its internal steps.
+Do NOT dispatch a spawned `Agent` and tell it to go figure out the audit's own find→verify→synthesize structure. Call the `Workflow` tool yourself, directly, once per audit you're running — it runs fully in the background and gives you exactly one clean completion notification (with the published Artifact URL) when the whole pipeline is done. This is the load-bearing lesson from a bad 2026-08-28 run (kept below as 1a for the full story) — a dispatched `Agent` may not actually have `Workflow` in its own toolset, silently falls back to background `Agent` calls it can't get results from, and stalls for hours without telling you.
+
+For each audit:
+1. Read the audit's own numbered file (`01-naive-learner.md` through `10-multi-signal-disagreement.md`) and `how-to-run-an-audit.md`.
+2. Check `docs/audits/workflows/<NN>-<name>.mjs` for a saved reference script. Decide whether its track/domain split and file targets still match the CURRENT codebase — a template is a starting point to adapt, not something to trust blindly, since the codebase moves and a stale hardcoded script can silently under-cover what a fresh read of the `.md` would catch. Adapt it if needed, or write a fresh one using the same shape if it's badly out of date or missing.
+3. Invoke it: `Workflow({scriptPath: "docs/audits/workflows/<NN>-<name>.mjs", args: {situationalContext: "...", repo: "...", devServerUrl: "..."}})` — pass this run's specifics (a background process's status, a related ticket to cross-reference) through `args`, not by editing the template file.
+4. That single `Workflow` call is the unit you wait on — not its internal steps.
+
+## 1a. Postmortem: why direct `Workflow` calls are now the rule (2026-08-28)
+
+On that run, the orchestrator dispatched a spawned `Agent` per audit and told it to use `Workflow` internally, per an earlier version of `how-to-run-an-audit.md`. Several of those agents did not actually have `Workflow` in their own toolset — it didn't error or say so up front, it silently substituted its own background (`run_in_background: true`) `Agent` calls for the fan-out instead, which looked identical from the outside (a checkpoint message like "All N find-stage agents are running in the background, I'll wait for their completion notifications").
+
+**The actual failure:** a dispatched agent's own background `Agent` calls' completion notifications are delivered to the ORCHESTRATOR's session, not to the agent that spawned them. The orchestrator saw every find/verify result arrive as real, substantive `<task-notification>`s, while the dispatching agent itself received none of them and sat correctly-but-uselessly waiting forever. It wasn't a reasoning bug — it was structurally blind to its own children's results, and would never publish left alone.
+
+**How you could tell it was happening:** the orchestrator kept receiving detailed results for an audit, stage after stage, but the audit's own top-level dispatch never sent a "here's the Artifact URL" completion, and `ListAgents`/`TaskOutput` on its agentId showed it not running at all (idle, not crashed). A plain "are you done?" message got a truthful-but-stale "still waiting" reply that just went idle again — accurate from its own vantage point.
+
+**The fix that was used to recover that run** (now superseded by section 1's default, kept here in case a similar situation ever recurs): compile every result the stalled agent needs from what the orchestrator already received via notification, and relay it in one message per stalled agent via `SendMessage`, explicitly stating what's true ("your background calls' completions routed to me, not you — here are the actual results, proceed straight to verify+synthesize+publish, do not re-run find"). This worked, but cost a large manual relay message per stuck audit — which calling `Workflow` directly (section 1) avoids needing in the first place.
+
+## 1b. If a `Workflow` gets interrupted mid-run (crash, restart, manual stop)
+
+Also learned on 2026-08-28, when an app crash killed every in-flight background process: a `Workflow` call's progress isn't lost just because the session that launched it dies. Each `agent()` call's result is cached by its exact `(prompt, opts)`. To recover, re-invoke the SAME script with `Workflow({scriptPath, resumeFromRunId: "<the original run's id>"})` — every already-completed `agent()` call replays instantly from cache, and only the step that was genuinely interrupted actually re-runs. Don't restart an interrupted audit from scratch by default; resume it. The one exception is a `Workflow` whose real work happens outside the cached `agent()` calls (a long single foreground call doing a live browser walkthrough, for instance) — that kind of run may need a fresh start if it was killed mid-call, since there's no intermediate checkpoint to resume from.
 
 ## 2. Cap concurrency, queue the rest
 

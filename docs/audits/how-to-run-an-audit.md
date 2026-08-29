@@ -1,8 +1,8 @@
 # How to run an audit
 
-This is the brief for an individual audit agent — dispatched by an orchestrator (see `orchestrator.md`) to run exactly ONE of the ten audits in this folder. Read this file plus your own audit's numbered file — nothing else in this folder. Never resolve a gap in your own audit's instructions by reading another audit's file; if something seems missing, it's either covered here (mechanics) or genuinely not specified (ask, don't assume) — it is never "the same as some other audit," since that audit's file may not be available to you.
+This is the brief for running exactly ONE of the ten audits in this folder. As of 2026-08-29, the orchestrator (see `orchestrator.md`) runs this itself, directly — it does NOT dispatch a separate agent to read this file and figure out how to structure the audit. Read this file plus the audit's own numbered file — nothing else in this folder needed. Never resolve a gap in an audit's instructions by reading another audit's file; if something seems missing, it's either covered here (mechanics) or genuinely not specified (ask, don't assume) — it is never "the same as some other audit," since that audit's file may not describe the same thing.
 
-Deciding WHICH audits run, how many run at once, watching them to completion, and combining every audit's report into one final set of recommendations is the orchestrator's job, not yours — you only need to run your own audit well and publish your own report.
+Deciding WHICH audits run, how many run at once, watching them to completion, and combining every audit's report into one final set of recommendations is the orchestrator's job on top of this — this file just covers how to actually structure and execute one audit correctly.
 
 ---
 
@@ -18,11 +18,15 @@ Sam (2026-08-28): "none of the audits should make any actual changes to code or 
 
 ---
 
-## Dispatch shape, within your own audit
+## Dispatch shape: call `Workflow` directly, don't delegate the design
 
-Use the `Workflow` tool — Sam has explicitly opted into this pattern (2026-08-28); invoke as a `Workflow`, not a batch of independent `Agent` calls. Your own audit's file states its natural unit of work (a track, a data domain, a surface area, a code layer, whatever fits its subject) — dispatch one `agent()` per unit, fanned out via `pipeline()`/`parallel()`.
+**Call the `Workflow` tool yourself, directly, as the orchestrator.** Do not spawn an `Agent` and tell it to "read these two files and figure out the Workflow" — a dispatched agent may not actually have the `Workflow` tool in its own toolset (this happened repeatedly on the 2026-08-28 run: three separate audits silently fell back to background `Agent` calls for their own fan-out, and those calls' completions routed to the orchestrator's session instead of back to the agent that spawned them, causing an hours-long silent stall each time — see `orchestrator.md`'s postmortem for the full story). Calling `Workflow` yourself sidesteps this failure mode entirely: it runs fully in the background and gives you exactly one clean completion notification when the whole find→verify→synthesize pipeline is done.
 
-**Protect your own context.** The actual investigation — walking lessons, reading generated data files, browsing pages, running comparison scripts, whatever your audit's own work requires — belongs INSIDE `agent()` calls, never done directly in your own turn. A long-running audit will blow through even a large context budget fast if you read large files, browse many pages, or churn through raw tool output yourself instead of delegating that work and only pulling back small, structured results (via a `schema`) to synthesize from. Your job is to launch stages, read back short structured summaries, and write your own final report — not to do the legwork.
+**Reuse the saved template first.** `docs/audits/workflows/<NN>-<name>.mjs` holds a working reference implementation for each of the ten audits, built from a real run. Read the audit's own numbered `.md` file, then read its matching template — decide whether the template's track/domain split and file targets still match the CURRENT codebase (new generated data files, renamed routes, a changed component layout) before reusing it wholesale. A template is a starting point to adapt, not a frozen artifact to trust blindly — the whole reason the `.md` files remain the source of truth instead of the scripts is that a fresh look at the current code catches drift a stale hardcoded script would miss. If the template still fits, invoke it as-is (or with minor edits) via `Workflow({scriptPath: ...})`. If it's meaningfully out of date, or no template exists yet for a new audit, write a fresh script following the same find→verify→synthesize shape below, and consider saving it back to that folder for the next run.
+
+**Pass per-run context via `args`, not hardcoded into the script.** The templates read `args?.situationalContext`, `args?.repo`, `args?.devServerUrl` — pass whatever's specific to this run (a background process's status, a related ticket to cross-reference, non-default paths) through `Workflow`'s `args` parameter rather than editing the template file itself. This keeps the saved script reusable across runs instead of accumulating one-off, dated context.
+
+**One `agent()` per unit of work.** The audit's own `.md` file states its natural unit (a track, a data domain, a surface area, a code layer, whatever fits its subject) — one `agent()` per unit, fanned out via `pipeline()`/`parallel()`. The actual investigation — walking lessons, reading generated data files, browsing pages, running comparison scripts — belongs INSIDE those `agent()` calls, never done directly by the script's own orchestrating logic (there is no "own turn" doing legwork here — the script is pure control flow; all the real work happens inside the agents it spawns).
 
 ---
 
