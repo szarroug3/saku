@@ -6,25 +6,70 @@
 // interactive: useHistory, and the claim/unclaim actions.
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { Dock } from "@/components/dock";
-import { CharacterEntryView } from "@/components/library/character-entry-view";
-import { CounterEntryView } from "@/components/library/counter-entry-view";
-import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
-import { GrammarEntryView } from "@/components/library/grammar-entry-view";
-import { KanaEntryView } from "@/components/library/kana-entry-view";
-import { KeigoEntryView } from "@/components/library/keigo-entry-view";
-import { MarkEntryView } from "@/components/library/mark-entry-view";
-import { SentenceEntryView } from "@/components/library/sentence-entry-view";
 import { SliceBar } from "@/components/library/slice-bar";
-import { TermEntryView } from "@/components/library/term-entry-view";
-import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { FlatSurfaceProvider } from "@/components/ui";
 import { postClaim } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId } from "@/types";
 import type { Kind } from "@/lib/library/entries";
+
+// SAK-226: ONE entry page renders exactly one of these ten views (EntryBody's
+// switch below), but all ten used to be plain top-level imports here — so
+// every /library/[...entry] page, whatever kind it was, bundled and shipped
+// EVERY kind's view code and whatever each one pulls in. GrammarEntryView's
+// own chain (via pattern-family.tsx's `GRAMMAR_SUBJECT`) reaches
+// data/grammar/index.ts, whose top-level `GRAMMAR_FACTS = buildGrammarFacts()`
+// drags in the grammar corpus — so a plain WORD page was shipping grammar's
+// dictionary too, and every other kind's page was shipping everyone else's.
+// `next/dynamic`, exactly like quiz-mode-screen.tsx's screenLoaders: each
+// view is its own chunk, fetched only when EntryBody actually renders that
+// kind.
+const KanaEntryView = dynamic(() =>
+  import("@/components/library/kana-entry-view").then((m) => m.KanaEntryView),
+);
+const CharacterEntryView = dynamic(() =>
+  import("@/components/library/character-entry-view").then(
+    (m) => m.CharacterEntryView,
+  ),
+);
+const CounterEntryView = dynamic(() =>
+  import("@/components/library/counter-entry-view").then(
+    (m) => m.CounterEntryView,
+  ),
+);
+const KeigoEntryView = dynamic(() =>
+  import("@/components/library/keigo-entry-view").then((m) => m.KeigoEntryView),
+);
+const VerbPairEntryView = dynamic(() =>
+  import("@/components/library/verbpair-entry-view").then(
+    (m) => m.VerbPairEntryView,
+  ),
+);
+const GrammarEntryView = dynamic(() =>
+  import("@/components/library/grammar-entry-view").then(
+    (m) => m.GrammarEntryView,
+  ),
+);
+const GrammarConceptEntryView = dynamic(() =>
+  import("@/components/library/grammar-concept-entry-view").then(
+    (m) => m.GrammarConceptEntryView,
+  ),
+);
+const SentenceEntryView = dynamic(() =>
+  import("@/components/library/sentence-entry-view").then(
+    (m) => m.SentenceEntryView,
+  ),
+);
+const MarkEntryView = dynamic(() =>
+  import("@/components/library/mark-entry-view").then((m) => m.MarkEntryView),
+);
+const TermEntryView = dynamic(() =>
+  import("@/components/library/term-entry-view").then((m) => m.TermEntryView),
+);
 
 export interface GroupNavData {
   readonly groupLabel: string | null;

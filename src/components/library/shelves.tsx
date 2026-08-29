@@ -47,7 +47,7 @@ import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import { resolveHrefs } from "@/lib/library/server-lookups";
+import { resolveEntryLinks, resolveHrefs } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { japaneseFontClass } from "@/lib/japanese-text";
 
@@ -192,10 +192,27 @@ export function Shelf({
       return next;
     });
 
+  // SAK-226: EntryTile/EntryRow/VerbPairRow/KeigoSetRow used to resolve their
+  // OWN href/name by calling entryHref/entryName directly, which pulled the
+  // ~9.5MB dictionary those functions read into every /library visit's client
+  // bundle. Batch-resolved here instead, the same shape and the same
+  // persisted-cache reasoning as the grammar-only `grammarHrefs` below (SAK-118/
+  // SAK-120) — just over every kind's entries, not only grammar's, since every
+  // one of those four row shapes needs it now.
+  const allEntryIds = useMemo(
+    () => sections.flatMap((s) => s.entries.map((e) => e.id)),
+    [sections],
+  );
+  const entryLinks = useServerLookup(resolveEntryLinks, [allEntryIds], { persist: true }) ?? {};
+  const linkFor = (entry: LibEntry) =>
+    entryLinks[entry.id as unknown as string] ?? { href: "#", name: entry.glyph };
+
   const tile = (entry: LibEntry) => (
     <EntryTile
       key={entry.id}
       entry={entry}
+      href={linkFor(entry).href}
+      name={linkFor(entry).name}
       voice={voice}
       selected={selected.has(entry.id)}
       selectMode={selectMode}
@@ -215,6 +232,8 @@ export function Shelf({
     <EntryRow
       key={entry.id}
       entry={entry}
+      href={linkFor(entry).href}
+      name={linkFor(entry).name}
       voice={voice}
       note={entry.sub}
       grid={grid}
@@ -273,7 +292,8 @@ export function Shelf({
     return (
       <VerbPairRow
         key={entry.id}
-        entry={entry}
+        href={linkFor(entry).href}
+        name={linkFor(entry).name}
         pair={pair}
         voice={voice}
         selected={selected.has(entry.id)}
@@ -289,7 +309,8 @@ export function Shelf({
     return (
       <KeigoSetRow
         key={entry.id}
-        entry={entry}
+        href={linkFor(entry).href}
+        name={linkFor(entry).name}
         set={set}
         voice={voice}
         selected={selected.has(entry.id)}

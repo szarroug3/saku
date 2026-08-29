@@ -40,7 +40,8 @@ import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { factsOf } from "@/lib/facts";
 import type { Claims } from "@/lib/claims";
 import { knownFactsOf, LIB_ENTRIES } from "@/lib/library/library-index";
-import { isEntryKnownForDisplay, isKnownForDisplay } from "@/lib/library/known-mark";
+import { isKnownForDisplay } from "@/lib/library/known-mark";
+import { isEntryKnownForDisplay } from "@/lib/library/known-mark-guarded";
 import { entryIsKnown, entryStanding } from "@/lib/library/standing";
 import type { EntryId, FactAggregate, FactId } from "@/types";
 

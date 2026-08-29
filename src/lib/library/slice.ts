@@ -22,15 +22,28 @@
 
 import { effectiveState, type Claims } from "@/lib/claims";
 import { constructionConfigForFact } from "@/data/counter-categories";
-import { factsOf } from "@/lib/library/library-index";
 import { rank, status, type RankCandidate } from "@/lib/scoring";
 import { transitivitySide } from "@/data/transitivity-facts";
 import type { EntryId, FactAggregate, FactId } from "@/types";
 
+// SAK-226: `factsOf` (library-index.ts, the ~9.5MB dictionary it reads) used
+// to be imported directly here. slice-bar.tsx — this module's one CLIENT
+// caller — is statically rendered on every Library shelf and entry page, so
+// that import shipped the whole index to the browser on every one of them.
+// Every function below that needs an entry's facts now takes a `factsOfEntry`
+// resolver instead of reaching for `factsOf` itself: slice-bar.tsx passes a
+// small, batch-resolved map (server-lookups.ts's `resolveFactsOfEntries`,
+// already used the same way by results-view.tsx — see that action's own
+// header); test/server callers with no bundle to protect pass the real
+// `factsOf` straight through. Same data, same order, just handed in instead
+// of imported.
+export type FactsOfEntry = (entry: EntryId) => readonly FactId[];
+
 /**
- * A named set of entries. Facts are DERIVED (`factsOf`) rather than carried,
- * so a slice cannot be built that contains a fact its entries don't — which is
- * the one way the two key spaces could quietly diverge on this screen.
+ * A named set of entries. Facts are DERIVED (via a `factsOfEntry` resolver)
+ * rather than carried, so a slice cannot be built that contains a fact its
+ * entries don't — which is the one way the two key spaces could quietly
+ * diverge on this screen.
  */
 export interface Slice {
   /** What the bar calls it. "K か", "で", "生", "Hiragana". */
@@ -48,9 +61,9 @@ export interface Slice {
  * and its "I know this" button — which hides only when nothing is left to claim
  * — would never disappear. Non-transitivity facts are untouched: transitivitySide
  * returns nothing for them, so the guard keeps them. */
-export function sliceFacts(slice: Slice): FactId[] {
+export function sliceFacts(slice: Slice, factsOfEntry: FactsOfEntry): FactId[] {
   return slice.entries
-    .flatMap((e) => factsOf(e))
+    .flatMap((e) => factsOfEntry(e))
     .filter((f) => {
       const side = transitivitySide(f);
       return !side || side.askable;
@@ -68,8 +81,8 @@ export function sliceFacts(slice: Slice): FactId[] {
  * is the owner's rule. A kanji (meaning + readings) or a word (reading + meaning)
  * clears it; a single kana, or a subject that resolves to one fact, does not.
  */
-export function sliceIsDrillable(slice: Slice): boolean {
-  return sliceFacts(slice).length > 1;
+export function sliceIsDrillable(slice: Slice, factsOfEntry: FactsOfEntry): boolean {
+  return sliceFacts(slice, factsOfEntry).length > 1;
 }
 
 /**
@@ -158,6 +171,7 @@ export function hasMultipleQuizForms(facts: readonly FactId[]): boolean {
  */
 export function drillPlan(
   slice: Slice,
+  factsOfEntry: FactsOfEntry,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
@@ -169,7 +183,7 @@ export function drillPlan(
   // drops them on purpose (a quiet fact scores p → 1 and is unrankable); they
   // are appended after the ranked probes rather than routed through it.
   const solid: FactId[] = [];
-  for (const id of sliceFacts(slice)) {
+  for (const id of sliceFacts(slice, factsOfEntry)) {
     const state = effectiveState(facts[id], claims[id]);
     switch (status(state, now)) {
       case "probe":
@@ -213,11 +227,12 @@ export interface DrillPlan {
  * the bar's count and for anything that only needs the size of the thing. */
 export function drillOrder(
   slice: Slice,
+  factsOfEntry: FactsOfEntry,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
 ): FactId[] {
-  const plan = drillPlan(slice, facts, claims, now);
+  const plan = drillPlan(slice, factsOfEntry, facts, claims, now);
   return [...plan.probe, ...plan.teach];
 }
 
@@ -247,12 +262,13 @@ export interface SliceCount {
 
 export function sliceCount(
   slice: Slice,
+  factsOfEntry: FactsOfEntry,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
   includeSolid = false,
 ): SliceCount {
-  const all = sliceFacts(slice);
+  const all = sliceFacts(slice, factsOfEntry);
   let seen = 0;
   let solid = 0;
   let slipping = 0;
