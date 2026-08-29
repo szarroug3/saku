@@ -131,6 +131,15 @@ export function counterKanji(counter: CounterKind): string {
   return COUNTER_KANJI[counter];
 }
 
+/** Every CounterKind this engine knows, as a plain runtime array — the type
+ * alone has no runtime form, so anything that needs to walk "all 15 counter
+ * kinds" (SAK-244's audio pre-seed, most notably: scripts/seed-voice-audio.mjs
+ * enumerates every counterReading(n, kind) this engine can produce, and doing
+ * that exhaustively needs the actual kind list, not just the type) reads it
+ * from here rather than hand-maintaining a second copy that could drift from
+ * CounterKind/COUNTER_KANJI. */
+export const COUNTER_KINDS: readonly CounterKind[] = Object.keys(COUNTER_KANJI) as CounterKind[];
+
 /**
  * The kanji spelling of an integer 1 ≤ n < 10^12 — 17 → 十七, 300 → 三百, 8000 →
  * 八千, 100000 → 十万, 10_000_000_000 → 百億. The written twin of numberReading:
