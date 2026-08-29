@@ -7,11 +7,8 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 
-import { supabasePublishableKey } from "@/lib/supabase/keys";
+import { requireSupabasePublishableKey, requireSupabaseUrl } from "@/lib/supabase/keys";
 
 export function createSupabaseBrowserClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabasePublishableKey()!,
-  );
+  return createBrowserClient(requireSupabaseUrl(), requireSupabasePublishableKey());
 }
