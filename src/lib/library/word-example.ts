@@ -71,6 +71,15 @@ export type RankOf = (lemma: string) => number | undefined;
  *           into 十 + 分間, a segmentation accident, not a real occurrence of
  *           this word. Excluded here rather than in the corpus/tokenizer
  *           because the sentence is a perfectly good example of 合う (SAK-222).
+ *   - 顔   is 'face'; its highest-scoring sentence, 仏の顔も三度まで。 ("even a
+ *           Buddha's face [gets angry] after three strikes" — the English
+ *           gloss "You can only go so far" doesn't even mention a face), is
+ *           the proverb, not a plain use of the word: 顔 is grammatically and
+ *           semantically present, but a learner gets zero exposure to its
+ *           plain "face" meaning from it. Nine other corpus sentences (e.g.
+ *           顔を洗いなさい, "Wash your face") use it plainly, so banning the
+ *           proverb here lets chooseExample fall through to one of those
+ *           instead of leaving 顔 without an example (SAK-261).
  * These are named, not filtered by a rule: sense drift is a human judgement, and
  * a short authored list is the honest tool. See task-20 item 3 for what is left.
  */
@@ -81,6 +90,7 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
   パー: [10061602, 10061603],
   ホーム: [10828627],
   分間: [148042],
+  顔: [10565801],
 };
 
 /**

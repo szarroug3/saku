@@ -68,6 +68,12 @@ HOW A READING IS RESOLVED
    formal わたくし) contributes null for each of its kanji slots. NEVER a
    guess -- the same refusal VocabRow.align already makes for the word-level
    2.6% it cannot cleanly split.
+5. SENTENCE_READING_OVERRIDES (SAK-261) wins over all of the above, for the
+   rarer failure mode step 4 does NOT cover: the tagger returning a real,
+   dictionary-attested reading that is simply wrong for this sentence (仏
+   read as the France-abbreviation フツ instead of the deity ホトケ), rather
+   than refusing to resolve. A short, hand-curated, named exception list --
+   see the constant's own comment.
 
 MEASURED ACCURACY (full write-up in the SAK-95 Linear comment)
 ================================================================
@@ -135,8 +141,29 @@ def build_krd(vocab):
 # spuriously resolve to a content word's keb.
 CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名詞")
 
+# Hand-corrected sentence readings (SAK-261): the rare case where
+# unidic-lite's tagger resolves a token to a real, dictionary-attested
+# reading that is simply the wrong ONE for this particular sentence, rather
+# than failing to resolve at all -- so "absent, not wrong" doesn't catch it,
+# because the tagger isn't refusing, it's confidently wrong.
+#
+#   - id 10565801, 仏の顔も三度まで。 ("even a Buddha's face [gets angry] after
+#     three strikes"): unidic-lite tags 仏 here as フツ, the on'yomi
+#     abbreviation for "France" used in compounds like 仏語 (French, the
+#     language) -- a real reading of 仏, just not this one. The proverb's 仏
+#     is unambiguously the deity, kun'yomi ホトケ.
+#
+# Keyed by (Tatoeba sentence id, kanji character, 0-based occurrence of that
+# character among the sentence's kanji slots), so a second occurrence of the
+# same character elsewhere in the same sentence is untouched. A short, named
+# list, same philosophy as word-example.ts's WRONG_SENSE_EXAMPLES: this is a
+# human judgement call about sense, not something a rule can catch.
+SENTENCE_READING_OVERRIDES = {
+    (10565801, "仏", 0): ("ほとけ", "ほとけ"),
+}
 
-def analyze_sentence(jp, tagger, krd, keb):
+
+def analyze_sentence(jp, tagger, krd, keb, entry_id):
     """One fugashi tokenization of `jp` produces both outputs this script
     fills in:
 
@@ -149,6 +176,11 @@ def analyze_sentence(jp, tagger, krd, keb):
       resolution assembly.py's content_lemmas() uses to match a conjugated
       surface form back to its dictionary entry. (None, None) when no token
       resolves to `keb`: absent, not a guess.
+
+    `entry_id` (the Tatoeba sentence id) is only used to look up
+    SENTENCE_READING_OVERRIDES -- a hand-corrected reading, when the tagger
+    resolved a REAL reading that is simply wrong for this sentence, wins over
+    whatever the tokenizer/aligner produced for that kanji slot.
 
     UniDic splits a conjugated predicate into the content-verb morph plus a
     CHAIN of trailing 助動詞 (auxiliary-verb) tokens -- 思った is 思っ (動詞,
@@ -166,6 +198,7 @@ def analyze_sentence(jp, tagger, krd, keb):
         cursor += len(w.surface)
 
     slots = []
+    kanji_occurrence = {}
     for w in toks:
         surf = w.surface
         if not any(is_kanji(c) for c in surf):
@@ -174,11 +207,18 @@ def analyze_sentence(jp, tagger, krd, keb):
             continue
         kana = kata2hira(w.feature.kana or w.feature.pron or "")
         a = align(surf, kana, krd) if kana else None
-        n_kanji = sum(1 for c in surf if is_kanji(c))
+        kanji_chars = [c for c in surf if is_kanji(c)]
         if a:
-            slots.extend([list(t) for t in a])
+            triples = [list(t) for t in a]
         else:
-            slots.extend([None] * n_kanji)
+            triples = [None] * len(kanji_chars)
+        for i, kc in enumerate(kanji_chars):
+            occ = kanji_occurrence.get(kc, 0)
+            kanji_occurrence[kc] = occ + 1
+            override = SENTENCE_READING_OVERRIDES.get((entry_id, kc, occ))
+            if override:
+                triples[i] = [kc, override[0], override[1]]
+        slots.extend(triples)
 
     start = end = None
     for i, w in enumerate(toks):
@@ -220,7 +260,7 @@ def main():
         # start/end from row[3]/row[4] are ignored -- build-word-examples.ts
         # always emits them null (SAK-97); this pass is the single source of
         # truth for the span, computed below in the same tokenization as kr.
-        kr, start, end = analyze_sentence(jp, tagger, krd, keb)
+        kr, start, end = analyze_sentence(jp, tagger, krd, keb, entry_id)
         n_kanji_tot += len(kr)
         n_kanji_ok += sum(1 for s in kr if s is not None)
         if start is not None:
