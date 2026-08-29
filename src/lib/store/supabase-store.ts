@@ -18,6 +18,7 @@ import {
 import { hydrateRecentRuns } from "@/lib/aggregate";
 import { withBackfilledLearnedAt } from "@/lib/history-ops";
 import type { VersionedRead } from "@/lib/history-mutate";
+import type { ListsVersionedRead } from "@/lib/lists-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
@@ -176,15 +177,81 @@ export async function readListsRow(userId: string): Promise<ListsFile> {
   return { lists: raw?.lists ?? [] };
 }
 
-export async function writeListsRow(userId: string, file: ListsFile): Promise<void> {
+/**
+ * A versioned read of the lists row, for the compare-and-set write below. The
+ * twin of readHistoryRowVersioned over the other column, and guarded on the SAME
+ * `updated_at` token — right, because it is the same row: a history write
+ * landing mid-flight costs a lists retry, never a lost list.
+ */
+export async function readListsRowVersioned(
+  userId: string,
+): Promise<ListsVersionedRead> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("progress")
-    .upsert(
-      { user_id: userId, lists: file, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" },
-    );
+    .select("lists, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress.lists failed: ${error.message}`);
+  const raw = (data?.lists ?? {}) as Partial<ListsFile> | null;
+  return {
+    lists: { lists: raw?.lists ?? [] },
+    version: (data?.updated_at as string | null | undefined) ?? null,
+    exists: data != null,
+  };
+}
+
+/**
+ * Write the lists ONLY if the row still carries `expected` — the same optimistic
+ * concurrency writeHistoryRowGuarded uses, applied to the column that never had
+ * it. Returns true when it landed, false when a concurrent writer moved the
+ * token first.
+ *
+ * Without this, two devices signing in within the same second each replayed
+ * their own local lists over a stale read, both got a 2xx, and both cleared
+ * their local copy — the later write's lists were the only ones left. See
+ * lists-mutate.ts for the retry that turns a `false` here into a merge.
+ *
+ * The new `updated_at` is forced strictly greater than the one we guarded on, so
+ * two writes landing in the same millisecond still leave DISTINCT tokens and the
+ * second is reliably detected as a miss (identical reasoning to history's).
+ */
+export async function writeListsRowGuarded(
+  userId: string,
+  file: ListsFile,
+  expected: ListsVersionedRead,
+): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const prev = expected.version ? Date.parse(expected.version) : 0;
+  const nextTs = new Date(Math.max(Date.now(), prev + 1)).toISOString();
+
+  // No row yet: INSERT. A row that appeared since our read violates the user_id
+  // uniqueness, which is precisely the CAS miss we retry on.
+  if (!expected.exists) {
+    const { error } = await supabase
+      .from("progress")
+      .insert({ user_id: userId, lists: file, updated_at: nextTs });
+    if (error) {
+      if (isUniqueViolation(error)) return false;
+      throw new Error(`writing progress.lists failed: ${error.message}`);
+    }
+    return true;
+  }
+
+  // Row exists: UPDATE guarded on the token. `.select` reports the affected rows,
+  // so zero rows means the guard did not match. A legacy row with a null token is
+  // guarded with `.is`, not `.eq`.
+  const base = supabase
+    .from("progress")
+    .update({ lists: file, updated_at: nextTs })
+    .eq("user_id", userId);
+  const guarded =
+    expected.version == null
+      ? base.is("updated_at", null)
+      : base.eq("updated_at", expected.version);
+  const { data, error } = await guarded.select("user_id");
   if (error) throw new Error(`writing progress.lists failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
 // The `settings` jsonb is the third blob on the row, beside `history` and

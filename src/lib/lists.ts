@@ -9,12 +9,54 @@
 // reason it was a separate file: history is rewritten on every finished session
 // and rebuilt wholesale by deleteSessions(). Lists outlive all of that and must
 // not be collateral in a "delete all my history" that was never about them.
+//
+// EVERY MUTATOR GOES THROUGH COMPARE-AND-SET. These used to be load → mutate the
+// loaded copy → upsert the whole blob, which let two overlapping writes clobber
+// each other (two devices signing in at once wiped one device's lists outright —
+// see lists-mutate.ts). Each write is now a PURE op re-applied against whatever
+// a concurrent writer left behind, so a lost race merges instead of overwriting.
 
 import "server-only";
 
-import { withEntriesAdded, withEntriesRemoved, withName } from "@/lib/list-ops";
-import { readListsRow, writeListsRow } from "@/lib/store/supabase-store";
+import {
+  withListDeleted,
+  withListEntriesAdded,
+  withListEntriesRemoved,
+  withListRenamed,
+  withListSaved,
+} from "@/lib/list-ops";
+import { mutateListsWithRetry, type ListsStore } from "@/lib/lists-mutate";
+import {
+  readListsRow,
+  readListsRowVersioned,
+  writeListsRowGuarded,
+} from "@/lib/store/supabase-store";
 import type { EntryId, ListsFile, SavedList } from "@/types";
+
+/** The compare-and-set store the mutators below run their read-modify-write
+ * through, so two overlapping requests cannot clobber each other's lists. One
+ * instance, since it is stateless — the request-bound Supabase client is created
+ * per call inside these primitives. The twin of history.ts's `store`. */
+const store: ListsStore = {
+  read: readListsRowVersioned,
+  write: writeListsRowGuarded,
+};
+
+/**
+ * Apply a pure op to this user's lists and persist it, safe against a concurrent
+ * writer. The one seam every mutator below shares.
+ *
+ * An op that changed nothing writes nothing (the ops return the SAME file
+ * reference), which preserves what the old code did by accident for a missing or
+ * derived list and now does deliberately: an add to a list that is not there
+ * must not churn the row.
+ */
+function mutateLists(
+  userId: string,
+  op: (file: ListsFile) => ListsFile,
+): Promise<ListsFile> {
+  return mutateListsWithRetry(store, userId, op);
+}
 
 /** The signed-in learner's lists. readListsRow normalizes an unset column into
  * no lists. */
@@ -22,18 +64,9 @@ export async function loadLists(userId: string): Promise<ListsFile> {
   return readListsRow(userId);
 }
 
-async function writeLists(userId: string, file: ListsFile): Promise<void> {
-  await writeListsRow(userId, file);
-}
-
 /** Add a list, or replace the one with the same id. */
 export async function saveList(userId: string, list: SavedList): Promise<ListsFile> {
-  const file = await loadLists(userId);
-  const i = file.lists.findIndex((l) => l.id === list.id);
-  if (i === -1) file.lists.push(list);
-  else file.lists[i] = list;
-  await writeLists(userId, file);
-  return file;
+  return mutateLists(userId, (file) => withListSaved(file, list));
 }
 
 /**
@@ -51,11 +84,7 @@ export async function addToList(
   id: string,
   entries: EntryId[],
 ): Promise<ListsFile> {
-  const file = await loadLists(userId);
-  const i = file.lists.findIndex((l) => l.id === id);
-  if (i !== -1) file.lists[i] = withEntriesAdded(file.lists[i], entries);
-  await writeLists(userId, file);
-  return file;
+  return mutateLists(userId, (file) => withListEntriesAdded(file, id, entries));
 }
 
 /**
@@ -69,11 +98,7 @@ export async function removeFromList(
   id: string,
   entries: EntryId[],
 ): Promise<ListsFile> {
-  const file = await loadLists(userId);
-  const i = file.lists.findIndex((l) => l.id === id);
-  if (i !== -1) file.lists[i] = withEntriesRemoved(file.lists[i], entries);
-  await writeLists(userId, file);
-  return file;
+  return mutateLists(userId, (file) => withListEntriesRemoved(file, id, entries));
 }
 
 /**
@@ -87,16 +112,9 @@ export async function renameList(
   id: string,
   name: string,
 ): Promise<ListsFile> {
-  const file = await loadLists(userId);
-  const i = file.lists.findIndex((l) => l.id === id);
-  if (i !== -1) file.lists[i] = withName(file.lists[i], name);
-  await writeLists(userId, file);
-  return file;
+  return mutateLists(userId, (file) => withListRenamed(file, id, name));
 }
 
 export async function deleteList(userId: string, id: string): Promise<ListsFile> {
-  const file = await loadLists(userId);
-  file.lists = file.lists.filter((l) => l.id !== id);
-  await writeLists(userId, file);
-  return file;
+  return mutateLists(userId, (file) => withListDeleted(file, id));
 }
