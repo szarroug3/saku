@@ -15,7 +15,8 @@ import test from "node:test";
 
 import { KANJI } from "@/data/kanji.ts";
 import { builtPieces } from "@/data/kanji-etymology.ts";
-import { buildGlyphItem } from "@/lib/content/build-item.ts";
+import { wordEntry } from "@/data/vocab.ts";
+import { buildGlyphItem, buildItem } from "@/lib/content/build-item.ts";
 import { characterEntryPayload, derivePosition } from "./character-entry-content.ts";
 
 test("にょう (bottom-left) suffix is detected — the confirmed SAK-158 gap", () => {
@@ -104,6 +105,38 @@ test("a radical with no authored tip (口) carries radicalTip: null", () => {
   assert.ok(item, "口 should build a ContentItem");
   const payload = characterEntryPayload(item!);
   assert.equal(payload.radicalTip, null);
+});
+
+// ---- wordNote: いいえ/いや contrast note (SAK-229) ----
+//
+// Both words taught the single English gloss "no" with nothing anywhere
+// explaining the difference (いいえ is neutral; いや leans "don't want to /
+// reluctant", already hinted at by its own example sentence but never said in
+// prose). One shared note, resolvable from either word's own payload.
+
+test("いいえ's payload carries its own hand-authored contrast note, naming いや", () => {
+  const item = buildItem(wordEntry("いいえ"), "word");
+  assert.ok(item, "いいえ should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  assert.ok(payload.wordNote, "いいえ should have a wordNote");
+  assert.match(payload.wordNote!, /いいえ/);
+  assert.match(payload.wordNote!, /いや/);
+});
+
+test("いや's payload carries the SAME contrast note, naming いいえ", () => {
+  const item = buildItem(wordEntry("いや"), "word");
+  assert.ok(item, "いや should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  assert.ok(payload.wordNote, "いや should have a wordNote");
+  assert.match(payload.wordNote!, /いいえ/);
+  assert.match(payload.wordNote!, /いや/);
+});
+
+test("a word with no authored contrast partner (人) carries wordNote: null", () => {
+  const item = buildItem(wordEntry("人"), "word");
+  assert.ok(item, "人 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  assert.equal(payload.wordNote, null);
 });
 
 // ---- parts: the Sub-components list IS builtPieces (SAK-224) ----

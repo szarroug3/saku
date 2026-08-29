@@ -32,8 +32,9 @@ import { describe, test } from "node:test";
 
 import { RADICALS, radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { kanjiRow } from "@/data/kanji";
+import { wordEntry } from "@/data/vocab.ts";
 import { characterRoles } from "@/lib/character-role";
-import { buildGlyphItem } from "@/lib/content/build-item.ts";
+import { buildGlyphItem, buildItem } from "@/lib/content/build-item.ts";
 import { characterEntryPayload } from "@/lib/library/character-entry-content.ts";
 
 const SOURCE = readFileSync(
@@ -118,13 +119,41 @@ describe("SAK-155 — 勹's radical page renders its recognition tip", () => {
   test("the source destructures and renders radicalTip inside the radical block", () => {
     assert.match(
       SOURCE,
-      /const \{ kanjiMeaning, radicalMeaning, radicalTip \} = payload;/,
+      /const \{ kanjiMeaning, radicalMeaning, radicalTip, wordNote \} = payload;/,
       "CharacterEntryView should read radicalTip off the payload",
     );
     assert.match(
       SOURCE,
       /\{radicalTip \? \(/,
       "the 'As a radical' block should conditionally render radicalTip",
+    );
+  });
+});
+
+// ---- SAK-229: the "As a word" block renders the いいえ/いや contrast note ----
+//
+// Same constraint as SAK-146/SAK-155 above (no React harness for this
+// "use client" module): verified behaviourally (いいえ's own payload has a
+// non-null wordNote) and structurally (the source renders it).
+
+describe("SAK-229 — いいえ's word page renders its contrast note", () => {
+  test("いいえ's own payload carries a non-null wordNote", () => {
+    const item = buildItem(wordEntry("いいえ"), "word");
+    assert.ok(item, "いいえ should build a ContentItem");
+    const payload = characterEntryPayload(item!);
+    assert.ok(payload.wordNote, "いいえ should carry a wordNote");
+  });
+
+  test("the source destructures and renders wordNote inside the word block", () => {
+    assert.match(
+      SOURCE,
+      /const \{ kanjiMeaning, radicalMeaning, radicalTip, wordNote \} = payload;/,
+      "CharacterEntryView should read wordNote off the payload",
+    );
+    assert.match(
+      SOURCE,
+      /\{wordNote \? \(/,
+      "the 'As a word' block should conditionally render wordNote",
     );
   });
 });

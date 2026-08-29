@@ -246,7 +246,7 @@ export function CharacterEntryView({
   // The DEFINITION belongs to each role, not the header — a glyph that plays
   // several roles can mean different things in each (生 = "life" as a kanji, なま
   // "raw" as a word), so each role block carries its own meaning.
-  const { kanjiMeaning, radicalMeaning, radicalTip } = payload;
+  const { kanjiMeaning, radicalMeaning, radicalTip, wordNote } = payload;
 
   // Which role blocks have something to show, and whether to LABEL them: a
   // single-role glyph drops the "As a …" label (see RoleBlock). Each block that
@@ -522,6 +522,18 @@ export function CharacterEntryView({
                     })}
                   </tbody>
                 </table>
+                {/* SAK-229: a hand-authored note distinguishing this word from
+                    another word that glosses the same in English (いいえ vs
+                    いや, both "no") — see word-contrast-notes.ts. Placed right
+                    under the meaning it qualifies, before the word is shown in
+                    a sentence, so a learner reads the distinction before (or
+                    even without) an example that might otherwise be the only
+                    hint of it. */}
+                {wordNote ? (
+                  <div className="mt-3">
+                    <Callout>{wordNote}</Callout>
+                  </div>
+                ) : null}
               </div>
 
               {wordPieces.length > 0 ? (
