@@ -169,11 +169,11 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "how sure you are, and how you know",
     members: ["sou-appearance", "sou-hearsay", "you-da", "rashii", "kamoshirenai", "deshou"], //
     feel:
-      "そう splits by ATTACHMENT, which is the only split in this family a " +
-      "machine can see: 降りそう (stem, 'looks like rain') vs 降るそうだ " +
-      "(plain, 'I hear it'll rain'). The rest differ by how direct the " +
-      "evidence is, and that ordering is exactly the judgement call this app " +
-      "does not make for you.",
+      "そう splits by what it attaches to, and that's the one difference " +
+      "here you can spot just from the word's shape: 降りそう (stem, " +
+      "'looks like rain') vs 降るそうだ (plain, 'I hear it'll rain'). The " +
+      "rest differ by how direct the evidence is, and that ordering is " +
+      "exactly the judgement call this app does not make for you.",
     link: null,
     noLinkReason:
       "No single verified link covers the family. Tofugu's そう/よう/らしい " +
