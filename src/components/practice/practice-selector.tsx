@@ -23,7 +23,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { Info } from "@/components/ui";
+import { Chip, Info } from "@/components/ui";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { readableAssemblyForTiers } from "@/data/assembly";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
@@ -155,74 +155,12 @@ function ScopeButton({
   );
 }
 
-function TypeChip({
-  id,
-  count,
-  on,
-  onClick,
-}: {
-  id: string;
-  count: number;
-  on: boolean;
-  onClick: () => void;
-}) {
-  const glyph = GLYPH_BY_TYPE.get(id) ?? "";
-  // A type with nothing in the current scope can't be drilled — dim it and say
-  // so, rather than offering a chip that resolves to zero.
-  const empty = count === 0;
+/** The small count pill every Kind/Status/date chip carries as its last child. */
+function CountBadge({ count }: { count: number }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={empty}
-      suppressHydrationWarning
-      className={cx(
-        "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
-        on
-          ? "border-accent bg-accent-bg text-accent"
-          : "border-border bg-card text-text hover:bg-panel",
-        empty && "cursor-default opacity-40 hover:bg-card",
-      )}
-    >
-      <span className={cx(japaneseFontClass(glyph), "text-base")}>{glyph}</span>
-      <span>{typeLabel(id)}</span>
-      <span className="rounded-full border border-border px-1.5 py-0.5 text-[10.5px] tabular-nums text-text-muted">
-        {count}
-      </span>
-    </button>
-  );
-}
-
-function StatusChip({
-  label,
-  count,
-  on,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  on: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={count === 0}
-      suppressHydrationWarning
-      className={cx(
-        "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
-        on
-          ? "border-accent bg-accent-bg text-accent"
-          : "border-border bg-card text-text hover:bg-panel",
-        count === 0 && "cursor-default opacity-40 hover:bg-card",
-      )}
-    >
-      <span>{label}</span>
-      <span className="rounded-full border border-border px-1.5 py-0.5 text-[10.5px] tabular-nums text-text-muted">
-        {count}
-      </span>
-    </button>
+    <span className="rounded-full border border-border px-1.5 py-0.5 text-[10.5px] tabular-nums text-text-muted">
+      {count}
+    </span>
   );
 }
 
@@ -515,27 +453,35 @@ export function PracticeSelector({
           </Info>
         </div>
         <div className="flex flex-wrap gap-2">
-          {STATUSES.map(({ id, label }) => (
-            <StatusChip
-              key={id}
-              label={label}
-              count={statusCounts.get(id) ?? 0}
-              on={sel.states.includes(id)}
-              onClick={() => {
-                const next: Selection = {
-                  ...sel,
-                  states: sel.states.includes(id)
-                    ? sel.states.filter((state) => state !== id)
-                    : [...sel.states, id],
-                };
-                onChange(
-                  scope === "everything"
-                    ? pruneEmptyTypes(next, presentTypesIn(next))
-                    : next,
-                );
-              }}
-            />
-          ))}
+          {STATUSES.map(({ id, label }) => {
+            const count = statusCounts.get(id) ?? 0;
+            return (
+              <Chip
+                key={id}
+                type="button"
+                plain
+                on={sel.states.includes(id)}
+                disabled={count === 0}
+                suppressHydrationWarning
+                onClick={() => {
+                  const next: Selection = {
+                    ...sel,
+                    states: sel.states.includes(id)
+                      ? sel.states.filter((state) => state !== id)
+                      : [...sel.states, id],
+                  };
+                  onChange(
+                    scope === "everything"
+                      ? pruneEmptyTypes(next, presentTypesIn(next))
+                      : next,
+                  );
+                }}
+              >
+                <span>{label}</span>
+                <CountBadge count={count} />
+              </Chip>
+            );
+          })}
         </div>
         <p className="mt-2 text-[12px] text-text-muted">
           {sel.states.length
@@ -562,33 +508,48 @@ export function PracticeSelector({
           >
             <span>Any time</span>
           </button>
-          <StatusChip
-            label="Today"
-            count={learnedCounts.today}
+          <Chip
+            type="button"
+            plain
             on={isToday}
+            disabled={learnedCounts.today === 0}
+            suppressHydrationWarning
             onClick={() => {
               setCustomOpen(false);
               setLearned(todayRange(now));
             }}
-          />
-          <StatusChip
-            label="This week"
-            count={learnedCounts.week}
+          >
+            <span>Today</span>
+            <CountBadge count={learnedCounts.today} />
+          </Chip>
+          <Chip
+            type="button"
+            plain
             on={isWeek}
+            disabled={learnedCounts.week === 0}
+            suppressHydrationWarning
             onClick={() => {
               setCustomOpen(false);
               setLearned(thisWeekRange(now));
             }}
-          />
-          <StatusChip
-            label="This month"
-            count={learnedCounts.month}
+          >
+            <span>This week</span>
+            <CountBadge count={learnedCounts.week} />
+          </Chip>
+          <Chip
+            type="button"
+            plain
             on={isMonth}
+            disabled={learnedCounts.month === 0}
+            suppressHydrationWarning
             onClick={() => {
               setCustomOpen(false);
               setLearned(thisMonthRange(now));
             }}
-          />
+          >
+            <span>This month</span>
+            <CountBadge count={learnedCounts.month} />
+          </Chip>
           <button
             type="button"
             onClick={() => {
@@ -669,15 +630,27 @@ export function PracticeSelector({
         <div className="mt-6">
           <SubLbl>Kind</SubLbl>
           <div className="mb-1.5 flex flex-wrap gap-2">
-            {types.map((id) => (
-              <TypeChip
-                key={id}
-                id={id}
-                count={typeCounts.get(id) ?? 0}
-                on={sel.types.includes(id)}
-                onClick={() => onChange(toggleType(sel, id))}
-              />
-            ))}
+            {types.map((id) => {
+              const glyph = GLYPH_BY_TYPE.get(id) ?? "";
+              const count = typeCounts.get(id) ?? 0;
+              return (
+                <Chip
+                  key={id}
+                  type="button"
+                  plain
+                  on={sel.types.includes(id)}
+                  disabled={count === 0}
+                  suppressHydrationWarning
+                  onClick={() => onChange(toggleType(sel, id))}
+                >
+                  <span className={cx(japaneseFontClass(glyph), "text-base")}>
+                    {glyph}
+                  </span>
+                  <span>{typeLabel(id)}</span>
+                  <CountBadge count={count} />
+                </Chip>
+              );
+            })}
           </div>
           <p className="text-[12px] text-text-muted">
             {sel.types.length

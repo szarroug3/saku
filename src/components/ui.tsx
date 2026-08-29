@@ -332,23 +332,44 @@ export function PrimaryBtn({ className, ...props }: BtnProps) {
   );
 }
 
-/** Pill chip toggle; `partial` is the dashed/amber partial state. */
+/** Pill chip toggle; `partial` is the dashed/amber partial state.
+ *
+ * `plain` is the flatter look Practice's Kind/Status/date chips need: several
+ * children (a glyph, a label, a count badge) laid out with `flex`/`gap`
+ * instead of a single text node, a touch more vertical padding, an un-muted
+ * off-state text colour with its own hover, and a dimmed, hover-inert look
+ * once `disabled` (Tailwind's `disabled:` variant, so it only ever engages
+ * together with the real `disabled` attribute a caller passes through
+ * `...props`). It is its own branch rather than something layered on via
+ * className for the reason BtnProps's `danger`/`go` note gives: `cx` is a
+ * plain join, not tailwind-merge, so a className fighting the base string
+ * over the same property (padding, text colour) would leave both classes on
+ * the element with the winner decided by stylesheet order, not by the
+ * caller — a branch cannot collide with itself. SAK-249 moved
+ * TypeChip/StatusChip's hand-copied markup (practice-selector.tsx) onto this
+ * branch instead of leaving a byte-for-byte duplicate of Chip's own string. */
 export function Chip({
   on,
   partial,
+  plain,
   className,
   ...props
-}: BtnProps & { on?: boolean; partial?: boolean }) {
+}: BtnProps & { on?: boolean; partial?: boolean; plain?: boolean }) {
   return (
     <button
       {...props}
       className={cx(
-        "kq-material cursor-pointer select-none rounded-full border px-3 py-1 text-[13px]",
+        plain
+          ? "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]"
+          : "kq-material cursor-pointer select-none rounded-full border px-3 py-1 text-[13px]",
         on
           ? "border-accent bg-accent-bg text-accent"
           : partial
             ? "border-warning bg-warning-bg text-warning"
-            : "border-border bg-card text-text-muted",
+            : plain
+              ? "border-border bg-card text-text hover:bg-panel"
+              : "border-border bg-card text-text-muted",
+        plain && "disabled:cursor-default disabled:opacity-40 disabled:hover:bg-card",
         className,
       )}
     />
