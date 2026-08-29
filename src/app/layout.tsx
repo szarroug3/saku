@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
 import { DockHeightVar } from "@/components/dock-height-var";
+import { HydrationMarker } from "@/components/hydration-marker";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
@@ -356,6 +357,10 @@ export default async function RootLayout({
                                   fired on every app page load) was removed
                                   rather than kept as dead weight. */}
                               {children}
+                              {/* SAK-264: mounted last among the shell's own
+                                  client children on purpose — see the
+                                  component's own header. Renders nothing. */}
+                              <HydrationMarker />
                             </div>
                           </div>
                         </div>

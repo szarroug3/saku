@@ -1,4 +1,4 @@
-import { test, expect } from "./helpers/app";
+import { test, expect, waitForHydration } from "./helpers/app";
 import { kanaFact } from "@/data/characters";
 
 /**
@@ -14,8 +14,16 @@ import { kanaFact } from "@/data/characters";
  * - Grammar pages: sample grammar cluster
  * - Heavy data scenarios: pages with 100+ facts loaded
  *
- * Load time is measured from navigation start to networkidle (all network
- * requests complete and no new ones initiated for at least 500ms).
+ * SAK-264: load time is measured from navigation start to the app's own
+ * hydration-complete marker (waitForHydration, e2e/helpers/app.ts), NOT
+ * `waitForLoadState("networkidle")`. networkidle used to produce the same
+ * route measuring up to 20x apart between runs, because it waits on ALL
+ * network activity in the tab (analytics, Speed Insights, background
+ * revalidation) rather than anything that actually gates interactivity — see
+ * waitForHydration's own doc comment for the full explanation. The marker
+ * fires once, deterministically, per navigation, so these numbers are stable
+ * run to run on the same route; that is what the budgets below are
+ * calibrated against.
  */
 
 type PageLoadTest = {
@@ -160,8 +168,8 @@ for (const page of TEST_PAGES) {
 
     const response = await browserPage.goto(page.url);
 
-    // Wait for network to be idle (all requests complete, no new ones for 500ms)
-    await browserPage.waitForLoadState("networkidle");
+    // SAK-264: wait for the app's hydration-complete marker, not networkidle.
+    await waitForHydration(browserPage);
 
     const loadTimeMs = Date.now() - startTime;
 
@@ -253,7 +261,7 @@ test("Quiz selection page with 100+ facts loads within acceptable time", async (
 
   const response = await browserPage.goto("/quiz");
 
-  await browserPage.waitForLoadState("networkidle");
+  await waitForHydration(browserPage);
 
   const loadTimeMs = Date.now() - startTime;
 
@@ -283,7 +291,7 @@ test("Practice selector page with 100+ facts loads within acceptable time", asyn
 
   const response = await browserPage.goto("/practice");
 
-  await browserPage.waitForLoadState("networkidle");
+  await waitForHydration(browserPage);
 
   const loadTimeMs = Date.now() - startTime;
 
@@ -315,7 +323,7 @@ test("Progress page with 100+ known facts loads within acceptable time", async (
   // SAK-152: /stats moved to /progress (see the main-page test above).
   const response = await browserPage.goto("/progress");
 
-  await browserPage.waitForLoadState("networkidle");
+  await waitForHydration(browserPage);
 
   const loadTimeMs = Date.now() - startTime;
 
@@ -345,7 +353,7 @@ test("Library root with 100+ known facts loads within acceptable time", async ({
 
   const response = await browserPage.goto("/library");
 
-  await browserPage.waitForLoadState("networkidle");
+  await waitForHydration(browserPage);
 
   const loadTimeMs = Date.now() - startTime;
 
@@ -375,7 +383,7 @@ test("Library all tab with 100+ known facts loads within acceptable time", async
 
   const response = await browserPage.goto("/library?kind=all");
 
-  await browserPage.waitForLoadState("networkidle");
+  await waitForHydration(browserPage);
 
   const loadTimeMs = Date.now() - startTime;
 
