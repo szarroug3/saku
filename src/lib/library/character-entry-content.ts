@@ -6,7 +6,7 @@
 // detail pages deserialize its exact output instead of rebuilding it in the
 // browser (which would pull the curriculum dictionary into their bundle).
 
-import { etymologyOf, phoneticReading } from "@/data/kanji-etymology";
+import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { radicalTipFor } from "@/data/radical-tips";
@@ -16,7 +16,7 @@ import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
 import { strokeFallbackOf } from "@/lib/lesson-roles";
-import { teachableParts } from "@/lib/kanji-parts";
+import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
@@ -195,33 +195,46 @@ export function characterEntryPayload(
   const isWord = item.roles.includes("word") || item.kind === "word";
 
   const etymology = isKanji ? etymologyOf(glyph) : null;
+  // SAK-224: the Sub-components list is `builtPieces` — THE join between the
+  // shapes a kanji is actually DRAWN from (KanjiVG's `comps`) and Wiktionary's
+  // glyph origin — not the raw etymology components this used to read.
+  //
+  // The raw components are Wiktionary's CANONICAL characters (人, 水, 肉), which
+  // is not what the character on the page is drawn with: 仁/仏/仕 are written
+  // with 亻, 河 with 氵, 肝 with the flesh 月. Reading them raw printed the
+  // canonical form for 882 of the 2,136 kanji (41%) — a learner looking at 仁
+  // was told it contains 人 and got no hint that the shape they must recognise
+  // and write is 亻. It also printed the pieces `builtPieces` deliberately
+  // DROPS: structural `form` shells, and pieces Wiktionary names but that the
+  // drawn shape does not carry (服's 月 is a corruption of 舟 and matches
+  // neither of its components — labelling it "flesh" is the exact dishonesty
+  // the etymology layer refuses). And it missed the pieces `builtPieces` ADDS:
+  // its repeated-container expansion (森 → 木·木·木) and its hand-verified
+  // overrides (二 → 一·一).
+  //
+  // `builtPieces` is already the source of truth everywhere else this question
+  // is asked — `teachableParts` (the lesson's prerequisite graph and the drill
+  // hints) reads it, and `lessonRoles` gates this very section on it — so the
+  // page now agrees with the lesson instead of contradicting it.
   const parts: CharacterPart[] = isKanji
-    ? etymology && etymology.components.length > 0
-      ? etymology.components.map((c) => ({
-          glyph: c.glyph,
-          entry: builtPieceEntryId(c.glyph),
-          // A phonetic component's raw crawled `sense` is empty (SAK-137) — it
-          // was chosen for its SOUND, not a meaning, so there is nothing there
-          // to show. Show the reading it actually lends instead (never
-          // invented — phoneticReading only returns an on-reading the app's
-          // own data already confirms the host shares), same "phonetic" role
-          // tag either way. Falls back to the bare tag, no invented text, when
-          // no shared on-reading exists (see phoneticReading's own doc).
-          sense:
-            c.function === "phonetic"
-              ? (() => {
-                  const reading = phoneticReading(glyph, c.glyph);
-                  return reading ? `lends ${reading}` : "";
-                })()
-              : (c.sense ?? ""),
-          role: c.function ?? null,
-        }))
-      : (teachableParts(glyph) ?? []).map((p) => ({
-          glyph: p.c,
-          entry: builtPieceEntryId(p.c),
-          sense: p.meaning,
-          role: null,
-        }))
+    ? builtPieces(glyph).map((p) => ({
+        glyph: p.glyph,
+        entry: builtPieceEntryId(p.glyph),
+        // A phonetic piece's label is the on-reading it lends (never invented —
+        // `phoneticReading`, inside builtPieces, only returns a reading the
+        // app's own data already confirms the host shares); a semantic piece's
+        // is the contextual sense Wiktionary gives. Where a semantic piece has
+        // no contextual sense (河's 氵), fall back to the piece's OWN meaning
+        // from our own tables — "water" — rather than printing a bare role tag.
+        // Empty string only when there is genuinely nothing honest to say.
+        sense:
+          p.role === "phonetic"
+            ? p.label
+              ? `lends ${p.label}`
+              : ""
+            : (p.label ?? teachablePieceMeaning(p.glyph) ?? ""),
+        role: p.role,
+      }))
     : [];
 
   const groups: CharacterReadingGroup[] = [];

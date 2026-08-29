@@ -356,8 +356,15 @@ export function CharacterEntryView({
                 <div>
                   <SubLabel>Sub-components</SubLabel>
                   <div className="flex flex-col gap-1.5">
-                    {parts.map((p) => (
-                      <div key={p.glyph} className="flex items-baseline gap-2.5 text-[14px]">
+                    {/* Keyed by POSITION, not glyph: a kanji genuinely repeats a
+                       piece — 林 is 木 + 木, 森 three of them, 二 two 一 — and
+                       since SAK-224 these rows come from `builtPieces`, which
+                       keeps every copy. A glyph key would collide on those. */}
+                    {parts.map((p, i) => (
+                      <div
+                        key={`${p.glyph}-${i}`}
+                        className="flex items-baseline gap-2.5 text-[14px]"
+                      >
                         {/* Only the glyph itself navigates — the sense/role
                            text beside it is read, not tapped, so the row no
                            longer swallows a tap anywhere along its width.
