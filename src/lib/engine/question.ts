@@ -217,6 +217,18 @@ export interface PromptContext {
    * same-row, then same-set fill, which is what it always did.
    */
   known?: ReadonlySet<FactId>;
+  /**
+   * The per-showing SENSE a word MEANING card is testing THIS time, when its
+   * reading pools more than one genuinely distinct JMdict entry (`そう`:
+   * "appearing that" vs "in that way" — see `ReadingUnit.senseGroups`).
+   *
+   * Same discipline as `grammarVehicle` and `numberItem`: rolled once at ask
+   * time (`wordSenseFor`) and carried here so the check and the reveal grade
+   * against exactly the pool the card is asking about, instead of the fact's
+   * full pooled answer set. Absent for every fact whose reading traces to a
+   * single entry — the ordinary case — which keeps grading exactly as it was.
+   */
+  wordSense?: readonly string[];
 }
 
 /**
@@ -861,6 +873,44 @@ export function variantPromptFor(
   return { glyph: pick.glyph, original: glyph };
 }
 
+/**
+ * Roll ONE of a word MEANING fact's distinct senses to test THIS showing, or
+ * null.
+ *
+ * SAK-225: `そう` merges two genuinely separate JMdict entries under one
+ * spoken reading — "appearing that" (auxiliary) and "in that way" (adverb) —
+ * and `readingUnits` pools both sets of glosses into the fact's single answer
+ * set, so a learner who only knows ONE of them was never told they answered
+ * the wrong question (Library, by contrast, already lists these as two
+ * distinct meanings). Rolling one sense per SHOWING — the same discipline as
+ * `variantPromptFor` — lets the card grade against exactly the pool it is
+ * actually asking about, while the fact itself, its id and its progress stay
+ * exactly as they are: only the grading pool for THIS ask narrows.
+ *
+ * null for:
+ *   - any direction but jp2en (the only direction a word meaning is ever
+ *     asked — see `wordQuestions.fixedDir`);
+ *   - a word READING fact (its answer is the kana reading, never pooled
+ *     across senses — this ambiguity is meaning-fact-only); and
+ *   - a reading whose `senseGroups` is absent or has fewer than two entries,
+ *     i.e. every teachable sense it carries traces to the SAME JMdict entry
+ *     — the ordinary case, where there is only one pool and nothing to pick
+ *     between.
+ */
+export function wordSenseFor(
+  fact: FactId,
+  dir: Direction,
+  rng: Rng = Math.random,
+): readonly string[] | null {
+  if (dir !== "jp2en") return null;
+  if (isWordReading(fact)) return null;
+  const info = factInfo(fact);
+  if (!info || info.subject !== VOCAB_SUBJECT) return null;
+  const groups = wordReadingUnit(fact)?.unit.senseGroups;
+  if (!groups || groups.length < 2) return null;
+  return groups[Math.floor(rng() * groups.length)] ?? groups[0];
+}
+
 // ---------- words ----------
 
 const wordQuestions: QuestionType = {
@@ -878,6 +928,13 @@ const wordQuestions: QuestionType = {
     // written word is already the prompt.
     if (dir === "jp2en" && ctx?.listen && isWordReading(fact)) {
       return glyphOfFact(fact);
+    }
+    // SAK-225: a meaning fact whose reading pools more than one JMdict entry
+    // shows the SENSE this showing rolled (`wordSenseFor`), not the fact's
+    // pooled `answers[0]` — otherwise an MC board and a typed card for the
+    // same showing could disagree about which meaning is "the" answer.
+    if (dir === "jp2en" && !isWordReading(fact) && ctx?.wordSense?.length) {
+      return ctx.wordSense[0];
     }
     return null;
   },
@@ -917,13 +974,32 @@ const wordQuestions: QuestionType = {
     }
     return { glyph: answerOf(fact), jp: false, context: "in japanese", hint: null };
   },
-  check(fact, dir, given) {
-    if (dir === "jp2en") return checkJp2en(fact, given);
+  check(fact, dir, given, ctx) {
+    if (dir === "jp2en") {
+      // SAK-225: a meaning fact asking about ONE rolled sense (`wordSenseFor`)
+      // grades against THAT sense's own glosses only — not the fact's full
+      // pooled `answers`, which is what let an answer correct for the OTHER
+      // sense of a word like そう pass as though it matched the one asked.
+      if (!isWordReading(fact) && ctx?.wordSense?.length) {
+        return matchesEnglish(given, ctx.wordSense);
+      }
+      return checkJp2en(fact, given);
+    }
     // The reading fact's en→jp answer is its kana READING, not its glyph — which
     // `en2jpTarget` already knows, so checkEn2jp grades it with no special case
     // here. Accepted typed (romaji or kana) exactly the way every other kana
     // target is.
     return checkEn2jp(fact, given);
+  },
+  answerReveal(fact, dir, ctx) {
+    // SAK-225: reveal the SENSE this showing actually asked about, not the
+    // fact's pooled `answers[0]` (revealFor's default) — a miss on the
+    // "in that way" sense of そう must not be told the answer was "appearing
+    // that" just because that sense happens to sort first.
+    if (dir === "jp2en" && !isWordReading(fact) && ctx?.wordSense?.length) {
+      return ctx.wordSense[0];
+    }
+    return null;
   },
   distractors(fact, n) {
     // A word has no confusable table, but it has neighbours: the other everyday
