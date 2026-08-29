@@ -36,6 +36,7 @@ export {
   grammarVehicleFor,
   grammarSelectionFor,
   variantPromptFor,
+  wordSenseFor,
   type Prompt,
   type PromptContext,
   type QuestionType,

@@ -79,6 +79,7 @@ import {
   revealFor,
   variantPromptFor,
   wordReadingCredit,
+  wordSenseFor,
   spread,
   type GrammarSelection,
   type GrammarVehicle,
@@ -216,6 +217,16 @@ interface DrillQuestion {
    * showing — every reading card, every jp2en card, and every character with no
    * variant form. Plain data, so it rides the serialized runtime. */
   variant: VariantPrompt | null;
+  /**
+   * The SENSE this word MEANING card is testing THIS showing, when its
+   * reading pools more than one genuinely distinct JMdict entry (SAK-225:
+   * そう's "appearing that" vs "in that way"). Rolled once at ask time exactly
+   * like `variant` and `numberItem`, so a remount can't reroll which sense is
+   * being asked mid-card. null for every reading card, every non-word card,
+   * and every word meaning fact whose reading traces to a single entry — see
+   * `wordSenseFor`. Plain data, so it rides the serialized runtime.
+   */
+  wordSense: readonly string[] | null;
   /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
@@ -391,6 +402,7 @@ function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
     grammarSelection: q.grammarSelection ?? undefined,
     numberItem: q.numberItem ?? undefined,
     variant: q.variant ?? undefined,
+    wordSense: q.wordSense ?? undefined,
   };
 }
 
@@ -1199,12 +1211,20 @@ export function DrillScreen() {
     // a variant character whose plain recognition this showing keeps. It rides
     // the SAME meaning fact, so nothing about grading or scheduling changes.
     const variant = variantPromptFor(f, dir);
+    // A word MEANING card whose reading pools more than one distinct JMdict
+    // entry (SAK-225: そう's "appearing that" vs "in that way") rolls ONE
+    // sense here, once, so this showing's prompt, grading and reveal all
+    // agree on the same pool instead of accepting either as "the" answer.
+    // null for a reading card, a non-word card, and a reading whose senses
+    // all trace to one entry — see `wordSenseFor`.
+    const wordSense = wordSenseFor(f, dir);
     const ctx: PromptContext = {
       listen,
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
       numberItem: numberItem ?? undefined,
       variant: variant ?? undefined,
+      wordSense: wordSense ?? undefined,
     };
     // The selection board comes PRE-BUILT and pre-shuffled: its options were
     // chosen per-sentence by the generator, which proved each one wrong for THIS
@@ -1251,6 +1271,7 @@ export function DrillScreen() {
       grammarSelection,
       numberItem,
       variant,
+      wordSense,
       recognition,
       pitch,
       particleDrill,

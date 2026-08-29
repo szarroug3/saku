@@ -746,10 +746,30 @@ export function isKanaWord(w: VocabRow): boolean {
  * reading fixes it: one reading is one thing to learn, its meaning the union of
  * every sense read that way. A word with one reading has one unit; 日 has two
  * (ひ = day, か = a day-counter), each its own scored skill.
+ *
+ * THE UNION IS FOR DISPLAY, NOT FOR GRADING (SAK-225)
+ * ====================================================
+ * "one unrelated answer" cuts both ways: pooling あの's "that" and "well, um"
+ * into one accepted-answer set means typing either now grades as correct for
+ * BOTH — a learner who only knows one of them is never told they answered the
+ * wrong question (Library, by contrast, lists these as two distinct meanings
+ * already). `glosses` stays the union — a reading card's context line wants
+ * the whole picture — but `senseGroups` keeps the per-JMdict-entry split
+ * alongside it, so a MEANING card can test, and grade, one sense at a time.
+ * See `wordSenseFor` in engine/question.ts, the one reader.
  */
 export interface ReadingUnit {
   readonly reb: string;
   readonly glosses: readonly string[];
+  /**
+   * The distinct JMdict entries this reading pools together, each its own
+   * gloss list — present only when there is more than one (そう merges TWO:
+   * "appearing that" the auxiliary, "in that way" the adverb). A reading
+   * that traces to a single entry, the ordinary case, carries no groups: a
+   * single pool is not something to pick between, and `glosses` already is
+   * that one pool.
+   */
+  readonly senseGroups?: readonly (readonly string[])[];
 }
 
 export function readingUnits(w: VocabRow): ReadingUnit[] {
@@ -767,6 +787,13 @@ export function readingUnits(w: VocabRow): ReadingUnit[] {
     ),
   ];
   const byReb = new Map<string, string[]>();
+  // SAK-225: alongside the flat union, group each reading's senses by their
+  // source `definitionId` — the sidecar's own boundary between genuinely
+  // separate JMdict entries (see `withSenses`'s doc comment: "keep each
+  // source row a separate definition instead of guessing from similar
+  // English"). This never changes `glosses`; it only records, per reading,
+  // whether that union came from one entry or several.
+  const groupsByReb = new Map<string, Map<string, string[]>>();
   for (const s of teachable) {
     let gl = byReb.get(s.reb);
     if (!gl) {
@@ -775,8 +802,27 @@ export function readingUnits(w: VocabRow): ReadingUnit[] {
       if (!order.includes(s.reb)) order.push(s.reb);
     }
     for (const g of s.glosses) if (!gl.includes(g)) gl.push(g);
+
+    let groups = groupsByReb.get(s.reb);
+    if (!groups) {
+      groups = new Map();
+      groupsByReb.set(s.reb, groups);
+    }
+    let group = groups.get(s.definitionId);
+    if (!group) {
+      group = [];
+      groups.set(s.definitionId, group);
+    }
+    for (const g of s.glosses) if (!group.includes(g)) group.push(g);
   }
-  return order.map((reb) => ({ reb, glosses: byReb.get(reb)! }));
+  return order.map((reb) => {
+    const groups = [...(groupsByReb.get(reb)?.values() ?? [])];
+    return {
+      reb,
+      glosses: byReb.get(reb)!,
+      senseGroups: groups.length > 1 ? groups : undefined,
+    };
+  });
 }
 
 /** One reading-unit of a word paired with the fact ids it mints. `reading` is
