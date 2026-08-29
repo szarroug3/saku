@@ -34,7 +34,7 @@ export function DrillDrawer({ onClose }: { onClose: () => void }) {
       <div className="relative z-10 flex w-full max-w-sm flex-col rounded-xl border border-border bg-[var(--bg)] shadow-xl">
         <div className="overflow-y-auto px-4 pt-4 pb-2 text-[13px]">
           <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
-            Drill settings
+            Quiz settings
           </p>
           <Row label="Audio prompts">
             <OnOff

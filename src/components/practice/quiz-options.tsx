@@ -22,7 +22,7 @@ export function QuizOptionsFields() {
         info={
           <div className="flex flex-col gap-2">
             <p>
-              <span className="text-accent">Drill</span>: one question at a
+              <span className="text-accent">Quiz</span>: one question at a
               time. You&apos;re shown a prompt and type or pick the answer,
               with retries if you miss it.
             </p>
@@ -45,7 +45,7 @@ export function QuizOptionsFields() {
         }
       >
         <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
-          Drill
+          Quiz
         </Chip>
         <Chip on={cfg.mode === "pairs"} onClick={() => update({ mode: "pairs" })}>
           Match pairs

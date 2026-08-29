@@ -207,7 +207,7 @@ export function TriageSection({
             ) : null}
             {weakest.length ? (
               <SmallBtn onClick={onDrillWeakest}>
-                Drill your weakest {weakest.length}
+                Quiz your weakest {weakest.length}
               </SmallBtn>
             ) : null}
           </>

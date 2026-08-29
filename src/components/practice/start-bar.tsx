@@ -40,7 +40,7 @@ function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-/** "Drill · Full coverage · Both" — the HOW half, read off the live setup. */
+/** "Quiz · Full coverage · Both" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
   const parts: string[] = [
     cfg.mode === "pairs"
@@ -53,7 +53,9 @@ export function howSentence(cfg: QuizConfig): string {
             ? "Substitution"
             : cfg.mode === "listen-sentence"
               ? "Listen to sentences"
-              : "Drill",
+              // SAK-233: the stored mode value is still "drill" — only the
+              // displayed name changes, to match "Quiz me" everywhere else.
+              : "Quiz",
   ];
   // Grid deals every card once, and the sentence corpus modes run their own
   // corpus-driven queue: none of them has a length or direction to state.
