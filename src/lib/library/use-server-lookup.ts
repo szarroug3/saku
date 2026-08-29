@@ -230,13 +230,37 @@ export function useServerLookup<Args extends readonly unknown[], T>(
       // caller happens to observe/write the cache first.
       const inFlight = pending.get(k) ?? fn(...a);
       pending.set(k, inFlight);
-      const value = await inFlight;
-      pending.delete(k);
-      cache.set(k, value);
-      if (alive) forceRender((n) => n + 1);
-      if (persist) {
-        const version = curriculumVersion();
-        if (version) void idbSet(k, version, value);
+      try {
+        const value = await inFlight;
+        pending.delete(k);
+        cache.set(k, value);
+        if (alive) forceRender((n) => n + 1);
+        if (persist) {
+          const version = curriculumVersion();
+          if (version) void idbSet(k, version, value);
+        }
+      } catch {
+        // SAK-241: a rejected lookup used to stay in `pending` forever, so
+        // every later mount for this same key (e.g. navigating back to the
+        // same view) reused this SAME already-failed promise instead of
+        // actually retrying — a transient network error looked identical to
+        // a permanently stuck "loading" state, recoverable only by a full
+        // page reload (which starts this module, and so `pending`, fresh).
+        // Evicting here — but only if nothing already replaced this exact
+        // promise in the map, e.g. a concurrent caller's own retry — means
+        // `cache.has(k)` is still false afterward, so the NEXT mount's
+        // effect (a remount is required; see the `[key]` dep note below)
+        // falls through to a fresh `fn(...a)` call instead of re-awaiting
+        // this rejection. `cache` itself is untouched: this hook's contract
+        // is that a cached value is a resolved one, and there is nothing
+        // useful to cache about a failure.
+        if (pending.get(k) === inFlight) pending.delete(k);
+        // Swallow rather than rethrow: `run` is called fire-and-forget below
+        // (`void run(...)`), so an uncaught rejection here would surface as
+        // an unhandled promise rejection with nowhere for a caller to
+        // `.catch` it. The component has no error UI to drive — it just
+        // keeps reading `cache.get(key)` as `undefined`, the same value it
+        // reads while a first attempt is still genuinely in flight.
       }
     }
 
