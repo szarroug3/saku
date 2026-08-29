@@ -26,10 +26,15 @@
 //     alternatives (じゅうがつ「4,0」) or parenthesised part-of-speech splits
 //     (「(副)0,(名)3」). Those words genuinely have more than one accepted
 //     accent, so the honest thing is to store none rather than pick one.
-//   - the (word, reading) pair matches a vocab row on BOTH keb AND reb. Keying
-//     on the written form alone would give 箸 the accent of 橋; keying on the
-//     reading alone would give はし three different answers. Homographs差 are
-//     only safe when both agree.
+//   - the (word, reading) pair matches a vocab row on BOTH keb AND the reading
+//     the word is TAUGHT with (word-senses.json's primary sense reb, which can
+//     differ from vocab.json's raw reb — 面 ships as おもて but is taught めん;
+//     人 ships as じん but is taught ひと). Keying on the written form alone
+//     would give 箸 the accent of 橋; keying on the reading alone would give
+//     はし three different answers; keying on vocab.json's raw reb instead of
+//     the taught reading fetched the WRONG reading's pitch for any word whose
+//     primary sense differs from it (SAK-221). Homographs are only safe when
+//     both keb and the taught reading agree.
 //   - the pair is unambiguous within Kanjium itself — no two rows disagree.
 //
 // Anything that fails a check is dropped, counted, and reported. Partial and
@@ -116,6 +121,74 @@ function taughtReading(row, senses) {
   return s && s.length ? s[0].reb : row.reb;
 }
 
+// SAK-221 REGRESSION SAMPLE. Words the audit confirmed the buggy vocab.json-reb
+// lookup got wrong (or, for 仏/悪口, wrong in the other direction — it stored a
+// value where Kanjium is ambiguous and the honest answer is none). Checked
+// after every re-ingest, straight against that run's freshly fetched Kanjium
+// text, by a codepath that does NOT reuse parseAccents/the matching loop above
+// — so a future change that reintroduces "look up by row.reb instead of the
+// taught reading" (or any other break in this same spot) fails the ingest
+// instead of shipping quietly.
+const REGRESSION_SAMPLE = [
+  ["人", "ひと"],
+  ["入る", "はいる"],
+  ["開く", "あく"],
+  ["下手", "へた"],
+  ["空", "そら"],
+  ["上下", "じょうげ"],
+  ["印", "しるし"],
+  ["節", "ふし"],
+  ["仏", "ほとけ"], // ambiguous in Kanjium ("0,3") — must resolve to no value
+  ["悪口", "あっこう"], // ambiguous in Kanjium ("0,3") — must resolve to no value
+];
+
+/** Re-derive the correct downstep for one (keb, reading) pair directly from
+ * the raw Kanjium text, independently of parseAccents()/the `clean` map: scan
+ * every line for that exact tab-separated prefix, and only return a value
+ * when every matching line agrees on a single bare-integer accent. Returns
+ * undefined when there is no matching row, the rows disagree, or the shared
+ * accent is a comma/parenthesis alternative — matching the ingest's own
+ * "ambiguous means no pitch" rule via a separate implementation. */
+function independentLookup(rawText, keb, reading) {
+  const prefix = `${keb}\t${reading}\t`;
+  const accents = new Set();
+  for (const line of rawText.split("\n")) {
+    if (line.startsWith(prefix)) accents.add(line.slice(prefix.length));
+  }
+  if (accents.size !== 1) return undefined;
+  const [accent] = accents;
+  return /^\d+$/.test(accent) ? Number.parseInt(accent, 10) : undefined;
+}
+
+/** Check REGRESSION_SAMPLE against this run's output. Returns a list of
+ * human-readable failure strings (empty when everything matches). */
+function verifyRegressionSample(rawText, vocab, senses, out) {
+  const failures = [];
+  for (const [keb, expectedReading] of REGRESSION_SAMPLE) {
+    const row = vocab.find((r) => r.keb === keb);
+    if (!row) {
+      failures.push(`${keb}: no longer in vocab.json — update the regression sample`);
+      continue;
+    }
+    const reading = taughtReading(row, senses);
+    if (reading !== expectedReading) {
+      failures.push(
+        `${keb}: taught reading is now ${reading}, sample expects ${expectedReading} — update the regression sample`,
+      );
+      continue;
+    }
+    const expected = independentLookup(rawText, keb, reading);
+    const actual = out[keb];
+    if (actual !== expected) {
+      failures.push(
+        `${keb} (${reading}): pitch.json has ${actual === undefined ? "no value" : actual}, ` +
+          `independently re-derived from Kanjium: ${expected === undefined ? "no value" : expected}`,
+      );
+    }
+  }
+  return failures;
+}
+
 async function main() {
   process.stderr.write(`Fetching ${ACCENTS_URL}\n`);
   const res = await fetch(ACCENTS_URL);
@@ -133,27 +206,29 @@ async function main() {
     await readFile(resolve(GENDIR, "word-senses.json"), "utf8"),
   );
 
-  // Match on BOTH written form and reading. keb is unique across vocab, so the
-  // output can be keyed by keb alone once the reb has been checked.
+  // Match on BOTH written form and the TAUGHT reading. keb is unique across
+  // vocab, so the output can be keyed by keb alone once the reading has been
+  // checked. Looking up by vocab.json's raw reb here (rather than the taught
+  // reading) was the SAK-221 bug: for a word whose primary sense reads
+  // differently from vocab.json's reb (面 ships as おもて but is taught めん;
+  // 人 ships as じん but is taught ひと), that mismatch fetched Kanjium's
+  // pitch for the WRONG reading and shipped it as if it were correct.
   const out = {};
   let matched = 0;
   let hitButDropped = 0;
   const outOfRange = []; // dropped: downstep past the taught reading's last mora
   for (const row of vocab) {
-    const key = `${row.keb}\t${row.reb}`;
+    const reading = taughtReading(row, senses);
+    const key = `${row.keb}\t${reading}`;
     if (clean.has(key)) {
       const downstep = clean.get(key);
       // VALIDITY INVARIANT. An accent falls on some mora 0..moraCount; a downstep
       // larger than the reading's mora count is impossible and renders a drop past
-      // the end of the word. This catches a wrong Kanjium row AND — the case that bit
-      // 面 — a mismatch where the pitch was matched on the vocab.json reb (おもて,
-      // 3 morae) but the word is TAUGHT with a shorter reading (めん, 2 morae).
-      // Validate against the taught reading, which is the one the mark renders on.
-      const reading = taughtReading(row, senses);
+      // the end of the word. This catches a wrong Kanjium row.
       if (downstep > moraCount(reading)) {
         outOfRange.push(
-          `${row.keb} (taught ${reading}, ${moraCount(reading)} morae; ` +
-            `matched ${row.reb}) downstep ${downstep}`,
+          `${row.keb} (taught ${reading}, ${moraCount(reading)} morae) ` +
+            `downstep ${downstep}`,
         );
         continue;
       }
@@ -161,10 +236,21 @@ async function main() {
       matched++;
     } else if (
       // The pair exists in Kanjium but only as an ambiguous / multi-value row.
-      text.includes(`${row.keb}\t${row.reb}\t`)
+      text.includes(`${row.keb}\t${reading}\t`)
     ) {
       hitButDropped++;
     }
+  }
+
+  // SAK-221 regression guard: verify the sample BEFORE writing anything, so a
+  // reintroduced bug fails the ingest instead of shipping a bad pitch.json.
+  const regressionFailures = verifyRegressionSample(text, vocab, senses, out);
+  if (regressionFailures.length) {
+    throw new Error(
+      `SAK-221 regression check failed against freshly fetched Kanjium data:\n${regressionFailures
+        .map((f) => `  - ${f}`)
+        .join("\n")}`,
+    );
   }
 
   // Stable key order so the diff is legible and re-runs are reproducible.
@@ -185,6 +271,7 @@ async function main() {
       `  present but ambiguous, no pitch stored: ${hitButDropped}`,
       `  dropped, downstep past taught reading: ${outOfRange.length}`,
       ...outOfRange.map((s) => `    ${s}`),
+      `SAK-221 regression sample: ${REGRESSION_SAMPLE.length}/${REGRESSION_SAMPLE.length} match Kanjium`,
       `Wrote ${path}`,
       "",
     ].join("\n"),
