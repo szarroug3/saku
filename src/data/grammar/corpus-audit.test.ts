@@ -99,7 +99,13 @@ describe("coverage after the audit is recorded, not assumed", () => {
     "made-ni": 86,
     nikui: 63,
     node: 89,
+    // 212 -> 164: 48 are purpose の+に ("convenient FOR doing X") or the
+    // pronoun-の + choice-に of 〜にする, not concessive のに.
+    noni: 164,
     "ta-tokoro": 139,
+    // 243 -> 234: 9 are volitional + と思う ("I intend to X"), a different
+    // recipe (you-to-omou) folded into this one at ingest time.
+    "to-omou": 234,
   };
 
   for (const [p, n] of Object.entries(SURVIVED)) {

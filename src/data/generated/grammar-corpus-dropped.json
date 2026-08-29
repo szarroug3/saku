@@ -1,1 +1,515 @@
-[]
+[
+  {
+    "id": 5049,
+    "jp": "寝ようと思う。",
+    "en": "I think I'm gonna go to sleep.",
+    "pattern": "to-omou",
+    "span": "と思う",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": true
+  },
+  {
+    "id": 74135,
+    "jp": "電話で済まそうと思いました。",
+    "en": "I thought I could settle it by phone.",
+    "pattern": "to-omou",
+    "span": "と思い",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": true
+  },
+  {
+    "id": 74898,
+    "jp": "トランプをするのにもう一人必要だ。",
+    "en": "We need another person to play cards.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 75732,
+    "jp": "富士山に登るのに丸一晩かかった。",
+    "en": "It took all night to climb Mt Fuji.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 77549,
+    "jp": "列車に乗るのに十分な時間がある。",
+    "en": "We have enough time to catch the train.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 77635,
+    "jp": "冷蔵庫は食べ物を保存するのに役立つ。",
+    "en": "Refrigerators help to preserve food.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 77994,
+    "jp": "両親は彼を静めるのに成功した。",
+    "en": "The parents succeeded in calming him down.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 78218,
+    "jp": "硫黄はマッチを作るのに使われる。",
+    "en": "Sulfur is used to make matches.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 81449,
+    "jp": "翻訳は母語をよりよく知るのに役立つ。",
+    "en": "Translating helps us to know our mother tongue better.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 82050,
+    "jp": "僕はテレビを見るのに飽きたよ。",
+    "en": "I'm tired of watching television.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 82772,
+    "jp": "母親は夕食を作るのに忙しかった。",
+    "en": "My mother was busy cooking dinner.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 86256,
+    "jp": "彼女は料理をするのに慣れている。",
+    "en": "She is used to cooking.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 103526,
+    "jp": "彼は人前で話すのに慣れている。",
+    "en": "He is accustomed to speaking in public.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 110941,
+    "jp": "彼はホテルにたどり着くのに苦労した。",
+    "en": "He had difficulty in finding his way to the hotel.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 117953,
+    "jp": "彼の家を見つけるのに苦労した。",
+    "en": "I had a hard time finding his house.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 125763,
+    "jp": "直すのに、どのくらい時間がかかりますか。",
+    "en": "How long does it take to alter it?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 126161,
+    "jp": "朝早く起きるのには慣れています。",
+    "en": "I'm accustomed to getting up early.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 146351,
+    "jp": "笑われるのには慣れている。",
+    "en": "I'm used to being laughed at.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 150179,
+    "jp": "治るのにしばらくかかりますね。",
+    "en": "It will take a while to go away.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 151203,
+    "jp": "紙を綴じるのにホチキスはとても便利です。",
+    "en": "A stapler is very useful for attaching papers together.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 154948,
+    "jp": "私は徹夜で働くのに慣れている。",
+    "en": "I'm used to working all night.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 156906,
+    "jp": "私は今本を書くのに忙しい。",
+    "en": "I'm now busy writing a book.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 184819,
+    "jp": "外国に行こうと思っている。",
+    "en": "I'm thinking of going abroad.",
+    "pattern": "to-omou",
+    "span": "と思っ",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": false
+  },
+  {
+    "id": 192329,
+    "jp": "レポートを書くのに四苦八苦した。",
+    "en": "I had a very hard time writing the paper.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 193297,
+    "jp": "もっと運動しようと思います。",
+    "en": "I'm going to get more exercise.",
+    "pattern": "to-omou",
+    "span": "と思い",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": true
+  },
+  {
+    "id": 195709,
+    "jp": "マイケルは収支を合わせるのに苦労した。",
+    "en": "Michael had a hard time making ends meet.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 203696,
+    "jp": "タクシーを拾うのに少々苦労した。",
+    "en": "I had a little difficulty in getting a taxi.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 203697,
+    "jp": "タクシーを拾うのに苦労した。",
+    "en": "I had trouble getting a taxi.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 212223,
+    "jp": "その映画を作るのに数か月かかった。",
+    "en": "It took several months to shoot that film.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 213578,
+    "jp": "そこへ着くのにどれぐらいかかりますか。",
+    "en": "How long will it take to get there?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 213666,
+    "jp": "そこに行くのに一時間かかるでしょう。",
+    "en": "It'll take an hour to get there.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 219335,
+    "jp": "この問題を解くのに苦労した。",
+    "en": "I had difficulty in solving this problem.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 221726,
+    "jp": "この紙を切るのにはさみが必要です。",
+    "en": "I need a pair of scissors to cut this paper.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 234128,
+    "jp": "駅に着くのにどのくらいかかりますか。",
+    "en": "How long does it take to get to the station?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 1429173,
+    "jp": "一人で食事するのには慣れている。",
+    "en": "I'm used to eating alone.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 2132460,
+    "jp": "トムはしばしば物を覚えるのに苦労する。",
+    "en": "Tom often has trouble remembering things.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 2252444,
+    "jp": "彼は本を読むのに飽きた。",
+    "en": "He got tired of reading.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 3399587,
+    "jp": "両親が来る前に、家を掃除しようと思う。",
+    "en": "I would like to clean up the house before my parents come.",
+    "pattern": "to-omou",
+    "span": "と思う",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": false
+  },
+  {
+    "id": 7558241,
+    "jp": "それをやるのにいっぱい時間が掛かるだろう。",
+    "en": "Doing that will take too much time.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 7899902,
+    "jp": "トムは今夕食を作るのに忙しい。",
+    "en": "Tom is busy cooking supper now.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 7947486,
+    "jp": "トムは働くのに忙しい。",
+    "en": "Tom is busy working.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 8658010,
+    "jp": "自転車を借りるのに、いくらかかりますか？",
+    "en": "How much does it cost to rent a bicycle?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 8813287,
+    "jp": "彼が食べてるのにします。",
+    "en": "I'll have what he's having.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 9149298,
+    "jp": "一番高いのにします。",
+    "en": "I'll take the most expensive one.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 9257460,
+    "jp": "一番安いのにするよ。",
+    "en": "I'll take the cheapest.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 9476968,
+    "jp": "時々、英語を話すのに四苦八苦するよ。",
+    "en": "Sometimes I struggle to speak English.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 9476969,
+    "jp": "時々、英語を話すのに苦労するんだ。",
+    "en": "Sometimes I struggle to speak English.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 9768490,
+    "jp": "気持ちを落ち着かせるのに時間がかかった。",
+    "en": "It took me some time to calm down.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 10330598,
+    "jp": "男らしく言おうと思ったら、どう言えばいいの？",
+    "en": "What's a more masculine way of saying it?",
+    "pattern": "to-omou",
+    "span": "と思っ",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": false
+  },
+  {
+    "id": 10965442,
+    "jp": "追いつくのにどれだけ時間がかかるか？",
+    "en": "How much time will it take to catch up?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 10979962,
+    "jp": "それを行おうと思います。",
+    "en": "I think I will do that.",
+    "pattern": "to-omou",
+    "span": "と思い",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": false
+  },
+  {
+    "id": 10984962,
+    "jp": "ファイルを整理するのに役立ちます。",
+    "en": "It helps you with file organization.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  },
+  {
+    "id": 11801341,
+    "jp": "ここに泊まろうと思う。",
+    "en": "I think we'll stay here.",
+    "pattern": "to-omou",
+    "span": "と思う",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": true
+  },
+  {
+    "id": 11801342,
+    "jp": "ここにいようと思う。",
+    "en": "I think we'll stay here.",
+    "pattern": "to-omou",
+    "span": "と思う",
+    "why": "volitional verb + と思う is 'I intend to X' (a different recipe, you-to-omou), not 'I think that X'",
+    "orphaned": true
+  },
+  {
+    "id": 12024125,
+    "jp": "その本読むのに、どれぐらいかかった？",
+    "en": "How long did it take you to read that book?",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 12288649,
+    "jp": "こうするのにもいずれ慣れますよ。",
+    "en": "You'll eventually get used to doing this.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": true
+  },
+  {
+    "id": 12747250,
+    "jp": "食料を探すのに苦労したよ。",
+    "en": "Finding food was a struggle.",
+    "pattern": "noni",
+    "span": "のに",
+    "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
+    "orphaned": false
+  }
+]

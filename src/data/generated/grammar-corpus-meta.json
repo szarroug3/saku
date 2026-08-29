@@ -7,7 +7,7 @@
   "counts": {
     "japanese": 248802,
     "withEnglish": 232666,
-    "kept": 9672
+    "kept": 9654
   },
   "perPattern": {
     "ba": 257,
@@ -42,7 +42,7 @@
     "ni-tsuite": 191,
     "nikui": 63,
     "node": 89,
-    "noni": 212,
+    "noni": 164,
     "okage-de": 25,
     "rashii": 34,
     "sei-de": 49,
@@ -69,7 +69,7 @@
     "te-prohibition": 168,
     "te-request": 291,
     "te-shimau": 222,
-    "to-omou": 243,
+    "to-omou": 234,
     "to-shite": 147,
     "tsumori": 204,
     "wake-ni-wa-ikanai": 7,
@@ -188,9 +188,11 @@
       "ni-tsuite",
       "nikui",
       "node",
-      "ta-tokoro"
+      "noni",
+      "ta-tokoro",
+      "to-omou"
     ],
-    "droppedExamples": 0,
-    "droppedSentences": 0
+    "droppedExamples": 57,
+    "droppedSentences": 18
   }
 }
