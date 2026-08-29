@@ -14,6 +14,36 @@ Goal: stop re-wiring every surface by hand for each new content type. An update 
 a content **type** (or a new word) should propagate consistently across lessons,
 quizzes, and the library — with the compiler and tests catching what's missing.
 
+> **DECISION (SAK-239, Aug 2026): the generic scheduler is RETIRED, not to be
+> finished.** `scheduler.ts` (`planLesson`/`nextLesson`) and `resolve.ts`
+> (`resolveItem`) will not get their Stage-3 track swap. This closes the
+> "finish or retire" question §3/§6 had left open pending a scoping decision.
+> Reasons, all already true before this decision made them official:
+> 1. **Zero production usage.** The only importer of either file is the
+>    `/dev/numbers` reference page (confirmed by import search, SAK-239).
+> 2. **The problem it targeted is already solved, in production, a different
+>    way.** `unit-scheduler-core.ts` + the precomputed `learn-index.json`
+>    (`docs/perf-learn-bundle.md` Phase 1) does cross-track scheduling and is
+>    what drives `/learn` today. Finishing the Stage-3 swap would mean
+>    re-solving a problem that already shipped a solution.
+> 3. **The migration was already abandoned in practice** (§3 Stage 3, §6) —
+>    this decision just makes that formal instead of leaving it as an
+>    indefinitely-"kept alive for a dev page" limbo.
+>
+> **What this does NOT mean:** the files are not deleted. `/dev/numbers` still
+> imports them and dev pages are kept intentionally, so `scheduler.ts` and
+> `resolve.ts` stay as a working reference/demo of the generic-scheduler
+> design, same status as any other `/dev/*` page's supporting code — just no
+> longer a WIP with a pending swap. A future engineer reaching for
+> `scheduler.ts`/`resolve.ts`/`nextLesson` (content) to schedule a NEW track
+> should use `unit-scheduler-core.ts` instead; treat any further Stage-3 work
+> on the content-model scheduler as a deliberate, separately-scoped restart,
+> not a continuation.
+>
+> The rest of the unification (Stage 1 fact-model, Stage 2 `<LessonWalk>`,
+> Stage 4 `<Quiz>`/`<EntryPage>`) is UNAFFECTED by this decision — it is scoped
+> to the scheduler half only (§3 Stage 3 / §5's scheduler row).
+
 > **Progress at a glance** — the content model's non-scheduler half
 > (`item.ts`/`build-item.ts`/`fact.ts`/`meaning.ts`/`teach-unit.ts`) is live: it
 > backs the "Numbers & counters" content and the `/dev/scheduling` +
@@ -200,7 +230,8 @@ track at a time; delete each forked file only when its track is fully moved.
   **Guards:** the engine never returns an item whose prereqs are unsatisfied; and
   it never returns an item whose untaught-prereq chain exceeds the depth cap.
   (Kills mechanism 3: ordering.)
-  *Status: ⚫ superseded, not adopted (SAK-117).* `planLesson` (pure core) +
+  *Status: ⚫ RETIRED, not to be finished (decided SAK-239; superseded in
+  practice since SAK-117).* `planLesson` (pure core) +
   `nextLesson` (history seam) + `resolveItem` (kanji-corpus resolve) were built
   and tested standalone, and `numbersTrack()` (numbers-track.ts) was written
   against them as the pilot `Track.order()`. The Stage-3 swap onto the live
@@ -281,8 +312,8 @@ the table is itself unused (no non-comment importer, live or dev).
 | `fact.ts` | `Fact { id, kind }`; `FactKind = ResponseKind` via `jp2enResponse` (alias, not a new enum) | live | `fact.test.ts` |
 | `item.ts` | `ContentItem { entry, kind, glyph, facts, roles, prereqs }` — the keystone shape | live | — |
 | `build-item.ts` | `buildItem(entry, kind)` — derives facts (`factsOf`+`jp2enResponse`), roles (`characterRoles`), and prereq edges (`teachableParts`/kanji-in-glyph). An item is "whole" by construction | live | `build-item.test.ts` |
-| `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | superseded — only `/dev/numbers` (dev page) imports it | `scheduler.test.ts` |
-| `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | superseded — only `/dev/numbers` (dev page) imports it | `resolve.test.ts` |
+| `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | RETIRED (SAK-239) — kept only as `/dev/numbers`'s (dev page) reference/demo; zero production importers | `scheduler.test.ts` |
+| `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | RETIRED (SAK-239) — kept only as `/dev/numbers`'s (dev page) reference/demo; zero production importers | `resolve.test.ts` |
 | `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | kept — the type `numbers-track.ts` implements | — |
 | `numbers-track.ts` | `unitItem(unit)` — a generative-rule unit as a ContentItem (buildItem on its category-fact entry + bespoke `UNIT_KANJI` prereqs). The numbers/counters pilot's novel half | live — feeds `unit-tracks.ts`'s "numbers" track (the real scheduling path) and the `/dev/numbers`, `/dev/views` dev pages | `numbers-track.test.ts` |
 | `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | unconsumed | `registry.test.ts` |

@@ -1,7 +1,7 @@
 // What ROLES a character plays — radical, kanji, word, or any mix of them — in
 // one label the whole app can print the same way.
 //
-// The combined track (see kanji-lesson.ts) teaches radicals and kanji together,
+// The combined track (see curriculum-lesson.ts) teaches radicals and kanji together,
 // and a learner needs to know, for any character, whether to expect it INSIDE A
 // WORD, ONLY AS A BUILDING BLOCK, or ALREADY AS A WORD BY ITSELF. A character
 // can be doing all three at once (山 is a Kangxi radical, a jōyō kanji, and the

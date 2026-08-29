@@ -4,6 +4,15 @@
 // `nextXLesson` functions into one, and where the ordering bugs (a rule card
 // reachable before its prereqs; 10+ taught before 5) stop being possible.
 //
+// RETIRED, not to be finished — decision recorded in docs/architecture-refactor.md
+// (SAK-239, Aug 2026). This never got its Stage-3 track swap and has zero
+// production importers; the only thing that still uses it is the `/dev/numbers`
+// reference page, kept for that demo role (dev pages are kept intentionally).
+// Production cross-track scheduling shipped a different way:
+// `src/lib/content/unit-scheduler-core.ts` + `learn-index.json`. Point new
+// scheduling work there, not here — this file is a frozen reference, not a WIP
+// with a pending swap.
+//
 // ALGORITHM (Stage 3 implements; the contract is fixed here):
 //   1. Walk the active track's order (Track.order) for the next UNKNOWN items.
 //   2. For each, gather its UNTAUGHT prerequisites transitively — from ANY track;
@@ -18,7 +27,8 @@
 //      track's prepOnly/marker machinery.
 //
 // Stage 0 of docs/architecture-refactor.md: the contract and the gate constant.
-// Additive, not yet consumed.
+// Additive, never consumed by production — and per the SAK-239 decision above,
+// it will stay that way.
 
 import { effectiveState } from "@/lib/claims";
 import { itemCost } from "./cost";

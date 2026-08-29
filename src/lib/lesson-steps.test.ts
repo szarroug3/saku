@@ -25,14 +25,14 @@ import { describe, test } from "node:test";
 import { SETS, kanaFact, noteFor } from "../data/characters.ts";
 import { COUNTER_CURRICULUM, COUNTER_FACTS, counterEntry } from "../data/counters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
-import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { termEntry } from "../data/terms.ts";
 import { TSU_INTRO } from "../data/track-intros.ts";
-import { radicalMeaningFactId } from "../data/radicals.ts";
+import { radicalByGlyph, radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
-import { packLessons } from "./kanji-lesson.ts";
+import { packLessons } from "./curriculum-lesson.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
+import { radicalConsumerCount } from "./radical-order.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
@@ -710,75 +710,99 @@ describe("the つ counter intro rides the first つ-counter item", () => {
 });
 
 // The combined radical/kanji track, at the walk layer. The packing tests
-// (kanji-lesson.test.ts) prove a group's FACTS come out radical-before-kanji;
-// these prove the last hop the session actually renders — lessonSteps turning
-// those facts into steps — keeps a radical-only shape's step ahead of the kanji
-// that uses it, and does not conjure a second step for a both-role character
-// that is taught once as its kanji. This is the layer the walk reads (session
-// page → lessonSteps(session.teach)), so it is where the owner's "I'm not seeing
-// the radical intro before the kanji intro" is either true or false.
+// (curriculum-lesson.test.ts) prove a group's FACTS come out radical-before-
+// kanji; these prove the last hop the session actually renders — lessonSteps
+// turning those facts into steps — keeps a radical-only shape's step ahead of
+// the kanji that uses it, and does not conjure a second step for a both-role
+// character that is taught once as its kanji. This is the layer the walk reads
+// (session page → lessonSteps(session.teach)), so it is where the owner's
+// "I'm not seeing the radical intro before the kanji intro" is either true or
+// false.
+//
+// SAK-239: sourced from curriculum-lesson.ts's live packer over the real
+// CURRICULUM_SEQUENCE (radicals+kanji+words, one spine). It used to source from
+// kanji-lesson.ts's kanji-only packer, which was deleted as confirmed dead code
+// (zero production importers — superseded by curriculum-lesson.ts, see that
+// file's header) with only this fixture generator and its own test still
+// pointing at it. Assertions below are derived from what the real packer
+// produces, not hand-picked to match the old kanji-only order.
 describe("a mixed radical/kanji set steps the radical ahead of its kanji", () => {
-  const ORDER = kanjiTeachOrder("everyday");
-  // Pinned to a 6–12 budget: these assert the packer's hand-worked set
-  // compositions (人 大 日 一 first, 气 气 山 as the first woven set), which are a
+  // Pinned to a 6–12 budget, same as the old suite: exact set compositions are a
   // function of the packing granularity, not the shipped config default (5–7).
-  const GROUPS = packLessons(ORDER, { min: 6, max: 12 });
+  const GROUPS = packLessons({ min: 6, max: 12 });
 
-  test("the first woven-radical set walks 气 before 気 (everyday, 6–12 budget)", () => {
-    // The earliest set that carries a radical-only shape. Under the everyday
-    // order and a 6–12 budget that set opens 气 気 山: 气 (steam) is the
-    // radical 気 (spirit) is built around, and it has no card of its own anywhere
-    // else, so the walk is where the learner meets it — immediately before 気.
-    // (乙 乞 are worded kanji in their own right and pack a set earlier, with 不;
-    // only the radical-only 气 is welded to 気.)
-    const target = GROUPS.find((g) => g.items.some((it) => it.kind === "radical"));
-    assert.ok(target, "some everyday set weaves in a radical-only shape");
+  test("a radical-only shape's set walks it before the kanji it's tied to (6–12 budget)", () => {
+    // The earliest set that carries a radical-only shape. Under the live spine
+    // and a 6–12 budget that is 亅 (a radical-only shape) tied to 丁, in a set
+    // that goes on to teach 口, 可, 何 and 言 (口 and 言 are themselves both-role
+    // and take one kanji step each, not a separate radical step — see below).
+    const target = GROUPS.find(
+      (g) => g.items.some((it) => it.roles.includes("radical") && !it.roles.includes("kanji")),
+    );
+    assert.ok(target, "some set weaves in a radical-only shape");
     const steps = lessonSteps(target.facts);
     assert.deepEqual(
       steps.map((s) =>
         s.type === "item" ? `${s.item.kind}:${s.item.glyph}` : `${s.type}:${s.key}`,
       ),
-      ["radical:气", "kanji:気", "kanji:山"],
+      ["radical:亅", "kanji:丁", "kanji:口", "kanji:可", "kanji:何", "kanji:言"],
     );
   });
 
-  test("every set: each radical step precedes the kanji step it feeds", () => {
+  test("every set: a radical step with a consumer precedes some kanji step in it", () => {
     // The general invariant, over the whole curriculum: within a set, a radical
-    // item never steps after a kanji item. A radical is woven in only ahead of a
-    // kanji that uses it, so a radical trailing every kanji in its set would be a
-    // component taught after the shape it builds — the one thing the weave forbids.
+    // item that DOES have a consuming kanji never steps after every kanji item.
+    // A radical is woven in only ahead of the kanji that uses it, so one trailing
+    // every kanji in its set would be a component taught after the shape it
+    // builds — the one thing the weave forbids.
+    //
+    // EXEMPT: true orphans (radicalConsumerCount 0, e.g. 黍 黹 黽 鼎 齊 龜 龠 — no
+    // jōyō kanji uses them at all). curriculum-order.ts parks those at the very
+    // tail of the whole spine for completeness, same as kanji-lesson.ts's own
+    // "ORPHAN LAST" rule did — an orphan has no kanji to precede, by definition,
+    // so it is expected to end its set (and the whole curriculum) on its own.
     for (const g of GROUPS) {
       const steps = lessonSteps(g.facts).filter((s) => s.type === "item");
-      const lastRadical = steps.map((s) => s.type === "item" && s.item.kind).lastIndexOf("radical");
-      if (lastRadical === -1) continue;
-      const firstKanji = steps.map((s) => s.type === "item" && s.item.kind).indexOf("kanji");
-      assert.ok(
-        firstKanji === -1 || lastRadical < steps.length - 1,
-        `set ${g.index} ends on a radical step with no kanji after it`,
-      );
+      steps.forEach((s, i) => {
+        if (s.type !== "item" || s.item.kind !== "radical") return;
+        const row = radicalByGlyph(s.item.glyph);
+        if (!row || radicalConsumerCount(row.num) === 0) return; // true orphan
+        const laterKanji = steps
+          .slice(i + 1)
+          .some((t) => t.type === "item" && t.item.kind === "kanji");
+        assert.ok(
+          laterKanji,
+          `${s.item.glyph} (set ${g.index}) has a consumer but no later kanji step`,
+        );
+      });
     }
   });
 
-  test("a both-role first set is four kanji steps, no separate radical step", () => {
-    // The owner's "first set" confusion, pinned. 人 大 日 一 are each a Kangxi
-    // radical AND a jōyō kanji; the dedup teaches each once, as the kanji, so the
-    // walk is four kanji steps and NOT eight. The radical role rides the card's
-    // own "Radical · Kanji" label (see character-role.ts / RoleBadge), not a
-    // duplicate step for the same glyph.
+  test("an item playing both the radical and kanji role produces one kanji step, not two", () => {
+    // The owner's "first set" confusion, pinned, without hand-picking a glyph:
+    // a character that is both a Kangxi radical AND a jōyō kanji is taught once,
+    // as the kanji, so the walk never emits a separate radical step for it. The
+    // radical role rides the card's own "Radical · Kanji" label (see
+    // character-role.ts / RoleBadge), not a duplicate step for the same glyph.
     const first = GROUPS[0];
-    assert.deepEqual(first.chars, ["人", "大", "日", "一"]);
-    const steps = lessonSteps(first.facts);
-    assert.deepEqual(
-      steps.map((s) => (s.type === "item" ? `${s.item.kind}:${s.item.glyph}` : s.type)),
-      ["kanji:人", "kanji:大", "kanji:日", "kanji:一"],
+    const bothRole = first.items.find(
+      (it) => it.roles.includes("radical") && it.roles.includes("kanji"),
     );
+    assert.ok(bothRole, "the first set has a both-role (radical+kanji) item");
+    const steps = lessonSteps(first.facts).filter(
+      (s) => s.type === "item" && s.item.glyph === bothRole.glyph,
+    );
+    assert.equal(steps.length, 1, `${bothRole.glyph} should step once, not ${steps.length} times`);
+    assert.ok(steps[0].type === "item" && steps[0].item.kind === "kanji");
   });
 
   test("the radical step teaches the radical's own meaning fact", () => {
-    // The step must carry the radical's own fact (radical:气 meaning) — the drill
+    // The step must carry the radical's own fact (radical:亅 meaning) — the drill
     // and the walk read the same fact, so the shape shown and the meaning asked
     // stay one thing.
-    const target = GROUPS.find((g) => g.items.some((it) => it.kind === "radical"))!;
+    const target = GROUPS.find(
+      (g) => g.items.some((it) => it.roles.includes("radical") && !it.roles.includes("kanji")),
+    )!;
     const steps = lessonSteps(target.facts);
     const rad = steps.find((s) => s.type === "item" && s.item.kind === "radical");
     assert.ok(rad && rad.type === "item");
