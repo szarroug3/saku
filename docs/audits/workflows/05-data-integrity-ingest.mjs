@@ -22,7 +22,7 @@ const DOMAINS = [
   { key: 'vocab-lexical', label: 'vocab/lexical', scope: 'vocab.json, word-definitions.json, word-senses.json, word-examples.json, readings.json, meaning-registry.json(+.candidates.json), en-synonyms.json, cejc-reading-frequency.json' },
   { key: 'pitch-accent', label: 'pitch-accent pipeline', scope: 'pitch.json, pitch-pairs.json and their ingest scripts (pitch.mjs, pitch-pairs.mjs)' },
   { key: 'grammar-assembly-corpus', label: 'grammar/assembly corpus', scope: 'grammar-corpus.json, grammar-corpus-meta.json, grammar-corpus-dropped.json, assembly-corpus.json, assembly-corpus-meta.json, and their ingest/audit scripts' },
-  { key: 'kanji-radicals', label: 'kanji/radicals/ordering', scope: 'kanji.json, kanji-components.json, kanji-etymology.json(+-manual.json), kanji-phonetic-gloss.json, kanji-radicals.json, radicals.json, radical-enrichment.json, confusable-derived.json, order.json, strokes/*' },
+  { key: 'kanji-radicals', label: 'kanji/radicals/ordering', scope: 'kanji.json, kanji-components.json, kanji-etymology.json(+-manual.json), kanji-radicals.json, radicals.json, radical-enrichment.json, confusable-derived.json, order.json, strokes/*' },
   { key: 'counters', label: 'counters', scope: 'counters.ts, counter-categories.ts and how they cross-reference vocab.json/kanji.json' },
   { key: 'curriculum-indexes', label: 'curriculum/learn indexes', scope: 'curriculum-sequence.json, word-rank.json, learn-index.json, library-index.json, scheduling-preview.json, reading-proof-facts.json' },
 ]
