@@ -12,6 +12,7 @@ import { radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { radicalTipFor } from "@/data/radical-tips";
 import { readingUnits, vocabRow, wordSenseRegister, wordUnitFacts } from "@/data/vocab";
 import { exampleFor, type WordExample } from "@/data/word-examples";
+import { wordContrastNoteFor } from "@/data/word-contrast-notes";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
@@ -117,6 +118,12 @@ export interface CharacterEntryPayload {
    * why the two are different mechanisms). Null when the radical has none
    * authored, which is most of the 214 — absence is normal, not an error. */
   readonly radicalTip: string | null;
+  /** SAK-229: a hand-authored note distinguishing this word from another word
+   * that glosses the same in English (いいえ vs いや, both "no") — see
+   * word-contrast-notes.ts's own header for why this exists and what it is
+   * NOT. Null when this word has no authored partner, which is nearly every
+   * word — absence is normal, not an error. */
+  readonly wordNote: string | null;
   readonly usedIn: readonly CharacterUsedIn[];
   readonly strokeFallback: PrecomputedStrokeFallback;
 }
@@ -370,6 +377,7 @@ export function characterEntryPayload(
     kanjiMeaning: isKanji ? (kanjiRow(glyph)?.meanings.join(", ") ?? null) : null,
     radicalMeaning: isRadical ? (radicalByGlyph(glyph)?.meaning ?? null) : null,
     radicalTip: isRadical ? (radicalTipFor(glyph) ?? null) : null,
+    wordNote: isWord ? (wordContrastNoteFor(glyph) ?? null) : null,
     usedIn,
     strokeFallback: {
       normal: strokeFallbackOf(strokeItem, false),
