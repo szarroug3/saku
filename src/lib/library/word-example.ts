@@ -65,6 +65,12 @@ export type RankOf = (lemma: string) => number | undefined;
  *           sentence, so ビル now DOES get an example — these four stay banned.)
  *   - パー  is 'paper' (rock-paper-scissors); matched inside クリーパー (creeper).
  *   - ホーム is 'platform'; matched inside ホームページ (homepage).
+ *   - 分間  is 'a period of N minutes' (ふんかん); its only corpus sentence,
+ *           十分間に合うと思います。, does not contain it at all — the corpus
+ *           tokenizer mis-split 十分 ("enough", じゅうぶん) + the idiom 間に合う
+ *           into 十 + 分間, a segmentation accident, not a real occurrence of
+ *           this word. Excluded here rather than in the corpus/tokenizer
+ *           because the sentence is a perfectly good example of 合う (SAK-222).
  * These are named, not filtered by a rule: sense drift is a human judgement, and
  * a short authored list is the honest tool. See task-20 item 3 for what is left.
  */
@@ -74,6 +80,7 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
   ビル: [197307, 197310, 197380, 197393, 197406, 489421],
   パー: [10061602, 10061603],
   ホーム: [10828627],
+  分間: [148042],
 };
 
 /**
