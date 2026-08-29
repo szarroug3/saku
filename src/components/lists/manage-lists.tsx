@@ -329,7 +329,7 @@ function ListCard({
 
       <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
         <Btn sel onClick={onDrill} disabled={entries.length === 0}>
-          Drill
+          Quiz
         </Btn>
         <Btn danger onClick={onDelete}>
           Delete

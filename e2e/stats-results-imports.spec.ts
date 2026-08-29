@@ -143,7 +143,7 @@ test("/results renders the board from a stored session", async ({ page }) => {
   await expect(page).toHaveURL(/\/results$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Results");
   // The subtitle names the mode and question count the stored stats sum to.
-  await expect(page.getByText(/Drill · \d+ questions/)).toBeVisible();
+  await expect(page.getByText(/Quiz · \d+ questions/)).toBeVisible();
 });
 
 test("/settings renders its controls", async ({ page }) => {

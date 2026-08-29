@@ -92,7 +92,7 @@ test("comma-separated values each become their own item", async ({ page, seed })
 
 /**
  * THE IMPORTED LIST CAN BE DRILLED, from the done screen's "Go and drill it" and
- * from the list view's Drill button. Both must reach a real drill with questions,
+ * from the list view's Quiz button. Both must reach a real drill with questions,
  * not a round that immediately reports zero and offers only a retry.
  */
 test("'Go and drill it' drills the imported list", async ({ page, seed }) => {
@@ -108,7 +108,7 @@ test("a list drills from the list view", async ({ page, seed }) => {
   await seed({});
   await importThree(page);
   await page.goto("/lists");
-  await page.getByRole("button", { name: "Drill", exact: true }).first().click();
+  await page.getByRole("button", { name: "Quiz", exact: true }).first().click();
   await page.waitForURL("**/quiz");
   await drillReady(page);
 });

@@ -81,7 +81,10 @@ function modeName(m: QuizMode): string {
           ? "Substitution"
           : m === "listen-sentence"
             ? "Listen to sentences"
-            : "Drill";
+            // SAK-233: the internal mode value stays "drill" (storage/migration
+            // shape — see quiz-config.tsx), but every user-facing surface calls
+            // this activity "Quiz", matching the "Quiz me" buttons that start it.
+            : "Quiz";
 }
 
 export function ResultsView({ results }: { results: ResultsPayload }) {

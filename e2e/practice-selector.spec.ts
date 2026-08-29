@@ -192,9 +192,9 @@ test("choosing a Mode updates the run summary", async ({ page, seed }) => {
   await seed({ seen: HIRAGANA_FACTS, cfg: STEADY_CFG });
   await page.goto("/practice");
 
-  // Default is Drill.
+  // Default is Quiz.
   const bar = startBar(page);
-  await expect(bar).toContainText("Drill");
+  await expect(bar).toContainText("Quiz");
 
   // Switch to Match pairs: five kana make a playable board, so Start stays
   // enabled and the summary re-reads the mode.

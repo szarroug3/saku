@@ -538,7 +538,7 @@ function QuizPreStart({
   /** How many questions the run holds — order.length, the same number the
    * button showed. */
   count: number;
-  /** Generator pools are always ordinary Drill with their full generated round. */
+  /** Generator pools are always an ordinary Quiz with their full generated round. */
   generator: boolean;
   /** Runs the quiz. Navigates away, so the dialog need not close itself. */
   onStart: () => void;
@@ -588,7 +588,7 @@ function QuizPreStart({
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-panel px-3 py-2">
               {generator ? (
                 <span className="text-[13px] text-text-muted">
-                  Drill · Full generated round
+                  Quiz · Full generated round
                 </span>
               ) : (
                 <ConfigPreview />
