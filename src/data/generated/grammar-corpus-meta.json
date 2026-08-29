@@ -165,6 +165,7 @@
     "potential": "Morphologically identical to `passive` — 彼は食べられる and 彼に食べられた tokenise the same. Cannot be labelled from the sentence.",
     "shi": "Bare し. Collides with the 連用形 of する.",
     "shika-nai": "しか〜ない spans arbitrary distance; not a contiguous signature.",
+    "stem-form": "recipes.ts's pattern label is '〜(stem)', but the stem has no standalone written surface (かき/たべ only exist as the first half of a longer conjugated word) — no sentence contains the literal text '(stem)', so there is nothing here to match.",
     "te-aru": "てある vs ている overlap in the tagger's 有る/居る split more than is safe.",
     "te-iku": "ていく's 行く collides with the ikenai signatures; needs disambiguation.",
     "te-kuru": "See `te-iku`.",
@@ -172,6 +173,7 @@
     "te-sequence": "Bare て has several context-dependent meanings, so assigning one from tokens alone would be labelling at random.",
     "to-conditional": "Bare と. Collides with the quotative と and the listing と; the host test alone does not separate them.",
     "tokoro": "Bare ところ (about to X) collides with ta-tokoro and the noun 所.",
+    "volitional-form": "recipes.ts's pattern label is '〜(よ)う', a class-conditional spelling (godan 行こう has no よ; ichidan 食べよう does) with no single fixed string — same structural reason as `stem-form`.",
     "wa-yori": "See `hou-ga-yori`. And は is never quizzed regardless.",
     "wake-da": "〜わけだ ('that's why') is rare in Tatoeba and its 訳 token is shared by 言い訳だ ('it's an excuse'), the interrogative どういうわけだ, and the DIFFERENT patterns わけがない / わけではない / わけにはいかない. Only 10 raw matches, and the one that passed the filters was どういう訳だ — the wrong sense. No safe contiguous signature; needs hand-authored examples.",
     "you-to-omou": "Volitional + と思う; folded into to-omou for this pass."

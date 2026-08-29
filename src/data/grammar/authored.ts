@@ -31,6 +31,35 @@
 // otherwise answer empty for every one of them. Each gets ONE hand-picked
 // sentence, for REFERENCE ONLY: see the row group below for what that does and
 // does not buy them.
+//
+// A third lane, added by SAK-276: the SAK-174 copula/sentence-final-particle
+// rows (だ/です/も/ね/よ/って), と's bare 'and' sense (to-and), the bare predicate
+// がない, and the bare FORM lessons (ない/た/ます/prenominal-な, plus the
+// compound-verb patterns たがる/始める/続ける). None of these ever got a
+// grammar.py signature OR a NO_SIGNATURE entry — SAK-174 and the later
+// form-lesson rows landed in recipes.ts without anyone updating the Python
+// side, which is exactly the silent-zero this file's header warns about. None
+// of them has grammar.py's actual disqualifying problem (a real ambiguity of
+// MEANING, like potential/passive, or a token collision, like て-mo/ni-iku):
+// they are either meaning-only bare particles in the same shape は/が/で
+// already get ONE reference example (だ/です/も/ね/よ/って/がない/to-and), or a
+// real, unambiguous, everyday content pattern the tagger simply never learned
+// (nai-form/ta-form/masu-form/prenominal-form/tagaru/hajimeru/tsuzukeru/
+// ta-ato-de — the last already flagged CORPUS-SCARCE on its own row and now
+// finally getting the hand-authored example that note asked for). Same
+// REFERENCE-ONLY treatment as the particles above: one hand-picked sentence
+// each, chosen so the pattern's own written text is a literal, unique
+// substring of the sentence (authored.test.ts checks this).
+//
+// Two more SAK-174-era rows — stem-form (〜(stem)) and volitional-form
+// (〜(よ)う) — are NOT here. Their `pattern` string is a display placeholder,
+// not real text: "(stem)" never appears in any Japanese sentence (the stem
+// has no standalone written surface — かき/たべ only exist as the first half of
+// a longer conjugated word), and "(よ)う" is class-conditional spelling (行こう
+// has no よ, 食べよう does) with no single fixed string to match. Neither can
+// satisfy the same span-matches-pattern check every row below must pass, so
+// they are documented exemptions in grammar.NO_SIGNATURE / CORPUS_META.noSignature
+// instead of a fabricated row.
 
 import type { Example } from "./corpus";
 
@@ -225,6 +254,181 @@ const ROWS: readonly Authored[] = [
     v: ["水", "飲む"],
     hostSurface: "しか",
     hostDict: "しか",
+  },
+
+  // --- SAK-276: SAK-174's copulas/sentence-final particles, one bare-form ---
+  // ------- reference example each, same treatment as the particles above ---
+  {
+    id: -17,
+    recipe: "da",
+    jp: "あの人は先生だ。",
+    en: "That person is a teacher.",
+    n: 4,
+    v: ["あの人", "先生"],
+    hostSurface: "だ",
+    hostDict: "だ",
+  },
+  {
+    id: -18,
+    recipe: "desu",
+    jp: "あの人は先生です。",
+    en: "That person is a teacher.",
+    n: 4,
+    v: ["あの人", "先生"],
+    hostSurface: "です",
+    hostDict: "です",
+  },
+  {
+    id: -19,
+    recipe: "mo",
+    jp: "妹も先生です。",
+    en: "My sister is also a teacher.",
+    n: 4,
+    v: ["妹", "先生"],
+    hostSurface: "も",
+    hostDict: "も",
+  },
+  {
+    id: -20,
+    recipe: "ne",
+    jp: "今日は暑いですね。",
+    en: "It's hot today, isn't it.",
+    n: 5,
+    v: ["今日", "暑い"],
+    hostSurface: "ね",
+    hostDict: "ね",
+  },
+  {
+    id: -21,
+    recipe: "yo",
+    jp: "もう遅いよ。",
+    en: "It's already late, I'm telling you.",
+    n: 3,
+    v: ["もう", "遅い"],
+    hostSurface: "よ",
+    hostDict: "よ",
+  },
+  {
+    id: -22,
+    recipe: "tte",
+    jp: "明日は休みだって。",
+    en: "I heard tomorrow's a holiday.",
+    n: 4,
+    v: ["明日", "休み"],
+    hostSurface: "って",
+    hostDict: "って",
+  },
+  {
+    id: -23,
+    recipe: "ga-nai",
+    jp: "時間がない。",
+    en: "There's no time.",
+    n: 2,
+    v: ["時間"],
+    hostSurface: "がない",
+    hostDict: "がない",
+  },
+  {
+    id: -24,
+    recipe: "to-and",
+    jp: "私と彼はクラスメートだ。",
+    en: "He and I are classmates.",
+    n: 6,
+    v: ["私", "彼", "クラスメート"],
+    hostSurface: "と",
+    hostDict: "と",
+  },
+
+  // --- SAK-276: bare FORM lessons, one reference example each ---------------
+  // Same rationale as above: each written pattern is real, unambiguous text
+  // (unlike stem-form/volitional-form's placeholder labels — see this file's
+  // header), but too common a shape for grammar.py's tagger to treat as a
+  // distinguishing signature, exactly the reason は/が/を never got one either.
+  {
+    id: -25,
+    recipe: "nai-form",
+    jp: "肉を食べない。",
+    en: "I don't eat meat.",
+    n: 4,
+    v: ["肉", "食べる"],
+    hostSurface: "食べない",
+    hostDict: "食べる",
+  },
+  {
+    id: -26,
+    recipe: "ta-form",
+    jp: "映画を見た。",
+    en: "I watched a movie.",
+    n: 3,
+    v: ["映画", "見る"],
+    hostSurface: "見た",
+    hostDict: "見る",
+  },
+  {
+    id: -27,
+    recipe: "masu-form",
+    jp: "毎日、日本語を勉強します。",
+    en: "I study Japanese every day.",
+    n: 6,
+    v: ["毎日", "日本語", "勉強する"],
+    hostSurface: "勉強します",
+    hostDict: "勉強する",
+  },
+  {
+    id: -28,
+    recipe: "prenominal-form",
+    jp: "静かな部屋で休みたい。",
+    en: "I want to rest in a quiet room.",
+    n: 6,
+    v: ["静か", "部屋", "休む"],
+    hostSurface: "静かな",
+    hostDict: "静か",
+  },
+
+  // --- SAK-276: aspectual/desiderative compound verbs, never signed ---------
+  {
+    id: -29,
+    recipe: "tagaru",
+    jp: "子供は外で遊びたがる。",
+    en: "The child wants to play outside.",
+    n: 6,
+    v: ["子供", "外", "遊ぶ"],
+    hostSurface: "遊びたがる",
+    hostDict: "遊ぶ",
+  },
+  {
+    id: -30,
+    recipe: "hajimeru",
+    jp: "赤ちゃんが歩き始める。",
+    en: "The baby starts walking.",
+    n: 4,
+    v: ["赤ちゃん", "歩く"],
+    hostSurface: "歩き始める",
+    hostDict: "歩く",
+  },
+  {
+    id: -31,
+    recipe: "tsuzukeru",
+    jp: "雨が降り続ける。",
+    en: "The rain keeps falling.",
+    n: 4,
+    v: ["雨", "降る"],
+    hostSurface: "降り続ける",
+    hostDict: "降る",
+  },
+
+  // --- SAK-276: ta-ato-de finally gets the hand-authored example its own ---
+  // ------- row (recipes.ts) already asked for ("CORPUS-SCARCE ... Needs -----
+  // ------- hand-authored examples") -----------------------------------------
+  {
+    id: -32,
+    recipe: "ta-ato-de",
+    jp: "宿題をしたあとで、テレビを見た。",
+    en: "After doing my homework, I watched TV.",
+    n: 8,
+    v: ["宿題", "する", "テレビ", "見る"],
+    hostSurface: "したあとで",
+    hostDict: "する",
   },
 ];
 
