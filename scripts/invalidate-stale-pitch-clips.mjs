@@ -1,38 +1,81 @@
-// SAK-217: delete the Supabase Storage pitch clips that SAK-215's fix left
-// behind, silently wrong.
+// Delete the Supabase Storage pitch clips that a fix elsewhere in the app
+// left behind, silently wrong or silently orphaned.
 //
-// SAK-215 fixed `synthesizeAtDownstep` (src/lib/tts-synth.ts) so a NEW
-// synthesis call for one of `CONFIRMED_BAD_READINGS` no longer mis-pronounces
-// its は/へ as わ/え. It changed nothing about audio ALREADY sitting in
-// Storage from before that fix — and seed-voice-audio.mjs's own cache-skip
-// logic (`loadExistingKeys`, see that file) means simply re-running the seed
-// after SAK-215 will NOT regenerate those clips: it sees them as "already
-// have it" and leaves the wrong audio in place. This script computes exactly
-// which Storage objects that stale audio lives at and deletes them, so the
-// next seed run is forced to regenerate every one of them correctly.
+// WHY THIS SCRIPT EXISTS AT ALL. seed-voice-audio.mjs's cache-skip logic
+// (`loadExistingKeys`, see that file) means re-running the seed after a fix
+// will NOT touch audio that is already in Storage: it sees an object at the
+// expected path and leaves whatever is there in place. Whenever a fix changes
+// what a given Storage object SHOULD contain — or makes an object nothing
+// asks for any more — the only way to act on it is to delete the object
+// first. That is all this script does: compute exactly which Storage objects
+// a given fix invalidated, print them, and (with --execute) delete them so
+// the next seed run regenerates whatever is still wanted.
 //
-// WHAT COUNTS AS STALE. For each of the 26 (as of this writing —
-// CONFIRMED_BAD_READINGS is the actual source of truth, this comment is not)
-// confirmed-bad readings: every (reading, downstep) pair `pitchItems()`
-// (seed-voice-audio.mjs) would ever enumerate for that reading — its
-// CORRECT downstep(s) via `wordPitch`, AND its DISTRACTOR downstep(s) via
-// `wrongDownstepFor` (src/lib/pitch.ts, also seeded per SAK-216) — across
-// every voice in the roster (`VOICES`, src/lib/voice.ts). This reuses
-// `pitchItems()` itself rather than re-deriving that enumeration a second
-// time, so there is zero risk of this script's idea of "what got seeded"
-// drifting from the seed script's own.
+// TARGETS. Each ticket that invalidates clips gets a TARGET (see `TARGETS`
+// below): a named list of readings plus the exact (reading, downstep) pairs
+// that ticket made stale. `--target=<id>` picks one; the default is
+// `sak-217`, the original target this script was written for, so the SAK-217
+// invocation keeps working verbatim.
 //
-// A READING CAN MAP TO MORE THAN ONE DOWNSTEP. It is tempting to assume the
-// downstep only depends on the reading (kana), not on which kanji spells it
-// — it does NOT: pitch.json / `wordPitch` is keyed on the WRITTEN form
-// (`keb`), and different kanji sharing one reading can carry different
-// accents. Concretely, in this app's own VOCAB: はち is 八 "eight" (downstep
-// 0) AND 鉢/蜂 "bowl"/"bee" (downstep 2) — two genuinely different pitch
-// patterns for the same reading. Deduping this script's readings down to one
-// downstep each would silently miss half the stale clips. `pitchItems()`
-// doesn't make that mistake (it walks every VOCAB row, not every distinct
-// reading), and neither does this script, since it just filters that same
-// item list rather than re-deriving its own.
+//   sak-217 — SAK-215 fixed `synthesizeAtDownstep` (src/lib/tts-synth.ts) so
+//     a NEW synthesis call for one of `CONFIRMED_BAD_READINGS` no longer
+//     mis-pronounces its は/へ as わ/え. The audio already in Storage for
+//     those readings is wrong AT ITS OWN PATH — same reading, same downstep,
+//     wrong pronunciation — so every (reading, downstep) pair `pitchItems()`
+//     enumerates for a confirmed-bad reading is stale: its CORRECT
+//     downstep(s) via `wordPitch` AND its DISTRACTOR downstep(s) via
+//     `wrongDownstepFor` (src/lib/pitch.ts, seeded per SAK-216), across every
+//     voice in the roster (`VOICES`, src/lib/voice.ts). This target reuses
+//     `pitchItems()` itself rather than re-deriving that enumeration, so
+//     there is zero risk of its idea of "what got seeded" drifting from the
+//     seed script's own.
+//
+//     A READING CAN MAP TO MORE THAN ONE DOWNSTEP. It is tempting to assume
+//     the downstep only depends on the reading (kana), not on which kanji
+//     spells it — it does NOT: pitch.json / `wordPitch` is keyed on the
+//     WRITTEN form (`keb`), and different kanji sharing one reading can carry
+//     different accents. Concretely, in this app's own VOCAB: はち is 八
+//     "eight" (downstep 0) AND 鉢/蜂 "bowl"/"bee" (downstep 2). Deduping down
+//     to one downstep per reading would silently miss half the stale clips.
+//
+//   sak-221 — SAK-221 (SAK-290 is this run) fixed scripts/ingest/pitch.mjs,
+//     which had been looking a word up in Kanjium under vocab.json's raw
+//     `reb` instead of the reading the word is actually taught with. That
+//     shipped a WRONG DOWNSTEP VALUE in pitch.json for eleven words: eight
+//     were corrected to a different value, three (仏/悪口/背) now hold no
+//     value at all.
+//
+//     WHAT "STALE" MEANS WHEN A VALUE, NOT A SYNTHESIS, WAS WRONG. A pitch
+//     clip's content is a pure function of (reading, downstep, voice): the
+//     seed's `pitch` set synthesizes `synthesizeWordWav(raw.reading,
+//     raw.downstep, speakerId)` and stores it at `pitchObjectPath(raw.reading,
+//     raw.downstep, voiceId)`, and /api/pitch-tts does the same for its own
+//     r/d/v query params. So — unlike SAK-215 — nothing in Storage holds
+//     audio that is wrong FOR ITS OWN PATH. What the bad values did was make
+//     the APP ask for the wrong path (the learner heard ひと at downstep 1
+//     because pitch.json said 1), and that is fixed by the data change alone.
+//     The Storage residue is the clips at the OLD values' paths: objects
+//     `pitchItems()` no longer enumerates for any word, sitting in the bucket
+//     with nothing to serve them to. Those are what this target deletes —
+//     each word's previously-shipped downstep AND the distractor
+//     `wrongDownstepFor` derived from that previously-shipped downstep, per
+//     `SAK_221_PREVIOUS_PITCH`.
+//
+//     A word that transitioned from "had a value" to "no value" (仏/悪口/背)
+//     is still covered: it had real clips seeded under its old value, and now
+//     that pitch.json holds nothing for it, `pitchItems()` enumerates nothing
+//     for it either — so those clips are orphaned outright, and no
+//     replacement will be (or should be) generated for them. Deleting them is
+//     the whole fix for those three.
+//
+//     SAFETY: this target never proposes a pair that `pitchItems()` still
+//     enumerates today. Several of these words' old and new values happen to
+//     swap correct/distractor (人 ひと was 1 correct + 0 distractor, is now 0
+//     correct + 1 distractor — the same two paths, both still live and both
+//     already holding correct audio for their own downstep). Deleting those
+//     would throw away good clips to regenerate byte-identical ones. Any
+//     old-value pair that is still enumerated is skipped and reported as
+//     "retained" instead.
 //
 // DRY RUN BY DEFAULT. No flag ⇒ compute every path and print it, grouped by
 // reading, with a total count. No Supabase calls at all if credentials
@@ -50,6 +93,7 @@
 // Run:
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --execute
+//   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --target=sak-221
 //
 // Then re-seed the pitch set to regenerate what this deleted, correctly:
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice-audio.mjs --set=pitch
@@ -59,30 +103,159 @@ import { pathToFileURL } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { VOCAB } from "@/data/vocab";
+import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { CONFIRMED_BAD_READINGS } from "@/lib/tts-synth";
 import { pitchObjectPath, VOICES } from "@/lib/voice";
 
 import { loadExistingKeys, pitchItems } from "./seed-voice-audio.mjs";
 
-/** Every (reading, downstep) pair `pitchItems()` enumerates for ONE
- * confirmed-bad reading — its correct downstep(s) and distractor
- * downstep(s), deduped exactly as `pitchItems()` itself dedupes them. Returns
- * `[]` for any reading not in `CONFIRMED_BAD_READINGS` — that's the whole
- * point of gating on it, rather than trusting the caller to only ever pass a
- * bad reading in. */
-export function stalePitchItemsForReading(reading) {
-  if (!CONFIRMED_BAD_READINGS.includes(reading)) return [];
-  return pitchItems().filter((item) => item.reading === reading);
+/** The downstep pitch.json shipped for each SAK-221 word BEFORE that fix —
+ * i.e. the value the already-seeded clips were generated under. Read straight
+ * off the pre-fix pitch.json (git 349f0041, the commit SAK-221 landed on top
+ * of); it is deliberately a frozen literal rather than something re-derived
+ * from history at runtime, because the point of this map is to name a past
+ * state of the data that no longer exists in the working tree. Every one of
+ * these words now holds a DIFFERENT value (eight of them) or NO value at all
+ * (仏/悪口/背) in src/data/generated/pitch.json. */
+export const SAK_221_PREVIOUS_PITCH = Object.freeze({
+  人: 1,
+  入る: 0,
+  開く: 2,
+  下手: 0,
+  空: 2,
+  上下: 2,
+  印: 1,
+  節: 1,
+  仏: 1,
+  悪口: 2,
+  背: 1,
+});
+
+const key = (reading, downstep) => `${reading}:${downstep}`;
+
+/** SAK-217: every (reading, downstep) pair `pitchItems()` enumerates for a
+ * confirmed-bad reading — the clips whose AUDIO is wrong at their own path. */
+function sak217Items() {
+  const bad = new Set(CONFIRMED_BAD_READINGS);
+  return pitchItems().filter((item) => bad.has(item.reading));
 }
 
-/** Every Storage object path this script considers stale: one row per
- * (reading, downstep, voice), in `CONFIRMED_BAD_READINGS` order (readings),
- * then `pitchItems()` order (downsteps), then `VOICES` order (voices) — a
- * stable, readable order for both the dry-run report and the delete batches.
- * Pure — no network calls, safe to import and call from a test. */
-export function stalePitchClips() {
-  return CONFIRMED_BAD_READINGS.flatMap((reading) =>
-    stalePitchItemsForReading(reading).flatMap((item) =>
+/** SAK-221: every (reading, downstep) pair that was seeded under a word's
+ * PREVIOUS (wrong) pitch.json value and is no longer enumerated today — the
+ * word's own old downstep plus the distractor `wrongDownstepFor` derived from
+ * that old downstep, exactly as `pitchItems()` derived it at seed time.
+ * Resolves each written form to its taught reading through VOCAB (`reb`), the
+ * same keb→reb resolution `pitchItems()` performs, so the path this computes
+ * is the path the seed actually wrote.
+ *
+ * Returns `{ items, retained }`: `retained` is the old-value pairs that are
+ * STILL enumerated today (a word whose correct and distractor downsteps
+ * merely swapped keeps both paths live), reported but never deleted. */
+function sak221Partition() {
+  const live = new Set(pitchItems().map((item) => key(item.reading, item.downstep)));
+  const items = [];
+  const retained = [];
+  const seen = new Set();
+  for (const [written, previousDownstep] of Object.entries(SAK_221_PREVIOUS_PITCH)) {
+    for (const row of VOCAB) {
+      if (row.keb !== written) continue;
+      const distractor = wrongDownstepFor(previousDownstep, moraeOf(row.reb).length);
+      const downsteps = distractor === null ? [previousDownstep] : [previousDownstep, distractor];
+      for (const downstep of downsteps) {
+        const pairKey = key(row.reb, downstep);
+        if (seen.has(pairKey)) continue;
+        seen.add(pairKey);
+        (live.has(pairKey) ? retained : items).push({ written, reading: row.reb, downstep });
+      }
+    }
+  }
+  return { items, retained };
+}
+
+/** SAK-221's pairs that this script deliberately leaves alone: old-value
+ * paths that `pitchItems()` still enumerates, so the object there is a live,
+ * correct clip. Exported for the report and for the test that pins the
+ * "never delete a live path" guarantee. */
+export function sak221RetainedItems() {
+  return sak221Partition().retained;
+}
+
+/** A TARGET is one ticket's invalidation: `readings` fixes the report/delete
+ * order and doubles as the gate (`stalePitchItemsForReading` returns nothing
+ * for a reading outside it), `items()` yields the exact (reading, downstep)
+ * pairs that ticket made stale, and `explain()` adds any target-specific
+ * lines the run should print before the path list. */
+export const SAK_217_TARGET = Object.freeze({
+  id: "sak-217",
+  summary: "SAK-215's mis-pronounced は/へ readings (CONFIRMED_BAD_READINGS)",
+  readings: () => [...CONFIRMED_BAD_READINGS],
+  items: sak217Items,
+  explain: () => [`${CONFIRMED_BAD_READINGS.length} confirmed-bad reading(s) in CONFIRMED_BAD_READINGS.`],
+});
+
+export const SAK_221_TARGET = Object.freeze({
+  id: "sak-221",
+  summary: "SAK-221's corrected/removed pitch.json values (clips seeded under the old value)",
+  readings: () => {
+    const { items } = sak221Partition();
+    return [...new Set(items.map((item) => item.reading))];
+  },
+  items: () => sak221Partition().items,
+  explain: () => {
+    const { items, retained } = sak221Partition();
+    const lines = [
+      `${Object.keys(SAK_221_PREVIOUS_PITCH).length} word(s) whose pitch.json value SAK-221 corrected or removed.`,
+      `${items.length} old-value (reading, downstep) pair(s) now orphaned — nothing enumerates them today.`,
+    ];
+    if (retained.length > 0) {
+      lines.push(
+        `${retained.length} old-value pair(s) RETAINED (still enumerated today, clip is correct for its own ` +
+          `downstep, deleting it would only regenerate an identical file): ` +
+          retained.map((item) => `${item.written} ${item.reading}:${item.downstep}`).join(", "),
+      );
+    }
+    return lines;
+  },
+});
+
+export const TARGETS = Object.freeze({
+  [SAK_217_TARGET.id]: SAK_217_TARGET,
+  [SAK_221_TARGET.id]: SAK_221_TARGET,
+});
+
+/** `target.items()` / `target.readings()` walk all of VOCAB and pitchItems();
+ * `stalePitchClips` asks for them once per reading. Memoized per target so a
+ * 26-reading run doesn't rebuild the same static enumeration 26 times. */
+const itemCache = new Map();
+function targetItems(target) {
+  if (!itemCache.has(target)) itemCache.set(target, target.items());
+  return itemCache.get(target);
+}
+const readingCache = new Map();
+function targetReadings(target) {
+  if (!readingCache.has(target)) readingCache.set(target, target.readings());
+  return readingCache.get(target);
+}
+
+/** Every (reading, downstep) pair `target` considers stale for ONE reading.
+ * Returns `[]` for any reading the target doesn't cover — that's the whole
+ * point of gating on the target's own reading list, rather than trusting the
+ * caller to only ever pass an affected reading in. Defaults to SAK-217's
+ * target so the original call shape keeps its original meaning. */
+export function stalePitchItemsForReading(reading, target = SAK_217_TARGET) {
+  if (!targetReadings(target).includes(reading)) return [];
+  return targetItems(target).filter((item) => item.reading === reading);
+}
+
+/** Every Storage object path `target` considers stale: one row per (reading,
+ * downstep, voice), in the target's reading order, then its item order, then
+ * `VOICES` order — a stable, readable order for both the dry-run report and
+ * the delete batches. Pure — no network calls, safe to import and call from a
+ * test. */
+export function stalePitchClips(target = SAK_217_TARGET) {
+  return targetReadings(target).flatMap((reading) =>
+    stalePitchItemsForReading(reading, target).flatMap((item) =>
       VOICES.map((voice) => ({
         reading: item.reading,
         downstep: item.downstep,
@@ -93,10 +266,10 @@ export function stalePitchClips() {
   );
 }
 
-/** Group a flat clip list into `reading -> downstep -> path[]`, preserving
- * `CONFIRMED_BAD_READINGS` order — the shape the dry-run report and the
- * execute-mode log both print from, so the two modes read identically apart
- * from the header line and whether a delete actually ran. */
+/** Group a flat clip list into `reading -> downstep -> path[]`, preserving the
+ * target's reading order — the shape the dry-run report and the execute-mode
+ * log both print from, so the two modes read identically apart from the header
+ * line and whether a delete actually ran. */
 function groupByReadingAndDownstep(clips) {
   const byReading = new Map();
   for (const clip of clips) {
@@ -115,7 +288,13 @@ function parseArgs() {
       return [k, v ?? true];
     }),
   );
-  return { execute: !!args.execute };
+  const targetId = typeof args.target === "string" ? args.target : SAK_217_TARGET.id;
+  const target = TARGETS[targetId];
+  if (!target) {
+    console.error(`Unknown --target=${targetId}. Known targets: ${Object.keys(TARGETS).join(", ")}`);
+    process.exit(1);
+  }
+  return { execute: !!args.execute, target };
 }
 
 const LOG_DIR = new URL("../.logs/", import.meta.url);
@@ -210,14 +389,18 @@ async function deleteClips(clips, { bucket, supabase }) {
 }
 
 async function main() {
-  const { execute } = parseArgs();
-  const clips = stalePitchClips();
+  const { execute, target } = parseArgs();
+  const clips = stalePitchClips(target);
   const readingCount = new Set(clips.map((c) => c.reading)).size;
 
   log(
-    `invalidate-stale-pitch-clips: ${CONFIRMED_BAD_READINGS.length} confirmed-bad reading(s), ` +
-      `${readingCount} with at least one cached pair, ${clips.length} path(s) total across ` +
-      `${VOICES.length} voice(s)${execute ? " [EXECUTE — will delete from Storage]" : " [dry run]"}`,
+    `invalidate-stale-pitch-clips --target=${target.id}: ${target.summary}` +
+      `${execute ? " [EXECUTE — will delete from Storage]" : " [dry run]"}`,
+  );
+  for (const line of target.explain()) log(`  ${line}`);
+  log(
+    `${readingCount} reading(s) with at least one stale pair, ${clips.length} path(s) total across ` +
+      `${VOICES.length} voice(s).`,
   );
 
   const bucket = process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET;
