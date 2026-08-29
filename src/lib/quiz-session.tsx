@@ -1352,6 +1352,34 @@ export function QuizSessionProvider({
         },
         session.origin,
       );
+      // SAK-278 — Sam's own bar for "known enough to count" is this exact click,
+      // not the drill's outcome and not the lesson's own end: "as soon as they
+      // start the quiz, it makes sense to mark it as known... Clicking quiz me
+      // means they feel ready." Leaving the teach walk for the drill is every
+      // route through "Quiz me" (this callback IS that leaving — see
+      // session/page.tsx's toDrill/wider.onStart, both wrapped in leavingWalk),
+      // so the session's OWN taught material is claimed right here — the same
+      // sessionKnownClaimTarget mechanism endSession/finishSession already use
+      // to claim whatever of `teach` a session never got around to testing,
+      // just fired at the start of the quiz instead of held back for its end.
+      // Anything the drill DOES go on to test still keeps its real result:
+      // standingOf (library/standing.ts) only reads a claim while a fact's own
+      // `seen` count is zero, so a claim made here never outranks an answer
+      // made a moment later.
+      //
+      // A widened scope (`soFar`, the kana fork's "Quiz me on all X so far") is
+      // NOT claimed here — only `session.teach`, the material THIS lesson
+      // actually taught. The wider set can hold much older facts with real
+      // (possibly shaky) standings of their own, and claiming those the instant
+      // they're pulled into a bigger quiz would let a fresh claim's timestamp
+      // outrank a real, worse result it has no business overwriting.
+      //
+      // Nothing to claim on a "Quiz me" run with no teach set (session.teach
+      // empty): that material was already marked seen at Home's click
+      // (home-feed.tsx's markSeen), and SAK-52's explicit end-of-session choice
+      // is what claims it, on purpose — a Quiz-me abandoned via "Take me to the
+      // lesson" must leave no trace, which an automatic claim here would break.
+      if (session.teach.length) void postClaim(session.teach, true);
       setSession({
         ...session,
         facts,
