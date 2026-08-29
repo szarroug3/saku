@@ -1,5 +1,13 @@
 // resolveItem — the corpus lookup the scheduler reaches an item through.
 //
+// RETIRED, not to be finished — decision recorded in docs/architecture-refactor.md
+// (SAK-239, Aug 2026). This file has zero production importers; the only thing
+// that still uses it is the `/dev/numbers` reference page, kept for that demo
+// role (dev pages are kept intentionally). Production cross-track scheduling
+// shipped a different way: `src/lib/content/unit-scheduler-core.ts` +
+// `learn-index.json`. Point new scheduling work there, not here — this file is
+// a frozen reference, not a WIP with a pending swap.
+//
 // The NextLesson contract takes a `resolve(entry)` so it can follow a
 // prerequisite edge to the item it points at, in ANY track. That map is built by
 // iterating a corpus whose kind is known at construction — a LOOKUP, never a

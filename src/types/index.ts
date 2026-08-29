@@ -298,8 +298,11 @@ export interface QuizConfig {
 
   // ---------- what arrives next ----------
   /**
-   * How long a kanji lesson should be, in draw+assembly cost — see LessonRange
-   * and `kanjiCost` in src/lib/kanji-lesson.ts. A lesson fills toward `max` and
+   * How long a kanji lesson should be, in reading-unit cost — see LessonRange
+   * and `costOf` in src/lib/curriculum-lesson.ts (SAK-239: the old draw+assembly
+   * cost model, `kanjiCost` in the now-deleted kanji-lesson.ts, was superseded by
+   * this reading-unit model when the kanji and word tracks merged into one
+   * spine — see curriculum-lesson.ts's header). A lesson fills toward `max` and
    * only ends below `min` when the next indivisible piece won't fit.
    *
    * TWO NUMBERS with an ORDER between them: `max` may never be below `min`.
