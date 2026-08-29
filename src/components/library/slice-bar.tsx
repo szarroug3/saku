@@ -29,7 +29,6 @@ import { AddToList } from "@/components/library/add-to-list";
 import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Hint } from "@/components/ui";
 import { constructionConfigForFact } from "@/data/counter-categories";
-import { realQuestionCount } from "@/lib/ask-forms";
 import {
   drillPlan,
   hasMultipleQuizForms,
@@ -37,13 +36,19 @@ import {
   sliceFacts,
   sliceIsDrillable,
   sliceSentence,
+  type FactsOfEntry,
   type Slice,
 } from "@/lib/library/slice";
 import { claimableFacts, quizzableFacts } from "@/lib/library/reading-proof-facts";
+import {
+  getRealQuestionCount,
+  resolveFactsOfEntries,
+} from "@/lib/library/server-lookups";
+import { useServerLookup } from "@/lib/library/use-server-lookup";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
+import type { EntryId, FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
 
 interface SliceTeachPlan {
   facts: readonly FactId[];
@@ -148,22 +153,18 @@ export function SliceBar({
   // launch points that used to bypass it. See QuizPreStart below.
   const [quizzing, setQuizzing] = useState(false);
 
-  // Signed-out history lives in localStorage, which the server cannot read.
-  // Until the provider has restored it, every progress-derived sentence and
-  // action would be calculated from a fake empty history (briefly offering
-  // “Teach me” to someone who already knows the whole slice). Render the bar
-  // once, from real data, instead of rendering and then correcting it.
-  if (!progressReady) return null;
-  // The shelf bar's actions all operate on a hand-picked selection; with nothing
-  // selected there is nothing to add, claim, quiz or teach, so it shows nothing
-  // at all rather than a whole-shelf "Everything" band. (The entry variant has
-  // its own gate below and never sets hasSelection.)
-  if (variant === "bar" && !hasSelection) return null;
-  const plan = drillPlan(slice, facts, claims, now, includeSolid);
-  // Teach first, then probe — the order the session should MEET them, which is
-  // budget.planFacts's rule and not this bar's to invent. This is what "Teach me"
-  // runs: the new material, taught, then the met material probed.
-  const order = [...plan.teach, ...plan.probe];
+  // SAK-226: `factsOf` (library-index.ts's ~9.5MB dictionary) used to be
+  // imported straight into slice.ts, which this always-rendered bar imported
+  // straight into every Library page's client bundle. Batch-resolved here
+  // instead, for exactly this slice's own (small) entry list, and handed to
+  // slice.ts's functions as a resolver — see slice.ts's own header. Hooks run
+  // unconditionally, ahead of the readiness gates below, same as `cfg`/
+  // `adding`/`quizzing` above — including the `getRealQuestionCount` lookup
+  // further down, which needs values derived from this one and so must sit
+  // after it, but (rules of hooks) still before either early return.
+  const entryFactsMap = useServerLookup(resolveFactsOfEntries, [slice.entries]);
+  const factsOfEntry: FactsOfEntry = (e: EntryId) => entryFactsMap?.[e as unknown as string] ?? [];
+
   // WHAT "QUIZ ME" ASKS — every quizzable fact named by this Library slice.
   // A Library page has just shown the material, and an explicit Quiz action means
   // test this material now; prior exposure is not an additional eligibility gate.
@@ -174,9 +175,15 @@ export function SliceBar({
   // facts and readings whose word IS known are untouched, so kana, words and
   // meanings quiz exactly as before, and a hand-picked selection still asks
   // everything it picked except a reading in a word you never learned.
-  const quizOrder = quizzableFacts(sliceFacts(slice), history);
+  //
+  // Computed here, ahead of the readiness gates below (rather than after, next
+  // to the rest of the render logic that reads them) ONLY because
+  // `getRealQuestionCount`'s useServerLookup call needs their result as its
+  // args and hooks cannot follow a conditional return. Degenerate (empty) for
+  // the one render before `entryFactsMap` resolves — harmless, since nothing
+  // reads them for real until the `!entryFactsMap` gate below has passed.
+  const quizOrder = quizzableFacts(sliceFacts(slice, factsOfEntry), history);
   const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
-  const canQuiz = hasMultipleQuizForms(effectiveQuizOrder);
   const hasGenerator = effectiveQuizOrder.some(
     (fact) => constructionConfigForFact(fact) !== null,
   );
@@ -196,7 +203,44 @@ export function SliceBar({
   const quizLaunchCfg = hasGenerator
     ? { ...cfg, length: "limited" as const, limType: "cov" as const }
     : cfg;
-  const quizCount = realQuestionCount(effectiveQuizOrder, quizLaunchCfg, history);
+  // SAK-226: was a direct, synchronous `realQuestionCount(...)` call —
+  // ask-forms.ts (and the engine modules it reads) import the dictionary
+  // directly, so that call shipped it to every Library page. Moved behind a
+  // Server Action; see getRealQuestionCount's own header for why this is the
+  // one useServerLookup call in the app keyed on mutable args. Args are only
+  // passed once `entryFactsMap` is real (otherwise null, which
+  // useServerLookup treats as "nothing to fetch yet" — see its own header),
+  // so this never fires a round trip for the degenerate empty-facts case
+  // above. `?? 0` covers the one render before it resolves — the button
+  // itself is already gated below on `canQuiz`, computed from
+  // `effectiveQuizOrder` directly, so a momentary 0 here never flashes a
+  // button that then goes on to disappear.
+  const quizCount =
+    useServerLookup(
+      getRealQuestionCount,
+      entryFactsMap ? [effectiveQuizOrder, quizLaunchCfg, history] : null,
+    ) ?? 0;
+
+  // Signed-out history lives in localStorage, which the server cannot read.
+  // Until the provider has restored it, every progress-derived sentence and
+  // action would be calculated from a fake empty history (briefly offering
+  // “Teach me” to someone who already knows the whole slice). Render the bar
+  // once, from real data, instead of rendering and then correcting it. The
+  // freshly batch-resolved `entryFactsMap` above gets the exact same
+  // treatment, for the exact same reason — a slice's facts are as much "real
+  // data" as its progress is.
+  if (!progressReady || !entryFactsMap) return null;
+  // The shelf bar's actions all operate on a hand-picked selection; with nothing
+  // selected there is nothing to add, claim, quiz or teach, so it shows nothing
+  // at all rather than a whole-shelf "Everything" band. (The entry variant has
+  // its own gate below and never sets hasSelection.)
+  if (variant === "bar" && !hasSelection) return null;
+  const plan = drillPlan(slice, factsOfEntry, facts, claims, now, includeSolid);
+  // Teach first, then probe — the order the session should MEET them, which is
+  // budget.planFacts's rule and not this bar's to invent. This is what "Teach me"
+  // runs: the new material, taught, then the met material probed.
+  const order = [...plan.teach, ...plan.probe];
+  const canQuiz = hasMultipleQuizForms(effectiveQuizOrder);
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
@@ -208,7 +252,7 @@ export function SliceBar({
   const ordinaryClaimOrder = claimableFacts(
     includeSolid
       ? (() => {
-          const base = drillPlan(slice, facts, claims, now);
+          const base = drillPlan(slice, factsOfEntry, facts, claims, now);
           return [...base.teach, ...base.probe];
         })()
       : order,
@@ -219,13 +263,13 @@ export function SliceBar({
       ...(claimFacts ?? []).filter((id) => claims[id] === undefined),
     ]),
   ];
-  const count = sliceCount(slice, facts, claims, now, includeSolid);
+  const count = sliceCount(slice, factsOfEntry, facts, claims, now, includeSolid);
   const sentence = sliceSentence(count);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a
   // "drill" of it is a one-question session that teaches nothing the screen above
   // this bar hasn't already shown — so hide Drill (only Drill) on single-fact
   // slices. Add-to-list and I-know-this stay: you may still file か or claim it.
-  const canDrill = sliceIsDrillable(slice);
+  const canDrill = sliceIsDrillable(slice, factsOfEntry);
 
   // SAK-61: what "unclaim" reverses, on an entry OR a selection. The mirror of
   // claimOrder above — the same claimable (non-reading) facts of this exact
@@ -237,7 +281,7 @@ export function SliceBar({
   // rule the owner asked for: an all-unclaimed selection shows only "I know
   // these", an all-claimed one shows only "Mark as not known", and a mixed
   // selection shows both, each acting on its own subset.
-  const claimedFacts = claimableFacts(sliceFacts(slice)).filter(
+  const claimedFacts = claimableFacts(sliceFacts(slice, factsOfEntry)).filter(
     (fact) => claims[fact] !== undefined,
   );
 

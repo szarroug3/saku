@@ -20,7 +20,7 @@
 // resolveFactInfos) so a deck/list/breakdown resolves in ONE round trip built
 // once, not one request per row.
 
-import type { EntryId, FactId, FactInfo, FactState, HistoryFile } from "@/types";
+import type { EntryId, FactId, FactInfo, FactState, HistoryFile, QuizConfig } from "@/types";
 import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import type { Recipe } from "@/data/grammar/recipes";
 import type { StrokeFallback } from "@/lib/lesson-roles";
@@ -98,6 +98,7 @@ import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import { currentUserId } from "@/lib/auth";
 import { loadHistory } from "@/lib/history";
+import { realQuestionCount } from "@/lib/ask-forms";
 
 /* -------------------------------------------------------------------------
  * /LEARN HOME FEED — SAK-115. home-feed.tsx (its per-track frontier) and
@@ -1334,4 +1335,36 @@ export async function resolveLessonSteps(
   shownIntros: readonly string[],
 ): Promise<LessonStep[]> {
   return lessonSteps(facts, history, new Set(shownIntros));
+}
+
+/* -------------------------------------------------------------------------
+ * "QUIZ ME N" BUTTON COUNT — SAK-226. slice-bar.tsx (rendered on every
+ * Library shelf and entry page) used to import `realQuestionCount` from
+ * `@/lib/ask-forms` directly to compute the number on its "Quiz me" button.
+ * ask-forms.ts is pure arithmetic, but it — and the engine modules it calls
+ * into (lib/engine/question.ts above all) — read factInfo/vocabRow/READING_
+ * INDEX/grammarMeaning and several more generated-JSON-backed dictionaries
+ * DIRECTLY, at module scope. Bundled into a client component that renders on
+ * every reference page, that pulled the whole ~20MB+ dictionary along with
+ * it — the dominant contributor to this ticket's measured bundle.
+ *
+ * UNLIKE the rest of this file, this one genuinely depends on MUTABLE state
+ * (`ask`/`cfg` from the live quiz-settings drawer, `history` as claims/seen
+ * accrue) rather than only this build's fixed content — see
+ * use-server-lookup.ts's own header for why every other action here avoids
+ * that shape. It still fits useServerLookup cleanly, the same way
+ * getLearnFrontier (above) does for its own reactive `history` argument:
+ * a NEW (facts, cfg, history) tuple is simply a NEW cache key, so a config
+ * change or a fresh claim naturally refetches instead of ever reading stale.
+ * `facts` is always small here (one entry's own facts, or a hand-picked/
+ * shelf selection) — nothing like ALL_FACTS — so this round trip stays
+ * cheap. ask-forms.ts's own logic, tests and every OTHER caller (drill-
+ * screen.tsx, practice/page.tsx, …) are untouched; only this one call site
+ * moved behind the server boundary. */
+export async function getRealQuestionCount(
+  facts: readonly FactId[],
+  cfg: Pick<QuizConfig, "length" | "limType" | "limCount" | "ask">,
+  history: HistoryFile,
+): Promise<number> {
+  return realQuestionCount(facts, cfg, history);
 }

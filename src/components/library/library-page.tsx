@@ -39,6 +39,7 @@ import {
   getActiveMixupEntries,
   getEverythingSlice,
   getSelectionSlice,
+  resolveEntryLinks,
   searchLibraryByType,
   searchLibraryOneKind,
   type BrowseEntry,
@@ -565,6 +566,19 @@ export function LibraryPageClient({
     [resultSections],
   );
 
+  // SAK-226: EntryRow used to resolve its OWN href/name by calling
+  // entryHref/entryName directly (href.ts/library-index.ts, both built over
+  // the ~9.5MB dictionary), which shipped that whole dictionary to every
+  // /library visit's client bundle the moment a search result row rendered.
+  // Batch-resolved here instead — the same shape and persisted-cache
+  // reasoning shelves.tsx's own `entryLinks` uses for the shelf rows.
+  const searchHitIds = useMemo(
+    () => resultHits.map((h) => h.entry.id),
+    [resultHits],
+  );
+  const searchEntryLinks =
+    useServerLookup(resolveEntryLinks, [searchHitIds], { persist: true }) ?? {};
+
   // Shelves are cut lazily per shown kind now — see shelfFor above. The kanji
   // shelf is sectioned by the "everyday" teaching order, the one the curriculum
   // actually teaches in.
@@ -955,17 +969,23 @@ export function LibraryPageClient({
                   ) : null}
                 </Lbl>
                 </div>
-                {expanded && s.hits.map((h) => (
+                {expanded && s.hits.map((h) => {
+                  const link = searchEntryLinks[h.entry.id as unknown as string] ??
+                    { href: "#", name: h.entry.glyph };
+                  return (
                   <EntryRow
                     key={h.entry.id}
                     entry={h.entry}
+                    href={link.href}
+                    name={link.name}
                     note={h.entry.sub}
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
                     selectMode={selectMode}
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
-                ))}
+                  );
+                })}
               </Card>
               );
             })

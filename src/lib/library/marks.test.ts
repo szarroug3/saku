@@ -124,7 +124,7 @@ describe("the shelf exists and is reachable", () => {
       assert.deepEqual(e.readings, [], `${id} grew a reading`);
       assert.deepEqual(factsOf(markEntry(id)), [], `${id} grew a fact`);
       assert.equal(
-        sliceIsDrillable({ label: id, entries: [markEntry(id)] }),
+        sliceIsDrillable({ label: id, entries: [markEntry(id)] }, factsOf),
         false,
         `${id} offered a Drill button`,
       );
@@ -228,7 +228,7 @@ describe("a mark is not drillable, and not by omission", () => {
     // The bar's own rule, asked the way the bar asks it.
     for (const m of MARKS) {
       assert.equal(
-        sliceIsDrillable({ label: m.name, entries: [markEntry(m.id)] }),
+        sliceIsDrillable({ label: m.name, entries: [markEntry(m.id)] }, factsOf),
         false,
       );
     }
@@ -241,7 +241,7 @@ describe("a mark is not drillable, and not by omission", () => {
       label: `${MARKS.length} selected`,
       entries: MARKS.map((m) => markEntry(m.id)),
     };
-    assert.deepEqual(sliceIsDrillable(all), false);
+    assert.deepEqual(sliceIsDrillable(all, factsOf), false);
   });
 
   test("a mark has no facts table — not an empty one", () => {

@@ -66,15 +66,29 @@ import { KANA_SUBJECT } from "@/data/characters";
 import { KEIGO_SUBJECT } from "@/lib/keigo-ids";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
-import { GRAMMAR_SUBJECT, entryName } from "@/lib/library/library-index";
 import type { LibEntry } from "@/lib/library/entries";
-import { entryHref } from "@/lib/library/href";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
 // it has a reading" property is testable (the runner cannot load JSX).
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
 import { hasKanji } from "@/lib/romaji";
 import type { VerbPair } from "@/data/transitivity";
+
+// SAK-104: GRAMMAR_SUBJECT used to come from the server-only library-index.ts
+// — re-declared here as the pure literal it is (same move shelves.tsx already
+// made, and for the identical reason: data/grammar/index.ts's own
+// GRAMMAR_SUBJECT export drags its module-scope GRAMMAR_FACTS build, and
+// therefore the grammar corpus, into the client bundle).
+const GRAMMAR_SUBJECT = "grammar";
+
+// SAK-226: `entryHref`/`entryName` used to be called directly here, from
+// href.ts/library-index.ts — both server-only-in-spirit modules built over
+// the ~9.5MB dictionary, and this file renders EVERY Library shelf's tiles
+// and rows, so that import shipped the whole thing to every /library visit.
+// `href`/`name` now arrive as props, batch-resolved by the caller (shelves.tsx,
+// library-page.tsx's search results) via server-lookups.ts's
+// `resolveEntryLinks` — the exact shape this file's rows need together,
+// already built for SAK-104's other link-row callers.
 
 // SAK-170: every HearButton in this file stays GENERIC (no `downstep`), and no
 // tile/row here draws a pitch line, on purpose. This file renders every
@@ -206,12 +220,19 @@ export function ShelfRow({
 
 export function EntryTile({
   entry,
+  href,
+  name,
   voice,
   selected,
   selectMode,
   onToggleSelect,
 }: {
   entry: LibEntry;
+  /** The entry's page — batch-resolved by the caller (see this file's own
+   * header). */
+  href: string;
+  /** entryName(entry), batch-resolved the same way. */
+  name: string;
   voice: string;
   selected: boolean;
   /** Whether a plain click currently toggles selection (true) or opens the
@@ -275,7 +296,7 @@ export function EntryTile({
             glyph={entry.glyph}
             voiceName={voice}
             stopPropagation
-            label={`Hear ${entryName(entry)}`}
+            label={`Hear ${name}`}
             className="relative z-10 flex-none text-[11px]"
           />
         ) : null}
@@ -312,8 +333,8 @@ export function EntryTile({
   return (
     <div className={className} title={title}>
       <Link
-        href={entryHref(entry.id)}
-        aria-label={`Open ${entryName(entry)}`}
+        href={href}
+        aria-label={`Open ${name}`}
         className="absolute inset-0 rounded-[10px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       />
       {body}
@@ -330,6 +351,8 @@ export function EntryTile({
  * the file header. */
 export function EntryRow({
   entry,
+  href,
+  name,
   note,
   voice,
   selected,
@@ -338,6 +361,11 @@ export function EntryRow({
   onToggleSelect,
 }: {
   entry: LibEntry;
+  /** The entry's page — batch-resolved by the caller (see this file's own
+   * header). */
+  href: string;
+  /** entryName(entry), batch-resolved the same way. */
+  name: string;
   /** Why this row is here, when the section header doesn't already say it. */
   note?: string;
   voice: string;
@@ -361,7 +389,7 @@ export function EntryRow({
   // (召し上がる / いただく), the same shape the single-word ones show — with the
   // "Keigo · <meaning>" sub-line (passed as `note`) beneath. `entryName` is the
   // words for a keigo set (its glyph is empty), never the empty string.
-  const leadName = entry.kind === KEIGO_SUBJECT ? entryName(entry) : "";
+  const leadName = entry.kind === KEIGO_SUBJECT ? name : "";
   const rowTitle =
     entry.meanings.slice(0, 3).join(", ") || entry.sub;
   const markTitle =
@@ -381,8 +409,8 @@ export function EntryRow({
       selected={selected}
       onToggleSelect={onToggleSelect}
       selectMode={selectMode}
-      href={entryHref(entry.id)}
-      openLabel={`Open ${entryName(entry)}`}
+      href={href}
+      openLabel={`Open ${name}`}
       // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
       // and column gap; the default row is a self-contained flex line with its
       // own gap and horizontal padding so its text sits inset from the accent
@@ -460,7 +488,7 @@ export function EntryRow({
           glyph={entry.glyph}
           voiceName={voice}
           stopPropagation
-          label={`Hear ${entryName(entry)}`}
+          label={`Hear ${name}`}
           className="relative z-10 flex-none"
         />
       ) : null}
@@ -527,14 +555,19 @@ export function KeigoSetHeader() {
 }
 
 export function KeigoSetRow({
-  entry,
+  href,
+  name,
   set,
   voice,
   selected,
   selectMode,
   onToggleSelect,
 }: {
-  entry: LibEntry;
+  /** The entry's page — batch-resolved by the caller (see this file's own
+   * header). */
+  href: string;
+  /** entryName(entry), batch-resolved the same way. */
+  name: string;
   set: KeigoSet;
   voice: string;
   selected: boolean;
@@ -550,8 +583,8 @@ export function KeigoSetRow({
       selected={selected}
       onToggleSelect={onToggleSelect}
       selectMode={selectMode}
-      href={entryHref(entry.id)}
-      openLabel={`Open ${entryName(entry)}`}
+      href={href}
+      openLabel={`Open ${name}`}
       className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
       <KeigoCell words={honorific} meaning={set.meaning} voice={voice} />
@@ -621,14 +654,19 @@ export function VerbPairHeader() {
  * is VIEW by default and SELECT in select mode (see ShelfRow); the two HEAR
  * targets swallow their own clicks either way. */
 export function VerbPairRow({
-  entry,
+  href,
+  name,
   pair,
   voice,
   selected,
   selectMode,
   onToggleSelect,
 }: {
-  entry: LibEntry;
+  /** The entry's page — batch-resolved by the caller (see this file's own
+   * header). */
+  href: string;
+  /** entryName(entry), batch-resolved the same way. */
+  name: string;
   pair: VerbPair;
   voice: string;
   selected: boolean;
@@ -642,8 +680,8 @@ export function VerbPairRow({
       selected={selected}
       onToggleSelect={onToggleSelect}
       selectMode={selectMode}
-      href={entryHref(entry.id)}
-      openLabel={`Open ${entryName(entry)}`}
+      href={href}
+      openLabel={`Open ${name}`}
       className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_28px] items-center gap-3 px-3 py-2"
     >
       <PairCell side={pair.happens} voice={voice} />
