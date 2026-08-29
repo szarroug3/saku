@@ -388,7 +388,7 @@ export function CharacterEntryView({
                           {p.sense}
                           {p.role === "phonetic" ? (
                             <span className="ml-1.5 text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
-                              phonetic
+                              sound
                             </span>
                           ) : p.role === "semantic" ? (
                             <span className="ml-1.5 text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
