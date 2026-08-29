@@ -9,6 +9,8 @@ import "server-only";
 
 import { isChunkLike } from "@supabase/ssr";
 
+import { requireSupabaseUrl } from "@/lib/supabase/keys";
+
 /** Supabase's own default cookie key for this project: `sb-<project-ref>-auth-token`,
  * chunked across multiple cookies (`<key>.0`, `<key>.1`, ...) when the session is
  * large. Neither @supabase/supabase-js nor @supabase/ssr exports this computation,
@@ -18,7 +20,7 @@ import { isChunkLike } from "@supabase/ssr";
  * createSupabaseServerClient (./server.ts) never overrides it via cookieOptions.name,
  * so this default is what is actually on the wire. */
 function supabaseAuthCookieKey(): string {
-  const projectRef = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0];
+  const projectRef = new URL(requireSupabaseUrl()).hostname.split(".")[0];
   return `sb-${projectRef}-auth-token`;
 }
 

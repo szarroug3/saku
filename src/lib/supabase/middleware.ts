@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isSupabaseStore } from "@/lib/store/mode";
-import { supabasePublishableKey } from "@/lib/supabase/keys";
+import { requireSupabasePublishableKey, requireSupabaseUrl } from "@/lib/supabase/keys";
 
 // Runs on every matched request (see middleware.ts). Its ONE job, and only in
 // Supabase mode: refresh the auth session. The access token is short-lived, and
@@ -23,8 +23,8 @@ export async function updateSession(request: NextRequest) {
   if (!isSupabaseStore()) return response;
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabasePublishableKey()!,
+    requireSupabaseUrl(),
+    requireSupabasePublishableKey(),
     {
       cookies: {
         getAll() {

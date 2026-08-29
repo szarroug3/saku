@@ -15,16 +15,16 @@
 
 import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { supabasePublishableKey } from "@/lib/supabase/keys";
+import { requireSupabasePublishableKey, requireSupabaseUrl } from "@/lib/supabase/keys";
 import type { EntryId } from "@/types";
 
 let client: ReturnType<typeof createBrowserClient> | null = null;
 function supabase() {
   if (!client) {
-    client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      supabasePublishableKey()!,
-    );
+    // SAK-238: requireSupabaseUrl/requireSupabasePublishableKey throw a clear
+    // "Supabase is not configured" error instead of a `!`-asserted undefined
+    // crashing deep inside createBrowserClient — see keys.ts.
+    client = createBrowserClient(requireSupabaseUrl(), requireSupabasePublishableKey());
   }
   return client;
 }
