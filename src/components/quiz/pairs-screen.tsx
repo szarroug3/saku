@@ -20,8 +20,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { newFactStat, shuffle } from "@/lib/engine";
-import { entryOf } from "@/lib/facts";
-import { getQuizTrackLabel } from "@/lib/library/server-lookups";
+import { getQuizTrackLabel, resolveFactInfos } from "@/lib/library/server-lookups";
 import { useServerLookup } from "@/lib/library/use-server-lookup";
 import {
   dropClippedTail,
@@ -33,7 +32,9 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 import type {
+  EntryId,
   FactId,
+  FactInfo,
   FactSessionDetail,
   HistoryFile,
   PairResponse,
@@ -247,8 +248,23 @@ type PickResult =
   | { kind: "matched"; boardDone: boolean }
   | { kind: "mismatch"; flash: [number, number] };
 
+/** SAK-104/SAK-227: entryOf reads lib/facts.ts (server-only, the multi-
+ * megabyte dictionary), so pickCell takes a locally-resolved slice instead of
+ * importing it — see the "SAK-104: locally-resolved fact registry" section
+ * in the screen component below for how it's populated. Falls back to `null`
+ * (never a guess) if a fact somehow renders before its factInfo has
+ * resolved — the same tolerance drill-screen.tsx's identical pattern
+ * documents (a harmless, momentary gap, not a correctness issue). */
+function localEntryOf(factMap: Record<string, FactInfo>, f: FactId): EntryId | null {
+  return factMap[f as unknown as string]?.entry ?? null;
+}
+
 /** Legacy pickCell: pick / unpick / move pick / attempt a match. */
-function pickCell(p: PairsRuntime, i: number): PickResult {
+function pickCell(
+  p: PairsRuntime,
+  i: number,
+  factMap: Record<string, FactInfo>,
+): PickResult {
   const cell = p.board[i];
   if (cell.gone) return { kind: "noop" };
   if (p.pick === null) {
@@ -298,8 +314,8 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   // of ONE entry are not a confusion (see FactSessionDetail): pairing 生's セイ
   // cell with 生's ショウ cell is a wrong answer about 生, not mixing 生 up
   // with something else.
-  const said = entryOf(other.fact);
-  if (said !== entryOf(jp.fact)) {
+  const said = localEntryOf(factMap, other.fact);
+  if (said && said !== localEntryOf(factMap, jp.fact)) {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }
   p.streak = 0;
@@ -330,6 +346,28 @@ export function PairsScreen() {
     active ? [active.facts] : null,
   );
 
+  // ---------- SAK-104/SAK-227: locally-resolved fact registry ----------
+  //
+  // entryOf reads lib/facts.ts (the multi-megabyte dictionary) —
+  // drill-screen.tsx's identical section explains why a client quiz screen
+  // must never import it directly. The whole run's fact pool is fixed at
+  // Start (active.facts), so it's fetched ONCE, in one round trip, and every
+  // pick() below reads this map synchronously.
+  const [factMap, setFactMap] = useState<Record<string, FactInfo>>({});
+  useEffect(() => {
+    if (!active) return;
+    const missing = active.facts.filter(
+      (id) => !(id as unknown as string in factMap),
+    );
+    if (!missing.length) return;
+    void resolveFactInfos(missing).then((res) => {
+      setFactMap((prev) => ({ ...prev, ...res }));
+    });
+    // Only re-run when the active leg itself changes — factMap is read, not
+    // depended on, to avoid re-fetching on every merge.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
   // Transient mismatch flash: board indices currently flashing danger.
   const [flash, setFlash] = useState<number[]>([]);
   const flashTimer = useRef<number | undefined>(undefined);
@@ -345,7 +383,7 @@ export function PairsScreen() {
 
   const pick = (i: number) => {
     if (!p) return;
-    const res = pickCell(p, i);
+    const res = pickCell(p, i, factMap);
     if (res.kind === "noop") return;
     if (res.kind === "matched" && res.boardDone) {
       window.clearTimeout(nextTimer.current);
