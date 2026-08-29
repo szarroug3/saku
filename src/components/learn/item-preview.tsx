@@ -57,7 +57,7 @@ export function ItemPreview({ item }: { item: PreviewItem }) {
       // glyph span below can size itself in `cqi` against the tile's own
       // content-box width — the same mechanism entry-tile.tsx uses for the
       // Library grid.
-      className="relative flex h-[104px] w-[104px] shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 p-3 [container-type:inline-size]"
+      className="relative flex h-[104px] w-[104px] shrink-0 flex-col overflow-hidden rounded-2xl border border-border p-3 [container-type:inline-size]"
       style={
         {
           backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
