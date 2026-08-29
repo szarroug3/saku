@@ -44,7 +44,9 @@ import { effectiveState } from "@/lib/claims";
 import {
   READING_INDEX,
   READINGS,
+  factAnswers,
   readingFactId,
+  surfaceOf,
   type ReadingRow,
 } from "@/data/kanji";
 import { vocabRow, wordMeaningFactId } from "@/data/vocab";
@@ -94,16 +96,30 @@ export function isMultiPartWord(word: string): boolean {
  * reading, which is exactly when the reading is not yet askable: either nothing
  * proves it yet, or the only word that does is the single kanji itself (the "on
  * its own" card task #22 removed from quizzing).
+ *
+ * SAK-230: a reading's `words` is a whole rendaku/gemination FAMILY (中's ちゅう
+ * bucket also holds 一日中, which the kanji actually says じゅう there) — every
+ * word in it proves the fact (see `readingsProvedBy` below, deliberately broad),
+ * but not every word is safe to FRAME the fact on, because the fact's graded
+ * answer (`factAnswers`, baked once at build) is fixed to the row's own
+ * surface/base pair. Framing on a word outside that pair would print "中 read
+ * this way in 一日中" and still grade only ちゅう correct — telling a learner
+ * who typed the word's real reading, じゅう, that they were wrong. So a
+ * fallback candidate is only used when it actually surfaces one of the fact's
+ * accepted readings; the ingest anchor above is exempt from this check because
+ * `reanchor` already guarantees it does (see data/kanji.ts).
  */
 export function preferredAnchor(
   row: ReadingRow,
   known: (keb: string) => boolean,
 ): string | null {
   if (known(row.anchor) && isMultiPartWord(row.anchor)) return row.anchor;
+  const answers = new Set(factAnswers(row));
   let best: string | null = null;
   let bestRank = Infinity;
   for (const w of row.words) {
     if (!known(w) || !isMultiPartWord(w)) continue;
+    if (!answers.has(surfaceOf(w, row.k, row.base) ?? row.base)) continue;
     const rank = vocabRow(w)?.beginnerRank ?? Infinity;
     if (rank < bestRank) {
       bestRank = rank;

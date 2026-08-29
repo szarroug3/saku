@@ -420,8 +420,25 @@ function reattest(r: ReadingRow): ReadingRow {
  * alignment so a re-anchor never carries the old word's surface.
  */
 const RANK_UNKNOWN = Number.MAX_SAFE_INTEGER;
-function surfaceOf(word: string, k: string, base: string): string | undefined {
+/** How `k` actually sounds in `word`, among the words folded into the `base`
+ * bucket — 中 in 一日中 is じゅう, even though the bucket's base is ちゅう
+ * (rendaku/gemination folding, same discipline `base` itself documents).
+ * Exported so word-unlock.ts's anchor pick can apply the identical "does this
+ * word really surface the reading being asked" test — see SAK-230. */
+export function surfaceOf(word: string, k: string, base: string): string | undefined {
   return vocabRow(word)?.align?.find(([kk, , bb]) => kk === k && bb === base)?.[1];
+}
+
+/**
+ * The reading(s) a fact for `r` accepts as correct — its anchor's surface, plus
+ * the bucket's base when the two differ (仏 the anchor's own voicing, ぐち
+ * beside くち). ONE source for this pairing: `buildKanjiFacts` bakes it into
+ * `FactInfo.answers`, and word-unlock.ts's `preferredAnchor` re-reads it to
+ * decide which OTHER words in the bucket are safe to frame the same fact on —
+ * see SAK-230's header note on why that second reader exists.
+ */
+export function factAnswers(r: ReadingRow): readonly string[] {
+  return r.surface === r.base ? [r.surface] : [r.surface, r.base];
 }
 /**
  * A word where `k` reads MORE THAN ONE base is an ambiguous anchor and cannot be
@@ -665,7 +682,7 @@ function buildKanjiFacts(): FactInfo[] {
       glyph: r.k,
       // The answer is how the reading SURFACES in the anchor word — 口 in 出口
       // is ぐち, and marking ぐち wrong there would be marking Japanese wrong.
-      answers: r.surface === r.base ? [r.surface] : [r.surface, r.base],
+      answers: factAnswers(r),
       subject: KANJI_SUBJECT,
       meaning: k.meanings[0] ?? null,
     });
