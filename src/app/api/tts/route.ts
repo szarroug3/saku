@@ -84,10 +84,25 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
     const opusBytes = await encodeOpus(bytes);
-    const { error } = await supabase.storage
-      .from(bucket)
-      .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
-    if (error) throw error;
+
+    // The cache write is a SEPARATE try: a transient Storage failure here must
+    // not throw away a clip we already successfully synthesized and encoded
+    // (SAK-255) — that used to fall through to the catch below, discard the
+    // good audio, and 502 the request, forcing speech.ts's caller onto the
+    // browser's built-in fallback voice for what should have been a normal
+    // play. /api/pitch-tts already treats its own cache-write failure this
+    // way; this mirrors it. It costs a re-synthesis on the next request until
+    // the transient failure clears, but that's a cache-efficiency cost, not a
+    // reason to withhold audio already in hand.
+    try {
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(path, opusBytes, { contentType: AUDIO_CONTENT_TYPE, upsert: true });
+      if (error) throw error;
+    } catch (err) {
+      console.error(`tts: cache upload failed for "${text}" (voice ${voiceId}), serving uncached`, err);
+    }
+
     return new Response(new Blob([new Uint8Array(opusBytes)], { type: AUDIO_CONTENT_TYPE }), {
       headers: {
         "Content-Type": AUDIO_CONTENT_TYPE,
