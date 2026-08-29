@@ -456,6 +456,42 @@ interface ParkedRun {
   /** When it was set aside — orders the Current sessions list under the one
    * you're doing now. */
   parkedAt: number;
+  /** Set ONLY on an entry this tab did not park itself — a run another open
+   * tab is (or was) showing, mirrored here purely so this tab's own next save
+   * cannot make it vanish (see the onStorage note, SAK-245). Never set on a
+   * run this tab actually parked via parkIfActive/continueRun, and never
+   * surfaced in `runs` — see the filter there. */
+  mirrorOwner?: string;
+}
+
+/**
+ * A run's own identity, independent of which tab is currently looking at it
+ * or where it sits (focused vs. parked) — a session's own `sessionId` (frozen
+ * at start, see StudySession.sessionId), falling back to `startedAt` for a
+ * session snapshotted before that field existed; a bare quiz's own `legId`
+ * otherwise. `null` means no run at all.
+ *
+ * THIS IS THE FIX'S WHOLE HINGE (SAK-245). Two tabs writing the same
+ * `saku-session` key used to be told apart only by `owner` — which says WHO
+ * wrote, not WHETHER they were writing about the same run. Comparing identity
+ * instead is what lets onStorage tell "the run I'm already showing, updated"
+ * (adopt it) from "a completely different run" (never overwrite my own with
+ * it) — see onStorage below for where this is spent.
+ */
+function runIdentity(s: {
+  active: ActiveQuiz | null;
+  session: StudySession | null;
+}): string | null {
+  if (s.session) return `session:${s.session.sessionId ?? s.session.startedAt}`;
+  if (s.active) return `quiz:${s.active.legId}`;
+  return null;
+}
+
+/** The same identity, read off an already-parked run — so a mirrored copy of
+ * a foreign tab's run can be recognised as "the same run" whether it arrives
+ * as that tab's focused slot or inside that tab's own `parked` list. */
+function parkedIdentity(r: ParkedRun): string {
+  return runIdentity({ active: r.active, session: r.session }) ?? `parked:${r.id}`;
 }
 
 interface StoredSession {
@@ -950,11 +986,36 @@ export function QuizSessionProvider({
     return () => window.removeEventListener("beforeunload", saveNow);
   }, [active, session, results, progress, parked, restored, saveNow]);
 
-  // Newest tab wins. Opening the app in a second tab takes the quiz over, and
-  // this tab steps back rather than fighting it — otherwise both would keep
-  // writing their own runtime to the same key and each would see the other's
-  // deck position stutter. `storage` only fires in OTHER tabs, so this is the
-  // loser's side of the handshake.
+  // SAME RUN, UPDATED → ADOPT IT. A DIFFERENT RUN → NEVER TOUCH MY OWN.
+  // ====================================================================
+  // This used to be "newest write wins, whole document, no exceptions": ANY
+  // write from another tab replaced this tab's `active`/`session` outright,
+  // on the theory that opening the app in a second tab always means
+  // "continue the one thing I was doing" and the first tab should just step
+  // aside. That theory is only true when both tabs actually mean the same
+  // run. A learner who genuinely uses two signed-out tabs for two different
+  // things — the ordinary case this bug report is about — got the other
+  // tab's run forced onto their screen mid-answer, with no action of their
+  // own: confirmed independently three times, in real time (SAK-245, audit
+  // finding H2/U4). "Whichever tab last wrote it wins" is exactly the
+  // mechanism, and it is real, not a test artifact.
+  //
+  // The fix is the one the ticket points at: give each run its own identity
+  // (`runIdentity` above) instead of trusting the single shared `active`/
+  // `session` slot to mean "the truth for every tab". A write is adopted into
+  // THIS tab's own display only when it is about the SAME run this tab is
+  // already showing (a genuine update — the common single-tab-over-time case,
+  // a duplicated tab, or nothing focused yet so there is nothing to protect).
+  // A write about a DIFFERENT run never overwrites `active`/`session`/
+  // `results`/`progress` here — it is folded into THIS tab's own `parked`
+  // instead, tagged with the writer's tab id (`mirrorOwner`), so neither tab's
+  // in-progress work can vanish from the shared key just because the other
+  // tab doesn't know it exists (informed by the same read-reconcile-write
+  // conflict-avoidance session-store.ts already uses for signed-in sync,
+  // adapted to a single shared localStorage document instead of a per-user
+  // server row). Mirrored entries are excluded from `runs` (see the filter
+  // there) — they exist only so a save from this tab can never make the other
+  // tab's run disappear from disk, not to be a cross-tab session browser.
   useEffect(() => {
     if (!restored) return;
     const onStorage = (e: StorageEvent) => {
@@ -964,7 +1025,8 @@ export function QuizSessionProvider({
       // nothing: the tab that cleared dropped its session, the other tab still
       // held one, and the next thing that tab wrote put the session straight
       // back. An escape hatch that one surviving tab can undo is not an escape
-      // hatch, so a clear is adopted exactly like any other write.
+      // hatch, so a clear is adopted UNCONDITIONALLY, regardless of identity —
+      // this is the one write that really is meant for every tab.
       if (!e.newValue) {
         adoptedRef.current = true;
         lastBodyRef.current = null;
@@ -979,18 +1041,62 @@ export function QuizSessionProvider({
       try {
         const next: StoredSession = JSON.parse(e.newValue);
         if (!next.owner || next.owner === TAB_ID) return;
-        // Tell the save effect this state is theirs, not ours — see the guard.
-        adoptedRef.current = true;
-        // Storage now holds exactly this, and our state is about to. Recording
-        // both is what lets saveNow recognise the echo of an adoption and stay
-        // quiet instead of publishing it back — see the storm note there.
-        lastBodyRef.current = canonical(next);
-        lastRawRef.current = e.newValue;
-        setActive(next.active);
-        setSession(next.session);
-        setResults(next.results);
-        setProgress(next.progress);
-        setParked(next.parked ?? []);
+        const mine = runIdentity(latest.current);
+        const theirs = runIdentity(next);
+        if (mine === null || mine === theirs) {
+          // Nothing of ours to protect, or this is the SAME run we're already
+          // showing (updated) — adopt it exactly as before.
+          // Tell the save effect this state is theirs, not ours — see the guard.
+          adoptedRef.current = true;
+          // Storage now holds exactly this, and our state is about to.
+          // Recording both is what lets saveNow recognise the echo of an
+          // adoption and stay quiet instead of publishing it back — see the
+          // storm note there.
+          lastBodyRef.current = canonical(next);
+          lastRawRef.current = e.newValue;
+          setActive(next.active);
+          setSession(next.session);
+          setResults(next.results);
+          setProgress(next.progress);
+          setParked(next.parked ?? []);
+          return;
+        }
+        // A DIFFERENT run. Leave `active`/`session`/`results`/`progress`
+        // untouched — this tab keeps showing exactly what it was showing —
+        // and fold the writer's own picture of its world (its current focus,
+        // plus whatever it has parked) into OUR `parked`, replacing whatever
+        // we'd previously attributed to that same tab and never touching the
+        // run we are ourselves displaying. Deliberately NOT marked
+        // `adoptedRef` — this is new information THIS tab is choosing to
+        // remember, and it must actually be saved (see saveNow) or it would
+        // exist only until this tab's next answer overwrites the key.
+        setParked((prev) => {
+          const byId = new Map(prev.map((r) => [parkedIdentity(r), r] as const));
+          for (const [id, r] of byId) {
+            if (r.mirrorOwner === next.owner) byId.delete(id);
+          }
+          const incoming: ParkedRun[] = [];
+          if (next.active || next.session) {
+            incoming.push({
+              id: `mirror:${next.owner}:focus`,
+              active: next.active,
+              session: next.session,
+              progress: next.progress,
+              parkedAt:
+                next.active?.startedAt ?? next.session?.startedAt ?? Date.now(),
+              mirrorOwner: next.owner,
+            });
+          }
+          for (const r of next.parked ?? []) {
+            incoming.push({ ...r, mirrorOwner: next.owner });
+          }
+          for (const r of incoming) {
+            const id = parkedIdentity(r);
+            if (id === mine) continue; // never park ourselves
+            byId.set(id, r);
+          }
+          return [...byId.values()];
+        });
       } catch {
         // another tab wrote something unreadable — ignore it
       }
@@ -1772,7 +1878,15 @@ export function QuizSessionProvider({
    * lesson-card matching already carried this exact `phase !== "complete"`
    * filter locally (see lessonRuns in home-feed.tsx); moving it to the one
    * shared source fixes every other reader at once instead of leaving them to
-   * duplicate it themselves. */
+   * duplicate it themselves.
+   *
+   * A `mirrorOwner`-tagged entry is EXCLUDED — SAK-245. That tag means the
+   * entry is another tab's run, folded into our own `parked` only so this
+   * tab's next save cannot make it vanish from disk (see the onStorage note
+   * above); it was never parked BY this tab and is not this tab's to Continue
+   * or Discard. Surfacing it here would offer exactly the cross-tab race the
+   * fix closes — a click that steals a run another tab is still actively
+   * writing to. */
   const runs = useMemo<RunInfo[]>(() => {
     const out: RunInfo[] = [];
     if (session) {
@@ -1783,6 +1897,7 @@ export function QuizSessionProvider({
       out.push(quizRunInfo(FOCUSED_RUN, active, progress, active.startedAt ?? 0, true));
     }
     for (const r of parked) {
+      if (r.mirrorOwner) continue;
       if (r.session) {
         if (r.session.phase !== "complete") {
           out.push(sessionRunInfo(r.id, r.session, r.progress, false));
