@@ -62,32 +62,57 @@ export interface HistoryStore {
  * happen in normal use. Bounded so a pathological loop throws instead of spinning. */
 export const MAX_HISTORY_WRITE_ATTEMPTS = 5;
 
+/** The result of a tracked mutate — the new history, and whether a write
+ * actually landed (false only for the no-op contract: a duplicate session id,
+ * or a delete that selected nothing). SAK-237's saveSession/deleteSessions
+ * need this bit to know whether their SEPARATE facts-table work (folding a
+ * session's touched facts, or rebuilding the table from survivors) should run
+ * at all — a no-op meta write means that facts work was already done, or was
+ * never asked for. */
+export interface MutateHistoryResult {
+  history: HistoryFile;
+  wrote: boolean;
+}
+
 /**
  * Apply `op` to the user's history and persist it, safe against a concurrent
- * writer clobbering it.
+ * writer clobbering it. Reports whether a write actually landed — see
+ * `MutateHistoryResult`.
  *
  * The NO-OP CONTRACT is honoured and cheap: applySession / applyDeleteSessions
- * return the SAME reference when nothing changed (a duplicate session id, a
- * delete that selected nothing), and this writes nothing and contends for no row
- * in that case — exactly what history.ts did with `if (next !== hist)`.
+ * (and their SAK-237 meta-only counterparts) return the SAME reference when
+ * nothing changed (a duplicate session id, a delete that selected nothing),
+ * and this writes nothing and contends for no row in that case — exactly what
+ * history.ts did with `if (next !== hist)`.
  */
-export async function mutateHistoryWithRetry(
+export async function mutateHistoryWithRetryTracked(
   store: HistoryStore,
   userId: string,
   op: (hist: HistoryFile) => HistoryFile,
   maxAttempts: number = MAX_HISTORY_WRITE_ATTEMPTS,
-): Promise<HistoryFile> {
+): Promise<MutateHistoryResult> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const current = await store.read(userId);
     const next = op(current.history);
     // Nothing changed: no write, no contention. Preserves the exact "bail before
     // touching the row" behaviour the dedup and empty-delete paths rely on.
-    if (next === current.history) return next;
-    if (await store.write(userId, next, current)) return next;
+    if (next === current.history) return { history: next, wrote: false };
+    if (await store.write(userId, next, current)) return { history: next, wrote: true };
     // Lost the CAS to an overlapping write. Loop: re-read the winner's state and
     // re-apply our op onto it, so our field is added to theirs instead of over it.
   }
   throw new Error(
     `history write for user ${userId} lost to concurrent writers ${maxAttempts} times`,
   );
+}
+
+/** The untracked form every caller used before SAK-237 needed the `wrote` bit
+ * — a thin wrapper so existing behaviour (and its tests) are untouched. */
+export async function mutateHistoryWithRetry(
+  store: HistoryStore,
+  userId: string,
+  op: (hist: HistoryFile) => HistoryFile,
+  maxAttempts: number = MAX_HISTORY_WRITE_ATTEMPTS,
+): Promise<HistoryFile> {
+  return (await mutateHistoryWithRetryTracked(store, userId, op, maxAttempts)).history;
 }
