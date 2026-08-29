@@ -145,6 +145,56 @@ import {
 //     confirmed via both toKatakana and "洗うです").
 // Every entry below held its bug under BOTH the katakana oracle and kanji
 // context — the same double-confirmation は/へ's 26 entries already use.
+//
+// SAK-243 re-ran this exact three-signal test (bare hiragana vs. toKatakana
+// vs. `{keb}です`) live against the actually-seeded pitch reading set
+// (scripts/seed-voice-audio.mjs's pitchItems(), same population as SAK-218),
+// this time specifically targeting the "long-vowel realization noise" SAK-218
+// left unfixed: cases where bare hiragana keeps an おう/よう sequence literal
+// while BOTH toKatakana and kanji-context agree it should merge to a long
+// vowel (おうこく "should" sound オオコク, not the literal オウコク bare hiragana
+// sends) — or, for a handful of words, the reverse: bare hiragana wrongly
+// merges a sequence toKatakana/context both keep literal (こうり "retail" as
+// コウリ, not the merged コオリ that sounds like 氷 "ice"). 57 readings held
+// this exact two-witness confirmation with no conflicting sense.
+//
+// Two more were found holding this same shape but were DROPPED rather than
+// added, because each reading is shared by more than one VOCAB sense that
+// want OPPOSITE pronunciations — the same conflict SAK-243's audit already
+// flagged for かこう (囲う vs. 下降/加工/河口) and left unresolved rather than
+// guessed:
+//   やとう: 野党 "opposition party" wants the merged ヤトオ (confirmed via
+//     toKatakana + context); 雇う "to employ" is a godan verb and wants the
+//     literal ヤトウ (confirmed via three separate real sentences: 雇うです,
+//     彼を雇う, 人を雇うことにした — all ヤトウ, zero exceptions). One shared
+//     reading string can't satisfy both; fixing one regresses the other, so
+//     both are left exactly as bare hiragana already renders them (today's
+//     literal ヤトウ happens to already match the verb, at the noun's expense
+//     — no regression either way from leaving it alone).
+//   よう: 用 "business/task" wants the merged ヨオ; 酔う "to get drunk" is
+//     another godan verb and wants the literal ヨウ (same three-sentence
+//     confirmation as 雇う above). Same conflict, same call: left untouched.
+//
+// A separate cluster SAK-243's audit also confirmed live — bare へ+い words
+// (へいき, へいや, かくへいき, せいへき, へいえき, へいれつ, and one more) —
+// is NOT included below despite being flagged as a confirmed bug, because
+// THIS FILE'S OWN FIX MECHANISM CANNOT CORRECT IT: the only tool this map has
+// is swapping in toKatakana(reading), but audio_query on ANY katakana or
+// katakana-like spelling of these words (toKatakana's plain output, or even a
+// hand-typed katakana string with the intended long vowel already spelled
+// out, e.g. "ヘエキ") independently confirmed to drop the ヘ consonant
+// entirely (audio_query("ヘエキ") → エ,エ,キ, verified live) — worse than
+// today's unfixed bare-hiragana behavior, which at least keeps the correct
+// consonant (へいき bare → ヘ,イ,キ; only the vowel is left non-naturalized,
+// the same open naturalization question as the separate 628-word pending
+// bucket this audit flagged as a product decision, not a bug). Only kanji-in-
+// context input produces the fully correct ヘ,エ,キ, and this synthesis path
+// only ever sends a bare reading, never kanji, to keep the mora count this
+// code's pitch-pattern overlay depends on from drifting off the word's own
+// taught reb (see this file's synthesizeWordWav doc comment). Left unfixed;
+// needs either a different fix mechanism or a product call, not a listing
+// here. 栄え(はえ) is excluded from this batch too, per the separate
+// still-open "こう and はえ" word-identity ticket referenced by SAK-243.
 export const CONFIRMED_BAD_READINGS: readonly string[] = [
   "はち", // 八 "eight" (SAK-215's reported bug), also 鉢 "bowl" / 蜂 "bee".
   "は", // 歯 "tooth", also 葉 "leaf".
@@ -182,6 +232,79 @@ export const CONFIRMED_BAD_READINGS: readonly string[] = [
   "にゅうさつ", // 入札 "bid/tender" — same さつ-final failure.
   "ぶんさつ", // 分冊 "separate volume" — same さつ-final failure.
   "きょうそうにゅうさつ", // 競争入札 "competitive bidding" — same さつ-final failure.
+  // SAK-243's new confirmed bugs (see this comment block's header for the
+  // broader method) — long-vowel merges that bare hiragana gets literal and
+  // both toKatakana and kanji-context agree should merge, unless noted:
+  "バベルのとう", // バベルの塔 "Tower of Babel".
+  "あっとう", // 圧倒 "to overwhelm".
+  "いちょう", // 胃腸 "stomach and intestines".
+  "おうだんほどう", // 横断歩道 "pedestrian crossing".
+  "おうじゃ", // 王者 "king/monarch".
+  "おうこく", // 王国 "kingdom".
+  "おうじょ", // 王女 "princess".
+  "おうさま", // 王様 "king".
+  "かんようく", // 慣用句 "idiom".
+  "きっちょう", // 吉兆 "lucky omen".
+  "ぎゃくこうか", // 逆効果 "opposite effect".
+  "ぐうぞう", // 偶像 "idol/image".
+  "げきどう", // 激動 "violent shock/turmoil".
+  "けんこうてき", // 健康的 "healthy".
+  "こうきょうきょく", // 交響曲 "symphony".
+  "さいしょうげん", // 最小限 "minimum".
+  "しつぎょう", // 失業 "unemployment".
+  "しゃこうてき", // 社交的 "sociable".
+  "しょうきょくてき", // 消極的 "negative/passive".
+  "しょうひしゃ", // 消費者 "consumer".
+  "ぞう", // 象 "elephant", also 臓 "viscera" — both senses agree, verified.
+  "せんとう", // 戦闘 "battle", also 銭湯 "public bath" / 先頭 "front" — all
+  // three senses agree, verified.
+  "せんとうき", // 戦闘機 "fighter aircraft".
+  "そうおう", // 相応 "suitable".
+  "ぞうり", // 草履 "zori sandals".
+  "ちょう", // 兆 "trillion", also 庁 "government office" / 腸 "intestine" /
+  // 超 "super-" — all four senses agree, verified.
+  "ちょうみりょう", // 調味料 "seasoning".
+  "ちょうとっきゅう", // 超特急 "super express".
+  "でんわちょう", // 電話帳 "phone book".
+  "とうおう", // 東欧 "Eastern Europe".
+  "とうざい", // 東西 "east and west".
+  "とうわく", // 当惑 "bewilderment".
+  "どうぞう", // 銅像 "bronze statue".
+  "のうどうてき", // 能動的 "active".
+  "はっしょうち", // 発祥地 "birthplace/cradle".
+  "ひろうえん", // 披露宴 "wedding reception".
+  "ひょうざん", // 氷山 "iceberg".
+  "ひょうてんか", // 氷点下 "below freezing".
+  "ただよう", // 漂う "to drift" — a godan verb, but this one's own literal
+  // vowel IS the bug (bare merges it away); toKatakana/context both keep it.
+  "ひょうちゃく", // 漂着 "drifting ashore".
+  "ひょうり", // 表裏 "front and back".
+  "ふけんこう", // 不健康 "poor health".
+  "ふそうおう", // 不相応 "unsuited".
+  "ふとう", // 不当 "unfair".
+  "ふへんふとう", // 不偏不党 "impartiality".
+  "ふうとう", // 封筒 "envelope".
+  "ほくほくとう", // 北北東 "north-northeast".
+  "ほんとう", // 本当 "truth/reality".
+  "むじんぞう", // 無尽蔵 "inexhaustible supply".
+  "めんどう", // 面倒 "trouble/bother".
+  "よびこう", // 予備校 "cram school".
+  "ようしゅ", // 洋酒 "Western liquor".
+  "なんとう", // 南東 "southeast".
+  "こうり", // 小売 "retail" — reversed direction: bare wrongly MERGES to
+  // コオリ (sounds like 氷 "ice"); toKatakana/context both keep it literal.
+  "ほうれんそう", // ほうれん草 "spinach".
+  "ちょうほんにん", // 張本人 "ringleader".
+  "メモちょう", // メモ帳 "memo pad".
+  // Godan verbs whose dictionary-form ending is wrongly merged into the
+  // preceding vowel by BOTH bare hiragana and toKatakana; only kanji-context
+  // (confirmed via real sentences, not just {keb}です) keeps the literal
+  // ending real verb morphology requires — the "majority" of two witnesses is
+  // the wrong one here, unlike every other entry in this file:
+  "あらそう", // 争う "to compete".
+  "さそう", // 誘う "to invite".
+  "つくろう", // 繕う "to mend".
+  "のろう", // 呪う "to curse".
 ];
 
 // Each bad reading's katakana form is DERIVED via toKatakana rather than
