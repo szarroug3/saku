@@ -526,7 +526,7 @@ export async function writeListsRowGuarded(
 }
 
 // The `settings` jsonb is the third blob on the row, beside `history` and
-// `lists`. It is added by scripts/sql/add-settings-column.sql and inherits the
+// `lists`. It is defined in supabase/schema.sql (SAK-253) and inherits the
 // row's existing RLS (which scopes every read/write to `user_id`), so no new
 // policy is needed. Same read-modify-write split as history/lists: the MERGE
 // logic lives in settings.ts, this only moves the blob to and from the row, and
@@ -632,8 +632,8 @@ export async function writeSettingsRowGuarded(
 
 // The `session` jsonb is the fourth blob on the row, beside `history`, `lists`
 // and `settings`. It holds the IN-PROGRESS run envelope (see session-state.ts) —
-// separate from `history`, which holds what you FINISHED. Added by
-// scripts/sql/add-session-column.sql and inherits the row's RLS. An unset column
+// separate from `history`, which holds what you FINISHED. Defined in
+// supabase/schema.sql (SAK-253) and inherits the row's RLS. An unset column
 // reads as the empty envelope (no synced run).
 //
 // SAK-260: the plain read-then-write this used to be (load -> pickNewer(loaded,

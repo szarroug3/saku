@@ -8,13 +8,37 @@
 -- The app keeps its existing JSON shapes — history (facts + sessions) and lists
 -- go into `history` and `lists` verbatim, so nothing about how the app reads or
 -- writes those blobs changes; only WHERE they live does.
-
+--
+-- Four jsonb blobs live on this one row, all read/written by
+-- src/lib/store/supabase-store.ts:
+--   history  — finished practice history (facts + sessions), folded in forever.
+--   lists    — saved lists.
+--   settings — server-synced preferences (quiz config, theme/appearance/accents,
+--              dismissal flags); read/written via src/lib/settings.ts.
+--   session  — the IN-PROGRESS run envelope (deck position, current question,
+--              answers so far, requeue state, phase + round), separate from
+--              `history` on purpose so a stale in-progress copy can never
+--              resurrect a finished run; read/written via src/lib/session-store.ts.
+-- `settings` and `session` are read unconditionally by readProgressSeedRow
+-- (`select history, settings, session, lists`) — unlike `progress_facts` below,
+-- there is no fallback for these columns being absent, so they belong in this
+-- table's own definition rather than a separate "run this by hand" script that
+-- a fresh setup could skip. RLS policies gate the ROW, not the column list, so
+-- both inherit the same policies as `history`/`lists` automatically.
 create table if not exists public.progress (
   user_id    uuid primary key references auth.users (id) on delete cascade,
   history    jsonb not null default '{}'::jsonb,
   lists      jsonb not null default '{}'::jsonb,
+  settings   jsonb,
+  session    jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- Idempotent upgrade path for a `progress` table that already existed before
+-- `settings`/`session` were added to the create-table definition above (the
+-- create above only takes effect on a brand-new table).
+alter table public.progress add column if not exists settings jsonb;
+alter table public.progress add column if not exists session jsonb;
 
 -- Every user sees and edits only their own row.
 alter table public.progress enable row level security;
