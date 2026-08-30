@@ -20,12 +20,19 @@ import { afterEach, describe, mock, test } from "node:test";
 
 import { COUNTER_KINDS, counterReading, numberReading } from "@/lib/number-reading";
 import { wordPitch } from "@/data/pitch";
+import { VERB_PAIRS } from "@/data/transitivity";
 import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { CONFIRMED_BAD_READINGS } from "@/lib/tts-synth";
 import { VOICE_PREVIEW } from "@/lib/voice";
 
-import { bareNumberTexts, countedNumberTexts, pitchItems, synthesizeText } from "./seed-voice-audio.mjs";
+import {
+  bareNumberTexts,
+  countedNumberTexts,
+  pitchItems,
+  synthesizeText,
+  verbPairTexts,
+} from "./seed-voice-audio.mjs";
 
 describe("pitchItems — SAK-216 distractor coverage", () => {
   test("every VOCAB word with a verified downstep gets both a correct item and (when honest) a distractor item", () => {
@@ -195,6 +202,39 @@ describe("bareNumberTexts / countedNumberTexts — SAK-244 counted-number covera
 
   test("no null reading ever reaches the item list (counterReading's out-of-range guard is respected)", () => {
     const texts = countedNumberTexts();
+    assert.ok(texts.every((t) => typeof t === "string" && t.length > 0));
+  });
+});
+
+// SAK-280: verb-pair members that fall outside VOCAB (濡れる/濡らす) had zero
+// pre-generated audio — every VOCAB-based set (`words`, `pitch`) walks VOCAB
+// only, so a pair member reachable under no VOCAB spelling was invisible to
+// both. `verbPairTexts()` instead walks VERB_PAIRS itself, independent of
+// VOCAB reachability, so this test pins it against the REAL transitivity
+// data rather than a fabricated fixture.
+describe("verbPairTexts — SAK-280 verb-pair audio coverage", () => {
+  test("covers every VERB_PAIRS member's reading, both sides of every pair", () => {
+    const texts = verbPairTexts();
+    const present = new Set(texts);
+    let checked = 0;
+    for (const pair of VERB_PAIRS) {
+      for (const side of [pair.happens, pair.doIt]) {
+        checked++;
+        assert.ok(present.has(side.reading), `missing reading ${side.reading} (${side.word})`);
+      }
+    }
+    assert.ok(checked > 0, "no VERB_PAIRS row found — test fixture problem, not a real pass");
+  });
+
+  test("includes the two known VOCAB-unreachable gaps this ticket exists for", () => {
+    const texts = verbPairTexts();
+    assert.ok(texts.includes("ぬれる"), "濡れる's reading (ぬれる) must be covered");
+    assert.ok(texts.includes("ぬらす"), "濡らす's reading (ぬらす) must be covered");
+  });
+
+  test("every reading is a non-empty string (no malformed VERB_PAIRS row slips through)", () => {
+    const texts = verbPairTexts();
+    assert.ok(texts.length > 0);
     assert.ok(texts.every((t) => typeof t === "string" && t.length > 0));
   });
 });

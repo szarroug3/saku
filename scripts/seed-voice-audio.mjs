@@ -76,6 +76,7 @@ import { autoPatternPage } from "@/data/grammar/auto-page";
 import { RECIPES } from "@/data/grammar/recipes";
 import { READINGS } from "@/data/kanji";
 import { wordPitch } from "@/data/pitch";
+import { VERB_PAIRS } from "@/data/transitivity";
 import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
@@ -252,6 +253,33 @@ export function countedNumberTexts() {
   return texts;
 }
 
+/** SAK-280: every VERB_PAIRS member's reading (src/data/transitivity.ts) —
+ * the exact `s.m.reading` string `verbpair-entry-view.tsx`'s HearButton
+ * speaks for each side of a taught verb pair, and the same reading
+ * `transitivityMc` (src/lib/grammar/mc.ts) drills a learner on across ALL 69
+ * pairs, unfiltered by curriculum reachability.
+ *
+ * `words` above only walks VOCAB, and `pitch` above only walks VOCAB rows
+ * with a verified downstep — so a pair member that is not itself a VOCAB
+ * word under the exact spelling the pair uses (see transitivity.ts's own
+ * notes on 産む and 濡れる/濡らす — verb-pair-unit.ts's `CURRICULUM_PAIRS`
+ * filter exists for the same reason) falls through BOTH sets and gets no
+ * pre-generated audio at all: every play is a guaranteed live synthesis
+ * call. An audit found exactly two such gaps, 濡れる (ぬれる) and 濡らす
+ * (ぬらす) — 産む's reading (うむ) happens to coincide with VOCAB's 生む,
+ * so it is already covered incidentally by the `words` set above.
+ *
+ * Walking ALL 138 member readings here rather than hand-listing just the two
+ * known gaps is deliberate: most already have a real VOICEVOX clip cached
+ * under some VOCAB word's identical reading, and `textSet`'s own dedup plus
+ * the existing-keys skip make a redundant sighting free (same discipline the
+ * `sentences`/`word-examples` overlap already relies on) — so this covers
+ * the two known gaps AND stays correct if a future pair introduces another
+ * VOCAB-unreachable member, with no one having to notice and hand-add it. */
+export function verbPairTexts() {
+  return VERB_PAIRS.flatMap((p) => [p.happens.reading, p.doIt.reading]);
+}
+
 /** Each set describes how to enumerate, cache-path, label, and synthesize its
  * own items — the run/upload/skip/limit machinery below (`runPool`,
  * `seedOneWithRetry`) is generic over all four, so a new set (a new content
@@ -290,6 +318,11 @@ const SETS = {
   // the ticket's whole point: almost every counted number a learner hears
   // was a fresh, uncached synthesis call before this set existed.
   counters: textSet(countedNumberTexts),
+  // SAK-280: every VERB_PAIRS member's reading — covers the taught verb-pair
+  // words that fall outside VOCAB (currently 濡れる/濡らす) which `words` and
+  // `pitch` above both miss. See verbPairTexts' own comment for why this
+  // walks all 69 pairs rather than just the known gaps.
+  "verb-pairs": textSet(verbPairTexts),
   // SAK-107: the EXACT-pitch cache `/api/pitch-tts` reads/writes — the
   // settings voice-picker preview and every Library word's pitch "hear it"
   // button. Different item shape (reading+downstep, not free text), different

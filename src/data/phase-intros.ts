@@ -191,6 +191,25 @@ export interface PitchExampleRow {
    * `IntroPitchExamples` renders the follow-up kana in a visibly muted
    * trailing style so it reads as "add this to hear it," never as if it
    * were part of the word itself.
+   *
+   * DORMANT (SAK-280): zero shipped rows set this today — the はし set's
+   * 橋/端 usage above was removed in SAK-142 round 2's follow-up, and
+   * nothing has used it since. Reactivating it needs one more step than it
+   * looks like: `reading + followUp` (はしが) is a synthetic string that
+   * matches no VOCAB word's own reading, so `scripts/seed-voice-audio.mjs`'s
+   * `pitchItems()` — which only walks VOCAB's verified (reading, downstep)
+   * pairs — will never emit it, and the exact-pitch HearButton/PitchReading
+   * this feeds (see `IntroPitchExamples` in phase-intro-view.tsx) will hit
+   * live synthesis on `/api/pitch-tts` every single time, for every voice,
+   * forever, with no pre-seeded cache entry to fall back to. This is the
+   * SAME bug SHAPE SAK-216 fixed (see
+   * https://linear.app/saku-san/issue/SAK-216/seed-distractor-mispitch-pitch-clips-not-just-correct-readings):
+   * a live renderer requesting a (text, downstep) pair the seed script's
+   * enumeration never considered because it wasn't a word's own plain
+   * reading. Before shipping a new `followUp` row, add its
+   * `reading + followUp` string (at the word's own real `downstep`) to
+   * `pitchItems()` too — do not assume the existing VOCAB walk already
+   * covers it.
    */
   readonly followUp?: string;
 }
