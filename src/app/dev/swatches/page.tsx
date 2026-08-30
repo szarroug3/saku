@@ -6,7 +6,9 @@
 // <html> (bypassing the persisted theme provider), so a flip here is a throwaway
 // preview that reverts on reload and never touches saved settings. A
 // MutationObserver re-reads the computed values whenever those attributes change
-// — whether from these buttons or the real Settings picker.
+// — whether from these buttons or the real Settings picker — and a
+// prefers-color-scheme listener catches the case those attributes miss: an
+// OS-level dark/light flip while appearance is "system".
 "use client";
 
 import { useEffect, useState } from "react";
@@ -55,7 +57,16 @@ const LOREM =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
 /** Read every token's resolved value off <html>, re-reading whenever the theme
- * attributes change. Empty until mounted (values are client-only). */
+ * attributes change OR the OS-level color scheme changes. Empty until mounted
+ * (values are client-only).
+ *
+ * The MutationObserver alone isn't enough: when appearance is "system" (no
+ * data-appearance attribute), an OS-level dark/light flip is resolved purely
+ * by the `@media (prefers-color-scheme: dark)` block in globals.css — no
+ * attribute on <html> ever changes, so the observer never fires and the
+ * printed hex values go stale even though the swatch colours (driven live by
+ * the CSS custom properties) update correctly. Watching the same media query
+ * theme.tsx uses for `resolved` closes that gap. */
 function useResolvedTokens(): Record<string, string> {
   const [values, setValues] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -72,7 +83,12 @@ function useResolvedTokens(): Record<string, string> {
       attributes: true,
       attributeFilter: ["data-theme", "data-appearance", "data-accent"],
     });
-    return () => obs.disconnect();
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", read);
+    return () => {
+      obs.disconnect();
+      mq.removeEventListener("change", read);
+    };
   }, []);
   return values;
 }
