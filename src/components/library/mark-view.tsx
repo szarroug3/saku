@@ -429,7 +429,7 @@ function SentenceRuleExamples({ markId }: { markId: string }) {
             <p className="text-[14px] text-text">{colorizeSentence(ex.englishNatural, natural)}</p>
             <SentencePartBoxes sentence={ex.englishNatural} spans={natural} labels={labels} />
             <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
-              Japanese chunk order
+              English in Japanese order
             </p>
             <p className="text-[13px] text-text">
               {colorizeSentence(ex.englishOrdered, ordered)}

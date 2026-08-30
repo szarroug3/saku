@@ -131,12 +131,12 @@ describe("findAssemblyMismatch", () => {
   test("falls back to a positional message when no tier/role data is available", () => {
     // A generated-corpus item has no known tier (sentenceOrderingTierForItem
     // returns null for compound/ambiguous items) — the message should still
-    // name a specific chunk, just without the semantic label.
+    // name a specific piece, just without the semantic label.
     const tray = ["それを", "私は", "言う。"];
     const mismatch = findAssemblyMismatch(SIMPLE_ITEM, tray, null);
     assert.ok(mismatch);
     assert.equal(mismatch.label, null);
-    assert.equal(assemblyMismatchMessage(mismatch), "Chunk 2 is out of place.");
+    assert.equal(assemblyMismatchMessage(mismatch), "Piece 2 is out of place.");
   });
 
   test("returns null when the tray length doesn't match the canonical length", () => {

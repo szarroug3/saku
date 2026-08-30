@@ -109,15 +109,15 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   const out: CoachHint[] = [
     {
       id: "keep-chunks",
-      text: "Think in chunks, not individual words; each chip already includes its particle.",
+      text: "Think in pieces, not individual words; each chip already includes its particle.",
     },
     {
       id: "anchor-end",
-      text: "A good first move is to lock in the ending chunk.",
+      text: "A good first move is to lock in the ending piece.",
     },
     {
       id: "before-end",
-      text: "Then place topic/time/place chunks before it and adjust the middle.",
+      text: "Then place topic/time/place pieces before it and adjust the middle.",
     },
   ];
 
@@ -136,7 +136,7 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   if (item.p.length > 0) {
     out.push({
       id: "pattern-clue",
-      text: "Pattern chunks and their host words usually stay tightly grouped in the frame.",
+      text: "Pattern pieces and their host words usually stay tightly grouped in the frame.",
     });
   }
   return out;
@@ -510,7 +510,7 @@ export function AssemblyScreen() {
   ) as SentenceOrderingTierId | null;
   const thinkHint =
     (tierId ? SENTENCE_ORDERING_GUIDES[tierId]?.hook : undefined) ??
-    "Think about what each chunk does, then place the final predicate.";
+    "Think about what each piece does, then place the final predicate.";
   const haloState: HaloState =
     card.state === "right"
       ? "right"
