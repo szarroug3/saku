@@ -33,6 +33,28 @@
 //      local settings are replayed up to the server a single time, then the
 //      server is authoritative. Gated so it never clobbers a server that already
 //      has settings (e.g. a value set on another device).
+//
+// SAK-258: A FAILED WRITE USED TO BE INVISIBLE
+// =============================================
+// `save()` used to fire the POST and never look at the result — `void
+// writeSettingsToServer(patch)` — so a save that genuinely failed (offline, a
+// dead session, the server refusing it) left the learner believing their
+// change stuck when the row never moved. There was also nothing coalescing a
+// SECOND change that came in before the first one's response landed, so a
+// failed first patch's field could be dropped for good the moment a later,
+// unrelated patch succeeded.
+//
+// `queueWrite`/`flush` below fix both: every patch is folded into `unsavedRef`
+// (mergeSettings, same field-level replace `save` already used) before it is
+// sent, so a write in flight when a new one arrives grows to cover both rather
+// than racing it, and `unsavedRef` is only cleared when the copy actually SENT
+// is confirmed landed — never when something newer has since queued behind it.
+// A failure sets `saveError`, which the app's one save-status banner shows (see
+// save-status.tsx and pending-history-writes.ts's SAK-242 precedent for a
+// second source feeding that same banner); `retrySave` is its button, and the
+// same flush also fires automatically once the browser reports it is back
+// online — the same "try again when connectivity returns" every other
+// background write in this app already does.
 
 import {
   createContext,
@@ -56,6 +78,11 @@ import type { SettingsFile } from "@/types";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
+/** The save-status banner's copy for a settings write that has not landed —
+ * kept as one constant so the message shown and the message tested agree. */
+const SETTINGS_SAVE_ERROR =
+  "A setting change hasn't saved yet. It's kept on this device and will keep retrying.";
+
 export interface SettingsContextValue {
   /** The server's copy, or null when there is no server to speak for it (a
    * signed-out visitor in Supabase mode). Consumers reconcile against it, server
@@ -66,6 +93,12 @@ export interface SettingsContextValue {
    * POST it. A no-op on the network when there is no server (the writer has
    * already updated the local cache). */
   save: (patch: SettingsFile) => void;
+  /** Set when a settings write hasn't landed on the server yet — the save-status
+   * banner's copy (see save-status.tsx). Null when nothing is outstanding. */
+  saveError: string | null;
+  /** The banner's button: retry sending whatever hasn't been confirmed saved
+   * yet. Safe to call when nothing is pending (a no-op). */
+  retrySave: () => void;
 }
 
 export const SettingsContext = createContext<SettingsContextValue | undefined>(
@@ -120,19 +153,95 @@ export function SettingsProvider({
     return null;
   });
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // The patch not yet confirmed saved, and whether a send is currently in
+  // flight for it. A ref, not state — queueWrite/flush run from event handlers
+  // and an effect, and need the CURRENT value synchronously (state set in the
+  // same tick is not readable until the next render).
+  const unsavedRef = useRef<SettingsFile | null>(null);
+  const flightRef = useRef(false);
+
+  /**
+   * Send whatever is queued in `unsavedRef`, looping (not recursing — a
+   * self-referencing useCallback can't see its own later reassignment) for as
+   * long as something newer keeps arriving while a send is in flight.
+   * Idempotent to call with nothing queued or a send already running (the
+   * retry button and the "online" listener below both call it
+   * unconditionally).
+   *
+   * `sending` is captured before the await each iteration so the completion
+   * check can tell "this exact copy landed" from "something newer queued
+   * behind it while we were waiting" — `unsavedRef.current` may have grown
+   * (via queueWrite) by the time the POST resolves, and clearing it in that
+   * case would drop the newer field(s) on the floor with nothing left to
+   * retry them.
+   */
+  const flush = useCallback(() => {
+    if (flightRef.current) return;
+    flightRef.current = true;
+    void (async () => {
+      while (unsavedRef.current) {
+        const sending = unsavedRef.current;
+        const ok = await writeSettingsToServer(sending);
+        if (!ok) {
+          setSaveError(SETTINGS_SAVE_ERROR);
+          break;
+        }
+        if (unsavedRef.current === sending) {
+          unsavedRef.current = null;
+          setSaveError(null);
+        }
+        // else: loop again — something newer queued while `sending` was in
+        // flight, so it still needs to go out.
+      }
+      flightRef.current = false;
+    })();
+  }, []);
+
+  /** Merge a patch into the held server copy (so a later reconcile/read
+   * reflects the change this session) and fold it into the outstanding
+   * write. Two patches that arrive before either lands are merged
+   * (mergeSettings — field-level replace) rather than racing, so a write that
+   * failed is not silently replaced by a later, unrelated one that happens to
+   * succeed first. Shared by `save` and the one-time migration effect below —
+   * one write path, one place that queues and retries it. */
+  const queueWrite = useCallback(
+    (patch: SettingsFile) => {
+      setServerSettings((prev) => mergeSettings(prev ?? {}, patch));
+      unsavedRef.current = unsavedRef.current
+        ? mergeSettings(unsavedRef.current, patch)
+        : patch;
+      flush();
+    },
+    [flush],
+  );
+
+  const retrySave = useCallback(() => flush(), [flush]);
+
+  // Retry whenever the browser reports connectivity is back — the same
+  // "try again once online" every other background write in this app already
+  // does (history-writes.ts, use-finished-round-outbox.ts). A no-op when
+  // nothing is queued or a send is already running.
+  useEffect(() => {
+    const onOnline = () => flush();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flush]);
+
   const save = useCallback(
     (patch: SettingsFile) => {
-      // Keep the held server copy current so a later reconcile/read reflects the
-      // change this session. Merge, never replace — a single-field save must not
-      // drop the rest of the copy.
-      setServerSettings((prev) => mergeSettings(prev ?? {}, patch));
       // No server to write to (signed-out Supabase visitor): the writer already
       // cached the value locally, and the one-time migration will replay it up on
-      // sign-in. Nothing to POST.
-      if (userId === null) return;
-      void writeSettingsToServer(patch);
+      // sign-in. Still reflect it in the held copy (merge, never replace — a
+      // single-field save must not drop the rest), just nothing to POST.
+      if (userId === null) {
+        setServerSettings((prev) => mergeSettings(prev ?? {}, patch));
+        return;
+      }
+      queueWrite(patch);
     },
-    [userId],
+    [userId, queueWrite],
   );
 
   // Register save() as the bridge the plain writers (claim-hint, lesson-prefs,
@@ -164,17 +273,18 @@ export function SettingsProvider({
     if (!isEmptySettings(initial)) return; // server already authoritative
     const local = readLocalSettings(window.localStorage);
     if (isEmptySettings(local)) return; // nothing local to seed the server with
-    void (async () => {
-      if (await writeSettingsToServer(local)) {
-        setServerSettings((prev) => mergeSettings(prev ?? {}, local));
-      }
-      // On failure, leave migratedFor set for this session but the NEXT load still
-      // sees an empty server and retries the (idempotent) replay.
-    })();
-  }, [userId, initial]);
+    // Same path as any other change (queueWrite reflects it in the held copy
+    // AND queues the write): queueWrite/flush's own retry-on-failure (SAK-258)
+    // now covers a POST that doesn't land, rather than the migration silently
+    // doing nothing until a full page reload sees the server still empty and
+    // retries. Deferred a microtask (rather than calling queueWrite directly
+    // in the effect body) so the state update it makes is not synchronous
+    // within the effect itself — react-hooks/set-state-in-effect.
+    void Promise.resolve().then(() => queueWrite(local));
+  }, [userId, initial, queueWrite]);
 
   return (
-    <SettingsContext.Provider value={{ serverSettings, save }}>
+    <SettingsContext.Provider value={{ serverSettings, save, saveError, retrySave }}>
       {children}
     </SettingsContext.Provider>
   );

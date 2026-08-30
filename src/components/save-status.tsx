@@ -30,20 +30,39 @@
 // retry themselves the moment the browser reports it is back online, with no
 // button to press — so when only this source is active the banner says so
 // without one.
+//
+// SAK-258: A THIRD SOURCE, WITH ITS OWN RETRY
+// ============================================
+// A settings write (SettingsProvider's save()) used to be fire-and-forget —
+// posted, and the result never looked at — so a failed save left no trace
+// anywhere a learner could see. Its `saveError`/`retrySave` (useSettings) slot
+// in exactly like the finished-round outbox's: real error copy, and a button
+// that resends. Priority when more than one source is active: a stuck
+// finished round outranks a stuck setting, because a lost round corrupts the
+// visible progress numbers everywhere in the app, while a setting is confined
+// to the one place it is shown — but `retrySave` here always retries BOTH, so
+// pressing the one visible button never leaves the other quietly stuck.
 
 import { Btn } from "@/components/ui";
 import { usePendingHistoryWriteCount } from "@/lib/pending-history-writes";
 import { useQuizSession } from "@/lib/quiz-session";
+import { useSettings } from "@/lib/use-settings";
 
 export function SaveStatus() {
-  const { saveError, retrySave } = useQuizSession();
+  const { saveError: sessionError, retrySave: retrySession } = useQuizSession();
+  const { saveError: settingsError, retrySave: retrySettings } = useSettings();
   const pendingWrites = usePendingHistoryWriteCount();
+  const saveError = sessionError ?? settingsError;
   if (!saveError && pendingWrites === 0) return null;
   const message =
     saveError ??
     (pendingWrites === 1
       ? "A change hasn't saved yet. It will retry automatically once you're back online."
       : "Some changes haven't saved yet. They will retry automatically once you're back online.");
+  const retrySave = () => {
+    retrySession();
+    retrySettings();
+  };
   return (
     <div
       // `status`, not `alert`: assertive would interrupt a screen reader

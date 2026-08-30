@@ -15,12 +15,34 @@
 // no-flash script cannot read the server), but the durable copy is the row. A
 // write MERGES a partial patch into the stored blob (mergeSettings) so a
 // single-field change never clobbers the rest.
+//
+// EVERY MUTATOR GOES THROUGH COMPARE-AND-SET (SAK-258). This used to be load ->
+// mergeSettings(loaded, patch) -> upsert the whole blob, which let two
+// overlapping writes clobber each other: change one setting on device A and a
+// different one on device B in the same window, and whichever write landed
+// second silently dropped the other's field — see settings-mutate.ts. The write
+// is now a PURE patch re-applied against whatever a concurrent writer left
+// behind, so a lost race merges instead of overwriting.
 
 import "server-only";
 
 import { mergeSettings } from "@/lib/settings-merge";
-import { readSettingsRow, writeSettingsRow } from "@/lib/store/supabase-store";
+import { mutateSettingsWithRetry, type SettingsStore } from "@/lib/settings-mutate";
+import {
+  readSettingsRow,
+  readSettingsRowVersioned,
+  writeSettingsRowGuarded,
+} from "@/lib/store/supabase-store";
 import type { SettingsFile } from "@/types";
+
+/** The compare-and-set store saveSettings runs its read-modify-write through,
+ * so two overlapping requests cannot clobber each other's fields. One
+ * instance, since it is stateless — the request-bound Supabase client is
+ * created per call inside these primitives. The twin of lists.ts's `store`. */
+const store: SettingsStore = {
+  read: readSettingsRowVersioned,
+  write: writeSettingsRowGuarded,
+};
 
 /** The signed-in learner's settings. readSettingsRow normalizes an unset column
  * into the empty (all-default) settings. */
@@ -28,24 +50,18 @@ export async function loadSettings(userId: string): Promise<SettingsFile> {
   return readSettingsRow(userId);
 }
 
-/** The write half — upserts only the `settings` column. */
-async function writeSettings(userId: string, settings: SettingsFile): Promise<void> {
-  await writeSettingsRow(userId, settings);
-}
-
 /**
- * Merge a partial settings patch into the stored blob and persist it.
- *
- * Read-modify-write on the whole blob, exactly like saveList: load the current
- * settings, field-replace with whatever the patch carries (mergeSettings), write
- * the result back. So a POST that changes only the theme leaves cfg, the accent
- * map and the dismissal flags exactly as they were.
+ * Merge a partial settings patch into the stored blob and persist it, safe
+ * against a concurrent writer. So a POST that changes only the theme leaves
+ * cfg, the accent map and the dismissal flags exactly as they were — AND, if
+ * another device's write to a different field lands in between, that field
+ * survives too instead of being overwritten by this write's stale copy of it.
  */
 export async function saveSettings(
   userId: string,
   patch: SettingsFile,
 ): Promise<SettingsFile> {
-  const next = mergeSettings(await loadSettings(userId), patch);
-  await writeSettings(userId, next);
-  return next;
+  return mutateSettingsWithRetry(store, userId, (settings) =>
+    mergeSettings(settings, patch),
+  );
 }
