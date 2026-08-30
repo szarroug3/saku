@@ -300,20 +300,48 @@ export const CONFIRMED_BAD_READINGS: readonly string[] = [
   // preceding vowel by BOTH bare hiragana and toKatakana; only kanji-context
   // (confirmed via real sentences, not just {keb}です) keeps the literal
   // ending real verb morphology requires — the "majority" of two witnesses is
-  // the wrong one here, unlike every other entry in this file:
+  // the wrong one here, unlike every other entry in this file. Live-verified
+  // that the katakana swap every OTHER entry uses is a no-op for these four
+  // specifically (audio_query("アラソウ") still comes back
+  // ["ア","ラ","ソ","オ"], byte-identical to the bare-hiragana bug) — see
+  // VERB_KANJI_OVERRIDE below for the fix that actually works for them:
   "あらそう", // 争う "to compete".
   "さそう", // 誘う "to invite".
   "つくろう", // 繕う "to mend".
   "のろう", // 呪う "to curse".
 ];
 
-// Each bad reading's katakana form is DERIVED via toKatakana rather than
-// hand-typed a second time, so the fix stays exactly what was verified live
-// (feed the SAME reading back in katakana) with no chance of a typo drifting
-// the two apart. Adding a newly-confirmed bad reading only ever means adding
-// one string to the list above.
+// The four godan-verb entries just above whose katakana form is a
+// live-verified no-op (VOICEVOX's own long-vowel normalization still merges
+// the ending even when the input is already katakana). Their real kanji
+// spelling is what finally produces the correct ending — live-verified:
+// audio_query("争う") returns ["ア","ラ","ソ","ウ"], the correct 4 morae, the
+// SAME mora count synthesizeAtDownstep already expects for this reading (its
+// downstep in the pitch dataset was computed against that count), so this
+// doesn't disturb the pitch-pattern-by-mora-index overlay. Each of these four
+// has exactly one common kanji spelling — none of the heteronym risk a
+// general kana→kanji substitution would carry for most readings, which is
+// why this file otherwise never sends kanji (see readingForMisreadingFix's
+// own comment on that general rule).
+const VERB_KANJI_OVERRIDE: ReadonlyMap<string, string> = new Map([
+  ["あらそう", "争う"],
+  ["さそう", "誘う"],
+  ["つくろう", "繕う"],
+  ["のろう", "呪う"],
+]);
+
+// Each bad reading's corrected form is DERIVED rather than hand-typed a
+// second time, so the fix stays exactly what was verified live: its katakana
+// twin via toKatakana for the general case (feed the SAME reading back in
+// katakana), or its kanji spelling via VERB_KANJI_OVERRIDE for the four
+// entries above where katakana alone doesn't fix it. Adding a newly-confirmed
+// bad reading only ever means adding one string to the list above (plus, in
+// the rare VERB_KANJI_OVERRIDE-style case, one entry to that map).
 const WORD_READING_MISREADING: ReadonlyMap<string, string> = new Map(
-  CONFIRMED_BAD_READINGS.map((reading) => [reading, toKatakana(reading)]),
+  CONFIRMED_BAD_READINGS.map((reading) => [
+    reading,
+    VERB_KANJI_OVERRIDE.get(reading) ?? toKatakana(reading),
+  ]),
 );
 
 /** Swap an EXACT, individually-confirmed-bad word reading for its katakana
@@ -324,7 +352,7 @@ const WORD_READING_MISREADING: ReadonlyMap<string, string> = new Map(
  * exactly as VOICEVOX's own hiragana-mode analysis already handles it.
  *
  * Exported (SAK-219) so every OTHER synthesis path that can send one of these
- * 34 readings bare and standalone — scripts/seed-voice-audio.mjs's general
+ * confirmed-bad readings bare and standalone — scripts/seed-voice-audio.mjs's general
  * text sets (words/sentences/kana/yomi/word-examples/grammar-derive, via its
  * own `synthesizeText`) and `synthesizeSentenceWav` below (the live /api/tts
  * fallback, gated there to an exact whole-string match only — see that
