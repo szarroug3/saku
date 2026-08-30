@@ -1,4 +1,4 @@
-import type { BuiltPiece } from "@/data/kanji-etymology";
+import type { EtymologyPiece } from "@/data/kanji-etymology";
 
 // Recovered Built-from tiles for kanji whose automated etymology join dropped a
 // visible piece that genuinely IS the unmatched Wiktionary component (a variant
@@ -7,7 +7,7 @@ import type { BuiltPiece } from "@/data/kanji-etymology";
 // Slice 57–111 (55 kanji) reviewed. 8 recoveries below; the other 47 stay
 // dropped (near-homograph confusions, corruptions, redraws, and incomplete /
 // nested pieces — the story already covers those components).
-export const REASSEMBLY_B: Readonly<Record<string, readonly BuiltPiece[]>> = {
+export const REASSEMBLY_B: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   宴: [
     { glyph: "宀", role: "semantic", label: null },
     { glyph: "妟", role: "phonetic", label: "えん" },

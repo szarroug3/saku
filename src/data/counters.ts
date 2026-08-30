@@ -83,22 +83,14 @@ export interface CounterForm {
   /** The number kanji this form must be able to read before it can be taught,
    * or null for a kana form (which needs no kanji at all). */
   readonly numberKanji: string | null;
-  /** A second reading the same number branches into — し for よん (4), しち for
-   * なな (7), く for きゅう (9). Empty for a form with one reading. It is a
-   * READING, so it belongs on the reading side, never in the meaning gloss;
-   * picking the wrong branch is the commonest beginner tell, so it is still
-   * shown. See the NUMBERS block below. */
-  readonly altReading: string;
 }
 
-/** A kana form: glyph and reading are the same, no kanji prerequisite. The
- * optional altReading carries a second reading of the same number (よん also し). */
+/** A kana form: glyph and reading are the same, no kanji prerequisite. */
 function kana(
   key: string,
   glyph: string,
   meaning: string,
   counter: string,
-  altReading = "",
 ): CounterForm {
   return {
     key,
@@ -108,7 +100,6 @@ function kana(
     counter,
     phase: 1,
     numberKanji: null,
-    altReading,
   };
 }
 
@@ -122,7 +113,7 @@ function counted(
   numberKanji: string,
   phase: CounterPhase,
 ): CounterForm {
-  return { key, glyph, reading, meaning, counter, phase, numberKanji, altReading: "" };
+  return { key, glyph, reading, meaning, counter, phase, numberKanji };
 }
 
 // ─── Phase 1a · 〜つ, the escape hatch, taught FIRST ────────────────────────

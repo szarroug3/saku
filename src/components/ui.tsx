@@ -20,10 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { isNearPageBottom } from "@/lib/scroll-cue";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 /**
  * FLAT SECTION SURFACES, scoped by a provider rather than threaded as a prop.
@@ -94,7 +91,7 @@ export function Card({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cx("mb-3.5", className)}>{children}</div>;
+  return <div className={cn("mb-3.5", className)}>{children}</div>;
 }
 
 /** Uppercase section label ("QUIZ", "MISSED CHARACTERS", …). */
@@ -107,16 +104,17 @@ export function Lbl({
   children: ReactNode;
   /** "muted" (default) is the quiet section eyebrow every screen uses; "accent"
    * lifts a top-level group header, as the Practice page does over its
-   * sub-labelled sections. */
-  tone?: "muted" | "accent";
+   * sub-labelled sections; "danger" is the destructive-section eyebrow
+   * (Settings' "Start over"). */
+  tone?: "muted" | "accent" | "danger";
   /** Drops the label's own mb-2 for a caller composing its own spacing
    * (e.g. a flex row pairing the label with an Info icon, where the label's
    * usual bottom margin would land inside the row's cross-axis box and pull
-   * `items-center` off the icon). A prop branch rather than a `className`
-   * override for the same reason `Btn`'s `danger`/`go` are: `cx` is a plain
-   * join, not tailwind-merge, so `mb-2 … mb-0` both reach the element and
-   * the generated stylesheet's declaration order picks the winner, not the
-   * caller — `mb-2` won every time. */
+   * `items-center` off the icon, or a parent that already supplies the gap
+   * itself). A prop branch rather than a `className` override for the same
+   * reason `Btn`'s `danger`/`go` are named branches: naming the variant once
+   * here is one clear source of truth, instead of every caller re-deciding
+   * spacing/tone inline. */
   flush?: boolean;
   /** Extra classes merged onto the label, e.g. `w-full` to force it onto its
    * own line inside a `flex-wrap` row of chips (the Library's two filter
@@ -125,10 +123,10 @@ export function Lbl({
 }) {
   return (
     <p
-      className={cx(
+      className={cn(
         flush ? "" : "mb-2",
         "text-[13px] font-semibold uppercase tracking-[0.04em]",
-        tone === "accent" ? "text-accent" : "text-text-muted",
+        tone === "accent" ? "text-accent" : tone === "danger" ? "text-danger" : "text-text-muted",
         className,
       )}
     >
@@ -165,7 +163,7 @@ export function Info({
       <TooltipTrigger
         type="button"
         aria-label={label}
-        className={cx(
+        className={cn(
           "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-border align-[1px] text-[9px] leading-none text-text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           className,
         )}
@@ -201,7 +199,7 @@ export function Row({
 }) {
   return (
     <div
-      className={cx(
+      className={cn(
         // No divider line between rows any more — the ruled-list look was the
         // last of the boxed chrome, and it read as "unchanged" against the old
         // Card version. Rows separate by their own vertical space now; the
@@ -225,11 +223,10 @@ export function Row({
 type BtnProps = ComponentProps<"button"> & {
   sel?: boolean;
   /** Destructive tone: the action discards or deletes something. Lives here
-   * rather than being passed in as a className because ui.tsx joins classes
-   * with `cx` (no tailwind-merge), so `border-danger` arriving from outside
-   * would not displace `border-border` — both would land, and which one won
-   * would be decided by their order in the generated stylesheet rather than
-   * by the caller. A branch cannot collide with itself. */
+   * rather than being passed in as a className — see the `go` doc below for
+   * the receipt on why a tone belongs to a named branch rather than a
+   * className a caller has to get exactly right. A branch cannot collide
+   * with itself. */
   danger?: boolean;
   /**
    * The button that does the thing: filled, inverted, one per screen.
@@ -274,7 +271,7 @@ export function Btn({ sel, danger, go, className, ...props }: BtnProps) {
   return (
     <button
       {...props}
-      className={cx(
+      className={cn(
         "kq-material cursor-pointer rounded-lg text-sm hover:bg-panel",
         sel
           ? "border-2 border-accent bg-accent-bg px-[13px] py-1.5 text-accent hover:bg-accent-bg"
@@ -294,7 +291,7 @@ export function SmallBtn({ sel, danger, className, ...props }: BtnProps) {
   return (
     <button
       {...props}
-      className={cx(
+      className={cn(
         "kq-material cursor-pointer rounded-lg text-xs hover:bg-panel disabled:cursor-default disabled:opacity-45",
         sel
           ? "border-2 border-accent bg-accent-bg px-[9px] py-[3px] text-accent hover:bg-accent-bg"
@@ -311,7 +308,7 @@ export function GhostBtn({ className, ...props }: BtnProps) {
   return (
     <button
       {...props}
-      className={cx(
+      className={cn(
         "cursor-pointer rounded-lg border-none bg-transparent text-sm text-text-muted hover:bg-panel",
         className,
       )}
@@ -319,13 +316,24 @@ export function GhostBtn({ className, ...props }: BtnProps) {
   );
 }
 
-export function PrimaryBtn({ className, ...props }: BtnProps) {
+/**
+ * `size`: "md" (default) is the full-width, one-per-screen CTA (Start, Save).
+ * "sm" is the compact, inline, content-width shape a CTA sitting alongside
+ * other controls needs (e.g. the Practice page's "Practice what's due").
+ * Added so a caller reaching for that shape has a real PrimaryBtn variant
+ * instead of hand-rolling the same recipe outside the component.
+ */
+export function PrimaryBtn({
+  size = "md",
+  className,
+  ...props
+}: BtnProps & { size?: "md" | "sm" }) {
   return (
     <button
       {...props}
-      className={cx(
-        "w-full cursor-pointer rounded-lg bg-text p-3 text-base text-bg",
-        "disabled:cursor-default disabled:opacity-40",
+      className={cn(
+        "cursor-pointer rounded-lg bg-text text-bg disabled:cursor-default disabled:opacity-40",
+        size === "sm" ? "px-4 py-2 text-sm font-semibold" : "w-full p-3 text-base",
         className,
       )}
     />
@@ -341,11 +349,8 @@ export function PrimaryBtn({ className, ...props }: BtnProps) {
  * once `disabled` (Tailwind's `disabled:` variant, so it only ever engages
  * together with the real `disabled` attribute a caller passes through
  * `...props`). It is its own branch rather than something layered on via
- * className for the reason BtnProps's `danger`/`go` note gives: `cx` is a
- * plain join, not tailwind-merge, so a className fighting the base string
- * over the same property (padding, text colour) would leave both classes on
- * the element with the winner decided by stylesheet order, not by the
- * caller — a branch cannot collide with itself. SAK-249 moved
+ * className for the same reason BtnProps's `danger`/`go` are named branches
+ * rather than classNames — a branch cannot collide with itself. SAK-249 moved
  * TypeChip/StatusChip's hand-copied markup (practice-selector.tsx) onto this
  * branch instead of leaving a byte-for-byte duplicate of Chip's own string. */
 export function Chip({
@@ -358,7 +363,7 @@ export function Chip({
   return (
     <button
       {...props}
-      className={cx(
+      className={cn(
         plain
           ? "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]"
           : "kq-material cursor-pointer select-none rounded-full border px-3 py-1 text-[13px]",
@@ -394,7 +399,7 @@ export function SoundIcon({ className }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      className={cx("inline-block size-[1.05em] shrink-0", className)}
+      className={cn("inline-block size-[1.05em] shrink-0", className)}
     >
       <path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
       <path d="M15.5 8.5a5 5 0 0 1 0 7" />

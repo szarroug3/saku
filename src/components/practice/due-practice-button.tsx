@@ -15,7 +15,7 @@
 // for the Scope buttons below. It is not a second definition of "due" — it is
 // the existing one, run early and pre-clicked.
 
-import { Info } from "@/components/ui";
+import { Info, PrimaryBtn } from "@/components/ui";
 
 export function DuePracticeButton({
   count,
@@ -29,15 +29,15 @@ export function DuePracticeButton({
   const disabled = count === 0;
   return (
     <div className="mb-6 flex flex-wrap items-center gap-2.5 border-b border-border pb-6">
-      <button
+      <PrimaryBtn
+        size="sm"
         type="button"
         disabled={disabled}
         onClick={onStart}
         suppressHydrationWarning
-        className="cursor-pointer rounded-lg bg-text px-4 py-2 text-sm font-semibold text-bg disabled:cursor-default disabled:opacity-40"
       >
         Practice what&apos;s due
-      </button>
+      </PrimaryBtn>
       <span
         suppressHydrationWarning
         className="text-[13px] text-text-muted"

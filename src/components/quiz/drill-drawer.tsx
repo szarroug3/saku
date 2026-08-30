@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { PrimaryBtn, Btn, Chip, Row, SmallBtn } from "@/components/ui";
+import { PrimaryBtn, Btn, Chip, Lbl, Row, SmallBtn } from "@/components/ui";
 import { askFromAudioPrompts } from "@/lib/ask-config";
 import { useQuizConfig } from "@/lib/quiz-config";
 
@@ -33,9 +33,7 @@ export function DrillDrawer({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 flex w-full max-w-sm flex-col rounded-xl border border-border bg-[var(--bg)] shadow-xl">
         <div className="overflow-y-auto px-4 pt-4 pb-2 text-[13px]">
-          <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
-            Quiz settings
-          </p>
+          <Lbl>Quiz settings</Lbl>
           <Row label="Audio prompts">
             <OnOff
               on={draft.audioPrompts}

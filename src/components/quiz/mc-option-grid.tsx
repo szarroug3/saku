@@ -25,10 +25,7 @@ import {
   MC_OPTION_MIN_FONT_REM,
   shrinkFontToFitHeight,
 } from "./mc-option-fit";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 export interface McOptionGridItem {
   /** Unique across this board's options — becomes the React key. */
@@ -393,7 +390,7 @@ export function McOptionGrid({
           type="button"
           onClick={onSelect ? () => onSelect(o.key, i) : undefined}
           style={o.fontFamily ? { fontFamily: o.fontFamily } : undefined}
-          className={cx(
+          className={cn(
             // `h-[6.25rem]`: SAK-207 round 3's fixed tile height, replacing
             // the old `min-h-[60px]` FLOOR — see MC_OPTION_TILE_HEIGHT_REM in
             // mc-option-fit.ts for the full derivation. Kept as a literal

@@ -58,10 +58,7 @@ import type {
   SavedList,
   Selection,
 } from "@/types";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 /** A minor sub-group heading inside the de-boxed selector — one grain finer than
  * the page's <Lbl>. The scope/status/date/kind groups separate by this label and
@@ -75,7 +72,7 @@ function SubLbl({
 }) {
   return (
     <p
-      className={cx(
+      className={cn(
         className,
         "text-[11px] font-semibold uppercase tracking-[0.12em] text-text",
       )}
@@ -143,7 +140,7 @@ function ScopeButton({
     <button
       type="button"
       onClick={onClick}
-      className={cx(
+      className={cn(
         "flex-1 cursor-pointer rounded-lg border px-3 py-2 text-[13px] font-medium",
         on
           ? "border-accent bg-accent-bg text-accent"
@@ -181,7 +178,7 @@ function ListTile({
     <button
       type="button"
       onClick={onClick}
-      className={cx(
+      className={cn(
         "flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-[13px]",
         on
           ? "border-accent bg-accent-bg text-accent"
@@ -499,7 +496,7 @@ export function PracticeSelector({
               setCustomOpen(false);
               setLearned(null);
             }}
-            className={cx(
+            className={cn(
               "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
               !activeLearned
                 ? "border-accent bg-accent-bg text-accent"
@@ -573,7 +570,7 @@ export function PracticeSelector({
                 );
               }
             }}
-            className={cx(
+            className={cn(
               "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
               isCustom
                 ? "border-accent bg-accent-bg text-accent"
@@ -609,7 +606,7 @@ export function PracticeSelector({
                   setCustomTo(e.target.value);
                   applyCustom(customFrom, e.target.value);
                 }}
-                className={cx(
+                className={cn(
                   "rounded border bg-card px-2 py-1 text-[13px] text-text",
                   invalidRange ? "border-danger" : "border-border",
                 )}
@@ -617,7 +614,7 @@ export function PracticeSelector({
             </label>
           </div>
         ) : null}
-        <p className={cx("mt-2 text-[12px]", invalidRange ? "text-danger" : "text-text-muted")}>
+        <p className={cn("mt-2 text-[12px]", invalidRange ? "text-danger" : "text-text-muted")}>
           {invalidRange
             ? "From is after To. Set From on or before To to pick a range."
             : activeLearned
@@ -643,7 +640,7 @@ export function PracticeSelector({
                   suppressHydrationWarning
                   onClick={() => onChange(toggleType(sel, id))}
                 >
-                  <span className={cx(japaneseFontClass(glyph), "text-base")}>
+                  <span className={cn(japaneseFontClass(glyph), "text-base")}>
                     {glyph}
                   </span>
                   <span>{typeLabel(id)}</span>

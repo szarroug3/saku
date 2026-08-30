@@ -299,7 +299,6 @@ const cachedLearnFrontier = unstable_cache(
   async (hash: string, slice: LearnHistorySlice, range: LessonRange) =>
     computeLearnFrontier(slice, range),
   ["getLearnFrontier", CURRICULUM_VERSION],
-  { tags: ["learn-frontier"] },
 );
 
 const EMPTY_SLICE: LearnHistorySlice = { facts: {}, claims: {}, seen: {}, learnedAt: {} };
@@ -445,7 +444,6 @@ const cachedShelfChunk = unstable_cache(
       (chunkIndex + 1) * SHELF_CHUNK_SIZE,
     ),
   ["getLibraryShelves", CURRICULUM_VERSION],
-  { tags: ["library-shelves"] },
 );
 
 /** Every kind's shelf sections, in one round trip — the browse view needs all

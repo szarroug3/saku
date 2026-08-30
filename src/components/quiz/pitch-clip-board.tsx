@@ -10,10 +10,7 @@
 // plays the clip and leaves `revealing` permanently on).
 
 import { SoundIcon } from "@/components/ui";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 export interface PitchClipBoardProps {
   /** The two clip URLs, in the order the board shows them. */
@@ -63,7 +60,7 @@ export function PitchClipBoard({
           onClick={onTap ? () => onTap(i) : undefined}
           aria-label={`Play clip ${i + 1}`}
           aria-pressed={pick === i}
-          className={cx(
+          className={cn(
             "flex min-h-20 shrink-0 grow-0 basis-[calc((100%-12px)/2)] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-3 text-center",
             revealing && i === correct
               ? "border-success bg-success-bg text-success"

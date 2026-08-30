@@ -34,6 +34,7 @@ import {
 } from "@/components/results/word-table-keys";
 import { groupRowsByDisplayLabel } from "@/components/results/word-table-grouping";
 import type { EntryId, FactId, SessionStats } from "@/types";
+import { cn } from "@/lib/utils";
 
 export type { BoxKey };
 export {
@@ -56,10 +57,6 @@ function saidTextForPhrase(st: SessionStats[FactId] | undefined, phrase: string)
   return said;
 }
 
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
-
 /** How-you-did, as a word and a colour. The same four states the cell reads
  * from — see outcomeOf. */
 const OUTCOME: Record<Outcome, { label: string; text: string; dot: string }> = {
@@ -78,8 +75,8 @@ function HowYouDid({
   if (outcome === "first-try") return null;
   const o = OUTCOME[outcome];
   return (
-    <span className={cx("flex items-center gap-1 text-[9px] font-medium", o.text)}>
-      <span className={cx("inline-block h-1.5 w-1.5 rounded-full", o.dot)} />
+    <span className={cn("flex items-center gap-1 text-[9px] font-medium", o.text)}>
+      <span className={cn("inline-block h-1.5 w-1.5 rounded-full", o.dot)} />
       {o.label}
     </span>
   );
@@ -119,7 +116,7 @@ function PresentationCell({
       aria-label={`${phrase}, ${OUTCOME[outcome].label}${
         saidParts.length ? `, answered ${saidParts.join(" ")} instead` : ""
       }`}
-      className={cx(
+      className={cn(
         // No box: a hairline left rule replaces the old bordered/rounded tile,
         // and the grid's own gap (see WordTable) is what separates one cell
         // from the next — the de-boxed pattern, not a card per cell.
@@ -141,7 +138,7 @@ function PresentationCell({
         </span>
       ) : null}
       <span
-        className={cx(
+        className={cn(
           "text-[10px] uppercase leading-tight tracking-[0.04em]",
           selected ? "text-accent" : "text-text",
         )}

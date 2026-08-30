@@ -137,11 +137,10 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 /**
  * The one demolition on a page of preferences, and set apart as one.
  *
- * NOT a <Card>: Card hard-codes `border border-border`, and `cx` is a plain
- * join with no tailwind-merge (see ui.tsx), so a `border-danger` passed in
- * would land NEXT TO `border-border` and the winner would be decided by
- * stylesheet order, not by intent. This is the same collision the Btn note
- * documents. So the container is written out here with the danger border baked
+ * NOT a <Card>: Card hard-codes `border border-border` with no way to swap
+ * the tone in, for the same reason Btn's `danger`/`go` are named branches
+ * rather than classNames (see ui.tsx). So the container is written out here
+ * with the danger border baked
  * in from the start — one hairline of --danger, not a filled red panel: it must
  * read as dangerous, not garish.
  *
@@ -157,8 +156,10 @@ function ResetProgress() {
   const { clearAllRuns } = useQuizSession();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleReset = async () => {
+    setError(false);
     const ok = await confirm({
       title: "Clear everything?",
       body: (
@@ -201,8 +202,11 @@ function ResetProgress() {
       clearAllRuns();
       setDone(true);
     } catch {
-      // Same failure surface the sessions list uses for /api/delete.
-      alert("Couldn't clear everything. Try again.");
+      // Same failure surface the sessions list uses for /api/delete — inline,
+      // ordinary DOM a driver can see and click past, not a native alert()
+      // (invisible to anything driving the app through the DOM, and blocking
+      // besides).
+      setError(true);
     } finally {
       setBusy(false);
     }
@@ -210,9 +214,7 @@ function ResetProgress() {
 
   return (
     <section className="mt-8">
-      <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-danger">
-        Start over
-      </p>
+      <Lbl tone="danger">Start over</Lbl>
       <p className="mb-2.5 text-[13px] leading-snug text-text-muted">
         Wipes everything the app has learned about you: every quiz you have done,
         everything you have marked as already known, and everything you have
@@ -228,9 +230,16 @@ function ResetProgress() {
           home page to start over.
         </Hint>
       ) : (
-        <Btn danger onClick={handleReset} disabled={busy}>
-          {busy ? "Clearing…" : "Start over"}
-        </Btn>
+        <>
+          <Btn danger onClick={handleReset} disabled={busy}>
+            {busy ? "Clearing…" : "Start over"}
+          </Btn>
+          {error ? (
+            <p className="mt-2 text-[13px] text-danger">
+              Couldn&apos;t clear everything. Try again.
+            </p>
+          ) : null}
+        </>
       )}
     </section>
   );

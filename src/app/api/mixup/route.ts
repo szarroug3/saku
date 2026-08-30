@@ -14,7 +14,8 @@ interface MixupBody {
 export async function POST(request: Request) {
   let body: MixupBody;
   try {
-    body = (await request.json()) as MixupBody;
+    const text = await request.text();
+    body = text ? (JSON.parse(text) as MixupBody) : {};
   } catch (e) {
     return Response.json(
       { error: e instanceof Error ? e.message : String(e) },

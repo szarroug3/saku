@@ -18,10 +18,7 @@
 import { useState } from "react";
 
 import type { ParticleDrillChunk, ParticleDrillQuestion } from "@/lib/engine/particle-drill";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 export interface ParticleTapCardProps {
   question: ParticleDrillQuestion;
@@ -95,7 +92,7 @@ export function ParticleTapCard({
             type="button"
             onClick={() => handleTap(chunk)}
             disabled={disabled || !!outcome}
-            className={cx(
+            className={cn(
               "mx-0.5 inline-block cursor-pointer rounded-md border px-1.5 py-0.5 align-baseline transition-colors duration-150",
               outcome === "correct" || revealed
                 ? "border-success bg-success-bg text-success"

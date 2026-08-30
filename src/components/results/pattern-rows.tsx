@@ -34,10 +34,7 @@ import {
 } from "@/lib/library/standing";
 import type { PairRow } from "@/lib/confusions";
 import type { SessionStats } from "@/types";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 function pctOf(runs: boolean[]): number {
   if (!runs.length) return 0;
@@ -165,7 +162,7 @@ function Tag({ state }: { state: PairRow["state"] }) {
         : "bg-panel text-text-muted";
   return (
     <span
-      className={cx(
+      className={cn(
         "ml-auto flex-none rounded-full px-2 py-0.5",
         "text-[9px] uppercase tracking-[0.07em]",
         tone,
@@ -193,7 +190,7 @@ function runPips(runs: boolean[]) {
               ? "var(--success)"
               : "var(--danger)",
       }}
-      className={cx(
+      className={cn(
         "h-[5px] w-[5px] rounded-full",
       )}
     />
@@ -256,10 +253,10 @@ export function PatternRow({
           : undefined
       }
       aria-pressed={clickable ? selected : undefined}
-      className={cx("w-full text-left", clickable && "cursor-pointer")}
+      className={cn("w-full text-left", clickable && "cursor-pointer")}
     >
       <div
-      className={cx(
+      className={cn(
         // No box: a hairline left rule instead of the old bordered/rounded
         // tile — whitespace (the stack's own `gap-1.5`, see PatternSection)
         // separates one row from the next.
