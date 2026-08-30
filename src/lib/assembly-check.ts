@@ -118,11 +118,11 @@ export function findAssemblyMismatch(
   return null;
 }
 
-/** A short, learner-facing sentence naming the misplaced chunk — the labeled
- * form when one is known, a positional fallback ("Chunk 2") when it is not,
+/** A short, learner-facing sentence naming the misplaced piece — the labeled
+ * form when one is known, a positional fallback ("Piece 2") when it is not,
  * so a wrong check always says something specific rather than nothing. */
 export function assemblyMismatchMessage(mismatch: AssemblyMismatch): string {
   return mismatch.label
     ? `${mismatch.label} is out of place.`
-    : `Chunk ${mismatch.canonIndex + 1} is out of place.`;
+    : `Piece ${mismatch.canonIndex + 1} is out of place.`;
 }

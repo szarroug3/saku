@@ -470,12 +470,12 @@ const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinition[]> 
     {
       key: "topic",
       title: "Who or what the sentence is about",
-      details: ["Start with the topic chunk, often marked by は.", "Keep the particle attached to the word it labels."],
+      details: ["Start with the topic, often marked by は.", "Keep the particle attached to the word it labels."],
     },
     {
       key: "core",
       title: "Object, destination, or description",
-      details: ["Place the information that completes the thought before the final predicate.", "Its particle stays inside this chunk."],
+      details: ["Place the information that completes the thought before the final predicate.", "Keep its particle attached to it."],
     },
     {
       key: "ending",
@@ -796,8 +796,8 @@ function FocusedPartBoxes({
 
 /**
  * The intro card's own worked example — same three-layer shape as the step
- * cards below it (natural English, that sentence in Japanese chunk order, then
- * the actual Japanese sentence), just without a chunk to highlight yet: the
+ * cards below it (natural English, that sentence in Japanese word order, then
+ * the actual Japanese sentence), just without a part to highlight yet: the
  * intro is read before the walk starts breaking anything into parts. Reuses
  * the step cards' box/label treatment so the abstract description above it
  * and the concrete cards after it don't look like two different features.
@@ -814,7 +814,7 @@ function IntroWorkedExample({ example }: { example: SentenceOrderingWorkedExampl
       <p className="text-[14px] text-text-muted">{example.en}</p>
 
       <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
-        Japanese chunk order
+        English in Japanese order
       </p>
       <p className="text-[13px] text-text-muted">{example.enOrdered}</p>
 
@@ -929,7 +929,7 @@ export function SentenceRuleEntryView({
                       />
 
                       <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
-                        Japanese chunk order
+                        English in Japanese order
                       </p>
                       <p className="text-[13px] text-text-muted">
                         {focusedSentence(orderedSentence, orderedParts, activePart)}
