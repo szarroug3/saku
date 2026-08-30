@@ -291,7 +291,7 @@ export function SessionComplete({
           ) : (
             <>
               Saved in <b>Recent sessions</b>. <b>I already know these</b>{" "}
-              claims anything you didn&apos;t actually answer — whatever you
+              claims anything you didn&apos;t actually answer. Whatever you
               DID answer keeps its real result. <b>Take me to the lesson</b>{" "}
               claims and saves nothing, and reopens this exact set as a fresh
               lesson.

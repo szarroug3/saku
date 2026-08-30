@@ -2,9 +2,56 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+import noEmDashInUserFacingCopy from "./eslint-rules/no-em-dash-in-user-facing-copy.mjs";
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // SAK-235: SAK-84 swept em dashes out of user-facing copy once, by hand,
+    // and new ones kept landing afterward (see SAK-235's ticket body — several
+    // postdate SAK-84's own cleanup commit by hours or days). src/data holds
+    // the app's content modules (lesson prose, reference-page text, tooltip
+    // copy) and src/components holds the JSX/labels/props a learner actually
+    // reads; those are the two trees SAK-84 itself audited. Test files are
+    // excluded because the em-dash regression tests (e.g. how-it-works.test.ts)
+    // legitimately hold the "—" character as the very string they check for.
+    files: ["src/data/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    plugins: {
+      local: { rules: { "no-em-dash-in-user-facing-copy": noEmDashInUserFacingCopy } },
+    },
+    rules: {
+      // No allowedKeys here on purpose: a property name like `note` is not a
+      // safe repo-wide signal (word-contrast-notes.ts and a couple of
+      // components render their OWN `note` field straight to the learner) so
+      // the escape hatch below is granted per FILE, not per key name.
+      "local/no-em-dash-in-user-facing-copy": ["error", { allowedKeys: [] }],
+    },
+  },
+  {
+    // grammar/recipes.ts's `note` field is genuine internal engineering
+    // commentary stored as a string property rather than a `//` comment —
+    // SAK-84's own commit message calls this out by name as intentional and
+    // separate from user-facing copy. Every other field on a Recipe (gloss,
+    // pattern, intro, …) still goes through the base rule above.
+    files: ["src/data/grammar/recipes.ts"],
+    rules: {
+      "local/no-em-dash-in-user-facing-copy": ["error", { allowedKeys: ["note"] }],
+    },
+  },
+  {
+    // grammar/corpus-audit.ts is the other file SAK-84's commit message named
+    // as an intentional exception: it exports only confound SIGNATURES for
+    // scripts/audit-corpus.ts's report-only CI step (why/holds), consumed by
+    // console.error/a dropped-rows JSON, never rendered in the app. Turned off
+    // wholesale rather than per-key since nothing in this file reaches a
+    // learner.
+    files: ["src/data/grammar/corpus-audit.ts"],
+    rules: {
+      "local/no-em-dash-in-user-facing-copy": "off",
+    },
+  },
   {
     // A leading underscore is our "deliberately unused" marker: stub params
     // that keep an API shape (_history, _range, _count) and the like. Honor
