@@ -1297,11 +1297,11 @@ export const PITCH_INTRO: PhaseIntro = {
     },
     {
       lead: "The symbol is here to help you tell same-sounding words apart.",
-      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. We show the line so you learn that difference from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
+      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. The line is drawn here so that difference is learned from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
     },
     {
-      lead: "We show it where we have it.",
-      text: "We don't have pitch data for everything but where we have it, we will show it. For those where we have the data, you might see a quiz for it or you might not because sometimes, the audio clip is hard to distinguish from other homophones.",
+      lead: "The line only appears where the data supports it.",
+      text: "Pitch data isn't available for every word, but where it exists, the line reflects it. A quiz may or may not follow, since some audio clips are too close to another homophone's to tell apart reliably.",
     },
   ],
   pitchExamples: [

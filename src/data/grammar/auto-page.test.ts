@@ -40,8 +40,8 @@ describe("appliedGloss on a non-verb vehicle (SAK-191)", () => {
   });
 
   test("ta-form: 'did X' becomes the copula's past tense", () => {
-    assert.equal(sectionGloss("ta-form", "い-adjectives"), "plain past, “was expensive”");
-    assert.equal(sectionGloss("ta-form", "な-adjectives"), "plain past, “was quiet”");
+    assert.equal(sectionGloss("ta-form", "い-adjectives"), "plain past, \"was expensive\"");
+    assert.equal(sectionGloss("ta-form", "な-adjectives"), "plain past, \"was quiet\"");
   });
 
   test("sugiru: the verb-only 'do X too much' half is dropped, not filled", () => {

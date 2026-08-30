@@ -28,8 +28,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { confoundFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
+import { confoundFor, prerequisiteGapFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
 import type { Example } from "../src/data/grammar/corpus.ts";
+
+/** A confound and an untaught-prerequisite gap both drop a pattern claim from
+ * a sentence for the same practical reason (see corpus-audit.ts's
+ * UNTAUGHT_PREREQUISITE doc for why they are still two separate tables). */
+const guiltReasonFor = (ex: Example, p: string): string | null =>
+  confoundFor(ex, p) ?? prerequisiteGapFor(ex, p);
 
 const GEN = fileURLToPath(new URL("../src/data/generated/", import.meta.url));
 
@@ -63,7 +69,7 @@ function main() {
   const kept: Example[] = [];
 
   for (const ex of corpus) {
-    const guilty = ex.p.filter((p) => confoundFor(ex, p) !== null);
+    const guilty = ex.p.filter((p) => guiltReasonFor(ex, p) !== null);
     if (guilty.length === 0) {
       kept.push(ex);
       continue;
@@ -77,7 +83,7 @@ function main() {
         en: ex.en,
         pattern: p,
         span: ex.jp.slice(sp[0], sp[1]),
-        why: confoundFor(ex, p)!,
+        why: guiltReasonFor(ex, p)!,
         orphaned: survivors.length === 0,
       });
     }

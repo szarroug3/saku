@@ -50,8 +50,10 @@ export type RankOf = (lemma: string) => number | undefined;
 /**
  * Tatoeba sentences that teach the WRONG SENSE of the word they are keyed to —
  * the actively-false subset of the corpus's ~4-5% translation drift (task-20
- * item 3). Free-corpus data is accepted as-is elsewhere; these are excluded
- * because the example contradicts the very word it illustrates.
+ * item 3) — plus a small number that are simply bad teaching examples with no
+ * better candidate in the corpus (顔, 脱出, 大概, 英文 below). Free-corpus data
+ * is accepted as-is elsewhere; these are excluded because showing them would
+ * do more harm than showing nothing.
  *
  * Keyed by written form, because a sentence banned for one word is a fine
  * example for another: 9776863 mistranslates グラス (a drinking glass) as the
@@ -80,6 +82,23 @@ export type RankOf = (lemma: string) => number | undefined;
  *           顔を洗いなさい, "Wash your face") use it plainly, so banning the
  *           proverb here lets chooseExample fall through to one of those
  *           instead of leaving 顔 without an example (SAK-261).
+ * The last three are SAK-283 (L2-L4), all one-candidate words: banning leaves
+ * them without an example rather than shipping the one poor candidate there
+ * is — the same trade the 顔 and 分間 rows already make, just with no fallback
+ * sentence to land on:
+ *   - 脱出 is 'to escape'; its only sentence, 洞窟を脱出！ ("Cave escape!"), is a
+ *           caption fragment — no subject, no conjugated verb — not a worked
+ *           clause a learner can read grammar off of.
+ *   - 大概 is the everyday adverb 'mostly, usually'; its only sentence,
+ *           酒もいいが大概にしておきなさい。("It's all right to drink, but drink
+ *           in moderation"), is the fixed idiom 大概にする ("know when to
+ *           stop"), which never shows the word's ordinary sense.
+ *   - 英文 is 'English text/sentence'; its only sentence, インドネシア語の文は
+ *           英文の対訳としては完璧です。, is a stilted, translation-about-a-
+ *           translation sentence that reads as machine output, and it is also
+ *           the corpus's own 〜として (to-shite) example — banning it here
+ *           only drops it from 英文's word page, not from that recipe's much
+ *           larger example pool.
  * These are named, not filtered by a rule: sense drift is a human judgement, and
  * a short authored list is the honest tool. See task-20 item 3 for what is left.
  */
@@ -91,6 +110,9 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
   ホーム: [10828627],
   分間: [148042],
   顔: [10565801],
+  脱出: [484243],
+  大概: [76037],
+  英文: [10068011],
 };
 
 /**
