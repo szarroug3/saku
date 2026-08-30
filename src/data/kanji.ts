@@ -412,10 +412,11 @@ function buildAttesting(): Map<string, Set<string>> {
 
 function reattest(r: ReadingRow): ReadingRow {
   const proving = ATTESTING.get(`${r.k}|${r.base}`);
-  // Kept in the row's own order, duplicates and all: 45 rows list a word twice
-  // and `nWords` counts what is listed, so de-duplicating here would quietly
-  // re-sort the readings table (entries.ts sorts on nWords) for rows this
-  // correction has nothing to say about.
+  // Kept in the row's own order. readings.json no longer lists a word twice
+  // within one row (SAK-281 fixed the 45 rows that did, at the source), and
+  // `proving` is a Set, so filtering r.words and appending the words in
+  // `proving` it doesn't already have stays duplicate-free without this
+  // function needing its own dedupe pass.
   const kept = r.words.filter((w) => proving?.has(w));
   const added = proving ? [...proving].filter((w) => !r.words.includes(w)) : [];
   if (kept.length === r.words.length && added.length === 0) return r;

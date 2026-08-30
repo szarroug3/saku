@@ -493,8 +493,21 @@ def main():
             ws,
             key=lambda kw: (rank_of.get(kw[0], HUGE), kw[1] != base, len(kw[0]), kw[0]),
         )[0]
+        # A reduplicated-kanji word (一喜一憂, 人々) aligns the SAME kanji to the
+        # SAME base reading twice within itself -- once per occurrence -- so it
+        # appends to `ws` twice and would otherwise list itself twice in one
+        # reading group. One word attesting a reading twice is still only one
+        # word that proves it, so dedupe on the written form here, keeping the
+        # first occurrence's order (SAK-281; 45 rows affected).
+        seen_words = set()
+        words = []
+        for w, _ in ws:
+            if w in seen_words:
+                continue
+            seen_words.add(w)
+            words.append(w)
         row = dict(k=kanji, base=base, anchor=best[0], surface=best[1],
-                   nWords=len(ws), words=[w for w, _ in ws])
+                   nWords=len(words), words=words)
         t = types_for(K[kanji]["kinds"], base)
         if t:
             row["type"] = t
