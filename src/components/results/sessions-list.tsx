@@ -201,6 +201,7 @@ export function SessionsList() {
   // rows so only the saved one flips to "Saved".
   const [madeLists, setMadeLists] = useState<Set<string | number>>(new Set());
   const [deleteError, setDeleteError] = useState(false);
+  const [saveListError, setSaveListError] = useState(false);
 
   // Save a finished session as a DERIVED list: a rule that re-selects it by its
   // timestamp. Unlike an in-progress run, a finished session IS in history, so
@@ -214,8 +215,17 @@ export function SessionsList() {
   // widens.
   const makeList = (record: SessionListRow) => {
     void (async () => {
-      await save(deriveSessionList(record.ts));
-      setMadeLists((prev) => new Set(prev).add(rowKey(record)));
+      setSaveListError(false);
+      try {
+        // save() rejects when the write neither reached the server nor fell
+        // back to local (see lists-provider.tsx) — SAK-262: this used to
+        // await unconditionally, so a failed save just never flipped the
+        // button to "Saved" with no explanation anywhere on screen.
+        await save(deriveSessionList(record.ts));
+        setMadeLists((prev) => new Set(prev).add(rowKey(record)));
+      } catch {
+        setSaveListError(true);
+      }
     })();
   };
 
@@ -336,6 +346,11 @@ export function SessionsList() {
       {deleteError ? (
         <p className="mt-2 text-[13px] text-danger">
           Couldn&apos;t delete. Try again.
+        </p>
+      ) : null}
+      {saveListError ? (
+        <p className="mt-2 text-[13px] text-danger">
+          Couldn&apos;t save the list. Try again.
         </p>
       ) : null}
     </>

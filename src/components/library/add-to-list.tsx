@@ -28,14 +28,30 @@ export function AddToList({
 }) {
   const { lists, loaded, addTo, removeFrom, create } = useLists();
   const [name, setName] = useState("");
+  // create()/addTo()/removeFrom() (see lists-provider.tsx) reject when the
+  // write neither reached the server nor fell back to local — SAK-262: this
+  // popover used to fire-and-forget every one of these and close (or just sit
+  // there) regardless, so a failed add/remove/create left no trace anywhere.
+  const [error, setError] = useState<string | null>(null);
   const fixed = lists.filter(isWritable);
   const derived = lists.filter((l) => !isWritable(l));
 
   const submitNew = () => {
-    if (!name.trim()) return;
-    void create(name, entries);
-    setName("");
-    onDone();
+    const toCreate = name.trim();
+    if (!toCreate) return;
+    setError(null);
+    void (async () => {
+      try {
+        await create(toCreate, entries);
+        setName("");
+        onDone();
+      } catch {
+        // Keep the popover open and the typed name in the box — closing it
+        // (the old behavior) would have thrown away a name the person may
+        // not want to retype, on top of hiding that anything went wrong.
+        setError("Couldn't create the list. Try again.");
+      }
+    })();
   };
 
   return (
@@ -85,8 +101,15 @@ export function AddToList({
             // click should make, so the two can never drift apart.
             const onClick = () => {
               const t = listToggle(list, entries);
-              if (t.kind === "remove") void removeFrom(list.id, t.entries);
-              else void addTo(list.id, t.entries);
+              setError(null);
+              void (async () => {
+                try {
+                  if (t.kind === "remove") await removeFrom(list.id, t.entries);
+                  else await addTo(list.id, t.entries);
+                } catch {
+                  setError(`Couldn't update “${list.name}”. Try again.`);
+                }
+              })();
             };
             return (
               <button
@@ -130,6 +153,10 @@ export function AddToList({
           </div>
         </>
       )}
+
+      {error ? (
+        <p className="mt-2.5 text-[13px] text-danger">{error}</p>
+      ) : null}
 
       {/* The one line the callout in the design asks for. It prints whenever a
           derived list exists, because that is when its absence from the rows

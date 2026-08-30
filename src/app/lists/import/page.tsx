@@ -93,14 +93,24 @@ export default function ImportPage() {
     const chosen = report.entries.filter((e) => included.has(e));
     if (!chosen.length) return;
     const listName = name.trim() || nameFromFile(filename);
-    await save({
-      kind: "fixed",
-      id: `import-${Date.now()}`,
-      name: listName,
-      created: Date.now(),
-      entries: chosen,
-      origin: "import",
-    });
+    setError(null);
+    try {
+      // save() rejects when the write neither reached the server nor fell
+      // back to local (see lists-provider.tsx) — caught here so a failed
+      // import says so instead of the confirm screen just closing over
+      // nothing, which is the SAK-262 bug for this list-creation path.
+      await save({
+        kind: "fixed",
+        id: `import-${Date.now()}`,
+        name: listName,
+        created: Date.now(),
+        entries: chosen,
+        origin: "import",
+      });
+    } catch {
+      setError("Couldn't import. Try again.");
+      return;
+    }
     setDone(listName);
     setDoneEntries(chosen);
     putReport(null);
@@ -382,6 +392,9 @@ export default function ImportPage() {
               </Btn>
             </span>
           </div>
+          {error ? (
+            <span className="mt-2.5 block text-[13px] text-danger">{error}</span>
+          ) : null}
         </>
       )}
 
