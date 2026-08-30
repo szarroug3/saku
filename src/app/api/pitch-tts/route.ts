@@ -136,9 +136,14 @@ export async function GET(request: Request): Promise<Response> {
       return new Response("synthesis failed", { status: 502 });
     }
 
+    // SAK-285 (L48): see /api/tts/route.ts's matching comment — a cold
+    // container's first ffmpeg spawn here is the same unmeasured-locally
+    // cost, so this logs the same wall-clock timing rather than guessing.
     let opusBytes: Buffer | null = null;
+    const encodeStarted = Date.now();
     try {
       opusBytes = await encodeOpus(bytes);
+      console.info(`pitch-tts: opus encode took ${Date.now() - encodeStarted}ms for "${reading}"`);
     } catch (err) {
       console.error("pitch-tts: opus encode failed, serving uncompressed WAV uncached", err);
     }

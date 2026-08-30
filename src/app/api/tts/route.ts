@@ -83,7 +83,18 @@ export async function GET(request: Request): Promise<Response> {
         `tts: pitch-matched ${matchedPhrases}/${totalPhrases} accent phrase(s) for "${text}"`,
       );
     }
+    // SAK-285 (L48): a cold serverless container's FIRST ffmpeg spawn is a
+    // real, plausible cost (process-launch overhead on top of the encode
+    // itself) that local dev — a long-lived, already-warm process — cannot
+    // reproduce. This never ran anywhere before; there was no number to look
+    // at. Logging the encode's own wall time turns "structurally unmeasurable
+    // locally" into "read it off Vercel's function logs" without guessing at
+    // a threshold or changing behavior — a genuinely slow cold-start encode
+    // shows up as an outlier duration on an early request, same log line
+    // every other request also gets.
+    const encodeStarted = Date.now();
     const opusBytes = await encodeOpus(bytes);
+    console.info(`tts: opus encode took ${Date.now() - encodeStarted}ms for "${text}"`);
 
     // The cache write is a SEPARATE try: a transient Storage failure here must
     // not throw away a clip we already successfully synthesized and encoded
