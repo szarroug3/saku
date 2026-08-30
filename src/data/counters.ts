@@ -413,10 +413,14 @@ export const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set([
  * CURRICULUM_WORDS via its own COUNTER_TRACK_KEBS (a broader, hand-maintained
  * bookkeeping set that also covers the bare number/base kanji this map does
  * not need to know about) — that teaching-spine cut is unrelated to and
- * unaffected by this map. The four SAK-176 kebs need no such cut: they were
- * never in CURRICULUM_WORDS' teaching spine to begin with (no big-number VOCAB
- * row above 千 was ever taught there), so this map is a pure Library-display
- * concern for them, exactly like the other two families.
+ * unaffected by this map. SAK-287: the four SAK-176 kebs turned out to need
+ * that exact same cut — an earlier version of this comment claimed they "were
+ * never in CURRICULUM_WORDS' teaching spine to begin with", but they were: all
+ * four shipped as ordinary word-role entries in curriculum-sequence.json
+ * (confirmed at positions 13976/13978/13980/13981), so learners hit them twice,
+ * once here thinly and once properly on the "big" construction page. They are
+ * now also in COUNTER_TRACK_KEBS, same as every family above; this map remains
+ * the Library-display side of that same cut, exactly like the other families.
  * This map exists purely so src/lib/library/entries.ts can (a) skip these kebs
  * when it walks VOCAB for the Words shelf, the same way COUNTER_KANJI_GLYPHS
  * makes it skip 二十歳/day/month, and (b) attach each keb as a searchAlso alias

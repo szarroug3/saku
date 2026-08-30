@@ -432,10 +432,18 @@ describe("the totals are counted off the data, never typed in", () => {
   // real vocab.json duplicates of the new "ji" (〜時) generative category
   // (一時/４時/７時) out to the counters track, each a single-reading word —
   // same mechanism as the SAK-163/174/177 drops above.
-  test("and today those counts are 90, 2,136 and 12,544", () => {
+  // It dropped to 12,540 with SAK-287: COUNTER_TRACK_KEBS pulled the four real
+  // vocab.json duplicates of the "big" generative category (１万/１０万/
+  // １００万/１００億) out to the counters track, each a single-reading word —
+  // same mechanism as the SAK-163/174/177/171 drops above. Unlike the bare
+  // Sino numbers (一…十, 百/千/万), none of these four is a single Han
+  // character, so none is folded back in via isSingleCharWordGlyph — cutting
+  // them from CURRICULUM_WORDS removes them from CURRICULUM_SEQUENCE entirely,
+  // same as 一人/二人/割/階/円/一時/４時/７時 above.
+  test("and today those counts are 90, 2,136 and 12,540", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12544);
+    assert.equal(CURRICULUM_TOTALS.word, 12540);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -443,7 +451,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12544, 12544);
+        assert.equal(g.position.word?.total ?? 12540, 12540);
       }
     }
   });

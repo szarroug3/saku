@@ -180,6 +180,14 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
   // same cut). 何時 (なんじ, "what time") is a separate, genuinely independent
   // word and is deliberately NOT here.
   "一時", "４時", "７時",
+  // SAK-287: vocab.json's real big-number series (１万/１０万/１００万/１００億)
+  // — taught generatively by the counters track's "big" category, exactly like
+  // the other generative families above. counters.ts's doc comment above
+  // COUNTER_VOCAB_DUPLICATE_KEBS claimed these "were never in CURRICULUM_WORDS'
+  // teaching spine to begin with"; that was wrong (confirmed at curriculum-
+  // sequence.json positions 13976/13978/13980/13981, all with roles:["word"])
+  // — this cut is what that comment assumed already existed.
+  "１万", "１０万", "１００万", "１００億",
 ]);
 
 // The core case/binding particles (か/は/が/に/で/を/へ/まで/だけ/しか), so the words

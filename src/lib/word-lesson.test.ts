@@ -63,6 +63,8 @@ describe("the curriculum is essentially all of VOCAB, in beginnerRank order", ()
       "１割", "二割", "１階", "二階", "一円", "１０００円",
       // SAK-171: the counters track's new "ji" (〜時) category owns these too.
       "一時", "４時", "７時",
+      // SAK-287: the counters track's "big" category owns these too.
+      "１万", "１０万", "１００万", "１００億",
     ]) {
       assert.ok(!curriculumKebs.has(excluded), `${excluded} should be excluded (counter track owns it)`);
     }
@@ -176,7 +178,14 @@ describe("the word total is the material, and does not move", () => {
     // Minus 3 more with SAK-171: 一時/４時/７時 joined COUNTER_TRACK_KEBS once
     // the "ji" (〜時) generative category shipped — the same "the counters
     // track already teaches this" reason 一人/二人/割/階/円 etc were cut above.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12433);
+    // Minus 4 more with SAK-287: １万/１０万/１００万/１００億 joined
+    // COUNTER_TRACK_KEBS — these are the counters track's "big" category's own
+    // real vocab.json series (see counters.ts's COUNTER_VOCAB_DUPLICATE_KEBS
+    // doc comment), the same duplicate-teaching reason every family above was
+    // cut for. A prior version of that comment claimed these four "were never
+    // in CURRICULUM_WORDS' teaching spine to begin with" — that was wrong; they
+    // shipped at curriculum-sequence.json positions 13976/13978/13980/13981.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12429);
   });
 });
 
@@ -210,6 +219,25 @@ describe("SAK-175: particles/connectives with an EXACT grammar-recipe match are 
         CURRICULUM_WORDS.some((w) => w.keb === keb),
         `${keb} has a real standalone sense a recipe does not teach and must stay in CURRICULUM_WORDS`,
       );
+    }
+  });
+});
+
+describe("SAK-287: big-number words are cut from the vocab spine, taught only via Counters", () => {
+  const CUT_KEBS = ["１万", "１０万", "１００万", "１００億"];
+
+  test("all four are gone from CURRICULUM_WORDS", () => {
+    for (const keb of CUT_KEBS) {
+      assert.ok(
+        !CURRICULUM_WORDS.some((w) => w.keb === keb),
+        `${keb} must no longer be in CURRICULUM_WORDS — the counters track's "big" category already teaches it`,
+      );
+    }
+  });
+
+  test("all four are still real VOCAB rows (only the teaching spine cut them, not the dictionary)", () => {
+    for (const keb of CUT_KEBS) {
+      assert.ok(VOCAB.some((w) => w.keb === keb), `${keb} should still exist in VOCAB itself`);
     }
   });
 });
