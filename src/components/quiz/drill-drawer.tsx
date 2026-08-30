@@ -31,7 +31,25 @@ export function DrillDrawer({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 flex w-full max-w-sm flex-col rounded-xl border border-border bg-[var(--bg)] shadow-xl">
+      <div
+        // THE DRAWER IS A CARD FLOATING OVER THE PAGE — same tokens, same
+        // reasoning, as confirm-dialog.tsx's panel and ui/tooltip.tsx's:
+        // --card, --border, --radius, --shadow-card, via `rounded-(--radius)`
+        // and NOT `rounded-xl`, which resolves to the same value but pairs
+        // with `bg-card` to trigger the Card recipe (aizome's fill-dissolves-
+        // into-hairline-rules rule), the wrong choice for a panel that must
+        // occlude what's behind it. That mismatch is what made this drawer
+        // paint itself in --bg instead of --card and lose its shadow in
+        // every theme but momentum (SAK-250).
+        //
+        // kq-material + kq-overlay: this is a portalled-style overlay panel
+        // (fixed over the whole page, its own backdrop), not a card in the
+        // page flow, so it needs the frost back the same way confirm-dialog.tsx
+        // and filter-dropdown.tsx do — kiri's --card is `transparent`, and
+        // without kq-overlay's backdrop-filter the page reads straight through
+        // instead of the panel occluding it.
+        className="kq-material kq-overlay relative z-10 flex w-full max-w-sm flex-col rounded-(--radius) border border-border bg-card shadow-card"
+      >
         <div className="overflow-y-auto px-4 pt-4 pb-2 text-[13px]">
           <Lbl>Quiz settings</Lbl>
           <Row label="Audio prompts">
