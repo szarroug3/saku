@@ -51,6 +51,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moraCount } from "./mora.mjs";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const GENDIR = resolve(REPO, "src/data/generated");
@@ -90,25 +92,6 @@ function parseAccents(text) {
     clean.set(key, Number.parseInt(accent, 10));
   }
   return { clean, stats };
-}
-
-/** Count the morae of a kana reading. A mora is one beat of the language, and
- * kana map to it ALMOST one-to-one — the exceptions are the small y-glides that
- * form a yōon (きゃ, しゅ, ちょ) and the small vowels that form foreign yōon
- * (ファ, ウィ): those ride the preceding full kana and add no beat. Everything
- * else is its own mora, INCLUDING the three that look like they might not be —
- * the long-vowel mark ー (コーヒー = ko-o-hi-i, 4), the small っ sokuon
- * (がっこう = ga-t-ko-o, 4), and ん (せんせい = se-n-se-e, 4). This is the count a
- * downstep is measured against: an accent may fall on morae 0..moraCount, so any
- * stored downstep larger than this is impossible for the reading. */
-const SMALL_KANA = new Set("ゃゅょャュョぁぃぅぇぉァィゥェォ");
-function moraCount(reading) {
-  let n = 0;
-  for (const c of reading) {
-    if (SMALL_KANA.has(c)) continue;
-    n++;
-  }
-  return n;
 }
 
 /** The reading a word is TAUGHT with, mirroring src/data/vocab.ts's withSenses:

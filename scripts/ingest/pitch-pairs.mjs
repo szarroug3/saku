@@ -87,6 +87,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { moraCount } from "./mora.mjs";
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const GENDIR = resolve(REPO, "src/data/generated");
@@ -99,24 +101,6 @@ const GENDIR = resolve(REPO, "src/data/generated");
 function taughtReading(row, senses) {
   const s = senses[row.keb];
   return s && s.length ? s[0].reb : row.reb;
-}
-
-const SMALL_KANA = new Set([
-  "ゃ", "ゅ", "ょ", "ぁ", "ぃ", "ぅ", "ぇ", "ぉ", "ゎ",
-  "ャ", "ュ", "ョ", "ァ", "ィ", "ゥ", "ェ", "ォ", "ヮ",
-]);
-
-/** Mora count of a kana reading — a dependency-free duplicate of
- * src/lib/pitch.ts's moraeOf (see this file's RUN section for why ingest
- * scripts don't import app modules). Keep in sync if that logic ever
- * changes. */
-function moraCount(reading) {
-  let n = 0;
-  for (const ch of reading) {
-    if (SMALL_KANA.has(ch) && n > 0) continue;
-    n++;
-  }
-  return n;
 }
 
 /** The isolated high/low sequence for `downstep` over `length` morae — a
