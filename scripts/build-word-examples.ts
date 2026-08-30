@@ -10,6 +10,13 @@
 // importing the 1.8 MB corpus into its client bundle; the reasoning is in
 // src/lib/library/word-example.ts, which owns the choosing.
 //
+// A candidate pool per word is CORPUS's sentences plus word-example.ts's
+// EXTRA_EXAMPLES — a small, hand-verified supplement of real Tatoeba
+// sentences for the rare word whose only corpus candidate teaches the wrong
+// sense and the corpus (filtered to grammar-pattern matches, not "every
+// Tatoeba sentence") has no better one to fall back to. See EXTRA_EXAMPLES's
+// own doc comment for what makes a row eligible.
+//
 // Rerun it whenever the corpus or the vocabulary is rebuilt. The output is
 // deterministic — same inputs, same file, byte for byte — so a rerun that
 // changes nothing produces no diff.
@@ -23,7 +30,7 @@ import { join } from "node:path";
 
 import { CORPUS } from "../src/data/grammar/corpus.ts";
 import { VOCAB } from "../src/data/vocab.ts";
-import { chooseExample, indexByWord } from "../src/lib/library/word-example.ts";
+import { EXTRA_EXAMPLES, chooseExample, indexByWord } from "../src/lib/library/word-example.ts";
 
 const rank = new Map(VOCAB.map((w) => [w.keb, w.beginnerRank]));
 const rankOf = (lemma: string) => rank.get(lemma);
@@ -47,8 +54,8 @@ const out: Record<
 > = {};
 let n = 0;
 for (const w of [...VOCAB].sort((a, b) => (a.keb < b.keb ? -1 : a.keb > b.keb ? 1 : 0))) {
-  const candidates = byWord.get(w.keb);
-  if (!candidates) continue;
+  const candidates = [...(byWord.get(w.keb) ?? []), ...(EXTRA_EXAMPLES[w.keb] ?? [])];
+  if (candidates.length === 0) continue;
   const pick = chooseExample(candidates, w.keb, rankOf);
   if (!pick) continue;
   out[w.keb] = [pick.id, pick.jp, pick.en, null, null, []];
