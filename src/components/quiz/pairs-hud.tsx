@@ -76,14 +76,19 @@ function Pill({
 /** Live session accuracy, on exactly the terms src/lib/accuracy.ts defines.
  * Characters still sitting unmatched on the board are already counted as seen,
  * so they're excluded until they resolve — otherwise a fresh board would open
- * at 0% and climb, reporting "not attempted yet" as "wrong". */
+ * at 0% and climb, reporting "not attempted yet" as "wrong".
+ *
+ * SAK-256: "% correct" counts a pair only if it was matched right on the
+ * FIRST try — `firstTryCorrect`, not `everCorrect`. Matching it right after a
+ * mismatch still clears the pair off the board (that's `everCorrect`, checked
+ * elsewhere); it just no longer inflates the displayed accuracy. */
 function liveAccuracy(stats: SessionStats): number | null {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not matched yet
     agg.seen += st.seen;
     agg.missed += st.misses;
-    agg.correct += st.everCorrect ? 1 : 0;
+    agg.correct += st.firstTryCorrect === true ? 1 : 0;
   }
   return accuracyOf(agg);
 }
