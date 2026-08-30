@@ -27,6 +27,7 @@ import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { VocabRow } from "@/data/vocab";
 
 import {
+  canonicalMixupEntry,
   claimableFacts as claimableFactsOf,
   entryForGlyph as entryForGlyphOf,
   entryName as libEntryName,
@@ -529,15 +530,25 @@ export async function searchLibraryByType(
 /** The active weakness-pair entries (the Status dropdown's "Mix-ups" option) —
  * factEntryOf reads the server-only fact registry, so this fold moved here.
  * Depends only on `history`/`graduateRuns`, not per-keystroke state, so
- * library-page.tsx calls it once per history/config change, not per render. */
+ * library-page.tsx calls it once per history/config change, not per render.
+ *
+ * SAK-271: each side is passed through `canonicalMixupEntry` before joining
+ * the set. A pair's `a`/`b` are entry ids resolved via `entryOf` (facts.ts) —
+ * see confusions.ts's own header on the two key spaces — and for a handful of
+ * VOCAB rows (the four big-number counter words, 一つ…九つ, 一人/二人, …) that
+ * raw entry id is a pure duplicate the Library never lists on its own (see
+ * canonicalMixupEntry's doc comment in library-index.ts). Left unresolved, a
+ * mix-up recorded against one of those never matches any real Library entry's
+ * id and can never surface here; redirecting through its known alias is what
+ * makes it show up on the entry the Library actually displays that word on. */
 export async function getActiveMixupEntries(
   history: HistoryFile,
   graduateRuns: number,
 ): Promise<string[]> {
   const entries = new Set<string>();
   for (const pair of activeWeaknessPairs(history, graduateRuns, factEntryOfIndex)) {
-    entries.add(pair.a);
-    entries.add(pair.b);
+    entries.add(canonicalMixupEntry(pair.a));
+    entries.add(canonicalMixupEntry(pair.b));
   }
   return [...entries];
 }

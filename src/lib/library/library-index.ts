@@ -42,6 +42,12 @@ import { PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveEntry } from "@/data/com
 import { VOCAB_SUBJECT, wordEntry } from "@/lib/vocab-ids";
 import { NUMBER_CONSTRUCTION_SUBJECT } from "@/data/number-construction-id";
 import { entryId } from "@/lib/fact-id";
+// SAK-271: both maps are pure data (a Map literal keyed by keb string,
+// numberConstructionEntry/counterEntry id builders) — see counters.ts's own
+// imports, which pull in nothing heavier than fact-id.ts. Safe to read here
+// without reintroducing the dictionary this loader exists to avoid; see
+// canonicalMixupEntry's doc comment below for why they're needed at all.
+import { COUNTER_TAIL_FORM_ALIASES, COUNTER_VOCAB_DUPLICATE_KEBS } from "@/data/counters";
 // CURRICULUM_GLYPHS (not curriculum-order.ts directly) — curriculum-order.ts
 // imports data/vocab.ts (isSingleCharWordGlyph), which would pull the ~8.6MB
 // dictionary onto /library. CURRICULUM_GLYPHS is the SAME spine, in the same
@@ -101,6 +107,45 @@ export function knownFactsOf(entry: IndexLibEntry | EntryId): readonly FactId[] 
  * no longer has. */
 export function factEntryOf(fact: FactId): EntryId {
   return INDEX.factEntry[fact as unknown as string] ?? (fact as unknown as EntryId);
+}
+
+/**
+ * SAK-271: some VOCAB rows (１万/１０万/１００万/１００億, 一つ…九つ, 一人/二人,
+ * 二十歳, …) are pure duplicates of a counter/number-construction entry that
+ * already teaches the same word under a different id — see
+ * COUNTER_VOCAB_DUPLICATE_KEBS's own doc comment in data/counters.ts.
+ * library/entries.ts drops these kebs from the browsable Library list and
+ * aliases them for search instead of minting a second, redundant entry —
+ * but `factEntryOf` above still (correctly) names the RAW word entry a fact
+ * belongs to: entryOf's job is to say what a fact IS, not to know about this
+ * display-only dedup. That raw id then matches no entry in `LIB_ENTRIES`, so a
+ * mix-up recorded against one of these facts resolves to an id no real
+ * Library entry carries and can never surface on the Mix-ups filter, since
+ * that filter can only ever match a real, on-screen entry's id.
+ *
+ * Built off the SAME two source maps entries.ts's own
+ * COUNTER_KANJI_DUPLICATE_SEARCH reads (COUNTER_VOCAB_DUPLICATE_KEBS /
+ * COUNTER_TAIL_FORM_ALIASES) — the forward direction of that same lookup, so
+ * this file and counters.ts/entries.ts cannot disagree about which word
+ * aliases which entry. Both source maps are lightweight (no dictionary
+ * import), so reading them here does not reintroduce the ~8.6MB dictionary
+ * this content-free loader exists to avoid.
+ */
+const DUPLICATE_ENTRY_TARGET: ReadonlyMap<EntryId, EntryId> = new Map(
+  [...COUNTER_VOCAB_DUPLICATE_KEBS, ...COUNTER_TAIL_FORM_ALIASES].map(
+    ([keb, target]) => [wordEntry(keb), target],
+  ),
+);
+
+/**
+ * `id`, redirected to the real Library entry it is a pure duplicate of (see
+ * `DUPLICATE_ENTRY_TARGET` above), or `id` unchanged when it names no known
+ * duplicate. For callers that need "the entry a mix-up should be credited to
+ * on screen" rather than "what a fact literally is" — currently only
+ * `getActiveMixupEntries` (server-lookups.ts), the Library's Mix-ups filter.
+ */
+export function canonicalMixupEntry(id: EntryId): EntryId {
+  return DUPLICATE_ENTRY_TARGET.get(id) ?? id;
 }
 
 /** Every fact of an entry, unfiltered — the precomputed twin of `factsOf`
