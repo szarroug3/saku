@@ -162,8 +162,19 @@
 //     filtering work and mask a real bug if filtering itself were the thing
 //     that crashed).
 //
-// PLAIN RUN (no flags): loads any existing en-synonyms.json + progress ledger,
-// skips every key already in the ledger, and for the rest reuses a cached
+// A THIRD, COMMITTED ledger exists alongside those two local/gitignored ones
+// (SAK-272): src/data/generated/en-synonyms-attempted.json is the same set as
+// the progress ledger, but checked into the repo. It exists for two reasons —
+// (1) a fresh clone/worktree has no scripts/.cache/, so without a committed
+// copy this script cannot tell "never attempted" from "attempted, zero hits"
+// and would silently re-derive (network-fetch) EVERY confirmed-no-hit key on
+// its very first run in a new checkout; (2) scripts/audit-en-synonyms.mjs
+// reads it to catch drift — new content adding gloss keys this pool has never
+// even been asked about — in CI, with no network access and without having to
+// run this whole script. `done` below unions both ledgers.
+//
+// PLAIN RUN (no flags): loads any existing en-synonyms.json + both ledgers,
+// skips every key already in either, and for the rest reuses a cached
 // Datamuse response when one exists or fetches fresh otherwise. This is both
 // "continue a crashed run" and "top up after new glosses were added to the
 // app's data" in one behavior — new keys get queried, old ones don't.
@@ -198,8 +209,7 @@ import {
 } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { ALL_FACTS, factInfo } from "@/lib/facts";
-import { isEnglishGloss, stripParentheticals, synonymKeyOf } from "@/lib/engine/en-match";
+import { collectSynonymKeys } from "./lib/en-synonym-keys.mjs";
 
 const REFRESH = process.argv.includes("--refresh") || process.argv.includes("--force");
 
@@ -209,6 +219,17 @@ const PROGRESS_PATH = fileURLToPath(
 );
 const OUT_PATH = fileURLToPath(
   new URL("../src/data/generated/en-synonyms.json", import.meta.url),
+);
+// COMMITTED companion to OUT_PATH: every key this run (and every prior one,
+// merged in) has been PROCESSED for, whether or not it survived filtering —
+// i.e. `done`, not `pool`'s keys. Unlike the resumability ledger at
+// PROGRESS_PATH (gitignored, local-cache-only — see the header's CACHING
+// section), this ships in the repo so scripts/audit-en-synonyms.mjs can tell
+// "needed key has zero synonyms because none exist" (fine, not drift) apart
+// from "needed key was never even queried" (drift) WITHOUT re-running this
+// script or needing network access. See audit-en-synonyms.mjs.
+const ATTEMPTED_PATH = fileURLToPath(
+  new URL("../src/data/generated/en-synonyms-attempted.json", import.meta.url),
 );
 
 mkdirSync(CACHE_DIR, { recursive: true });
@@ -236,24 +257,10 @@ function readJsonIfExists(path) {
 
 // ---------------------------------------------------------------------------
 // 1. Collect every distinct queryable key from the app's real gloss data.
+//    (collectSynonymKeys, imported above from ./lib/en-synonym-keys.mjs so
+//    the build and the drift audit can never compute two different answers
+//    to "what does the app need".)
 // ---------------------------------------------------------------------------
-
-function collectKeys() {
-  const keys = new Set();
-  for (const id of ALL_FACTS) {
-    const info = factInfo(id);
-    if (!info) continue;
-    for (const a of info.answers) {
-      if (!isEnglishGloss(a)) continue;
-      const stripped = stripParentheticals(a);
-      for (const piece of [a, stripped, ...stripped.split(",")]) {
-        const key = synonymKeyOf(piece);
-        if (key) keys.add(key);
-      }
-    }
-  }
-  return [...keys].sort();
-}
 
 // ---------------------------------------------------------------------------
 // 2. Datamuse, cached: rel_syn UNION ml's high-confidence cluster.
@@ -607,7 +614,7 @@ const MANUAL_SEEDS = {
 const BATCH_SIZE = 200; // flush the output + progress ledger every N processed keys
 
 async function main() {
-  const keys = collectKeys();
+  const keys = collectSynonymKeys();
   console.log(
     `en-synonyms: ${keys.length} distinct queryable gloss keys` +
       (REFRESH ? " (--refresh: re-deriving everything)" : ""),
@@ -615,9 +622,18 @@ async function main() {
 
   // Resume state: an existing pool and the ledger of keys already derived in
   // a prior run. --refresh discards both and starts clean.
+  //
+  // `done` unions TWO ledgers, not just the local one: PROGRESS_PATH is the
+  // gitignored, machine-local resumability cache (see the header's CACHING
+  // section), but ATTEMPTED_PATH is COMMITTED — so a fresh clone/worktree
+  // with no scripts/.cache/ (this is normal; it is never checked in) still
+  // knows which keys a PRIOR run already tried and correctly skips
+  // re-querying Datamuse for them, rather than mistaking "no local cache" for
+  // "nothing has ever been attempted".
   const pool = REFRESH ? {} : (readJsonIfExists(OUT_PATH) ?? {});
   const progressArr = REFRESH ? [] : (readJsonIfExists(PROGRESS_PATH) ?? []);
-  const done = new Set(progressArr);
+  const attemptedArr = REFRESH ? [] : (readJsonIfExists(ATTEMPTED_PATH) ?? []);
+  const done = new Set([...progressArr, ...attemptedArr]);
 
   const todo = keys.filter((k) => !done.has(k));
   if (todo.length < keys.length) {
@@ -640,6 +656,10 @@ async function main() {
     );
     writeJsonAtomic(OUT_PATH, sortedPool);
     writeJsonAtomic(PROGRESS_PATH, [...done].sort());
+    // Committed alongside OUT_PATH — see ATTEMPTED_PATH's declaration above
+    // and scripts/audit-en-synonyms.mjs for why this ships in the repo
+    // instead of staying local-cache-only like PROGRESS_PATH.
+    writeJsonAtomic(ATTEMPTED_PATH, [...done].sort());
   }
 
   // Small bounded concurrency, with a short per-request stagger — Datamuse
@@ -648,7 +668,7 @@ async function main() {
   // 403 partway through (see `datamuseFetch`'s retry/backoff, which also
   // guards the rest). This keeps well under a soft ~100k/day guideline while
   // not taking hours for ~11k keys.
-  const CONCURRENCY = 2;
+  const CONCURRENCY = 5;
   const STAGGER_MS = 300;
   let cursor = 0;
 

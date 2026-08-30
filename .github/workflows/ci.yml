@@ -72,6 +72,18 @@ jobs:
       - name: Assembly corpus freshness
         run: pnpm run check-assembly-freshness
 
+      # src/data/generated/en-synonyms.json is a COMMITTED, mostly-generated
+      # artifact (see scripts/build-en-synonyms.mjs) that degrades gracefully
+      # when stale — a missing key just falls back to exact-match grading, so
+      # nothing else here would ever notice it silently drifting further out
+      # of sync with new content (SAK-272: it reached 42% missing, unnoticed,
+      # before this gate existed). This fails the build the moment a merged
+      # PR adds gloss keys the pool has never even been asked about, so
+      # catching up is a small, immediate diff instead of a periodic
+      # rediscovery.
+      - name: Synonym pool coverage
+        run: pnpm run audit-en-synonyms:check
+
       # The gate the other three cannot be: a route conflict, a bad import, an
       # invalid config — none is a type or lint or unit-test failure, and all of
       # them are a failed build.
