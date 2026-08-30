@@ -82,14 +82,20 @@ function Pill({
 /** Live session accuracy, on exactly the terms src/lib/accuracy.ts defines.
  * Cards that haven't been answered yet are left out — on the grid EVERY card
  * is counted as seen from the first paint, so without this the sheet would
- * open at 0% and climb, reporting "unanswered" as "wrong". */
+ * open at 0% and climb, reporting "unanswered" as "wrong".
+ *
+ * SAK-256: "% correct" counts a card only if it was right on the FIRST try —
+ * `firstTryCorrect`, not `everCorrect`. Getting it right after being
+ * re-queued still clears the card from the board (that's `everCorrect`,
+ * checked elsewhere to end the retry loop); it just no longer inflates the
+ * displayed accuracy. */
 function liveAccuracy(stats: SessionStats): number | null {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not attempted yet
     agg.seen += st.seen;
     agg.missed += st.misses;
-    agg.correct += st.everCorrect ? 1 : 0;
+    agg.correct += st.firstTryCorrect === true ? 1 : 0;
   }
   return accuracyOf(agg);
 }
