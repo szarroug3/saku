@@ -116,6 +116,53 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
 };
 
 /**
+ * A small, hand-verified supplement of REAL Tatoeba sentences for words whose
+ * grammar-corpus.json candidates all fail to teach a sense that matters,
+ * where — unlike the WRONG_SENSE_EXAMPLES cases above — no other candidate in
+ * the corpus can be fallen back to, because grammar-corpus.json is not "every
+ * Tatoeba sentence": scripts/ingest/grammar.py only keeps sentences that also
+ * match one of recipes.ts's grammar patterns. A perfectly good vocabulary
+ * sentence can miss that filter for reasons that have nothing to do with
+ * whether it teaches the word well.
+ *
+ * Each row here is a genuine Tatoeba sentence — a real positive id, a real
+ * permalink, CC BY 2.0 FR like every other row this file ships — fetched and
+ * verified by hand against Tatoeba directly, NOT invented. That is what tells
+ * this apart from src/data/grammar/authored.ts's negative-id lane: those rows
+ * are fabricated because no Tatoeba sentence exists for their pattern at all;
+ * these are real Tatoeba sentences the grammar-pattern filter simply never
+ * had a reason to keep. `p`/`sp` are left empty because these rows are never
+ * added to CORPUS or AUTHORED and so never enter grammar-pattern drilling —
+ * they exist ONLY as extra chooseExample candidates for the word named by the
+ * key, via the merge in scripts/build-word-examples.ts. Scoped to one target
+ * word deliberately: splicing them into indexByWord's general pool would let
+ * a row's OTHER lemmas (集合's row also contains 日曜日 and する) start
+ * competing for words this fix was never about.
+ *
+ *   - 集合 (SAK-259): JMdict's most common sense is "meeting up/gathering"
+ *     (しゅうごう), but the corpus's one candidate, 878460, is the math "set"
+ *     sense ("The set of real numbers is closed under addition") — a learner
+ *     never saw the everyday meaning demonstrated. Sentence 122155,
+ *     日曜日に集合しよう。("Let's get together on Sunday."), is a real Tatoeba
+ *     sentence using the everyday sense; it also outscores 878460 on its own
+ *     merits (日曜日/する are common, 加法/実数 are not), so chooseExample picks
+ *     it over 878460 without needing a WRONG_SENSE_EXAMPLES ban.
+ */
+export const EXTRA_EXAMPLES: Readonly<Record<string, readonly Example[]>> = {
+  集合: [
+    {
+      id: 122155,
+      jp: "日曜日に集合しよう。",
+      en: "Let's get together on Sunday.",
+      n: 5,
+      v: ["日曜日", "集合", "する"],
+      p: [],
+      sp: {},
+    },
+  ],
+};
+
+/**
  * How hard this sentence is, as the rank of the hardest word in it.
  *
  * THE TARGET WORD IS EXCLUDED. It is in `v` for every candidate by
