@@ -177,7 +177,7 @@ const TRACK_INTRO_COPY: Record<string, string> = {
   numbers:
     "Start anytime. You'll want these the first time you order two of something or count people.",
   keigo:
-    "Start once plain verbs feel comfortable. This is the polite, formal version of what you already know.",
+    "Start anytime. The first set needs no plain verbs at all, and each new one unlocks as you learn the plain verb it's for.",
 };
 
 const TRACK_WHY: Record<string, Why> = {

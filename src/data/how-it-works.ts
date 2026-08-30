@@ -131,7 +131,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     title: "Rounds and breaks",
     paragraphs: [
       "A full Learn session runs in three rounds. Each round runs through the same whole set of material queued for the session, not just what you got wrong last time, so you may see an item more than once across a session, on purpose.",
-      "Between rounds, Saku enforces a short break: 5 minutes before round 2, 10 minutes before round 3 by default, adjustable in Settings. There's no break after round 3; you're offered \"Complete session\" instead.",
+      "Between rounds, Saku schedules a short break: 5 minutes before round 2, 10 minutes before round 3 by default, adjustable in Settings. There's no break after round 3; you're offered \"Complete session\" instead.",
       "During a break, Saku deliberately shows you nothing: no items, no answers, no preview, because a rest with the material still in front of you isn't a rest. You can skip a break early, or end the session at any point; whatever round you finished is already saved.",
     ],
     paragraphAccents: [
