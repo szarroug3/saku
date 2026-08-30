@@ -15,6 +15,13 @@
 // wrongDownstepFor, the guarantee that it never proposes a path
 // `pitchItems()` still enumerates, and the guarantee that adding a target
 // changed nothing about the default (SAK-217) behaviour.
+//
+// SAK-219 adds a third target (`sak-219`) covering the GENERAL (non-pitch)
+// audio clips — a different Storage namespace (`voiceObjectPath`, no
+// downstep dimension) from the other two targets' `pitchObjectPath`. Same
+// independence discipline: paths recomputed straight from
+// CONFIRMED_BAD_READINGS + voiceObjectPath, never by calling this script's
+// own logic back at itself.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -23,11 +30,12 @@ import { wordPitch } from "@/data/pitch";
 import { VOCAB } from "@/data/vocab";
 import { CONFIRMED_BAD_READINGS } from "@/lib/tts-synth";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
-import { pitchObjectPath, VOICES } from "@/lib/voice";
+import { pitchObjectPath, VOICES, voiceObjectPath } from "@/lib/voice";
 
 import { pitchItems } from "./seed-voice-audio.mjs";
 import {
   SAK_217_TARGET,
+  SAK_219_TARGET,
   SAK_221_PREVIOUS_PITCH,
   SAK_221_TARGET,
   sak221RetainedItems,
@@ -160,7 +168,7 @@ describe("stalePitchClips — SAK-290 target selection", () => {
   test("the default target is still SAK-217's, unchanged by adding a second target", () => {
     assert.deepEqual(stalePitchClips(), stalePitchClips(SAK_217_TARGET));
     assert.deepEqual(stalePitchItemsForReading("はち"), stalePitchItemsForReading("はち", SAK_217_TARGET));
-    assert.deepEqual(Object.keys(TARGETS).sort(), ["sak-217", "sak-221"]);
+    assert.deepEqual(Object.keys(TARGETS).sort(), ["sak-217", "sak-219", "sak-221"]);
   });
 
   test("SAK_221_PREVIOUS_PITCH records values pitch.json no longer holds", () => {
@@ -239,5 +247,45 @@ describe("stalePitchClips — SAK-290 target selection", () => {
     // And a SAK-215 reading with no SAK-221 involvement is invisible to the
     // sak-221 target.
     assert.deepEqual(stalePitchItemsForReading("はち", SAK_221_TARGET), []);
+  });
+});
+
+describe("stalePitchClips — SAK-219 general-audio target", () => {
+  test("the sak-219 target covers every CONFIRMED_BAD_READINGS entry, exactly one voiceObjectPath clip per reading per voice", () => {
+    const clips = stalePitchClips(SAK_219_TARGET);
+
+    const expectedPaths = new Set(
+      CONFIRMED_BAD_READINGS.flatMap((reading) => VOICES.map((voice) => voiceObjectPath(voice.id, reading))),
+    );
+    const actualPaths = new Set(clips.map((c) => c.path));
+    assert.deepEqual(actualPaths, expectedPaths);
+    assert.equal(new Set(clips.map((c) => c.path)).size, clips.length, "duplicate path in the sak-219 target");
+    assert.equal(clips.length, CONFIRMED_BAD_READINGS.length * VOICES.length);
+
+    // No downstep dimension for this target — every clip carries null.
+    assert.ok(clips.every((c) => c.downstep === null));
+
+    // Every clip's reading must itself be a confirmed-bad reading — same
+    // discipline as the sak-217 target's own equivalent guard.
+    for (const clip of clips) {
+      assert.ok(CONFIRMED_BAD_READINGS.includes(clip.reading), `unexpected reading ${clip.reading} in sak-219 target`);
+    }
+  });
+
+  test("a reading NOT in CONFIRMED_BAD_READINGS produces no paths under the sak-219 target either", () => {
+    const ordinaryReading = "がっこう";
+    assert.ok(!CONFIRMED_BAD_READINGS.includes(ordinaryReading));
+    assert.deepEqual(stalePitchItemsForReading(ordinaryReading, SAK_219_TARGET), []);
+  });
+
+  test("the sak-219 target's paths land in the SAME general voices/<voiceId>/ namespace synthesizeText/synthesizeSentenceWav actually read/write, not the pitch namespace", () => {
+    const [firstClip] = stalePitchClips(SAK_219_TARGET);
+    assert.ok(firstClip.path.startsWith(`voices/${firstClip.voiceId}/`));
+    assert.ok(!firstClip.path.includes("/pitch-"), "sak-219 clips must never collide with the pitch cache's own sub-namespace");
+  });
+
+  test("adding the sak-219 target changed nothing about the sak-217/sak-221 targets' own default behaviour", () => {
+    assert.deepEqual(stalePitchClips(), stalePitchClips(SAK_217_TARGET));
+    assert.deepEqual(stalePitchItemsForReading("はち"), stalePitchItemsForReading("はち", SAK_217_TARGET));
   });
 });
