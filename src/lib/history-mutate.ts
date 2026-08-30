@@ -62,6 +62,18 @@ export interface HistoryStore {
  * happen in normal use. Bounded so a pathological loop throws instead of spinning. */
 export const MAX_HISTORY_WRITE_ATTEMPTS = 5;
 
+/** A small jittered pause before a retry — NOT a fix for anything broken today
+ * (a write losing the CAS at all is already rare; see MAX_HISTORY_WRITE_ATTEMPTS'
+ * own doc), but a tight zero-delay loop gives two overlapping writers the exact
+ * same read-then-write cadence, so a retry can end up racing the SAME window it
+ * just lost. A few milliseconds of spread makes the second attempt land after
+ * the other writer's, rather than beside it again. Capped small and exported so
+ * a test can override it with a no-op and stay instant. */
+export async function defaultRetryBackoff(attempt: number): Promise<void> {
+  const ms = Math.min(10 * attempt, 80) + Math.random() * 20;
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** The result of a tracked mutate — the new history, and whether a write
  * actually landed (false only for the no-op contract: a duplicate session id,
  * or a delete that selected nothing). SAK-237's saveSession/deleteSessions
@@ -90,6 +102,7 @@ export async function mutateHistoryWithRetryTracked(
   userId: string,
   op: (hist: HistoryFile) => HistoryFile,
   maxAttempts: number = MAX_HISTORY_WRITE_ATTEMPTS,
+  backoff: (attempt: number) => Promise<void> = defaultRetryBackoff,
 ): Promise<MutateHistoryResult> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const current = await store.read(userId);
@@ -98,8 +111,10 @@ export async function mutateHistoryWithRetryTracked(
     // touching the row" behaviour the dedup and empty-delete paths rely on.
     if (next === current.history) return { history: next, wrote: false };
     if (await store.write(userId, next, current)) return { history: next, wrote: true };
-    // Lost the CAS to an overlapping write. Loop: re-read the winner's state and
-    // re-apply our op onto it, so our field is added to theirs instead of over it.
+    // Lost the CAS to an overlapping write. Pause briefly (see
+    // defaultRetryBackoff), then re-read the winner's state and re-apply our op
+    // onto it, so our field is added to theirs instead of over it.
+    if (attempt < maxAttempts) await backoff(attempt);
   }
   throw new Error(
     `history write for user ${userId} lost to concurrent writers ${maxAttempts} times`,
@@ -113,6 +128,7 @@ export async function mutateHistoryWithRetry(
   userId: string,
   op: (hist: HistoryFile) => HistoryFile,
   maxAttempts: number = MAX_HISTORY_WRITE_ATTEMPTS,
+  backoff: (attempt: number) => Promise<void> = defaultRetryBackoff,
 ): Promise<HistoryFile> {
-  return (await mutateHistoryWithRetryTracked(store, userId, op, maxAttempts)).history;
+  return (await mutateHistoryWithRetryTracked(store, userId, op, maxAttempts, backoff)).history;
 }

@@ -24,7 +24,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Btn, GhostBtn } from "@/components/ui";
+import { Btn, GhostBtn, SoundIcon } from "@/components/ui";
 import { newFactStat, retriesAllowed } from "@/lib/engine";
 import {
   gradeRecognition,
@@ -243,7 +243,7 @@ export function SentenceListenScreen() {
               shake ? "animate-gshake" : ""
             }`}
           >
-            <span aria-hidden>🔊</span>
+            <SoundIcon />
             <span className="text-sm text-text-muted">Play again</span>
           </button>
         </div>

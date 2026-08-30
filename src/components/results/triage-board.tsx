@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 
-import { SmallBtn } from "@/components/ui";
+import { Lbl, SmallBtn } from "@/components/ui";
 import {
   boxKeysForFacts,
   factOfBoxKey,
@@ -55,9 +55,9 @@ export function Board({
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
+        <Lbl flush>
           {label} · {n} selected
-        </p>
+        </Lbl>
         <span className="flex items-center gap-1.5 text-xs text-text-muted">
           <button
             type="button"

@@ -27,10 +27,7 @@ import { buildSessionListRows, type SessionListRow } from "@/lib/session-rows";
 import { useLists } from "@/lib/use-lists";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 /** Enter/Space on a div that behaves as a control — the row and the dot are
  * both clickable-but-not-buttons (a row contains buttons; a button can't). */
@@ -75,7 +72,7 @@ function SessionRow({
       title="Open this session's results"
       onClick={onOpen}
       onKeyDown={(e) => activates(e, onOpen)}
-      className={cx(
+      className={cn(
         "flex cursor-pointer flex-wrap items-center justify-between gap-x-3 gap-y-1",
         "kq-material rounded-[12px] border p-3 text-[13px]",
         selected
@@ -100,7 +97,7 @@ function SessionRow({
           className="flex h-5 w-5 flex-none cursor-pointer items-center justify-center"
         >
           <span
-            className={cx(
+            className={cn(
               "h-2.5 w-2.5 rounded-full border-[1.5px] transition-colors",
               selected ? "border-accent bg-accent" : "border-text-muted",
             )}
@@ -203,6 +200,7 @@ export function SessionsList() {
   // Which finished sessions this visit has turned into a list, keyed like the
   // rows so only the saved one flips to "Saved".
   const [madeLists, setMadeLists] = useState<Set<string | number>>(new Set());
+  const [deleteError, setDeleteError] = useState(false);
 
   // Save a finished session as a DERIVED list: a rule that re-selects it by its
   // timestamp. Unlike an in-progress run, a finished session IS in history, so
@@ -237,6 +235,7 @@ export function SessionsList() {
   };
 
   const deleteSessions = async (ids: (string | number)[], all: boolean) => {
+    setDeleteError(false);
     try {
       // postDelete: signed out (401), the delete happens in this browser's local
       // history and refresh() re-reads it, so removing a signed-out session works
@@ -246,7 +245,11 @@ export function SessionsList() {
       await refresh();
       setPicked(new Set());
     } catch {
-      alert("Couldn't delete. Try again.");
+      // Inline, ordinary DOM a driver can see and click past — not a native
+      // alert() (invisible to anything driving the app through the DOM, and
+      // blocking besides). Same failure surface settings-card.tsx's "Start
+      // over" uses for /api/delete.
+      setDeleteError(true);
     }
   };
 
@@ -330,6 +333,11 @@ export function SessionsList() {
           your per-character stats
         </Hint>
       </div>
+      {deleteError ? (
+        <p className="mt-2 text-[13px] text-danger">
+          Couldn&apos;t delete. Try again.
+        </p>
+      ) : null}
     </>
   );
 }

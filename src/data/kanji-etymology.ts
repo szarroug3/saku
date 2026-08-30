@@ -252,7 +252,7 @@ export function phoneticReading(host: string, piece: string): string | null {
 /** One shape piece a learner is shown, with its role and the one-word label the
  * UX puts beside it: the sense for a meaning piece, the lent reading for a sound
  * piece (null when it can't be derived). */
-export interface BuiltPiece {
+export interface EtymologyPiece {
   /** The piece as drawn (the KanjiVG form, e.g. 氵). */
   readonly glyph: string;
   readonly role: "semantic" | "phonetic";
@@ -268,7 +268,7 @@ export interface BuiltPiece {
  * decomposition (comps, classical radical, stroke conservation all stay as they
  * were). Kept tiny and explicit on purpose; not a general escape hatch.
  */
-const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly BuiltPiece[]>> = {
+const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   二: [
     { glyph: "一", role: "semantic", label: "one" },
     { glyph: "一", role: "semantic", label: "one" },
@@ -305,7 +305,7 @@ const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly BuiltPiece[]>> = {
  * match directly and never take this path; 嘆's coincidental 口 inside its
  * phonetic body is atomic, finds no container to expand, and stays unlabelled).
  */
-export function builtPieces(kanji: string): readonly BuiltPiece[] {
+export function builtPieces(kanji: string): readonly EtymologyPiece[] {
   const override = BUILT_PIECES_OVERRIDE[kanji];
   if (override) return override;
   const etym = RAW[kanji];
@@ -335,13 +335,13 @@ export function builtPieces(kanji: string): readonly BuiltPiece[] {
     glyph: string,
     fn: "semantic" | "phonetic",
     sense: string | null,
-  ): BuiltPiece => ({
+  ): EtymologyPiece => ({
     glyph,
     role: fn,
     label: fn === "phonetic" ? phoneticReading(kanji, glyph) : sense,
   });
 
-  const out: BuiltPiece[] = [];
+  const out: EtymologyPiece[] = [];
   comps.forEach((piece, i) => {
     const role = roles[i];
     if (role) {
@@ -353,7 +353,7 @@ export function builtPieces(kanji: string): readonly BuiltPiece[] {
     const sub = kanjiRow(piece)?.comps ?? [];
     if (sub.length < 2) return;
     const claimed: typeof leftover = [];
-    const tiles: BuiltPiece[] = [];
+    const tiles: EtymologyPiece[] = [];
     for (const s of sub) {
       const sc = canonical(s);
       const hit = leftover.find((l) => !l.used && l.canon === sc);

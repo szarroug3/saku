@@ -10,10 +10,7 @@ import { useHistory } from "@/lib/use-history";
 import { wordKnown } from "@/lib/word-unlock";
 import { clearActionLabel } from "@/components/results/clear-state";
 import type { FactId } from "@/types";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 function pctOf(runs: boolean[]): number {
   if (!runs.length) return 0;
@@ -134,7 +131,7 @@ export function FactProgressSection({
                 ? "var(--success)"
                 : "var(--danger)",
         }}
-        className={cx(
+        className={cn(
           "h-[5px] w-[5px] rounded-full",
         )}
       />
@@ -162,10 +159,10 @@ export function FactProgressSection({
           : undefined
       }
       aria-pressed={clickable ? isSelected?.(fact) : undefined}
-      className={cx("w-full text-left", clickable && "cursor-pointer")}
+      className={cn("w-full text-left", clickable && "cursor-pointer")}
     >
       <div
-      className={cx(
+      className={cn(
         // No box: a hairline left rule instead of the old bordered/rounded
         // tile, matching PatternRow — whitespace (the stack's own `gap-1.5`,
         // see FactProgressSection) separates one row from the next.

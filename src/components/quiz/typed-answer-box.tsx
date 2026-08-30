@@ -12,10 +12,7 @@
 // own callers.
 
 import { forwardRef } from "react";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 export interface TypedAnswerBoxProps {
   value: string;
@@ -61,7 +58,7 @@ export const TypedAnswerBox = forwardRef<HTMLInputElement, TypedAnswerBoxProps>(
           className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
         />
         <span
-          className={cx(
+          className={cn(
             "text-[11px]",
             noteTone === "warning" ? "text-warning" : "text-text-muted",
           )}

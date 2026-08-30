@@ -1,4 +1,4 @@
-import type { BuiltPiece } from "@/data/kanji-etymology";
+import type { EtymologyPiece } from "@/data/kanji-etymology";
 
 // Recovered Built-from tiles for kanji whose automated etymology join dropped a
 // visible piece that genuinely IS the unmatched Wiktionary component.
@@ -16,7 +16,7 @@ import type { BuiltPiece } from "@/data/kanji-etymology";
 //   犯 (㔾 ← 𢎘): Wiktionary gives phonetic 𢎘; the visible 㔾/卩 is an unexplained
 //     reduction, not a confirmed variant of 𢎘.
 //   細 (田 ← 囟), 直 (十 ← 丨): both are corruptions of the component, not variants.
-export const REASSEMBLY_D: Readonly<Record<string, readonly BuiltPiece[]>> = {
+export const REASSEMBLY_D: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   // 珍 — reassembly. Dropped 人 + 彡 are exactly 㐱 (⿱𠆢彡, "man" + "hair"),
   //   the phonetic. Host on-reading ちん.
   珍: [

@@ -25,9 +25,12 @@ import { KEIGO_SETS, type KeigoSet } from "@/data/keigo";
  * formulaic phrase (no plain verb at all) is always in, since it has nothing to
  * gate on. Mirrors keigoItems()'s own blockedBy gate exactly, so a set that
  * passes this filter is a set that CAN unlock, not just one that plausibly
- * should. */
+ * should. A non-formulaic set with an empty `plain` array (a data bug, not a
+ * shape today's KEIGO_SETS uses) has no primary verb to gate on either, so it
+ * fails safe the same way an uncurriculumed one does — filtered out, per this
+ * file's own "quietly stops being offered" philosophy — rather than throwing. */
 function setInCurriculum(set: KeigoSet): boolean {
-  return set.formulaic === true || isCurriculumWord(set.plain[0]!.keb);
+  return set.formulaic === true || isCurriculumWord(set.plain[0]?.keb ?? "");
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { BuiltPiece } from "@/data/kanji-etymology";
+import type { EtymologyPiece } from "@/data/kanji-etymology";
 
 // Recovered Built-from tiles for kanji whose automated etymology join dropped a
 // visible piece that genuinely IS the unmatched Wiktionary component.
@@ -31,7 +31,7 @@ import type { BuiltPiece } from "@/data/kanji-etymology";
 //   single confident sense-label exists for the merged tile:
 //   野 (里 = 田+土), 開 (开 = 一+廾), 退 (艮 = 日+夊), 道 (⻌ = 行-part+止),
 //   選 (⻌ ⊃ 止).
-export const REASSEMBLY_E: Readonly<Record<string, readonly BuiltPiece[]>> = {
+export const REASSEMBLY_E: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   // 融 — variant. Dropped 虫 is the everyday/simplified form of the phonetic 蟲
   //   (蟲 trad. / 虫 simp., same character; Wiktionary: semantic 鬲 + phonetic 蟲).
   //   Show 虫; host on-reading ゆう.

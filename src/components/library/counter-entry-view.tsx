@@ -150,15 +150,6 @@ export function CounterEntryView({
                         </>
                       );
                     })()}
-                    {/* A second reading the same number branches into — く beside
-                        きゅう. It is a READING, so it rides beside the primary reading,
-                        never in the meaning. Absent (empty) for every current form. */}
-                    {form.altReading ? (
-                      <span className="text-[13px] text-text-muted">
-                        <span className="font-kana">{form.altReading}</span> beside{" "}
-                        <span className="font-kana">{form.reading}</span>
-                      </span>
-                    ) : null}
                   </span>
                 </td>
                 <td className="w-full py-1 align-top text-text-muted">{form.meaning}</td>

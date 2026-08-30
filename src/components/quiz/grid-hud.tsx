@@ -32,15 +32,12 @@ import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { SessionStats } from "@/types";
+import { cn } from "@/lib/utils";
 
 /** How long the controls stay lit after the mouse stops. */
 const CONTROLS_IDLE_MS = 2000;
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 function subscribeReducedMotion(onChange: () => void): () => void {
   const mq = window.matchMedia(REDUCED_MOTION);
@@ -68,7 +65,7 @@ function Pill({
 }) {
   return (
     <span
-      className={cx(
+      className={cn(
         "kq-material rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
         tone === "accent"
           ? "border-accent/40 bg-accent-bg text-accent"

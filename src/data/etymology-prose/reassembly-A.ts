@@ -1,7 +1,7 @@
-import type { BuiltPiece } from "@/data/kanji-etymology";
+import type { EtymologyPiece } from "@/data/kanji-etymology";
 // Recovered Built-from tiles: dropped visible pieces re-joined to their real
 // Wiktionary component. Each cites why it's a genuine reassembly/variant.
-export const REASSEMBLY_A: Readonly<Record<string, readonly BuiltPiece[]>> = {
+export const REASSEMBLY_A: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   低: [
     { glyph: "亻", role: "semantic", label: "man, person" },
     { glyph: "氐", role: "phonetic", label: "てい" },

@@ -37,10 +37,8 @@
 // problem must not silence the button" reasoning the upload step below
 // already applies.
 
-import { createClient } from "@supabase/supabase-js";
-
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
-import { supabaseSecretKey } from "@/lib/supabase/secret-key";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { synthesizeWordWav, ttsConfigured } from "@/lib/tts-synth";
 import { DEFAULT_VOICE_ID, pitchAudioUrl, pitchObjectPath, voice, voiceBucket } from "@/lib/voice";
 
@@ -87,15 +85,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const bucket = voiceBucket();
-  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = supabaseSecretKey();
   const publicUrl = pitchAudioUrl(reading, downstep, voiceIdRaw);
-  if (!bucket || !supaUrl || !serviceKey || !publicUrl || !ttsConfigured()) {
+  const supabase = createAdminClient();
+  if (!bucket || !supabase || !publicUrl || !ttsConfigured()) {
     return new Response("pitch tts not configured", { status: 503 });
   }
 
   const path = pitchObjectPath(reading, downstep, voiceIdRaw);
-  const supabase = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });
 
   // Cache hit → hand the browser the CDN URL (cheaper than proxying bytes).
   // A HEAD on the already-computed public URL hits the CDN edge directly, no

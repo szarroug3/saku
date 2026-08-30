@@ -35,10 +35,7 @@
 import { startIsDisabled, getStartButtonReason } from "@/lib/practice-start";
 import type { QuizConfig } from "@/types";
 import type { SettingsReachability } from "@/lib/ask-forms";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 /** "Quiz · Full coverage · Both" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
@@ -116,7 +113,7 @@ export function StartBar({
     // styling classes are not a contract (the de-box dropped the old kq-band).
     <div
       data-start-bar
-      className={cx(
+      className={cn(
         "mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 pt-6",
         "border-t",
         disabled ? "border-border" : "border-accent",
@@ -141,7 +138,7 @@ export function StartBar({
         disabled={disabled}
         onClick={onStart}
         suppressHydrationWarning
-        className={cx(
+        className={cn(
           "ml-auto flex-none cursor-pointer rounded-lg bg-text px-5 py-2",
           "text-sm font-semibold text-bg",
           "disabled:cursor-default disabled:opacity-40",

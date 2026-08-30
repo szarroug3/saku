@@ -45,12 +45,9 @@ import { trackIdOfFactMap } from "@/lib/content/learn-scheduler";
 import { isStaleRun } from "@/lib/session-staleness";
 import { useLists } from "@/lib/use-lists";
 import type { FactId } from "@/types";
+import { cn } from "@/lib/utils";
 
 const EMPTY_ARGS: [] = [];
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 /** Enter/Space on a div that behaves as a control — the selection dot is
  * clickable-but-not-a-button (the row already contains buttons; a button can't
@@ -71,7 +68,7 @@ function KindBadge({ kind }: { kind: RunInfo["kind"] }) {
   const teaching = kind === "session";
   return (
     <span
-      className={cx(
+      className={cn(
         "flex-none rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
         teaching
           ? "bg-accent-bg text-accent"
@@ -173,7 +170,7 @@ function RunRow({
   const stale = now !== null && isStaleRun(run.lastActiveAt, now);
   return (
     <div
-      className={cx(
+      className={cn(
         // De-boxed to the editorial language: no card, no border, no fill on the
         // mesh — rows sit apart by whitespace and the selected one takes a flat
         // accent wash (no shadow/blur, so scrolling stays a cached layer).
@@ -198,7 +195,7 @@ function RunRow({
           className="flex h-5 w-5 flex-none cursor-pointer items-center justify-center"
         >
           <span
-            className={cx(
+            className={cn(
               "h-2.5 w-2.5 rounded-full border-[1.5px] transition-colors",
               selected ? "border-accent bg-accent" : "border-text-muted",
             )}

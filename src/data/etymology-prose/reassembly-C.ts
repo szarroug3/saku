@@ -1,4 +1,4 @@
-import type { BuiltPiece } from "@/data/kanji-etymology";
+import type { EtymologyPiece } from "@/data/kanji-etymology";
 
 // Recovered Built-from tiles for kanji whose automated etymology join dropped a
 // visible piece that genuinely IS the unmatched Wiktionary component.
@@ -23,7 +23,7 @@ import type { BuiltPiece } from "@/data/kanji-etymology";
 //   氾, 法, 泰, 津, 活 (舌 ← 𠯑), 浸, 灰 (厂 ← 又), 災, 炉, 熊 (灬 ← 炎):
 //     each visible drop is a redrawn/reduced remnant, not the component's shape.
 // SKIPPED — kokuji / unsettled: 栃, 斑 (王+王 build only the 王_王 frame of 班).
-export const REASSEMBLY_C: Readonly<Record<string, readonly BuiltPiece[]>> = {
+export const REASSEMBLY_C: Readonly<Record<string, readonly EtymologyPiece[]>> = {
   // 施 — reassembly. Dropped 方 + 𠂉 are exactly 㫃 (⿰方人, "flags flying"), the
   //   semantic banner; 也 stays on the right.
   施: [

@@ -44,7 +44,8 @@ type Body =
 export async function POST(request: Request) {
   let body: Body;
   try {
-    body = JSON.parse(await request.text()) as Body;
+    const text = await request.text();
+    body = text ? (JSON.parse(text) as Body) : ({} as Body);
   } catch (e) {
     return Response.json(
       { error: e instanceof Error ? e.message : String(e) },

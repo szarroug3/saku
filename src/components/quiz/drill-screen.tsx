@@ -150,6 +150,7 @@ import { ParticleTapCard } from "./particle-tap-card";
 import { ParticleMarkerSentence } from "./particle-marker-card";
 import { PitchClipBoard } from "./pitch-clip-board";
 import { TypedAnswerBox } from "./typed-answer-box";
+import { cn } from "@/lib/utils";
 
 // ---------- runtime shape (lives in active.runtime) ----------
 
@@ -548,10 +549,6 @@ const CONTROLS_IDLE_MS = 2000;
 // Continue button, in every mode. Only a CORRECT answer still auto-advances
 // (650ms), which is what that mechanism was for.
 
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
-
 // ---------- reduced motion ----------
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
@@ -619,7 +616,7 @@ function Pill({
 }) {
   return (
     <span
-      className={cx(
+      className={cn(
         "kq-material rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
         tone === "accent"
           ? "border-accent/40 bg-accent-bg text-accent"
@@ -3162,7 +3159,7 @@ export function DrillScreen() {
                 Array.from({ length: allowed }, (_, i) => (
                   <span
                     key={i}
-                    className={cx(
+                    className={cn(
                       "block size-1.5 rounded-full",
                       i < retriesLeft ? "bg-accent" : "bg-border",
                     )}

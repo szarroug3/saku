@@ -42,6 +42,16 @@ import { entryOf, factsOf } from "@/lib/facts";
 import { knownFactIds } from "@/lib/known-facts";
 import type { FactId, HistoryFile } from "@/types";
 
+// Cached per `history` OBJECT IDENTITY, not content. Safe because every writer
+// (history-provider.tsx's setState, history-ops.ts's applyClaims/applySeen/…)
+// treats HistoryFile as immutable and hands back a new object on every change —
+// the same assumption unit-scheduler-core.ts's "PURE function of history" style
+// relies on — so the same reference always means the same known set. Drill-
+// screen calls this up to three times (MC options, "Show choices", the typed-
+// answer check) per single card/answer against the SAME history, and a
+// WeakMap means a history change (not a re-render) is what invalidates it.
+const cache = new WeakMap<HistoryFile, FactId[]>();
+
 /**
  * Every fact of every entry the learner has met — the confusion search space.
  *
@@ -51,11 +61,15 @@ import type { FactId, HistoryFile } from "@/types";
  * rule the rest of the history walk follows.
  */
 export function confusionKnownFacts(history: HistoryFile): FactId[] {
+  const cached = cache.get(history);
+  if (cached) return cached;
   const out = new Set<FactId>();
   for (const f of knownFactIds(history)) {
     const siblings = factsOf(entryOf(f));
     if (siblings.length) for (const g of siblings) out.add(g);
     else out.add(f);
   }
-  return [...out];
+  const result = [...out];
+  cache.set(history, result);
+  return result;
 }
