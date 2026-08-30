@@ -51,9 +51,12 @@ __pycache__/
 # source-attributed reductions belong in src/data/generated; raw archives do not.
 /scripts/ingest/raw/
 
-# Raw Datamuse API responses cached by scripts/build-en-synonyms.mjs, so a
-# rerun re-fetches nothing. Not source-attributed content; only the filtered
-# output (src/data/generated/en-synonyms.json) is checked in.
+# Raw Datamuse API responses + the local resumability ledger, cached by
+# scripts/build-en-synonyms.mjs, so a rerun re-fetches nothing. Not
+# source-attributed content; only the filtered output
+# (src/data/generated/en-synonyms.json) and the committed attempted-keys
+# ledger (src/data/generated/en-synonyms-attempted.json — see
+# scripts/audit-en-synonyms.mjs) are checked in.
 /scripts/.cache/
 
 # Local learner data, not shipped
