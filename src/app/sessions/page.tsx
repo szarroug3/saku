@@ -8,7 +8,7 @@ export default function SessionsPage() {
     <>
       <PageTitle
         title="Recent sessions"
-        sub="Every quiz you've finished, newest first."
+        sub="Every quiz and lesson you've finished, newest first."
       />
       <SessionsList />
     </>
