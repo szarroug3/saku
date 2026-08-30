@@ -352,13 +352,22 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
   },
 
   // Contrast and doing something without another action.
+  //
+  // -71 and -73 were authored topic-first ("私は傘を持たないで出た。") until
+  // SAK-254: SENTENCE_ORDERING_CHUNK_ROLES.contrast declares this tier's frame
+  // as setup-clause-first (core, then topic — see that file's comment and
+  // -72's のに example just below), so the topic-first order made the
+  // assembly quiz's wrong-check misname these two items' chunks ("First
+  // situation" on 私は, "Who the result is about" on the ないで clause).
+  // Reordered to setup-first, same meaning, matching -72 and every contrast
+  // TIER_EXAMPLE.
   {
     id: -71,
     en: "I left without taking an umbrella.",
-    jp: "私は傘を持たないで出た。",
+    jp: "傘を持たないで、私は出た。",
     pieces: [
+      { t: "傘を持たないで、", h: "持つ" },
       { t: "私は", h: "私" },
-      { t: "傘を持たないで", h: "持つ" },
       { t: "出た。", h: "出る" },
     ],
     v: ["私", "傘", "持つ", "出る"],
@@ -379,10 +388,10 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
   {
     id: -73,
     en: "I went to sleep without doing my homework.",
-    jp: "私は宿題をしないで寝た。",
+    jp: "宿題をしないで、私は寝た。",
     pieces: [
+      { t: "宿題をしないで、", h: "する" },
       { t: "私は", h: "私" },
-      { t: "宿題をしないで", h: "する" },
       { t: "寝た。", h: "寝る" },
     ],
     v: ["私", "宿題", "する", "寝る"],

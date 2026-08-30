@@ -71,6 +71,28 @@ describe("chunkRoleLabels", () => {
     // can't be labeled positionally without guessing which role is missing.
     assert.equal(chunkRoleLabels("simple", 4), null);
   });
+
+  // SAK-254: "sequential" is a plain topic-first frame (私は/それを/
+  // 言ってしまった。), same shape as "simple" — it used to be declared
+  // core-first (a stray copy of causal's subordinate-clause-first shape),
+  // which named それを "Who" and 私は "Where or what" on a wrong check.
+  test("sequential labels topic before core, matching its actual topic-first sentences", () => {
+    assert.deepEqual(chunkRoleLabels("sequential", 3), [
+      "Who",
+      "Where or what",
+      "Action + added meaning",
+    ]);
+  });
+
+  // SAK-254: contrast genuinely puts its setup clause (のに/ないで) first —
+  // unlike sequential, this one was already right; regression-guard it too.
+  test("contrast labels core (the setup clause) before topic", () => {
+    assert.deepEqual(chunkRoleLabels("contrast", 3), [
+      "First situation",
+      "Who the result is about",
+      "What happened",
+    ]);
+  });
 });
 
 describe("findAssemblyMismatch", () => {
@@ -130,6 +152,59 @@ describe("findAssemblyMismatch", () => {
     assert.equal(mismatch.surface, "言う。");
     assert.equal(mismatch.canonIndex, 2);
     assert.equal(mismatch.label, "Action");
+  });
+
+  // SAK-254 repro: "私はそれを言ってしまった。" (sequential tier, id -11's shape
+  // in src/data/assembly.ts) built with 私は and それを swapped. Before the
+  // fix this named 私は "Where or what" and それを "Who" — backwards.
+  test("SAK-254: sequential names a swapped topic/core pair correctly", () => {
+    const SEQUENTIAL_ITEM: AssemblyItem = {
+      id: -11,
+      en: "I accidentally said that.",
+      jp: "私はそれを言ってしまった。",
+      pieces: [
+        { t: "私は", h: "私" },
+        { t: "それを", h: "それ" },
+        { t: "言ってしまった。", h: "言う" },
+      ],
+      v: ["私", "それ", "言う"],
+      p: ["te-shimau"],
+    };
+    const tray = ["それを", "私は", "言ってしまった。"];
+    const mismatch = findAssemblyMismatch(SEQUENTIAL_ITEM, tray, "sequential");
+    assert.ok(mismatch);
+    // それを belongs at canonical index 1 ("core" / "Where or what"); 私は
+    // (canonical index 0, "topic" / "Who") is what the learner misplaced it
+    // ahead of.
+    assert.equal(mismatch.canonIndex, 1);
+    assert.equal(mismatch.surface, "それを");
+    assert.equal(mismatch.label, "Where or what");
+  });
+
+  // SAK-254: contrast's setup-first frame (のに/ないで, then topic) applied
+  // to the corpus's own -71 shape ("傘を持たないで、私は出た。") — a swap of
+  // the setup clause and the topic should name the setup clause, not "Who".
+  test("SAK-254: contrast names a swapped core/topic pair correctly", () => {
+    const CONTRAST_ITEM: AssemblyItem = {
+      id: -71,
+      en: "I left without taking an umbrella.",
+      jp: "傘を持たないで、私は出た。",
+      pieces: [
+        { t: "傘を持たないで、", h: "持つ" },
+        { t: "私は", h: "私" },
+        { t: "出た。", h: "出る" },
+      ],
+      v: ["私", "傘", "持つ", "出る"],
+      p: ["nai-de"],
+    };
+    const tray = ["私は", "傘を持たないで、", "出た。"];
+    const mismatch = findAssemblyMismatch(CONTRAST_ITEM, tray, "contrast");
+    assert.ok(mismatch);
+    // 私は belongs at canonical index 1 ("topic" / "Who the result is
+    // about"); the learner placed it first, ahead of the setup clause.
+    assert.equal(mismatch.canonIndex, 1);
+    assert.equal(mismatch.surface, "私は");
+    assert.equal(mismatch.label, "Who the result is about");
   });
 });
 

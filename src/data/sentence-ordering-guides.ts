@@ -43,10 +43,24 @@ export const SENTENCE_ORDERING_CHUNK_ROLES: Record<
   simple: ["topic", "core", "ending"],
   causal: ["core", "topic", "ending"],
   obligation: ["topic", "core", "ending"],
-  sequential: ["core", "topic", "ending"],
+  // Was ["core", "topic", "ending"] (SAK-254): sequential sentences are a
+  // plain topic-first frame (私は/それを/言ってしまった。), not a
+  // subordinate-clause-first one like causal's から/ので — that wrong copy
+  // had the assembly quiz's wrong-check naming それを "Who" and 私は "Where
+  // or what" whenever a sequential item's piece count matched (see
+  // assembly-check.ts's chunkRoleLabels / sentence-part-spans.ts's
+  // assemblyRoleSpans, both purely positional over this array).
+  sequential: ["topic", "core", "ending"],
   desire: ["topic", "core", "ending"],
   giving: ["topic", "core", "ending"],
   reported: ["topic", "core", "ending"],
+  // Setup-clause-first (see SENTENCE_ORDERING_GUIDES.contrast's body: "First
+  // comes the setup... Then comes the main result"). Both のに and ないで are
+  // taught as setup clauses under this one frame, so every contrast item —
+  // curated corpus entries and TIER_EXAMPLES alike — must place its のに/ないで
+  // clause before the topic to get a correct positional role label (SAK-254
+  // found two ないで items authored topic-first, which this frame mislabeled
+  // the same way the old sequential entry did; fixed at the data, not here).
   contrast: ["core", "topic", "ending"],
 };
 
