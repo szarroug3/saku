@@ -27,6 +27,7 @@ import {
   factsTitle,
   libEntry,
   quizTrackLabel,
+  readingBasesOf,
   subjectLabel,
   trackLabel,
   LIB_ENTRIES,
@@ -174,6 +175,28 @@ test("a word keeps both its rows — dropping one would not leave a table", () =
   assert.deepEqual(rows.map((r) => r.label), ["Reading", "Meaning"]);
   assert.equal(factsTitle(w, rows), "Reading and meaning");
   assert.equal(factsColumnHeader(w), "What it asks");
+});
+
+// ---- readingBasesOf: SAK-265's search-index fallback ----
+//
+// LibEntry.readings feeds Library search. A kanji with zero aligned readings
+// (壱, 藩, 栃, 陛, ...) used to search with nothing at all; readingBasesOf falls
+// back to KANJIDIC2's raw on/kun list so the kanji is still findable by its
+// real reading. See character-entry-content.test.ts for the same fallback on
+// the entry page's own on'yomi/kun'yomi display.
+
+test("readingBasesOf falls back to raw KANJIDIC2 readings for a kanji with no aligned evidence", () => {
+  const bases = readingBasesOf("壱");
+  assert.ok(bases.includes("いち"), "壱 should be findable by いち");
+  assert.ok(bases.includes("ひとつ"), "壱 should be findable by ひとつ");
+});
+
+test("readingBasesOf prefers real aligned evidence over the raw fallback when both exist", () => {
+  // 一 has real aligned readings (いち, ひと, ...); the raw KANJIDIC2 fallback
+  // must never run alongside them or duplicate/reorder what evidence already
+  // decided.
+  const aligned = need(libEntry(kanjiEntry("一"))).readings;
+  assert.deepEqual(readingBasesOf("一"), aligned);
 });
 
 test("no kind renders a headed table with no rows", () => {

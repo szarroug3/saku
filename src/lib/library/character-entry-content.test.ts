@@ -84,6 +84,85 @@ test("suffix checks don't collide with each other", () => {
   assert.notEqual(derivePosition("むにょう").en, "Bottom");
 });
 
+// ---- reading groups: KANJIDIC2 fallback for the 114 kanji with zero aligned
+// readings (SAK-265) ----
+//
+// readingsOf() only carries a (kanji, reading) pair a TAUGHT everyday word's
+// kana actually aligns to; 114 of 2,136 jouyou kanji have no such word at all,
+// so both groups silently vanished even though KANJIDIC2 documents real
+// readings. 壱/藩/栃/陛 are the ticket's own spot-check set.
+
+test("壱 (aligned readings: none) falls back to KANJIDIC2's raw on'yomi AND kun'yomi", () => {
+  const item = buildGlyphItem("壱");
+  assert.ok(item, "壱 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  const on = payload.groups.find((g) => g.label === "On’yomi");
+  const kun = payload.groups.find((g) => g.label === "Kun’yomi");
+  assert.ok(on, "壱 should show an On’yomi group");
+  assert.ok(kun, "壱 should show a Kun’yomi group");
+  assert.ok(
+    on!.readings.some((r) => r.base === "いち"),
+    "壱's on'yomi should include いち",
+  );
+  assert.ok(
+    kun!.readings.some((r) => r.base === "ひとつ"),
+    "壱's kun'yomi should include ひとつ",
+  );
+  // No taught word anchors these — every fallback row must say so honestly,
+  // never invent an example.
+  for (const r of [...on!.readings, ...kun!.readings]) {
+    assert.equal(r.example, null);
+  }
+});
+
+test("藩 (on'yomi only in KANJIDIC2) shows the On’yomi group and no Kun’yomi group", () => {
+  const item = buildGlyphItem("藩");
+  assert.ok(item, "藩 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  const on = payload.groups.find((g) => g.label === "On’yomi");
+  assert.ok(on, "藩 should show an On’yomi group");
+  assert.ok(on!.readings.some((r) => r.base === "はん" && r.example === null));
+  assert.equal(
+    payload.groups.find((g) => g.label === "Kun’yomi"),
+    undefined,
+    "藩 genuinely has no kun'yomi in KANJIDIC2 — no group should be invented",
+  );
+});
+
+test("栃 (kokuji, kun'yomi only) shows Kun’yomi and no On’yomi group", () => {
+  const item = buildGlyphItem("栃");
+  assert.ok(item, "栃 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  const kun = payload.groups.find((g) => g.label === "Kun’yomi");
+  assert.ok(kun, "栃 should show a Kun’yomi group");
+  assert.ok(kun!.readings.some((r) => r.base === "とち" && r.example === null));
+  assert.equal(
+    payload.groups.find((g) => g.label === "On’yomi"),
+    undefined,
+    "栃 is a kokuji with no on'yomi in KANJIDIC2 — no group should be invented",
+  );
+});
+
+test("陛 (aligned readings: none) falls back to its On’yomi へい", () => {
+  const item = buildGlyphItem("陛");
+  assert.ok(item, "陛 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  const on = payload.groups.find((g) => g.label === "On’yomi");
+  assert.ok(on, "陛 should show an On’yomi group");
+  assert.ok(on!.readings.some((r) => r.base === "へい" && r.example === null));
+});
+
+test("a kanji with real aligned evidence (人) never shows the raw fallback", () => {
+  const item = buildGlyphItem("人");
+  assert.ok(item, "人 should build a ContentItem");
+  const payload = characterEntryPayload(item!);
+  for (const g of payload.groups) {
+    for (const r of g.readings) {
+      assert.notEqual(r.example, null, `${r.base} should carry a real anchor word, not a fallback`);
+    }
+  }
+});
+
 // ---- radicalTip: 勹's single-radical recognition tip (SAK-155) ----
 //
 // Not a lookalike pair (that's ConfusionSection's `tip`, tested separately in
