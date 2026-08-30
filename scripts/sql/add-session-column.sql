@@ -5,9 +5,9 @@
 -- position, current question, answers/attempts so far, requeue state, per-showing
 -- stats, and the session loop's phase + round) lives in one jsonb column beside
 -- `history`, `lists` and `settings`. It is read/written by src/lib/session-store.ts
--- via readSessionRow / writeSessionRow in src/lib/store/supabase-store.ts, and
--- synced last-writer-wins so a run started on one device can be picked up on
--- another.
+-- via readSessionRowVersioned / writeSessionRowGuarded in
+-- src/lib/store/supabase-store.ts (compare-and-set, SAK-260), and synced
+-- last-writer-wins so a run started on one device can be picked up on another.
 --
 -- SEPARATE FROM `history`. `history` is what you FINISHED (folded in forever);
 -- this is what you are STILL DOING (last-writer-wins, cleared when the run ends).
