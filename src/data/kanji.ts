@@ -78,6 +78,28 @@ export interface KanjiRow {
    * numbers the owner calibrated by hand against exactly this decomposition. Use
    * `comps` for anything a learner reads; `costParts` only for sizing a lesson. */
   readonly costParts: readonly string[];
+  /**
+   * SAK-265: KANJIDIC2's RAW on'yomi, normalised (katakana folded to hiragana,
+   * trailing/leading `-` stripped) but otherwise untouched — every reading the
+   * dictionary documents, not just the ones an everyday word's kana happens to
+   * align to. From scripts/ingest/kanji-raw-readings.py.
+   *
+   * FALLBACK ONLY, NEVER A REPLACEMENT FOR `READINGS`. `READINGS` (readings.json)
+   * is "reading AND the everyday word that proves it" — the only thing this app
+   * ever quizzes or anchors an example to. `on`/`kun` here carry no anchor word
+   * at all, by construction: 114 of 2,136 jouyou kanji (壱, 藩, 栃, 陛, ...) have
+   * NO everyday taught word whose kana aligns to them — the aligner needs a
+   * clean per-kanji split and jukujikun words don't have one — so `READINGS`
+   * has zero rows for them even though KANJIDIC2 documents real readings. Read
+   * this ONLY where `READINGS` has nothing to show for a given kanji/type, so a
+   * Library reading section is never left blank when the dictionary actually
+   * has an answer. See src/lib/library/character-entry-content.ts.
+   */
+  readonly on: readonly string[];
+  /** SAK-265: KANJIDIC2's raw kun'yomi, normalised (okurigana after `.`
+   * dropped, leading/trailing `-` stripped) — see `on` just above for why this
+   * exists and how it must be used. */
+  readonly kun: readonly string[];
 }
 
 /** One reading of one kanji, and the everyday word that proves it. */

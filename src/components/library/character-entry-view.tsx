@@ -430,7 +430,17 @@ export function CharacterEntryView({
                                   </span>
                                 </td>
                                 <td className="w-full py-1 align-middle text-[13px] text-text-muted">
-                                  as in <span className="font-kana text-[14px]">{r.example}</span>
+                                  {r.example !== null ? (
+                                    <>
+                                      as in <span className="font-kana text-[14px]">{r.example}</span>
+                                    </>
+                                  ) : (
+                                    // SAK-265: a real KANJIDIC2 reading with no taught
+                                    // everyday word to show it in — say so plainly rather
+                                    // than printing a blank second column or inventing
+                                    // an example word the app has no evidence for.
+                                    "not in a taught word yet"
+                                  )}
                                 </td>
                               </tr>
                             ))}

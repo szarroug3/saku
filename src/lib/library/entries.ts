@@ -462,6 +462,13 @@ export interface LibEntry {
    * A caller printing `readings[0]` as if it were the reading is making the
    * mistake the whole entry/fact split exists to prevent; see EntryRow, which
    * prints one only when there IS only one.
+   *
+   * SAK-265: for the 114 of 2,136 jouyou kanji `readingsOf` has zero rows for
+   * (no everyday taught word aligns to them — see KanjiRow.on/.kun), this falls
+   * back to KANJIDIC2's raw on/kun list so the kanji is still searchable by its
+   * real reading (壱 by いち) instead of returning no readings at all. Evidence-
+   * backed readings always come first and this fallback never runs alongside
+   * them; it fires only when the aligned list is empty.
    */
   readonly readings: readonly string[];
   /** What it MEANS, in English. Searched. Empty for a kana. */
@@ -556,6 +563,22 @@ function groupReadings(): Map<string, ReadingRow[]> {
  * reading" printed the fifth most useful one. */
 export function readingsOf(c: string): readonly ReadingRow[] {
   return BY_KANJI_READINGS.get(c) ?? [];
+}
+
+/**
+ * SAK-265: `readingsOf(c)`'s bases where it has any, else KANJIDIC2's raw
+ * on/kun list (on first, matching KANJIDIC2's own order) — never a mix of the
+ * two. A kanji either has evidence-backed readings or it doesn't; this exists
+ * so a caller that only wants "some real readings to show/search by" (the
+ * Library index's search field) never comes back empty for the 114 kanji
+ * `readingsOf` has nothing for. See KanjiRow.on/.kun for why those 114 exist
+ * and why this is a fallback, not a merge.
+ */
+export function readingBasesOf(c: string): readonly string[] {
+  const aligned = BY_KANJI_READINGS.get(c);
+  if (aligned && aligned.length > 0) return aligned.map((r) => r.base);
+  const row = kanjiRow(c);
+  return row ? [...row.on, ...row.kun] : [];
 }
 
 /**
@@ -905,7 +928,7 @@ function build(): LibEntry[] {
       id: kanjiEntry(k.c),
       kind: KANJI_SUBJECT,
       glyph: k.c,
-      readings: readingsOf(k.c).map((r) => r.base),
+      readings: readingBasesOf(k.c),
       meanings: k.meanings,
       // Stroke count only. The jōyō grade and the name of the dictionary the
       // row came from were both here and both removed: a grade is a fact about

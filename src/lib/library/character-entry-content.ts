@@ -34,7 +34,14 @@ interface CharacterPart {
 interface CharacterReadingGroup {
   readonly label: string;
   readonly help: string;
-  readonly readings: readonly { readonly base: string; readonly example: string }[];
+  /**
+   * SAK-265: `example` is null for a FALLBACK row — a reading KANJIDIC2
+   * documents but that no taught everyday word's kana aligns to, so there is no
+   * real anchor word to show or ask about (see KanjiRow.on/.kun). Never invent
+   * a placeholder here; the view renders the row without an "as in ..." clause
+   * instead.
+   */
+  readonly readings: readonly { readonly base: string; readonly example: string | null }[];
 }
 
 interface CharacterVariant {
@@ -247,6 +254,13 @@ export function characterEntryPayload(
   const groups: CharacterReadingGroup[] = [];
   if (isKanji) {
     const readings = readingsOf(glyph);
+    // SAK-265: raw KANJIDIC2 readings, read ONLY as a fallback for a type the
+    // aligned data below has nothing for — see KanjiRow.on/.kun. 114 of 2,136
+    // jouyou kanji (壱, 藩, 栃, 陛, ...) have no taught everyday word whose kana
+    // aligns to them at all, so `readings` is empty for every type; many more
+    // have real evidence for one type (on OR kun) but not the other. Either way
+    // the section must not go blank when KANJIDIC2 itself documents an answer.
+    const raw = kanjiRow(glyph);
     for (const [type, label, help] of [
       [
         "on",
@@ -259,9 +273,16 @@ export function characterEntryPayload(
         "The native Japanese reading, usually taken when the kanji stands alone or with a hiragana tail.",
       ],
     ] as const) {
-      const selected = readings
+      const selected: { readonly base: string; readonly example: string | null }[] = readings
         .filter((r) => r.type === type || r.type === "both")
         .map((r) => ({ base: r.base, example: r.anchor }));
+      if (selected.length === 0 && raw) {
+        // No taught word attests this type at all: fall back to KANJIDIC2's own
+        // list for it, unattested (no anchor word exists to show or ask about).
+        for (const base of type === "on" ? raw.on : raw.kun) {
+          selected.push({ base, example: null });
+        }
+      }
       if (selected.length > 0) groups.push({ label, help, readings: selected });
     }
   }
