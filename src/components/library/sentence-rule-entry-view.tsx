@@ -375,22 +375,27 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
       marker: { en: "even though", jp: "のに" },
     },
+    // Reordered SAK-254: was topic-first ("私は何も言わないで出た。"), which put
+    // this tier's own "who" chunk before its "setup" chunk — backwards from the
+    // のに example above and from SENTENCE_ORDERING_CHUNK_ROLES.contrast
+    // (core/setup, then topic). Fronting the ないで clause the same way keeps
+    // every contrast example teaching the one frame this tier claims.
     {
       en: "I left without saying anything.",
-      enOrdered: "As for me → without saying anything → left.",
-      jp: "私は何も言わないで出た。",
+      enOrdered: "Without saying anything → as for me → left.",
+      jp: "何も言わないで、私は出た。",
       ending: { en: "left", jp: "出た" },
       core: { en: "without saying anything", jp: "何も言わないで" },
-      topic: { en: "I", enOrdered: "As for me", jp: "私は" },
+      topic: { en: "I", enOrdered: "as for me", jp: "私は" },
       marker: { en: "without doing", jp: "ないで" },
     },
     {
       en: "I said it without knowing it.",
-      enOrdered: "As for me → without knowing that → said it.",
-      jp: "私はそれを知らないで言った。",
+      enOrdered: "Without knowing that → as for me → said it.",
+      jp: "それを知らないで、私は言った。",
       ending: { en: "said it", jp: "言った" },
       core: { en: "without knowing that", jp: "それを知らないで" },
-      topic: { en: "I", enOrdered: "As for me", jp: "私は" },
+      topic: { en: "I", enOrdered: "as for me", jp: "私は" },
       marker: { en: "without doing", jp: "ないで" },
     },
   ],
@@ -534,16 +539,19 @@ const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinition[]> 
       details: ["Finish with the form that means “must” or “have to.”", "Forms such as なければならない make the action required."],
     },
   ],
+  // Order swapped SAK-254: this is a plain topic-first frame (私は/それを/
+  // 言ってしまった。), so the walk should teach "who" before "where or what",
+  // matching SENTENCE_ORDERING_CHUNK_ROLES.sequential.
   sequential: [
-    {
-      key: "core",
-      title: "Where or what",
-      details: ["Put the place or thing involved before the final action.", "Keep its small marker attached."],
-    },
     {
       key: "topic",
       title: "Who does the action",
       details: ["Place the person doing the action before the final action.", "Japanese may leave this person unstated when it is already clear."],
+    },
+    {
+      key: "core",
+      title: "Where or what",
+      details: ["Put the place or thing involved before the final action.", "Keep its small marker attached."],
     },
     {
       key: "ending",
