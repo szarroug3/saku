@@ -59,7 +59,11 @@ const WA: readonly RawRow[] = [
   { id: -4, recipe: "wa", jp: "彼女は来ると思う", en: "I think that she will come.", markedWord: "彼女", particleText: "は", distractors: ["来ると", "思う"] },
   { id: -5, recipe: "wa", jp: "君は行かなければならない", en: "It's necessary for you to go.", markedWord: "君", particleText: "は", distractors: ["行かなければ", "ならない"] },
   { id: -6, recipe: "wa", jp: "規則は守らなければならない", en: "We must observe the rules.", markedWord: "規則", particleText: "は", distractors: ["守らなければ", "ならない"] },
-  { id: -7, recipe: "wa", jp: "それなら話は別だよ", en: "In that case, I'll change my mind.", markedWord: "話", particleText: "は", distractors: ["それなら", "別だよ"] },
+  // SAK-263: "話は別だ" is the fixed idiom "that's a different matter" (about
+  // the topic at hand), not about changing one's mind. The old gloss carried
+  // over unchanged from assembly-corpus.json id 205710 / grammar-corpus.json
+  // id 205710, both corrected alongside this row.
+  { id: -7, recipe: "wa", jp: "それなら話は別だよ", en: "In that case, that's a different matter.", markedWord: "話", particleText: "は", distractors: ["それなら", "別だよ"] },
   { id: -8, recipe: "wa", jp: "窓は開けなきゃいけないの", en: "Do I have to open the window?", markedWord: "窓", particleText: "は", distractors: ["開けなきゃ", "いけないの"] },
   { id: -9, recipe: "wa", jp: "明日は天気だと思う", en: "Tomorrow I think it will be good weather.", markedWord: "明日", particleText: "は", distractors: ["天気だと", "思う"] },
   { id: -10, recipe: "wa", jp: "草は刈らないといけないよ", en: "The grass needs cutting.", markedWord: "草", particleText: "は", distractors: ["刈らないと", "いけないよ"] },
