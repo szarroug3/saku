@@ -4,7 +4,7 @@
 // WHY THIS EXISTS
 // ===============
 // scripts/ingest/grammar.py matches morphologically, not by regex, and its
-// docstring is right that this is the only defensible way to tag 8,689
+// docstring is right that this is the only defensible way to tag 9,672
 // sentences. But a UniDic token run is not a MEANING. Nine signatures match a
 // token run that a different, real pattern also produces, and the tagger has no
 // way to tell them apart from the tokens alone:

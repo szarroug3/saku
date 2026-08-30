@@ -340,7 +340,7 @@ export function selection(
 
   // A sentence matching several patterns cannot be blanked for one of them
   // without risking the blank covering another. Drop it — cheaper than being
-  // clever, and there are 8,689 sentences.
+  // clever, and there are 9,654 sentences.
   if (ex.p.length > 1) return null;
 
   // EVERY recipe is a candidate distractor, said plainly. This used to read

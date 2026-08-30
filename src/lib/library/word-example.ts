@@ -5,7 +5,7 @@
 // The corpus lives in grammar-corpus.json, 1.8 MB, and nothing on the Library
 // entry page imports it today. Indexing it at runtime — however lazily, however
 // well memoised — would put all 1.8 MB into the client bundle of a page that
-// needs one sentence out of 8,689, on top of the 3 MB of vocab.json it already
+// needs one sentence out of 9,654, on top of the 3 MB of vocab.json it already
 // carries. The build step in scripts/build-word-examples.ts runs the chooser
 // below once, offline, and emits src/data/generated/word-examples.json: the
 // chosen sentence for each word that has one, and nothing else. That file is
