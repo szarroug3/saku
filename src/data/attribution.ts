@@ -125,7 +125,7 @@ export const SOURCES: readonly Source[] = [
     // conflict. Like every other borrowed thing, it earns a line here so the
     // credit is a thing someone has to consciously delete, not forget to add.
     name: "English Wiktionary",
-    what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole. This covers both the crawled set (kanji-etymology.json) and a hand-authored layer (kanji-etymology-manual.json) that re-maps the same Wiktionary glyph-origin prose onto the visible modern glyph where the automated join could not — e.g. 時's phonetic, historically 之, now written 寺. Every hand-authored entry cites its source and stays CC BY-SA 4.0.",
+    what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole. This covers both the crawled set (kanji-etymology.json) and a hand-authored layer (kanji-etymology-manual.json) that re-maps the same Wiktionary glyph-origin prose onto the visible modern glyph where the automated join could not, e.g. 時's phonetic, historically 之, now written 寺. Every hand-authored entry cites its source and stays CC BY-SA 4.0.",
     holder: "Wiktionary contributors",
     licence: "CC BY-SA 4.0",
     href: "https://en.wiktionary.org/",
@@ -201,8 +201,8 @@ export const LICENCE_NOTE =
   "redistributed. The JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, " +
   "CC BY), open-anki-jlpt-decks (MIT), and the OpenSubtitles 2018 frequency list " +
   "from hermitdave/FrequencyWords (CC BY-SA 4.0) provide fallback ordering only " +
-  "for words CEJC does not observe. The glyph-origin notes — what each component of a " +
-  "kanji contributes and how the parts make the whole — are derived from English " +
+  "for words CEJC does not observe. The glyph-origin notes, covering what each component of a " +
+  "kanji contributes and how the parts make the whole, are derived from English " +
   "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
   "ShareAlike 4.0 International licence and written by Wiktionary's contributors. " +
   "The Japanese names of the classical radicals and their positional variant " +

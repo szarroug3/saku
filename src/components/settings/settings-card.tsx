@@ -409,7 +409,7 @@ export function SettingsCard() {
 
         <Row
           label="Pitch questions"
-          info="Adds a pitch-accent question after an eligible word's meaning card: hear two clips and pick the one with the word's real pitch. Requires Audio prompts to be on — a pitch question is itself an audio prompt."
+          info="Adds a pitch-accent question after an eligible word's meaning card: hear two clips and pick the one with the word's real pitch. Requires Audio prompts to be on, since a pitch question is itself an audio prompt."
           dim={!cfg.audioPrompts}
         >
           <Toggle
@@ -544,7 +544,7 @@ export function SettingsCard() {
 
         <Row
           label="Speech voice"
-          info="Used everywhere the app speaks — quiz prompts, listening exercises, the Hear button, and the word page's pitch accent. Every voice here carries a word's real pitch, not just its own accent. Picking a voice plays a short sample so you can hear it before committing."
+          info="Used everywhere the app speaks: quiz prompts, listening exercises, the Hear button, and the word page's pitch accent. Every voice here carries a word's real pitch, not just its own accent. Picking a voice plays a short sample so you can hear it before committing."
         >
           {rosterEnabled ? (
             <>

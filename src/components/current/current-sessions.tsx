@@ -207,7 +207,7 @@ function RunRow({
         <KindBadge kind={run.kind} />
         {stale ? (
           <span
-            title="No activity for over a day — still here if you want it, or Discard to clear it out"
+            title="No activity for over a day. Still here if you want it, or Discard to clear it out"
             className="flex-none rounded-full border border-warning/40 bg-warning-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-warning"
           >
             Inactive
