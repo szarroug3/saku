@@ -1,6 +1,6 @@
 "use client";
 
-// Recent sessions — newest first, one row per finished quiz.
+// Recent sessions — newest first, one row per finished quiz or lesson.
 //
 // The row IS the record: click it to reopen those results (viewStoredSession
 // rebuilds the screen from the stored detail, or from the aggregates for
@@ -176,7 +176,8 @@ function NoSessions() {
       </span>
       <p className="text-[13px] font-semibold">No sessions yet</p>
       <Hint>
-        Finish a quiz and it lands here. Every run is kept until you delete it.
+        Finish a quiz or a lesson and it lands here. Every run is kept until
+        you delete it.
       </Hint>
     </div>
   );
