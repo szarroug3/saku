@@ -20,7 +20,7 @@ import { describe, test } from "node:test";
 
 import { COUNTER_KINDS, counterReading, numberReading } from "@/lib/number-reading";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB } from "@/data/vocab";
+import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { VOICE_PREVIEW } from "@/lib/voice";
 
@@ -38,22 +38,29 @@ describe("pitchItems — SAK-216 distractor coverage", () => {
       if (downstep === null) continue;
       checked++;
 
+      // SAK-266: the reading a correct/distractor item is keyed on is the
+      // SAME one the live quiz resolves (legacyUnqualifiedReading), not
+      // VOCAB's own `.reb` — those two can differ for a word whose
+      // CEJC/NUMBER_WORD_ALTERNATES-preferred reading has moved on from what
+      // it was originally taught under (七/九/四).
+      const reading = legacyUnqualifiedReading(row.keb) ?? row.reb;
+
       // The correct-downstep item must still be there, unchanged.
       assert.ok(
-        present.has(`${row.reb}:${downstep}`),
-        `missing correct item for ${row.keb} (${row.reb}, downstep ${downstep})`,
+        present.has(`${reading}:${downstep}`),
+        `missing correct item for ${row.keb} (${reading}, downstep ${downstep})`,
       );
 
       // The distractor must match wrongDownstepFor EXACTLY — same function,
       // same inputs the live "wrong"-mode quiz uses — or, when that word has
       // no honest distractor (a 1-mora reading), no distractor item should
       // have been invented for it.
-      const wrongDownstep = wrongDownstepFor(downstep, moraeOf(row.reb).length);
+      const wrongDownstep = wrongDownstepFor(downstep, moraeOf(reading).length);
       if (wrongDownstep === null) continue;
       withDistractor++;
       assert.ok(
-        present.has(`${row.reb}:${wrongDownstep}`),
-        `missing distractor item for ${row.keb} (${row.reb}, distractor downstep ${wrongDownstep})`,
+        present.has(`${reading}:${wrongDownstep}`),
+        `missing distractor item for ${row.keb} (${reading}, distractor downstep ${wrongDownstep})`,
       );
     }
 
@@ -65,17 +72,19 @@ describe("pitchItems — SAK-216 distractor coverage", () => {
   test("a 1-mora verified word gets no distractor item (mirrors rollPitchQuestion's own null handling)", () => {
     const oneMoraRow = VOCAB.find((row) => {
       const downstep = wordPitch(row.keb);
-      return downstep !== null && moraeOf(row.reb).length < 2;
+      const reading = legacyUnqualifiedReading(row.keb) ?? row.reb;
+      return downstep !== null && moraeOf(reading).length < 2;
     });
     // Only assert the behavior if such a word actually exists in the corpus
     // right now — its presence isn't this test's concern, its handling is.
     if (!oneMoraRow) return;
 
     const downstep = wordPitch(oneMoraRow.keb);
-    assert.equal(wrongDownstepFor(downstep, moraeOf(oneMoraRow.reb).length), null);
+    const reading = legacyUnqualifiedReading(oneMoraRow.keb) ?? oneMoraRow.reb;
+    assert.equal(wrongDownstepFor(downstep, moraeOf(reading).length), null);
 
     const items = pitchItems();
-    const itemsForReading = items.filter((i) => i.reading === oneMoraRow.reb);
+    const itemsForReading = items.filter((i) => i.reading === reading);
     assert.deepEqual(
       itemsForReading.map((i) => i.downstep),
       [downstep],
@@ -104,7 +113,8 @@ describe("pitchItems — SAK-216 distractor coverage", () => {
     for (const row of VOCAB) {
       const downstep = wordPitch(row.keb);
       if (downstep === null) continue;
-      const correctKey = `${row.reb}:${downstep}`;
+      const reading = legacyUnqualifiedReading(row.keb) ?? row.reb;
+      const correctKey = `${reading}:${downstep}`;
       if (!correctOnlySeen.has(correctKey)) {
         correctOnlySeen.add(correctKey);
         correctOnlyCount++;
@@ -113,9 +123,9 @@ describe("pitchItems — SAK-216 distractor coverage", () => {
         expectedSeen.add(correctKey);
         expectedTotal++;
       }
-      const wrongDownstep = wrongDownstepFor(downstep, moraeOf(row.reb).length);
+      const wrongDownstep = wrongDownstepFor(downstep, moraeOf(reading).length);
       if (wrongDownstep === null) continue;
-      const wrongKey = `${row.reb}:${wrongDownstep}`;
+      const wrongKey = `${reading}:${wrongDownstep}`;
       if (!expectedSeen.has(wrongKey)) {
         expectedSeen.add(wrongKey);
         expectedTotal++;
