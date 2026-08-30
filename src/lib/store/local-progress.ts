@@ -1,7 +1,5 @@
 "use client";
 
-import { hydrateRecentRuns } from "@/lib/aggregate";
-
 // The signed-out learner's progress, kept in THIS browser's localStorage.
 //
 // THE PROBLEM THIS SOLVES
@@ -46,7 +44,7 @@ import {
   applySeen,
   applySession,
   emptyHistory,
-  withBackfilledLearnedAt,
+  normalizeHistoryShell,
 } from "@/lib/history-ops";
 import {
   withEntriesAdded,
@@ -113,30 +111,13 @@ function write(key: string, value: unknown): void {
 
 /**
  * This browser's signed-out history. Always a well-formed HistoryFile: a missing
- * or corrupt blob reads as the day-one shell, never as a throw. `normalizeHistory`
- * fills the optional keys so callers can index `.claims`/`.seen` without guards,
+ * or corrupt blob reads as the day-one shell, never as a throw. `normalizeHistoryShell`
+ * (history-ops.ts, shared with the server's legacy reader — see SAK-251) fills
+ * the optional keys so callers can index `.claims`/`.seen` without guards,
  * matching what the server's readers already assume.
  */
 export function loadLocalHistory(): HistoryFile {
-  return normalizeHistory(read<Partial<HistoryFile>>(LOCAL_HISTORY_KEY, {}));
-}
-
-/** Coerce whatever came out of storage into the four containers a HistoryFile
- * promises. Mirrors normalizeHistory in supabase-store.ts — a blob written by an
- * older build, or half-corrupted, still reads as a usable (possibly empty)
- * history rather than crashing a screen. */
-function normalizeHistory(h: Partial<HistoryFile>): HistoryFile {
-  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
-  // Backfill learnedAt best-effort, mirroring the server normalizer, so a
-  // signed-out learner's local copy carries the same populated first-learned map.
-  return withBackfilledLearnedAt({
-    sessions,
-    facts: hydrateRecentRuns(h.facts ?? {}, sessions),
-    claims: h.claims ?? {},
-    seen: h.seen ?? {},
-    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
-    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
-  });
+  return normalizeHistoryShell(read<Partial<HistoryFile>>(LOCAL_HISTORY_KEY, {}));
 }
 
 /** Apply one op to the local history, persist it, and return the new file — the

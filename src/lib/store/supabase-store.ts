@@ -16,7 +16,7 @@ import {
   type SessionStateEnvelope,
 } from "@/lib/session-state";
 import { hydrateRecentRuns } from "@/lib/aggregate";
-import { withBackfilledLearnedAt } from "@/lib/history-ops";
+import { normalizeHistoryShell, withBackfilledLearnedAt } from "@/lib/history-ops";
 import type { VersionedRead } from "@/lib/history-mutate";
 import type { ListsVersionedRead } from "@/lib/lists-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
@@ -113,7 +113,9 @@ export async function writeHistoryRow(userId: string, hist: HistoryFile): Promis
 /**
  * The LEGACY-ONLY normalizer: `facts` comes straight from the jsonb column,
  * with no `progress_facts` lookup. Deliberately NOT the same as
- * `normalizeHistory` above.
+ * `normalizeHistory` above — but the actual repair-a-corrupt-blob shell IS
+ * shared (SAK-251): see `normalizeHistoryShell` in history-ops.ts, which
+ * local-progress.ts's signed-out reader also calls.
  *
  * Used by `readHistoryRowVersioned` — the read half of the generic
  * compare-and-set `saveClaims`/`saveSeen`/`dropSeen`/`clearMixup` mutators in
@@ -128,16 +130,7 @@ export async function writeHistoryRow(userId: string, hist: HistoryFile): Promis
  * before SAK-237.
  */
 function normalizeHistoryLegacyOnly(raw: unknown): HistoryFile {
-  const h = (raw ?? {}) as Partial<HistoryFile>;
-  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
-  return withBackfilledLearnedAt({
-    sessions,
-    facts: hydrateRecentRuns((h.facts ?? {}) as Record<FactId, FactAggregate>, sessions),
-    claims: h.claims ?? {},
-    seen: h.seen ?? {},
-    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
-    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
-  });
+  return normalizeHistoryShell((raw ?? {}) as Partial<HistoryFile>);
 }
 
 /**

@@ -39,8 +39,40 @@
 // `result !== input` and preserve the "bail before touching the file" behavior
 // byte-for-byte. Every other function always returns a fresh clone.
 
-import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
+import {
+  emptyAggregate,
+  foldSession,
+  foldSessions,
+  hydrateRecentRuns,
+} from "@/lib/aggregate";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+
+/**
+ * Coerce whatever came out of storage into the four containers a HistoryFile
+ * promises: a missing/corrupt blob's absent fields read as empty (never as a
+ * throw), facts missing `recentRuns` get backfilled from the sessions, and
+ * `learnedAt` is derived for anything that lacks it.
+ *
+ * THE ONE REPAIR, SHARED (SAK-251): this used to be hand-copied — once as
+ * local-progress.ts's own `normalizeHistory` for the signed-out localStorage
+ * blob, once as supabase-store.ts's `normalizeHistoryLegacyOnly` for the
+ * signed-in jsonb column's pre-migration shape — with one file's comment
+ * literally noting it "mirrors" the other. Both now call this. (Not to be
+ * confused with supabase-store.ts's OWN `normalizeHistory`, which additionally
+ * merges in the `progress_facts` table and is deliberately NOT this function —
+ * see its doc comment.)
+ */
+export function normalizeHistoryShell(h: Partial<HistoryFile>): HistoryFile {
+  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
+  return withBackfilledLearnedAt({
+    sessions,
+    facts: hydrateRecentRuns(h.facts ?? {}, sessions),
+    claims: h.claims ?? {},
+    seen: h.seen ?? {},
+    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
+    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
+  });
+}
 
 /**
  * The day-one shell a fresh install starts with, `{ sessions: [], facts: {} }`.
