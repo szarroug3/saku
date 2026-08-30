@@ -76,7 +76,7 @@ import { autoPatternPage } from "@/data/grammar/auto-page";
 import { RECIPES } from "@/data/grammar/recipes";
 import { READINGS } from "@/data/kanji";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB } from "@/data/vocab";
+import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
@@ -106,23 +106,34 @@ function textSet(getTexts) {
  *
  *   1. Every VOCAB row with a verified Kanjium accent. pitch.json (and
  *      `wordPitch`) is keyed on the WRITTEN form (`keb`, which may be kanji),
- *      not the kana the app actually speaks — the word page resolves a hit
- *      to its own `reb` before ever calling the pitch route (see
- *      character-entry-view.tsx's `pitchReading` / `HearButton glyph={w.reading}`).
- *      Seeding pitch.json's keys directly would be wrong for any kanji-written
- *      word: VOICEVOX would read the kanji using ITS OWN guessed reading,
- *      which can disagree with the word's taught reb in mora count, so this
- *      walks VOCAB and reproduces that same keb→reb resolution rather than
- *      trusting pitch.json's keys as if they were kana. For every such row,
- *      ALSO adds the distractor downstep `wrongDownstepFor` (src/lib/pitch.ts)
- *      picks for that same (downstep, mora count) — the exact same call and
- *      inputs the live "wrong"-mode quiz uses (src/lib/pitch-quiz.ts's
- *      `rollPitchQuestion`), so a re-run here can never disagree with what a
- *      live learner's session would independently compute and request. Mirrors
- *      that caller's null handling too: `wrongDownstepFor` returns null for a
- *      1-mora reading (no honest wrong-pitch clip exists), and `rollPitchQuestion`
- *      simply offers no "wrong"-mode question for that word — this skips
- *      adding a distractor item the same way, rather than inventing one.
+ *      not the kana the app actually speaks — the live quiz resolves a hit to
+ *      `legacyUnqualifiedReading(keb)` before ever calling the pitch route
+ *      (src/lib/pitch-quiz.ts's `rollPitchQuestion`; see also
+ *      character-entry-view.tsx's `pitchReading` / `HearButton glyph={w.reading}`,
+ *      which fetches the SAME function server-side). SAK-266: this used to
+ *      read `row.reb` off VOCAB instead — VOCAB's own `.reb` is the CEJC/
+ *      NUMBER_WORD_ALTERNATES-preferred reading (src/data/vocab.ts's
+ *      `withSenses`), which for a word whose preferred reading has moved on
+ *      from what it was taught under (七 なな vs the still-frozen taught
+ *      しち, 九 く vs きゅう, 四 よん vs し — see `legacyUnqualifiedReading`'s
+ *      own "predate CEJC ranking" doc) is a DIFFERENT string than the one the
+ *      live quiz actually asks for. Seeding pitch.json's keys directly would
+ *      also be wrong for any kanji-written word (VOICEVOX would read the
+ *      kanji using its own guessed reading, which can disagree with the
+ *      word's taught reb in mora count) — so this still walks VOCAB for its
+ *      `keb`s and verified downsteps, but resolves each one's reading through
+ *      `legacyUnqualifiedReading`, the exact call `rollPitchQuestion` makes,
+ *      rather than trusting either pitch.json's keys or VOCAB's own `.reb` as
+ *      if either were the taught kana. For every such row, ALSO adds the
+ *      distractor downstep `wrongDownstepFor` (src/lib/pitch.ts) picks for
+ *      that same (downstep, mora count of THIS SAME resolved reading) — the
+ *      exact same call and inputs the live "wrong"-mode quiz uses, so a
+ *      re-run here can never disagree with what a live learner's session
+ *      would independently compute and request. Mirrors that caller's null
+ *      handling too: `wrongDownstepFor` returns null for a 1-mora reading (no
+ *      honest wrong-pitch clip exists), and `rollPitchQuestion` simply offers
+ *      no "wrong"-mode question for that word — this skips adding a
+ *      distractor item the same way, rather than inventing one.
  *   2. The settings-page voice-preview reading (VOICE_PREVIEW) — fixed
  *      せんせい/downstep 3, confirmed NOT itself a pitch.json entry. No
  *      distractor: the preview clip is never quizzed, only played once by
@@ -146,9 +157,10 @@ export function pitchItems() {
   for (const row of VOCAB) {
     const downstep = wordPitch(row.keb);
     if (downstep === null) continue;
-    add(row.reb, downstep);
-    const wrongDownstep = wrongDownstepFor(downstep, moraeOf(row.reb).length);
-    if (wrongDownstep !== null) add(row.reb, wrongDownstep);
+    const reading = legacyUnqualifiedReading(row.keb) ?? row.reb;
+    add(reading, downstep);
+    const wrongDownstep = wrongDownstepFor(downstep, moraeOf(reading).length);
+    if (wrongDownstep !== null) add(reading, wrongDownstep);
   }
   add(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep);
   return items;
