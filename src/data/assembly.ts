@@ -13,7 +13,7 @@
 //   2. Only sentences whose piece order is GENUINELY FIXED survive. A sentence
 //      that admits more than one natural order (two case-marked arguments that
 //      scramble, coordinate clauses that reorder) is DROPPED, not graded — see
-//      `single_order` in the ingest script. 596 of 8,547 survive; the small
+//      `single_order` in the ingest script. 605 of 9,654 survive; the small
 //      honest set is the point.
 //
 // Selection no longer gates on a per-learner known-words check (SAK-87 round 5

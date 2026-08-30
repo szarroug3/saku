@@ -60,6 +60,18 @@ jobs:
       - name: Corpus audit
         run: pnpm run audit-corpus:check
 
+      # assembly-corpus.json (the "build a sentence from pieces" word bank) is
+      # DERIVED from grammar-corpus.json by a separate script (scripts/ingest/
+      # assembly.py) a human has to remember to re-run. Nothing enforced that
+      # until SAK-274, where two additive grammar-corpus updates shipped without
+      # a regeneration and the derived set silently went stale. This does not
+      # re-run the tokenizer (that needs fugashi/unidic-lite, which CI does not
+      # install) — it only checks the committed meta file's recorded input size
+      # still matches grammar-corpus.json, which is enough to catch exactly this
+      # class of drift.
+      - name: Assembly corpus freshness
+        run: pnpm run check-assembly-freshness
+
       # The gate the other three cannot be: a route conflict, a bad import, an
       # invalid config — none is a type or lint or unit-test failure, and all of
       # them are a failed build.

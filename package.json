@@ -26,6 +26,7 @@
     "mnemonic-images": "node scripts/build-mnemonic-images.mjs",
     "audit-corpus": "node scripts/audit-corpus.ts",
     "audit-corpus:check": "node scripts/audit-corpus.ts --check",
+    "check-assembly-freshness": "node scripts/check-assembly-freshness.ts",
     "test": "env -u NODE_OPTIONS -u VSCODE_INSPECTOR_OPTIONS node ./scripts/run-unit-tests.mjs",
     "test:serial": "env -u NODE_OPTIONS -u VSCODE_INSPECTOR_OPTIONS node --conditions=react-server --experimental-test-module-mocks --import ./src/lib/conjugate/test-hooks.mjs --test --test-concurrency=1",
     "test:clean": "env -u NODE_OPTIONS -u VSCODE_INSPECTOR_OPTIONS node ./scripts/run-unit-tests.mjs",
