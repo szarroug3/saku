@@ -60,6 +60,7 @@ import {
   wordReadingFactId,
 } from "@/data/vocab";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
+import { numberConstructionEntry } from "@/data/number-construction-id";
 
 import {
   entryName as libEntryName,
@@ -398,6 +399,93 @@ describe("getSelectionSlice / getEverythingSlice", () => {
     const [a] = LIB_ENTRIES.map((e) => e.id as unknown as string);
     const ids = await SL.getEverythingSlice(["mixup"], false, {}, {}, Date.now(), [a]);
     assert.deepEqual(ids, [a]);
+  });
+});
+
+/* -------------------------------------------------------------------------
+ * ACTIVE MIXUP ENTRIES — SAK-271
+ * ---------------------------------------------------------------------- */
+
+describe("getActiveMixupEntries", () => {
+  // SAK-271: １万 is a real VOCAB row whose entry (word:１万) is a pure
+  // duplicate the Library never lists on its own — COUNTER_VOCAB_DUPLICATE_KEBS
+  // (data/counters.ts) aliases it to numberConstructionEntry("big") instead.
+  // entryOf/factEntryOf correctly keep naming the raw word entry (that is
+  // their job), so a mix-up recorded against this fact used to resolve to an
+  // id no real Library entry carries and could never appear on the Mix-ups
+  // filter — see library-index.ts's canonicalMixupEntry doc comment.
+  test("a mix-up on a counter-duplicate word (１万) surfaces on the real construction entry, not the orphaned word entry", async () => {
+    const fact = wordMeaningFactId("１万");
+    const saidAs = kanaEntry("あ");
+    const history: HistoryFile = {
+      sessions: [
+        {
+          ts: 1,
+          mode: "drill",
+          redrill: false,
+          total: 1,
+          forgivingPct: 0,
+          strictPct: 0,
+          facts: {},
+          detail: {
+            [fact]: {
+              seen: 1,
+              misses: 1,
+              everCorrect: false,
+              firstTryCorrect: false,
+              firstTryCount: 0,
+              correct: 0,
+              confused: { [saidAs]: 1 },
+            },
+          },
+        },
+      ],
+      facts: {},
+    };
+
+    const ids = await SL.getActiveMixupEntries(history, 10);
+    assert.ok(
+      ids.includes(numberConstructionEntry("big")),
+      "the real 'big' construction entry is flagged as an active mix-up",
+    );
+    assert.ok(
+      !ids.includes(wordEntry("１万")),
+      "the orphaned raw word entry never leaks into the filter",
+    );
+  });
+
+  test("a mix-up on an ordinary word (no known duplicate) is unaffected", async () => {
+    const shown = kanjiMeaningFactId("生");
+    const saidAs = kanaEntry("あ");
+    const history: HistoryFile = {
+      sessions: [
+        {
+          ts: 1,
+          mode: "drill",
+          redrill: false,
+          total: 1,
+          forgivingPct: 0,
+          strictPct: 0,
+          facts: {},
+          detail: {
+            [shown]: {
+              seen: 1,
+              misses: 1,
+              everCorrect: false,
+              firstTryCorrect: false,
+              firstTryCount: 0,
+              correct: 0,
+              confused: { [saidAs]: 1 },
+            },
+          },
+        },
+      ],
+      facts: {},
+    };
+
+    const ids = await SL.getActiveMixupEntries(history, 10);
+    assert.ok(ids.includes(kanjiEntry("生")));
+    assert.ok(ids.includes(saidAs));
   });
 });
 
