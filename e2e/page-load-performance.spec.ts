@@ -1,4 +1,13 @@
-import { test, expect, waitForHydration } from "./helpers/app";
+import {
+  test,
+  expect,
+  waitForHydration,
+  STEADY_CFG,
+  direction,
+  style,
+  startVowelLessonDrill,
+  answerDrillCard,
+} from "./helpers/app";
 import { kanaFact } from "@/data/characters";
 
 /**
@@ -154,6 +163,19 @@ const TEST_PAGES: PageLoadTest[] = [
     url: "/lists/import",
     maxLoadTimeMs: 2000,
   },
+
+  // SAK-228: bare /lists (ManageLists) had NO load-time budget assertion at
+  // all before this, despite route_sizes.mjs confirming it as the single
+  // heaviest route in the app (~23MB, still carrying the vocabulary
+  // dictionary — see docs/perf-library-list-bundle.md's "still deferred"
+  // list). This is exactly the shape of gap the ticket is about: a route
+  // this heavy could regress further and nothing would notice. Renders fine
+  // with an empty list (no seed needed) — no redirect, unlike /session below.
+  {
+    name: "Lists page (bare)",
+    url: "/lists",
+    maxLoadTimeMs: 4500,
+  },
 ];
 
 for (const page of TEST_PAGES) {
@@ -171,19 +193,30 @@ for (const page of TEST_PAGES) {
     // SAK-264: wait for the app's hydration-complete marker, not networkidle.
     await waitForHydration(browserPage);
 
-    const loadTimeMs = Date.now() - startTime;
-
     // Verify page loaded successfully
     expect(response, `no response for ${page.url}`).not.toBeNull();
     expect(response!.status(), `bad status for ${page.url}`).toBeLessThan(400);
 
-    // Verify navigation element is visible (proof of successful render)
+    // Verify navigation element is visible (proof of successful render).
+    //
+    // SAK-228: this check must happen BEFORE loadTimeMs is captured, not
+    // after. It used to run after the stopwatch had already been read, which
+    // silently exempted the entire cost of whatever renders between "React
+    // hydrated" (the marker) and "the nav is actually painted and visible" —
+    // client-side data loading, a heavy component's own render, images —
+    // from the budget below. A route that hydrates fast but then blocks on
+    // several seconds of that work would still report a fast loadTimeMs and
+    // pass; the very failure mode a bundle-size regression like the 27MB bug
+    // produces (hydration itself proceeds, but real interactivity is stalled
+    // behind more JS than the marker's own commit accounts for).
     const navLibraryLink = browserPage.getByRole("navigation").getByRole("link", {
       name: "Library",
     });
     await expect(navLibraryLink, `nav not visible on ${page.url}`).toBeVisible({
       timeout: 5000,
     });
+
+    const loadTimeMs = Date.now() - startTime;
 
     // Check load time
     expect(loadTimeMs, `${page.name} took ${loadTimeMs}ms (limit: ${page.maxLoadTimeMs}ms)`).toBeLessThanOrEqual(
@@ -263,14 +296,16 @@ test("Quiz selection page with 100+ facts loads within acceptable time", async (
 
   await waitForHydration(browserPage);
 
-  const loadTimeMs = Date.now() - startTime;
-
   expect(response, "no response for /quiz").not.toBeNull();
   expect(response!.status(), "bad status for /quiz").toBeLessThan(400);
 
+  // SAK-228: capture loadTimeMs AFTER this visibility check, not before — see
+  // the fix's comment on the main TEST_PAGES loop above for why.
   await expect(
     browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
   ).toBeVisible({ timeout: 5000 });
+
+  const loadTimeMs = Date.now() - startTime;
 
   // Heavier data should take a bit longer but still be reasonable
   const maxLoadTime = 3500;
@@ -293,14 +328,16 @@ test("Practice selector page with 100+ facts loads within acceptable time", asyn
 
   await waitForHydration(browserPage);
 
-  const loadTimeMs = Date.now() - startTime;
-
   expect(response, "no response for /practice").not.toBeNull();
   expect(response!.status(), "bad status for /practice").toBeLessThan(400);
 
+  // SAK-228: capture loadTimeMs AFTER this visibility check, not before — see
+  // the fix's comment on the main TEST_PAGES loop above for why.
   await expect(
     browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
   ).toBeVisible({ timeout: 5000 });
+
+  const loadTimeMs = Date.now() - startTime;
 
   const maxLoadTime = 3500;
   expect(loadTimeMs, `Practice page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
@@ -325,14 +362,16 @@ test("Progress page with 100+ known facts loads within acceptable time", async (
 
   await waitForHydration(browserPage);
 
-  const loadTimeMs = Date.now() - startTime;
-
   expect(response, "no response for /progress").not.toBeNull();
   expect(response!.status(), "bad status for /progress").toBeLessThan(400);
 
+  // SAK-228: capture loadTimeMs AFTER this visibility check, not before — see
+  // the fix's comment on the main TEST_PAGES loop above for why.
   await expect(
     browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
   ).toBeVisible({ timeout: 5000 });
+
+  const loadTimeMs = Date.now() - startTime;
 
   const maxLoadTime = 4000;
   expect(loadTimeMs, `Progress page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
@@ -355,14 +394,16 @@ test("Library root with 100+ known facts loads within acceptable time", async ({
 
   await waitForHydration(browserPage);
 
-  const loadTimeMs = Date.now() - startTime;
-
   expect(response, "no response for /library").not.toBeNull();
   expect(response!.status(), "bad status for /library").toBeLessThan(400);
 
+  // SAK-228: capture loadTimeMs AFTER this visibility check, not before — see
+  // the fix's comment on the main TEST_PAGES loop above for why.
   await expect(
     browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
   ).toBeVisible({ timeout: 5000 });
+
+  const loadTimeMs = Date.now() - startTime;
 
   const maxLoadTime = 4000;
   expect(loadTimeMs, `Library page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
@@ -385,14 +426,16 @@ test("Library all tab with 100+ known facts loads within acceptable time", async
 
   await waitForHydration(browserPage);
 
-  const loadTimeMs = Date.now() - startTime;
-
   expect(response, "no response for /library?kind=all").not.toBeNull();
   expect(response!.status(), "bad status for /library?kind=all").toBeLessThan(400);
 
+  // SAK-228: capture loadTimeMs AFTER this visibility check, not before — see
+  // the fix's comment on the main TEST_PAGES loop above for why.
   await expect(
     browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
   ).toBeVisible({ timeout: 5000 });
+
+  const loadTimeMs = Date.now() - startTime;
 
   const maxLoadTime = 4500;
   expect(loadTimeMs, `Library all tab with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
@@ -400,4 +443,91 @@ test("Library all tab with 100+ known facts loads within acceptable time", async
   );
 
   console.log(`✓ Library all tab (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
+
+/**
+ * SAK-228: /session had NO load-time budget assertion at all before this,
+ * despite route_sizes.mjs confirming it as one of the two heaviest routes in
+ * the app (~15-20MB — still carrying the vocabulary dictionary for grading,
+ * see docs/perf-library-list-bundle.md's "still deferred" list).
+ *
+ * /session can't be added to TEST_PAGES above: a bare `goto("/session")` with
+ * no active quiz session redirects straight to "/" (see the
+ * `router.replace("/")` in src/app/session/page.tsx) before the route's own
+ * heavy code ever renders anything to measure. Reaching the real screen
+ * needs a genuine in-progress round, the same way session-loop.spec.ts and
+ * quiz-flow-performance.spec.ts do it.
+ *
+ * The measurement itself is a fresh navigation (`page.reload()`), not the
+ * in-app transition quiz-flow-performance.spec.ts already times — that file
+ * answers "is the SPA transition into this screen fast", this answers "how
+ * long does loading this route's own bundle take", which is what a bundle-
+ * size regression like the 27MB bug actually costs.
+ *
+ * CAVEAT, honestly: because this reload happens in the SAME browser context
+ * that already visited /learn → /quiz → /session once to build the round
+ * state, the route's static JS chunks may already be in the browser's HTTP
+ * cache, so this under-counts pure network-transfer time versus a genuinely
+ * cold visitor. It does NOT under-count the JS parse/execute cost, which a
+ * full page navigation always pays fresh regardless of cache — and that
+ * parse/execute cost, not download time, is what production TTFB
+ * measurements (see this ticket's own investigation) confirmed is the real
+ * bottleneck. A route that regresses to 27MB will still take meaningfully
+ * longer to parse and hydrate here even warm. Getting a fully cold
+ * measurement would need seeding the quiz-session localStorage snapshot
+ * directly rather than driving it through the UI once first — left as a
+ * follow-up rather than hand-authoring that snapshot's shape here.
+ */
+test("/session (round-complete) reload loads within acceptable time", async ({
+  page,
+  seed,
+}) => {
+  const VOWELS = ["あ", "い", "う", "え", "お"];
+  const VOWEL_FACTS = VOWELS.map((k) => `kana:${k}/reading`);
+
+  const CFG = {
+    ...STEADY_CFG,
+    ...direction("jp2en"),
+    ...style("jp2en", "typed"),
+    length: "limited",
+    limType: "cov",
+  };
+
+  await seed({ seen: [], cfg: CFG });
+  await startVowelLessonDrill(page);
+
+  for (let i = 0; i < VOWELS.length; i++) {
+    await answerDrillCard(page, VOWEL_FACTS, {
+      last: i === VOWELS.length - 1,
+      finishUrl: "**/session",
+    });
+  }
+
+  // Real round-complete state is now live (and persisted to localStorage,
+  // src/lib/quiz-session.tsx) — reload the route fresh and time THAT.
+  const startTime = Date.now();
+
+  const response = await page.reload();
+
+  await waitForHydration(page);
+
+  expect(response, "no response reloading /session").not.toBeNull();
+  expect(response!.status(), "bad status reloading /session").toBeLessThan(400);
+
+  // Interactive = the round-complete fork restored from the localStorage
+  // snapshot and its primary button is on screen — the same signal
+  // quiz-flow-performance.spec.ts uses for the SPA-transition version of
+  // this screen.
+  await expect(
+    page.getByRole("button", { name: "Complete round", exact: true }),
+  ).toBeVisible();
+
+  const loadTimeMs = Date.now() - startTime;
+  const maxLoadTime = 8000;
+
+  console.log(`✓ /session reload (round-complete): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+  expect(
+    loadTimeMs,
+    `/session reload took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`,
+  ).toBeLessThanOrEqual(maxLoadTime);
 });

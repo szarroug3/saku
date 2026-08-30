@@ -78,6 +78,16 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # SAK-228: bundle-size regression gate. Reads the client JS each route's
+      # own manifest references straight out of the `.next` this Build step
+      # just produced, and fails if any route exceeds its budget (see
+      # scripts/route_sizes.mjs for how each budget was picked). Runs on every
+      # push and PR, not only main — the whole point is to catch a route
+      # ballooning (the 27MB bundle bug this ticket is named for) BEFORE it
+      # merges, not after.
+      - name: Bundle size budget
+        run: pnpm run check-route-sizes
+
   # content_entries (Supabase) holds the fetch-by-id Library entry payloads —
   # term/mark/grammar-concept/kana, and more kinds over time (see
   # scripts/seed-content-entries.mjs). Its source data ships in the SAME commit
