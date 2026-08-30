@@ -10,7 +10,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, mock, test } from "node:test";
 
-import { synthesizeWordWav } from "./tts-synth.ts";
+import { synthesizeSentenceWav, synthesizeWordWav } from "./tts-synth.ts";
 
 let savedEngineUrl: string | undefined;
 
@@ -123,4 +123,52 @@ test("mora COUNT and pitch pattern are unaffected by the katakana swap", async (
   const moras = body.accent_phrases[0].moras;
   assert.equal(moras.length, 2, "katakana ハチ must still parse to 2 morae, same as はち would");
   assert.notEqual(moras[0].pitch, moras[1].pitch, "downstep 1 must render as a high/low contrast, not flat");
+});
+
+// SAK-219: synthesizeSentenceWav (the live /api/tts fallback used on a cache
+// miss) had NO protection at all against CONFIRMED_BAD_READINGS — only the
+// pitch path (synthesizeWordWav above) got SAK-215/218's fix. A plain Hear
+// button with no downstep (e.g. the Library word page's general listening
+// button, or a kana/word-examples teaching card) sends exactly this path a
+// bare reading with no sentence around it, so it must get the SAME katakana
+// substitution — but ONLY on an EXACT, whole-string match; a real sentence
+// that merely CONTAINS one of these readings must pass through untouched,
+// since it already has the kind of context that resolves は/へ correctly
+// (unlike the bare, context-free case this whole exception list exists for).
+test("SAK-219: a bare CONFIRMED-bad reading (はち) sent to synthesizeSentenceWav is converted to katakana, exactly like the pitch path", async () => {
+  const { queried } = mockVoicevox();
+  await synthesizeSentenceWav("はち", 9009);
+  assert.deepEqual(queried, ["おはようございます", "ハチ"]);
+});
+
+test("SAK-219: another bare CONFIRMED-bad reading (つかう) is converted; an ordinary bare reading (つかれる) is not", async () => {
+  const { queried: q1 } = mockVoicevox();
+  await synthesizeSentenceWav("つかう", 9010);
+  assert.deepEqual(q1, ["おはようございます", "ツカウ"]);
+
+  mock.restoreAll();
+  const { queried: q2 } = mockVoicevox();
+  await synthesizeSentenceWav("つかれる", 9011);
+  assert.deepEqual(q2, ["おはようございます", "つかれる"], "つかれる is not on the exception list — must stay hiragana");
+});
+
+test("SAK-219: a real SENTENCE that merely CONTAINS a confirmed-bad reading (はち mid-sentence) is left untouched — no substring match", async () => {
+  const { queried } = mockVoicevox();
+  const sentence = "彼ははちを飼っています。"; // "He keeps a bee." — 蜂/はち appears mid-sentence.
+  await synthesizeSentenceWav(sentence, 9012);
+  assert.deepEqual(
+    queried,
+    ["おはようございます", sentence],
+    "a sentence containing はち must reach audio_query completely unmodified, never katakana-substituted",
+  );
+});
+
+test("SAK-219: the bare single-glyph は fix (SAK-178) and the whole-word exception list (SAK-215/218) agree and don't double-fire", async () => {
+  // は is BOTH a bare-kana-particle entry (BARE_KANA_PARTICLE_MISREADING)
+  // AND its own CONFIRMED_BAD_READINGS entry (歯/葉) — composing the two
+  // fixes must still resolve to exactly one katakana result, not throw and
+  // not produce some doubly-converted string.
+  const { queried } = mockVoicevox();
+  await synthesizeSentenceWav("は", 9013);
+  assert.deepEqual(queried, ["おはようございます", "ハ"]);
 });

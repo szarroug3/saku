@@ -321,8 +321,16 @@ const WORD_READING_MISREADING: ReadonlyMap<string, string> = new Map(
  * conversion (see WORD_READING_MISREADING's comment for why that broke
  * こんにちは-type words) — only the specific readings verified live to be
  * mis-segmented by OpenJTalk get swapped; everything else passes through
- * exactly as VOICEVOX's own hiragana-mode analysis already handles it. */
-function readingForMisreadingFix(reading: string): string {
+ * exactly as VOICEVOX's own hiragana-mode analysis already handles it.
+ *
+ * Exported (SAK-219) so every OTHER synthesis path that can send one of these
+ * 34 readings bare and standalone — scripts/seed-voice-audio.mjs's general
+ * text sets (words/sentences/kana/yomi/word-examples/grammar-derive, via its
+ * own `synthesizeText`) and `synthesizeSentenceWav` below (the live /api/tts
+ * fallback, gated there to an exact whole-string match only — see that
+ * function's own comment) — reuses this SAME map, rather than a second copy
+ * that could silently drift from it. */
+export function readingForMisreadingFix(reading: string): string {
   return WORD_READING_MISREADING.get(reading) ?? reading;
 }
 
@@ -354,6 +362,29 @@ const BARE_KANA_PARTICLE_MISREADING: ReadonlyMap<string, string> = new Map([
  * merely contains one of these characters passes through untouched. */
 function textForBareKanaFix(text: string): string {
   return BARE_KANA_PARTICLE_MISREADING.get(text) ?? text;
+}
+
+/** SAK-219: extends `synthesizeSentenceWav`'s bare-glyph fix above to the
+ * OTHER exact-match exception list `synthesizeAtDownstep` already uses for
+ * the pitch path (`WORD_READING_MISREADING`/`CONFIRMED_BAD_READINGS`,
+ * SAK-215/218) — reusing that SAME map via `readingForMisreadingFix`, not a
+ * second copy of it. Composing the two here (rather than merging them into
+ * one map) keeps each fix's own scope exactly as narrow as it always was:
+ * `textForBareKanaFix` only ever matches a single bare は/へ, and
+ * `readingForMisreadingFix` is a plain `Map.get` — an EXACT, whole-string
+ * match against one of the 34 confirmed-bad readings only, NEVER a substring
+ * match inside a longer sentence. That distinction matters here specifically:
+ * `synthesizeSentenceWav` receives arbitrary text — a full sentence, mixed
+ * kanji and kana, or a bare single word — and a real sentence merely
+ * CONTAINING one of these readings mid-sentence (e.g. 鉢を買いに行った) is a
+ * different context than the word spoken bare and standalone (a Hear button
+ * on just はち): it already carries the same kind of surrounding context that
+ * resolves は/へ correctly for real words (see `WORD_READING_MISREADING`'s own
+ * header comment on why context is the mechanical test), and has NOT been
+ * verified to share the bare-word bug — so this must only fire on a full,
+ * exact match of the whole string, never a partial one. */
+function textForExactMisreadingFix(text: string): string {
+  return readingForMisreadingFix(textForBareKanaFix(text));
 }
 
 // How far in from each end of the measured natural range a High/Low target
@@ -518,19 +549,19 @@ export async function synthesizeSentenceWav(
   if (!base) throw new Error("VOICEVOX not configured (VOICEVOX_ENGINE_URL).");
 
   const target = await targetRange(base, speakerId);
-  // This bare-single-character fix stays narrow to this path, and stays
-  // SEPARATE from synthesizeAtDownstep's own WORD_READING_MISREADING map
-  // (SAK-215) rather than merging into one map or one blanket rule. `text`
-  // here is arbitrary — a full sentence, mixed kanji and kana, or a word not
-  // yet resolved to an exact downstep — and OpenJTalk's hiragana-mode
-  // analysis is frequently RIGHT about things a blanket katakana conversion
-  // would get wrong (こんにちは → コンニチワ is a real, correct, lexicalized
-  // は→わ exception; forcing katakana input renders it コンニチハ, verified
-  // live). Only the single bare-glyph case this map covers (a Hear button
-  // with no surrounding sentence to disambiguate は/へ) is unambiguous enough
-  // to fix blindly; everything else here is left for OpenJTalk's own
-  // judgment, same as before.
-  const query = await audioQuery(base, textForBareKanaFix(text), speakerId);
+  // Two independent EXACT-match fixes composed here (see
+  // `textForExactMisreadingFix`'s own comment) — never a blanket
+  // hiragana→katakana conversion. `text` here is arbitrary — a full
+  // sentence, mixed kanji and kana, or a bare single word — and OpenJTalk's
+  // hiragana-mode analysis is frequently RIGHT about things a blanket
+  // katakana conversion would get wrong (こんにちは → コンニチワ is a real,
+  // correct, lexicalized は→わ exception; forcing katakana input renders it
+  // コンニチハ, verified live). Only the bare-glyph case (a Hear button on a
+  // single は/へ) and the 34 confirmed-bad readings matched WHOLE-STRING (a
+  // Hear button on exactly one of them, standalone) are unambiguous enough to
+  // fix blindly; everything else here is left for OpenJTalk's own judgment,
+  // same as before.
+  const query = await audioQuery(base, textForExactMisreadingFix(text), speakerId);
   const { totalPhrases, matchedPhrases } = correctSentencePitch(
     query.accent_phrases as AccentPhraseLike[],
     target,

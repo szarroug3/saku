@@ -80,7 +80,7 @@ import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
-import { synthesizeWordWav } from "@/lib/tts-synth";
+import { readingForMisreadingFix, synthesizeWordWav } from "@/lib/tts-synth";
 import { pitchObjectPath, VOICE_PREVIEW, VOICES, voiceObjectPath } from "@/lib/voice";
 import grammarCorpus from "@/data/generated/grammar-corpus.json" with { type: "json" };
 import wordExamples from "@/data/generated/word-examples.json" with { type: "json" };
@@ -394,9 +394,27 @@ async function synthesize(base, speakerId, query) {
 /** Plain text → WAV, no pitch correction — what every `textSet` item uses.
  * (The pitch set instead calls `synthesizeWordWav` from tts-synth.ts, which
  * hand-edits the query's mora pitches to an exact downstep before synthesis —
- * see that module's header comment for why the two paths don't share this.) */
-async function synthesizeText(base, speakerId, text) {
-  const query = await audioQuery(base, text, speakerId);
+ * see that module's header comment for why the two paths don't share this.)
+ *
+ * SAK-219: applies the SAME `readingForMisreadingFix` (tts-synth.ts,
+ * SAK-215/218's `WORD_READING_MISREADING`) `synthesizeAtDownstep` already
+ * applies for the pitch path — this general path called `audioQuery` with no
+ * correction of any kind before this fix, so any of `words`/`sentences`/
+ * `kana`/`yomi`/`word-examples`/`grammar-derive`'s items that happen to be an
+ * EXACT match on one of the 34 confirmed-bad readings (はち, つかう, ...) hit
+ * the identical OpenJTalk mis-segmentation bug SAK-215 fixed for the pitch
+ * path — confirmed live: `audio_query` on bare "はち" here returns "ワチ",
+ * same as it did before SAK-215. `readingForMisreadingFix` is an exact
+ * Map.get, never a substring match, so a sentence that merely CONTAINS one of
+ * these readings (unlike a bare word-list/kana-card item that IS one) passes
+ * through untouched — same discipline `synthesizeSentenceWav` uses for the
+ * live-fallback case below.
+ *
+ * Exported (SAK-219) so a test can assert exactly what string reaches
+ * `audioQuery` for a confirmed-bad vs. an ordinary reading, the same
+ * mocked-fetch discipline tts-synth.test.ts already uses for the pitch path. */
+export async function synthesizeText(base, speakerId, text) {
+  const query = await audioQuery(base, readingForMisreadingFix(text), speakerId);
   return synthesize(base, speakerId, query);
 }
 

@@ -77,6 +77,22 @@
 //     old-value pair that is still enumerated is skipped and reported as
 //     "retained" instead.
 //
+//   sak-219 — SAK-219 extended SAK-215/218's exact-match katakana fix past
+//     the pitch-only path (`synthesizeAtDownstep`) to the GENERAL synthesis
+//     paths: seed-voice-audio.mjs's `words`/`sentences`/`kana`/`yomi`/
+//     `word-examples`/`grammar-derive` sets (its `synthesizeText`, seeded at
+//     `voiceObjectPath`) AND `synthesizeSentenceWav` (src/lib/tts-synth.ts,
+//     the live /api/tts fallback on a cache miss, gated there to an EXACT
+//     whole-string match only). Same "audio wrong at its own path" shape
+//     SAK-217 already solved for the pitch cache — every `voiceObjectPath`
+//     clip for a `CONFIRMED_BAD_READINGS` entry, across every voice, whether
+//     it got there via a bulk seed run or a live learner's cache-miss
+//     request, was synthesized under the old, broken pronunciation and needs
+//     deleting before a re-seed/re-request can fix it. Unlike sak-217/221,
+//     there is no downstep dimension to enumerate — `voiceObjectPath` hashes
+//     the raw text alone (see `sak219Items()`) — so this is the simplest of
+//     the three targets: one clip per reading per voice, full stop.
+//
 // DRY RUN BY DEFAULT. No flag ⇒ compute every path and print it, grouped by
 // reading, with a total count. No Supabase calls at all if credentials
 // aren't configured — this mode has no hard dependency on live Storage. If
@@ -94,9 +110,17 @@
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --execute
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --target=sak-221
+//   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --target=sak-219
+//   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/invalidate-stale-pitch-clips.mjs --target=sak-219 --execute
 //
-// Then re-seed the pitch set to regenerate what this deleted, correctly:
+// Then re-seed to regenerate what this deleted, correctly — the pitch set for
+// sak-217/sak-221, or every general text set for sak-219 (the cache-skip
+// logic these already rely on means a clip this script did NOT delete is
+// left untouched, so a full re-run of `--set=all` is safe and correct here,
+// not wasteful — see this file's own header on why cache-skip is exactly the
+// reason a delete has to happen first):
 //   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice-audio.mjs --set=pitch
+//   node --env-file=.env.local --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice-audio.mjs --set=all
 
 import { appendFileSync, mkdirSync } from "node:fs";
 import { pathToFileURL } from "node:url";
@@ -106,7 +130,7 @@ import { createClient } from "@supabase/supabase-js";
 import { VOCAB } from "@/data/vocab";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
 import { CONFIRMED_BAD_READINGS } from "@/lib/tts-synth";
-import { pitchObjectPath, VOICES } from "@/lib/voice";
+import { pitchObjectPath, VOICES, voiceObjectPath } from "@/lib/voice";
 
 import { loadExistingKeys, pitchItems } from "./seed-voice-audio.mjs";
 
@@ -139,6 +163,18 @@ const key = (reading, downstep) => `${reading}:${downstep}`;
 function sak217Items() {
   const bad = new Set(CONFIRMED_BAD_READINGS);
   return pitchItems().filter((item) => bad.has(item.reading));
+}
+
+/** SAK-219: one item per `CONFIRMED_BAD_READINGS` entry, no downstep — the
+ * GENERAL (non-pitch) audio clips seed-voice-audio.mjs's `words`/`sentences`/
+ * `kana`/`yomi`/`word-examples`/`grammar-derive` sets seed at `voiceObjectPath`
+ * (a pure function of voiceId + raw text, no reading/downstep pair involved —
+ * see voice.ts). Unlike `sak217Items()`, there is no "which downstep(s)" to
+ * enumerate here: `voiceObjectPath` hashes the reading STRING alone, so each
+ * confirmed-bad reading has exactly one general-path clip per voice,
+ * regardless of how many VOCAB rows/kanji spellings share that reading. */
+function sak219Items() {
+  return CONFIRMED_BAD_READINGS.map((reading) => ({ reading }));
 }
 
 /** SAK-221: every (reading, downstep) pair that was seeded under a word's
@@ -192,6 +228,32 @@ export const SAK_217_TARGET = Object.freeze({
   readings: () => [...CONFIRMED_BAD_READINGS],
   items: sak217Items,
   explain: () => [`${CONFIRMED_BAD_READINGS.length} confirmed-bad reading(s) in CONFIRMED_BAD_READINGS.`],
+  objectPath: (item, voiceId) => pitchObjectPath(item.reading, item.downstep, voiceId),
+});
+
+// SAK-219 extended SAK-215/218's exact-match katakana fix past the pitch-only
+// path to seed-voice-audio.mjs's general `synthesizeText` AND
+// synthesizeSentenceWav's live /api/tts fallback (src/lib/tts-synth.ts) — so
+// any of the 34 CONFIRMED_BAD_READINGS already bulk-seeded under the general
+// `words`/`sentences`/`kana`/`yomi`/`word-examples`/`grammar-derive` sets (or
+// ever lazily synthesized live through /api/tts's cache-miss fallback) were
+// seeded/cached under the OLD, broken pronunciation — the exact same
+// "audio wrong at its own path" shape SAK-217 already solved for the pitch
+// cache, just at `voiceObjectPath` instead of `pitchObjectPath`.
+export const SAK_219_TARGET = Object.freeze({
+  id: "sak-219",
+  summary:
+    "SAK-219's confirmed-bad readings, general (non-pitch) audio clips " +
+    "(CONFIRMED_BAD_READINGS via voiceObjectPath — words/sentences/kana/yomi/word-examples/grammar-derive " +
+    "sets, and any live /api/tts fallback clip cached under the same bare text)",
+  readings: () => [...CONFIRMED_BAD_READINGS],
+  items: sak219Items,
+  explain: () => [
+    `${CONFIRMED_BAD_READINGS.length} confirmed-bad reading(s) in CONFIRMED_BAD_READINGS.`,
+    "One general voiceObjectPath clip per reading per voice (no downstep dimension — " +
+      "voiceObjectPath hashes the raw text alone).",
+  ],
+  objectPath: (item, voiceId) => voiceObjectPath(voiceId, item.reading),
 });
 
 export const SAK_221_TARGET = Object.freeze({
@@ -217,11 +279,13 @@ export const SAK_221_TARGET = Object.freeze({
     }
     return lines;
   },
+  objectPath: (item, voiceId) => pitchObjectPath(item.reading, item.downstep, voiceId),
 });
 
 export const TARGETS = Object.freeze({
   [SAK_217_TARGET.id]: SAK_217_TARGET,
   [SAK_221_TARGET.id]: SAK_221_TARGET,
+  [SAK_219_TARGET.id]: SAK_219_TARGET,
 });
 
 /** `target.items()` / `target.readings()` walk all of VOCAB and pitchItems();
@@ -249,18 +313,24 @@ export function stalePitchItemsForReading(reading, target = SAK_217_TARGET) {
 }
 
 /** Every Storage object path `target` considers stale: one row per (reading,
- * downstep, voice), in the target's reading order, then its item order, then
+ * downstep, voice) for a pitch-shaped target, or one row per (reading, voice)
+ * for a general-audio-shaped target (`downstep` is `null` there — see
+ * `SAK_219_TARGET`'s own comment on why `voiceObjectPath` has no downstep
+ * dimension) — in the target's reading order, then its item order, then
  * `VOICES` order — a stable, readable order for both the dry-run report and
- * the delete batches. Pure — no network calls, safe to import and call from a
- * test. */
+ * the delete batches. Each target supplies its OWN `objectPath(item, voiceId)`
+ * (pitchObjectPath vs. voiceObjectPath) rather than this function hard-coding
+ * one path builder, so a general-audio target's clips land at the path the
+ * general seed/live-fallback path actually reads/writes. Pure — no network
+ * calls, safe to import and call from a test. */
 export function stalePitchClips(target = SAK_217_TARGET) {
   return targetReadings(target).flatMap((reading) =>
     stalePitchItemsForReading(reading, target).flatMap((item) =>
       VOICES.map((voice) => ({
         reading: item.reading,
-        downstep: item.downstep,
+        downstep: item.downstep ?? null,
         voiceId: voice.id,
-        path: pitchObjectPath(item.reading, item.downstep, voice.id),
+        path: target.objectPath(item, voice.id),
       })),
     ),
   );
@@ -269,7 +339,10 @@ export function stalePitchClips(target = SAK_217_TARGET) {
 /** Group a flat clip list into `reading -> downstep -> path[]`, preserving the
  * target's reading order — the shape the dry-run report and the execute-mode
  * log both print from, so the two modes read identically apart from the header
- * line and whether a delete actually ran. */
+ * line and whether a delete actually ran. A general-audio target's clips all
+ * carry `downstep: null` (see `stalePitchClips`), collapsing to one group per
+ * reading — `printReport` below only prints a "downstep N:" sub-line when
+ * there is a real downstep to show. */
 function groupByReadingAndDownstep(clips) {
   const byReading = new Map();
   for (const clip of clips) {
@@ -317,12 +390,22 @@ function printReport(clips, presence) {
   const byReading = groupByReadingAndDownstep(clips);
   for (const [reading, byDownstep] of byReading) {
     const pathCount = [...byDownstep.values()].reduce((sum, arr) => sum + arr.length, 0);
-    log(`${reading} (${byDownstep.size} downstep pair(s), ${pathCount} path(s)):`);
+    // A general-audio target (SAK-219) has no downstep dimension — every clip
+    // in `byDownstep` groups under the single `null` key — so the header and
+    // per-group line both drop the "downstep" language rather than printing
+    // a meaningless "downstep null".
+    const pitchShaped = [...byDownstep.keys()].some((d) => d !== null);
+    log(
+      pitchShaped
+        ? `${reading} (${byDownstep.size} downstep pair(s), ${pathCount} path(s)):`
+        : `${reading} (${pathCount} path(s)):`,
+    );
     for (const [downstep, clipsForDownstep] of byDownstep) {
-      log(`  downstep ${downstep}:`);
+      if (downstep !== null) log(`  downstep ${downstep}:`);
+      const indent = downstep !== null ? "    " : "  ";
       for (const clip of clipsForDownstep) {
         const mark = presence === null ? "" : presence.get(clip.path) ? " [exists]" : " [not found]";
-        log(`    ${clip.path}${mark}`);
+        log(`${indent}${clip.path}${mark}`);
       }
     }
   }

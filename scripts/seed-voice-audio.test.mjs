@@ -16,15 +16,16 @@
 // doing that doesn't also try to run the real seed.
 
 import assert from "node:assert/strict";
-import { describe, test } from "node:test";
+import { afterEach, describe, mock, test } from "node:test";
 
 import { COUNTER_KINDS, counterReading, numberReading } from "@/lib/number-reading";
 import { wordPitch } from "@/data/pitch";
 import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
+import { CONFIRMED_BAD_READINGS } from "@/lib/tts-synth";
 import { VOICE_PREVIEW } from "@/lib/voice";
 
-import { bareNumberTexts, countedNumberTexts, pitchItems } from "./seed-voice-audio.mjs";
+import { bareNumberTexts, countedNumberTexts, pitchItems, synthesizeText } from "./seed-voice-audio.mjs";
 
 describe("pitchItems — SAK-216 distractor coverage", () => {
   test("every VOCAB word with a verified downstep gets both a correct item and (when honest) a distractor item", () => {
@@ -195,5 +196,73 @@ describe("bareNumberTexts / countedNumberTexts — SAK-244 counted-number covera
   test("no null reading ever reaches the item list (counterReading's out-of-range guard is respected)", () => {
     const texts = countedNumberTexts();
     assert.ok(texts.every((t) => typeof t === "string" && t.length > 0));
+  });
+});
+
+// SAK-219: `synthesizeText` — what every `textSet` item (words, sentences,
+// kana, yomi, word-examples, grammar-derive) actually synthesizes through —
+// called `audioQuery` with NO correction of any kind before this fix, so any
+// item text that happens to be an EXACT match on one of the 34
+// CONFIRMED_BAD_READINGS (はち, つかう, ...) hit the identical OpenJTalk
+// mis-segmentation bug SAK-215 fixed for the pitch-only path. Same
+// mocked-fetch discipline as src/lib/tts-synth.test.ts (the one seam this
+// module calls through).
+describe("synthesizeText — SAK-219 general-path misreading fix", () => {
+  afterEach(() => {
+    mock.restoreAll();
+  });
+
+  /** Mocks both `/audio_query` and `/synthesis`, recording only the
+   * `text` param `/audio_query` was actually called with (in call order) —
+   * `/synthesis` carries no `text` query param, so it's excluded rather than
+   * pushing a spurious empty string per call. */
+  function mockAudioQuery() {
+    const queried = [];
+    mock.method(globalThis, "fetch", async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/audio_query") {
+        const text = decodeURIComponent(url.searchParams.get("text") ?? "");
+        queried.push(text);
+        const moras = [...text].map((ch) => ({ text: ch, pitch: 5 }));
+        return new Response(JSON.stringify({ accent_phrases: [{ moras }] }), { status: 200 });
+      }
+      if (url.pathname === "/synthesis") {
+        return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url.pathname}`);
+    });
+    return queried;
+  }
+
+  test("a confirmed-bad reading item (はち) is converted to katakana before audio_query", async () => {
+    const queried = mockAudioQuery();
+    await synthesizeText("http://fake-voicevox.test", 9001, "はち");
+    assert.deepEqual(queried, ["ハチ"], "synthesizeText must query VOICEVOX with the katakana form, not bare はち");
+  });
+
+  test("an ordinary word (がっこう) reaches audio_query unchanged", async () => {
+    const queried = mockAudioQuery();
+    await synthesizeText("http://fake-voicevox.test", 9002, "がっこう");
+    assert.deepEqual(queried, ["がっこう"]);
+  });
+
+  test("a real sentence merely CONTAINING a confirmed-bad reading (word-examples/sentences set item) is left untouched", async () => {
+    const queried = mockAudioQuery();
+    const sentence = "彼ははちを飼っています。";
+    await synthesizeText("http://fake-voicevox.test", 9003, sentence);
+    assert.deepEqual(queried, [sentence], "exact-match only — a sentence containing はち must not be substring-matched");
+  });
+
+  test("every CONFIRMED_BAD_READINGS entry is converted away from bare hiragana (smoke check across the full list, no network)", async () => {
+    // Not a live VOICEVOX check (that's done manually per the ticket's own
+    // instruction not to run seed/cleanup scripts here) — just confirms the
+    // fix function is wired in for the FULL list, not just the couple of
+    // readings spot-checked above.
+    for (const reading of CONFIRMED_BAD_READINGS) {
+      const queried = mockAudioQuery();
+      await synthesizeText("http://fake-voicevox.test", 9004, reading);
+      assert.notEqual(queried[0], reading, `${reading} should have been converted away from bare hiragana`);
+      mock.restoreAll();
+    }
   });
 });
