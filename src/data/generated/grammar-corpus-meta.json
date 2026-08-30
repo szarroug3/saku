@@ -7,7 +7,7 @@
   "counts": {
     "japanese": 248802,
     "withEnglish": 232666,
-    "kept": 9654
+    "kept": 9653
   },
   "perPattern": {
     "ba": 257,
@@ -44,7 +44,7 @@
     "node": 89,
     "noni": 164,
     "okage-de": 25,
-    "rashii": 34,
+    "rashii": 33,
     "sei-de": 49,
     "sou-appearance": 222,
     "sou-hearsay": 92,
@@ -192,7 +192,7 @@
       "ta-tokoro",
       "to-omou"
     ],
-    "droppedExamples": 57,
-    "droppedSentences": 18
+    "droppedExamples": 58,
+    "droppedSentences": 19
   }
 }

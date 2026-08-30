@@ -660,7 +660,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "da",
     pattern: "〜だ",
-    gloss: "“is / am / are” (casual)",
+    gloss: "\"is / am / are\" (casual)",
     level: "N5",
     attach: [
       { host: "noun", form: null, add: "だ" },
@@ -674,7 +674,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "desu",
     pattern: "〜です",
-    gloss: "“is / am / are” (polite)",
+    gloss: "\"is / am / are\" (polite)",
     level: "N5",
     attach: [
       { host: "noun", form: null, add: "です" },
@@ -702,7 +702,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "ne",
     pattern: "〜ね",
-    gloss: "seeking agreement (“right?”)",
+    gloss: "seeking agreement (\"right?\")",
     level: "N5",
     attach: [
       { host: "verb", form: "dictionary", add: "ね" },
@@ -721,7 +721,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "yo",
     pattern: "〜よ",
-    gloss: "asserting new information (“I’m telling you”)",
+    gloss: "asserting new information (\"I'm telling you\")",
     level: "N5",
     attach: [
       { host: "verb", form: "dictionary", add: "よ" },
@@ -752,7 +752,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "ga-nai",
     pattern: "〜がない",
-    gloss: "there isn’t X / doesn’t have X",
+    gloss: "there isn't X / doesn't have X",
     level: "N5",
     attach: [{ host: "noun", form: null, add: "がない" }],
     note:
@@ -857,7 +857,7 @@ export const RECIPES: readonly Recipe[] = [
     // gloss and a meaning of its own, not only a build table.
     id: "nai-form",
     pattern: "〜ない",
-    gloss: "plain negative, “doesn’t / won’t do X”",
+    gloss: "plain negative, \"doesn't / won't do X\"",
     level: "N5",
     attach: [{ host: "verb", form: "nai", add: "" }],
   },
@@ -955,7 +955,7 @@ export const RECIPES: readonly Recipe[] = [
     // memory hook. Bare form, add "": its production is "make the た-form".
     id: "ta-form",
     pattern: "〜た",
-    gloss: "plain past, “did X”",
+    gloss: "plain past, \"did X\"",
     level: "N5",
     attach: [
       { host: "verb", form: "ta", add: "" },

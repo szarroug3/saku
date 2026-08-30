@@ -201,9 +201,10 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["kara-reason", "node"],
     feel:
       "ので is softer and more deferential; から states a reason more baldly " +
-      "and is the one you can end a sentence on. Note から has a second, " +
-      "unrelated job, 東京から, 'from Tokyo', which has nothing to do with " +
-      "reasons.",
+      "and reads as more final when it ends the sentence, though ので can " +
+      "trail a sentence the same way, just with less of that snap. Note から " +
+      "has a second, unrelated job, 東京から, 'from Tokyo', which has nothing " +
+      "to do with reasons.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/conjunctive-particle-node/",
       label: "Tofugu: ので",

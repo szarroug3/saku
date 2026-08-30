@@ -71,7 +71,7 @@ test("scope presets render and switch the panel below them", async ({
   // no saved lists, so the empty-state line is the honest signal the panel
   // changed — asserting content, not styling.
   await lists.click();
-  await expect(page.getByText("You haven't made any lists yet.")).toBeVisible();
+  await expect(page.getByText("You don’t have any lists yet.")).toBeVisible();
   await expect(page.getByText("Kind", { exact: true })).toHaveCount(0);
 
   // Back to Everything restores the Kind row.

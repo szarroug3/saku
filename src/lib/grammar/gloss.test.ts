@@ -33,8 +33,8 @@ const APPROVED_TABLE: readonly [string, string][] = [
   ["someone does X for me", "someone X for me"], // te-kureru
   ["have someone do X", "have someone X"], // te-morau
   [
-    "plain negative, “doesn’t / won’t do X”",
-    "plain negative, “doesn’t / won’t X”",
+    "plain negative, \"doesn't / won't do X\"",
+    "plain negative, \"doesn't / won't X\"",
   ], // nai-form
   ["please don't do X", "please don't X"], // nai-request
   ["without doing X", "without X"], // nai-de
@@ -53,7 +53,7 @@ const APPROVED_TABLE: readonly [string, string][] = [
 /** did/done are NEVER touched — the 4 recipes where the past tense is the
  * actual meaning being taught, not scaffolding. */
 const NEVER_TOUCHED: readonly string[] = [
-  "plain past, “did X”", // ta-form
+  "plain past, \"did X\"", // ta-form
   "have done X before", // ta-koto-ga-aru
   "just did X", // ta-bakari, ta-tokoro (same string)
 ];
@@ -88,8 +88,8 @@ describe("edge cases the unconditional strip must not mishandle", () => {
     // not followed by a bare "X" — \bdoes\b would not even match inside it, but
     // this pins the behaviour so a future regex tweak can't regress it quietly.
     assert.equal(
-      dropDoScaffold("there isn’t X / doesn’t have X"),
-      "there isn’t X / doesn’t have X",
+      dropDoScaffold("there isn't X / doesn't have X"),
+      "there isn't X / doesn't have X",
     );
   });
 });

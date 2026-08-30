@@ -511,5 +511,14 @@
     "span": "のに",
     "why": "の+に is purpose ('for/to do X') or the pronoun-の + choice-に of 〜にする, not concessive のに ('even though')",
     "orphaned": false
+  },
+  {
+    "id": 8576121,
+    "jp": "自分らしくあれ。",
+    "en": "Be yourself.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく + あれ, the classical imperative of ある ('be that way') — no lesson teaches this construction",
+    "orphaned": true
   }
 ]

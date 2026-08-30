@@ -682,7 +682,7 @@ export function PracticeSelector({
           ))}
           {!lists.length ? (
             <p className="text-[12px] text-text-muted">
-              You haven&apos;t made any lists yet.
+              You don&rsquo;t have any lists yet.
             </p>
           ) : null}
         </div>

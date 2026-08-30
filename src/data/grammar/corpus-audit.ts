@@ -179,6 +179,42 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
 export const AUDITED: readonly string[] = Object.keys(CONFOUNDS).sort();
 
 /**
+ * Examples that correctly demonstrate their pattern — unlike everything above,
+ * this is NOT a confound — but pair it with a SECOND construction the
+ * curriculum has no lesson for, so the rest of the sentence is unreadable for
+ * a reason no amount of studying `pattern` would fix.
+ *
+ * SAK-283 (L1): 8576121 自分らしくあれ。 ("Be yourself.") is a genuine らしい
+ * example — らしく is the adverbial attach form, correctly tagged — but あれ
+ * here is 有れ, the classical imperative of ある ("be"), not the pronoun of the
+ * same spelling a learner meets at N5. `Example.v` never lists it (ある's
+ * auxiliary uses are deliberately excluded from content lemmas, see corpus.ts),
+ * so the >=95% readability gate in readable.ts cannot catch it either: nothing
+ * in this app teaches らしく+あれ as a way to give a command, and
+ * recipes.ts's rashii row only documents the two attach forms that host a
+ * meaning fact (verb dictionary form, bare noun) — the adverbial form is not
+ * one of them. Keyed the same shape as CONFOUNDS so a future case can reuse
+ * this table without inventing a new one, but kept separate from it: the
+ * "no shipped example lacks its own pattern" invariant in corpus-audit.test.ts
+ * is specifically NOT what is being claimed here.
+ */
+const UNTAUGHT_PREREQUISITE: Readonly<Record<string, Readonly<Record<number, string>>>> = {
+  rashii: {
+    8576121:
+      "らしく + あれ, the classical imperative of ある ('be that way') — no lesson teaches this construction",
+  },
+};
+
+/** Recipe ids UNTAUGHT_PREREQUISITE has an opinion about. */
+export const AUDITED_PREREQ: readonly string[] = Object.keys(UNTAUGHT_PREREQUISITE).sort();
+
+/** Why `ex` cannot be used to teach/quiz `pattern` despite genuinely containing
+ * it, or null if there is no such objection. See UNTAUGHT_PREREQUISITE. */
+export function prerequisiteGapFor(ex: Example, pattern: string): string | null {
+  return UNTAUGHT_PREREQUISITE[pattern]?.[ex.id] ?? null;
+}
+
+/**
  * Why this example does NOT demonstrate `pattern`, or null if it does.
  *
  * The evidence is the example's own blank SPAN — the slice grammar.py recorded
