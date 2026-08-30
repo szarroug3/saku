@@ -873,10 +873,10 @@ export interface HistoryFile {
 // ---------- settings (server-synced preferences) ----------
 //
 // The learner's PREFERENCES, as one server-persisted blob — the third jsonb on
-// the `progress` row beside `history` and `lists` (settings.json in file mode).
-// The server is the source of truth; localStorage holds a per-field cache purely
-// so the app (and the pre-hydration no-flash script) can paint before the server
-// answers. See src/lib/settings.ts (server read/write) and
+// the `progress` row beside `history` and `lists`. The server is the source of
+// truth; localStorage holds a per-field cache purely so the app (and the
+// pre-hydration no-flash script) can paint before the server answers. See
+// src/lib/settings.ts (server read/write) and
 // src/lib/settings-provider.tsx (client seed + reconcile).
 //
 // Every field is OPTIONAL and absence means "this learner never set it, use the

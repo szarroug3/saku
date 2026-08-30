@@ -40,9 +40,12 @@
 //   3. A GAP TOO LONG between two consecutive lessons of the SAME track once
 //      it has started.
 //
-// This test is EXPECTED TO FAIL on today's content (findings #0 and #1,
-// above) — that is deliberate: the failure IS the signal that the curriculum
-// has real, unaddressed gaps, not a bug in this test.
+// This test now PASSES CLEAN (6/6). Findings #0 and #1, above, were real,
+// unaddressed curriculum gaps when this test was first written — the failure
+// was the signal, not a bug in the test. Both have since been fixed (see
+// docs/interleaved-schedule-findings.md for the investigation and fix
+// history); the numbered list above documents what each assertion below
+// guards against, not a currently-failing state.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -82,9 +85,9 @@ test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable
 // A safety cap on the simulation, not a pass/fail threshold — the walk is
 // expected to terminate (nothing left schedulable anywhere) well before this;
 // hitting it without terminating is itself a finding (a runaway/cyclic gate)
-// asserted on below. Set comfortably above the real walk's length (~1,800
-// rounds once the vocab track covers its full ~9,140-glyph curriculum) to
-// leave headroom for curriculum growth.
+// asserted on below. Set comfortably above the real walk's length (2,838
+// rounds as of the vocab track's current ~14,091-glyph curriculum) to leave
+// headroom for curriculum growth.
 const MAX_ROUNDS = 20000;
 
 // keigo and transitivity are exempt from BOTH timing checks below (first-
@@ -124,16 +127,17 @@ const GAP_CHECK_EXEMPT_TRACKS: ReadonlySet<string> = new Set(["keigo", "transiti
 // MAX_PREREQ_DEPTH (unit-scheduler-core.ts, shared with the rest of the app,
 // not something this ticket touches). The scheduler does EXACTLY what it is
 // designed to do here: it defers the `floor` unit rather than teach a
-// four-deep chain in one sitting, and lets 比 (a common, simple kanji) arrive
-// through ordinary cross-track vocab progress — which the fair round-robin
-// simulation shows takes 32 rounds. This is the depth gate working as
+// four-deep chain in one sitting, and lets 阜 (階's other, simple component)
+// arrive through ordinary cross-track vocab progress — which the fair
+// round-robin simulation shows takes 31 rounds (see the console.table below:
+// 'numbers:month (r15) → kanji:阜 (r46)'). This is the depth gate working as
 // intended on real content, not a scheduling bug, and not something to design
 // around by short-circuiting 階's genuine decomposition (see number-
 // construction.ts's `floor` CounterSpec) the way number-kanji.ts's `isLeaf`
 // exemption does for the Sino numerals — that exemption is for kanji whose
 // SHAPE decomposition would mislead, and 階/皆's real etymology is exactly
 // the pedagogically correct "Built from" box content, not a misleading shape.
-// 35 leaves the same comfortable margin over today's real worst case (32)
+// 35 leaves the same comfortable margin over today's real worst case (31)
 // that 30 left over 1, without tolerating a genuine silent-drought regression.
 const MAX_REASONABLE_ROUNDS = 35;
 

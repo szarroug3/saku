@@ -44,7 +44,7 @@ Under a maximally fair interleaving (every track gets a turn every round — the
 | Track | Units taught | Total units | Reachable? |
 |---|---|---|---|
 | kana | 43/43 lessons | 214 units | yes, no gaps |
-| vocab | 472/472 lessons | 2,295 units | yes, no gaps |
+| vocab | 472/472 lessons | 14,091 units | yes, no gaps |
 | numbers | 12/12 lessons | 40 units | yes, no gaps |
 | grammar | 21/21 lessons | 103 units | yes, no gaps |
 | sentence | 10/10 lessons | 10 units | yes, no gaps |
