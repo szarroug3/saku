@@ -103,6 +103,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   // id is derived from the timestamp, so a second save would be idempotent
   // anyway — this is just what the person sees.
   const [savedAsList, setSavedAsList] = useState(false);
+  const [saveListError, setSaveListError] = useState(false);
 
   const { summaryOnly } = results;
   const graduateRuns = cfg.graduateRuns;
@@ -286,8 +287,17 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    * The id is `session-<ts>`, so saving twice writes the same list rather than
    * a duplicate. */
   const saveAsList = async () => {
-    await save(deriveSessionList(results.ts));
-    setSavedAsList(true);
+    setSaveListError(false);
+    try {
+      // save() rejects when the write neither reached the server nor fell
+      // back to local (see lists-provider.tsx) — SAK-262: this used to await
+      // unconditionally, so a failed save just never flipped the button, with
+      // no explanation anywhere on screen.
+      await save(deriveSessionList(results.ts));
+      setSavedAsList(true);
+    } catch {
+      setSaveListError(true);
+    }
   };
 
   // Clearing a pair stamps `clearedMixups[key]` to now, which makes
@@ -457,13 +467,20 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         detail={summary.detail}
         counts={summary.counts}
         trailing={
-          <Btn
-            className="disabled:cursor-default disabled:opacity-45"
-            disabled={savedAsList}
-            onClick={() => void saveAsList()}
-          >
-            {savedAsList ? "Saved as a list" : "Save as a list"}
-          </Btn>
+          <span className="inline-flex items-center gap-2">
+            <Btn
+              className="disabled:cursor-default disabled:opacity-45"
+              disabled={savedAsList}
+              onClick={() => void saveAsList()}
+            >
+              {savedAsList ? "Saved as a list" : "Save as a list"}
+            </Btn>
+            {saveListError ? (
+              <span className="text-[13px] text-danger">
+                Couldn&apos;t save. Try again.
+              </span>
+            ) : null}
+          </span>
         }
       />
 

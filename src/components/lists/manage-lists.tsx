@@ -100,6 +100,13 @@ export function ManageLists() {
     startQuiz(facts, { what: list.name });
   };
 
+  // remove()/rename()/removeFrom() (see lists-provider.tsx) reject when the
+  // write neither reached the server nor fell back to local — SAK-262: this
+  // whole screen used to await the write and refresh() unconditionally, so a
+  // failed edit just didn't show up after the refresh with nothing on screen
+  // ever asking whether it had worked. Each ListCard now catches its own write
+  // and shows an inline error, matching the "Couldn't delete. Try again."
+  // pattern sessions-list.tsx already uses for /api/delete.
   const del = async (list: SavedList) => {
     const count = entriesByList.get(list.id)?.length ?? 0;
     const ok = await confirm({
@@ -162,9 +169,9 @@ export function ManageLists() {
             entries={entriesByList.get(list.id) ?? []}
             voice={cfg.voiceName}
             onDrill={() => drill(list)}
-            onDelete={() => void del(list)}
-            onRename={(name) => void rename(list.id, name)}
-            onRemoveEntry={(id) => void removeFrom(list.id, [id])}
+            onDelete={() => del(list)}
+            onRename={(name) => rename(list.id, name)}
+            onRemoveEntry={(id) => removeFrom(list.id, [id])}
           />
         ))
       )}
@@ -186,25 +193,59 @@ function ListCard({
   entries: EntryId[];
   voice: string;
   onDrill(): void;
-  onDelete(): void;
-  onRename(name: string): void;
-  onRemoveEntry(id: EntryId): void;
+  onDelete(): Promise<void>;
+  onRename(name: string): Promise<void>;
+  onRemoveEntry(id: EntryId): Promise<void>;
 }) {
   const writable = isWritable(list);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(list.name);
+  // One error slot for the whole card: rename, delete, and remove-one-entry
+  // are mutually exclusive actions on the same list at any given moment, so
+  // there is never a case where two would need to show at once. Cleared at
+  // the start of every attempt so a stale message from a different action
+  // doesn't linger.
+  const [error, setError] = useState<string | null>(null);
 
   const shown = entries.slice(0, TILE_CAP);
   const overflow = entries.length - shown.length;
 
   const commit = () => {
     const name = draft.trim();
-    if (name && name !== list.name) onRename(name);
     setEditing(false);
+    if (!name || name === list.name) return;
+    setError(null);
+    void (async () => {
+      try {
+        await onRename(name);
+      } catch {
+        setError("Couldn't rename. Try again.");
+      }
+    })();
   };
   const cancel = () => {
     setDraft(list.name);
     setEditing(false);
+  };
+  const del = () => {
+    setError(null);
+    void (async () => {
+      try {
+        await onDelete();
+      } catch {
+        setError("Couldn't delete. Try again.");
+      }
+    })();
+  };
+  const removeEntry = (id: EntryId) => {
+    setError(null);
+    void (async () => {
+      try {
+        await onRemoveEntry(id);
+      } catch {
+        setError("Couldn't remove. Try again.");
+      }
+    })();
   };
 
   return (
@@ -281,7 +322,7 @@ function ListCard({
                 {writable ? (
                   <button
                     type="button"
-                    onClick={() => onRemoveEntry(id)}
+                    onClick={() => removeEntry(id)}
                     aria-label={`Remove ${entry.glyph} from ${list.name}`}
                     className="absolute right-1 top-1 flex size-4 cursor-pointer items-center justify-center rounded-full border border-border text-[10px] leading-none text-text-muted hover:border-danger hover:text-danger"
                   >
@@ -331,10 +372,13 @@ function ListCard({
         <Btn sel onClick={onDrill} disabled={entries.length === 0}>
           Quiz
         </Btn>
-        <Btn danger onClick={onDelete}>
+        <Btn danger onClick={del}>
           Delete
         </Btn>
       </div>
+      {error ? (
+        <p className="mt-2 text-[13px] text-danger">{error}</p>
+      ) : null}
     </section>
   );
 }

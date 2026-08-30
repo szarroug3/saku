@@ -34,6 +34,12 @@ import { deleteList as deleteListWrite, postList } from "@/lib/progress-fetch";
 import { loadLocalLists } from "@/lib/store/local-progress";
 import type { EntryId, SavedList } from "@/types";
 
+/** save/addTo/removeFrom/rename/remove/create all reject (an Error) when the
+ * underlying write neither reached the server nor fell back to local — callers
+ * must catch and show something, the same "check ok, throw, catch, show an
+ * inline error" shape used elsewhere for /api/delete (sessions-list.tsx,
+ * settings-card.tsx). A resolved promise means the edit is visible on `lists`
+ * after the awaited refresh(); a rejected one means nothing changed. */
 export interface ListsContextValue {
   lists: SavedList[];
   loaded: boolean;
@@ -114,37 +120,54 @@ export function ListsProvider({
   // refresh() that follows re-reads whichever store answered. One reroute, at the
   // one funnel every list mutation already passed through — now shared, so a
   // single re-read updates every reader.
+  //
+  // postList/deleteListWrite report `ok: false` on a write that neither reached
+  // the server nor fell back to local (a signed-in token refresh that still
+  // failed, a network error) — see progress-fetch.ts. THAT is the case this
+  // ticket closes: these callbacks used to await the write and refresh
+  // regardless, so a failed write just... didn't show up after the refresh, with
+  // nothing on screen ever having asked "did it work". Throwing here — the same
+  // "check res.ok, throw on failure" shape sessions-list.tsx and
+  // settings-card.tsx already use for /api/delete — lets a caller's try/catch
+  // show a real error instead of the edit silently vanishing. refresh() only
+  // runs after a write that actually landed; there is nothing new to re-read
+  // after one that didn't.
   const save = useCallback(
     async (list: SavedList) => {
-      await postList(list);
+      const res = await postList(list);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
     },
     [refresh],
   );
   const addTo = useCallback(
     async (id: string, entries: EntryId[]) => {
-      await postList({ addTo: id, entries });
+      const res = await postList({ addTo: id, entries });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
     },
     [refresh],
   );
   const removeFrom = useCallback(
     async (id: string, entries: EntryId[]) => {
-      await postList({ removeFrom: id, entries });
+      const res = await postList({ removeFrom: id, entries });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
     },
     [refresh],
   );
   const rename = useCallback(
     async (id: string, name: string) => {
-      await postList({ rename: id, name });
+      const res = await postList({ rename: id, name });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
     },
     [refresh],
   );
   const remove = useCallback(
     async (id: string) => {
-      await deleteListWrite(id);
+      const res = await deleteListWrite(id);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
     },
     [refresh],

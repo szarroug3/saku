@@ -264,6 +264,7 @@ export function CurrentSessions() {
   // run id every other per-row bit of state keys on, so only the clicked row
   // flips to "Saved".
   const [madeLists, setMadeLists] = useState<Set<string>>(new Set());
+  const [saveListError, setSaveListError] = useState(false);
   // The last row you toggled, for Shift-range selection. A ref, not state: it
   // only ever seeds the NEXT click, so changing it should not re-render.
   const anchorRef = useRef<string | null>(null);
@@ -371,8 +372,17 @@ export function CurrentSessions() {
     void (async () => {
       const list = await fixedRunList(run.id, run.what, run.facts);
       if (!list) return;
-      await save(list);
-      setMadeLists((prev) => new Set(prev).add(run.id));
+      setSaveListError(false);
+      try {
+        // save() rejects when the write neither reached the server nor fell
+        // back to local (see lists-provider.tsx) — SAK-262: this used to
+        // await unconditionally, so a failed save just never flipped the
+        // button, with no explanation anywhere on screen.
+        await save(list);
+        setMadeLists((prev) => new Set(prev).add(run.id));
+      } catch {
+        setSaveListError(true);
+      }
     })();
   };
 
@@ -454,6 +464,11 @@ export function CurrentSessions() {
           range
         </Hint>
       </div>
+      {saveListError ? (
+        <p className="text-[13px] text-danger">
+          Couldn&apos;t save the list. Try again.
+        </p>
+      ) : null}
     </div>
   );
 }
