@@ -99,6 +99,28 @@ test("SAK-218: another newly-confirmed bad reading (つかう, 使う's dictiona
   assert.deepEqual(q2, ["おはようございます", "つかれる"], "つかれる is not on the exception list — must stay hiragana");
 });
 
+test("SAK-243: a confirmed-bad reading whose katakana swap is a no-op (あらそう, 争う) is converted to its KANJI spelling instead", async () => {
+  // Live-verified against real VOICEVOX: audio_query("アラソウ") still comes
+  // back ["ア","ラ","ソ","オ"] — identical to the bare-hiragana bug — so the
+  // ordinary toKatakana fix every other entry uses does nothing here. Only
+  // the actual kanji (争う) gets the correct ending.
+  const { queried } = mockVoicevox();
+  await synthesizeWordWav("あらそう", 3, 9020);
+  assert.deepEqual(queried, ["おはようございます", "争う"]);
+});
+
+test("SAK-243: the same kanji override applies via synthesizeSentenceWav, and only for an exact whole-string match", async () => {
+  const { queried: q1 } = mockVoicevox();
+  await synthesizeSentenceWav("さそう", 9021);
+  assert.deepEqual(q1, ["おはようございます", "誘う"]);
+
+  mock.restoreAll();
+  const { queried: q2 } = mockVoicevox();
+  const sentence = "彼女をさそうつもりだ。"; // contains さそう mid-sentence
+  await synthesizeSentenceWav(sentence, 9022);
+  assert.deepEqual(q2, ["おはようございます", sentence], "a sentence merely containing さそう must reach audio_query unmodified");
+});
+
 test("mora COUNT and pitch pattern are unaffected by the katakana swap", async () => {
   mockVoicevox();
   const calls: string[] = [];
