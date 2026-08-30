@@ -50,7 +50,14 @@ export default function SchedulingDevPage() {
         pulled inline, in teach order.
       </p>
 
-      {/* Track tabs */}
+      {/* Track tabs.
+       * SAK-270: the unselected pill's border-border measured 2.90:1 against
+       * the page ground — under WCAG 1.4.11's 3:1 floor for a UI component
+       * boundary. Same fix as frostCard (see src/components/ui/frost.tsx):
+       * derive from --text instead of --border, since --text is the
+       * max-contrast ink in every theme/mode and a fixed mix of it
+       * self-corrects per palette. 50% clears 3:1 everywhere (worst case
+       * momentum/light at 3.16:1; kiri/dark, the reported case, at 4.88:1). */}
       <div className="mt-6 flex flex-wrap gap-2">
         {SCHEDULING_PREVIEW_TRACKS.map((t) => (
           <button
@@ -59,7 +66,7 @@ export default function SchedulingDevPage() {
             className={`rounded-full border px-3 py-1 text-sm transition ${
               t.id === trackId
                 ? "border-accent bg-accent/10 text-accent"
-                : "border-border text-text-muted hover:text-text"
+                : "border-[color-mix(in_srgb,var(--text)_50%,transparent)] text-text-muted hover:text-text"
             }`}
           >
             {t.title}
