@@ -11,8 +11,19 @@
 // card follows. Theme-aware via the --card token, so every palette and dark mode
 // get their own ground.
 // The surface WITHOUT padding, so a caller (a compact tile) can set its own.
+//
+// SAK-270: border-border/70 measured 2.02:1 against this card's own ground —
+// under WCAG 1.4.11's 3:1 floor for a UI component boundary. --border is tuned
+// as the app's quietest hairline (it's meant to lose to real content), so
+// thinning it further with /70 alpha only pushed it further under the floor.
+// Fixed the same way the accent/arc pairs in globals.css already solve this:
+// derive from --text instead of --border. --text is the max-contrast ink in
+// every theme and mode, so a fixed mix of it self-corrects per palette; 50%
+// is the lowest round number that still clears 3:1 against every theme's own
+// card ground (worst case: momentum/light at 3.21:1; kiri/dark — this card's
+// actual reported case — clears with room at 4.88:1).
 export const frostSurface =
-  "rounded-2xl border border-border/70 " +
+  "rounded-2xl border border-[color-mix(in_srgb,var(--text)_50%,transparent)] " +
   "bg-[color-mix(in_srgb,var(--card)_72%,transparent)]";
 
 export const frostCard = `${frostSurface} p-5`;
