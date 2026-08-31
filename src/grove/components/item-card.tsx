@@ -189,20 +189,24 @@ export function ItemCard({
         </>
       ) : (
         <>
+          {/* The meaning takes all the space left over and centres inside it, so
+              a name that wraps to two lines grows upward instead of shoving the
+              cost line down. */}
           <span
-            className={`font-medium leading-snug text-text ${englishSize(item.english, density)}`}
+            className={`flex flex-1 items-center justify-center font-medium leading-snug text-text ${englishSize(item.english, density)}`}
           >
             {item.english}
           </span>
 
-          {/* What this pick actually costs, centred under the meaning and in the
-              accent, because on this page the number IS the decision. Picking
-              "Wednesday" is the word plus three kanji plus their radicals, so a
-              card reading 1 would understate exactly the overload the Nursery
-              exists to warn about. */}
+          {/* What this pick actually costs, in the accent because on this page
+              the number IS the decision: picking "Wednesday" is the word plus
+              three kanji plus their radicals, so a card reading 1 would
+              understate exactly the overload the Nursery exists to warn about.
+              Anchored to the bottom so it sits on one line across a whole row,
+              which is what makes two cards comparable at a glance. */}
           {pieces !== undefined ? (
             <span
-              className={`mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent ${
+              className={`shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent ${
                 selected ? "opacity-100" : "opacity-90"
               }`}
             >
