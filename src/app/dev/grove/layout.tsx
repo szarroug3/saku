@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 export const GROVE_PAGES: Array<{ href: string; label: string; note: string }> = [
   { href: "/dev/grove", label: "Overview", note: "what this area is and the rules" },
   { href: "/dev/grove/item-card", label: "ItemCard", note: "ghost glyph + English" },
+  { href: "/dev/grove/item-section", label: "ItemSection", note: "headers, counts, gates" },
 ];
 
 export default function GroveGalleryLayout({ children }: { children: ReactNode }) {

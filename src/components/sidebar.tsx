@@ -141,6 +141,7 @@ const DEV_PAGES: Array<{
     children: [
       { href: "/dev/grove", label: "Overview" },
       { href: "/dev/grove/item-card", label: "ItemCard" },
+      { href: "/dev/grove/item-section", label: "ItemSection" },
     ],
   },
 ];
