@@ -147,16 +147,16 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Status is not on the card"
-        note="All four of these are different statuses and the card renders them identically, on purpose. A coloured dot needs a legend, and tinting the glyph just moves the same unlabelled signal somewhere more distracting. The Library shows status where it is actually worded: the coverage bar and the status filter."
+        note="All four of these are a different status and the card renders them identically, on purpose. A coloured dot needed a legend, and tinting the glyph only moved the same unlabelled signal somewhere more distracting. Status belongs to the Library's own furniture, where it is worded: the status filter down the left and the coverage bar above the grid. The labels below are this gallery talking, not the card."
       >
         <Grid>
           {STATUS_ORDER.map((status) => (
-            <ItemCard
-              key={status}
-              item={{ ...ITEMS[1], id: status, status }}
-              lead="glyph"
-              badge={STATUS[status].label.split(",")[0]}
-            />
+            <div key={status}>
+              <ItemCard item={{ ...ITEMS[1], id: status, status }} lead="glyph" />
+              <div className="mt-1.5 text-center text-[10px] uppercase tracking-[0.08em] text-text-muted">
+                {STATUS[status].label.split(",")[0]}
+              </div>
+            </div>
           ))}
         </Grid>
       </Case>
