@@ -4,70 +4,110 @@
 // Library grid, and the Practice deck preview, so it is built once here and
 // composed everywhere rather than reimplemented per surface. Tracked as SAK-292.
 //
-// THE TREATMENT
+// THE TWO ARRANGEMENTS
 //
-// The big Japanese glyph stays as a ghost in the BACKGROUND, and the English sits
-// in FRONT of it. Both, layered — not one or the other.
+// Nursery (`lead="english"`)   the English centred, and the Japanese ONLY as a
+//                              ghost in the bottom-right corner. Nothing legible
+//                              in Japanese, because the whole point of the page
+//                              is that you pick what to learn before you can
+//                              read it. The ghost is texture, not information.
 //
-// That combination is what lets the Nursery be English-only (you pick what to
-// learn before you can read it) while still looking like Saku. A ghosted glyph
-// reads as texture rather than as information, so it gives the card its identity
-// without leaking the answer.
+// Library (`lead="glyph"`)     the character centred, the English directly
+//                              underneath it. No ghost: the glyph is already the
+//                              hero, so a second copy behind it would just muddy
+//                              the card.
 //
-// `lead` flips which one is the foreground, because the Library leads with the
-// glyph while the Nursery leads with the meaning. Same card, same ghost, one prop.
+// WHAT IS DELIBERATELY NOT ON THE CARD
+//
+// - The content type. The section the card sits in already says what these are,
+//   so a "KANJI" label on every tile is the same word repeated twenty times.
+// - A status dot. A bare coloured dot means nothing without a legend beside it.
+//   Where status matters (the Library grid) it is carried by the glyph's own
+//   colour instead, which needs no key to read: muted means you have not met it.
 
 import type { ReactNode } from "react";
 
 import { japaneseFont } from "@/grove/lib/japanese";
-import { KIND_DOT, STATUS } from "@/grove/lib/tokens";
+import { STATUS } from "@/grove/lib/tokens";
 import type { GroveItem } from "@/grove/lib/types";
 
 export type ItemCardDensity = "comfortable" | "compact";
 
 export interface ItemCardProps {
   item: GroveItem;
-  /** Which side of the card is the foreground. Nursery picks by meaning, the
-   * Library picks by character. Default `english`. */
+  /** Which arrangement to use. Nursery picks by meaning, the Library picks by
+   * character. Default `english`. */
   lead?: "english" | "glyph";
-  /** Draw the ghost glyph behind. Turn OFF mid-quiz, where showing the character
-   * at all would give away the answer. Default true. */
+  /** Draw the corner ghost. Only applies to the English arrangement, and turns
+   * OFF mid-quiz where showing the character would give away the answer.
+   * Default true. */
   ghost?: boolean;
   density?: ItemCardDensity;
   selected?: boolean;
   disabled?: boolean;
-  /** Small corner slot: a piece cost ("7 pieces"), a miss count ("3x"), a pair
-   * flag. Kept as a node so callers own the wording. */
+  /**
+   * How many pieces this pick actually commits you to, for the Nursery.
+   *
+   * Not an optional decoration: picking "Wednesday" is the word plus three
+   * kanji plus their radicals, so it is 7 and not 1. If the card showed the
+   * number of picks instead, the cart would understate exactly the overload it
+   * exists to warn about. Rendered bottom-left, opposite the ghost.
+   *
+   * The number passed in is already deduplicated against the rest of the cart,
+   * so a word sharing a radical with something you have chosen costs less here
+   * than it would alone. `shared` names that saving when there is one.
+   */
+  pieces?: number;
+  /** How many of `pieces` were already covered by other picks in the cart. */
+  shared?: number;
+  /** Small top-right slot: a miss count ("3x"), a pair flag, a lock reason.
+   * Kept as a node so callers own the wording. */
   badge?: ReactNode;
   onClick?: () => void;
 }
 
-const PAD: Record<ItemCardDensity, string> = {
-  comfortable: "min-h-[104px] p-3",
-  compact: "min-h-[72px] p-2",
+const BOX: Record<ItemCardDensity, string> = {
+  comfortable: "min-h-[96px] px-3 py-3",
+  compact: "min-h-[68px] px-2 py-2",
 };
 
-/** The ghost scales down as the glyph gets longer, so 水曜日 fills the card the
- * same way 水 does instead of overflowing it. */
+/** The ghost scales down as the glyph gets longer, so 水曜日 sits in the corner
+ * the same way 水 does instead of overflowing it. */
 function ghostSize(glyph: string, density: ItemCardDensity): string {
   const n = [...glyph].length;
   if (density === "compact") {
-    if (n <= 1) return "text-[52px]";
-    if (n <= 2) return "text-[34px]";
-    return "text-[24px]";
+    if (n <= 1) return "text-[40px]";
+    if (n <= 2) return "text-[26px]";
+    return "text-[18px]";
   }
-  if (n <= 1) return "text-[76px]";
-  if (n <= 2) return "text-[50px]";
-  if (n <= 3) return "text-[36px]";
-  return "text-[28px]";
+  if (n <= 1) return "text-[58px]";
+  if (n <= 2) return "text-[38px]";
+  if (n <= 3) return "text-[27px]";
+  return "text-[21px]";
 }
 
-function leadSize(text: string, density: ItemCardDensity): string {
-  const n = [...text].length;
-  if (density === "compact") return n <= 3 ? "text-[20px]" : "text-[13px]";
+/** English shrinks as it lengthens so "day of the week" still fits on a tile
+ * without truncating, which matters because it is the only thing on the card. */
+function englishSize(text: string, density: ItemCardDensity): string {
+  const n = text.length;
+  if (density === "compact") return n <= 10 ? "text-[13px]" : "text-[11px]";
+  if (n <= 8) return "text-[19px]";
+  if (n <= 14) return "text-[16px]";
+  if (n <= 22) return "text-[14px]";
+  return "text-[12.5px]";
+}
+
+function glyphSize(glyph: string, density: ItemCardDensity): string {
+  const n = [...glyph].length;
+  if (density === "compact") {
+    if (n <= 1) return "text-[26px]";
+    if (n <= 3) return "text-[17px]";
+    return "text-[13px]";
+  }
+  if (n <= 1) return "text-[38px]";
   if (n <= 2) return "text-[30px]";
-  if (n <= 4) return "text-[22px]";
-  return "text-[15px]";
+  if (n <= 3) return "text-[25px]";
+  return "text-[19px]";
 }
 
 export function ItemCard({
@@ -77,13 +117,11 @@ export function ItemCard({
   density = "comfortable",
   selected = false,
   disabled = false,
+  pieces,
+  shared,
   badge,
   onClick,
 }: ItemCardProps) {
-  const status = STATUS[item.status];
-  const front = lead === "glyph" ? item.glyph : item.english;
-  const back = lead === "glyph" ? item.english : item.glyph;
-
   const interactive = Boolean(onClick) && !disabled;
   const Tag = interactive ? "button" : "div";
 
@@ -92,8 +130,8 @@ export function ItemCard({
       {...(interactive ? { type: "button" as const, onClick } : {})}
       aria-disabled={disabled || undefined}
       className={[
-        "relative isolate flex w-full flex-col justify-end overflow-hidden rounded-xl text-left",
-        PAD[density],
+        "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center",
+        BOX[density],
         "border bg-card transition-colors",
         selected ? "border-accent bg-accent-bg" : "border-border",
         interactive ? "hover:border-accent/60 hover:bg-panel" : "",
@@ -102,15 +140,16 @@ export function ItemCard({
         .filter(Boolean)
         .join(" ")}
     >
-      {/* The ghost. aria-hidden because the same character is already announced
-          by the visible text below — a screen reader should not hear it twice.
-          Low opacity keeps it behind the foreground's contrast floor. */}
-      {ghost ? (
+      {/* The ghost, bottom-right, bleeding slightly off the corner so it reads as
+          a watermark rather than as a second piece of content. aria-hidden: a
+          screen reader should not announce a character the sighted design is
+          deliberately not asking you to read. */}
+      {ghost && lead === "english" ? (
         <span
           aria-hidden
           className={[
-            "pointer-events-none absolute -right-1 -top-1 -z-10 select-none leading-none",
-            "text-text opacity-[0.07]",
+            "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none leading-none",
+            "text-text opacity-[0.09]",
             ghostSize(item.glyph, density),
             japaneseFont(item.glyph),
           ].join(" ")}
@@ -119,49 +158,64 @@ export function ItemCard({
         </span>
       ) : null}
 
-      {/* Status marker. Colour alone never carries the meaning: the title
-          attribute names it, and every surface that uses this card also renders
-          a legend. */}
-      <span
-        title={status.label}
-        className={`absolute right-2 top-2 h-1.5 w-1.5 rounded-full ${status.dot}`}
-      />
-
       {badge ? (
-        <span className="absolute left-2 top-2 text-[10px] font-semibold uppercase tracking-[0.06em] text-text-muted">
+        <span className="absolute right-2 top-1.5 text-[9.5px] font-semibold uppercase tracking-[0.06em] text-text-muted">
           {badge}
         </span>
       ) : null}
 
-      <span
-        className={[
-          "font-medium leading-tight",
-          leadSize(front, density),
-          lead === "glyph" ? status.glyph : "text-text",
-          japaneseFont(front),
-        ].join(" ")}
-      >
-        {front}
-      </span>
 
-      {/* The other half, small and muted. In the Nursery this is the reading or
-          nothing; the point of the page is that you choose by meaning. */}
       {lead === "glyph" ? (
-        <span className="mt-0.5 truncate text-[11px] text-text-muted">{back}</span>
-      ) : item.reading ? (
-        <span
-          className={`mt-0.5 truncate text-[11px] text-text-muted ${japaneseFont(item.reading)}`}
-        >
-          {item.reading}
-        </span>
-      ) : null}
+        <>
+          {/* Status is carried by the glyph's own colour, so the grid scans by
+              what you know without needing a key beside it. */}
+          <span
+            className={[
+              "font-medium leading-tight",
+              glyphSize(item.glyph, density),
+              STATUS[item.status].glyph,
+              japaneseFont(item.glyph),
+            ].join(" ")}
+          >
+            {item.glyph}
+          </span>
+          <span
+            className={`mt-1 w-full truncate ${
+              density === "compact" ? "text-[9.5px]" : "text-[11.5px]"
+            } text-text-muted`}
+          >
+            {item.english}
+          </span>
+        </>
+      ) : (
+        <>
+          <span
+            className={`font-medium leading-snug text-text ${englishSize(item.english, density)}`}
+          >
+            {item.english}
+          </span>
 
-      <span className="mt-1 flex items-center gap-1.5">
-        <span className={`h-1 w-1 rounded-full ${KIND_DOT[item.kind]}`} aria-hidden />
-        <span className="text-[9.5px] font-medium uppercase tracking-[0.09em] text-text-muted">
-          {item.kind}
-        </span>
-      </span>
+          {/* What this pick actually costs, centred under the meaning and in the
+              accent, because on this page the number IS the decision. Picking
+              "Wednesday" is the word plus three kanji plus their radicals, so a
+              card reading 1 would understate exactly the overload the Nursery
+              exists to warn about. */}
+          {pieces !== undefined ? (
+            <span
+              className={`mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent ${
+                selected ? "opacity-100" : "opacity-90"
+              }`}
+            >
+              {pieces} {pieces === 1 ? "piece" : "pieces"}
+              {shared ? (
+                <span className="ml-1 font-medium normal-case tracking-normal text-text-muted">
+                  &middot; {shared} shared
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </>
+      )}
     </Tag>
   );
 }
