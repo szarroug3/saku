@@ -4,75 +4,136 @@
 // Route: /dev/grove/item-card
 //
 // Real content, not lorem: these are actual items the redesign has to render,
-// including the awkward ones (a three-character word, a long English meaning, a
-// counter whose glyph is a single kana).
+// including the awkward ones (a three-character word, a long meaning, a counter
+// whose glyph is a single kana).
 //
-// The cards are shown UNDER section headers here rather than in one flat grid,
+// Cards are shown UNDER per-type section headers rather than in one flat grid,
 // because that is how they appear in the real pages and it is what makes the
-// missing type label on each card the right call.
+// missing type label on each card the right call. Those headers are stubs here;
+// ItemSection (SAK-293) replaces them with computed counts and real gating.
 
 import { useState } from "react";
 
 import { ItemCard } from "@/grove/components/item-card";
 import { STATUS, STATUS_ORDER } from "@/grove/lib/tokens";
-import type { GroveItem, GroveKind } from "@/grove/lib/types";
+import type { GroveItem } from "@/grove/lib/types";
 
-const ITEMS: GroveItem[] = [
-  { id: "k-moku", kind: "kanji", glyph: "木", english: "tree", reading: "き", status: "mastered" },
-  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", reading: "みず", status: "learned" },
-  { id: "k-you", kind: "kanji", glyph: "曜", english: "day of the week", reading: "よう", status: "planted" },
-  { id: "k-shin", kind: "kanji", glyph: "森", english: "forest", reading: "もり", status: "wild" },
-  { id: "r-hane", kind: "radical", glyph: "羽", english: "feathers", status: "planted" },
-  { id: "r-moku", kind: "radical", glyph: "木", english: "tree", status: "mastered" },
-  { id: "kana-ki", kind: "kana", glyph: "き", english: "ki", status: "learned" },
-  { id: "kana-shu", kind: "kana", glyph: "しゅ", english: "shu", status: "wild" },
-  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", reading: "すいようび", status: "planted" },
-  { id: "w-water", kind: "word", glyph: "お水", english: "water", reading: "おみず", status: "learned" },
-  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild" },
-  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "learned" },
-  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "planted" },
-  { id: "g-desu", kind: "grammar", glyph: "です", english: "polite statement", status: "wild" },
-  // Locked picks. Each waits on something specific, and the reason is phrased as
-  // the learner would hear it rather than as a rule ID.
-  { id: "kana-cha", kind: "kana", glyph: "ちゃ", english: "cha", status: "wild" },
-  { id: "c-anim", kind: "counter", glyph: "匹", english: "small animals", status: "wild" },
-  { id: "w-future", kind: "word", glyph: "未来", english: "the future", status: "wild" },
-];
-
-/** Why a pick cannot be taken yet. Presence here is what locks the card. */
-const LOCKED: Record<string, string> = {
-  "kana-cha": "comes with sha shu sho",
-  "c-anim": "taught with 1 through 10",
-  "w-future": "needs its kanji first",
-};
-
-const byKind = (k: GroveKind) => ITEMS.filter((i) => i.kind === k);
+/** How many pieces a pick commits you to, and how many of those something else
+ * in the cart already covers. Stands in for the prerequisite graph (SAK-299). */
+type Pick = GroveItem & { pieces: number; shared?: number; lockedReason?: string };
 
 /**
- * What each pick really costs, in pieces, already deduplicated against the rest
- * of the cart. Stands in for the prerequisite graph until that lands (SAK-299).
+ * WORDS. Only the next few available ones are listed.
  *
- * These are the real numbers from the cost model: "Wednesday" is the word plus
- * three kanji plus their radicals, and the two kanji that share a radical are
- * only charged once, so it is 7 rather than 9. "Forest" is cheap here because
- * the 木 radical is already covered by "tree".
+ * Locked words are not shown at all, unlike locked kana rows and counters. With
+ * roughly 12,500 of them a locked word carries no information: you would scroll
+ * past thousands of greyed cards to reach the handful you can actually take.
+ * Rows and counters are small, enumerable sets where seeing the shape of what is
+ * coming is worth the space.
+ *
+ * Adding a word plants its whole prerequisite tree with it, which is exactly
+ * what the piece count counts: the word, its kanji, and their radicals.
  */
-const COST: Record<string, { pieces: number; shared?: number }> = {
-  "w-wed": { pieces: 7 },
-  "w-water": { pieces: 3 },
-  "w-open": { pieces: 4 },
-  "k-shin": { pieces: 2, shared: 1 },
-  "c-thing": { pieces: 1 },
-  "c-flat": { pieces: 3 },
-  "kana-ki": { pieces: 1 },
-  "kana-shu": { pieces: 3 },
-  "g-desu": { pieces: 1 },
-};
+const WORDS: Pick[] = [
+  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 7 },
+  { id: "w-water", kind: "word", glyph: "お水", english: "water", status: "wild", pieces: 3 },
+  { id: "w-forest", kind: "word", glyph: "森", english: "forest", status: "wild", pieces: 2, shared: 1 },
+  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild", pieces: 4 },
+  { id: "w-uni", kind: "word", glyph: "大学", english: "university", status: "wild", pieces: 5 },
+  { id: "w-time", kind: "word", glyph: "時間", english: "time", status: "wild", pieces: 6 },
+];
+
+/**
+ * KANA. One card per row, named as a row.
+ *
+ * "ka ki ku ke ko" reads as a password. "K row" reads as a thing you could
+ * decide to learn, and it is how the rows get referred to once you know any of
+ * them. The ghost is the row's representative character.
+ */
+const KANA: Pick[] = [
+  { id: "kana-a", kind: "kana", glyph: "あ", english: "Vowels", status: "mastered", pieces: 5 },
+  { id: "kana-k", kind: "kana", glyph: "か", english: "K row", status: "learned", pieces: 5 },
+  { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", status: "wild", pieces: 5 },
+  { id: "kana-t", kind: "kana", glyph: "た", english: "T row", status: "wild", pieces: 5 },
+  {
+    id: "kana-g", kind: "kana", glyph: "が", english: "G row", status: "wild", pieces: 5,
+    lockedReason: "comes with the K row",
+  },
+  {
+    id: "kana-ky", kind: "kana", glyph: "きゃ", english: "Blended K", status: "wild", pieces: 3,
+    lockedReason: "comes with the K row",
+  },
+];
+
+/** COUNTING. Small enough that showing the locked ones is worth the space. */
+const COUNTING: Pick[] = [
+  { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", status: "wild", pieces: 10 },
+  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "wild", pieces: 1 },
+  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 3 },
+  {
+    id: "c-anim", kind: "counter", glyph: "匹", english: "small animals", status: "wild", pieces: 3,
+    lockedReason: "taught with 1 through 10",
+  },
+];
+
+/**
+ * VERB PAIRS, their own section now.
+ *
+ * These used to ride along with a headword, so picking "to open something"
+ * silently dragged its partner in and a card's real cost depended on grammar the
+ * learner could not see. As a section they get chosen deliberately, and the cost
+ * shown is the honest one for taking both halves.
+ */
+const VERB_PAIRS: Pick[] = [
+  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", status: "wild", pieces: 2, shared: 2 },
+  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", status: "wild", pieces: 4 },
+  { id: "vp-enter", kind: "verbPair", glyph: "入れる", english: "to put in", status: "wild", pieces: 4 },
+];
+
+/** KEIGO, also its own section. A polite form is frequently written with
+ * entirely different kanji from the plain one, so it carries its own cost. */
+const KEIGO: Pick[] = [
+  { id: "kg-eat", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", status: "wild", pieces: 6 },
+  { id: "kg-go", kind: "keigo", glyph: "いらっしゃる", english: "to go, politely", status: "wild", pieces: 1 },
+  { id: "kg-say", kind: "keigo", glyph: "おっしゃる", english: "to say, politely", status: "wild", pieces: 1 },
+];
+
+const LIBRARY: GroveItem[] = [
+  { id: "k-moku", kind: "kanji", glyph: "木", english: "tree", status: "mastered" },
+  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", status: "learned" },
+  { id: "k-you", kind: "kanji", glyph: "曜", english: "day of the week", status: "planted" },
+  { id: "k-shin", kind: "kanji", glyph: "森", english: "forest", status: "wild" },
+  { id: "r-hane", kind: "radical", glyph: "羽", english: "feathers", status: "planted" },
+  { id: "l-kana-ki", kind: "kana", glyph: "き", english: "ki", status: "learned" },
+  { id: "l-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "planted" },
+  { id: "l-water", kind: "word", glyph: "お水", english: "water", status: "learned" },
+  { id: "l-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild" },
+  { id: "l-thing", kind: "counter", glyph: "つ", english: "general things", status: "learned" },
+  { id: "l-desu", kind: "grammar", glyph: "です", english: "polite statement", status: "wild" },
+  { id: "l-keigo", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", status: "wild" },
+];
 
 export default function ItemCardGalleryPage() {
-  const [picked, setPicked] = useState<string[]>(["k-sui"]);
+  const [picked, setPicked] = useState<string[]>(["w-water"]);
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const nursery = (rows: Pick[]) => (
+    <Grid>
+      {rows.map((it) => (
+        <ItemCard
+          key={it.id}
+          item={it}
+          pieces={it.pieces}
+          shared={it.shared}
+          locked={Boolean(it.lockedReason)}
+          lockedReason={it.lockedReason}
+          selected={picked.includes(it.id)}
+          onClick={() => toggle(it.id)}
+        />
+      ))}
+    </Grid>
+  );
 
   return (
     <div>
@@ -80,55 +141,41 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Nursery"
-        note="English centred, nothing legible in Japanese. The character appears only as a ghost in the bottom-right corner, so the card carries Saku's texture without leaking the answer. Along the bottom, in the accent, is what the pick actually commits you to: Wednesday is the word plus three kanji plus their radicals, so it is 7 and not 1. It is anchored to the card's bottom edge so every cost in a row lands on one line, even when a meaning wraps. No type label, because the section header above already says it. Click to select. The outlined cards are locked: no padlock, just a dashed edge, no surface, and greyed text, with the reason standing where the cost would be."
+        note="English centred, nothing legible in Japanese, and the character only as a ghost in the corner. Along the bottom in the accent is what the pick actually commits you to, anchored to the card's edge so every cost in a row lands on one line. No type label, because the section header already says it. Click to select."
       >
-        <Section title="Words">
-          <Grid>
-            {byKind("word").map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                pieces={COST[item.id]?.pieces ?? 1}
-                shared={COST[item.id]?.shared}
-                locked={item.id in LOCKED}
-                lockedReason={LOCKED[item.id]}
-                selected={picked.includes(item.id)}
-                onClick={() => toggle(item.id)}
-              />
-            ))}
-          </Grid>
+        <Section
+          title="Words"
+          hint="The next few you can take. Locked words are not shown at all: with 12,500 of them, greyed cards would be most of what you ever scrolled past. Adding one plants its whole prerequisite tree, which is what the count is counting."
+        >
+          {nursery(WORDS)}
         </Section>
-        <Section title="Counting">
-          <Grid>
-            {byKind("counter").map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                pieces={COST[item.id]?.pieces ?? 1}
-                shared={COST[item.id]?.shared}
-                locked={item.id in LOCKED}
-                lockedReason={LOCKED[item.id]}
-                selected={picked.includes(item.id)}
-                onClick={() => toggle(item.id)}
-              />
-            ))}
-          </Grid>
+
+        <Section
+          title="Kana sounds"
+          hint="One card per row, named as a row rather than as a string of romaji. A small enough set that the locked ones are worth showing, so the shape of what is coming stays visible."
+        >
+          {nursery(KANA)}
         </Section>
-        <Section title="Kana sounds">
-          <Grid>
-            {byKind("kana").map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                pieces={COST[item.id]?.pieces ?? 1}
-                shared={COST[item.id]?.shared}
-                locked={item.id in LOCKED}
-                lockedReason={LOCKED[item.id]}
-                selected={picked.includes(item.id)}
-                onClick={() => toggle(item.id)}
-              />
-            ))}
-          </Grid>
+
+        <Section
+          title="Counting"
+          hint="Also small and enumerable, so locked entries stay visible with their reason."
+        >
+          {nursery(COUNTING)}
+        </Section>
+
+        <Section
+          title="Verb pairs"
+          hint="Its own section rather than something bundled into a word. Picking a headword used to drag its partner in silently, which made a card's real cost depend on grammar you could not see."
+        >
+          {nursery(VERB_PAIRS)}
+        </Section>
+
+        <Section
+          title="Keigo"
+          hint="Also its own section. A polite form is often written with entirely different kanji from the plain one, so it carries its own cost instead of inflating someone else's."
+        >
+          {nursery(KEIGO)}
         </Section>
       </Case>
 
@@ -136,20 +183,11 @@ export default function ItemCardGalleryPage() {
         title="Library"
         note="The character centred in plain text colour, with its meaning directly underneath in the accent. No ghost here: the glyph is already the hero, so a second copy behind it would only muddy the card."
       >
-        <Section title="Kanji">
-          <Grid>
-            {byKind("kanji").map((item) => (
-              <ItemCard key={item.id} item={item} lead="glyph" />
-            ))}
-          </Grid>
-        </Section>
-        <Section title="Words">
-          <Grid>
-            {byKind("word").map((item) => (
-              <ItemCard key={item.id} item={item} lead="glyph" />
-            ))}
-          </Grid>
-        </Section>
+        <Grid>
+          {LIBRARY.map((item) => (
+            <ItemCard key={item.id} item={item} lead="glyph" />
+          ))}
+        </Grid>
       </Case>
 
       <Case
@@ -157,7 +195,7 @@ export default function ItemCardGalleryPage() {
         note="For the grid at real scale, where the job is fitting a couple of hundred glyphs on screen at once."
       >
         <div className="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-1.5">
-          {ITEMS.map((item) => (
+          {LIBRARY.map((item) => (
             <ItemCard key={item.id} item={item} lead="glyph" density="compact" />
           ))}
         </div>
@@ -170,7 +208,7 @@ export default function ItemCardGalleryPage() {
         <Grid>
           {STATUS_ORDER.map((status) => (
             <div key={status}>
-              <ItemCard item={{ ...ITEMS[1], id: status, status }} lead="glyph" />
+              <ItemCard item={{ ...LIBRARY[1], id: status, status }} lead="glyph" />
               <div className="mt-1.5 text-center text-[10px] uppercase tracking-[0.08em] text-text-muted">
                 {STATUS[status].label.split(",")[0]}
               </div>
@@ -180,14 +218,14 @@ export default function ItemCardGalleryPage() {
       </Case>
 
       <Case
-        title="Locked, and badges"
-        note="Locked is muted and inert with the reason standing in place of the cost. It stays in the tab order, so the reason is reachable without a pointer rather than buried in a hover. That leaves the top-right badge free for whatever else a host wants: a pair flag, a miss count in Practice. The third card is a pick made cheaper by parts already in the cart."
+        title="Locked, and the badge slot"
+        note="Locked loses its surface rather than going translucent: dashed edge, greyed text, and the reason standing in place of the cost. Fading the whole card also faded the reason, which measured 2:1 against the page. It stays in the tab order so the reason is reachable without a pointer. That leaves the top-right badge free for whatever else a host wants, such as a Practice miss count."
       >
         <Grid>
-          <ItemCard item={ITEMS[14]} locked lockedReason="comes with sha shu sho" />
-          <ItemCard item={ITEMS[15]} locked lockedReason="taught with 1 through 10" />
-          <ItemCard item={ITEMS[3]} pieces={2} shared={1} />
-          <ItemCard item={ITEMS[10]} pieces={4} badge="pair" />
+          <ItemCard item={KANA[4]} locked lockedReason="comes with the K row" />
+          <ItemCard item={COUNTING[3]} locked lockedReason="taught with 1 through 10" />
+          <ItemCard item={WORDS[2]} pieces={2} shared={1} />
+          <ItemCard item={WORDS[0]} pieces={7} badge="3x" />
         </Grid>
       </Case>
 
@@ -196,10 +234,10 @@ export default function ItemCardGalleryPage() {
         note="Mid-quiz the character IS the answer, so the ghost would give it away. One prop turns it off and the card is otherwise unchanged."
       >
         <Grid>
-          <ItemCard item={ITEMS[1]} ghost={false} pieces={3} />
-          <ItemCard item={ITEMS[8]} ghost={false} pieces={7} />
-          <ItemCard item={ITEMS[1]} pieces={3} />
-          <ItemCard item={ITEMS[8]} pieces={7} />
+          <ItemCard item={WORDS[1]} ghost={false} pieces={3} />
+          <ItemCard item={WORDS[0]} ghost={false} pieces={7} />
+          <ItemCard item={WORDS[1]} pieces={3} />
+          <ItemCard item={WORDS[0]} pieces={7} />
         </Grid>
       </Case>
     </div>
@@ -215,8 +253,8 @@ function Intro() {
         keeps the Japanese only as a corner ghost, because you pick what to learn
         before you can read it.{" "}
         <strong className="text-text">Library</strong> centres the character with
-        the English underneath, because there you arrive having met something in
-        the wild.
+        its meaning underneath in the accent, because there you arrive having met
+        something in the wild.
       </p>
       <p className="mt-2 text-sm leading-relaxed text-text-muted">
         Neither shows the content type: the section a card sits in is already per
@@ -238,7 +276,7 @@ function Case({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-8">
+    <section className="mt-9">
       <h2 className="text-[15px] font-semibold text-text">{title}</h2>
       <p className="mb-3 mt-1 max-w-[78ch] text-[13px] leading-relaxed text-text-muted">
         {note}
@@ -249,13 +287,28 @@ function Case({
 }
 
 /** A per-type section header, the thing that makes a type label on each card
- * redundant. Mirrors what ItemSection will render for real. */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+ * redundant. A stub for ItemSection (SAK-293). */
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="mt-4 first:mt-0">
-      <h3 className="mb-2 border-b border-border/60 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+    <div className="mt-5 first:mt-0">
+      <h3 className="border-b border-border/60 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
         {title}
       </h3>
+      {hint ? (
+        <p className="mb-2 mt-1.5 max-w-[76ch] text-[11.5px] leading-relaxed text-text-muted/80">
+          {hint}
+        </p>
+      ) : (
+        <div className="mb-2" />
+      )}
       {children}
     </div>
   );

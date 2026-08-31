@@ -170,7 +170,7 @@ export function ItemCard({
         <span
           aria-hidden
           className={[
-            "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none leading-none",
+            "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none whitespace-nowrap leading-none",
             // Fainter on a locked card, so the corner does not compete with the
             // reason now that the card no longer dims as a whole.
             locked ? "text-text opacity-[0.05]" : "text-text opacity-[0.09]",

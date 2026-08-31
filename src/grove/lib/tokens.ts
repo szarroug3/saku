@@ -31,6 +31,12 @@ export const KIND_DOT: Record<GroveKind, string> = {
   word: "bg-sentence-topic",
   counter: "bg-warning",
   grammar: "bg-success",
+  // Verb pairs and keigo are word families, so they share the word hue rather
+  // than inventing two more. Saku's palette has no categorical ramp to draw an
+  // eighth distinct colour from, and these three never appear in the same
+  // section, so the collision is never seen side by side.
+  verbPair: "bg-sentence-topic",
+  keigo: "bg-sentence-topic",
 };
 
 /** Human label for a kind, for eyebrows and tooltips. */
@@ -41,6 +47,8 @@ export const KIND_LABEL: Record<GroveKind, string> = {
   word: "word",
   counter: "counter",
   grammar: "grammar",
+  verbPair: "verb pair",
+  keigo: "keigo",
 };
 
 /**

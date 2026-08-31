@@ -2,9 +2,25 @@
 // tree owns its types so the old content model can be deleted without touching
 // anything in here. See src/grove/README.md.
 
-/** What kind of thing this is. Drives the accent pip and which lesson blocks a
- * detail panel renders. */
-export type GroveKind = "kana" | "radical" | "kanji" | "word" | "counter" | "grammar";
+/**
+ * What kind of thing this is. Drives the section an item belongs to and which
+ * lesson blocks a detail panel renders.
+ *
+ * `verbPair` and `keigo` are their own kinds rather than attributes of a word.
+ * They used to ride along with a headword, so picking "to open something"
+ * silently dragged its partner in, which made one card's real cost depend on
+ * grammar the learner could not see. They now unlock as their own sections and
+ * are picked deliberately, like anything else.
+ */
+export type GroveKind =
+  | "kana"
+  | "radical"
+  | "kanji"
+  | "word"
+  | "counter"
+  | "grammar"
+  | "verbPair"
+  | "keigo";
 
 /**
  * How far the learner has got with one item. Four values, shared by every Grove
@@ -38,9 +54,21 @@ export function isOnTree(status: GroveStatus): boolean {
 export interface GroveItem {
   id: string;
   kind: GroveKind;
-  /** The Japanese. Also the ghost drawn behind an ItemCard. */
+  /**
+   * The Japanese. Also the ghost drawn behind an ItemCard.
+   *
+   * For a kana row this is the row's representative character (か for the K
+   * row), since the row itself has no single glyph but still wants texture in
+   * the corner.
+   */
   glyph: string;
-  /** The meaning, in English. What the Nursery shows in the foreground. */
+  /**
+   * What the Nursery shows in the foreground, in English.
+   *
+   * For most kinds this is the meaning. For a kana row it is the row's name
+   * ("Vowels", "K row"), because romaji strung together ("ka ki ku ke ko")
+   * reads as a password rather than as a thing you could choose to learn.
+   */
   english: string;
   /** Reading, when the item has one unambiguous one. Kana, not romaji. */
   reading?: string;
