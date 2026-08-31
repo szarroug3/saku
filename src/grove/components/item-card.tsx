@@ -59,20 +59,24 @@ export interface ItemCardProps {
    * meaningful cost to report. */
   lockedReason?: string;
   /**
-   * How many pieces this pick actually commits you to, for the Nursery.
+   * How many pieces this pick commits you to: every distinct node in its
+   * prerequisite tree, counted once.
    *
-   * Not an optional decoration: picking "Wednesday" is the word plus three
-   * kanji plus their radicals, so it is 7 and not 1. If the card showed the
-   * number of picks instead, the cart would understate exactly the overload it
-   * exists to warn about.
+   * Not an optional decoration. If the card showed the number of picks instead,
+   * it would say 1 for a word that is really eight things to learn, and
+   * understate exactly the overload the Nursery exists to warn about.
    *
-   * The number passed in is already deduplicated against the rest of the cart,
-   * so a word sharing a radical with something you have chosen costs less here
-   * than it would alone. `shared` names that saving when there is one.
+   * A piece reached by more than one parent is still one piece. For a word made
+   * of kanji A and kanji B, where A is built from radicals A and B and B is
+   * built from radicals A and C, radical A is counted once:
+   *
+   *     word + kanji A + radical A + radical B + kanji B + radical C = 6
+   *
+   * So the number is intrinsic to the item and stays comparable between cards.
+   * It does not shift depending on what else is in the cart; the cart's own
+   * total does that deduplication across picks, where it can be explained.
    */
   pieces?: number;
-  /** How many of `pieces` were already covered by other picks in the cart. */
-  shared?: number;
   /** Small top-right slot: a miss count ("3x"), a pair flag. Kept as a node so
    * callers own the wording. */
   badge?: ReactNode;
@@ -132,7 +136,6 @@ export function ItemCard({
   locked = false,
   lockedReason,
   pieces,
-  shared,
   badge,
   onClick,
 }: ItemCardProps) {
@@ -246,11 +249,6 @@ export function ItemCard({
               }`}
             >
               {pieces} {pieces === 1 ? "piece" : "pieces"}
-              {shared ? (
-                <span className="ml-1 font-medium normal-case tracking-normal text-text-muted">
-                  &middot; {shared} shared
-                </span>
-              ) : null}
             </span>
           ) : null}
         </>

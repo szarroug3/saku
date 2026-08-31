@@ -18,9 +18,9 @@ import { ItemCard } from "@/grove/components/item-card";
 import { STATUS, STATUS_ORDER } from "@/grove/lib/tokens";
 import type { GroveItem } from "@/grove/lib/types";
 
-/** How many pieces a pick commits you to, and how many of those something else
- * in the cart already covers. Stands in for the prerequisite graph (SAK-299). */
-type Pick = GroveItem & { pieces: number; shared?: number; lockedReason?: string };
+/** How many pieces a pick commits you to: every distinct node in its own
+ * prerequisite tree, counted once. Stands in for the graph (SAK-299). */
+type Pick = GroveItem & { pieces: number; lockedReason?: string };
 
 /**
  * WORDS. Only the next few available ones are listed.
@@ -35,9 +35,9 @@ type Pick = GroveItem & { pieces: number; shared?: number; lockedReason?: string
  * what the piece count counts: the word, its kanji, and their radicals.
  */
 const WORDS: Pick[] = [
-  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 7 },
+  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 8 },
   { id: "w-water", kind: "word", glyph: "お水", english: "water", status: "wild", pieces: 3 },
-  { id: "w-forest", kind: "word", glyph: "森", english: "forest", status: "wild", pieces: 2, shared: 1 },
+  { id: "w-forest", kind: "word", glyph: "森", english: "forest", status: "wild", pieces: 3 },
   { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild", pieces: 4 },
   { id: "w-uni", kind: "word", glyph: "大学", english: "university", status: "wild", pieces: 5 },
   { id: "w-time", kind: "word", glyph: "時間", english: "time", status: "wild", pieces: 6 },
@@ -69,7 +69,7 @@ const KANA: Pick[] = [
 const COUNTING: Pick[] = [
   { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", status: "wild", pieces: 10 },
   { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "wild", pieces: 1 },
-  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 3 },
+  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 4 },
   {
     id: "c-anim", kind: "counter", glyph: "匹", english: "small animals", status: "wild", pieces: 3,
     lockedReason: "taught with 1 through 10",
@@ -85,8 +85,8 @@ const COUNTING: Pick[] = [
  * shown is the honest one for taking both halves.
  */
 const VERB_PAIRS: Pick[] = [
-  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", status: "wild", pieces: 2, shared: 2 },
-  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", status: "wild", pieces: 4 },
+  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", status: "wild", pieces: 5 },
+  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", status: "wild", pieces: 5 },
   { id: "vp-enter", kind: "verbPair", glyph: "入れる", english: "to put in", status: "wild", pieces: 4 },
 ];
 
@@ -125,7 +125,6 @@ export default function ItemCardGalleryPage() {
           key={it.id}
           item={it}
           pieces={it.pieces}
-          shared={it.shared}
           locked={Boolean(it.lockedReason)}
           lockedReason={it.lockedReason}
           selected={picked.includes(it.id)}
@@ -138,6 +137,7 @@ export default function ItemCardGalleryPage() {
   return (
     <div>
       <Intro />
+      <CountingRule />
 
       <Case
         title="Nursery"
@@ -166,7 +166,7 @@ export default function ItemCardGalleryPage() {
 
         <Section
           title="Verb pairs"
-          hint="Its own section rather than something bundled into a word. Picking a headword used to drag its partner in silently, which made a card's real cost depend on grammar you could not see."
+          hint="Its own section rather than something bundled into a word. Picking a headword used to drag its partner in silently, which made a card's real cost depend on grammar you could not see. To open is 5: both halves, their one shared kanji, and its two radicals."
         >
           {nursery(VERB_PAIRS)}
         </Section>
@@ -224,8 +224,8 @@ export default function ItemCardGalleryPage() {
         <Grid>
           <ItemCard item={KANA[4]} locked lockedReason="comes with the K row" />
           <ItemCard item={COUNTING[3]} locked lockedReason="taught with 1 through 10" />
-          <ItemCard item={WORDS[2]} pieces={2} shared={1} />
-          <ItemCard item={WORDS[0]} pieces={7} badge="3x" />
+          <ItemCard item={WORDS[2]} pieces={3} />
+          <ItemCard item={WORDS[0]} pieces={8} badge="3x" />
         </Grid>
       </Case>
 
@@ -235,11 +235,44 @@ export default function ItemCardGalleryPage() {
       >
         <Grid>
           <ItemCard item={WORDS[1]} ghost={false} pieces={3} />
-          <ItemCard item={WORDS[0]} ghost={false} pieces={7} />
+          <ItemCard item={WORDS[0]} ghost={false} pieces={8} />
           <ItemCard item={WORDS[1]} pieces={3} />
-          <ItemCard item={WORDS[0]} pieces={7} />
+          <ItemCard item={WORDS[0]} pieces={8} />
         </Grid>
       </Case>
+    </div>
+  );
+}
+
+/** The counting rule, spelled out. It is the one thing on the Nursery card that
+ * is not self-evident, and getting it wrong is what would make the cart lie. */
+function CountingRule() {
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-card p-4">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+        How a piece count is worked out
+      </h3>
+      <p className="mt-2 text-sm leading-relaxed text-text-muted">
+        Every distinct node in the item&apos;s prerequisite tree, counted once. A
+        piece reached by more than one parent is still one piece.
+      </p>
+      <pre className="mt-3 overflow-x-auto rounded-lg bg-panel p-3 text-[12px] leading-relaxed text-text-muted">
+{`word A
+├─ kanji A
+│  ├─ radical A
+│  └─ radical B
+└─ kanji B
+   ├─ radical A   ← already counted
+   └─ radical C
+
+word + kanji A + radical A + radical B + kanji B + radical C = 6`}
+      </pre>
+      <p className="mt-3 text-sm leading-relaxed text-text-muted">
+        The number is intrinsic to the item, so two cards stay comparable and a
+        count never shifts under you as the cart changes. Deduplication{" "}
+        <em>across</em> picks belongs to the cart total, where there is room to
+        say why it dropped.
+      </p>
     </div>
   );
 }
