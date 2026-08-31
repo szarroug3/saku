@@ -44,14 +44,27 @@ export interface ItemCardProps {
   ghost?: boolean;
   density?: ItemCardDensity;
   selected?: boolean;
-  disabled?: boolean;
+  /**
+   * Not yet available to pick. The card mutes and stops responding, and
+   * `lockedReason` takes the place of the piece count.
+   *
+   * Deliberately no padlock, no badge, no icon. Muted plus inert already says
+   * "not this one", and a lock glyph would only be a picture of a word the card
+   * is about to say anyway. It stays keyboard-reachable so the reason is
+   * discoverable rather than hidden behind a hover.
+   */
+  locked?: boolean;
+  /** Why it is locked, in the learner's terms: "comes with sha shu sho". Shown
+   * where the piece count normally sits, because a pick you cannot take has no
+   * meaningful cost to report. */
+  lockedReason?: string;
   /**
    * How many pieces this pick actually commits you to, for the Nursery.
    *
    * Not an optional decoration: picking "Wednesday" is the word plus three
    * kanji plus their radicals, so it is 7 and not 1. If the card showed the
    * number of picks instead, the cart would understate exactly the overload it
-   * exists to warn about. Rendered bottom-left, opposite the ghost.
+   * exists to warn about.
    *
    * The number passed in is already deduplicated against the rest of the cart,
    * so a word sharing a radical with something you have chosen costs less here
@@ -60,8 +73,8 @@ export interface ItemCardProps {
   pieces?: number;
   /** How many of `pieces` were already covered by other picks in the cart. */
   shared?: number;
-  /** Small top-right slot: a miss count ("3x"), a pair flag, a lock reason.
-   * Kept as a node so callers own the wording. */
+  /** Small top-right slot: a miss count ("3x"), a pair flag. Kept as a node so
+   * callers own the wording. */
   badge?: ReactNode;
   onClick?: () => void;
 }
@@ -116,26 +129,35 @@ export function ItemCard({
   ghost = true,
   density = "comfortable",
   selected = false,
-  disabled = false,
+  locked = false,
+  lockedReason,
   pieces,
   shared,
   badge,
   onClick,
 }: ItemCardProps) {
-  const interactive = Boolean(onClick) && !disabled;
-  const Tag = interactive ? "button" : "div";
+  // A locked card stays a button so it keeps its place in the tab order and its
+  // reason can be read without a pointer. `aria-disabled` announces the state
+  // while leaving it focusable, which the `disabled` attribute would not.
+  const isButton = Boolean(onClick);
+  const Tag = isButton ? "button" : "div";
 
   return (
     <Tag
-      {...(interactive ? { type: "button" as const, onClick } : {})}
-      aria-disabled={disabled || undefined}
+      {...(isButton ? { type: "button" as const, onClick: locked ? undefined : onClick } : {})}
+      aria-disabled={locked || undefined}
       className={[
         "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center",
         BOX[density],
-        "border bg-card transition-colors",
+        "border transition-colors",
+        // Locked recedes by losing its surface rather than by going
+        // translucent. Fading the whole card also faded the reason, which is
+        // the one thing on it you need to read: that measured 2:1 against the
+        // page, under even the 3:1 floor. Greying the content keeps the state
+        // obvious and the words legible.
+        locked ? "cursor-not-allowed border-dashed bg-transparent" : "bg-card",
         selected ? "border-accent bg-accent-bg" : "border-border",
-        interactive ? "hover:border-accent/60 hover:bg-panel" : "",
-        disabled ? "cursor-not-allowed opacity-45" : "",
+        isButton && !locked ? "hover:border-accent/60 hover:bg-panel" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -149,7 +171,9 @@ export function ItemCard({
           aria-hidden
           className={[
             "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none leading-none",
-            "text-text opacity-[0.09]",
+            // Fainter on a locked card, so the corner does not compete with the
+            // reason now that the card no longer dims as a whole.
+            locked ? "text-text opacity-[0.05]" : "text-text opacity-[0.09]",
             ghostSize(item.glyph, density),
             japaneseFont(item.glyph),
           ].join(" ")}
@@ -195,7 +219,9 @@ export function ItemCard({
               a name that wraps to two lines grows upward instead of shoving the
               cost line down. */}
           <span
-            className={`flex flex-1 items-center justify-center font-medium leading-snug text-text ${englishSize(item.english, density)}`}
+            className={`flex flex-1 items-center justify-center font-medium leading-snug ${
+              locked ? "text-text-muted" : "text-text"
+            } ${englishSize(item.english, density)}`}
           >
             {item.english}
           </span>
@@ -206,7 +232,14 @@ export function ItemCard({
               understate exactly the overload the Nursery exists to warn about.
               Anchored to the bottom so it sits on one line across a whole row,
               which is what makes two cards comparable at a glance. */}
-          {pieces !== undefined ? (
+          {locked && lockedReason ? (
+            // A pick you cannot take has no cost worth reporting, so the same
+            // slot says why instead. Muted rather than accented: this is the one
+            // line on the card that is not an invitation.
+            <span className="shrink-0 pt-1.5 text-[10px] font-medium leading-tight text-text-muted">
+              {lockedReason}
+            </span>
+          ) : pieces !== undefined ? (
             <span
               className={`shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent ${
                 selected ? "opacity-100" : "opacity-90"

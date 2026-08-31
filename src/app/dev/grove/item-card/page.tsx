@@ -32,7 +32,19 @@ const ITEMS: GroveItem[] = [
   { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "learned" },
   { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "planted" },
   { id: "g-desu", kind: "grammar", glyph: "です", english: "polite statement", status: "wild" },
+  // Locked picks. Each waits on something specific, and the reason is phrased as
+  // the learner would hear it rather than as a rule ID.
+  { id: "kana-cha", kind: "kana", glyph: "ちゃ", english: "cha", status: "wild" },
+  { id: "c-anim", kind: "counter", glyph: "匹", english: "small animals", status: "wild" },
+  { id: "w-future", kind: "word", glyph: "未来", english: "the future", status: "wild" },
 ];
+
+/** Why a pick cannot be taken yet. Presence here is what locks the card. */
+const LOCKED: Record<string, string> = {
+  "kana-cha": "comes with sha shu sho",
+  "c-anim": "taught with 1 through 10",
+  "w-future": "needs its kanji first",
+};
 
 const byKind = (k: GroveKind) => ITEMS.filter((i) => i.kind === k);
 
@@ -68,7 +80,7 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Nursery"
-        note="English centred, nothing legible in Japanese. The character appears only as a ghost in the bottom-right corner, so the card carries Saku's texture without leaking the answer. Along the bottom, in the accent, is what the pick actually commits you to: Wednesday is the word plus three kanji plus their radicals, so it is 7 and not 1. It is anchored to the card's bottom edge so every cost in a row lands on one line, even when a meaning wraps. No type label, because the section header above already says it. Click to select."
+        note="English centred, nothing legible in Japanese. The character appears only as a ghost in the bottom-right corner, so the card carries Saku's texture without leaking the answer. Along the bottom, in the accent, is what the pick actually commits you to: Wednesday is the word plus three kanji plus their radicals, so it is 7 and not 1. It is anchored to the card's bottom edge so every cost in a row lands on one line, even when a meaning wraps. No type label, because the section header above already says it. Click to select. The outlined cards are locked: no padlock, just a dashed edge, no surface, and greyed text, with the reason standing where the cost would be."
       >
         <Section title="Words">
           <Grid>
@@ -78,6 +90,8 @@ export default function ItemCardGalleryPage() {
                 item={item}
                 pieces={COST[item.id]?.pieces ?? 1}
                 shared={COST[item.id]?.shared}
+                locked={item.id in LOCKED}
+                lockedReason={LOCKED[item.id]}
                 selected={picked.includes(item.id)}
                 onClick={() => toggle(item.id)}
               />
@@ -92,6 +106,8 @@ export default function ItemCardGalleryPage() {
                 item={item}
                 pieces={COST[item.id]?.pieces ?? 1}
                 shared={COST[item.id]?.shared}
+                locked={item.id in LOCKED}
+                lockedReason={LOCKED[item.id]}
                 selected={picked.includes(item.id)}
                 onClick={() => toggle(item.id)}
               />
@@ -106,6 +122,8 @@ export default function ItemCardGalleryPage() {
                 item={item}
                 pieces={COST[item.id]?.pieces ?? 1}
                 shared={COST[item.id]?.shared}
+                locked={item.id in LOCKED}
+                lockedReason={LOCKED[item.id]}
                 selected={picked.includes(item.id)}
                 onClick={() => toggle(item.id)}
               />
@@ -162,14 +180,14 @@ export default function ItemCardGalleryPage() {
       </Case>
 
       <Case
-        title="Badges and disabled"
-        note="The piece count is its own thing along the bottom, because the Nursery always needs it. The top-right badge is left for whatever else a host wants: a miss count in Practice, a pair flag, a lock reason. The second card shows a pick made cheaper by parts already in the cart."
+        title="Locked, and badges"
+        note="Locked is muted and inert with the reason standing in place of the cost. It stays in the tab order, so the reason is reachable without a pointer rather than buried in a hover. That leaves the top-right badge free for whatever else a host wants: a pair flag, a miss count in Practice. The third card is a pick made cheaper by parts already in the cart."
       >
         <Grid>
+          <ItemCard item={ITEMS[14]} locked lockedReason="comes with sha shu sho" />
+          <ItemCard item={ITEMS[15]} locked lockedReason="taught with 1 through 10" />
+          <ItemCard item={ITEMS[3]} pieces={2} shared={1} />
           <ItemCard item={ITEMS[10]} pieces={4} badge="pair" />
-          <ItemCard item={ITEMS[3]} pieces={2} shared={1} badge="3x" />
-          <ItemCard item={ITEMS[13]} pieces={1} disabled badge="locked" />
-          <ItemCard item={ITEMS[8]} pieces={7} />
         </Grid>
       </Case>
 
