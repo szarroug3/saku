@@ -68,7 +68,7 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Nursery"
-        note="English centred, nothing legible in Japanese. The character appears only as a ghost in the bottom-right corner, so the card carries Saku's texture without leaking the answer. Bottom-left is what the pick actually commits you to: Wednesday is the word plus three kanji plus their radicals, so it is 7 and not 1. No type label, because the section header above already says it. Click to select."
+        note="English centred, nothing legible in Japanese. The character appears only as a ghost in the bottom-right corner, so the card carries Saku's texture without leaking the answer. Along the bottom, in the accent, is what the pick actually commits you to: Wednesday is the word plus three kanji plus their radicals, so it is 7 and not 1. It is anchored to the card's bottom edge so every cost in a row lands on one line, even when a meaning wraps. No type label, because the section header above already says it. Click to select."
       >
         <Section title="Words">
           <Grid>
@@ -116,7 +116,7 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Library"
-        note="The character centred with the English directly underneath. No ghost here: the glyph is already the hero, so a second copy behind it would only muddy the card. Status is carried by the glyph's own colour rather than a dot, so the grid scans by what you know without needing a key."
+        note="The character centred in plain text colour, with its meaning directly underneath in the accent. No ghost here: the glyph is already the hero, so a second copy behind it would only muddy the card."
       >
         <Section title="Kanji">
           <Grid>
@@ -146,8 +146,8 @@ export default function ItemCardGalleryPage() {
       </Case>
 
       <Case
-        title="The four statuses"
-        note="Only visible in the Library arrangement, where knowing what you have met matters. Muted means you have never planted it; the strongest tone means mastered. Nothing needs a legend to read, which is why the coloured dot is gone."
+        title="Status is not on the card"
+        note="All four of these are different statuses and the card renders them identically, on purpose. A coloured dot needs a legend, and tinting the glyph just moves the same unlabelled signal somewhere more distracting. The Library shows status where it is actually worded: the coverage bar and the status filter."
       >
         <Grid>
           {STATUS_ORDER.map((status) => (
@@ -163,7 +163,7 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Badges and disabled"
-        note="The piece count is its own thing, bottom-left, because the Nursery always needs it. The top-right badge is left for whatever else a host wants: a miss count in Practice, a pair flag, a lock reason. The second card shows a pick made cheaper by parts already in the cart."
+        note="The piece count is its own thing along the bottom, because the Nursery always needs it. The top-right badge is left for whatever else a host wants: a miss count in Practice, a pair flag, a lock reason. The second card shows a pick made cheaper by parts already in the cart."
       >
         <Grid>
           <ItemCard item={ITEMS[10]} pieces={4} badge="pair" />

@@ -21,14 +21,14 @@
 //
 // - The content type. The section the card sits in already says what these are,
 //   so a "KANJI" label on every tile is the same word repeated twenty times.
-// - A status dot. A bare coloured dot means nothing without a legend beside it.
-//   Where status matters (the Library grid) it is carried by the glyph's own
-//   colour instead, which needs no key to read: muted means you have not met it.
+// - Status, in any form. A bare coloured dot means nothing without a legend
+//   beside it, and tinting the glyph instead just moves the same unlabelled
+//   signal somewhere more distracting. The Library already carries status where
+//   it is legible: the coverage bar and the status filter, both of them worded.
 
 import type { ReactNode } from "react";
 
 import { japaneseFont } from "@/grove/lib/japanese";
-import { STATUS } from "@/grove/lib/tokens";
 import type { GroveItem } from "@/grove/lib/types";
 
 export type ItemCardDensity = "comfortable" | "compact";
@@ -167,22 +167,24 @@ export function ItemCard({
 
       {lead === "glyph" ? (
         <>
-          {/* Status is carried by the glyph's own colour, so the grid scans by
-              what you know without needing a key beside it. */}
+          {/* Plain text colour for the character and the accent for its meaning.
+              Status is deliberately NOT tinted in here: the Library carries it
+              in the coverage bar and the status filter, where it is labelled, so
+              colouring every glyph as well would be a second unlabelled signal
+              competing with the one that reads. */}
           <span
             className={[
-              "font-medium leading-tight",
+              "font-medium leading-tight text-text",
               glyphSize(item.glyph, density),
-              STATUS[item.status].glyph,
               japaneseFont(item.glyph),
             ].join(" ")}
           >
             {item.glyph}
           </span>
           <span
-            className={`mt-1 w-full truncate ${
+            className={`mt-1 w-full truncate text-accent ${
               density === "compact" ? "text-[9.5px]" : "text-[11.5px]"
-            } text-text-muted`}
+            }`}
           >
             {item.english}
           </span>
