@@ -1,8 +1,11 @@
 "use client";
 
-// The most reused thing in the Grove. It appears in the Nursery picker, the
-// Library grid, and the Practice deck preview, so it is built once here and
-// composed everywhere rather than reimplemented per surface. Tracked as SAK-292.
+// One card, two surfaces: the Nursery picker and the Library grid. Tracked as
+// SAK-292.
+//
+// It is NOT a general-purpose tile. The Quiz has its own full-width prompt and
+// typed answer, and does not render items as cards at all, so nothing here is
+// shaped for it.
 //
 // THE TWO ARRANGEMENTS
 //
@@ -12,21 +15,21 @@
 //                              is that you pick what to learn before you can
 //                              read it. The ghost is texture, not information.
 //
-// Library (`lead="glyph"`)     the character centred, the English directly
-//                              underneath it. No ghost: the glyph is already the
-//                              hero, so a second copy behind it would just muddy
-//                              the card.
+// Library (`lead="glyph"`)     the character centred, its meaning directly
+//                              underneath in the accent. No ghost: the glyph is
+//                              already the hero, so a second copy behind it
+//                              would just muddy the card.
 //
 // WHAT IS DELIBERATELY NOT ON THE CARD
 //
-// - The content type. The section the card sits in already says what these are,
-//   so a "KANJI" label on every tile is the same word repeated twenty times.
+// - The content type. The section the card sits in is already per type, so a
+//   "KANJI" label on every tile is the same word repeated twenty times.
 // - Status, in any form. A bare coloured dot means nothing without a legend
 //   beside it, and tinting the glyph instead just moves the same unlabelled
-//   signal somewhere more distracting. The Library already carries status where
-//   it is legible: the coverage bar and the status filter, both of them worded.
-
-import type { ReactNode } from "react";
+//   signal somewhere more distracting. The Library carries status where it is
+//   worded: the coverage bar and the status filter.
+// - A locked state. The Nursery lists only what you can actually take, so a
+//   card that cannot be picked never reaches this component.
 
 import { japaneseFont } from "@/grove/lib/japanese";
 import type { GroveItem } from "@/grove/lib/types";
@@ -35,32 +38,16 @@ export type ItemCardDensity = "comfortable" | "compact";
 
 export interface ItemCardProps {
   item: GroveItem;
-  /** Which arrangement to use. Nursery picks by meaning, the Library picks by
+  /** Which arrangement to use. The Nursery picks by meaning, the Library by
    * character. Default `english`. */
   lead?: "english" | "glyph";
-  /** Draw the corner ghost. Only applies to the English arrangement, and turns
-   * OFF mid-quiz where showing the character would give away the answer.
-   * Default true. */
-  ghost?: boolean;
+  /** `compact` is for the Library grid at real scale, where the job is fitting
+   * a couple of hundred glyphs on screen at once. */
   density?: ItemCardDensity;
   selected?: boolean;
   /**
-   * Not yet available to pick. The card mutes and stops responding, and
-   * `lockedReason` takes the place of the piece count.
-   *
-   * Deliberately no padlock, no badge, no icon. Muted plus inert already says
-   * "not this one", and a lock glyph would only be a picture of a word the card
-   * is about to say anyway. It stays keyboard-reachable so the reason is
-   * discoverable rather than hidden behind a hover.
-   */
-  locked?: boolean;
-  /** Why it is locked, in the learner's terms: "comes with sha shu sho". Shown
-   * where the piece count normally sits, because a pick you cannot take has no
-   * meaningful cost to report. */
-  lockedReason?: string;
-  /**
    * How many pieces this pick commits you to: every distinct node in its
-   * prerequisite tree, counted once.
+   * prerequisite tree, counted once. Nursery only.
    *
    * Not an optional decoration. If the card showed the number of picks instead,
    * it would say 1 for a word that is really eight things to learn, and
@@ -77,9 +64,6 @@ export interface ItemCardProps {
    * total does that deduplication across picks, where it can be explained.
    */
   pieces?: number;
-  /** Small top-right slot: a miss count ("3x"), a pair flag. Kept as a node so
-   * callers own the wording. */
-  badge?: ReactNode;
   onClick?: () => void;
 }
 
@@ -103,7 +87,7 @@ function ghostSize(glyph: string, density: ItemCardDensity): string {
   return "text-[21px]";
 }
 
-/** English shrinks as it lengthens so "day of the week" still fits on a tile
+/** English shrinks as it lengthens so "to open something" still fits on a tile
  * without truncating, which matters because it is the only thing on the card. */
 function englishSize(text: string, density: ItemCardDensity): string {
   const n = text.length;
@@ -130,53 +114,39 @@ function glyphSize(glyph: string, density: ItemCardDensity): string {
 export function ItemCard({
   item,
   lead = "english",
-  ghost = true,
   density = "comfortable",
   selected = false,
-  locked = false,
-  lockedReason,
   pieces,
-  badge,
   onClick,
 }: ItemCardProps) {
-  // A locked card stays a button so it keeps its place in the tab order and its
-  // reason can be read without a pointer. `aria-disabled` announces the state
-  // while leaving it focusable, which the `disabled` attribute would not.
   const isButton = Boolean(onClick);
   const Tag = isButton ? "button" : "div";
 
   return (
     <Tag
-      {...(isButton ? { type: "button" as const, onClick: locked ? undefined : onClick } : {})}
-      aria-disabled={locked || undefined}
+      {...(isButton ? { type: "button" as const, onClick } : {})}
       className={[
         "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center",
         BOX[density],
-        "border transition-colors",
-        // Locked recedes by losing its surface rather than by going
-        // translucent. Fading the whole card also faded the reason, which is
-        // the one thing on it you need to read: that measured 2:1 against the
-        // page, under even the 3:1 floor. Greying the content keeps the state
-        // obvious and the words legible.
-        locked ? "cursor-not-allowed border-dashed bg-transparent" : "bg-card",
+        "border bg-card transition-colors",
         selected ? "border-accent bg-accent-bg" : "border-border",
-        isButton && !locked ? "hover:border-accent/60 hover:bg-panel" : "",
+        isButton ? "hover:border-accent/60 hover:bg-panel" : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {/* The ghost, bottom-right, bleeding slightly off the corner so it reads as
-          a watermark rather than as a second piece of content. aria-hidden: a
-          screen reader should not announce a character the sighted design is
-          deliberately not asking you to read. */}
-      {ghost && lead === "english" ? (
+      {/* The ghost, bottom-right, bleeding off the corner so it reads as a
+          watermark rather than as a second piece of content. It belongs to the
+          English arrangement only, and needs no prop to switch it off: the
+          Library leads with the glyph, where a copy behind it would be noise.
+          aria-hidden, because a screen reader should not announce a character
+          the sighted design is deliberately not asking you to read. */}
+      {lead === "english" ? (
         <span
           aria-hidden
           className={[
             "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none whitespace-nowrap leading-none",
-            // Fainter on a locked card, so the corner does not compete with the
-            // reason now that the card no longer dims as a whole.
-            locked ? "text-text opacity-[0.05]" : "text-text opacity-[0.09]",
+            "text-text opacity-[0.09]",
             ghostSize(item.glyph, density),
             japaneseFont(item.glyph),
           ].join(" ")}
@@ -185,20 +155,8 @@ export function ItemCard({
         </span>
       ) : null}
 
-      {badge ? (
-        <span className="absolute right-2 top-1.5 text-[9.5px] font-semibold uppercase tracking-[0.06em] text-text-muted">
-          {badge}
-        </span>
-      ) : null}
-
-
       {lead === "glyph" ? (
         <>
-          {/* Plain text colour for the character and the accent for its meaning.
-              Status is deliberately NOT tinted in here: the Library carries it
-              in the coverage bar and the status filter, where it is labelled, so
-              colouring every glyph as well would be a second unlabelled signal
-              competing with the one that reads. */}
           <span
             className={[
               "font-medium leading-tight text-text",
@@ -222,32 +180,17 @@ export function ItemCard({
               a name that wraps to two lines grows upward instead of shoving the
               cost line down. */}
           <span
-            className={`flex flex-1 items-center justify-center font-medium leading-snug ${
-              locked ? "text-text-muted" : "text-text"
-            } ${englishSize(item.english, density)}`}
+            className={`flex flex-1 items-center justify-center font-medium leading-snug text-text ${englishSize(item.english, density)}`}
           >
             {item.english}
           </span>
 
-          {/* What this pick actually costs, in the accent because on this page
-              the number IS the decision: picking "Wednesday" is the word plus
-              three kanji plus their radicals, so a card reading 1 would
-              understate exactly the overload the Nursery exists to warn about.
-              Anchored to the bottom so it sits on one line across a whole row,
-              which is what makes two cards comparable at a glance. */}
-          {locked && lockedReason ? (
-            // A pick you cannot take has no cost worth reporting, so the same
-            // slot says why instead. Muted rather than accented: this is the one
-            // line on the card that is not an invitation.
-            <span className="shrink-0 pt-1.5 text-[10px] font-medium leading-tight text-text-muted">
-              {lockedReason}
-            </span>
-          ) : pieces !== undefined ? (
-            <span
-              className={`shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent ${
-                selected ? "opacity-100" : "opacity-90"
-              }`}
-            >
+          {/* What the pick commits you to, in the accent because on this page
+              the number IS the decision. Anchored to the bottom so it sits on
+              one line across a whole row, which is what makes two cards
+              comparable at a glance. */}
+          {pieces !== undefined ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent">
               {pieces} {pieces === 1 ? "piece" : "pieces"}
             </span>
           ) : null}

@@ -20,7 +20,7 @@ import type { GroveItem } from "@/grove/lib/types";
 
 /** How many pieces a pick commits you to: every distinct node in its own
  * prerequisite tree, counted once. Stands in for the graph (SAK-299). */
-type Pick = GroveItem & { pieces: number; lockedReason?: string };
+type Pick = GroveItem & { pieces: number };
 
 /**
  * WORDS. Only the next few available ones are listed.
@@ -55,14 +55,6 @@ const KANA: Pick[] = [
   { id: "kana-k", kind: "kana", glyph: "か", english: "K row", status: "learned", pieces: 5 },
   { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", status: "wild", pieces: 5 },
   { id: "kana-t", kind: "kana", glyph: "た", english: "T row", status: "wild", pieces: 5 },
-  {
-    id: "kana-g", kind: "kana", glyph: "が", english: "G row", status: "wild", pieces: 5,
-    lockedReason: "comes with the K row",
-  },
-  {
-    id: "kana-ky", kind: "kana", glyph: "きゃ", english: "Blended K", status: "wild", pieces: 3,
-    lockedReason: "comes with the K row",
-  },
 ];
 
 /** COUNTING. Small enough that showing the locked ones is worth the space. */
@@ -70,10 +62,6 @@ const COUNTING: Pick[] = [
   { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", status: "wild", pieces: 10 },
   { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "wild", pieces: 1 },
   { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 4 },
-  {
-    id: "c-anim", kind: "counter", glyph: "匹", english: "small animals", status: "wild", pieces: 3,
-    lockedReason: "taught with 1 through 10",
-  },
 ];
 
 /**
@@ -125,8 +113,6 @@ export default function ItemCardGalleryPage() {
           key={it.id}
           item={it}
           pieces={it.pieces}
-          locked={Boolean(it.lockedReason)}
-          lockedReason={it.lockedReason}
           selected={picked.includes(it.id)}
           onClick={() => toggle(it.id)}
         />
@@ -141,25 +127,25 @@ export default function ItemCardGalleryPage() {
 
       <Case
         title="Nursery"
-        note="English centred, nothing legible in Japanese, and the character only as a ghost in the corner. Along the bottom in the accent is what the pick actually commits you to, anchored to the card's edge so every cost in a row lands on one line. No type label, because the section header already says it. Click to select."
+        note="English centred, nothing legible in Japanese, and the character only as a ghost in the corner. Along the bottom in the accent is what the pick actually commits you to, anchored to the card's edge so every cost in a row lands on one line. Every card here is one you can take right now: nothing locked, nothing greyed, nothing to scroll past. No type label, because the section header already says it. Click to select."
       >
         <Section
           title="Words"
-          hint="The next few you can take. Locked words are not shown at all: with 12,500 of them, greyed cards would be most of what you ever scrolled past. Adding one plants its whole prerequisite tree, which is what the count is counting."
+          hint="The next few you can take. Adding one plants its whole prerequisite tree, which is what the count is counting."
         >
           {nursery(WORDS)}
         </Section>
 
         <Section
           title="Kana sounds"
-          hint="One card per row, named as a row rather than as a string of romaji. A small enough set that the locked ones are worth showing, so the shape of what is coming stays visible."
+          hint="One card per row, named as a row rather than as a string of romaji, because ka ki ku ke ko reads as a password rather than as a thing you could decide to learn."
         >
           {nursery(KANA)}
         </Section>
 
         <Section
           title="Counting"
-          hint="Also small and enumerable, so locked entries stay visible with their reason."
+          hint="Counters you can take now. Anything still waiting on a prerequisite is simply absent."
         >
           {nursery(COUNTING)}
         </Section>
@@ -217,29 +203,7 @@ export default function ItemCardGalleryPage() {
         </Grid>
       </Case>
 
-      <Case
-        title="Locked, and the badge slot"
-        note="Locked loses its surface rather than going translucent: dashed edge, greyed text, and the reason standing in place of the cost. Fading the whole card also faded the reason, which measured 2:1 against the page. It stays in the tab order so the reason is reachable without a pointer. That leaves the top-right badge free for whatever else a host wants, such as a Practice miss count."
-      >
-        <Grid>
-          <ItemCard item={KANA[4]} locked lockedReason="comes with the K row" />
-          <ItemCard item={COUNTING[3]} locked lockedReason="taught with 1 through 10" />
-          <ItemCard item={WORDS[2]} pieces={3} />
-          <ItemCard item={WORDS[0]} pieces={8} badge="3x" />
-        </Grid>
-      </Case>
 
-      <Case
-        title="Ghost off"
-        note="Mid-quiz the character IS the answer, so the ghost would give it away. One prop turns it off and the card is otherwise unchanged."
-      >
-        <Grid>
-          <ItemCard item={WORDS[1]} ghost={false} pieces={3} />
-          <ItemCard item={WORDS[0]} ghost={false} pieces={8} />
-          <ItemCard item={WORDS[1]} pieces={3} />
-          <ItemCard item={WORDS[0]} pieces={8} />
-        </Grid>
-      </Case>
     </div>
   );
 }
