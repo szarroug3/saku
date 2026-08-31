@@ -15,7 +15,6 @@
 import { useState } from "react";
 
 import { ItemCard } from "@/grove/components/item-card";
-import { STATUS, STATUS_ORDER } from "@/grove/lib/tokens";
 import type { GroveItem } from "@/grove/lib/types";
 
 /** How many pieces a pick commits you to: every distinct node in its own
@@ -187,21 +186,6 @@ export default function ItemCardGalleryPage() {
         </div>
       </Case>
 
-      <Case
-        title="Status is not on the card"
-        note="All four of these are a different status and the card renders them identically, on purpose. A coloured dot needed a legend, and tinting the glyph only moved the same unlabelled signal somewhere more distracting. Status belongs to the Library's own furniture, where it is worded: the status filter down the left and the coverage bar above the grid. The labels below are this gallery talking, not the card."
-      >
-        <Grid>
-          {STATUS_ORDER.map((status) => (
-            <div key={status}>
-              <ItemCard item={{ ...LIBRARY[1], id: status, status }} lead="glyph" />
-              <div className="mt-1.5 text-center text-[10px] uppercase tracking-[0.08em] text-text-muted">
-                {STATUS[status].label.split(",")[0]}
-              </div>
-            </div>
-          ))}
-        </Grid>
-      </Case>
 
 
     </div>
