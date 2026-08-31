@@ -116,7 +116,14 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
 // same gate the /dev/* route layout enforces (src/app/dev/layout.tsx). NODE_ENV is
 // inlined at build time, so the whole section is dead-code-eliminated from the
 // shipped bundle.
-const DEV_PAGES: Array<{ href: string; label: string }> = [
+// `children` makes an entry a sub-folder rather than a link — the Grove
+// redesign gets one, so its component galleries group together instead of
+// scattering through this flat list as it grows.
+const DEV_PAGES: Array<{
+  href: string;
+  label: string;
+  children?: Array<{ href: string; label: string }>;
+}> = [
   { href: "/dev/views", label: "Views" },
   { href: "/dev/learn", label: "Learn" },
   { href: "/dev/library", label: "Library" },
@@ -125,6 +132,17 @@ const DEV_PAGES: Array<{ href: string; label: string }> = [
   { href: "/dev/swatches", label: "Swatches" },
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
   { href: "/dev/pitch-accent", label: "Pitch accent" },
+  {
+    href: "/dev/grove",
+    label: "Grove (redesign)",
+    // Mirrors GROVE_PAGES in src/app/dev/grove/layout.tsx. Kept as a literal
+    // rather than imported so this client component does not pull the gallery
+    // layout into the nav bundle.
+    children: [
+      { href: "/dev/grove", label: "Overview" },
+      { href: "/dev/grove/item-card", label: "ItemCard" },
+    ],
+  },
 ];
 
 export function Sidebar({
@@ -368,8 +386,43 @@ export function Sidebar({
           </button>
           {devOpen ? (
             <div className="flex flex-col gap-0.5">
-              {DEV_PAGES.map(({ href, label }) => {
-                const sel = pathname === href || pathname.startsWith(`${href}/`);
+              {DEV_PAGES.map(({ href, label, children }) => {
+                const within = pathname === href || pathname.startsWith(`${href}/`);
+                // A sub-folder: its own header, then its pages indented under it.
+                // Only expanded while you are inside it, so the flat list stays
+                // readable when you are working elsewhere.
+                if (children) {
+                  return (
+                    <div key={href}>
+                      <Link
+                        href={href}
+                        className={`flex items-baseline whitespace-nowrap rounded-lg py-[7px] pl-7 pr-3 text-left text-sm ${
+                          within ? "text-accent" : "text-text-muted hover:bg-panel"
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                      {within ? (
+                        <div className="flex flex-col gap-0.5">
+                          {children.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={`flex items-baseline whitespace-nowrap rounded-lg py-[6px] pl-11 pr-3 text-left text-[13px] ${
+                                pathname === child.href
+                                  ? "bg-accent-bg text-accent"
+                                  : "text-text-muted hover:bg-panel"
+                              }`}
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                }
+                const sel = within;
                 return (
                   <Link
                     key={href}

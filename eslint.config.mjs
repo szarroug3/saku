@@ -16,7 +16,14 @@ const eslintConfig = defineConfig([
     // reads; those are the two trees SAK-84 itself audited. Test files are
     // excluded because the em-dash regression tests (e.g. how-it-works.test.ts)
     // legitimately hold the "—" character as the very string they check for.
-    files: ["src/data/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    // src/grove is included for the same reason: it is redesign UI a learner
+    // reads, and it would otherwise start life outside the one rule that keeps
+    // em dashes out of copy.
+    files: [
+      "src/data/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/grove/**/*.{ts,tsx}",
+    ],
     ignores: ["**/*.test.ts", "**/*.test.tsx"],
     plugins: {
       local: { rules: { "no-em-dash-in-user-facing-copy": noEmDashInUserFacingCopy } },
@@ -27,6 +34,62 @@ const eslintConfig = defineConfig([
       // components render their OWN `note` field straight to the learner) so
       // the escape hatch below is granted per FILE, not per key name.
       "local/no-em-dash-in-user-facing-copy": ["error", { allowedKeys: [] }],
+    },
+  },
+  {
+    // THE GROVE BOUNDARY, half one: the redesign may not reach into the app.
+    //
+    // src/grove holds the new Nursery / Garden / Quiz / Practice / Library work.
+    // The whole point of keeping it in its own tree is that the current surfaces
+    // can be deleted wholesale at cutover, and that only stays true if nothing
+    // in here quietly grows a dependency on them.
+    //
+    // If the Grove needs something the app already has, it takes its own copy.
+    // A small helper duplicated is far cheaper than a dependency to untangle.
+    //
+    // The app's CSS design tokens are deliberately NOT restricted: those are
+    // consumed as Tailwind classes, not imports, and reusing them is what keeps
+    // all four themes and light/dark working. See src/grove/README.md.
+    files: ["src/grove/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/*", "@/lib/*", "@/data/*", "@/types/*"],
+              message:
+                "The Grove does not import from the existing app, so the old surfaces can be deleted at cutover. Bring a copy into src/grove instead. See src/grove/README.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // THE GROVE BOUNDARY, half two: the app may not depend on the redesign.
+    //
+    // Without this the boundary only holds one way, and the Grove would slowly
+    // become load-bearing for the current app — which would make it impossible
+    // to iterate on freely, which is the entire reason it is separate.
+    //
+    // src/app/dev/grove is exempt: that route exists precisely to render the
+    // gallery, and it is dev-only (the /dev subtree 404s in production).
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/grove/**", "src/app/dev/grove/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/grove/*"],
+              message:
+                "The current app must not depend on the Grove redesign. Only src/app/dev/grove renders it, until cutover.",
+            },
+          ],
+        },
+      ],
     },
   },
   {
