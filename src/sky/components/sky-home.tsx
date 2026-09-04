@@ -37,12 +37,13 @@ export interface SkyHomeProps {
   data: SkyHomeData;
   /** Where the Planetarium lives, for the empty sky's way in. */
   planetariumHref?: string;
-  /** How tall the page is for the home: the sky fills what the heading and
-   * the details bar leave. A CSS length; the route knows its own chrome. */
-  minHeight?: string;
+  /** How tall the home is: one page, never scrolling. The sky fills what
+   * the heading and the details leave, and shrinks when the details open.
+   * A CSS length; the route knows its own chrome. */
+  height?: string;
 }
 
-export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "calc(100vh - 8rem)" }: SkyHomeProps) {
+export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => skyStars(graph, data.roots), [graph, data.roots]);
   const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
@@ -55,7 +56,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "c
   const lookOf = useCallback((_id: string, base: StarLook): StarLook => (singled && base.standing !== singled ? { ...base, muted: true } : base), [singled]);
 
   return (
-    <div className="flex flex-col font-sky-ui text-sky-ink" style={{ minHeight }}>
+    <div className="flex flex-col overflow-hidden font-sky-ui text-sky-ink" style={{ height }}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-sky-display text-4xl leading-tight">Your sky</h1>
@@ -65,7 +66,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "c
         </div>
       </header>
 
-      <div className="relative mt-4 flex min-h-[360px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
+      <div className="relative mt-4 flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
         {empty ? (
           <div className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">Your sky is empty tonight.</p>
@@ -78,13 +79,13 @@ export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "c
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
 
-      <div className="mt-4">
+      <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
         <button
           type="button"
           onClick={() => setDetails((d) => !d)}
           aria-expanded={details}
           aria-controls="sky-home-details"
-          className="flex w-full items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-card px-5 py-3 text-left hover:bg-sky-card-strong"
+          className="flex w-full shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-card px-5 py-3 text-left hover:bg-sky-card-strong"
         >
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">How much you&apos;ve discovered and mix-ups</span>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
@@ -93,7 +94,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "c
           </span>
         </button>
         {details && (
-          <div id="sky-home-details" className="mt-4 grid gap-4 md:grid-cols-2">
+          <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 overflow-y-auto md:grid-cols-2">
             <DiscoveryPanel rows={data.discovery} />
             <MixUpsPanel graph={graph} pairs={data.mixUps} />
           </div>
