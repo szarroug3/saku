@@ -175,7 +175,7 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
       {interactive && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-sky-line bg-sky-card-strong p-1 font-sky-ui text-[12px] text-sky-ink">
           <button type="button" aria-label="Zoom out" onClick={() => zoom(1 / STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">−</button>
-          <button type="button" aria-label="Reset the view" onClick={() => setView({ k: 0, x: 0, y: 0 })} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{Math.round((shown.k / home) * 100)}%</button>
+          <button type="button" aria-label="Back to 100%" title="Back to 100%" onClick={() => zoom(home / shown.k)} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{Math.round((shown.k / home) * 100)}%</button>
           <button type="button" aria-label="Zoom in" onClick={() => zoom(STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">+</button>
         </div>
       )}
