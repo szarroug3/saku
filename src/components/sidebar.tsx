@@ -140,6 +140,7 @@ const DEV_PAGES: Array<{
     // layout into the nav bundle.
     children: [
       { href: "/dev/sky", label: "Overview" },
+      { href: "/dev/sky/home", label: "Home" },
       { href: "/dev/sky/tokens", label: "Night tokens" },
       { href: "/dev/sky/wash", label: "The wash" },
       { href: "/dev/sky/standings", label: "Standings" },

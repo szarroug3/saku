@@ -2180,6 +2180,16 @@ body {
   --sky-font-ui: var(--font-karla, "Karla"), -apple-system, "Helvetica Neue", system-ui, sans-serif;
 }
 
+/* A few dust stars on the sky canvas twinkle; reduced motion stills them. */
+@keyframes sky-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
+}
+.sky-twinkle { animation: sky-twinkle 3.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sky-twinkle { animation: none; }
+}
+
 @theme inline {
   --color-sky-zenith: var(--sky-zenith);
   --color-sky-ground-0: var(--sky-ground-0);

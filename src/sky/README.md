@@ -134,6 +134,24 @@ the filtered part (`src/sky/lib/coverage.ts`, tested); a counted segment
 never disappears (a hairline at least) and an empty bar still draws.
 `/dev/sky/filters` has both, live.
 
+### The home: one call
+
+`SkyHome` (`src/sky/components/sky-home.tsx`, SAK-329 to 336) is the whole
+home page: given `SkyHomeData` (items, the constellation roots, mix-ups) it
+draws the sky, the legend, "How much you've covered" and "Mix-ups". Every
+part is its own component and reused elsewhere: `SkyCanvas` (the SVG with
+seeded dust, a viewport group, and pan and zoom when interactive),
+`SkyField` (scatters and draws the constellations with hover tooltips; the
+Planetarium preview and the lesson use it at other sizes and with their own
+looks), `SkyTooltip`, `ConstellationTile`, `CoveragePanel`, `MixUpsPanel`.
+`src/sky/lib/scatter.ts` places boxes without overlap, seeded; `sky-scene.ts`
+decides roots (met items not under another met item), the star set and the
+tally. The data comes from an adapter outside the tree: for now
+`src/app/dev/sky/learner.ts` reads the Library's entries and the learner's
+history (a multi-fact entry's star wears the worst of its facts; a radical
+taught as its kanji is the kanji's star), and `/dev/sky/home` renders it on
+the signed-in learner's progress, or on a pretend learner with `?sample`.
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.
