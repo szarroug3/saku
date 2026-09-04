@@ -1,16 +1,16 @@
-// Grove colour, mapped ONTO the app's existing semantic tokens.
+// Kind and status colour for the ItemCard era, mapped onto the app's existing
+// semantic tokens.
 //
-// The redesign concept artifacts each invented their own palette (indigo grounds,
-// pink blossoms, violet accents). Those were for exploring layout only. Production
-// keeps Saku's scheme, because that scheme is what carries four themes (aizome,
-// graphite, momentum, kiri), the accent variants, and light/dark — all from one
-// set of CSS custom properties.
+// The Sky's own palette is the night theme: the --sky-* tokens in globals.css
+// (SAK-291), reached as bg-sky-*, text-sky-* and font-sky-* classes. The two
+// maps below predate it and still point at the current app's tokens, because
+// the components that use them (ItemCard, ItemSection) render inside current-app
+// chrome for now. SAK-294 replaces the four-value status with the app's
+// standings and moves these onto the night palette.
 //
-// So there are no hex values in this file, and there should be none anywhere in
-// src/grove. Everything below resolves to a `var(--…)` token that already changes
-// with the active theme. Tracked as SAK-291.
+// Either way: no hex values in this file, and none anywhere in src/sky.
 
-import type { GroveKind, GroveStatus } from "./types";
+import type { SkyKind, SkyStatus } from "./types";
 
 /**
  * The accent for each content kind, as a Tailwind class on an existing token.
@@ -24,7 +24,7 @@ import type { GroveKind, GroveStatus } from "./types";
  * If this proves too few distinctions once several kinds sit side by side, the fix
  * is to add tokens to globals.css for every theme, NOT to hardcode here.
  */
-export const KIND_DOT: Record<GroveKind, string> = {
+export const KIND_DOT: Record<SkyKind, string> = {
   kana: "bg-sentence-core",
   radical: "bg-sentence-ending",
   kanji: "bg-accent",
@@ -40,7 +40,7 @@ export const KIND_DOT: Record<GroveKind, string> = {
 };
 
 /** Human label for a kind, for eyebrows and tooltips. */
-export const KIND_LABEL: Record<GroveKind, string> = {
+export const KIND_LABEL: Record<SkyKind, string> = {
   kana: "kana",
   radical: "radical",
   kanji: "kanji",
@@ -57,7 +57,7 @@ export const KIND_LABEL: Record<GroveKind, string> = {
  * every legend, so the four surfaces stay consistent.
  */
 export const STATUS: Record<
-  GroveStatus,
+  SkyStatus,
   { dot: string; glyph: string; label: string }
 > = {
   mastered: {
@@ -83,4 +83,4 @@ export const STATUS: Record<
 };
 
 /** The four statuses in the order every legend and filter rail shows them. */
-export const STATUS_ORDER: GroveStatus[] = ["mastered", "learned", "planted", "wild"];
+export const STATUS_ORDER: SkyStatus[] = ["mastered", "learned", "planted", "wild"];

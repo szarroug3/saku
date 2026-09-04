@@ -1,7 +1,7 @@
 "use client";
 
 // Gallery for ItemCard, in both arrangements and every state.
-// Route: /dev/grove/item-card
+// Route: /dev/sky/item-card
 //
 // Real content, not lorem: these are actual items the redesign has to render,
 // including the awkward ones (a three-character word, a long meaning, a counter
@@ -14,12 +14,12 @@
 
 import { useState } from "react";
 
-import { ItemCard } from "@/grove/components/item-card";
-import type { GroveItem } from "@/grove/lib/types";
+import { ItemCard } from "@/sky/components/item-card";
+import type { SkyItem } from "@/sky/lib/types";
 
 /** How many pieces a pick commits you to: every distinct node in its own
  * prerequisite tree, counted once. Stands in for the graph (SAK-299). */
-type Pick = GroveItem & { pieces: number };
+type Pick = SkyItem & { pieces: number };
 
 /**
  * WORDS. Only the next few available ones are listed.
@@ -85,7 +85,7 @@ const KEIGO: Pick[] = [
   { id: "kg-say", kind: "keigo", glyph: "おっしゃる", english: "to say, politely", status: "wild", pieces: 1 },
 ];
 
-const LIBRARY: GroveItem[] = [
+const LIBRARY: SkyItem[] = [
   { id: "k-moku", kind: "kanji", glyph: "木", english: "tree", status: "mastered" },
   { id: "k-sui", kind: "kanji", glyph: "水", english: "water", status: "learned" },
   { id: "k-you", kind: "kanji", glyph: "曜", english: "day of the week", status: "planted" },
@@ -125,7 +125,7 @@ export default function ItemCardGalleryPage() {
       <CountingRule />
 
       <Case
-        title="Nursery"
+        title="Planetarium"
         note="English centred, nothing legible in Japanese, and the character only as a ghost in the corner. Along the bottom in the accent is what the pick actually commits you to, anchored to the card's edge so every cost in a row lands on one line. Every card here is one you can take right now: nothing locked, nothing greyed, nothing to scroll past. No type label, because the section header already says it. Click to select."
       >
         <Section
@@ -165,7 +165,7 @@ export default function ItemCardGalleryPage() {
       </Case>
 
       <Case
-        title="Library"
+        title="Atlas"
         note="The character centred in plain text colour, with its meaning directly underneath in the accent. No ghost here: the glyph is already the hero, so a second copy behind it would only muddy the card."
       >
         <Grid>
@@ -176,7 +176,7 @@ export default function ItemCardGalleryPage() {
       </Case>
 
       <Case
-        title="Library, compact"
+        title="Atlas, compact"
         note="For the grid at real scale, where the job is fitting a couple of hundred glyphs on screen at once."
       >
         <div className="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-1.5">
@@ -192,7 +192,7 @@ export default function ItemCardGalleryPage() {
   );
 }
 
-/** The counting rule, spelled out. It is the one thing on the Nursery card that
+/** The counting rule, spelled out. It is the one thing on the Planetarium card that
  * is not self-evident, and getting it wrong is what would make the cart lie. */
 function CountingRule() {
   return (
@@ -230,10 +230,10 @@ function Intro() {
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-sm leading-relaxed text-text-muted">
         Two arrangements of one component.{" "}
-        <strong className="text-text">Nursery</strong> centres the English and
+        <strong className="text-text">Planetarium</strong> centres the English and
         keeps the Japanese only as a corner ghost, because you pick what to learn
         before you can read it.{" "}
-        <strong className="text-text">Library</strong> centres the character with
+        <strong className="text-text">Atlas</strong> centres the character with
         its meaning underneath in the accent, because there you arrive having met
         something in the wild.
       </p>

@@ -35,7 +35,8 @@
     "test:clean": "env -u NODE_OPTIONS -u VSCODE_INSPECTOR_OPTIONS node ./scripts/run-unit-tests.mjs",
     "test:e2e": "playwright test",
     "test:e2e:report": "E2E_HTML_REPORT=1 playwright test",
-    "test:e2e:report:open": "playwright show-report"
+    "test:e2e:report:open": "playwright show-report",
+    "bake:sky": "node scripts/bake-sky-wash.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

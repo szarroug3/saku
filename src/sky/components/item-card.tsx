@@ -1,6 +1,6 @@
 "use client";
 
-// One card, two surfaces: the Nursery picker and the Library grid. Tracked as
+// One card, two surfaces: the Planetarium picker and the Atlas grid. Tracked as
 // SAK-292.
 //
 // It is NOT a general-purpose tile. The Quiz has its own full-width prompt and
@@ -9,13 +9,13 @@
 //
 // THE TWO ARRANGEMENTS
 //
-// Nursery (`lead="english"`)   the English centred, and the Japanese ONLY as a
+// Planetarium (`lead="english"`)   the English centred, and the Japanese ONLY as a
 //                              ghost in the bottom-right corner. Nothing legible
 //                              in Japanese, because the whole point of the page
 //                              is that you pick what to learn before you can
 //                              read it. The ghost is texture, not information.
 //
-// Library (`lead="glyph"`)     the character centred, its meaning directly
+// Atlas (`lead="glyph"`)     the character centred, its meaning directly
 //                              underneath in the accent. No ghost: the glyph is
 //                              already the hero, so a second copy behind it
 //                              would just muddy the card.
@@ -26,32 +26,32 @@
 //   "KANJI" label on every tile is the same word repeated twenty times.
 // - Status, in any form. A bare coloured dot means nothing without a legend
 //   beside it, and tinting the glyph instead just moves the same unlabelled
-//   signal somewhere more distracting. The Library carries status where it is
+//   signal somewhere more distracting. The Atlas carries status where it is
 //   worded: the coverage bar and the status filter.
-// - A locked state. The Nursery lists only what you can actually take, so a
+// - A locked state. The Planetarium lists only what you can actually take, so a
 //   card that cannot be picked never reaches this component.
 
-import { japaneseFont } from "@/grove/lib/japanese";
-import type { GroveItem } from "@/grove/lib/types";
+import { japaneseFont } from "@/sky/lib/japanese";
+import type { SkyItem } from "@/sky/lib/types";
 
 export type ItemCardDensity = "comfortable" | "compact";
 
 export interface ItemCardProps {
-  item: GroveItem;
-  /** Which arrangement to use. The Nursery picks by meaning, the Library by
+  item: SkyItem;
+  /** Which arrangement to use. The Planetarium picks by meaning, the Atlas by
    * character. Default `english`. */
   lead?: "english" | "glyph";
-  /** `compact` is for the Library grid at real scale, where the job is fitting
+  /** `compact` is for the Atlas grid at real scale, where the job is fitting
    * a couple of hundred glyphs on screen at once. */
   density?: ItemCardDensity;
   selected?: boolean;
   /**
    * How many pieces this pick commits you to: every distinct node in its
-   * prerequisite tree, counted once. Nursery only.
+   * prerequisite tree, counted once. Planetarium only.
    *
    * Not an optional decoration. If the card showed the number of picks instead,
    * it would say 1 for a word that is really eight things to learn, and
-   * understate exactly the overload the Nursery exists to warn about.
+   * understate exactly the overload the Planetarium exists to warn about.
    *
    * A piece reached by more than one parent is still one piece. For a word made
    * of kanji A and kanji B, where A is built from radicals A and B and B is
@@ -138,7 +138,7 @@ export function ItemCard({
       {/* The ghost, bottom-right, bleeding off the corner so it reads as a
           watermark rather than as a second piece of content. It belongs to the
           English arrangement only, and needs no prop to switch it off: the
-          Library leads with the glyph, where a copy behind it would be noise.
+          Atlas leads with the glyph, where a copy behind it would be noise.
           aria-hidden, because a screen reader should not announce a character
           the sighted design is deliberately not asking you to read. */}
       {lead === "english" ? (

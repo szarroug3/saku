@@ -116,7 +116,7 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
 // same gate the /dev/* route layout enforces (src/app/dev/layout.tsx). NODE_ENV is
 // inlined at build time, so the whole section is dead-code-eliminated from the
 // shipped bundle.
-// `children` makes an entry a sub-folder rather than a link — the Grove
+// `children` makes an entry a sub-folder rather than a link — the Sky redesign
 // redesign gets one, so its component galleries group together instead of
 // scattering through this flat list as it grows.
 const DEV_PAGES: Array<{
@@ -133,15 +133,18 @@ const DEV_PAGES: Array<{
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
   { href: "/dev/pitch-accent", label: "Pitch accent" },
   {
-    href: "/dev/grove",
-    label: "Grove (redesign)",
-    // Mirrors GROVE_PAGES in src/app/dev/grove/layout.tsx. Kept as a literal
+    href: "/dev/sky",
+    label: "Sky (redesign)",
+    // Mirrors SKY_PAGES in src/app/dev/sky/layout.tsx. Kept as a literal
     // rather than imported so this client component does not pull the gallery
     // layout into the nav bundle.
     children: [
-      { href: "/dev/grove", label: "Overview" },
-      { href: "/dev/grove/item-card", label: "ItemCard" },
-      { href: "/dev/grove/item-section", label: "ItemSection" },
+      { href: "/dev/sky", label: "Overview" },
+      { href: "/dev/sky/tokens", label: "Night tokens" },
+      { href: "/dev/sky/wash", label: "The wash" },
+      { href: "/dev/sky/item-card", label: "ItemCard" },
+      { href: "/dev/sky/item-section", label: "ItemSection" },
+      { href: "/dev/sky/tree", label: "Tree (superseded)" },
     ],
   },
 ];

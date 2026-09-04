@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./sky-wash.css";
 
 /* ==========================================================================
  * THEMING
@@ -45,6 +46,9 @@
   --danger-bg: #f6e6e2;
   --success: #2f6a45;
   --success-bg: #e6efe6;
+  /* The Garden's trunk and branches. A warm ink-brown rather than sumi black,
+   * so a tree still reads as a tree in a palette with no other wood hue. */
+  --trunk: #6b4423;
   /* SAK-231: --warning/--warning-bg used to be one hardcoded cyan shared
    * verbatim by all four themes in both modes — the only status colour NOT
    * re-tuned per theme like --danger/--success/--accent already are. Each
@@ -82,6 +86,9 @@
   --dark-success-bg: #22392c;
   --dark-warning: #57bcc4;
   --dark-warning-bg: #1e3634;
+  /* A proper mid-brown, not a pale tan: dark enough to read as wood, still
+   * legible against the warm charcoal ground. */
+  --dark-trunk: #9c6a3d;
   /* --dark-accent is a pastel (#8fa8d8) because it's mostly TEXT; as a filled
    * arc it washes out. Saturated indigo instead — still bright enough on the
    * charcoal ground, but it reads as ink rather than haze. */
@@ -121,6 +128,9 @@
   --success-bg: #e6f6ec;
   --warning: #01798f;
   --warning-bg: #d9f0f5;
+  /* Neutral-cool brown, desaturated to fit graphite's "precision" register
+   * rather than reading as a warm wood against its cool violet. */
+  --trunk: #5a4632;
   --arc: #4b4ade;
   --arc-track: #dcdfe8;
   --shadow-card: none;
@@ -143,6 +153,8 @@
   --dark-success-bg: #0d2818;
   --dark-warning: #56cad8;
   --dark-warning-bg: #0c313a;
+  /* Mid-brown, still legible on near-black and distinct from the violet accent. */
+  --dark-trunk: #8a6244;
   --dark-arc: #5d61f0;
   --dark-arc-track: #272a34;
   --dark-shadow-card: none;
@@ -185,6 +197,8 @@
   --success-bg: #dcfce7;
   --warning: #027a94;
   --warning-bg: #cceef3;
+  /* A punchier saturated brown to match momentum's tactile, high-energy register. */
+  --trunk: #7a4a1f;
   --arc: #15803d;
   --arc-track: #d3e0ec;
   --shadow-card: 0 3px 0 var(--border);
@@ -207,6 +221,9 @@
   --dark-success-bg: #123726;
   --dark-warning: #2dd4e0;
   --dark-warning-bg: #0a323d;
+  /* Mid amber-brown against the deep blue-slate ground — deep enough to read
+   * as wood, still warm enough to fit momentum's energetic register. */
+  --dark-trunk: #a8672e;
   --dark-arc: #22a95a;
   --dark-arc-track: #22384a;
   --dark-shadow-card: 0 3px 0 var(--border);
@@ -272,6 +289,11 @@
   --success-bg: rgba(15, 122, 69, 0.1);
   --warning: #00697c;
   --warning-bg: rgba(0, 105, 124, 0.12);
+  /* Opaque, unlike most of this theme's tokens: a translucent trunk over the
+   * mesh would read as a different colour at every point along a branch,
+   * the same reasoning as --arc below. Soft warm brown so it sits quietly
+   * against the glass rather than competing with the cyan accent. */
+  --trunk: #6b5541;
   /* Opaque track for the same reason the cards are: a translucent band over
    * the mesh reads as a different colour at every point of the circle. */
   --arc: #096b87;
@@ -303,6 +325,8 @@
   --dark-success-bg: rgba(74, 222, 128, 0.13);
   --dark-warning: #4cc9dc;
   --dark-warning-bg: rgba(76, 201, 220, 0.13);
+  /* Mid-brown, opaque, legible over the dark mesh without reading as pale gold. */
+  --dark-trunk: #93694a;
   /* --dark-accent (#67d4f5) is the luminous cyan the theme signs with, but as
    * a filled band it's the "too light" read — it dissolves into the mesh.
    * Deepened until the arc is a solid object again. */
@@ -501,6 +525,7 @@
     --success-bg: var(--dark-success-bg);
     --warning: var(--dark-warning);
     --warning-bg: var(--dark-warning-bg);
+    --trunk: var(--dark-trunk);
     --arc: var(--dark-arc);
     --arc-track: var(--dark-arc-track);
     --shadow-card: var(--dark-shadow-card);
@@ -527,6 +552,7 @@
   --success-bg: var(--dark-success-bg);
   --warning: var(--dark-warning);
   --warning-bg: var(--dark-warning-bg);
+  --trunk: var(--dark-trunk);
   --arc: var(--dark-arc);
   --arc-track: var(--dark-arc-track);
   --shadow-card: var(--dark-shadow-card);
@@ -650,6 +676,7 @@
   --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
   --color-warning-bg: var(--warning-bg);
+  --color-trunk: var(--trunk);
   --font-sans: var(--font-ui);
   --animate-gshake: gshake 0.45s;
   /* Stroke-order draw-along. Registered here — rather than written as an
@@ -2086,4 +2113,88 @@ body {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ============================================================================
+ * THE SKY: night theme tokens (SAK-291).
+ *
+ * The Sky redesign is a single night theme by choice: a dark ground, warm
+ * stars, gold for actions, and one palette for standings. These are not
+ * per-theme tokens. The sky is the same night whichever of the four app themes
+ * is active, so they sit on :root once. A future "dawn" variant would redefine
+ * these same names under a data attribute; components never change.
+ *
+ * Two floors, enforced by src/sky/lib/night-theme.test.ts, which parses this
+ * file: text tokens reach 4.5:1 on every ground and card, lines reach 3:1.
+ * --sky-faint and --sky-star-dim are decorative only (they sit below 3:1 on
+ * purpose) and must never carry text.
+ *
+ * Sky code never writes a raw hex value. If a semantic is missing, it is added
+ * here, once, and gets a Tailwind name in the @theme block below.
+ */
+:root {
+  /* The sweep's grounds, the stardust and the page wash live in sky-wash.css,
+   * the file to edit when tuning the background. These two are panel shades,
+   * not part of the sweep: ground-0 for tooltips and the handles' fill,
+   * ground-3 the lightest panel. */
+  --sky-ground-0: #0b0a28;
+  --sky-ground-3: #28226e;
+  /* translucent surfaces over a ground: dark glass, tinted toward the zenith,
+   * so a panel quiets the wash beneath it instead of brightening it */
+  --sky-card: rgba(6, 6, 26, 0.62);
+  --sky-card-strong: rgba(6, 6, 26, 0.74);
+  --sky-line: rgba(140, 151, 196, 0.22);
+  /* text */
+  --sky-ink: #e8ecfa;
+  --sky-muted: #9ba6d0;
+  --sky-faint: #4b5686; /* decorative only */
+  /* stars and the lines between them */
+  --sky-star: #f5ebc8;
+  --sky-star-mid: #b9c4ee;
+  --sky-star-dim: #3e4a78; /* decorative only */
+  --sky-link: #7c8cc7;
+  /* actions and the selected star */
+  --sky-gold: #f2c86b;
+  --sky-gold-ink: #1a1608;
+  /* standings: solid, getting there, shaky, slipping; lilac is for planets */
+  --sky-mint: #7ee0b8;
+  --sky-pale: #e3dcc3;
+  --sky-amber: #f2c86b;
+  --sky-coral: #ff9a8f;
+  --sky-lilac: #c8acff;
+  /* type. The webfonts are loaded once by the Sky layout, which sets
+   * --font-shippori-mincho and --font-karla; without them these fall through
+   * to the same system stacks the rest of the app uses. */
+  --sky-font-display: var(--font-shippori-mincho, "Shippori Mincho"), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --sky-font-ui: var(--font-karla, "Karla"), -apple-system, "Helvetica Neue", system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-sky-zenith: var(--sky-zenith);
+  --color-sky-ground-0: var(--sky-ground-0);
+  --color-sky-ground: var(--sky-ground);
+  --color-sky-ground-2: var(--sky-ground-2);
+  --color-sky-ground-3: var(--sky-ground-3);
+  --color-sky-card: var(--sky-card);
+  --color-sky-card-strong: var(--sky-card-strong);
+  --color-sky-line: var(--sky-line);
+  --color-sky-ink: var(--sky-ink);
+  --color-sky-muted: var(--sky-muted);
+  --color-sky-faint: var(--sky-faint);
+  --color-sky-star: var(--sky-star);
+  --color-sky-star-mid: var(--sky-star-mid);
+  --color-sky-star-dim: var(--sky-star-dim);
+  --color-sky-link: var(--sky-link);
+  --color-sky-gold: var(--sky-gold);
+  --color-sky-gold-ink: var(--sky-gold-ink);
+  --color-sky-mint: var(--sky-mint);
+  --color-sky-pale: var(--sky-pale);
+  --color-sky-amber: var(--sky-amber);
+  --color-sky-coral: var(--sky-coral);
+  --color-sky-lilac: var(--sky-lilac);
+  --background-image-sky-mesh: var(--sky-mesh);
+  --background-image-sky-mesh-sky: var(--sky-mesh-sky);
+  --background-image-sky-mesh-horizon: var(--sky-mesh-horizon);
+  --font-sky-display: var(--sky-font-display);
+  --font-sky-ui: var(--sky-font-ui);
 }

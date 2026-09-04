@@ -1,6 +1,6 @@
-// Grove's own copy of the "is this Japanese" check.
+// The Sky redesign's own copy of the "is this Japanese" check.
 //
-// The app has an equivalent in @/lib/japanese-text, but the Grove does not import
+// The app has an equivalent in @/lib/japanese-text, but the Sky redesign does not import
 // from the existing tree (see README). Three lines duplicated is cheaper than a
 // dependency that has to be untangled at cutover.
 

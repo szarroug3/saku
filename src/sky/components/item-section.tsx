@@ -8,12 +8,12 @@
 //
 //   - the card has NO type label, so this header is the only thing saying what
 //     these are;
-//   - the card has NO locked state, because the Nursery lists only what you can
+//   - the card has NO locked state, because the Planetarium lists only what you can
 //     take, so "why is the G row not here yet" is a question the SECTION answers;
-//   - the card has NO status, so in the Library that lives in the furniture
+//   - the card has NO status, so in the Atlas that lives in the furniture
 //     beside this component.
 //
-// Which means the honesty of the Nursery mostly lives here now. A section that
+// Which means the honesty of the Planetarium mostly lives here now. A section that
 // quietly shows six of two thousand words, or hides a gate without saying what
 // it is waiting for, is the failure mode this component exists to prevent.
 

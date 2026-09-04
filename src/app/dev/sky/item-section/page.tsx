@@ -1,18 +1,18 @@
 "use client";
 
-// Gallery for ItemSection. Route: /dev/grove/item-section
+// Gallery for ItemSection. Route: /dev/sky/item-section
 //
-// Shown as a whole Nursery rather than as isolated headers, because the point of
+// Shown as a whole Planetarium rather than as isolated headers, because the point of
 // this component is what a page of them reads like end to end: five sections,
 // one per type, each stating how much it is showing and what it is waiting for.
 
 import { useState } from "react";
 
-import { ItemCard } from "@/grove/components/item-card";
-import { ItemSection } from "@/grove/components/item-section";
-import type { GroveItem } from "@/grove/lib/types";
+import { ItemCard } from "@/sky/components/item-card";
+import { ItemSection } from "@/sky/components/item-section";
+import type { SkyItem } from "@/sky/lib/types";
 
-type Pick = GroveItem & { pieces: number };
+type Pick = SkyItem & { pieces: number };
 
 const WORDS: Pick[] = [
   { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 8 },
@@ -64,7 +64,7 @@ export default function ItemSectionGalleryPage() {
       <Intro />
 
       <Case
-        title="A Nursery, end to end"
+        title="A Planetarium, end to end"
         note="What the component is really for. Five sections, one per type, each saying how much it is showing and what it is waiting for. The headers are the only thing naming a type, since the cards deliberately do not."
       >
         <div className="rounded-xl border border-border bg-card p-5">
@@ -186,11 +186,11 @@ function Intro() {
         is the only thing naming a type;{" "}
         <strong className="text-text">no locked state</strong>, so a section
         answers why something is not here yet; and{" "}
-        <strong className="text-text">no status</strong>, so in the Library that
+        <strong className="text-text">no status</strong>, so in the Atlas that
         lives in the furniture beside it.
       </p>
       <p className="mt-2 text-sm leading-relaxed text-text-muted">
-        Which puts the honesty of the Nursery mostly here. A section that quietly
+        Which puts the honesty of the Planetarium mostly here. A section that quietly
         shows six of twelve thousand words, or hides a gate without saying what it
         waits for, is the failure this component exists to prevent.
       </p>
