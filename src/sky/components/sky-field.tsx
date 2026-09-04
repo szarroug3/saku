@@ -36,7 +36,8 @@ export interface SkyFieldProps {
   width?: number;
   height?: number;
   /** The world the constellations are scattered across. Fixed, so nothing
-   * moves when the window changes; pan reaches what the window does not show. */
+   * moves when the window changes; pan reaches what the window does not
+   * show. Taller than most windows, so the sky fills the box. */
   worldHeight?: number;
   /** Space between constellations and from the edges, in sky units. */
   pad?: number;
@@ -74,7 +75,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean }
 
-export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 460, worldHeight = 720, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 460, worldHeight = 900, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   // when filling, the sky's height in sky units follows the box's aspect
