@@ -118,15 +118,21 @@ export function discoveryRows(history: HistoryFile, stats: StatsData): Discovery
   return rows;
 }
 
+export interface SkyOptions {
+  /** Show the whole finite sky: every kana, piece and kanji as a point,
+   * discovered or not. Words still appear only once discovered. */
+  everything?: boolean;
+}
+
 /** The signed-in learner's sky, or an empty one for a visitor. */
-export async function learnerSky(now = Date.now()): Promise<SkyHomeData> {
+export async function learnerSky(now = Date.now(), options: SkyOptions = {}): Promise<SkyHomeData> {
   const userId = await currentUserId();
   const history = userId ? await loadHistory(userId) : emptyHistory();
-  return skyFromHistory(history, now, await getStatsRows());
+  return skyFromHistory(history, now, await getStatsRows(), options);
 }
 
 /** The sky from a history file. Without `stats` the discovery rows are empty. */
-export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData): SkyHomeData {
+export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData, options: SkyOptions = {}): SkyHomeData {
   const items = new Map<string, SkyItem>();
   const met = new Set<string>();
 
@@ -140,24 +146,29 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
     for (const p of parts) add(p);
   };
 
-  for (const kind of [KANA_SUBJECT, RADICAL_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT] as const) {
+  const firmament: string[] = [];
+  for (const kind of [KANA_SUBJECT, RADICAL_SUBJECT, PRIMITIVE_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT] as const) {
     for (const entry of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
       if (!entry.glyph) continue;
       // A radical taught as its kanji (radical:日 learns on kanji:日's card and
       // shares its meaning fact) is the same star as the kanji: one node, one
       // state. The kanji entry carries it; the radical entry is not a star.
       if (kind === RADICAL_SUBJECT && entryForGlyph(KANJI_SUBJECT, entry.glyph)) continue;
+      const single = kind !== VOCAB_SUBJECT;
       if (standingFor(entry, history, now).met) add(entry);
+      else if (options.everything && single) add(entry);
+      if (options.everything && single) firmament.push(entry.id);
     }
   }
 
   const list = [...items.values()];
   const graph = buildGraph(list);
   const roots = skyRoots(graph, met);
+  const rootSet = new Set(roots);
 
   const mixUps: MixUp[] = activeWeaknessPairs(history, GRADUATE_RUNS, entryOf)
     .filter((p) => items.has(p.a) && items.has(p.b))
     .map((p) => ({ a: p.a, b: p.b, times: p.runsMixedUp }));
 
-  return { items: list, roots, mixUps, discovery: stats ? discoveryRows(history, stats) : [] };
+  return { items: list, roots, mixUps, discovery: stats ? discoveryRows(history, stats) : [], firmament: firmament.filter((id) => !rootSet.has(id)) };
 }

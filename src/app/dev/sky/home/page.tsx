@@ -19,13 +19,22 @@ export const dynamic = "force-dynamic";
 export default async function SkyHomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
-  const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows()) : await learnerSky();
+  const everything = params.all !== undefined;
+  const options = { everything };
+  const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
+  const href = (s: boolean, a: boolean) => `/dev/sky/home${s || a ? "?" : ""}${[s ? "sample" : "", a ? "all" : ""].filter(Boolean).join("&")}`;
   return (
     <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
       <div className="mx-auto max-w-[1180px]">
-        <p className="mb-4 font-sky-ui text-[12px] text-sky-muted">
-          {sample ? "A pretend learner. " : "Your own progress. "}
-          <Link href={sample ? "/dev/sky/home" : "/dev/sky/home?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
+        <p className="mb-4 flex flex-wrap gap-x-4 font-sky-ui text-[12px] text-sky-muted">
+          <span>
+            {sample ? "A pretend learner. " : "Your own progress. "}
+            <Link href={href(!sample, everything)} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
+          </span>
+          <span>
+            {everything ? "Every kana, piece and kanji is up there. " : "Only what has been discovered. "}
+            <Link href={href(sample, !everything)} className="underline">{everything ? "Show only what's discovered" : "Show everything"}</Link>
+          </span>
         </p>
         <SkyHome data={data} planetariumHref="/learn" />
       </div>

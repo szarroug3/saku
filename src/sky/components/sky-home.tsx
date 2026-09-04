@@ -31,6 +31,9 @@ export interface SkyHomeData {
   mixUps: readonly MixUp[];
   /** How far the learner has got in each subject, grouped as the app groups them. */
   discovery: readonly DiscoveryRow[];
+  /** Every single star the sky holds before anything is discovered (kana,
+   * pieces, kanji), when the sky shows everything. Empty for discovered-only. */
+  firmament?: readonly string[];
 }
 
 export interface SkyHomeProps {
@@ -45,10 +48,10 @@ export interface SkyHomeProps {
 
 export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
-  const stars = useMemo(() => skyStars(graph, data.roots), [graph, data.roots]);
+  const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
   const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
   const totals = discoveryTotals(data.discovery);
-  const empty = data.roots.length === 0;
+  const empty = data.roots.length === 0 && !(data.firmament?.length);
   // the panels fold away, so the sky is most of the page
   const [details, setDetails] = useState(false);
   // hover a standing in the legend and only its stars stay lit
@@ -74,7 +77,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
