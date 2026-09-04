@@ -9,6 +9,8 @@ import Link from "next/link";
 
 import { SkyHome } from "@/sky/components/sky-home";
 
+import { SkyPage } from "../sky-page";
+
 import { getStatsRows } from "@/lib/library/server-lookups";
 
 import { learnerSky, skyFromHistory } from "../learner";
@@ -24,7 +26,7 @@ export default async function SkyHomePage({ searchParams }: { searchParams: Prom
   const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
   const href = (s: boolean, a: boolean) => `/dev/sky/home${s || a ? "?" : ""}${[s ? "sample" : "", a ? "all" : ""].filter(Boolean).join("&")}`;
   return (
-    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
+    <SkyPage>
       <div className="mx-auto max-w-[1180px]">
         <p className="mb-4 flex flex-wrap gap-x-4 font-sky-ui text-[12px] text-sky-muted">
           <span>
@@ -38,6 +40,6 @@ export default async function SkyHomePage({ searchParams }: { searchParams: Prom
         </p>
         <SkyHome data={data} planetariumHref="/dev/sky/planetarium" />
       </div>
-    </div>
+    </SkyPage>
   );
 }

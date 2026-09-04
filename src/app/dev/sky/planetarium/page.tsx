@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { SkyPlanetarium } from "@/sky/components/sky-planetarium";
 
+import { SkyPage } from "../sky-page";
 import { learnerPlanetarium, planetariumFromHistory } from "../planetarium";
 import { sampleHistory } from "../sample-learner";
 
@@ -17,7 +18,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const sample = params.sample !== undefined;
   const data = sample ? planetariumFromHistory(sampleHistory()) : await learnerPlanetarium();
   return (
-    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
+    <SkyPage>
       <div className="mx-auto max-w-[1180px]">
         <p className="mb-4 font-sky-ui text-[12px] text-sky-muted">
           {sample ? "A pretend learner. " : "Your own progress. "}
@@ -25,6 +26,6 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
         </p>
         <SkyPlanetarium data={data} lessonPath="/dev/sky/lesson" />
       </div>
-    </div>
+    </SkyPage>
   );
 }

@@ -12,6 +12,8 @@ import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import type { SkyItem } from "@/sky/lib/types";
 
+import { SkyPage } from "../sky-page";
+
 type Pick = SkyItem & { pieces: number };
 
 const WORDS: Pick[] = [
@@ -60,7 +62,7 @@ export default function ItemSectionGalleryPage() {
   );
 
   return (
-    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 font-sky-ui text-sky-ink">
+    <SkyPage><div className="font-sky-ui text-sky-ink">
       <Intro />
 
       <Case
@@ -172,7 +174,7 @@ export default function ItemSectionGalleryPage() {
           </Panel>
         </div>
       </Case>
-    </div>
+    </div></SkyPage>
   );
 }
 

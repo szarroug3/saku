@@ -17,6 +17,8 @@ import { useState } from "react";
 import { ItemCard } from "@/sky/components/item-card";
 import type { SkyItem } from "@/sky/lib/types";
 
+import { SkyPage } from "../sky-page";
+
 /** How many pieces a pick commits you to: every distinct node in its own
  * prerequisite tree, counted once. Stands in for the graph (SAK-299). */
 type Pick = SkyItem & { pieces: number };
@@ -120,7 +122,7 @@ export default function ItemCardGalleryPage() {
   );
 
   return (
-    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 font-sky-ui text-sky-ink">
+    <SkyPage><div className="font-sky-ui text-sky-ink">
       <Intro />
       <CountingRule />
 
@@ -188,7 +190,7 @@ export default function ItemCardGalleryPage() {
 
 
 
-    </div>
+    </div></SkyPage>
   );
 }
 

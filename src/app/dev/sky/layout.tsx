@@ -51,7 +51,7 @@ export default function SkyGalleryLayout({ children }: { children: ReactNode }) 
 
   return (
     <main className={`${shipporiMincho.variable} ${karla.variable} mx-auto max-w-[1180px] px-6 py-8`}>
-      <header className="border-b border-border pb-4">
+      <header className="relative z-10 border-b border-border bg-background pb-4">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
           Sky
         </div>
@@ -66,7 +66,7 @@ export default function SkyGalleryLayout({ children }: { children: ReactNode }) 
       </header>
 
       <div className="mt-6 flex gap-8">
-        <nav className="w-[172px] shrink-0">
+        <nav className="relative z-10 w-[172px] shrink-0">
           <div className="flex flex-col gap-0.5">
             {SKY_PAGES.map(({ href, label, note }) => {
               const sel = pathname === href;
