@@ -47,7 +47,7 @@ export interface StandingLegendProps {
   /** Called with the standing under the pointer, and null when it leaves,
    * so a sky beside the legend can single those stars out. */
   onHover?: (standing: Standing | null) => void;
-  /** The standing currently singled out; shows its count in a small bubble. */
+  /** The standing currently singled out, shown as the active row. */
   hovered?: Standing | null;
   className?: string;
 }
@@ -73,12 +73,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           >
             <Dot standing={standing} />
             <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
-            {!live && n !== undefined && <dd className="tabular-nums">{n}</dd>}
-            {live && on && (
-              <dd role="tooltip" className="absolute left-0 top-full z-10 mt-1 whitespace-nowrap rounded-md border border-sky-line bg-sky-ground-0 px-2 py-1 text-[12px] tabular-nums text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-                {n ?? 0} {STANDING[standing].label}
-              </dd>
-            )}
+            {n !== undefined && <dd className="tabular-nums">{n}</dd>}
           </div>
         );
       })}
