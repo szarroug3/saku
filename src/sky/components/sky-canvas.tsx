@@ -27,6 +27,8 @@ export interface SkyCanvasProps {
   dust?: number;
   /** Seeds the dust, so two skies on one page do not share a pattern. */
   seed?: string;
+  /** Fill the box: the svg takes the box's height rather than its own aspect. */
+  fill?: boolean;
   label: string;
   className?: string;
   children?: ReactNode;
@@ -37,7 +39,7 @@ const MAX_ZOOM = 6;
 const STEP = 1.3;
 const WHEEL_STEP = 1.15;
 
-export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", label, className = "", children }: SkyCanvasProps) {
+export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, label, className = "", children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [view, setView] = useState({ k: 1, x: 0, y: 0 });
   const drag = useRef<{ px: number; py: number; vx: number; vy: number } | null>(null);
@@ -101,13 +103,14 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   })), [dust, seed, width, height]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${fill ? "h-full w-full" : ""} ${className}`}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={label}
-        className={`block h-auto w-full select-none ${interactive ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
+        className={`block w-full select-none ${fill ? "h-full" : "h-auto"} ${interactive ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

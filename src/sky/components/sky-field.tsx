@@ -15,7 +15,7 @@
 // and the lesson use the same field smaller or larger, with their own looks
 // (tonight's picks faint; the lesson's own clickable stars on top).
 
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ConstellationFigure, type StarLook } from "@/sky/components/constellation";
 import { SkyCanvas } from "@/sky/components/sky-canvas";
@@ -47,6 +47,11 @@ export interface SkyFieldProps {
   briefTooltip?: boolean;
   /** A graph built by the caller, to share with panels beside the field. */
   graph?: PrerequisiteGraph;
+  /** Fill the box the field sits in (which must be positioned): the field
+   * pins to the box's edges and the sky's height follows the box's aspect,
+   * so the sky can be most of the page. `height` is the fallback until the
+   * box has a size. */
+  fill?: boolean;
   label: string;
   seed?: string;
   className?: string;
@@ -63,8 +68,21 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean }
 
-export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 460, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  // when filling, the sky's height in sky units follows the box's aspect
+  const [aspect, setAspect] = useState<number | null>(null);
+  useEffect(() => {
+    if (!fill || !fieldRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width: w, height: h } = entry.contentRect;
+      if (w > 0 && h > 0) setAspect(h / w);
+    });
+    ro.observe(fieldRef.current);
+    return () => ro.disconnect();
+  }, [fill]);
+  const height = fill && aspect ? Math.round(width * aspect) : fallbackHeight;
   const layouts = useMemo(() => new Map(roots.filter((r) => graph.has(r)).map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, roots]);
   const placed = useMemo<PlacedConstellation[]>(() => {
     const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, baseSize) })), (b) => b.size);
@@ -78,8 +96,7 @@ export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, b
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
-  // the tooltip: which constellation, and where the pointer is, in the field's own pixels
-  const fieldRef = useRef<HTMLDivElement>(null);
+  // the tooltip: which star, and where the pointer is, in the field's own pixels
   const [hover, setHover] = useState<Hover | null>(null);
   // the flip is decided here, in the event, where reading the rect is allowed
   const place = (id: string, clientX: number, clientY: number) => {
@@ -95,8 +112,8 @@ export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, b
   const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 7 })));
 
   return (
-    <div ref={fieldRef} className={`relative ${className}`} onPointerLeave={() => setHover(null)}>
-      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed}>
+    <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
+      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed} fill={fill} dust={Math.round((90 * height) / 460)}>
         {placed.map((p) => (
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}

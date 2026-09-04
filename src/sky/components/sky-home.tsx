@@ -37,9 +37,12 @@ export interface SkyHomeProps {
   data: SkyHomeData;
   /** Where the Planetarium lives, for the empty sky's way in. */
   planetariumHref?: string;
+  /** How tall the page is for the home: the sky fills what the heading and
+   * the details bar leave. A CSS length; the route knows its own chrome. */
+  minHeight?: string;
 }
 
-export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps) {
+export function SkyHome({ data, planetariumHref = "/planetarium", minHeight = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => skyStars(graph, data.roots), [graph, data.roots]);
   const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
@@ -52,7 +55,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
   const lookOf = useCallback((_id: string, base: StarLook): StarLook => (singled && base.standing !== singled ? { ...base, muted: true } : base), [singled]);
 
   return (
-    <div className="font-sky-ui text-sky-ink">
+    <div className="flex flex-col font-sky-ui text-sky-ink" style={{ minHeight }}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-sky-display text-4xl leading-tight">Your sky</h1>
@@ -62,20 +65,20 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
         </div>
       </header>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-sky-line">
+      <div className="relative mt-4 flex min-h-[360px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
         {empty ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 p-8 text-center">
+          <div className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">Your sky is empty tonight.</p>
             <p className="max-w-[44ch] text-[14px] text-sky-muted">Pick something to learn and it appears here as its own constellation. The first kana are a good place to start.</p>
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} graph={graph} interactive lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
 
-      <div className="mt-6">
+      <div className="mt-4">
         <button
           type="button"
           onClick={() => setDetails((d) => !d)}
