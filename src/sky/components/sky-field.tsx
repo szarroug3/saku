@@ -5,7 +5,9 @@
 // Takes the items and the ids of the constellations to show, builds the
 // graph, lays every constellation out (seeded, so a word keeps its shape),
 // sizes each by its stars, scatters them without overlap (seeded, so a word
-// keeps its place), and draws them on a SkyCanvas. Every star gets a
+// keeps its place) across a WORLD of fixed size, and draws them on a
+// SkyCanvas whose window shows as much of that world as fits: a box that
+// changes shape shows more or less sky, and never moves a constellation. Every star gets a
 // transparent hit circle inside the pan and zoom group, so it follows the
 // sky; hovering or focusing it shows the tooltip for THAT star, the radical,
 // the kanji or the word, which follows the cursor and flips to stay inside
@@ -30,8 +32,12 @@ export interface SkyFieldProps {
   items: readonly SkyItem[];
   /** The constellations to draw, by root id. */
   roots: readonly string[];
+  /** The window at 100%, in sky units. With `fill`, its height follows the box. */
   width?: number;
   height?: number;
+  /** The world the constellations are scattered across. Fixed, so nothing
+   * moves when the window changes; pan reaches what the window does not show. */
+  worldHeight?: number;
   /** Space between constellations and from the edges, in sky units. */
   pad?: number;
   /** A one-star constellation's box; every star adds to it. 48 on the home. */
@@ -68,7 +74,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean }
 
-export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 460, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 460, worldHeight = 720, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   // when filling, the sky's height in sky units follows the box's aspect
@@ -86,8 +92,8 @@ export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 
   const layouts = useMemo(() => new Map(roots.filter((r) => graph.has(r)).map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, roots]);
   const placed = useMemo<PlacedConstellation[]>(() => {
     const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, baseSize) })), (b) => b.size);
-    return scatterLayout(boxes, width, height, pad).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 4 }));
-  }, [layouts, baseSize, width, height, pad]);
+    return scatterLayout(boxes, width, worldHeight, pad).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 4 }));
+  }, [layouts, baseSize, width, worldHeight, pad]);
 
   const baseLook = useCallback((root: string, id: string): StarLook => {
     const it = graph.itemOf(id);
@@ -113,7 +119,7 @@ export function SkyField({ items, roots, width = 1120, height: fallbackHeight = 
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
-      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed} fill={fill} dust={Math.round((90 * height) / 460)}>
+      <SkyCanvas width={width} height={height} worldWidth={width} worldHeight={worldHeight} interactive={interactive} label={label} seed={seed} fill={fill} dust={Math.round((90 * worldHeight) / 460)}>
         {placed.map((p) => (
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}

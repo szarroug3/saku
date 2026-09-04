@@ -87,7 +87,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           aria-controls="sky-home-details"
           className="flex w-full shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-card px-5 py-3 text-left hover:bg-sky-card-strong"
         >
-          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">How much you&apos;ve discovered and mix-ups</span>
+          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Details</span>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
             {totals.total > 0 && <span>{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
             <span aria-hidden className="text-sky-ink">{details ? "Hide" : "Show"}</span>
