@@ -26,7 +26,7 @@ function Name({ graph, id }: { graph: PrerequisiteGraph; id: string }) {
   if (!item) return <span className="text-sky-muted">{id}</span>;
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className={`font-sky-display text-[17px] leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`} title={STANDING[item.standing].label}>{item.glyph}</span>
+      <span className={`font-sky-display text-[17px] leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
       <span>{item.english}</span>
     </span>
   );
