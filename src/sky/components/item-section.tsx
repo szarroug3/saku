@@ -8,8 +8,9 @@
 //
 //   - the card has NO type label, so this header is the only thing saying what
 //     these are;
-//   - the card has NO locked state, because the Planetarium lists only what you can
-//     take, so "why is the G row not here yet" is a question the SECTION answers;
+//   - a card can be locked with its reason inline (SAK-301), but a whole section
+//     waiting on something ("why is Grammar not here yet") is a question the
+//     SECTION answers, with a gate;
 //   - the card has NO status, so in the Atlas that lives in the furniture
 //     beside this component.
 //
@@ -55,11 +56,11 @@ export function ItemSection({ title, hint, shown, total, gate, children }: ItemS
   const isCapped = total !== undefined && shown !== undefined && total > shown;
 
   return (
-    <section className="mt-6 first:mt-0">
-      <div className="flex items-baseline justify-between gap-4 border-b border-border/60 pb-1.5">
+    <section className="mt-6 font-sky-ui first:mt-0">
+      <div className="flex items-baseline justify-between gap-4 border-b border-sky-line pb-1.5">
         <h3
           className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${
-            locked ? "text-text-muted/70" : "text-text-muted"
+            locked ? "text-sky-muted/70" : "text-sky-muted"
           }`}
         >
           {title}
@@ -68,15 +69,15 @@ export function ItemSection({ title, hint, shown, total, gate, children }: ItemS
         {/* The count. "next 6 of 12,500" rather than "6", because the second one
             is a claim about how much Japanese there is. */}
         {shown !== undefined && !locked ? (
-          <span className="shrink-0 text-[10.5px] tabular-nums text-text-muted/70">
+          <span className="shrink-0 text-[10.5px] tabular-nums text-sky-muted/70">
             {isCapped ? (
               <>
-                next <span className="text-text-muted">{shown}</span> of{" "}
+                next <span className="text-sky-muted">{shown}</span> of{" "}
                 {total!.toLocaleString()}
               </>
             ) : (
               <>
-                <span className="text-text-muted">{shown}</span>{" "}
+                <span className="text-sky-muted">{shown}</span>{" "}
                 {shown === 1 ? "to take" : "to take"}
               </>
             )}
@@ -85,7 +86,7 @@ export function ItemSection({ title, hint, shown, total, gate, children }: ItemS
       </div>
 
       {hint ? (
-        <p className="mt-1.5 max-w-[76ch] text-[11.5px] leading-relaxed text-text-muted/80">
+        <p className="mt-1.5 max-w-[76ch] text-[11.5px] leading-relaxed text-sky-muted/80">
           {hint}
         </p>
       ) : null}
@@ -106,15 +107,15 @@ function Gate({ gate }: { gate: NonNullable<ItemSectionProps["gate"]> }) {
   const pct = p ? Math.max(0, Math.min(100, Math.round((p.have / p.need) * 100))) : null;
 
   return (
-    <div className="mt-2.5 rounded-xl border border-dashed border-border px-4 py-3.5">
-      <p className="text-[12.5px] leading-relaxed text-text-muted">{gate.requirement}</p>
+    <div className="mt-2.5 rounded-xl border border-dashed border-sky-line px-4 py-3.5">
+      <p className="text-[12.5px] leading-relaxed text-sky-muted">{gate.requirement}</p>
 
       {p ? (
         <div className="mt-2.5 flex items-center gap-3">
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-panel">
-            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-sky-card-strong">
+            <div className="h-full rounded-full bg-sky-gold" style={{ width: `${pct}%` }} />
           </div>
-          <span className="shrink-0 text-[10.5px] tabular-nums text-text-muted/80">
+          <span className="shrink-0 text-[10.5px] tabular-nums text-sky-muted/80">
             {p.have} of {p.need} {p.unit}
           </span>
         </div>

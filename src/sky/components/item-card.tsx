@@ -28,8 +28,12 @@
 //   beside it, and tinting the glyph instead just moves the same unlabelled
 //   signal somewhere more distracting. The Atlas carries status where it is
 //   worded: the coverage bar and the status filter.
-// - A locked state. The Planetarium lists only what you can actually take, so a
-//   card that cannot be picked never reaches this component.
+// - A locked state that hides. A card that cannot be picked yet is still shown,
+//   with its reason inline (`locked`, SAK-301): "needs the K row first". What is
+//   hidden is never explained; what is shown and dashed is.
+//
+// Painted in the Sky's own tokens: it sits on the wash, never on the app's
+// light card.
 
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { SkyItem } from "@/sky/lib/types";
@@ -64,6 +68,12 @@ export interface ItemCardProps {
    * total does that deduplication across picks, where it can be explained.
    */
   pieces?: number;
+  /** The reason this cannot be picked yet, worded for the learner: "needs the
+   * K row first". Shown in place of the cost; the card is dashed and inert. */
+  locked?: string;
+  /** One short line under the cost: "2 shared", "kanji already in your sky",
+   * "comes with the K row". Planetarium only. */
+  note?: string;
   onClick?: () => void;
 }
 
@@ -117,20 +127,23 @@ export function ItemCard({
   density = "comfortable",
   selected = false,
   pieces,
+  locked,
+  note,
   onClick,
 }: ItemCardProps) {
-  const isButton = Boolean(onClick);
+  const isButton = Boolean(onClick) && !locked;
   const Tag = isButton ? "button" : "div";
 
   return (
     <Tag
-      {...(isButton ? { type: "button" as const, onClick } : {})}
+      {...(isButton ? { type: "button" as const, onClick, "aria-pressed": selected } : {})}
+      aria-disabled={locked ? true : undefined}
       className={[
-        "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center",
+        "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center font-sky-ui",
         BOX[density],
-        "border bg-card transition-colors",
-        selected ? "border-accent bg-accent-bg" : "border-border",
-        isButton ? "hover:border-accent/60 hover:bg-panel" : "",
+        "border transition-colors",
+        locked ? "cursor-not-allowed border-dashed border-sky-line bg-transparent opacity-60" : selected ? "border-sky-gold bg-sky-gold/10" : "border-sky-line bg-sky-panel",
+        isButton ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -146,7 +159,7 @@ export function ItemCard({
           aria-hidden
           className={[
             "pointer-events-none absolute -bottom-1.5 -right-0.5 -z-10 select-none whitespace-nowrap leading-none",
-            "text-text opacity-[0.09]",
+            "text-sky-ink opacity-[0.12]",
             ghostSize(item.glyph, density),
             japaneseFont(item.glyph),
           ].join(" ")}
@@ -159,7 +172,7 @@ export function ItemCard({
         <>
           <span
             className={[
-              "font-medium leading-tight text-text",
+              "font-sky-display font-medium leading-tight text-sky-ink",
               glyphSize(item.glyph, density),
               japaneseFont(item.glyph),
             ].join(" ")}
@@ -167,7 +180,7 @@ export function ItemCard({
             {item.glyph}
           </span>
           <span
-            className={`mt-1 w-full truncate text-accent ${
+            className={`mt-1 w-full truncate text-sky-gold ${
               density === "compact" ? "text-[9.5px]" : "text-[11.5px]"
             }`}
           >
@@ -180,7 +193,7 @@ export function ItemCard({
               a name that wraps to two lines grows upward instead of shoving the
               cost line down. */}
           <span
-            className={`flex flex-1 items-center justify-center font-medium leading-snug text-text ${englishSize(item.english, density)}`}
+            className={`flex flex-1 items-center justify-center font-medium leading-snug text-sky-ink ${englishSize(item.english, density)}`}
           >
             {item.english}
           </span>
@@ -189,11 +202,14 @@ export function ItemCard({
               the number IS the decision. Anchored to the bottom so it sits on
               one line across a whole row, which is what makes two cards
               comparable at a glance. */}
-          {pieces !== undefined ? (
-            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-accent">
+          {locked ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] text-sky-muted">{locked}</span>
+          ) : pieces !== undefined ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-gold">
               {pieces} {pieces === 1 ? "piece" : "pieces"}
             </span>
           ) : null}
+          {!locked && note ? <span className="shrink-0 pt-0.5 text-[10.5px] text-sky-muted">{note}</span> : null}
         </>
       )}
     </Tag>

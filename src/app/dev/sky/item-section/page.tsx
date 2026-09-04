@@ -60,14 +60,14 @@ export default function ItemSectionGalleryPage() {
   );
 
   return (
-    <div>
+    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 font-sky-ui text-sky-ink">
       <Intro />
 
       <Case
         title="A Planetarium, end to end"
         note="What the component is really for. Five sections, one per type, each saying how much it is showing and what it is waiting for. The headers are the only thing naming a type, since the cards deliberately do not."
       >
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="rounded-xl border border-sky-line bg-sky-card p-5">
           <ItemSection
             title="Words"
             hint="The next few you can take. Adding one plants its whole prerequisite tree, which is what each count is counting."
@@ -178,18 +178,18 @@ export default function ItemSectionGalleryPage() {
 
 function Intro() {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-sm leading-relaxed text-text-muted">
+    <div className="rounded-xl border border-sky-line bg-sky-card p-4">
+      <p className="text-sm leading-relaxed text-sky-muted">
         The group an ItemCard sits inside. It ended up carrying more than a
         heading, because three card decisions pushed work down into it: the card
-        has <strong className="text-text">no type label</strong>, so this header
+        has <strong className="text-sky-ink">no type label</strong>, so this header
         is the only thing naming a type;{" "}
-        <strong className="text-text">no locked state</strong>, so a section
+        <strong className="text-sky-ink">no locked state</strong>, so a section
         answers why something is not here yet; and{" "}
-        <strong className="text-text">no status</strong>, so in the Atlas that
+        <strong className="text-sky-ink">no status</strong>, so in the Atlas that
         lives in the furniture beside it.
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-text-muted">
+      <p className="mt-2 text-sm leading-relaxed text-sky-muted">
         Which puts the honesty of the Planetarium mostly here. A section that quietly
         shows six of twelve thousand words, or hides a gate without saying what it
         waits for, is the failure this component exists to prevent.
@@ -209,8 +209,8 @@ function Case({
 }) {
   return (
     <section className="mt-9">
-      <h2 className="text-[15px] font-semibold text-text">{title}</h2>
-      <p className="mb-3 mt-1 max-w-[78ch] text-[13px] leading-relaxed text-text-muted">
+      <h2 className="text-[15px] font-semibold text-sky-ink">{title}</h2>
+      <p className="mb-3 mt-1 max-w-[78ch] text-[13px] leading-relaxed text-sky-muted">
         {note}
       </p>
       {children}
@@ -219,12 +219,12 @@ function Case({
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-xl border border-border bg-card p-4">{children}</div>;
+  return <div className="rounded-xl border border-sky-line bg-sky-card p-4">{children}</div>;
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-text-muted">
+    <div className="rounded-xl border border-dashed border-sky-line px-4 py-6 text-center text-[12.5px] text-sky-muted">
       {children}
     </div>
   );

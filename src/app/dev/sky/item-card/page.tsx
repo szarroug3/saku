@@ -120,7 +120,7 @@ export default function ItemCardGalleryPage() {
   );
 
   return (
-    <div>
+    <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8 font-sky-ui text-sky-ink">
       <Intro />
       <CountingRule />
 
@@ -196,15 +196,15 @@ export default function ItemCardGalleryPage() {
  * is not self-evident, and getting it wrong is what would make the cart lie. */
 function CountingRule() {
   return (
-    <div className="mt-4 rounded-xl border border-border bg-card p-4">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+    <div className="mt-4 rounded-xl border border-sky-line bg-sky-card p-4">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">
         How a piece count is worked out
       </h3>
-      <p className="mt-2 text-sm leading-relaxed text-text-muted">
+      <p className="mt-2 text-sm leading-relaxed text-sky-muted">
         Every distinct node in the item&apos;s prerequisite tree, counted once. A
         piece reached by more than one parent is still one piece.
       </p>
-      <pre className="mt-3 overflow-x-auto rounded-lg bg-panel p-3 text-[12px] leading-relaxed text-text-muted">
+      <pre className="mt-3 overflow-x-auto rounded-lg bg-sky-card-strong p-3 text-[12px] leading-relaxed text-sky-muted">
 {`word A
 ├─ kanji A
 │  ├─ radical A
@@ -215,7 +215,7 @@ function CountingRule() {
 
 word + kanji A + radical A + radical B + kanji B + radical C = 6`}
       </pre>
-      <p className="mt-3 text-sm leading-relaxed text-text-muted">
+      <p className="mt-3 text-sm leading-relaxed text-sky-muted">
         The number is intrinsic to the item, so two cards stay comparable and a
         count never shifts under you as the cart changes. Deduplication{" "}
         <em>across</em> picks belongs to the cart total, where there is room to
@@ -227,17 +227,17 @@ word + kanji A + radical A + radical B + kanji B + radical C = 6`}
 
 function Intro() {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-sm leading-relaxed text-text-muted">
+    <div className="rounded-xl border border-sky-line bg-sky-card p-4">
+      <p className="text-sm leading-relaxed text-sky-muted">
         Two arrangements of one component.{" "}
-        <strong className="text-text">Planetarium</strong> centres the English and
+        <strong className="text-sky-ink">Planetarium</strong> centres the English and
         keeps the Japanese only as a corner ghost, because you pick what to learn
         before you can read it.{" "}
-        <strong className="text-text">Atlas</strong> centres the character with
+        <strong className="text-sky-ink">Atlas</strong> centres the character with
         its meaning underneath in the accent, because there you arrive having met
         something in the wild.
       </p>
-      <p className="mt-2 text-sm leading-relaxed text-text-muted">
+      <p className="mt-2 text-sm leading-relaxed text-sky-muted">
         Neither shows the content type: the section a card sits in is already per
         type, so printing it again on every tile is the same word twenty times.
         Every colour is an existing Saku token, so switching theme or appearance
@@ -258,8 +258,8 @@ function Case({
 }) {
   return (
     <section className="mt-9">
-      <h2 className="text-[15px] font-semibold text-text">{title}</h2>
-      <p className="mb-3 mt-1 max-w-[78ch] text-[13px] leading-relaxed text-text-muted">
+      <h2 className="text-[15px] font-semibold text-sky-ink">{title}</h2>
+      <p className="mb-3 mt-1 max-w-[78ch] text-[13px] leading-relaxed text-sky-muted">
         {note}
       </p>
       {children}
@@ -280,11 +280,11 @@ function Section({
 }) {
   return (
     <div className="mt-5 first:mt-0">
-      <h3 className="border-b border-border/60 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+      <h3 className="border-b border-sky-line/60 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">
         {title}
       </h3>
       {hint ? (
-        <p className="mb-2 mt-1.5 max-w-[76ch] text-[11.5px] leading-relaxed text-text-muted/80">
+        <p className="mb-2 mt-1.5 max-w-[76ch] text-[11.5px] leading-relaxed text-sky-muted/80">
           {hint}
         </p>
       ) : (

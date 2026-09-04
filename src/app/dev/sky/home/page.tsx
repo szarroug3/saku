@@ -36,7 +36,7 @@ export default async function SkyHomePage({ searchParams }: { searchParams: Prom
             <Link href={href(sample, !everything)} className="underline">{everything ? "Show only what's discovered" : "Show everything"}</Link>
           </span>
         </p>
-        <SkyHome data={data} planetariumHref="/learn" />
+        <SkyHome data={data} planetariumHref="/dev/sky/planetarium" />
       </div>
     </div>
   );

@@ -35,6 +35,7 @@ const karla = Karla({
 export const SKY_PAGES: Array<{ href: string; label: string; note: string }> = [
   { href: "/dev/sky", label: "Overview", note: "what this area is and the rules" },
   { href: "/dev/sky/home", label: "Home", note: "your sky, on your real progress" },
+  { href: "/dev/sky/planetarium", label: "Planetarium", note: "pick what to learn next" },
   { href: "/dev/sky/tokens", label: "Night tokens", note: "the palette, with contrast" },
   { href: "/dev/sky/wash", label: "The wash", note: "the background, full screen, for tuning" },
   { href: "/dev/sky/standings", label: "Standings", note: "the six words, legend and chips" },

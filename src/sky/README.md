@@ -163,6 +163,27 @@ history (a multi-fact entry's star wears the worst of its facts; a radical
 taught as its kanji is the kanji's star), and `/dev/sky/home` renders it on
 the signed-in learner's progress, or on a pretend learner with `?sample`.
 
+### The Planetarium: one call
+
+`SkyPlanetarium` (`src/sky/components/sky-planetarium.tsx`, SAK-300 to 304)
+is the whole page: given `SkyPlanetariumData` (every item on offer and under
+it, what is learned, and the sections) it lays out the picker and the rail.
+The picker is `ItemSection`s of `ItemCard`s, English only, each priced in the
+real pieces it brings beside what is learned and what is already picked; a
+card that cannot be picked yet is shown dashed with its reason ("needs the K
+row first"). The rail is the preview sky (`SkyField` with `tonight` set to the
+picks: known stars lit, the rest faint), the `PieceMeter` against a
+comfortable lesson (12, a placeholder), and tonight's picks with what each
+brings and a remove with undo. Every number comes from `src/sky/lib/cart.ts`
+over the graph: `cartSummary` (per-pick `costOf`, total `pieceCount`, the two
+pinned equal), `pickState` (a part never locks; a headword or a kana row
+does, and the cart can supply it), `withoutPick` (removing a pick takes down
+what it held open), `pickBreakdown`. A kana row is a `group`: picked as one,
+locks what builds on it, drawn, but never a piece itself. The data comes from
+`src/app/dev/sky/planetarium.ts` (kana rows from the character sets, words in
+curriculum order, counting, grammar behind a plain-hiragana gate, verb pairs
+and keigo attached to their plain verb); `/dev/sky/planetarium` (`?sample`).
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.

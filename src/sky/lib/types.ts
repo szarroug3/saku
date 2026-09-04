@@ -65,6 +65,13 @@ export interface SkyItem {
    */
   components?: string[];
   /**
+   * A grouping of its components rather than a thing learned on its own: a
+   * kana row. It is picked as one, locks what builds on it, and is drawn,
+   * but it is never a piece: the row costs its sounds, not its sounds plus
+   * one. Absent (false) for everything that is itself learned.
+   */
+  group?: boolean;
+  /**
    * For a verb pair or a keigo form: the word it attaches to. A prerequisite
    * too (you meet the pair after its headword), on top of the pair's own
    * kanji, which may be entirely different from the headword's. Ignored on

@@ -157,11 +157,13 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
   const isAvailable = (id: string, learned: Learned) => byId.has(id) && prerequisitesOf(id).every((p) => isLearned(learned, p));
 
   // What still has to be learned for `id`: its order, minus every node that
-  // is learned in its own right. Nothing is skipped for sitting under a
-  // learned node. `met` collects the learned nodes, in the order they came.
+  // is learned in its own right, and minus groups, which are never pieces.
+  // Nothing is skipped for sitting under a learned node. `met` collects the
+  // learned nodes, in the order they came.
   const needed = (id: string, learned: Learned, met?: string[]): string[] => {
     const out: string[] = [];
     for (const n of orderOf(id)) {
+      if (byId.get(n)?.group) continue;
       if (isLearned(learned, n)) met?.push(n);
       else out.push(n);
     }

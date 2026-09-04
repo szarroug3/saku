@@ -49,7 +49,7 @@ const WORST: readonly AppStanding[] = ["slipping", "shaky", "getting-there", "cl
 
 const KIND: Partial<Record<string, SkyKind>> = { [KANA_SUBJECT]: "kana", [RADICAL_SUBJECT]: "radical", [PRIMITIVE_SUBJECT]: "radical", [KANJI_SUBJECT]: "kanji", [VOCAB_SUBJECT]: "word" };
 
-function standingFor(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
+export function standingFor(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
   const facts = knownFactsOf(entry);
   let met = false;
   let worst: AppStanding = "not-seen";
@@ -66,19 +66,19 @@ function standingFor(entry: LibEntry, history: HistoryFile, now: number): { stan
 }
 
 /** The entry a component glyph refers to: a kanji, a radical or a primitive. */
-function componentEntry(glyph: string): LibEntry | undefined {
+export function componentEntry(glyph: string): LibEntry | undefined {
   const id = entryForGlyph(KANJI_SUBJECT, glyph) ?? entryForGlyph(RADICAL_SUBJECT, glyph) ?? entryForGlyph(PRIMITIVE_SUBJECT, glyph);
   return id ? libEntry(id) : undefined;
 }
 
 /** The parts an entry is made of, as entries: a word's kanji, a kanji's components. */
-function partsOf(entry: LibEntry): LibEntry[] {
+export function partsOf(entry: LibEntry): LibEntry[] {
   if (entry.kind === VOCAB_SUBJECT) return [...entry.glyph].map((c) => (kanjiRow(c) ? componentEntry(c) : undefined)).filter((e): e is LibEntry => !!e);
   if (entry.kind === KANJI_SUBJECT) return (kanjiRow(entry.glyph)?.comps ?? []).map(componentEntry).filter((e): e is LibEntry => !!e);
   return [];
 }
 
-function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[]): SkyItem {
+export function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[]): SkyItem {
   const kind = KIND[entry.kind] ?? "word";
   const english = entry.meanings[0] ?? entry.readings[0] ?? entry.glyph;
   return {
@@ -173,8 +173,17 @@ export async function learnerSky(now = Date.now(), options: SkyOptions = {}): Pr
   return skyFromHistory(history, now, await getStatsRows(), options);
 }
 
-/** The sky from a history file. Without `stats` the discovery rows are empty. */
-export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData, options: SkyOptions = {}): SkyHomeData {
+/** The learner's items and what they have met, as a growing map: the home
+ * starts from what is met; the Planetarium adds what is on offer with `add`. */
+export interface SkyItems {
+  items: Map<string, SkyItem>;
+  met: Set<string>;
+  firmament: string[];
+  /** An entry and every part under it become items; met ones are recorded. */
+  add: (entry: LibEntry) => void;
+}
+
+export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOptions = {}): SkyItems {
   const items = new Map<string, SkyItem>();
   const met = new Set<string>();
 
@@ -204,7 +213,12 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
       if (inFirmament) firmament.push(entry.id);
     }
   }
+  return { items, met, firmament, add };
+}
 
+/** The sky from a history file. Without `stats` the discovery rows are empty. */
+export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData, options: SkyOptions = {}): SkyHomeData {
+  const { items, met, firmament } = skyItems(history, now, options);
   const list = [...items.values()];
   const graph = buildGraph(list);
   const roots = skyRoots(graph, met);
