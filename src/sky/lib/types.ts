@@ -64,4 +64,11 @@ export interface SkyItem {
    * whatever the sky adds next, without renaming.
    */
   components?: string[];
+  /**
+   * For a verb pair or a keigo form: the word it attaches to. A prerequisite
+   * too (you meet the pair after its headword), on top of the pair's own
+   * kanji, which may be entirely different from the headword's. Ignored on
+   * every other kind. See src/sky/lib/graph.ts.
+   */
+  headword?: string;
 }

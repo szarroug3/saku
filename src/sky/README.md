@@ -78,6 +78,26 @@ star fill or coverage bar sits beside a legend. Inside the lesson a star is
 locked, open, lit or selected (`LessonState`), never a standing; "tonight" and
 "lit" are legend rows there, never chips. `/dev/sky/standings` shows all of it.
 
+### The prerequisite graph: what needs what, once
+
+`src/sky/lib/graph.ts` (SAK-299) is the one model of composition and
+prerequisites, and the Planetarium, the Lesson, the constellation renderer,
+the Atlas and Practice all read it. `buildGraph(items)` takes the flat item
+list (a word's `components` are its kanji, a kanji's its parts; a verb pair or
+keigo form has its own kanji plus a `headword` it attaches to and needs) and
+answers: `prerequisitesOf`, `dependentsOf`, `closureOf`, `orderOf` (pieces,
+then kanji, then the word: the lesson's sequence), `unmetPrerequisites`,
+`isAvailable` (every direct prerequisite learned), `wouldUnlock` (the
+Planetarium's hints), `costOf` and `pieceCount` (the cart: shared pieces once,
+learned ones free) and `constellationOf` (every node once with its depth, and
+every edge). "Learned" is the caller's predicate, usually `isKnown(standing)`.
+Two rules: a piece used by two parents is one node with one state; and
+learning a thing says nothing about its parts, so a claimed word is only the
+word and its unknown kanji and radicals are still counted and taught.
+Dangling references and cycles are cut and
+reported, never hidden. `/dev/sky/graph` builds it from the app's real kanji
+and vocab tables (that dev route is exempt from the boundary).
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.
