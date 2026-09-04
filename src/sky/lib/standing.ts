@@ -44,13 +44,13 @@ export const SOLID_PCT = 80;
  * text floor on purpose.
  */
 export const STANDING: Record<Standing, { label: string; dot: string; text: string; border: string; meaning: string }> = {
-  solid: { label: "solid", dot: "bg-sky-solid", text: "text-sky-solid", border: "border-sky-solid/40", meaning: "tested recently and it went well: at least 8 of the last 10 attempts landed" },
-  "getting-there": { label: "getting there", dot: "bg-sky-getting-there", text: "text-sky-getting-there", border: "border-sky-getting-there/40", meaning: "at least 6 of the last 10 attempts landed" },
-  shaky: { label: "shaky", dot: "bg-sky-shaky", text: "text-sky-shaky", border: "border-sky-shaky/40", meaning: "fewer than 6 of the last 10 landed" },
-  slipping: { label: "slipping", dot: "bg-sky-slipping", text: "text-sky-slipping", border: "border-sky-slipping/40", meaning: "it was solid, and recent answers say otherwise" },
-  claimed: { label: "claimed", dot: "bg-sky-claimed", text: "text-sky-claimed", border: "border-sky-claimed/40", meaning: "you said you already know this and skipped the lesson; never tested" },
+  solid: { label: "solid", dot: "bg-sky-solid", text: "text-sky-solid", border: "border-sky-solid/40", meaning: "You got at least 8 of the last 10 attempts correct" },
+  "getting-there": { label: "getting there", dot: "bg-sky-getting-there", text: "text-sky-getting-there", border: "border-sky-getting-there/40", meaning: "You got at least 6 of the last 10 attempts correct" },
+  shaky: { label: "shaky", dot: "bg-sky-shaky", text: "text-sky-shaky", border: "border-sky-shaky/40", meaning: "You got fewer than 6 of the last 10 attempts correct" },
+  slipping: { label: "slipping", dot: "bg-sky-slipping", text: "text-sky-slipping", border: "border-sky-slipping/40", meaning: "You haven't tested this recently" },
+  claimed: { label: "claimed", dot: "bg-sky-claimed", text: "text-sky-claimed", border: "border-sky-claimed/40", meaning: "You marked this as known but haven't tested it" },
   // The app's word is "not seen"; the sky's is "undiscovered" (Sam, 2026-09-04), since the sky is about discovery.
-  "not-seen": { label: "undiscovered", dot: "bg-sky-not-seen", text: "text-sky-muted", border: "border-sky-line", meaning: "exists in Saku, not yet discovered" },
+  "not-seen": { label: "undiscovered", dot: "bg-sky-not-seen", text: "text-sky-muted", border: "border-sky-line", meaning: "You haven't learned this yet" },
 };
 
 /** True when the app is willing to count it as known: proved, or claimed. The
