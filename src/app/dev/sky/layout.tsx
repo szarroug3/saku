@@ -38,6 +38,7 @@ export const SKY_PAGES: Array<{ href: string; label: string; note: string }> = [
   { href: "/dev/sky/wash", label: "The wash", note: "the background, full screen, for tuning" },
   { href: "/dev/sky/standings", label: "Standings", note: "the six words, legend and chips" },
   { href: "/dev/sky/graph", label: "Graph", note: "what needs what, on real words" },
+  { href: "/dev/sky/constellations", label: "Constellations", note: "one seeded shape, every screen" },
   { href: "/dev/sky/item-card", label: "ItemCard", note: "ghost glyph + English" },
   { href: "/dev/sky/item-section", label: "ItemSection", note: "headers, counts, gates" },
   { href: "/dev/sky/tree", label: "Tree (superseded)", note: "the abandoned branch tree, kept for reference" },

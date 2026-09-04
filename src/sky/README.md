@@ -98,6 +98,25 @@ Dangling references and cycles are cut and
 reported, never hidden. `/dev/sky/graph` builds it from the app's real kanji
 and vocab tables (that dev route is exempt from the boundary).
 
+### Constellations: one seeded shape, every screen
+
+`src/sky/lib/constellation.ts` (SAK-296) turns the graph's shape into
+positions: `layoutConstellation(graph.constellationOf(id))` puts the root at
+the centre, its parts on a ring, their parts fanned out beyond (each level
+reaching a little less), a shared piece once, between the parents that share
+it, and normalises to the unit box. Every number hashes from the root's id
+(`hashUnit`, the prototype's function), never `Math.random`, so a word is the
+same shape on the home sky, in the Planetarium, in the lesson, on an Atlas
+tile and in Practice; `placeConstellation(layout, cx, cy, r)` is the only
+thing that differs. Prerequisites + 1 stars, no more. `ConstellationFigure`
+(`src/sky/components/constellation.tsx`) draws a placed layout inside an
+`<svg>`: star size by role (`roleOf(kind)`: word, kanji, piece), colour by
+standing through the standing tokens, glow on known stars, lines that fade
+and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
+`emphasis`) override the standing, and `dots={false}` draws lines only so the
+lesson can put its own clickable stars on the returned positions, in the same
+colours via `paintFor`. `/dev/sky/constellations` shows all of it on real words.
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.
