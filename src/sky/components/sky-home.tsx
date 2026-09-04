@@ -17,9 +17,10 @@ import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/compon
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
 import { StandingLegend } from "@/sky/components/standing-legend";
+import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { skyStars, tallyStandings } from "@/sky/lib/sky-scene";
-import type { Standing } from "@/sky/lib/standing";
+import { STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 /** Everything the home needs, plain data, from whatever adapter the route uses. */
@@ -34,6 +35,9 @@ export interface SkyHomeData {
   /** Every single star the sky holds before anything is discovered (kana,
    * pieces, kanji), when the sky shows everything. Empty for discovered-only. */
   firmament?: readonly string[];
+  /** Everything the app counts, by standing: the legend's numbers, adding up
+   * to the discovery total. Without it the legend tallies the sky's stars. */
+  standingCounts?: CoverageCounts;
 }
 
 export interface SkyHomeProps {
@@ -49,14 +53,23 @@ export interface SkyHomeProps {
 export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
-  const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
+  const counts = useMemo(() => data.standingCounts ?? tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [data.standingCounts, stars, graph]);
   const totals = discoveryTotals(data.discovery);
   const empty = data.roots.length === 0 && !(data.firmament?.length);
   // the panels fold away, so the sky is most of the page
   const [details, setDetails] = useState(false);
-  // hover a standing in the legend and only its stars stay lit
+  // The legend is the filter: a standing is drawn only while its word is
+  // selected. Everything starts selected except "not seen", so the sky opens
+  // showing what the learner has met; nothing selected shows nothing.
+  // Hovering a selected word singles its stars out among the rest.
   const [singled, setSingled] = useState<Standing | null>(null);
-  const lookOf = useCallback((_id: string, base: StarLook): StarLook => (singled && base.standing !== singled ? { ...base, muted: true } : base), [singled]);
+  const [selected, setSelected] = useState<ReadonlySet<Standing>>(() => new Set(STANDING_ORDER.filter((s) => s !== "not-seen")));
+  const toggle = useCallback((s: Standing) => setSelected((prev) => { const next = new Set(prev); if (next.has(s)) next.delete(s); else next.add(s); return next; }), []);
+  const lookOf = useCallback((_id: string, base: StarLook): StarLook => {
+    if (!selected.has(base.standing)) return { ...base, hidden: true };
+    if (singled && base.standing !== singled) return { ...base, muted: true };
+    return base;
+  }, [selected, singled]);
 
   return (
     <div className="flex flex-col overflow-hidden font-sky-ui text-sky-ink" style={{ height }}>
@@ -77,10 +90,10 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} width={data.firmament?.length ? 3200 : 1120} height={data.firmament?.length ? 2400 : 900} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} width={data.firmament?.length ? 4800 : 1120} height={data.firmament?.length ? 3600 : 900} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
-      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
+      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} />}
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
         <button

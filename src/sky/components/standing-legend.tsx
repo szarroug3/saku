@@ -49,32 +49,42 @@ export interface StandingLegendProps {
   onHover?: (standing: Standing | null) => void;
   /** The standing currently singled out, shown as the active row. */
   hovered?: Standing | null;
+  /** Click a word to show only that standing (several can be on); click
+   * again to turn it off. With `onToggle` the rows are buttons. */
+  onToggle?: (standing: Standing) => void;
+  selected?: ReadonlySet<Standing>;
   className?: string;
 }
 
 /** Every dot with its word. Put one wherever standings are painted. */
-export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, className = "" }: StandingLegendProps) {
+export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, className = "" }: StandingLegendProps) {
   const live = Boolean(onHover);
+  const clickable = Boolean(onToggle);
   return (
     <dl className={`flex flex-wrap gap-x-4 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-muted ${className}`}>
       {standings.map((standing) => {
         const n = counts?.[standing];
         const on = hovered === standing;
+        const picked = selected?.has(standing) ?? false;
+        const Row = clickable ? "button" : "div";
         return (
-          <div
+          <Row
             key={standing}
-            className={`relative inline-flex items-center gap-1.5 ${live ? "cursor-default rounded-md px-1.5" : ""} ${on ? "bg-sky-card" : ""}`}
-            title={live ? undefined : STANDING[standing].meaning}
+            type={clickable ? "button" : undefined}
+            aria-pressed={clickable ? picked : undefined}
+            onClick={clickable ? () => onToggle?.(standing) : undefined}
+            className={`relative inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 ${clickable ? "cursor-pointer" : live ? "cursor-default" : ""} ${picked ? "border border-sky-line bg-sky-card-strong" : on ? "bg-sky-card" : "border border-transparent"} ${clickable && !picked ? "opacity-55" : ""}`}
+            title={clickable ? (picked ? `Hide ${STANDING[standing].label}` : `Show ${STANDING[standing].label}`) : live ? undefined : STANDING[standing].meaning}
             onPointerEnter={live ? () => onHover?.(standing) : undefined}
             onPointerLeave={live ? () => onHover?.(null) : undefined}
             onFocus={live ? () => onHover?.(standing) : undefined}
             onBlur={live ? () => onHover?.(null) : undefined}
-            tabIndex={live ? 0 : undefined}
+            tabIndex={live && !clickable ? 0 : undefined}
           >
             <Dot standing={standing} />
             <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
             {n !== undefined && <dd className="tabular-nums">{n}</dd>}
-          </div>
+          </Row>
         );
       })}
       {extra.map((row) => (

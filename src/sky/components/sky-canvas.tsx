@@ -47,7 +47,8 @@ export interface SkyCanvasProps {
 
 const MAX_ZOOM = 6;
 const STEP = 1.3;
-const WHEEL_STEP = 1.15;
+/** Zoom per pixel of wheel delta: 100 pixels, one mouse notch, is about 1.15x. */
+const WHEEL_RATE = 0.0014;
 
 export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, label, className = "", children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -109,10 +110,14 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   useEffect(() => {
     const el = svgRef.current;
     if (!el || !interactive) return;
+    // Zoom by the wheel's delta rather than a fixed step per event: a mouse
+    // notch is a real step, a trackpad's stream of tiny deltas is a smooth
+    // glide, and the momentum a scroll leaves behind barely moves the sky.
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const at = toSky(e.clientX, e.clientY);
-      zoom(e.deltaY < 0 ? WHEEL_STEP : 1 / WHEEL_STEP, at ?? undefined);
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY;
+      zoom(Math.exp(-Math.max(-300, Math.min(300, delta)) * WHEEL_RATE), at ?? undefined);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);

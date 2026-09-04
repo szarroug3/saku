@@ -34,6 +34,7 @@ import { standingOf as appStandingOf, type Standing as AppStanding } from "@/lib
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import { buildGraph } from "@/sky/lib/graph";
 import type { DiscoveryRow } from "@/sky/components/discovery-panel";
+import type { CoverageCounts } from "@/sky/lib/coverage";
 import type { MixUp } from "@/sky/components/mix-ups-panel";
 import type { SkyHomeData } from "@/sky/components/sky-home";
 import { skyRoots } from "@/sky/lib/sky-scene";
@@ -108,6 +109,30 @@ const SUBJECT_LABEL: Record<string, string> = {
 const metCount = (subject: StatsSubject, history: HistoryFile) =>
   subject.entries.filter((e) => (subject.entryFacts[e as unknown as string] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f])).length;
 
+/** Every entry Progress counts, tallied by standing: the legend's numbers,
+ * which add up to the same total as the discovery panel. A multi-fact entry
+ * takes the worst of its facts, as a star does; a learned sentence tier is
+ * "claimed", the closest word for a completion the model does not score. */
+export function standingTally(history: HistoryFile, stats: StatsData, now: number): CoverageCounts {
+  const counts: Partial<Record<Standing, number>> = {};
+  const bump = (s: Standing) => { counts[s] = (counts[s] ?? 0) + 1; };
+  const subjects = stats.rows.flatMap((r) => (r.kind === "subject" ? [r.subject] : r.children));
+  for (const subject of subjects) {
+    for (const entry of subject.entries) {
+      const facts = subject.entryFacts[entry as unknown as string] ?? [];
+      let worst: AppStanding = "not-seen";
+      for (const f of facts) {
+        const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
+        if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
+      }
+      bump(worst);
+    }
+  }
+  const learnedTiers = learnedSentenceTierIds(history).length;
+  for (let i = 0; i < stats.sentenceTierCount; i++) bump(i < learnedTiers ? "claimed" : "not-seen");
+  return counts;
+}
+
 /** "x of y" per subject, grouped as Progress groups them, sentences last. */
 export function discoveryRows(history: HistoryFile, stats: StatsData): DiscoveryRow[] {
   const row = (s: StatsSubject): DiscoveryRow => ({ label: SUBJECT_LABEL[s.id] ?? s.id, discovered: metCount(s, history), total: s.entries.length });
@@ -172,5 +197,10 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
     .filter((p) => items.has(p.a) && items.has(p.b))
     .map((p) => ({ a: p.a, b: p.b, times: p.runsMixedUp }));
 
-  return { items: list, roots, mixUps, discovery: stats ? discoveryRows(history, stats) : [], firmament: firmament.filter((id) => !rootSet.has(id)) };
+  return {
+    items: list, roots, mixUps,
+    discovery: stats ? discoveryRows(history, stats) : [],
+    standingCounts: stats ? standingTally(history, stats, now) : undefined,
+    firmament: firmament.filter((id) => !rootSet.has(id)),
+  };
 }

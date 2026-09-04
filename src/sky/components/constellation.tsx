@@ -36,6 +36,8 @@ export interface StarLook {
   emphasis?: boolean;
   /** Faded right back, while something else is singled out. */
   muted?: boolean;
+  /** Not drawn at all, nor its lines: the legend is showing only others. */
+  hidden?: boolean;
 }
 
 /** The paint for a look: fill token, glow radius, line opacity, line dash. */
@@ -85,12 +87,14 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
   const hot = (id: string) => looks.get(id)?.emphasis === true;
   const dim = (id: string) => looks.get(id)?.muted === true;
+  const gone = (id: string) => looks.get(id)?.hidden === true;
   const MUTED = 0.12;
   return (
     <g data-constellation={layout.root}>
       <g data-lines>
         {layout.lines.map(([i, j]) => {
           const a = stars[i], b = stars[j];
+          if (gone(a.id) || gone(b.id)) return null;
           const paint = paintFor(looks.get(b.id)!);
           const emphasised = hot(a.id) || hot(b.id);
           return (
@@ -109,6 +113,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
         <g data-stars>
           {stars.map((s) => {
             const look = looks.get(s.id)!;
+            if (look.hidden) return null;
             const paint = paintFor(look);
             const rr = STAR_RADIUS[look.role] * u;
             return (
