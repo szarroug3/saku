@@ -63,7 +63,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
         return (
           <div
             key={standing}
-            className={`relative inline-flex items-center gap-1.5 ${live ? "cursor-default rounded-md px-1 -mx-1" : ""} ${on ? "bg-sky-card" : ""}`}
+            className={`relative inline-flex items-center gap-1.5 ${live ? "cursor-default rounded-md px-1.5" : ""} ${on ? "bg-sky-card" : ""}`}
             title={live ? undefined : STANDING[standing].meaning}
             onPointerEnter={live ? () => onHover?.(standing) : undefined}
             onPointerLeave={live ? () => onHover?.(null) : undefined}
@@ -72,11 +72,11 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
             tabIndex={live ? 0 : undefined}
           >
             <Dot standing={standing} />
-            <dt className="text-sky-ink">{STANDING[standing].label}</dt>
+            <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
             {!live && n !== undefined && <dd className="tabular-nums">{n}</dd>}
             {live && on && (
-              <dd role="tooltip" className="absolute left-0 top-full z-10 mt-1 whitespace-nowrap rounded-md border border-sky-line bg-sky-ground-0 px-2 py-1 text-[12px] text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-                {n ?? 0} {n === 1 ? "star" : "stars"}
+              <dd role="tooltip" className="absolute left-0 top-full z-10 mt-1 whitespace-nowrap rounded-md border border-sky-line bg-sky-ground-0 px-2 py-1 text-[12px] tabular-nums text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+                {n ?? 0} {STANDING[standing].label}
               </dd>
             )}
           </div>
@@ -85,7 +85,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
       {extra.map((row) => (
         <div key={row.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden className="inline-flex h-2.5 w-2.5 items-center justify-center">{row.swatch}</span>
-          <dt className="text-sky-ink">{row.label}</dt>
+          <dt className="capitalize text-sky-ink">{row.label}</dt>
         </div>
       ))}
     </dl>
