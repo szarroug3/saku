@@ -2143,6 +2143,10 @@ body {
    * so a panel quiets the wash beneath it instead of brightening it */
   --sky-card: rgba(6, 6, 26, 0.62);
   --sky-card-strong: rgba(6, 6, 26, 0.74);
+  /* the panels over the sky: see-through enough for the wash to colour
+   * them and the dust to show, opaque enough for muted text to clear 4.5:1
+   * over the brightest of the band (measured 4.8:1 at 60%, 3.7:1 at 45%) */
+  --sky-panel: color-mix(in srgb, var(--sky-ground-0) 60%, transparent);
   --sky-line: rgba(140, 151, 196, 0.22);
   /* text */
   --sky-ink: #e8ecfa;
@@ -2202,6 +2206,7 @@ body {
   --color-sky-ground-3: var(--sky-ground-3);
   --color-sky-card: var(--sky-card);
   --color-sky-card-strong: var(--sky-card-strong);
+  --color-sky-panel: var(--sky-panel);
   --color-sky-line: var(--sky-line);
   --color-sky-ink: var(--sky-ink);
   --color-sky-muted: var(--sky-muted);

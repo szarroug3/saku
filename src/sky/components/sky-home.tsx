@@ -90,7 +90,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           onClick={() => setDetails((d) => !d)}
           aria-expanded={details}
           aria-controls="sky-home-details"
-          className="flex w-full shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-card px-5 py-3 text-left hover:bg-sky-card-strong"
+          className="flex w-full shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-panel px-5 py-3 text-left hover:bg-sky-card"
         >
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Details</span>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
