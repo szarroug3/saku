@@ -115,31 +115,48 @@ const metCount = (subject: StatsSubject, history: HistoryFile) =>
  * "claimed", the closest word for a completion the model does not score. */
 export function standingTally(history: HistoryFile, stats: StatsData, now: number): CoverageCounts {
   const counts: Partial<Record<Standing, number>> = {};
-  const bump = (s: Standing) => { counts[s] = (counts[s] ?? 0) + 1; };
   const subjects = stats.rows.flatMap((r) => (r.kind === "subject" ? [r.subject] : r.children));
-  for (const subject of subjects) {
-    for (const entry of subject.entries) {
-      const facts = subject.entryFacts[entry as unknown as string] ?? [];
-      let worst: AppStanding = "not-seen";
-      for (const f of facts) {
-        const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
-        if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
-      }
-      bump(worst);
-    }
-  }
-  const learnedTiers = learnedSentenceTierIds(history).length;
-  for (let i = 0; i < stats.sentenceTierCount; i++) bump(i < learnedTiers ? "claimed" : "not-seen");
+  for (const subject of subjects) addCounts(counts, subjectTally(subject, history, now));
+  addCounts(counts, sentenceTally(history, stats));
   return counts;
 }
 
+/** A subject's entries by standing: the worst of each entry's facts. */
+function subjectTally(subject: StatsSubject, history: HistoryFile, now: number): CoverageCounts {
+  const counts: Partial<Record<Standing, number>> = {};
+  for (const entry of subject.entries) {
+    const facts = subject.entryFacts[entry as unknown as string] ?? [];
+    let worst: AppStanding = "not-seen";
+    for (const f of facts) {
+      const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
+      if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
+    }
+    counts[worst] = (counts[worst] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Sentence tiers: learned ones are "claimed", the rest not seen. */
+function sentenceTally(history: HistoryFile, stats: StatsData): CoverageCounts {
+  const learned = Math.min(stats.sentenceTierCount, learnedSentenceTierIds(history).length);
+  return { claimed: learned, "not-seen": stats.sentenceTierCount - learned };
+}
+
+function addCounts(into: Partial<Record<Standing, number>>, more: CoverageCounts): void {
+  for (const [k, n] of Object.entries(more) as Array<[Standing, number]>) into[k] = (into[k] ?? 0) + n;
+}
+
 /** "x of y" per subject, grouped as Progress groups them, sentences last. */
-export function discoveryRows(history: HistoryFile, stats: StatsData): DiscoveryRow[] {
-  const row = (s: StatsSubject): DiscoveryRow => ({ label: SUBJECT_LABEL[s.id] ?? s.id, discovered: metCount(s, history), total: s.entries.length });
-  const rows: DiscoveryRow[] = stats.rows.map((r) =>
-    r.kind === "subject" ? row(r.subject) : { label: r.label, discovered: r.children.reduce((n, s) => n + metCount(s, history), 0), total: r.children.reduce((n, s) => n + s.entries.length, 0), children: r.children.map(row) },
-  );
-  rows.push({ label: "Sentences", discovered: learnedSentenceTierIds(history).length, total: stats.sentenceTierCount });
+export function discoveryRows(history: HistoryFile, stats: StatsData, now = Date.now()): DiscoveryRow[] {
+  const row = (s: StatsSubject): DiscoveryRow => ({ label: SUBJECT_LABEL[s.id] ?? s.id, discovered: metCount(s, history), total: s.entries.length, counts: subjectTally(s, history, now) });
+  const rows: DiscoveryRow[] = stats.rows.map((r) => {
+    if (r.kind === "subject") return row(r.subject);
+    const children = r.children.map(row);
+    const counts: Partial<Record<Standing, number>> = {};
+    for (const c of children) if (c.counts) addCounts(counts, c.counts);
+    return { label: r.label, discovered: children.reduce((n, c) => n + c.discovered, 0), total: children.reduce((n, c) => n + c.total, 0), children, counts };
+  });
+  rows.push({ label: "Sentences", discovered: Math.min(stats.sentenceTierCount, learnedSentenceTierIds(history).length), total: stats.sentenceTierCount, counts: sentenceTally(history, stats) });
   return rows;
 }
 
@@ -199,7 +216,7 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
 
   return {
     items: list, roots, mixUps,
-    discovery: stats ? discoveryRows(history, stats) : [],
+    discovery: stats ? discoveryRows(history, stats, now) : [],
     standingCounts: stats ? standingTally(history, stats, now) : undefined,
     firmament: firmament.filter((id) => !rootSet.has(id)),
   };

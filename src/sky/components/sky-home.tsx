@@ -93,7 +93,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           <SkyField items={data.items} roots={data.roots} firmament={data.firmament} width={data.firmament?.length ? 4800 : 1120} height={data.firmament?.length ? 3600 : 900} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
-      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} />}
+      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} info />}
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
         <button

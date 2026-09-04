@@ -1,3 +1,5 @@
+"use client";
+
 // The standing legend and chip: the only two places a standing's colour is
 // painted as a dot. Tracked as SAK-294.
 //
@@ -6,7 +8,7 @@
 // every dot with its label, and anything else that wants to colour by standing
 // (a star fill, a coverage bar segment) sits next to one of these.
 
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
@@ -53,11 +55,68 @@ export interface StandingLegendProps {
    * again to turn it off. With `onToggle` the rows are buttons. */
   onToggle?: (standing: Standing) => void;
   selected?: ReadonlySet<Standing>;
+  /** An "i" after the words: hover or focus it for what each standing means. */
+  info?: boolean;
   className?: string;
 }
 
+/** What each standing means, one line per standing: the card behind the
+ * legend's "i", and anywhere else the words need spelling out. */
+export function StandingKey({ standings = STANDING_ORDER, className = "" }: { standings?: readonly Standing[]; className?: string }) {
+  return (
+    <dl className={`grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-ink ${className}`}>
+      {standings.map((standing) => (
+        <div key={standing} className="contents">
+          <dt className="inline-flex items-center gap-1.5 capitalize">
+            <Dot standing={standing} />
+            <span className={STANDING[standing].text}>{STANDING[standing].label}</span>
+          </dt>
+          <dd className="text-sky-muted">{STANDING[standing].meaning}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+const KEY_WIDTH = 420;
+
+/** The legend's "i": the key opens above it on hover or focus. Above,
+ * because the legend usually sits at the bottom of a sky with nothing below
+ * to spill into; fixed to the viewport and ending at the button's right
+ * edge, so a sky that clips its overflow cannot cut the card off. */
+function InfoButton({ standings }: { standings: readonly Standing[] }) {
+  const button = useRef<HTMLButtonElement>(null);
+  const [at, setAt] = useState<{ right: number; bottom: number } | null>(null);
+  const open = () => {
+    const r = button.current?.getBoundingClientRect();
+    if (!r) return;
+    setAt({ right: Math.max(8, Math.min(window.innerWidth - r.right, window.innerWidth - 8 - KEY_WIDTH)), bottom: window.innerHeight - r.top + 8 });
+  };
+  const close = () => setAt(null);
+  return (
+    <div className="inline-flex items-center" onPointerEnter={open} onPointerLeave={close}>
+      <button
+        ref={button}
+        type="button"
+        aria-label="What the standings mean"
+        aria-expanded={at !== null}
+        aria-controls="sky-standing-key"
+        onFocus={open}
+        onBlur={close}
+        onClick={() => (at ? close() : open())}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${at ? "border-sky-line bg-sky-card-strong text-sky-ink" : "border-sky-line text-sky-muted"}`}
+      >
+        i
+      </button>
+      <div id="sky-standing-key" role="tooltip" hidden={at === null} style={at ?? undefined} className="fixed z-50 w-max max-w-[min(420px,calc(100vw-16px))] rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <StandingKey standings={standings} />
+      </div>
+    </div>
+  );
+}
+
 /** Every dot with its word. Put one wherever standings are painted. */
-export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, className = "" }: StandingLegendProps) {
+export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, info = false, className = "" }: StandingLegendProps) {
   const live = Boolean(onHover);
   const clickable = Boolean(onToggle);
   return (
@@ -93,6 +152,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           <dt className="capitalize text-sky-ink">{row.label}</dt>
         </div>
       ))}
+      {info && <InfoButton standings={standings} />}
     </dl>
   );
 }
