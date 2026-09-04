@@ -35,12 +35,14 @@ function Bar({ discovered, total }: { discovered: number; total: number }) {
   );
 }
 
+/** One row of the list's shared grid: the list is the grid, so every row's
+ * bar and count line up in the same columns. */
 function Row({ row, child = false }: { row: DiscoveryRow; child?: boolean }) {
   return (
-    <li className={`grid grid-cols-[minmax(0,1fr)_minmax(80px,140px)_auto] items-center gap-4 ${child ? "pl-6" : ""}`}>
-      <span className={`truncate ${child ? "text-sky-muted" : "text-sky-ink"} ${japaneseFont(row.label)}`}>{row.label}</span>
+    <li className="contents">
+      <span className={`truncate ${child ? "pl-6 text-sky-muted" : "text-sky-ink"} ${japaneseFont(row.label)}`}>{row.label}</span>
       <Bar discovered={row.discovered} total={row.total} />
-      <span className="tabular-nums text-sky-muted">{row.discovered.toLocaleString()} of {row.total.toLocaleString()}</span>
+      <span className="text-right tabular-nums text-sky-muted">{row.discovered.toLocaleString()} of {row.total.toLocaleString()}</span>
     </li>
   );
 }
@@ -53,7 +55,7 @@ export function DiscoveryPanel({ rows, title = "How much you've discovered", cla
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
         <span className="text-[13px] tabular-nums text-sky-muted">{discovered.toLocaleString()} of {total.toLocaleString()} Discovered</span>
       </div>
-      <ul className="mt-4 flex flex-col gap-2.5 text-[14px]">
+      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(80px,160px)_max-content] items-center gap-x-4 gap-y-2.5 text-[14px]">
         {rows.flatMap((row) => [
           <Row key={row.label} row={row} />,
           ...(row.children ?? []).map((c) => <Row key={`${row.label}/${c.label}`} row={c} child />),
