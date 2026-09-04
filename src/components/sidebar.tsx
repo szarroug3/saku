@@ -145,6 +145,7 @@ const DEV_PAGES: Array<{
       { href: "/dev/sky/standings", label: "Standings" },
       { href: "/dev/sky/graph", label: "Graph" },
       { href: "/dev/sky/constellations", label: "Constellations" },
+      { href: "/dev/sky/filters", label: "Filters + coverage" },
       { href: "/dev/sky/item-card", label: "ItemCard" },
       { href: "/dev/sky/item-section", label: "ItemSection" },
     ],

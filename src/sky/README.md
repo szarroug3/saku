@@ -117,6 +117,23 @@ and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
 lesson can put its own clickable stars on the returned positions, in the same
 colours via `paintFor`. `/dev/sky/constellations` shows all of it on real words.
 
+### Filter chips and the coverage bar
+
+`FilterChipRow` (`src/sky/components/filter-chip-row.tsx`, SAK-298) is a row
+of choices with live counts, in two modes (`multi`, or `single` with an "any"
+chip), and `ToggleChip` is the one amber chip that is on or off ("only ones
+I have missed"). Every chip carries the count the caller computed for it;
+a chip whose count is 0 says "none" and cannot be picked (unless it is
+already on, so nothing is ever stuck), and a chip that does not apply is
+disabled with the reason in its title. `CoverageBar`
+(`src/sky/components/coverage-bar.tsx`) is the stacked bar by standing, in
+the standing tokens, with no labels of its own: pair it with a headline and
+a `StandingLegend` carrying the same counts. It takes the size of the whole
+collection as a separate argument and is always drawn against that, never
+the filtered part (`src/sky/lib/coverage.ts`, tested); a counted segment
+never disappears (a hairline at least) and an empty bar still draws.
+`/dev/sky/filters` has both, live.
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.

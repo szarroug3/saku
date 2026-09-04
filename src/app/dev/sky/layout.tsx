@@ -39,6 +39,7 @@ export const SKY_PAGES: Array<{ href: string; label: string; note: string }> = [
   { href: "/dev/sky/standings", label: "Standings", note: "the six words, legend and chips" },
   { href: "/dev/sky/graph", label: "Graph", note: "what needs what, on real words" },
   { href: "/dev/sky/constellations", label: "Constellations", note: "one seeded shape, every screen" },
+  { href: "/dev/sky/filters", label: "Filters + coverage", note: "chips with counts, the honest bar" },
   { href: "/dev/sky/item-card", label: "ItemCard", note: "ghost glyph + English" },
   { href: "/dev/sky/item-section", label: "ItemSection", note: "headers, counts, gates" },
 ];
