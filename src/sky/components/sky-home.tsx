@@ -60,7 +60,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-sky-display text-4xl leading-tight">Your sky</h1>
-          <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-sky-muted">
+          <p className="mt-2 text-[15px] leading-relaxed text-sky-muted">
             This is your sky. It will evolve as you explore and discover more of the Japanese language.
           </p>
         </div>
