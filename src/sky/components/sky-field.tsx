@@ -5,10 +5,11 @@
 // Takes the items and the ids of the constellations to show, builds the
 // graph, lays every constellation out (seeded, so a word keeps its shape),
 // sizes each by its stars, scatters them without overlap (seeded, so a word
-// keeps its place), and draws them on a SkyCanvas. Each constellation gets a
-// generous transparent hit area inside the pan and zoom group, so it follows
-// the sky; hovering or focusing it shows the tooltip, which follows the
-// cursor and flips to stay inside the field. No labels: hover names things.
+// keeps its place), and draws them on a SkyCanvas. Every star gets a
+// transparent hit circle inside the pan and zoom group, so it follows the
+// sky; hovering or focusing it shows the tooltip for THAT star, the radical,
+// the kanji or the word, which follows the cursor and flips to stay inside
+// the field. No labels: hover names things.
 //
 // The home uses it at full size with pan and zoom; the Planetarium's preview
 // and the lesson use the same field smaller or larger, with their own looks
@@ -19,7 +20,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { ConstellationFigure, type StarLook } from "@/sky/components/constellation";
 import { SkyCanvas } from "@/sky/components/sky-canvas";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
-import { layoutConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
+import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterLayout, type Placed } from "@/sky/lib/scatter";
 import { bySizeDesc } from "@/sky/lib/sky-scene";
@@ -60,7 +61,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
   r: number;
 }
 
-interface Hover { root: string; x: number; y: number; flipX: boolean; flipY: boolean }
+interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean }
 
 export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
@@ -81,15 +82,17 @@ export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, b
   const fieldRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<Hover | null>(null);
   // the flip is decided here, in the event, where reading the rect is allowed
-  const place = (root: string, clientX: number, clientY: number) => {
+  const place = (id: string, clientX: number, clientY: number) => {
     const r = fieldRef.current?.getBoundingClientRect();
     if (!r || r.width === 0) return;
     const x = clientX - r.left, y = clientY - r.top;
-    setHover({ root, x, y, flipX: x > r.width * 0.6, flipY: y > r.height * 0.6 });
+    setHover({ id, x, y, flipX: x > r.width * 0.6, flipY: y > r.height * 0.6 });
   };
 
-  const hoverItem = hover ? graph.itemOf(hover.root) : undefined;
-  const hoverPieces = hover ? graph.closureOf(hover.root).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
+  const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
+  const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
+  // one hit circle per star, sized to its dot plus some slack
+  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 7 })));
 
   return (
     <div ref={fieldRef} className={`relative ${className}`} onPointerLeave={() => setHover(null)}>
@@ -98,21 +101,21 @@ export function SkyField({ items, roots, width = 1120, height = 460, pad = 26, b
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}
         {children?.(placed)}
-        {/* hit areas last, so they sit above the stars */}
+        {/* hit areas last, so they sit above the stars: one per star */}
         <g data-hits>
-          {placed.map((p) => (
-            <rect
-              key={p.root}
-              x={p.x - 8} y={p.y - 8} width={p.size + 16} height={p.size + 16} rx={10}
+          {hits.map((h) => (
+            <circle
+              key={h.key}
+              cx={h.x} cy={h.y} r={h.r}
               fill="transparent"
               tabIndex={0}
               role="button"
-              aria-label={graph.itemOf(p.root)?.english ?? p.root}
-              data-hit={p.root}
-              onPointerEnter={(e) => place(p.root, e.clientX, e.clientY)}
-              onPointerMove={(e) => place(p.root, e.clientX, e.clientY)}
+              aria-label={graph.itemOf(h.id)?.english ?? h.id}
+              data-hit={h.id}
+              onPointerEnter={(e) => place(h.id, e.clientX, e.clientY)}
+              onPointerMove={(e) => place(h.id, e.clientX, e.clientY)}
               onPointerLeave={() => setHover(null)}
-              onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(p.root, r.left + r.width / 2, r.top + r.height / 2); }}
+              onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(h.id, r.left + r.width / 2, r.top + r.height / 2); }}
               onBlur={() => setHover(null)}
               className="outline-none focus-visible:stroke-[var(--sky-gold)] focus-visible:[stroke-width:1.5]"
             />

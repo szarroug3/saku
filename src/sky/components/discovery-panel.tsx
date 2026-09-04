@@ -51,7 +51,7 @@ export function DiscoveryPanel({ rows, title = "How much you've discovered", cla
     <section className={`rounded-2xl border border-sky-line bg-sky-card p-5 font-sky-ui text-sky-ink ${className}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
-        <span className="text-[13px] tabular-nums text-sky-muted">{discovered.toLocaleString()} of {total.toLocaleString()} discovered</span>
+        <span className="text-[13px] tabular-nums text-sky-muted">{discovered.toLocaleString()} of {total.toLocaleString()} Discovered</span>
       </div>
       <ul className="mt-4 flex flex-col gap-2.5 text-[14px]">
         {rows.flatMap((row) => [

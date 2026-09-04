@@ -3,11 +3,12 @@
 // The home: your sky. Tracked as SAK-329 to SAK-336.
 //
 // One call from the route, given the learner's data: the sky with every
-// constellation they have learned, pannable and zoomable, hover to name; the
-// legend; then "How much you've covered" and "Mix-ups" side by side. No
-// lesson panel and no explainer of the review model: tonight's picks are
-// reached from the Planetarium and the Lesson. A brand-new learner sees an
-// empty sky that says where to start.
+// constellation they have learned, pannable and zoomable, hover to name a
+// star; the legend; then, folded away under one line so the sky has the
+// page, "How much you've discovered" and "Mix-ups" side by side. No lesson
+// panel and no explainer of the review model: tonight's picks are reached
+// from the Planetarium and the Lesson. A brand-new learner sees an empty sky
+// that says where to start.
 
 import { useCallback, useMemo, useState } from "react";
 
@@ -44,6 +45,8 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
   const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
   const totals = discoveryTotals(data.discovery);
   const empty = data.roots.length === 0;
+  // the panels fold away, so the sky is most of the page
+  const [details, setDetails] = useState(false);
   // hover a standing in the legend and only its stars stay lit
   const [singled, setSingled] = useState<Standing | null>(null);
   const lookOf = useCallback((_id: string, base: StarLook): StarLook => (singled && base.standing !== singled ? { ...base, muted: true } : base), [singled]);
@@ -54,14 +57,9 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
         <div>
           <h1 className="font-sky-display text-4xl leading-tight">Your sky</h1>
           <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-sky-muted">
-            Every word you&apos;ve learned is a small constellation: the word at its centre, its characters around it, the pieces they&apos;re built from beyond. Each star is coloured by how well you know it. Hover a constellation to name it; drag to pan and scroll to zoom.
+            This is your sky. It will evolve as you explore and discover more of the Japanese language.
           </p>
         </div>
-        {!empty && totals.total > 0 && (
-          <div className="text-[13px] tabular-nums text-sky-muted">
-            <b className="text-sky-ink">{totals.discovered.toLocaleString()}</b> of {totals.total.toLocaleString()} discovered
-          </div>
-        )}
       </header>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-sky-line">
@@ -77,9 +75,26 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <DiscoveryPanel rows={data.discovery} />
-        <MixUpsPanel graph={graph} pairs={data.mixUps} />
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => setDetails((d) => !d)}
+          aria-expanded={details}
+          aria-controls="sky-home-details"
+          className="flex w-full items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-card px-5 py-3 text-left hover:bg-sky-card-strong"
+        >
+          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">How much you&apos;ve discovered and mix-ups</span>
+          <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
+            {totals.total > 0 && <span>{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
+            <span aria-hidden className="text-sky-ink">{details ? "Hide" : "Show"}</span>
+          </span>
+        </button>
+        {details && (
+          <div id="sky-home-details" className="mt-4 grid gap-4 md:grid-cols-2">
+            <DiscoveryPanel rows={data.discovery} />
+            <MixUpsPanel graph={graph} pairs={data.mixUps} />
+          </div>
+        )}
       </div>
     </div>
   );
