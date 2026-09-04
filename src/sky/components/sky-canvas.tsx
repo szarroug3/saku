@@ -71,8 +71,11 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   const scale = box.w > 0 && box.h > 0 ? (fill ? Math.max : Math.min)(box.w / width, box.h / height) : 0;
   /** The window, in sky units: what the box shows at 100%. */
   const win = scale > 0 ? { w: box.w / scale, h: box.h / scale } : { w: width, h: height };
-  /** The zoom at which the whole world fits the window; never above 1. */
-  const fit = Math.min(1, win.w / width, win.h / height);
+  /** The furthest the sky zooms out: the world spanning the window's width.
+   * Never its height: a short window (the details open) would then shrink
+   * the world narrower than the box and bunch everything to the left. What
+   * does not fit below is reached by panning, and the top stays put. */
+  const fit = Math.min(1, win.w / width);
   /** The zoom the sky opens at and resets to: `focus` units across the window. */
   const home = focus ? Math.max(fit, Math.min(MAX_ZOOM, win.w / focus)) : fit;
 
