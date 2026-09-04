@@ -76,9 +76,10 @@ describe("the constellation layout", () => {
   it("placing is the only thing that changes between screens", () => {
     const l = layoutConstellation(g.constellationOf("wordA"));
     const small = placeConstellation(l, 50, 50, 20), big = placeConstellation(l, 500, 300, 200);
+    // positions round to hundredths (so the server and the browser agree), hence the tolerance
     for (let i = 0; i < l.stars.length; i++) {
-      assert.ok(Math.abs((small[i].px - 50) * 10 - (big[i].px - 500)) < 1e-9);
-      assert.ok(Math.abs((small[i].py - 50) * 10 - (big[i].py - 300)) < 1e-9);
+      assert.ok(Math.abs((small[i].px - 50) * 10 - (big[i].px - 500)) < 0.1);
+      assert.ok(Math.abs((small[i].py - 50) * 10 - (big[i].py - 300)) < 0.1);
     }
     assert.deepEqual([small[0].px, small[0].py], [50, 50], "the root sits on the centre");
   });

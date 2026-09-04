@@ -77,7 +77,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} width={data.firmament?.length ? 3200 : 1120} height={data.firmament?.length ? 2400 : 900} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}

@@ -109,9 +109,11 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
     }
   }
 
-  // normalise so the farthest star touches the unit box
+  // normalise so the farthest star touches the unit box, and round: the
+  // trigonometry above can differ in its last digit between the server and
+  // the browser, and a coordinate that differs is a hydration mismatch
   const extent = Math.max(0.5, ...stars.map((s) => Math.max(Math.abs(s.x), Math.abs(s.y))));
-  for (const s of stars) { s.x /= extent; s.y /= extent; }
+  for (const s of stars) { s.x = round4(s.x / extent); s.y = round4(s.y / extent); }
 
   const lines = shape.edges.map(([from, to]) => [index.get(from)!, index.get(to)!] as const);
   return { root: shape.root, stars, lines };
@@ -123,9 +125,13 @@ export interface PlacedStar extends Star {
   py: number;
 }
 
-/** The same shape at a place and size: centre (cx, cy), reach r. */
+const round4 = (n: number) => Math.round(n * 1e4) / 1e4;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** The same shape at a place and size: centre (cx, cy), reach r. Positions
+ * are rounded to hundredths, so the server and the browser agree exactly. */
 export function placeConstellation(layout: ConstellationLayout, cx: number, cy: number, r: number): readonly PlacedStar[] {
-  return layout.stars.map((s) => ({ ...s, px: cx + s.x * r, py: cy + s.y * r }));
+  return layout.stars.map((s) => ({ ...s, px: round2(cx + s.x * r), py: round2(cy + s.y * r) }));
 }
 
 /** The radius of a star's dot at unit scale, by role. */

@@ -43,7 +43,7 @@ export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: num
       if (!clash) found = { x, y };
     }
     const at = found ?? first ?? { x: pad, y: pad };
-    placed.push({ item, x: at.x, y: at.y, size });
+    placed.push({ item, x: Math.round(at.x * 100) / 100, y: Math.round(at.y * 100) / 100, size });
   }
   return placed;
 }

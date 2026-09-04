@@ -19,10 +19,10 @@
 
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { ConstellationFigure, paintFor, type StarLook } from "@/sky/components/constellation";
+import { ConstellationFigure, type StarLook } from "@/sky/components/constellation";
 import { SkyCanvas } from "@/sky/components/sky-canvas";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
-import { hashUnit, layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
+import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterLayout, type Placed } from "@/sky/lib/scatter";
 import { bySizeDesc } from "@/sky/lib/sky-scene";
@@ -44,10 +44,15 @@ export interface SkyFieldProps {
   interactive?: boolean;
   /** Roots picked for tonight and not yet learned: their unlearned stars draw faint and dashed. */
   tonight?: ReadonlySet<string>;
-  /** The firmament: single stars at seeded points across the whole world,
-   * under the constellations, each hoverable. The sky that is already there
-   * before anything is discovered: every kana, piece and kanji. */
+  /** The firmament: the sky that is already there before anything is
+   * discovered. Every id here is drawn as the constellation it would become
+   * (a kanji with its pieces, a kana alone), small and in its standing's
+   * colour, scattered with the rest. Discovery only changes colours. */
   firmament?: readonly string[];
+  /** A one-star firmament constellation's box; every star adds to it. */
+  firmamentBase?: number;
+  /** How many world units span the box at 100%; the whole world by default. */
+  focus?: number;
   /** Override how a star looks; the default is its standing. */
   lookOf?: (id: string, base: StarLook) => StarLook;
   /** Draw lines only; the caller puts its own stars on the positions. */
@@ -76,14 +81,17 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean; w: number; h: number }
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const layouts = useMemo(() => new Map(roots.filter((r) => graph.has(r)).map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, roots]);
+  const rootSet = useMemo(() => new Set(roots), [roots]);
+  const all = useMemo(() => [...roots, ...firmament.filter((id) => !rootSet.has(id))].filter((id) => graph.has(id)), [roots, firmament, rootSet, graph]);
+  const layouts = useMemo(() => new Map(all.map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, all]);
   const placed = useMemo<PlacedConstellation[]>(() => {
-    const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, baseSize) })), (b) => b.size);
-    return scatterLayout(boxes, width, height, pad).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 4 }));
-  }, [layouts, baseSize, width, height, pad]);
+    const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase) })), (b) => b.size);
+    const gap = firmament.length ? Math.min(pad, 6) : pad;
+    return scatterLayout(boxes, width, height, gap).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
+  }, [layouts, baseSize, firmamentBase, rootSet, firmament.length, width, height, pad]);
 
   const baseLook = useCallback((root: string, id: string): StarLook => {
     const it = graph.itemOf(id);
@@ -104,26 +112,12 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
 
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
-  // the firmament's points: seeded by id, anywhere in the world but its edges
-  const points = useMemo(() => firmament.filter((id) => graph.has(id)).map((id) => ({ id, x: 12 + hashUnit(`${id}#fx`) * (width - 24), y: 12 + hashUnit(`${id}#fy`) * (height - 24) })), [firmament, graph, width, height]);
   // one hit circle per star, sized to its dot plus some slack
-  const hits = [
-    ...points.map((p) => ({ key: `firmament/${p.id}`, id: p.id, x: p.x, y: p.y, r: 6 })),
-    ...placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 7 }))),
-  ];
+  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
-      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed} fill={fill} dust={points.length ? 0 : Math.round((90 * height) / 460)}>
-        {points.length > 0 && (
-          <g data-firmament>
-            {points.map((p) => {
-              const look = baseLook(p.id, p.id);
-              const paint = paintFor(look);
-              return <circle key={p.id} data-firmament-star={p.id} cx={p.x} cy={p.y} r={1.3} fill={paint.fill} opacity={look.muted ? 0.12 : paint.opacity} />;
-            })}
-          </g>
-        )}
+      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} dust={firmament.length ? 0 : Math.round((90 * height) / 460)}>
         {placed.map((p) => (
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}

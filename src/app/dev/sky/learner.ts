@@ -154,10 +154,12 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
       // shares its meaning fact) is the same star as the kanji: one node, one
       // state. The kanji entry carries it; the radical entry is not a star.
       if (kind === RADICAL_SUBJECT && entryForGlyph(KANJI_SUBJECT, entry.glyph)) continue;
-      const single = kind !== VOCAB_SUBJECT;
+      // The firmament is every kana and every kanji, drawn as the constellation
+      // it would become; pieces live inside their kanji, words appear on discovery.
+      const inFirmament = options.everything && (kind === KANA_SUBJECT || kind === KANJI_SUBJECT);
       if (standingFor(entry, history, now).met) add(entry);
-      else if (options.everything && single) add(entry);
-      if (options.everything && single) firmament.push(entry.id);
+      else if (inFirmament) add(entry);
+      if (inFirmament) firmament.push(entry.id);
     }
   }
 

@@ -36,19 +36,23 @@ export interface SkyCanvasProps {
   seed?: string;
   /** Fill the box: the svg is a window onto the world, cropped to the box. */
   fill?: boolean;
+  /** How many world units span the window at 100%: the scale the sky opens
+   * at and resets to. Defaults to the whole world fitting. A world larger
+   * than this is seen by panning, or by zooming out towards the fit. */
+  focus?: number;
   label: string;
   className?: string;
   children?: ReactNode;
 }
 
-const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
 const STEP = 1.3;
 const WHEEL_STEP = 1.15;
 
-export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, label, className = "", children }: SkyCanvasProps) {
+export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, label, className = "", children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [view, setView] = useState({ k: 1, x: 0, y: 0 });
+  // opens at the home zoom: k of 0 means "the home zoom", resolved by the clamp
+  const [view, setView] = useState({ k: 0, x: 0, y: 0 });
   const drag = useRef<{ px: number; py: number; vx: number; vy: number } | null>(null);
 
   // The box's size in pixels, for the maths only (never for what is drawn):
@@ -66,15 +70,21 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   const scale = box.w > 0 && box.h > 0 ? (fill ? Math.max : Math.min)(box.w / width, box.h / height) : 0;
   /** The window, in sky units: what the box shows at 100%. */
   const win = scale > 0 ? { w: box.w / scale, h: box.h / scale } : { w: width, h: height };
+  /** The zoom at which the whole world fits the window; never above 1. */
+  const fit = Math.min(1, win.w / width, win.h / height);
+  /** The zoom the sky opens at and resets to: `focus` units across the window. */
+  const home = focus ? Math.max(fit, Math.min(MAX_ZOOM, win.w / focus)) : fit;
 
   // The world's edges never leave the window, and the world is anchored to
   // the top left when it is smaller than the window. Applied to the stored
   // view on every render, so a window that changes shape keeps the pan it
-  // had and only shows more or less of the world.
+  // had and only shows more or less of the world. The zoom can go down to
+  // the fit, so a world larger than the window can be seen whole.
   const clamp = useCallback((v: { k: number; x: number; y: number }) => {
-    const axis = (w: number, world: number, at: number) => (world * v.k <= w ? 0 : Math.min(0, Math.max(w - world * v.k, at)));
-    return { k: v.k, x: axis(win.w, width, v.x), y: axis(win.h, height, v.y) };
-  }, [win.w, win.h, width, height]);
+    const k = v.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
+    const axis = (w: number, world: number, at: number) => (world * k <= w ? 0 : Math.min(0, Math.max(w - world * k, at)));
+    return { k, x: axis(win.w, width, v.x), y: axis(win.h, height, v.y) };
+  }, [win.w, win.h, width, height, fit, home]);
   const shown = clamp(view);
 
   /** Pointer position in sky units, or null when the element has no size. */
@@ -87,12 +97,13 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
 
   const zoom = useCallback((factor: number, at?: { x: number; y: number }) => {
     setView((v) => {
-      const k = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v.k * factor));
-      const ratio = k / v.k;
+      const from = v.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
+      const k = Math.min(MAX_ZOOM, Math.max(fit, from * factor));
+      const ratio = k / from;
       const px = at?.x ?? win.w / 2, py = at?.y ?? win.h / 2;
       return clamp({ k, x: px - (px - v.x) * ratio, y: py - (py - v.y) * ratio });
     });
-  }, [clamp, win.w, win.h]);
+  }, [clamp, win.w, win.h, fit, home]);
 
   // wheel must be a non-passive listener to stop the page scrolling under the sky
   useEffect(() => {
@@ -156,7 +167,7 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
       {interactive && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-sky-line bg-sky-card-strong p-1 font-sky-ui text-[12px] text-sky-ink">
           <button type="button" aria-label="Zoom out" onClick={() => zoom(1 / STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">−</button>
-          <button type="button" aria-label="Reset the view" onClick={() => setView({ k: 1, x: 0, y: 0 })} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{Math.round(shown.k * 100)}%</button>
+          <button type="button" aria-label="Reset the view" onClick={() => setView({ k: 0, x: 0, y: 0 })} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{Math.round((shown.k / home) * 100)}%</button>
           <button type="button" aria-label="Zoom in" onClick={() => zoom(STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">+</button>
         </div>
       )}
