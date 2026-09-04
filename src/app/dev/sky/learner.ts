@@ -28,8 +28,12 @@ import { entryOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
+import { KIND_LABEL } from "@/lib/library/kinds";
+import { getStatsRows, type StatsData, type StatsSubject } from "@/lib/library/server-lookups";
 import { standingOf as appStandingOf, type Standing as AppStanding } from "@/lib/library/standing";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import { buildGraph } from "@/sky/lib/graph";
+import type { DiscoveryRow } from "@/sky/components/discovery-panel";
 import type { MixUp } from "@/sky/components/mix-ups-panel";
 import type { SkyHomeData } from "@/sky/components/sky-home";
 import { skyRoots } from "@/sky/lib/sky-scene";
@@ -87,14 +91,42 @@ function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[])
   };
 }
 
+/** What each subject is called in the discovery panel: the Library's own
+ * shelf names, plus the split rows Progress adds. The same table Progress
+ * keeps in by-subject.tsx, so the two pages never call one shelf two things. */
+const SUBJECT_LABEL: Record<string, string> = {
+  ...KIND_LABEL,
+  grammar: "Grammar",
+  transitivity: "Verb pairs",
+  "kana-hiragana": "Hiragana",
+  "kana-katakana": "Katakana",
+  "counting-numbers": "Numbers",
+  "counting-counters": "Counters",
+};
+
+/** Entries in a subject the learner has met: any of the entry's facts answered or claimed. */
+const metCount = (subject: StatsSubject, history: HistoryFile) =>
+  subject.entries.filter((e) => (subject.entryFacts[e as unknown as string] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f])).length;
+
+/** "x of y" per subject, grouped as Progress groups them, sentences last. */
+export function discoveryRows(history: HistoryFile, stats: StatsData): DiscoveryRow[] {
+  const row = (s: StatsSubject): DiscoveryRow => ({ label: SUBJECT_LABEL[s.id] ?? s.id, discovered: metCount(s, history), total: s.entries.length });
+  const rows: DiscoveryRow[] = stats.rows.map((r) =>
+    r.kind === "subject" ? row(r.subject) : { label: r.label, discovered: r.children.reduce((n, s) => n + metCount(s, history), 0), total: r.children.reduce((n, s) => n + s.entries.length, 0), children: r.children.map(row) },
+  );
+  rows.push({ label: "Sentences", discovered: learnedSentenceTierIds(history).length, total: stats.sentenceTierCount });
+  return rows;
+}
+
 /** The signed-in learner's sky, or an empty one for a visitor. */
 export async function learnerSky(now = Date.now()): Promise<SkyHomeData> {
   const userId = await currentUserId();
   const history = userId ? await loadHistory(userId) : emptyHistory();
-  return skyFromHistory(history, now);
+  return skyFromHistory(history, now, await getStatsRows());
 }
 
-export function skyFromHistory(history: HistoryFile, now = Date.now()): SkyHomeData {
+/** The sky from a history file. Without `stats` the discovery rows are empty. */
+export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData): SkyHomeData {
   const items = new Map<string, SkyItem>();
   const met = new Set<string>();
 
@@ -127,5 +159,5 @@ export function skyFromHistory(history: HistoryFile, now = Date.now()): SkyHomeD
     .filter((p) => items.has(p.a) && items.has(p.b))
     .map((p) => ({ a: p.a, b: p.b, times: p.runsMixedUp }));
 
-  return { items: list, roots, mixUps };
+  return { items: list, roots, mixUps, discovery: stats ? discoveryRows(history, stats) : [] };
 }

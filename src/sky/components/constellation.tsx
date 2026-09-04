@@ -34,6 +34,8 @@ export interface StarLook {
   lit?: boolean;
   /** The star the panel is showing, or every star of the word: gold. */
   emphasis?: boolean;
+  /** Faded right back, while something else is singled out. */
+  muted?: boolean;
 }
 
 /** The paint for a look: fill token, glow radius, line opacity, line dash. */
@@ -82,6 +84,8 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
   const stars = placeConstellation(layout, cx, cy, r);
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
   const hot = (id: string) => looks.get(id)?.emphasis === true;
+  const dim = (id: string) => looks.get(id)?.muted === true;
+  const MUTED = 0.12;
   return (
     <g data-constellation={layout.root}>
       <g data-lines>
@@ -95,7 +99,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
               x1={a.px} y1={a.py} x2={b.px} y2={b.py}
               stroke={emphasised ? "var(--sky-gold)" : "var(--sky-link)"}
               strokeWidth={emphasised ? 1.4 : 1}
-              opacity={emphasised ? 0.9 : paint.opacity}
+              opacity={dim(a.id) || dim(b.id) ? MUTED : emphasised ? 0.9 : paint.opacity}
               strokeDasharray={!emphasised && paint.dash ? paint.dash : undefined}
             />
           );
@@ -108,7 +112,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             const paint = paintFor(look);
             const rr = STAR_RADIUS[look.role] * u;
             return (
-              <g key={s.id} data-star={s.id}>
+              <g key={s.id} data-star={s.id} opacity={look.muted ? MUTED : undefined}>
                 {paint.glow > 0 && <circle cx={s.px} cy={s.py} r={rr + paint.glow} fill={paint.fill} opacity={look.emphasis ? 0.22 : 0.16} />}
                 <circle cx={s.px} cy={s.py} r={rr} fill={paint.fill} />
               </g>

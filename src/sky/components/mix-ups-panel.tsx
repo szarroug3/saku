@@ -25,12 +25,9 @@ export function MixUpsPanel({ graph, pairs, limit = 2, className = "" }: MixUpsP
     <section className={`rounded-2xl border border-sky-line bg-sky-card p-5 font-sky-ui text-sky-ink ${className}`}>
       <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Mix-ups</h2>
       {shown.length === 0 ? (
-        <p className="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-sky-muted">Nothing tangled right now. When you answer one star when it asked for another, the pair shows up here.</p>
+        <p className="mt-2 text-[14px] text-sky-muted">You currently have no mix-ups.</p>
       ) : (
         <>
-          <p className="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-sky-muted">
-            {shown.length === 1 ? "Two stars that keep getting tangled" : "Stars that keep getting tangled"}: you answered one when it asked for the other.
-          </p>
           <ul className="mt-3 flex flex-col gap-3">
             {shown.map((p) => (
               <li key={`${p.a}|${p.b}`} className="flex items-center gap-4">

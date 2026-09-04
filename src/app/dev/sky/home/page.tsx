@@ -9,6 +9,8 @@ import Link from "next/link";
 
 import { SkyHome } from "@/sky/components/sky-home";
 
+import { getStatsRows } from "@/lib/library/server-lookups";
+
 import { learnerSky, skyFromHistory } from "../learner";
 import { sampleHistory } from "../sample-learner";
 
@@ -17,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function SkyHomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
-  const data = sample ? skyFromHistory(sampleHistory()) : await learnerSky();
+  const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows()) : await learnerSky();
   return (
     <div className="sky-wash -mx-6 -my-8 min-h-[calc(100vh-4rem)] px-6 py-8">
       <div className="mx-auto max-w-[1180px]">

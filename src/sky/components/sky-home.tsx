@@ -9,14 +9,16 @@
 // reached from the Planetarium and the Lesson. A brand-new learner sees an
 // empty sky that says where to start.
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import { CoveragePanel } from "@/sky/components/coverage-panel";
+import type { StarLook } from "@/sky/components/constellation";
+import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { buildGraph } from "@/sky/lib/graph";
 import { skyStars, tallyStandings } from "@/sky/lib/sky-scene";
+import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 /** Everything the home needs, plain data, from whatever adapter the route uses. */
@@ -26,6 +28,8 @@ export interface SkyHomeData {
   /** The constellations to draw: met items that are not part of another met item. */
   roots: readonly string[];
   mixUps: readonly MixUp[];
+  /** How far the learner has got in each subject, grouped as the app groups them. */
+  discovery: readonly DiscoveryRow[];
 }
 
 export interface SkyHomeProps {
@@ -34,13 +38,15 @@ export interface SkyHomeProps {
   planetariumHref?: string;
 }
 
-const NOTE = "Every star in the sky wears its own colour: the standing Saku currently gives it. Solid stays quiet; shaky and slipping are what tonight's drill will reach for first.";
-
 export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => skyStars(graph, data.roots), [graph, data.roots]);
   const counts = useMemo(() => tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [stars, graph]);
+  const totals = discoveryTotals(data.discovery);
   const empty = data.roots.length === 0;
+  // hover a standing in the legend and only its stars stay lit
+  const [singled, setSingled] = useState<Standing | null>(null);
+  const lookOf = useCallback((_id: string, base: StarLook): StarLook => (singled && base.standing !== singled ? { ...base, muted: true } : base), [singled]);
 
   return (
     <div className="font-sky-ui text-sky-ink">
@@ -51,10 +57,9 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
             Every word you&apos;ve learned is a small constellation: the word at its centre, its characters around it, the pieces they&apos;re built from beyond. Each star is coloured by how well you know it. Hover a constellation to name it; drag to pan and scroll to zoom.
           </p>
         </div>
-        {!empty && (
-          <div className="flex gap-4 text-[13px] text-sky-muted">
-            <span><b className="text-sky-ink">{stars.length}</b> stars</span>
-            <span><b className="text-sky-ink">{data.roots.length}</b> constellations</span>
+        {!empty && totals.total > 0 && (
+          <div className="text-[13px] tabular-nums text-sky-muted">
+            <b className="text-sky-ink">{totals.discovered.toLocaleString()}</b> of {totals.total.toLocaleString()} discovered
           </div>
         )}
       </header>
@@ -67,13 +72,13 @@ export function SkyHome({ data, planetariumHref = "/planetarium" }: SkyHomeProps
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} graph={graph} interactive label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} graph={graph} interactive lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
-      {!empty && <StandingLegend className="mt-3" />}
+      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} />}
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <CoveragePanel counts={counts} total={stars.length} summary={`${stars.length} stars · ${data.roots.length} constellations`} label="your sky" note={NOTE} />
+        <DiscoveryPanel rows={data.discovery} />
         <MixUpsPanel graph={graph} pairs={data.mixUps} />
       </div>
     </div>

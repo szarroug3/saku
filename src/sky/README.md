@@ -138,12 +138,16 @@ never disappears (a hairline at least) and an empty bar still draws.
 
 `SkyHome` (`src/sky/components/sky-home.tsx`, SAK-329 to 336) is the whole
 home page: given `SkyHomeData` (items, the constellation roots, mix-ups) it
-draws the sky, the legend, "How much you've covered" and "Mix-ups". Every
+draws the sky, the legend, "How much you've discovered" and "Mix-ups". Every
 part is its own component and reused elsewhere: `SkyCanvas` (the SVG with
 seeded dust, a viewport group, and pan and zoom when interactive),
 `SkyField` (scatters and draws the constellations with hover tooltips; the
 Planetarium preview and the lesson use it at other sizes and with their own
-looks), `SkyTooltip`, `ConstellationTile`, `CoveragePanel`, `MixUpsPanel`.
+looks), `SkyTooltip`, `ConstellationTile`, `DiscoveryPanel` ("x of y" per
+subject, grouped as Progress groups them: Sam chose the breakdown by subject
+over the one by standing), `MixUpsPanel`. Standings are read off the sky:
+hover a word in the legend and only that standing's stars stay lit, with
+its count in a bubble. The page explains nothing the visual already says.
 `src/sky/lib/scatter.ts` places boxes without overlap, seeded; `sky-scene.ts`
 decides roots (met items not under another met item), the star set and the
 tally. The data comes from an adapter outside the tree: for now
