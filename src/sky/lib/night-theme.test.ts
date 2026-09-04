@@ -193,6 +193,18 @@ describe("night theme tokens", () => {
     assert.ok(layers.length > 0);
   });
 
+  it("each standing has an alias token pointing at a text-safe colour, except not seen, which is decorative", () => {
+    const ALIASES: Record<string, string> = { solid: "mint", "getting-there": "pale", shaky: "amber", slipping: "coral", claimed: "star-mid", "not-seen": "star-dim" };
+    for (const [standing, target] of Object.entries(ALIASES)) {
+      const values = TOKENS.get(standing);
+      assert.ok(values && values.length === 1, `--sky-${standing} is defined once`);
+      assert.equal(values[0], `var(--sky-${target})`, `--sky-${standing} aliases the palette, it is not a colour of its own`);
+      if (standing === "not-seen") assert.ok((DECORATIVE_ONLY as readonly string[]).includes(target), "not seen paints a decorative dot and never text");
+      else assert.ok((TEXT_TOKENS as readonly string[]).includes(target), `--sky-${standing} must be a text-safe colour, since its chip label uses it`);
+      assert.ok(CSS_CODE.includes(`--color-sky-${standing}: var(--sky-${standing});`), `--sky-${standing} has a Tailwind name`);
+    }
+  });
+
   it("both type tokens end in a real fallback stack", () => {
     const display = TOKENS.get("font-display")?.[0] ?? "";
     const ui = TOKENS.get("font-ui")?.[0] ?? "";

@@ -49,7 +49,8 @@ describe("sky-wash.css as data", () => {
     const mesh = resolvedMesh(m, "STARDUST");
     assert.ok(mesh.startsWith("STARDUST, "));
     assert.ok(mesh.endsWith("100%)"));
-    assert.equal((mesh.match(/gradient\(/g) ?? []).length, m.layers.length + 1);
+    // hidden layers keep their knobs but are left out of the mesh
+    assert.equal((mesh.match(/gradient\(/g) ?? []).length, m.layers.filter((l) => l.visible).length + 1);
   });
 
   it("validation catches the things the editor could send", () => {

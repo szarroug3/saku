@@ -15,29 +15,29 @@ import type { SkyItem } from "@/sky/lib/types";
 type Pick = SkyItem & { pieces: number };
 
 const WORDS: Pick[] = [
-  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 8 },
-  { id: "w-water", kind: "word", glyph: "お水", english: "water", status: "wild", pieces: 3 },
-  { id: "w-forest", kind: "word", glyph: "森", english: "forest", status: "wild", pieces: 3 },
-  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild", pieces: 4 },
-  { id: "w-uni", kind: "word", glyph: "大学", english: "university", status: "wild", pieces: 5 },
-  { id: "w-time", kind: "word", glyph: "時間", english: "time", status: "wild", pieces: 6 },
+  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", standing: "not-seen", pieces: 8 },
+  { id: "w-water", kind: "word", glyph: "お水", english: "water", standing: "not-seen", pieces: 3 },
+  { id: "w-forest", kind: "word", glyph: "森", english: "forest", standing: "not-seen", pieces: 3 },
+  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", standing: "not-seen", pieces: 4 },
+  { id: "w-uni", kind: "word", glyph: "大学", english: "university", standing: "not-seen", pieces: 5 },
+  { id: "w-time", kind: "word", glyph: "時間", english: "time", standing: "not-seen", pieces: 6 },
 ];
 
 const KANA: Pick[] = [
-  { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", status: "wild", pieces: 5 },
-  { id: "kana-t", kind: "kana", glyph: "た", english: "T row", status: "wild", pieces: 5 },
-  { id: "kana-n", kind: "kana", glyph: "な", english: "N row", status: "wild", pieces: 5 },
+  { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", standing: "not-seen", pieces: 5 },
+  { id: "kana-t", kind: "kana", glyph: "た", english: "T row", standing: "not-seen", pieces: 5 },
+  { id: "kana-n", kind: "kana", glyph: "な", english: "N row", standing: "not-seen", pieces: 5 },
 ];
 
 const COUNTING: Pick[] = [
-  { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", status: "wild", pieces: 10 },
-  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "wild", pieces: 1 },
-  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 4 },
+  { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", standing: "not-seen", pieces: 10 },
+  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", standing: "not-seen", pieces: 1 },
+  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", standing: "not-seen", pieces: 4 },
 ];
 
 const VERB_PAIRS: Pick[] = [
-  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", status: "wild", pieces: 5 },
-  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", status: "wild", pieces: 5 },
+  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", standing: "not-seen", pieces: 5 },
+  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", standing: "not-seen", pieces: 5 },
 ];
 
 export default function ItemSectionGalleryPage() {

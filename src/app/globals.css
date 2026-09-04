@@ -2156,12 +2156,23 @@ body {
   /* actions and the selected star */
   --sky-gold: #f2c86b;
   --sky-gold-ink: #1a1608;
-  /* standings: solid, getting there, shaky, slipping; lilac is for planets */
+  /* the palette the standings draw from; lilac is for planets */
   --sky-mint: #7ee0b8;
   --sky-pale: #e3dcc3;
   --sky-amber: #f2c86b;
   --sky-coral: #ff9a8f;
   --sky-lilac: #c8acff;
+  /* standings (SAK-294): one name per word, so a screen paints "solid" and
+   * never has to remember that solid is mint. Aliases, not new colours; the
+   * words and the decision table live in src/sky/lib/standing.ts. "not seen"
+   * points at a decorative token and is never a text colour: its chip label
+   * uses muted. */
+  --sky-solid: var(--sky-mint);
+  --sky-getting-there: var(--sky-pale);
+  --sky-shaky: var(--sky-amber);
+  --sky-slipping: var(--sky-coral);
+  --sky-claimed: var(--sky-star-mid);
+  --sky-not-seen: var(--sky-star-dim); /* decorative only, by alias */
   /* type. The webfonts are loaded once by the Sky layout, which sets
    * --font-shippori-mincho and --font-karla; without them these fall through
    * to the same system stacks the rest of the app uses. */
@@ -2192,9 +2203,13 @@ body {
   --color-sky-amber: var(--sky-amber);
   --color-sky-coral: var(--sky-coral);
   --color-sky-lilac: var(--sky-lilac);
+  --color-sky-solid: var(--sky-solid);
+  --color-sky-getting-there: var(--sky-getting-there);
+  --color-sky-shaky: var(--sky-shaky);
+  --color-sky-slipping: var(--sky-slipping);
+  --color-sky-claimed: var(--sky-claimed);
+  --color-sky-not-seen: var(--sky-not-seen);
   --background-image-sky-mesh: var(--sky-mesh);
-  --background-image-sky-mesh-sky: var(--sky-mesh-sky);
-  --background-image-sky-mesh-horizon: var(--sky-mesh-horizon);
   --font-sky-display: var(--sky-font-display);
   --font-sky-ui: var(--sky-font-ui);
 }

@@ -13,7 +13,7 @@ import type { Branch } from "@/sky/lib/branch";
 import type { SkyItem } from "@/sky/lib/types";
 
 function item(id: string): SkyItem {
-  return { id, kind: "radical", glyph: id, english: id, status: "wild" };
+  return { id, kind: "radical", glyph: id, english: id, standing: "not-seen" };
 }
 
 function leaf(id: string): Branch {

@@ -34,12 +34,12 @@ type Pick = SkyItem & { pieces: number };
  * what the piece count counts: the word, its kanji, and their radicals.
  */
 const WORDS: Pick[] = [
-  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "wild", pieces: 8 },
-  { id: "w-water", kind: "word", glyph: "お水", english: "water", status: "wild", pieces: 3 },
-  { id: "w-forest", kind: "word", glyph: "森", english: "forest", status: "wild", pieces: 3 },
-  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild", pieces: 4 },
-  { id: "w-uni", kind: "word", glyph: "大学", english: "university", status: "wild", pieces: 5 },
-  { id: "w-time", kind: "word", glyph: "時間", english: "time", status: "wild", pieces: 6 },
+  { id: "w-wed", kind: "word", glyph: "水曜日", english: "Wednesday", standing: "not-seen", pieces: 8 },
+  { id: "w-water", kind: "word", glyph: "お水", english: "water", standing: "not-seen", pieces: 3 },
+  { id: "w-forest", kind: "word", glyph: "森", english: "forest", standing: "not-seen", pieces: 3 },
+  { id: "w-open", kind: "word", glyph: "開ける", english: "to open something", standing: "not-seen", pieces: 4 },
+  { id: "w-uni", kind: "word", glyph: "大学", english: "university", standing: "not-seen", pieces: 5 },
+  { id: "w-time", kind: "word", glyph: "時間", english: "time", standing: "not-seen", pieces: 6 },
 ];
 
 /**
@@ -50,17 +50,17 @@ const WORDS: Pick[] = [
  * them. The ghost is the row's representative character.
  */
 const KANA: Pick[] = [
-  { id: "kana-a", kind: "kana", glyph: "あ", english: "Vowels", status: "mastered", pieces: 5 },
-  { id: "kana-k", kind: "kana", glyph: "か", english: "K row", status: "learned", pieces: 5 },
-  { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", status: "wild", pieces: 5 },
-  { id: "kana-t", kind: "kana", glyph: "た", english: "T row", status: "wild", pieces: 5 },
+  { id: "kana-a", kind: "kana", glyph: "あ", english: "Vowels", standing: "solid", pieces: 5 },
+  { id: "kana-k", kind: "kana", glyph: "か", english: "K row", standing: "getting-there", pieces: 5 },
+  { id: "kana-s", kind: "kana", glyph: "さ", english: "S row", standing: "not-seen", pieces: 5 },
+  { id: "kana-t", kind: "kana", glyph: "た", english: "T row", standing: "not-seen", pieces: 5 },
 ];
 
 /** COUNTING. Small enough that showing the locked ones is worth the space. */
 const COUNTING: Pick[] = [
-  { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", status: "wild", pieces: 10 },
-  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", status: "wild", pieces: 1 },
-  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", status: "wild", pieces: 4 },
+  { id: "c-num", kind: "counter", glyph: "一", english: "1 through 10", standing: "not-seen", pieces: 10 },
+  { id: "c-thing", kind: "counter", glyph: "つ", english: "general things", standing: "not-seen", pieces: 1 },
+  { id: "c-flat", kind: "counter", glyph: "枚", english: "flat objects", standing: "not-seen", pieces: 4 },
 ];
 
 /**
@@ -72,32 +72,32 @@ const COUNTING: Pick[] = [
  * shown is the honest one for taking both halves.
  */
 const VERB_PAIRS: Pick[] = [
-  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", status: "wild", pieces: 5 },
-  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", status: "wild", pieces: 5 },
-  { id: "vp-enter", kind: "verbPair", glyph: "入れる", english: "to put in", status: "wild", pieces: 4 },
+  { id: "vp-open", kind: "verbPair", glyph: "開ける", english: "to open", standing: "not-seen", pieces: 5 },
+  { id: "vp-start", kind: "verbPair", glyph: "始める", english: "to start", standing: "not-seen", pieces: 5 },
+  { id: "vp-enter", kind: "verbPair", glyph: "入れる", english: "to put in", standing: "not-seen", pieces: 4 },
 ];
 
 /** KEIGO, also its own section. A polite form is frequently written with
  * entirely different kanji from the plain one, so it carries its own cost. */
 const KEIGO: Pick[] = [
-  { id: "kg-eat", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", status: "wild", pieces: 6 },
-  { id: "kg-go", kind: "keigo", glyph: "いらっしゃる", english: "to go, politely", status: "wild", pieces: 1 },
-  { id: "kg-say", kind: "keigo", glyph: "おっしゃる", english: "to say, politely", status: "wild", pieces: 1 },
+  { id: "kg-eat", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", standing: "not-seen", pieces: 6 },
+  { id: "kg-go", kind: "keigo", glyph: "いらっしゃる", english: "to go, politely", standing: "not-seen", pieces: 1 },
+  { id: "kg-say", kind: "keigo", glyph: "おっしゃる", english: "to say, politely", standing: "not-seen", pieces: 1 },
 ];
 
 const LIBRARY: SkyItem[] = [
-  { id: "k-moku", kind: "kanji", glyph: "木", english: "tree", status: "mastered" },
-  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", status: "learned" },
-  { id: "k-you", kind: "kanji", glyph: "曜", english: "day of the week", status: "planted" },
-  { id: "k-shin", kind: "kanji", glyph: "森", english: "forest", status: "wild" },
-  { id: "r-hane", kind: "radical", glyph: "羽", english: "feathers", status: "planted" },
-  { id: "l-kana-ki", kind: "kana", glyph: "き", english: "ki", status: "learned" },
-  { id: "l-wed", kind: "word", glyph: "水曜日", english: "Wednesday", status: "planted" },
-  { id: "l-water", kind: "word", glyph: "お水", english: "water", status: "learned" },
-  { id: "l-open", kind: "word", glyph: "開ける", english: "to open something", status: "wild" },
-  { id: "l-thing", kind: "counter", glyph: "つ", english: "general things", status: "learned" },
-  { id: "l-desu", kind: "grammar", glyph: "です", english: "polite statement", status: "wild" },
-  { id: "l-keigo", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", status: "wild" },
+  { id: "k-moku", kind: "kanji", glyph: "木", english: "tree", standing: "solid" },
+  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", standing: "getting-there" },
+  { id: "k-you", kind: "kanji", glyph: "曜", english: "day of the week", standing: "claimed" },
+  { id: "k-shin", kind: "kanji", glyph: "森", english: "forest", standing: "not-seen" },
+  { id: "r-hane", kind: "radical", glyph: "羽", english: "feathers", standing: "claimed" },
+  { id: "l-kana-ki", kind: "kana", glyph: "き", english: "ki", standing: "getting-there" },
+  { id: "l-wed", kind: "word", glyph: "水曜日", english: "Wednesday", standing: "claimed" },
+  { id: "l-water", kind: "word", glyph: "お水", english: "water", standing: "getting-there" },
+  { id: "l-open", kind: "word", glyph: "開ける", english: "to open something", standing: "not-seen" },
+  { id: "l-thing", kind: "counter", glyph: "つ", english: "general things", standing: "getting-there" },
+  { id: "l-desu", kind: "grammar", glyph: "です", english: "polite statement", standing: "not-seen" },
+  { id: "l-keigo", kind: "keigo", glyph: "召し上がる", english: "to eat, politely", standing: "not-seen" },
 ];
 
 export default function ItemCardGalleryPage() {

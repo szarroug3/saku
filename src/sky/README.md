@@ -61,6 +61,23 @@ lower third is a vivid painted horizon where **only large ink (headings) sits
 bare, and body and muted text live inside panels** (`bg-sky-card`), whose dark
 glass is what the test checks them against. `/dev/sky/tokens` shows every token live with its ratios.
 
+### Standings: one vocabulary, painted only with its word
+
+How an item is going is one of the app's six words (`src/sky/lib/standing.ts`,
+SAK-294): solid, getting there, shaky, slipping, claimed, not seen. Each has
+its own alias token (`bg-sky-solid`, `text-sky-slipping`) on the night palette,
+so a screen paints the word. `standingOf(evidence)` is the Sky's copy of the
+app's decision table; the caller runs the model and hands over showings, the
+model's verdict (teach, probe, quiet) and the last-ten-runs accuracy, and
+`standing.test.ts` proves the copy agrees with `src/lib/library/standing.ts`
+on a grid of scenarios (that test is the one place Sky code imports the app,
+and it goes at cutover). **A bare coloured dot never appears without its
+word:** the dot is not exported; `StandingChip` and `StandingLegend` in
+`src/sky/components/standing-legend.tsx` are the only ways to paint one, and a
+star fill or coverage bar sits beside a legend. Inside the lesson a star is
+locked, open, lit or selected (`LessonState`), never a standing; "tonight" and
+"lit" are legend rows there, never chips. `/dev/sky/standings` shows all of it.
+
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system
 stack. Both are loaded once by the Sky layout, never per component.

@@ -2,6 +2,8 @@
 // tree owns its types so the old content model can be deleted without touching
 // anything in here. See src/sky/README.md.
 
+import type { Standing } from "./standing";
+
 /**
  * What kind of thing this is. Drives the section an item belongs to and which
  * lesson blocks a detail panel renders.
@@ -22,27 +24,6 @@ export type SkyKind =
   | "verbPair"
   | "keigo";
 
-/**
- * How far the learner has got with one item. Four values, shared by every Sky
- * surface, so a colour means the same thing in the sky, the Atlas, the
- * Planetarium and Practice.
- *
- * - `mastered` graduated out of the review basket for good, still on the tree
- * - `learned`  opened and known, eligible for the basket
- * - `planted`  on your tree, bud not opened yet
- * - `wild`     exists in Saku, never planted
- */
-export type SkyStatus = "mastered" | "learned" | "planted" | "wild";
-
-/** True once the learner has actually opened and learned the item. */
-export function isKnown(status: SkyStatus): boolean {
-  return status === "mastered" || status === "learned";
-}
-
-/** True when the item sits on the learner's tree at all, opened or not. */
-export function isOnTree(status: SkyStatus): boolean {
-  return status !== "wild";
-}
 
 /**
  * One item, in the shape every Sky surface consumes.
@@ -72,7 +53,9 @@ export interface SkyItem {
   english: string;
   /** Reading, when the item has one unambiguous one. Kana, not romaji. */
   reading?: string;
-  status: SkyStatus;
+  /** How it is going, in the app's own words (SAK-294): the six standings of
+   * src/sky/lib/standing.ts. Painted only beside a legend or as a chip. */
+  standing: Standing;
   /**
    * IDs of the items this one is built from, if any — a word's kanji, a
    * kanji's radicals. Absent or empty for something with no parts (most

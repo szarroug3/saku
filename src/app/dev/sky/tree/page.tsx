@@ -26,30 +26,30 @@ const ZOOM_STEP = 1.25;
  * walks into `components` yet.
  */
 const CART: SkyItem[] = [
-  { id: "r-sui", kind: "radical", glyph: "氵", english: "water", status: "wild" },
-  { id: "r-hi", kind: "radical", glyph: "日", english: "sun", status: "wild" },
-  { id: "r-tori", kind: "radical", glyph: "隹", english: "bird", status: "wild" },
-  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", status: "wild", components: ["r-sui"] },
+  { id: "r-sui", kind: "radical", glyph: "氵", english: "water", standing: "not-seen" },
+  { id: "r-hi", kind: "radical", glyph: "日", english: "sun", standing: "not-seen" },
+  { id: "r-tori", kind: "radical", glyph: "隹", english: "bird", standing: "not-seen" },
+  { id: "k-sui", kind: "kanji", glyph: "水", english: "water", standing: "not-seen", components: ["r-sui"] },
   {
     id: "k-you",
     kind: "kanji",
     glyph: "曜",
     english: "day of the week",
-    status: "wild",
+    standing: "not-seen",
     components: ["r-hi", "r-tori"],
   },
-  { id: "k-hi", kind: "kanji", glyph: "日", english: "day", status: "wild" },
+  { id: "k-hi", kind: "kanji", glyph: "日", english: "day", standing: "not-seen" },
   {
     id: "w-suiyoubi",
     kind: "word",
     glyph: "水曜日",
     english: "Wednesday",
-    status: "wild",
+    standing: "not-seen",
     components: ["k-sui", "k-you", "k-hi"],
   },
-  { id: "r-ki", kind: "radical", glyph: "木", english: "tree", status: "wild" },
-  { id: "k-mori", kind: "kanji", glyph: "森", english: "forest", status: "wild", components: ["r-ki"] },
-  { id: "w-mori", kind: "word", glyph: "森", english: "forest", status: "wild", components: ["k-mori"] },
+  { id: "r-ki", kind: "radical", glyph: "木", english: "tree", standing: "not-seen" },
+  { id: "k-mori", kind: "kanji", glyph: "森", english: "forest", standing: "not-seen", components: ["r-ki"] },
+  { id: "w-mori", kind: "word", glyph: "森", english: "forest", standing: "not-seen", components: ["k-mori"] },
 ];
 
 export default function GardenGalleryPage() {

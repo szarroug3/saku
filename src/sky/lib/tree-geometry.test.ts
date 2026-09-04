@@ -7,7 +7,7 @@ import { canopyRadius, computeTreeGeometry, TRUNK_TOP } from "@/sky/lib/tree-geo
 import type { SkyItem } from "@/sky/lib/types";
 
 function item(id: string, overrides: Partial<SkyItem> = {}): SkyItem {
-  return { id, kind: "radical", glyph: id, english: id, status: "wild", ...overrides };
+  return { id, kind: "radical", glyph: id, english: id, standing: "not-seen", ...overrides };
 }
 
 /**

@@ -17,20 +17,19 @@ import { WashSwitch } from "../wash-switch";
 
 const GROUPS: ReadonlyArray<{ label: string; note: string; vars: readonly string[] }> = [
   { label: "Grounds", note: "zenith to horizon; the page is --sky-ground", vars: ["--sky-zenith", "--sky-ground-0", "--sky-ground", "--sky-ground-2", "--sky-ground-3"] },
-  { label: "Surfaces", note: "translucent, over a ground; the mesh is the page wash", vars: ["--sky-card", "--sky-card-strong", "--sky-line", "--sky-stardust", "--sky-mesh-sky", "--sky-mesh-horizon", "--sky-mesh"] },
+  { label: "Surfaces", note: "translucent, over a ground; the mesh is the page wash", vars: ["--sky-card", "--sky-card-strong", "--sky-line", "--sky-stardust", "--sky-milky-starfield", "--sky-mesh"] },
   { label: "Text", note: "faint is decorative only", vars: ["--sky-ink", "--sky-muted", "--sky-faint"] },
   { label: "Stars", note: "star-dim is decorative only", vars: ["--sky-star", "--sky-star-mid", "--sky-star-dim", "--sky-link"] },
   { label: "Actions", note: "gold-ink is the text on a gold button", vars: ["--sky-gold", "--sky-gold-ink"] },
   { label: "Standings", note: "solid, getting there, shaky, slipping; lilac is for planets", vars: ["--sky-mint", "--sky-pale", "--sky-amber", "--sky-coral", "--sky-lilac"] },
 ];
 
-const DECORATIVE = new Set(["--sky-faint", "--sky-star-dim", "--sky-line", "--sky-card", "--sky-card-strong", "--sky-mesh", "--sky-mesh-sky", "--sky-mesh-horizon", "--sky-stardust"]);
-const IMAGE_TOKENS = new Set(["--sky-mesh", "--sky-mesh-sky", "--sky-mesh-horizon", "--sky-stardust"]);
+const DECORATIVE = new Set(["--sky-faint", "--sky-star-dim", "--sky-line", "--sky-card", "--sky-card-strong", "--sky-mesh", "--sky-milky-starfield", "--sky-stardust"]);
+const IMAGE_TOKENS = new Set(["--sky-mesh", "--sky-milky-starfield", "--sky-stardust"]);
 const IMAGE_NOTES: Record<string, string> = {
-  "--sky-mesh": "stardust + sky + horizon + sweep",
-  "--sky-mesh-sky": "text-safe hotspots, upper sky",
-  "--sky-mesh-horizon": "vivid glows, lower third; muted text only in panels",
-  "--sky-stardust": "inline SVG, 72 seeded dots, tiled",
+  "--sky-mesh": "stardust + the layers + the sweep, from sky-wash.css",
+  "--sky-milky-starfield": "the Milky Way's own stars, an inline SVG from the star knobs",
+  "--sky-stardust": "a tiled PNG from the --sky-stars-* knobs",
 };
 const GROUNDS = ["--sky-ground", "--sky-ground-2", "--sky-ground-3"] as const;
 

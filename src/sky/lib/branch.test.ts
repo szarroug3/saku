@@ -10,7 +10,7 @@ function item(id: string, overrides: Partial<SkyItem> = {}): SkyItem {
     kind: "word",
     glyph: id,
     english: id,
-    status: "planted",
+    standing: "claimed",
     ...overrides,
   };
 }

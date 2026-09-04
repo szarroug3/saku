@@ -1,16 +1,16 @@
-// Kind and status colour for the ItemCard era, mapped onto the app's existing
-// semantic tokens.
+// Kind colour for the ItemCard era, mapped onto the app's existing semantic
+// tokens.
 //
 // The Sky's own palette is the night theme: the --sky-* tokens in globals.css
-// (SAK-291), reached as bg-sky-*, text-sky-* and font-sky-* classes. The two
-// maps below predate it and still point at the current app's tokens, because
-// the components that use them (ItemCard, ItemSection) render inside current-app
-// chrome for now. SAK-294 replaces the four-value status with the app's
-// standings and moves these onto the night palette.
+// (SAK-291), reached as bg-sky-*, text-sky-* and font-sky-* classes. The kind
+// map below predates it and still points at the current app's tokens, because
+// the components that use it (ItemCard, ItemSection) render inside current-app
+// chrome for now. Status colour is no longer here: standings, with their own
+// tokens, legend and chip, live in src/sky/lib/standing.ts (SAK-294).
 //
 // Either way: no hex values in this file, and none anywhere in src/sky.
 
-import type { SkyKind, SkyStatus } from "./types";
+import type { SkyKind } from "./types";
 
 /**
  * The accent for each content kind, as a Tailwind class on an existing token.
@@ -50,37 +50,3 @@ export const KIND_LABEL: Record<SkyKind, string> = {
   verbPair: "verb pair",
   keigo: "keigo",
 };
-
-/**
- * How each status reads. `dot` is the status marker; `glyph` tints the character
- * itself so a grid scans by knowledge at a glance; `label` is the wording used in
- * every legend, so the four surfaces stay consistent.
- */
-export const STATUS: Record<
-  SkyStatus,
-  { dot: string; glyph: string; label: string }
-> = {
-  mastered: {
-    dot: "bg-success",
-    glyph: "text-success",
-    label: "mastered",
-  },
-  learned: {
-    dot: "bg-accent",
-    glyph: "text-text",
-    label: "learned",
-  },
-  planted: {
-    dot: "bg-text-muted",
-    glyph: "text-text-muted",
-    label: "on your tree, unopened",
-  },
-  wild: {
-    dot: "bg-border",
-    glyph: "text-text-muted/60",
-    label: "not planted",
-  },
-};
-
-/** The four statuses in the order every legend and filter rail shows them. */
-export const STATUS_ORDER: SkyStatus[] = ["mastered", "learned", "planted", "wild"];
