@@ -104,10 +104,10 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
         onFocus={open}
         onBlur={close}
         onClick={() => (at ? close() : open())}
-        className={`inline-flex items-center gap-1.5 rounded-md border border-sky-line py-0.5 pl-1.5 pr-2 text-sky-ink ${at ? "bg-sky-card-strong" : "bg-sky-card"}`}
+        aria-label="What the standings mean"
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-accent font-sky-display text-[12px] font-bold leading-none text-sky-accent-ink ring-2 ring-transparent ${at ? "ring-sky-line" : ""}`}
       >
-        <span aria-hidden className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-sky-gold font-sky-display text-[10px] font-bold leading-none text-sky-gold-ink">i</span>
-        What these mean
+        i
       </button>
       {at && createPortal(
         <div id="sky-standing-key" role="tooltip" style={at} className="fixed z-50 w-max max-w-[min(420px,calc(100vw-16px))] rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">

@@ -2156,6 +2156,10 @@ body {
   /* actions and the selected star */
   --sky-gold: #f2c86b;
   --sky-gold-ink: #1a1608;
+  /* the learner's own accent, for help and hints: the app's dark accent as
+   * they have it set (magenta, azure...), falling back to magenta */
+  --sky-accent: var(--dark-accent, #f472b6);
+  --sky-accent-ink: #1a0a14;
   /* the palette the standings draw from; lilac is for planets */
   --sky-mint: #7ee0b8;
   --sky-pale: #e3dcc3;
@@ -2208,6 +2212,8 @@ body {
   --color-sky-link: var(--sky-link);
   --color-sky-gold: var(--sky-gold);
   --color-sky-gold-ink: var(--sky-gold-ink);
+  --color-sky-accent: var(--sky-accent);
+  --color-sky-accent-ink: var(--sky-accent-ink);
   --color-sky-mint: var(--sky-mint);
   --color-sky-pale: var(--sky-pale);
   --color-sky-amber: var(--sky-amber);
