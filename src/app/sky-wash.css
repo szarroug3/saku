@@ -165,6 +165,22 @@
   contain: paint;
 }
 
+/* A frosted panel over the wash, with no blur running. The panel paints the
+ * baked gradients (public/sky/wash-frost.png, a quarter-size copy) fixed to
+ * the viewport, so it shows what a blurred wash would show at that spot; the
+ * stars are simply not in the picture. A dark tint on top keeps text at its
+ * contrast. Measured on 2026-09-04: backdrop-filter re-samples the page under
+ * every panel on every scrolled frame and stuttered with a column of cards;
+ * this is a plain image paint. On a browser that ignores fixed attachment
+ * (iOS) the panel shows the picture fitted to itself, which still reads. */
+.sky-frost {
+  background-color: var(--sky-ground);
+  background-image: linear-gradient(rgba(6, 6, 26, 0.45), rgba(6, 6, 26, 0.45)), url("/sky/wash-frost.png");
+  background-size: auto, cover;
+  background-position: center, center;
+  background-attachment: fixed, fixed;
+}
+
 /* The wash switch on the dev pages sets data-wash on <html>. "live" is the
  * CSS gradients straight from the knobs above: the mode to tune in, since
  * edits show on save (resizing is slow there, which is the whole reason for

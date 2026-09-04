@@ -6,9 +6,13 @@
 // paint under everything) and scrolls a long column of "How much you've
 // covered" cards over it, enough to make the page scroll, so resize and scroll
 // can be judged with the kind of content the sky will actually carry. The
-// wash switch stays reachable, so the same column can be tried over each mode.
+// cards are the home's own SkyPanel, so whatever it is made of (a frosted
+// ground, a blur) is what gets judged. The wash switch stays reachable, so
+// the same column can be tried over each mode.
 
 import { useState } from "react";
+
+import { SkyPanel } from "@/sky/components/sky-panel";
 
 const COUNTS = [0, 40, 120] as const;
 
@@ -37,11 +41,7 @@ function CoverageCard({ index }: { index: number }) {
   const total = counts.reduce((s, n) => s + n, 0);
   const constellations = Math.max(3, Math.round(total / 3.2));
   return (
-    <div className="rounded-2xl border border-sky-line bg-sky-card p-6 text-sky-ink">
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.14em] text-sky-muted">How much you&apos;ve covered</div>
-        <div className="text-[15px] text-sky-muted">{total} stars · {constellations} constellations</div>
-      </div>
+    <SkyPanel title="How much you've covered" aside={`${total} stars · ${constellations} constellations`}>
       <div className="mt-4 flex h-3.5 overflow-hidden rounded-full bg-sky-card-strong">
         {STANDINGS.map((s, k) => counts[k] > 0 && <div key={s.name} className={`h-full ${s.dot}`} style={{ width: `${(counts[k] / total) * 100}%` }} />)}
       </div>
@@ -57,7 +57,7 @@ function CoverageCard({ index }: { index: number }) {
       <p className="mt-5 text-[17px] leading-relaxed text-sky-muted">
         Every star in the sky wears its own colour: the standing Saku currently gives it. Solid stays quiet; shaky and slipping are what tonight&apos;s drill will reach for first.
       </p>
-    </div>
+    </SkyPanel>
   );
 }
 

@@ -13,6 +13,13 @@
 // Why a bitmap: CSS gradients are re-rasterised on every resize; a bitmap is
 // decoded once and scaled by the GPU. Gradients have no fine detail, so a
 // 1600px image scaled to any viewport looks the same as the live CSS.
+//
+// Also writes public/sky/wash-frost.png: the same picture at a quarter size,
+// for the frosted panels (.sky-frost in sky-wash.css). A panel that paints
+// this, fixed to the viewport, shows what a blurred wash would show at that
+// spot, and the stars are simply not in it; a real backdrop blur re-samples
+// the page under every panel on every scrolled frame and was measured to
+// stutter with a column of cards (2026-09-04).
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
@@ -92,11 +99,35 @@ for (let y = 0; y < H; y++) {
     rgb[o] = Math.max(0, Math.min(255, Math.round(r + d))); rgb[o + 1] = Math.max(0, Math.min(255, Math.round(g + d))); rgb[o + 2] = Math.max(0, Math.min(255, Math.round(b + d)));
   }
 }
+/** The image at 1/n size, each pixel the mean of its n by n block. */
+const downsample = (n) => {
+  const w = Math.floor(W / n), h = Math.floor(H / n);
+  const out = Buffer.alloc((w * 3 + 1) * h);
+  for (let y = 0; y < h; y++) {
+    out[y * (w * 3 + 1)] = 0;
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) {
+        const o = (y * n + dy) * (W * 3 + 1) + 1 + (x * n + dx) * 3;
+        r += rgb[o]; g += rgb[o + 1]; b += rgb[o + 2];
+      }
+      const o = y * (w * 3 + 1) + 1 + x * 3;
+      out[o] = Math.round(r / (n * n)); out[o + 1] = Math.round(g / (n * n)); out[o + 2] = Math.round(b / (n * n));
+    }
+  }
+  return { rows: out, w, h };
+};
 const table = new Int32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c; });
 const crc32 = (buf) => { let c = -1; for (const v of buf) c = table[(c ^ v) & 0xff] ^ (c >>> 8); return (c ^ -1) >>> 0; };
 const chunk = (type, data) => { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]); const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td)); return Buffer.concat([len, td, crc]); };
-const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
-const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(rgb, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
-const out = new URL("../public/sky/wash-baked.png", import.meta.url);
-writeFileSync(out, png);
+const encode = (rows, w, h) => {
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(rows, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
+};
+const png = encode(rgb, W, H);
+writeFileSync(new URL("../public/sky/wash-baked.png", import.meta.url), png);
 console.log(`baked ${layers.length} layers to public/sky/wash-baked.png (${W}x${H}, ${(png.length / 1024).toFixed(0)} KB)`);
+const frost = downsample(4);
+const frostPng = encode(frost.rows, frost.w, frost.h);
+writeFileSync(new URL("../public/sky/wash-frost.png", import.meta.url), frostPng);
+console.log(`and public/sky/wash-frost.png (${frost.w}x${frost.h}, ${(frostPng.length / 1024).toFixed(0)} KB)`);
