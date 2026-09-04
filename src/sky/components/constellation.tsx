@@ -10,6 +10,8 @@
 //
 // Colour is by standing through the standing tokens, so a star is the same
 // colour as its chip. Lines fade and dash to stars that are not lit or known.
+// Every star sits on a dark halo (ground-0, translucent) so it still reads
+// where the wash runs light: over the pink and the sky blue of the horizon.
 
 import type { ReactNode } from "react";
 
@@ -32,16 +34,20 @@ export interface StarLook {
 interface Paint { fill: string; glow: number; opacity: number; dash?: string }
 
 const BY_STANDING: Record<Standing, Paint> = {
-  solid: { fill: "var(--sky-solid)", glow: 5, opacity: 0.85 },
-  "getting-there": { fill: "var(--sky-getting-there)", glow: 3, opacity: 0.7 },
-  shaky: { fill: "var(--sky-shaky)", glow: 3, opacity: 0.6 },
-  slipping: { fill: "var(--sky-slipping)", glow: 3, opacity: 0.55, dash: "4 3" },
-  claimed: { fill: "var(--sky-claimed)", glow: 0, opacity: 0.5 },
-  "not-seen": { fill: "var(--sky-not-seen)", glow: 0, opacity: 0.22, dash: "2 4" },
+  solid: { fill: "var(--sky-solid)", glow: 5, opacity: 0.95 },
+  "getting-there": { fill: "var(--sky-getting-there)", glow: 3, opacity: 0.85 },
+  shaky: { fill: "var(--sky-shaky)", glow: 3, opacity: 0.8 },
+  slipping: { fill: "var(--sky-slipping)", glow: 3, opacity: 0.75, dash: "4 3" },
+  claimed: { fill: "var(--sky-claimed)", glow: 0, opacity: 0.7 },
+  "not-seen": { fill: "var(--sky-not-seen)", glow: 0, opacity: 0.55, dash: "2 4" },
 };
-const TONIGHT: Paint = { fill: "var(--sky-star-mid)", glow: 4, opacity: 0.5, dash: "3 3" };
-const LIT: Paint = { fill: "var(--sky-star)", glow: 4, opacity: 0.75 };
-const EMPHASIS: Paint = { fill: "var(--sky-gold)", glow: 6, opacity: 0.9 };
+const TONIGHT: Paint = { fill: "var(--sky-star-mid)", glow: 4, opacity: 0.65, dash: "3 3" };
+const LIT: Paint = { fill: "var(--sky-star)", glow: 4, opacity: 0.85 };
+const EMPHASIS: Paint = { fill: "var(--sky-gold)", glow: 6, opacity: 0.95 };
+
+/** The dark halo behind every star and line, so they read on the light
+ * parts of the wash. */
+const HALO = "var(--sky-ground-0)";
 
 /** The paint a look resolves to. Exported so the lesson's own clickable
  * stars can wear the same colours. */
@@ -82,14 +88,17 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
           const paint = paintFor(looks.get(b.id)!);
           const emphasised = hot(a.id) || hot(b.id);
           return (
-            <line
-              key={`${a.id}>${b.id}`}
-              x1={a.px} y1={a.py} x2={b.px} y2={b.py}
-              stroke={emphasised ? "var(--sky-gold)" : "var(--sky-link)"}
-              strokeWidth={emphasised ? 1.4 : 1}
-              opacity={emphasised ? 0.9 : paint.opacity}
-              strokeDasharray={!emphasised && paint.dash ? paint.dash : undefined}
-            />
+            <g key={`${a.id}>${b.id}`}>
+              <line x1={a.px} y1={a.py} x2={b.px} y2={b.py} stroke={HALO} strokeWidth={(emphasised ? 1.6 : 1.2) * u + 2} opacity={0.35} strokeLinecap="round" />
+              <line
+                x1={a.px} y1={a.py} x2={b.px} y2={b.py}
+                stroke={emphasised ? "var(--sky-gold)" : "var(--sky-star-mid)"}
+                strokeWidth={(emphasised ? 1.6 : 1.2) * u}
+                opacity={emphasised ? 0.95 : paint.opacity}
+                strokeDasharray={!emphasised && paint.dash ? paint.dash : undefined}
+                strokeLinecap="round"
+              />
+            </g>
           );
         })}
       </g>
@@ -101,8 +110,9 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             const rr = STAR_RADIUS[look.role] * u;
             return (
               <g key={s.id} data-star={s.id}>
-                {paint.glow > 0 && <circle cx={s.px} cy={s.py} r={rr + paint.glow} fill={paint.fill} opacity={look.emphasis ? 0.22 : 0.16} />}
-                <circle cx={s.px} cy={s.py} r={rr} fill={paint.fill} />
+                {paint.glow > 0 && <circle cx={s.px} cy={s.py} r={rr + paint.glow} fill={paint.fill} opacity={look.emphasis ? 0.24 : 0.18} />}
+                <circle cx={s.px} cy={s.py} r={rr + 1.2} fill={HALO} opacity={0.55} />
+                <circle cx={s.px} cy={s.py} r={rr} fill={paint.fill} opacity={paint.opacity} />
               </g>
             );
           })}

@@ -63,8 +63,8 @@ export default function SkyConstellationsPage() {
             const S = sizeFor(l.stars.length, 48);
             return (
               <figure key={w} className="flex flex-col items-center gap-1">
-                <svg viewBox={`0 0 ${S + 12} ${S + 12}`} width={S + 12} height={S + 12} role="img" aria-label={w}>
-                  <ConstellationFigure layout={l} cx={(S + 12) / 2} cy={(S + 12) / 2} r={S / 2 - 4} unit={S / 70} lookOf={lookOf} />
+                <svg viewBox={`0 0 ${S + 20} ${S + 20}`} width={S + 20} height={S + 20} role="img" aria-label={w}>
+                  <ConstellationFigure layout={l} cx={(S + 20) / 2} cy={(S + 20) / 2} r={S / 2 - 6} unit={S / 70} lookOf={lookOf} />
                 </svg>
                 <figcaption className="font-sky-display text-[15px]">{w}</figcaption>
               </figure>

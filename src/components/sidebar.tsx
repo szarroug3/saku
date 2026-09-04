@@ -147,7 +147,6 @@ const DEV_PAGES: Array<{
       { href: "/dev/sky/constellations", label: "Constellations" },
       { href: "/dev/sky/item-card", label: "ItemCard" },
       { href: "/dev/sky/item-section", label: "ItemSection" },
-      { href: "/dev/sky/tree", label: "Tree (superseded)" },
     ],
   },
 ];

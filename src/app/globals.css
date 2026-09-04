@@ -2151,7 +2151,7 @@ body {
   /* stars and the lines between them */
   --sky-star: #f5ebc8;
   --sky-star-mid: #b9c4ee;
-  --sky-star-dim: #3e4a78; /* decorative only */
+  --sky-star-dim: #6a78b4; /* decorative only: an unlearned star that still reads on the wash; never text */
   --sky-link: #7c8cc7;
   /* actions and the selected star */
   --sky-gold: #f2c86b;
