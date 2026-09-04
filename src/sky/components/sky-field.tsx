@@ -24,7 +24,7 @@ import { SkyCanvas } from "@/sky/components/sky-canvas";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
 import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
-import { scatterLayout, type Placed } from "@/sky/lib/scatter";
+import { scatterLayout, worldFor, type Placed } from "@/sky/lib/scatter";
 import { bySizeDesc } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -32,9 +32,10 @@ export interface SkyFieldProps {
   items: readonly SkyItem[];
   /** The constellations to draw, by root id. */
   roots: readonly string[];
-  /** The world the constellations are scattered across, in sky units.
-   * Fixed, so nothing moves when the box changes; with `fill` the box is a
-   * window onto it and pan reaches what it does not show. */
+  /** The smallest world the constellations are scattered across, in sky
+   * units; it grows to fit what there is, keeping this shape. Fixed for a
+   * given sky, so nothing moves when the box changes; with `fill` the box is
+   * a window onto it and pan reaches what it does not show. */
   width?: number;
   height?: number;
   /** Space between constellations and from the edges, in sky units. */
@@ -87,10 +88,12 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const rootSet = useMemo(() => new Set(roots), [roots]);
   const all = useMemo(() => [...roots, ...firmament.filter((id) => !rootSet.has(id))].filter((id) => graph.has(id)), [roots, firmament, rootSet, graph]);
   const layouts = useMemo(() => new Map(all.map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, all]);
-  const placed = useMemo<PlacedConstellation[]>(() => {
+  const { placed, world } = useMemo(() => {
     const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase) })), (b) => b.size);
     const gap = firmament.length ? Math.min(pad, 18) : pad;
-    return scatterLayout(boxes, width, height, gap).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
+    const world = worldFor(boxes, gap, { width, height });
+    const placed: PlacedConstellation[] = scatterLayout(boxes, world.width, world.height, gap).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
+    return { placed, world };
   }, [layouts, baseSize, firmamentBase, rootSet, firmament.length, width, height, pad]);
 
   const baseLook = useCallback((root: string, id: string): StarLook => {
@@ -117,7 +120,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
-      <SkyCanvas width={width} height={height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} dust={firmament.length ? 0 : Math.round((90 * height) / 460)}>
+      <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
         {placed.map((p) => (
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}

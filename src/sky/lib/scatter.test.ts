@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { overlaps, scatterLayout } from "@/sky/lib/scatter";
+import { overlaps, scatterLayout, worldFor } from "@/sky/lib/scatter";
 import { bySizeDesc, skyRoots, skyStars, tallyStandings } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -62,5 +62,19 @@ describe("the sky scene", () => {
   it("tallies standings and sorts largest first, stably", () => {
     assert.deepEqual(tallyStandings(["日本", "日", "本", "木", "時", "間"], standing), { solid: 3, shaky: 1, claimed: 1, "not-seen": 1 });
     assert.deepEqual(bySizeDesc(["a", "bb", "cc", "d"], (s) => s.length), ["bb", "cc", "a", "d"]);
+  });
+});
+
+describe("worldFor", () => {
+  it("keeps the minimum world for a small sky, and grows it to fit a large one", () => {
+    const min = { width: 1120, height: 900 };
+    const few = Array.from({ length: 30 }, (_, i) => ({ key: `w${i}`, size: 60 }));
+    assert.deepEqual(worldFor(few, 26, min), min);
+    const many = Array.from({ length: 500 }, (_, i) => ({ key: `w${i}`, size: 60 }));
+    const world = worldFor(many, 26, min);
+    assert.ok(world.width > min.width && world.height > min.height);
+    assert.ok(Math.abs(world.width / world.height - 1120 / 900) < 0.01, "keeps the shape");
+    const placed = scatterLayout(many, world.width, world.height, 26);
+    for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.ok(!overlaps(placed[i], placed[j], 26), `${placed[i].item.key} overlaps ${placed[j].item.key}`);
   });
 });

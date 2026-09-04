@@ -25,7 +25,7 @@ export interface Placed<T extends ScatterItem = ScatterItem> {
   size: number;
 }
 
-const TRIES = 60;
+const TRIES = 100;
 
 /** Places items in order into a w by h sky, keeping `pad` between boxes and
  * from the edges. Larger items should come first: they are the hardest to fit. */
@@ -46,6 +46,22 @@ export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: num
     placed.push({ item, x: Math.round(at.x * 100) / 100, y: Math.round(at.y * 100) / 100, size });
   }
   return placed;
+}
+
+/** How full a scatter can pack its boxes before the tries run out and
+ * things start to overlap; the world is sized so the boxes never take more
+ * of it than this. */
+const PACKING = 0.35;
+
+/** A world big enough for these boxes, in a 4:3 shape, never smaller than
+ * `min`. Grows with what the learner has: a sky of thirty words fits the
+ * minimum, a sky of five hundred gets the room it needs and is seen by
+ * panning and zooming out, not by overlapping. Rounded to whole units. */
+export function worldFor(items: readonly ScatterItem[], pad: number, min: { width: number; height: number }): { width: number; height: number } {
+  const needed = items.reduce((sum, b) => sum + (b.size + pad) ** 2, 0) / PACKING;
+  const aspect = min.width / min.height;
+  const width = Math.max(min.width, Math.ceil(Math.sqrt(needed * aspect)));
+  return { width, height: Math.max(min.height, Math.ceil(width / aspect)) };
 }
 
 /** True when two placed boxes overlap, allowing for the padding. */

@@ -110,9 +110,9 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           </span>
         </button>
         {details && (
-          <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 overflow-y-auto md:grid-cols-2">
-            <DiscoveryPanel rows={data.discovery} />
-            <MixUpsPanel graph={graph} pairs={data.mixUps} />
+          <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
+            <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />
+            <MixUpsPanel className="min-h-0 overflow-y-auto" graph={graph} pairs={data.mixUps} />
           </div>
         )}
       </div>
