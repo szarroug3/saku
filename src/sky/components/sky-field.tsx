@@ -70,7 +70,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
   r: number;
 }
 
-interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean }
+interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean; w: number; h: number }
 
 export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
@@ -95,7 +95,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     const r = fieldRef.current?.getBoundingClientRect();
     if (!r || r.width === 0) return;
     const x = clientX - r.left, y = clientY - r.top;
-    setHover({ id, x, y, flipX: x > r.width * 0.6, flipY: y > r.height * 0.6 });
+    setHover({ id, x, y, flipX: x > r.width * 0.6, flipY: y > r.height * 0.6, w: r.width, h: r.height });
   };
 
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
@@ -134,7 +134,12 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
       {hover && hoverItem && (
         <div
           className="pointer-events-none absolute z-10"
-          style={{ left: hover.x, top: hover.y, transform: `translate(${hover.flipX ? "calc(-100% - 14px)" : "14px"}, ${hover.flipY ? "calc(-100% - 14px)" : "14px"})` }}
+          // anchored by whichever edge faces the pointer, so the card always has the
+          // room on its far side to lay out at its natural width
+          style={{
+            ...(hover.flipX ? { right: hover.w - hover.x + 14 } : { left: hover.x + 14 }),
+            ...(hover.flipY ? { bottom: hover.h - hover.y + 14 } : { top: hover.y + 14 }),
+          }}
           role="tooltip"
         >
           <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={briefTooltip} />
