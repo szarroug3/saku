@@ -7,6 +7,7 @@
 // Planetarium preview and the lesson; the lesson passes `brief` to show only
 // the English, which is what Sam asked for there ("car", nothing more).
 
+import { Eyebrow, SkyCard } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING } from "@/sky/lib/standing";
 import { KIND_LABEL } from "@/sky/lib/tokens";
@@ -22,28 +23,26 @@ export interface SkyTooltipProps {
 }
 
 export function SkyTooltip({ item, pieces = [], brief = false, className = "" }: SkyTooltipProps) {
-  if (brief) {
-    return <div className={`rounded-lg border border-sky-line bg-sky-ground-0 px-2.5 py-1.5 font-sky-ui text-[13px] text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${className}`}>{item.english}</div>;
-  }
+  if (brief) return <SkyCard className={`rounded-lg px-2.5 py-1.5 ${className}`}>{item.english}</SkyCard>;
   const discovered = item.standing !== "not-seen";
   return (
-    <div className={`max-w-[260px] rounded-xl border border-sky-line bg-sky-ground-0 p-3 font-sky-ui text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${className}`}>
-      <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{KIND_LABEL[item.kind]}</div>
+    <SkyCard className={`max-w-[260px] ${className}`}>
+      <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
       <div className="flex items-baseline gap-2">
-        <span className={`font-sky-display text-2xl leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`} title={STANDING[item.standing].label}>{item.glyph}</span>
+        <span className={`font-sky-display text-2xl leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
       </div>
-      {discovered && <div className="mt-1.5 text-[13px]">{item.english}</div>}
+      {discovered && <div className="mt-1.5">{item.english}</div>}
       {pieces.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {pieces.map((p) => (
-            <li key={p.id} className="inline-flex items-center gap-1 rounded-md border border-sky-line px-1.5 py-0.5 text-[12px]" title={STANDING[p.standing].label}>
+            <li key={p.id} className="inline-flex items-center gap-1 rounded-md border border-sky-line px-1.5 py-0.5 text-[12px]">
               <span className={`font-sky-display text-[14px] ${STANDING[p.standing].text} ${japaneseFont(p.glyph)}`}>{p.glyph}</span>
               {p.standing !== "not-seen" && <span className="text-sky-muted">{p.english}</span>}
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </SkyCard>
   );
 }

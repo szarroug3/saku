@@ -9,8 +9,9 @@
 // (a star fill, a coverage bar segment) sits next to one of these.
 
 import { useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 
+import { aboveAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
+import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
 function Dot({ standing, className = "" }: { standing: Standing; className?: string }) {
@@ -79,20 +80,31 @@ export function StandingKey({ standings = STANDING_ORDER, className = "" }: { st
   );
 }
 
-const KEY_WIDTH = 420;
+/** Counts by standing as words: "12 solid, 3 shaky", numbers lined up on
+ * the right, each word in its colour and so no dot. Only the standings
+ * that have any, in legend order. */
+export function StandingTally({ counts, standings = STANDING_ORDER, empty = "Nothing yet", className = "" }: { counts: CoverageCounts; standings?: readonly Standing[]; empty?: string; className?: string }) {
+  const lines = standings.filter((s) => (counts[s] ?? 0) > 0);
+  if (lines.length === 0) return <div className={`text-sky-muted ${className}`}>{empty}</div>;
+  return (
+    <dl className={`grid grid-cols-[max-content_max-content] gap-x-2 gap-y-0.5 ${className}`}>
+      {lines.map((s) => (
+        <div key={s} className="contents">
+          <dd className="text-right tabular-nums">{(counts[s] ?? 0).toLocaleString()}</dd>
+          <dt className={`capitalize ${STANDING[s].text}`}>{STANDING[s].label}</dt>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
-/** The legend's "i": the key opens above it on hover or focus. Above,
+/** The legend's "i": the key opens above it on hover or focus, above
  * because the legend usually sits at the bottom of a sky with nothing below
- * to spill into; fixed to the viewport and ending at the button's right
- * edge, so a sky that clips its overflow cannot cut the card off. */
+ * to spill into. */
 function InfoButton({ standings }: { standings: readonly Standing[] }) {
   const button = useRef<HTMLButtonElement>(null);
-  const [at, setAt] = useState<{ right: number; bottom: number } | null>(null);
-  const open = () => {
-    const r = button.current?.getBoundingClientRect();
-    if (!r) return;
-    setAt({ right: Math.max(8, Math.min(window.innerWidth - r.right, window.innerWidth - 8 - KEY_WIDTH)), bottom: window.innerHeight - r.top + 8 });
-  };
+  const [at, setAt] = useState<Anchor | null>(null);
+  const open = () => { const r = button.current?.getBoundingClientRect(); if (r) setAt(aboveAnchor(r)); };
   const close = () => setAt(null);
   return (
     <div className="inline-flex items-center" onPointerEnter={open} onPointerLeave={close}>
@@ -109,11 +121,10 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
       >
         i
       </button>
-      {at && createPortal(
-        <div id="sky-standing-key" role="tooltip" style={at} className="fixed z-50 w-max max-w-[min(420px,calc(100vw-16px))] rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-          <StandingKey standings={standings} />
-        </div>,
-        document.body,
+      {at && (
+        <Floating id="sky-standing-key" at={at} gap={8} className="w-max max-w-[min(420px,calc(100vw-16px))]">
+          <SkyCard className="px-3 py-2.5"><StandingKey standings={standings} /></SkyCard>
+        </Floating>
       )}
     </div>
   );

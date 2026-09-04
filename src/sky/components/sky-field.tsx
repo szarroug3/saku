@@ -21,6 +21,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ConstellationFigure, type StarLook } from "@/sky/components/constellation";
 import { SkyCanvas } from "@/sky/components/sky-canvas";
+import { Floating, pointerAnchor, type Anchor } from "@/sky/components/sky-card";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
 import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
@@ -80,7 +81,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
   r: number;
 }
 
-interface Hover { id: string; x: number; y: number; flipX: boolean; flipY: boolean; w: number; h: number }
+interface Hover { id: string; at: Anchor }
 
 export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
@@ -103,15 +104,9 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
-  // the tooltip: which star, and where the pointer is, in the field's own pixels
+  // the tooltip: which star, and where it hangs, decided in the event
   const [hover, setHover] = useState<Hover | null>(null);
-  // the flip is decided here, in the event, where reading the rect is allowed
-  const place = (id: string, clientX: number, clientY: number) => {
-    const r = fieldRef.current?.getBoundingClientRect();
-    if (!r || r.width === 0) return;
-    const x = clientX - r.left, y = clientY - r.top;
-    setHover({ id, x, y, flipX: x > r.width * 0.6, flipY: y > r.height * 0.6, w: r.width, h: r.height });
-  };
+  const place = (id: string, clientX: number, clientY: number) => setHover({ id, at: pointerAnchor(clientX, clientY) });
 
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
@@ -147,18 +142,9 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
         </g>
       </SkyCanvas>
       {hover && hoverItem && (
-        <div
-          className="pointer-events-none absolute z-10"
-          // anchored by whichever edge faces the pointer, so the card always has the
-          // room on its far side to lay out at its natural width
-          style={{
-            ...(hover.flipX ? { right: hover.w - hover.x + 14 } : { left: hover.x + 14 }),
-            ...(hover.flipY ? { bottom: hover.h - hover.y + 14 } : { top: hover.y + 14 }),
-          }}
-          role="tooltip"
-        >
+        <Floating at={hover.at}>
           <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={briefTooltip} />
-        </div>
+        </Floating>
       )}
     </div>
   );

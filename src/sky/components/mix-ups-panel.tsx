@@ -2,11 +2,13 @@
 // SAK-336. Just the two names, "日 day and 目 eye", each glyph in its
 // standing's colour, and how many runs it happened in. Sam's call
 // (2026-09-04): no tiles, the names are enough. Every pair is listed; the
-// caller gives the panel a height and it scrolls.
+// caller gives the panel a height and it scrolls. Practice shows the same
+// panel for its pool.
 
+import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { PrerequisiteGraph } from "@/sky/lib/graph";
 import { STANDING } from "@/sky/lib/standing";
+import type { SkyItem } from "@/sky/lib/types";
 
 export interface MixUp {
   a: string;
@@ -16,13 +18,14 @@ export interface MixUp {
 }
 
 export interface MixUpsPanelProps {
-  graph: PrerequisiteGraph;
   pairs: readonly MixUp[];
+  /** Names the ids: a graph's `itemOf`, or a lookup into any item list. */
+  itemOf: (id: string) => SkyItem | undefined;
+  title?: string;
   className?: string;
 }
 
-function Name({ graph, id }: { graph: PrerequisiteGraph; id: string }) {
-  const item = graph.itemOf(id);
+function Name({ item, id }: { item: SkyItem | undefined; id: string }) {
   if (!item) return <span className="text-sky-muted">{id}</span>;
   return (
     <span className="inline-flex items-baseline gap-1.5">
@@ -32,24 +35,23 @@ function Name({ graph, id }: { graph: PrerequisiteGraph; id: string }) {
   );
 }
 
-export function MixUpsPanel({ graph, pairs, className = "" }: MixUpsPanelProps) {
+export function MixUpsPanel({ pairs, itemOf, title = "Mix-ups", className = "" }: MixUpsPanelProps) {
   return (
-    <section className={`rounded-2xl border border-sky-line bg-sky-card p-5 font-sky-ui text-sky-ink ${className}`}>
-      <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Mix-ups</h2>
+    <SkyPanel title={title} className={className}>
       {pairs.length === 0 ? (
         <p className="mt-2 text-[14px] text-sky-muted">You currently have no mix-ups.</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2.5 text-[14px]">
           {pairs.map((p) => (
             <li key={`${p.a}|${p.b}`} className="flex items-baseline gap-2">
-              <Name graph={graph} id={p.a} />
+              <Name item={itemOf(p.a)} id={p.a} />
               <span className="text-sky-muted">and</span>
-              <Name graph={graph} id={p.b} />
+              <Name item={itemOf(p.b)} id={p.b} />
               <span className="ml-auto pl-4 text-[13px] tabular-nums text-sky-muted">{p.times} {p.times === 1 ? "time" : "times"}</span>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </SkyPanel>
   );
 }

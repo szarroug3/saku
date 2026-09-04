@@ -9,12 +9,13 @@
 // subject's total, and hovering it gives the numbers: "9 solid, 3 shaky".
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 
 import { CoverageBar } from "@/sky/components/coverage-bar";
+import { Eyebrow, Floating, pointerAnchor, SkyCard, type Anchor } from "@/sky/components/sky-card";
+import { SkyPanel } from "@/sky/components/sky-panel";
+import { StandingTally } from "@/sky/components/standing-legend";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { STANDING, STANDING_ORDER } from "@/sky/lib/standing";
 
 export interface DiscoveryRow {
   label: string;
@@ -36,12 +37,12 @@ export function discoveryTotals(rows: readonly DiscoveryRow[]): { discovered: nu
   return rows.reduce((sum, r) => ({ discovered: sum.discovered + r.discovered, total: sum.total + r.total }), { discovered: 0, total: 0 });
 }
 
-interface Hover { row: DiscoveryRow; x: number; y: number }
+interface Hover { row: DiscoveryRow; at: Anchor }
 
 /** One row of the list's shared grid: the list is the grid, so every row's
  * bar and count line up in the same columns. */
 function Row({ row, child = false, onHover }: { row: DiscoveryRow; child?: boolean; onHover: (h: Hover | null) => void }) {
-  const move = (e: React.PointerEvent) => onHover({ row, x: e.clientX, y: e.clientY });
+  const move = (e: React.PointerEvent) => onHover({ row, at: pointerAnchor(e.clientX, e.clientY) });
   return (
     <li className="contents">
       <span className={`truncate ${child ? "pl-6 text-sky-muted" : "text-sky-ink"} ${japaneseFont(row.label)}`}>{row.label}</span>
@@ -53,55 +54,25 @@ function Row({ row, child = false, onHover }: { row: DiscoveryRow; child?: boole
   );
 }
 
-/** The numbers behind a bar: each standing that has any, in legend order,
- * undiscovered last. The words carry the colour, so no dots; the numbers
- * line up on the right. */
-function Breakdown({ row }: { row: DiscoveryRow }) {
-  const counts = row.counts ?? {};
-  const lines = STANDING_ORDER.filter((s) => (counts[s] ?? 0) > 0);
-  return (
-    <div className="rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2 font-sky-ui text-[12.5px] text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-      <div className={`mb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted ${japaneseFont(row.label)}`}>{row.label}</div>
-      {lines.length === 0 ? (
-        <div className="text-sky-muted">Nothing here yet</div>
-      ) : (
-        <dl className="grid grid-cols-[max-content_max-content] gap-x-2 gap-y-0.5">
-          {lines.map((s) => (
-            <div key={s} className="contents">
-              <dd className="text-right tabular-nums">{(counts[s] ?? 0).toLocaleString()}</dd>
-              <dt className={`capitalize ${STANDING[s].text}`}>{STANDING[s].label}</dt>
-            </div>
-          ))}
-        </dl>
-      )}
-    </div>
-  );
-}
-
 export function DiscoveryPanel({ rows, title = "How much you've discovered", className = "" }: DiscoveryPanelProps) {
   const { discovered, total } = discoveryTotals(rows);
   const [hover, setHover] = useState<Hover | null>(null);
   return (
-    <section className={`rounded-2xl border border-sky-line bg-sky-card p-5 font-sky-ui text-sky-ink ${className}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
-        <span className="text-[13px] tabular-nums text-sky-muted">{discovered.toLocaleString()} of {total.toLocaleString()} Discovered</span>
-      </div>
+    <SkyPanel title={title} aside={`${discovered.toLocaleString()} of ${total.toLocaleString()} Discovered`} className={className}>
       <ul className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(80px,160px)_max-content] items-center gap-x-4 gap-y-2.5 text-[14px]">
         {rows.flatMap((row) => [
           <Row key={row.label} row={row} onHover={setHover} />,
           ...(row.children ?? []).map((c) => <Row key={`${row.label}/${c.label}`} row={c} child onHover={setHover} />),
         ])}
       </ul>
-      {/* on the body, fixed to the viewport: a styled ancestor would otherwise
-          make "fixed" local to itself and put the card far from the pointer,
-          and the details region's own scrolling would clip it */}
-      {hover && createPortal(
-        <div role="tooltip" className="pointer-events-none fixed z-50" style={{ left: hover.x + 14, top: hover.y + 14 }}>
-          <Breakdown row={hover.row} />
-        </div>,
-        document.body,
+      {hover && (
+        <Floating at={hover.at}>
+          <SkyCard className="px-3 py-2 text-[12.5px]">
+            <Eyebrow className={japaneseFont(hover.row.label)}>{hover.row.label}</Eyebrow>
+            <StandingTally counts={hover.row.counts ?? {}} empty="Nothing here yet" />
+          </SkyCard>
+        </Floating>
       )}
-    </section>
+    </SkyPanel>
   );
 }

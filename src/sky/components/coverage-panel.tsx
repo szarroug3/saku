@@ -3,6 +3,7 @@
 // an Atlas shelf shows the same panel for its own collection.
 
 import { CoverageBar } from "@/sky/components/coverage-bar";
+import { SkyPanel } from "@/sky/components/sky-panel";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING_ORDER, type Standing } from "@/sky/lib/standing";
@@ -23,14 +24,10 @@ export interface CoveragePanelProps {
 export function CoveragePanel({ counts, total, summary, label, title = "How much you've covered", note, className = "" }: CoveragePanelProps) {
   const present = STANDING_ORDER.filter((s): s is Standing => (counts[s] ?? 0) > 0 && s !== "not-seen");
   return (
-    <section className={`rounded-2xl border border-sky-line bg-sky-card p-5 font-sky-ui text-sky-ink ${className}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
-        {summary && <span className="text-[13px] text-sky-muted">{summary}</span>}
-      </div>
+    <SkyPanel title={title} aside={summary} className={className}>
       <CoverageBar className="mt-3 h-3" counts={counts} total={total} label={label} />
       <StandingLegend className="mt-4 flex-col !gap-y-2 text-[15px]" standings={present} counts={counts} />
       {note && <p className="mt-4 max-w-[52ch] text-[14px] leading-relaxed text-sky-muted">{note}</p>}
-    </section>
+    </SkyPanel>
   );
 }

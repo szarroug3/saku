@@ -145,9 +145,16 @@ seeded dust, a viewport group, and pan and zoom when interactive),
 Planetarium preview and the lesson use it at other sizes and with their own
 looks), `SkyTooltip`, `ConstellationTile`, `DiscoveryPanel` ("x of y" per
 subject, grouped as Progress groups them: Sam chose the breakdown by subject
-over the one by standing), `MixUpsPanel`. Standings are read off the sky:
-hover a word in the legend and only that standing's stars stay lit, with
-its count in a bubble. The page explains nothing the visual already says.
+over the one by standing; each bar is the standing breakdown and hovering
+it gives the numbers), `MixUpsPanel` ("日 day and 目 eye, 4 times", every
+pair). The panels share `SkyPanel` (the card with the small caps title);
+every card that floats over the sky (a star's tooltip, a bar's numbers, the
+legend's key) is `SkyCard` inside `Floating` from `sky-card.tsx`, which
+renders on the body and anchors by the edge facing away from the pointer.
+The legend is the filter through `useStandingFilter`: click a word to show
+only that standing, hover one to single its stars out, and the counts sit
+inline. `StandingTally` is the same counts as words with no dots. The page
+explains nothing the visual already says.
 `src/sky/lib/scatter.ts` places boxes without overlap, seeded; `sky-scene.ts`
 decides roots (met items not under another met item), the star set and the
 tally. The data comes from an adapter outside the tree: for now

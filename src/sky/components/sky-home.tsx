@@ -10,17 +10,16 @@
 // from the Planetarium and the Lesson. A brand-new learner sees an empty sky
 // that says where to start.
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-import type { StarLook } from "@/sky/components/constellation";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
 import { StandingLegend } from "@/sky/components/standing-legend";
+import { useStandingFilter } from "@/sky/components/use-standing-filter";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { skyStars, tallyStandings } from "@/sky/lib/sky-scene";
-import { STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 /** Everything the home needs, plain data, from whatever adapter the route uses. */
@@ -58,18 +57,8 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
   const empty = data.roots.length === 0 && !(data.firmament?.length);
   // the panels fold away, so the sky is most of the page
   const [details, setDetails] = useState(false);
-  // The legend is the filter: a standing is drawn only while its word is
-  // selected. Everything starts selected except "not seen", so the sky opens
-  // showing what the learner has met; nothing selected shows nothing.
-  // Hovering a selected word singles its stars out among the rest.
-  const [singled, setSingled] = useState<Standing | null>(null);
-  const [selected, setSelected] = useState<ReadonlySet<Standing>>(() => new Set(STANDING_ORDER.filter((s) => s !== "not-seen")));
-  const toggle = useCallback((s: Standing) => setSelected((prev) => { const next = new Set(prev); if (next.has(s)) next.delete(s); else next.add(s); return next; }), []);
-  const lookOf = useCallback((_id: string, base: StarLook): StarLook => {
-    if (!selected.has(base.standing)) return { ...base, hidden: true };
-    if (singled && base.standing !== singled) return { ...base, muted: true };
-    return base;
-  }, [selected, singled]);
+  // the legend is the filter: everything but "undiscovered" to start
+  const { selected, toggle, singled, setSingled, lookOf } = useStandingFilter();
 
   return (
     <div className="flex flex-col overflow-hidden font-sky-ui text-sky-ink" style={{ height }}>
@@ -90,7 +79,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
             <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
           </div>
         ) : (
-          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} width={data.firmament?.length ? 4800 : 1120} height={data.firmament?.length ? 3600 : 900} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
       {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} info />}
@@ -112,7 +101,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
         {details && (
           <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
             <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />
-            <MixUpsPanel className="min-h-0 overflow-y-auto" graph={graph} pairs={data.mixUps} />
+            <MixUpsPanel className="min-h-0 overflow-y-auto" pairs={data.mixUps} itemOf={graph.itemOf} />
           </div>
         )}
       </div>
