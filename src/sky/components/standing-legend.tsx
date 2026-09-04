@@ -9,6 +9,7 @@
 // (a star fill, a coverage bar segment) sits next to one of these.
 
 import { useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
@@ -104,13 +105,16 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
         onFocus={open}
         onBlur={close}
         onClick={() => (at ? close() : open())}
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${at ? "border-sky-line bg-sky-card-strong text-sky-ink" : "border-sky-line text-sky-muted"}`}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border border-sky-line text-[11px] font-semibold leading-none text-sky-ink ${at ? "bg-sky-card-strong" : ""}`}
       >
         i
       </button>
-      <div id="sky-standing-key" role="tooltip" hidden={at === null} style={at ?? undefined} className="fixed z-50 w-max max-w-[min(420px,calc(100vw-16px))] rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-        <StandingKey standings={standings} />
-      </div>
+      {at && createPortal(
+        <div id="sky-standing-key" role="tooltip" style={at} className="fixed z-50 w-max max-w-[min(420px,calc(100vw-16px))] rounded-xl border border-sky-line bg-sky-ground-0 px-3 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+          <StandingKey standings={standings} />
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

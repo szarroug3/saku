@@ -9,6 +9,7 @@
 // subject's total, and hovering it gives the numbers: "9 solid, 3 shaky".
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import type { CoverageCounts } from "@/sky/lib/coverage";
@@ -53,7 +54,8 @@ function Row({ row, child = false, onHover }: { row: DiscoveryRow; child?: boole
 }
 
 /** The numbers behind a bar: each standing that has any, in legend order,
- * undiscovered last. */
+ * undiscovered last. The words carry the colour, so no dots; the numbers
+ * line up on the right. */
 function Breakdown({ row }: { row: DiscoveryRow }) {
   const counts = row.counts ?? {};
   const lines = STANDING_ORDER.filter((s) => (counts[s] ?? 0) > 0);
@@ -63,15 +65,14 @@ function Breakdown({ row }: { row: DiscoveryRow }) {
       {lines.length === 0 ? (
         <div className="text-sky-muted">Nothing here yet</div>
       ) : (
-        <ul className="flex flex-col gap-0.5">
+        <dl className="grid grid-cols-[max-content_max-content] gap-x-2 gap-y-0.5">
           {lines.map((s) => (
-            <li key={s} className="flex items-center gap-2">
-              <span aria-hidden className={`inline-block h-2 w-2 rounded-full ${STANDING[s].dot}`} />
-              <span className="min-w-[3ch] text-right tabular-nums">{(counts[s] ?? 0).toLocaleString()}</span>
-              <span className={`capitalize ${STANDING[s].text}`}>{STANDING[s].label}</span>
-            </li>
+            <div key={s} className="contents">
+              <dd className="text-right tabular-nums">{(counts[s] ?? 0).toLocaleString()}</dd>
+              <dt className={`capitalize ${STANDING[s].text}`}>{STANDING[s].label}</dt>
+            </div>
           ))}
-        </ul>
+        </dl>
       )}
     </div>
   );
@@ -92,11 +93,14 @@ export function DiscoveryPanel({ rows, title = "How much you've discovered", cla
           ...(row.children ?? []).map((c) => <Row key={`${row.label}/${c.label}`} row={c} child onHover={setHover} />),
         ])}
       </ul>
-      {/* fixed to the viewport, so the details region's own scrolling never clips it */}
-      {hover && (
+      {/* on the body, fixed to the viewport: a styled ancestor would otherwise
+          make "fixed" local to itself and put the card far from the pointer,
+          and the details region's own scrolling would clip it */}
+      {hover && createPortal(
         <div role="tooltip" className="pointer-events-none fixed z-50" style={{ left: hover.x + 14, top: hover.y + 14 }}>
           <Breakdown row={hover.row} />
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   );
