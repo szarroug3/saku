@@ -1,14 +1,15 @@
-// A pretend learner with a real-shaped history, for the dev pages: some
-// kana, a dozen words with their kanji, in every standing. Built with the
-// app's own record shapes (claims, fact aggregates with recent runs), so the
-// adapter treats it exactly like a real history file.
+// A pretend learner with a real-shaped history, for the dev pages: dozens
+// of kana, kanji and words in every standing, so every colour shows on the
+// bars, plus a few recorded mix-ups. Built with the app's own record shapes
+// (claims, fact aggregates with recent runs, quiz sessions with confusions),
+// so the adapter treats it exactly like a real history file.
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { emptyHistory } from "@/lib/history-ops";
-import { entryForGlyph, knownFactsOf, libEntry } from "@/lib/library/entries";
-import type { FactAggregate, HistoryFile } from "@/types";
+import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type LibEntry } from "@/lib/library/entries";
+import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
 
 const DAY = 86_400_000;
 
@@ -19,27 +20,63 @@ const drilled = (hits: number, daysAgo: number, now: number, stability = 40): Fa
 });
 
 type Shape = "solid" | "getting-there" | "shaky" | "slipping" | "claimed";
+const SHAPES: readonly Shape[] = ["solid", "getting-there", "shaky", "slipping", "claimed"];
 
-const factsOfGlyph = (kind: typeof KANA_SUBJECT | typeof KANJI_SUBJECT | typeof VOCAB_SUBJECT, glyph: string) => {
-  const id = entryForGlyph(kind, glyph);
-  const entry = id ? libEntry(id) : undefined;
-  return entry ? knownFactsOf(entry) : [];
-};
+/** How many of each subject the learner has met; spread evenly over the shapes. */
+const REACH: Record<string, number> = { [KANA_SUBJECT]: 60, [KANJI_SUBJECT]: 150, [VOCAB_SUBJECT]: 250 };
+
+/** Kanji that look alike, the classic mix-ups; each pair recorded in this
+ * many runs. Pairs whose kanji the data does not carry are skipped. */
+const MIX_UPS: ReadonlyArray<readonly [string, string, number]> = [["日", "目", 4], ["人", "入", 3], ["大", "犬", 2], ["木", "本", 2], ["土", "士", 1]];
 
 export function sampleHistory(now = Date.now()): HistoryFile {
   const history = emptyHistory();
   const claims: Record<string, number> = {};
-  const set = (kind: typeof KANA_SUBJECT | typeof KANJI_SUBJECT | typeof VOCAB_SUBJECT, glyph: string, shape: Shape) => {
-    for (const f of factsOfGlyph(kind, glyph)) {
+  const set = (entry: LibEntry, shape: Shape) => {
+    for (const f of knownFactsOf(entry)) {
       if (shape === "claimed") { claims[f] = now - 3 * DAY; continue; }
       history.facts[f] = shape === "solid" ? drilled(9, 1, now) : shape === "getting-there" ? drilled(7, 1, now) : shape === "shaky" ? drilled(3, 1, now) : drilled(10, 90, now, 5);
     }
   };
-  for (const k of ["あ", "い", "う", "え", "お", "か", "き"]) set(KANA_SUBJECT, k, "solid");
-  set(KANA_SUBJECT, "く", "getting-there");
-  set(KANA_SUBJECT, "け", "shaky");
-  for (const [k, s] of [["日", "solid"], ["本", "solid"], ["大", "solid"], ["学", "getting-there"], ["火", "solid"], ["山", "claimed"], ["水", "solid"], ["田", "shaky"], ["時", "solid"], ["間", "slipping"], ["電", "solid"], ["車", "solid"], ["木", "solid"], ["休", "claimed"], ["生", "solid"], ["人", "solid"]] as const) set(KANJI_SUBJECT, k, s);
-  for (const [w, s] of [["日本", "solid"], ["大学", "getting-there"], ["火山", "solid"], ["水田", "slipping"], ["時間", "shaky"], ["電車", "solid"], ["休む", "claimed"], ["学生", "solid"], ["人", "solid"], ["山", "solid"]] as const) set(VOCAB_SUBJECT, w, s);
+  for (const [kind, reach] of Object.entries(REACH)) {
+    // spread over the whole subject (hiragana and katakana, every kanji grade), not its first page
+    const all = (LIB_ENTRIES_BY_KIND.get(kind as LibEntry["kind"]) ?? []).filter((e) => knownFactsOf(e).length > 0);
+    const stride = Math.max(1, Math.floor(all.length / reach));
+    const entries = all.filter((_, i) => i % stride === 0).slice(0, reach);
+    entries.forEach((entry, i) => set(entry, SHAPES[i % SHAPES.length]));
+  }
+
+  // the mix-ups: both kanji shaky, and a session per run that confused them
+  const pairs = MIX_UPS.flatMap(([a, b, runs]) => {
+    const ia = entryForGlyph(KANJI_SUBJECT, a), ib = entryForGlyph(KANJI_SUBJECT, b);
+    const ea = ia && libEntry(ia), eb = ib && libEntry(ib);
+    if (!ea || !eb) return [];
+    set(ea, "shaky"); set(eb, "shaky");
+    return [{ a: ea, b: eb, runs }];
+  });
+  const mostRuns = Math.max(0, ...pairs.map((p) => p.runs));
+  for (let run = 0; run < mostRuns; run++) {
+    const detail: SessionStats = {};
+    for (const p of pairs) {
+      if (run >= p.runs) continue;
+      const confuse = (shown: LibEntry, said: LibEntry) => {
+        for (const f of knownFactsOf(shown)) detail[f] = { seen: 2, misses: 1, everCorrect: true, firstTryCorrect: false, firstTryCount: 1, correct: 1, confused: { [said.id]: 1 } };
+      };
+      confuse(p.a, p.b);
+      confuse(p.b, p.a);
+    }
+    history.sessions.push(session(now - (mostRuns - run) * 2 * DAY, detail));
+  }
+
   history.claims = claims;
   return history;
+}
+
+function session(ts: number, detail: SessionStats): QuizSessionRecord {
+  const facts: QuizSessionRecord["facts"] = {};
+  for (const [f, d] of Object.entries(detail) as Array<[FactId, SessionStats[FactId]]>) {
+    facts[f] = { seen: d.seen, missed: d.misses, firstTry: d.firstTryCount, correct: d.correct };
+  }
+  const total = Object.keys(detail).length;
+  return { id: `sample-${ts}`, ts, mode: "drill", redrill: false, total, forgivingPct: 100, strictPct: 50, facts, detail };
 }
