@@ -9,6 +9,7 @@
 
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING } from "@/sky/lib/standing";
+import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface SkyTooltipProps {
@@ -27,6 +28,7 @@ export function SkyTooltip({ item, pieces = [], brief = false, className = "" }:
   const discovered = item.standing !== "not-seen";
   return (
     <div className={`max-w-[260px] rounded-xl border border-sky-line bg-sky-ground-0 p-3 font-sky-ui text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${className}`}>
+      <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{KIND_LABEL[item.kind]}</div>
       <div className="flex items-baseline gap-2">
         <span className={`font-sky-display text-2xl leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`} title={STANDING[item.standing].label}>{item.glyph}</span>
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
