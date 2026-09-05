@@ -69,6 +69,9 @@ interface Open {
   hinted: boolean;
   /** Choices already tried and found wrong. */
   wrong: readonly string[];
+  /** The choice picked and not yet checked (a pick only selects; Check
+   * submits, so a clip can be heard first: Sam, 2026-09-05). */
+  chosen?: string;
 }
 
 const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
@@ -130,11 +133,13 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     return all;
   };
 
-  /** A right answer moves straight on; a wrong one costs a try. */
+  /** A right answer moves straight on; a wrong one costs a try. Typed text
+   * is graded when there is any; else the picked choice. */
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     const text = given.trim();
-    if (!text || answered) return;
+    if (answered) return;
+    if (!text) { if (state.chosen) choose(state.chosen); return; }
     const tries = state.tries + 1;
     if (grade(card, text)) {
       const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries);
@@ -154,8 +159,16 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     // was asked for (the choices on a typed card, a hint) or a retry
     if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { given: undefined }); advance(at, all); return; }
     if (tries >= maxTries) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
-    patch({ tries, wrong: [...state.wrong, id] });
+    patch({ tries, wrong: [...state.wrong, id], chosen: undefined });
     setFeedback(`Not that one. ${maxTries - tries === 1 ? "One more try." : `${maxTries - tries} tries left.`}`);
+  };
+
+  /** Picks a choice without checking it; a pitched choice plays its clip. */
+  const hears = useRef(new Map<string, HTMLSpanElement>());
+  const pick = (id: string) => {
+    if (answered || state.wrong.includes(id)) return;
+    patch({ chosen: id });
+    hears.current.get(id)?.querySelector("button")?.click();
   };
 
   const giveUp = () => { if (!answered) { settle("missed", state.tries + 1, { given: undefined }); setFeedback(null); } };
@@ -332,22 +345,25 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                         spellCheck={false}
                         className="min-w-0 flex-1 rounded-xl border border-sky-muted/45 bg-sky-card px-4 py-2.5 text-[16px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
                       />
-                      <SkyButton onClick={() => submit()} disabled={!given.trim()}>Check</SkyButton>
+                      <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
                     </form>
                   )}
                   {choices && (
                     <div className="flex flex-wrap justify-center gap-2">
-                      {card.options.map((o) => {
+                      {card.options.map((o, i) => {
                         const struck = state.wrong.includes(o.id);
-                        // a pitched choice holds a hear button of its own, so the
-                        // pick is a button beside it rather than around it
-                        if (o.pitch !== undefined && Pitch) {
+                        const on = state.chosen === o.id;
+                        const frame = struck ? "border-transparent bg-sky-card/40 text-sky-muted" : on ? "border-sky-accent bg-sky-card-strong" : "border-sky-line bg-sky-card hover:border-sky-accent";
+                        // a pitched choice is a sound to judge: a numbered clip with
+                        // its hear button, the reading only once a hint is asked for
+                        if (o.pitch !== undefined) {
                           return (
-                            <div key={o.id} className={`flex w-[calc((100%-1rem)/3)] min-w-[140px] items-center gap-1 rounded-xl border pr-2 ${struck ? "border-transparent bg-sky-card/40 text-sky-muted" : "border-sky-line bg-sky-card hover:border-sky-accent"}`}>
-                              <button type="button" onClick={() => choose(o.id)} disabled={struck} className={`min-w-0 flex-1 px-3 py-2.5 text-left font-sky-display text-[18px] ${struck ? "line-through" : ""} ${japaneseFont(o.label)}`}>
-                                <Pitch reading={o.label} downstep={o.pitch} />
+                            <div key={o.id} className={`flex w-[calc((100%-1rem)/3)] min-w-[140px] items-center gap-1 rounded-xl border pr-2 ${frame}`}>
+                              <button type="button" onClick={() => pick(o.id)} disabled={struck} aria-pressed={on} className={`flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left ${struck ? "line-through" : ""}`}>
+                                <span className="text-[12px] text-sky-muted">{i + 1}</span>
+                                {state.hinted && Pitch && <span className={`font-sky-display text-[18px] ${japaneseFont(o.label)}`}><Pitch reading={o.label} downstep={o.pitch} /></span>}
                               </button>
-                              {Hear && <Hear glyph={o.label} downstep={o.pitch} />}
+                              {Hear && <span ref={(el) => { if (el) hears.current.set(o.id, el); else hears.current.delete(o.id); }}><Hear glyph={o.label} downstep={o.pitch} /></span>}
                             </div>
                           );
                         }
@@ -355,15 +371,20 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                           <button
                             key={o.id}
                             type="button"
-                            onClick={() => choose(o.id)}
+                            onClick={() => pick(o.id)}
                             disabled={struck}
-                            className={`w-[calc((100%-1rem)/3)] min-w-[140px] rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
+                            aria-pressed={on}
+                            className={`w-[calc((100%-1rem)/3)] min-w-[140px] rounded-xl border px-3 py-2.5 text-left ${frame} ${struck ? "line-through" : ""} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
                           >
                             {o.label}
                           </button>
                         );
                       })}
                     </div>
+                  )}
+                  {/* a card without a box still checks its pick with a button */}
+                  {choices && !card.typed && (
+                    <div className="flex justify-center"><SkyButton onClick={() => submit()} disabled={!state.chosen}>Check</SkyButton></div>
                   )}
                 </div>
               )}
