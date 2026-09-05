@@ -21,6 +21,9 @@ export type SkyKind =
   | "word"
   | "counter"
   | "grammar"
+  /** A sentence rule: how a kind of sentence is ordered. Its own kind, not
+   * grammar (Sam's call, 2026-09-05). */
+  | "sentence"
   | "verbPair"
   | "keigo";
 

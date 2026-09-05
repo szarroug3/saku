@@ -35,7 +35,7 @@ export function SkyTooltip({ item, pieces = [], brief = false, tonight = false, 
         <span className={`font-sky-display text-2xl leading-none ${tonight ? "text-sky-ink" : STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
       </div>
-      {discovered && <div className="mt-1.5">{item.english}</div>}
+      {discovered && item.english !== item.glyph && <div className="mt-1.5">{item.english}</div>}
       {pieces.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {pieces.map((p) => (

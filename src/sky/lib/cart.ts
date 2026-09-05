@@ -23,7 +23,7 @@ import type { SkyKind, SkyItem } from "./types";
 export const COMFORTABLE_PIECES = 12;
 
 /** Kinds that are picked as their own thing, and so can lock what needs them. */
-const PICKED_AS_OWN: ReadonlySet<SkyKind> = new Set(["word", "counter", "grammar", "verbPair", "keigo"]);
+const PICKED_AS_OWN: ReadonlySet<SkyKind> = new Set(["word", "counter", "grammar", "sentence", "verbPair", "keigo"]);
 
 /** True when an item is chosen on its own in the Planetarium, rather than
  * riding along under something else: every kind but the parts, plus a kana

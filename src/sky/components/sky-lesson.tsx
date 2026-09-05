@@ -209,7 +209,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                       className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
                     >
                       <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
-                      <span className="text-[12.5px] text-sky-muted">{it?.english}</span>
+                      {it?.english !== it?.glyph && <span className="text-[12.5px] text-sky-muted">{it?.english}</span>}
                     </button>
                   </li>
                 );

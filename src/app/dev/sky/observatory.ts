@@ -226,7 +226,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
       case COUNTER_KIND: return offer(entry, "counter");
       case GRAMMAR_SUBJECT: return offer(entry, "grammar");
       // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
-      case SENTENCE_RULE_KIND: { const english = entry.name ?? entry.meanings[0] ?? entry.id; return offer(entry, "grammar", { english, glyph: sentenceTierShortLabel(english) }); }
+      case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
       default: return offer(entry, "word");

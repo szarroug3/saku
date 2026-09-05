@@ -130,7 +130,7 @@ export function ItemCard({
           Atlas leads with the glyph, where a copy behind it would be noise.
           aria-hidden, because a screen reader should not announce a character
           the sighted design is deliberately not asking you to read. */}
-      {lead === "english" ? (
+      {lead === "english" && item.glyph !== item.english ? (
         <span
           aria-hidden
           className={[

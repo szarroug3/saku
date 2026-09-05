@@ -58,6 +58,7 @@ const ROLE: Record<SkyItem["kind"], string> = {
   word: "",
   counter: "a counting word",
   grammar: "a sentence rule",
+  sentence: "",
   verbPair: "a verb and its partner",
   keigo: "a polite verb",
 };
@@ -67,7 +68,7 @@ function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; on
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
       <span className={`font-sky-display text-[18px] leading-none text-sky-ink ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
       {note && <span className={`font-sky-display text-[13px] text-sky-muted ${japaneseFont(note)}`}>{note}</span>}
-      <span className="text-[12.5px] text-sky-muted">{item.english}</span>
+      {item.english !== item.glyph && <span className="text-[12.5px] text-sky-muted">{item.english}</span>}
     </button>
   );
 }

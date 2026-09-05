@@ -89,6 +89,9 @@ function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "grammar") {
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
     if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; t.notes = [recipe.sense, recipe.intro?.blurb].filter((x): x is string => !!x); return t; }
+    return t;
+  }
+  if (item.kind === "sentence") {
     // a sentence rule: the app's walk, page by page
     const tier = (Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]).find((k) => item.id.endsWith(`sentence-rule-${k}`));
     if (tier) t.pages = sentenceRulePages(tier);

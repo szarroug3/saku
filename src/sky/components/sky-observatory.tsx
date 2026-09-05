@@ -82,7 +82,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
  * sentence rule, the rest by the kind's own word. */
 function kindLabel(item: SkyItem): string {
   if (item.kind === "kana") return /[\u30a0-\u30ff]/.test(item.glyph) ? "katakana" : "hiragana";
-  if (item.kind === "grammar") return "sentence rule";
+  if (item.kind === "grammar" || item.kind === "sentence") return "sentence rule";
   return KIND_LABEL[item.kind];
 }
 
