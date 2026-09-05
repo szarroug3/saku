@@ -36,5 +36,6 @@ export function QuizClient({ cards, skyHref, sample = false, onFinish }: { cards
   const router = useRouter();
   // a retry is the same route with just those cards named
   const retry = (ids: readonly string[]) => router.push(`/dev/sky/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
-  return <SkyQuiz cards={cards} grade={grade} onFinish={onFinish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} height="100%" />;
+  // keyed by its cards, so a retry (the same route, other cards) starts fresh
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={onFinish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} height="100%" />;
 }
