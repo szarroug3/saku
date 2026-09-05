@@ -130,12 +130,13 @@ function tally(shelf: AtlasShelf): Record<Standing, number> {
 export interface Pick { toggle: boolean; range: boolean }
 type OnPick = (id: string, pick: Pick) => void;
 
-function Tile({ item, selected, onOpen }: { item: SkyItem; selected: boolean; onOpen: OnPick }) {
+function Tile({ item, selected, onOpen, onPeek }: { item: SkyItem; selected: boolean; onOpen: OnPick; onPeek?: (id: string) => void }) {
   const lone = [...item.glyph].length <= 1;
   return (
     <button
       type="button"
       onClick={(e) => onOpen(item.id, { toggle: e.metaKey || e.ctrlKey, range: e.shiftKey })}
+      onPointerEnter={onPeek ? () => onPeek(item.id) : undefined}
       aria-pressed={selected}
       title={`${item.glyph} ${item.english}`}
       className={`flex aspect-square min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1 transition-colors ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-card hover:bg-sky-card-strong"}`}
@@ -146,10 +147,10 @@ function Tile({ item, selected, onOpen }: { item: SkyItem; selected: boolean; on
   );
 }
 
-function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick }) {
+function Grid({ ids, graph, selected, onOpen, onPeek }: { ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick; onPeek?: (id: string) => void }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
-      {ids.map((id) => { const it = graph.itemOf(id); return it ? <Tile key={id} item={it} selected={selected.has(id)} onOpen={onOpen} /> : null; })}
+      {ids.map((id) => { const it = graph.itemOf(id); return it ? <Tile key={id} item={it} selected={selected.has(id)} onOpen={onOpen} onPeek={onPeek} /> : null; })}
     </div>
   );
 }
@@ -157,7 +158,7 @@ function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph:
 /** A cut of a shelf whose tiles mount only as it comes into view, so a
  * shelf of twelve thousand words costs nothing until it is scrolled to.
  * Until then it holds the room its rows will take. */
-function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick }) {
+function LazySection({ label, ids, graph, selected, onOpen, onPeek }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick; onPeek?: (id: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
@@ -173,7 +174,7 @@ function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; 
   return (
     <div ref={ref} className="mt-3" style={near ? undefined : { minHeight: `${rows * 70 + (label ? 22 : 0)}px` }}>
       {label && <p className="mb-1.5 text-[11.5px] font-semibold text-sky-muted">{label}</p>}
-      {near && <Grid ids={ids} graph={graph} selected={selected} onOpen={onOpen} />}
+      {near && <Grid ids={ids} graph={graph} selected={selected} onOpen={onOpen} onPeek={onPeek} />}
     </div>
   );
 }
@@ -250,23 +251,29 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const anchor = useRef<string | null>(initialEntry ?? null);
   const single = selected.length === 1 ? selected[0] : null;
 
-  // the entry fetched for a single selection
-  const [open, setOpen] = useState<AtlasEntry | null>(null);
+  // the entries fetched so far, by id: fetched once, kept for the visit,
+  // and fetched ahead when a tile is hovered so a click finds it ready
+  const [entries, setEntries] = useState<ReadonlyMap<string, AtlasEntry>>(() => new Map());
+  const pending = useRef(new Map<string, Promise<AtlasEntry>>());
+  const fetchEntry = useCallback((id: string): Promise<AtlasEntry> => {
+    const had = pending.current.get(id);
+    if (had) return had;
+    const p = lookup.entry(id).then((entry) => { setEntries((prev) => new Map(prev).set(id, entry)); return entry; });
+    pending.current.set(id, p);
+    return p;
+  }, [lookup]);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!single) return;
     let live = true;
-    lookup.entry(single).then((entry) => {
-      if (!live) return;
-      bring(entry.items);
-      setOpen(entry);
-      panel.current?.scrollTo({ top: 0 });
-    });
+    fetchEntry(single).then((entry) => { if (live) bring(entry.items); });
     return () => { live = false; };
-  }, [single, lookup, bring]);
+  }, [single, fetchEntry, bring]);
   // the card opens at once on what a tile knows; the teaching fills in
   const current = single ? graph.itemOf(single) : undefined;
-  const entry = single && open?.id === single ? open : null;
+  const entry = single ? entries.get(single) ?? null : null;
+  const open = entry;
+  const setOpen = (e: AtlasEntry) => setEntries((prev) => new Map(prev).set(e.id, e));
   const setOpening = (id: string) => { anchor.current = id; setSelected([id]); };
 
   // "I know this" and "I know these": the claim, then the entries as
@@ -316,6 +323,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
     else setSelected([id]);
   };
   const clear = () => setSelected([]);
+  // a hovered tile's entry is fetched ahead, so the click finds it ready
+  const peek = (id: string) => { void fetchEntry(id).catch(() => undefined); };
   const selectedItems = itemsOf(selected);
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
   const showPanel = selected.length > 0;
@@ -398,7 +407,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{status ? ` · ${STANDING[status].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
                 </p>
                 {here && here.shown.length > 0 ? (
-                  <div className="mt-2"><Grid ids={here.shown} graph={graph} selected={selectedSet} onOpen={pick} /></div>
+                  <div className="mt-2"><Grid ids={here.shown} graph={graph} selected={selectedSet} onOpen={pick} onPeek={peek} /></div>
                 ) : (
                   <p className="mt-3 text-[13.5px] text-sky-muted">
                     {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${status ? ` with that status` : ""}.`}
@@ -421,7 +430,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 {shelfSections.length === 0 ? (
                   <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
                 ) : shelfSections.map((section) => (
-                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={selectedSet} onOpen={pick} />
+                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={selectedSet} onOpen={pick} onPeek={peek} />
                 ))}
                 {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
               </>
@@ -475,7 +484,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       ) : (
                         <span className="text-[12.5px] text-sky-muted">Already in your sky.</span>
                       )}
-                      {quizHref && (entry?.quizzable ?? 0) > 1 && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
+                      {quizHref && (current.quizzable ?? entry?.quizzable ?? 0) > 1 && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
                     </>
                   }
                 />

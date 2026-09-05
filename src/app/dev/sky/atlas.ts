@@ -103,8 +103,16 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kind === kind)!.unit }));
-  // the tiles need only what a tile shows; an entry's parts come with it when it is opened
-  const lean = (id: string): SkyItem | undefined => { const it = o.items.get(id); if (!it) return undefined; const { components: _parts, ...rest } = it; return rest; };
+  // the tiles need only what a tile shows, plus how much a quiz could ask
+  // (so the panel's buttons are right the moment it opens); an entry's
+  // parts come with it when it is opened
+  const lean = (id: string): SkyItem | undefined => {
+    const it = o.items.get(id);
+    if (!it) return undefined;
+    const { components: _parts, ...rest } = it;
+    const entry = libEntry(id as EntryId);
+    return { ...rest, quizzable: entry ? quizzableFacts(knownFactsOf(entry), history).length : 0 };
+  };
   return { items: shown.map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
 }
 

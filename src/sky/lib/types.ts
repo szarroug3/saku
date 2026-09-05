@@ -68,6 +68,12 @@ export interface SkyItem {
    */
   components?: string[];
   /**
+   * How many things a quiz could ask about it, when the adapter knows: one
+   * for a kana, several for a grammar pattern. A surface offers a quiz only
+   * when there is more than one. Optional: most skies never ask.
+   */
+  quizzable?: number;
+  /**
    * A grouping of its components rather than a thing learned on its own: a
    * kana row. It is picked as one, locks what builds on it, and is drawn,
    * but it is never a piece: the row costs its sounds, not its sounds plus
