@@ -23,7 +23,7 @@ import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
-import { confusableWith, COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import { confusableWith, COUNTER_KIND, entryForGlyph, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { searchByType } from "@/lib/library/search";
 import { shelfSections } from "@/lib/library/shelf-sections";
@@ -35,7 +35,7 @@ import type { EntryId, HistoryFile } from "@/types";
 
 import { standingFor } from "./learner";
 import { conceptTwin, teachFor } from "./teach";
-import { offerings, type Offerings } from "./observatory";
+import { offerings, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
@@ -119,7 +119,8 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
       ? [{ id: shelf.id, label: shelf.title, entries: shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday").flatMap((c) => c.entries)) }]
       : shelfSections(shelf.kinds[0], "everyday");
     for (const cut of cuts) {
-      const ids = cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
+      // the native numbers are one tile, the 〜つ rule, with the ten under it
+      const ids = cut.id === "counters-tsu" ? [TSU_RULE] : cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
       if (ids.length) sections.push({ id: cut.id, label: cut.label, items: ids });
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
@@ -134,8 +135,7 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     const it = o.items.get(id);
     if (!it) return undefined;
     const { components: _parts, ...rest } = it;
-    const entry = libEntry(id as EntryId);
-    return { ...rest, quizzable: entry ? quizzableFacts(knownFactsOf(entry), history).length : 0 };
+    return { ...rest, quizzable: quizzableFacts(pickFacts([id]), history).length };
   };
   return { items: shown.map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
 }
@@ -161,9 +161,10 @@ export function atlasSearchFromHistory(history: HistoryFile, query: string, now 
  * ways, counted against the whole corpus. */
 export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Date.now()): AtlasEntry | undefined {
   const o = offerings(history, now);
+  // a pick the offerings build themselves (a kana row, the 〜つ rule) has no
+  // library entry of its own; it still opens
   const item = o.offerPick(id);
-  const entry = libEntry(id as EntryId);
-  if (!item || !entry) return undefined;
+  if (!item) return undefined;
   const related: RelatedGroup[] = [];
   const glyph = item.glyph;
   /** A group from ids, offering each so it can be drawn and opened. */
@@ -185,7 +186,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     if (!items.length) return;
     const tips: Record<string, string> = {};
     for (const x of items) { const tip = radicalConfusableTip(glyph, x.glyph); if (tip) tips[x.id] = tip; }
-    related.push({ title: "Easily mixed up with", items, ...(Object.keys(tips).length ? { tips } : {}) });
+    related.push({ title: "Easily mixed up with", items, early: true, ...(Object.keys(tips).length ? { tips } : {}) });
   };
 
   if (item.kind === "kana") lookalikes();
@@ -194,7 +195,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     // what it is a part of first, then every word written with it, in
     // teaching order, against the whole vocabulary (Sam's order)
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Used as a part in", builds, `You know ${knownOf(builds)} of ${builds.length}`);
+    if (builds.length) group("Kanji written with it", builds, `You know ${knownOf(builds)} of ${builds.length}`);
     const kebs = VOCAB.filter((w) => w.keb.includes(glyph)).map((w) => w.keb).sort((a, b) => (vocabRow(a)?.beginnerRank ?? Infinity) - (vocabRow(b)?.beginnerRank ?? Infinity));
     const ids = wordIds(kebs);
     if (ids.length) group("Words written with it", ids, `You know ${knownOf(ids)} of ${ids.length}`);
@@ -202,7 +203,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   if (item.kind === "radical") {
     lookalikes();
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Kanji built from it", builds, `You know ${knownOf(builds)} of ${builds.length}`);
+    if (builds.length) group("Kanji written with it", builds, `You know ${knownOf(builds)} of ${builds.length}`);
     const known = wordIds(knownWordsUsing(glyph, history));
     if (known.length) group("Words you know that use it", known, `${known.length}`);
   }

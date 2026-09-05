@@ -54,7 +54,7 @@ test("the adjective concept is one concise class guide, without a repeated title
   page,
 }) => {
   await page.goto(entryHref(grammarConceptEntry("adjective-types")));
-  await expect(page.getByText("い-adjectives and な-adjectives.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Keiyōshi and keiyōdōshi.", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "い-adjectives change their own ending." })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "な-adjectives take な, and lean on です." })).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("The app tags each word's kind");
@@ -70,7 +70,7 @@ test("the adjective noun form has its own Library entry", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Describe a noun." })).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("lets an adjective describe a noun");
   await expect(page.getByRole("heading", { name: "Adjectives", exact: true })).toHaveCount(0);
-  await expect(page.getByText("Adjective Types", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Keiyōshi/keiyōdōshi", { exact: true })).toHaveCount(0);
   const beforeANoun = page.getByRole("heading", { name: "Before a noun", exact: true });
   await expect(beforeANoun).toHaveCount(1);
   const adjectiveTable = beforeANoun.locator("xpath=ancestor::section[1]").getByRole("table");

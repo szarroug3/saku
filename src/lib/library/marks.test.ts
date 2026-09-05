@@ -390,7 +390,7 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
       const dak = bodyFor(intro, "゛").map((p) => p.text).join(" ");
       for (const text of [whole, dak]) {
         assert.match(text, /25 more characters/);
-        assert.match(text, /same character with a mark/);
+        assert.match(text, /already know/);
       }
     }
   });

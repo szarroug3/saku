@@ -14,7 +14,7 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { entryForGlyph, knownFactsOf, libEntry } from "@/lib/library/entries";
+import { entryForGlyph } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
@@ -22,7 +22,7 @@ import type { QuizCard, QuizOption } from "@/sky/lib/quiz";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
 import { learnerHistory } from "./atlas";
-import { offerings } from "./observatory";
+import { offerings, pickFacts } from "./observatory";
 import { teachFor } from "./teach";
 
 /** The basket: how many cards a session asks (SAK-311's cap). */
@@ -32,7 +32,7 @@ export const QUIZ_CAP = 8;
  * named, else what is due, capped. */
 export function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now()): FactId[] {
   if (picks.length) {
-    const facts = picks.flatMap((id) => { const e = libEntry(id as EntryId); return e ? quizzableFacts(knownFactsOf(e), history) : []; });
+    const facts = picks.flatMap((id) => quizzableFacts(pickFacts([id]), history));
     return [...new Set(facts)].slice(0, QUIZ_CAP);
   }
   return dueFacts(history, [], now).slice(0, QUIZ_CAP);

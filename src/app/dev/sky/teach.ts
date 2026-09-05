@@ -17,7 +17,8 @@ import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { derivePosition } from "@/lib/library/character-entry-content";
 import { formsOfWord } from "@/lib/word-forms";
-import { counterForm, counterRoleNote } from "@/data/counters";
+import { COUNTER_CURRICULUM, counterForm, counterRoleNote } from "@/data/counters";
+import { TSU_INTRO } from "@/data/track-intros";
 import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
@@ -38,6 +39,7 @@ import { TERMS, termEntry } from "@/data/terms";
 import { vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
+import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -100,13 +102,35 @@ function markPages(mark: Mark): TeachPage[] {
       title: `${first.from} to ${first.to}`,
       ...(first.hook ? { instruction: hookLine(first.hook) } : {}),
       heads: [...(hiragana.length ? ["Hiragana"] : []), ...(katakana.length ? ["Katakana"] : [])],
-      rows: Array.from({ length: Math.max(hiragana.length, katakana.length) }, (_, i) => [hiragana[i], katakana[i]].filter((x): x is [string, string] => !!x).map(([base, converted]) => [{ text: `${base} ` }, { text: converted, accent: true }])),
+      rows: Array.from({ length: Math.max(hiragana.length, katakana.length) }, (_, i) => [hiragana[i], katakana[i]].filter((x): x is [string, string] => !!x).map(([base, converted]) => [{ text: `${said(base)} → ` }, { text: said(converted), accent: true }])),
       ...(notes.length ? { note: [...new Set(notes)].join(" ") } : {}),
     });
   }
+  // the yōon read like dakuten: every one, with how it is said (Sam, 2026-09-05)
+  if (mark.id === "small-ya") tables.push(yoonTable());
   const last = pages[pages.length - 1];
   pages[pages.length - 1] = { ...last, ...(tables.length ? { tables: [...(last.tables ?? []), ...tables] } : {}), ...(mark.note ? { after: [...(last.after ?? []), { text: mark.note }] } : {}) };
   return pages;
+}
+
+/** "か (ka)": a kana with its reading. */
+function said(kana: string): string {
+  const r = romajiOf(kana);
+  return r ? `${kana} (${r})` : kana;
+}
+
+/** Every yōon, hiragana beside katakana: き + ゃ → きゃ (kya). */
+function yoonTable(): TeachTable {
+  const rowsOf = (setId: string) => SETS.find((set) => set.id === setId)?.sections.filter((sec) => sec.label.startsWith("Yōon")) ?? [];
+  const h = rowsOf("hiragana");
+  const k = rowsOf("katakana");
+  const cell = (c: string, r: string): SkySoundLine => [{ text: `${[...c][0]} + ${[...c][1]} → ` }, { text: `${c} (${r})`, accent: true }];
+  const rows: SkySoundLine[][] = [];
+  h.forEach((sec, i) => sec.chars.forEach((ch, j) => {
+    const kc = k[i]?.chars[j];
+    rows.push([cell(ch.c, ch.r[0]), ...(kc ? [cell(kc.c, kc.r[0])] : [])]);
+  }));
+  return { title: "Every yōon", heads: ["Hiragana", "Katakana"], rows };
 }
 
 function romajiOf(glyph: string): string | undefined {
@@ -175,6 +199,13 @@ export function teachFor(item: SkyItem): LessonTeach {
     // a counted form: how you say it; a counting rule: how it is built, the
     // app's own rule card with its worked tables (Sam, 2026-09-05: the
     // counting rules had rich content)
+    if (item.id === TSU_RULE) {
+      // the native numbers as one rule: the track's own pitch, then the ten
+      const forms = COUNTER_CURRICULUM.filter((f) => f.counter === "つ");
+      t.meanings = ["The native way to count things, one to ten, for anything without a counter of its own."];
+      t.pages = [{ ...pageFromIntro(TSU_INTRO), eyebrow: "〜つ", tables: [{ title: "One to ten", heads: ["Count", "Written", "Meaning"], rows: forms.map((f, i) => [[{ text: String(i + 1) }], [{ text: f.glyph, accent: true }], [{ text: f.meaning }]]) }] }];
+      return t;
+    }
     const form = counterForm(item.id as Parameters<typeof counterForm>[0]);
     if (form) { t.reading = form.reading; t.meanings = [form.meaning]; const note = counterRoleNote(form); if (note) t.notes = [note]; t.pitch = wordPitch(form.glyph); }
     const construction = numberConstructionFor(item.id as EntryId);
@@ -444,6 +475,16 @@ function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
   for (const t of intro.deriveTables ?? []) tables.push(deriveTable(t.rules, t.heads, t.title, { ...(t.instruction ? { instruction: t.instruction } : {}), ...(t.formula ? { formula: t.formula } : {}) }));
   if (intro.buildFooter && tables.length) tables[tables.length - 1] = { ...tables[tables.length - 1], footer: `${intro.buildFooter.chain} · ${intro.buildFooter.gloss}` };
   for (const g of intro.countTables ?? []) tables.push(countTable(g));
+  // the card's worked examples: きて → きって (kite → kitte), 時 + 時 = 時々 (ときどき) sometimes
+  if (intro.examples?.length && mark !== "ゃゅょ") {
+    const anyReading = intro.examples.some((e) => e.reading);
+    const anyGloss = intro.examples.some((e) => e.gloss);
+    tables.push({
+      title: "Examples",
+      heads: ["Written", ...(anyReading ? ["Said"] : []), ...(anyGloss ? ["Meaning"] : [])],
+      rows: intro.examples.map((e) => [[{ text: `${e.from} ${e.op ?? "="} ` }, { text: e.to, accent: true }], ...(anyReading ? [[{ text: e.reading ?? "" }]] : []), ...(anyGloss ? [[{ text: e.gloss ?? "" }]] : [])]),
+    });
+  }
   const ex = intro.sentenceExample;
   const examples = ex ? [{ natural: [{ text: ex.en }], japanese: [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text) }] : undefined;
   return {

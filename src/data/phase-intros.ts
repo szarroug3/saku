@@ -641,16 +641,11 @@ export const DAKUTEN_H: PhaseIntro = {
   body: [
     {
       mark: "゛",
-      lead: "(dakuten): two dashes.",
-      text: "It voices the consonant: your vocal cords buzz. か becomes が, さ becomes ざ, た becomes だ, は becomes ば. Put a finger on your throat and say ka, then ga. The second one hums.",
+      text: "Two short strokes, like a little pair of apostrophes, sit at the top right of a kana and change how it starts: か ka becomes が ga, さ sa becomes ざ za, た ta becomes だ da, は ha becomes ば ba. The kana underneath is the one you already know. Only the first sound changes, from a hard k, s, t or h to one that hums. Put a finger on your throat and say ka, then ga: the second one buzzes.",
     },
     {
       mark: "゜",
-      lead: "(handakuten): a small circle,",
-      text: "and it only ever lands on the は row.",
-    },
-    {
-      text: "You already know every shape here.",
+      text: "A small circle in the same spot does the same job on the は row only, turning h into p: は ha becomes ぱ pa.",
     },
     // TAGGED ゛, AND THE TAG IS THE FIX. The count and the worked pair are both
     // about the two dashes: か → が is dakuten, and 25 is dakuten plus handakuten
@@ -661,8 +656,13 @@ export const DAKUTEN_H: PhaseIntro = {
     // at once and the sentence is true of the pair. Only the split needed to know
     // which mark it belongs to.
     {
+      text: "Nothing new to draw: every one of these is a kana you already know, with a mark on it.",
+    },
+    // TAGGED ゛: the count is the two strokes' alone (the circle makes five),
+    // so it stays off the handakuten page. See `bodyFor` in data/marks.ts.
+    {
       mark: "゛",
-      text: "か and が are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
+      text: "The two strokes alone give you 25 more characters.",
     },
   ],
 };
@@ -675,29 +675,26 @@ export const DAKUTEN_K: PhaseIntro = {
   body: [
     {
       mark: "゛",
-      lead: "(dakuten): two dashes.",
-      text: "It voices the consonant, meaning your vocal cords buzz: カ ka → ガ ga, サ sa → ザ za, タ ta → ダ da, ハ ha → バ ba.",
+      text: "The same two short strokes at the top right change how a katakana starts: カ ka becomes ガ ga, サ sa becomes ザ za, タ ta becomes ダ da, ハ ha becomes バ ba.",
     },
     {
       mark: "゜",
-      lead: "(handakuten): a small circle,",
-      text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
+      text: "The small circle does the same on the ハ row only, turning h into p: ハ ha becomes パ pa.",
     },
     {
       text: "The marks work exactly as they did in hiragana, on shapes you already know.",
     },
-    // Tagged ゛ for the reason the hiragana card's closing line is. Same
-    // sentence, same split, same page it was wrong on.
+    // Tagged ゛ for the reason the hiragana card's closing line is.
     {
       mark: "゛",
-      text: "カ and ガ are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
+      text: "The two strokes alone give you 25 more characters.",
     },
   ],
 };
 
 export const COMBO_H: PhaseIntro = {
   id: "intro-combo-hiragana",
-  name: "Small や, ゆ, よ",
+  name: "Yōon",
   setId: "hiragana",
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
@@ -721,7 +718,7 @@ export const COMBO_H: PhaseIntro = {
 
 export const COMBO_K: PhaseIntro = {
   id: "intro-combo-katakana",
-  name: "Small ャ, ュ, ョ",
+  name: "Yōon in katakana",
   setId: "katakana",
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
@@ -745,7 +742,7 @@ export const COMBO_K: PhaseIntro = {
 
 export const LONG_H: PhaseIntro = {
   id: "intro-long-vowel-hiragana",
-  name: "Long vowels",
+  name: "Chōon",
   setId: "hiragana",
   title: "A held vowel is a different word.",
   body: [
@@ -771,7 +768,7 @@ export const LONG_H: PhaseIntro = {
 
 export const LONG_K: PhaseIntro = {
   id: "intro-long-vowel-katakana",
-  name: "Long vowels in katakana",
+  name: "Chōon in katakana",
   setId: "katakana",
   title: "Katakana holds a vowel with one long dash.",
   body: [
@@ -836,7 +833,7 @@ export const LONG_K: PhaseIntro = {
 
 export const SOKUON_H: PhaseIntro = {
   id: "intro-sokuon-hiragana",
-  name: "Small っ",
+  name: "Sokuon",
   setId: "hiragana",
   title: "A small っ is not a sound. It doubles the next consonant.",
   body: [
@@ -862,7 +859,7 @@ export const SOKUON_H: PhaseIntro = {
 
 export const SOKUON_K: PhaseIntro = {
   id: "intro-sokuon-katakana",
-  name: "Small ッ",
+  name: "Sokuon in katakana",
   setId: "katakana",
   title: "A small ッ does the same thing on this side.",
   body: [
@@ -976,7 +973,7 @@ export const PUNCTUATION: PhaseIntro = {
 // 様々, 少々, 国々), not invented forms.
 export const ITERATION_MARK: PhaseIntro = {
   id: "intro-iteration-mark",
-  name: "The 々 mark",
+  name: "Odoriji",
   setId: NO_SCRIPT,
   title: "々 repeats the kanji before it.",
   body: [

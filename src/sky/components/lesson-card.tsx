@@ -67,6 +67,8 @@ export interface RelatedGroup {
   items: readonly SkyItem[];
   /** A line under an item, by its id: how to tell a look-alike apart. */
   tips?: Readonly<Record<string, string>>;
+  /** Folds before "How it's written" rather than after the card's own folds. */
+  early?: boolean;
 }
 
 export type PitchComponent = ComponentType<{ reading: string; downstep: number; className?: string }>;
@@ -76,21 +78,6 @@ export type PitchComponent = ComponentType<{ reading: string; downstep: number; 
 export type HearComponent = ComponentType<{ glyph: string; downstep?: number; className?: string; label?: string }>;
 
 /** What each kind is, in the learner's terms. */
-const ROLE: Record<SkyItem["kind"], string> = {
-  kana: "a sound, one syllable",
-  radical: "a piece characters are built from",
-  kanji: "a character words are built with",
-  word: "",
-  counter: "a counting word",
-  grammar: "a sentence rule",
-  sentence: "",
-  term: "",
-  mark: "",
-  concept: "",
-  verbPair: "a verb and its partner",
-  keigo: "a polite verb",
-};
-
 function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
@@ -135,11 +122,11 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
   return (
     <DetailFrame toolbar={toolbar} footer={footer} scroll={scroll} className={className}>
       <div className="flex shrink-0 items-start justify-between gap-3">
-        <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
+        <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
         {standing && <StandingChip standing={item.standing} />}
       </div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+        <span className={`font-sky-display leading-none ${item.glyph === item.english ? "text-[28px] leading-tight" : "text-[52px]"} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {/* the reading and its hear button as one group, so the button
             centres on the reading rather than on the glyph beside it */}
         <span className="inline-flex items-center gap-2">
@@ -148,7 +135,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
               ? <Pitch reading={reading} downstep={teach.pitch} className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`} />
               : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
           )}
-          {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && (
+          {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && !item.glyph.includes("〜") && (
             <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} />
           )}
         </span>
@@ -167,7 +154,9 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       {pages.length > 0 && (
         <>
           {pages.length > 1 && <Pager pages={pages} page={at} onPage={onPage} />}
-          <TeachPageView page={pages[at]} />
+          {/* a lone page named after the thing itself carries no eyebrow: the
+              name is right above it */}
+          <TeachPageView page={pages.length === 1 && pages[at].eyebrow?.toLowerCase() === item.english.toLowerCase() ? { ...pages[at], eyebrow: undefined } : pages[at]} />
         </>
       )}
 
@@ -245,8 +234,6 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           <Eyebrow className="mt-4">Made of</Eyebrow>
           <div className="flex flex-wrap gap-2">{madeOf.map((p) => <StarButton key={p.id} item={p} note={partSense.get(p.glyph)?.toLowerCase() === p.english.toLowerCase() ? undefined : partSense.get(p.glyph)} onSelect={onSelect} />)}</div>
         </>
-      ) : item.kind === "kanji" || item.kind === "radical" ? (
-        <p className="mt-3 text-[13.5px] text-sky-muted">Nothing under it: this one is a building block itself.</p>
       ) : null}
       {teach?.variants && teach.variants.length > 0 && (
         <>
@@ -277,6 +264,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
             </div>
           </Fold>
         )}
+        {related.filter((g) => g.early).map((group) => <RelatedFold key={group.title} group={group} onSelect={onSelect} />)}
         {(written || teach?.strokes !== undefined) && (
           <Fold title="How it's written">
             {written ?? <p>{teach!.strokes} {teach!.strokes === 1 ? "stroke" : "strokes"}.</p>}
@@ -295,7 +283,16 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         ))}
         {/* the related groups last, closed (Sam's order, 2026-09-05): what it
             is a part of, then the words written with it */}
-        {related.map((group) => (
+        {related.filter((g) => !g.early).map((group) => <RelatedFold key={group.title} group={group} onSelect={onSelect} />)}
+      </div>
+
+      {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
+    </DetailFrame>
+  );
+}
+
+function RelatedFold({ group, onSelect }: { group: RelatedGroup; onSelect: (id: string) => void }) {
+  return (
           <Fold key={group.title} title={group.note ? `${group.title} · ${group.note}` : group.title}>
             {group.tips ? (
               <div className="flex flex-col gap-2.5">
@@ -310,11 +307,6 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
               <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
             )}
           </Fold>
-        ))}
-      </div>
-
-      {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
-    </DetailFrame>
   );
 }
 

@@ -49,6 +49,9 @@ import { componentEntry, skyItems, standingFor } from "./learner";
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
 
+/** The native numbers (ひとつ to とお) as one pick: the 〜つ rule. */
+export const TSU_RULE = "counter-rule:tsu";
+
 /** What each track is and when to start it. Short, in the learner's terms. */
 const COPY = {
   kana: {
@@ -181,8 +184,12 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const words = allWords.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), gate: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
 
-  // counting: the track's own order
+  // counting: the track's own order. The native numbers are one rule, not
+  // ten picks (Sam, 2026-09-05): a pick with the ten forms under it
   const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
+  const tsu = COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
+  for (const e of tsu) add(e);
+  items.set(TSU_RULE, { id: TSU_RULE, kind: "counter", glyph: "〜つ", english: "Native numbers", standing: tsu.every((e) => met.has(e.id)) ? "claimed" : "not-seen", components: tsu.map((e) => e.id) });
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
 
@@ -291,6 +298,10 @@ export function metBeyondWords(history: HistoryFile, now = Date.now()): { items:
 export function pickFacts(ids: readonly string[]): FactId[] {
   const out: FactId[] = [];
   for (const id of ids) {
+    if (id === TSU_RULE) {
+      for (const f of COUNTER_CURRICULUM) if (f.counter === "つ") { const e = libEntry(counterEntry(f)); if (e) out.push(...knownFactsOf(e)); }
+      continue;
+    }
     const row = /^kana-row:(.+)$/.exec(id);
     if (row) {
       const section = SETS.flatMap((set) => set.sections).find((s) => s.id === row[1]);

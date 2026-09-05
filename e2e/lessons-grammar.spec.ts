@@ -74,9 +74,9 @@ test("the grammar track's first sitting introduces adjective forms", async ({
     "Sometimes the tail moves. Sometimes it stays.",
   );
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("Adjective Types", { exact: true })).toBeVisible();
+  await expect(page.getByText("Keiyōshi/keiyōdōshi", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "い-adjectives and な-adjectives." }),
+    page.getByRole("heading", { name: "Keiyōshi and keiyōdōshi." }),
   ).toBeVisible();
   await expect(page.locator("body")).toContainText("きれい");
   await expect(page.locator("body")).toContainText(
@@ -123,7 +123,7 @@ test("the second grammar sitting teaches building the て-form", async ({ page, 
 
   // "Verb Types" is page 2 of the te-form sitting (page 1 is the "what a form is"
   // intro), so step forward until it appears rather than expecting it first.
-  const verbTypes = page.getByText("Verb Types", { exact: true });
+  const verbTypes = page.getByText("Godan/ichidan", { exact: true });
   for (let i = 0; i < 8 && !(await isVisibleSoon(verbTypes)); i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }

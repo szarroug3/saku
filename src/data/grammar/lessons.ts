@@ -135,7 +135,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     // building on this page: the classes come first, the conjugation follows.
     id: "gl-verb-types",
     setId: "",
-    eyebrow: "Verb Types",
+    eyebrow: "Godan/ichidan",
     title: "Godan and Ichidan.",
     body: [
       {
@@ -166,18 +166,18 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     // the learner to understand an い / な label.
     id: "gl-adjective-types",
     setId: "",
-    eyebrow: "Adjective Types",
-    title: "い-adjectives and な-adjectives.",
+    eyebrow: "Keiyōshi/keiyōdōshi",
+    title: "Keiyōshi and keiyōdōshi.",
     body: [
       {
-        text: "Before you use an adjective, you need to know which of the two adjective classes it belongs to. The class is a property of the word, just like a verb's group.",
+        text: "Before you use an adjective, you need to know which of the two adjective classes it belongs to: keiyōshi, the い-adjectives, or keiyōdōshi, the な-adjectives. The class is a property of the word, just like a verb's group.",
       },
       {
-        lead: "い-adjectives",
+        lead: "い-adjectives (keiyōshi)",
         text: "usually end in い, like たかい and やすい. Before a noun they do not change: たかいみせ (an expensive shop). Their final い changes when they use other forms.",
       },
       {
-        lead: "な-adjectives",
+        lead: "な-adjectives (keiyōdōshi)",
         text: "have no reliable kana ending. Examples include しずか, べんり, and げんき. They are called な-adjectives because they add な before a noun.",
       },
       {
