@@ -115,6 +115,8 @@ export interface SkyAtlasProps {
 }
 
 const SEARCH_DELAY = 180;
+/** Labels after a number are title case (Sam's rule): "17 of 214 Radicals Known". */
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** The panel's width to start, and the narrowest it can be dragged. */
 const PANEL_WIDTH = 360;
 
@@ -154,7 +156,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const tracked = shelf?.kind !== "term";
   const filter = tracked ? status : null;
   // "2,136 Shown", or with a status picked "43 Shaky" (Sam's wording: title case)
-  const shownWord = filter ? STANDING[filter].label.replace(/\b\w/g, (c) => c.toUpperCase()) : "Shown";
+  const shownWord = filter ? titleCase(STANDING[filter].label) : "Shown";
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter); }, [graph, filter]);
 
   // search: the app's answer, by shelf, after a short pause in typing. The
@@ -272,11 +274,11 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   <div className="min-w-0 flex-1">
                     {tracked ? (
                       <>
-                        <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
+                        <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {titleCase(shelf.unit)} Known</span></p>
                         <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
                       </>
                     ) : (
-                      <p className="font-sky-display text-[22px] text-sky-ink">{shelf.total.toLocaleString()} <span className="text-[14px] text-sky-muted">{shelf.unit}</span></p>
+                      <p className="font-sky-display text-[22px] text-sky-ink">{shelf.total.toLocaleString()} <span className="text-[14px] text-sky-muted">{titleCase(shelf.unit)}</span></p>
                     )}
                   </div>
                 </div>
@@ -285,7 +287,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
               {result ? (
                 <>
                   <p className="mt-4 text-[12.5px] text-sky-muted">
-                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> {shownWord} · matching <span className="font-semibold text-sky-ink">{result.query}</span>{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
+                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> {shownWord} · Matching <span className="font-semibold text-sky-ink">{result.query}</span>{here?.section.more ? ` · ${here.section.more.toLocaleString()} More` : ""}
                   </p>
                   {here && here.shown.length > 0 ? (
                     <div className="mt-2"><TileGrid items={itemsOf(here.shown)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} /></div>
@@ -299,7 +301,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       <span>Also found:</span>
                       {elsewhere.map((f) => (
                         <button key={f.section.id} type="button" onClick={() => setShelfId(f.shelf!.id)} className="rounded-full border border-sky-line px-2 py-0.5 hover:border-sky-accent hover:text-sky-ink">
-                          {(f.section.items.length + (f.section.more ?? 0)).toLocaleString()} {f.shelf!.title.toLowerCase()}
+                          {(f.section.items.length + (f.section.more ?? 0)).toLocaleString()} {f.shelf!.title}
                         </button>
                       ))}
                     </p>
@@ -313,7 +315,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   ) : cuts.map((cut) => (
                     <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
                   ))}
-                  {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
+                  {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} More {titleCase(shelf.unit)}. Search for the rest.</p>}
                 </>
               ) : null}
               {searching && <p className="mt-3 text-[12.5px] text-sky-muted">Searching…</p>}

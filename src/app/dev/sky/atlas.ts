@@ -153,13 +153,13 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     // every word written with it, in teaching order, against the whole vocabulary
     const kebs = VOCAB.filter((w) => w.keb.includes(glyph)).map((w) => w.keb).sort((a, b) => (vocabRow(a)?.beginnerRank ?? Infinity) - (vocabRow(b)?.beginnerRank ?? Infinity));
     const ids = wordIds(kebs);
-    if (ids.length) group("Words written with it", ids, `you know ${knownOf(ids)} of ${ids.length}`);
+    if (ids.length) group("Words written with it", ids, `You know ${knownOf(ids)} of ${ids.length}`);
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Used as a part in", builds, `${builds.length} kanji`);
+    if (builds.length) group("Used as a part in", builds, `${builds.length} Kanji`);
   }
   if (item.kind === "radical") {
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Kanji built from it", builds, `${builds.length} kanji`);
+    if (builds.length) group("Kanji built from it", builds, `${builds.length} Kanji`);
     const known = wordIds(knownWordsUsing(glyph, history));
     if (known.length) group("Words you know that use it", known, `${known.length}`);
   }

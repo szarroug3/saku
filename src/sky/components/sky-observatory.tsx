@@ -184,12 +184,12 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             </p>
           </SkyPanel>
 
-          <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} pieces`} className="shrink-0 !p-4">
+          <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} Pieces`} className="shrink-0 !p-4">
             <PieceMeter className="mt-3" pieces={summary.pieces} cap={cap} />
             <p className={`mt-2 text-[12.5px] ${over ? "text-sky-coral" : "text-sky-muted"}`}>{meterNote}</p>
           </SkyPanel>
 
-          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "pick")} · ${plural(summary.pieces, "piece")}` : "Nothing yet"} className="flex min-h-0 flex-1 flex-col !p-4">
+          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} className="flex min-h-0 flex-1 flex-col !p-4">
             {picks.length === 0 ? (
               <p className="mt-3 flex-1 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
             ) : (
