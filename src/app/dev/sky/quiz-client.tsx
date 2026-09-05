@@ -22,13 +22,13 @@ import { PitchMark } from "./pitch-reading";
 
 /** Whether `given` answers the card. A rolled counting card (say 六十七)
  * carries its own accepted readings; everything else asks the fact. */
-function grade(card: QuizCard, given: string): boolean {
+export function grade(card: QuizCard, given: string): boolean {
   if (card.meta?.accept) return card.meta.accept.split("|").some((a) => romajiMatches(given, a));
   return checkTyped(card.id as FactId, given, (card.meta?.dir ?? "jp2en") as Direction);
 }
 
 /** The app's info mark, restyled for the wash. */
-function Tip({ label, children }: { label: string; children: ReactNode }) {
+export function Tip({ label, children }: { label: string; children: ReactNode }) {
   return <Info label={label} className="ml-1.5 border-sky-accent text-sky-accent hover:bg-sky-accent/15">{children}</Info>;
 }
 

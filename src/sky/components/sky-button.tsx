@@ -72,20 +72,24 @@ export interface SkyChipProps {
   onClick?: () => void;
   title?: string;
   current?: "page" | "step" | "true";
+  /** Greyed, with the reason in its title. */
+  disabled?: boolean;
   className?: string;
   children: ReactNode;
 }
 
 /** A small pill that is on or off: a pager's pages, the Atlas's "also
  * found" counts. One look for every pill (audit, 2026-09-05). */
-export function SkyChip({ on = false, onClick, title, current, className = "", children }: SkyChipProps) {
+export function SkyChip({ on = false, onClick, title, current, disabled = false, className = "", children }: SkyChipProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={title}
+      disabled={disabled}
+      aria-pressed={current ? undefined : on}
       aria-current={on && current ? current : undefined}
-      className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"} ${className}`}
+      className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${disabled ? "cursor-not-allowed border-transparent text-sky-faint line-through" : on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"} ${className}`}
     >
       {children}
     </button>

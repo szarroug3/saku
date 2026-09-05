@@ -40,7 +40,7 @@ import { offerings, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
  * to search); the page mounts a cut's tiles only as it comes into view. */
-const SHELVES: ReadonlyArray<{ id: string; kinds: readonly Kind[]; sky: SkyKind; title: string; unit: string }> = [
+export const SHELVES: ReadonlyArray<{ id: string; kinds: readonly Kind[]; sky: SkyKind; title: string; unit: string }> = [
   { id: "kana", kinds: [KANA_SUBJECT], sky: "kana", title: "Kana", unit: "kana" },
   { id: "radicals", kinds: [RADICAL_SUBJECT], sky: "radical", title: "Radicals", unit: "radicals" },
   { id: "kanji", kinds: [KANJI_SUBJECT], sky: "kanji", title: "Kanji", unit: "kanji" },
@@ -63,7 +63,7 @@ const SEARCH_PER_KIND = 24;
  * Keigo): the term's page carries it, so it is not shown twice. */
 const termNamed = (name: string | undefined) => !!name && TERMS.some((t) => t.name.toLowerCase() === name.toLowerCase());
 const twinned = (e: LibEntry): boolean => (e.kind === MARK_SUBJECT || e.kind === GRAMMAR_CONCEPT_SUBJECT) && termNamed(e.name);
-const all = (kind: Kind): readonly LibEntry[] => (LIB_ENTRIES_BY_KIND.get(kind) ?? []).filter((e) => !twinned(e));
+export const all = (kind: Kind): readonly LibEntry[] => (LIB_ENTRIES_BY_KIND.get(kind) ?? []).filter((e) => !twinned(e));
 
 /** The page to read about a grammar concept: the term of that name when
  * there is one (Keigo), else the concept itself. */

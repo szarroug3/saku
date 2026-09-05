@@ -44,6 +44,11 @@ export interface SkyQuizProps {
   tip?: ComponentType<{ label: string; children: ReactNode }>;
   /** Starts a new quiz of just these cards, from the results. */
   onRetry?: (cardIds: readonly string[]) => void;
+  /** Practice's "no narrowing down": the choices are never offered on a
+   * typed card. */
+  noNarrowing?: boolean;
+  /** Practice's offer to keep the recipe, on the results. */
+  onSave?: () => void;
   height?: string;
 }
 
@@ -76,7 +81,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, noNarrowing = false, onSave, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -220,14 +225,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} tip={tip} onRetry={onRetry} height={height} />;
+    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} tip={tip} onRetry={onRetry} onSave={onSave} height={height} />;
   }
 
   const meta = [KIND_LABEL[card.item.kind], card.seen > 0 ? `seen ${card.seen} ${card.seen === 1 ? "time" : "times"}` : "first time", card.missed > 0 ? `missed ${card.missed} ${card.missed === 1 ? "time" : "times"} before` : null].filter(Boolean).join(" · ");
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
   const triesLeft = maxTries - state.tries;
   const help = [
-    !answered && card.typed && !state.narrowed && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
+    !answered && card.typed && !state.narrowed && !noNarrowing && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
     !answered && card.hint && !state.hinted ? { label: "Hint", run: () => patch({ hinted: true }) } : null,
     !answered ? { label: "I don't know", run: giveUp } : null,
   ].filter((h): h is { label: string; run: () => void } => !!h);

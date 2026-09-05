@@ -16,6 +16,8 @@ import type { AtlasEntry, AtlasSearchResult } from "@/sky/components/sky-atlas";
 
 import { atlasEntryFromHistory, atlasSearchFromHistory, learnerHistory } from "./atlas";
 import { pickFacts } from "./observatory";
+import { practicePreview } from "./practice";
+import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
 import { sampleHistory } from "./sample-learner";
 
 /** "I already know these": claim the picks, the app's own claim (a skip of
@@ -86,4 +88,10 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   revalidatePath("/dev/sky/planetarium");
   revalidatePath("/dev/sky/atlas");
   revalidatePath("/dev/sky/quiz");
+}
+
+/** Practice's live preview: the recipe resolved against the learner (or the
+ * pretend one). Reads only; practice never writes the schedule. */
+export async function practiceLookup(sample: boolean, recipe: Recipe, misses: PracticeMisses): Promise<PracticePreview> {
+  return practicePreview(sample ? sampleHistory() : await learnerHistory(), recipe, misses);
 }
