@@ -131,12 +131,10 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
               <ItemSection
                 key={section.id}
                 title={section.title}
-                intro={section.intro}
-                when={section.when}
+                intro={started ? undefined : section.intro}
+                when={started ? undefined : section.when}
                 start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])), disabled: ids.length === 0 }}
                 claim={!started && section.claimable && onClaim ? { label: claiming ? "Claiming…" : "I already know these", onClick: () => startClaim(() => onClaim(section.id)), disabled: claiming } : undefined}
-                shown={started ? ids.length : undefined}
-                total={started ? section.total : undefined}
               >
                 {started && ids.length > 0 && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
