@@ -105,14 +105,18 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
-        {reading && reading !== item.glyph && (
-          Pitch && typeof teach?.pitch === "number"
-            ? <Pitch reading={reading} downstep={teach.pitch} className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`} />
-            : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
-        )}
-        {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && (
-          <span className="self-center"><Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} /></span>
-        )}
+        {/* the reading and its hear button as one group, so the button
+            centres on the reading rather than on the glyph beside it */}
+        <span className="inline-flex items-center gap-2">
+          {reading && reading !== item.glyph && (
+            Pitch && typeof teach?.pitch === "number"
+              ? <Pitch reading={reading} downstep={teach.pitch} className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`} />
+              : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
+          )}
+          {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && (
+            <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} />
+          )}
+        </span>
       </div>
       {/* a kana's name is its sound, already beside the glyph */}
       {item.kind !== "kana" && (
