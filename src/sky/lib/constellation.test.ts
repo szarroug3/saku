@@ -95,18 +95,18 @@ describe("the constellation layout", () => {
     assert.equal(layout.lines.length, 5, "five members, five links round the ring");
   });
 
-  it("a group inside a group is drawn the same way: no line touches either, each rings its own", () => {
+  it("the row a row builds on is a prerequisite, not part of its picture", () => {
     const kana = (s: string) => [...s].map((k) => item(k, "kana"));
     const rows = buildGraph([
       ...kana("はひふへほ"), ...kana("ばびぶべぼ"),
       { ...item("row:h", "kana", [..."はひふへほ"]), group: true },
       { ...item("row:b", "kana", [..."ばびぶべぼ", "row:h"]), group: true },
     ]);
+    assert.ok(rows.prerequisitesOf("row:b").includes("row:h"), "still needed");
     const layout = layoutConstellation(rows.constellationOf("row:b"));
-    const groups = new Set(layout.stars.map((s, i) => (s.group ? i : -1)).filter((i) => i >= 0));
-    assert.equal(groups.size, 2);
-    assert.ok(layout.lines.every(([a, b]) => !groups.has(a) && !groups.has(b)), "no line touches a group");
-    assert.equal(layout.lines.length, 10, "two rings of five");
+    assert.deepEqual(new Set(layout.stars.filter((s) => !s.group).map((s) => s.id)), new Set([..."ばびぶべぼ"]), "only its own sounds are drawn");
+    assert.equal(layout.stars.filter((s) => s.group).length, 1);
+    assert.equal(layout.lines.length, 5, "one ring of five");
   });
 
   it("role and size helpers", () => {

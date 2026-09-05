@@ -215,6 +215,9 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
       const walk = (node: string) => {
         const d = depth.get(node)! + 1;
         for (const p of prerequisitesOf(node)) {
+          // another group (the row a row builds on) is a prerequisite, not a
+          // part of this picture: its members are its own constellation
+          if (byId.get(p)?.group) continue;
           const key = node + " " + p;
           if (!edgeSeen.has(key)) { edgeSeen.add(key); edges.push([node, p]); }
           const before = depth.get(p);
@@ -223,7 +226,7 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
         }
       };
       walk(id);
-      const nodes = orderOf(id).map((n) => ({ id: n, depth: depth.get(n) ?? 0, ...(byId.get(n)?.group ? { group: true } : {}) })).reverse();
+      const nodes = orderOf(id).filter((n) => depth.has(n)).map((n) => ({ id: n, depth: depth.get(n) ?? 0, ...(byId.get(n)?.group ? { group: true } : {}) })).reverse();
       return { root: id, nodes, edges, ...(byId.get(id)?.group ? { group: true } : {}) };
     },
   };
