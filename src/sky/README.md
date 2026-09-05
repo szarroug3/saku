@@ -244,3 +244,23 @@ outline button; quiet is only for a step back. A raw `<button>` is for a
 thing that is selected (a tile, a row, a choice), never for an action. The
 Quiz's results screen is its own component (`quiz-results.tsx`).
 
+
+### Practice (2026-09-05)
+
+`SkyPractice` (`sky-practice.tsx`) describes a deck rather than assembling
+it: a `Recipe` (`lib/practice.ts`) says what to draw from, what standing it
+should have, whether only things missed before, a radical it must be built
+from, what to be asked for, how many, and whether the choices may ever be
+offered. Presets and saved decks are recipes under a name. The preview is
+the recipe resolved now, shakiest first, with any item droppable. The run
+is `SkyQuiz` with the write target handed in: the Quiz route passes the
+schedule's recorder, the practice route passes a client function that only
+notes misses in the browser, so no practice answer can reach the schedule.
+
+### The Atlas since (2026-09-05)
+
+The kanji shelf carries a "Built from" row of radicals and cuts by one,
+together with the status list. A shelf over 3,000 entries (Words) ships
+its cuts as ids only: each cut fetches its tiles as it scrolls near
+(`AtlasLookup.tiles`), and a status cut of it is answered by the server
+(`AtlasLookup.sections`).

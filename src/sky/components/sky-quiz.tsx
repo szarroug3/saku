@@ -324,10 +324,10 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
 
               {answered && (
                 <div className="mt-4 flex flex-col gap-2">
-                  <p className="text-center">
+                  <div className="text-center">
                     <Eyebrow tone="inherit" size="md" className={`mb-0 ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</Eyebrow>
-                    <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
-                  </p>
+                    <p className="mt-1 text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</p>
+                  </div>
                   <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answerPitch !== undefined && Pitch ? <Pitch reading={card.answer} downstep={card.answerPitch} /> : card.answer}</p>
                   {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
                 </div>

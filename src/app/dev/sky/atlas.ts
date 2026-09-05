@@ -9,7 +9,8 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { KANJI_SUBJECT } from "@/data/kanji";
+import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
+import { builtPieces } from "@/data/kanji-etymology";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
@@ -30,6 +31,7 @@ import { shelfSections } from "@/lib/library/shelf-sections";
 import type { RelatedGroup } from "@/sky/components/lesson-card";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection, AtlasShelf, SkyAtlasData } from "@/sky/components/sky-atlas";
 import type { CoverageCounts } from "@/sky/lib/coverage";
+import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { EntryId, HistoryFile } from "@/types";
 
@@ -54,6 +56,11 @@ export const SHELVES: ReadonlyArray<{ id: string; kinds: readonly Kind[]; sky: S
   // 2026-09-05): one shelf of pages to read, in the app's three cuts
   { id: "terms", kinds: [TERM_SUBJECT, MARK_SUBJECT, GRAMMAR_CONCEPT_SUBJECT], sky: "term", title: "Terms", unit: "terms" },
 ];
+
+/** A shelf bigger than this ships its cuts as ids only; its tiles are
+ * fetched as each cut scrolls near, and a status cut of it is answered by
+ * the server (SAK-328: the Words shelf alone was 2.6 MB of tiles). */
+const STREAM_ABOVE = 3000;
 
 /** How many of a related group are listed; the note carries the whole count. */
 const RELATED_SHOWN = 12;
@@ -127,8 +134,9 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
       if (ids.length) sections.push({ id: cut.id, label: rules ? "Counting rules" : cut.label, items: ids });
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
-    shown.push(...sections.flatMap((s) => s.items));
-    return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
+    const streamed = entries.length > STREAM_ABOVE;
+    if (!streamed) shown.push(...sections.flatMap((s) => s.items));
+    return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf), ...(streamed ? { streamed } : {}) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kinds.includes(kind))!.unit }));
   // the tiles need only what a tile shows, plus how much a quiz could ask
@@ -138,9 +146,40 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     const it = o.items.get(id);
     if (!it) return undefined;
     const { components: _parts, ...rest } = it;
-    return { ...rest, quizzable: quizzableFacts(pickFacts([id]), history).length };
+    // a kanji tile carries the radicals it is built from, so the shelf can
+    // be cut by one (SAK-325): the app's own pieces and its components
+    const parts = it.kind === "kanji" ? [...new Set([...builtPieces(it.glyph).map((p) => p.glyph), ...(kanjiRow(it.glyph)?.comps ?? [])])] : [];
+    return { ...rest, quizzable: quizzableFacts(pickFacts([id]), history).length, ...(parts.length ? { parts } : {}) };
   };
   return { items: shown.map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
+}
+
+/** The tile for each id, the way the shelves ship them: what a streamed
+ * cut asks for as it scrolls near. */
+export function atlasTilesFromHistory(history: HistoryFile, ids: readonly string[], now = Date.now()): SkyItem[] {
+  const o = offerings(history, now);
+  const out: SkyItem[] = [];
+  for (const id of ids) {
+    const it = o.offerPick(id);
+    if (!it) continue;
+    const { components: _parts, ...rest } = it;
+    out.push({ ...rest, quizzable: quizzableFacts(pickFacts([id]), history).length });
+  }
+  return out;
+}
+
+/** A streamed shelf's cuts kept to one standing, answered here because the
+ * client has none of that shelf's standings to cut by. */
+export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, status: Standing, now = Date.now()): AtlasSection[] {
+  const shelf = SHELVES.find((s) => s.id === shelfId);
+  if (!shelf) return [];
+  const o = offerings(history, now);
+  const out: AtlasSection[] = [];
+  for (const cut of shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday"))) {
+    const ids = cut.entries.filter((e) => !twinned(e) && standingFor(e, history, now).standing === status).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
+    if (ids.length) out.push({ id: cut.id, label: cut.label, items: ids });
+  }
+  return out;
 }
 
 /** The app's search, by kind, as Atlas sections. */

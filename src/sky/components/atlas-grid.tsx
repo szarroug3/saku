@@ -67,7 +67,7 @@ export function TileGrid({ items, selected, onPick, onPeek }: TileGridProps) {
 
 /** A cut of a shelf whose tiles mount only as it comes into view. Until
  * then it holds the room its rows will take. */
-export function LazyTileGrid({ label, items, selected, onPick, onPeek }: TileGridProps & { label?: string }) {
+export function LazyTileGrid({ label, items, expected, onNear, selected, onPick, onPeek }: TileGridProps & { label?: string; /** How many tiles the cut holds, when some are still to come. */ expected?: number; /** Called once as the cut nears, to fetch what it is missing. */ onNear?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
@@ -77,13 +77,14 @@ export function LazyTileGrid({ label, items, selected, onPick, onPeek }: TileGri
     io.observe(el);
     return () => io.disconnect();
   }, [near]);
+  useEffect(() => { if (near) onNear?.(); }, [near, onNear]);
   // about eight tiles a row at the narrowest the grid gets; only a guess
   // at the room, replaced by the real rows once mounted
-  const rows = Math.ceil(items.length / 8);
+  const rows = Math.ceil((expected ?? items.length) / 8);
   return (
     <div ref={ref} className="mt-3" style={near ? undefined : { minHeight: `${rows * 70 + (label ? 22 : 0)}px` }}>
       {label && <p className="mb-1.5 text-[11.5px] font-semibold text-sky-muted">{label}</p>}
-      {near && <TileGrid items={items} selected={selected} onPick={onPick} onPeek={onPeek} />}
+      {near && items.length > 0 && <TileGrid items={items} selected={selected} onPick={onPick} onPeek={onPeek} />}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import Link from "next/link";
 import { HearButton } from "@/components/ui/hear-button";
 import { SkyAtlas } from "@/sky/components/sky-atlas";
 
-import { atlasEntry, atlasSearch, claimPicks, unclaimPicks } from "../actions";
+import { atlasEntry, atlasSearch, atlasSections, atlasTiles, claimPicks, unclaimPicks } from "../actions";
 import { atlasFromHistory, learnerAtlas } from "../atlas";
 import { PitchMark } from "../pitch-reading";
 import { sampleHistory } from "../sample-learner";
@@ -34,7 +34,7 @@ export default async function SkyAtlasPage({ searchParams }: { searchParams: Pro
     >
       <SkyAtlas
         data={data}
-        lookup={{ search: atlasSearch.bind(null, sample), entry: atlasEntry.bind(null, sample) }}
+        lookup={{ search: atlasSearch.bind(null, sample), entry: atlasEntry.bind(null, sample), tiles: atlasTiles.bind(null, sample), sections: atlasSections.bind(null, sample) }}
         observatoryHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"}
         quizHref={sample ? "/dev/sky/quiz?sample" : "/dev/sky/quiz"}
         written={WrittenBlock}

@@ -76,6 +76,9 @@ export interface SkyItem {
   /** Its parts are its content and the card lists them itself (the 〜つ
    * rule's ten forms), so the card shows no "Made of". */
   listsParts?: boolean;
+  /** The radicals a kanji is built from, for looking a kanji up by what
+   * can be seen in it (SAK-325). Only on a kanji tile. */
+  parts?: readonly string[];
   /** How it is going, in the app's own words (SAK-294): the six standings of
    * src/sky/lib/standing.ts. Painted only beside a legend or as a chip. */
   standing: Standing;

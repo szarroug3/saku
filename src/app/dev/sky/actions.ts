@@ -12,9 +12,11 @@ import { dropClaims, saveClaims, saveSession } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizAnswer } from "@/sky/lib/quiz";
 import type { FactId, SessionStats } from "@/types";
-import type { AtlasEntry, AtlasSearchResult } from "@/sky/components/sky-atlas";
+import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/components/sky-atlas";
+import type { Standing } from "@/sky/lib/standing";
+import type { SkyItem } from "@/sky/lib/types";
 
-import { atlasEntryFromHistory, atlasSearchFromHistory, learnerHistory } from "./atlas";
+import { atlasEntryFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { pickFacts } from "./observatory";
 import { practicePreview } from "./practice";
 import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
@@ -88,6 +90,16 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   revalidatePath("/dev/sky/planetarium");
   revalidatePath("/dev/sky/atlas");
   revalidatePath("/dev/sky/quiz");
+}
+
+/** A streamed shelf's tiles, for the ids of a cut that scrolled near. */
+export async function atlasTiles(sample: boolean, ids: readonly string[]): Promise<SkyItem[]> {
+  return atlasTilesFromHistory(sample ? sampleHistory() : await learnerHistory(), ids);
+}
+
+/** A streamed shelf's cuts, kept to one standing. */
+export async function atlasSections(sample: boolean, shelfId: string, status: Standing): Promise<AtlasSection[]> {
+  return atlasSectionsFromHistory(sample ? sampleHistory() : await learnerHistory(), shelfId, status);
 }
 
 /** Practice's live preview: the recipe resolved against the learner (or the

@@ -18,7 +18,7 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { AtlasRail } from "@/sky/components/atlas-rail";
@@ -62,6 +62,9 @@ export interface AtlasShelf {
   sections: readonly AtlasSection[];
   /** How many of the collection are not on the shelf. */
   more: number;
+  /** Its tiles are not shipped: each cut fetches its own as it scrolls
+   * near, and a status cut is asked of the server (SAK-328). */
+  streamed?: boolean;
 }
 
 export interface SkyAtlasData {
@@ -93,6 +96,10 @@ export type WrittenComponent = ComponentType<{ glyph: string }>;
 export interface AtlasLookup {
   search: (query: string) => Promise<AtlasSearchResult>;
   entry: (id: string) => Promise<AtlasEntry>;
+  /** A streamed shelf's tiles, for a cut that scrolled near. */
+  tiles: (ids: readonly string[]) => Promise<readonly SkyItem[]>;
+  /** A streamed shelf's cuts kept to one standing. */
+  sections: (shelfId: string, status: Standing) => Promise<readonly AtlasSection[]>;
 }
 
 export interface SkyAtlasProps {
@@ -151,7 +158,17 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
 
   // the rail: one collection open at a time, and one status or all
   const [railOpen, setRailOpen] = useState(true);
-  const [shelfId, setShelfId] = useState(data.shelves[0]?.id ?? "");
+  const [shelfId, setShelf] = useState(data.shelves[0]?.id ?? "");
+  // the kanji shelf can be cut by a radical (SAK-325): the way a kanji seen
+  // in the wild is found, by what can be seen in it. It combines with the
+  // status, and clears when another shelf opens.
+  const [component, setComponent] = useState<string | null>(null);
+  const setShelfId = useCallback((id: string) => { setShelf(id); setComponent(null); }, []);
+  const parts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const it of data.items) if (it.kind === "kanji") for (const r of it.parts ?? []) counts.set(r, (counts.get(r) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([glyph, count]) => ({ glyph, count }));
+  }, [data.items]);
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
   const counts = shelf ? tally(shelf) : undefined;
@@ -163,7 +180,26 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const filter = tracked ? status : null;
   // "2,136 Shown", or with a status picked "43 Shaky" (Sam's wording: title case)
   const shownWord = filter ? titleCase(STANDING[filter].label) : "Shown";
-  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter); }, [graph, filter]);
+  const part = shelf?.id === "kanji" ? component : null;
+  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter) && (part === null || it.kind !== "kanji" || !!it.parts?.includes(part)); }, [graph, filter, part]);
+
+  // a streamed shelf: its cuts fetch their tiles as they near; with a status
+  // picked its cuts come from the server, since no standings are here to cut by
+  const [streamedCuts, setStreamedCuts] = useState<ReadonlyMap<string, readonly AtlasSection[]>>(new Map());
+  const streamKey = shelf?.streamed && filter ? `${shelf.id}:${filter}` : null;
+  useEffect(() => {
+    if (!streamKey || streamedCuts.has(streamKey) || !shelf) return;
+    let live = true;
+    lookup.sections(shelf.id, filter!).then((cuts) => { if (live) setStreamedCuts((prev) => new Map(prev).set(streamKey, cuts)); });
+    return () => { live = false; };
+  }, [streamKey, streamedCuts, shelf, filter, lookup]);
+  const fetching = useRef(new Set<string>());
+  const fetchTiles = useCallback((ids: readonly string[]) => {
+    const missing = ids.filter((id) => !graph.itemOf(id) && !fetching.current.has(id));
+    if (!missing.length) return;
+    for (const id of missing) fetching.current.add(id);
+    lookup.tiles(missing).then((tiles) => bring(tiles)).catch(() => { for (const id of missing) fetching.current.delete(id); });
+  }, [graph, lookup, bring]);
 
   // search: the app's answer, by shelf, after a short pause in typing. The
   // answer is kept with the query it answers, so a cleared or changed box
@@ -192,7 +228,15 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const found = useMemo(() => result?.sections.map((section) => ({ section, shelf: data.shelves.find((s) => s.id === section.id), shown: section.items.filter(keep) })) ?? [], [result, data.shelves, keep]);
   const here = found.find((f) => f.shelf?.id === shelf?.id);
   const elsewhere = found.filter((f) => f.shelf && f.shelf.id !== shelf?.id);
-  const cuts = useMemo(() => shelf?.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0) ?? [], [shelf, keep]);
+  const cuts = useMemo(() => {
+    if (!shelf) return [];
+    if (shelf.streamed) {
+      // unfetched tiles are kept by id; the server's status cut stands in for the filter
+      const base = streamKey ? (streamedCuts.get(streamKey) ?? []) : shelf.sections;
+      return base.map((s) => ({ ...s, items: s.items.filter((id) => !graph.itemOf(id) || keep(id)) })).filter((s) => s.items.length > 0);
+    }
+    return shelf.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0);
+  }, [shelf, keep, streamKey, streamedCuts, graph]);
   const shownOnShelf = cuts.reduce((n, s) => n + s.items.length, 0);
   const order = useMemo(() => (result ? (here?.shown ?? []) : cuts.flatMap((c) => c.items)), [result, here, cuts]);
 
@@ -311,11 +355,20 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{part && <> · built from <span className={`font-semibold text-sky-ink ${japaneseFont(part)}`}>{part}</span></>}</p>
+                  {shelf.id === "kanji" && parts.length > 0 && (
+                    <div className="mt-2">
+                      <Eyebrow className="mb-1.5">Built from</Eyebrow>
+                      <div className="flex flex-wrap gap-1.5">
+                        <SkyChip on={component === null} onClick={() => setComponent(null)}>Any</SkyChip>
+                        {parts.slice(0, 48).map((r) => <SkyChip key={r.glyph} on={component === r.glyph} onClick={() => setComponent(component === r.glyph ? null : r.glyph)} className={japaneseFont(r.glyph)}>{r.glyph} · {r.count}</SkyChip>)}
+                      </div>
+                    </div>
+                  )}
                   {cuts.length === 0 ? (
-                    <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
+                    <p className="mt-3 text-[13.5px] text-sky-muted">{part ? `Nothing here built from ${part}${filter ? " with that status" : ""}.` : "Nothing here with that status."}</p>
                   ) : cuts.map((cut) => (
-                    <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
+                    <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} expected={shelf.streamed ? cut.items.length : undefined} onNear={shelf.streamed ? () => fetchTiles(cut.items) : undefined} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
                   ))}
                   {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} More {titleCase(shelf.unit)}. Search for the rest.</p>}
                 </>
@@ -388,6 +441,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                         <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], false)}>{marking ? "Marking…" : "I don't know this"}</SkyButton>
                       )}
                       {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizFor([current.id])}>Quiz me</SkyButton>}
+                      {/* a radical's panel jumps to every kanji built from it (SAK-325) */}
+                      {current.kind === "radical" && <SkyButton variant="outline" onClick={() => { setShelf("kanji"); setComponent(current.glyph); selection.clear(); }}>Kanji built from it</SkyButton>}
                     </>
                   )}
                 />
