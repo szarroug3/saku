@@ -113,7 +113,7 @@ export default function ItemCardGalleryPage() {
         <ItemCard
           key={it.id}
           item={it}
-          pieces={it.pieces}
+          label="word"
           selected={picked.includes(it.id)}
           onClick={() => toggle(it.id)}
         />

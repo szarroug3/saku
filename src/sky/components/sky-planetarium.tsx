@@ -22,6 +22,7 @@ import { SkyPanel } from "@/sky/components/sky-panel";
 import { cartSummary, COMFORTABLE_PIECES, pickBreakdown, pickState, withoutPick, type PickLine } from "@/sky/lib/cart";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
+import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface PlanetariumSection {
@@ -36,8 +37,13 @@ export interface PlanetariumSection {
   items: readonly string[];
   /** How many exist beyond what is shown, when more do. */
   total?: number;
-  /** Set when the whole section is waiting on something. */
+  /** Set when the whole section is waiting on something. Such a section is
+   * not shown at all (Sam's call, 2026-09-04). */
   gate?: ItemSectionProps["gate"];
+  /** The learner has already started this kind of thing, so its things are
+   * laid out straight away; otherwise the section shows what it is and a
+   * Start button, and the things appear once that is pressed. */
+  started?: boolean;
 }
 
 export interface SkyPlanetariumData {
@@ -65,6 +71,14 @@ export interface SkyPlanetariumProps {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/** What kind of thing a card is: a kana row by its script, grammar as a
+ * sentence rule, the rest by the kind's own word. */
+function kindLabel(item: SkyItem): string {
+  if (item.kind === "kana") return /[\u30a0-\u30ff]/.test(item.glyph) ? "katakana" : "hiragana";
+  if (item.kind === "grammar") return "sentence rule";
+  return KIND_LABEL[item.kind];
+}
+
 /** What a pick brings, worded: "1 kanji, 2 pieces under it · already in your sky: 雨 田". */
 function describe(graph: PrerequisiteGraph, line: PickLine, openedBy: readonly string[]): { text: string; free: SkyItem[] } {
   const b = pickBreakdown(graph, line);
@@ -85,6 +99,8 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const [picks, setPicks] = useState<readonly string[]>(initialPicks);
   const [undo, setUndo] = useState<{ removed: string; before: readonly string[] } | null>(null);
+  // sections opened with their Start button this visit, on top of those already started
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
 
   const summary = cartSummary(graph, picks, learned, cap);
   const over = summary.over > 0;
@@ -100,8 +116,6 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   };
   /** What a section lays out: only what can be taken now, the first few. */
   const offered = (section: PlanetariumSection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
-  /** The way into a section: its first thing not yet picked. */
-  const startOf = (section: PlanetariumSection) => offered(section).find((id) => !picks.includes(id));
 
   const nameOf = (id: string) => graph.itemOf(id)?.english ?? id;
   const meterNote = summary.pieces === 0
@@ -117,21 +131,20 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
     <SkyPageShell eyebrow="Planetarium" title="What would you like to learn next?" lede="Pick freely. Nothing here is a fixed order, and anything already in your sky is free." height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
-          {data.sections.map((section) => {
+          {data.sections.filter((section) => !section.gate).map((section) => {
             const ids = offered(section);
-            const first = startOf(section);
+            const started = section.started || opened.has(section.id);
             return (
               <ItemSection
                 key={section.id}
                 title={section.title}
                 intro={section.intro}
                 when={section.when}
-                start={section.gate ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => { if (first) toggle(first); }, disabled: !first }}
-                shown={ids.length}
-                total={section.total}
-                gate={section.gate}
+                start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])), disabled: ids.length === 0 }}
+                shown={started ? ids.length : undefined}
+                total={started ? section.total : undefined}
               >
-                {ids.length > 0 && (
+                {started && ids.length > 0 && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
@@ -146,7 +159,7 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                           : cost.free.length && cost.pieces.length === 1 && item.kind === "word"
                             ? "kanji already in your sky"
                             : undefined;
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} pieces={cost.pieces.length} note={note} onClick={() => toggle(id)} />;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} note={note} onClick={() => toggle(id)} />;
                     })}
                   </div>
                 )}
@@ -209,7 +222,7 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
               </p>
             )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-3 block rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-gold text-sky-gold-ink"}`}>{startLabel}</a>
+              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-3 block rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
             ) : (
               <span aria-disabled className="mt-3 block rounded-[10px] bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold text-sky-faint">{"Start tonight's lesson"}</span>
             )}

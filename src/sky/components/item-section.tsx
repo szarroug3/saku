@@ -89,7 +89,7 @@ export function ItemSection({ title, intro, when, start, shown, total, gate, chi
               type="button"
               onClick={start.onClick}
               disabled={start.disabled}
-              className="shrink-0 rounded-[10px] bg-sky-gold px-3.5 py-2 text-[13px] font-semibold text-sky-gold-ink disabled:bg-sky-card-strong disabled:text-sky-faint"
+              className="shrink-0 rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint"
             >
               {start.label}
             </button>
@@ -117,7 +117,7 @@ function Gate({ gate }: { gate: NonNullable<ItemSectionProps["gate"]> }) {
       {p ? (
         <div className="mt-2.5 flex items-center gap-3">
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-sky-card-strong">
-            <div className="h-full rounded-full bg-sky-gold" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full bg-sky-accent" style={{ width: `${pct}%` }} />
           </div>
           <span className="shrink-0 text-[10.5px] tabular-nums text-sky-muted/80">
             {p.have} of {p.need} {p.unit}

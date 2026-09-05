@@ -21,7 +21,7 @@ export function PieceMeter({ pieces, cap, className = "" }: PieceMeterProps) {
       className={`flex gap-[3px] ${className}`}
     >
       {Array.from({ length: n }, (_, i) => (
-        <span key={i} className={`h-2 flex-1 rounded-[2px] ${i < pieces ? (i < cap ? "bg-sky-gold" : "bg-sky-coral") : "bg-sky-card-strong"}`} />
+        <span key={i} className={`h-2 flex-1 rounded-[2px] ${i < pieces ? (i < cap ? "bg-sky-accent" : "bg-sky-coral") : "bg-sky-card-strong"}`} />
       ))}
     </div>
   );

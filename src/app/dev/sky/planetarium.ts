@@ -128,43 +128,50 @@ export function planetariumFromHistory(history: HistoryFile, now = Date.now()): 
       if (allMet) learned.add(id); else rows.push(id);
     }
   }
-  sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows });
+  sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows, started: kanaMet > 0 });
   const kanaDone = kanaMet >= kanaTotal;
   const afterKana = kanaDone ? undefined : { requirement: "Opens once kana is done. Everything else is read through it.", progress: { have: kanaMet, need: kanaTotal, unit: "kana" } };
 
   // words: the curriculum's order, next ones first
-  const words = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), total: words.length, gate: afterKana });
+  const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e);
+  const words = allWords.filter((e) => !standingFor(e, history, now).met);
+  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), total: words.length, gate: afterKana, started: words.length < allWords.length });
 
   // counting: the track's own order
-  const counting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), total: counting.length, gate: afterKana });
+  const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
+  const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
+  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), total: counting.length, gate: afterKana, started: counting.length < allCounting.length });
 
   // grammar: sentence rules, in the track's order
-  const grammar = CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), total: grammar.length, gate: afterKana });
+  const allGrammar = CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))).filter((e): e is LibEntry => !!e);
+  const grammar = allGrammar.filter((e) => !standingFor(e, history, now).met);
+  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), total: grammar.length, gate: afterKana, started: grammar.length < allGrammar.length });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];
+  let pairsMet = 0;
   for (const p of VERB_PAIRS) {
     const entry = libEntry(pairEntry(p));
-    if (!entry || standingFor(entry, history, now).met) continue;
+    if (!entry) continue;
+    if (standingFor(entry, history, now).met) { pairsMet++; continue; }
     const head = wordEntry(p.happens.word);
     if (head) add(head);
     pairs.push(offer(entry, "verbPair", { headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
   }
-  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), total: pairs.length, gate: afterKana });
+  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), total: pairs.length, gate: afterKana, started: pairsMet > 0 });
 
   // keigo: attached to the plain verb, with the polite words' kanji
   const keigo: string[] = [];
+  let keigoMet = 0;
   for (const set of KEIGO_SETS) {
     const entry = libEntry(keigoSetEntry(set));
-    if (!entry || standingFor(entry, history, now).met) continue;
+    if (!entry) continue;
+    if (standingFor(entry, history, now).met) { keigoMet++; continue; }
     const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
     if (head) add(head);
     keigo.push(offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] }).id);
   }
-  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana });
+  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0 });
 
   return { items: [...items.values()], learned: [...learned], sections };
 }

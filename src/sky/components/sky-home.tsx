@@ -68,7 +68,7 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           <div className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">Your sky is empty tonight.</p>
             <p className="max-w-[44ch] text-[14px] text-sky-muted">Pick something to learn and it appears here as its own constellation. The first kana are a good place to start.</p>
-            <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-gold px-3.5 py-2 text-sm font-semibold text-sky-gold-ink">Open the Planetarium</a>
+            <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-accent px-3.5 py-2 text-sm font-semibold text-sky-accent-ink">Open the Planetarium</a>
           </div>
         ) : (
           <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />

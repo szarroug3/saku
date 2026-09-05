@@ -33,7 +33,7 @@
 //   hidden is never explained; what is shown and dashed is.
 //
 // Painted in the Sky's own tokens: it sits on the wash, never on the app's
-// light card.
+// light card. Selected keeps its ground and takes the accent on its border.
 
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { SkyItem } from "@/sky/lib/types";
@@ -49,25 +49,10 @@ export interface ItemCardProps {
    * a couple of hundred glyphs on screen at once. */
   density?: ItemCardDensity;
   selected?: boolean;
-  /**
-   * How many pieces this pick commits you to: every distinct node in its
-   * prerequisite tree, counted once. Planetarium only.
-   *
-   * Not an optional decoration. If the card showed the number of picks instead,
-   * it would say 1 for a word that is really eight things to learn, and
-   * understate exactly the overload the Planetarium exists to warn about.
-   *
-   * A piece reached by more than one parent is still one piece. For a word made
-   * of kanji A and kanji B, where A is built from radicals A and B and B is
-   * built from radicals A and C, radical A is counted once:
-   *
-   *     word + kanji A + radical A + radical B + kanji B + radical C = 6
-   *
-   * So the number is intrinsic to the item and stays comparable between cards.
-   * It does not shift depending on what else is in the cart; the cart's own
-   * total does that deduplication across picks, where it can be explained.
-   */
-  pieces?: number;
+  /** The line under the name, in the accent: what kind of thing this is,
+   * "hiragana", "word", "sentence rule" (Sam's call, 2026-09-04: the kind,
+   * not the piece count; the cart carries the cost). */
+  label?: string;
   /** The reason this cannot be picked yet, worded for the learner: "needs the
    * K row first". Shown in place of the cost; the card is dashed and inert. */
   locked?: string;
@@ -126,7 +111,7 @@ export function ItemCard({
   lead = "english",
   density = "comfortable",
   selected = false,
-  pieces,
+  label,
   locked,
   note,
   onClick,
@@ -142,8 +127,8 @@ export function ItemCard({
         "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center font-sky-ui",
         BOX[density],
         "border transition-colors",
-        locked ? "cursor-not-allowed border-dashed border-sky-line bg-transparent opacity-60" : selected ? "border-sky-gold bg-sky-gold/10" : "border-sky-line bg-sky-panel",
-        isButton ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
+        locked ? "cursor-not-allowed border-dashed border-sky-line bg-transparent opacity-60" : selected ? "border-sky-accent bg-sky-panel" : "border-sky-line bg-sky-panel",
+        isButton && !selected ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -180,7 +165,7 @@ export function ItemCard({
             {item.glyph}
           </span>
           <span
-            className={`mt-1 w-full truncate text-sky-gold ${
+            className={`mt-1 w-full truncate text-sky-accent ${
               density === "compact" ? "text-[9.5px]" : "text-[11.5px]"
             }`}
           >
@@ -198,16 +183,12 @@ export function ItemCard({
             {item.english}
           </span>
 
-          {/* What the pick commits you to, in the accent because on this page
-              the number IS the decision. Anchored to the bottom so it sits on
-              one line across a whole row, which is what makes two cards
-              comparable at a glance. */}
+          {/* What kind of thing it is, in the accent, anchored to the bottom so
+              it sits on one line across a whole row. */}
           {locked ? (
             <span className="shrink-0 pt-1.5 text-[10.5px] text-sky-muted">{locked}</span>
-          ) : pieces !== undefined ? (
-            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-gold">
-              {pieces} {pieces === 1 ? "piece" : "pieces"}
-            </span>
+          ) : label ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-accent">{label}</span>
           ) : null}
           {!locked && note ? <span className="shrink-0 pt-0.5 text-[10.5px] text-sky-muted">{note}</span> : null}
         </>
