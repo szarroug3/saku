@@ -49,10 +49,11 @@ export function Tile({ item, selected, onPick, onPeek }: { item: SkyItem; select
 }
 
 export function TileGrid({ items, selected, onPick, onPeek }: TileGridProps) {
-  // a cut of names (the sentence rules) lays out in wider tiles
+  // tiles keep one size whatever the grid's width (the panel opening beside
+  // it must not resize them): fixed columns, wider for a cut of names
   const wide = items.some((it) => isName(it.glyph));
   return (
-    <div className={`grid gap-1.5 ${wide ? "grid-cols-[repeat(auto-fill,minmax(120px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(64px,1fr))]"}`}>
+    <div className={`grid gap-1.5 ${wide ? "grid-cols-[repeat(auto-fill,130px)]" : "grid-cols-[repeat(auto-fill,72px)]"}`}>
       {items.map((it) => <Tile key={it.id} item={it} selected={selected.has(it.id)} onPick={onPick} onPeek={onPeek} />)}
     </div>
   );

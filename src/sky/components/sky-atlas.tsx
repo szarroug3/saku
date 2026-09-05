@@ -148,11 +148,12 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
   const counts = shelf ? tally(shelf) : undefined;
-  // a term carries no standing (nothing is ever asked about it), so its
-  // shelf shows no status list and no coverage
-  const tracked = shelf?.kind !== "term";
   const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
-  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (status === null || it.standing === status); }, [graph, status]);
+  // a term carries no standing (nothing is ever asked about it), so its
+  // shelf shows no status list, no coverage, and ignores the status filter
+  const tracked = shelf?.kind !== "term";
+  const filter = tracked ? status : null;
+  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter); }, [graph, filter]);
 
   // search: the app's answer, by shelf, after a short pause in typing. The
   // answer is kept with the query it answers, so a cleared or changed box
@@ -282,13 +283,13 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
               {result ? (
                 <>
                   <p className="mt-4 text-[12.5px] text-sky-muted">
-                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{status ? ` · ${STANDING[status].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
+                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{filter ? ` · ${STANDING[filter].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
                   </p>
                   {here && here.shown.length > 0 ? (
                     <div className="mt-2"><TileGrid items={itemsOf(here.shown)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} /></div>
                   ) : (
                     <p className="mt-3 text-[13.5px] text-sky-muted">
-                      {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${status ? " with that status" : ""}.`}
+                      {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${filter ? " with that status" : ""}.`}
                     </p>
                   )}
                   {elsewhere.length > 0 && (
@@ -304,7 +305,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> shown{status ? ` · ${STANDING[status].label}` : ""}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> shown{filter ? ` · ${STANDING[filter].label}` : ""}</p>
                   {cuts.length === 0 ? (
                     <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
                   ) : cuts.map((cut) => (
