@@ -102,10 +102,12 @@ function teachFor(item: SkyItem): LessonTeach {
     const set = keigoSetForEntry(item.id as Parameters<typeof keigoSetForEntry>[0]);
     if (set) {
       t.meanings = [set.meaning];
-      t.notes = [
-        ...(set.plain.length ? [`Plain: ${set.plain.map((v) => `${v.keb} (${v.reading})`).join(", ")}`] : []),
-        ...set.words.map((w) => `${w.word} (${w.reading}): ${w.register}${w.use ? ` · ${w.use}` : ""}`),
-      ];
+      t.notes = set.formulaic
+        ? ["This one is different. It isn't the polite version of a verb you already know. It's a fixed phrase: the greeting shop and restaurant staff call out to welcome a customer in, roughly \"welcome, come in!\" You'll hear it, not say it, so learn it by ear."]
+        : [
+            ...(set.plain.length ? [`Plain: ${set.plain.map((v) => `${v.keb} (${v.reading})`).join(", ")}`] : []),
+            ...set.words.map((w) => `${w.word} (${w.reading}): ${w.register}${w.use ? ` · ${w.use}` : ""}`),
+          ];
     }
     return t;
   }
@@ -173,15 +175,25 @@ function pagesFor(starIds: readonly string[], history: HistoryFile): LessonPage[
   const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
+  // pages go before the first of OUR stars not yet passed, not before the
+  // app's next item: a piece with no facts of its own (艹) is a star here
+  // but never an item there, and a page must not land after it
+  let cursor = 0;
   for (const step of appLessonSteps(facts, history)) {
     if (step.type === "item") {
-      for (const page of pending) pages.push({ ...page, before: step.item.entry });
+      const at = starIds.indexOf(step.item.entry);
+      if (at < 0) continue;
+      const before = starIds[Math.min(cursor, at)];
+      for (const page of pending) pages.push({ ...page, before });
       pending = [];
+      cursor = at + 1;
     } else if (step.type === "intro") {
-      pending.push({ kind: "Intro", title: step.intro.title, body: step.intro.body.map((b) => (b.heading ? `${b.heading}. ` : "") + b.text) });
+      // named the way the app's own rail names it: a short name, else the eyebrow
+      const title = step.intro.name ?? step.intro.eyebrow ?? step.intro.title;
+      pending.push({ kind: "Intro", title, lead: title === step.intro.title ? undefined : step.intro.title, body: step.intro.body.map((b) => (b.heading ? `${b.heading}. ` : "") + b.text) });
     } else if (step.type === "term") {
       const term = TERMS.find((t) => termEntry(t.id) === step.entry);
-      if (term) pending.push({ kind: "Term", title: term.name, body: [term.summary, ...term.body] });
+      if (term) pending.push({ kind: "Term", title: term.name, lead: term.summary, body: [...term.body] });
     } else if (step.type === "conversion") {
       pending.push({ kind: "Sound shift", title: `${step.row.from} to ${step.row.to}`, body: [step.row.hook] });
     }

@@ -11,7 +11,7 @@
 // page header. A star already in the sky says so and is here for
 // reference. Sparse items stay short: nothing is padded.
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -31,15 +31,22 @@ export interface LessonCardProps {
   /** The stroke order and its notes, from whoever has them; goes in the
    * "How it's written" fold. */
   written?: ReactNode;
+  /** A button that speaks a reading, from whoever has the voice: beside the
+   * glyph's reading, each of a kanji's readings and the example word. */
+  hear?: HearComponent;
   className?: string;
 }
+
+/** What a hear button takes: the kana to say and, for a word, the mora its
+ * pitch falls after. */
+export type HearComponent = ComponentType<{ glyph: string; downstep?: number; className?: string; label?: string }>;
 
 /** What each kind is, in the learner's terms. */
 const ROLE: Record<SkyItem["kind"], string> = {
   kana: "a sound, one syllable",
   radical: "a piece characters are built from",
   kanji: "a character words are built with",
-  word: "a word",
+  word: "",
   counter: "a counting word",
   grammar: "a sentence rule",
   verbPair: "a verb and its partner",
@@ -70,7 +77,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const reading = teach?.reading ?? item.reading;
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
@@ -81,6 +88,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       {rows.map((r) => (
         <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
+          {Hear && <Hear glyph={r.reading} />}
           {r.words.length > 0 && <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
         </li>
       ))}
@@ -89,11 +97,14 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
 
   return (
     <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
-      <Eyebrow>{KIND_LABEL[item.kind]} · {ROLE[item.kind]}</Eyebrow>
+      <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {reading && reading !== item.glyph && <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>}
         {teach?.pitch !== undefined && teach.pitch !== null && <span className="text-[12.5px] text-sky-muted">pitch {teach.pitch}</span>}
+        {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && (
+          <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} />
+        )}
       </div>
       {/* a kana's name is its sound, already beside the glyph */}
       {item.kind !== "kana" && (
@@ -131,6 +142,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
               <p className="mt-1 flex items-baseline gap-3 border-t border-sky-line pt-2">
                 <span className={`font-sky-display text-[24px] leading-none text-sky-ink ${japaneseFont(teach.exampleWord.word)}`}>{teach.exampleWord.word}</span>
                 <span className="text-[13.5px] text-sky-muted">{teach.exampleWord.reading} · {teach.exampleWord.gloss}</span>
+                {Hear && <Hear glyph={teach.exampleWord.word} />}
               </p>
             )}
           </div>
@@ -200,6 +212,7 @@ export function LessonPageCard({ page, className = "" }: { page: LessonPage; cla
     <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
       <Eyebrow>{page.kind}</Eyebrow>
       <h2 className="font-sky-display text-[26px] leading-tight">{page.title}</h2>
+      {page.lead && <p className="mt-2 max-w-[64ch] text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
       <div className="mt-3 flex max-w-[64ch] flex-col gap-2.5">
         {page.body.map((para, i) => <p key={i} className="text-[14.5px] leading-relaxed text-sky-ink/90">{para}</p>)}
       </div>

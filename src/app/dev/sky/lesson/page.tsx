@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 
+import { HearButton } from "@/components/ui/hear-button";
 import { SkyLesson } from "@/sky/components/sky-lesson";
 
 import { learnerLesson, lessonFromPicks, showcasePicks } from "../lesson";
@@ -39,7 +40,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
         </>
       }
     >
-      <SkyLesson data={data} drillHref="/session" written={written} height="100%" />
+      <SkyLesson data={data} drillHref="/session" written={written} hear={HearButton} height="100%" />
     </SkyPage>
   );
 }

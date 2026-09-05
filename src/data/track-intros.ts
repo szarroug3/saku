@@ -77,6 +77,7 @@ export type TrackId =
 
 export const HIRAGANA_TRACK: PhaseIntro = {
   id: "track-hiragana",
+  name: "Hiragana",
   setId: "hiragana",
   eyebrow: "What hiragana is",
   title: "Japanese is written in kana, and hiragana is the first half of it.",
@@ -107,6 +108,7 @@ export const HIRAGANA_TRACK: PhaseIntro = {
 
 export const KATAKANA_TRACK: PhaseIntro = {
   id: "track-katakana",
+  name: "Katakana",
   setId: "katakana",
   eyebrow: "What katakana is",
   title: "Katakana is the other half of kana: the same sounds, a second set of shapes.",
@@ -147,6 +149,7 @@ export const KATAKANA_TRACK: PhaseIntro = {
 
 export const RADICAL_TRACK: PhaseIntro = {
   id: "track-radical",
+  name: "Radicals",
   setId: "",
   eyebrow: "What a radical is",
   title: "A radical is a piece other kanji are built out of.",
@@ -178,6 +181,7 @@ export const RADICAL_TRACK: PhaseIntro = {
 
 export const KANJI_TRACK: PhaseIntro = {
   id: "track-kanji",
+  name: "Kanji",
   setId: "",
   eyebrow: "What kanji are",
   title: "Kanji are the characters Japanese words are written with.",
@@ -195,6 +199,7 @@ export const KANJI_TRACK: PhaseIntro = {
 
 export const WORD_TRACK: PhaseIntro = {
   id: "track-word",
+  name: "Words",
   setId: "",
   eyebrow: "What words add",
   title: "Words are the part you actually speak and read.",
@@ -228,6 +233,7 @@ export const WORD_TRACK: PhaseIntro = {
 // way every other concept card here names its own examples.
 export const VARIANT_INTRO: PhaseIntro = {
   id: "intro-variant-forms",
+  name: "Radical alternate forms",
   setId: "",
   eyebrow: "What a variant form is",
   title: "A character changes shape depending on where it sits inside a kanji.",
@@ -254,6 +260,7 @@ export const VARIANT_INTRO: PhaseIntro = {
 
 export const GRAMMAR_TRACK: PhaseIntro = {
   id: "track-grammar",
+  name: "Grammar",
   setId: "",
   eyebrow: "What grammar is here",
   title: "Grammar is how words become sentences.",
@@ -278,6 +285,7 @@ export const GRAMMAR_TRACK: PhaseIntro = {
 // rewrite in her voice. Every string here is quoted in the task report.
 export const COUNTERS_TRACK: PhaseIntro = {
   id: "track-counters",
+  name: "Counters",
   setId: "",
   eyebrow: "What this track teaches",
   title: "Counting in Japanese uses a small word that changes with what you count.",
@@ -296,6 +304,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
 // term page.
 export const TSU_INTRO: PhaseIntro = {
   id: "intro-tsu",
+  name: "〜つ",
   setId: "",
   eyebrow: "Where to start",
   title: "〜つ works when nothing else does.",
@@ -313,6 +322,7 @@ export const TSU_INTRO: PhaseIntro = {
 // not assumed to know them. Every string is quoted in the task report.
 export const KEIGO_TRACK: PhaseIntro = {
   id: "track-keigo",
+  name: "Keigo",
   setId: "",
   eyebrow: "What keigo is",
   title: "Japanese changes a verb by who you are speaking to, and about whom.",

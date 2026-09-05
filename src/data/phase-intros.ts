@@ -635,6 +635,7 @@ export interface SentenceExample {
 
 export const DAKUTEN_H: PhaseIntro = {
   id: "intro-dakuten-hiragana",
+  name: "Dakuten and handakuten",
   setId: "hiragana",
   title: "Two marks change the sound, not the character.",
   body: [
@@ -668,6 +669,7 @@ export const DAKUTEN_H: PhaseIntro = {
 
 export const DAKUTEN_K: PhaseIntro = {
   id: "intro-dakuten-katakana",
+  name: "Dakuten and handakuten in katakana",
   setId: "katakana",
   title: "Two marks change the sound, not the character.",
   body: [
@@ -695,6 +697,7 @@ export const DAKUTEN_K: PhaseIntro = {
 
 export const COMBO_H: PhaseIntro = {
   id: "intro-combo-hiragana",
+  name: "Small や, ゆ, よ",
   setId: "hiragana",
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
@@ -718,6 +721,7 @@ export const COMBO_H: PhaseIntro = {
 
 export const COMBO_K: PhaseIntro = {
   id: "intro-combo-katakana",
+  name: "Small ャ, ュ, ョ",
   setId: "katakana",
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
@@ -741,6 +745,7 @@ export const COMBO_K: PhaseIntro = {
 
 export const LONG_H: PhaseIntro = {
   id: "intro-long-vowel-hiragana",
+  name: "Long vowels",
   setId: "hiragana",
   title: "A held vowel is a different word.",
   body: [
@@ -766,6 +771,7 @@ export const LONG_H: PhaseIntro = {
 
 export const LONG_K: PhaseIntro = {
   id: "intro-long-vowel-katakana",
+  name: "Long vowels in katakana",
   setId: "katakana",
   title: "Katakana holds a vowel with one long dash.",
   body: [
@@ -830,6 +836,7 @@ export const LONG_K: PhaseIntro = {
 
 export const SOKUON_H: PhaseIntro = {
   id: "intro-sokuon-hiragana",
+  name: "Small っ",
   setId: "hiragana",
   title: "A small っ is not a sound. It doubles the next consonant.",
   body: [
@@ -855,6 +862,7 @@ export const SOKUON_H: PhaseIntro = {
 
 export const SOKUON_K: PhaseIntro = {
   id: "intro-sokuon-katakana",
+  name: "Small ッ",
   setId: "katakana",
   title: "A small ッ does the same thing on this side.",
   body: [
@@ -903,6 +911,7 @@ export const SOKUON_K: PhaseIntro = {
 // its /o/ reading (src/data/mnemonics.ts).
 export const PARTICLE_RULE: PhaseIntro = {
   id: "intro-particle-reading",
+  name: "Particles は, へ, を",
   setId: "hiragana",
   title: "Three kana change their sound when they do a job.",
   body: [
@@ -937,6 +946,7 @@ export const PARTICLE_RULE: PhaseIntro = {
 // not try to be a full style guide for a system that has one.
 export const PUNCTUATION: PhaseIntro = {
   id: "intro-punctuation",
+  name: "Punctuation",
   setId: NO_SCRIPT,
   title: "Japanese punctuates its sentences differently.",
   body: [
@@ -966,6 +976,7 @@ export const PUNCTUATION: PhaseIntro = {
 // 様々, 少々, 国々), not invented forms.
 export const ITERATION_MARK: PhaseIntro = {
   id: "intro-iteration-mark",
+  name: "The 々 mark",
   setId: NO_SCRIPT,
   title: "々 repeats the kanji before it.",
   body: [
@@ -1008,6 +1019,7 @@ export const ITERATION_MARK: PhaseIntro = {
 // have; the tendency plus "learn the reading as given" is the honest amount.
 export const RENDAKU: PhaseIntro = {
   id: "intro-rendaku",
+  name: "Rendaku",
   setId: NO_SCRIPT,
   title: "In a compound, the second word's first sound often changes.",
   body: [
@@ -1062,6 +1074,7 @@ export const RENDAKU: PhaseIntro = {
 // invented forms. marks.ts renders the same three objects on the Library page.
 export const OKURIGANA_INTRO: PhaseIntro = {
   id: "intro-okurigana",
+  name: "Okurigana",
   setId: NO_SCRIPT,
   title: "The kanji does not always finish the word.",
   body: [
@@ -1082,6 +1095,7 @@ export const OKURIGANA_INTRO: PhaseIntro = {
 
 export const OKURIGANA_MOVING: PhaseIntro = {
   id: "intro-okurigana-moving",
+  name: "Moving okurigana",
   setId: NO_SCRIPT,
   title: "Sometimes the tail moves. Sometimes it stays.",
   body: [
@@ -1118,6 +1132,7 @@ export const OKURIGANA_MOVING: PhaseIntro = {
 // language instead. The examples are early, common curated pairs.
 export const TRANSITIVITY_INTRO: PhaseIntro = {
   id: "intro-transitivity",
+  name: "Verb pairs",
   setId: NO_SCRIPT,
   title: "Some verbs come in twos: one for when it happens, one for when you do it.",
   body: [
@@ -1175,6 +1190,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
 // draft string is quoted in the task report.
 export const COUNTER_SOUND_CHANGE: PhaseIntro = {
   id: "intro-counter-sound-change",
+  name: "Counter sound changes",
   setId: NO_SCRIPT,
   title: "Some counters change their sound after certain numbers.",
   body: [
@@ -1211,6 +1227,7 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
 // (number-reading.ts); the prose is the owner's to finalize.
 export const NUMBERS_COMPOSE: PhaseIntro = {
   id: "intro-numbers-compose",
+  name: "Building numbers",
   setId: NO_SCRIPT,
   title: "Past ten, you build numbers instead of memorizing them.",
   body: [
@@ -1247,6 +1264,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
 // the prose is the owner's to finalize. Mirrors NUMBERS_COMPOSE's structure.
 export const NUMBERS_BIG: PhaseIntro = {
   id: "intro-numbers-big",
+  name: "Big numbers",
   setId: NO_SCRIPT,
   title: "The big steps are their own words. Everything between builds from them.",
   body: [
@@ -1302,6 +1320,7 @@ export const NUMBERS_BIG: PhaseIntro = {
 // spelling of one script.
 export const PITCH_INTRO: PhaseIntro = {
   id: "intro-pitch",
+  name: "Pitch accent",
   setId: NO_SCRIPT,
   eyebrow: "What pitch accent is",
   title: "A word carries a tune: some morae are said high, some low.",
@@ -1370,6 +1389,7 @@ export const PITCH_INTRO: PhaseIntro = {
 // both on'yomi and kun'yomi.
 export const ONYOMI_INTRO: PhaseIntro = {
   id: "intro-onyomi",
+  name: "Kun’yomi and on’yomi",
   setId: NO_SCRIPT,
   eyebrow: "Kun’yomi and on’yomi",
   title: "A kanji can carry a native Japanese reading and a borrowed Chinese reading.",
@@ -1399,6 +1419,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
 // kanji (河 = 氵 + 可, 明 = 日 + 月).
 export const BUILT_FROM_INTRO: PhaseIntro = {
   id: "intro-built-from",
+  name: "How a kanji is built",
   setId: NO_SCRIPT,
   eyebrow: "How a kanji is built",
   title: "A kanji's pieces do one of two jobs: give the meaning, or give the sound.",

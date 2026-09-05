@@ -68,7 +68,11 @@ export interface LessonPage {
   before: string;
   /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
   kind: string;
+  /** Short: "Radicals", "Pitch accent". */
   title: string;
+  /** The page's one sentence, when it has one: "A radical is a piece other
+   * kanji are built out of." */
+  lead?: string;
   body: readonly string[];
 }
 

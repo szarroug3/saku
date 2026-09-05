@@ -14,7 +14,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
-import { LessonCard, LessonPageCard } from "@/sky/components/lesson-card";
+import { LessonCard, LessonPageCard, type HearComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
@@ -42,12 +42,14 @@ export interface SkyLessonProps {
   drillHref?: string;
   /** "How it's written" per star, from whoever has the stroke order. */
   written?: Readonly<Record<string, ReactNode>>;
+  /** A button that speaks a reading, from whoever has the voice. */
+  hear?: HearComponent;
   height?: string;
 }
 
 const BTN = "rounded-[10px] px-3.5 py-2 text-[13px] font-semibold";
 
-export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, written, hear, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
@@ -136,6 +138,7 @@ export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) 
                 partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
                 known={learned.has(current.id)}
                 written={written?.[current.id]}
+                hear={hear}
                 onSelect={open}
               />
             ) : (
@@ -174,7 +177,7 @@ export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) 
                       onClick={() => open(s.id)}
                       className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
                     >
-                      <span className={`font-sky-display text-[17px] leading-none ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
+                      <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
                       <span className="text-[12.5px] text-sky-muted">{it?.english}</span>
                     </button>
                   </li>
