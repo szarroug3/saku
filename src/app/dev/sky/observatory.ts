@@ -22,6 +22,8 @@
 
 import { KANA_SUBJECT, SETS, kanaEntry } from "@/data/characters";
 import { TERM_SUBJECT } from "@/data/terms";
+import { MARK_SUBJECT } from "@/data/marks";
+import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
@@ -250,6 +252,10 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
       case KANJI_SUBJECT: return offer(entry, "kanji");
       // a term is its name: a page to read, never a star
       case TERM_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "term", { english: name, glyph: name }); }
+      // a writing rule is its mark where it has one (゛, っ), else its name
+      // (long vowels, rendaku); a grammar concept is its name. Pages to read.
+      case MARK_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "mark", { english: name, glyph: entry.glyph || name }); }
+      case GRAMMAR_CONCEPT_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "concept", { english: name, glyph: name }); }
       default: return offer(entry, "word");
     }
   };

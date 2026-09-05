@@ -34,7 +34,7 @@ import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
-import type { SkyItem, SkyKind } from "@/sky/lib/types";
+import { isPage, type SkyItem, type SkyKind } from "@/sky/lib/types";
 
 /** One cut of a shelf: a name and the entries under it. */
 export interface AtlasSection {
@@ -131,6 +131,9 @@ function tally(shelf: AtlasShelf): Record<Standing, number> {
 
 const unknown = (it: SkyItem) => it.standing === "not-seen";
 
+/** "23 Words", "1 Word": a count with the collection's name, singular for one. */
+const countOf = (n: number, title: string) => `${n.toLocaleString()} ${n === 1 && title.endsWith("s") ? title.slice(0, -1) : title}`;
+
 export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entries brought with them, so every tile and card has its parts
@@ -151,9 +154,10 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const [status, setStatus] = useState<Standing | null>(null);
   const counts = shelf ? tally(shelf) : undefined;
   const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
-  // a term carries no standing (nothing is ever asked about it), so its
+  // a page to read (a term, a writing rule, a concept) carries no standing
+  // (nothing is ever asked about it), so its
   // shelf shows no status list, no coverage, and ignores the status filter
-  const tracked = shelf?.kind !== "term";
+  const tracked = !shelf || !isPage(shelf.kind);
   const filter = tracked ? status : null;
   // "2,136 Shown", or with a status picked "43 Shaky" (Sam's wording: title case)
   const shownWord = filter ? titleCase(STANDING[filter].label) : "Shown";
@@ -303,7 +307,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       <span>Also found:</span>
                       {elsewhere.map((f) => (
                         <button key={f.section.id} type="button" onClick={() => setShelfId(f.shelf!.id)} className="rounded-full border border-sky-line px-2 py-0.5 hover:border-sky-accent hover:text-sky-ink">
-                          {(f.section.items.length + (f.section.more ?? 0)).toLocaleString()} {f.shelf!.title}
+                          {countOf(f.section.items.length + (f.section.more ?? 0), f.shelf!.title)}
                         </button>
                       ))}
                     </p>
@@ -367,7 +371,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                   partOf={[]}
                   known={false}
-                  standing
+                  standing={!isPage(current.kind)}
                   toolbar={toolbar}
                   related={entry?.related ?? []}
                   written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
@@ -377,7 +381,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   page={page?.id === current.id ? page.at : 0}
                   onPage={(at) => setPage({ id: current.id, at })}
                   // a term is a page to read: nothing to pick, claim or quiz
-                  footer={current.kind === "term" ? undefined : (
+                  footer={isPage(current.kind) ? undefined : (
                     <>
                       {unknown(current) ? (
                         <>

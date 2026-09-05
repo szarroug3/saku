@@ -18,7 +18,7 @@ import type { ComponentType, ReactNode } from "react";
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
-import { Pager, Parted, Sound, TeachPageView } from "@/sky/components/teach-page";
+import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonPage, LessonTeach } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
@@ -65,6 +65,8 @@ export interface RelatedGroup {
   title: string;
   note?: string;
   items: readonly SkyItem[];
+  /** A line under an item, by its id: how to tell a look-alike apart. */
+  tips?: Readonly<Record<string, string>>;
 }
 
 export type PitchComponent = ComponentType<{ reading: string; downstep: number; className?: string }>;
@@ -83,6 +85,8 @@ const ROLE: Record<SkyItem["kind"], string> = {
   grammar: "a sentence rule",
   sentence: "",
   term: "",
+  mark: "",
+  concept: "",
   verbPair: "a verb and its partner",
   keigo: "a polite verb",
 };
@@ -112,6 +116,8 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
   const at = Math.max(0, Math.min(page, pages.length - 1));
   const reading = teach?.reading ?? item.reading;
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
+  // what each piece does in the character: "lends セイ", "water"
+  const partSense = new Map((teach?.parts ?? []).filter((p) => p.sense).map((p) => [p.glyph, p.sense]));
   const on = teach?.readings?.filter((r) => r.kind === "on") ?? [];
   const kun = teach?.readings?.filter((r) => r.kind === "kun") ?? [];
   const readingList = (rows: typeof on) => (
@@ -235,11 +241,24 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       ) : madeOf.length > 0 ? (
         <>
           <Eyebrow className="mt-4">Made of</Eyebrow>
-          <div className="flex flex-wrap gap-2">{madeOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+          <div className="flex flex-wrap gap-2">{madeOf.map((p) => <StarButton key={p.id} item={p} note={partSense.get(p.glyph)?.toLowerCase() === p.english.toLowerCase() ? undefined : partSense.get(p.glyph)} onSelect={onSelect} />)}</div>
         </>
       ) : item.kind === "kanji" || item.kind === "radical" ? (
         <p className="mt-3 text-[13.5px] text-sky-muted">Nothing under it: this one is a building block itself.</p>
       ) : null}
+      {teach?.variants && teach.variants.length > 0 && (
+        <>
+          <Eyebrow className="mt-4">Also written as</Eyebrow>
+          <div className="flex flex-wrap gap-2">
+            {teach.variants.map((v) => (
+              <span key={v.glyph} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5">
+                <span className={`font-sky-display text-[18px] leading-none text-sky-ink ${japaneseFont(v.glyph)}`}>{v.glyph}</span>
+                <span className="text-[12.5px] text-sky-muted">{v.position}{v.example ? ` · as in ${v.example}` : ""}</span>
+              </span>
+            ))}
+          </div>
+        </>
+      )}
       {partOf.length > 0 && (
         <>
           <Eyebrow className="mt-4">Part of</Eyebrow>
@@ -267,11 +286,27 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
             <p className="mt-1">{teach.example.en}</p>
           </Fold>
         )}
+        {teach?.tables?.map((table) => (
+          <Fold key={table.title ?? "table"} title={table.title ?? "Table"}>
+            <Table table={{ ...table, title: undefined }} />
+          </Fold>
+        ))}
         {/* the related groups last, closed (Sam's order, 2026-09-05): what it
             is a part of, then the words written with it */}
         {related.map((group) => (
           <Fold key={group.title} title={group.note ? `${group.title} · ${group.note}` : group.title}>
-            <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+            {group.tips ? (
+              <div className="flex flex-col gap-2.5">
+                {group.items.map((p) => (
+                  <div key={p.id}>
+                    <StarButton item={p} onSelect={onSelect} />
+                    {group.tips?.[p.id] && <p className="mt-1.5 text-[13px] leading-relaxed">{group.tips[p.id]}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+            )}
           </Fold>
         ))}
       </div>

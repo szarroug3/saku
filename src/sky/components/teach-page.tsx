@@ -91,7 +91,7 @@ function Formula({ formula }: { formula: TeachFormula }) {
 }
 
 /** One table of the teaching, with its heading, instruction and formula. */
-function Table({ table }: { table: TeachTable }) {
+export function Table({ table }: { table: TeachTable }) {
   const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
   return (
     <div className="rounded-xl border border-sky-line px-3.5 py-3">

@@ -50,6 +50,14 @@ export interface LessonTeach {
   pitch?: number | null;
   /** How many strokes a character takes. */
   strokes?: number;
+  /** A kanji's pieces and what each does in it: the one that lends its
+   * sound, the one that gives the sense. Shown against the "Made of" stars. */
+  parts?: ReadonlyArray<{ glyph: string; sense: string; role: "phonetic" | "semantic" | null }>;
+  /** The shapes a radical takes inside other characters (氵 for 水), where
+   * each sits and a kanji it is seen in. */
+  variants?: ReadonlyArray<{ glyph: string; position: string; example?: string }>;
+  /** Tables that fold closed under the card: a word's forms, grouped. */
+  tables?: readonly TeachTable[];
   /** A star taught over several pages rather than one card (a sentence
    * rule: the intro, then a step per part). Next and Back walk the pages
    * before moving on to the next star. */

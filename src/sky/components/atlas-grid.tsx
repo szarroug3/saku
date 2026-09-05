@@ -30,8 +30,12 @@ export interface TileGridProps {
  * wider tile. */
 export const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(glyph) && glyph.length > 2;
 
+/** Whether a thing is shown by its name rather than a glyph: its glyph is
+ * its name (a term, a concept, a rule with no mark), or reads as one. */
+export const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph);
+
 export function Tile({ item, selected, onPick, onPeek }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void }) {
-  const name = isName(item.glyph);
+  const name = named(item);
   const lone = !name && [...item.glyph].length <= 1;
   return (
     <button
@@ -51,7 +55,7 @@ export function Tile({ item, selected, onPick, onPeek }: { item: SkyItem; select
 export function TileGrid({ items, selected, onPick, onPeek }: TileGridProps) {
   // tiles keep one size whatever the grid's width (the panel opening beside
   // it must not resize them): fixed columns, wider for a cut of names
-  const wide = items.some((it) => isName(it.glyph));
+  const wide = items.some(named);
   return (
     <div className={`grid gap-1.5 ${wide ? "grid-cols-[repeat(auto-fill,130px)]" : "grid-cols-[repeat(auto-fill,72px)]"}`}>
       {items.map((it) => <Tile key={it.id} item={it} selected={selected.has(it.id)} onPick={onPick} onPeek={onPeek} />)}

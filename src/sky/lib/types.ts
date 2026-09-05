@@ -27,8 +27,22 @@ export type SkyKind =
   /** A term: a name and its definition, the reference pages the tracks
    * open with. Never a star; a page to read. */
   | "term"
+  /** A writing rule: dakuten, the small tsu, long vowels, punctuation.
+   * A page to read, like a term. */
+  | "mark"
+  /** A grammar concept: verb types, adjective types, the keigo registers.
+   * A page to read, like a term. */
+  | "concept"
   | "verbPair"
   | "keigo";
+
+/** The kinds that are pages to read, never asked about: nothing to pick,
+ * claim or quiz, and no standing to show. */
+export const PAGE_KINDS: ReadonlySet<SkyKind> = new Set<SkyKind>(["term", "mark", "concept"]);
+
+export function isPage(kind: SkyKind): boolean {
+  return PAGE_KINDS.has(kind);
+}
 
 
 /**

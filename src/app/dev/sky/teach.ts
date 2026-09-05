@@ -6,6 +6,16 @@
 // (src/sky/lib/lesson.ts). Nothing is required; a sparse item stays short.
 
 import { SETS } from "@/data/characters";
+import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
+import { bodyFor, markFor, scriptLabel } from "@/data/marks";
+import { radicalTipFor } from "@/data/radical-tips";
+import { radicalVariants } from "@/data/radicals";
+import { wordContrastNoteFor } from "@/data/word-contrast-notes";
+import { builtPieces } from "@/data/kanji-etymology";
+import { teachablePieceMeaning } from "@/lib/kanji-parts";
+import { usedAsPartIn } from "@/lib/library/components";
+import { derivePosition } from "@/lib/library/character-entry-content";
+import { formsOfWord } from "@/lib/word-forms";
 import { counterForm, counterRoleNote } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
@@ -47,6 +57,13 @@ function marked(jp: string, span: readonly [number, number]): PartedSentence {
 }
 
 /** A kana's romaji, from the character sets. */
+/** Where a radical's variant sits in a kanji, in a word: "Left", "Top". */
+const POSITION: Record<string, string> = { kanmuri: "Top", hen: "Left", tsukuri: "Right", ashi: "Bottom", nyou: "Bottom left", kamae: "Around", tare: "Top and left" };
+function positionOf(v: { position?: { romaji: string; kana: string }; name: { kana: string } }): string {
+  if (v.position) return POSITION[v.position.romaji] ?? v.position.kana;
+  return derivePosition(v.name.kana).en;
+}
+
 function romajiOf(glyph: string): string | undefined {
   for (const set of SETS) for (const s of set.sections) for (const ch of s.chars) if (ch.c === glyph) return ch.r[0];
   return undefined;
@@ -67,6 +84,12 @@ export function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "radical") {
     const m = getMnemonic(glyph);
     if (m) { t.story = spans(m.mnemonic); t.mnemonicImage = m.image; }
+    // how to spot it inside a kanji, and the shapes it takes there (the
+    // app's "As a radical" block)
+    const tip = radicalTipFor(glyph);
+    if (tip) t.notes = [tip];
+    const variants = radicalVariants(glyph).map((v) => ({ glyph: v.glyph, position: positionOf(v), example: usedAsPartIn(v.glyph)[0] }));
+    if (variants.length) t.variants = variants.map((v) => ({ glyph: v.glyph, position: v.position, ...(v.example ? { example: v.example } : {}) }));
     return t;
   }
   if (item.kind === "kanji") {
@@ -76,6 +99,14 @@ export function teachFor(item: SkyItem): LessonTeach {
     if (e?.originText) t.etymology = e.originText;
     // on'yomi are written in katakana, kun'yomi in hiragana, the dictionary's own convention
     t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, kind: /[\u30a0-\u30ff]/.test(r.base) ? "on" as const : "kun" as const, words: r.words.slice(0, 4) }));
+    // what each piece does in it, the app's "Built from" labels: a phonetic
+    // piece lends its sound, a semantic one its sense (or its own meaning)
+    const parts = builtPieces(glyph).map((p) => ({
+      glyph: p.glyph,
+      role: p.role,
+      sense: p.role === "phonetic" ? (p.label ? `lends ${p.label}` : "lends its sound") : (p.label ?? teachablePieceMeaning(p.glyph) ?? ""),
+    }));
+    if (parts.length) t.parts = parts;
     return t;
   }
   if (item.kind === "word") {
@@ -87,6 +118,12 @@ export function teachFor(item: SkyItem): LessonTeach {
     const ex = exampleFor(glyph);
     if (ex) t.example = { jp: ex.jp, en: ex.en };
     t.pitch = wordPitch(glyph);
+    // how it differs from the word it is weighed against, and every form
+    // it takes, grouped as the app's word page groups them
+    const contrast = wordContrastNoteFor(glyph);
+    if (contrast) t.notes = [contrast];
+    const groups = row ? formsOfWord(row) : null;
+    if (groups) t.tables = groups.map((g) => ({ title: g.title, heads: ["Form", "Written"], rows: g.rows.map((r) => [[{ text: r.label }], [{ text: r.value }]]) }));
     return t;
   }
   if (item.kind === "counter") {
@@ -135,6 +172,41 @@ export function teachFor(item: SkyItem): LessonTeach {
     // a term is its definition, read as one page
     const term = TERMS.find((x) => termEntry(x.id) === item.id);
     if (term) { t.meanings = [term.summary]; t.notes = [...term.body]; }
+    return t;
+  }
+  if (item.kind === "mark") {
+    // a writing rule: the lesson's own cards, one per script, with the
+    // conversion tables (dakuten's five rows) and the aside the app's mark
+    // page shows after them
+    const mark = markFor(item.id as EntryId);
+    if (mark) {
+      t.meanings = [mark.summary];
+      // the pager names each card by its script ("In hiragana"), since the
+      // two intros share a title; a script-neutral card keeps its own name
+      const pages = mark.intros.map((intro) => { const page = pageFromIntro(intro, mark.glyph); const script = scriptLabel(intro.setId); return script ? { ...page, eyebrow: script } : page; });
+      for (const row of mark.rows) {
+        const script = scriptLabel(row.setId)?.replace(/^In /, "");
+        pages.push({
+          eyebrow: `${script ? `${script} · ` : ""}${row.from} to ${row.to}`,
+          title: `${row.mark} ${row.markName}: ${row.from} becomes ${row.to}`,
+          paragraphs: [{ text: row.hook }, ...(row.callout ? [{ text: row.callout }] : []), ...(row.aside ? [{ text: row.aside }] : [])].filter((x) => x.text),
+          tables: [{ heads: ["Without", "With the mark"], rows: row.pairs.map(([base, converted]) => [[{ text: base }], [{ text: converted, active: true }]]) }],
+        });
+      }
+      if (mark.note && pages.length) pages[pages.length - 1] = { ...pages[pages.length - 1], after: [...(pages[pages.length - 1].after ?? []), { text: mark.note }] };
+      t.pages = pages;
+    }
+    return t;
+  }
+  if (item.kind === "concept") {
+    // a grammar concept: its cards, the lesson's own; the short answer
+    // stands alone only when there are no cards, as on the app's page
+    const concept = GRAMMAR_CONCEPTS.find((c) => grammarConceptEntry(c.id) === item.id);
+    if (concept) {
+      t.meanings = [concept.summary];
+      if (concept.cards.length) t.pages = concept.cards.map((c) => pageFromIntro(c));
+      else t.notes = [...concept.body];
+    }
     return t;
   }
   if (item.kind === "keigo") {
@@ -214,7 +286,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
  * shape into the Sky's, so the two show the same build by construction. */
 function grammarPages(recipe: Recipe): TeachPage[] {
   const intros = formLibraryPages(recipe.id);
-  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map(pageFromIntro);
+  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro));
   const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
   const members = family ? membersOf(family) : [];
   if (family && members.length > 1) {
@@ -315,8 +387,10 @@ export const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagra
   (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
 
 /** One of the app's teaching pages in the Sky's shape. */
-function pageFromIntro(intro: PhaseIntro): TeachPage {
+function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
   const tables: TeachTable[] = [];
+  // a punctuation catalogue: the marks, their names and their English jobs
+  if (intro.punctuation?.length) tables.push({ title: "The marks", heads: ["Mark", "Name", "Does the job of", "Note"], rows: intro.punctuation.map((r) => [[{ text: r.mark }], [{ text: r.name }], [{ text: r.english }], [{ text: r.note }]]) });
   for (const section of intro.buildSections ?? []) {
     const title = section.hideTitle ? undefined : section.title;
     const instruction = section.body.map((p) => p.text).join(" ");
@@ -339,7 +413,8 @@ function pageFromIntro(intro: PhaseIntro): TeachPage {
     // app's eyebrow is the same "Grammar" on every generated page
     eyebrow: intro.name ?? (intro.eyebrow && intro.eyebrow !== "Grammar" ? intro.eyebrow : intro.title.replace(/[.。]$/, "")),
     title: intro.title,
-    paragraphs: paragraphs(intro.body),
+    // a mark's card keeps only the paragraphs about that mark (see bodyFor)
+    paragraphs: paragraphs(mark === undefined ? intro.body : bodyFor(intro, mark)),
     ...(intro.buildFormula ? { formula: intro.buildFormula } : {}),
     ...(tables.length ? { tables } : {}),
     ...(intro.bodyAfterBuild?.length ? { after: paragraphs(intro.bodyAfterBuild) } : {}),

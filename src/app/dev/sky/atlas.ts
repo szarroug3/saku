@@ -13,13 +13,17 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { TERM_SUBJECT } from "@/data/terms";
+import { MARK_SUBJECT } from "@/data/marks";
+import { GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry, grammarConceptFor } from "@/data/grammar-concepts";
+import { radicalConfusableTip } from "@/data/radical-tips";
+import { wordContrastPartner } from "@/data/word-contrast-notes";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
-import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import { confusableWith, COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { searchByType } from "@/lib/library/search";
 import { shelfSections } from "@/lib/library/shelf-sections";
@@ -38,11 +42,13 @@ import { offerings, type Offerings } from "./observatory";
  * to search); the page mounts a cut's tiles only as it comes into view. */
 const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string }> = [
   { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana" },
+  { id: "writing-rules", kind: MARK_SUBJECT, sky: "mark", title: "Writing rules", unit: "writing rules" },
   { id: "radicals", kind: RADICAL_SUBJECT, sky: "radical", title: "Radicals", unit: "radicals" },
   { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji" },
   { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words" },
   { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters" },
   { id: "grammar", kind: GRAMMAR_SUBJECT, sky: "grammar", title: "Grammar", unit: "patterns" },
+  { id: "grammar-concepts", kind: GRAMMAR_CONCEPT_SUBJECT, sky: "concept", title: "Grammar concepts", unit: "concepts" },
   { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules" },
   { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs" },
   { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets" },
@@ -149,7 +155,22 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   const kanjiIds = (glyphs: readonly string[]) => glyphs.map((g) => entryForGlyph(KANJI_SUBJECT, g)).filter((x): x is EntryId => !!x);
   const knownOf = (ids: readonly string[]) => ids.filter((x) => { const e = libEntry(x as EntryId); return !!e && standingFor(e, history, now).met; }).length;
 
+  /** The shapes this one is mixed up with, each with its tip where one is
+   * written (the app's confusion section): a kana's look-alikes, a kanji's,
+   * a radical's partner. */
+  const lookalikes = () => {
+    const e = libEntry(item.id as EntryId);
+    const ids = e ? confusableWith(e) : [];
+    const items = ids.slice(0, RELATED_SHOWN).map((x) => o.offerPick(x)).filter((x): x is SkyItem => !!x);
+    if (!items.length) return;
+    const tips: Record<string, string> = {};
+    for (const x of items) { const tip = radicalConfusableTip(glyph, x.glyph); if (tip) tips[x.id] = tip; }
+    related.push({ title: "Easily mixed up with", items, ...(Object.keys(tips).length ? { tips } : {}) });
+  };
+
+  if (item.kind === "kana") lookalikes();
   if (item.kind === "kanji") {
+    lookalikes();
     // what it is a part of first, then every word written with it, in
     // teaching order, against the whole vocabulary (Sam's order)
     const builds = kanjiIds(usedAsPartIn(glyph));
@@ -159,10 +180,24 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     if (ids.length) group("Words written with it", ids, `You know ${knownOf(ids)} of ${ids.length}`);
   }
   if (item.kind === "radical") {
+    lookalikes();
     const builds = kanjiIds(usedAsPartIn(glyph));
     if (builds.length) group("Kanji built from it", builds, `${builds.length} Kanji`);
     const known = wordIds(knownWordsUsing(glyph, history));
     if (known.length) group("Words you know that use it", known, `${known.length}`);
+  }
+  if (item.kind === "word") {
+    // the word it is weighed against (the app's contrast note names both)
+    const partner = wordContrastPartner(glyph);
+    if (partner) group("Often compared with", wordIds([partner.glyph]));
+  }
+  if (item.kind === "keigo") {
+    // the registers, explained once, as the app's keigo page links out to
+    group("Read about it", [grammarConceptEntry("keigo-registers")]);
+  }
+  if (item.kind === "concept") {
+    const concept = grammarConceptFor(item.id as EntryId);
+    if (concept?.related?.length) group("Read about it", concept.related.map((id) => grammarConceptEntry(id)));
   }
 
   return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach: teachFor(item), related };
