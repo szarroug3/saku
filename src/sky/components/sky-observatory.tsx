@@ -123,7 +123,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   const startLabel = over ? `Start with ${summary.pieces} pieces anyway` : `Start tonight's lesson · ${plural(summary.pieces, "piece")}`;
 
   return (
-    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" lede="Choose what to add to your sky. Each pick becomes a constellation once you learn it." height={height}>
+    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
           {data.sections.filter((section) => !section.gate && !section.complete).map((section) => {

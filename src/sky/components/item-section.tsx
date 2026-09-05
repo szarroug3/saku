@@ -61,7 +61,7 @@ export function ItemSection({ title, intro, when, start, claim, shown, total, ga
   return (
     <section className="mt-7 font-sky-ui first:mt-0">
       <div className="flex items-baseline justify-between gap-4 border-b border-sky-line pb-1.5">
-        <h3 className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${locked ? "text-sky-muted/70" : "text-sky-muted"}`}>{title}</h3>
+        <h3 className={`text-[13px] font-semibold uppercase tracking-[0.12em] ${locked ? "text-sky-muted" : "text-sky-accent"}`}>{title}</h3>
 
         {/* The count. "next 6 of 12,500" rather than "6", because the second one
             is a claim about how much Japanese there is. */}
