@@ -20,10 +20,12 @@
 // kana are done (the app's rule: finish or claim the last kana group). Each
 // section says what it is and when to start it, in the app's own words.
 
-import { SETS, kanaEntry } from "@/data/characters";
+import { KANA_SUBJECT, SETS, kanaEntry } from "@/data/characters";
+import { PRIMITIVE_SUBJECT } from "@/data/components";
+import { RADICAL_SUBJECT } from "@/data/radicals";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
-import { kanjiRow } from "@/data/kanji";
+import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
 import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry, keigoSetForEntry, type KeigoSet } from "@/data/keigo";
 import { VERB_PAIRS, type VerbPair } from "@/data/transitivity";
 import { pairEntry, pairForEntry, TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
@@ -235,6 +237,11 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
       case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
+      // a kana, a piece or a kanji picked on its own (the Atlas does): its own kind
+      case KANA_SUBJECT: return offer(entry, "kana");
+      case RADICAL_SUBJECT:
+      case PRIMITIVE_SUBJECT: return offer(entry, "radical");
+      case KANJI_SUBJECT: return offer(entry, "kanji");
       default: return offer(entry, "word");
     }
   };

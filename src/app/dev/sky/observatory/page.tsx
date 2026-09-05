@@ -17,6 +17,8 @@ export const dynamic = "force-dynamic";
 export default async function SkyObservatoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
+  // `?picks=a,b` opens with those picked: the Atlas's "Add to tonight's picks"
+  const picks = String(params.picks ?? "").split(",").filter(Boolean);
   const data = sample ? observatoryFromHistory(sampleHistory()) : await learnerObservatory();
   return (
     <SkyPage
@@ -27,7 +29,7 @@ export default async function SkyObservatoryPage({ searchParams }: { searchParam
         </>
       }
     >
-      <SkyObservatory data={data} lessonPath={sample ? "/dev/sky/lesson?sample" : "/dev/sky/lesson"} height="100%" onClaim={sample ? undefined : claimPicks} />
+      <SkyObservatory data={data} lessonPath={sample ? "/dev/sky/lesson?sample" : "/dev/sky/lesson"} initialPicks={picks} height="100%" onClaim={sample ? undefined : claimPicks} />
     </SkyPage>
   );
 }

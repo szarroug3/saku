@@ -14,6 +14,7 @@
 import type { ComponentType, ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
+import { StandingChip } from "@/sky/components/standing-legend";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonPage, LessonTeach, PartedSentence, SoundLine, TeachExample, TeachPage } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
@@ -41,7 +42,21 @@ export interface LessonCardProps {
    * and the pager's way of changing it. */
   page?: number;
   onPage?: (page: number) => void;
+  /** The Atlas's additions: the standing chip in the eyebrow row, groups of
+   * related stars after the card's own (the words written with a kanji,
+   * the kanji built from a piece), and a pinned footer of actions. */
+  standing?: boolean;
+  related?: readonly RelatedGroup[];
+  footer?: ReactNode;
   className?: string;
+}
+
+/** A group of stars related to this one, with what the group is and, when
+ * it is a sample, a note on the whole: "you know 3 of 38". */
+export interface RelatedGroup {
+  title: string;
+  note?: string;
+  items: readonly SkyItem[];
 }
 
 export type PitchComponent = ComponentType<{ reading: string; downstep: number; className?: string }>;
@@ -179,7 +194,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const pages = teach?.pages ?? [];
   const at = Math.max(0, Math.min(page, pages.length - 1));
@@ -200,8 +215,11 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
   );
 
   return (
-    <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
-      <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
+    <section className={`flex flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
+      <div className="flex items-start justify-between gap-3">
+        <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
+        {standing && <StandingChip standing={item.standing} />}
+      </div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {/* the reading and its hear button as one group, so the button
@@ -295,6 +313,12 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           <div className="flex flex-wrap gap-2">{partOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
         </>
       )}
+      {related.map((group) => (
+        <div key={group.title}>
+          <Eyebrow className="mt-4">{group.title}{group.note ? <span className="normal-case tracking-normal text-sky-muted"> · {group.note}</span> : null}</Eyebrow>
+          <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+        </div>
+      ))}
 
       <div className="mt-4">
         {(on.length > 0 || kun.length > 0) && (
@@ -319,6 +343,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       </div>
 
       {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
+      {footer && <div className="mt-auto flex flex-wrap gap-2 border-t border-sky-line pt-4 [&:not(:first-child)]:mt-5">{footer}</div>}
     </section>
   );
 }

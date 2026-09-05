@@ -45,7 +45,7 @@ function romajiOf(glyph: string): string | undefined {
 }
 
 /** What the card says for one star, from whatever the app knows about it. */
-function teachFor(item: SkyItem): LessonTeach {
+export function teachFor(item: SkyItem): LessonTeach {
   const t: LessonTeach = {};
   const glyph = item.glyph;
   if (item.kind === "kana") {
