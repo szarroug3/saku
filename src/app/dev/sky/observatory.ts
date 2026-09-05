@@ -83,6 +83,19 @@ function rowName(label: string, firstRomaji: string): string {
   return `${bare} row`;
 }
 
+/** The two sides of a verb pair as one name, "to get dirty · to make dirty":
+ * the first meaning of each side that shares a word with one of the other's
+ * ("dirty" in both, "mend" in "mended"), since a dictionary lists "to pollute"
+ * before "to make dirty"; the first of each otherwise. */
+const FILLER = new Set(["the", "and", "get", "become", "make", "let", "have", "etc", "one", "for", "with", "into", "out"]);
+function pairName(happens: readonly string[], doIt: readonly string[]): string | undefined {
+  const words = (m: string) => m.toLowerCase().replace(/\(.*?\)/g, "").split(/[^a-z]+/).filter((w) => w.length >= 3 && !FILLER.has(w));
+  const related = (a: string, b: string) => words(a).some((x) => words(b).some((y) => x.startsWith(y) || y.startsWith(x)));
+  for (const h of happens) for (const d of doIt) if (related(h, d)) return `${h} · ${d}`;
+  if (happens[0] && doIt[0]) return `${happens[0]} · ${doIt[0]}`;
+  return happens[0] ?? doIt[0];
+}
+
 /** The signed-in learner's Observatory, or a visitor's. */
 export async function learnerObservatory(now = Date.now()): Promise<SkyObservatoryData> {
   const userId = await currentUserId();
@@ -156,7 +169,11 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
     if (standingFor(entry, history, now).met) { pairsMet++; continue; }
     const head = wordEntry(p.happens.word);
     if (head) add(head);
-    pairs.push(offer(entry, "verbPair", { headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
+    // named by its two words' own meanings, "to get dirty · to make dirty":
+    // the pair table carries example sentences, not a name
+    const doIt = wordEntry(p.doIt.word);
+    const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
+    pairs.push(offer(entry, "verbPair", { english, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
   }
   sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), total: pairs.length, gate: afterKana, started: pairsMet > 0 });
 
