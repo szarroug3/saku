@@ -260,7 +260,7 @@ function pageFromIntro(intro: PhaseIntro): TeachPage {
   return {
     // the page's own name on the pager pill (〜ので, "The て/で-form"); the
     // app's eyebrow is the same "Grammar" on every generated page
-    eyebrow: intro.name ?? intro.eyebrow ?? "Grammar",
+    eyebrow: intro.name ?? (intro.eyebrow && intro.eyebrow !== "Grammar" ? intro.eyebrow : intro.title.replace(/[.。]$/, "")),
     title: intro.title,
     paragraphs: paragraphs(intro.body),
     ...(intro.buildFormula ? { formula: intro.buildFormula } : {}),

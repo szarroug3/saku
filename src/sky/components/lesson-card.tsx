@@ -247,7 +247,8 @@ function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; page: num
           type="button"
           aria-current={i === page ? "page" : undefined}
           onClick={() => onPage?.(i)}
-          className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${i === page ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
+          title={p.title}
+          className={`max-w-[22ch] truncate rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${japaneseFont(p.eyebrow ?? "")} ${i === page ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
         >
           {p.eyebrow ?? `Page ${i + 1}`}
         </button>
