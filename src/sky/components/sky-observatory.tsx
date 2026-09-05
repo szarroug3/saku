@@ -209,7 +209,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 type="button"
                 disabled={claiming}
                 onClick={() => startClaim(async () => { await onClaim(picks); setPicks([]); setUndo(null); })}
-                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-line bg-sky-card px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-ink hover:bg-sky-card-strong disabled:text-sky-faint"
+                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-accent bg-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-accent hover:bg-sky-accent/10 disabled:border-sky-line disabled:text-sky-faint"
               >
                 {claiming ? "Claiming…" : "I already know these"}
               </button>
