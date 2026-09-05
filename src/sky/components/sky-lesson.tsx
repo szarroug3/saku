@@ -105,10 +105,25 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
   const back = () => (page > 0 ? setPage(page - 1) : open(steps[stepIndex - 1].id, pagesOf(steps[stepIndex - 1].id) - 1));
   const next = () => (lastPage ? open(steps[stepIndex + 1].id) : setPage(page + 1));
 
+  // the arrow keys page too: left is Back, right is Next (Sam's ask), unless
+  // the keys are typing into something
+  const canBack = !(stepIndex === 0 && page === 0);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      if (e.key === "ArrowLeft" && canBack) { e.preventDefault(); back(); }
+      if (e.key === "ArrowRight" && !last) { e.preventDefault(); next(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
-      <button type="button" disabled={stepIndex === 0 && page === 0} onClick={back} className={`${BTN} border border-sky-line text-sky-ink disabled:border-transparent disabled:text-sky-faint`}>Back</button>
+      <button type="button" disabled={!canBack} onClick={back} className={`${BTN} border border-sky-line text-sky-ink disabled:border-transparent disabled:text-sky-faint`}>Back</button>
       {last && drillHref ? (
         <a href={drillHref} className={`${BTN} bg-sky-accent text-sky-accent-ink`}>Drill</a>
       ) : (
