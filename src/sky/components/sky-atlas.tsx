@@ -6,23 +6,29 @@
 // tool. You arrive having met something in the wild, so it behaves like a
 // reference and never asks you to answer anything.
 //
-// One call from the route: the shelves (the first stretch of each kind, in
+// One call from the route: the shelves (every cut of every collection, in
 // teaching order, with the true size of the whole collection and the
 // learner's standings over all of it), and two lookups the route provides,
 // search and entry, which reach the app's own index. The shape is Sam's
 // prototype (2026-09-05): search across the top, the collections and the
-// learner's status down the left with their counts, one collection's grid
-// in the middle under its coverage line, and the open entry on the right,
-// the same card the Lesson uses in reference mode: the standing,
-// cross-links both ways, and a footer that sends a thing not yet learned
-// to tonight's picks. A tile is the glyph in its standing's colour with
-// its meaning under it: no constellation here, the Atlas is a grid to scan.
+// learner's status down the left (`AtlasRail`), one collection's grid in
+// the middle under its coverage line (`atlas-grid.tsx`), and on the right
+// what is selected: one entry as the same card the Lesson uses, in
+// reference mode, or several as a list with actions on all of them. With
+// nothing selected there is no panel. Selection is `useSelection`; the
+// entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType } from "react";
 
+import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
+import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
+import { DetailFrame } from "@/sky/components/detail-frame";
 import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup } from "@/sky/components/lesson-card";
+import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
+import { useEntries } from "@/sky/components/use-entries";
+import { useSelection } from "@/sky/components/use-selection";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -40,10 +46,10 @@ export interface AtlasSection {
 }
 
 /** One shelf: a kind, its whole size, the learner's standings over all of
- * it, and the first stretch of it in teaching order. */
+ * it, and its cuts in teaching order. */
 export interface AtlasShelf {
   id: string;
-  /** The sky kind on this shelf, for its dot and for matching search results by kind. */
+  /** The sky kind on this shelf. */
   kind: SkyKind;
   title: string;
   /** What one of these is called, for "13 of 2,136 kanji". */
@@ -52,19 +58,19 @@ export interface AtlasShelf {
   total: number;
   counts: CoverageCounts;
   sections: readonly AtlasSection[];
-  /** How many of the collection are not on the shelf: "2,036 more. Search for the rest." */
+  /** How many of the collection are not on the shelf. */
   more: number;
 }
 
 export interface SkyAtlasData {
-  /** Every entry on the shelves, with every part under them. */
+  /** Every entry on the shelves. */
   items: readonly SkyItem[];
   shelves: readonly AtlasShelf[];
   /** What the whole Atlas holds, for the empty search: "14,091 words". */
   holds: ReadonlyArray<{ total: number; unit: string }>;
 }
 
-/** The answer to a search: the entries found, by kind. */
+/** The answer to a search: the entries found, by shelf. */
 export interface AtlasSearchResult {
   items: readonly SkyItem[];
   sections: readonly AtlasSection[];
@@ -77,11 +83,6 @@ export interface AtlasEntry {
   items: readonly SkyItem[];
   teach: LessonTeach;
   related: readonly RelatedGroup[];
-  /** Whether the learner has this in their sky. */
-  known: boolean;
-  /** How many things a quiz could ask about it: one for a kana, several
-   * for a rule. A quiz is offered only when there is more than one. */
-  quizzable: number;
 }
 
 /** What the stroke-order block takes: the character to draw. */
@@ -95,9 +96,9 @@ export interface AtlasLookup {
 export interface SkyAtlasProps {
   data: SkyAtlasData;
   lookup: AtlasLookup;
-  /** Where "Add to tonight's picks" goes; the pick is appended as `?picks=`. */
+  /** Where "Add to tonight's picks" goes; the picks are appended as `?picks=`. */
   observatoryHref: string;
-  /** Where "Quiz me" goes for something already known. */
+  /** Where "Quiz me" goes. */
   quizHref?: string;
   /** "How it's written" for a character, from whoever has the stroke order. */
   written?: WrittenComponent;
@@ -105,9 +106,8 @@ export interface SkyAtlasProps {
   pitch?: PitchComponent;
   /** The entry open at first, when the route names one. */
   initialEntry?: string;
-  /** "I know this": claims the entry, the app's own claim (a skip of the
-   * lesson, untested; never mastery). Without it the claim is kept for
-   * the visit only. */
+  /** "I know this": the app's own claim (a skip of the lesson, untested;
+   * never mastery). Without it the claim is kept for the visit only. */
   onClaim?: (ids: readonly string[]) => Promise<void>;
   /** "I don't know this": the mirror of the claim, back to brand new. */
   onUnclaim?: (ids: readonly string[]) => Promise<void>;
@@ -125,92 +125,11 @@ function tally(shelf: AtlasShelf): Record<Standing, number> {
   return out;
 }
 
-/** A tile: the glyph in its standing's colour, its meaning under it. No
- * constellation (Sam's call, 2026-09-05): the Atlas is a grid to scan. */
-/** How a tile was clicked: plain opens it alone, cmd or ctrl adds it to
- * the selection, shift takes the run from the last one clicked to it. */
-export interface Pick { toggle: boolean; range: boolean }
-type OnPick = (id: string, pick: Pick) => void;
-
-/** A glyph that is really a name in English (a sentence rule's "Because /
- * so", a counter's "one thing"): set smaller, allowed to wrap, given a
- * wider tile. */
-const isName = (glyph: string) => /^[A-Za-z0-9 \/().'’-]+$/.test(glyph) && glyph.length > 2;
-
-function Tile({ item, selected, onOpen, onPeek }: { item: SkyItem; selected: boolean; onOpen: OnPick; onPeek?: (id: string) => void }) {
-  const name = isName(item.glyph);
-  const lone = !name && [...item.glyph].length <= 1;
-  return (
-    <button
-      type="button"
-      onClick={(e) => onOpen(item.id, { toggle: e.metaKey || e.ctrlKey, range: e.shiftKey })}
-      onPointerEnter={onPeek ? () => onPeek(item.id) : undefined}
-      aria-pressed={selected}
-      title={`${item.glyph} ${item.english}`}
-      className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 transition-colors ${name ? "min-h-[64px] py-2" : "aspect-square"} ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-card hover:bg-sky-card-strong"}`}
-    >
-      <span className={`max-w-full text-center leading-tight ${name ? "line-clamp-2 font-sky-ui text-[12.5px] font-semibold" : `truncate font-sky-display leading-none ${lone ? "text-[24px]" : "text-[15px]"}`} ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
-      {item.english !== item.glyph && <span className="max-w-full truncate text-[9.5px] text-sky-muted">{item.english}</span>}
-    </button>
-  );
-}
-
-function Grid({ ids, graph, selected, onOpen, onPeek }: { ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick; onPeek?: (id: string) => void }) {
-  // a cut of names (the sentence rules) lays out in wider tiles
-  const wide = ids.some((id) => { const it = graph.itemOf(id); return !!it && isName(it.glyph); });
-  return (
-    <div className={`grid gap-1.5 ${wide ? "grid-cols-[repeat(auto-fill,minmax(120px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(64px,1fr))]"}`}>
-      {ids.map((id) => { const it = graph.itemOf(id); return it ? <Tile key={id} item={it} selected={selected.has(id)} onOpen={onOpen} onPeek={onPeek} /> : null; })}
-    </div>
-  );
-}
-
-/** A cut of a shelf whose tiles mount only as it comes into view, so a
- * shelf of twelve thousand words costs nothing until it is scrolled to.
- * Until then it holds the room its rows will take. */
-function LazySection({ label, ids, graph, selected, onOpen, onPeek }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick; onPeek?: (id: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || near) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setNear(true); }, { rootMargin: "600px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [near]);
-  // about eight tiles a row at the narrowest the grid gets; only a guess
-  // at the room, replaced by the real rows once mounted
-  const rows = Math.ceil(ids.length / 8);
-  return (
-    <div ref={ref} className="mt-3" style={near ? undefined : { minHeight: `${rows * 70 + (label ? 22 : 0)}px` }}>
-      {label && <p className="mb-1.5 text-[11.5px] font-semibold text-sky-muted">{label}</p>}
-      {near && <Grid ids={ids} graph={graph} selected={selected} onOpen={onOpen} onPeek={onPeek} />}
-    </div>
-  );
-}
-
-/** A rail row: a name with a count on the right, and a dot before it when
- * the row stands for a standing (the collections carry no dot: Sam found
- * the kind colours confusing, 2026-09-05). */
-function RailRow({ on, dot, label, capitalize = false, count, onClick }: { on: boolean; dot?: ReactNode; label: string; capitalize?: boolean; count?: number; onClick: () => void }) {
-  return (
-    <button type="button" aria-pressed={on} onClick={onClick} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] ${on ? "bg-sky-card-strong font-semibold text-sky-ink" : "text-sky-muted hover:bg-sky-card hover:text-sky-ink"}`}>
-      {dot}
-      <span className={`min-w-0 flex-1 truncate ${capitalize ? "capitalize" : ""}`}>{label}</span>
-      {count !== undefined && <span className="text-[11px] tabular-nums text-sky-faint">{count.toLocaleString()}</span>}
-    </button>
-  );
-}
-
-const RAIL_HEADING_TEXT = "text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted";
-const RAIL_HEADING = `mb-1.5 ${RAIL_HEADING_TEXT}`;
-const ROUND_BTN = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink";
-const BTN_SOLID = "rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink";
-const BTN_OUTLINE = "rounded-[10px] border border-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent disabled:opacity-60";
+const unknown = (it: SkyItem) => it.standing === "not-seen";
 
 export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
-  // entry brought with them, so every tile and card has its parts
+  // entries brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
   const items = useMemo(() => {
     const byId = new Map(data.items.map((it) => [it.id, it]));
@@ -219,19 +138,18 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   }, [data.items, extra]);
   const graph = useMemo(() => buildGraph(items), [items]);
   const bring = useCallback((more: readonly SkyItem[]) => setExtra((prev) => [...prev, ...more]), []);
+  const itemsOf = useCallback((ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group), [graph]);
 
-  // the rail: one collection open at a time, and one status or all of
-  // them; it folds to its dots to give the grid the room
+  // the rail: one collection open at a time, and one status or all
   const [railOpen, setRailOpen] = useState(true);
-  // the right panel widened over the rail and the grid
-  const [wide, setWide] = useState(false);
   const [shelfId, setShelfId] = useState(data.shelves[0]?.id ?? "");
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
   const counts = shelf ? tally(shelf) : undefined;
-  const keep = (id: string) => { const it = graph.itemOf(id); return !!it && (status === null || it.standing === status); };
+  const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
+  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (status === null || it.standing === status); }, [graph, status]);
 
-  // search: the app's answer, by kind, after a short pause in typing. The
+  // search: the app's answer, by shelf, after a short pause in typing. The
   // answer is kept with the query it answers, so a cleared or changed box
   // shows the shelf, or "Searching", without any state to reset.
   const [query, setQuery] = useState("");
@@ -253,125 +171,60 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const result = asked && answer?.query === asked ? answer : null;
   const searching = !!asked && !result;
 
-  // the selection: one tile opens its entry on the right; several (cmd or
-  // ctrl to add, shift for a run) open a panel of actions on all of them;
-  // none, and there is no panel (Sam's call, 2026-09-05)
-  const [selected, setSelected] = useState<readonly string[]>(initialEntry ? [initialEntry] : []);
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const anchor = useRef<string | null>(initialEntry ?? null);
-  const single = selected.length === 1 ? selected[0] : null;
+  // what the middle shows: the open shelf's cuts, or this collection's
+  // search results with a line on what the other collections found
+  const found = useMemo(() => result?.sections.map((section) => ({ section, shelf: data.shelves.find((s) => s.id === section.id), shown: section.items.filter(keep) })) ?? [], [result, data.shelves, keep]);
+  const here = found.find((f) => f.shelf?.id === shelf?.id);
+  const elsewhere = found.filter((f) => f.shelf && f.shelf.id !== shelf?.id);
+  const cuts = useMemo(() => shelf?.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0) ?? [], [shelf, keep]);
+  const shownOnShelf = cuts.reduce((n, s) => n + s.items.length, 0);
+  const order = useMemo(() => (result ? (here?.shown ?? []) : cuts.flatMap((c) => c.items)), [result, here, cuts]);
 
-  // the entries fetched so far, by id: fetched once, kept for the visit,
-  // and fetched ahead when a tile is hovered so a click finds it ready
-  const [entries, setEntries] = useState<ReadonlyMap<string, AtlasEntry>>(() => new Map());
-  const pending = useRef(new Map<string, Promise<AtlasEntry>>());
-  const fetchEntry = useCallback((id: string): Promise<AtlasEntry> => {
-    const had = pending.current.get(id);
-    if (had) return had;
-    const p = lookup.entry(id).then((entry) => { setEntries((prev) => new Map(prev).set(id, entry)); return entry; });
-    pending.current.set(id, p);
-    return p;
-  }, [lookup]);
-  const panel = useRef<HTMLDivElement>(null);
+  // the selection, and the entries behind it
+  const selection = useSelection(order, initialEntry);
+  const entries = useEntries(lookup.entry);
+  const { single } = selection;
+  const fetchEntry = entries.fetch;
   useEffect(() => {
     if (!single) return;
     let live = true;
     fetchEntry(single).then((entry) => { if (live) bring(entry.items); });
     return () => { live = false; };
   }, [single, fetchEntry, bring]);
-  // the card opens at once on what a tile knows; the teaching fills in
   const current = single ? graph.itemOf(single) : undefined;
-  const entry = single ? entries.get(single) ?? null : null;
-  const open = entry;
-  const setOpen = (e: AtlasEntry) => setEntries((prev) => new Map(prev).set(e.id, e));
-  const setOpening = (id: string) => { anchor.current = id; setSelected([id]); };
-  // which page of a paged entry is showing; back to the first for each entry
-  const [pageOf, setPageOf] = useState<{ id: string; page: number } | null>(null);
-  const page = pageOf?.id === single ? pageOf.page : 0;
-  const setPage = (p: number) => { if (single) setPageOf({ id: single, page: p }); };
+  const entry = single ? entries.get(single) : undefined;
+  const selectedItems = itemsOf(selection.ids);
+  const [page, setPage] = useState<{ id: string; at: number } | null>(null);
 
-  // "I know this" and "I know these": the claim, then the entries as
-  // claimed, here and on their tiles
-  const [claiming, setClaiming] = useState(false);
-  const claimIds = async (ids: readonly string[]) => {
-    const unknown = ids.map((id) => graph.itemOf(id)).filter((it): it is SkyItem => !!it && it.standing === "not-seen");
-    if (unknown.length === 0) return;
-    setClaiming(true);
+  // "I know this" and "I don't know this", on one or on several: the
+  // app's own claim or its withdrawal, then the items shown as such
+  const [marking, setMarking] = useState(false);
+  const mark = async (ids: readonly string[], toKnown: boolean) => {
+    const these = itemsOf(ids).filter((it) => unknown(it) === toKnown);
+    if (these.length === 0) return;
+    setMarking(true);
     try {
-      await onClaim?.(unknown.map((it) => it.id));
-      bring(unknown.map((it) => ({ ...it, standing: "claimed" as const })));
-      if (open && unknown.some((it) => it.id === open.id)) setOpen({ ...open, known: true });
+      await (toKnown ? onClaim : onUnclaim)?.(these.map((it) => it.id));
+      bring(these.map((it) => ({ ...it, standing: toKnown ? "claimed" as const : "not-seen" as const })));
     } finally {
-      setClaiming(false);
+      setMarking(false);
     }
   };
-  const claim = () => current && claimIds([current.id]);
-  // "I don't know this" and "I don't know these": back to undiscovered
-  const unclaimIds = async (ids: readonly string[]) => {
-    const known = ids.map((id) => graph.itemOf(id)).filter((it): it is SkyItem => !!it && it.standing !== "not-seen");
-    if (known.length === 0) return;
-    setClaiming(true);
-    try {
-      await onUnclaim?.(known.map((it) => it.id));
-      bring(known.map((it) => ({ ...it, standing: "not-seen" as const })));
-      if (open && known.some((it) => it.id === open.id)) setOpen({ ...open, known: false });
-    } finally {
-      setClaiming(false);
-    }
-  };
-  const unclaim = () => current && unclaimIds([current.id]);
-  const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
-
-  const holds = data.holds.map((h) => `${h.total.toLocaleString()} ${h.unit}`);
-  const holdsLine = holds.length > 1 ? `${holds.slice(0, -1).join(", ")} and ${holds[holds.length - 1]}` : holds[0] ?? "";
-
-  // what the middle shows: the open shelf, or this collection's search
-  // results, with a line on what the other collections found
-  const kindOf = (section: AtlasSection) => data.shelves.find((s) => s.id === section.id);
-  const found = result?.sections.map((section) => ({ section, shelf: kindOf(section), shown: section.items.filter(keep) })) ?? [];
-  const here = found.find((f) => f.shelf?.id === shelf?.id);
-  const elsewhere = found.filter((f) => f.shelf && f.shelf.id !== shelf?.id);
-  const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
-  const shelfSections = shelf?.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0) ?? [];
-  const shownOnShelf = shelfSections.reduce((n, s) => n + s.items.length, 0);
-
-  // the tiles in the order they are on screen, for a shift-click's run
-  const order = result ? (here?.shown ?? []) : shelfSections.flatMap((sec) => sec.items);
-  const pick: OnPick = (id, how) => {
-    if (how.range && anchor.current) {
-      const a = order.indexOf(anchor.current), b = order.indexOf(id);
-      if (a >= 0 && b >= 0) {
-        const run = order.slice(Math.min(a, b), Math.max(a, b) + 1);
-        setSelected((prev) => [...new Set([...prev, ...run])]);
-        return;
-      }
-    }
-    anchor.current = id;
-    if (how.toggle) setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    else setSelected([id]);
-  };
-  const clear = () => setSelected([]);
-  // a hovered tile's entry is fetched ahead, so the click finds it ready
-  const peek = (id: string) => { void fetchEntry(id).catch(() => undefined); };
-  const selectedItems = itemsOf(selected);
-  // the buttons follow the selection: "I know these" for the ones not yet in
-  // the sky, "I don't know these" for the ones that are, both for a mixture
-  const unknownSelected = selectedItems.filter((it) => it.standing === "not-seen");
-  const knownSelected = selectedItems.filter((it) => it.standing !== "not-seen");
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
-  const showPanel = selected.length > 0;
-  // the panel's own row of controls: widen it over the rail and the grid
-  // (or bring them back) at the far left, close at the right
+
+  // the right panel widened over the rail and the grid
+  const [wide, setWide] = useState(false);
+  const showPanel = selection.ids.length > 0;
+  const shelvesShown = !(wide && showPanel);
+  const columns = !shelvesShown ? "lg:grid-cols-[minmax(0,1fr)]" : railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-[minmax(0,1fr)]";
   const toolbar = (
     <>
-      <button type="button" aria-pressed={wide} onClick={() => setWide(!wide)} title={wide ? "Bring the shelves back" : "Widen this panel"} className={ROUND_BTN}>
-        <span aria-hidden>{wide ? "›" : "‹"}</span><span className="sr-only">{wide ? "Bring the shelves back" : "Widen this panel"}</span>
-      </button>
-      <button type="button" onClick={clear} title="Close" className={ROUND_BTN}>
-        <span aria-hidden>×</span><span className="sr-only">Close</span>
-      </button>
+      <RoundButton label={wide ? "Bring the shelves back" : "Widen this panel"} pressed={wide} onClick={() => setWide(!wide)}>{wide ? "›" : "‹"}</RoundButton>
+      <RoundButton label="Close" onClick={selection.clear}>×</RoundButton>
     </>
   );
+  const holds = data.holds.map((h) => `${h.total.toLocaleString()} ${h.unit}`);
+  const holdsLine = holds.length > 1 ? `${holds.slice(0, -1).join(", ")} and ${holds[holds.length - 1]}` : holds[0] ?? "";
 
   return (
     <SkyPageShell eyebrow="Atlas" title="What would you like to know?" height={height}>
@@ -387,111 +240,86 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           />
         </label>
 
-        <div className={`grid min-h-0 flex-1 items-start gap-4 ${wide && showPanel ? "lg:grid-cols-[minmax(0,1fr)]" : railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-[minmax(0,1fr)]"}`}>
-          {railOpen && !(wide && showPanel) && (
-          <nav aria-label="Collections and status" className="flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel p-3">
-            {(
-              <>
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <p className={RAIL_HEADING_TEXT}>Collections</p>
-                    <button type="button" aria-expanded onClick={() => setRailOpen(false)} title="Hide the rail" className={ROUND_BTN}>
-                      <span aria-hidden>‹</span><span className="sr-only">Hide the rail</span>
-                    </button>
-                  </div>
-                  {data.shelves.map((s) => (
-                    <RailRow key={s.id} on={s.id === shelf?.id} label={s.title} count={s.total} onClick={() => setShelfId(s.id)} />
-                  ))}
-                </div>
-                {counts && (
-                  <div>
-                    <p className={RAIL_HEADING}>Your status</p>
-                    <RailRow on={status === null} dot={<span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-full border border-sky-line" />} label="Everything" count={shelf?.total} onClick={() => setStatus(null)} />
-                    {STANDING_ORDER.map((s) => (
-                      <RailRow key={s} on={status === s} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STANDING[s].dot}`} />} label={STANDING[s].label} capitalize count={counts[s]} onClick={() => setStatus(status === s ? null : s)} />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </nav>
+        <div className={`grid min-h-0 flex-1 items-start gap-4 ${columns}`}>
+          {shelvesShown && railOpen && shelf && (
+            <AtlasRail collections={data.shelves} open={shelf.id} onOpen={setShelfId} counts={counts} total={shelf.total} status={status} onStatus={setStatus} onHide={() => setRailOpen(false)} />
           )}
 
-          {!(wide && showPanel) && (
-          <div className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
-            {shelf && (
-              <div className="flex shrink-0 items-start gap-3">
-                {!railOpen && (
-                  <button type="button" aria-expanded={false} onClick={() => setRailOpen(true)} title="Show the rail" className={`${ROUND_BTN} mt-1`}>
-                    <span aria-hidden>›</span><span className="sr-only">Show the rail</span>
-                  </button>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
-                  <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
+          {shelvesShown && (
+            <div className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
+              {shelf && (
+                <div className="flex shrink-0 items-start gap-3">
+                  {!railOpen && <RoundButton label="Show the rail" expanded={false} onClick={() => setRailOpen(true)} className="mt-1">›</RoundButton>}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
+                    <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {result ? (
-              <>
-                <p className="mt-4 text-[12.5px] text-sky-muted">
-                  <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{status ? ` · ${STANDING[status].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
-                </p>
-                {here && here.shown.length > 0 ? (
-                  <div className="mt-2"><Grid ids={here.shown} graph={graph} selected={selectedSet} onOpen={pick} onPeek={peek} /></div>
-                ) : (
-                  <p className="mt-3 text-[13.5px] text-sky-muted">
-                    {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${status ? ` with that status` : ""}.`}
+              {result ? (
+                <>
+                  <p className="mt-4 text-[12.5px] text-sky-muted">
+                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{status ? ` · ${STANDING[status].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
                   </p>
-                )}
-                {elsewhere.length > 0 && (
-                  <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-sky-muted">
-                    <span>Also found:</span>
-                    {elsewhere.map((f) => (
-                      <button key={f.section.id} type="button" onClick={() => setShelfId(f.shelf!.id)} className="rounded-full border border-sky-line px-2 py-0.5 hover:border-sky-accent hover:text-sky-ink">
-                        {(f.section.items.length + (f.section.more ?? 0)).toLocaleString()} {f.shelf!.title.toLowerCase()}
-                      </button>
-                    ))}
-                  </p>
-                )}
-              </>
-            ) : shelf ? (
-              <>
-                <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> shown{status ? ` · ${STANDING[status].label}` : ""}</p>
-                {shelfSections.length === 0 ? (
-                  <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
-                ) : shelfSections.map((section) => (
-                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={selectedSet} onOpen={pick} onPeek={peek} />
-                ))}
-                {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
-              </>
-            ) : null}
-            {searching && <p className="mt-3 text-[12.5px] text-sky-muted">Searching…</p>}
-          </div>
+                  {here && here.shown.length > 0 ? (
+                    <div className="mt-2"><TileGrid items={itemsOf(here.shown)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} /></div>
+                  ) : (
+                    <p className="mt-3 text-[13.5px] text-sky-muted">
+                      {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${status ? " with that status" : ""}.`}
+                    </p>
+                  )}
+                  {elsewhere.length > 0 && (
+                    <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-sky-muted">
+                      <span>Also found:</span>
+                      {elsewhere.map((f) => (
+                        <button key={f.section.id} type="button" onClick={() => setShelfId(f.shelf!.id)} className="rounded-full border border-sky-line px-2 py-0.5 hover:border-sky-accent hover:text-sky-ink">
+                          {(f.section.items.length + (f.section.more ?? 0)).toLocaleString()} {f.shelf!.title.toLowerCase()}
+                        </button>
+                      ))}
+                    </p>
+                  )}
+                </>
+              ) : shelf ? (
+                <>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> shown{status ? ` · ${STANDING[status].label}` : ""}</p>
+                  {cuts.length === 0 ? (
+                    <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
+                  ) : cuts.map((cut) => (
+                    <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
+                  ))}
+                  {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
+                </>
+              ) : null}
+              {searching && <p className="mt-3 text-[12.5px] text-sky-muted">Searching…</p>}
+            </div>
           )}
 
           {showPanel && (
-            <div ref={panel} className="min-h-0 self-stretch">
-              {selected.length > 1 ? (
-                <section className="flex h-full flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink">
-                  <div className="mb-3 flex shrink-0 items-center justify-between gap-2">{toolbar}</div>
-                  <h2 className="shrink-0 text-[13px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{selected.length} selected</h2>
-                  <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-1.5 overflow-y-auto">
+            <div className="min-h-0 self-stretch">
+              {selection.ids.length > 1 ? (
+                <DetailFrame
+                  scroll
+                  toolbar={toolbar}
+                  footer={
+                    <>
+                      {selectedItems.some(unknown) && <SkyButton href={picksHref(selectedItems.filter(unknown).map((it) => it.id))}>Add to tonight&apos;s picks</SkyButton>}
+                      {selectedItems.some(unknown) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, true)}>{marking ? "Marking…" : "I know these"}</SkyButton>}
+                      {selectedItems.some((it) => !unknown(it)) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, false)}>{marking ? "Marking…" : "I don't know these"}</SkyButton>}
+                      {quizHref && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
+                    </>
+                  }
+                >
+                  <h2 className="shrink-0 text-[13px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{selection.ids.length} selected</h2>
+                  <div className="mt-3 flex flex-wrap content-start gap-1.5">
                     {selectedItems.map((it) => (
-                      <button key={it.id} type="button" onClick={() => setOpening(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
+                      <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
                         <span className={`font-sky-display text-[16px] leading-none ${STANDING[it.standing].text} ${japaneseFont(it.glyph)}`}>{it.glyph}</span>
                         {it.english !== it.glyph && <span className="max-w-[10ch] truncate text-[11px] text-sky-muted">{it.english}</span>}
                       </button>
                     ))}
                   </div>
-                  <div className="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-sky-line pt-3">
-                    {unknownSelected.length > 0 && <a href={picksHref(unknownSelected.map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
-                    {unknownSelected.length > 0 && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
-                    {knownSelected.length > 0 && <button type="button" onClick={() => unclaimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I don't know these"}</button>}
-                    {quizHref && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
-                  </div>
-                </section>
+                </DetailFrame>
               ) : current ? (
                 <LessonCard
                   scroll
@@ -506,20 +334,20 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
                   hear={hear}
                   pitch={pitch}
-                  onSelect={setOpening}
-                  page={page}
-                  onPage={setPage}
+                  onSelect={selection.only}
+                  page={page?.id === current.id ? page.at : 0}
+                  onPage={(at) => setPage({ id: current.id, at })}
                   footer={
                     <>
-                      {current.standing === "not-seen" ? (
+                      {unknown(current) ? (
                         <>
-                          <a href={picksHref([current.id])} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
-                          <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
+                          <SkyButton href={picksHref([current.id])}>Add to tonight&apos;s picks</SkyButton>
+                          <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], true)}>{marking ? "Marking…" : "I know this"}</SkyButton>
                         </>
                       ) : (
-                        <button type="button" onClick={unclaim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I don't know this"}</button>
+                        <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], false)}>{marking ? "Marking…" : "I don't know this"}</SkyButton>
                       )}
-                      {quizHref && (current.quizzable ?? entry?.quizzable ?? 0) > 1 && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
+                      {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
                     </>
                   }
                 />

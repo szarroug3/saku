@@ -61,6 +61,9 @@ export interface TeachPage {
   /** "Intro", "Step 1": what the page is, for the eyebrow and the pager. */
   eyebrow?: string;
   title: string;
+  /** The page's one sentence, set bold under the title: "A radical is a
+   * piece other kanji are built out of." */
+  lead?: string;
   /** The line to keep in mind, in the accent: "Think: who → what → action." */
   hook?: string;
   /** The page's prose: an optional heading over it, a bold lead, its text,
@@ -123,18 +126,14 @@ export interface LessonStep {
 }
 
 /** A page in the order: what a track is, what a term means, how a mark
- * changes a sound. Plain text from whatever the route's adapter has. */
+ * changes a sound. The same page shape a star's teaching uses, placed
+ * before a star. */
 export interface LessonPage {
   /** The star this page comes before. */
   before: string;
   /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
   kind: string;
-  /** Short: "Radicals", "Pitch accent". */
-  title: string;
-  /** The page's one sentence, when it has one: "A radical is a piece other
-   * kanji are built out of." */
-  lead?: string;
-  body: readonly string[];
+  page: TeachPage;
 }
 
 const has = (learned: Learned, id: string) => (typeof learned === "function" ? learned(id) : learned.has(id));
@@ -149,7 +148,7 @@ export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], 
     for (const id of graph.orderOf(pick)) {
       if (seen.has(id) || has(learned, id) || graph.itemOf(id)?.group) continue;
       seen.add(id);
-      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.kind}:${page.title}`, pick, page });
+      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.kind}:${page.page.title}`, pick, page });
       steps.push({ id, pick });
     }
   }

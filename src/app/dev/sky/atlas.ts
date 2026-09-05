@@ -29,7 +29,7 @@ import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { EntryId, HistoryFile } from "@/types";
 
 import { standingFor } from "./learner";
-import { teachFor } from "./lesson";
+import { teachFor } from "./teach";
 import { offerings, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
@@ -162,8 +162,5 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     if (known.length) group("Words you know that use it", known, `${known.length}`);
   }
 
-  const teach = teachFor(item);
-  // how many things a quiz could ask about it: one for a kana, several for a rule
-  const quizzable = quizzableFacts(knownFactsOf(entry), history).length;
-  return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach, related, known: standingFor(entry, history, now).met, quizzable };
+  return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach: teachFor(item), related };
 }

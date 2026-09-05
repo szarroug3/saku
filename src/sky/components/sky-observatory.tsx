@@ -18,6 +18,7 @@ import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
 import { SkyField } from "@/sky/components/sky-field";
+import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
@@ -209,19 +210,20 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
               </p>
             )}
             {picks.length > 0 && (
-              <button
-                type="button"
+              <SkyButton
+                variant="outline"
+                block
                 disabled={claiming}
                 onClick={() => startClaim(async () => { if (onClaim) await onClaim(picks); setClaimed((c) => [...c, ...picks]); setPicks([]); setUndo(null); })}
-                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-accent bg-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-accent hover:bg-sky-accent/10 disabled:border-sky-line disabled:text-sky-faint"
+                className="mt-3 shrink-0 py-2.5"
               >
                 {claiming ? "Claiming…" : "I already know these"}
-              </button>
+              </SkyButton>
             )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}${lessonPath.includes("?") ? "&" : "?"}picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] border border-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
+              <SkyButton variant={over ? "coral" : "solid"} block href={`${lessonPath}${lessonPath.includes("?") ? "&" : "?"}picks=${encodeURIComponent(picks.join(","))}`} className="mt-2 shrink-0 py-2.5">{startLabel}</SkyButton>
             ) : (
-              <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] border border-transparent bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-faint">Start Lesson</span>
+              <SkyButton block disabled href="#" className="mt-3 shrink-0 py-2.5">Start Lesson</SkyButton>
             )}
           </SkyPanel>
         </aside>

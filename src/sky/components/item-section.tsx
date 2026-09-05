@@ -15,6 +15,7 @@
 // Atlas carries that in its furniture), so what a thing IS is said here.
 
 import type { ReactNode } from "react";
+import { SkyButton } from "@/sky/components/sky-button";
 
 export interface ItemSectionProps {
   title: string;
@@ -40,16 +41,7 @@ export function ItemSection({ title, intro, when, start, children }: ItemSection
             {intro && <p className="text-[13.5px] leading-relaxed text-sky-ink">{intro}</p>}
             {when && <p className={`text-[12.5px] leading-relaxed text-sky-muted ${intro ? "mt-1" : ""}`}>{when}</p>}
           </div>
-          {start && (
-            <button
-              type="button"
-              onClick={start.onClick}
-              disabled={start.disabled}
-              className="shrink-0 rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint"
-            >
-              {start.label}
-            </button>
-          )}
+          {start && <SkyButton onClick={start.onClick} disabled={start.disabled} className="shrink-0">{start.label}</SkyButton>}
         </div>
       )}
 

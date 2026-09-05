@@ -16,6 +16,8 @@ import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/compon
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
 import { bodyOf, type Body } from "@/sky/lib/constellation";
+import { SURFACE } from "@/sky/components/sky-panel";
+import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { useStandingFilter } from "@/sky/components/use-standing-filter";
@@ -80,7 +82,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>
             <p className="text-[14px] text-sky-muted">Go to the observatory to explore.</p>
-            <a href={observatoryHref} className="pointer-events-auto mt-1 rounded-[10px] bg-sky-accent px-3.5 py-2 text-sm font-semibold text-sky-accent-ink">Explore</a>
+            <SkyButton href={observatoryHref} className="pointer-events-auto mt-1">Explore</SkyButton>
           </div>
         )}
       </div>
@@ -92,7 +94,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
           onClick={() => setDetails((d) => !d)}
           aria-expanded={details}
           aria-controls="sky-home-details"
-          className="flex w-full shrink-0 items-center justify-between gap-4 rounded-2xl border border-sky-line bg-sky-panel px-5 py-3 text-left hover:bg-sky-card"
+          className={`${SURFACE} flex w-full shrink-0 items-center justify-between gap-4 px-5 py-3 text-left hover:bg-sky-card`}
         >
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Details</span>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">

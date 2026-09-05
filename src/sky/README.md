@@ -119,15 +119,9 @@ and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
 lesson can put its own clickable stars on the returned positions, in the same
 colours via `paintFor`. `/dev/sky/constellations` (gallery page removed 2026-09-04) shows all of it on real words.
 
-### Filter chips and the coverage bar
+### The coverage bar
 
-`FilterChipRow` (`src/sky/components/filter-chip-row.tsx`, SAK-298) is a row
-of choices with live counts, in two modes (`multi`, or `single` with an "any"
-chip), and `ToggleChip` is the one amber chip that is on or off ("only ones
-I have missed"). Every chip carries the count the caller computed for it;
-a chip whose count is 0 says "none" and cannot be picked (unless it is
-already on, so nothing is ever stuck), and a chip that does not apply is
-disabled with the reason in its title. `CoverageBar`
+`CoverageBar`
 (`src/sky/components/coverage-bar.tsx`) is the stacked bar by standing, in
 the standing tokens, with no labels of its own: pair it with a headline and
 a `StandingLegend` carrying the same counts. It takes the size of the whole
@@ -145,7 +139,7 @@ part is its own component and reused elsewhere: `SkyCanvas` (the SVG with
 seeded dust, a viewport group, and pan and zoom when interactive),
 `SkyField` (scatters and draws the constellations with hover tooltips; the
 Planetarium preview and the lesson use it at other sizes and with their own
-looks), `SkyTooltip`, `ConstellationTile`, `DiscoveryPanel` ("x of y" per
+looks), `SkyTooltip`, `DiscoveryPanel` ("x of y" per
 subject, grouped as Progress groups them: Sam chose the breakdown by subject
 over the one by standing; each bar is the standing breakdown and hovering
 it gives the numbers), `MixUpsPanel` ("日 day and 目 eye, 4 times", every
@@ -219,3 +213,23 @@ Because the boundary is enforced both ways, the cutover is mechanical:
 3. Remove the lint boundary and, if you like, flatten `src/sky/` up into `src/`.
 
 No untangling step, because there is nothing tangled.
+
+### Shared pieces (2026-09-05 cleanup)
+
+`SkyButton` and `RoundButton` (`sky-button.tsx`) are every action and
+control on every page: solid in the accent for the main thing to do,
+outline for the quieter choice, quiet for a step back, coral for a warning,
+round for a close, widen or fold. `SkySurface` (`sky-panel.tsx`) is the
+see-through box every panel, card and rail sits in, and `SkyPanel` is that
+box with a small caps title. `DetailFrame` (`detail-frame.tsx`) is the frame
+of a panel that shows one thing and acts on it: controls across the top, a
+body that scrolls inside the box when asked, actions pinned at the bottom;
+the lesson's card (`LessonCard`, the star's head and its kind's blocks), the
+Atlas's entry and its selection wear it. `teach-page.tsx` renders a page of
+teaching (paragraphs, a build formula, tables, worked examples, the pager);
+a star's pages and the pages between stars are the same `TeachPage`. The
+Atlas is composed from `AtlasRail`, `atlas-grid.tsx` (tiles in cuts that
+mount as they scroll near), `useSelection` (plain, cmd and shift picks over
+the tiles on screen) and `useEntries` (entries fetched once, fetched ahead
+on hover).
+

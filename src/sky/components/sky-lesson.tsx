@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard, LessonPageCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
+import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
@@ -48,8 +49,6 @@ export interface SkyLessonProps {
   pitch?: PitchComponent;
   height?: string;
 }
-
-const BTN = "rounded-[10px] px-3.5 py-2 text-[13px] font-semibold";
 
 export function SkyLesson({ data, drillHref, written, hear, pitch, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
@@ -123,11 +122,11 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
   const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
-      <button type="button" disabled={!canBack} onClick={back} className={`${BTN} border border-sky-line text-sky-ink disabled:border-transparent disabled:text-sky-faint`}>Back</button>
+      <SkyButton variant="quiet" disabled={!canBack} onClick={back}>Back</SkyButton>
       {last && drillHref ? (
-        <a href={drillHref} className={`${BTN} bg-sky-accent text-sky-accent-ink`}>Drill</a>
+        <SkyButton href={drillHref}>Drill</SkyButton>
       ) : (
-        <button type="button" disabled={last} onClick={next} className={`${BTN} bg-sky-accent text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint`}>Next</button>
+        <SkyButton disabled={last} onClick={next}>Next</SkyButton>
       )}
     </div>
   );
@@ -193,7 +192,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                         onClick={() => open(s.id)}
                         className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
                       >
-                        <span className={`text-[13px] ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.title}</span>
+                        <span className={`text-[13px] ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.page.title}</span>
                         <span className="ml-auto text-[10.5px] uppercase tracking-[0.08em] text-sky-muted">{s.page.kind}</span>
                       </button>
                     </li>
