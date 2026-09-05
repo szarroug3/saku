@@ -62,7 +62,7 @@ function tierExample(tier: AssemblyTier): string {
  * → "Conditional". A label with no such suffix (e.g. "Te-form links and
  * helpers") is returned unchanged — this only trims the redundant word, it
  * never invents a new label (SAK-11). */
-function sentenceTierShortLabel(label: string): string {
+export function sentenceTierShortLabel(label: string): string {
   return label.replace(/\s+sentences$/i, "");
 }
 

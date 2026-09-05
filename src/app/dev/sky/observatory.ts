@@ -33,6 +33,7 @@ import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
+import { sentenceTierShortLabel } from "@/lib/content/sentence-track";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
@@ -224,7 +225,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     switch (entry.kind) {
       case COUNTER_KIND: return offer(entry, "counter");
       case GRAMMAR_SUBJECT: return offer(entry, "grammar");
-      case SENTENCE_RULE_KIND: return offer(entry, "grammar", { english: entry.name ?? entry.meanings[0] ?? entry.id });
+      // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
+      case SENTENCE_RULE_KIND: { const english = entry.name ?? entry.meanings[0] ?? entry.id; return offer(entry, "grammar", { english, glyph: sentenceTierShortLabel(english) }); }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
       default: return offer(entry, "word");

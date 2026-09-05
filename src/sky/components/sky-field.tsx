@@ -85,7 +85,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
   r: number;
 }
 
-interface Hover { id: string; at: Anchor }
+interface Hover { id: string; /** the constellation it was hovered in, for its look */ root: string; at: Anchor }
 
 export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
@@ -110,12 +110,15 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
 
   // the tooltip: which star, and where it hangs, decided in the event
   const [hover, setHover] = useState<Hover | null>(null);
-  const place = (id: string, clientX: number, clientY: number) => setHover({ id, at: pointerAnchor(clientX, clientY) });
+  const place = (id: string, root: string, clientX: number, clientY: number) => setHover({ id, root, at: pointerAnchor(clientX, clientY) });
 
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
+  // a star picked for tonight, or opened in the lesson, is named in full
+  const hoverLook = hover ? baseLook(hover.root, hover.id) : undefined;
+  const hoverTonight = !!hoverLook && !!(hoverLook.tonight || hoverLook.lit || hoverLook.emphasis);
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
   // one hit circle per star, sized to its dot plus some slack
-  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
+  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
@@ -139,10 +142,10 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
                 aria-label={graph.itemOf(h.id)?.english ?? h.id}
                 aria-disabled={disabled || undefined}
                 data-hit={h.id}
-                onPointerEnter={(e) => place(h.id, e.clientX, e.clientY)}
-                onPointerMove={(e) => place(h.id, e.clientX, e.clientY)}
+                onPointerEnter={(e) => place(h.id, h.root, e.clientX, e.clientY)}
+                onPointerMove={(e) => place(h.id, h.root, e.clientX, e.clientY)}
                 onPointerLeave={() => setHover(null)}
-                onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(h.id, r.left + r.width / 2, r.top + r.height / 2); }}
+                onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(h.id, h.root, r.left + r.width / 2, r.top + r.height / 2); }}
                 onBlur={() => setHover(null)}
                 onClick={onStarClick ? pick : undefined}
                 onKeyDown={onStarClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } : undefined}
@@ -154,7 +157,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
       </SkyCanvas>
       {hover && hoverItem && (
         <Floating at={hover.at}>
-          <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={typeof briefTooltip === "function" ? briefTooltip(hover.id) : briefTooltip} />
+          <SkyTooltip item={hoverItem} pieces={hoverPieces} tonight={hoverTonight} brief={typeof briefTooltip === "function" ? briefTooltip(hover.id) : briefTooltip} />
         </Floating>
       )}
     </div>

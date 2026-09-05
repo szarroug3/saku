@@ -19,17 +19,20 @@ export interface SkyTooltipProps {
   pieces?: readonly SkyItem[];
   /** Only the English name. */
   brief?: boolean;
+  /** Being learned tonight: not yet in the sky, but named in full, with the
+   * glyph in the ink rather than the undiscovered grey. */
+  tonight?: boolean;
   className?: string;
 }
 
-export function SkyTooltip({ item, pieces = [], brief = false, className = "" }: SkyTooltipProps) {
+export function SkyTooltip({ item, pieces = [], brief = false, tonight = false, className = "" }: SkyTooltipProps) {
   if (brief) return <SkyCard className={`rounded-lg px-2.5 py-1.5 ${className}`}>{item.english}</SkyCard>;
-  const discovered = item.standing !== "not-seen";
+  const discovered = tonight || item.standing !== "not-seen";
   return (
     <SkyCard className={`max-w-[260px] ${className}`}>
       <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
       <div className="flex items-baseline gap-2">
-        <span className={`font-sky-display text-2xl leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+        <span className={`font-sky-display text-2xl leading-none ${tonight ? "text-sky-ink" : STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
       </div>
       {discovered && <div className="mt-1.5">{item.english}</div>}
