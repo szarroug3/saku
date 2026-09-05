@@ -273,7 +273,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                       className={`flex w-full flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
                     >
                       <span className={`font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
-                      <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answer}</span>
+                      <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answerPitch !== undefined && Pitch ? <Pitch reading={c.answer} downstep={c.answerPitch} /> : c.answer}</span>
                       <span className={`ml-auto text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
                     </button>
                   </li>
@@ -395,7 +395,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                     <span className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</span>
                     <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
                   </p>
-                  <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answer}</p>
+                  <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answerPitch !== undefined && Pitch ? <Pitch reading={card.answer} downstep={card.answerPitch} /> : card.answer}</p>
                   {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
                 </div>
               )}

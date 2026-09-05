@@ -65,6 +65,8 @@ export interface QuizCard {
   answerId: string;
   /** The answer as the reveal shows it. */
   answer: string;
+  /** The answer is a reading to draw with this pitch (a pitch card). */
+  answerPitch?: number;
   /** How many times this fact has been seen, and missed, before tonight. */
   seen: number;
   missed: number;

@@ -179,6 +179,7 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     options: correctFirst ? pair : [pair[1], pair[0]],
     answerId: "pitch:right",
     answer: q.reading,
+    answerPitch: q.downstep,
     seen: 0,
     missed: 0,
     teach: teachFor(item),
