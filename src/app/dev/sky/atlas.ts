@@ -37,7 +37,7 @@ import { offerings, type Offerings } from "./observatory";
  * to search); the page mounts a cut's tiles only as it comes into view. */
 const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string }> = [
   { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana" },
-  { id: "pieces", kind: RADICAL_SUBJECT, sky: "radical", title: "Pieces", unit: "pieces" },
+  { id: "radicals", kind: RADICAL_SUBJECT, sky: "radical", title: "Radicals", unit: "radicals" },
   { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji" },
   { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words" },
   { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters" },
