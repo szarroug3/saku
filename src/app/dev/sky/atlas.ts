@@ -18,7 +18,8 @@ import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
-import { COUNTER_KIND, entryForGlyph, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND, type Kind, type LibEntry } from "@/lib/library/entries";
+import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { searchByType } from "@/lib/library/search";
 import { shelfSections } from "@/lib/library/shelf-sections";
 import type { RelatedGroup } from "@/sky/components/lesson-card";
@@ -154,5 +155,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   }
 
   const teach = teachFor(item);
-  return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach, related, known: standingFor(entry, history, now).met };
+  // how many things a quiz could ask about it: one for a kana, several for a rule
+  const quizzable = quizzableFacts(knownFactsOf(entry), history).length;
+  return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach, related, known: standingFor(entry, history, now).met, quizzable };
 }

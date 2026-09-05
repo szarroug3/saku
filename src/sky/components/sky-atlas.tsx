@@ -80,6 +80,9 @@ export interface AtlasEntry {
   related: readonly RelatedGroup[];
   /** Whether the learner has this in their sky. */
   known: boolean;
+  /** How many things a quiz could ask about it: one for a kana, several
+   * for a rule. A quiz is offered only when there is more than one. */
+  quizzable: number;
 }
 
 /** What the stroke-order block takes: the character to draw. */
@@ -179,17 +182,19 @@ function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; 
 /** A rail row: a name with a count on the right, and a dot before it when
  * the row stands for a standing (the collections carry no dot: Sam found
  * the kind colours confusing, 2026-09-05). */
-function RailRow({ on, dot, label, count, onClick }: { on: boolean; dot?: ReactNode; label: string; count?: number; onClick: () => void }) {
+function RailRow({ on, dot, label, capitalize = false, count, onClick }: { on: boolean; dot?: ReactNode; label: string; capitalize?: boolean; count?: number; onClick: () => void }) {
   return (
     <button type="button" aria-pressed={on} onClick={onClick} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] ${on ? "bg-sky-card-strong font-semibold text-sky-ink" : "text-sky-muted hover:bg-sky-card hover:text-sky-ink"}`}>
       {dot}
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span className={`min-w-0 flex-1 truncate ${capitalize ? "capitalize" : ""}`}>{label}</span>
       {count !== undefined && <span className="text-[11px] tabular-nums text-sky-faint">{count.toLocaleString()}</span>}
     </button>
   );
 }
 
-const RAIL_HEADING = "mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted";
+const RAIL_HEADING_TEXT = "text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted";
+const RAIL_HEADING = `mb-1.5 ${RAIL_HEADING_TEXT}`;
+const ROUND_BTN = "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink";
 const BTN_SOLID = "rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink";
 const BTN_OUTLINE = "rounded-[10px] border border-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent disabled:opacity-60";
 
@@ -208,6 +213,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   // the rail: one collection open at a time, and one status or all of
   // them; it folds to its dots to give the grid the room
   const [railOpen, setRailOpen] = useState(true);
+  // the right panel widened over the rail and the grid
+  const [wide, setWide] = useState(false);
   const [shelfId, setShelfId] = useState(data.shelves[0]?.id ?? "");
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
@@ -258,8 +265,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
     });
     return () => { live = false; };
   }, [single, lookup, bring]);
-  const opening = !!single && open?.id !== single;
-  const current = single && open?.id === single ? graph.itemOf(single) : undefined;
+  // the card opens at once on what a tile knows; the teaching fills in
+  const current = single ? graph.itemOf(single) : undefined;
+  const entry = single && open?.id === single ? open : null;
   const setOpening = (id: string) => { anchor.current = id; setSelected([id]); };
 
   // "I know this" and "I know these": the claim, then the entries as
@@ -312,6 +320,17 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const selectedItems = itemsOf(selected);
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
   const showPanel = selected.length > 0;
+  // the panel's corner: widen it over the rail and the grid, or bring them back; and close
+  const corner = (
+    <>
+      <button type="button" aria-pressed={wide} onClick={() => setWide(!wide)} title={wide ? "Bring the shelves back" : "Widen this panel"} className={ROUND_BTN}>
+        <span aria-hidden>{wide ? "›" : "‹"}</span><span className="sr-only">{wide ? "Bring the shelves back" : "Widen this panel"}</span>
+      </button>
+      <button type="button" onClick={clear} title="Close" className={ROUND_BTN}>
+        <span aria-hidden>×</span><span className="sr-only">Close</span>
+      </button>
+    </>
+  );
 
   return (
     <SkyPageShell eyebrow="Atlas" title="What would you like to know?" height={height}>
@@ -327,16 +346,18 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           />
         </label>
 
-        <div className={`grid min-h-0 flex-1 items-start gap-4 ${railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[44px_minmax(0,1fr)_360px]" : "lg:grid-cols-[44px_minmax(0,1fr)]"}`}>
-          <nav aria-label="Collections and status" className={`flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel ${railOpen ? "p-3" : "items-center p-2"}`}>
-            <button type="button" aria-expanded={railOpen} onClick={() => setRailOpen(!railOpen)} title={railOpen ? "Fold the rail" : "Open the rail"} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] text-sky-muted hover:border-sky-accent hover:text-sky-ink ${railOpen ? "self-end" : ""}`}>
-              <span aria-hidden>{railOpen ? "‹" : "›"}</span>
-              <span className="sr-only">{railOpen ? "Fold the rail" : "Open the rail"}</span>
-            </button>
-            {railOpen ? (
+        <div className={`grid min-h-0 flex-1 items-start gap-4 ${wide && showPanel ? "lg:grid-cols-[minmax(0,1fr)]" : railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-[minmax(0,1fr)]"}`}>
+          {railOpen && !(wide && showPanel) && (
+          <nav aria-label="Collections and status" className="flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel p-3">
+            {(
               <>
                 <div>
-                  <p className={RAIL_HEADING}>Collections</p>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className={RAIL_HEADING_TEXT}>Collections</p>
+                    <button type="button" aria-expanded onClick={() => setRailOpen(false)} title="Hide the rail" className={ROUND_BTN}>
+                      <span aria-hidden>‹</span><span className="sr-only">Hide the rail</span>
+                    </button>
+                  </div>
                   {data.shelves.map((s) => (
                     <RailRow key={s.id} on={s.id === shelf?.id} label={s.title} count={s.total} onClick={() => setShelfId(s.id)} />
                   ))}
@@ -346,22 +367,28 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                     <p className={RAIL_HEADING}>Your status</p>
                     <RailRow on={status === null} dot={<span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-full border border-sky-line" />} label="Everything" count={shelf?.total} onClick={() => setStatus(null)} />
                     {STANDING_ORDER.map((s) => (
-                      <RailRow key={s} on={status === s} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STANDING[s].dot}`} />} label={STANDING[s].label} count={counts[s]} onClick={() => setStatus(status === s ? null : s)} />
+                      <RailRow key={s} on={status === s} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STANDING[s].dot}`} />} label={STANDING[s].label} capitalize count={counts[s]} onClick={() => setStatus(status === s ? null : s)} />
                     ))}
                   </div>
                 )}
               </>
-            ) : null}
+            )}
           </nav>
+          )}
 
+          {!(wide && showPanel) && (
           <div className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
             {shelf && (
-              <div className="shrink-0">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <div className="flex shrink-0 items-start gap-3">
+                {!railOpen && (
+                  <button type="button" aria-expanded={false} onClick={() => setRailOpen(true)} title="Show the rail" className={`${ROUND_BTN} mt-1`}>
+                    <span aria-hidden>›</span><span className="sr-only">Show the rail</span>
+                  </button>
+                )}
+                <div className="min-w-0 flex-1">
                   <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
-                  <p className="text-[12px] text-sky-muted">{shelf.more > 0 ? `the first ${(shelf.total - shelf.more).toLocaleString()} are here, in the order Saku teaches them` : "the whole collection is here"}</p>
+                  <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
                 </div>
-                <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
               </div>
             )}
 
@@ -401,17 +428,12 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
             ) : null}
             {searching && <p className="mt-3 text-[12.5px] text-sky-muted">Searching…</p>}
           </div>
+          )}
 
           {showPanel && (
-            <div ref={panel} className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
-              <div className="mb-2 flex shrink-0 items-center justify-between">
-                <span className="text-[12px] text-sky-muted">{selected.length > 1 ? `${selected.length} selected` : "Open"}</span>
-                <button type="button" onClick={clear} title="Close" className="flex h-7 w-7 items-center justify-center rounded-full border border-sky-line text-[14px] text-sky-muted hover:border-sky-accent hover:text-sky-ink">
-                  <span aria-hidden>×</span><span className="sr-only">Close</span>
-                </button>
-              </div>
+            <div ref={panel} className="min-h-0 self-stretch">
               {selected.length > 1 ? (
-                <SkyPanel title={`${selected.length} selected`} className="flex min-h-0 flex-1 flex-col">
+                <SkyPanel title={`${selected.length} selected`} aside={corner} className="flex h-full flex-col">
                   <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-1.5 overflow-y-auto">
                     {selectedItems.map((it) => (
                       <button key={it.id} type="button" onClick={() => setOpening(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
@@ -424,39 +446,39 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   <div className="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-sky-line pt-3">
                     {selectedItems.some((it) => it.standing === "not-seen") && <a href={picksHref(selectedItems.filter((it) => it.standing === "not-seen").map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
                     {selectedItems.some((it) => it.standing === "not-seen") && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
-                    {quizHref && selectedItems.some((it) => it.standing !== "not-seen") && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
+                    {quizHref && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
                   </div>
                 </SkyPanel>
-              ) : current && open ? (
+              ) : current ? (
                 <LessonCard
-                  className="min-h-full"
+                  scroll
                   item={current}
-                  teach={open.teach}
+                  teach={entry?.teach}
                   madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                   partOf={[]}
                   known={false}
                   standing
-                  related={open.related}
+                  corner={corner}
+                  related={entry?.related ?? []}
                   written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
                   hear={hear}
                   pitch={pitch}
                   onSelect={setOpening}
                   footer={
-                    open.known ? (
-                      quizHref && <a href={quizHref} className={BTN_SOLID}>Quiz me</a>
-                    ) : (
-                      <>
-                        <a href={picksHref([current.id])} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
-                        <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
-                      </>
-                    )
+                    <>
+                      {current.standing === "not-seen" ? (
+                        <>
+                          <a href={picksHref([current.id])} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
+                          <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
+                        </>
+                      ) : (
+                        <span className="text-[12.5px] text-sky-muted">Already in your sky.</span>
+                      )}
+                      {quizHref && (entry?.quizzable ?? 0) > 1 && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
+                    </>
                   }
                 />
-              ) : (
-                <SkyPanel title="Opening" className="min-h-full">
-                  <p className="mt-2 text-[14px] text-sky-muted">{opening ? "One moment." : "Nothing here."}</p>
-                </SkyPanel>
-              )}
+              ) : null}
             </div>
           )}
         </div>

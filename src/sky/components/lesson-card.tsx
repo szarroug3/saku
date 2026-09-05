@@ -48,6 +48,10 @@ export interface LessonCardProps {
   standing?: boolean;
   related?: readonly RelatedGroup[];
   footer?: ReactNode;
+  /** Controls in the card's top corner, after the standing chip: a close, a widen. */
+  corner?: ReactNode;
+  /** The card fills its box and scrolls inside it, the footer pinned at the bottom. */
+  scroll?: boolean;
   className?: string;
 }
 
@@ -194,7 +198,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, corner, scroll = false, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const pages = teach?.pages ?? [];
   const at = Math.max(0, Math.min(page, pages.length - 1));
@@ -215,11 +219,17 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
   );
 
   return (
-    <section className={`flex flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
-      <div className="flex items-start justify-between gap-3">
+    <section className={`flex flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${scroll ? "h-full overflow-hidden" : ""} ${className}`}>
+      <div className={`flex items-start justify-between gap-3 ${scroll ? "shrink-0" : ""}`}>
         <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
-        {standing && <StandingChip standing={item.standing} />}
+        {(standing || corner) && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            {standing && <StandingChip standing={item.standing} />}
+            {corner}
+          </div>
+        )}
       </div>
+      <div className={scroll ? "-mr-2 min-h-0 flex-1 overflow-y-auto pr-2" : "contents"}>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {/* the reading and its hear button as one group, so the button
@@ -343,7 +353,8 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       </div>
 
       {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
-      {footer && <div className="mt-auto flex flex-wrap gap-2 border-t border-sky-line pt-4 [&:not(:first-child)]:mt-5">{footer}</div>}
+      </div>
+      {footer && <div className={`mt-auto flex flex-wrap items-center gap-2 border-t border-sky-line pt-4 ${scroll ? "shrink-0" : "[&:not(:first-child)]:mt-5"}`}>{footer}</div>}
     </section>
   );
 }
