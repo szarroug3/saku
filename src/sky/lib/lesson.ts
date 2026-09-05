@@ -43,18 +43,35 @@ export interface LessonStep {
   id: string;
   /** The pick this step belongs to: the word or row it is taught for. */
   pick: string;
+  /** A page rather than a star: an intro to a track, a term, a sound
+   * shift, read before the star it sits in front of. */
+  page?: LessonPage;
+}
+
+/** A page in the order: what a track is, what a term means, how a mark
+ * changes a sound. Plain text from whatever the route's adapter has. */
+export interface LessonPage {
+  /** The star this page comes before. */
+  before: string;
+  /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
+  kind: string;
+  title: string;
+  body: readonly string[];
 }
 
 const has = (learned: Learned, id: string) => (typeof learned === "function" ? learned(id) : learned.has(id));
 
-/** Every step of the night, in teaching order. */
-export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned): LessonStep[] {
+/** Every step of the night, in teaching order: the stars, with any pages
+ * slotted in front of the star each comes before (a page whose star is not
+ * tonight's is dropped). A page's id is "page:" and its title. */
+export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned, pages: readonly LessonPage[] = []): LessonStep[] {
   const steps: LessonStep[] = [];
   const seen = new Set<string>();
   for (const pick of picks) {
     for (const id of graph.orderOf(pick)) {
       if (seen.has(id) || has(learned, id) || graph.itemOf(id)?.group) continue;
       seen.add(id);
+      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.kind}:${page.title}`, pick, page });
       steps.push({ id, pick });
     }
   }

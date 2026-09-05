@@ -14,13 +14,13 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
-import { LessonCard } from "@/sky/components/lesson-card";
+import { LessonCard, LessonPageCard } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { isUnlocked, lessonSteps, starState, type LessonTeach } from "@/sky/lib/lesson";
+import { isUnlocked, lessonSteps, starState, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface SkyLessonData {
@@ -32,6 +32,8 @@ export interface SkyLessonData {
   picks: readonly string[];
   /** What the card teaches, by star. */
   teach: Readonly<Record<string, LessonTeach>>;
+  /** The pages read between the stars: intros, terms, sound shifts. */
+  pages?: readonly LessonPage[];
 }
 
 export interface SkyLessonProps {
@@ -48,7 +50,7 @@ const BTN = "rounded-[10px] px-3.5 py-2 text-[13px] font-semibold";
 export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
-  const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
+  const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.length ? [steps[0].id] : []));
   const [selected, setSelected] = useState<string | null>(steps[0]?.id ?? null);
   const stepIndex = Math.max(0, steps.findIndex((s) => s.id === selected));
@@ -79,7 +81,8 @@ export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) 
     return undefined;
   };
 
-  const current = selected ? graph.itemOf(selected) : undefined;
+  const currentStep = steps.find((s) => s.id === selected);
+  const current = selected && !currentStep?.page ? graph.itemOf(selected) : undefined;
   const tonight = useMemo(() => new Set(steps.map((s) => s.id).concat(data.picks)), [steps, data.picks]);
   // only what is being taught is drawn: a pick with nothing left to teach stays off the sky
   const taught = useMemo(() => data.picks.filter((p) => steps.some((s) => s.pick === p)), [data.picks, steps]);
@@ -122,7 +125,9 @@ export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) 
         </div>
         <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="min-h-0 self-stretch overflow-y-auto pr-1">
-            {current ? (
+            {currentStep?.page ? (
+              <LessonPageCard page={currentStep.page} className="min-h-full" />
+            ) : current ? (
               <LessonCard
                 className="min-h-full"
                 item={current}
@@ -144,6 +149,22 @@ export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) 
                 const it = graph.itemOf(s.id);
                 const locked = !isUnlocked(steps, i, opened);
                 const state = stateOf(s.id);
+                if (s.page) {
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        aria-current={state === "selected" ? "step" : undefined}
+                        aria-disabled={locked || undefined}
+                        onClick={() => open(s.id)}
+                        className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
+                      >
+                        <span className={`text-[13px] ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.title}</span>
+                        <span className="ml-auto text-[10.5px] uppercase tracking-[0.08em] text-sky-muted">{s.page.kind}</span>
+                      </button>
+                    </li>
+                  );
+                }
                 return (
                   <li key={s.id}>
                     <button

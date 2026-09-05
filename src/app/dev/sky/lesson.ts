@@ -6,6 +6,7 @@
 // Nothing is required; a sparse item stays short.
 
 import { SETS } from "@/data/characters";
+import { TERMS, termEntry } from "@/data/terms";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { kanjiRow, READINGS } from "@/data/kanji";
 import { getMnemonic, type SoundLine } from "@/data/mnemonics";
@@ -15,9 +16,11 @@ import { exampleFor } from "@/data/word-examples";
 import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
+import { knownFactsOf, libEntry } from "@/lib/library/entries";
+import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
-import { lessonSteps, type LessonTeach } from "@/sky/lib/lesson";
+import { lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
@@ -88,8 +91,33 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   // the card for every star tonight: the steps, the picks, and the known stars under them
   const teach: Record<string, LessonTeach> = {};
   const ids = new Set<string>();
-  for (const s of lessonSteps(graph, known, learnedSet)) ids.add(s.id);
+  const stars = lessonSteps(graph, known, learnedSet);
+  for (const s of stars) ids.add(s.id);
   for (const p of known) for (const id of graph.orderOf(p)) ids.add(id);
   for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it); }
-  return { items, learned, picks: known, teach };
+  return { items, learned, picks: known, teach, pages: pagesFor(stars.map((s) => s.id), history) };
+}
+
+/** The pages the app's own lesson walk puts between these stars (a track's
+ * intro, the terms it defines, a sound shift), each attached to the star it
+ * comes before. The walk reads history, so an intro already shown is not
+ * shown again. */
+function pagesFor(starIds: readonly string[], history: HistoryFile): LessonPage[] {
+  const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
+  const pages: LessonPage[] = [];
+  let pending: Omit<LessonPage, "before">[] = [];
+  for (const step of appLessonSteps(facts, history)) {
+    if (step.type === "item") {
+      for (const page of pending) pages.push({ ...page, before: step.item.entry });
+      pending = [];
+    } else if (step.type === "intro") {
+      pending.push({ kind: "Intro", title: step.intro.title, body: step.intro.body.map((b) => (b.heading ? `${b.heading}. ` : "") + b.text) });
+    } else if (step.type === "term") {
+      const term = TERMS.find((t) => termEntry(t.id) === step.entry);
+      if (term) pending.push({ kind: "Term", title: term.name, body: [term.summary, ...term.body] });
+    } else if (step.type === "conversion") {
+      pending.push({ kind: "Sound shift", title: `${step.row.from} to ${step.row.to}`, body: [step.row.hook] });
+    }
+  }
+  return pages;
 }

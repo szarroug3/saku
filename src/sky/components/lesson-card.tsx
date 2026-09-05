@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonTeach } from "@/sky/lib/lesson";
+import type { LessonPage, LessonTeach } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -90,16 +90,19 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         {reading && reading !== item.glyph && <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>}
         {teach?.pitch !== undefined && teach.pitch !== null && <span className="text-[12.5px] text-sky-muted">pitch {teach.pitch}</span>}
       </div>
-      <p className="mt-3 text-[15px] leading-relaxed">
-        <span className="font-semibold">{meanings[0]}</span>
-        {meanings.length > 1 && <span className="text-sky-muted"> · {meanings.slice(1, 4).join(" · ")}</span>}
-      </p>
+      {/* a kana's name is its sound, already beside the glyph */}
+      {item.kind !== "kana" && (
+        <p className="mt-3 text-[15px] leading-relaxed">
+          <span className="font-semibold">{meanings[0]}</span>
+          {meanings.length > 1 && <span className="text-sky-muted"> · {meanings.slice(1, 4).join(" · ")}</span>}
+        </p>
+      )}
 
       {teach?.mnemonic && teach.mnemonic.length > 0 && (
         <div className="mt-3 flex items-start gap-4">
           {teach.mnemonicImage && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={teach.mnemonicImage} alt="" className="size-[84px] flex-none rounded-lg object-contain" />
+            <img src={teach.mnemonicImage} alt="" className="size-[160px] flex-none rounded-lg object-contain" />
           )}
           <div>
             {teach.mnemonic.map((line, i) => (
@@ -160,6 +163,20 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       </div>
 
       {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
+    </section>
+  );
+}
+
+/** A page in the order rather than a star: an intro, a term, a sound shift.
+ * The kind as the eyebrow, the title, the paragraphs. */
+export function LessonPageCard({ page, className = "" }: { page: LessonPage; className?: string }) {
+  return (
+    <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
+      <Eyebrow>{page.kind}</Eyebrow>
+      <h2 className="font-sky-display text-[26px] leading-tight">{page.title}</h2>
+      <div className="mt-3 flex max-w-[64ch] flex-col gap-2.5">
+        {page.body.map((para, i) => <p key={i} className="text-[14.5px] leading-relaxed text-sky-ink/90">{para}</p>)}
+      </div>
     </section>
   );
 }
