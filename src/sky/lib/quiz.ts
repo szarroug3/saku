@@ -33,6 +33,9 @@ export interface QuizOption {
   label: string;
   /** The label is Japanese, for its font. */
   jp: boolean;
+  /** The label is a reading to draw with this pitch (the mora the voice
+   * falls after; 0 for none): a card asking which pitch is right. */
+  pitch?: number;
 }
 
 /** One question. */

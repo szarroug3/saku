@@ -70,6 +70,7 @@ interface Open {
 const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 
 export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }: SkyQuizProps) {
+  const Pitch = pitch;
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
@@ -301,7 +302,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                             disabled={struck}
                             className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
                           >
-                            {o.label}
+                            {o.pitch !== undefined && Pitch ? <Pitch reading={o.label} downstep={o.pitch} /> : o.label}
                           </button>
                         );
                       })}

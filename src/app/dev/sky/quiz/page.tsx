@@ -7,7 +7,7 @@
 import Link from "next/link";
 
 import { recordQuiz } from "../actions";
-import { learnerQuiz, quizCards, quizFromHistory, sampleFacts } from "../quiz";
+import { learnerQuiz, quizFromHistory, sampleCards } from "../quiz";
 import { QuizClient } from "../quiz-client";
 import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
@@ -19,8 +19,8 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const sample = params.sample !== undefined;
   const picks = String(params.picks ?? "").split(",").filter(Boolean);
   // the pretend learner has nothing due (everything was drilled just now), so
-  // the sample asks one card of every kind unless picks are named
-  const cards = sample ? (picks.length ? quizFromHistory(sampleHistory(), picks) : quizCards(sampleHistory(), sampleFacts(sampleHistory()))) : await learnerQuiz(picks);
+  // the sample asks every question type of every kind unless picks are named
+  const cards = sample ? (picks.length ? quizFromHistory(sampleHistory(), picks) : sampleCards(sampleHistory())) : await learnerQuiz(picks);
   return (
     <SkyPage
       note={

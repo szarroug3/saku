@@ -188,7 +188,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // ten picks (Sam, 2026-09-05): a pick with the ten forms under it
   const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
   const tsu = COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
-  for (const e of tsu) add(e);
+  for (const e of tsu) offer(e, "counter");
   items.set(TSU_RULE, { id: TSU_RULE, kind: "counter", glyph: "〜つ", english: "Native numbers", standing: tsu.every((e) => met.has(e.id)) ? "claimed" : "not-seen", components: tsu.map((e) => e.id), listsParts: true });
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });

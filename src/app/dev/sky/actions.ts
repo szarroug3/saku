@@ -6,6 +6,7 @@
 import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth";
+import { factInfo } from "@/lib/facts";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
 import { dropClaims, saveClaims, saveSession } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
@@ -71,6 +72,8 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   if (!userId || answers.length === 0) return;
   const stats: SessionStats = {};
   for (const a of answers) {
+    // a card the Sky asks on its own (a word's pitch) has no fact to record against yet
+    if (!factInfo(a.cardId as FactId)) continue;
     const st = statForShowing(stats, a.cardId as FactId);
     const ok = a.grade !== "missed";
     const credit = a.grade === "clean";

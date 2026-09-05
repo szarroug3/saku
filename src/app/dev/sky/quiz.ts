@@ -10,14 +10,16 @@
 import { buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import { fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
-import { entryOf, factInfo } from "@/lib/facts";
+import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT } from "@/data/vocab";
-import { COUNTER_KIND, knownFactsOf, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
+import { RADICAL_SUBJECT } from "@/data/radicals";
+import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
+import { wordPitch } from "@/data/pitch";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
@@ -88,20 +90,82 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   return cards;
 }
 
-/** One card of every kind the Quiz can ask (Sam, 2026-09-05): the first
- * thing of each kind with something to ask, one fact each, so the sample
- * shows every shape a card takes. */
-export function sampleFacts(history: HistoryFile): FactId[] {
-  // no radical: a radical's facts are its kanji's, already asked
-  const kinds = [KANA_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT, COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const;
-  const out: FactId[] = [];
-  for (const kind of kinds) {
+/** Every question type of every kind (Sam, 2026-09-05), for the sample:
+ * kana, type the reading; radical and kanji, type the meaning; kanji, type
+ * the reading in a word; word, type the meaning, type the reading, pick
+ * the reading with the right pitch; counter, type the meaning and the
+ * reading; grammar, pick the meaning, build the form; a verb pair and a
+ * keigo set, pick. One thing of each kind, the first that has the fact. */
+export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] {
+  const first = (kind: Kind, want: (fact: string) => boolean, strict = true): FactId | undefined => {
     for (const e of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
-      const fact = quizzableFacts(knownFactsOf(e), history).find((f) => !out.includes(f));
-      if (fact) { out.push(fact); break; }
+      // a reading fact waits on a proving word (reading-proof-facts); the
+      // pretend learner has proved none, so the unproved list is searched too
+      const facts = strict ? quizzableFacts(knownFactsOf(e), history) : factsOf(e.id);
+      const f = facts.find((x) => want(x as string));
+      if (f) return f;
     }
-  }
-  return out;
+    return undefined;
+  };
+  const meaning = (f: string) => f.includes("/meaning");
+  const reading = (f: string) => f.includes("/reading");
+  const facts = [
+    first(KANA_SUBJECT, reading),
+    // a radical that is a kanji too (一) carries the kanji's fact; ask one of its own
+    first(RADICAL_SUBJECT, (f) => f.startsWith("radical:") && meaning(f)),
+    first(KANJI_SUBJECT, meaning),
+    first(KANJI_SUBJECT, reading, false),
+    first(VOCAB_SUBJECT, meaning),
+    first(VOCAB_SUBJECT, reading),
+    first(COUNTER_KIND, meaning),
+    first(COUNTER_KIND, reading, false),
+    first(GRAMMAR_SUBJECT, meaning),
+    first(GRAMMAR_SUBJECT, (f) => !meaning(f)),
+    first(TRANSITIVITY_SUBJECT, () => true),
+    first(KEIGO_SUBJECT, () => true),
+  ].filter((f): f is FactId => !!f);
+  const cards = quizCards(history, [...new Set(facts)], now);
+  // the pitch card sits with the word cards
+  const word = VOCAB.find((w) => wordPitch(w.keb) !== null && [...w.reb].length >= 3);
+  const pitch = word ? pitchCard(history, word.keb, now) : undefined;
+  const afterWords = cards.findIndex((c) => c.item.kind === "word" && c.answerIs === "reading");
+  if (pitch) cards.splice(afterWords >= 0 ? afterWords + 1 : cards.length, 0, pitch);
+  return cards;
+}
+
+/** The morae of a reading: each kana, a small ゃゅょ joining the one before. */
+function moraeOf(reading: string): number {
+  return [...reading].filter((c) => !/[ゃゅょャュョ]/.test(c)).length;
+}
+
+/** A card asking which pitch a word takes: its reading drawn with the fall
+ * in different places, the true one among them. The Sky's own question,
+ * with no fact behind it yet, so it records nothing (see recordQuiz). */
+export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCard | undefined {
+  const row = vocabRow(keb);
+  const downstep = wordPitch(keb);
+  const id = entryForGlyph(VOCAB_SUBJECT, keb);
+  if (!row || downstep === null || !id) return undefined;
+  const item = offerings(history, now).offerPick(id);
+  if (!item) return undefined;
+  const n = moraeOf(row.reb);
+  const wrong = [0, 1, n, 2, 3, n - 1].filter((d, i, all) => d >= 0 && d <= n && d !== downstep && all.indexOf(d) === i).slice(0, 3);
+  const options: QuizOption[] = [downstep, ...wrong].map((d) => ({ id: `pitch:${d}`, label: row.reb, jp: true, pitch: d })).sort(() => Math.random() - 0.5);
+  return {
+    id: `${id}/pitch`,
+    item,
+    prompt: { glyph: keb, jp: true, context: row.glosses[0] },
+    instruction: "Pick how this word is said, with the pitch in the right place.",
+    answerIs: "other",
+    typed: false,
+    options,
+    answerId: `pitch:${downstep}`,
+    answer: row.reb,
+    seen: 0,
+    missed: 0,
+    teach: teachFor(item),
+    meta: { dir: "jp2en" },
+  };
 }
 
 /** The signed-in learner's quiz, or a visitor's. */
