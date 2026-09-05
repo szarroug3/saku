@@ -123,12 +123,17 @@ function tally(shelf: AtlasShelf): Record<Standing, number> {
 
 /** A tile: the glyph in its standing's colour, its meaning under it. No
  * constellation (Sam's call, 2026-09-05): the Atlas is a grid to scan. */
-function Tile({ item, selected, onOpen }: { item: SkyItem; selected: boolean; onOpen: (id: string) => void }) {
+/** How a tile was clicked: plain opens it alone, cmd or ctrl adds it to
+ * the selection, shift takes the run from the last one clicked to it. */
+export interface Pick { toggle: boolean; range: boolean }
+type OnPick = (id: string, pick: Pick) => void;
+
+function Tile({ item, selected, onOpen }: { item: SkyItem; selected: boolean; onOpen: OnPick }) {
   const lone = [...item.glyph].length <= 1;
   return (
     <button
       type="button"
-      onClick={() => onOpen(item.id)}
+      onClick={(e) => onOpen(item.id, { toggle: e.metaKey || e.ctrlKey, range: e.shiftKey })}
       aria-pressed={selected}
       title={`${item.glyph} ${item.english}`}
       className={`flex aspect-square min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1 transition-colors ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-card hover:bg-sky-card-strong"}`}
@@ -139,10 +144,10 @@ function Tile({ item, selected, onOpen }: { item: SkyItem; selected: boolean; on
   );
 }
 
-function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: string | null; onOpen: (id: string) => void }) {
+function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
-      {ids.map((id) => { const it = graph.itemOf(id); return it ? <Tile key={id} item={it} selected={id === selected} onOpen={onOpen} /> : null; })}
+      {ids.map((id) => { const it = graph.itemOf(id); return it ? <Tile key={id} item={it} selected={selected.has(id)} onOpen={onOpen} /> : null; })}
     </div>
   );
 }
@@ -150,7 +155,7 @@ function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph:
 /** A cut of a shelf whose tiles mount only as it comes into view, so a
  * shelf of twelve thousand words costs nothing until it is scrolled to.
  * Until then it holds the room its rows will take. */
-function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: string | null; onOpen: (id: string) => void }) {
+function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: ReadonlySet<string>; onOpen: OnPick }) {
   const ref = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
@@ -231,38 +236,48 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const result = asked && answer?.query === asked ? answer : null;
   const searching = !!asked && !result;
 
-  // the open entry
+  // the selection: one tile opens its entry on the right; several (cmd or
+  // ctrl to add, shift for a run) open a panel of actions on all of them;
+  // none, and there is no panel (Sam's call, 2026-09-05)
+  const [selected, setSelected] = useState<readonly string[]>(initialEntry ? [initialEntry] : []);
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const anchor = useRef<string | null>(initialEntry ?? null);
+  const single = selected.length === 1 ? selected[0] : null;
+
+  // the entry fetched for a single selection
   const [open, setOpen] = useState<AtlasEntry | null>(null);
-  const [opening, setOpening] = useState<string | null>(initialEntry ?? null);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!opening) return;
+    if (!single) return;
     let live = true;
-    lookup.entry(opening).then((entry) => {
+    lookup.entry(single).then((entry) => {
       if (!live) return;
       bring(entry.items);
       setOpen(entry);
-      setOpening(null);
       panel.current?.scrollTo({ top: 0 });
     });
     return () => { live = false; };
-  }, [opening, lookup, bring]);
-  const openId = open?.id ?? null;
-  const current = openId ? graph.itemOf(openId) : undefined;
+  }, [single, lookup, bring]);
+  const opening = !!single && open?.id !== single;
+  const current = single && open?.id === single ? graph.itemOf(single) : undefined;
+  const setOpening = (id: string) => { anchor.current = id; setSelected([id]); };
 
-  // "I know this": the claim, then the entry as claimed, here and on its tile
+  // "I know this" and "I know these": the claim, then the entries as
+  // claimed, here and on their tiles
   const [claiming, setClaiming] = useState(false);
-  const claim = async () => {
-    if (!current || !open) return;
+  const claimIds = async (ids: readonly string[]) => {
+    const unknown = ids.map((id) => graph.itemOf(id)).filter((it): it is SkyItem => !!it && it.standing === "not-seen");
+    if (unknown.length === 0) return;
     setClaiming(true);
     try {
-      await onClaim?.([current.id]);
-      bring([{ ...current, standing: "claimed" }]);
-      setOpen({ ...open, known: true });
+      await onClaim?.(unknown.map((it) => it.id));
+      bring(unknown.map((it) => ({ ...it, standing: "claimed" as const })));
+      if (open && unknown.some((it) => it.id === open.id)) setOpen({ ...open, known: true });
     } finally {
       setClaiming(false);
     }
   };
+  const claim = () => current && claimIds([current.id]);
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
 
   const holds = data.holds.map((h) => `${h.total.toLocaleString()} ${h.unit}`);
@@ -278,6 +293,26 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const shelfSections = shelf?.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0) ?? [];
   const shownOnShelf = shelfSections.reduce((n, s) => n + s.items.length, 0);
 
+  // the tiles in the order they are on screen, for a shift-click's run
+  const order = result ? (here?.shown ?? []) : shelfSections.flatMap((sec) => sec.items);
+  const pick: OnPick = (id, how) => {
+    if (how.range && anchor.current) {
+      const a = order.indexOf(anchor.current), b = order.indexOf(id);
+      if (a >= 0 && b >= 0) {
+        const run = order.slice(Math.min(a, b), Math.max(a, b) + 1);
+        setSelected((prev) => [...new Set([...prev, ...run])]);
+        return;
+      }
+    }
+    anchor.current = id;
+    if (how.toggle) setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    else setSelected([id]);
+  };
+  const clear = () => setSelected([]);
+  const selectedItems = itemsOf(selected);
+  const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
+  const showPanel = selected.length > 0;
+
   return (
     <SkyPageShell eyebrow="Atlas" title="What would you like to know?" height={height}>
       <div className="flex min-h-0 flex-1 flex-col gap-3 font-sky-ui">
@@ -292,7 +327,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           />
         </label>
 
-        <div className={`grid min-h-0 flex-1 items-start gap-4 ${railOpen ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[44px_minmax(0,1fr)_360px]"}`}>
+        <div className={`grid min-h-0 flex-1 items-start gap-4 ${railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[44px_minmax(0,1fr)_360px]" : "lg:grid-cols-[44px_minmax(0,1fr)]"}`}>
           <nav aria-label="Collections and status" className={`flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel ${railOpen ? "p-3" : "items-center p-2"}`}>
             <button type="button" aria-expanded={railOpen} onClick={() => setRailOpen(!railOpen)} title={railOpen ? "Fold the rail" : "Open the rail"} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] text-sky-muted hover:border-sky-accent hover:text-sky-ink ${railOpen ? "self-end" : ""}`}>
               <span aria-hidden>{railOpen ? "‹" : "›"}</span>
@@ -336,7 +371,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{status ? ` · ${STANDING[status].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
                 </p>
                 {here && here.shown.length > 0 ? (
-                  <div className="mt-2"><Grid ids={here.shown} graph={graph} selected={openId} onOpen={setOpening} /></div>
+                  <div className="mt-2"><Grid ids={here.shown} graph={graph} selected={selectedSet} onOpen={pick} /></div>
                 ) : (
                   <p className="mt-3 text-[13.5px] text-sky-muted">
                     {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${status ? ` with that status` : ""}.`}
@@ -359,7 +394,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 {shelfSections.length === 0 ? (
                   <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
                 ) : shelfSections.map((section) => (
-                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={openId} onOpen={setOpening} />
+                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={selectedSet} onOpen={pick} />
                 ))}
                 {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
               </>
@@ -367,38 +402,63 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
             {searching && <p className="mt-3 text-[12.5px] text-sky-muted">Searching…</p>}
           </div>
 
-          <div ref={panel} className="min-h-0 self-stretch overflow-y-auto pr-1">
-            {current && open ? (
-              <LessonCard
-                className="min-h-full"
-                item={current}
-                teach={open.teach}
-                madeOf={itemsOf(graph.prerequisitesOf(current.id))}
-                partOf={[]}
-                known={false}
-                standing
-                related={open.related}
-                written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
-                hear={hear}
-                pitch={pitch}
-                onSelect={setOpening}
-                footer={
-                  open.known ? (
-                    quizHref && <a href={quizHref} className={BTN_SOLID}>Quiz me</a>
-                  ) : (
-                    <>
-                      <a href={`${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${encodeURIComponent(current.id)}`} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
-                      <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
-                    </>
-                  )
-                }
-              />
-            ) : (
-              <SkyPanel title={opening ? "Opening" : "Nothing open"} className="min-h-full">
-                <p className="mt-2 text-[14px] text-sky-muted">{opening ? "One moment." : "Pick anything from the grid, or search, and it opens here."}</p>
-              </SkyPanel>
-            )}
-          </div>
+          {showPanel && (
+            <div ref={panel} className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
+              <div className="mb-2 flex shrink-0 items-center justify-between">
+                <span className="text-[12px] text-sky-muted">{selected.length > 1 ? `${selected.length} selected` : "Open"}</span>
+                <button type="button" onClick={clear} title="Close" className="flex h-7 w-7 items-center justify-center rounded-full border border-sky-line text-[14px] text-sky-muted hover:border-sky-accent hover:text-sky-ink">
+                  <span aria-hidden>×</span><span className="sr-only">Close</span>
+                </button>
+              </div>
+              {selected.length > 1 ? (
+                <SkyPanel title={`${selected.length} selected`} className="flex min-h-0 flex-1 flex-col">
+                  <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-1.5 overflow-y-auto">
+                    {selectedItems.map((it) => (
+                      <button key={it.id} type="button" onClick={() => setOpening(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
+                        <span className={`font-sky-display text-[16px] leading-none ${STANDING[it.standing].text} ${japaneseFont(it.glyph)}`}>{it.glyph}</span>
+                        {it.english !== it.glyph && <span className="max-w-[10ch] truncate text-[11px] text-sky-muted">{it.english}</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 shrink-0 text-[12px] text-sky-muted">{selectedItems.filter((it) => it.standing === "not-seen").length.toLocaleString()} not yet in your sky. Cmd or ctrl adds one, shift takes a run.</p>
+                  <div className="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-sky-line pt-3">
+                    {selectedItems.some((it) => it.standing === "not-seen") && <a href={picksHref(selectedItems.filter((it) => it.standing === "not-seen").map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
+                    {selectedItems.some((it) => it.standing === "not-seen") && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
+                    {quizHref && selectedItems.some((it) => it.standing !== "not-seen") && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
+                  </div>
+                </SkyPanel>
+              ) : current && open ? (
+                <LessonCard
+                  className="min-h-full"
+                  item={current}
+                  teach={open.teach}
+                  madeOf={itemsOf(graph.prerequisitesOf(current.id))}
+                  partOf={[]}
+                  known={false}
+                  standing
+                  related={open.related}
+                  written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
+                  hear={hear}
+                  pitch={pitch}
+                  onSelect={setOpening}
+                  footer={
+                    open.known ? (
+                      quizHref && <a href={quizHref} className={BTN_SOLID}>Quiz me</a>
+                    ) : (
+                      <>
+                        <a href={picksHref([current.id])} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
+                        <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
+                      </>
+                    )
+                  }
+                />
+              ) : (
+                <SkyPanel title="Opening" className="min-h-full">
+                  <p className="mt-2 text-[14px] text-sky-muted">{opening ? "One moment." : "Nothing here."}</p>
+                </SkyPanel>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </SkyPageShell>
