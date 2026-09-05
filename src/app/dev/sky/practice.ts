@@ -5,10 +5,9 @@
 // (SAK-318); the run's misses are kept by the client as signal only.
 
 import { grammarMeaning } from "@/data/grammar";
-import { usedAsPartIn } from "@/lib/library/components";
 import { knownFactsOf, type LibEntry } from "@/lib/library/entries";
+import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
-import { builtPieces } from "@/data/kanji-etymology";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
 import type { Ask, PracticeCollection, PracticeItem, PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
@@ -39,14 +38,15 @@ export function askOf(fact: FactId): Ask | null {
   return null;
 }
 
-/** The kanji a word is written with. */
-const kanjiIn = (glyph: string): string[] => [...glyph].filter((c) => /[一-龯]/.test(c));
-
-/** The radicals a kanji is built from, by the app's own pieces. */
-const partsOf = (kanji: string): string[] => builtPieces(kanji).map((p) => p.glyph);
+/** The facts practice may ask of an entry. A kanji is known by its meaning
+ * alone (knownFactsOf), but its readings inside words are asked too, each
+ * once a word carrying it has been met: quizzableFacts keeps that gate. */
+function askable(e: LibEntry, history: HistoryFile): FactId[] {
+  return quizzableFacts(e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e), history);
+}
 
 /** The recipe, resolved now: the items it holds (shakiest first), how many
- * matched, which asks the pool could carry, and the radicals in it. */
+ * matched, and which asks the pool could carry. */
 export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
   const o = offerings(history, now);
   const shelves = recipe.collections.length ? SHELVES.filter((s) => recipe.collections.includes(s.id)) : SHELVES.filter((s) => s.sky !== "term");
@@ -54,19 +54,12 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
   const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
 
   const asksAvailable: Record<Ask, boolean> = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
-  const componentCounts = new Map<string, number>();
   const matched: PracticeItem[] = [];
   for (const e of pool) {
     if (recipe.statuses.length && !recipe.statuses.includes(standingFor(e, history, now).standing)) continue;
-    // the radicals this thing is built from: a kanji's pieces, a word's kanji's pieces
-    const built = e.kind === "kanji" ? partsOf(e.glyph) : e.kind === "word" ? kanjiIn(e.glyph).flatMap(partsOf) : [];
-    for (const r of new Set(built)) componentCounts.set(r, (componentCounts.get(r) ?? 0) + 1);
-    if (recipe.component && !built.includes(recipe.component) && !(e.kind === "kanji" && usedAsPartIn(recipe.component).includes(e.glyph))) continue;
-    const facts = quizzableFacts(knownFactsOf(e), history);
-    const byAsk = facts.map((f) => [f, askOf(f)] as const).filter((x): x is readonly [FactId, Ask] => x[1] !== null);
+    const byAsk = askable(e, history).map((f) => [f, askOf(f)] as const).filter((x): x is readonly [FactId, Ask] => x[1] !== null);
     for (const [, a] of byAsk) asksAvailable[a] = true;
-    let kept = byAsk.filter(([, a]) => recipe.asks.includes(a)).map(([f]) => f);
-    if (recipe.missedOnly) kept = kept.filter((f) => missesOf(f) > 0);
+    const kept = byAsk.filter(([, a]) => recipe.asks.includes(a)).map(([f]) => f);
     if (!kept.length) continue;
     const item = o.offerPick(e.id);
     if (!item) continue;
@@ -76,8 +69,7 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
   // shakiest first; ties keep the shelf's own order
   const ordered = matched.map((m, i) => [m, i] as const).sort((a, b) => b[0].misses - a[0].misses || a[1] - b[1]).map(([m]) => m);
   const items = recipe.size === "all" ? ordered : ordered.slice(0, recipe.size);
-  const components = [...componentCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map(([glyph, count]) => ({ glyph, count }));
-  return { items, matched: matched.length, asksAvailable, components };
+  return { items, matched: matched.length, asksAvailable };
 }
 
 /** The cards for a deck: the kept items' facts, in the deck's order. */

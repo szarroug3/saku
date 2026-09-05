@@ -249,13 +249,16 @@ Quiz's results screen is its own component (`quiz-results.tsx`).
 
 `SkyPractice` (`sky-practice.tsx`) describes a deck rather than assembling
 it: a `Recipe` (`lib/practice.ts`) says what to draw from, what standing it
-should have, whether only things missed before, a radical it must be built
-from, what to be asked for, how many, and whether the choices may ever be
-offered. Presets and saved decks are recipes under a name. The preview is
-the recipe resolved now, shakiest first, with any item droppable. The run
-is `SkyQuiz` with the write target handed in: the Quiz route passes the
-schedule's recorder, the practice route passes a client function that only
-notes misses in the browser, so no practice answer can reach the schedule.
+should have, what to be asked for, how many, and whether the Quiz may offer
+its multiple-choice help. A saved recipe is the recipe under a name, kept
+by the learner and shown only once there is one. The preview is the recipe
+resolved now, shakiest first, with any item droppable. A kanji's readings
+are asked inside the words that carry them, each once such a word has been
+met (`quizzableFacts` keeps that gate), so "The reading in a word" lights
+up as the learner meets words. The run is `SkyQuiz` with the write target
+handed in: the Quiz route passes the schedule's recorder, the practice
+route passes a client function that only notes misses in the browser, so
+no practice answer can reach the schedule.
 
 ### The Atlas since (2026-09-05)
 
