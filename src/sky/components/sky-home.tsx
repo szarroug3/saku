@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
+import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { useStandingFilter } from "@/sky/components/use-standing-filter";
 import type { CoverageCounts } from "@/sky/lib/coverage";
@@ -61,17 +62,8 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
   const { selected, toggle, singled, setSingled, lookOf } = useStandingFilter();
 
   return (
-    <div className="flex flex-col overflow-hidden font-sky-ui text-sky-ink" style={{ height }}>
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-sky-display text-4xl leading-tight">Your sky</h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-sky-muted">
-            This is your sky. It will evolve as you explore and discover more of the Japanese language.
-          </p>
-        </div>
-      </header>
-
-      <div className="relative mt-4 flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
+    <SkyPageShell title="Your sky" lede="This is your sky. It will evolve as you explore and discover more of the Japanese language." height={height}>
+      <div className="relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
         {empty ? (
           <div className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">Your sky is empty tonight.</p>
@@ -105,6 +97,6 @@ export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc
           </div>
         )}
       </div>
-    </div>
+    </SkyPageShell>
   );
 }

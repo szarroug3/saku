@@ -72,7 +72,7 @@ export default function ItemSectionGalleryPage() {
         <div className="rounded-xl border border-sky-line bg-sky-card p-5">
           <ItemSection
             title="Words"
-            hint="The next few you can take. Adding one plants its whole prerequisite tree, which is what each count is counting."
+            when="The next few you can take. Adding one plants its whole prerequisite tree, which is what each count is counting."
             shown={WORDS.length}
             total={12500}
           >
@@ -81,7 +81,7 @@ export default function ItemSectionGalleryPage() {
 
           <ItemSection
             title="Kana sounds"
-            hint="One card per row, named as a row rather than as a string of romaji."
+            when="One card per row, named as a row rather than as a string of romaji."
             shown={KANA.length}
             total={40}
           >
@@ -94,7 +94,7 @@ export default function ItemSectionGalleryPage() {
 
           <ItemSection
             title="Verb pairs"
-            hint="Its own section rather than something bundled into a word, so each pick carries its own honest cost."
+            when="Its own section rather than something bundled into a word, so each pick carries its own honest cost."
             shown={VERB_PAIRS.length}
             total={310}
           >
@@ -168,7 +168,7 @@ export default function ItemSectionGalleryPage() {
             </ItemSection>
           </Panel>
           <Panel>
-            <ItemSection title="Counting" hint="A section with no hint, count or gate still works.">
+            <ItemSection title="Counting" when="A section with no hint, count or gate still works.">
               {cards(COUNTING.slice(0, 2))}
             </ItemSection>
           </Panel>

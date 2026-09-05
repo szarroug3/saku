@@ -5,17 +5,22 @@
 // layer for the page. Nothing in src/sky knows any of this exists.
 //
 // What is on offer, and in what shape:
-//   kana rows   one item per row of a script, its kana as components, so a row
-//               costs the sounds not yet known; the marks and blends also take
-//               the plain row they build on, which the cart can supply
+//   kana        one item per row of either script, its kana as components, so
+//               a row costs the sounds not yet known; the marks and blends
+//               also take the plain row they build on, which the cart can
+//               supply. Hiragana rows first, then katakana
 //   words       the curriculum's order, the next ones not yet met
 //   counting    the counters track in its own order (〜つ first)
-//   grammar     the patterns in the track's order, behind a kana gate
+//   grammar     the patterns in the track's order
 //   verb pairs  each attached to its plain verb as headword
 //   keigo       each set attached to its plain verb
 // Everything else in the sky rides along as parts, so costs are real.
+//
+// KANA IS THE GATE, as on the app's home: every other track opens once the
+// kana are done (the app's rule: finish or claim the last kana group). Each
+// section says what it is and when to start it, in the app's own words.
 
-import { SETS, kanaEntry, KANA_SUBJECT } from "@/data/characters";
+import { SETS, kanaEntry } from "@/data/characters";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
 import { kanjiRow } from "@/data/kanji";
@@ -35,8 +40,36 @@ import type { HistoryFile } from "@/types";
 
 import { componentEntry, skyItems, standingFor } from "./learner";
 
-/** How many of a long section to show; the section says how many exist. */
+/** How many of a long section to offer; the page lays out fewer and says how many exist. */
 const SHOW = 24;
+
+/** What each track is and when to start it. Short, in the learner's terms. */
+const COPY = {
+  kana: {
+    intro: "Kana are the sounds of Japanese. Each one is a syllable, and together they tell you how to pronounce anything that is written.",
+    when: "Learn these first. Once you know them you can read, and everything else opens.",
+  },
+  words: {
+    intro: "Words are the part you actually speak and read. A word brings its kanji and the pieces they are built from, so you assemble it instead of memorising it whole.",
+    when: "Start as soon as kana is done. This is the main track, and it keeps going.",
+  },
+  counting: {
+    intro: "Japanese counts with a small word that changes with what you count: one for people, one for long things, one for flat ones.",
+    when: "Start anytime after kana. You will want these the first time you order two of something.",
+  },
+  grammar: {
+    intro: "Sentences are not built the way English builds them. The order is different, and small words mark who did what. A pattern is learned once and reused on every word you know.",
+    when: "Start once single words feel limiting, when you want to say \"I ate\" or \"please eat\", not just \"eat\".",
+  },
+  verbPairs: {
+    intro: "Many verbs come in pairs: one for what happens on its own, one for someone doing it. The door opens; I open the door.",
+    when: "Each pair opens once you know its plain verb.",
+  },
+  keigo: {
+    intro: "Japanese changes a verb by who you are speaking to. A polite verb replaces the plain one outright: a separate word, not an ending.",
+    when: "Each set opens once you know the plain verb it replaces.",
+  },
+} as const;
 
 /** The plain row each mark or blend row builds on, by the row id's suffix. */
 const BASE_ROW: Record<string, string> = { g: "k", z: "s", d: "t", bp: "h", kya: "k", sha: "s", cha: "t", nya: "n", hya: "h", mya: "m", rya: "r", gya: "g", ja: "z", dja: "d", bya: "bp", pya: "bp" };
@@ -73,9 +106,10 @@ export function planetariumFromHistory(history: HistoryFile, now = Date.now()): 
   const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
   const kanjiIn = (text: string): string[] => [...text].filter((c) => kanjiRow(c)).map((c) => componentEntry(c)).filter((e): e is LibEntry => !!e).map((e) => { add(e); return e.id; });
 
-  // kana: one item per row, the row's kana under it
+  // kana: one item per row of either script, the row's kana under it
+  const rows: string[] = [];
+  let kanaTotal = 0, kanaMet = 0;
   for (const set of SETS) {
-    const rows: string[] = [];
     for (const section of set.sections) {
       const kana = section.chars.map((ch) => libEntry(kanaEntry(ch.c))).filter((e): e is LibEntry => !!e);
       for (const e of kana) add(e);
@@ -89,28 +123,26 @@ export function planetariumFromHistory(history: HistoryFile, now = Date.now()): 
         group: true,
         components: [...kana.map((e) => e.id), ...(base ? [base] : [])],
       });
+      kanaTotal += kana.length;
+      kanaMet += kana.filter((e) => met.has(e.id)).length;
       if (allMet) learned.add(id); else rows.push(id);
     }
-    sections.push({ id: set.id, title: set.label, hint: set.id === "hiragana" ? "Rows you have not finished. The marks and blends build on the plain rows, which come along when they are not in your sky yet." : undefined, items: rows });
   }
+  sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows });
+  const kanaDone = kanaMet >= kanaTotal;
+  const afterKana = kanaDone ? undefined : { requirement: "Opens once kana is done. Everything else is read through it.", progress: { have: kanaMet, need: kanaTotal, unit: "kana" } };
 
   // words: the curriculum's order, next ones first
   const words = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({ id: "words", title: "Words", hint: "Shown by meaning. A word brings its kanji and the pieces they are built from.", items: words.slice(0, SHOW).map((e) => offer(e, "word").id), total: words.length });
+  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), total: words.length, gate: afterKana });
 
   // counting: the track's own order
   const counting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({ id: "counting", title: "Counting", hint: "Listed by what they count. Japanese picks a counter by the shape of the thing.", items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), total: counting.length });
+  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), total: counting.length, gate: afterKana });
 
-  // grammar: behind the plain hiragana
-  const plainHiragana = SETS[0].sections.slice(0, 10).flatMap((s) => s.chars.map((ch) => kanaEntry(ch.c)));
-  const haveHiragana = plainHiragana.filter((id) => met.has(id)).length;
+  // grammar: sentence rules, in the track's order
   const grammar = CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))).filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met);
-  sections.push({
-    id: "grammar", title: "Grammar", hint: "Shown by what it does.",
-    items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), total: grammar.length,
-    gate: haveHiragana < plainHiragana.length ? { requirement: "Grammar opens once you can read hiragana. The plain rows first; the marks and blends can come later.", progress: { have: haveHiragana, need: plainHiragana.length, unit: "hiragana" } } : undefined,
-  });
+  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), total: grammar.length, gate: afterKana });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];
@@ -121,7 +153,7 @@ export function planetariumFromHistory(history: HistoryFile, now = Date.now()): 
     if (head) add(head);
     pairs.push(offer(entry, "verbPair", { headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
   }
-  sections.push({ id: "verb-pairs", title: "Verb pairs", hint: "A verb and its partner: one for what happens, one for doing it. A pair needs its plain verb first.", items: pairs.slice(0, SHOW), total: pairs.length });
+  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), total: pairs.length, gate: afterKana });
 
   // keigo: attached to the plain verb, with the polite words' kanji
   const keigo: string[] = [];
@@ -132,8 +164,7 @@ export function planetariumFromHistory(history: HistoryFile, now = Date.now()): 
     if (head) add(head);
     keigo.push(offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] }).id);
   }
-  sections.push({ id: "keigo", title: "Keigo", hint: "Polite forms of verbs you know. Each needs its plain verb first.", items: keigo });
+  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana });
 
-  void KANA_SUBJECT;
   return { items: [...items.values()], learned: [...learned], sections };
 }

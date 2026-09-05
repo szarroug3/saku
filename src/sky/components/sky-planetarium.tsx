@@ -17,6 +17,7 @@ import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection, type ItemSectionProps } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
 import { SkyField } from "@/sky/components/sky-field";
+import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { cartSummary, COMFORTABLE_PIECES, pickBreakdown, pickState, withoutPick, type PickLine } from "@/sky/lib/cart";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
@@ -26,9 +27,12 @@ import type { SkyItem } from "@/sky/lib/types";
 export interface PlanetariumSection {
   id: string;
   title: string;
-  /** One line on the section's rule, when it has one worth stating. */
-  hint?: string;
-  /** What is on offer, in order, by id. */
+  /** What this kind of thing is. */
+  intro?: string;
+  /** When to start it. */
+  when?: string;
+  /** What is on offer, in order, by id. Only what can be taken now; the
+   * page shows at most `SHOWN` of them. */
   items: readonly string[];
   /** How many exist beyond what is shown, when more do. */
   total?: number;
@@ -44,8 +48,13 @@ export interface SkyPlanetariumData {
   sections: readonly PlanetariumSection[];
 }
 
+/** How many of a section are laid out. */
+export const SHOWN = 9;
+
 export interface SkyPlanetariumProps {
   data: SkyPlanetariumData;
+  /** How tall the page is; the heading stays put and the picker scrolls. */
+  height?: string;
   /** A comfortable lesson, in pieces. */
   cap?: number;
   /** Where "Start tonight's lesson" goes; the picks are appended as
@@ -71,7 +80,7 @@ function describe(graph: PrerequisiteGraph, line: PickLine, openedBy: readonly s
   return { text: bits.join(" · "), free: b.shared.length ? [] : b.free };
 }
 
-export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [] }: SkyPlanetariumProps) {
+export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height }: SkyPlanetariumProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const [picks, setPicks] = useState<readonly string[]>(initialPicks);
@@ -89,6 +98,10 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
       setPicks([...picks, id]);
     }
   };
+  /** What a section lays out: only what can be taken now, the first few. */
+  const offered = (section: PlanetariumSection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
+  /** The way into a section: its first thing not yet picked. */
+  const startOf = (section: PlanetariumSection) => offered(section).find((id) => !picks.includes(id));
 
   const nameOf = (id: string) => graph.itemOf(id)?.english ?? id;
   const meterNote = summary.pieces === 0
@@ -101,50 +114,48 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   const startLabel = over ? `Start with ${summary.pieces} pieces anyway` : `Start tonight's lesson · ${plural(summary.pieces, "piece")}`;
 
   return (
-    <div className="font-sky-ui text-sky-ink">
-      <header>
-        <div className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">Planetarium</div>
-        <h1 className="mt-1 font-sky-display text-4xl leading-tight">What would you like to learn next?</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-sky-muted">Pick freely. Nothing here is a fixed order, and anything already in your sky is free.</p>
-      </header>
-
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0">
-          {data.sections.map((section) => (
-            <ItemSection key={section.id} title={section.title} hint={section.hint} shown={section.items.length} total={section.total} gate={section.gate}>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
-                {section.items.map((id) => {
-                  const item = graph.itemOf(id);
-                  if (!item) return null;
-                  const state = pickState(graph, id, learned, picks);
-                  // a picked card shows its line in the cart (priced after the picks
-                  // before it); an unpicked one, what it would add to the whole cart
-                  const cost = summary.lines.find((l) => l.id === id)?.cost ?? graph.costOf(id, learned, picks);
-                  const note = cost.shared.length
-                    ? `${cost.shared.length} shared`
-                    : state.openedByCart.length
-                      ? `comes with ${state.openedByCart.map(nameOf).join(" and ")}`
-                      : cost.free.length && cost.pieces.length === 1 && item.kind === "word"
-                        ? "kanji already in your sky"
-                        : undefined;
-                  return (
-                    <ItemCard
-                      key={id}
-                      item={item}
-                      selected={picks.includes(id)}
-                      pieces={cost.pieces.length}
-                      note={note}
-                      locked={state.available ? undefined : `needs ${state.needs.map(nameOf).join(" and ")} first`}
-                      onClick={() => toggle(id)}
-                    />
-                  );
-                })}
-              </div>
-            </ItemSection>
-          ))}
+    <SkyPageShell eyebrow="Planetarium" title="What would you like to learn next?" lede="Pick freely. Nothing here is a fixed order, and anything already in your sky is free." height={height}>
+      <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
+          {data.sections.map((section) => {
+            const ids = offered(section);
+            const first = startOf(section);
+            return (
+              <ItemSection
+                key={section.id}
+                title={section.title}
+                intro={section.intro}
+                when={section.when}
+                start={section.gate ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => { if (first) toggle(first); }, disabled: !first }}
+                shown={ids.length}
+                total={section.total}
+                gate={section.gate}
+              >
+                {ids.length > 0 && (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+                    {ids.map((id) => {
+                      const item = graph.itemOf(id)!;
+                      const state = pickState(graph, id, learned, picks);
+                      // a picked card shows its line in the cart (priced after the picks
+                      // before it); an unpicked one, what it would add to the whole cart
+                      const cost = summary.lines.find((l) => l.id === id)?.cost ?? graph.costOf(id, learned, picks);
+                      const note = cost.shared.length
+                        ? `${cost.shared.length} shared`
+                        : state.openedByCart.length
+                          ? `comes with ${state.openedByCart.map(nameOf).join(" and ")}`
+                          : cost.free.length && cost.pieces.length === 1 && item.kind === "word"
+                            ? "kanji already in your sky"
+                            : undefined;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} pieces={cost.pieces.length} note={note} onClick={() => toggle(id)} />;
+                    })}
+                  </div>
+                )}
+              </ItemSection>
+            );
+          })}
         </div>
 
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
+        <aside className="flex min-h-0 flex-col gap-4 self-stretch overflow-y-auto lg:pb-6">
           <SkyPanel title="Your sky tonight" className="!p-4">
             <div className="mt-3 overflow-hidden rounded-xl border border-sky-line">
               <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} seed="planetarium" label="Tonight's picks, as the constellations they will be" />
@@ -205,6 +216,6 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
           </SkyPanel>
         </aside>
       </div>
-    </div>
+    </SkyPageShell>
   );
 }
