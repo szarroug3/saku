@@ -24,7 +24,7 @@ export function StandingChip({ standing, count, title }: { standing: Standing; c
   return (
     <span
       title={title ?? s.meaning}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-sky-ui text-[12.5px] font-semibold ${s.border} ${s.text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-sky-ui text-[12.5px] font-semibold capitalize ${s.border} ${s.text}`}
     >
       <Dot standing={standing} />
       {s.label}
