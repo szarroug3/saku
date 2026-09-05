@@ -35,7 +35,7 @@ import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import { sentenceTierShortLabel } from "@/lib/content/sentence-track";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
@@ -236,6 +236,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     if (!entry) return undefined;
     switch (entry.kind) {
       case COUNTER_KIND: return offer(entry, "counter");
+      // a counting rule (numbers 11 to 99, the 〜本 counter's system): counted with the counters
+      case NUMBER_CONSTRUCTION_KIND: return offer(entry, "counter", { english: entry.name ?? entry.meanings[0] ?? entry.id });
       case GRAMMAR_SUBJECT: return offer(entry, "grammar");
       // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
       case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }

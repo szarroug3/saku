@@ -41,7 +41,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
         </>
       }
     >
-      <SkyLesson data={data} drillHref="/session" written={written} hear={HearButton} pitch={PitchMark} height="100%" />
+      <SkyLesson data={data} drillHref={`/dev/sky/quiz?${sample || showcase ? "sample&" : ""}picks=${encodeURIComponent(picks.join(","))}`} written={written} hear={HearButton} pitch={PitchMark} height="100%" />
     </SkyPage>
   );
 }

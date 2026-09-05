@@ -6,7 +6,11 @@
 import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth";
-import { dropClaims, saveClaims } from "@/lib/history";
+import { statForShowing, resolveShowing } from "@/lib/drill-stats";
+import { dropClaims, saveClaims, saveSession } from "@/lib/history";
+import { buildSessionRecord } from "@/lib/session-record";
+import type { QuizAnswer } from "@/sky/lib/quiz";
+import type { FactId, SessionStats } from "@/types";
 import type { AtlasEntry, AtlasSearchResult } from "@/sky/components/sky-atlas";
 
 import { atlasEntryFromHistory, atlasSearchFromHistory, learnerHistory } from "./atlas";
@@ -55,4 +59,29 @@ export async function atlasEntry(sample: boolean, id: string): Promise<AtlasEntr
   const entry = atlasEntryFromHistory(history, id);
   if (!entry) throw new Error(`No Atlas entry: ${id}`);
   return entry;
+}
+
+/** The Quiz's answers, recorded as one session against the schedule, the
+ * app's own way (a session record folded into the fact aggregates). The
+ * four grades map onto the model's two: clean and nearly are a hit (a near
+ * miss must not reset, SAK-314); with help is right but not a first-try
+ * hit; missed is a miss. A four-way interval treatment (SAK-317) waits on
+ * the scoring model itself. */
+export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId || answers.length === 0) return;
+  const stats: SessionStats = {};
+  for (const a of answers) {
+    const st = statForShowing(stats, a.cardId as FactId);
+    const ok = a.grade !== "missed";
+    const credit = a.grade === "clean" || a.grade === "nearly";
+    resolveShowing(st, credit, ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: false });
+    if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
+  }
+  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.map((a) => a.cardId as FactId) });
+  if (!record) return;
+  await saveSession(userId, record);
+  revalidatePath("/dev/sky/planetarium");
+  revalidatePath("/dev/sky/atlas");
+  revalidatePath("/dev/sky/quiz");
 }

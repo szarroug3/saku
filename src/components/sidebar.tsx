@@ -142,6 +142,7 @@ const DEV_PAGES: Array<{
       { href: "/dev/sky/observatory", label: "Observatory" },
       { href: "/dev/sky/lesson?showcase", label: "Lesson" },
       { href: "/dev/sky/atlas", label: "Atlas" },
+      { href: "/dev/sky/quiz?sample", label: "Quiz" },
     ],
   },
 ];

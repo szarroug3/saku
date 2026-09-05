@@ -36,7 +36,7 @@ export default async function SkyAtlasPage({ searchParams }: { searchParams: Pro
         data={data}
         lookup={{ search: atlasSearch.bind(null, sample), entry: atlasEntry.bind(null, sample) }}
         observatoryHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"}
-        quizHref="/session"
+        quizHref={sample ? "/dev/sky/quiz?sample" : "/dev/sky/quiz"}
         written={WrittenBlock}
         hear={HearButton}
         pitch={PitchMark}

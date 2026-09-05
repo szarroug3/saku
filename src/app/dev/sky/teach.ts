@@ -12,7 +12,7 @@ import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
 import { RECIPES, type Recipe } from "@/data/grammar/recipes";
-import type { IntroBuildRule, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import type { CountBuildPiece, IntroBuildRule, IntroCountGroup, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
@@ -21,6 +21,7 @@ import { pairForEntry } from "@/data/transitivity-facts";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { kanjiRow, READINGS } from "@/data/kanji";
 import { getMnemonic, type SoundLine } from "@/data/mnemonics";
+import { numberConstructionFor } from "@/data/number-construction";
 import { wordPitch } from "@/data/pitch";
 import { TERMS, termEntry } from "@/data/terms";
 import { vocabRow } from "@/data/vocab";
@@ -28,6 +29,8 @@ import { exampleFor } from "@/data/word-examples";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
+
+import type { EntryId } from "@/types";
 
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
 
@@ -87,8 +90,16 @@ export function teachFor(item: SkyItem): LessonTeach {
     return t;
   }
   if (item.kind === "counter") {
+    // a counted form: how you say it; a counting rule: how it is built, the
+    // app's own rule card with its worked tables (Sam, 2026-09-05: the
+    // counting rules had rich content)
     const form = counterForm(item.id as Parameters<typeof counterForm>[0]);
     if (form) { t.reading = form.reading; t.meanings = [form.meaning]; const note = counterRoleNote(form); if (note) t.notes = [note]; t.pitch = wordPitch(form.glyph); }
+    const construction = numberConstructionFor(item.id as EntryId);
+    if (construction) {
+      t.meanings = [construction.summary];
+      t.pages = [pageFromIntro({ id: `construction-${construction.id}`, setId: "", title: construction.name, name: "How it's built", body: [...construction.body], countTables: construction.exampleGroups })];
+    }
     return t;
   }
   if (item.kind === "grammar") {
@@ -284,6 +295,22 @@ function deriveTable(rules: readonly IntroDeriveRow[], heads?: { verb?: string; 
   return { ...(title ? { title } : {}), heads: [heads?.verb ?? "Verb", ...(form ? [heads?.form ?? "Form"] : []), heads?.pattern ?? "Pattern", ...(gloss ? ["Meaning"] : []), ...(cls ? ["Class"] : [])], rows, ...extra };
 }
 
+export /** A count table: each row a count, its word and reading, and the pieces it
+ * is built from with the result. */
+function countTable(g: IntroCountGroup): TeachTable {
+  const piece = (p: CountBuildPiece, accent = false): SkySoundLine => [text(p.kana, accent), ...(p.value ? [text(` (${p.value})`)] : [])];
+  return {
+    title: g.title,
+    heads: [g.counter ? "Count" : "Number", "Written", "Reading", "Built from"],
+    rows: g.examples.map((r) => [
+      [text(r.label)],
+      [text(r.word)],
+      [text(r.reading), ...(r.alternateReadings?.length ? [text(` · ${r.alternateReadings.join(" · ")}`)] : [])],
+      [...r.build.flatMap((p, i) => (i === 0 ? piece(p) : [text(` ${p.op ?? "+"} `), ...piece(p)])), text(" → "), ...piece(r.result, true)],
+    ]),
+  };
+}
+
 export const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
   (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
 
@@ -304,6 +331,7 @@ function pageFromIntro(intro: PhaseIntro): TeachPage {
   if (intro.deriveRules?.length) tables.push(deriveTable(intro.deriveRules, intro.deriveHeads));
   for (const t of intro.deriveTables ?? []) tables.push(deriveTable(t.rules, t.heads, t.title, { ...(t.instruction ? { instruction: t.instruction } : {}), ...(t.formula ? { formula: t.formula } : {}) }));
   if (intro.buildFooter && tables.length) tables[tables.length - 1] = { ...tables[tables.length - 1], footer: `${intro.buildFooter.chain} · ${intro.buildFooter.gloss}` };
+  for (const g of intro.countTables ?? []) tables.push(countTable(g));
   const ex = intro.sentenceExample;
   const examples = ex ? [{ natural: [{ text: ex.en }], japanese: [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text) }] : undefined;
   return {

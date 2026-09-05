@@ -97,9 +97,9 @@ function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; on
   );
 }
 
-function Fold({ title, children }: { title: string; children: ReactNode }) {
+function Fold({ title, open = false, children }: { title: string; open?: boolean; children: ReactNode }) {
   return (
-    <details className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
+    <details open={open} className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
       <summary className="cursor-pointer font-semibold text-sky-ink">{title}</summary>
       <div className="mt-2.5">{children}</div>
     </details>
@@ -246,12 +246,15 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           <div className="flex flex-wrap gap-2">{partOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
         </>
       )}
-      {related.map((group) => (
-        <div key={group.title}>
-          <Eyebrow className="mt-4">{group.title}{group.note ? <span className="normal-case tracking-normal text-sky-muted"> · {group.note}</span> : null}</Eyebrow>
-          <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+      {related.length > 0 && (
+        <div className="mt-4">
+          {related.map((group) => (
+            <Fold key={group.title} title={group.note ? `${group.title} · ${group.note}` : group.title} open>
+              <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+            </Fold>
+          ))}
         </div>
-      ))}
+      )}
 
       <div className="mt-4">
         {(on.length > 0 || kun.length > 0) && (

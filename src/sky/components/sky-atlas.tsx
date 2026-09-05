@@ -98,7 +98,7 @@ export interface SkyAtlasProps {
   lookup: AtlasLookup;
   /** Where "Add to tonight's picks" goes; the picks are appended as `?picks=`. */
   observatoryHref: string;
-  /** Where "Quiz me" goes. */
+  /** Where "Quiz me" goes; the picks are appended as `?picks=`. */
   quizHref?: string;
   /** "How it's written" for a character, from whoever has the stroke order. */
   written?: WrittenComponent;
@@ -220,7 +220,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
       setMarking(false);
     }
   };
-  const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
+  const withPicks = (base: string, ids: readonly string[]) => `${base}${base.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
+  const picksHref = (ids: readonly string[]) => withPicks(observatoryHref, ids);
+  const quizFor = (ids: readonly string[]) => (quizHref ? withPicks(quizHref, ids) : undefined);
 
   // the right panel: widened over the rail and the grid, or dragged wider
   // by its left edge (Sam's ask, 2026-09-05)
@@ -343,7 +345,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       {selectedItems.some(unknown) && <SkyButton href={picksHref(selectedItems.filter(unknown).map((it) => it.id))}>Add to lesson</SkyButton>}
                       {selectedItems.some(unknown) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, true)}>{marking ? "Marking…" : "I know these"}</SkyButton>}
                       {selectedItems.some((it) => !unknown(it)) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, false)}>{marking ? "Marking…" : "I don't know these"}</SkyButton>}
-                      {quizHref && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
+                      {quizHref && <SkyButton variant="outline" href={quizFor(selection.ids)}>Quiz me</SkyButton>}
                     </>
                   }
                 >
@@ -385,7 +387,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       ) : (
                         <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], false)}>{marking ? "Marking…" : "I don't know this"}</SkyButton>
                       )}
-                      {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
+                      {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizFor([current.id])}>Quiz me</SkyButton>}
                     </>
                   )}
                 />
