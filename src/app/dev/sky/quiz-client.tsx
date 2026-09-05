@@ -7,6 +7,10 @@
 // on the client, with no round trip per answer. Right or wrong, nothing in
 // between: a near miss gets another try instead (Sam, 2026-09-05).
 
+import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
+
+import { Info } from "@/components/ui";
 import { HearButton } from "@/components/ui/hear-button";
 import { checkTyped } from "@/lib/engine";
 import { romajiMatches } from "@/lib/romaji";
@@ -23,6 +27,14 @@ function grade(card: QuizCard, given: string): boolean {
   return checkTyped(card.id as FactId, given, (card.meta?.dir ?? "jp2en") as Direction);
 }
 
-export function QuizClient({ cards, skyHref, onFinish }: { cards: readonly QuizCard[]; skyHref: string; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void> }) {
-  return <SkyQuiz cards={cards} grade={grade} onFinish={onFinish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} height="100%" />;
+/** The app's info mark, restyled for the wash. */
+function Tip({ label, children }: { label: string; children: ReactNode }) {
+  return <Info label={label} className="ml-1.5 border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-accent">{children}</Info>;
+}
+
+export function QuizClient({ cards, skyHref, sample = false, onFinish }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void> }) {
+  const router = useRouter();
+  // a retry is the same route with just those cards named
+  const retry = (ids: readonly string[]) => router.push(`/dev/sky/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
+  return <SkyQuiz cards={cards} grade={grade} onFinish={onFinish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} height="100%" />;
 }

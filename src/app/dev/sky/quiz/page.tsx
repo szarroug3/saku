@@ -7,7 +7,8 @@
 import Link from "next/link";
 
 import { recordQuiz } from "../actions";
-import { learnerQuiz, quizFromHistory, sampleCards } from "../quiz";
+import { learnerHistory } from "../atlas";
+import { cardsFor, learnerQuiz, quizFromHistory, sampleCards } from "../quiz";
 import { QuizClient } from "../quiz-client";
 import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
@@ -18,9 +19,12 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const sample = params.sample !== undefined;
   const picks = String(params.picks ?? "").split(",").filter(Boolean);
+  // `?cards=` names the exact cards (a retry from the results)
+  const named = String(params.cards ?? "").split(",").filter(Boolean);
+  const history = sample ? sampleHistory() : await learnerHistory();
   // the pretend learner has nothing due (everything was drilled just now), so
   // the sample asks every question type of every kind unless picks are named
-  const cards = sample ? (picks.length ? quizFromHistory(sampleHistory(), picks) : sampleCards(sampleHistory())) : await learnerQuiz(picks);
+  const cards = named.length ? cardsFor(history, named) : sample ? (picks.length ? quizFromHistory(history, picks) : sampleCards(history)) : await learnerQuiz(picks);
   return (
     <SkyPage
       note={
@@ -30,7 +34,7 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
         </>
       }
     >
-      <QuizClient cards={cards} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} />
+      <QuizClient cards={cards} sample={sample} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} />
     </SkyPage>
   );
 }

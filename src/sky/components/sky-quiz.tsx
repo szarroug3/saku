@@ -17,7 +17,7 @@
 // what each does to the schedule, then the answers go to whoever records
 // them.
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
@@ -38,6 +38,10 @@ export interface SkyQuizProps {
   skyHref: string;
   hear?: HearComponent;
   pitch?: PitchComponent;
+  /** An info mark that shows `children` on hover: the app's own tooltip. */
+  tip?: ComponentType<{ label: string; children: ReactNode }>;
+  /** Starts a new quiz of just these cards, from the results. */
+  onRetry?: (cardIds: readonly string[]) => void;
   height?: string;
 }
 
@@ -69,9 +73,12 @@ interface Open {
 
 const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
+  const Tip = tip;
+  // rows picked on the results, for a retry of just those
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
@@ -204,39 +211,56 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
       <SkyPageShell eyebrow="Quiz" title="How it went" aside={strip} height={height}>
         <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
           <SkySurface>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-center sm:grid-cols-4">
               {GRADES.map((g) => (
                 <div key={g}>
-                  <dt className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${VERDICT[g]}`}>{GRADE[g].label}</dt>
                   <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{counts[g]}</dd>
-                  <dd className="mt-1 text-[12px] leading-snug text-sky-muted">{GRADE[g].meaning}</dd>
+                  <dt className={`mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${VERDICT[g]}`}>
+                    {GRADE[g].label}
+                    {Tip && <Tip label={`What ${GRADE[g].label.toLowerCase()} means`}>{GRADE[g].meaning}</Tip>}
+                  </dt>
                 </div>
               ))}
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">Unanswered</dt>
                 <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{unanswered}</dd>
-                <dd className="mt-1 text-[12px] leading-snug text-sky-muted">Left when the quiz ended. Not recorded.</dd>
+                <dt className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">
+                  Unanswered
+                  {Tip && <Tip label="What unanswered means">Left when the quiz ended. Not recorded.</Tip>}
+                </dt>
               </div>
             </dl>
           </SkySurface>
-          <SkySurface>
-            <ul className="flex flex-col gap-2">
+          {/* the list keeps one height and scrolls inside; a row can be picked
+              for a retry of just those cards (Sam, 2026-09-05) */}
+          <SkySurface className="flex h-[360px] shrink-0 flex-col">
+            <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
               {cards.map((c) => {
                 const a = answers[c.id];
+                const on = picked.has(c.id);
                 return (
-                  <li key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-sky-line pb-2 last:border-0 last:pb-0">
-                    <span className={`font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
-                    <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answer}</span>
-                    <span className={`ml-auto text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => { const next = new Set(picked); if (on) next.delete(c.id); else next.add(c.id); setPicked(next); }}
+                      className={`flex w-full flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
+                    >
+                      <span className={`font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
+                      <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answer}</span>
+                      <span className={`ml-auto text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
+                    </button>
                   </li>
                 );
               })}
             </ul>
-            <p className="mt-4 text-[12.5px] text-sky-muted">
+            <p className="mt-3 shrink-0 text-[12.5px] text-sky-muted">
               {!onFinish ? "A look only: nothing was recorded." : saved === "saving" ? "Recording…" : saved === "yes" ? "Recorded against your schedule." : saved === "failed" ? "Could not record this. Your schedule is unchanged." : ""}
             </p>
           </SkySurface>
-          <div><SkyButton href={skyHref}>Back to the observatory</SkyButton></div>
+          <div className="flex flex-wrap gap-2">
+            <SkyButton href={skyHref}>Back to the observatory</SkyButton>
+            {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
+          </div>
         </div>
       </SkyPageShell>
     );
@@ -299,14 +323,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                     </form>
                   )}
                   {choices && (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div className="flex flex-wrap justify-center gap-2">
                       {card.options.map((o) => {
                         const struck = state.wrong.includes(o.id);
                         // a pitched choice holds a hear button of its own, so the
                         // pick is a button beside it rather than around it
                         if (o.pitch !== undefined && Pitch) {
                           return (
-                            <div key={o.id} className={`flex items-center gap-1 rounded-xl border pr-2 ${struck ? "border-transparent bg-sky-card/40 text-sky-muted" : "border-sky-line bg-sky-card hover:border-sky-accent"}`}>
+                            <div key={o.id} className={`flex w-[calc((100%-1rem)/3)] min-w-[140px] items-center gap-1 rounded-xl border pr-2 ${struck ? "border-transparent bg-sky-card/40 text-sky-muted" : "border-sky-line bg-sky-card hover:border-sky-accent"}`}>
                               <button type="button" onClick={() => choose(o.id)} disabled={struck} className={`min-w-0 flex-1 px-3 py-2.5 text-left font-sky-display text-[18px] ${struck ? "line-through" : ""} ${japaneseFont(o.label)}`}>
                                 <Pitch reading={o.label} downstep={o.pitch} />
                               </button>
@@ -320,7 +344,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                             type="button"
                             onClick={() => choose(o.id)}
                             disabled={struck}
-                            className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
+                            className={`w-[calc((100%-1rem)/3)] min-w-[140px] rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
                           >
                             {o.label}
                           </button>

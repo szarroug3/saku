@@ -21,12 +21,12 @@ import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB, VOCAB_SUBJECT } from "@/data/vocab";
-import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, type Kind } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
 import type { QuizCard, QuizOption } from "@/sky/lib/quiz";
-import type { Direction, FactId, HistoryFile } from "@/types";
+import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
 import { learnerHistory } from "./atlas";
 import { offerings, pickFacts } from "./observatory";
@@ -181,6 +181,23 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     teach: teachFor(item),
     meta: { dir: "jp2en" },
   };
+}
+
+/** The cards some ids name, in that order: a fact each, or a word's pitch
+ * card (`word:X/pitch`). What a retry from the results asks. */
+export function cardsFor(history: HistoryFile, ids: readonly string[], now = Date.now()): QuizCard[] {
+  const out: QuizCard[] = [];
+  for (const id of ids) {
+    const pitch = /^(.+)\/pitch$/.exec(id);
+    if (pitch) {
+      const keb = libEntry(pitch[1] as EntryId)?.glyph;
+      const card = keb ? pitchCard(history, keb, now) : undefined;
+      if (card) out.push(card);
+      continue;
+    }
+    out.push(...quizCards(history, [id as FactId], now));
+  }
+  return out;
 }
 
 /** The signed-in learner's quiz, or a visitor's. */
