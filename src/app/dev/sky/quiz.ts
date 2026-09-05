@@ -20,12 +20,13 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
-import { VOCAB, VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
 import type { QuizCard, QuizOption } from "@/sky/lib/quiz";
+import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
 import { learnerHistory } from "./atlas";
@@ -96,7 +97,10 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       answer: construction ? construction.reading : revealFor(fact, dir),
       seen: agg?.seen ?? 0,
       missed: agg?.missed ?? 0,
-      teach: teachFor(item),
+      // a word card asks about one reading (a qualified fact names it, a
+      // plain one is the word's first), so its reveal is that reading's
+      // lesson card, not the whole entry (Sam, 2026-09-05)
+      teach: teachFor(item, { reading: wordReadingAsked(fact, item) }),
       meta: { dir, ...(construction ? { accept: construction.accept.join("|") } : {}) },
     });
   }
@@ -185,6 +189,14 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     teach: teachFor(item),
     meta: { dir: "jp2en" },
   };
+}
+
+/** The reading a word fact is about: word:日/reading@にち names にち; a plain
+ * word fact is the word's first reading. Undefined for anything else. */
+function wordReadingAsked(fact: FactId, item: SkyItem): string | undefined {
+  if (item.kind !== "word" || !(fact as string).startsWith("word:")) return undefined;
+  const m = /@([^#]+)/.exec(fact as string);
+  return m ? m[1] : vocabRow(item.glyph)?.reb;
 }
 
 /** The cards some ids name, in that order: a fact each, or a word's pitch

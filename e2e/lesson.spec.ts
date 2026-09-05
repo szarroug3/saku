@@ -68,7 +68,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // position through the walk. Asserted by what the intro TEACHES.
   await expect(teachPosition(page)).toHaveText(teachPositionText(1, 8));
   await expect(page.locator("body")).toContainText("kana");
-  await expect(page.locator("body")).toContainText("sound-based scripts");
+  await expect(page.locator("body")).toContainText("characters Japanese uses for sounds");
 
   // Walk to each vowel's teach card in turn — concept/term cards may sit between
   // them, so step forward until each vowel's page is on screen rather than assume a

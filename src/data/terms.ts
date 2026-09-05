@@ -156,10 +156,12 @@ export const TERMS: readonly Term[] = [
   {
     id: "kana",
     name: "Kana",
-    summary: "The two Japanese sound scripts, hiragana and katakana, together.",
+    // Read before hiragana or katakana is taught (Sam, 2026-09-05), so it
+    // explains kana on its own terms and only previews the two sets.
+    summary: "Japanese's sound characters: each one is a syllable, not a meaning.",
     body: [
-      "Kana is the name for Japanese's two sound-based scripts together, hiragana and katakana.",
-      "Each kana stands for a sound rather than a meaning, and between them they can spell any Japanese word.",
+      "Kana are the characters Japanese uses for sounds. Each kana stands for one syllable, like a, ka or shi, rather than for a meaning, and together they can spell any Japanese word.",
+      "There are two matching sets of them, hiragana and katakana, and you will meet each in turn.",
     ],
     searchAlso: ["kana", "syllabary", "syllabaries"],
     related: ["hiragana", "katakana"],
