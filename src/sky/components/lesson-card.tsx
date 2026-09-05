@@ -15,7 +15,7 @@ import type { ComponentType, ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonPage, LessonTeach, SoundLine } from "@/sky/lib/lesson";
+import type { LessonPage, LessonTeach, PartedSentence, SoundLine, TeachExample, TeachPage } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -37,6 +37,10 @@ export interface LessonCardProps {
   /** A word's reading with its pitch drawn over it, from whoever draws it;
    * used in place of the plain reading when the pitch is known. */
   pitch?: PitchComponent;
+  /** Which of the star's pages is showing, when it is taught over several,
+   * and the pager's way of changing it. */
+  page?: number;
+  onPage?: (page: number) => void;
   className?: string;
 }
 
@@ -73,6 +77,97 @@ function Sound({ line }: { line: SoundLine }) {
   return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent">{s.text}</span> : <span key={i}>{s.text}</span>))}</>;
 }
 
+/** A sentence with its parts coloured: the part being taught in the accent,
+ * the other parts in the ink, the text between them muted. */
+function Parted({ line, className = "" }: { line: PartedSentence; className?: string }) {
+  return (
+    <p className={className}>
+      {line.map((run, i) => (
+        <span key={i} className={run.label ? (run.active ? "font-semibold text-sky-accent" : "font-medium text-sky-ink") : "text-sky-muted"}>{run.text}</span>
+      ))}
+    </p>
+  );
+}
+
+/** The parts of a sentence as labelled boxes, in order: the role over the
+ * text, the one being taught in the accent. */
+function PartBoxes({ line }: { line: PartedSentence }) {
+  const parts = line.filter((run) => run.label);
+  if (parts.length === 0) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {parts.map((run, i) => (
+        <div key={i} className={`rounded-md border px-2 py-1 ${run.active ? "border-sky-accent" : "border-sky-line"}`}>
+          <span className={`block text-[9.5px] font-semibold uppercase tracking-wide ${run.active ? "text-sky-accent" : "text-sky-muted"}`}>{run.label}</span>
+          <span className={`text-[13px] font-medium ${run.active ? "text-sky-accent" : "text-sky-ink"} ${japaneseFont(run.text)}`}>{run.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One worked example, three ways. */
+function Example({ example, n }: { example: TeachExample; n: number }) {
+  const block = (title: string, line: PartedSentence, big = false) => (
+    <div className="mt-3 first:mt-1.5">
+      <Eyebrow className="!mb-0.5">{title}</Eyebrow>
+      <Parted line={line} className={big ? `font-sky-display text-[20px] leading-snug ${japaneseFont(line.map((r) => r.text).join(""))}` : "text-[14px] leading-relaxed"} />
+      <PartBoxes line={line} />
+    </div>
+  );
+  return (
+    <div className="rounded-xl border border-sky-line px-3.5 py-3">
+      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">Example {n}</p>
+      {block("Natural English", example.natural)}
+      {block("English in Japanese order", example.ordered)}
+      {block("Japanese", example.japanese, true)}
+    </div>
+  );
+}
+
+/** One page of a star taught over several: the eyebrow, the title, the hook
+ * to keep in mind, the prose and the worked examples. */
+function TeachPageView({ page }: { page: TeachPage }) {
+  return (
+    <div className="mt-4 border-t border-sky-line pt-4">
+      {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
+      <h3 className="max-w-[30ch] font-sky-display text-[24px] leading-tight">{page.title}</h3>
+      {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
+      <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">
+        {page.paragraphs.map((para, i) => (
+          <p key={i}>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className="text-sky-ink/90">{para.text}</span></p>
+        ))}
+      </div>
+      {page.examples && page.examples.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3">
+          {page.examples.map((ex, i) => <Example key={i} example={ex} n={i + 1} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The pager for a star with several pages: one pill per page, the one
+ * showing in the accent. */
+function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; page: number; onPage?: (page: number) => void }) {
+  return (
+    <nav aria-label="Pages" className="mt-3 flex flex-wrap items-center gap-1.5">
+      {pages.map((p, i) => (
+        <button
+          key={i}
+          type="button"
+          aria-current={i === page ? "page" : undefined}
+          onClick={() => onPage?.(i)}
+          className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${i === page ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
+        >
+          {p.eyebrow ?? `Page ${i + 1}`}
+        </button>
+      ))}
+      <span className="ml-auto text-[12px] tabular-nums text-sky-muted">{page + 1} of {pages.length}</span>
+    </nav>
+  );
+}
+
 function Fold({ title, children }: { title: string; children: ReactNode }) {
   return (
     <details className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
@@ -82,8 +177,10 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
+  const pages = teach?.pages ?? [];
+  const at = Math.max(0, Math.min(page, pages.length - 1));
   const reading = teach?.reading ?? item.reading;
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
   const on = teach?.readings?.filter((r) => r.kind === "on") ?? [];
@@ -118,12 +215,19 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           )}
         </span>
       </div>
-      {/* a kana's name is its sound, already beside the glyph */}
-      {item.kind !== "kana" && (
+      {/* a kana's name is its sound, already beside the glyph; a rule's name is its glyph */}
+      {item.kind !== "kana" && meanings[0] !== item.glyph && (
         <p className="mt-3 text-[15px] leading-relaxed">
           <span className="font-semibold">{meanings[0]}</span>
           {meanings.length > 1 && <span className="text-sky-muted"> · {meanings.slice(1, 4).join(" · ")}</span>}
         </p>
+      )}
+
+      {pages.length > 0 && (
+        <>
+          <Pager pages={pages} page={at} onPage={onPage} />
+          <TeachPageView page={pages[at]} />
+        </>
       )}
 
       {(teach?.story || teach?.hook) && (

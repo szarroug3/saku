@@ -9,7 +9,7 @@ import { SETS } from "@/data/characters";
 import { COUNTER_CURRICULUM, counterEntry, counterForm, counterRoleNote } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
-import { SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
+import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
 import { KEIGO_SETS, keigoSetEntry, keigoSetForEntry } from "@/data/keigo";
 import { VERB_PAIRS } from "@/data/transitivity";
@@ -27,9 +27,10 @@ import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
+import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
-import { lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
+import { lessonSteps, type LessonPage, type LessonTeach, type PartedSentence, type TeachPage } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
@@ -88,9 +89,9 @@ function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "grammar") {
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
     if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; t.notes = [recipe.sense, recipe.intro?.blurb].filter((x): x is string => !!x); return t; }
-    // a sentence rule: the ordering guide's own paragraphs and its hook
+    // a sentence rule: the app's walk, page by page
     const tier = (Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]).find((k) => item.id.endsWith(`sentence-rule-${k}`));
-    if (tier) { const g = SENTENCE_ORDERING_GUIDES[tier]; t.meanings = [g.title]; t.notes = [...g.body.map((b) => `${b.lead} ${b.text}`), g.hook]; }
+    if (tier) t.pages = sentenceRulePages(tier);
     return t;
   }
   if (item.kind === "verbPair") {
@@ -112,6 +113,53 @@ function teachFor(item: SkyItem): LessonTeach {
     return t;
   }
   return t;
+}
+
+/** The sentence-rule walk as pages: the intro (the guide's paragraphs, its
+ * hook and its worked example, plain), then one step per part of the frame,
+ * each with the tier's examples three ways and that part marked. The same
+ * data and span maths the app's walk renders (src/lib/sentence-rule-walk.ts). */
+function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
+  const g = SENTENCE_ORDERING_GUIDES[tier];
+  const labels = CHUNK_ROLE_LABELS[tier];
+  const order = stepPartOrder(tier);
+  /** The sentence as runs: its parts labelled, the active one marked, the rest plain. */
+  const runs = (sentence: string, parts: readonly PositionedStepPart[], active: StepKey): PartedSentence => {
+    const out: Array<{ text: string; label?: string; active?: boolean }> = [];
+    let cursor = 0;
+    for (const p of parts) {
+      if (p.start > cursor) out.push({ text: sentence.slice(cursor, p.start) });
+      out.push({ text: sentence.slice(p.start, p.end), label: labels[p.part] ?? p.part, ...(p.part === active ? { active: true } : {}) });
+      cursor = p.end;
+    }
+    if (cursor < sentence.length) out.push({ text: sentence.slice(cursor) });
+    return out;
+  };
+  const threeWays = (example: TierExample, active: StepKey) => {
+    const ordered = example.enOrdered.replaceAll(", ", " → ");
+    return {
+      natural: runs(example.en, positionedStepParts(example.en, example, order, "en"), active),
+      ordered: runs(ordered, positionedStepParts(ordered, example, order, "enOrdered"), active),
+      japanese: runs(example.jp, positionedStepParts(example.jp, example, order, "jp"), active),
+    };
+  };
+  const intro: TeachPage = {
+    eyebrow: "Intro",
+    title: g.title,
+    hook: g.hook,
+    paragraphs: g.body,
+    ...(g.example ? { examples: [{ natural: [{ text: g.example.en }], ordered: [{ text: g.example.enOrdered }], japanese: [{ text: g.example.jp }] }] } : {}),
+  };
+  return [
+    intro,
+    ...lessonsForTier(tier).map((l) => ({
+      eyebrow: l.step,
+      title: l.title,
+      hook: g.hook,
+      paragraphs: l.details.map((text) => ({ text })),
+      examples: l.examples.map(({ example, activePart }) => threeWays(example, activePart)),
+    })),
+  ];
 }
 
 /** One of everything, for a look at every kind of card: a plain kana row,

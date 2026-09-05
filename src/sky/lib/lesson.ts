@@ -50,7 +50,37 @@ export interface LessonTeach {
   pitch?: number | null;
   /** How many strokes a character takes. */
   strokes?: number;
+  /** A star taught over several pages rather than one card (a sentence
+   * rule: the intro, then a step per part). Next and Back walk the pages
+   * before moving on to the next star. */
+  pages?: readonly TeachPage[];
 }
+
+/** One page of a star's teaching. */
+export interface TeachPage {
+  /** "Intro", "Step 1": what the page is, for the eyebrow and the pager. */
+  eyebrow?: string;
+  title: string;
+  /** The line to keep in mind, in the accent: "Think: who → what → action." */
+  hook?: string;
+  /** The page's prose: an optional bold lead and its text. */
+  paragraphs: ReadonlyArray<{ lead?: string; text: string }>;
+  /** Worked examples, each in its three renderings. */
+  examples?: readonly TeachExample[];
+}
+
+/** An example sentence three ways: natural English, English in Japanese
+ * order, and the Japanese, each with its parts named. */
+export interface TeachExample {
+  natural: PartedSentence;
+  ordered: PartedSentence;
+  japanese: PartedSentence;
+}
+
+/** A sentence as runs of text. A run with a label is one of the sentence's
+ * parts ("Topic" over 私は); the part this page teaches is marked active.
+ * Runs without a label are the text between parts. */
+export type PartedSentence = ReadonlyArray<{ text: string; label?: string; active?: boolean }>;
 
 export interface LessonStep {
   id: string;

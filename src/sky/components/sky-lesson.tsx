@@ -11,7 +11,7 @@
 // from the start for reference, and a star opened stays lit. Order and
 // locking come from src/sky/lib/lesson.ts over the graph.
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard, LessonPageCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
@@ -57,15 +57,20 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.length ? [steps[0].id] : []));
   const [selected, setSelected] = useState<string | null>(steps[0]?.id ?? null);
+  // which page of the selected star is showing, for a star taught over several
+  const [page, setPage] = useState(0);
   const stepIndex = Math.max(0, steps.findIndex((s) => s.id === selected));
   const stepOf = (id: string) => steps.findIndex((s) => s.id === id);
+  const pagesOf = (id: string) => data.teach[id]?.pages?.length ?? 1;
 
-  /** Open a star: a step only when unlocked; a known star any time, without moving the lesson on. */
-  const open = (id: string) => {
+  /** Open a star: a step only when unlocked; a known star any time, without
+   * moving the lesson on. Opens on its first page unless told otherwise. */
+  const open = (id: string, at = 0) => {
     const i = stepOf(id);
     if (i >= 0 && !isUnlocked(steps, i, opened)) return;
     setOpened((o) => new Set([...o, id]));
     setSelected(id);
+    setPage(at);
   };
   const stateOf = (id: string) => starState(steps, id, opened, selected);
   // the selected star wears the accent (Sam's call, 2026-09-05)
@@ -78,22 +83,36 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
     }
   };
 
+  // the card scrolls back to its top for each star and each page, and the
+  // order keeps the selected row in view
+  const cardBox = useRef<HTMLDivElement>(null);
+  const rail = useRef<HTMLOListElement>(null);
+  useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); }, [selected, page]);
+  useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
+
   const currentStep = steps.find((s) => s.id === selected);
   const current = selected && !currentStep?.page ? graph.itemOf(selected) : undefined;
   const tonight = useMemo(() => new Set(steps.map((s) => s.id).concat(data.picks)), [steps, data.picks]);
   // only what is being taught is drawn: a pick with nothing left to teach stays off the sky
   const taught = useMemo(() => data.picks.filter((p) => steps.some((s) => s.pick === p)), [data.picks, steps]);
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
-  const last = stepIndex === steps.length - 1;
+  // Next and Back walk a star's pages before they move between stars, so a
+  // rule taught over five pages is read through; Back into such a star
+  // lands on its last page. The lesson ends on the last page of the last star.
+  const pageCount = selected ? pagesOf(selected) : 1;
+  const lastPage = page >= pageCount - 1;
+  const last = stepIndex === steps.length - 1 && lastPage;
+  const back = () => (page > 0 ? setPage(page - 1) : open(steps[stepIndex - 1].id, pagesOf(steps[stepIndex - 1].id) - 1));
+  const next = () => (lastPage ? open(steps[stepIndex + 1].id) : setPage(page + 1));
 
   const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
-      <button type="button" disabled={stepIndex === 0} onClick={() => open(steps[stepIndex - 1].id)} className={`${BTN} border border-sky-line text-sky-ink disabled:border-transparent disabled:text-sky-faint`}>Back</button>
+      <button type="button" disabled={stepIndex === 0 && page === 0} onClick={back} className={`${BTN} border border-sky-line text-sky-ink disabled:border-transparent disabled:text-sky-faint`}>Back</button>
       {last && drillHref ? (
         <a href={drillHref} className={`${BTN} bg-sky-accent text-sky-accent-ink`}>Drill</a>
       ) : (
-        <button type="button" disabled={last} onClick={() => open(steps[stepIndex + 1].id)} className={`${BTN} bg-sky-accent text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint`}>Next</button>
+        <button type="button" disabled={last} onClick={next} className={`${BTN} bg-sky-accent text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint`}>Next</button>
       )}
     </div>
   );
@@ -120,7 +139,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
           />
         </div>
         <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="min-h-0 self-stretch overflow-y-auto pr-1">
+          <div ref={cardBox} className="min-h-0 self-stretch overflow-y-auto pr-1">
             {currentStep?.page ? (
               <LessonPageCard page={currentStep.page} className="min-h-full" />
             ) : current ? (
@@ -134,6 +153,8 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                 written={written?.[current.id]}
                 hear={hear}
                 pitch={pitch}
+                page={page}
+                onPage={setPage}
                 onSelect={open}
               />
             ) : (
@@ -142,7 +163,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
           </div>
           <SkyPanel title="Tonight, in order" className="flex min-h-0 flex-col self-stretch !p-4">
             <p className="mt-1 shrink-0 text-[12px] text-sky-muted">Pieces first, then the character, then the word. Stars already in your sky are not listed; they are open on the constellation for reference.</p>
-            <ol className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+            <ol ref={rail} className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
               {steps.map((s, i) => {
                 const it = graph.itemOf(s.id);
                 const locked = !isUnlocked(steps, i, opened);
