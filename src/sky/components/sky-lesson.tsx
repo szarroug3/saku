@@ -66,11 +66,10 @@ export function SkyLesson({ data, drillHref, written, hear, height }: SkyLessonP
     setSelected(id);
   };
   const stateOf = (id: string) => starState(steps, id, opened, selected);
-  // the selected star is simply lit: the rail and the card say which it is
-  // (Sam's call, 2026-09-05: no accent on the constellation)
+  // the selected star wears the accent (Sam's call, 2026-09-05)
   const lookOf = (id: string, base: StarLook): StarLook => {
     switch (stateOf(id)) {
-      case "selected":
+      case "selected": return { ...base, emphasis: true };
       case "lit": return learned.has(id) ? base : { ...base, lit: true };
       case "open": return learned.has(id) ? base : { ...base, tonight: true };
       case "locked": return { ...base, standing: "not-seen", tonight: false };

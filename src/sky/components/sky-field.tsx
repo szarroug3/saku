@@ -147,7 +147,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
                 onBlur={() => setHover(null)}
                 onClick={onStarClick ? pick : undefined}
                 onKeyDown={onStarClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } : undefined}
-                className={`outline-none focus-visible:stroke-[var(--sky-gold)] focus-visible:[stroke-width:1.5] ${onStarClick && !disabled ? "cursor-pointer" : ""}`}
+                className={`outline-none focus-visible:stroke-[var(--sky-accent)] focus-visible:[stroke-width:1.5] ${onStarClick && !disabled ? "cursor-pointer" : ""}`}
               />
             );
           })}

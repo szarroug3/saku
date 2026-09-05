@@ -32,7 +32,7 @@ export interface StarLook {
   tonight?: boolean;
   /** Opened during this lesson: bright, and it stays that way. */
   lit?: boolean;
-  /** The star the panel is showing, or every star of the word: gold. */
+  /** The star the panel is showing: the learner's accent. */
   emphasis?: boolean;
   /** Faded right back, while something else is singled out. */
   muted?: boolean;
@@ -53,7 +53,7 @@ const BY_STANDING: Record<Standing, Paint> = {
 };
 const TONIGHT: Paint = { fill: "var(--sky-star-mid)", glow: 4, opacity: 0.5, dash: "3 3" };
 const LIT: Paint = { fill: "var(--sky-star)", glow: 4, opacity: 0.75 };
-const EMPHASIS: Paint = { fill: "var(--sky-gold)", glow: 6, opacity: 0.9 };
+const EMPHASIS: Paint = { fill: "var(--sky-accent)", glow: 6, opacity: 0.9 };
 
 /** The paint a look resolves to. Exported so the lesson's own clickable
  * stars can wear the same colours. */
@@ -101,7 +101,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             <line
               key={`${a.id}>${b.id}`}
               x1={a.px} y1={a.py} x2={b.px} y2={b.py}
-              stroke={emphasised ? "var(--sky-gold)" : "var(--sky-link)"}
+              stroke={emphasised ? "var(--sky-accent)" : "var(--sky-link)"}
               strokeWidth={emphasised ? 1.4 : 1}
               opacity={dim(a.id) || dim(b.id) ? MUTED : emphasised ? 0.9 : paint.opacity}
               strokeDasharray={!emphasised && paint.dash ? paint.dash : undefined}
