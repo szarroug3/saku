@@ -84,6 +84,17 @@ describe("the constellation layout", () => {
     assert.deepEqual([small[0].px, small[0].py], [50, 50], "the root sits on the centre");
   });
 
+  it("a group draws as its members alone, in a ring, with no star at the centre", () => {
+    const row = buildGraph([...["か", "き", "く", "け", "こ"].map((k) => item(k, "kana")), { ...item("row:k", "kana", ["か", "き", "く", "け", "こ"]), group: true }]);
+    const layout = layoutConstellation(row.constellationOf("row:k"));
+    const root = layout.stars.find((s) => s.id === "row:k")!;
+    assert.equal(root.group, true);
+    assert.equal(layout.stars.filter((s) => !s.group).length, 5);
+    const rootIndex = layout.stars.indexOf(root);
+    assert.ok(layout.lines.every(([a, b]) => a !== rootIndex && b !== rootIndex), "nothing points at the centre");
+    assert.equal(layout.lines.length, 5, "five members, five links round the ring");
+  });
+
   it("role and size helpers", () => {
     assert.equal(roleOf("word"), "word");
     assert.equal(roleOf("verbPair"), "word");

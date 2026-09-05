@@ -46,6 +46,8 @@ export interface Star {
   /** x and y in [-1, 1]; the root is (0, 0). */
   x: number;
   y: number;
+  /** A group's root: a place, not a star. Never drawn, never a hit. */
+  group?: boolean;
 }
 
 export interface ConstellationLayout {
@@ -69,7 +71,7 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
 
   const index = new Map<string, number>();
   shape.nodes.forEach((n, i) => index.set(n.id, i));
-  const stars: Star[] = shape.nodes.map((n) => ({ id: n.id, depth: n.depth, x: 0, y: 0 }));
+  const stars: Star[] = shape.nodes.map((n) => ({ id: n.id, depth: n.depth, x: 0, y: 0, ...(shape.group && n.id === shape.root ? { group: true } : {}) }));
   if (stars.length === 0) return { root: shape.root, stars, lines: [] };
 
   // every parent's parts, in edge order, so a fan has a stable order
@@ -115,8 +117,24 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
   const extent = Math.max(0.5, ...stars.map((s) => Math.max(Math.abs(s.x), Math.abs(s.y))));
   for (const s of stars) { s.x = round4(s.x / extent); s.y = round4(s.y / extent); }
 
-  const lines = shape.edges.map(([from, to]) => [index.get(from)!, index.get(to)!] as const);
+  // a group has no star at its centre: its parts link to each other, round
+  // the ring they sit on, and nothing points inward
+  const lines: Array<readonly [number, number]> = shape.group
+    ? [
+        ...shape.edges.filter(([from]) => from !== shape.root).map(([from, to]) => [index.get(from)!, index.get(to)!] as const),
+        ...ring((partsOf.get(shape.root) ?? []).map((id) => index.get(id)!)),
+      ]
+    : shape.edges.map(([from, to]) => [index.get(from)!, index.get(to)!] as const);
   return { root: shape.root, stars, lines };
+}
+
+/** Each member to the next, and the last back to the first when there are
+ * enough to close. */
+function ring(members: readonly number[]): Array<readonly [number, number]> {
+  if (members.length < 2) return [];
+  const out = members.slice(0, -1).map((m, i) => [m, members[i + 1]] as const);
+  if (members.length >= 3) out.push([members[members.length - 1], members[0]] as const);
+  return out;
 }
 
 export interface PlacedStar extends Star {

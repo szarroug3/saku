@@ -45,6 +45,9 @@ export interface PickCost {
  * from a parent to a part. The root is depth 0. */
 export interface Constellation {
   root: string;
+  /** The root is a group (a kana row): a grouping of its parts, not a star
+   * of its own. Drawn as its parts alone, linked in a ring. */
+  group?: boolean;
   nodes: ReadonlyArray<{ id: string; depth: number }>;
   edges: ReadonlyArray<readonly [from: string, to: string]>;
 }
@@ -219,7 +222,7 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
       };
       walk(id);
       const nodes = orderOf(id).map((n) => ({ id: n, depth: depth.get(n) ?? 0 })).reverse();
-      return { root: id, nodes, edges };
+      return { root: id, nodes, edges, ...(byId.get(id)?.group ? { group: true } : {}) };
     },
   };
 }

@@ -111,7 +111,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
   // one hit circle per star, sized to its dot plus some slack
-  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
+  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>

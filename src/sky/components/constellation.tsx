@@ -113,7 +113,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
         <g data-stars>
           {stars.map((s) => {
             const look = looks.get(s.id)!;
-            if (look.hidden) return null;
+            if (look.hidden || s.group) return null;
             const paint = paintFor(look);
             const rr = STAR_RADIUS[look.role] * u;
             return (
