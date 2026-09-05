@@ -140,7 +140,7 @@ const DEV_PAGES: Array<{
     children: [
       { href: "/dev/sky/planetarium", label: "Planetarium" },
       { href: "/dev/sky/observatory", label: "Observatory" },
-      { href: "/dev/sky/lesson?sample&picks=word:%E9%9B%BB%E8%BB%8A,kana-row:h-vowels", label: "Lesson (sample)" },
+      { href: "/dev/sky/lesson?showcase", label: "Lesson (showcase)" },
     ],
   },
 ];

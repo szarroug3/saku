@@ -6,7 +6,9 @@ import Link from "next/link";
 
 import { SkyLesson } from "@/sky/components/sky-lesson";
 
-import { learnerLesson, lessonFromPicks } from "../lesson";
+import { learnerLesson, lessonFromPicks, showcasePicks } from "../lesson";
+import { emptyHistory } from "@/lib/history-ops";
+
 import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
 import { WrittenBlock } from "../written-block";
@@ -16,9 +18,10 @@ export const dynamic = "force-dynamic";
 export default async function SkyLessonPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
+  const showcase = params.showcase !== undefined;
   const raw = Array.isArray(params.picks) ? params.picks.join(",") : (params.picks ?? "");
-  const picks = raw.split(",").map((s) => s.trim()).filter(Boolean);
-  const data = sample ? lessonFromPicks(sampleHistory(), picks) : await learnerLesson(picks);
+  const picks = showcase ? showcasePicks() : raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const data = showcase ? lessonFromPicks(emptyHistory(), picks) : sample ? lessonFromPicks(sampleHistory(), picks) : await learnerLesson(picks);
   const back = sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory";
   // the real stroke order for every character on the card, as a slot
   const written = Object.fromEntries(
@@ -31,7 +34,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
     <SkyPage
       note={
         <>
-          {sample ? "A pretend learner. " : "Your own progress. "}
+          {showcase ? "One of everything, on an empty history. " : sample ? "A pretend learner. " : "Your own progress. "}
           <Link href={back} className="underline">Back to the Observatory</Link>
         </>
       }

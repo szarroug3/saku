@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonPage, LessonTeach } from "@/sky/lib/lesson";
+import type { LessonPage, LessonTeach, SoundLine } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -54,6 +54,11 @@ function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; on
       <span className="text-[12.5px] text-sky-muted">{item.english}</span>
     </button>
   );
+}
+
+/** Prose with the runs spoken as the sound in the accent. */
+function Sound({ line }: { line: SoundLine }) {
+  return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent">{s.text}</span> : <span key={i}>{s.text}</span>))}</>;
 }
 
 function Fold({ title, children }: { title: string; children: ReactNode }) {
@@ -98,20 +103,41 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         </p>
       )}
 
-      {teach?.mnemonic && teach.mnemonic.length > 0 && (
+      {(teach?.story || teach?.hook) && (
         <div className="mt-3 flex items-start gap-4">
           {teach.mnemonicImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={teach.mnemonicImage} alt="" className="size-[160px] flex-none rounded-lg object-contain" />
           )}
-          <div>
-            {teach.mnemonic.map((line, i) => (
-              <p key={i} className={`text-[14px] leading-relaxed ${i === teach.mnemonic!.length - 1 ? "" : "text-sky-muted"} ${i > 0 ? "mt-1" : ""}`}>{line}</p>
-            ))}
+          <div className="flex flex-col gap-2">
+            {teach.story && <p className="text-[15px] leading-relaxed"><Sound line={teach.story} /></p>}
+            {teach.hook && <p className="text-[14px] leading-relaxed text-sky-muted"><Sound line={teach.hook} /></p>}
+            {teach.headsUp && (
+              <div className="mt-1 border-l-2 border-sky-accent pl-3 text-[13.5px] leading-relaxed">
+                <p><span className="font-semibold">Heads up.</span> <span className="text-sky-muted">{teach.headsUp.summary}</span></p>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {teach.headsUp.rules.map((r) => (
+                    <li key={r.when} className="flex flex-wrap items-baseline gap-x-2">
+                      <span>{r.when}</span>
+                      <span className="text-sky-muted">said</span>
+                      <span className="font-semibold text-sky-accent">{r.sounds}</span>
+                      <span className={`text-sky-muted ${japaneseFont(r.example)}`}>{r.example}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {teach.exampleWord && (
+              <p className="mt-1 flex items-baseline gap-3 border-t border-sky-line pt-2">
+                <span className={`font-sky-display text-[24px] leading-none text-sky-ink ${japaneseFont(teach.exampleWord.word)}`}>{teach.exampleWord.word}</span>
+                <span className="text-[13.5px] text-sky-muted">{teach.exampleWord.reading} · {teach.exampleWord.gloss}</span>
+              </p>
+            )}
           </div>
         </div>
       )}
       {teach?.etymology && <p className="mt-2 text-[14px] leading-relaxed text-sky-muted">{teach.etymology}</p>}
+      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"} ${japaneseFont(note)}`}>{note}</p>)}
 
       {teach?.writtenWith && teach.writtenWith.length > 0 ? (
         <>

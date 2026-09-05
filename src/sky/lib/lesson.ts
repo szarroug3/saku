@@ -13,6 +13,9 @@
 
 import type { Learned, PrerequisiteGraph } from "./graph";
 
+/** A line of prose with the runs spoken as the sound marked. */
+export type SoundLine = ReadonlyArray<{ text: string; accent?: boolean }>;
+
 /** What the card teaches for one star, in plain data from whatever the
  * route's adapter can find: nothing is required, and a sparse item stays
  * short. */
@@ -21,10 +24,20 @@ export interface LessonTeach {
   reading?: string;
   /** Every meaning, the first being the name. */
   meanings?: readonly string[];
-  /** The say-it-like hook and the shape's story, for a kana or a piece. */
-  mnemonic?: readonly string[];
-  /** The drawing that goes with the mnemonic, when there is one. */
+  /** The shape's story, for a kana or a piece: runs of text, the ones
+   * spoken as the sound marked to be coloured. */
+  story?: SoundLine;
+  /** The say-it-like hook: "Sounds like the letter n." */
+  hook?: SoundLine;
+  /** The drawing that goes with the story, when there is one. */
   mnemonicImage?: string;
+  /** A sound that changes with what follows it (ん): the summary and the rules. */
+  headsUp?: { summary: string; rules: ReadonlyArray<{ when: string; sounds: string; example: string }> };
+  /** A word the sound is heard in: "ほん hon · book". */
+  exampleWord?: { word: string; reading: string; gloss: string };
+  /** Anything else worth a line: a counter's role, a pair's two verbs, a
+   * keigo set's words. Plain paragraphs. */
+  notes?: readonly string[];
   /** Where the character comes from, for a kanji. */
   etymology?: string;
   /** A kanji's readings, on'yomi and kun'yomi, each with words it is read that way in. */

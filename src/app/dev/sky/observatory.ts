@@ -32,7 +32,7 @@ import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
@@ -224,6 +224,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     switch (entry.kind) {
       case COUNTER_KIND: return offer(entry, "counter");
       case GRAMMAR_SUBJECT: return offer(entry, "grammar");
+      case SENTENCE_RULE_KIND: return offer(entry, "grammar", { english: entry.name ?? entry.meanings[0] ?? entry.id });
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
       default: return offer(entry, "word");

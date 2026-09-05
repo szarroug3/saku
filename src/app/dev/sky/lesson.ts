@@ -6,6 +6,15 @@
 // Nothing is required; a sparse item stays short.
 
 import { SETS } from "@/data/characters";
+import { COUNTER_CURRICULUM, counterEntry, counterForm, counterRoleNote } from "@/data/counters";
+import { patternEntry } from "@/data/grammar";
+import { RECIPES } from "@/data/grammar/recipes";
+import { SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
+import { contextPronunciation } from "@/data/kana-context";
+import { KEIGO_SETS, keigoSetEntry, keigoSetForEntry } from "@/data/keigo";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { pairEntry, pairForEntry } from "@/data/transitivity-facts";
+import { VOCAB_SUBJECT } from "@/data/vocab";
 import { TERMS, termEntry } from "@/data/terms";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { kanjiRow, READINGS } from "@/data/kanji";
@@ -16,7 +25,7 @@ import { exampleFor } from "@/data/word-examples";
 import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { knownFactsOf, libEntry } from "@/lib/library/entries";
+import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
@@ -26,7 +35,7 @@ import type { HistoryFile } from "@/types";
 
 import { offerings } from "./observatory";
 
-const text = (line: SoundLine) => line.map((s) => s.text).join("");
+const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
 
 /** A kana's romaji, from the character sets. */
 function romajiOf(glyph: string): string | undefined {
@@ -41,12 +50,14 @@ function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "kana") {
     t.reading = romajiOf(glyph);
     const m = getMnemonic(glyph);
-    if (m) { t.mnemonic = [text(m.analogy), text(m.mnemonic)].filter(Boolean); t.mnemonicImage = m.image; }
+    if (m) { t.story = spans(m.mnemonic); t.hook = spans(m.analogy); t.mnemonicImage = m.image; t.exampleWord = { word: m.example.word, reading: m.example.reading, gloss: m.example.gloss }; }
+    const ctx = contextPronunciation(glyph);
+    if (ctx) t.headsUp = { summary: ctx.summary, rules: ctx.rules };
     return t;
   }
   if (item.kind === "radical") {
     const m = getMnemonic(glyph);
-    if (m) { t.mnemonic = [text(m.mnemonic)].filter(Boolean); t.mnemonicImage = m.image; }
+    if (m) { t.story = spans(m.mnemonic); t.mnemonicImage = m.image; }
     return t;
   }
   if (item.kind === "kanji") {
@@ -58,7 +69,7 @@ function teachFor(item: SkyItem): LessonTeach {
     t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, kind: /[\u30a0-\u30ff]/.test(r.base) ? "on" as const : "kun" as const, words: r.words.slice(0, 4) }));
     return t;
   }
-  if (item.kind === "word" || item.kind === "counter") {
+  if (item.kind === "word") {
     const row = vocabRow(glyph);
     if (row) {
       t.reading = row.reb; t.meanings = row.glosses;
@@ -66,10 +77,59 @@ function teachFor(item: SkyItem): LessonTeach {
     }
     const ex = exampleFor(glyph);
     if (ex) t.example = { jp: ex.jp, en: ex.en };
-    if (item.kind === "word") t.pitch = wordPitch(glyph);
+    t.pitch = wordPitch(glyph);
+    return t;
+  }
+  if (item.kind === "counter") {
+    const form = counterForm(item.id as Parameters<typeof counterForm>[0]);
+    if (form) { t.reading = form.reading; t.meanings = [form.meaning]; const note = counterRoleNote(form); if (note) t.notes = [note]; }
+    return t;
+  }
+  if (item.kind === "grammar") {
+    const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
+    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; t.notes = [recipe.sense, recipe.intro?.blurb].filter((x): x is string => !!x); return t; }
+    // a sentence rule: the ordering guide's own paragraphs and its hook
+    const tier = (Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]).find((k) => item.id.endsWith(`sentence-rule-${k}`));
+    if (tier) { const g = SENTENCE_ORDERING_GUIDES[tier]; t.meanings = [g.title]; t.notes = [...g.body.map((b) => `${b.lead} ${b.text}`), g.hook]; }
+    return t;
+  }
+  if (item.kind === "verbPair") {
+    const p = pairForEntry(item.id as Parameters<typeof pairForEntry>[0]);
+    if (p) t.notes = [`${p.happens.word} (${p.happens.reading}): ${p.happens.en}`, `${p.doIt.word} (${p.doIt.reading}): ${p.doIt.en}`];
+    return t;
+  }
+  if (item.kind === "keigo") {
+    const set = keigoSetForEntry(item.id as Parameters<typeof keigoSetForEntry>[0]);
+    if (set) {
+      t.meanings = [set.meaning];
+      t.notes = [
+        ...(set.plain.length ? [`Plain: ${set.plain.map((v) => `${v.keb} (${v.reading})`).join(", ")}`] : []),
+        ...set.words.map((w) => `${w.word} (${w.reading}): ${w.register}${w.use ? ` · ${w.use}` : ""}`),
+      ];
+    }
     return t;
   }
   return t;
+}
+
+/** One of everything, for a look at every kind of card: a plain kana row,
+ * the row with ん (a heads up), a word with a piece and a kanji under it,
+ * a glyph that is a piece, a kanji and a word, a counter, a grammar rule,
+ * a sentence rule, a verb pair and a keigo set. Built on an empty history,
+ * so all of it is new. */
+export function showcasePicks(): string[] {
+  const word = (keb: string) => entryForGlyph(VOCAB_SUBJECT, keb);
+  const sentenceRule = LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND)?.[0]?.id;
+  return [
+    "kana-row:h-vowels",
+    "kana-row:h-w",
+    word("花火"), word("山"),
+    counterEntry(COUNTER_CURRICULUM[0]),
+    patternEntry("te-sequence"),
+    sentenceRule,
+    pairEntry(VERB_PAIRS[0]),
+    keigoSetEntry(KEIGO_SETS[0]),
+  ].filter((id): id is string => !!id);
 }
 
 /** The signed-in learner's lesson for these picks, or a visitor's. */
@@ -95,7 +155,14 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   for (const s of stars) ids.add(s.id);
   for (const p of known) for (const id of graph.orderOf(p)) ids.add(id);
   for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it); }
-  return { items, learned, picks: known, teach, pages: pagesFor(stars.map((s) => s.id), history) };
+  // the pages, per pick: the app's walk branches on what a teach set is
+  // (a counter unit, a grammar sitting), so each pick gets its own walk;
+  // a page two picks would both open with is read once, at its first use
+  const seen = new Set<string>();
+  const pages = known
+    .flatMap((pick) => pagesFor(stars.filter((s) => s.pick === pick).map((s) => s.id), history))
+    .filter((page) => { const key = `${page.kind}:${page.title}`; if (seen.has(key)) return false; seen.add(key); return true; });
+  return { items, learned, picks: known, teach, pages };
 }
 
 /** The pages the app's own lesson walk puts between these stars (a track's
