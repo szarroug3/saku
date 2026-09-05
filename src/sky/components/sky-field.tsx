@@ -54,8 +54,9 @@ export interface SkyFieldProps {
   firmamentBase?: number;
   /** How many world units span the box at 100%; the whole world by default. */
   focus?: number;
-  /** The constellation the sky opens on, in the middle of the window; the
-   * top left otherwise. */
+  /** Where the sky opens, in the middle of the window: a constellation by
+   * its root, or "bodies" for the heart of the sky where the planets,
+   * asteroids and binaries gather. The top left otherwise. */
   openOn?: string;
   /** Override how a star looks; the default is its standing. */
   lookOf?: (id: string, base: StarLook) => StarLook;
@@ -90,6 +91,9 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; /** the constellation it was hovered in, for its look */ root: string; at: Anchor }
 
+/** How tightly the bodies gather about the centre: a fraction of the world. */
+const NEAR = 0.12;
+
 export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -105,7 +109,8 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
       const reach = bodyRadius(bodyOf(kind), roleOf(kind));
       let size = sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase);
       for (let i = 0; i < 2; i++) size = Math.max(size, Math.ceil(2 * reach * unit(size) + 10));
-      return { key: root, size };
+      // the planets, asteroids and binaries gather at the heart of the sky
+      return { key: root, size, ...(bodyOf(kind) !== "star" ? { near: NEAR } : {}) };
     });
     const gap = firmament.length ? Math.min(pad, 18) : pad;
     const { placed: laid, world } = scatterInWorld(boxes, { width, height }, gap);
@@ -120,8 +125,12 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
-  const openingOn = openOn ? placed.find((p) => p.root === openOn) : undefined;
-  const opening = useMemo(() => (openingOn ? { x: openingOn.cx, y: openingOn.cy } : undefined), [openingOn]);
+  const opening = useMemo(() => {
+    if (!openOn) return undefined;
+    const on = openOn === "bodies" ? placed.filter((p) => bodyOf(graph.itemOf(p.root)?.kind ?? "word") !== "star") : placed.filter((p) => p.root === openOn);
+    if (on.length === 0) return undefined;
+    return { x: on.reduce((s, p) => s + p.cx, 0) / on.length, y: on.reduce((s, p) => s + p.cy, 0) / on.length };
+  }, [openOn, placed, graph]);
 
   // the tooltip: which star, and where it hangs, decided in the event
   const [hover, setHover] = useState<Hover | null>(null);

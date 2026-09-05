@@ -139,6 +139,10 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // kana: one item per row of either script, the row's kana under it
   const rows: string[] = [];
   let kanaTotal = 0, kanaMet = 0;
+  // every hiragana row comes before any katakana (Sam's rule, 2026-09-05):
+  // the katakana vowels build on all of hiragana, and the rest of katakana
+  // on its vowels
+  const hiraganaRows: string[] = [];
   for (const set of SETS) {
     for (const section of set.sections) {
       const kana = section.chars.map((ch) => libEntry(kanaEntry(ch.c))).filter((e): e is LibEntry => !!e);
@@ -150,11 +154,13 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
       const suffix = section.id.replace(/^[hk]-/, "");
       const baseSuffix = BASE_ROW[suffix] ?? (suffix === "vowels" ? undefined : "vowels");
       const base = baseSuffix ? `kana-row:${section.id.slice(0, 2)}${baseSuffix}` : undefined;
+      const builtOn = base ? [base] : section.id === "k-vowels" ? hiraganaRows : [];
+      if (section.id.startsWith("h-")) hiraganaRows.push(id);
       items.set(id, {
         id, kind: "kana", glyph: section.chars[0].c, english: rowName(section.label, section.chars[0].r[0]),
         standing: allMet ? "claimed" : "not-seen",
         group: true,
-        components: [...kana.map((e) => e.id), ...(base ? [base] : [])],
+        components: [...kana.map((e) => e.id), ...builtOn],
       });
       kanaTotal += kana.length;
       kanaMet += kana.filter((e) => met.has(e.id)).length;

@@ -118,7 +118,9 @@ export function ItemCard({
         "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center font-sky-ui",
         BOX[density],
         "border transition-colors",
-        selected ? "border-sky-accent bg-sky-panel" : "border-sky-line bg-sky-panel",
+        // an unselected card's edge in the muted ink, not the hairline: the
+        // hairline was hard to see against the wash (Sam, 2026-09-05)
+        selected ? "border-sky-accent bg-sky-panel" : "border-sky-muted/45 bg-sky-panel",
         isButton && !selected ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
       ]
         .filter(Boolean)

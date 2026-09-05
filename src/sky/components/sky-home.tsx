@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
-import { bodyOf, type Body } from "@/sky/lib/constellation";
+import { bodyOf } from "@/sky/lib/constellation";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { useStandingFilter } from "@/sky/components/use-standing-filter";
@@ -55,13 +55,9 @@ export interface SkyHomeProps {
 export function SkyHome({ data, observatoryHref = "/observatory", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
-  // the sky opens on a planet if there is one, else a binary, else an
-  // asteroid: the learner's furthest reach, and the part of the sky worth
-  // a look first
-  const openOn = useMemo(() => {
-    const first = (body: Body) => data.roots.find((id) => bodyOf(graph.itemOf(id)?.kind ?? "word") === body);
-    return first("planet") ?? first("binary") ?? first("asteroid");
-  }, [graph, data.roots]);
+  // the sky opens on its heart, where the planets, asteroids and binaries
+  // gather: the learner's furthest reach, and the part worth a look first
+  const openOn = useMemo(() => (data.roots.some((id) => bodyOf(graph.itemOf(id)?.kind ?? "word") !== "star") ? "bodies" : undefined), [graph, data.roots]);
   const counts = useMemo(() => data.standingCounts ?? tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [data.standingCounts, stars, graph]);
   const totals = discoveryTotals(data.discovery);
   // nothing discovered: no entry in any standing but "undiscovered"

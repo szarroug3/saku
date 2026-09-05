@@ -140,7 +140,7 @@ const DEV_PAGES: Array<{
     children: [
       { href: "/dev/sky/planetarium", label: "Planetarium" },
       { href: "/dev/sky/observatory", label: "Observatory" },
-      { href: "/dev/sky/lesson?showcase", label: "Lesson (showcase)" },
+      { href: "/dev/sky/lesson?showcase", label: "Lesson" },
     ],
   },
 ];

@@ -17,6 +17,11 @@ export interface ScatterItem {
   key: string;
   /** The box's side, in sky units. */
   size: number;
+  /** Keep it near the middle of the sky: candidates fall within this
+   * fraction of the world's width and height around the centre (0.12 puts
+   * everything so marked within a window of the sky). The planets and
+   * asteroids sit together at the heart of the sky; the stars go anywhere. */
+  near?: number;
 }
 
 export interface Placed<T extends ScatterItem = ScatterItem> {
@@ -38,8 +43,7 @@ export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: num
     let first: { x: number; y: number } | null = null;
     let found: { x: number; y: number } | null = null;
     for (let t = 0; t < TRIES && !found; t++) {
-      const x = pad + hashUnit(`${item.key}#x${t}`) * Math.max(0, w - size - pad * 2);
-      const y = pad + hashUnit(`${item.key}#y${t}`) * Math.max(0, h - size - pad * 2);
+      const { x, y } = candidate(item, t, size, w, h, pad);
       first ??= { x, y };
       const clash = placed.some((p) => x < p.x + p.size + pad && x + size + pad > p.x && y < p.y + p.size + pad && y + size + pad > p.y);
       if (!clash) found = { x, y };
@@ -48,6 +52,17 @@ export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: num
     placed.push({ item, x: Math.round(at.x * 100) / 100, y: Math.round(at.y * 100) / 100, size });
   }
   return placed;
+}
+
+/** The t-th seeded spot for an item: anywhere in the sky, or within its
+ * `near` band about the centre, always inside the padded edges. */
+function candidate(item: ScatterItem, t: number, size: number, w: number, h: number, pad: number): { x: number; y: number } {
+  const ux = hashUnit(`${item.key}#x${t}`), uy = hashUnit(`${item.key}#y${t}`);
+  const maxX = Math.max(0, w - size - pad * 2), maxY = Math.max(0, h - size - pad * 2);
+  if (item.near === undefined) return { x: pad + ux * maxX, y: pad + uy * maxY };
+  const x = (w - size) / 2 + (ux - 0.5) * w * item.near;
+  const y = (h - size) / 2 + (uy - 0.5) * h * item.near;
+  return { x: Math.min(pad + maxX, Math.max(pad, x)), y: Math.min(pad + maxY, Math.max(pad, y)) };
 }
 
 /** Every spot on a grid across the sky, starting from a seeded corner of
@@ -99,7 +114,8 @@ const GROWTH_STEPS = 8;
  * at a size, by key, so the same set lands the same way whatever order it
  * came in. Deterministic throughout. */
 export function scatterInWorld<T extends ScatterItem>(items: readonly T[], min: { width: number; height: number }, pad: number): { placed: Placed<T>[]; world: { width: number; height: number } } {
-  const ordered = [...items].sort((a, b) => b.size - a.size || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  // what must sit near the centre goes first, so it gets the centre
+  const ordered = [...items].sort((a, b) => Number(b.near !== undefined) - Number(a.near !== undefined) || b.size - a.size || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
   let world = worldFor(ordered, pad, min);
   let placed = scatterLayout(ordered, world.width, world.height, pad);
   for (let step = 0; step < GROWTH_STEPS && anyOverlap(placed, pad); step++) {

@@ -147,7 +147,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
             type={clickable ? "button" : undefined}
             aria-pressed={clickable ? picked : undefined}
             onClick={clickable ? () => onToggle?.(standing) : undefined}
-            className={`relative inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 ${clickable ? "cursor-pointer" : live ? "cursor-default" : ""} ${picked ? "border-sky-line bg-sky-card-strong" : on ? "border-transparent bg-sky-card" : "border-transparent"} ${clickable && !picked ? "opacity-55" : ""}`}
+            className={`relative inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 ${clickable ? "cursor-pointer" : live ? "cursor-default" : ""} ${picked ? "border-sky-line bg-sky-card-strong" : on ? "border-transparent bg-sky-card" : "border-transparent"} ${clickable && !picked ? "opacity-80" : ""}`}
             title={clickable ? (picked ? `Hide ${STANDING[standing].label}` : `Show ${STANDING[standing].label}`) : live ? undefined : STANDING[standing].meaning}
             onPointerEnter={live ? () => onHover?.(standing) : undefined}
             onPointerLeave={live ? () => onHover?.(null) : undefined}
