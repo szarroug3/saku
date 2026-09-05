@@ -173,7 +173,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
               title={`${i + 1} of ${cards.length}${a ? `: ${GRADE[a.grade].label}` : ""}`}
               aria-label={`Card ${i + 1}${a ? `, ${GRADE[a.grade].label}` : ""}`}
               aria-current={i === at && !finished ? "step" : undefined}
-              className={`h-2.5 w-4 rounded-full transition-colors ${a ? PIP[a.grade] : "bg-sky-card-strong hover:bg-sky-muted"} ${i === at && !finished ? "ring-2 ring-sky-ink ring-offset-1 ring-offset-transparent" : ""}`}
+              className={`h-2.5 w-4 rounded-full transition-colors ${a ? PIP[a.grade] : "bg-sky-muted/70 hover:bg-sky-ink"} ${i === at && !finished ? "ring-2 ring-sky-ink ring-offset-1 ring-offset-transparent" : ""}`}
             />
           );
         })}
@@ -307,8 +307,10 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
               {help.length > 0 && (
                 <div className="border-t border-sky-line pt-3">
                   <Eyebrow>Help me{state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}</Eyebrow>
-                  <div className="flex flex-wrap gap-2">
-                    {help.map((h) => <SkyButton key={h.label} variant="outline" onClick={h.run}>{h.label}</SkyButton>)}
+                  {/* three equal cells whatever is offered, so the buttons keep
+                      one size from card to card (Sam, 2026-09-05) */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
                   </div>
                 </div>
               )}

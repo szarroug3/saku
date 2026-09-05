@@ -12,14 +12,17 @@ import { hintFor } from "@/lib/engine/hint";
 import { fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
 import { entryOf, factInfo } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
+import { KEIGO_SUBJECT } from "@/data/keigo";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { entryForGlyph } from "@/lib/library/entries";
+import { COUNTER_KIND, knownFactsOf, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
 import type { QuizCard, QuizOption } from "@/sky/lib/quiz";
-import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
+import type { Direction, FactId, HistoryFile } from "@/types";
 
 import { learnerHistory } from "./atlas";
 import { offerings, pickFacts } from "./observatory";
@@ -39,7 +42,11 @@ export function quizFacts(history: HistoryFile, picks: readonly string[], now = 
 }
 
 export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now()): QuizCard[] {
-  const facts = quizFacts(history, picks, now);
+  return quizCards(history, quizFacts(history, picks, now), now);
+}
+
+/** The cards for some facts, in order. */
+export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now()): QuizCard[] {
   const o = offerings(history, now);
   const known = Object.keys(history.facts ?? {}) as FactId[];
   const cards: QuizCard[] = [];
@@ -81,13 +88,20 @@ export function quizFromHistory(history: HistoryFile, picks: readonly string[], 
   return cards;
 }
 
-/** A handful of the pretend learner's things, for a quiz with nothing
- * due: a few kana, a kanji or two, a word. */
-export function samplePicks(): string[] {
-  const kana = ["あ", "き", "す"].map((g) => entryForGlyph(KANA_SUBJECT, g));
-  const kanji = ["人", "日"].map((g) => entryForGlyph(KANJI_SUBJECT, g));
-  const words = ["山", "花火", "水"].map((g) => entryForGlyph(VOCAB_SUBJECT, g));
-  return [...kana, ...kanji, ...words].filter((id): id is EntryId => !!id);
+/** One card of every kind the Quiz can ask (Sam, 2026-09-05): the first
+ * thing of each kind with something to ask, one fact each, so the sample
+ * shows every shape a card takes. */
+export function sampleFacts(history: HistoryFile): FactId[] {
+  // no radical: a radical's facts are its kanji's, already asked
+  const kinds = [KANA_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT, COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const;
+  const out: FactId[] = [];
+  for (const kind of kinds) {
+    for (const e of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
+      const fact = quizzableFacts(knownFactsOf(e), history).find((f) => !out.includes(f));
+      if (fact) { out.push(fact); break; }
+    }
+  }
+  return out;
 }
 
 /** The signed-in learner's quiz, or a visitor's. */
