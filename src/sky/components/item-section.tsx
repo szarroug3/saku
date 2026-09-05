@@ -25,6 +25,9 @@ export interface ItemSectionProps {
   when?: string;
   /** The way in: a button after the intro, "Start kana". */
   start?: { label: string; onClick: () => void; disabled?: boolean };
+  /** The other way in: "I already know these", which claims the whole track
+   * and skips its lessons (a claim is never mastery: it starts untested). */
+  claim?: { label: string; onClick: () => void; disabled?: boolean };
   /**
    * How many items this section is showing right now. Always derived by the
    * caller from the data, never written as a literal, so it stays true as the
@@ -52,7 +55,7 @@ export interface ItemSectionProps {
   children?: ReactNode;
 }
 
-export function ItemSection({ title, intro, when, start, shown, total, gate, children }: ItemSectionProps) {
+export function ItemSection({ title, intro, when, start, claim, shown, total, gate, children }: ItemSectionProps) {
   const locked = Boolean(gate);
   const isCapped = total !== undefined && shown !== undefined && total > shown;
 
@@ -78,21 +81,35 @@ export function ItemSection({ title, intro, when, start, shown, total, gate, chi
         ) : null}
       </div>
 
-      {(intro || when || start) && (
+      {(intro || when || start || claim) && (
         <div className="mt-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="max-w-[70ch]">
             {intro && <p className="text-[13.5px] leading-relaxed text-sky-ink">{intro}</p>}
             {when && <p className={`text-[12.5px] leading-relaxed text-sky-muted ${intro ? "mt-1" : ""}`}>{when}</p>}
           </div>
-          {start && !locked && (
-            <button
-              type="button"
-              onClick={start.onClick}
-              disabled={start.disabled}
-              className="shrink-0 rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint"
-            >
-              {start.label}
-            </button>
+          {(start || claim) && !locked && (
+            <div className="flex shrink-0 items-center gap-2">
+              {claim && (
+                <button
+                  type="button"
+                  onClick={claim.onClick}
+                  disabled={claim.disabled}
+                  className="rounded-[10px] border border-sky-line bg-sky-card px-3.5 py-2 text-[13px] font-semibold text-sky-ink hover:bg-sky-card-strong disabled:text-sky-faint"
+                >
+                  {claim.label}
+                </button>
+              )}
+              {start && (
+                <button
+                  type="button"
+                  onClick={start.onClick}
+                  disabled={start.disabled}
+                  className="rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint"
+                >
+                  {start.label}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}

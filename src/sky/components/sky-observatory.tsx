@@ -11,7 +11,7 @@
 // one out. Every number comes from src/sky/lib/cart.ts over the graph, so
 // the cart's total is what the lesson will teach.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection, type ItemSectionProps } from "@/sky/components/item-section";
@@ -43,6 +43,11 @@ export interface ObservatorySection {
    * laid out straight away; otherwise the section shows what it is and a
    * Start button, and the things appear once that is pressed. */
   started?: boolean;
+  /** Nothing left to take: the track is done and is not shown. */
+  complete?: boolean;
+  /** The whole track can be claimed at once ("I already know these"): the
+   * finite tracks, never the words. */
+  claimable?: boolean;
 }
 
 export interface SkyObservatoryData {
@@ -65,6 +70,9 @@ export interface SkyObservatoryProps {
   /** Where "Start tonight's lesson" goes; the picks are appended as
    * `?picks=a,b,c`. A path, not a function: the route is a server component. */
   lessonPath?: string;
+  /** Claims a whole track ("I already know these"): a server action from the
+   * route. Absent when the learner cannot claim (a sample, a visitor). */
+  onClaim?: (sectionId: string) => Promise<void>;
   initialPicks?: readonly string[];
 }
 
@@ -78,13 +86,14 @@ function kindLabel(item: SkyItem): string {
   return KIND_LABEL[item.kind];
 }
 
-export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height }: SkyObservatoryProps) {
+export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height, onClaim }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const [picks, setPicks] = useState<readonly string[]>(initialPicks);
   const [undo, setUndo] = useState<{ removed: string; before: readonly string[] } | null>(null);
   // sections opened with their Start button this visit, on top of those already started
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
+  const [claiming, startClaim] = useTransition();
 
   const summary = cartSummary(graph, picks, learned, cap);
   const over = summary.over > 0;
@@ -115,7 +124,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" lede="Choose what to add to your sky. Each pick becomes a constellation once you learn it." height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
-          {data.sections.filter((section) => !section.gate).map((section) => {
+          {data.sections.filter((section) => !section.gate && !section.complete).map((section) => {
             const ids = offered(section);
             const started = section.started || opened.has(section.id);
             return (
@@ -125,6 +134,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 intro={section.intro}
                 when={section.when}
                 start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])), disabled: ids.length === 0 }}
+                claim={!started && section.claimable && onClaim ? { label: claiming ? "Claiming…" : "I already know these", onClick: () => startClaim(() => onClaim(section.id)), disabled: claiming } : undefined}
                 shown={started ? ids.length : undefined}
                 total={started ? section.total : undefined}
               >
