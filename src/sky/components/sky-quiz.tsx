@@ -95,6 +95,9 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const allAnswered = cards.length > 0 && answeredCount === cards.length;
   // the choices show when asked for, or on a card only ever asked that way
   const choices = card ? (state.narrowed || !card.typed) : false;
+  // a card of two choices is wrong after one wrong pick; a typed card, or a
+  // fuller board, gets the retries
+  const maxTries = card ? (card.typed ? MAX_TRIES : Math.min(MAX_TRIES, Math.max(1, card.options.length - 1))) : MAX_TRIES;
 
   // the box takes focus for every card that is still open
   useEffect(() => { if (!answered) input.current?.focus(); }, [at, answered]);
@@ -137,19 +140,21 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
       advance(at, all);
       return;
     }
-    if (tries >= MAX_TRIES) { settle("missed", tries); setFeedback(null); return; }
+    if (tries >= maxTries) { settle("missed", tries); setFeedback(null); return; }
     patch({ tries });
     setGiven("");
-    setFeedback(`Not that. ${MAX_TRIES - tries === 1 ? "One more try." : `${MAX_TRIES - tries} tries left.`}`);
+    setFeedback(`Not that. ${maxTries - tries === 1 ? "One more try." : `${maxTries - tries} tries left.`}`);
   };
 
   const choose = (id: string) => {
     if (answered || state.wrong.includes(id)) return;
     const tries = state.tries + 1;
-    if (id === card.answerId) { const all = settle("help", tries, { given: undefined }); advance(at, all); return; }
-    if (tries >= MAX_TRIES) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
+    // a card that opens on its choices is answered cold: help is only what
+    // was asked for (the choices on a typed card, a hint) or a retry
+    if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { given: undefined }); advance(at, all); return; }
+    if (tries >= maxTries) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
     patch({ tries, wrong: [...state.wrong, id] });
-    setFeedback(`Not that one. ${MAX_TRIES - tries === 1 ? "One more try." : `${MAX_TRIES - tries} tries left.`}`);
+    setFeedback(`Not that one. ${maxTries - tries === 1 ? "One more try." : `${maxTries - tries} tries left.`}`);
   };
 
   const giveUp = () => { if (!answered) { settle("missed", state.tries + 1, { given: undefined }); setFeedback(null); } };
@@ -268,7 +273,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
 
   const meta = [KIND_LABEL[card.item.kind], card.seen > 0 ? `seen ${card.seen} ${card.seen === 1 ? "time" : "times"}` : "first time", card.missed > 0 ? `missed ${card.missed} ${card.missed === 1 ? "time" : "times"} before` : null].filter(Boolean).join(" · ");
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
-  const triesLeft = MAX_TRIES - state.tries;
+  const triesLeft = maxTries - state.tries;
   const help = [
     !answered && card.typed && !state.narrowed && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
     !answered && card.hint && !state.hinted ? { label: "Hint", run: () => patch({ hinted: true }) } : null,

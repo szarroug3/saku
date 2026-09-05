@@ -29,7 +29,7 @@ function grade(card: QuizCard, given: string): boolean {
 
 /** The app's info mark, restyled for the wash. */
 function Tip({ label, children }: { label: string; children: ReactNode }) {
-  return <Info label={label} className="ml-1.5 border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-accent">{children}</Info>;
+  return <Info label={label} className="ml-1.5 border-sky-accent text-sky-accent hover:bg-sky-accent/15">{children}</Info>;
 }
 
 export function QuizClient({ cards, skyHref, sample = false, onFinish }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void> }) {

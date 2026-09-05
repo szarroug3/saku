@@ -164,7 +164,8 @@ export function Info({
         type="button"
         aria-label={label}
         className={cn(
-          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-border align-[1px] text-[9px] leading-none text-text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          // an accent ring and an accent i, so the mark can be seen (Sam, 2026-09-05)
+          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-accent align-[1px] text-[9px] font-semibold leading-none text-accent hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           className,
         )}
       >

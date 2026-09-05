@@ -2,12 +2,14 @@
 // route's adapter can build, and the three grades an answer can earn.
 // Tracked as SAK-312 to SAK-317.
 //
-// Every card opens on a blank box (SAK-313). A right answer moves straight
-// on; a wrong one gets more tries (MAX_TRIES in all) before the card is
-// missed. Help is there to ask for: the choices, a hint. Three grades
-// (Sam, 2026-09-05; the old "nearly" went, since ka for ki is not a slip):
-// perfect (right, first try, no help), with help (right after a retry, a
-// hint or the choices), missed (wrong after the last try, or given up).
+// Every card opens on a blank box (SAK-313), or on its choices when that is
+// all it is ever asked by. A right answer moves straight on; a wrong one
+// gets more tries (MAX_TRIES in all; one only on a card of two choices)
+// before the card is missed. Help is there to ask for: the choices, a
+// hint. Three grades (Sam, 2026-09-05; the old "nearly" went, since ka for
+// ki is not a slip): perfect (right, first try, nothing asked for), with
+// help (right after a retry, a hint or asking for the choices), missed
+// (wrong after the last try, or given up). Opening on choices is not help.
 // Cards can be skipped and come back to; the grades are per card.
 
 import type { LessonTeach } from "./lesson";
@@ -87,7 +89,7 @@ export interface QuizAnswer {
 }
 
 /** The grade for a right answer: perfect only when nothing helped it
- * along, no retry, no hint, no choices. */
+ * along, no retry, no hint, no asking for the choices. */
 export function gradeFor(helped: boolean): Grade {
   return helped ? "help" : "clean";
 }
