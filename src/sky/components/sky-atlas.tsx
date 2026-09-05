@@ -153,8 +153,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   // shelf shows no status list, no coverage, and ignores the status filter
   const tracked = shelf?.kind !== "term";
   const filter = tracked ? status : null;
-  // "2,136 shown", or with a status picked "43 Shaky" (Sam's wording)
-  const shownWord = filter ? STANDING[filter].label.replace(/\b\w/g, (c) => c.toUpperCase()) : "shown";
+  // "2,136 Shown", or with a status picked "43 Shaky" (Sam's wording: title case)
+  const shownWord = filter ? STANDING[filter].label.replace(/\b\w/g, (c) => c.toUpperCase()) : "Shown";
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter); }, [graph, filter]);
 
   // search: the app's answer, by shelf, after a short pause in typing. The
