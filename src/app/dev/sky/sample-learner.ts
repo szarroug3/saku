@@ -14,7 +14,7 @@ import { pairEntry } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
-import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type LibEntry } from "@/lib/library/entries";
+import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
 
 const DAY = 86_400_000;
@@ -58,6 +58,8 @@ export function sampleHistory(now = Date.now()): HistoryFile {
     ...CURRICULUM_PATTERNS.slice(0, 5).map((r, i) => [patternEntry(r.id) as string, i] as [string, number]),
     ...VERB_PAIRS.slice(0, 3).map((p, i) => [pairEntry(p) as string, i] as [string, number]),
     ...KEIGO_SETS.slice(0, 1).map((k, i) => [keigoSetEntry(k) as string, i] as [string, number]),
+    // the first two sentence tiers, so the Planetarium has a sentence planet
+    ...(LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).slice(0, 2).map((e, i) => [e.id as string, i] as [string, number]),
   ];
   for (const [id, i] of started) {
     const entry = id ? libEntry(id as Parameters<typeof libEntry>[0]) : undefined;
