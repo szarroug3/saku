@@ -78,12 +78,13 @@ function Sound({ line }: { line: SoundLine }) {
 }
 
 /** A sentence with its parts coloured: the part being taught in the accent,
- * the other parts in the ink, the text between them muted. */
+ * everything else in the ink (nothing muted: Sam's call, 2026-09-05, the
+ * examples were hard to read). */
 function Parted({ line, className = "" }: { line: PartedSentence; className?: string }) {
   return (
-    <p className={className}>
+    <p className={`text-sky-ink ${className}`}>
       {line.map((run, i) => (
-        <span key={i} className={run.label ? (run.active ? "font-semibold text-sky-accent" : "font-medium text-sky-ink") : "text-sky-muted"}>{run.text}</span>
+        <span key={i} className={run.active ? "font-semibold text-sky-accent" : run.label ? "font-medium" : ""}>{run.text}</span>
       ))}
     </p>
   );
@@ -110,14 +111,14 @@ function PartBoxes({ line }: { line: PartedSentence }) {
 function Example({ example, n }: { example: TeachExample; n: number }) {
   const block = (title: string, line: PartedSentence, big = false) => (
     <div className="mt-3 first:mt-1.5">
-      <Eyebrow className="!mb-0.5">{title}</Eyebrow>
+      <Eyebrow className="!mb-0.5 text-sky-accent">{title}</Eyebrow>
       <Parted line={line} className={big ? `font-sky-display text-[20px] leading-snug ${japaneseFont(line.map((r) => r.text).join(""))}` : "text-[14px] leading-relaxed"} />
       <PartBoxes line={line} />
     </div>
   );
   return (
     <div className="rounded-xl border border-sky-line px-3.5 py-3">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">Example {n}</p>
+      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">Example {n}</p>
       {block("Natural English", example.natural)}
       {block("English in Japanese order", example.ordered)}
       {block("Japanese", example.japanese, true)}
