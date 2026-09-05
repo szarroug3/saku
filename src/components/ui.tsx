@@ -165,13 +165,16 @@ export function Info({
         aria-label={label}
         className={cn(
           // an accent ring and an accent i, so the mark can be seen (Sam, 2026-09-05)
-          // the glyph box is centred in the ring and nudged up a hair, since the
-          // letter's ink sits low in its box
-          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-accent pb-px align-[1px] text-[9px] font-semibold leading-[0] text-accent hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          // the i is drawn, not typed, so it sits dead centre in the ring
+          // whatever the font's side bearings do (Sam, 2026-09-05)
+          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-accent align-[1px] text-accent hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           className,
         )}
       >
-        i
+        <svg viewBox="0 0 10 10" aria-hidden className="size-[7px] fill-current">
+          <circle cx="5" cy="1.6" r="1.15" />
+          <rect x="4.05" y="3.7" width="1.9" height="5.2" rx="0.7" />
+        </svg>
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={6} className="max-w-[280px]">
         {children}
