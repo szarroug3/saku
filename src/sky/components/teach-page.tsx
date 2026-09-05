@@ -67,7 +67,7 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
  * with a phrase picked out in the accent. */
 export function Paragraph({ para }: { para: TeachParagraph }) {
   const at = para.accent ? para.text.indexOf(para.accent) : -1;
-  const text = at >= 0 && para.accent
+  const text = para.runs ? <Sound line={para.runs} /> : at >= 0 && para.accent
     ? <>{para.text.slice(0, at)}<span className={`font-semibold text-sky-accent ${japaneseFont(para.accent)}`}>{para.accent}</span>{para.text.slice(at + para.accent.length)}</>
     : para.text;
   return (
@@ -96,7 +96,7 @@ export function Table({ table }: { table: TeachTable }) {
   return (
     <div className="rounded-xl border border-sky-line px-3.5 py-3">
       {table.title && <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">{table.title}</p>}
-      {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{table.instruction}</p>}
+      {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{typeof table.instruction === "string" ? table.instruction : <Sound line={table.instruction} />}</p>}
       {formulas.length > 0 && <div className="mt-2 flex flex-col gap-1">{formulas.map((f, i) => <Formula key={i} formula={f} />)}</div>}
       <div className="mt-2 overflow-x-auto">
         <table className="w-full border-collapse text-[13.5px]">

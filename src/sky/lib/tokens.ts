@@ -53,8 +53,9 @@ export const KIND_LABEL: Record<SkyKind, string> = {
   grammar: "grammar",
   sentence: "sentences",
   term: "term",
-  mark: "writing rule",
-  concept: "grammar concept",
+  // a writing rule and a grammar concept read as terms (Sam, 2026-09-05)
+  mark: "term",
+  concept: "term",
   verbPair: "verb pair",
   keigo: "keigo",
 };

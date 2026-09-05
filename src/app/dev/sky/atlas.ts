@@ -12,7 +12,7 @@ import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { RADICAL_SUBJECT } from "@/data/radicals";
-import { TERM_SUBJECT } from "@/data/terms";
+import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import { MARK_SUBJECT } from "@/data/marks";
 import { GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry, grammarConceptFor } from "@/data/grammar-concepts";
 import { radicalConfusableTip } from "@/data/radical-tips";
@@ -34,32 +34,44 @@ import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { EntryId, HistoryFile } from "@/types";
 
 import { standingFor } from "./learner";
-import { teachFor } from "./teach";
+import { conceptTwin, teachFor } from "./teach";
 import { offerings, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
  * to search); the page mounts a cut's tiles only as it comes into view. */
-const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string }> = [
-  { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana" },
-  { id: "writing-rules", kind: MARK_SUBJECT, sky: "mark", title: "Writing rules", unit: "writing rules" },
-  { id: "radicals", kind: RADICAL_SUBJECT, sky: "radical", title: "Radicals", unit: "radicals" },
-  { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji" },
-  { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words" },
-  { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters" },
-  { id: "grammar", kind: GRAMMAR_SUBJECT, sky: "grammar", title: "Grammar", unit: "patterns" },
-  { id: "grammar-concepts", kind: GRAMMAR_CONCEPT_SUBJECT, sky: "concept", title: "Grammar concepts", unit: "concepts" },
-  { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules" },
-  { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs" },
-  { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets" },
-  { id: "terms", kind: TERM_SUBJECT, sky: "term", title: "Terms", unit: "terms" },
+const SHELVES: ReadonlyArray<{ id: string; kinds: readonly Kind[]; sky: SkyKind; title: string; unit: string }> = [
+  { id: "kana", kinds: [KANA_SUBJECT], sky: "kana", title: "Kana", unit: "kana" },
+  { id: "radicals", kinds: [RADICAL_SUBJECT], sky: "radical", title: "Radicals", unit: "radicals" },
+  { id: "kanji", kinds: [KANJI_SUBJECT], sky: "kanji", title: "Kanji", unit: "kanji" },
+  { id: "words", kinds: [VOCAB_SUBJECT], sky: "word", title: "Words", unit: "words" },
+  { id: "counting", kinds: [COUNTER_KIND], sky: "counter", title: "Counting", unit: "counters" },
+  { id: "grammar", kinds: [GRAMMAR_SUBJECT], sky: "grammar", title: "Grammar", unit: "patterns" },
+  { id: "sentences", kinds: [SENTENCE_RULE_KIND], sky: "sentence", title: "Sentences", unit: "sentence rules" },
+  { id: "verb-pairs", kinds: [TRANSITIVITY_SUBJECT], sky: "verbPair", title: "Verb pairs", unit: "verb pairs" },
+  { id: "keigo", kinds: [KEIGO_SUBJECT], sky: "keigo", title: "Keigo", unit: "keigo sets" },
+  // the writing rules and the grammar concepts are terms too (Sam,
+  // 2026-09-05): one shelf of pages to read, in the app's three cuts
+  { id: "terms", kinds: [TERM_SUBJECT, MARK_SUBJECT, GRAMMAR_CONCEPT_SUBJECT], sky: "term", title: "Terms", unit: "terms" },
 ];
 
 /** How many of a related group are listed; the note carries the whole count. */
 const RELATED_SHOWN = 12;
 const SEARCH_PER_KIND = 24;
 
-const all = (kind: Kind): readonly LibEntry[] => LIB_ENTRIES_BY_KIND.get(kind) ?? [];
+/** A writing rule or a grammar concept that a term already names (Dakuten,
+ * Keigo): the term's page carries it, so it is not shown twice. */
+const termNamed = (name: string | undefined) => !!name && TERMS.some((t) => t.name.toLowerCase() === name.toLowerCase());
+const twinned = (e: LibEntry): boolean => (e.kind === MARK_SUBJECT || e.kind === GRAMMAR_CONCEPT_SUBJECT) && termNamed(e.name);
+const all = (kind: Kind): readonly LibEntry[] => (LIB_ENTRIES_BY_KIND.get(kind) ?? []).filter((e) => !twinned(e));
+
+/** The page to read about a grammar concept: the term of that name when
+ * there is one (Keigo), else the concept itself. */
+const readAbout = (conceptId: string): EntryId => {
+  const name = grammarConceptFor(grammarConceptEntry(conceptId))?.name;
+  const term = name ? TERMS.find((t) => t.name.toLowerCase() === name.toLowerCase()) : undefined;
+  return term ? termEntry(term.id) : grammarConceptEntry(conceptId);
+};
 
 /** The learner's standings over a whole collection, for its coverage bar. */
 function countsOver(entries: readonly LibEntry[], history: HistoryFile, now: number): CoverageCounts {
@@ -100,17 +112,21 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
   const o = offerings(history, now);
   const shown: string[] = [];
   const shelves: AtlasShelf[] = SHELVES.map((shelf) => {
-    const entries = all(shelf.kind);
+    const entries = shelf.kinds.flatMap(all);
     const sections: AtlasSection[] = [];
-    for (const cut of shelfSections(shelf.kind, "everyday")) {
-      const ids = cut.entries.map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
+    // a shelf of several kinds (Terms) is one cut, in the kinds' order
+    const cuts = shelf.kinds.length > 1
+      ? [{ id: shelf.id, label: shelf.title, entries: shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday").flatMap((c) => c.entries)) }]
+      : shelfSections(shelf.kinds[0], "everyday");
+    for (const cut of cuts) {
+      const ids = cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
       if (ids.length) sections.push({ id: cut.id, label: cut.label, items: ids });
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     shown.push(...sections.flatMap((s) => s.items));
     return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
   }).filter((s) => s.total > 0);
-  const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kind === kind)!.unit }));
+  const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kinds.includes(kind))!.unit }));
   // the tiles need only what a tile shows, plus how much a quiz could ask
   // (so the panel's buttons are right the moment it opens); an entry's
   // parts come with it when it is opened
@@ -128,12 +144,16 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
 export function atlasSearchFromHistory(history: HistoryFile, query: string, now = Date.now()): AtlasSearchResult {
   const o = offerings(history, now);
   // a section per shelf, keyed by the shelf's id so the page can match them
-  const sections: AtlasSection[] = searchByType(query, { perSection: SEARCH_PER_KIND }).map((s) => ({
-    id: SHELVES.find((sh) => sh.kind === s.kind)?.id ?? s.kind,
-    label: s.label,
-    items: s.hits.map((h) => o.offerPick(h.entry.id)?.id).filter((id): id is string => !!id),
-    ...(s.more ? { more: s.more } : {}),
-  })).filter((s) => s.items.length > 0);
+  const sections: AtlasSection[] = [];
+  for (const s of searchByType(query, { perSection: SEARCH_PER_KIND })) {
+    const shelf = SHELVES.find((sh) => sh.kinds.includes(s.kind));
+    const items = s.hits.filter((h) => !twinned(h.entry)).map((h) => o.offerPick(h.entry.id)?.id).filter((id): id is string => !!id);
+    if (!items.length) continue;
+    // kinds that share a shelf (Terms) share its section
+    const have = sections.find((x) => x.id === (shelf?.id ?? s.kind));
+    if (have) { have.items = [...have.items, ...items]; if (s.more) have.more = (have.more ?? 0) + s.more; continue; }
+    sections.push({ id: shelf?.id ?? s.kind, label: shelf?.title ?? s.label, items, ...(s.more ? { more: s.more } : {}) });
+  }
   return { items: closure(o, sections.flatMap((s) => s.items)), sections };
 }
 
@@ -174,7 +194,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     // what it is a part of first, then every word written with it, in
     // teaching order, against the whole vocabulary (Sam's order)
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Used as a part in", builds, `${builds.length} Kanji`);
+    if (builds.length) group("Used as a part in", builds, `You know ${knownOf(builds)} of ${builds.length}`);
     const kebs = VOCAB.filter((w) => w.keb.includes(glyph)).map((w) => w.keb).sort((a, b) => (vocabRow(a)?.beginnerRank ?? Infinity) - (vocabRow(b)?.beginnerRank ?? Infinity));
     const ids = wordIds(kebs);
     if (ids.length) group("Words written with it", ids, `You know ${knownOf(ids)} of ${ids.length}`);
@@ -182,7 +202,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   if (item.kind === "radical") {
     lookalikes();
     const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Kanji built from it", builds, `${builds.length} Kanji`);
+    if (builds.length) group("Kanji built from it", builds, `You know ${knownOf(builds)} of ${builds.length}`);
     const known = wordIds(knownWordsUsing(glyph, history));
     if (known.length) group("Words you know that use it", known, `${known.length}`);
   }
@@ -193,11 +213,17 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   }
   if (item.kind === "keigo") {
     // the registers, explained once, as the app's keigo page links out to
-    group("Read about it", [grammarConceptEntry("keigo-registers")]);
+    group("Read about it", [readAbout("keigo-registers")]);
+  }
+  if (item.kind === "term") {
+    // a term that carries a concept links where the concept did
+    const twin = TERMS.find((x) => termEntry(x.id) === item.id);
+    const concept = twin ? conceptTwin(twin.name) : undefined;
+    if (concept?.related?.length) group("Read about it", concept.related.map(readAbout));
   }
   if (item.kind === "concept") {
     const concept = grammarConceptFor(item.id as EntryId);
-    if (concept?.related?.length) group("Read about it", concept.related.map((id) => grammarConceptEntry(id)));
+    if (concept?.related?.length) group("Read about it", concept.related.map(readAbout));
   }
 
   return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach: teachFor(item), related };

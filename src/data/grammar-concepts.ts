@@ -154,7 +154,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
 export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
   {
     id: "verb-classes",
-    name: "Verb types",
+    name: "Godan/ichidan",
     summary:
       "Every verb is one of two groups (with some exceptions), and the group decides how every form is built.",
     body: [
@@ -162,6 +162,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "An う-verb drops its last kana and adds the ending. An る-verb just drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
     ],
     searchAlso: [
+      "verb types",
       "verb classes",
       "verb groups",
       "う-verbs and る-verbs",
@@ -179,7 +180,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
   },
   {
     id: "adjective-types",
-    name: "い-adjectives and な-adjectives",
+    name: "Keiyōshi/keiyōdōshi",
     summary:
       "い-adjectives conjugate themselves; な-adjectives take な and lean on です for tense and connection.",
     body: [
@@ -187,6 +188,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "Spelling is only a clue. Common な-adjectives such as きれい and きらい end in い, so an adjective's class is learned with the word.",
     ],
     searchAlso: [
+      "い-adjectives and な-adjectives",
       "adjective types",
       "i-adjective",
       "na-adjective",
@@ -199,7 +201,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
   },
   {
     id: "keigo-registers",
-    name: "Keigo: the politeness levels",
+    name: "Keigo",
     summary:
       "Three registers: polite, honorific for the other person, humble for yourself.",
     body: [
@@ -207,6 +209,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "Which one you reach for is decided by whose action it is: honorific for someone else, humble for yourself. Using a humble form for someone else lowers them, which is a real mistake.",
     ],
     searchAlso: [
+      "keigo: the politeness levels",
       "keigo",
       "politeness levels",
       "registers",

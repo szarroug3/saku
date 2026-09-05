@@ -108,7 +108,9 @@ export interface TeachPage {
   link?: { href: string; label: string };
 }
 
-export interface TeachParagraph { heading?: string; lead?: string; text: string; accent?: string }
+/** `runs` replaces `text` for a line with several parts to colour (a hook
+ * whose letters are the point). */
+export interface TeachParagraph { heading?: string; lead?: string; text: string; accent?: string; runs?: SoundLine }
 
 /** A build formula: the form in a box, what is trimmed off it, what is
  * added. `label` names the case when a pattern branches ("Godan"). */
@@ -118,7 +120,7 @@ export interface TeachFormula { label?: string; base: string; add?: string; trim
  * text with the part that matters marked (the piece a rule adds). */
 export interface TeachTable {
   title?: string;
-  instruction?: string;
+  instruction?: string | SoundLine;
   formula?: TeachFormula | readonly TeachFormula[];
   heads: readonly string[];
   rows: ReadonlyArray<ReadonlyArray<SoundLine>>;

@@ -234,7 +234,7 @@ describe("the verb-conjugating grammar entries link to う-verbs and る-verbs",
   test("the concept exists at the id the link points to", () => {
     const entry = libEntry(grammarConceptEntry("verb-classes"));
     assert.ok(entry);
-    assert.equal(entry.name, "Verb types");
+    assert.equal(entry.name, "Godan/ichidan");
   });
 
   test("a verb-form pattern is detected, and a non-conjugating one is not", () => {
@@ -259,7 +259,7 @@ describe("the adjective-hosting grammar entries link to い/な-adjectives", () 
   test("the concept exists at the id the link points to", () => {
     const entry = libEntry(grammarConceptEntry("adjective-types"));
     assert.ok(entry);
-    assert.equal(entry.name, "い-adjectives and な-adjectives");
+    assert.equal(entry.name, "Keiyōshi/keiyōdōshi");
   });
 
   test("adjective-hosting patterns are detected, and a verb-only one is not", () => {
@@ -278,7 +278,7 @@ describe("the keigo entries can reach the politeness-levels concept", () => {
   test("the concept exists at the id the keigo pages point to", () => {
     const entry = libEntry(grammarConceptEntry("keigo-registers"));
     assert.ok(entry);
-    assert.equal(entry.name, "Keigo: the politeness levels");
+    assert.equal(entry.name, "Keigo");
   });
 
   test("every keigo set has an entry to carry the link", () => {

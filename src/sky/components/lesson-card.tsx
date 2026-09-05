@@ -161,6 +161,9 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         </p>
       )}
 
+      {/* the notes are about the thing itself (a term's definition, a
+          counter's role); they read before its pages, not after them */}
+      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"} ${japaneseFont(note)}`}>{note}</p>)}
       {pages.length > 0 && (
         <>
           {pages.length > 1 && <Pager pages={pages} page={at} onPage={onPage} />}
@@ -224,7 +227,6 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         </div>
       )}
       {teach?.etymology && <p className="mt-2 text-[14px] leading-relaxed text-sky-muted">{teach.etymology}</p>}
-      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"} ${japaneseFont(note)}`}>{note}</p>)}
 
       {teach?.writtenWith && teach.writtenWith.length > 0 ? (
         <>

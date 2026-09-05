@@ -6,8 +6,9 @@
 // (src/sky/lib/lesson.ts). Nothing is required; a sparse item stays short.
 
 import { SETS } from "@/data/characters";
-import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
-import { bodyFor, markFor, scriptLabel } from "@/data/marks";
+import { GRAMMAR_CONCEPTS, grammarConceptEntry, type GrammarConcept } from "@/data/grammar-concepts";
+import { bodyFor, markFor, MARKS, type Mark } from "@/data/marks";
+import { hookRuns } from "@/data/dakuten-rows";
 import { radicalTipFor } from "@/data/radical-tips";
 import { radicalVariants } from "@/data/radicals";
 import { wordContrastNoteFor } from "@/data/word-contrast-notes";
@@ -62,6 +63,50 @@ const POSITION: Record<string, string> = { kanmuri: "Top", hen: "Left", tsukuri:
 function positionOf(v: { position?: { romaji: string; kana: string }; name: { kana: string } }): string {
   if (v.position) return POSITION[v.position.romaji] ?? v.position.kana;
   return derivePosition(v.name.kana).en;
+}
+
+/** A hook with its letters in brackets ("The [k]arate [k]ick"), as runs
+ * with those letters coloured instead (Sam, 2026-09-05). */
+function hookLine(hook: string): SkySoundLine {
+  return hookRuns(hook).map((r) => ({ text: r.text, accent: r.hit }));
+}
+
+/** The writing rule (dakuten, yōon…) or the grammar concept (keigo) a term
+ * shares its name with: the page that carries the fuller teaching. */
+export function markTwin(name: string): Mark | undefined {
+  return MARKS.find((m) => m.shelf === "writing" && m.name.toLowerCase() === name.toLowerCase());
+}
+export function conceptTwin(name: string): GrammarConcept | undefined {
+  return GRAMMAR_CONCEPTS.find((c) => c.name.toLowerCase() === name.toLowerCase());
+}
+
+/** A writing rule, read as one page (Sam, 2026-09-05): the lesson's
+ * explanation once (the hiragana card; the katakana copy says the same
+ * with other glyphs), then the conversion tables for both scripts side by
+ * side, then the aside. Okurigana's three cards are three pages. */
+function markPages(mark: Mark): TeachPage[] {
+  const hasHiragana = mark.intros.some((i) => i.setId === "hiragana");
+  const intros = mark.intros.filter((i) => !(hasHiragana && i.setId === "katakana"));
+  const pages = intros.map((intro) => ({ ...pageFromIntro(intro, mark.glyph), eyebrow: mark.name }));
+  if (!pages.length) pages.push({ eyebrow: mark.name, title: mark.name, paragraphs: [] });
+  const tables: TeachTable[] = [];
+  for (const conv of [...new Set(mark.rows.map((r) => r.conv))]) {
+    const rows = mark.rows.filter((r) => r.conv === conv);
+    const first = rows[0];
+    const hiragana = rows.find((r) => r.setId === "hiragana")?.pairs ?? [];
+    const katakana = rows.find((r) => r.setId === "katakana")?.pairs ?? [];
+    const notes = rows.flatMap((r) => [r.callout, r.aside]).filter((x): x is string => !!x);
+    tables.push({
+      title: `${first.from} to ${first.to}`,
+      ...(first.hook ? { instruction: hookLine(first.hook) } : {}),
+      heads: [...(hiragana.length ? ["Hiragana"] : []), ...(katakana.length ? ["Katakana"] : [])],
+      rows: Array.from({ length: Math.max(hiragana.length, katakana.length) }, (_, i) => [hiragana[i], katakana[i]].filter((x): x is [string, string] => !!x).map(([base, converted]) => [{ text: `${base} ` }, { text: converted, accent: true }])),
+      ...(notes.length ? { note: [...new Set(notes)].join(" ") } : {}),
+    });
+  }
+  const last = pages[pages.length - 1];
+  pages[pages.length - 1] = { ...last, ...(tables.length ? { tables: [...(last.tables ?? []), ...tables] } : {}), ...(mark.note ? { after: [...(last.after ?? []), { text: mark.note }] } : {}) };
+  return pages;
 }
 
 function romajiOf(glyph: string): string | undefined {
@@ -169,33 +214,26 @@ export function teachFor(item: SkyItem): LessonTeach {
     return t;
   }
   if (item.kind === "term") {
-    // a term is its definition, read as one page
+    // a term is its definition, then whatever the same name teaches
+    // elsewhere (Sam, 2026-09-05: the writing rules and the grammar
+    // concepts are terms): the mark's page for Dakuten, the concept's
+    // cards for Keigo, else the term's own cards
     const term = TERMS.find((x) => termEntry(x.id) === item.id);
-    if (term) { t.meanings = [term.summary]; t.notes = [...term.body]; }
+    if (term) {
+      t.meanings = [term.summary];
+      const mark = markTwin(term.name);
+      const concept = conceptTwin(term.name);
+      if (mark) t.pages = markPages(mark);
+      else if (concept?.cards.length) t.pages = concept.cards.map((c) => pageFromIntro(c));
+      else if (term.cards?.length) t.pages = term.cards.map((c) => pageFromIntro(c, term.cardMark));
+      // the definition, unless a fuller page says the same thing
+      if (!mark && !concept) t.notes = [...term.body];
+    }
     return t;
   }
   if (item.kind === "mark") {
-    // a writing rule: the lesson's own cards, one per script, with the
-    // conversion tables (dakuten's five rows) and the aside the app's mark
-    // page shows after them
     const mark = markFor(item.id as EntryId);
-    if (mark) {
-      t.meanings = [mark.summary];
-      // the pager names each card by its script ("In hiragana"), since the
-      // two intros share a title; a script-neutral card keeps its own name
-      const pages = mark.intros.map((intro) => { const page = pageFromIntro(intro, mark.glyph); const script = scriptLabel(intro.setId); return script ? { ...page, eyebrow: script } : page; });
-      for (const row of mark.rows) {
-        const script = scriptLabel(row.setId)?.replace(/^In /, "");
-        pages.push({
-          eyebrow: `${script ? `${script} · ` : ""}${row.from} to ${row.to}`,
-          title: `${row.mark} ${row.markName}: ${row.from} becomes ${row.to}`,
-          paragraphs: [{ text: row.hook }, ...(row.callout ? [{ text: row.callout }] : []), ...(row.aside ? [{ text: row.aside }] : [])].filter((x) => x.text),
-          tables: [{ heads: ["Without", "With the mark"], rows: row.pairs.map(([base, converted]) => [[{ text: base }], [{ text: converted, active: true }]]) }],
-        });
-      }
-      if (mark.note && pages.length) pages[pages.length - 1] = { ...pages[pages.length - 1], after: [...(pages[pages.length - 1].after ?? []), { text: mark.note }] };
-      t.pages = pages;
-    }
+    if (mark) { t.meanings = [mark.summary]; t.pages = markPages(mark); }
     return t;
   }
   if (item.kind === "concept") {

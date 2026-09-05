@@ -233,11 +233,12 @@ const RAW_MARKS: readonly Mark[] = [
   },
   {
     id: "small-tsu",
-    name: "Small っ",
+    name: "Sokuon",
     glyph: "っ",
     summary:
       "This is not a sound of its own. It doubles the consonant that follows. きて / きって.",
     searchAlso: [
+      "small っ",
       "っ",
       "ッ",
       "sokuon",
@@ -252,10 +253,11 @@ const RAW_MARKS: readonly Mark[] = [
   },
   {
     id: "small-ya",
-    name: "Small ゃ ゅ ょ",
+    name: "Yōon",
     glyph: "ゃゅょ",
     summary: "Fuse onto the i-row kana in front of them to make ONE syllable.",
     searchAlso: [
+      "small ゃ ゅ ょ",
       "ゃ",
       "ゅ",
       "ょ",
@@ -276,11 +278,12 @@ const RAW_MARKS: readonly Mark[] = [
     id: "long-vowel",
     // No glyph, and the name is doing the glyph's job — this is the entry that
     // proved the Library's model assumed every entry is a character.
-    name: "Long vowels",
+    name: "Chōon",
     glyph: "",
     summary:
       "Hold a vowel a beat longer and it is a different word: ー in katakana, a doubled vowel in hiragana.",
     searchAlso: [
+      "long vowels",
       "ー",
       "chouonpu",
       "chōonpu",
@@ -296,10 +299,11 @@ const RAW_MARKS: readonly Mark[] = [
   },
   {
     id: "iteration-mark",
-    name: "Iteration mark",
+    name: "Odoriji",
     glyph: "々",
     summary: "Repeats the kanji before it. 時 → 時々.",
     searchAlso: [
+      "iteration mark",
       "々",
       "iteration mark",
       "odoriji",

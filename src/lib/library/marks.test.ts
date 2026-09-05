@@ -172,7 +172,7 @@ describe("an entry is not always a character", () => {
     assert.equal(long.glyph, "", "a placeholder glyph got stuffed in");
     // The name is what stands in wherever a glyph would have been rendered as a
     // label — the breadcrumb, an aria-label.
-    assert.equal(long.name, "Long vowels");
+    assert.equal(long.name, "Chōon");
   });
 
   test("the four that DO have a written token carry it", () => {
