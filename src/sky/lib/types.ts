@@ -73,6 +73,9 @@ export interface SkyItem {
   english: string;
   /** Reading, when the item has one unambiguous one. Kana, not romaji. */
   reading?: string;
+  /** Its parts are its content and the card lists them itself (the 〜つ
+   * rule's ten forms), so the card shows no "Made of". */
+  listsParts?: boolean;
   /** How it is going, in the app's own words (SAK-294): the six standings of
    * src/sky/lib/standing.ts. Painted only beside a legend or as a chip. */
   standing: Standing;

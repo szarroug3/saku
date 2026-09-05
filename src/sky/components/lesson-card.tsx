@@ -229,7 +229,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
             })}
           </div>
         </>
-      ) : madeOf.length > 0 ? (
+      ) : madeOf.length > 0 && !item.listsParts ? (
         <>
           <Eyebrow className="mt-4">Made of</Eyebrow>
           <div className="flex flex-wrap gap-2">{madeOf.map((p) => <StarButton key={p.id} item={p} note={partSense.get(p.glyph)?.toLowerCase() === p.english.toLowerCase() ? undefined : partSense.get(p.glyph)} onSelect={onSelect} />)}</div>
