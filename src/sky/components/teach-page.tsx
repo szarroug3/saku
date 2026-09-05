@@ -129,7 +129,7 @@ export function TeachPageView({ page, alone = false }: { page: TeachPage; alone?
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
-      <h3 className={`max-w-[30ch] font-sky-display text-[20px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>
+      {page.title && <h3 className={`max-w-[30ch] font-sky-display text-[20px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>}
       {page.lead && <p className="mt-2 max-w-[64ch] text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
       {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
       <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">

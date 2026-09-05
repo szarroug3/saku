@@ -203,7 +203,8 @@ export function teachFor(item: SkyItem): LessonTeach {
       // the native numbers as one rule: the track's own pitch, then the ten
       const forms = COUNTER_CURRICULUM.filter((f) => f.counter === "つ");
       t.meanings = ["The native way to count things, one to ten, for anything without a counter of its own."];
-      t.pages = [{ ...pageFromIntro(TSU_INTRO), eyebrow: "〜つ", tables: [{ title: "One to ten", heads: ["Count", "Written", "Meaning"], rows: forms.map((f, i) => [[{ text: String(i + 1) }], [{ text: f.glyph, accent: true }], [{ text: f.meaning }]]), note: "Ten is the exception: とお has no つ on the end. The other nine all end in つ." }] }];
+      // the card's head already says what it is: the page is the pitch and the table, no title
+      t.pages = [{ ...pageFromIntro(TSU_INTRO), eyebrow: undefined, title: "", tables: [{ title: "One to ten", heads: ["Count", "Written", "Meaning"], rows: forms.map((f, i) => [[{ text: String(i + 1) }], [{ text: f.glyph, accent: true }], [{ text: f.meaning }]]), note: "Ten is the exception: とお has no つ on the end. The other nine all end in つ." }] }];
       return t;
     }
     const form = counterForm(item.id as Parameters<typeof counterForm>[0]);

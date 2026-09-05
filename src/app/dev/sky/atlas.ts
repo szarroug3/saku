@@ -119,9 +119,12 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
       ? [{ id: shelf.id, label: shelf.title, entries: shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday").flatMap((c) => c.entries)) }]
       : shelfSections(shelf.kinds[0], "everyday");
     for (const cut of cuts) {
-      // the native numbers are one tile, the 〜つ rule, with the ten under it
-      const ids = cut.id === "counters-tsu" ? [TSU_RULE] : cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
-      if (ids.length) sections.push({ id: cut.id, label: cut.label, items: ids });
+      // the native numbers are one rule, the 〜つ tile, first among the
+      // counting rules (Sam, 2026-09-05), with the ten forms under it
+      if (cut.id === "counters-tsu") continue;
+      const rules = cut.id === "counters-constructions";
+      const ids = [...(rules ? [TSU_RULE] : []), ...cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id)];
+      if (ids.length) sections.push({ id: cut.id, label: rules ? "Counting rules" : cut.label, items: ids });
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     shown.push(...sections.flatMap((s) => s.items));

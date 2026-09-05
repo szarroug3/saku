@@ -1,28 +1,30 @@
 // The quiz's model: a card per question, in plain data from whatever the
-// route's adapter can build, and the four grades an answer can earn.
+// route's adapter can build, and the three grades an answer can earn.
 // Tracked as SAK-312 to SAK-317.
 //
-// Every card opens on a blank box (SAK-313). A right or near answer goes
-// straight to the reveal; a miss shows the narrowed set for a second look;
-// the learner may ask for the set at any time, at the cost of the clean
-// grade. Four grades, kept apart (SAK-317), since they are four different
-// events: clean (right, cold, first try), nearly (right but for spelling),
-// help (right after narrowing, asked for or triggered by a miss), missed
-// (wrong after the second look, or skipped).
+// Every card opens on a blank box (SAK-313). A right answer moves straight
+// on; a wrong one gets more tries (MAX_TRIES in all) before the card is
+// missed. Help is there to ask for: the choices, a hint. Three grades
+// (Sam, 2026-09-05; the old "nearly" went, since ka for ki is not a slip):
+// perfect (right, first try, no help), with help (right after a retry, a
+// hint or the choices), missed (wrong after the last try, or given up).
+// Cards can be skipped and come back to; the grades are per card.
 
 import type { LessonTeach } from "./lesson";
 import type { SkyItem } from "./types";
 
-export type Grade = "clean" | "nearly" | "help" | "missed";
+export type Grade = "clean" | "help" | "missed";
 
-export const GRADES: readonly Grade[] = ["clean", "nearly", "help", "missed"];
+export const GRADES: readonly Grade[] = ["clean", "help", "missed"];
+
+/** How many goes a card gets before it is missed: two retries. */
+export const MAX_TRIES = 3;
 
 /** What each grade means, and what it does to the schedule. */
 export const GRADE: Record<Grade, { label: string; meaning: string; consequence: string }> = {
-  clean: { label: "Clean", meaning: "Right, cold, first try.", consequence: "Produced cold: the interval stretches furthest." },
-  nearly: { label: "Nearly", meaning: "Right but for spelling.", consequence: "You had it and the spelling slipped: back sooner, no reset." },
-  help: { label: "With help", meaning: "Right after narrowing it down.", consequence: "Recognised rather than recalled: treated as weaker than clean." },
-  missed: { label: "Missed", meaning: "Wrong after the second look, or skipped.", consequence: "Back tomorrow, and its confusable comes with it." },
+  clean: { label: "Perfect", meaning: "You got it right without any help.", consequence: "Recalled cold: the interval stretches furthest." },
+  help: { label: "With help", meaning: "You got it after a retry, hint, or multiple choice.", consequence: "Counted as weaker than perfect: it comes back sooner." },
+  missed: { label: "Missed", meaning: "You ran out of tries, or gave it up.", consequence: "Back tomorrow, and its look-alike comes with it." },
 };
 
 /** One choice in the narrowed set. */
@@ -70,26 +72,23 @@ export interface QuizAnswer {
   grade: Grade;
   /** What was typed, when something was. */
   given?: string;
-  /** Attempts before the reveal: 1 for a clean answer. */
+  /** Attempts it took: 1 for a perfect answer. */
   tries: number;
-  /** The narrowed set was shown before the answer landed. */
+  /** The choices were shown before the answer landed. */
   narrowed: boolean;
+  /** A hint was shown. */
+  hinted: boolean;
 }
 
-/** What a grader says about a typed answer. */
-export interface Verdict { ok: boolean; nearly: boolean }
-
-/** The grade for what happened on a card: the verdict, whether the set
- * was shown, and whether this was the first try. */
-export function gradeFor(verdict: Verdict, narrowed: boolean, tries: number): Grade | null {
-  if (verdict.ok) return narrowed || tries > 1 ? "help" : "clean";
-  if (verdict.nearly && !narrowed) return "nearly";
-  return null;
+/** The grade for a right answer: perfect only when nothing helped it
+ * along, no retry, no hint, no choices. */
+export function gradeFor(helped: boolean): Grade {
+  return helped ? "help" : "clean";
 }
 
-/** The four counts. */
+/** The three counts. */
 export function tally(answers: readonly QuizAnswer[]): Record<Grade, number> {
-  const out: Record<Grade, number> = { clean: 0, nearly: 0, help: 0, missed: 0 };
+  const out: Record<Grade, number> = { clean: 0, help: 0, missed: 0 };
   for (const a of answers) out[a.grade]++;
   return out;
 }
