@@ -82,7 +82,7 @@ function teachFor(item: SkyItem): LessonTeach {
   }
   if (item.kind === "counter") {
     const form = counterForm(item.id as Parameters<typeof counterForm>[0]);
-    if (form) { t.reading = form.reading; t.meanings = [form.meaning]; const note = counterRoleNote(form); if (note) t.notes = [note]; }
+    if (form) { t.reading = form.reading; t.meanings = [form.meaning]; const note = counterRoleNote(form); if (note) t.notes = [note]; t.pitch = wordPitch(form.glyph); }
     return t;
   }
   if (item.kind === "grammar") {

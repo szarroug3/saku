@@ -6,6 +6,14 @@
 
 import { PitchReading } from "@/components/library/pitch-mark";
 
-export function PitchMark({ reading, downstep, className }: { reading: string; downstep: number; className?: string }) {
-  return <PitchReading reading={reading} downstep={downstep} className={className} />;
+export function PitchMark({ reading, downstep, className = "" }: { reading: string; downstep: number; className?: string }) {
+  // the marks are borders in the current colour; on the wash they need the
+  // accent and some weight to read, so they are restyled from outside
+  return (
+    <PitchReading
+      reading={reading}
+      downstep={downstep}
+      className={`${className} [&_span.border-current]:border-sky-accent [&_span.border-t]:border-t-2 [&_span.border-r]:border-r-2 [&_span.border-t]:pt-0.5`}
+    />
+  );
 }
