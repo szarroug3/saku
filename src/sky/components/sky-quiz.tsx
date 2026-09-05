@@ -71,6 +71,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 
 export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }: SkyQuizProps) {
   const Pitch = pitch;
+  const Hear = hear;
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
@@ -245,7 +246,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
   const triesLeft = MAX_TRIES - state.tries;
   const help = [
-    !answered && card.typed && !state.narrowed ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
+    !answered && card.typed && !state.narrowed && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
     !answered && card.hint && !state.hinted ? { label: "Hint", run: () => patch({ hinted: true }) } : null,
     !answered ? { label: "I don't know", run: giveUp } : null,
   ].filter((h): h is { label: string; run: () => void } => !!h);
@@ -267,7 +268,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
           <div className="mt-3 flex min-h-0 flex-1 gap-4">
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex flex-col items-center text-center">
-                <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[64px]" : "text-[36px]") : "text-[28px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
+                {card.prompt.within ? (
+                  // the word, with the glyph asked about in ink and the rest muted
+                  <p className={`font-sky-display text-[56px] leading-none ${japaneseFont(card.prompt.within)}`}>
+                    {[...card.prompt.within].map((ch, i) => <span key={i} className={ch === card.prompt.glyph ? "text-sky-ink" : "text-sky-muted/60"}>{ch}</span>)}
+                  </p>
+                ) : (
+                  <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[64px]" : "text-[36px]") : "text-[28px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
+                )}
                 {context && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
                 {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
               </div>
@@ -302,7 +310,9 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                             disabled={struck}
                             className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
                           >
-                            {o.pitch !== undefined && Pitch ? <Pitch reading={o.label} downstep={o.pitch} /> : o.label}
+                            {o.pitch !== undefined && Pitch
+                              ? <span className="flex items-center justify-between gap-2"><Pitch reading={o.label} downstep={o.pitch} />{Hear && <Hear glyph={o.label} downstep={o.pitch} />}</span>
+                              : o.label}
                           </button>
                         );
                       })}

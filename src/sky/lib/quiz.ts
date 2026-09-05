@@ -44,8 +44,11 @@ export interface QuizCard {
   id: string;
   /** The thing it is a fact of, for the reveal's head and the strip. */
   item: SkyItem;
-  /** The big thing on the card, and the line that makes it answerable. */
-  prompt: { glyph: string; jp: boolean; context?: string };
+  /** The big thing on the card, and the line that makes it answerable.
+   * `within` is a word the glyph is asked inside (a kanji's reading in
+   * 統一): the card draws the word with the glyph in ink and the rest
+   * muted. */
+  prompt: { glyph: string; jp: boolean; context?: string; within?: string };
   /** What to do, in the app's words: "Type the reading in romaji." */
   instruction?: string;
   /** A nudge, shown on request: a line, or a drawing. */

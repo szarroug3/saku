@@ -9,6 +9,9 @@
 
 import { buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
+import { rollConstructionItem } from "@/lib/engine/number-quiz";
+import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
+import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
 import { fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
@@ -17,8 +20,7 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
-import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
-import { wordPitch } from "@/data/pitch";
+import { VOCAB, VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
@@ -57,9 +59,17 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     if (!info) continue;
     const item = o.offerPick(entryOf(fact));
     if (!item) continue;
+    // a kanji is never asked how it is said on its own (Sam, 2026-09-05):
+    // only inside a word, which the card then shows
+    const anchored = /^kanji:(.+?)\/reading@([^#]+)/.exec(fact as string);
+    if (anchored && anchored[2] === anchored[1]) continue;
+    // a counting rule (11 to 99, 〜本) is asked on a number rolled for this
+    // showing, the app's own way: how is 六十七 said
+    const construction = isConstructionFact(fact) ? rollConstructionItem({ ...constructionConfigForFact(fact)!, directions: ["read"] }, Math.random) : null;
+    if (isConstructionFact(fact) && !construction) continue;
     const dir: Direction = fixedDirOf(fact) ?? "jp2en";
     const typed = !mcOnlyIn(fact, dir);
-    const prompt = questionsFor(fact).prompt(fact, dir);
+    const prompt = questionsFor(fact).prompt(fact, dir, construction ? { numberItem: construction } : undefined);
     const qt = questionsFor(fact);
     const options: QuizOption[] = buildMcOptions(fact, dir, undefined, known).map((f) => {
       const label = qt.optionLabel?.(f, dir) ?? revealFor(f, dir);
@@ -70,21 +80,24 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir)) });
     const hint = hintFor(fact, dir);
     const agg = history.facts?.[fact];
+    const instruction = construction
+      ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
+      : quizInstruction(fact, dir, typed ? "typed" : "mc");
     cards.push({
       id: fact,
       item,
-      prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context ? { context: prompt.context } : {}) },
-      ...(quizInstruction(fact, dir, typed ? "typed" : "mc") ? { instruction: quizInstruction(fact, dir, typed ? "typed" : "mc")! } : {}),
+      prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
+      ...(instruction ? { instruction } : {}),
       ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : {} } : {}),
-      answerIs: answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
-      typed,
-      options,
+      answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
+      typed: construction ? true : typed,
+      options: construction ? [{ id: fact, label: construction.reading, jp: true }] : options,
       answerId: fact,
-      answer: revealFor(fact, dir),
+      answer: construction ? construction.reading : revealFor(fact, dir),
       seen: agg?.seen ?? 0,
       missed: agg?.missed ?? 0,
       teach: teachFor(item),
-      meta: { dir },
+      meta: { dir, ...(construction ? { accept: construction.accept.join("|") } : {}) },
     });
   }
   return cards;
@@ -114,53 +127,55 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
     // a radical that is a kanji too (一) carries the kanji's fact; ask one of its own
     first(RADICAL_SUBJECT, (f) => f.startsWith("radical:") && meaning(f)),
     first(KANJI_SUBJECT, meaning),
-    first(KANJI_SUBJECT, reading, false),
+    // a kanji's reading is only ever asked inside a word, so a fact anchored on one
+    first(KANJI_SUBJECT, (f) => /\/reading@(.+)/.test(f) && !/\/reading@([^#]+)/.exec(f)![1].match(/^.$/), false),
     first(VOCAB_SUBJECT, meaning),
     first(VOCAB_SUBJECT, reading),
     first(COUNTER_KIND, meaning),
-    first(COUNTER_KIND, reading, false),
+    // the counting rules roll a number: how is 六十七 said, how do you say four people
+    CONSTRUCTION_CATEGORIES.find((c) => c.id === "tens")?.fact,
+    CONSTRUCTION_CATEGORIES.find((c) => c.id === "ko")?.fact,
     first(GRAMMAR_SUBJECT, meaning),
     first(GRAMMAR_SUBJECT, (f) => !meaning(f)),
     first(TRANSITIVITY_SUBJECT, () => true),
     first(KEIGO_SUBJECT, () => true),
   ].filter((f): f is FactId => !!f);
   const cards = quizCards(history, [...new Set(facts)], now);
-  // the pitch card sits with the word cards
-  const word = VOCAB.find((w) => wordPitch(w.keb) !== null && [...w.reb].length >= 3);
-  const pitch = word ? pitchCard(history, word.keb, now) : undefined;
+  // the pitch card sits with the word cards: a real homophone pair when
+  // the curriculum has one (悪 and 開く share あく), else a mispitched twin
+  const questions = VOCAB.map((w) => [w.keb, rollPitchQuestion(w.keb)] as const).filter((x) => x[1]);
+  const keb = (questions.find((x) => x[1]!.mode === "pair") ?? questions[0])?.[0];
+  const pitch = keb ? pitchCard(history, keb, now) : undefined;
   const afterWords = cards.findIndex((c) => c.item.kind === "word" && c.answerIs === "reading");
   if (pitch) cards.splice(afterWords >= 0 ? afterWords + 1 : cards.length, 0, pitch);
   return cards;
 }
 
-/** The morae of a reading: each kana, a small ゃゅょ joining the one before. */
-function moraeOf(reading: string): number {
-  return [...reading].filter((c) => !/[ゃゅょャュョ]/.test(c)).length;
-}
-
-/** A card asking which pitch a word takes: its reading drawn with the fall
- * in different places, the true one among them. The Sky's own question,
- * with no fact behind it yet, so it records nothing (see recordQuiz). */
+/** The app's own pitch question (SAK-128) as a card: the word's reading
+ * twice, once with its true pitch and once with another (a homophone
+ * partner's, or a made-up one), the learner picking which means the word.
+ * Each choice is drawn with its pitch and can be heard through the app's
+ * pitch clips. No fact of its own yet, so it records nothing. */
 export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCard | undefined {
-  const row = vocabRow(keb);
-  const downstep = wordPitch(keb);
+  const q = rollPitchQuestion(keb);
   const id = entryForGlyph(VOCAB_SUBJECT, keb);
-  if (!row || downstep === null || !id) return undefined;
+  if (!q || !id) return undefined;
   const item = offerings(history, now).offerPick(id);
   if (!item) return undefined;
-  const n = moraeOf(row.reb);
-  const wrong = [0, 1, n, 2, 3, n - 1].filter((d, i, all) => d >= 0 && d <= n && d !== downstep && all.indexOf(d) === i).slice(0, 3);
-  const options: QuizOption[] = [downstep, ...wrong].map((d) => ({ id: `pitch:${d}`, label: row.reb, jp: true, pitch: d })).sort(() => Math.random() - 0.5);
+  const other = q.mode === "pair" ? q.partnerDownstep : q.wrongDownstep;
+  if (other === null) return undefined;
+  const correctFirst = Math.random() < 0.5;
+  const pair: QuizOption[] = [{ id: "pitch:right", label: q.reading, jp: true, pitch: q.downstep }, { id: "pitch:other", label: q.reading, jp: true, pitch: other }];
   return {
     id: `${id}/pitch`,
     item,
-    prompt: { glyph: keb, jp: true, context: row.glosses[0] },
-    instruction: "Pick how this word is said, with the pitch in the right place.",
+    prompt: { glyph: keb, jp: true, context: q.gloss },
+    instruction: pitchInstruction({ promptGloss: q.gloss }),
     answerIs: "other",
     typed: false,
-    options,
-    answerId: `pitch:${downstep}`,
-    answer: row.reb,
+    options: correctFirst ? pair : [pair[1], pair[0]],
+    answerId: "pitch:right",
+    answer: q.reading,
     seen: 0,
     missed: 0,
     teach: teachFor(item),

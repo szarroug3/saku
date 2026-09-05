@@ -9,14 +9,17 @@
 
 import { HearButton } from "@/components/ui/hear-button";
 import { checkTyped } from "@/lib/engine";
+import { romajiMatches } from "@/lib/romaji";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import type { Direction, FactId } from "@/types";
 
 import { PitchMark } from "./pitch-reading";
 
-/** Whether `given` answers the card. */
+/** Whether `given` answers the card. A rolled counting card (say 六十七)
+ * carries its own accepted readings; everything else asks the fact. */
 function grade(card: QuizCard, given: string): boolean {
+  if (card.meta?.accept) return card.meta.accept.split("|").some((a) => romajiMatches(given, a));
   return checkTyped(card.id as FactId, given, (card.meta?.dir ?? "jp2en") as Direction);
 }
 
