@@ -128,8 +128,11 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
       for (const e of kana) add(e);
       const id = `kana-row:${section.id}`;
       const allMet = kana.every((e) => met.has(e.id));
+      // every row builds on something: a mark or blend on its plain row, a
+      // plain row on the vowels (Sam's rule: the vowels come first)
       const suffix = section.id.replace(/^[hk]-/, "");
-      const base = BASE_ROW[suffix] ? `kana-row:${section.id.slice(0, 2)}${BASE_ROW[suffix]}` : undefined;
+      const baseSuffix = BASE_ROW[suffix] ?? (suffix === "vowels" ? undefined : "vowels");
+      const base = baseSuffix ? `kana-row:${section.id.slice(0, 2)}${baseSuffix}` : undefined;
       items.set(id, {
         id, kind: "kana", glyph: section.chars[0].c, english: rowName(section.label, section.chars[0].r[0]),
         standing: allMet ? "claimed" : "not-seen",
