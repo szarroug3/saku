@@ -409,7 +409,7 @@ export function Sidebar({
                               key={child.href}
                               href={child.href}
                               className={`flex items-baseline whitespace-nowrap rounded-lg py-[6px] pl-11 pr-3 text-left text-[13px] ${
-                                pathname === child.href
+                                pathname === child.href.split("?")[0]
                                   ? "bg-accent-bg text-accent"
                                   : "text-text-muted hover:bg-panel"
                               }`}

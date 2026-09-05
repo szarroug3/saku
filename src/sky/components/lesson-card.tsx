@@ -1,13 +1,17 @@
 // The card under the lesson sky: the selected star, taught. Tracked as
 // SAK-310 and SAK-297.
 //
-// Eyebrow naming what kind of thing this is, the glyph large with its
-// reading, the meanings, then what it is made of and what it is part of as
-// buttons that select those stars, and the longer material (readings, how
-// it is written, an example) as closed disclosures. No standing, no "I
-// already know this", no Back or Next: those live in the page header. A
-// star already in the sky says so and is here for reference. Sparse items
-// stay short: nothing is padded.
+// What matters is open: the kind, the glyph large with its reading (and a
+// word's pitch), the meaning, the mnemonic with its drawing or the origin,
+// what it is made of, what it is part of and, for a word, the kanji it is
+// written with and how each is read here, as buttons that select those
+// stars. The rest folds closed (Sam's rule, 2026-09-05): readings, how it
+// is written (the real stroke order, handed in as a slot), an example. No
+// standing, no "I already know this", no Back or Next: those live in the
+// page header. A star already in the sky says so and is here for
+// reference. Sparse items stay short: nothing is padded.
+
+import type { ReactNode } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -24,6 +28,9 @@ export interface LessonCardProps {
   /** Already in the sky: shown for reference, not re-taught. */
   known: boolean;
   onSelect: (id: string) => void;
+  /** The stroke order and its notes, from whoever has them; goes in the
+   * "How it's written" fold. */
+  written?: ReactNode;
   className?: string;
 }
 
@@ -39,44 +46,83 @@ const ROLE: Record<SkyItem["kind"], string> = {
   keigo: "a polite verb",
 };
 
-function StarButton({ item, onSelect }: { item: SkyItem; onSelect: (id: string) => void }) {
+function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
       <span className={`font-sky-display text-[18px] leading-none text-sky-ink ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+      {note && <span className={`font-sky-display text-[13px] text-sky-muted ${japaneseFont(note)}`}>{note}</span>}
       <span className="text-[12.5px] text-sky-muted">{item.english}</span>
     </button>
   );
 }
 
-function Fold({ title, children }: { title: string; children: React.ReactNode }) {
+function Fold({ title, children }: { title: string; children: ReactNode }) {
   return (
     <details className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
       <summary className="cursor-pointer font-semibold text-sky-ink">{title}</summary>
-      <div className="mt-2">{children}</div>
+      <div className="mt-2.5">{children}</div>
     </details>
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const reading = teach?.reading ?? item.reading;
+  const byId = new Map(madeOf.map((m) => [m.glyph, m]));
+  const on = teach?.readings?.filter((r) => r.kind === "on") ?? [];
+  const kun = teach?.readings?.filter((r) => r.kind === "kun") ?? [];
+  const readingList = (rows: typeof on) => (
+    <ul className="flex flex-col gap-1">
+      {rows.map((r) => (
+        <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
+          {r.words.length > 0 && <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
       <Eyebrow>{KIND_LABEL[item.kind]} · {ROLE[item.kind]}</Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {reading && reading !== item.glyph && <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>}
+        {teach?.pitch !== undefined && teach.pitch !== null && <span className="text-[12.5px] text-sky-muted">pitch {teach.pitch}</span>}
       </div>
       <p className="mt-3 text-[15px] leading-relaxed">
         <span className="font-semibold">{meanings[0]}</span>
         {meanings.length > 1 && <span className="text-sky-muted"> · {meanings.slice(1, 4).join(" · ")}</span>}
       </p>
-      {teach?.mnemonic?.map((line, i) => (
-        <p key={i} className={`mt-2 text-[14px] leading-relaxed ${i === 0 ? "text-sky-muted" : ""}`}>{line}</p>
-      ))}
+
+      {teach?.mnemonic && teach.mnemonic.length > 0 && (
+        <div className="mt-3 flex items-start gap-4">
+          {teach.mnemonicImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={teach.mnemonicImage} alt="" className="size-[84px] flex-none rounded-lg object-contain" />
+          )}
+          <div>
+            {teach.mnemonic.map((line, i) => (
+              <p key={i} className={`text-[14px] leading-relaxed ${i === teach.mnemonic!.length - 1 ? "" : "text-sky-muted"} ${i > 0 ? "mt-1" : ""}`}>{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
       {teach?.etymology && <p className="mt-2 text-[14px] leading-relaxed text-sky-muted">{teach.etymology}</p>}
 
-      {madeOf.length > 0 ? (
+      {teach?.writtenWith && teach.writtenWith.length > 0 ? (
+        <>
+          <Eyebrow className="mt-4">Written with</Eyebrow>
+          <div className="flex flex-wrap gap-2">
+            {teach.writtenWith.map((w, i) => {
+              const star = byId.get(w.kanji);
+              return star
+                ? <StarButton key={`${w.kanji}${i}`} item={star} note={w.reading} onSelect={onSelect} />
+                : <span key={`${w.kanji}${i}`} className={`inline-flex items-baseline gap-2 rounded-lg border border-transparent px-2.5 py-1.5 font-sky-display text-[18px] ${japaneseFont(w.kanji)}`}>{w.kanji}<span className="text-[13px] text-sky-muted">{w.reading}</span></span>;
+            })}
+          </div>
+        </>
+      ) : madeOf.length > 0 ? (
         <>
           <Eyebrow className="mt-4">Made of</Eyebrow>
           <div className="flex flex-wrap gap-2">{madeOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
@@ -92,32 +138,23 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, class
       )}
 
       <div className="mt-4">
-        {teach?.readings && teach.readings.length > 0 && (
+        {(on.length > 0 || kun.length > 0) && (
           <Fold title="Readings">
-            <ul className="flex flex-col gap-1">
-              {teach.readings.map((r) => (
-                <li key={`${r.reading}@${r.inWord}`} className="flex items-baseline gap-3">
-                  <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
-                  <span>in <span className={`font-sky-display text-sky-ink ${japaneseFont(r.inWord)}`}>{r.inWord}</span></span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-col gap-3">
+              {on.length > 0 && <div><Eyebrow>On&apos;yomi · the reading that came with the character</Eyebrow>{readingList(on)}</div>}
+              {kun.length > 0 && <div><Eyebrow>Kun&apos;yomi · the native reading</Eyebrow>{readingList(kun)}</div>}
+            </div>
           </Fold>
         )}
-        {teach?.strokes !== undefined && (
+        {(written || teach?.strokes !== undefined) && (
           <Fold title="How it's written">
-            <p>{teach.strokes} {teach.strokes === 1 ? "stroke" : "strokes"}. The stroke order plays here, in the order you would write it.</p>
+            {written ?? <p>{teach!.strokes} {teach!.strokes === 1 ? "stroke" : "strokes"}.</p>}
           </Fold>
         )}
         {teach?.example && (
-          <Fold title="Example">
+          <Fold title="In a sentence">
             <p className={`font-sky-display text-[17px] text-sky-ink ${japaneseFont(teach.example.jp)}`}>{teach.example.jp}</p>
             <p className="mt-1">{teach.example.en}</p>
-          </Fold>
-        )}
-        {teach?.pitch !== undefined && (
-          <Fold title="Pitch">
-            <p>{teach.pitch === null ? "No pitch data for this word." : `Pattern ${teach.pitch}.`}</p>
           </Fold>
         )}
       </div>

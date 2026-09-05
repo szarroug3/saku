@@ -11,7 +11,7 @@
 // from the start for reference, and a star opened stays lit. Order and
 // locking come from src/sky/lib/lesson.ts over the graph.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard } from "@/sky/components/lesson-card";
@@ -38,12 +38,14 @@ export interface SkyLessonProps {
   data: SkyLessonData;
   /** Where Next goes after the last step: the drill. */
   drillHref?: string;
+  /** "How it's written" per star, from whoever has the stroke order. */
+  written?: Readonly<Record<string, ReactNode>>;
   height?: string;
 }
 
 const BTN = "rounded-[10px] px-3.5 py-2 text-[13px] font-semibold";
 
-export function SkyLesson({ data, drillHref, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, written, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
@@ -60,9 +62,11 @@ export function SkyLesson({ data, drillHref, height }: SkyLessonProps) {
     setSelected(id);
   };
   const stateOf = (id: string) => starState(steps, id, opened, selected);
+  // the selected star is simply lit: the rail and the card say which it is
+  // (Sam's call, 2026-09-05: no accent on the constellation)
   const lookOf = (id: string, base: StarLook): StarLook => {
     switch (stateOf(id)) {
-      case "selected": return { ...base, emphasis: true };
+      case "selected":
       case "lit": return learned.has(id) ? base : { ...base, lit: true };
       case "open": return learned.has(id) ? base : { ...base, tonight: true };
       case "locked": return { ...base, standing: "not-seen", tonight: false };
@@ -77,6 +81,8 @@ export function SkyLesson({ data, drillHref, height }: SkyLessonProps) {
 
   const current = selected ? graph.itemOf(selected) : undefined;
   const tonight = useMemo(() => new Set(steps.map((s) => s.id).concat(data.picks)), [steps, data.picks]);
+  // only what is being taught is drawn: a pick with nothing left to teach stays off the sky
+  const taught = useMemo(() => data.picks.filter((p) => steps.some((s) => s.pick === p)), [data.picks, steps]);
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
   const last = stepIndex === steps.length - 1;
 
@@ -98,7 +104,7 @@ export function SkyLesson({ data, drillHref, height }: SkyLessonProps) {
         <div className="relative h-[42%] min-h-[180px] shrink-0 overflow-hidden rounded-2xl border border-sky-line">
           <SkyField
             items={data.items}
-            roots={data.picks}
+            roots={taught}
             graph={graph}
             width={1120}
             height={400}
@@ -118,11 +124,13 @@ export function SkyLesson({ data, drillHref, height }: SkyLessonProps) {
           <div className="min-h-0 self-stretch overflow-y-auto pr-1">
             {current ? (
               <LessonCard
+                className="min-h-full"
                 item={current}
                 teach={data.teach[current.id]}
                 madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                 partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
                 known={learned.has(current.id)}
+                written={written?.[current.id]}
                 onSelect={open}
               />
             ) : (

@@ -23,10 +23,14 @@ export interface LessonTeach {
   meanings?: readonly string[];
   /** The say-it-like hook and the shape's story, for a kana or a piece. */
   mnemonic?: readonly string[];
+  /** The drawing that goes with the mnemonic, when there is one. */
+  mnemonicImage?: string;
   /** Where the character comes from, for a kanji. */
   etymology?: string;
-  /** A kanji's readings, each with a word it is read that way in. */
-  readings?: ReadonlyArray<{ reading: string; inWord: string }>;
+  /** A kanji's readings, on'yomi and kun'yomi, each with words it is read that way in. */
+  readings?: ReadonlyArray<{ reading: string; kind: "on" | "kun"; words: readonly string[] }>;
+  /** A word's kanji and how each is read in this word. */
+  writtenWith?: ReadonlyArray<{ kanji: string; reading: string }>;
   /** An example sentence for a word. */
   example?: { jp: string; en: string };
   /** A word's pitch pattern, when known. */

@@ -38,12 +38,12 @@ function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "kana") {
     t.reading = romajiOf(glyph);
     const m = getMnemonic(glyph);
-    if (m) t.mnemonic = [text(m.analogy), text(m.mnemonic)].filter(Boolean);
+    if (m) { t.mnemonic = [text(m.analogy), text(m.mnemonic)].filter(Boolean); t.mnemonicImage = m.image; }
     return t;
   }
   if (item.kind === "radical") {
     const m = getMnemonic(glyph);
-    if (m) t.mnemonic = [text(m.mnemonic)].filter(Boolean);
+    if (m) { t.mnemonic = [text(m.mnemonic)].filter(Boolean); t.mnemonicImage = m.image; }
     return t;
   }
   if (item.kind === "kanji") {
@@ -51,12 +51,16 @@ function teachFor(item: SkyItem): LessonTeach {
     if (row) { t.meanings = row.meanings; t.strokes = row.strokes; }
     const e = etymologyOf(glyph);
     if (e?.originText) t.etymology = e.originText;
-    t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, inWord: r.anchor }));
+    // on'yomi are written in katakana, kun'yomi in hiragana, the dictionary's own convention
+    t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, kind: /[\u30a0-\u30ff]/.test(r.base) ? "on" as const : "kun" as const, words: r.words.slice(0, 4) }));
     return t;
   }
   if (item.kind === "word" || item.kind === "counter") {
     const row = vocabRow(glyph);
-    if (row) { t.reading = row.reb; t.meanings = row.glosses; }
+    if (row) {
+      t.reading = row.reb; t.meanings = row.glosses;
+      if (row.align?.length) t.writtenWith = row.align.filter(([k]) => kanjiRow(k)).map(([kanji, surface]) => ({ kanji, reading: surface }));
+    }
     const ex = exampleFor(glyph);
     if (ex) t.example = { jp: ex.jp, en: ex.en };
     if (item.kind === "word") t.pitch = wordPitch(glyph);

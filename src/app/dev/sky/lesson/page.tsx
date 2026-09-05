@@ -9,6 +9,7 @@ import { SkyLesson } from "@/sky/components/sky-lesson";
 import { learnerLesson, lessonFromPicks } from "../lesson";
 import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
+import { WrittenBlock } from "../written-block";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,13 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
   const picks = raw.split(",").map((s) => s.trim()).filter(Boolean);
   const data = sample ? lessonFromPicks(sampleHistory(), picks) : await learnerLesson(picks);
   const back = sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory";
+  // the real stroke order for every character on the card, as a slot
+  const written = Object.fromEntries(
+    Object.keys(data.teach)
+      .map((id) => data.items.find((i) => i.id === id))
+      .filter((i): i is NonNullable<typeof i> => !!i && (i.kind === "kana" || i.kind === "kanji" || i.kind === "radical"))
+      .map((i) => [i.id, <WrittenBlock key={i.id} glyph={i.glyph} />]),
+  );
   return (
     <SkyPage
       note={
@@ -28,7 +36,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
         </>
       }
     >
-      <SkyLesson data={data} drillHref="/session" height="100%" />
+      <SkyLesson data={data} drillHref="/session" written={written} height="100%" />
     </SkyPage>
   );
 }
