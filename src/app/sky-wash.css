@@ -2,7 +2,7 @@
  * THE SKY WASH: the page background of the Sky redesign.
  *
  * THIS IS THE FILE TO EDIT when tuning the background, by hand or with the
- * editor at /dev/sky/wash (drag the glows, pick colours, add or remove layers,
+ * editor that used to live at /dev/sky/wash (removed 2026-09-04; restore it from git if the wash needs tuning again) (drag the glows, pick colours, add or remove layers,
  * then Save, which rewrites this file). Every value in the KNOBS block is one
  * thing to change. The LAYERS block is generated from the knobs by
  * src/sky/lib/sky-wash-file.ts; edit the knobs, not the layers.

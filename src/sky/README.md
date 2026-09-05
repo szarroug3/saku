@@ -38,7 +38,7 @@ stylesheet: text tokens reach 4.5:1 on every ground and card, lines reach 3:1.
 `--sky-faint` and `--sky-star-dim` are decorative only and never carry text.
 The sweep and the page wash live in `src/app/sky-wash.css` as an ordered list
 of layers, each a few named knobs (a glow's colour, strength, position, size,
-tail and visibility). `/dev/sky/wash` is the editor: drag glows, pick colours,
+tail and visibility). `/dev/sky/wash` (gallery page removed 2026-09-04) is the editor: drag glows, pick colours,
 add, hide, reorder or remove layers, then Save (rewrites the file through
 `/api/dev/sky-wash`) or Save + bake; Reset goes back to what the file last
 held. The editor only shows in the live CSS wash mode, the one it edits.
@@ -54,12 +54,12 @@ across the band) and `-x` (slides the whole star field left or right while
 the band stays; drag the star handle). The stars always run the band's whole
 length. The field is an inline
 SVG drawn for 16:9 and shown with cover so it agrees with the baked bitmap. Both images are generated on Save. To judge
-scroll and resize with real content on top, the wash page and `/dev/sky/tokens`
+scroll and resize with real content on top, the wash page and `/dev/sky/tokens` (gallery page removed 2026-09-04)
 have a "cards" pill (bottom left) that overlays a fixed wash with a long column
 of coverage cards; the wash switch beside it swaps modes. The wash (`bg-sky-mesh`) has two halves: the upper sky is text-safe, the
 lower third is a vivid painted horizon where **only large ink (headings) sits
 bare, and body and muted text live inside panels** (`bg-sky-card`), whose dark
-glass is what the test checks them against. `/dev/sky/tokens` shows every token live with its ratios.
+glass is what the test checks them against. `/dev/sky/tokens` (gallery page removed 2026-09-04) shows every token live with its ratios.
 
 ### Standings: one vocabulary, painted only with its word
 
@@ -76,7 +76,7 @@ word:** the dot is not exported; `StandingChip` and `StandingLegend` in
 `src/sky/components/standing-legend.tsx` are the only ways to paint one, and a
 star fill or coverage bar sits beside a legend. Inside the lesson a star is
 locked, open, lit or selected (`LessonState`), never a standing; "tonight" and
-"lit" are legend rows there, never chips. `/dev/sky/standings` shows all of it.
+"lit" are legend rows there, never chips. `/dev/sky/standings` (gallery page removed 2026-09-04) shows all of it.
 
 ### The prerequisite graph: what needs what, once
 
@@ -95,7 +95,7 @@ Two rules: a piece used by two parents is one node with one state; and
 learning a thing says nothing about its parts, so a claimed word is only the
 word and its unknown kanji and radicals are still counted and taught.
 Dangling references and cycles are cut and
-reported, never hidden. `/dev/sky/graph` builds it from the app's real kanji
+reported, never hidden. `/dev/sky/graph` (gallery page removed 2026-09-04) builds it from the app's real kanji
 and vocab tables (that dev route is exempt from the boundary).
 
 ### Constellations: one seeded shape, every screen
@@ -115,7 +115,7 @@ standing through the standing tokens, glow on known stars, lines that fade
 and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
 `emphasis`) override the standing, and `dots={false}` draws lines only so the
 lesson can put its own clickable stars on the returned positions, in the same
-colours via `paintFor`. `/dev/sky/constellations` shows all of it on real words.
+colours via `paintFor`. `/dev/sky/constellations` (gallery page removed 2026-09-04) shows all of it on real words.
 
 ### Filter chips and the coverage bar
 
@@ -132,7 +132,7 @@ a `StandingLegend` carrying the same counts. It takes the size of the whole
 collection as a separate argument and is always drawn against that, never
 the filtered part (`src/sky/lib/coverage.ts`, tested); a counted segment
 never disappears (a hairline at least) and an empty bar still draws.
-`/dev/sky/filters` has both, live.
+`/dev/sky/filters` (gallery page removed 2026-09-04) has both, live.
 
 ### The home: one call
 

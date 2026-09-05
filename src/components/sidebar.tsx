@@ -133,22 +133,13 @@ const DEV_PAGES: Array<{
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
   { href: "/dev/pitch-accent", label: "Pitch accent" },
   {
-    href: "/dev/sky",
+    href: "/dev/sky/home",
     label: "Sky (redesign)",
-    // Mirrors SKY_PAGES in src/app/dev/sky/layout.tsx. Kept as a literal
-    // rather than imported so this client component does not pull the gallery
-    // layout into the nav bundle.
+    // The Sky pages on their real data, until cutover. Kept as a literal so
+    // this client component does not pull the Sky layout into the nav bundle.
     children: [
-      { href: "/dev/sky", label: "Overview" },
       { href: "/dev/sky/home", label: "Home" },
-      { href: "/dev/sky/tokens", label: "Night tokens" },
-      { href: "/dev/sky/wash", label: "The wash" },
-      { href: "/dev/sky/standings", label: "Standings" },
-      { href: "/dev/sky/graph", label: "Graph" },
-      { href: "/dev/sky/constellations", label: "Constellations" },
-      { href: "/dev/sky/filters", label: "Filters + coverage" },
-      { href: "/dev/sky/item-card", label: "ItemCard" },
-      { href: "/dev/sky/item-section", label: "ItemSection" },
+      { href: "/dev/sky/planetarium", label: "Planetarium" },
     ],
   },
 ];
