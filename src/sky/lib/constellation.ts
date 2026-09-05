@@ -71,7 +71,7 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
 
   const index = new Map<string, number>();
   shape.nodes.forEach((n, i) => index.set(n.id, i));
-  const stars: Star[] = shape.nodes.map((n) => ({ id: n.id, depth: n.depth, x: 0, y: 0, ...(shape.group && n.id === shape.root ? { group: true } : {}) }));
+  const stars: Star[] = shape.nodes.map((n) => ({ id: n.id, depth: n.depth, x: 0, y: 0, ...(n.group || (shape.group && n.id === shape.root) ? { group: true } : {}) }));
   if (stars.length === 0) return { root: shape.root, stars, lines: [] };
 
   // every parent's parts, in edge order, so a fan has a stable order
@@ -117,14 +117,15 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
   const extent = Math.max(0.5, ...stars.map((s) => Math.max(Math.abs(s.x), Math.abs(s.y))));
   for (const s of stars) { s.x = round4(s.x / extent); s.y = round4(s.y / extent); }
 
-  // a group has no star at its centre: its parts link to each other, round
-  // the ring they sit on, and nothing points inward
-  const lines: Array<readonly [number, number]> = shape.group
-    ? [
-        ...shape.edges.filter(([from]) => from !== shape.root).map(([from, to]) => [index.get(from)!, index.get(to)!] as const),
-        ...ring((partsOf.get(shape.root) ?? []).map((id) => index.get(id)!)),
-      ]
-    : shape.edges.map(([from, to]) => [index.get(from)!, index.get(to)!] as const);
+  // a group has no star: nothing points at it or out of it, and its parts
+  // link to each other round the ring they sit on. A group inside another
+  // (the row a row builds on) is drawn the same way, so its sounds never
+  // fan out over the ring around them.
+  const groups = new Set(stars.filter((s) => s.group).map((s) => s.id));
+  const lines: Array<readonly [number, number]> = [
+    ...shape.edges.filter(([from, to]) => !groups.has(from) && !groups.has(to)).map(([from, to]) => [index.get(from)!, index.get(to)!] as const),
+    ...[...groups].flatMap((g) => ring((partsOf.get(g) ?? []).filter((id) => !groups.has(id)).map((id) => index.get(id)!))),
+  ];
   return { root: shape.root, stars, lines };
 }
 

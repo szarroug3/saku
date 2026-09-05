@@ -25,8 +25,7 @@ import { Floating, pointerAnchor, type Anchor } from "@/sky/components/sky-card"
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
 import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
-import { scatterLayout, worldFor, type Placed } from "@/sky/lib/scatter";
-import { bySizeDesc } from "@/sky/lib/sky-scene";
+import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface SkyFieldProps {
@@ -90,10 +89,10 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const all = useMemo(() => [...roots, ...firmament.filter((id) => !rootSet.has(id))].filter((id) => graph.has(id)), [roots, firmament, rootSet, graph]);
   const layouts = useMemo(() => new Map(all.map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, all]);
   const { placed, world } = useMemo(() => {
-    const boxes = bySizeDesc([...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase) })), (b) => b.size);
+    const boxes = [...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase) }));
     const gap = firmament.length ? Math.min(pad, 18) : pad;
-    const world = worldFor(boxes, gap, { width, height });
-    const placed: PlacedConstellation[] = scatterLayout(boxes, world.width, world.height, gap).map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
+    const { placed: laid, world } = scatterInWorld(boxes, { width, height }, gap);
+    const placed: PlacedConstellation[] = laid.map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
     return { placed, world };
   }, [layouts, baseSize, firmamentBase, rootSet, firmament.length, width, height, pad]);
 

@@ -5,8 +5,10 @@
 // seeded by its own key, nudged until it overlaps nothing placed before it,
 // so a word keeps its place night after night and a new word finds a gap
 // without moving the others. Rejection sampling with a bounded number of
-// tries; if no clean spot turns up the first candidate stands, which is the
-// honest failure for a sky that is simply full.
+// tries, then a seeded sweep of the whole sky for any free spot (a small
+// sky with three boxes has room the random tries can all miss); only when
+// there is none does the first candidate stand, which is the honest failure
+// for a sky that is simply full.
 
 import { hashUnit } from "./constellation";
 
@@ -42,10 +44,27 @@ export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: num
       const clash = placed.some((p) => x < p.x + p.size + pad && x + size + pad > p.x && y < p.y + p.size + pad && y + size + pad > p.y);
       if (!clash) found = { x, y };
     }
-    const at = found ?? first ?? { x: pad, y: pad };
+    const at = found ?? sweep(item.key, size, w, h, pad, placed) ?? first ?? { x: pad, y: pad };
     placed.push({ item, x: Math.round(at.x * 100) / 100, y: Math.round(at.y * 100) / 100, size });
   }
   return placed;
+}
+
+/** Every spot on a grid across the sky, starting from a seeded corner of
+ * it, until one is clear. Deterministic, so a word still keeps its place. */
+function sweep(key: string, size: number, w: number, h: number, pad: number, placed: readonly Placed[]): { x: number; y: number } | null {
+  const step = Math.max(4, Math.round(Math.min(size, pad * 2) / 2));
+  const xs: number[] = [], ys: number[] = [];
+  for (let x = pad; x <= w - size - pad + 1e-6; x += step) xs.push(x);
+  for (let y = pad; y <= h - size - pad + 1e-6; y += step) ys.push(y);
+  if (!xs.length || !ys.length) return null;
+  const ox = Math.floor(hashUnit(`${key}#sx`) * xs.length), oy = Math.floor(hashUnit(`${key}#sy`) * ys.length);
+  for (let j = 0; j < ys.length; j++) for (let i = 0; i < xs.length; i++) {
+    const x = xs[(i + ox) % xs.length], y = ys[(j + oy) % ys.length];
+    const clash = placed.some((p) => x < p.x + p.size + pad && x + size + pad > p.x && y < p.y + p.size + pad && y + size + pad > p.y);
+    if (!clash) return { x, y };
+  }
+  return null;
 }
 
 /** How full a scatter can pack its boxes before the tries run out and
@@ -62,6 +81,32 @@ export function worldFor(items: readonly ScatterItem[], pad: number, min: { widt
   const aspect = min.width / min.height;
   const width = Math.max(min.width, Math.ceil(Math.sqrt(needed * aspect)));
   return { width, height: Math.max(min.height, Math.ceil(width / aspect)) };
+}
+
+/** True when any two placed boxes overlap, allowing for the padding. */
+export function anyOverlap(placed: readonly Placed[], pad: number): boolean {
+  for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) if (overlaps(placed[i], placed[j], pad)) return true;
+  return false;
+}
+
+/** How much the world grows each time a scatter comes out overlapping. */
+const GROWTH = 1.25;
+const GROWTH_STEPS = 8;
+
+/** Boxes scattered into a world at least `min` in size, grown until they
+ * all fit clean: the area rule (`worldFor`) says roughly how big, and the
+ * scatter says whether that was enough. Boxes are placed largest first and,
+ * at a size, by key, so the same set lands the same way whatever order it
+ * came in. Deterministic throughout. */
+export function scatterInWorld<T extends ScatterItem>(items: readonly T[], min: { width: number; height: number }, pad: number): { placed: Placed<T>[]; world: { width: number; height: number } } {
+  const ordered = [...items].sort((a, b) => b.size - a.size || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  let world = worldFor(ordered, pad, min);
+  let placed = scatterLayout(ordered, world.width, world.height, pad);
+  for (let step = 0; step < GROWTH_STEPS && anyOverlap(placed, pad); step++) {
+    world = { width: Math.ceil(world.width * GROWTH), height: Math.ceil(world.height * GROWTH) };
+    placed = scatterLayout(ordered, world.width, world.height, pad);
+  }
+  return { placed, world };
 }
 
 /** True when two placed boxes overlap, allowing for the padding. */

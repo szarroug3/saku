@@ -134,7 +134,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   const meterNote = summary.pieces === 0
     ? "Pick anything to start."
     : over
-      ? `That's ${summary.over} past a comfortable lesson. You can still start it, but expect a backlog of unopened lessons.`
+      ? `That's ${summary.over} past a comfortable lesson.`
       : summary.pieces === cap
         ? "A full lesson, right at the line."
         : `${cap - summary.pieces} more ${cap - summary.pieces === 1 ? "piece" : "pieces"} before this lesson gets uncomfortably large.`;

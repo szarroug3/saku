@@ -48,7 +48,9 @@ export interface Constellation {
   /** The root is a group (a kana row): a grouping of its parts, not a star
    * of its own. Drawn as its parts alone, linked in a ring. */
   group?: boolean;
-  nodes: ReadonlyArray<{ id: string; depth: number }>;
+  /** Every node once; a group anywhere in the shape (a row another row
+   * builds on) is flagged, and is drawn the same way as a group root. */
+  nodes: ReadonlyArray<{ id: string; depth: number; group?: boolean }>;
   edges: ReadonlyArray<readonly [from: string, to: string]>;
 }
 
@@ -221,7 +223,7 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
         }
       };
       walk(id);
-      const nodes = orderOf(id).map((n) => ({ id: n, depth: depth.get(n) ?? 0 })).reverse();
+      const nodes = orderOf(id).map((n) => ({ id: n, depth: depth.get(n) ?? 0, ...(byId.get(n)?.group ? { group: true } : {}) })).reverse();
       return { root: id, nodes, edges, ...(byId.get(id)?.group ? { group: true } : {}) };
     },
   };

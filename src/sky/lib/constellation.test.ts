@@ -95,6 +95,20 @@ describe("the constellation layout", () => {
     assert.equal(layout.lines.length, 5, "five members, five links round the ring");
   });
 
+  it("a group inside a group is drawn the same way: no line touches either, each rings its own", () => {
+    const kana = (s: string) => [...s].map((k) => item(k, "kana"));
+    const rows = buildGraph([
+      ...kana("はひふへほ"), ...kana("ばびぶべぼ"),
+      { ...item("row:h", "kana", [..."はひふへほ"]), group: true },
+      { ...item("row:b", "kana", [..."ばびぶべぼ", "row:h"]), group: true },
+    ]);
+    const layout = layoutConstellation(rows.constellationOf("row:b"));
+    const groups = new Set(layout.stars.map((s, i) => (s.group ? i : -1)).filter((i) => i >= 0));
+    assert.equal(groups.size, 2);
+    assert.ok(layout.lines.every(([a, b]) => !groups.has(a) && !groups.has(b)), "no line touches a group");
+    assert.equal(layout.lines.length, 10, "two rings of five");
+  });
+
   it("role and size helpers", () => {
     assert.equal(roleOf("word"), "word");
     assert.equal(roleOf("verbPair"), "word");

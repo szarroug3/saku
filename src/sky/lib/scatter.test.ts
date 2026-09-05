@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { overlaps, scatterLayout, worldFor } from "@/sky/lib/scatter";
+import { anyOverlap, overlaps, scatterInWorld, scatterLayout, worldFor } from "@/sky/lib/scatter";
 import { bySizeDesc, skyRoots, skyStars, tallyStandings } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -62,6 +62,27 @@ describe("the sky scene", () => {
   it("tallies standings and sorts largest first, stably", () => {
     assert.deepEqual(tallyStandings(["日本", "日", "本", "木", "時", "間"], standing), { solid: 3, shaky: 1, claimed: 1, "not-seen": 1 });
     assert.deepEqual(bySizeDesc(["a", "bb", "cc", "d"], (s) => s.length), ["bb", "cc", "a", "d"]);
+  });
+});
+
+describe("a small sky", () => {
+  it("grows until its rows fit clean, and lands the same way whatever order they came in", () => {
+    const rows = ["kana-row:h-vowels", "kana-row:h-k", "kana-row:h-s"].map((key) => ({ key, size: 76 }));
+    const min = { width: 340, height: 230 };
+    const a = scatterInWorld(rows, min, 16);
+    assert.ok(!anyOverlap(a.placed, 16));
+    for (const order of [[rows[0], rows[2], rows[1]], [rows[2], rows[1], rows[0]]]) {
+      const b = scatterInWorld(order, min, 16);
+      assert.ok(!anyOverlap(b.placed, 16));
+      assert.deepEqual(b.world, a.world);
+      assert.deepEqual(b.placed.map((p) => [p.item.key, p.x, p.y]), a.placed.map((p) => [p.item.key, p.x, p.y]));
+    }
+  });
+
+  it("a sky that is genuinely full still gives up gracefully", () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ key: `w${i}`, size: 120 }));
+    const { placed } = scatterInWorld(many, { width: 400, height: 300 }, 10);
+    assert.equal(placed.length, 40);
   });
 });
 
