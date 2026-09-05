@@ -34,7 +34,7 @@ export interface SkyQuizProps {
   grade: (card: QuizCard, given: string) => boolean;
   /** Where the answers go when the session ends: the schedule. */
   onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
-  /** Back to the sky. */
+  /** Back to the observatory. */
   skyHref: string;
   hear?: HearComponent;
   pitch?: PitchComponent;
@@ -188,7 +188,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
       <SkyPageShell eyebrow="Quiz" title="Nothing to quiz" height={height}>
         <SkySurface className="mx-auto max-w-[560px]">
           <p className="text-[14px] text-sky-muted">Nothing is due. Learn something in the Observatory, or pick things in the Atlas and ask for a quiz.</p>
-          <SkyButton href={skyHref} className="mt-4">Back to the sky</SkyButton>
+          <SkyButton href={skyHref} className="mt-4">Back to the observatory</SkyButton>
         </SkySurface>
       </SkyPageShell>
     );
@@ -234,7 +234,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
               {!onFinish ? "A look only: nothing was recorded." : saved === "saving" ? "Recording…" : saved === "yes" ? "Recorded against your schedule." : saved === "failed" ? "Could not record this. Your schedule is unchanged." : ""}
             </p>
           </SkySurface>
-          <div><SkyButton href={skyHref}>Back to the sky</SkyButton></div>
+          <div><SkyButton href={skyHref}>Back to the observatory</SkyButton></div>
         </div>
       </SkyPageShell>
     );
@@ -252,95 +252,94 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
       {/* one width and one height for the box whatever is on the card, so the
-          arrows stay put while stepping back and forth, and the help row is
-          anchored to its bottom (Sam, 2026-09-05); no arrow past either end */}
+          arrows stay put while stepping back and forth; the help is a bar
+          down its right side (Sam, 2026-09-05); no arrow past either end. A
+          hint, and a missed card's lesson, open in the panel underneath. */}
       <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-        <SkySurface className="flex h-[540px] shrink-0 flex-col">
+        <SkySurface className="flex h-[360px] shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{meta}</p>
             <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
-          <div className="mt-4 flex flex-col items-center text-center">
-            <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[72px]" : "text-[40px]") : "text-[30px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
-            {context && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
-            {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
-          </div>
-
-          {!answered && (
-            <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3">
-              {/* the answering area scrolls if it must (choices and a hint
-                  together); the help row below it never moves */}
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-              {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
-              {card.typed && (
-                <form onSubmit={submit} className="flex gap-2">
-                  <input
-                    ref={input}
-                    value={given}
-                    onChange={(e) => setGiven(e.target.value)}
-                    placeholder={card.answerIs === "reading" ? "The reading, in romaji" : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    className="min-w-0 flex-1 rounded-xl border border-sky-muted/45 bg-sky-card px-4 py-2.5 text-[16px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
-                  />
-                  <SkyButton onClick={() => submit()} disabled={!given.trim()}>Check</SkyButton>
-                </form>
-              )}
-              {choices && (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {card.options.map((o) => {
-                    const struck = state.wrong.includes(o.id);
-                    return (
-                      <button
-                        key={o.id}
-                        type="button"
-                        onClick={() => choose(o.id)}
-                        disabled={struck}
-                        className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
-                      >
-                        {o.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {state.hinted && card.hint && (
-                <div className="flex items-center gap-3 rounded-xl border border-sky-line px-3 py-2 text-[13.5px] text-sky-muted">
-                  {card.hint.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.hint.image} alt="" className="size-[56px] rounded-md object-contain" />
-                  )}
-                  {card.hint.text && <span>{card.hint.text}</span>}
-                </div>
-              )}
+          <div className="mt-3 flex min-h-0 flex-1 gap-4">
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex flex-col items-center text-center">
+                <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[64px]" : "text-[36px]") : "text-[28px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
+                {context && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
+                {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
               </div>
-              {help.length > 0 && (
-                <div className="mt-auto shrink-0 border-t border-sky-line pt-3">
-                  <Eyebrow>Help me{state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}</Eyebrow>
-                  {/* three equal cells whatever is offered, so the buttons keep
-                      one size from card to card (Sam, 2026-09-05) */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
-                  </div>
+
+              {!answered && (
+                <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+                  {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
+                  {card.typed && (
+                    <form onSubmit={submit} className="flex gap-2">
+                      <input
+                        ref={input}
+                        value={given}
+                        onChange={(e) => setGiven(e.target.value)}
+                        placeholder={card.answerIs === "reading" ? "The reading, in romaji" : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        className="min-w-0 flex-1 rounded-xl border border-sky-muted/45 bg-sky-card px-4 py-2.5 text-[16px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
+                      />
+                      <SkyButton onClick={() => submit()} disabled={!given.trim()}>Check</SkyButton>
+                    </form>
+                  )}
+                  {choices && (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {card.options.map((o) => {
+                        const struck = state.wrong.includes(o.id);
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => choose(o.id)}
+                            disabled={struck}
+                            className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
+                          >
+                            {o.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {answered && (
+                <div className="mt-4 flex flex-col gap-2">
+                  <p className="text-center">
+                    <span className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</span>
+                    <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
+                  </p>
+                  <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answer}</p>
+                  {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
                 </div>
               )}
             </div>
-          )}
 
-          {answered && (
-            <div className="mt-5 flex flex-1 flex-col gap-3">
-              <p className="text-center">
-                <span className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</span>
-                <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
-              </p>
-              <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answer}</p>
-              {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
-              <div className="mt-auto flex justify-center"><SkyButton onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton></div>
+            {/* the bar: help while the card is open, the way on once it is done */}
+            <div className="flex w-[168px] shrink-0 flex-col gap-2 border-l border-sky-line pl-4">
+              <Eyebrow>{answered ? "Then" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}`}</Eyebrow>
+              {answered
+                ? <SkyButton block onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton>
+                : help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
             </div>
-          )}
+          </div>
         </SkySurface>
+
+        {!answered && state.hinted && card.hint && (
+          <SkySurface className="flex items-center gap-4 text-[14px] text-sky-ink/90">
+            {card.hint.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={card.hint.image} alt="" className="size-[96px] rounded-md object-contain" />
+            )}
+            {card.hint.text && <span>{card.hint.text}</span>}
+          </SkySurface>
+        )}
 
         {answered && (
           <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} />

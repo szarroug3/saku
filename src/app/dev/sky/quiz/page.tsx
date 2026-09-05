@@ -25,12 +25,12 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
     <SkyPage
       note={
         <>
-          {sample ? "A pretend learner, nothing recorded. " : "Your own progress. "}
+          {sample ? "A pretend learner, so there is no one to record against. " : "Your own progress, recorded. "}
           <Link href={sample ? "/dev/sky/quiz" : "/dev/sky/quiz?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
         </>
       }
     >
-      <QuizClient cards={cards} skyHref={sample ? "/dev/sky/planetarium?sample" : "/dev/sky/planetarium"} onFinish={sample ? undefined : recordQuiz} />
+      <QuizClient cards={cards} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} />
     </SkyPage>
   );
 }
