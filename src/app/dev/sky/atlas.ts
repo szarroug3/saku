@@ -150,12 +150,13 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   const knownOf = (ids: readonly string[]) => ids.filter((x) => { const e = libEntry(x as EntryId); return !!e && standingFor(e, history, now).met; }).length;
 
   if (item.kind === "kanji") {
-    // every word written with it, in teaching order, against the whole vocabulary
+    // what it is a part of first, then every word written with it, in
+    // teaching order, against the whole vocabulary (Sam's order)
+    const builds = kanjiIds(usedAsPartIn(glyph));
+    if (builds.length) group("Used as a part in", builds, `${builds.length} Kanji`);
     const kebs = VOCAB.filter((w) => w.keb.includes(glyph)).map((w) => w.keb).sort((a, b) => (vocabRow(a)?.beginnerRank ?? Infinity) - (vocabRow(b)?.beginnerRank ?? Infinity));
     const ids = wordIds(kebs);
     if (ids.length) group("Words written with it", ids, `You know ${knownOf(ids)} of ${ids.length}`);
-    const builds = kanjiIds(usedAsPartIn(glyph));
-    if (builds.length) group("Used as a part in", builds, `${builds.length} Kanji`);
   }
   if (item.kind === "radical") {
     const builds = kanjiIds(usedAsPartIn(glyph));

@@ -246,15 +246,6 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           <div className="flex flex-wrap gap-2">{partOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
         </>
       )}
-      {related.length > 0 && (
-        <div className="mt-4">
-          {related.map((group) => (
-            <Fold key={group.title} title={group.note ? `${group.title} · ${group.note}` : group.title} open>
-              <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
-            </Fold>
-          ))}
-        </div>
-      )}
 
       <div className="mt-4">
         {(on.length > 0 || kun.length > 0) && (
@@ -276,6 +267,13 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
             <p className="mt-1">{teach.example.en}</p>
           </Fold>
         )}
+        {/* the related groups last, closed (Sam's order, 2026-09-05): what it
+            is a part of, then the words written with it */}
+        {related.map((group) => (
+          <Fold key={group.title} title={group.note ? `${group.title} · ${group.note}` : group.title}>
+            <div className="flex flex-wrap gap-2">{group.items.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
+          </Fold>
+        ))}
       </div>
 
       {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
