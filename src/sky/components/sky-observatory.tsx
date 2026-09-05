@@ -69,8 +69,9 @@ export interface SkyObservatoryProps {
   lessonPath?: string;
   /** Claims the picks ("I already know these"): a server action from the
    * route, given the picked ids. Each pick claims only itself (a word's kanji
-   * stay unclaimed; a kana row claims its sounds). Absent when the learner
-   * cannot claim (a sample, a visitor). */
+   * stay unclaimed; a kana row claims its sounds). Absent when there is no
+   * history to write to (a sample, a visitor): the claim then holds for the
+   * visit only, so the page still behaves. */
   onClaim?: (ids: readonly string[]) => Promise<void>;
   initialPicks?: readonly string[];
 }
@@ -87,7 +88,10 @@ function kindLabel(item: SkyItem): string {
 
 export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height, onClaim }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
-  const learned = useMemo(() => new Set(data.learned), [data.learned]);
+  // what is claimed this visit joins what is learned; without a route to
+  // write to, that is the whole of the claim
+  const [claimed, setClaimed] = useState<readonly string[]>([]);
+  const learned = useMemo(() => new Set([...data.learned, ...claimed]), [data.learned, claimed]);
   const [picks, setPicks] = useState<readonly string[]>(initialPicks);
   const [undo, setUndo] = useState<{ removed: string; before: readonly string[] } | null>(null);
   // sections opened with their Start button this visit, on top of those already started
@@ -204,11 +208,11 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 <button type="button" className="underline hover:text-sky-ink" onClick={() => { setPicks(undo.before); setUndo(null); }}>Undo</button>
               </p>
             )}
-            {picks.length > 0 && onClaim && (
+            {picks.length > 0 && (
               <button
                 type="button"
                 disabled={claiming}
-                onClick={() => startClaim(async () => { await onClaim(picks); setPicks([]); setUndo(null); })}
+                onClick={() => startClaim(async () => { if (onClaim) await onClaim(picks); setClaimed((c) => [...c, ...picks]); setPicks([]); setUndo(null); })}
                 className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-accent bg-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-accent hover:bg-sky-accent/10 disabled:border-sky-line disabled:text-sky-faint"
               >
                 {claiming ? "Claiming…" : "I already know these"}
