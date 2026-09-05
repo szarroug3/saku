@@ -165,7 +165,9 @@ export function Info({
         aria-label={label}
         className={cn(
           // an accent ring and an accent i, so the mark can be seen (Sam, 2026-09-05)
-          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-accent align-[1px] text-[9px] font-semibold leading-none text-accent hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          // the glyph box is centred in the ring and nudged up a hair, since the
+          // letter's ink sits low in its box
+          "kq-material ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-accent pb-px align-[1px] text-[9px] font-semibold leading-[0] text-accent hover:bg-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
           className,
         )}
       >

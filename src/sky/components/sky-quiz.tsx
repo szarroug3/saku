@@ -77,8 +77,9 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const Pitch = pitch;
   const Hear = hear;
   const Tip = tip;
-  // rows picked on the results, for a retry of just those
+  // rows picked on the results, for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const [lastPick, setLastPick] = useState<number | null>(null);
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
@@ -235,11 +236,11 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
               </div>
             </dl>
           </SkySurface>
-          {/* the list keeps one height and scrolls inside; a row can be picked
-              for a retry of just those cards (Sam, 2026-09-05) */}
-          <SkySurface className="flex h-[360px] shrink-0 flex-col">
+          {/* the list fills the page and scrolls inside; a row can be picked
+              for a retry of just those cards, shift for a run (Sam, 2026-09-05) */}
+          <SkySurface className="flex min-h-0 flex-1 flex-col">
             <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-              {cards.map((c) => {
+              {cards.map((c, i) => {
                 const a = answers[c.id];
                 const on = picked.has(c.id);
                 return (
@@ -247,7 +248,15 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                     <button
                       type="button"
                       aria-pressed={on}
-                      onClick={() => { const next = new Set(picked); if (on) next.delete(c.id); else next.add(c.id); setPicked(next); }}
+                      onClick={(e) => {
+                        const next = new Set(picked);
+                        if (e.shiftKey && lastPick !== null) {
+                          for (let k = Math.min(lastPick, i); k <= Math.max(lastPick, i); k++) next.add(cards[k].id);
+                        } else if (on) next.delete(c.id);
+                        else next.add(c.id);
+                        setPicked(next);
+                        setLastPick(i);
+                      }}
                       className={`flex w-full flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
                     >
                       <span className={`font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
