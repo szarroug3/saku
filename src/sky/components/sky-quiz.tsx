@@ -359,7 +359,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                         if (o.pitch !== undefined) {
                           return (
                             <div key={o.id} className={`flex w-[calc((100%-1rem)/3)] min-w-[140px] items-center gap-1 rounded-xl border pr-2 ${frame}`}>
-                              <button type="button" onClick={() => pick(o.id)} disabled={struck} aria-pressed={on} className={`flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left ${struck ? "line-through" : ""}`}>
+                              <button type="button" onClick={() => pick(o.id)} disabled={struck} aria-pressed={on} className={`flex min-h-[52px] min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left ${struck ? "line-through" : ""}`}>
                                 <span className="text-[12px] text-sky-muted">{i + 1}</span>
                                 {state.hinted && Pitch && <span className={`font-sky-display text-[18px] ${japaneseFont(o.label)}`}><Pitch reading={o.label} downstep={o.pitch} /></span>}
                               </button>
@@ -411,7 +411,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
           </div>
         </SkySurface>
 
-        {!answered && state.hinted && card.hint && (
+        {!answered && state.hinted && card.hint && (card.hint.image || card.hint.text) && (
           <SkySurface className="flex items-center gap-4 text-[14px] text-sky-ink/90">
             {card.hint.image && (
               // eslint-disable-next-line @next/next/no-img-element

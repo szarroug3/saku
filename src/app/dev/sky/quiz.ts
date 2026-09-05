@@ -171,8 +171,9 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     item,
     prompt: { glyph: keb, jp: true, context: q.gloss },
     instruction: pitchInstruction({ promptGloss: q.gloss }),
-    // the choices are sounds; the hint writes each one out with its pitch
-    hint: { text: "Each clip now shows its reading, with the line where the voice stays high." },
+    // the choices are sounds; the hint writes each one out with its pitch,
+    // on the clips themselves, so there is nothing to say below
+    hint: {},
     answerIs: "other",
     typed: false,
     options: correctFirst ? pair : [pair[1], pair[0]],
