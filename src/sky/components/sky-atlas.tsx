@@ -148,6 +148,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
   const counts = shelf ? tally(shelf) : undefined;
+  // a term carries no standing (nothing is ever asked about it), so its
+  // shelf shows no status list and no coverage
+  const tracked = shelf?.kind !== "term";
   const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (status === null || it.standing === status); }, [graph, status]);
 
@@ -255,7 +258,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
 
         <div className="grid min-h-0 flex-1 items-start gap-4" style={{ gridTemplateColumns: columns }}>
           {shelvesShown && railOpen && shelf && (
-            <AtlasRail collections={data.shelves} open={shelf.id} onOpen={setShelfId} counts={counts} total={shelf.total} status={status} onStatus={setStatus} onHide={() => setRailOpen(false)} />
+            <AtlasRail collections={data.shelves} open={shelf.id} onOpen={setShelfId} counts={tracked ? counts : undefined} total={shelf.total} status={status} onStatus={setStatus} onHide={() => setRailOpen(false)} />
           )}
 
           {shelvesShown && (
@@ -264,8 +267,14 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 <div className="flex shrink-0 items-start gap-3">
                   {!railOpen && <RoundButton label="Show the rail" expanded={false} onClick={() => setRailOpen(true)} className="mt-1">›</RoundButton>}
                   <div className="min-w-0 flex-1">
-                    <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
-                    <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
+                    {tracked ? (
+                      <>
+                        <p className="font-sky-display text-[22px] text-sky-ink">{known.toLocaleString()} <span className="text-[14px] text-sky-muted">of {shelf.total.toLocaleString()} {shelf.unit} known</span></p>
+                        <CoverageBar className="mt-2 h-2" counts={shelf.counts} total={shelf.total} label={shelf.unit} />
+                      </>
+                    ) : (
+                      <p className="font-sky-display text-[22px] text-sky-ink">{shelf.total.toLocaleString()} <span className="text-[14px] text-sky-muted">{shelf.unit}</span></p>
+                    )}
                   </div>
                 </div>
               )}

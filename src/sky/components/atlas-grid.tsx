@@ -28,7 +28,7 @@ export interface TileGridProps {
 /** A glyph that is really a name in English (a sentence rule's "Because /
  * so", a counter's "one thing"): set smaller, allowed to wrap, given a
  * wider tile. */
-export const isName = (glyph: string) => /^[A-Za-z0-9 /().'’-]+$/.test(glyph) && glyph.length > 2;
+export const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(glyph) && glyph.length > 2;
 
 export function Tile({ item, selected, onPick, onPeek }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void }) {
   const name = isName(item.glyph);
@@ -40,7 +40,7 @@ export function Tile({ item, selected, onPick, onPeek }: { item: SkyItem; select
       onPointerEnter={onPeek ? () => onPeek(item.id) : undefined}
       aria-pressed={selected}
       title={`${item.glyph} ${item.english}`}
-      className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 transition-colors ${name ? "min-h-[64px] py-2" : "aspect-square"} ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-panel hover:bg-sky-card-strong"}`}
+      className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 transition-colors ${name ? "h-16" : "aspect-square"} ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-panel hover:bg-sky-card-strong"}`}
     >
       <span className={`max-w-full text-center leading-tight ${name ? "line-clamp-2 font-sky-ui text-[12.5px] font-semibold" : `truncate font-sky-display leading-none ${lone ? "text-[24px]" : "text-[15px]"}`} ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
       {item.english !== item.glyph && <span className="max-w-full truncate text-[9.5px] text-sky-muted">{item.english}</span>}
