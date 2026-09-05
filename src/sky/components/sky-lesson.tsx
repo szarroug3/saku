@@ -17,6 +17,7 @@ import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard, LessonPageCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
+import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
@@ -182,23 +183,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                 const it = graph.itemOf(s.id);
                 const locked = !isUnlocked(steps, i, opened);
                 const state = stateOf(s.id);
-                if (s.page) {
-                  return (
-                    <li key={s.id}>
-                      <button
-                        type="button"
-                        aria-current={state === "selected" ? "step" : undefined}
-                        aria-disabled={locked || undefined}
-                        onClick={() => open(s.id)}
-                        className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
-                      >
-                        <span className={`text-[13px] ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.page.title}</span>
-                        <span className="ml-auto text-[10.5px] uppercase tracking-[0.08em] text-sky-muted">{s.page.kind}</span>
-                      </button>
-                    </li>
-                  );
-                }
-                return (
+                const row = (children: ReactNode) => (
                   <li key={s.id}>
                     <button
                       type="button"
@@ -207,11 +192,21 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                       onClick={() => open(s.id)}
                       className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
                     >
-                      <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${state === "lit" || state === "selected" ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
-                      {it?.english !== it?.glyph && <span className="text-[12.5px] text-sky-muted">{it?.english}</span>}
+                      {children}
                     </button>
                   </li>
                 );
+                const lit = state === "lit" || state === "selected";
+                if (s.page) {
+                  return row(<>
+                    <span className={`text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.page.title}</span>
+                    <Eyebrow className="ml-auto mb-0 font-normal">{s.page.kind}</Eyebrow>
+                  </>);
+                }
+                return row(<>
+                  <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${lit ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
+                  {it?.english !== it?.glyph && <span className="text-[12.5px] text-sky-muted">{it?.english}</span>}
+                </>);
               })}
             </ol>
           </SkyPanel>

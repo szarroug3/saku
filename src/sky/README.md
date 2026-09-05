@@ -233,3 +233,14 @@ mount as they scroll near), `useSelection` (plain, cmd and shift picks over
 the tiles on screen) and `useEntries` (entries fetched once, fetched ahead
 on hover).
 
+Added in the second audit (2026-09-05): `SkyChip` (`sky-button.tsx`) is the
+one pill that is on or off (a pager's pages, the Atlas's "also found"
+counts); `SkyInput` (`sky-input.tsx`) is the one text box (the Atlas's
+search, the Quiz's answer); `SkyBox` (`sky-panel.tsx`) is the bordered box
+inside a card (a table, a worked example); `Eyebrow` (`sky-card.tsx`) is the
+one small caps label, in a tone (muted, accent, or the caller's colour) and
+a size, wherever a label sits over content. Non-primary actions are the
+outline button; quiet is only for a step back. A raw `<button>` is for a
+thing that is selected (a tile, a row, a choice), never for an action. The
+Quiz's results screen is its own component (`quiz-results.tsx`).
+

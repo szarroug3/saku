@@ -63,7 +63,11 @@ export function SkyCard({ className = "", children }: { className?: string; chil
   return <div className={`rounded-xl border border-sky-line bg-sky-ground-0 p-3 font-sky-ui text-[13px] text-sky-ink shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${className}`}>{children}</div>;
 }
 
-/** The small caps line over a card's content: the kind of thing, the subject. */
-export function Eyebrow({ className = "", children }: { className?: string; children: ReactNode }) {
-  return <div className={`mb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted ${className}`}>{children}</div>;
+/** The small caps line over content: the kind of thing, a section's name,
+ * a table's title. The ONE such label in the Sky (audit, 2026-09-05):
+ * muted by default, in the accent when it names a thing being taught,
+ * inheriting its colour when the caller colours it (a verdict). */
+export function Eyebrow({ tone = "muted", size = "sm", className = "", children }: { tone?: "muted" | "accent" | "inherit"; size?: "sm" | "md"; className?: string; children: ReactNode }) {
+  const colour = tone === "muted" ? "text-sky-muted" : tone === "accent" ? "text-sky-accent" : "";
+  return <div className={`mb-1 font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${colour} ${className}`}>{children}</div>;
 }

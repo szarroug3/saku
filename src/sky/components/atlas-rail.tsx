@@ -9,6 +9,7 @@
 import type { ReactNode } from "react";
 
 import { RoundButton } from "@/sky/components/sky-button";
+import { Eyebrow } from "@/sky/components/sky-card";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
@@ -26,7 +27,6 @@ export interface AtlasRailProps {
   onHide: () => void;
 }
 
-const HEADING = "text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted";
 
 /** A rail row: a name with a count on the right, and a dot before it when
  * the row stands for a standing. */
@@ -47,14 +47,14 @@ export function AtlasRail({ collections, open, onOpen, counts, total, status, on
     <SkySurface as="nav" pad="sm" aria-label="Collections and status" className="flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto">
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <p className={HEADING}>Collections</p>
+          <Eyebrow className="mb-0">Collections</Eyebrow>
           <RoundButton label="Hide the rail" expanded onClick={onHide}>‹</RoundButton>
         </div>
         {collections.map((c) => <RailRow key={c.id} on={c.id === open} label={c.title} count={c.total} onClick={() => onOpen(c.id)} />)}
       </div>
       {counts && (
         <div>
-          <p className={`mb-1.5 ${HEADING}`}>Your status</p>
+          <Eyebrow className="mb-1.5">Your status</Eyebrow>
           <RailRow on={status === null} dot={dot("border border-sky-line")} label="Everything" count={total} onClick={() => onStatus(null)} />
           {STANDING_ORDER.map((s) => (
             <RailRow key={s} on={status === s} dot={dot(STANDING[s].dot)} label={STANDING[s].label} capitalize count={counts[s]} onClick={() => onStatus(status === s ? null : s)} />

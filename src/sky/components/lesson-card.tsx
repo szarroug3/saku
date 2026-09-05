@@ -198,7 +198,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         <div className="mt-4 flex flex-col gap-4 border-t border-sky-line pt-4">
           {teach.forms.map((f) => (
             <div key={`${f.role}:${f.word}`}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-accent">{f.role}</p>
+              <Eyebrow tone="accent" className="mb-0">{f.role}</Eyebrow>
               {f.note && <p className="mt-0.5 text-[13px] leading-relaxed text-sky-muted">{f.note}</p>}
               <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
                 <span className={`font-sky-display text-[22px] leading-none text-sky-ink ${japaneseFont(f.word)}`}>{f.word}</span>

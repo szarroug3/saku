@@ -16,6 +16,7 @@ import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/compon
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
 import { bodyOf, type Body } from "@/sky/lib/constellation";
+import { Eyebrow } from "@/sky/components/sky-card";
 import { SURFACE } from "@/sky/components/sky-panel";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -96,7 +97,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
           aria-controls="sky-home-details"
           className={`${SURFACE} flex w-full shrink-0 items-center justify-between gap-4 px-5 py-3 text-left hover:bg-sky-card`}
         >
-          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Details</span>
+          <Eyebrow size="md" className="mb-0">Details</Eyebrow>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
             {totals.total > 0 && <span>{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
             <span aria-hidden className="text-sky-ink">{details ? "Hide" : "Show"}</span>

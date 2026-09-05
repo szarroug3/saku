@@ -42,3 +42,9 @@ export function SkyPanel({ title, aside, className = "", children }: SkyPanelPro
     </SkySurface>
   );
 }
+
+/** A bordered box inside a card: a table, a worked example. Lighter than a
+ * surface, with no ground of its own. */
+export function SkyBox({ className = "", children }: { className?: string; children: ReactNode }) {
+  return <div className={`rounded-xl border border-sky-line px-3.5 py-3 ${className}`}>{children}</div>;
+}

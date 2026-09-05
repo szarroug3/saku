@@ -21,11 +21,13 @@ import { useEffect, useRef, useState, type ComponentType, type FormEvent, type R
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
+import { QuizResults, VERDICT } from "@/sky/components/quiz-results";
+import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, GRADES, gradeFor, MAX_TRIES, tally, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { GRADE, gradeFor, MAX_TRIES, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 
 export interface SkyQuizProps {
@@ -51,11 +53,6 @@ const PIP: Record<Grade, string> = {
   help: "bg-sky-shaky",
   missed: "bg-sky-slipping",
 };
-const VERDICT: Record<Grade, string> = {
-  clean: "text-sky-solid",
-  help: "text-sky-shaky",
-  missed: "text-sky-slipping",
-};
 
 /** A context line that only names the kind of answer ("meaning") says
  * nothing the instruction does not; a frame or a gloss is worth showing. */
@@ -76,13 +73,13 @@ interface Open {
 
 const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 
+/** "One more try." or "2 tries left." */
+const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
+
 export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
-  const Tip = tip;
-  // rows picked on the results, for a retry of just those; shift picks a run
-  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
-  const [lastPick, setLastPick] = useState<number | null>(null);
+
   const [at, setAt] = useState(0);
   const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
@@ -149,7 +146,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     if (tries >= maxTries) { settle("missed", tries); setFeedback(null); return; }
     patch({ tries });
     setGiven("");
-    setFeedback(`Not that. ${maxTries - tries === 1 ? "One more try." : `${maxTries - tries} tries left.`}`);
+    setFeedback(`Not that. ${triesNote(maxTries - tries)}`);
   };
 
   const choose = (id: string) => {
@@ -160,7 +157,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { given: undefined }); advance(at, all); return; }
     if (tries >= maxTries) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
     patch({ tries, wrong: [...state.wrong, id], chosen: undefined });
-    setFeedback(`Not that one. ${maxTries - tries === 1 ? "One more try." : `${maxTries - tries} tries left.`}`);
+    setFeedback(`Not that one. ${triesNote(maxTries - tries)}`);
   };
 
   /** Picks a choice without checking it; a pitched choice plays its clip. */
@@ -207,7 +204,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
         })}
       </div>
       <span className="tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
-      {!finished && cards.length > 0 && <SkyButton variant="quiet" onClick={() => finish(answers)}>End the quiz</SkyButton>}
+      {!finished && cards.length > 0 && <SkyButton variant="outline" onClick={() => finish(answers)}>End the quiz</SkyButton>}
     </div>
   );
 
@@ -223,74 +220,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   }
 
   if (finished) {
-    const list = cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a);
-    const counts = tally(list);
-    const unanswered = cards.length - list.length;
-    return (
-      <SkyPageShell eyebrow="Quiz" title="How it went" height={height}>
-        <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-          <SkySurface>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-center sm:grid-cols-4">
-              {GRADES.map((g) => (
-                <div key={g}>
-                  <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{counts[g]}</dd>
-                  <dt className={`mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${VERDICT[g]}`}>
-                    {GRADE[g].label}
-                    {Tip && <Tip label={`What ${GRADE[g].label.toLowerCase()} means`}>{GRADE[g].meaning}</Tip>}
-                  </dt>
-                </div>
-              ))}
-              <div>
-                <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{unanswered}</dd>
-                <dt className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">
-                  Unanswered
-                  {Tip && <Tip label="What unanswered means">Left when the quiz ended. Not recorded.</Tip>}
-                </dt>
-              </div>
-            </dl>
-          </SkySurface>
-          {/* the list fills the page and scrolls inside; a row can be picked
-              for a retry of just those cards, shift for a run (Sam, 2026-09-05) */}
-          <SkySurface className="flex min-h-0 flex-1 flex-col">
-            <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-              {cards.map((c, i) => {
-                const a = answers[c.id];
-                const on = picked.has(c.id);
-                return (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      aria-pressed={on}
-                      onClick={(e) => {
-                        const next = new Set(picked);
-                        if (e.shiftKey && lastPick !== null) {
-                          for (let k = Math.min(lastPick, i); k <= Math.max(lastPick, i); k++) next.add(cards[k].id);
-                        } else if (on) next.delete(c.id);
-                        else next.add(c.id);
-                        setPicked(next);
-                        setLastPick(i);
-                      }}
-                      className={`grid w-full grid-cols-[10rem_1fr_auto] items-baseline gap-x-3 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
-                    >
-                      {/* the glyph column is one width, so the answers line up */}
-                      <span className={`truncate font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
-                      <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answerPitch !== undefined && Pitch ? <Pitch reading={c.answer} downstep={c.answerPitch} /> : c.answer}</span>
-                      <span className={`text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            {/* recording is the normal case and says nothing; only a failure speaks */}
-            {saved === "failed" && <p className="mt-3 shrink-0 text-[12.5px] text-sky-slipping">Could not record this. Your schedule is unchanged.</p>}
-          </SkySurface>
-          <div className="flex flex-wrap gap-2">
-            <SkyButton href={skyHref}>Back to the observatory</SkyButton>
-            {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
-          </div>
-        </div>
-      </SkyPageShell>
-    );
+    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} tip={tip} onRetry={onRetry} height={height} />;
   }
 
   const meta = [KIND_LABEL[card.item.kind], card.seen > 0 ? `seen ${card.seen} ${card.seen === 1 ? "time" : "times"}` : "first time", card.missed > 0 ? `missed ${card.missed} ${card.missed === 1 ? "time" : "times"} before` : null].filter(Boolean).join(" · ");
@@ -313,7 +243,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
         <SkySurface className="flex shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{meta}</p>
+            <Eyebrow className="mb-0">{meta}</Eyebrow>
             <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
           <div className="mt-3 flex min-h-0 flex-1 gap-4">
@@ -336,15 +266,12 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                   {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
                   {card.typed && (
                     <form onSubmit={submit} className="flex gap-2">
-                      <input
+                      <SkyInput
                         ref={input}
                         value={given}
                         onChange={(e) => setGiven(e.target.value)}
                         placeholder={card.answerIs === "reading" ? "The reading, in romaji" : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
-                        autoComplete="off"
-                        autoCapitalize="off"
-                        spellCheck={false}
-                        className="min-w-0 flex-1 rounded-xl border border-sky-muted/45 bg-sky-card px-4 py-2.5 text-[16px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
+                        className="flex-1"
                       />
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
                     </form>
@@ -393,7 +320,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
               {answered && (
                 <div className="mt-4 flex flex-col gap-2">
                   <p className="text-center">
-                    <span className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</span>
+                    <Eyebrow tone="inherit" size="md" className={`mb-0 ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</Eyebrow>
                     <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
                   </p>
                   <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answerPitch !== undefined && Pitch ? <Pitch reading={card.answer} downstep={card.answerPitch} /> : card.answer}</p>

@@ -6,6 +6,7 @@
 // SAK-300 and SAK-329.
 
 import type { ReactNode } from "react";
+import { Eyebrow } from "@/sky/components/sky-card";
 
 export interface SkyPageShellProps {
   /** The small caps line over the title: "Planetarium". Omitted on the home. */
@@ -27,7 +28,7 @@ export function SkyPageShell({ eyebrow, title, lede, aside, height = "calc(100vh
     <div className={`flex flex-col overflow-hidden font-sky-ui text-sky-ink ${className}`} style={{ height }}>
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
-          {eyebrow && <div className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{eyebrow}</div>}
+          {eyebrow && <Eyebrow className="mb-0">{eyebrow}</Eyebrow>}
           <h1 className={`font-sky-display text-4xl leading-tight ${eyebrow ? "mt-1" : ""}`}>{title}</h1>
           {lede && <p className="mt-2 text-[15px] leading-relaxed text-sky-muted">{lede}</p>}
         </div>

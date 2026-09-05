@@ -4,7 +4,9 @@
 // Atlas shows the same pages as reference. One renderer, so the two can
 // never drift.
 
+import { SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
+import { SkyBox } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, TeachParagraph, TeachTable } from "@/sky/lib/lesson";
 
@@ -48,18 +50,18 @@ function PartBoxes({ line }: { line: PartedSentence }) {
 function Example({ example, n, count }: { example: TeachExample; n: number; count: number }) {
   const block = (title: string, line: PartedSentence, big = false) => (
     <div className="mt-3 first:mt-1.5">
-      <Eyebrow className="!mb-0.5 text-sky-accent">{title}</Eyebrow>
+      <Eyebrow tone="accent" className="!mb-0.5">{title}</Eyebrow>
       <Parted line={line} className={big ? `font-sky-display text-[20px] leading-snug ${japaneseFont(line.map((r) => r.text).join(""))}` : "text-[14px] leading-relaxed"} />
       <PartBoxes line={line} />
     </div>
   );
   return (
-    <div className="rounded-xl border border-sky-line px-3.5 py-3">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">{count > 1 ? `Example ${n}` : "In a sentence"}</p>
+    <SkyBox>
+      <Eyebrow tone="accent" className="mb-0">{count > 1 ? `Example ${n}` : "In a sentence"}</Eyebrow>
       {block("Natural English", example.natural)}
       {example.ordered && block("English in Japanese order", example.ordered)}
       {block("Japanese", example.japanese, true)}
-    </div>
+    </SkyBox>
   );
 }
 
@@ -72,7 +74,7 @@ export function Paragraph({ para }: { para: TeachParagraph }) {
     : para.text;
   return (
     <div>
-      {para.heading && <p className="mb-1 mt-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{para.heading}</p>}
+      {para.heading && <Eyebrow size="md" className="mt-1">{para.heading}</Eyebrow>}
       <p>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className={`text-sky-ink/90 ${japaneseFont(para.text)}`}>{text}</span></p>
     </div>
   );
@@ -82,7 +84,7 @@ export function Paragraph({ para }: { para: TeachParagraph }) {
 function Formula({ formula }: { formula: TeachFormula }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5 text-[14px]">
-      {formula.label && <span className="mr-1 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{formula.label}</span>}
+      {formula.label && <Eyebrow className="mb-0 mr-1">{formula.label}</Eyebrow>}
       <span className={`rounded-md border border-dashed border-sky-muted px-2 py-0.5 ${japaneseFont(formula.base)}`}>{formula.base}</span>
       {formula.trim && <><span className="text-sky-muted">−</span><span className={`font-sky-display ${japaneseFont(formula.trim)}`}>{formula.trim}</span></>}
       {formula.add && <><span className="text-sky-muted">+</span><span className={`font-sky-display font-semibold text-sky-accent ${japaneseFont(formula.add)}`}>{formula.add}</span></>}
@@ -94,8 +96,8 @@ function Formula({ formula }: { formula: TeachFormula }) {
 export function Table({ table }: { table: TeachTable }) {
   const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
   return (
-    <div className="rounded-xl border border-sky-line px-3.5 py-3">
-      {table.title && <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">{table.title}</p>}
+    <SkyBox>
+      {table.title && <Eyebrow tone="accent" className="mb-0">{table.title}</Eyebrow>}
       {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{typeof table.instruction === "string" ? table.instruction : <Sound line={table.instruction} />}</p>}
       {formulas.length > 0 && <div className="mt-2 flex flex-col gap-1">{formulas.map((f, i) => <Formula key={i} formula={f} />)}</div>}
       <div className="mt-2 overflow-x-auto">
@@ -119,7 +121,7 @@ export function Table({ table }: { table: TeachTable }) {
       </div>
       {table.footer && <p className={`mt-2 text-[13.5px] ${japaneseFont(table.footer)}`}>{table.footer}</p>}
       {table.note && <p className="mt-2 text-[12.5px] leading-relaxed text-sky-muted">{table.note}</p>}
-    </div>
+    </SkyBox>
   );
 }
 
@@ -162,16 +164,9 @@ export function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; pa
   return (
     <nav aria-label="Pages" className="mt-3 flex flex-wrap items-center gap-1.5">
       {pages.map((p, i) => (
-        <button
-          key={i}
-          type="button"
-          aria-current={i === page ? "page" : undefined}
-          onClick={() => onPage?.(i)}
-          title={p.title}
-          className={`max-w-[22ch] truncate rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${japaneseFont(p.eyebrow ?? "")} ${i === page ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
-        >
+        <SkyChip key={i} on={i === page} current="page" onClick={() => onPage?.(i)} title={p.title} className={`max-w-[22ch] truncate ${japaneseFont(p.eyebrow ?? "")}`}>
           {p.eyebrow ?? `Page ${i + 1}`}
-        </button>
+        </SkyChip>
       ))}
       <span className="ml-auto text-[12px] tabular-nums text-sky-muted">{page + 1} of {pages.length}</span>
     </nav>

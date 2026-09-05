@@ -25,7 +25,9 @@ import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup } from "@/sky/components/lesson-card";
-import { RoundButton, SkyButton } from "@/sky/components/sky-button";
+import { RoundButton, SkyButton, SkyChip } from "@/sky/components/sky-button";
+import { Eyebrow } from "@/sky/components/sky-card";
+import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { useEntries } from "@/sky/components/use-entries";
 import { useSelection } from "@/sky/components/use-selection";
@@ -258,13 +260,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
       <div className="flex min-h-0 flex-1 flex-col gap-3 font-sky-ui">
         <label className="relative block shrink-0">
           <span className="sr-only">Search the Atlas</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search anything: し, shi, 生, せんせい, telephone…"
-            className="w-full rounded-xl border border-sky-muted/45 bg-sky-panel px-4 py-2.5 text-[15px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
-          />
+          <SkyInput type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search anything: し, shi, 生, せんせい, telephone…" className="w-full bg-sky-panel text-[15px]" />
         </label>
 
         <div className="grid min-h-0 flex-1 items-start gap-4" style={{ gridTemplateColumns: columns }}>
@@ -306,9 +302,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                     <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-sky-muted">
                       <span>Also found:</span>
                       {elsewhere.map((f) => (
-                        <button key={f.section.id} type="button" onClick={() => setShelfId(f.shelf!.id)} className="rounded-full border border-sky-line px-2 py-0.5 hover:border-sky-accent hover:text-sky-ink">
+                        <SkyChip key={f.section.id} onClick={() => setShelfId(f.shelf!.id)}>
                           {countOf(f.section.items.length + (f.section.more ?? 0), f.shelf!.title)}
-                        </button>
+                        </SkyChip>
                       ))}
                     </p>
                   )}
@@ -353,7 +349,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                     </>
                   }
                 >
-                  <h2 className="shrink-0 text-[13px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{selection.ids.length} selected</h2>
+                  <Eyebrow size="md" className="shrink-0">{selection.ids.length} selected</Eyebrow>
                   <div className="mt-3 flex flex-wrap content-start gap-1.5">
                     {selectedItems.map((it) => (
                       <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
