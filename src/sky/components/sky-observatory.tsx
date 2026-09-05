@@ -113,7 +113,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
     }
   };
   /** What a section lays out: only what can be taken now, the first few. */
-  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
+  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
   /** A click on a card: shift picks everything from the last click to this
    * one within the section (a range, like files in a list); otherwise toggle. */
   const clickCard = (section: ObservatorySection, id: string, shift: boolean) => {
