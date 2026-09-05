@@ -11,6 +11,7 @@ import { VERB_PAIRS } from "@/data/transitivity";
 import { pairEntry } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { TERMS, termEntry } from "@/data/terms";
+import { TSU_INTRO } from "@/data/track-intros";
 import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
@@ -19,10 +20,11 @@ import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
 import { lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
+import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
-import { offerings } from "./observatory";
-import { paragraphs, teachFor } from "./teach";
+import { offerings, TSU_RULE, type Offerings } from "./observatory";
+import { pageFromIntro, teachFor } from "./teach";
 
 /** One of everything, for a look at every kind of card: a plain kana row,
  * the row with ん (a heads up), a word with a piece and a kanji under it,
@@ -66,31 +68,46 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   const stars = lessonSteps(graph, known, learnedSet);
   for (const s of stars) ids.add(s.id);
   for (const p of known) for (const id of graph.orderOf(p)) ids.add(id);
-  for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it); }
   // the pages, per pick: the app's walk branches on what a teach set is
   // (a counter unit, a grammar sitting), so each pick gets its own walk;
-  // a page two picks would both open with is read once, at its first use
+  // a page two picks would both open with is read once, at its first use.
+  // The walk also says which reading of a word tonight teaches.
   const seen = new Set<string>();
+  const readings = new Map<string, string>();
   const pages = known
-    .flatMap((pick) => pagesFor(stars.filter((s) => s.pick === pick).map((s) => s.id), history))
-    .filter((page) => { const key = `${page.kind}:${page.page.title}`; if (seen.has(key)) return false; seen.add(key); return true; });
+    .flatMap((pick) => walkFor(stars.filter((s) => s.pick === pick).map((s) => s.id), history, offer, readings))
+    .filter((page) => { if (seen.has(page.item.id)) return false; seen.add(page.item.id); return true; });
+  for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id) }); }
   return { items, learned, picks: known, teach, pages };
+}
+
+/** The reading a lesson item teaches, from its facts: a qualified reading
+ * fact (word:日/reading@にち) names it; a plain one is the word's first. */
+function taughtReading(facts: readonly string[]): string | undefined {
+  for (const f of facts) { const m = /\/reading@([^#]+)/.exec(f); if (m) return m[1]; }
+  return undefined;
 }
 
 /** The pages the app's own lesson walk puts between these stars (a track's
  * intro, the terms it defines, a sound shift), each attached to the star it
- * comes before. The walk reads history, so an intro already shown is not
- * shown again. */
-function pagesFor(starIds: readonly string[], history: HistoryFile): LessonPage[] {
+ * comes before, and each the thing it is about, shown with the same card a
+ * star gets (Sam, 2026-09-05): a term is its Atlas entry, the 〜つ intro
+ * is the 〜つ rule, a sound shift is the mark's page kept to that one row.
+ * The walk reads history, so an intro already shown is not shown again.
+ * `readings` collects which reading of a word the walk teaches. */
+function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offerings, readings: Map<string, string>): LessonPage[] {
   const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
+  const push = (kind: string, item: SkyItem | undefined, teach?: LessonTeach) => { if (item) pending.push({ kind, item, teach: teach ?? teachFor(item) }); };
   // pages go before the first of OUR stars not yet passed, not before the
   // app's next item: a piece with no facts of its own (艹) is a star here
   // but never an item there, and a page must not land after it
   let cursor = 0;
   for (const step of appLessonSteps(facts, history)) {
     if (step.type === "item") {
+      const reading = taughtReading(step.item.facts);
+      if (reading) readings.set(step.item.entry, reading);
       const at = starIds.indexOf(step.item.entry);
       if (at < 0) continue;
       const before = starIds[Math.min(cursor, at)];
@@ -98,14 +115,21 @@ function pagesFor(starIds: readonly string[], history: HistoryFile): LessonPage[
       pending = [];
       cursor = at + 1;
     } else if (step.type === "intro") {
-      // named the way the app's own rail names it: a short name, else the eyebrow
-      const title = step.intro.name ?? step.intro.eyebrow ?? step.intro.title;
-      pending.push({ kind: "Intro", page: { title, ...(title === step.intro.title ? {} : { lead: step.intro.title }), paragraphs: paragraphs(step.intro.body) } });
+      if (step.intro.id === TSU_INTRO.id) { push("Counting rule", offer.offerPick(TSU_RULE)); continue; }
+      // an intro with no entry of its own is a page to read, named the way
+      // the app's own rail names it: a short name, else the eyebrow
+      const name = step.intro.name ?? step.intro.eyebrow ?? step.intro.title;
+      push("Intro", { id: `page:${step.intro.id}`, kind: "term", glyph: name, english: name, standing: "not-seen" }, { pages: [pageFromIntro(step.intro)] });
     } else if (step.type === "term") {
-      const term = TERMS.find((t) => termEntry(t.id) === step.entry);
-      if (term) pending.push({ kind: "Term", page: { title: term.name, lead: term.summary, paragraphs: term.body.map((text) => ({ text })) } });
+      push("Term", offer.offerPick(step.entry));
     } else if (step.type === "conversion") {
-      pending.push({ kind: "Sound shift", page: { title: `${step.row.from} to ${step.row.to}`, paragraphs: [{ text: step.row.hook }] } });
+      // the mark's own page, kept to the one conversion being taught
+      const term = TERMS.find((t) => t.name === (step.row.mark === "゜" ? "Handakuten" : "Dakuten"));
+      const item = term ? offer.offerPick(termEntry(term.id)) : undefined;
+      if (!item) continue;
+      const whole = teachFor(item);
+      const title = `${step.row.from} to ${step.row.to}`;
+      push("Sound shift", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
     }
   }
   return pages;

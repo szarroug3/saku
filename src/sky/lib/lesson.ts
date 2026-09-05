@@ -11,6 +11,7 @@
 // does not advance the lesson. Nothing dims when you move on: a star opened
 // stays lit for the rest of the lesson.
 
+import type { SkyItem } from "./types";
 import type { Learned, PrerequisiteGraph } from "./graph";
 
 /** A line of prose with the runs spoken as the sound marked. */
@@ -58,6 +59,11 @@ export interface LessonTeach {
   variants?: ReadonlyArray<{ glyph: string; position: string; example?: string }>;
   /** Tables that fold closed under the card: a word's forms, grouped. */
   tables?: readonly TeachTable[];
+  /** A word's readings, each with what it means read that way (日 is ひ,
+   * にち and か). The Atlas shows them all; a lesson shows only the one
+   * being taught, the others waiting for their own lesson (Sam,
+   * 2026-09-05: readings are taught in order of how often they are said). */
+  pronunciations?: ReadonlyArray<{ reading: string; glosses: readonly string[]; pitch?: number | null }>;
   /** A star taught over several pages rather than one card (a sentence
    * rule: the intro, then a step per part). Next and Back walk the pages
    * before moving on to the next star. */
@@ -161,7 +167,11 @@ export interface LessonPage {
   before: string;
   /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
   kind: string;
-  page: TeachPage;
+  /** The thing the page is: a term, a counting rule, a mark. It is shown
+   * with the same card every star and every Atlas entry is (Sam,
+   * 2026-09-05), only what the card holds differing. */
+  item: SkyItem;
+  teach: LessonTeach;
 }
 
 const has = (learned: Learned, id: string) => (typeof learned === "function" ? learned(id) : learned.has(id));
@@ -176,7 +186,7 @@ export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], 
     for (const id of graph.orderOf(pick)) {
       if (seen.has(id) || has(learned, id) || graph.itemOf(id)?.group) continue;
       seen.add(id);
-      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.kind}:${page.page.title}`, pick, page });
+      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.item.id}`, pick, page });
       steps.push({ id, pick });
     }
   }

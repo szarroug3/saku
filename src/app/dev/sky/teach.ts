@@ -36,7 +36,7 @@ import { getMnemonic, type SoundLine } from "@/data/mnemonics";
 import { numberConstructionFor } from "@/data/number-construction";
 import { wordPitch } from "@/data/pitch";
 import { TERMS, termEntry } from "@/data/terms";
-import { vocabRow } from "@/data/vocab";
+import { readingUnits, vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import { TSU_RULE } from "./observatory";
@@ -139,7 +139,12 @@ function romajiOf(glyph: string): string | undefined {
 }
 
 /** What the card says for one star, from whatever the app knows about it. */
-export function teachFor(item: SkyItem): LessonTeach {
+/** What a lesson narrows the card to: the one reading being taught. */
+export interface TeachScope {
+  reading?: string;
+}
+
+export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
   const t: LessonTeach = {};
   const glyph = item.glyph;
   if (item.kind === "kana") {
@@ -181,7 +186,14 @@ export function teachFor(item: SkyItem): LessonTeach {
   if (item.kind === "word") {
     const row = vocabRow(glyph);
     if (row) {
-      t.reading = row.reb; t.meanings = row.glosses;
+      // every way it is read, each with what it means read that way; a
+      // lesson keeps only the reading it is teaching (the head shows that
+      // one), the Atlas shows them all
+      const units = readingUnits(row);
+      const shown = scope.reading ? units.filter((u) => u.reb === scope.reading) : units;
+      const head = shown[0] ?? { reb: row.reb, glosses: row.glosses };
+      t.reading = head.reb; t.meanings = head.glosses;
+      if (shown.length) t.pronunciations = shown.map((u) => ({ reading: u.reb, glosses: u.glosses, pitch: u.reb === row.reb ? wordPitch(glyph) : null }));
       if (row.align?.length) t.writtenWith = row.align.filter(([k]) => kanjiRow(k)).map(([kanji, surface]) => ({ kanji, reading: surface }));
     }
     const ex = exampleFor(glyph);
@@ -457,7 +469,7 @@ export const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagra
   (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
 
 /** One of the app's teaching pages in the Sky's shape. */
-function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
+export function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
   const tables: TeachTable[] = [];
   // a punctuation catalogue: the marks, their names and their English jobs
   if (intro.punctuation?.length) tables.push({ title: "The marks", heads: ["Mark", "Name", "Does the job of", "Note"], rows: intro.punctuation.map((r) => [[{ text: r.mark }], [{ text: r.name }], [{ text: r.english }], [{ text: r.note }]]) });

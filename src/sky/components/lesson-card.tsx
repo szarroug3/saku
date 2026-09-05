@@ -20,7 +20,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonPage, LessonTeach } from "@/sky/lib/lesson";
+import type { LessonTeach } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -265,6 +265,21 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
           </Fold>
         )}
         {related.filter((g) => g.early).map((group) => <RelatedFold key={group.title} group={group} onSelect={onSelect} />)}
+        {teach?.pronunciations && teach.pronunciations.length > 1 && (
+          <Fold title="Readings">
+            <ul className="flex flex-col gap-1.5">
+              {teach.pronunciations.map((r) => (
+                <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3">
+                  {Pitch && typeof r.pitch === "number"
+                    ? <Pitch reading={r.reading} downstep={r.pitch} className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`} />
+                    : <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>}
+                  {Hear && <span className="self-center"><Hear glyph={r.reading} downstep={r.pitch ?? undefined} /></span>}
+                  <span>{r.glosses.join(", ")}</span>
+                </li>
+              ))}
+            </ul>
+          </Fold>
+        )}
         {(written || teach?.strokes !== undefined) && (
           <Fold title="How it's written">
             {written ?? <p>{teach!.strokes} {teach!.strokes === 1 ? "stroke" : "strokes"}.</p>}
@@ -310,13 +325,3 @@ function RelatedFold({ group, onSelect }: { group: RelatedGroup; onSelect: (id: 
   );
 }
 
-/** A page in the order rather than a star: an intro, a term, a sound shift,
- * the same page a star's teaching is made of, on its own. The kind is the
- * eyebrow. */
-export function LessonPageCard({ page, className = "" }: { page: LessonPage; className?: string }) {
-  return (
-    <DetailFrame className={className}>
-      <TeachPageView page={{ ...page.page, eyebrow: page.kind }} alone />
-    </DetailFrame>
-  );
-}

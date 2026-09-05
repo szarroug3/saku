@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
-import { LessonCard, LessonPageCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
+import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -156,7 +156,9 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
         <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div ref={cardBox} className="min-h-0 self-stretch overflow-y-auto pr-1">
             {currentStep?.page ? (
-              <LessonPageCard page={currentStep.page} className="min-h-full" />
+              // a page is the same card a star gets (Sam, 2026-09-05), with
+              // nothing under it and nothing to hear of its own
+              <LessonCard className="min-h-full" item={currentStep.page.item} teach={currentStep.page.teach} madeOf={[]} partOf={[]} known={false} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
             ) : current ? (
               <LessonCard
                 className="min-h-full"
@@ -199,7 +201,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
                 const lit = state === "lit" || state === "selected";
                 if (s.page) {
                   return row(<>
-                    <span className={`text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.page.title}</span>
+                    <span className={`text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.item.english}</span>
                     <Eyebrow className="ml-auto mb-0 font-normal">{s.page.kind}</Eyebrow>
                   </>);
                 }
