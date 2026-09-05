@@ -12,6 +12,7 @@ import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { RADICAL_SUBJECT } from "@/data/radicals";
+import { TERM_SUBJECT } from "@/data/terms";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { currentUserId } from "@/lib/auth";
@@ -45,6 +46,7 @@ const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: stri
   { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules" },
   { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs" },
   { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets" },
+  { id: "terms", kind: TERM_SUBJECT, sky: "term", title: "Terms", unit: "terms" },
 ];
 
 /** How many of a related group are listed; the note carries the whole count. */

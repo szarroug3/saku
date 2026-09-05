@@ -18,7 +18,7 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { AtlasRail } from "@/sky/components/atlas-rail";
@@ -115,6 +115,8 @@ export interface SkyAtlasProps {
 }
 
 const SEARCH_DELAY = 180;
+/** The panel's width to start, and the narrowest it can be dragged. */
+const PANEL_WIDTH = 360;
 
 /** The learner's standings over a shelf, with the untouched remainder as
  * "undiscovered", for the status list and the coverage line. */
@@ -212,11 +214,22 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   };
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
 
-  // the right panel widened over the rail and the grid
+  // the right panel: widened over the rail and the grid, or dragged wider
+  // by its left edge (Sam's ask, 2026-09-05)
   const [wide, setWide] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const showPanel = selection.ids.length > 0;
   const shelvesShown = !(wide && showPanel);
-  const columns = !shelvesShown ? "lg:grid-cols-[minmax(0,1fr)]" : railOpen ? (showPanel ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[200px_minmax(0,1fr)]") : showPanel ? "lg:grid-cols-[minmax(0,1fr)_360px]" : "lg:grid-cols-[minmax(0,1fr)]";
+  const columns = !shelvesShown ? "minmax(0, 1fr)" : `${railOpen ? "200px " : ""}minmax(0, 1fr)${showPanel ? ` ${panelWidth}px` : ""}`;
+  const startResize = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const from = e.clientX, was = panelWidth;
+    const max = Math.max(PANEL_WIDTH, Math.floor(window.innerWidth * 0.7));
+    const move = (ev: PointerEvent) => setPanelWidth(Math.min(max, Math.max(PANEL_WIDTH, was + (from - ev.clientX))));
+    const stop = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop); };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    e.preventDefault();
+  };
   const toolbar = (
     <>
       <RoundButton label={wide ? "Bring the shelves back" : "Widen this panel"} pressed={wide} onClick={() => setWide(!wide)}>{wide ? "›" : "‹"}</RoundButton>
@@ -240,7 +253,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           />
         </label>
 
-        <div className={`grid min-h-0 flex-1 items-start gap-4 ${columns}`}>
+        <div className="grid min-h-0 flex-1 items-start gap-4" style={{ gridTemplateColumns: columns }}>
           {shelvesShown && railOpen && shelf && (
             <AtlasRail collections={data.shelves} open={shelf.id} onOpen={setShelfId} counts={counts} total={shelf.total} status={status} onStatus={setStatus} onHide={() => setRailOpen(false)} />
           )}
@@ -296,14 +309,24 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           )}
 
           {showPanel && (
-            <div className="min-h-0 self-stretch">
+            <div className="relative min-h-0 self-stretch">
+              {shelvesShown && (
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize the panel"
+                  title="Drag to resize"
+                  onPointerDown={startResize}
+                  className="absolute -left-3 top-0 z-10 h-full w-3 cursor-col-resize touch-none"
+                />
+              )}
               {selection.ids.length > 1 ? (
                 <DetailFrame
                   scroll
                   toolbar={toolbar}
                   footer={
                     <>
-                      {selectedItems.some(unknown) && <SkyButton href={picksHref(selectedItems.filter(unknown).map((it) => it.id))}>Add to tonight&apos;s picks</SkyButton>}
+                      {selectedItems.some(unknown) && <SkyButton href={picksHref(selectedItems.filter(unknown).map((it) => it.id))}>Add to lesson</SkyButton>}
                       {selectedItems.some(unknown) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, true)}>{marking ? "Marking…" : "I know these"}</SkyButton>}
                       {selectedItems.some((it) => !unknown(it)) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, false)}>{marking ? "Marking…" : "I don't know these"}</SkyButton>}
                       {quizHref && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
@@ -337,11 +360,12 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   onSelect={selection.only}
                   page={page?.id === current.id ? page.at : 0}
                   onPage={(at) => setPage({ id: current.id, at })}
-                  footer={
+                  // a term is a page to read: nothing to pick, claim or quiz
+                  footer={current.kind === "term" ? undefined : (
                     <>
                       {unknown(current) ? (
                         <>
-                          <SkyButton href={picksHref([current.id])}>Add to tonight&apos;s picks</SkyButton>
+                          <SkyButton href={picksHref([current.id])}>Add to lesson</SkyButton>
                           <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], true)}>{marking ? "Marking…" : "I know this"}</SkyButton>
                         </>
                       ) : (
@@ -349,7 +373,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       )}
                       {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizHref}>Quiz me</SkyButton>}
                     </>
-                  }
+                  )}
                 />
               ) : null}
             </div>

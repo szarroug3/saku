@@ -16,7 +16,7 @@ export function Sound({ line }: { line: SoundLine }) {
 /** A sentence with its parts coloured: the part being taught in the accent,
  * everything else in the ink (nothing muted: Sam's call, 2026-09-05, the
  * examples were hard to read). */
-function Parted({ line, className = "" }: { line: PartedSentence; className?: string }) {
+export function Parted({ line, className = "" }: { line: PartedSentence; className?: string }) {
   return (
     <p className={`text-sky-ink ${className}`}>
       {line.map((run, i) => (

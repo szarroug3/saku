@@ -32,6 +32,7 @@ export const KIND_DOT: Record<SkyKind, string> = {
   counter: "bg-warning",
   grammar: "bg-success",
   sentence: "bg-success",
+  term: "bg-success",
   // Verb pairs and keigo are word families, so they share the word hue rather
   // than inventing two more. Saku's palette has no categorical ramp to draw an
   // eighth distinct colour from, and these three never appear in the same
@@ -49,6 +50,7 @@ export const KIND_LABEL: Record<SkyKind, string> = {
   counter: "counter",
   grammar: "grammar",
   sentence: "sentences",
+  term: "term",
   verbPair: "verb pair",
   keigo: "keigo",
 };

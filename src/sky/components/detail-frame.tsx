@@ -27,7 +27,7 @@ export function DetailFrame({ toolbar, footer, scroll = false, pad = "md", class
     <SkySurface as="section" pad={pad} className={`flex flex-col ${scroll ? "h-full overflow-hidden" : ""} ${className}`}>
       {toolbar && <div className="mb-3 flex shrink-0 items-center justify-between gap-2">{toolbar}</div>}
       <div className={scroll ? "-mr-2 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2" : "flex flex-col"}>{children}</div>
-      {footer && <div className={`mt-auto flex flex-wrap items-center gap-2 border-t border-sky-line pt-4 ${scroll ? "shrink-0" : "[&:not(:first-child)]:mt-5"}`}>{footer}</div>}
+      {footer && <div className={`mt-auto grid grid-cols-2 gap-2 border-t border-sky-line pt-4 [&>*]:w-full ${scroll ? "shrink-0" : "[&:not(:first-child)]:mt-5"}`}>{footer}</div>}
     </SkySurface>
   );
 }

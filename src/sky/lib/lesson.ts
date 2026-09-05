@@ -54,6 +54,24 @@ export interface LessonTeach {
    * rule: the intro, then a step per part). Next and Back walk the pages
    * before moving on to the next star. */
   pages?: readonly TeachPage[];
+  /** Forms taught side by side: a verb pair's two verbs by their role, a
+   * keigo set's polite words by register, each with what it is for. */
+  forms?: readonly TeachForm[];
+}
+
+/** One form of a set: its role ("It happens on its own", "Honorific"),
+ * a note on when it is used, the word with its reading and pitch, the
+ * English it points to, and a sentence showing it. */
+export interface TeachForm {
+  role: string;
+  note?: string;
+  word: string;
+  reading?: string;
+  pitch?: number | null;
+  /** The English sentence the form answers to: "The door opened." */
+  sentence?: string;
+  /** A Japanese sentence with the form marked. */
+  example?: PartedSentence;
 }
 
 /** One page of a star's teaching. */

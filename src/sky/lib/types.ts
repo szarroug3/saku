@@ -24,6 +24,9 @@ export type SkyKind =
   /** A sentence rule: how a kind of sentence is ordered. Its own kind, not
    * grammar (Sam's call, 2026-09-05). */
   | "sentence"
+  /** A term: a name and its definition, the reference pages the tracks
+   * open with. Never a star; a page to read. */
+  | "term"
   | "verbPair"
   | "keigo";
 

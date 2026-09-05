@@ -22,13 +22,26 @@ import { etymologyOf } from "@/data/kanji-etymology";
 import { kanjiRow, READINGS } from "@/data/kanji";
 import { getMnemonic, type SoundLine } from "@/data/mnemonics";
 import { wordPitch } from "@/data/pitch";
+import { TERMS, termEntry } from "@/data/terms";
 import { vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
-import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
+import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
+
+/** The keigo registers, in the learner's terms, as the app's keigo page has them. */
+const REGISTER: Record<string, { label: string; desc: string }> = {
+  honorific: { label: "Honorific", desc: "Use this form to raise another person when they take an action." },
+  humble: { label: "Humble", desc: "Use this form to lower yourself when you take an action." },
+};
+
+/** A sentence with one span marked, as the Sky's runs. */
+function marked(jp: string, span: readonly [number, number]): PartedSentence {
+  const [a, b] = span;
+  return [{ text: jp.slice(0, a) }, { text: jp.slice(a, b), label: "The verb", active: true }, { text: jp.slice(b) }].filter((r) => r.text);
+}
 
 /** A kana's romaji, from the character sets. */
 function romajiOf(glyph: string): string | undefined {
@@ -93,20 +106,43 @@ export function teachFor(item: SkyItem): LessonTeach {
     return t;
   }
   if (item.kind === "verbPair") {
+    // the two verbs by their role, the way the app's pair page shows them
     const p = pairForEntry(item.id as Parameters<typeof pairForEntry>[0]);
-    if (p) t.notes = [`${p.happens.word} (${p.happens.reading}): ${p.happens.en}`, `${p.doIt.word} (${p.doIt.reading}): ${p.doIt.en}`];
+    if (p) {
+      const side = (m: typeof p.happens, role: string, note: string): TeachForm => ({
+        role, note, word: m.word, reading: m.reading, pitch: wordPitch(m.word), sentence: m.en,
+        ...(m.example ? { example: marked(m.example.jp, m.example.highlightSpan) } : {}),
+      });
+      t.forms = [
+        side(p.happens, "It happens on its own", "No one is named as making it happen; it just happens."),
+        side(p.doIt, "Someone does it", "Someone makes it happen."),
+      ];
+    }
+    return t;
+  }
+  if (item.kind === "term") {
+    // a term is its definition, read as one page
+    const term = TERMS.find((x) => termEntry(x.id) === item.id);
+    if (term) { t.meanings = [term.summary]; t.notes = [...term.body]; }
     return t;
   }
   if (item.kind === "keigo") {
     const set = keigoSetForEntry(item.id as Parameters<typeof keigoSetForEntry>[0]);
     if (set) {
       t.meanings = [set.meaning];
-      t.notes = set.formulaic
-        ? ["This one is different. It isn't the polite version of a verb you already know. It's a fixed phrase: the greeting shop and restaurant staff call out to welcome a customer in, roughly \"welcome, come in!\" You'll hear it, not say it, so learn it by ear."]
-        : [
-            ...(set.plain.length ? [`Plain: ${set.plain.map((v) => `${v.keb} (${v.reading})`).join(", ")}`] : []),
-            ...set.words.map((w) => `${w.word} (${w.reading}): ${w.register}${w.use ? ` · ${w.use}` : ""}`),
-          ];
+      if (set.formulaic) {
+        t.notes = ["This one is different. It isn't the polite version of a verb you already know. It's a fixed phrase: the greeting shop and restaurant staff call out to welcome a customer in, roughly \"welcome, come in!\" You'll hear it, not say it, so learn it by ear."];
+        t.forms = set.words.map((w) => ({ role: "The phrase", word: w.word, reading: w.reading }));
+      } else {
+        // the plain verb, then each polite form by its register with when to
+        // use it, the way the app's keigo page reads; these are new words,
+        // not a politer spelling of the plain one
+        t.notes = ["Keigo doesn't change the everyday word. These are entirely new words."];
+        t.forms = [
+          ...set.plain.map((v) => ({ role: "Plain", note: "The everyday verb these replace.", word: v.keb, reading: v.reading, pitch: wordPitch(v.keb) })),
+          ...set.words.map((w) => ({ role: `${REGISTER[w.register]?.label ?? w.register}${w.use ? ` · ${w.use}` : ""}`, note: REGISTER[w.register]?.desc, word: w.word, reading: w.reading })),
+        ];
+      }
     }
     return t;
   }

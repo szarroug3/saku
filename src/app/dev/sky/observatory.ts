@@ -21,6 +21,7 @@
 // section says what it is and when to start it, in the app's own words.
 
 import { KANA_SUBJECT, SETS, kanaEntry } from "@/data/characters";
+import { TERM_SUBJECT } from "@/data/terms";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
@@ -196,7 +197,10 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     // the pair table carries example sentences, not a name
     const doIt = wordEntry(p.doIt.word);
     const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
-    return offer(entry, "verbPair", { english, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] });
+    // the pair shows as what its two verbs share, the kanji (出 for 出る and
+    // 出す), since neither verb alone is the pair (Sam's call, 2026-09-05)
+    const shared = [...p.happens.word].filter((c) => kanjiRow(c) && p.doIt.word.includes(c)).join("");
+    return offer(entry, "verbPair", { english, glyph: shared || entry.glyph, reading: undefined, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] });
   };
   const pairs: string[] = [];
   let pairsMet = 0;
@@ -242,6 +246,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
       case RADICAL_SUBJECT:
       case PRIMITIVE_SUBJECT: return offer(entry, "radical");
       case KANJI_SUBJECT: return offer(entry, "kanji");
+      // a term is its name: a page to read, never a star
+      case TERM_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "term", { english: name, glyph: name }); }
       default: return offer(entry, "word");
     }
   };
