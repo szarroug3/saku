@@ -178,7 +178,8 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
           );
         })}
       </div>
-      <span className="tabular-nums">{finished ? `${cards.length} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
+      <span className="tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
+      {!finished && cards.length > 0 && <SkyButton variant="quiet" onClick={() => finish(answers)}>End the quiz</SkyButton>}
     </div>
   );
 
@@ -196,11 +197,12 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
   if (finished) {
     const list = cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a);
     const counts = tally(list);
+    const unanswered = cards.length - list.length;
     return (
       <SkyPageShell eyebrow="Quiz" title="How it went" aside={strip} height={height}>
         <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
           <SkySurface>
-            <dl className="grid grid-cols-3 gap-x-6 gap-y-3">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
               {GRADES.map((g) => (
                 <div key={g}>
                   <dt className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${VERDICT[g]}`}>{GRADE[g].label}</dt>
@@ -208,17 +210,22 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                   <dd className="mt-1 text-[12px] leading-snug text-sky-muted">{GRADE[g].meaning}</dd>
                 </div>
               ))}
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-sky-muted">Unanswered</dt>
+                <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{unanswered}</dd>
+                <dd className="mt-1 text-[12px] leading-snug text-sky-muted">Left when the quiz ended. Not recorded.</dd>
+              </div>
             </dl>
           </SkySurface>
           <SkySurface>
             <ul className="flex flex-col gap-2">
-              {list.map((a) => {
-                const c = cards.find((x) => x.id === a.cardId)!;
+              {cards.map((c) => {
+                const a = answers[c.id];
                 return (
-                  <li key={a.cardId} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-sky-line pb-2 last:border-0 last:pb-0">
+                  <li key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-sky-line pb-2 last:border-0 last:pb-0">
                     <span className={`font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
                     <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answer}</span>
-                    <span className={`ml-auto text-[12px] font-semibold ${VERDICT[a.grade]}`}>{GRADE[a.grade].label}</span>
+                    <span className={`ml-auto text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
                   </li>
                 );
               })}
@@ -245,13 +252,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
       {/* one width and one height for the box whatever is on the card, so the
-          arrows stay put while stepping back and forth (Sam, 2026-09-05) */}
+          arrows stay put while stepping back and forth, and the help row is
+          anchored to its bottom (Sam, 2026-09-05); no arrow past either end */}
       <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-        <SkySurface className="min-h-[360px] shrink-0">
+        <SkySurface className="flex h-[480px] shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
-            <RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton>
+            <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{meta}</p>
-            <RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton>
+            <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
           <div className="mt-4 flex flex-col items-center text-center">
             <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[72px]" : "text-[40px]") : "text-[30px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
@@ -260,7 +268,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
           </div>
 
           {!answered && (
-            <div className="mt-5 flex flex-col gap-3">
+            <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3">
               {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
               {card.typed && (
                 <form onSubmit={submit} className="flex gap-2">
@@ -305,7 +313,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                 </div>
               )}
               {help.length > 0 && (
-                <div className="border-t border-sky-line pt-3">
+                <div className="mt-auto border-t border-sky-line pt-3">
                   <Eyebrow>Help me{state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}</Eyebrow>
                   {/* three equal cells whatever is offered, so the buttons keep
                       one size from card to card (Sam, 2026-09-05) */}
@@ -318,14 +326,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
           )}
 
           {answered && (
-            <div className="mt-5 flex flex-col gap-3">
+            <div className="mt-5 flex flex-1 flex-col gap-3">
               <p className="text-center">
                 <span className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</span>
                 <span className="mt-1 block text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</span>
               </p>
               <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answer}</p>
               {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
-              <div className="flex justify-center"><SkyButton onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton></div>
+              <div className="mt-auto flex justify-center"><SkyButton onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton></div>
             </div>
           )}
         </SkySurface>
