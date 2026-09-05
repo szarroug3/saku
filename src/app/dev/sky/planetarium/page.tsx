@@ -18,14 +18,15 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const sample = params.sample !== undefined;
   const data = sample ? planetariumFromHistory(sampleHistory()) : await learnerPlanetarium();
   return (
-    <SkyPage>
-      <div className="mx-auto max-w-[1180px]">
-        <p className="mb-4 font-sky-ui text-[12px] text-sky-muted">
+    <SkyPage
+      note={
+        <>
           {sample ? "A pretend learner. " : "Your own progress. "}
           <Link href={sample ? "/dev/sky/planetarium" : "/dev/sky/planetarium?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </p>
-        <SkyPlanetarium data={data} lessonPath="/dev/sky/lesson" />
-      </div>
+        </>
+      }
+    >
+      <SkyPlanetarium data={data} lessonPath="/dev/sky/lesson" height="100%" />
     </SkyPage>
   );
 }

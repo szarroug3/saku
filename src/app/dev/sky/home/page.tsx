@@ -26,20 +26,21 @@ export default async function SkyHomePage({ searchParams }: { searchParams: Prom
   const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
   const href = (s: boolean, a: boolean) => `/dev/sky/home${s || a ? "?" : ""}${[s ? "sample" : "", a ? "all" : ""].filter(Boolean).join("&")}`;
   return (
-    <SkyPage>
-      <div className="mx-auto max-w-[1180px]">
-        <p className="mb-4 flex flex-wrap gap-x-4 font-sky-ui text-[12px] text-sky-muted">
+    <SkyPage
+      note={
+        <>
           <span>
             {sample ? "A pretend learner. " : "Your own progress. "}
             <Link href={href(!sample, everything)} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
           </span>
-          <span>
+          <span className="ml-4">
             {everything ? "Every kana, piece and kanji is up there. " : "Only what has been discovered. "}
             <Link href={href(sample, !everything)} className="underline">{everything ? "Show only what's discovered" : "Show everything"}</Link>
           </span>
-        </p>
-        <SkyHome data={data} planetariumHref="/dev/sky/planetarium" />
-      </div>
+        </>
+      }
+    >
+      <SkyHome data={data} planetariumHref="/dev/sky/planetarium" height="100%" />
     </SkyPage>
   );
 }

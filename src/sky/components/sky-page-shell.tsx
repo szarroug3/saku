@@ -2,7 +2,7 @@
 // lede in a fixed place at the top, and the page's body in the space that is
 // left, scrolling on its own. One column the height of the viewport, never
 // the page scrolling under its own heading (Sam's rule, 2026-09-04: the
-// title, question and description stay put, on every page). Tracked as
+// name and description stay put, on every page). Tracked as
 // SAK-300 and SAK-329.
 
 import type { ReactNode } from "react";
