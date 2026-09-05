@@ -96,6 +96,8 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   // sections opened with their Start button this visit, on top of those already started
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
   const [claiming, startClaim] = useTransition();
+  // the last card clicked, for shift-click: everything between it and the next click
+  const [anchor, setAnchor] = useState<string | null>(null);
 
   const summary = cartSummary(graph, picks, learned, cap);
   const over = summary.over > 0;
@@ -111,6 +113,22 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   };
   /** What a section lays out: only what can be taken now, the first few. */
   const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
+  /** A click on a card: shift picks everything from the last click to this
+   * one within the section (a range, like files in a list); otherwise toggle. */
+  const clickCard = (section: ObservatorySection, id: string, shift: boolean) => {
+    const ids = offered(section);
+    const from = anchor ? ids.indexOf(anchor) : -1, to = ids.indexOf(id);
+    if (shift && from >= 0 && to >= 0 && from !== to) {
+      const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
+      const next = [...picks];
+      for (const r of range) if (!next.includes(r) && pickState(graph, r, learned, next).available) next.push(r);
+      setUndo(null);
+      setPicks(next);
+    } else {
+      toggle(id);
+    }
+    setAnchor(id);
+  };
 
   const nameOf = (id: string) => graph.itemOf(id)?.english ?? id;
   const meterNote = summary.pieces === 0
@@ -120,7 +138,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
       : summary.pieces === cap
         ? "A full lesson, right at the line."
         : `${cap - summary.pieces} more ${cap - summary.pieces === 1 ? "piece" : "pieces"} before this lesson gets uncomfortably large.`;
-  const startLabel = over ? `Start with ${summary.pieces} pieces anyway` : `Start tonight's lesson · ${plural(summary.pieces, "piece")}`;
+  const startLabel = over ? "Start Lesson anyway" : "Start Lesson";
 
   return (
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" height={height}>
@@ -143,7 +161,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={() => toggle(id)} />;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={(e) => clickCard(section, id, e.shiftKey)} />;
                     })}
                   </div>
                 )}
@@ -194,15 +212,15 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 type="button"
                 disabled={claiming}
                 onClick={() => startClaim(async () => { await onClaim(picks); setPicks([]); setUndo(null); })}
-                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-line bg-sky-card px-3.5 py-2 text-center text-[13px] font-semibold text-sky-ink hover:bg-sky-card-strong disabled:text-sky-faint"
+                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-line bg-sky-card px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-ink hover:bg-sky-card-strong disabled:text-sky-faint"
               >
                 {claiming ? "Claiming…" : "I already know these"}
               </button>
             )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
+              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] border border-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
             ) : (
-              <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold text-sky-faint">{"Start tonight's lesson"}</span>
+              <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] border border-transparent bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-faint">Start Lesson</span>
             )}
           </SkyPanel>
         </aside>

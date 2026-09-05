@@ -59,7 +59,8 @@ export interface ItemCardProps {
   /** One short line under the cost: "2 shared", "kanji already in your sky",
    * "comes with the K row". Planetarium only. */
   note?: string;
-  onClick?: () => void;
+  /** The click, with its event, so a page can read shift for a range. */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 const BOX: Record<ItemCardDensity, string> = {
