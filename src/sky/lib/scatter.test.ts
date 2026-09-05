@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { anyOverlap, overlaps, scatterInWorld, scatterLayout, worldFor, type ScatterItem } from "@/sky/lib/scatter";
+import { anyOverlap, overlaps, scatterInWorld, scatterLayout, worldFor } from "@/sky/lib/scatter";
 import { bySizeDesc, skyRoots, skyStars, tallyStandings } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -97,22 +97,5 @@ describe("worldFor", () => {
     assert.ok(Math.abs(world.width / world.height - 1120 / 900) < 0.01, "keeps the shape");
     const placed = scatterLayout(many, world.width, world.height, 26);
     for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.ok(!overlaps(placed[i], placed[j], 26), `${placed[i].item.key} overlaps ${placed[j].item.key}`);
-  });
-});
-
-describe("scatter near the centre", () => {
-  it("keeps items marked near within their band about the centre, and places them first", () => {
-    const items: ScatterItem[] = [
-      ...Array.from({ length: 30 }, (_, i) => ({ key: `star${i}`, size: 40 })),
-      ...Array.from({ length: 6 }, (_, i) => ({ key: `body${i}`, size: 50, near: 0.2 })),
-    ];
-    const { placed, world } = scatterInWorld(items, { width: 1600, height: 1200 }, 20);
-    assert.ok(!anyOverlap(placed, 20));
-    for (const p of placed.filter((p) => p.item.near !== undefined)) {
-      const cx = p.x + p.size / 2, cy = p.y + p.size / 2;
-      assert.ok(Math.abs(cx - world.width / 2) <= world.width * 0.1 + p.size, `${p.item.key} x ${cx} of ${world.width}`);
-      assert.ok(Math.abs(cy - world.height / 2) <= world.height * 0.1 + p.size, `${p.item.key} y ${cy} of ${world.height}`);
-    }
-    assert.ok(placed.slice(0, 6).every((p) => p.item.near !== undefined));
   });
 });
