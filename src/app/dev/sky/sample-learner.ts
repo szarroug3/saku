@@ -5,8 +5,14 @@
 // so the adapter treats it exactly like a real history file.
 
 import { KANA_SUBJECT } from "@/data/characters";
+import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
+import { patternEntry } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
+import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { pairEntry } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
+import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
@@ -22,8 +28,9 @@ const drilled = (hits: number, daysAgo: number, now: number, stability = 40): Fa
 type Shape = "solid" | "getting-there" | "shaky" | "slipping" | "claimed";
 const SHAPES: readonly Shape[] = ["solid", "getting-there", "shaky", "slipping", "claimed"];
 
-/** How many of each subject the learner has met; spread evenly over the shapes. */
-const REACH: Record<string, number> = { [KANA_SUBJECT]: 60, [KANJI_SUBJECT]: 150, [VOCAB_SUBJECT]: 250 };
+/** How many of each subject the learner has met; spread evenly over the
+ * shapes. Every kana, so the tracks after kana are open. */
+const REACH: Record<string, number> = { [KANA_SUBJECT]: Infinity, [KANJI_SUBJECT]: 150, [VOCAB_SUBJECT]: 250 };
 
 /** Kanji that look alike, the classic mix-ups; each pair recorded in this
  * many runs. Pairs whose kanji the data does not carry are skipped. */
@@ -44,6 +51,17 @@ export function sampleHistory(now = Date.now()): HistoryFile {
     const stride = Math.max(1, Math.floor(all.length / reach));
     const entries = all.filter((_, i) => i % stride === 0).slice(0, reach);
     entries.forEach((entry, i) => set(entry, SHAPES[i % SHAPES.length]));
+  }
+  // a start on every other track, so the Observatory shows them open
+  const started: Array<[string | undefined, number]> = [
+    ...COUNTER_CURRICULUM.slice(0, 8).map((f, i) => [counterEntry(f) as string, i] as [string, number]),
+    ...CURRICULUM_PATTERNS.slice(0, 5).map((r, i) => [patternEntry(r.id) as string, i] as [string, number]),
+    ...VERB_PAIRS.slice(0, 3).map((p, i) => [pairEntry(p) as string, i] as [string, number]),
+    ...KEIGO_SETS.slice(0, 1).map((k, i) => [keigoSetEntry(k) as string, i] as [string, number]),
+  ];
+  for (const [id, i] of started) {
+    const entry = id ? libEntry(id as Parameters<typeof libEntry>[0]) : undefined;
+    if (entry && knownFactsOf(entry).length) set(entry, SHAPES[i % SHAPES.length]);
   }
 
   // the mix-ups: both kanji shaky, and a session per run that confused them

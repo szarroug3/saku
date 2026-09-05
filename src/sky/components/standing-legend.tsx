@@ -137,7 +137,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
   return (
     <dl className={`flex flex-wrap gap-x-4 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-muted ${className}`}>
       {standings.map((standing) => {
-        const n = counts?.[standing];
+        const n = counts ? (counts[standing] ?? 0) : undefined;
         const on = hovered === standing;
         const picked = selected?.has(standing) ?? false;
         const Row = clickable ? "button" : "div";
@@ -157,7 +157,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           >
             <Dot standing={standing} />
             <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
-            {n !== undefined && <dd className="tabular-nums">{n}</dd>}
+            {n !== undefined && <dd className="tabular-nums">{n.toLocaleString()}</dd>}
           </Row>
         );
       })}

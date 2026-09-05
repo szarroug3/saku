@@ -1,22 +1,25 @@
-// The Sky's Planetarium, on the signed-in learner's real progress. Route:
-// /dev/sky/planetarium. One call: the route loads what is on offer through
-// the adapter and hands it to SkyPlanetarium. `?sample` shows a pretend
-// learner instead.
+// The Sky's Planetarium, the home: the signed-in learner's sky on their real
+// progress, every kana, piece and kanji up there and lit as discovered.
+// Route: /dev/sky/planetarium. Per request, never prerendered. `?sample`
+// shows a pretend learner instead.
 
 import Link from "next/link";
 
-import { SkyPlanetarium } from "@/sky/components/sky-planetarium";
+import { SkyHome } from "@/sky/components/sky-home";
 
-import { SkyPage } from "../sky-page";
-import { learnerPlanetarium, planetariumFromHistory } from "../planetarium";
+import { getStatsRows } from "@/lib/library/server-lookups";
+
+import { learnerSky, skyFromHistory } from "../learner";
 import { sampleHistory } from "../sample-learner";
+import { SkyPage } from "../sky-page";
 
 export const dynamic = "force-dynamic";
 
 export default async function SkyPlanetariumPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
-  const data = sample ? planetariumFromHistory(sampleHistory()) : await learnerPlanetarium();
+  const options = { everything: true };
+  const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
   return (
     <SkyPage
       note={
@@ -26,7 +29,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
         </>
       }
     >
-      <SkyPlanetarium data={data} lessonPath="/dev/sky/lesson" height="100%" />
+      <SkyHome data={data} observatoryHref="/dev/sky/observatory" height="100%" />
     </SkyPage>
   );
 }

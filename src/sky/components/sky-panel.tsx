@@ -16,7 +16,7 @@ export interface SkyPanelProps {
 export function SkyPanel({ title, aside, className = "", children }: SkyPanelProps) {
   return (
     <section className={`rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${className}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
         {aside && <span className="text-[13px] tabular-nums text-sky-muted">{aside}</span>}
       </div>

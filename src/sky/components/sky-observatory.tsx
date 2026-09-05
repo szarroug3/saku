@@ -1,6 +1,6 @@
 "use client";
 
-// The Planetarium: pick what to learn next. Tracked as SAK-300 to SAK-304.
+// The Observatory: pick what to learn next. Tracked as SAK-300 to SAK-304.
 //
 // One call from the route, given the learner's items, what they have
 // learned, and the sections on offer. A shop, not a feed (Sam's rule): the
@@ -25,7 +25,7 @@ import { japaneseFont } from "@/sky/lib/japanese";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
-export interface PlanetariumSection {
+export interface ObservatorySection {
   id: string;
   title: string;
   /** What this kind of thing is. */
@@ -46,19 +46,19 @@ export interface PlanetariumSection {
   started?: boolean;
 }
 
-export interface SkyPlanetariumData {
+export interface SkyObservatoryData {
   /** Everything on offer and everything under it, plus what the learner has. */
   items: readonly SkyItem[];
   /** What is already in the sky: free, and never charged. */
   learned: readonly string[];
-  sections: readonly PlanetariumSection[];
+  sections: readonly ObservatorySection[];
 }
 
 /** How many of a section are laid out. */
 export const SHOWN = 9;
 
-export interface SkyPlanetariumProps {
-  data: SkyPlanetariumData;
+export interface SkyObservatoryProps {
+  data: SkyObservatoryData;
   /** How tall the page is; the heading stays put and the picker scrolls. */
   height?: string;
   /** A comfortable lesson, in pieces. */
@@ -94,7 +94,7 @@ function describe(graph: PrerequisiteGraph, line: PickLine, openedBy: readonly s
   return { text: bits.join(" · "), free: b.shared.length ? [] : b.free };
 }
 
-export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height }: SkyPlanetariumProps) {
+export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const [picks, setPicks] = useState<readonly string[]>(initialPicks);
@@ -115,7 +115,7 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
     }
   };
   /** What a section lays out: only what can be taken now, the first few. */
-  const offered = (section: PlanetariumSection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
+  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
 
   const nameOf = (id: string) => graph.itemOf(id)?.english ?? id;
   const meterNote = summary.pieces === 0
@@ -128,7 +128,7 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
   const startLabel = over ? `Start with ${summary.pieces} pieces anyway` : `Start tonight's lesson · ${plural(summary.pieces, "piece")}`;
 
   return (
-    <SkyPageShell eyebrow="Planetarium" title="What would you like to learn next?" lede="Choose what to add to your sky. Each pick becomes a constellation once you learn it." height={height}>
+    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" lede="Choose what to add to your sky. Each pick becomes a constellation once you learn it." height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
           {data.sections.filter((section) => !section.gate).map((section) => {
@@ -168,8 +168,8 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
           })}
         </div>
 
-        <aside className="flex min-h-0 flex-col gap-4 self-stretch overflow-y-auto lg:pb-6">
-          <SkyPanel title="Your sky tonight" className="!p-4">
+        <aside className="flex min-h-0 flex-col gap-4 self-stretch lg:pb-6">
+          <SkyPanel title="Your sky tonight" className="shrink-0 !p-4">
             <div className="mt-3 overflow-hidden rounded-xl border border-sky-line">
               <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} seed="planetarium" label="Tonight's picks, as the constellations they will be" />
             </div>
@@ -180,16 +180,16 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             </p>
           </SkyPanel>
 
-          <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} pieces`} className="!p-4">
+          <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} pieces`} className="shrink-0 !p-4">
             <PieceMeter className="mt-3" pieces={summary.pieces} cap={cap} />
             <p className={`mt-2 text-[12.5px] ${over ? "text-sky-coral" : "text-sky-muted"}`}>{meterNote}</p>
           </SkyPanel>
 
-          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "pick")} · ${plural(summary.pieces, "piece")}` : "nothing yet"} className="!p-4">
+          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "pick")} · ${plural(summary.pieces, "piece")}` : "nothing yet"} className="flex min-h-0 flex-col !p-4">
             {picks.length === 0 ? (
               <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
             ) : (
-              <ul className="mt-3 flex max-h-[240px] flex-col gap-1.5 overflow-y-auto">
+              <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
                 {summary.lines.map((line) => {
                   const { text, free } = describe(graph, line, pickState(graph, line.id, learned, picks).openedByCart);
                   return (
@@ -216,15 +216,15 @@ export function SkyPlanetarium({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
               </ul>
             )}
             {undo && (
-              <p className="mt-2 text-[12px] text-sky-muted">
+              <p className="mt-2 shrink-0 text-[12px] text-sky-muted">
                 Removed {nameOf(undo.removed)}.{" "}
                 <button type="button" className="underline hover:text-sky-ink" onClick={() => { setPicks(undo.before); setUndo(null); }}>Undo</button>
               </p>
             )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-3 block rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
+              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-3 block shrink-0 rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
             ) : (
-              <span aria-disabled className="mt-3 block rounded-[10px] bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold text-sky-faint">{"Start tonight's lesson"}</span>
+              <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold text-sky-faint">{"Start tonight's lesson"}</span>
             )}
           </SkyPanel>
         </aside>

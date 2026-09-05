@@ -1,14 +1,14 @@
 "use client";
 
-// The home: your sky. Tracked as SAK-329 to SAK-336.
+// The home, named the Planetarium: your sky. Tracked as SAK-329 to SAK-336.
 //
 // One call from the route, given the learner's data: the sky with every
 // constellation they have learned, pannable and zoomable, hover to name a
 // star; the legend; then, folded away under one line so the sky has the
 // page, "How much you've discovered" and "Mix-ups" side by side. No lesson
 // panel and no explainer of the review model: tonight's picks are reached
-// from the Planetarium and the Lesson. A brand-new learner sees an empty sky
-// that says where to start.
+// from the Observatory and the Lesson. A brand-new learner sees the whole
+// firmament, undiscovered, and a way to the Observatory.
 
 import { useMemo, useState } from "react";
 
@@ -19,6 +19,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { useStandingFilter } from "@/sky/components/use-standing-filter";
 import type { CoverageCounts } from "@/sky/lib/coverage";
+import { STANDING_ORDER } from "@/sky/lib/standing";
 import { buildGraph } from "@/sky/lib/graph";
 import { skyStars, tallyStandings } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
@@ -42,39 +43,39 @@ export interface SkyHomeData {
 
 export interface SkyHomeProps {
   data: SkyHomeData;
-  /** Where the Planetarium lives, for the empty sky's way in. */
-  planetariumHref?: string;
+  /** Where the Observatory lives, for the empty sky's way in. */
+  observatoryHref?: string;
   /** How tall the home is: one page, never scrolling. The sky fills what
    * the heading and the details leave, and shrinks when the details open.
    * A CSS length; the route knows its own chrome. */
   height?: string;
 }
 
-export function SkyHome({ data, planetariumHref = "/planetarium", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
+export function SkyHome({ data, observatoryHref = "/observatory", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
   const counts = useMemo(() => data.standingCounts ?? tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [data.standingCounts, stars, graph]);
   const totals = discoveryTotals(data.discovery);
-  const empty = data.roots.length === 0 && !(data.firmament?.length);
+  // nothing discovered: no entry in any standing but "undiscovered"
+  const empty = STANDING_ORDER.filter((s) => s !== "not-seen").every((s) => !(counts[s] ?? 0));
   // the panels fold away, so the sky is most of the page
   const [details, setDetails] = useState(false);
   // the legend is the filter: everything but "undiscovered" to start
   const { selected, toggle, singled, setSingled, lookOf } = useStandingFilter();
 
   return (
-    <SkyPageShell title="Your sky" lede="This is your sky. It will evolve as you explore and discover more of the Japanese language." height={height}>
+    <SkyPageShell title="Planetarium" lede="This is the planetarium. It will evolve as you explore and discover more of the Japanese language." height={height}>
       <div className="relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
-        {empty ? (
-          <div className="flex w-full flex-col items-center justify-center gap-3 p-8 text-center">
-            <p className="font-sky-display text-2xl">Your sky is empty tonight.</p>
-            <p className="max-w-[44ch] text-[14px] text-sky-muted">Pick something to learn and it appears here as its own constellation. The first kana are a good place to start.</p>
-            <a href={planetariumHref} className="mt-1 rounded-[10px] bg-sky-accent px-3.5 py-2 text-sm font-semibold text-sky-accent-ink">Open the Planetarium</a>
+        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+        {empty && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
+            <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>
+            <p className="text-[14px] text-sky-muted">Go to the observatory to explore.</p>
+            <a href={observatoryHref} className="pointer-events-auto mt-1 rounded-[10px] bg-sky-accent px-3.5 py-2 text-sm font-semibold text-sky-accent-ink">Explore</a>
           </div>
-        ) : (
-          <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         )}
       </div>
-      {!empty && <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} info />}
+      <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} info />
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
         <button

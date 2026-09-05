@@ -160,13 +160,13 @@ decides roots (met items not under another met item), the star set and the
 tally. The data comes from an adapter outside the tree: for now
 `src/app/dev/sky/learner.ts` reads the Library's entries and the learner's
 history (a multi-fact entry's star wears the worst of its facts; a radical
-taught as its kanji is the kanji's star), and `/dev/sky/home` renders it on
+taught as its kanji is the kanji's star), and `/dev/sky/planetarium` renders it on
 the signed-in learner's progress, or on a pretend learner with `?sample`.
 
-### The Planetarium: one call
+### The Observatory: one call
 
-`SkyPlanetarium` (`src/sky/components/sky-planetarium.tsx`, SAK-300 to 304)
-is the whole page: given `SkyPlanetariumData` (every item on offer and under
+`SkyObservatory` (`src/sky/components/sky-observatory.tsx`, SAK-300 to 304)
+is the whole page: given `SkyObservatoryData` (every item on offer and under
 it, what is learned, and the sections) it lays out the picker and the rail.
 The picker is `ItemSection`s of `ItemCard`s, English only, each priced in the
 real pieces it brings beside what is learned and what is already picked; a
@@ -182,7 +182,7 @@ what it held open), `pickBreakdown`. A kana row is a `group`: picked as one,
 locks what builds on it, drawn, but never a piece itself. The data comes from
 `src/app/dev/sky/planetarium.ts` (kana rows from the character sets, words in
 curriculum order, counting, grammar behind a plain-hiragana gate, verb pairs
-and keigo attached to their plain verb); `/dev/sky/planetarium` (`?sample`).
+and keigo attached to their plain verb); `/dev/sky/observatory` (`?sample`).
 
 Type: `font-sky-display` is Shippori Mincho for Japanese and display, falling
 back to Hiragino Mincho; `font-sky-ui` is Karla, falling back to the system

@@ -1,4 +1,4 @@
-// What the Planetarium offers, from the app's tables and the learner's
+// What the Observatory offers, from the app's tables and the learner's
 // history. Server-side and dev-only, like learner.ts: the one place the
 // app's curricula (kana rows, the word order, counting, grammar, verb pairs,
 // keigo) meet the Sky's item shape. At cutover this becomes the Sky's data
@@ -34,7 +34,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { entryForGlyph, libEntry, type LibEntry } from "@/lib/library/entries";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
-import type { PlanetariumSection, SkyPlanetariumData } from "@/sky/components/sky-planetarium";
+import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
@@ -83,18 +83,18 @@ function rowName(label: string, firstRomaji: string): string {
   return `${bare} row`;
 }
 
-/** The signed-in learner's Planetarium, or a visitor's. */
-export async function learnerPlanetarium(now = Date.now()): Promise<SkyPlanetariumData> {
+/** The signed-in learner's Observatory, or a visitor's. */
+export async function learnerObservatory(now = Date.now()): Promise<SkyObservatoryData> {
   const userId = await currentUserId();
   const history = userId ? await loadHistory(userId) : emptyHistory();
-  return planetariumFromHistory(history, now);
+  return observatoryFromHistory(history, now);
 }
 
-export function planetariumFromHistory(history: HistoryFile, now = Date.now()): SkyPlanetariumData {
+export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {
   const sky = skyItems(history, now);
   const { items, met, add } = sky;
   const learned = new Set(met);
-  const sections: PlanetariumSection[] = [];
+  const sections: ObservatorySection[] = [];
 
   /** An app entry on offer: added with its parts, given the sky kind it is picked as. */
   const offer = (entry: LibEntry, kind: SkyKind, extra: Partial<SkyItem> = {}): SkyItem => {

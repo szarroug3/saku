@@ -133,13 +133,13 @@ const DEV_PAGES: Array<{
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
   { href: "/dev/pitch-accent", label: "Pitch accent" },
   {
-    href: "/dev/sky/home",
+    href: "/dev/sky",
     label: "Sky (redesign)",
     // The Sky pages on their real data, until cutover. Kept as a literal so
     // this client component does not pull the Sky layout into the nav bundle.
     children: [
-      { href: "/dev/sky/home", label: "Home" },
       { href: "/dev/sky/planetarium", label: "Planetarium" },
+      { href: "/dev/sky/observatory", label: "Observatory" },
     ],
   },
 ];
