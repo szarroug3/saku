@@ -267,9 +267,8 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                 );
               })}
             </ul>
-            <p className="mt-3 shrink-0 text-[12.5px] text-sky-muted">
-              {!onFinish ? "A look only: nothing was recorded." : saved === "saving" ? "Recording…" : saved === "yes" ? "Recorded against your schedule." : saved === "failed" ? "Could not record this. Your schedule is unchanged." : ""}
-            </p>
+            {/* recording is the normal case and says nothing; only a failure speaks */}
+            {saved === "failed" && <p className="mt-3 shrink-0 text-[12.5px] text-sky-slipping">Could not record this. Your schedule is unchanged.</p>}
           </SkySurface>
           <div className="flex flex-wrap gap-2">
             <SkyButton href={skyHref}>Back to the observatory</SkyButton>
