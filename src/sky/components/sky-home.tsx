@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
+import { bodyOf, type Body } from "@/sky/lib/constellation";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { StandingLegend } from "@/sky/components/standing-legend";
 import { useStandingFilter } from "@/sky/components/use-standing-filter";
@@ -54,6 +55,13 @@ export interface SkyHomeProps {
 export function SkyHome({ data, observatoryHref = "/observatory", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
+  // the sky opens on a planet if there is one, else a binary, else an
+  // asteroid: the learner's furthest reach, and the part of the sky worth
+  // a look first
+  const openOn = useMemo(() => {
+    const first = (body: Body) => data.roots.find((id) => bodyOf(graph.itemOf(id)?.kind ?? "word") === body);
+    return first("planet") ?? first("binary") ?? first("asteroid");
+  }, [graph, data.roots]);
   const counts = useMemo(() => data.standingCounts ?? tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [data.standingCounts, stars, graph]);
   const totals = discoveryTotals(data.discovery);
   // nothing discovered: no entry in any standing but "undiscovered"
@@ -66,7 +74,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
   return (
     <SkyPageShell title="Planetarium" lede="This is the planetarium. It will evolve as you explore and discover more of the Japanese language." height={height}>
       <div className="relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
-        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>

@@ -40,6 +40,9 @@ export interface SkyCanvasProps {
    * at and resets to. Defaults to the whole world fitting. A world larger
    * than this is seen by panning, or by zooming out towards the fit. */
   focus?: number;
+  /** Where the sky opens, in world units: this point sits in the middle of
+   * the window (as near as the edges allow). The top left otherwise. */
+  center?: { x: number; y: number };
   label: string;
   className?: string;
   children?: ReactNode;
@@ -50,7 +53,7 @@ const STEP = 1.3;
 /** Zoom per pixel of wheel delta: 100 pixels, one mouse notch, is about 1.15x. */
 const WHEEL_RATE = 0.0014;
 
-export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, label, className = "", children }: SkyCanvasProps) {
+export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, label, className = "", children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   // opens at the home zoom: k of 0 means "the home zoom", resolved by the clamp
   const [view, setView] = useState({ k: 0, x: 0, y: 0 });
@@ -84,11 +87,16 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   // view on every render, so a window that changes shape keeps the pan it
   // had and only shows more or less of the world. The zoom can go down to
   // the fit, so a world larger than the window can be seen whole.
+  // The stored view's k of 0 means "not touched yet": the home zoom, opened
+  // on `center` when there is one.
   const clamp = useCallback((v: { k: number; x: number; y: number }) => {
-    const k = v.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
+    const opening = v.k === 0;
+    const k = opening ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
+    const x = opening && center ? win.w / 2 - center.x * k : v.x;
+    const y = opening && center ? win.h / 2 - center.y * k : v.y;
     const axis = (w: number, world: number, at: number) => (world * k <= w ? 0 : Math.min(0, Math.max(w - world * k, at)));
-    return { k, x: axis(win.w, width, v.x), y: axis(win.h, height, v.y) };
-  }, [win.w, win.h, width, height, fit, home]);
+    return { k, x: axis(win.w, width, x), y: axis(win.h, height, y) };
+  }, [win.w, win.h, width, height, fit, home, center]);
   const shown = clamp(view);
 
   /** Pointer position in sky units, or null when the element has no size. */

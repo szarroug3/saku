@@ -54,6 +54,9 @@ export interface SkyFieldProps {
   firmamentBase?: number;
   /** How many world units span the box at 100%; the whole world by default. */
   focus?: number;
+  /** The constellation the sky opens on, in the middle of the window; the
+   * top left otherwise. */
+  openOn?: string;
   /** Override how a star looks; the default is its standing. */
   lookOf?: (id: string, base: StarLook) => StarLook;
   /** Draw lines only; the caller puts its own stars on the positions. */
@@ -87,7 +90,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; /** the constellation it was hovered in, for its look */ root: string; at: Anchor }
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -117,6 +120,9 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
+  const openingOn = openOn ? placed.find((p) => p.root === openOn) : undefined;
+  const opening = useMemo(() => (openingOn ? { x: openingOn.cx, y: openingOn.cy } : undefined), [openingOn]);
+
   // the tooltip: which star, and where it hangs, decided in the event
   const [hover, setHover] = useState<Hover | null>(null);
   const place = (id: string, root: string, clientX: number, clientY: number) => setHover({ id, root, at: pointerAnchor(clientX, clientY) });
@@ -131,7 +137,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
-      <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
+      <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} center={opening} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
         {placed.map((p) => (
           <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
         ))}
