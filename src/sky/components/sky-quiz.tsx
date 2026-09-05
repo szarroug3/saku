@@ -302,6 +302,18 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {card.options.map((o) => {
                         const struck = state.wrong.includes(o.id);
+                        // a pitched choice holds a hear button of its own, so the
+                        // pick is a button beside it rather than around it
+                        if (o.pitch !== undefined && Pitch) {
+                          return (
+                            <div key={o.id} className={`flex items-center gap-1 rounded-xl border pr-2 ${struck ? "border-transparent bg-sky-card/40 text-sky-muted" : "border-sky-line bg-sky-card hover:border-sky-accent"}`}>
+                              <button type="button" onClick={() => choose(o.id)} disabled={struck} className={`min-w-0 flex-1 px-3 py-2.5 text-left font-sky-display text-[18px] ${struck ? "line-through" : ""} ${japaneseFont(o.label)}`}>
+                                <Pitch reading={o.label} downstep={o.pitch} />
+                              </button>
+                              {Hear && <Hear glyph={o.label} downstep={o.pitch} />}
+                            </div>
+                          );
+                        }
                         return (
                           <button
                             key={o.id}
@@ -310,9 +322,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                             disabled={struck}
                             className={`rounded-xl border px-3 py-2.5 text-left ${struck ? "border-transparent bg-sky-card/40 text-sky-muted line-through" : "border-sky-line bg-sky-card hover:border-sky-accent"} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
                           >
-                            {o.pitch !== undefined && Pitch
-                              ? <span className="flex items-center justify-between gap-2"><Pitch reading={o.label} downstep={o.pitch} />{Hear && <Hear glyph={o.label} downstep={o.pitch} />}</span>
-                              : o.label}
+                            {o.label}
                           </button>
                         );
                       })}
