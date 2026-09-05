@@ -255,7 +255,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
           arrows stay put while stepping back and forth, and the help row is
           anchored to its bottom (Sam, 2026-09-05); no arrow past either end */}
       <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-        <SkySurface className="flex h-[480px] shrink-0 flex-col">
+        <SkySurface className="flex h-[540px] shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{meta}</p>
@@ -269,6 +269,9 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
 
           {!answered && (
             <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3">
+              {/* the answering area scrolls if it must (choices and a hint
+                  together); the help row below it never moves */}
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
               {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
               {card.typed && (
                 <form onSubmit={submit} className="flex gap-2">
@@ -307,13 +310,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
                 <div className="flex items-center gap-3 rounded-xl border border-sky-line px-3 py-2 text-[13.5px] text-sky-muted">
                   {card.hint.image && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={card.hint.image} alt="" className="size-[72px] rounded-md object-contain" />
+                    <img src={card.hint.image} alt="" className="size-[56px] rounded-md object-contain" />
                   )}
                   {card.hint.text && <span>{card.hint.text}</span>}
                 </div>
               )}
+              </div>
               {help.length > 0 && (
-                <div className="mt-auto border-t border-sky-line pt-3">
+                <div className="mt-auto shrink-0 border-t border-sky-line pt-3">
                   <Eyebrow>Help me{state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}</Eyebrow>
                   {/* three equal cells whatever is offered, so the buttons keep
                       one size from card to card (Sam, 2026-09-05) */}
