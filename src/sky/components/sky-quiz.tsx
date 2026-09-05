@@ -214,7 +214,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     const counts = tally(list);
     const unanswered = cards.length - list.length;
     return (
-      <SkyPageShell eyebrow="Quiz" title="How it went" aside={strip} height={height}>
+      <SkyPageShell eyebrow="Quiz" title="How it went" height={height}>
         <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
           <SkySurface>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-center sm:grid-cols-4">
