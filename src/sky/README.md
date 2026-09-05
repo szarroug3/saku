@@ -169,9 +169,9 @@ the signed-in learner's progress, or on a pretend learner with `?sample`.
 is the whole page: given `SkyObservatoryData` (every item on offer and under
 it, what is learned, and the sections) it lays out the picker and the rail.
 The picker is `ItemSection`s of `ItemCard`s, English only, each priced in the
-real pieces it brings beside what is learned and what is already picked; a
-card that cannot be picked yet is shown dashed with its reason ("needs the K
-row first"). The rail is the preview sky (`SkyField` with `tonight` set to the
+real pieces it brings beside what is learned and what is already picked;
+what cannot be picked yet is not shown, nor a finished track, and a section
+says what its kind of thing is and when to start it until it is started. The rail is the preview sky (`SkyField` with `tonight` set to the
 picks: known stars lit, the rest faint), the `PieceMeter` against a
 comfortable lesson (12, a placeholder), and tonight's picks with what each
 brings and a remove with undo. Every number comes from `src/sky/lib/cart.ts`

@@ -28,9 +28,8 @@
 //   beside it, and tinting the glyph instead just moves the same unlabelled
 //   signal somewhere more distracting. The Atlas carries status where it is
 //   worded: the coverage bar and the status filter.
-// - A locked state that hides. A card that cannot be picked yet is still shown,
-//   with its reason inline (`locked`, SAK-301): "needs the K row first". What is
-//   hidden is never explained; what is shown and dashed is.
+// - A locked state. What cannot be picked yet is not shown at all (Sam's call,
+//   2026-09-04), so a card that cannot be picked never reaches this component.
 //
 // Painted in the Sky's own tokens: it sits on the wash, never on the app's
 // light card. Selected keeps its ground and takes the accent on its border.
@@ -53,12 +52,6 @@ export interface ItemCardProps {
    * "hiragana", "word", "sentence rule" (Sam's call, 2026-09-04: the kind,
    * not the piece count; the cart carries the cost). */
   label?: string;
-  /** The reason this cannot be picked yet, worded for the learner: "needs the
-   * K row first". Shown in place of the cost; the card is dashed and inert. */
-  locked?: string;
-  /** One short line under the cost: "2 shared", "kanji already in your sky",
-   * "comes with the K row". Planetarium only. */
-  note?: string;
   /** The click, with its event, so a page can read shift for a range. */
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
@@ -113,22 +106,19 @@ export function ItemCard({
   density = "comfortable",
   selected = false,
   label,
-  locked,
-  note,
   onClick,
 }: ItemCardProps) {
-  const isButton = Boolean(onClick) && !locked;
+  const isButton = Boolean(onClick);
   const Tag = isButton ? "button" : "div";
 
   return (
     <Tag
       {...(isButton ? { type: "button" as const, onClick, "aria-pressed": selected } : {})}
-      aria-disabled={locked ? true : undefined}
       className={[
         "relative isolate flex w-full flex-col items-center justify-center overflow-hidden rounded-xl text-center font-sky-ui",
         BOX[density],
         "border transition-colors",
-        locked ? "cursor-not-allowed border-dashed border-sky-line bg-transparent opacity-60" : selected ? "border-sky-accent bg-sky-panel" : "border-sky-line bg-sky-panel",
+        selected ? "border-sky-accent bg-sky-panel" : "border-sky-line bg-sky-panel",
         isButton && !selected ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
       ]
         .filter(Boolean)
@@ -186,12 +176,7 @@ export function ItemCard({
 
           {/* What kind of thing it is, in the accent, anchored to the bottom so
               it sits on one line across a whole row. */}
-          {locked ? (
-            <span className="shrink-0 pt-1.5 text-[10.5px] text-sky-muted">{locked}</span>
-          ) : label ? (
-            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-accent">{label}</span>
-          ) : null}
-          {!locked && note ? <span className="shrink-0 pt-0.5 text-[10.5px] text-sky-muted">{note}</span> : null}
+          {label ? <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-accent">{label}</span> : null}
         </>
       )}
     </Tag>

@@ -40,7 +40,7 @@ import type { FactId, HistoryFile } from "@/types";
 
 import { componentEntry, skyItems, standingFor } from "./learner";
 
-/** How many of a long section to offer; the page lays out fewer and says how many exist. */
+/** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
 
 /** What each track is and when to start it. Short, in the learner's terms. */
@@ -141,24 +141,24 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
       if (allMet) learned.add(id); else rows.push(id);
     }
   }
-  sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows, started: kanaMet > 0, complete: rows.length === 0, claimable: true });
+  sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows, started: kanaMet > 0, complete: rows.length === 0 });
   const kanaDone = kanaMet >= kanaTotal;
   const afterKana = kanaDone ? undefined : { requirement: "Opens once kana is done. Everything else is read through it.", progress: { have: kanaMet, need: kanaTotal, unit: "kana" } };
 
   // words: the curriculum's order, next ones first
   const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e);
   const words = allWords.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), total: words.length, gate: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
+  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), gate: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
 
   // counting: the track's own order
   const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), total: counting.length, gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0, claimable: true });
+  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
 
   // grammar: sentence rules, in the track's order
   const allGrammar = CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))).filter((e): e is LibEntry => !!e);
   const grammar = allGrammar.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), total: grammar.length, gate: afterKana, started: grammar.length < allGrammar.length, complete: grammar.length === 0, claimable: true });
+  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), gate: afterKana, started: grammar.length < allGrammar.length, complete: grammar.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];
@@ -175,7 +175,7 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
     const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
     pairs.push(offer(entry, "verbPair", { english, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
   }
-  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), total: pairs.length, gate: afterKana, started: pairsMet > 0, complete: pairs.length === 0, claimable: true });
+  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), gate: afterKana, started: pairsMet > 0, complete: pairs.length === 0 });
 
   // keigo: attached to the plain verb, with the polite words' kanji
   const keigo: string[] = [];
@@ -188,7 +188,7 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
     if (head) add(head);
     keigo.push(offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] }).id);
   }
-  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0, complete: keigo.length === 0, claimable: true });
+  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0, complete: keigo.length === 0 });
 
   return { items: [...items.values()], learned: [...learned], sections };
 }

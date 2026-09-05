@@ -4,17 +4,18 @@
 //
 // One call from the route, given the learner's items, what they have
 // learned, and the sections on offer. A shop, not a feed (Sam's rule): the
-// picker is sections of ItemCards in English only, each priced in the real
-// pieces it brings, locked ones shown with their reason; the rail is the
-// preview sky of tonight's picks, the piece meter against a comfortable
-// lesson, and the picks themselves with what each brings and a way to take
-// one out. Every number comes from src/sky/lib/cart.ts over the graph, so
-// the cart's total is what the lesson will teach.
+// picker is sections of ItemCards in English only, only what can be taken
+// now (nothing locked, nothing finished), each section saying what its kind
+// of thing is until it is started; the rail is the preview sky of tonight's
+// picks, the piece meter against a comfortable lesson, and the picks with
+// their cost, a way to take one out, "I already know these" and the way to
+// the lesson. Every number comes from src/sky/lib/cart.ts over the graph,
+// so the cart's total is what the lesson will teach.
 
 import { useMemo, useState, useTransition } from "react";
 
 import { ItemCard } from "@/sky/components/item-card";
-import { ItemSection, type ItemSectionProps } from "@/sky/components/item-section";
+import { ItemSection } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -31,23 +32,19 @@ export interface ObservatorySection {
   intro?: string;
   /** When to start it. */
   when?: string;
-  /** What is on offer, in order, by id. Only what can be taken now; the
-   * page shows at most `SHOWN` of them. */
+  /** What is on offer, in order, by id. The page lays out those that can be
+   * taken now, at most `SHOWN` of them. */
   items: readonly string[];
-  /** How many exist beyond what is shown, when more do. */
-  total?: number;
-  /** Set when the whole section is waiting on something. Such a section is
-   * not shown at all (Sam's call, 2026-09-04). */
-  gate?: ItemSectionProps["gate"];
+  /** What the whole section is waiting on, when it is: such a section is
+   * not shown at all (Sam's call, 2026-09-04), but the reason is kept so a
+   * page can say what is coming. */
+  gate?: { requirement: string; progress?: { have: number; need: number; unit: string } };
   /** The learner has already started this kind of thing, so its things are
    * laid out straight away; otherwise the section shows what it is and a
    * Start button, and the things appear once that is pressed. */
   started?: boolean;
   /** Nothing left to take: the track is done and is not shown. */
   complete?: boolean;
-  /** The whole track can be claimed at once ("I already know these"): the
-   * finite tracks, never the words. */
-  claimable?: boolean;
 }
 
 export interface SkyObservatoryData {
