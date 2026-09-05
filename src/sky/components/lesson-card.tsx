@@ -48,8 +48,8 @@ export interface LessonCardProps {
   standing?: boolean;
   related?: readonly RelatedGroup[];
   footer?: ReactNode;
-  /** Controls in the card's top corner, after the standing chip: a close, a widen. */
-  corner?: ReactNode;
+  /** A row of controls across the top of the card, above the eyebrow: a widen, a close. */
+  toolbar?: ReactNode;
   /** The card fills its box and scrolls inside it, the footer pinned at the bottom. */
   scroll?: boolean;
   className?: string;
@@ -198,7 +198,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, corner, scroll = false, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const pages = teach?.pages ?? [];
   const at = Math.max(0, Math.min(page, pages.length - 1));
@@ -220,14 +220,10 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
 
   return (
     <section className={`flex flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink ${scroll ? "h-full overflow-hidden" : ""} ${className}`}>
+      {toolbar && <div className="mb-3 flex shrink-0 items-center justify-between gap-2">{toolbar}</div>}
       <div className={`flex items-start justify-between gap-3 ${scroll ? "shrink-0" : ""}`}>
         <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
-        {(standing || corner) && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            {standing && <StandingChip standing={item.standing} />}
-            {corner}
-          </div>
-        )}
+        {standing && <StandingChip standing={item.standing} />}
       </div>
       <div className={scroll ? "-mr-2 min-h-0 flex-1 overflow-y-auto pr-2" : "contents"}>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

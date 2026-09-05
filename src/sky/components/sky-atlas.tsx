@@ -23,7 +23,6 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, ty
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup } from "@/sky/components/lesson-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
-import { SkyPanel } from "@/sky/components/sky-panel";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -320,8 +319,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const selectedItems = itemsOf(selected);
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
   const showPanel = selected.length > 0;
-  // the panel's corner: widen it over the rail and the grid, or bring them back; and close
-  const corner = (
+  // the panel's own row of controls: widen it over the rail and the grid
+  // (or bring them back) at the far left, close at the right
+  const toolbar = (
     <>
       <button type="button" aria-pressed={wide} onClick={() => setWide(!wide)} title={wide ? "Bring the shelves back" : "Widen this panel"} className={ROUND_BTN}>
         <span aria-hidden>{wide ? "›" : "‹"}</span><span className="sr-only">{wide ? "Bring the shelves back" : "Widen this panel"}</span>
@@ -341,7 +341,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by meaning, reading, or character"
+            placeholder="Search anything: し, shi, 生, せんせい, telephone…"
             className="w-full rounded-xl border border-sky-muted/45 bg-sky-panel px-4 py-2.5 text-[15px] text-sky-ink placeholder:text-sky-muted focus:border-sky-accent focus:outline-none"
           />
         </label>
@@ -433,7 +433,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           {showPanel && (
             <div ref={panel} className="min-h-0 self-stretch">
               {selected.length > 1 ? (
-                <SkyPanel title={`${selected.length} selected`} aside={corner} className="flex h-full flex-col">
+                <section className="flex h-full flex-col rounded-2xl border border-sky-line bg-sky-panel p-5 font-sky-ui text-sky-ink">
+                  <div className="mb-3 flex shrink-0 items-center justify-between gap-2">{toolbar}</div>
+                  <h2 className="shrink-0 text-[13px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{selected.length} selected</h2>
                   <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-1.5 overflow-y-auto">
                     {selectedItems.map((it) => (
                       <button key={it.id} type="button" onClick={() => setOpening(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
@@ -442,13 +444,12 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       </button>
                     ))}
                   </div>
-                  <p className="mt-3 shrink-0 text-[12px] text-sky-muted">{selectedItems.filter((it) => it.standing === "not-seen").length.toLocaleString()} not yet in your sky. Cmd or ctrl adds one, shift takes a run.</p>
                   <div className="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-sky-line pt-3">
                     {selectedItems.some((it) => it.standing === "not-seen") && <a href={picksHref(selectedItems.filter((it) => it.standing === "not-seen").map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
                     {selectedItems.some((it) => it.standing === "not-seen") && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
                     {quizHref && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
                   </div>
-                </SkyPanel>
+                </section>
               ) : current ? (
                 <LessonCard
                   scroll
@@ -458,7 +459,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                   partOf={[]}
                   known={false}
                   standing
-                  corner={corner}
+                  toolbar={toolbar}
                   related={entry?.related ?? []}
                   written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
                   hear={hear}
