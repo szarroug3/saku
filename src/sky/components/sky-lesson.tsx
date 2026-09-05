@@ -77,12 +77,6 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
       case "locked": return { ...base, standing: "not-seen", tonight: false };
     }
   };
-  const noteOf = (id: string) => {
-    const state = stateOf(id);
-    if (state === "locked") { const i = stepOf(id); return `after ${graph.itemOf(steps[i - 1].id)?.english ?? ""}`; }
-    if (learned.has(id) && state !== "lit") return "already in your sky";
-    return undefined;
-  };
 
   const currentStep = steps.find((s) => s.id === selected);
   const current = selected && !currentStep?.page ? graph.itemOf(selected) : undefined;
@@ -118,8 +112,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
             baseSize={56}
             fill
             lookOf={lookOf}
-            briefTooltip
-            tooltipNote={noteOf}
+            briefTooltip={(id) => stateOf(id) === "locked"}
             onStarClick={open}
             starDisabled={(id) => stateOf(id) === "locked"}
             seed="lesson"

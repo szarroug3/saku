@@ -19,20 +19,11 @@ export interface SkyTooltipProps {
   pieces?: readonly SkyItem[];
   /** Only the English name. */
   brief?: boolean;
-  /** One muted line under the name, in brief mode: "after flower", "already in your sky". */
-  note?: string;
   className?: string;
 }
 
-export function SkyTooltip({ item, pieces = [], brief = false, note, className = "" }: SkyTooltipProps) {
-  if (brief) {
-    return (
-      <SkyCard className={`rounded-lg px-2.5 py-1.5 ${className}`}>
-        {item.english}
-        {note && <div className="text-[12px] text-sky-muted">{note}</div>}
-      </SkyCard>
-    );
-  }
+export function SkyTooltip({ item, pieces = [], brief = false, className = "" }: SkyTooltipProps) {
+  if (brief) return <SkyCard className={`rounded-lg px-2.5 py-1.5 ${className}`}>{item.english}</SkyCard>;
   const discovered = item.standing !== "not-seen";
   return (
     <SkyCard className={`max-w-[260px] ${className}`}>

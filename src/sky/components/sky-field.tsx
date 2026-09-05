@@ -58,10 +58,9 @@ export interface SkyFieldProps {
   lookOf?: (id: string, base: StarLook) => StarLook;
   /** Draw lines only; the caller puts its own stars on the positions. */
   dots?: boolean;
-  /** Only the English name in the tooltip. */
-  briefTooltip?: boolean;
-  /** One muted line under a brief tooltip, per star: "after flower". */
-  tooltipNote?: (id: string) => string | undefined;
+  /** Only the English name in the tooltip, for every star or per star (the
+   * lesson names a locked star and nothing more). */
+  briefTooltip?: boolean | ((id: string) => boolean);
   /** Stars are the navigation: click, Enter or Space picks one. */
   onStarClick?: (id: string) => void;
   /** A star that ignores input, and says so to assistive tech. */
@@ -88,7 +87,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; at: Anchor }
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, tooltipNote, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -155,7 +154,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
       </SkyCanvas>
       {hover && hoverItem && (
         <Floating at={hover.at}>
-          <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={briefTooltip} note={tooltipNote?.(hover.id)} />
+          <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={typeof briefTooltip === "function" ? briefTooltip(hover.id) : briefTooltip} />
         </Floating>
       )}
     </div>
