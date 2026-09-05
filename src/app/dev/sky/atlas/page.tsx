@@ -9,7 +9,7 @@ import Link from "next/link";
 import { HearButton } from "@/components/ui/hear-button";
 import { SkyAtlas } from "@/sky/components/sky-atlas";
 
-import { atlasEntry, atlasSearch, claimPicks } from "../actions";
+import { atlasEntry, atlasSearch, claimPicks, unclaimPicks } from "../actions";
 import { atlasFromHistory, learnerAtlas } from "../atlas";
 import { PitchMark } from "../pitch-reading";
 import { sampleHistory } from "../sample-learner";
@@ -42,6 +42,7 @@ export default async function SkyAtlasPage({ searchParams }: { searchParams: Pro
         pitch={PitchMark}
         initialEntry={entry}
         onClaim={sample ? undefined : claimPicks}
+        onUnclaim={sample ? undefined : unclaimPicks}
         height="100%"
       />
     </SkyPage>

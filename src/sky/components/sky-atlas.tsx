@@ -109,6 +109,8 @@ export interface SkyAtlasProps {
    * lesson, untested; never mastery). Without it the claim is kept for
    * the visit only. */
   onClaim?: (ids: readonly string[]) => Promise<void>;
+  /** "I don't know this": the mirror of the claim, back to brand new. */
+  onUnclaim?: (ids: readonly string[]) => Promise<void>;
   height?: string;
 }
 
@@ -198,7 +200,7 @@ const ROUND_BTN = "flex h-7 w-7 shrink-0 items-center justify-center rounded-ful
 const BTN_SOLID = "rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink";
 const BTN_OUTLINE = "rounded-[10px] border border-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent disabled:opacity-60";
 
-export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, height }: SkyAtlasProps) {
+export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entry brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
@@ -292,6 +294,20 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
     }
   };
   const claim = () => current && claimIds([current.id]);
+  // "I don't know this" and "I don't know these": back to undiscovered
+  const unclaimIds = async (ids: readonly string[]) => {
+    const known = ids.map((id) => graph.itemOf(id)).filter((it): it is SkyItem => !!it && it.standing !== "not-seen");
+    if (known.length === 0) return;
+    setClaiming(true);
+    try {
+      await onUnclaim?.(known.map((it) => it.id));
+      bring(known.map((it) => ({ ...it, standing: "not-seen" as const })));
+      if (open && known.some((it) => it.id === open.id)) setOpen({ ...open, known: false });
+    } finally {
+      setClaiming(false);
+    }
+  };
+  const unclaim = () => current && unclaimIds([current.id]);
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
 
   const holds = data.holds.map((h) => `${h.total.toLocaleString()} ${h.unit}`);
@@ -326,6 +342,10 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   // a hovered tile's entry is fetched ahead, so the click finds it ready
   const peek = (id: string) => { void fetchEntry(id).catch(() => undefined); };
   const selectedItems = itemsOf(selected);
+  // the buttons follow the selection: "I know these" for the ones not yet in
+  // the sky, "I don't know these" for the ones that are, both for a mixture
+  const unknownSelected = selectedItems.filter((it) => it.standing === "not-seen");
+  const knownSelected = selectedItems.filter((it) => it.standing !== "not-seen");
   const picksHref = (ids: readonly string[]) => `${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
   const showPanel = selected.length > 0;
   // the panel's own row of controls: widen it over the rail and the grid
@@ -454,8 +474,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                     ))}
                   </div>
                   <div className="mt-3 flex shrink-0 flex-wrap gap-2 border-t border-sky-line pt-3">
-                    {selectedItems.some((it) => it.standing === "not-seen") && <a href={picksHref(selectedItems.filter((it) => it.standing === "not-seen").map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
-                    {selectedItems.some((it) => it.standing === "not-seen") && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
+                    {unknownSelected.length > 0 && <a href={picksHref(unknownSelected.map((it) => it.id))} className={BTN_SOLID}>Add to tonight&apos;s picks</a>}
+                    {unknownSelected.length > 0 && <button type="button" onClick={() => claimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know these"}</button>}
+                    {knownSelected.length > 0 && <button type="button" onClick={() => unclaimIds(selected)} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I don't know these"}</button>}
                     {quizHref && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
                   </div>
                 </section>
@@ -482,7 +503,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                           <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
                         </>
                       ) : (
-                        <span className="text-[12.5px] text-sky-muted">Already in your sky.</span>
+                        <button type="button" onClick={unclaim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I don't know this"}</button>
                       )}
                       {quizHref && (current.quizzable ?? entry?.quizzable ?? 0) > 1 && <a href={quizHref} className={BTN_OUTLINE}>Quiz me</a>}
                     </>

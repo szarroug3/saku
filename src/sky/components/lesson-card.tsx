@@ -16,7 +16,7 @@ import type { ComponentType, ReactNode } from "react";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonPage, LessonTeach, PartedSentence, SoundLine, TeachExample, TeachPage } from "@/sky/lib/lesson";
+import type { LessonPage, LessonTeach, PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, TeachParagraph, TeachTable } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -127,8 +127,9 @@ function PartBoxes({ line }: { line: PartedSentence }) {
   );
 }
 
-/** One worked example, three ways. */
-function Example({ example, n }: { example: TeachExample; n: number }) {
+/** One worked example: natural English, the Japanese, and the English in
+ * Japanese order between them when the example has one. */
+function Example({ example, n, count }: { example: TeachExample; n: number; count: number }) {
   const block = (title: string, line: PartedSentence, big = false) => (
     <div className="mt-3 first:mt-1.5">
       <Eyebrow className="!mb-0.5 text-sky-accent">{title}</Eyebrow>
@@ -138,32 +139,99 @@ function Example({ example, n }: { example: TeachExample; n: number }) {
   );
   return (
     <div className="rounded-xl border border-sky-line px-3.5 py-3">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">Example {n}</p>
+      <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">{count > 1 ? `Example ${n}` : "In a sentence"}</p>
       {block("Natural English", example.natural)}
-      {block("English in Japanese order", example.ordered)}
+      {example.ordered && block("English in Japanese order", example.ordered)}
       {block("Japanese", example.japanese, true)}
     </div>
   );
 }
 
+/** A paragraph of the teaching: a heading over it, a bold lead, the text
+ * with a phrase picked out in the accent. */
+function Paragraph({ para }: { para: TeachParagraph }) {
+  const at = para.accent ? para.text.indexOf(para.accent) : -1;
+  const text = at >= 0 && para.accent
+    ? <>{para.text.slice(0, at)}<span className={`font-semibold text-sky-accent ${japaneseFont(para.accent)}`}>{para.accent}</span>{para.text.slice(at + para.accent.length)}</>
+    : para.text;
+  return (
+    <div>
+      {para.heading && <p className="mb-1 mt-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{para.heading}</p>}
+      <p>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className={`text-sky-ink/90 ${japaneseFont(para.text)}`}>{text}</span></p>
+    </div>
+  );
+}
+
+/** A build formula as pills: the form in a dashed box, what is trimmed, what is added. */
+function Formula({ formula }: { formula: TeachFormula }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5 text-[14px]">
+      {formula.label && <span className="mr-1 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{formula.label}</span>}
+      <span className={`rounded-md border border-dashed border-sky-muted px-2 py-0.5 ${japaneseFont(formula.base)}`}>{formula.base}</span>
+      {formula.trim && <><span className="text-sky-muted">−</span><span className={`font-sky-display ${japaneseFont(formula.trim)}`}>{formula.trim}</span></>}
+      {formula.add && <><span className="text-sky-muted">+</span><span className={`font-sky-display font-semibold text-sky-accent ${japaneseFont(formula.add)}`}>{formula.add}</span></>}
+    </span>
+  );
+}
+
+/** One table of the teaching, with its heading, instruction and formula. */
+function Table({ table }: { table: TeachTable }) {
+  const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
+  return (
+    <div className="rounded-xl border border-sky-line px-3.5 py-3">
+      {table.title && <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-accent">{table.title}</p>}
+      {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{table.instruction}</p>}
+      {formulas.length > 0 && <div className="mt-2 flex flex-col gap-1">{formulas.map((f, i) => <Formula key={i} formula={f} />)}</div>}
+      <div className="mt-2 overflow-x-auto">
+        <table className="w-full border-collapse text-[13.5px]">
+          <thead>
+            <tr>{table.heads.map((h, i) => <th key={i} className="border-b border-sky-line pb-1 pr-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row, r) => (
+              <tr key={r}>
+                {row.map((cell, c) => (
+                  <td key={c} className={`py-1 pr-3 align-top ${japaneseFont(cell.map((x) => x.text).join(""))}`}><Sound line={cell} /></td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {table.footer && <p className={`mt-2 text-[13.5px] ${japaneseFont(table.footer)}`}>{table.footer}</p>}
+      {table.note && <p className="mt-2 text-[12.5px] leading-relaxed text-sky-muted">{table.note}</p>}
+    </div>
+  );
+}
+
 /** One page of a star taught over several: the eyebrow, the title, the hook
- * to keep in mind, the prose and the worked examples. */
+ * to keep in mind, the prose, the formula and tables, the worked examples. */
 function TeachPageView({ page }: { page: TeachPage }) {
   return (
     <div className="mt-4 border-t border-sky-line pt-4">
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
-      <h3 className="max-w-[30ch] font-sky-display text-[24px] leading-tight">{page.title}</h3>
+      <h3 className={`max-w-[30ch] font-sky-display text-[24px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>
       {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
       <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">
-        {page.paragraphs.map((para, i) => (
-          <p key={i}>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className="text-sky-ink/90">{para.text}</span></p>
-        ))}
+        {page.paragraphs.map((para, i) => <Paragraph key={i} para={para} />)}
       </div>
-      {page.examples && page.examples.length > 0 && (
+      {page.formula && <div className="mt-3"><Formula formula={page.formula} /></div>}
+      {page.tables && page.tables.length > 0 && (
         <div className="mt-4 flex flex-col gap-3">
-          {page.examples.map((ex, i) => <Example key={i} example={ex} n={i + 1} />)}
+          {page.tables.map((t, i) => <Table key={i} table={t} />)}
         </div>
       )}
+      {page.after && page.after.length > 0 && (
+        <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">
+          {page.after.map((para, i) => <Paragraph key={i} para={para} />)}
+        </div>
+      )}
+      {page.examples && page.examples.length > 0 && (
+        <div className="mt-4 flex flex-col gap-3">
+          {page.examples.map((ex, i) => <Example key={i} example={ex} n={i + 1} count={page.examples!.length} />)}
+        </div>
+      )}
+      {page.link && <p className="mt-3 text-[13px]"><a href={page.link.href} target="_blank" rel="noopener" className="text-sky-accent underline">{page.link.label}</a></p>}
     </div>
   );
 }

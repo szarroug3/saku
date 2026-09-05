@@ -63,17 +63,48 @@ export interface TeachPage {
   title: string;
   /** The line to keep in mind, in the accent: "Think: who → what → action." */
   hook?: string;
-  /** The page's prose: an optional bold lead and its text. */
-  paragraphs: ReadonlyArray<{ lead?: string; text: string }>;
-  /** Worked examples, each in its three renderings. */
+  /** The page's prose: an optional heading over it, a bold lead, its text,
+   * and a phrase of the text to pick out in the accent. */
+  paragraphs: ReadonlyArray<TeachParagraph>;
+  /** The build as a formula, for a grammar pattern: [て-form] + から. */
+  formula?: TeachFormula;
+  /** Tables: a form's build rules, a pattern's derivation, a family of
+   * patterns side by side. */
+  tables?: readonly TeachTable[];
+  /** Prose after the tables. */
+  after?: ReadonlyArray<TeachParagraph>;
+  /** Worked examples, each in its renderings. */
   examples?: readonly TeachExample[];
+  /** Somewhere to read more. */
+  link?: { href: string; label: string };
 }
 
-/** An example sentence three ways: natural English, English in Japanese
- * order, and the Japanese, each with its parts named. */
+export interface TeachParagraph { heading?: string; lead?: string; text: string; accent?: string }
+
+/** A build formula: the form in a box, what is trimmed off it, what is
+ * added. `label` names the case when a pattern branches ("Godan"). */
+export interface TeachFormula { label?: string; base: string; add?: string; trim?: string }
+
+/** A table of the teaching: headings, and rows of cells, each cell runs of
+ * text with the part that matters marked (the piece a rule adds). */
+export interface TeachTable {
+  title?: string;
+  instruction?: string;
+  formula?: TeachFormula | readonly TeachFormula[];
+  heads: readonly string[];
+  rows: ReadonlyArray<ReadonlyArray<SoundLine>>;
+  /** A closing line: the chain the rows build toward, and its meaning. */
+  footer?: string;
+  /** A note under the table: how a family's members differ. */
+  note?: string;
+}
+
+/** An example sentence: natural English, the Japanese, and for a sentence
+ * rule the English in Japanese order between them, each with its parts
+ * named. */
 export interface TeachExample {
   natural: PartedSentence;
-  ordered: PartedSentence;
+  ordered?: PartedSentence;
   japanese: PartedSentence;
 }
 

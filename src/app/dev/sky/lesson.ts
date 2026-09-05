@@ -8,7 +8,12 @@
 import { SETS } from "@/data/characters";
 import { COUNTER_CURRICULUM, counterEntry, counterForm, counterRoleNote } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
-import { RECIPES } from "@/data/grammar/recipes";
+import { autoPatternPage } from "@/data/grammar/auto-page";
+import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
+import { formLibraryPages } from "@/data/grammar/lessons";
+import { RECIPES, type Recipe } from "@/data/grammar/recipes";
+import type { IntroBuildRule, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
 import { KEIGO_SETS, keigoSetEntry, keigoSetForEntry } from "@/data/keigo";
@@ -30,7 +35,7 @@ import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
-import { lessonSteps, type LessonPage, type LessonTeach, type PartedSentence, type TeachPage } from "@/sky/lib/lesson";
+import { lessonSteps, type LessonPage, type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
@@ -87,8 +92,11 @@ export function teachFor(item: SkyItem): LessonTeach {
     return t;
   }
   if (item.kind === "grammar") {
+    // a pattern: the app's own teaching pages (the build, its tables, the
+    // sentence) and its family, page by page, the way the app's grammar page
+    // shows them (Sam's call, 2026-09-05: keep that richness)
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
-    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; t.notes = [recipe.sense, recipe.intro?.blurb].filter((x): x is string => !!x); return t; }
+    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = grammarPages(recipe); return t; }
     return t;
   }
   if (item.kind === "sentence") {
@@ -163,6 +171,103 @@ function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
       examples: l.examples.map(({ example, activePart }) => threeWays(example, activePart)),
     })),
   ];
+}
+
+/** A grammar pattern's pages: the app's own teaching (a form's authored
+ * Library pages, or the generated pattern page: the meaning, the build
+ * formula, the conjugation or derivation tables, the sentence), then its
+ * family side by side when it has one. Converted from the app's PhaseIntro
+ * shape into the Sky's, so the two show the same build by construction. */
+function grammarPages(recipe: Recipe): TeachPage[] {
+  const intros = formLibraryPages(recipe.id);
+  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map(pageFromIntro);
+  const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
+  const members = family ? membersOf(family) : [];
+  if (family && members.length > 1) {
+    const rows = members.map((m) => {
+      const built = buildRow(m)?.built ?? "";
+      const me = m.id === recipe.id;
+      const pattern = m.sense ? `${m.pattern} ${m.sense}` : m.pattern;
+      return [[{ text: pattern, ...(me ? { accent: true } : {}) }], [{ text: m.gloss }], [{ text: built }]] as const;
+    });
+    pages.push({
+      eyebrow: "Family",
+      title: "Ways to say this",
+      paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are its near neighbours, and how each is built." }],
+      tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, ...(family.feel ? { note: family.feel } : {}) }],
+      ...(family.link ? { link: { href: family.link.url, label: family.link.label } } : {}),
+    });
+  }
+  return pages;
+}
+
+const text = (s: string, accent = false): SkySoundLine[number] => (accent ? { text: s, accent: true } : { text: s });
+
+/** A build rule as a row: ending · verb · change · result, with the added
+ * piece in the accent, plus a meaning and a note when any row has them. */
+function ruleRow(r: IntroBuildRule, gloss: boolean, note: boolean): SkySoundLine[] {
+  const change: SkySoundLine = r.to ? [text("→")] : [...(r.drop ? [text(`− ${r.drop}`)] : []), ...(r.add ? [text(r.drop ? " + " : "+ "), text(r.add, true)] : [])];
+  let result: SkySoundLine;
+  if (r.to) {
+    const at = r.accent === false ? -1 : typeof r.accent === "string" ? r.to.indexOf(r.accent) : -1;
+    result = at >= 0 && typeof r.accent === "string" ? [text(r.to.slice(0, at)), text(r.accent, true), text(r.to.slice(at + r.accent.length))] : [text(r.to, r.accent !== false)];
+  } else {
+    const stem = r.verb && r.drop && r.verb.endsWith(r.drop) ? r.verb.slice(0, r.verb.length - r.drop.length) : (r.verb ?? "");
+    result = [text(stem), ...(r.add ? [text(r.add, true)] : [])];
+  }
+  return [[text(r.label ?? "")], [text(r.verb ?? "")], change, result, ...(gloss ? [[text(r.gloss ?? "")]] : []), ...(note ? [[text(r.note ?? "")]] : [])];
+}
+
+function ruleTable(rules: readonly IntroBuildRule[], heads?: { label?: string; change?: string; note?: string; gloss?: string }, title?: string, extra: Partial<TeachTable> = {}): TeachTable {
+  const gloss = rules.some((r) => r.gloss), note = rules.some((r) => r.note);
+  return { ...(title ? { title } : {}), heads: [heads?.label ?? "Ending", "Verb", heads?.change ?? "Change", "Result", ...(gloss ? [heads?.gloss ?? "Meaning"] : []), ...(note ? [heads?.note ?? "Note"] : [])], rows: rules.map((r) => ruleRow(r, gloss, note)), ...extra };
+}
+
+/** A derivation as a row: verb · form · pattern · meaning, the pattern's
+ * added piece in the accent when it can be told from the form. */
+function deriveTable(rules: readonly IntroDeriveRow[], heads?: { verb?: string; form?: string; pattern?: string }, title?: string, extra: Partial<TeachTable> = {}): TeachTable {
+  const form = rules.some((r) => r.form), gloss = rules.some((r) => r.gloss), cls = rules.some((r) => r.classLabel);
+  const rows = rules.map((r) => {
+    const base = r.form ?? r.verb;
+    const result: SkySoundLine = r.result.startsWith(base) ? [text(base), text(r.result.slice(base.length), true)] : [text(r.result)];
+    return [[text(r.verb)], ...(form ? [[text(r.form ?? "")]] : []), result, ...(gloss ? [[text(r.gloss ?? "")]] : []), ...(cls ? [[text(r.classLabel ?? "")]] : [])];
+  });
+  return { ...(title ? { title } : {}), heads: [heads?.verb ?? "Verb", ...(form ? [heads?.form ?? "Form"] : []), heads?.pattern ?? "Pattern", ...(gloss ? ["Meaning"] : []), ...(cls ? ["Class"] : [])], rows, ...extra };
+}
+
+const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
+  (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
+
+/** One of the app's teaching pages in the Sky's shape. */
+function pageFromIntro(intro: PhaseIntro): TeachPage {
+  const tables: TeachTable[] = [];
+  for (const section of intro.buildSections ?? []) {
+    const title = section.hideTitle ? undefined : section.title;
+    const instruction = section.body.map((p) => p.text).join(" ");
+    const footer = section.footer ? `${section.footer.chain} · ${section.footer.gloss}` : undefined;
+    const extra = { ...(instruction ? { instruction } : {}), ...(section.formula ? { formula: section.formula } : {}), ...(footer ? { footer } : {}) };
+    if (section.rules?.length) tables.push(ruleTable(section.rules, section.heads, title, extra));
+    for (const t of section.tables ?? []) tables.push(ruleTable(t.rules, t.heads, title ? `${title} · ${t.title}` : t.title, tables.length === 0 ? extra : {}));
+    if (!section.rules?.length && !section.tables?.length && (instruction || section.formula)) tables.push({ ...(title ? { title } : {}), ...extra, heads: [], rows: [] });
+  }
+  if (intro.buildRules?.length) tables.push(ruleTable(intro.buildRules, intro.buildHeads));
+  for (const t of intro.buildTables ?? []) tables.push(ruleTable(t.rules, t.heads, t.title));
+  if (intro.deriveRules?.length) tables.push(deriveTable(intro.deriveRules, intro.deriveHeads));
+  for (const t of intro.deriveTables ?? []) tables.push(deriveTable(t.rules, t.heads, t.title, { ...(t.instruction ? { instruction: t.instruction } : {}), ...(t.formula ? { formula: t.formula } : {}) }));
+  if (intro.buildFooter && tables.length) tables[tables.length - 1] = { ...tables[tables.length - 1], footer: `${intro.buildFooter.chain} · ${intro.buildFooter.gloss}` };
+  const ex = intro.sentenceExample;
+  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text) }] : undefined;
+  return {
+    // the page's own name on the pager pill (〜ので, "The て/で-form"); the
+    // app's eyebrow is the same "Grammar" on every generated page
+    eyebrow: intro.name ?? intro.eyebrow ?? "Grammar",
+    title: intro.title,
+    paragraphs: paragraphs(intro.body),
+    ...(intro.buildFormula ? { formula: intro.buildFormula } : {}),
+    ...(tables.length ? { tables } : {}),
+    ...(intro.bodyAfterBuild?.length ? { after: paragraphs(intro.bodyAfterBuild) } : {}),
+    ...(examples ? { examples } : {}),
+  };
 }
 
 /** One of everything, for a look at every kind of card: a plain kana row,

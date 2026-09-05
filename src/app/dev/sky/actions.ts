@@ -6,7 +6,7 @@
 import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth";
-import { saveClaims } from "@/lib/history";
+import { dropClaims, saveClaims } from "@/lib/history";
 import type { AtlasEntry, AtlasSearchResult } from "@/sky/components/sky-atlas";
 
 import { atlasEntryFromHistory, atlasSearchFromHistory, learnerHistory } from "./atlas";
@@ -22,6 +22,20 @@ export async function claimPicks(ids: readonly string[]): Promise<void> {
   const facts = pickFacts(ids);
   if (facts.length === 0) return;
   await saveClaims(userId, facts, Date.now());
+  revalidatePath("/dev/sky/observatory");
+  revalidatePath("/dev/sky/planetarium");
+  revalidatePath("/dev/sky/atlas");
+}
+
+/** "I don't know this": the mirror of a claim, the app's own withdrawal.
+ * The picks' facts go back to brand new (claim and quiz record both), the
+ * way the Library's "Mark as not known" does. */
+export async function unclaimPicks(ids: readonly string[]): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+  const facts = pickFacts(ids);
+  if (facts.length === 0) return;
+  await dropClaims(userId, facts);
   revalidatePath("/dev/sky/observatory");
   revalidatePath("/dev/sky/planetarium");
   revalidatePath("/dev/sky/atlas");
