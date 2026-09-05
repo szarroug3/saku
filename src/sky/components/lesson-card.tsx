@@ -34,8 +34,13 @@ export interface LessonCardProps {
   /** A button that speaks a reading, from whoever has the voice: beside the
    * glyph's reading, each of a kanji's readings and the example word. */
   hear?: HearComponent;
+  /** A word's reading with its pitch drawn over it, from whoever draws it;
+   * used in place of the plain reading when the pitch is known. */
+  pitch?: PitchComponent;
   className?: string;
 }
+
+export type PitchComponent = ComponentType<{ reading: string; downstep: number; className?: string }>;
 
 /** What a hear button takes: the kana to say and, for a word, the mora its
  * pitch falls after. */
@@ -77,7 +82,7 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const reading = teach?.reading ?? item.reading;
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
@@ -88,7 +93,7 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       {rows.map((r) => (
         <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
-          {Hear && <Hear glyph={r.reading} />}
+          {Hear && <span className="self-center"><Hear glyph={r.reading} /></span>}
           {r.words.length > 0 && <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
         </li>
       ))}
@@ -100,10 +105,13 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       <Eyebrow>{KIND_LABEL[item.kind]}{ROLE[item.kind] ? ` · ${ROLE[item.kind]}` : ""}</Eyebrow>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display text-[52px] leading-none ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
-        {reading && reading !== item.glyph && <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>}
-        {teach?.pitch !== undefined && teach.pitch !== null && <span className="text-[12.5px] text-sky-muted">pitch {teach.pitch}</span>}
+        {reading && reading !== item.glyph && (
+          Pitch && typeof teach?.pitch === "number"
+            ? <Pitch reading={reading} downstep={teach.pitch} className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`} />
+            : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
+        )}
         {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && (
-          <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} />
+          <span className="self-center"><Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} /></span>
         )}
       </div>
       {/* a kana's name is its sound, already beside the glyph */}
@@ -139,10 +147,10 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
               </div>
             )}
             {teach.exampleWord && (
-              <p className="mt-1 flex items-baseline gap-3 border-t border-sky-line pt-2">
+              <p className="mt-1 flex items-center gap-3 border-t border-sky-line pt-2">
                 <span className={`font-sky-display text-[24px] leading-none text-sky-ink ${japaneseFont(teach.exampleWord.word)}`}>{teach.exampleWord.word}</span>
                 <span className="text-[13.5px] text-sky-muted">{teach.exampleWord.reading} · {teach.exampleWord.gloss}</span>
-                {Hear && <Hear glyph={teach.exampleWord.word} />}
+                {Hear && <span className="self-center"><Hear glyph={teach.exampleWord.word} /></span>}
               </p>
             )}
           </div>

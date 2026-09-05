@@ -11,6 +11,7 @@ import { learnerLesson, lessonFromPicks, showcasePicks } from "../lesson";
 import { emptyHistory } from "@/lib/history-ops";
 
 import { sampleHistory } from "../sample-learner";
+import { PitchMark } from "../pitch-reading";
 import { SkyPage } from "../sky-page";
 import { WrittenBlock } from "../written-block";
 
@@ -40,7 +41,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
         </>
       }
     >
-      <SkyLesson data={data} drillHref="/session" written={written} hear={HearButton} height="100%" />
+      <SkyLesson data={data} drillHref="/session" written={written} hear={HearButton} pitch={PitchMark} height="100%" />
     </SkyPage>
   );
 }

@@ -14,7 +14,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
-import { LessonCard, LessonPageCard, type HearComponent } from "@/sky/components/lesson-card";
+import { LessonCard, LessonPageCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
@@ -44,12 +44,14 @@ export interface SkyLessonProps {
   written?: Readonly<Record<string, ReactNode>>;
   /** A button that speaks a reading, from whoever has the voice. */
   hear?: HearComponent;
+  /** A reading with its pitch drawn over it, from whoever draws it. */
+  pitch?: PitchComponent;
   height?: string;
 }
 
 const BTN = "rounded-[10px] px-3.5 py-2 text-[13px] font-semibold";
 
-export function SkyLesson({ data, drillHref, written, hear, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, written, hear, pitch, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
@@ -138,6 +140,7 @@ export function SkyLesson({ data, drillHref, written, hear, height }: SkyLessonP
                 known={learned.has(current.id)}
                 written={written?.[current.id]}
                 hear={hear}
+                pitch={pitch}
                 onSelect={open}
               />
             ) : (
