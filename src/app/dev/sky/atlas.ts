@@ -31,19 +31,19 @@ import { standingFor } from "./learner";
 import { teachFor } from "./lesson";
 import { offerings, type Offerings } from "./observatory";
 
-/** The shelves, in the order the app teaches the subjects, each with a
- * budget of tiles: whole cuts are shown until the budget runs out, and the
- * rest is reached by search. */
-const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string; tiles: number }> = [
-  { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana", tiles: 260 },
-  { id: "pieces", kind: RADICAL_SUBJECT, sky: "radical", title: "Pieces", unit: "pieces", tiles: 60 },
-  { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji", tiles: 100 },
-  { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words", tiles: 100 },
-  { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters", tiles: 60 },
-  { id: "grammar", kind: GRAMMAR_SUBJECT, sky: "grammar", title: "Grammar", unit: "patterns", tiles: 60 },
-  { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules", tiles: 20 },
-  { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs", tiles: 40 },
-  { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets", tiles: 40 },
+/** The shelves, in the order the app teaches the subjects. Every cut of
+ * every shelf is shown (Sam's call, 2026-09-05: everything, without having
+ * to search); the page mounts a cut's tiles only as it comes into view. */
+const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string }> = [
+  { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana" },
+  { id: "pieces", kind: RADICAL_SUBJECT, sky: "radical", title: "Pieces", unit: "pieces" },
+  { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji" },
+  { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words" },
+  { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters" },
+  { id: "grammar", kind: GRAMMAR_SUBJECT, sky: "grammar", title: "Grammar", unit: "patterns" },
+  { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules" },
+  { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs" },
+  { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets" },
 ];
 
 /** How many of a related group are listed; the note carries the whole count. */
@@ -93,20 +93,18 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
   const shelves: AtlasShelf[] = SHELVES.map((shelf) => {
     const entries = all(shelf.kind);
     const sections: AtlasSection[] = [];
-    let budget = shelf.tiles;
     for (const cut of shelfSections(shelf.kind, "everyday")) {
-      if (budget <= 0) break;
       const ids = cut.entries.map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
-      const kept = ids.slice(0, budget);
-      budget -= kept.length;
-      if (kept.length) sections.push({ id: cut.id, label: cut.label, items: kept, ...(ids.length > kept.length ? { more: ids.length - kept.length } : {}) });
+      if (ids.length) sections.push({ id: cut.id, label: cut.label, items: ids });
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     shown.push(...sections.flatMap((s) => s.items));
     return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kind === kind)!.unit }));
-  return { items: closure(o, shown), shelves, holds };
+  // the tiles need only what a tile shows; an entry's parts come with it when it is opened
+  const lean = (id: string): SkyItem | undefined => { const it = o.items.get(id); if (!it) return undefined; const { components: _parts, ...rest } = it; return rest; };
+  return { items: shown.map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
 }
 
 /** The app's search, by kind, as Atlas sections. */

@@ -29,7 +29,6 @@ import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
-import { KIND_DOT } from "@/sky/lib/tokens";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 
 /** One cut of a shelf: a name and the entries under it. */
@@ -104,6 +103,10 @@ export interface SkyAtlasProps {
   pitch?: PitchComponent;
   /** The entry open at first, when the route names one. */
   initialEntry?: string;
+  /** "I know this": claims the entry, the app's own claim (a skip of the
+   * lesson, untested; never mastery). Without it the claim is kept for
+   * the visit only. */
+  onClaim?: (ids: readonly string[]) => Promise<void>;
   height?: string;
 }
 
@@ -144,8 +147,34 @@ function Grid({ ids, graph, selected, onOpen }: { ids: readonly string[]; graph:
   );
 }
 
-/** A rail row: a dot, a name, a count on the right. */
-function RailRow({ on, dot, label, count, onClick }: { on: boolean; dot: ReactNode; label: string; count?: number; onClick: () => void }) {
+/** A cut of a shelf whose tiles mount only as it comes into view, so a
+ * shelf of twelve thousand words costs nothing until it is scrolled to.
+ * Until then it holds the room its rows will take. */
+function LazySection({ label, ids, graph, selected, onOpen }: { label?: string; ids: readonly string[]; graph: ReturnType<typeof buildGraph>; selected: string | null; onOpen: (id: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setNear(true); }, { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  // about eight tiles a row at the narrowest the grid gets; only a guess
+  // at the room, replaced by the real rows once mounted
+  const rows = Math.ceil(ids.length / 8);
+  return (
+    <div ref={ref} className="mt-3" style={near ? undefined : { minHeight: `${rows * 70 + (label ? 22 : 0)}px` }}>
+      {label && <p className="mb-1.5 text-[11.5px] font-semibold text-sky-muted">{label}</p>}
+      {near && <Grid ids={ids} graph={graph} selected={selected} onOpen={onOpen} />}
+    </div>
+  );
+}
+
+/** A rail row: a name with a count on the right, and a dot before it when
+ * the row stands for a standing (the collections carry no dot: Sam found
+ * the kind colours confusing, 2026-09-05). */
+function RailRow({ on, dot, label, count, onClick }: { on: boolean; dot?: ReactNode; label: string; count?: number; onClick: () => void }) {
   return (
     <button type="button" aria-pressed={on} onClick={onClick} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] ${on ? "bg-sky-card-strong font-semibold text-sky-ink" : "text-sky-muted hover:bg-sky-card hover:text-sky-ink"}`}>
       {dot}
@@ -156,8 +185,10 @@ function RailRow({ on, dot, label, count, onClick }: { on: boolean; dot: ReactNo
 }
 
 const RAIL_HEADING = "mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-muted";
+const BTN_SOLID = "rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink";
+const BTN_OUTLINE = "rounded-[10px] border border-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent disabled:opacity-60";
 
-export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, height }: SkyAtlasProps) {
+export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entry brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
@@ -169,7 +200,9 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const graph = useMemo(() => buildGraph(items), [items]);
   const bring = useCallback((more: readonly SkyItem[]) => setExtra((prev) => [...prev, ...more]), []);
 
-  // the rail: one collection open at a time, and one status or all of them
+  // the rail: one collection open at a time, and one status or all of
+  // them; it folds to its dots to give the grid the room
+  const [railOpen, setRailOpen] = useState(true);
   const [shelfId, setShelfId] = useState(data.shelves[0]?.id ?? "");
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
@@ -216,6 +249,20 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   }, [opening, lookup, bring]);
   const openId = open?.id ?? null;
   const current = openId ? graph.itemOf(openId) : undefined;
+
+  // "I know this": the claim, then the entry as claimed, here and on its tile
+  const [claiming, setClaiming] = useState(false);
+  const claim = async () => {
+    if (!current || !open) return;
+    setClaiming(true);
+    try {
+      await onClaim?.([current.id]);
+      bring([{ ...current, standing: "claimed" }]);
+      setOpen({ ...open, known: true });
+    } finally {
+      setClaiming(false);
+    }
+  };
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
 
   const holds = data.holds.map((h) => `${h.total.toLocaleString()} ${h.unit}`);
@@ -245,23 +292,31 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
           />
         </label>
 
-        <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[200px_minmax(0,1fr)_360px]">
-          <nav aria-label="Collections and status" className="flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel p-3">
-            <div>
-              <p className={RAIL_HEADING}>Collections</p>
-              {data.shelves.map((s) => (
-                <RailRow key={s.id} on={s.id === shelf?.id} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${KIND_DOT[s.kind]}`} />} label={s.title} count={s.total} onClick={() => setShelfId(s.id)} />
-              ))}
-            </div>
-            {counts && (
-              <div>
-                <p className={RAIL_HEADING}>Your status</p>
-                <RailRow on={status === null} dot={<span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-full border border-sky-line" />} label="Everything" count={shelf?.total} onClick={() => setStatus(null)} />
-                {STANDING_ORDER.map((s) => (
-                  <RailRow key={s} on={status === s} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STANDING[s].dot}`} />} label={STANDING[s].label} count={counts[s]} onClick={() => setStatus(status === s ? null : s)} />
-                ))}
-              </div>
-            )}
+        <div className={`grid min-h-0 flex-1 items-start gap-4 ${railOpen ? "lg:grid-cols-[200px_minmax(0,1fr)_360px]" : "lg:grid-cols-[44px_minmax(0,1fr)_360px]"}`}>
+          <nav aria-label="Collections and status" className={`flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto rounded-2xl border border-sky-line bg-sky-panel ${railOpen ? "p-3" : "items-center p-2"}`}>
+            <button type="button" aria-expanded={railOpen} onClick={() => setRailOpen(!railOpen)} title={railOpen ? "Fold the rail" : "Open the rail"} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] text-sky-muted hover:border-sky-accent hover:text-sky-ink ${railOpen ? "self-end" : ""}`}>
+              <span aria-hidden>{railOpen ? "‹" : "›"}</span>
+              <span className="sr-only">{railOpen ? "Fold the rail" : "Open the rail"}</span>
+            </button>
+            {railOpen ? (
+              <>
+                <div>
+                  <p className={RAIL_HEADING}>Collections</p>
+                  {data.shelves.map((s) => (
+                    <RailRow key={s.id} on={s.id === shelf?.id} label={s.title} count={s.total} onClick={() => setShelfId(s.id)} />
+                  ))}
+                </div>
+                {counts && (
+                  <div>
+                    <p className={RAIL_HEADING}>Your status</p>
+                    <RailRow on={status === null} dot={<span aria-hidden className="inline-block h-2 w-2 shrink-0 rounded-full border border-sky-line" />} label="Everything" count={shelf?.total} onClick={() => setStatus(null)} />
+                    {STANDING_ORDER.map((s) => (
+                      <RailRow key={s} on={status === s} dot={<span aria-hidden className={`inline-block h-2 w-2 shrink-0 rounded-full ${STANDING[s].dot}`} />} label={STANDING[s].label} count={counts[s]} onClick={() => setStatus(status === s ? null : s)} />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : null}
           </nav>
 
           <div className="flex min-h-0 flex-col self-stretch overflow-y-auto pr-1">
@@ -304,11 +359,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 {shelfSections.length === 0 ? (
                   <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
                 ) : shelfSections.map((section) => (
-                  <div key={section.id} className="mt-3">
-                    {shelf.sections.length > 1 && <p className="mb-1.5 text-[11.5px] font-semibold text-sky-muted">{section.label}</p>}
-                    <Grid ids={section.items} graph={graph} selected={openId} onOpen={setOpening} />
-                    {section.more ? <p className="mt-1.5 text-[12px] text-sky-muted">{section.more.toLocaleString()} more in this cut.</p> : null}
-                  </div>
+                  <LazySection key={section.id} label={shelf.sections.length > 1 ? section.label : undefined} ids={section.items} graph={graph} selected={openId} onOpen={setOpening} />
                 ))}
                 {shelf.more > 0 && <p className="mt-4 text-[13px] text-sky-muted">{shelf.more.toLocaleString()} more {shelf.unit}. Search for the rest.</p>}
               </>
@@ -333,9 +384,12 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 onSelect={setOpening}
                 footer={
                   open.known ? (
-                    quizHref && <a href={quizHref} className="rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink">Quiz me</a>
+                    quizHref && <a href={quizHref} className={BTN_SOLID}>Quiz me</a>
                   ) : (
-                    <a href={`${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${encodeURIComponent(current.id)}`} className="rounded-[10px] bg-sky-accent px-3.5 py-2 text-[13px] font-semibold text-sky-accent-ink">Add to tonight&apos;s picks</a>
+                    <>
+                      <a href={`${observatoryHref}${observatoryHref.includes("?") ? "&" : "?"}picks=${encodeURIComponent(current.id)}`} className={BTN_SOLID}>Add to tonight&apos;s picks</a>
+                      <button type="button" onClick={claim} disabled={claiming} className={BTN_OUTLINE}>{claiming ? "Marking…" : "I know this"}</button>
+                    </>
                   )
                 }
               />

@@ -24,6 +24,7 @@ export async function claimPicks(ids: readonly string[]): Promise<void> {
   await saveClaims(userId, facts, Date.now());
   revalidatePath("/dev/sky/observatory");
   revalidatePath("/dev/sky/planetarium");
+  revalidatePath("/dev/sky/atlas");
 }
 
 /** The Atlas's search, over the app's own index, on the learner's history
