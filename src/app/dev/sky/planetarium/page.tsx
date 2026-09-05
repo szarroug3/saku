@@ -1,5 +1,7 @@
 // The Sky's Planetarium, the home: the signed-in learner's sky on their real
-// progress, every kana, piece and kanji up there and lit as discovered.
+// progress, every kana, piece and kanji up there and lit as discovered, and
+// the counters, grammar, sentence rules, verb pairs and keigo met so far as
+// their own bodies.
 // Route: /dev/sky/planetarium. Per request, never prerendered. `?sample`
 // shows a pretend learner instead.
 
@@ -10,6 +12,7 @@ import { SkyHome } from "@/sky/components/sky-home";
 import { getStatsRows } from "@/lib/library/server-lookups";
 
 import { learnerSky, skyFromHistory } from "../learner";
+import { metBeyondWords } from "../observatory";
 import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
 
@@ -18,7 +21,8 @@ export const dynamic = "force-dynamic";
 export default async function SkyPlanetariumPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
-  const options = { everything: true };
+  // everything, and the planets, asteroids and binaries the Observatory knows how to build
+  const options = { everything: true, beyond: metBeyondWords };
   const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
   return (
     <SkyPage

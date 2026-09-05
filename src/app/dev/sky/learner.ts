@@ -164,6 +164,10 @@ export interface SkyOptions {
   /** Show the whole finite sky: every kana, piece and kanji as a point,
    * discovered or not. Words still appear only once discovered. */
   everything?: boolean;
+  /** More of what the learner has met, from an adapter that knows other
+   * kinds (the Observatory's counters, grammar, rules, pairs and keigo):
+   * items to add, with their parts, and which of them count as met. */
+  beyond?: (history: HistoryFile, now: number) => { items: readonly SkyItem[]; met: readonly string[] };
 }
 
 /** The signed-in learner's sky, or an empty one for a visitor. */
@@ -219,6 +223,12 @@ export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOpt
 /** The sky from a history file. Without `stats` the discovery rows are empty. */
 export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: StatsData, options: SkyOptions = {}): SkyHomeData {
   const { items, met, firmament } = skyItems(history, now, options);
+  // what another adapter adds: its own things replace any plainer version
+  // of them here, its parts fill in only where missing
+  const beyond = options.beyond?.(history, now);
+  const beyondMet = new Set(beyond?.met ?? []);
+  for (const it of beyond?.items ?? []) if (beyondMet.has(it.id) || !items.has(it.id)) items.set(it.id, it);
+  for (const id of beyondMet) met.add(id);
   const list = [...items.values()];
   const graph = buildGraph(list);
   const roots = skyRoots(graph, met);

@@ -110,7 +110,9 @@ same shape on the home sky, in the Planetarium, in the lesson, on an Atlas
 tile and in Practice; `placeConstellation(layout, cx, cy, r)` is the only
 thing that differs. Prerequisites + 1 stars, no more. `ConstellationFigure`
 (`src/sky/components/constellation.tsx`) draws a placed layout inside an
-`<svg>`: star size by role (`roleOf(kind)`: word, kanji, piece), colour by
+`<svg>`: star size by role (`roleOf(kind)`: word, kanji, piece), body by kind
+(`bodyOf(kind)`: grammar and sentence rules are planets, counters asteroids,
+verb pairs binary stars, the rest stars), colour by
 standing through the standing tokens, glow on known stars, lines that fade
 and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
 `emphasis`) override the standing, and `dots={false}` draws lines only so the

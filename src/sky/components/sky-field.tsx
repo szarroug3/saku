@@ -23,7 +23,7 @@ import { ConstellationFigure, type StarLook } from "@/sky/components/constellati
 import { SkyCanvas } from "@/sky/components/sky-canvas";
 import { Floating, pointerAnchor, type Anchor } from "@/sky/components/sky-card";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
-import { layoutConstellation, placeConstellation, roleOf, sizeFor, STAR_RADIUS } from "@/sky/lib/constellation";
+import { bodyOf, bodyRadius, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
 import type { SkyItem } from "@/sky/lib/types";
@@ -104,7 +104,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const baseLook = useCallback((root: string, id: string): StarLook => {
     const it = graph.itemOf(id);
     const standing = it?.standing ?? "not-seen";
-    const look: StarLook = { role: roleOf(it?.kind ?? "word"), standing, tonight: tonight?.has(root) && standing === "not-seen" };
+    const look: StarLook = { role: roleOf(it?.kind ?? "word"), body: bodyOf(it?.kind ?? "word"), standing, tonight: tonight?.has(root) && standing === "not-seen" };
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
@@ -118,7 +118,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const hoverTonight = !!hoverLook && !!(hoverLook.tonight || hoverLook.lit || hoverLook.emphasis);
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
   // one hit circle per star, sized to its dot plus some slack
-  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: STAR_RADIUS[roleOf(graph.itemOf(s.id)?.kind ?? "word")] * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
+  const hits = placed.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOf(graph.itemOf(s.id)?.kind ?? "word"), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>

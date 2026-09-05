@@ -40,6 +40,51 @@ export function roleOf(kind: SkyKind): StarRole {
   return "word";
 }
 
+/** What kind of body a thing is drawn as (Sam's call, 2026-09-05): kana,
+ * pieces, kanji and words are stars; a grammar pattern or a sentence rule
+ * is a planet; a counter is an asteroid; a verb pair is a binary star, two
+ * suns round one centre. Keigo are words, so stars. */
+export type Body = "star" | "planet" | "asteroid" | "binary";
+
+export function bodyOf(kind: SkyKind): Body {
+  switch (kind) {
+    case "grammar":
+    case "sentence": return "planet";
+    case "counter": return "asteroid";
+    case "verbPair": return "binary";
+    default: return "star";
+  }
+}
+
+/** How far a body reaches from its centre at unit scale: the hit area and
+ * the room it needs. A star's is its dot; a planet's is its ring. */
+export function bodyRadius(body: Body, role: StarRole): number {
+  switch (body) {
+    case "planet": return PLANET.ring;
+    case "asteroid": return ASTEROID.r * 1.15;
+    case "binary": return BINARY.b.x + BINARY.b.r;
+    default: return STAR_RADIUS[role];
+  }
+}
+
+/** The planet: its disc and the ring round it, in star units. */
+export const PLANET = { r: 4.2, ring: 7.6, ringDepth: 2.3, tilt: -24 };
+/** The asteroid: a lumpy shape of this many corners about this radius. */
+export const ASTEROID = { r: 2.9, corners: 7 };
+/** The binary: two suns, offset from the centre. */
+export const BINARY = { a: { x: -2.3, y: -0.7, r: 2.6 }, b: { x: 2.5, y: 1.0, r: 2.0 } };
+
+/** The corners of an asteroid, seeded by its id so it is the same lump on
+ * every sky: unit radius, to be scaled and offset by the drawer. */
+export function asteroidShape(id: string): ReadonlyArray<readonly [number, number]> {
+  const spin = hashUnit(`${id}|spin`) * Math.PI * 2;
+  return Array.from({ length: ASTEROID.corners }, (_, i) => {
+    const a = spin + (i / ASTEROID.corners) * Math.PI * 2;
+    const r = 0.72 + hashUnit(`${id}|lump${i}`) * 0.45;
+    return [round4(Math.cos(a) * r), round4(Math.sin(a) * r)] as const;
+  });
+}
+
 export interface Star {
   id: string;
   depth: number;

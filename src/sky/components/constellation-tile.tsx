@@ -2,7 +2,7 @@
 // home's mix-ups, the Practice pool. Tracked as SAK-296 and SAK-336.
 
 import { ConstellationFigure, type StarLook } from "@/sky/components/constellation";
-import { layoutConstellation, roleOf } from "@/sky/lib/constellation";
+import { bodyOf, layoutConstellation, roleOf } from "@/sky/lib/constellation";
 import type { PrerequisiteGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING } from "@/sky/lib/standing";
@@ -25,7 +25,7 @@ export function ConstellationTile({ graph, id, size = 64, lookOf, caption = "gly
   const box = size + 16;
   const look = (star: string): StarLook => {
     const it = graph.itemOf(star);
-    const base: StarLook = { role: roleOf(it?.kind ?? "word"), standing: it?.standing ?? "not-seen" };
+    const base: StarLook = { role: roleOf(it?.kind ?? "word"), body: bodyOf(it?.kind ?? "word"), standing: it?.standing ?? "not-seen" };
     return lookOf ? lookOf(star, base) : base;
   };
   return (

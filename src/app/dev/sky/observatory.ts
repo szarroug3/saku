@@ -32,7 +32,7 @@ import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import { sentenceTierShortLabel } from "@/lib/content/sentence-track";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
@@ -234,6 +234,28 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   };
 
   return { items, learned, sections, offerPick };
+}
+
+/** Everything the learner has met beyond kana, pieces, kanji and words:
+ * the counters, grammar patterns, sentence rules, verb pairs and keigo sets
+ * met so far, built the way the Observatory offers them (so a pair is named
+ * by its two meanings and a rule by its short label) with every part under
+ * them, for the Planetarium's sky. The learner's adapter draws only the
+ * first four kinds itself; these are the planets, asteroids and binaries. */
+export function metBeyondWords(history: HistoryFile, now = Date.now()): { items: SkyItem[]; met: string[] } {
+  const o = offerings(history, now);
+  const met: string[] = [];
+  for (const kind of [COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const) {
+    for (const entry of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
+      if (!standingFor(entry, history, now).met) continue;
+      if (o.offerPick(entry.id)) met.push(entry.id);
+    }
+  }
+  // the picks and everything under them, so their constellations are whole
+  const keep = new Set<string>();
+  const walk = (id: string) => { if (keep.has(id)) return; keep.add(id); for (const c of o.items.get(id)?.components ?? []) walk(c); };
+  met.forEach(walk);
+  return { items: [...keep].map((id) => o.items.get(id)).filter((x): x is SkyItem => !!x), met };
 }
 
 /** The facts a set of picks claims when the learner says "I already know

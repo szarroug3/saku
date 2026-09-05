@@ -11,22 +11,27 @@
 // Colour is by standing through the standing tokens, so a star is the same
 // colour as its chip. Lines fade and dash to stars that are not lit or known.
 //
-// THE LOOK IS A PLACEHOLDER. Sam's call (2026-09-04): get the model right
-// first and decide the visuals later. So this draws the plainest thing that
-// shows the shape and the state: a dot per star, a line per edge, paint from
-// the tokens. Halos, glows, sizes and line weights are all open; the card
-// for that is "Sky: star and line visuals" in Sky: Shared components. Every
-// consumer reads positions from placeConstellation and looks from paintFor,
-// so the drawing can change without touching them.
+// THE LOOK IS STILL MOSTLY A PLACEHOLDER. Sam's call (2026-09-04): get the
+// model right first and decide the visuals later. So this draws the plainest
+// thing that shows the shape and the state: a dot per star, a line per edge,
+// paint from the tokens. Halos, glows, sizes and line weights are all open;
+// the card for that is "Sky: star and line visuals" in Sky: Shared
+// components. What IS decided (Sam, 2026-09-05) is the bodies: a grammar
+// pattern or a sentence rule is a planet with a ring, a counter an asteroid,
+// a verb pair a binary star; everything else a star. Every consumer reads
+// positions from placeConstellation and looks from paintFor, so the drawing
+// can change without touching them.
 
 import type { ReactNode } from "react";
 
-import { placeConstellation, STAR_RADIUS, type ConstellationLayout, type StarRole } from "@/sky/lib/constellation";
+import { ASTEROID, asteroidShape, BINARY, placeConstellation, PLANET, STAR_RADIUS, type Body, type ConstellationLayout, type StarRole } from "@/sky/lib/constellation";
 import type { Standing } from "@/sky/lib/standing";
 
 /** What one star looks like. Standing first; the lesson's looks override it. */
 export interface StarLook {
   role: StarRole;
+  /** What it is drawn as: a star unless said otherwise (see bodyOf). */
+  body?: Body;
   standing: Standing;
   /** Picked for tonight and not yet learned: faint and dashed. */
   tonight?: boolean;
@@ -80,6 +85,56 @@ export interface ConstellationProps {
   children?: ReactNode;
 }
 
+/** One body at a point: a star's dot, a planet's disc and ring, an
+ * asteroid's lump, a binary's two suns. The glow, when the paint has one,
+ * sits under all of them. */
+function BodyFigure({ id, x, y, body, role, paint, glowOpacity, u }: { id: string; x: number; y: number; body: Body; role: StarRole; paint: Paint; glowOpacity: number; u: number }) {
+  const glow = (r: number) => paint.glow > 0 && <circle cx={x} cy={y} r={r + paint.glow} fill={paint.fill} opacity={glowOpacity} />;
+  switch (body) {
+    case "planet": {
+      const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u;
+      // the ring's far half behind the disc, its near half in front
+      return (
+        <g transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
+          {glow(r)}
+          <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke={paint.fill} strokeWidth={0.9 * u} opacity={0.45} />
+          <circle cx={x} cy={y} r={r} fill={paint.fill} />
+          <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke={paint.fill} strokeWidth={0.9 * u} opacity={0.95} />
+        </g>
+      );
+    }
+    case "asteroid": {
+      const r = ASTEROID.r * u;
+      const points = asteroidShape(id).map(([px, py]) => `${x + px * r},${y + py * r}`).join(" ");
+      return (
+        <>
+          {glow(r)}
+          <polygon points={points} fill={paint.fill} />
+        </>
+      );
+    }
+    case "binary": {
+      const a = BINARY.a, b = BINARY.b;
+      return (
+        <>
+          {glow(a.r * u + 1.5 * u)}
+          <circle cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />
+          <circle cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />
+        </>
+      );
+    }
+    default: {
+      const r = STAR_RADIUS[role] * u;
+      return (
+        <>
+          {glow(r)}
+          <circle cx={x} cy={y} r={r} fill={paint.fill} />
+        </>
+      );
+    }
+  }
+}
+
 /** The lines and stars of one constellation. Put it inside an <svg>. */
 export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots = true, children }: ConstellationProps) {
   const u = Math.max(0.7, Math.min(1.8, unit));
@@ -115,11 +170,9 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             const look = looks.get(s.id)!;
             if (look.hidden || s.group) return null;
             const paint = paintFor(look);
-            const rr = STAR_RADIUS[look.role] * u;
             return (
-              <g key={s.id} data-star={s.id} opacity={look.muted ? MUTED : undefined}>
-                {paint.glow > 0 && <circle cx={s.px} cy={s.py} r={rr + paint.glow} fill={paint.fill} opacity={look.emphasis ? 0.22 : 0.16} />}
-                <circle cx={s.px} cy={s.py} r={rr} fill={paint.fill} />
+              <g key={s.id} data-star={s.id} data-body={look.body ?? "star"} opacity={look.muted ? MUTED : undefined}>
+                <BodyFigure id={s.id} x={s.px} y={s.py} body={look.body ?? "star"} role={look.role} paint={paint} glowOpacity={look.emphasis ? 0.22 : 0.16} u={u} />
               </g>
             );
           })}

@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { hashUnit, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
+import { asteroidShape, bodyOf, hashUnit, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -114,6 +114,23 @@ describe("the constellation layout", () => {
     assert.equal(roleOf("verbPair"), "word");
     assert.equal(roleOf("kanji"), "kanji");
     assert.equal(roleOf("radical"), "piece");
+  });
+
+  it("draws each kind as its body", () => {
+    assert.equal(bodyOf("word"), "star");
+    assert.equal(bodyOf("kana"), "star");
+    assert.equal(bodyOf("keigo"), "star");
+    assert.equal(bodyOf("grammar"), "planet");
+    assert.equal(bodyOf("sentence"), "planet");
+    assert.equal(bodyOf("counter"), "asteroid");
+    assert.equal(bodyOf("verbPair"), "binary");
+  });
+
+  it("gives an asteroid the same lump every time, about the unit circle", () => {
+    const a = asteroidShape("counter:x"), b = asteroidShape("counter:x");
+    assert.deepEqual(a, b);
+    assert.notDeepEqual(a, asteroidShape("counter:y"));
+    for (const [x, y] of a) { const r = Math.hypot(x, y); assert.ok(r >= 0.72 && r <= 1.17, `${r}`); }
     assert.equal(sizeFor(6, 48), 48 + 45);
     assert.equal(sizeFor(1, 48), 48);
   });
