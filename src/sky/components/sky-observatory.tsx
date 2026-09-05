@@ -19,9 +19,8 @@ import { PieceMeter } from "@/sky/components/piece-meter";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
-import { cartSummary, COMFORTABLE_PIECES, pickBreakdown, pickState, withoutPick, type PickLine } from "@/sky/lib/cart";
-import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
-import { japaneseFont } from "@/sky/lib/japanese";
+import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
+import { buildGraph } from "@/sky/lib/graph";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -79,21 +78,6 @@ function kindLabel(item: SkyItem): string {
   return KIND_LABEL[item.kind];
 }
 
-/** What a pick brings, worded: "1 kanji, 2 pieces under it · already in your sky: 雨 田". */
-function describe(graph: PrerequisiteGraph, line: PickLine, openedBy: readonly string[]): { text: string; free: SkyItem[] } {
-  const b = pickBreakdown(graph, line);
-  const bits: string[] = [];
-  if (b.brings.kana) bits.push(plural(b.brings.kana, "sound"));
-  if (b.brings.word) bits.push(plural(b.brings.word, "word"));
-  if (b.brings.kanji) {
-    const under = b.brings.radical ? `, ${plural(b.brings.radical, "piece")} under ${b.brings.kanji === 1 ? "it" : "them"}` : "";
-    bits.push(`${b.brings.kanji} kanji${under}`);
-  } else if (b.brings.radical) bits.push(plural(b.brings.radical, "piece"));
-  if (b.shared.length) bits.push(`${b.shared.length} already in tonight's picks`);
-  if (openedBy.length) bits.push(`with ${openedBy.map((id) => graph.itemOf(id)?.english ?? id).join(" and ")}`);
-  return { text: bits.join(" · "), free: b.shared.length ? [] : b.free };
-}
-
 export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
@@ -148,18 +132,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
-                      const state = pickState(graph, id, learned, picks);
-                      // a picked card shows its line in the cart (priced after the picks
-                      // before it); an unpicked one, what it would add to the whole cart
-                      const cost = summary.lines.find((l) => l.id === id)?.cost ?? graph.costOf(id, learned, picks);
-                      const note = cost.shared.length
-                        ? `${cost.shared.length} shared`
-                        : state.openedByCart.length
-                          ? `comes with ${state.openedByCart.map(nameOf).join(" and ")}`
-                          : cost.free.length && cost.pieces.length === 1 && item.kind === "word"
-                            ? "kanji already in your sky"
-                            : undefined;
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} note={note} onClick={() => toggle(id)} />;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={() => toggle(id)} />;
                     })}
                   </div>
                 )}
@@ -185,39 +158,23 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             <p className={`mt-2 text-[12.5px] ${over ? "text-sky-coral" : "text-sky-muted"}`}>{meterNote}</p>
           </SkyPanel>
 
-          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "pick")} · ${plural(summary.pieces, "piece")}` : "nothing yet"} className="flex min-h-0 flex-col !p-4">
+          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "pick")} · ${plural(summary.pieces, "piece")}` : "nothing yet"} className="flex min-h-0 flex-1 flex-col !p-4">
             {picks.length === 0 ? (
-              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
+              <p className="mt-3 flex-1 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
             ) : (
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
-                {summary.lines.map((line) => {
-                  const { text, free } = describe(graph, line, pickState(graph, line.id, learned, picks).openedByCart);
-                  return (
-                    <li key={line.id} className="rounded-lg bg-sky-card px-2.5 py-2">
-                      <div className="flex items-baseline gap-2">
-                        <span className="flex-1 text-[13px] font-semibold">{nameOf(line.id)}</span>
-                        <span className="text-[11px] tabular-nums text-sky-muted">{line.cost.pieces.length}</span>
-                        <button type="button" aria-label={`Remove ${nameOf(line.id)}`} onClick={() => toggle(line.id)} className="pl-1.5 text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
-                      </div>
-                      {(text || free.length > 0) && (
-                        <div className="mt-0.5 text-[11px] text-sky-muted">
-                          {text}
-                          {free.length > 0 && (
-                            <>
-                              {text ? " · " : ""}already in your sky:{" "}
-                              {free.map((f) => <span key={f.id} className={`font-sky-display text-sky-ink ${japaneseFont(f.glyph)}`}>{f.glyph} </span>)}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
+                {summary.lines.map((line) => (
+                  <li key={line.id} className="flex items-baseline gap-2 rounded-lg bg-sky-card px-2.5 py-2">
+                    <span className="flex-1 text-[13px] font-semibold">{nameOf(line.id)}</span>
+                    <span className="text-[11px] tabular-nums text-sky-muted">{line.cost.pieces.length}</span>
+                    <button type="button" aria-label={`Remove ${nameOf(line.id)}`} onClick={() => toggle(line.id)} className="pl-1.5 text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
+                  </li>
+                ))}
               </ul>
             )}
             {undo && (
               <p className="mt-2 shrink-0 text-[12px] text-sky-muted">
-                Removed {nameOf(undo.removed)}.{" "}
+                Removed {nameOf(undo.removed)} ·{" "}
                 <button type="button" className="underline hover:text-sky-ink" onClick={() => { setPicks(undo.before); setUndo(null); }}>Undo</button>
               </p>
             )}
