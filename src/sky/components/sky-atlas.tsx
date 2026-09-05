@@ -153,6 +153,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   // shelf shows no status list, no coverage, and ignores the status filter
   const tracked = shelf?.kind !== "term";
   const filter = tracked ? status : null;
+  // "2,136 shown", or with a status picked "43 Shaky" (Sam's wording)
+  const shownWord = filter ? STANDING[filter].label.replace(/\b\w/g, (c) => c.toUpperCase()) : "shown";
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter); }, [graph, filter]);
 
   // search: the app's answer, by shelf, after a short pause in typing. The
@@ -283,7 +285,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
               {result ? (
                 <>
                   <p className="mt-4 text-[12.5px] text-sky-muted">
-                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> shown · matching <span className="font-semibold text-sky-ink">{result.query}</span>{filter ? ` · ${STANDING[filter].label}` : ""}{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
+                    <span className="font-semibold text-sky-ink">{(here?.shown.length ?? 0).toLocaleString()}</span> {shownWord} · matching <span className="font-semibold text-sky-ink">{result.query}</span>{here?.section.more ? ` · ${here.section.more.toLocaleString()} more` : ""}
                   </p>
                   {here && here.shown.length > 0 ? (
                     <div className="mt-2"><TileGrid items={itemsOf(here.shown)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} /></div>
@@ -305,7 +307,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> shown{filter ? ` · ${STANDING[filter].label}` : ""}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}</p>
                   {cuts.length === 0 ? (
                     <p className="mt-3 text-[13.5px] text-sky-muted">Nothing here with that status.</p>
                   ) : cuts.map((cut) => (
