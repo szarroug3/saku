@@ -70,9 +70,11 @@ export interface SkyObservatoryProps {
   /** Where "Start tonight's lesson" goes; the picks are appended as
    * `?picks=a,b,c`. A path, not a function: the route is a server component. */
   lessonPath?: string;
-  /** Claims a whole track ("I already know these"): a server action from the
-   * route. Absent when the learner cannot claim (a sample, a visitor). */
-  onClaim?: (sectionId: string) => Promise<void>;
+  /** Claims the picks ("I already know these"): a server action from the
+   * route, given the picked ids. Each pick claims only itself (a word's kanji
+   * stay unclaimed; a kana row claims its sounds). Absent when the learner
+   * cannot claim (a sample, a visitor). */
+  onClaim?: (ids: readonly string[]) => Promise<void>;
   initialPicks?: readonly string[];
 }
 
@@ -126,6 +128,8 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
           {data.sections.filter((section) => !section.gate && !section.complete).map((section) => {
             const ids = offered(section);
+            // nothing to take right now (everything left waits on something): not shown
+            if (ids.length === 0) return null;
             const started = section.started || opened.has(section.id);
             return (
               <ItemSection
@@ -134,7 +138,6 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 intro={started ? undefined : section.intro}
                 when={started ? undefined : section.when}
                 start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])), disabled: ids.length === 0 }}
-                claim={!started && section.claimable && onClaim ? { label: claiming ? "Claiming…" : "I already know these", onClick: () => startClaim(() => onClaim(section.id)), disabled: claiming } : undefined}
               >
                 {started && ids.length > 0 && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
@@ -186,8 +189,18 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 <button type="button" className="underline hover:text-sky-ink" onClick={() => { setPicks(undo.before); setUndo(null); }}>Undo</button>
               </p>
             )}
+            {picks.length > 0 && onClaim && (
+              <button
+                type="button"
+                disabled={claiming}
+                onClick={() => startClaim(async () => { await onClaim(picks); setPicks([]); setUndo(null); })}
+                className="mt-3 block w-full shrink-0 rounded-[10px] border border-sky-line bg-sky-card px-3.5 py-2 text-center text-[13px] font-semibold text-sky-ink hover:bg-sky-card-strong disabled:text-sky-faint"
+              >
+                {claiming ? "Claiming…" : "I already know these"}
+              </button>
+            )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-3 block shrink-0 rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
+              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] px-3.5 py-2.5 text-center text-sm font-semibold ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
             ) : (
               <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold text-sky-faint">{"Start tonight's lesson"}</span>
             )}

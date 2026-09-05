@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import { SkyObservatory } from "@/sky/components/sky-observatory";
 
-import { claimTrack } from "../actions";
+import { claimPicks } from "../actions";
 import { SkyPage } from "../sky-page";
 import { learnerObservatory, observatoryFromHistory } from "../observatory";
 import { sampleHistory } from "../sample-learner";
@@ -27,7 +27,7 @@ export default async function SkyObservatoryPage({ searchParams }: { searchParam
         </>
       }
     >
-      <SkyObservatory data={data} lessonPath="/dev/sky/lesson" height="100%" onClaim={sample ? undefined : claimTrack} />
+      <SkyObservatory data={data} lessonPath="/dev/sky/lesson" height="100%" onClaim={sample ? undefined : claimPicks} />
     </SkyPage>
   );
 }

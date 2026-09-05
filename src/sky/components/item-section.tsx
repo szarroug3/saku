@@ -25,8 +25,7 @@ export interface ItemSectionProps {
   when?: string;
   /** The way in: a button after the intro, "Start kana". */
   start?: { label: string; onClick: () => void; disabled?: boolean };
-  /** The other way in: "I already know these", which claims the whole track
-   * and skips its lessons (a claim is never mastery: it starts untested). */
+  /** A second, quieter button beside Start, when a page has one. */
   claim?: { label: string; onClick: () => void; disabled?: boolean };
   /**
    * How many items this section is showing right now. Always derived by the

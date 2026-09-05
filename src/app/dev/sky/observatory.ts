@@ -193,17 +193,20 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
   return { items: [...items.values()], learned: [...learned], sections };
 }
 
-/** Every fact a whole track claims when the learner says "I already know
- * these": the finite tracks only. Words have no end and are never claimed
- * whole. */
-export function trackFacts(track: string): FactId[] {
-  const facts = (entries: Array<LibEntry | undefined>) => entries.filter((e): e is LibEntry => !!e).flatMap((e) => [...knownFactsOf(e)]);
-  switch (track) {
-    case "kana": return facts(SETS.flatMap((set) => set.sections.flatMap((s) => s.chars.map((ch) => libEntry(kanaEntry(ch.c))))));
-    case "counting": return facts(COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))));
-    case "grammar": return facts(CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))));
-    case "verb-pairs": return facts(VERB_PAIRS.map((p) => libEntry(pairEntry(p))));
-    case "keigo": return facts(KEIGO_SETS.map((k) => libEntry(keigoSetEntry(k))));
-    default: return [];
+/** The facts a set of picks claims when the learner says "I already know
+ * these": each pick claims only itself (Sam's rule: a claimed word says
+ * nothing about its kanji), and a kana row claims its sounds. */
+export function pickFacts(ids: readonly string[]): FactId[] {
+  const out: FactId[] = [];
+  for (const id of ids) {
+    const row = /^kana-row:(.+)$/.exec(id);
+    if (row) {
+      const section = SETS.flatMap((set) => set.sections).find((s) => s.id === row[1]);
+      for (const ch of section?.chars ?? []) { const e = libEntry(kanaEntry(ch.c)); if (e) out.push(...knownFactsOf(e)); }
+      continue;
+    }
+    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    if (entry) out.push(...knownFactsOf(entry));
   }
+  return out;
 }
