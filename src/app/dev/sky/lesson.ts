@@ -205,8 +205,8 @@ const text = (s: string, accent = false): SkySoundLine[number] => (accent ? { te
 
 /** A build rule as a row: ending · verb · change · result, with the added
  * piece in the accent, plus a meaning and a note when any row has them. */
-function ruleRow(r: IntroBuildRule, gloss: boolean, note: boolean): SkySoundLine[] {
-  const change: SkySoundLine = r.to ? [text("→")] : [...(r.drop ? [text(`− ${r.drop}`)] : []), ...(r.add ? [text(r.drop ? " + " : "+ "), text(r.add, true)] : [])];
+function ruleRow(r: IntroBuildRule, cols: RuleColumns): SkySoundLine[] {
+  const change: SkySoundLine = r.to ? [] : [...(r.drop ? [text(`− ${r.drop}`)] : []), ...(r.add ? [text(r.drop ? " + " : "+ "), text(r.add, true)] : [])];
   let result: SkySoundLine;
   if (r.to) {
     const at = r.accent === false ? -1 : typeof r.accent === "string" ? r.to.indexOf(r.accent) : -1;
@@ -215,12 +215,38 @@ function ruleRow(r: IntroBuildRule, gloss: boolean, note: boolean): SkySoundLine
     const stem = r.verb && r.drop && r.verb.endsWith(r.drop) ? r.verb.slice(0, r.verb.length - r.drop.length) : (r.verb ?? "");
     result = [text(stem), ...(r.add ? [text(r.add, true)] : [])];
   }
-  return [[text(r.label ?? "")], [text(r.verb ?? "")], change, result, ...(gloss ? [[text(r.gloss ?? "")]] : []), ...(note ? [[text(r.note ?? "")]] : [])];
+  return [
+    ...(cols.ending ? [[text(r.label ?? r.drop ?? "")]] : []),
+    [text(r.verb ?? "")],
+    ...(cols.change ? [change] : []),
+    result,
+    ...(cols.gloss ? [[text(r.gloss ?? "")]] : []),
+    ...(cols.note ? [[text(r.note ?? "")]] : []),
+  ];
 }
 
+/** Which columns a rule table needs: the ending only when a row names one
+ * (its label, or the kana it drops); the change only when a row is built
+ * by a rule rather than given whole; meaning and note when any row has one.
+ * So a list of memorised forms (たべる → たべて) is verb, result, meaning. */
+interface RuleColumns { ending: boolean; change: boolean; gloss: boolean; note: boolean }
+
 function ruleTable(rules: readonly IntroBuildRule[], heads?: { label?: string; change?: string; note?: string; gloss?: string }, title?: string, extra: Partial<TeachTable> = {}): TeachTable {
-  const gloss = rules.some((r) => r.gloss), note = rules.some((r) => r.note);
-  return { ...(title ? { title } : {}), heads: [heads?.label ?? "Ending", "Verb", heads?.change ?? "Change", "Result", ...(gloss ? [heads?.gloss ?? "Meaning"] : []), ...(note ? [heads?.note ?? "Note"] : [])], rows: rules.map((r) => ruleRow(r, gloss, note)), ...extra };
+  const cols: RuleColumns = {
+    ending: rules.some((r) => r.label || r.drop),
+    change: rules.some((r) => !r.to && (r.drop || r.add)),
+    gloss: rules.some((r) => r.gloss),
+    note: rules.some((r) => r.note),
+  };
+  const head = [
+    ...(cols.ending ? [heads?.label ?? "Ending"] : []),
+    "Verb",
+    ...(cols.change ? [heads?.change ?? "Change"] : []),
+    "Result",
+    ...(cols.gloss ? [heads?.gloss ?? "Meaning"] : []),
+    ...(cols.note ? [heads?.note ?? "Note"] : []),
+  ];
+  return { ...(title ? { title } : {}), heads: head, rows: rules.map((r) => ruleRow(r, cols)), ...extra };
 }
 
 /** A derivation as a row: verb · form · pattern · meaning, the pattern's

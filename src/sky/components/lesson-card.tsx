@@ -190,9 +190,12 @@ function Table({ table }: { table: TeachTable }) {
           <tbody>
             {table.rows.map((row, r) => (
               <tr key={r}>
-                {row.map((cell, c) => (
-                  <td key={c} className={`py-1 pr-3 align-top ${japaneseFont(cell.map((x) => x.text).join(""))}`}><Sound line={cell} /></td>
-                ))}
+                {row.map((cell, c) => {
+                  const plain = cell.map((x) => x.text).join("");
+                  // short cells hold their line and the table scrolls sideways in
+                  // a narrow panel; a long note wraps at a readable measure
+                  return <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"} ${japaneseFont(plain)}`}><Sound line={cell} /></td>;
+                })}
               </tr>
             ))}
           </tbody>
