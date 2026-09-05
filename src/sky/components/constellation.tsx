@@ -92,32 +92,37 @@ function BodyFigure({ id, x, y, body, role, paint, glowOpacity, u }: { id: strin
   const glow = (r: number) => paint.glow > 0 && <circle cx={x} cy={y} r={r + paint.glow} fill={paint.fill} opacity={glowOpacity} />;
   switch (body) {
     case "planet": {
-      const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u;
-      // the ring's far half behind the disc, its near half in front
+      const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u, w = 2 * u;
+      // the disc in its standing's colour with a shaded limb; the ring in
+      // starlight so it reads against any disc, its far half behind the
+      // disc and its near half in front. No glow: it would swallow the ring.
       return (
         <g transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
-          {glow(r)}
-          <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke={paint.fill} strokeWidth={0.9 * u} opacity={0.45} />
+          <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.35} />
           <circle cx={x} cy={y} r={r} fill={paint.fill} />
-          <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke={paint.fill} strokeWidth={0.9 * u} opacity={0.95} />
+          <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill="var(--sky-ground-0)" opacity={0.3} />
+          <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.9} />
         </g>
       );
     }
     case "asteroid": {
       const r = ASTEROID.r * u;
       const points = asteroidShape(id).map(([px, py]) => `${x + px * r},${y + py * r}`).join(" ");
+      // a lump with a crater on it, so it is a rock and not a fat star
       return (
         <>
-          {glow(r)}
           <polygon points={points} fill={paint.fill} />
+          <circle cx={x + r * 0.3} cy={y - r * 0.15} r={r * 0.32} fill="var(--sky-ground-0)" opacity={0.45} />
+          <circle cx={x - r * 0.35} cy={y + r * 0.3} r={r * 0.2} fill="var(--sky-ground-0)" opacity={0.35} />
         </>
       );
     }
     case "binary": {
       const a = BINARY.a, b = BINARY.b;
+      // two suns, a shared glow between them
       return (
         <>
-          {glow(a.r * u + 1.5 * u)}
+          {glow(a.r * u + 4 * u)}
           <circle cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />
           <circle cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />
         </>

@@ -67,12 +67,14 @@ export function bodyRadius(body: Body, role: StarRole): number {
   }
 }
 
-/** The planet: its disc and the ring round it, in star units. */
-export const PLANET = { r: 4.2, ring: 7.6, ringDepth: 2.3, tilt: -24 };
+/** The planet: its disc and the ring round it, in star units. Big enough
+ * to read as a planet at the smallest scale the sky draws (Sam, 2026-09-05:
+ * "I can barely tell this is a planet"). */
+export const PLANET = { r: 16, ring: 30, ringDepth: 9.5, tilt: -24 };
 /** The asteroid: a lumpy shape of this many corners about this radius. */
-export const ASTEROID = { r: 2.9, corners: 7 };
-/** The binary: two suns, offset from the centre. */
-export const BINARY = { a: { x: -2.3, y: -0.7, r: 2.6 }, b: { x: 2.5, y: 1.0, r: 2.0 } };
+export const ASTEROID = { r: 11, corners: 7 };
+/** The binary: two suns, offset from the centre, far enough apart to read as two. */
+export const BINARY = { a: { x: -8, y: -2.5, r: 7 }, b: { x: 8.5, y: 3.5, r: 5.2 } };
 
 /** The corners of an asteroid, seeded by its id so it is the same lump on
  * every sky: unit radius, to be scaled and offset by the drawer. */

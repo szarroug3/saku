@@ -94,12 +94,21 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const all = useMemo(() => [...roots, ...firmament.filter((id) => !rootSet.has(id))].filter((id) => graph.has(id)), [roots, firmament, rootSet, graph]);
   const layouts = useMemo(() => new Map(all.map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, all]);
   const { placed, world } = useMemo(() => {
-    const boxes = [...layouts].map(([root, l]) => ({ key: root, size: sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase) }));
+    // a box by star count, and never smaller than the root's body: a planet's
+    // ring must fit inside it (the body scales with the box, so settle twice)
+    const unit = (size: number) => Math.max(0.7, Math.min(1.8, size / 70));
+    const boxes = [...layouts].map(([root, l]) => {
+      const kind = graph.itemOf(root)?.kind ?? "word";
+      const reach = bodyRadius(bodyOf(kind), roleOf(kind));
+      let size = sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase);
+      for (let i = 0; i < 2; i++) size = Math.max(size, Math.ceil(2 * reach * unit(size) + 10));
+      return { key: root, size };
+    });
     const gap = firmament.length ? Math.min(pad, 18) : pad;
     const { placed: laid, world } = scatterInWorld(boxes, { width, height }, gap);
     const placed: PlacedConstellation[] = laid.map((p) => ({ ...p, root: p.item.key, cx: p.x + p.size / 2, cy: p.y + p.size / 2, r: p.size / 2 - 3 }));
     return { placed, world };
-  }, [layouts, baseSize, firmamentBase, rootSet, firmament.length, width, height, pad]);
+  }, [layouts, graph, baseSize, firmamentBase, rootSet, firmament.length, width, height, pad]);
 
   const baseLook = useCallback((root: string, id: string): StarLook => {
     const it = graph.itemOf(id);
