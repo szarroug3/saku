@@ -27,7 +27,7 @@ export default async function SkyObservatoryPage({ searchParams }: { searchParam
         </>
       }
     >
-      <SkyObservatory data={data} lessonPath="/dev/sky/lesson" height="100%" onClaim={sample ? undefined : claimPicks} />
+      <SkyObservatory data={data} lessonPath={sample ? "/dev/sky/lesson?sample" : "/dev/sky/lesson"} height="100%" onClaim={sample ? undefined : claimPicks} />
     </SkyPage>
   );
 }

@@ -215,7 +215,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
               </button>
             )}
             {picks.length > 0 && lessonPath ? (
-              <a href={`${lessonPath}?picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] border border-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
+              <a href={`${lessonPath}${lessonPath.includes("?") ? "&" : "?"}picks=${encodeURIComponent(picks.join(","))}`} className={`mt-2 block shrink-0 rounded-[10px] border border-transparent px-3.5 py-2.5 text-center text-sm font-semibold leading-5 ${over ? "bg-sky-coral text-sky-gold-ink" : "bg-sky-accent text-sky-accent-ink"}`}>{startLabel}</a>
             ) : (
               <span aria-disabled className="mt-3 block shrink-0 rounded-[10px] border border-transparent bg-sky-card-strong px-3.5 py-2.5 text-center text-sm font-semibold leading-5 text-sky-faint">Start Lesson</span>
             )}

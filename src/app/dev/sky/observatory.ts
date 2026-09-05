@@ -22,17 +22,17 @@
 
 import { SETS, kanaEntry } from "@/data/characters";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
-import { patternEntry } from "@/data/grammar";
+import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { kanjiRow } from "@/data/kanji";
-import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
-import { VERB_PAIRS } from "@/data/transitivity";
-import { pairEntry } from "@/data/transitivity-facts";
+import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry, keigoSetForEntry, type KeigoSet } from "@/data/keigo";
+import { VERB_PAIRS, type VerbPair } from "@/data/transitivity";
+import { pairEntry, pairForEntry, TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { entryForGlyph, knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, entryForGlyph, knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
@@ -104,6 +104,22 @@ export async function learnerObservatory(now = Date.now()): Promise<SkyObservato
 }
 
 export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {
+  const { items, learned, sections } = offerings(history, now);
+  return { items: [...items.values()], learned: [...learned], sections };
+}
+
+/** What the Observatory builds, kept open: the items and what is learned as
+ * they grow, the sections, and `offerPick`, which adds any pick by id (a
+ * word beyond the first page, a row, a rule) with everything under it, so
+ * the lesson can build exactly what was picked. */
+export interface Offerings {
+  items: Map<string, SkyItem>;
+  learned: Set<string>;
+  sections: ObservatorySection[];
+  offerPick: (id: string) => SkyItem | undefined;
+}
+
+export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const sky = skyItems(history, now);
   const { items, met, add } = sky;
   const learned = new Set(met);
@@ -164,36 +180,57 @@ export function observatoryFromHistory(history: HistoryFile, now = Date.now()): 
   sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), gate: afterKana, started: grammar.length < allGrammar.length, complete: grammar.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
-  const pairs: string[] = [];
-  let pairsMet = 0;
-  for (const p of VERB_PAIRS) {
-    const entry = libEntry(pairEntry(p));
-    if (!entry) continue;
-    if (standingFor(entry, history, now).met) { pairsMet++; continue; }
+  const offerPair = (p: VerbPair, entry: LibEntry): SkyItem => {
     const head = wordEntry(p.happens.word);
     if (head) add(head);
     // named by its two words' own meanings, "to get dirty · to make dirty":
     // the pair table carries example sentences, not a name
     const doIt = wordEntry(p.doIt.word);
     const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
-    pairs.push(offer(entry, "verbPair", { english, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] }).id);
+    return offer(entry, "verbPair", { english, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] });
+  };
+  const pairs: string[] = [];
+  let pairsMet = 0;
+  for (const p of VERB_PAIRS) {
+    const entry = libEntry(pairEntry(p));
+    if (!entry) continue;
+    if (standingFor(entry, history, now).met) { pairsMet++; continue; }
+    pairs.push(offerPair(p, entry).id);
   }
   sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), gate: afterKana, started: pairsMet > 0, complete: pairs.length === 0 });
 
   // keigo: attached to the plain verb, with the polite words' kanji
+  const offerKeigo = (set: KeigoSet, entry: LibEntry): SkyItem => {
+    const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
+    if (head) add(head);
+    return offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] });
+  };
   const keigo: string[] = [];
   let keigoMet = 0;
   for (const set of KEIGO_SETS) {
     const entry = libEntry(keigoSetEntry(set));
     if (!entry) continue;
     if (standingFor(entry, history, now).met) { keigoMet++; continue; }
-    const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
-    if (head) add(head);
-    keigo.push(offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] }).id);
+    keigo.push(offerKeigo(set, entry).id);
   }
   sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0, complete: keigo.length === 0 });
 
-  return { items: [...items.values()], learned: [...learned], sections };
+  /** Any pick by id, built the way its section would build it. */
+  const offerPick = (id: string): SkyItem | undefined => {
+    const have = items.get(id);
+    if (have) return have;
+    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    if (!entry) return undefined;
+    switch (entry.kind) {
+      case COUNTER_KIND: return offer(entry, "counter");
+      case GRAMMAR_SUBJECT: return offer(entry, "grammar");
+      case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
+      case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
+      default: return offer(entry, "word");
+    }
+  };
+
+  return { items, learned, sections, offerPick };
 }
 
 /** The facts a set of picks claims when the learner says "I already know

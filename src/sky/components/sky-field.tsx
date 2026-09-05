@@ -60,6 +60,12 @@ export interface SkyFieldProps {
   dots?: boolean;
   /** Only the English name in the tooltip. */
   briefTooltip?: boolean;
+  /** One muted line under a brief tooltip, per star: "after flower". */
+  tooltipNote?: (id: string) => string | undefined;
+  /** Stars are the navigation: click, Enter or Space picks one. */
+  onStarClick?: (id: string) => void;
+  /** A star that ignores input, and says so to assistive tech. */
+  starDisabled?: (id: string) => boolean;
   /** A graph built by the caller, to share with panels beside the field. */
   graph?: PrerequisiteGraph;
   /** Fill the box the field sits in (which must be positioned): the field
@@ -82,7 +88,7 @@ export interface PlacedConstellation extends Placed<{ key: string; size: number 
 
 interface Hover { id: string; at: Anchor }
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, lookOf, dots = true, briefTooltip = false, tooltipNote, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -121,28 +127,35 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
         {children?.(placed)}
         {/* hit areas last, so they sit above the stars: one per star */}
         <g data-hits>
-          {hits.map((h) => (
-            <circle
-              key={h.key}
-              cx={h.x} cy={h.y} r={h.r}
-              fill="transparent"
-              tabIndex={0}
-              role="button"
-              aria-label={graph.itemOf(h.id)?.english ?? h.id}
-              data-hit={h.id}
-              onPointerEnter={(e) => place(h.id, e.clientX, e.clientY)}
-              onPointerMove={(e) => place(h.id, e.clientX, e.clientY)}
-              onPointerLeave={() => setHover(null)}
-              onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(h.id, r.left + r.width / 2, r.top + r.height / 2); }}
-              onBlur={() => setHover(null)}
-              className="outline-none focus-visible:stroke-[var(--sky-gold)] focus-visible:[stroke-width:1.5]"
-            />
-          ))}
+          {hits.map((h) => {
+            const disabled = starDisabled?.(h.id) ?? false;
+            const pick = () => { if (!disabled) { setHover(null); onStarClick?.(h.id); } };
+            return (
+              <circle
+                key={h.key}
+                cx={h.x} cy={h.y} r={h.r}
+                fill="transparent"
+                tabIndex={disabled ? -1 : 0}
+                role="button"
+                aria-label={graph.itemOf(h.id)?.english ?? h.id}
+                aria-disabled={disabled || undefined}
+                data-hit={h.id}
+                onPointerEnter={(e) => place(h.id, e.clientX, e.clientY)}
+                onPointerMove={(e) => place(h.id, e.clientX, e.clientY)}
+                onPointerLeave={() => setHover(null)}
+                onFocus={(e) => { const r = e.currentTarget.getBoundingClientRect(); place(h.id, r.left + r.width / 2, r.top + r.height / 2); }}
+                onBlur={() => setHover(null)}
+                onClick={onStarClick ? pick : undefined}
+                onKeyDown={onStarClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } } : undefined}
+                className={`outline-none focus-visible:stroke-[var(--sky-gold)] focus-visible:[stroke-width:1.5] ${onStarClick && !disabled ? "cursor-pointer" : ""}`}
+              />
+            );
+          })}
         </g>
       </SkyCanvas>
       {hover && hoverItem && (
         <Floating at={hover.at}>
-          <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={briefTooltip} />
+          <SkyTooltip item={hoverItem} pieces={hoverPieces} brief={briefTooltip} note={tooltipNote?.(hover.id)} />
         </Floating>
       )}
     </div>
