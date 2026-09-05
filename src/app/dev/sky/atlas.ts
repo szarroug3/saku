@@ -24,7 +24,7 @@ import { shelfSections } from "@/lib/library/shelf-sections";
 import type { RelatedGroup } from "@/sky/components/lesson-card";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection, AtlasShelf, SkyAtlasData } from "@/sky/components/sky-atlas";
 import type { CoverageCounts } from "@/sky/lib/coverage";
-import type { SkyItem } from "@/sky/lib/types";
+import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { EntryId, HistoryFile } from "@/types";
 
 import { standingFor } from "./learner";
@@ -34,16 +34,16 @@ import { offerings, type Offerings } from "./observatory";
 /** The shelves, in the order the app teaches the subjects, each with a
  * budget of tiles: whole cuts are shown until the budget runs out, and the
  * rest is reached by search. */
-const SHELVES: ReadonlyArray<{ id: string; kind: Kind; title: string; unit: string; tiles: number }> = [
-  { id: "kana", kind: KANA_SUBJECT, title: "Kana", unit: "kana", tiles: 260 },
-  { id: "pieces", kind: RADICAL_SUBJECT, title: "Pieces", unit: "pieces", tiles: 60 },
-  { id: "kanji", kind: KANJI_SUBJECT, title: "Kanji", unit: "kanji", tiles: 100 },
-  { id: "words", kind: VOCAB_SUBJECT, title: "Words", unit: "words", tiles: 100 },
-  { id: "counting", kind: COUNTER_KIND, title: "Counting", unit: "counters", tiles: 60 },
-  { id: "grammar", kind: GRAMMAR_SUBJECT, title: "Grammar", unit: "patterns", tiles: 60 },
-  { id: "sentences", kind: SENTENCE_RULE_KIND, title: "Sentences", unit: "sentence rules", tiles: 20 },
-  { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, title: "Verb pairs", unit: "verb pairs", tiles: 40 },
-  { id: "keigo", kind: KEIGO_SUBJECT, title: "Keigo", unit: "keigo sets", tiles: 40 },
+const SHELVES: ReadonlyArray<{ id: string; kind: Kind; sky: SkyKind; title: string; unit: string; tiles: number }> = [
+  { id: "kana", kind: KANA_SUBJECT, sky: "kana", title: "Kana", unit: "kana", tiles: 260 },
+  { id: "pieces", kind: RADICAL_SUBJECT, sky: "radical", title: "Pieces", unit: "pieces", tiles: 60 },
+  { id: "kanji", kind: KANJI_SUBJECT, sky: "kanji", title: "Kanji", unit: "kanji", tiles: 100 },
+  { id: "words", kind: VOCAB_SUBJECT, sky: "word", title: "Words", unit: "words", tiles: 100 },
+  { id: "counting", kind: COUNTER_KIND, sky: "counter", title: "Counting", unit: "counters", tiles: 60 },
+  { id: "grammar", kind: GRAMMAR_SUBJECT, sky: "grammar", title: "Grammar", unit: "patterns", tiles: 60 },
+  { id: "sentences", kind: SENTENCE_RULE_KIND, sky: "sentence", title: "Sentences", unit: "sentence rules", tiles: 20 },
+  { id: "verb-pairs", kind: TRANSITIVITY_SUBJECT, sky: "verbPair", title: "Verb pairs", unit: "verb pairs", tiles: 40 },
+  { id: "keigo", kind: KEIGO_SUBJECT, sky: "keigo", title: "Keigo", unit: "keigo sets", tiles: 40 },
 ];
 
 /** How many of a related group are listed; the note carries the whole count. */
@@ -103,7 +103,7 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     shown.push(...sections.flatMap((s) => s.items));
-    return { id: shelf.id, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
+    return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kind === kind)!.unit }));
   return { items: closure(o, shown), shelves, holds };
@@ -112,8 +112,9 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
 /** The app's search, by kind, as Atlas sections. */
 export function atlasSearchFromHistory(history: HistoryFile, query: string, now = Date.now()): AtlasSearchResult {
   const o = offerings(history, now);
+  // a section per shelf, keyed by the shelf's id so the page can match them
   const sections: AtlasSection[] = searchByType(query, { perSection: SEARCH_PER_KIND }).map((s) => ({
-    id: s.kind,
+    id: SHELVES.find((sh) => sh.kind === s.kind)?.id ?? s.kind,
     label: s.label,
     items: s.hits.map((h) => o.offerPick(h.entry.id)?.id).filter((id): id is string => !!id),
     ...(s.more ? { more: s.more } : {}),
