@@ -251,12 +251,13 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
 
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
-      {/* one width and one height for the box whatever is on the card, so the
-          arrows stay put while stepping back and forth; the help is a bar
-          down its right side (Sam, 2026-09-05); no arrow past either end. A
-          hint, and a missed card's lesson, open in the panel underneath. */}
+      {/* one width for the box whatever is on the card, so the arrows stay
+          put while stepping back and forth; the help is a bar down its right
+          side, so the box may grow downward for the choices without anything
+          above moving (Sam, 2026-09-05); no arrow past either end. A hint,
+          and a missed card's lesson, open in the panel underneath. */}
       <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-        <SkySurface className="flex h-[360px] shrink-0 flex-col">
+        <SkySurface className="flex shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-muted">{meta}</p>
@@ -271,7 +272,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, height }
               </div>
 
               {!answered && (
-                <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+                <div className="mt-4 flex flex-col gap-3">
                   {feedback && <p className="text-center text-[13px] text-sky-slipping">{feedback}</p>}
                   {card.typed && (
                     <form onSubmit={submit} className="flex gap-2">
