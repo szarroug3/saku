@@ -8,9 +8,6 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
   questionsFor,
@@ -109,32 +106,4 @@ test("the variant showing is en2jp only, and never a reading fact", () => {
 test("the showing is OCCASIONAL — a low coin keeps plain recognition", () => {
   // rng() < 0.5 leaves the base fact asked its ordinary English → glyph way.
   assert.equal(variantPromptFor(HITO, "en2jp", always(0.1)), null);
-});
-
-// The card reads as ONE instruction line, with no grey sub-label — the drill
-// carries the whole variant question in the instruction slot, the way the grammar
-// form-name folded in. No renderer in this harness, so this asserts the source.
-const DRILL = readFileSync(
-  resolve(
-    fileURLToPath(new URL(".", import.meta.url)),
-    "../../components/quiz/drill-screen.tsx",
-  ),
-  "utf-8",
-)
-  .replace(/\/\*[\s\S]*?\*\//g, " ")
-  .replace(/\/\/[^\n]*/g, " ");
-
-test("a variant card shows a single instruction line, no sub-label", () => {
-  // The instruction folds the question in.
-  assert.match(
-    DRILL,
-    /q\.variant\s*\?[\s\S]*?"Which of these is this a form of\?"/,
-    "the variant branch supplies the whole question as the instruction",
-  );
-  // The old grey sub-label copy is gone from BOTH surfaces.
-  assert.doesNotMatch(
-    DRILL,
-    /which character is this a form of\?/,
-    "the drill no longer prints a grey variant sub-label",
-  );
 });

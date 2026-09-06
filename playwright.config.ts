@@ -24,7 +24,6 @@ const PORT = 3249;
 export default defineConfig({
   testDir: "./e2e",
   // The old app's specs, archived with its pages at cutover (2026-09-06).
-  testIgnore: "**/_classic/**",
   // Run separate spec files concurrently. Tests within one file remain ordered,
   // while each worker still gets Playwright's isolated browser context and
   // localStorage state through the seed fixture described above.

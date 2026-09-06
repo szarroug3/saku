@@ -204,15 +204,13 @@ Page-level composition lives in the route that renders it, not here.
 Dev-only: the whole `/dev/*` subtree 404s in a production build, and the nav
 group is compiled out.
 
-## Migration, when the time comes
+## Migration, done
 
-Because the boundary is enforced both ways, the cutover is mechanical:
-
-1. Point the real routes at Sky components.
-2. Delete the old `src/components/<surface>` trees.
-3. Remove the lint boundary and, if you like, flatten `src/sky/` up into `src/`.
-
-No untangling step, because there is nothing tangled.
+The boundary was enforced both ways, so the cutover was mechanical: the real
+routes point at Sky components (2026-09-06, below), and the old
+`src/components/<surface>` trees went with the archive the same day. The
+lint boundary stays: nothing in `src/sky` imports the app, and only the
+Sky's own routes render the Sky.
 
 ### Shared pieces (2026-09-05 cleanup)
 
@@ -322,11 +320,31 @@ The Sky is the app. Its routes moved from `src/app/dev/sky` to
 `src/app/(sky)`: `/` (the Planetarium), `/observatory`, `/lesson`, `/quiz`,
 `/practice` and `/practice/run`, `/atlas`, `/sessions`, `/settings`,
 `/account` (also served at `/login`), `/how-it-works`, `/about`. The old
-app's pages are archived, unrouted, in `src/app/_classic` (a private
-folder Next never routes), and its end-to-end specs in `e2e/_classic`,
-ignored by the runner, until Sam says to clean them up. The lint boundary
-now reads: only the Sky's own routes render the Sky. Anywhere this file
+app's pages were archived first, unrouted, in `src/app/_classic` with
+their end-to-end specs in `e2e/_classic`, then removed on Sam's word the
+same day (see "The archive, removed"). The lint boundary now reads: only
+the Sky's own routes render the Sky. Anywhere this file
 says `/dev/sky`, read the top-level path.
+
+### The archive, removed (2026-09-06)
+
+The old app is gone from the tree: `src/app/_classic`, `e2e/_classic`, the
+old frame under `/dev` (the sidebar and its dock), and every component and
+library file that nothing live reached any more (the old lesson planner,
+the session and results screens, the Library pages, lists, the old
+Progress page, the pairs, grid, substitution and sentence-listening quiz
+modes). A few helpers stayed because live tests build fixtures with them
+(`curriculum-lesson.ts`, `lesson.ts`, `sentence-ordering-plan.ts`,
+`session-accuracy.ts`, `list-membership.ts`); they are dead to the app and
+listed for the data-model cleanup.
+
+To read anything from the old app, use the last commit that carried it:
+
+    git show 0bccca51:src/app/_classic/library/page.tsx
+    git ls-tree -r 0bccca51 --name-only | grep -E '_classic|components/(session|results|library)'
+
+The removal itself is the commit right after it on `main` (its hash is
+noted below once it exists, and in the memory file for this project).
 
 ### The shell (2026-09-06)
 

@@ -66,8 +66,10 @@ function renders(file: string, tag: string): boolean {
   return new RegExp(`<${tag}[\\s/>]`).test(TEXT.get(file) ?? "");
 }
 
-const SIDEBAR = join(SRC, "components", "sidebar.tsx");
-const LAYOUT = join(SRC, "app", "layout.tsx");
+// The Sky's shell (2026-09-06): the bar's entries live in shell-client.tsx and
+// the (sky) layout mounts it around every page.
+const SIDEBAR = join(SRC, "app", "(sky)", "shell-client.tsx");
+const LAYOUT = join(SRC, "app", "(sky)", "layout.tsx");
 const DRAWS_STROKES = (f: string) => renders(f, "HowItsWritten") || renders(f, "StrokeOrder");
 const rel = (f: string) => f.slice(SRC.length + 1);
 
@@ -91,8 +93,8 @@ describe("the credits link is carried by the global chrome", () => {
       FILES.some(DRAWS_STROKES),
       "no file renders <HowItsWritten>/<StrokeOrder> — did they get renamed? Update this test.",
     );
-    assert.ok(TEXT.has(SIDEBAR), "src/components/sidebar.tsx moved; repoint this test");
-    assert.ok(TEXT.has(LAYOUT), "src/app/layout.tsx moved; repoint this test");
+    assert.ok(TEXT.has(SIDEBAR), "src/app/(sky)/shell-client.tsx moved; repoint this test");
+    assert.ok(TEXT.has(LAYOUT), "src/app/(sky)/layout.tsx moved; repoint this test");
   });
 
   test("the sidebar links to the credits page", () => {
@@ -101,9 +103,9 @@ describe("the credits link is carried by the global chrome", () => {
     // and this fails — that is a licence violation, not a nav tidy-up.
     assert.ok(
       linksTo(TEXT.get(SIDEBAR) ?? "", ATTRIBUTION_HREF),
-      `src/components/sidebar.tsx has no link to ${ATTRIBUTION_HREF}. The data ` +
+      `src/app/(sky)/shell-client.tsx has no link to ${ATTRIBUTION_HREF}. The data ` +
         `acknowledgement (EDRDG dictionaries + KanjiVG stroke order) is reachable ` +
-        `from every screen ONLY through the global "About the data" sidebar entry. ` +
+        `from every screen ONLY through the bar's "About" entry. ` +
         `Restore it — this is a licence violation, not a style nit.`,
     );
   });
@@ -115,13 +117,13 @@ describe("the credits link is carried by the global chrome", () => {
     // mechanism the licence relies on is gone from the whole app at once.
     const layout = TEXT.get(LAYOUT) ?? "";
     assert.ok(
-      renders(LAYOUT, "Sidebar"),
-      "src/app/layout.tsx no longer renders <Sidebar> — the credits link is no " +
-        "longer global chrome, so no screen is guaranteed a route to /about/data.",
+      renders(LAYOUT, "SkyShellClient"),
+      "src/app/(sky)/layout.tsx no longer renders <SkyShellClient>: the credits link is no " +
+        "longer global chrome, so no screen is guaranteed a route to /about.",
     );
     assert.ok(
       layout.includes("{children}"),
-      "src/app/layout.tsx no longer wraps {children} — confirm the sidebar and " +
+      "src/app/(sky)/layout.tsx no longer wraps {children}: confirm the bar and " +
         "the page still share one shell so the menu item is reachable from each page.",
     );
   });
