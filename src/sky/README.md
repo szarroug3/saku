@@ -292,3 +292,15 @@ New primitives: `SkyToggle`, `SkyStepper`, `ChipRow` (equal-width chips),
 in the registry, so it schedules and records, but off its word's fact list,
 so the Library's known rule and the app's lessons are untouched; the Sky's
 lesson quiz adds it for each word taught while pitch questions are on.
+
+### Listening, the timer, ordering, sessions (2026-09-06, later)
+
+`QuizCard.listen` is a listening card: the reading plays itself, glyph and
+context hidden until answered or "Show it"; `timerSeconds` on `SkyQuiz`
+counts a card down from the clock's tick. `QuizCard.order` is a sentence
+tier's ordering board (tap to place, tap to take back); the recorder
+credits its pattern facts in an "assembly" session, the app's own kind.
+`SkySessions` (`lib/sessions.ts`) lists the learner's session records
+with the quiz's grades derived from each record's counts. The retries
+count lives on the quiz's help bar and the rest length on the rest
+screen: one home per setting, the place you would reach for it.
