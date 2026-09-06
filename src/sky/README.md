@@ -925,3 +925,39 @@ Atlas load:
 working: the two queries overlap now instead of queueing. The same request's
 second visit to the server put `session` at 96 ms rather than 660, which is
 the connection being warm.
+
+### Building a payload nobody asked to be built (2026-09-06, SAK-382)
+
+Portland took the database from 1550 ms to 115, which left building the page
+as the biggest thing in a response by five times over: 643 ms on the
+function against 115 for both queries together.
+
+Almost all of it was waste, and waste this round created.
+`splitAtlas(atlasFromHistory(h))` builds 2,815 tiles and ten shelves of
+section lists and then throws every one of them away, because the catalogue
+already holds them and the only thing a learner changes is the standings and
+the counts. The split was written as a diff against a thing that, once the
+catalogue existed, no longer needed building at all.
+
+`atlasPayloadFor` asks the catalogue what it holds and works out only what a
+learner changes about it: 40.4 ms becomes 6.2 ms. `atlasFromHistory` stays,
+because it is what builds the catalogue in the first place and what the
+tiles and sections lookups use.
+
+The one thing the direct route cannot discover for itself is that it needed
+no `extras`, since it never builds a tile to compare against the catalogue.
+So the test runs both routes over three learners and asserts they agree
+exactly, `extras` included.
+
+The home has the same shape of waste and has not been fixed. It builds
+15,380 items and then spends 21 ms of a 54 ms build comparing them against
+the catalogue to find out that all of them matched. Its roots genuinely need
+the graph, and the graph is learner-independent and could be built once from
+the catalogue, so the same treatment should work. It is a larger job than
+the Atlas was, because what is "met" for the counters, grammar and keigo
+comes through the Observatory's offerings rather than straight off an entry.
+
+Tried and reverted: comparing items field by field instead of writing both
+out and comparing the text. It reads better and is not order-dependent, and
+it measured 56.5 ms against 54. Filtering the keys of fifteen thousand
+objects allocates more than `JSON.stringify` costs. Left as it was.
