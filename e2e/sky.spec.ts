@@ -104,6 +104,38 @@ test("the quiz card is centred in the space the list leaves, and never cut off",
   expect(Math.abs(measured.left - measured.right)).toBeLessThanOrEqual(2);
 });
 
+test("the home draws its sky from a cached catalogue, not from its own response", async ({ page }) => {
+  // SAK-381. The stars used to ride in every response, 2.2 MB of them. Now
+  // the response carries the learner's difference and the stars come from
+  // /api/sky-catalogue, once, cached under a content hash.
+  const asked: string[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/sky-catalogue/")) asked.push(r.url()); });
+
+  await page.goto("/?sample");
+  const sky = page.getByLabel("Every constellation the sky holds, scattered across it, lit as you learn them");
+  await expect(sky).toBeVisible();
+  // the sky is really drawn: stars, and something to aim at
+  await expect(sky.locator("circle[data-hit]").first()).toBeVisible();
+  expect(await sky.locator("circle[data-hit]").count()).toBeGreaterThan(50);
+
+  // the page asked for it in its own HTML, so it starts downloading with the
+  // page rather than after hydration
+  const preload = page.locator('link[rel="preload"][href*="/api/sky-catalogue/"]');
+  await expect(preload).toHaveCount(1);
+
+  // it fetched the catalogue, and the path carries a version
+  expect(asked.length).toBe(1);
+  expect(asked[0]).toMatch(/\/api\/sky-catalogue\/[^/]+$/);
+
+  // and the catalogue says it may be kept forever
+  const answer = await page.request.get(asked[0]);
+  expect(answer.headers()["cache-control"]).toContain("immutable");
+
+  // the page's own response is now small
+  const html = (await (await page.request.get("/?sample")).body()).length;
+  expect(html, `the home sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(400 * 1024);
+});
+
 test("the atlas opens on its question", async ({ page }) => {
   await page.goto("/atlas?sample");
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();

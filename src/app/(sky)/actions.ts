@@ -17,7 +17,7 @@ import { loadSettings } from "@/lib/settings";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import type { FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection, SkyAtlasData } from "@/sky/components/sky-atlas";
-import type { SkyHomeData } from "@/sky/components/sky-home";
+import type { SkyPayload } from "./sky-payload";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import type { SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
@@ -27,6 +27,7 @@ import type { SkyItem } from "@/sky/lib/types";
 
 import { atlasEntryFromHistory, atlasFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { skyFromHistory } from "./learner";
+import { splitSky } from "./catalogue";
 import { lessonFromPicks } from "./lesson";
 import { beyondWords, observatoryFromHistory, pickFacts } from "./observatory";
 import { practiceCards, practicePreview } from "./practice";
@@ -44,9 +45,14 @@ async function historyFor(who: Who): Promise<HistoryFile> {
 
 // ---------- reads ----------
 
-export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyHomeData> {
+/** The learner's sky as its difference from the catalogue (SAK-381): the
+ * standings, the constellations and the panels, without the fifteen thousand
+ * stars that are the same for everyone. The browser fetches those once from
+ * /api/sky-catalogue and puts the two back together with `joinSky`. */
+export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPayload> {
   const history = await historyFor(who);
-  return skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
+  const data = skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
+  return splitSky(data);
 }
 
 export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {

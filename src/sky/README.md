@@ -663,3 +663,63 @@ what a file mentions and asking what a learner downloads.
 Two things the audit also asked about came back clean. `HearButton`, which
 is in every Sky page, reaches 33 files and 0.25 MB of source with no table
 among them. Settings was fixed earlier by SAK-366 and stayed at 0.48 MB.
+
+### The home stops sending the sky (2026-09-06, SAK-381)
+
+The home sent every star it could draw on every request. For the sample
+learner that was 2.2 MB; for someone who had never opened the app it was
+the same 2.2 MB, because their sky is empty and they still got the whole
+curriculum. Fifteen thousand three hundred and eighty items, and between
+any two learners the only thing that differed was one word per item.
+
+So the items go out once, as a CATALOGUE: every star this build could
+hold, without its standing, at `/api/sky-catalogue/<version>`. The version
+is a hash of the contents, so it is served `immutable` and a repeat visit
+makes no request at all, not even a revalidation. It is prerendered by
+`generateStaticParams`, so in production it is a file on the CDN and no
+function runs for it.
+
+What a learner gets is the difference: the standings that are not
+"not-seen", the constellations, the mix-ups, the discovery rows, and two
+short lists where their sky and the catalogue disagree. `joinSky` puts the
+two back together in the browser and hands `SkyHome` exactly the
+`SkyHomeData` it always took, so nothing in `src/sky` knows any of this
+happened.
+
+| | before | after |
+| --- | --- | --- |
+| a learner with a history | 2202 KB | 28 KB |
+| a learner who has never opened it | 2201 KB | 1 KB |
+| the home's own HTML response | about 2.2 MB | 49 KB |
+
+The catalogue is 2.3 MB, 443 KB compressed, once per browser per build.
+The page starts it downloading with `preload` rather than after hydration,
+and it knows the version without knowing whose sky it is, since the
+version is the same for everybody.
+
+Two things make this safe rather than merely fast.
+
+The catalogue is built by running the real pipeline against an empty
+history, not by a second implementation of it. `skyCatalogue` calls the
+same `skyFromHistory` the home calls, given nobody, so a star cannot be
+shaped one way there and another way on a learner's own sky.
+
+And there is an escape hatch, because that is not quite enough on its own:
+the Observatory offers things by what has been met, and offering an entry
+can change its kind, so a learner's sky can hold an item the empty one
+does not, or hold one differently. `splitSky` compares each item against
+the catalogue and sends anything that does not match exactly, whole, as
+`extras`. Today there are none for any learner tested; correctness never
+depends on there being none.
+
+`sky-payload.test.ts` builds the sky the old way for three learners,
+splits it, joins it, and asserts the result is the same sky. `items` is
+compared as a map rather than a list, because the catalogue's order is its
+own and a learner's tail is theirs; the order is not read on the home,
+which is proved rather than assumed by building the prerequisite graph
+from both and walking every constellation the sky shows, star for star.
+`roots` and `firmament`, whose order IS read, are compared exactly.
+
+One thing deliberately not sent: the roots. The firmament never holds a
+root, so `joinSky` takes them out itself instead of the payload listing
+598 ids twice.

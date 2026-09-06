@@ -1,0 +1,90 @@
+// The sky, split into the part that is the same for everyone and the part
+// that is not (SAK-381).
+//
+// The home used to send every star it could draw, with its standing, on every
+// request: 2.15 MB for the sample learner and the same 2.15 MB for someone
+// who had never opened the app, because their sky is empty and they still got
+// the whole curriculum. Fifteen thousand items, and the only thing that
+// differed between two learners was one word per item.
+//
+// So the items go out once, as a CATALOGUE: every star the sky could hold,
+// without its standing, cached by the browser and the CDN under a version
+// that changes when its contents do. What a learner gets is the difference:
+// the standings that are not "not-seen", the constellations they have, the
+// mix-ups, and a couple of small lists where their sky and the catalogue
+// disagree. `joinSky` puts the two back together in the browser and hands the
+// Sky exactly the SkyHomeData it always took, so nothing in src/sky knows any
+// of this happened.
+//
+// The escape hatch is `extras`. The catalogue is built by running the real
+// pipeline against an empty history, and a learner's sky can hold an item
+// that one does not, or hold one differently: the Observatory offers things
+// by what has been met, and offering an entry can change its kind. Anything
+// that does not match the catalogue exactly travels whole. Normally there are
+// none; correctness never depends on there being none.
+
+import type { MixUp } from "@/sky/components/mix-ups-panel";
+import type { DiscoveryRow } from "@/sky/components/discovery-panel";
+import type { SkyHomeData } from "@/sky/components/sky-home";
+import type { CoverageCounts } from "@/sky/lib/coverage";
+import type { Standing } from "@/sky/lib/standing";
+import type { SkyItem } from "@/sky/lib/types";
+
+/** A star with everything but how it is going. */
+export type SkyItemBase = Omit<SkyItem, "standing">;
+
+/** Every star the sky could hold, for this build. Cached hard, so it carries
+ * the version its contents hash to. */
+export interface SkyCatalogue {
+  version: string;
+  items: readonly SkyItemBase[];
+  /** The whole firmament, before a learner's own is taken into account. */
+  firmament: readonly string[];
+}
+
+/** One learner's sky, as the difference from the catalogue. */
+export interface SkyPayload {
+  /** The catalogue this was split against. */
+  version: string;
+  /** Only the stars that have got somewhere. Anything absent is not-seen. */
+  standings: Readonly<Record<string, Standing>>;
+  /** Stars the catalogue does not have, or has differently. Usually none. */
+  extras: readonly SkyItem[];
+  roots: readonly string[];
+  mixUps: readonly MixUp[];
+  discovery: readonly DiscoveryRow[];
+  standingCounts?: CoverageCounts;
+  /** Firmament the catalogue is missing, and firmament it should not have.
+   * A root is never firmament, so `joinSky` takes the roots out itself and
+   * `firmamentDrop` carries only what the roots do not already account for. */
+  firmamentAdd: readonly string[];
+  firmamentDrop: readonly string[];
+}
+
+/** The catalogue and one learner's difference, back into the sky the Sky
+ * takes. Pure, and the browser's half of the split. */
+export function joinSky(catalogue: SkyCatalogue, payload: SkyPayload): SkyHomeData {
+  const extras = new Map(payload.extras.map((i) => [i.id, i]));
+  const items: SkyItem[] = [];
+  for (const base of catalogue.items) {
+    const instead = extras.get(base.id);
+    if (instead) {
+      items.push(instead);
+      extras.delete(base.id);
+      continue;
+    }
+    items.push({ ...base, standing: payload.standings[base.id] ?? "not-seen" });
+  }
+  // whatever was left is a star this learner has and the catalogue does not
+  items.push(...extras.values());
+
+  const drop = new Set([...payload.firmamentDrop, ...payload.roots]);
+  return {
+    items,
+    roots: payload.roots,
+    mixUps: payload.mixUps,
+    discovery: payload.discovery,
+    ...(payload.standingCounts ? { standingCounts: payload.standingCounts } : {}),
+    firmament: [...catalogue.firmament.filter((id) => !drop.has(id)), ...payload.firmamentAdd],
+  };
+}
