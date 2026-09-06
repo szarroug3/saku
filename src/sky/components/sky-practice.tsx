@@ -131,6 +131,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     setRenaming(null);
   };
   const load = (d: SavedRecipe) => { set(d.recipe); setLoaded(d.name); };
+  const step = (by: number) => setRecipe((r) => { const n = Math.max(1, (typeof r.size === "number" ? r.size : DEFAULT_SIZE) + by); setCount(String(n)); return { ...r, size: n }; });
 
   return (
     <SkyPageShell eyebrow="Practice" title="What would you like to practise?" height={height}>
@@ -191,13 +192,19 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: Math.max(1, parseInt(count, 10) || DEFAULT_SIZE) })}>Limited</SkyChip>
             <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
             {recipe.size !== "all" && (
-              <SkyInput
-                type="number" min={1} step={1} inputMode="numeric" aria-label="How many"
-                value={count}
-                onChange={(e) => { setCount(e.target.value); const n = parseInt(e.target.value, 10); if (n >= 1) set({ size: n }); }}
-                onBlur={() => { if (!(parseInt(count, 10) >= 1)) setCount(String(recipe.size)); }}
-                className="h-[26px] w-20 !rounded-full !px-3 !py-0 text-center !text-[12px] font-semibold"
-              />
+              // a stepper in the chip's shape: its own minus and plus, the
+              // browser's spinner hidden
+              <span className="inline-flex h-[26px] items-stretch overflow-hidden rounded-full border border-sky-line text-[12px] font-semibold">
+                <button type="button" aria-label="Fewer" onClick={() => step(-1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink">−</button>
+                <SkyInput
+                  type="number" min={1} step={1} inputMode="numeric" aria-label="How many"
+                  value={count}
+                  onChange={(e) => { setCount(e.target.value); const n = parseInt(e.target.value, 10); if (n >= 1) set({ size: n }); }}
+                  onBlur={() => { if (!(parseInt(count, 10) >= 1)) setCount(String(recipe.size)); }}
+                  className="w-11 !rounded-none !border-x !border-y-0 !border-sky-line !bg-transparent !px-1 !py-0 text-center !text-[12px] font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <button type="button" aria-label="More" onClick={() => step(1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink">+</button>
+              </span>
             )}
           </Facet>
           <div className="mt-8 flex flex-wrap items-center gap-2">
