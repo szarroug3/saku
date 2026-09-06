@@ -363,11 +363,16 @@ sample toggle) that the old dev wrapper used to carry.
 ### Everything in the sky, and only what the window shows (2026-09-06)
 
 Nothing is excluded from the Planetarium any more (Sam: "if it gets taught,
-it should appear"): the firmament is every kana, kanji AND word, on top of
-the counters, grammar, sentence rules, verb pairs and keigo added earlier,
-so about fifteen thousand constellations. Only the pages to read (a term, a
-writing rule, a concept) stay out; nothing is ever asked about them, so
-they have no standing to paint. Three things make that affordable.
+it should appear", and "everything should behave according to its own
+filter regardless of where it is"): the firmament is every kana, piece,
+kanji and word, on top of the counters, grammar, sentence rules, verb pairs
+and keigo, so about 15,400 constellations. Every kind that can be a star
+is therefore up there as itself as well as inside whatever is built from
+it, which is what lets a piece survive Kanji being turned off. Only the
+pages to read (a term, a writing rule, a concept) stay out: nothing is ever
+asked about them, so they have no standing to paint. A piece written the
+same as a kanji is that kanji, one node with one standing, so it answers to
+Kanji. Three things make the size affordable.
 
 **The scatter is no longer quadratic.** Every box is registered in the
 cells of a uniform grid it touches, so a clash test looks at its
