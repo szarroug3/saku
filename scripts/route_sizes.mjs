@@ -35,16 +35,18 @@ const ROUTES = {
   "/": ["app/(sky)/page_client-reference-manifest.js", 1.5],
   "/observatory": ["app/(sky)/observatory/page_client-reference-manifest.js", 1.5],
   "/lesson": ["app/(sky)/lesson/page_client-reference-manifest.js", 2],
-  // The quiz, practice and settings clients pull the app's engine and its
-  // tables into the browser (14.8 MB measured, 2026-09-06). Budgeted at
-  // what they are so growth still fails; the cut is tracked in the
-  // performance audit, and these should come back down to about 2 MB.
+  // The quiz and practice clients grade on the client, so they pull the
+  // app's engine and its tables into the browser (14.8 MB measured,
+  // 2026-09-06). Budgeted at what they are so growth still fails; SAK-380
+  // is the cut, and these should come back to about 2 MB. Settings used to
+  // be here too, for importing one component from the quiz's client file;
+  // SAK-366 moved it and the page went to 0.48 MB.
   "/quiz": ["app/(sky)/quiz/page_client-reference-manifest.js", 16],
   "/practice": ["app/(sky)/practice/page_client-reference-manifest.js", 16],
   "/practice/run": ["app/(sky)/practice/run/page_client-reference-manifest.js", 16],
   "/atlas": ["app/(sky)/atlas/page_client-reference-manifest.js", 2],
   "/sessions": ["app/(sky)/sessions/page_client-reference-manifest.js", 1.5],
-  "/settings": ["app/(sky)/settings/page_client-reference-manifest.js", 16],
+  "/settings": ["app/(sky)/settings/page_client-reference-manifest.js", 1.5],
   "/account": ["app/(sky)/account/page_client-reference-manifest.js", 1.5],
   "/how-it-works": ["app/(sky)/how-it-works/page_client-reference-manifest.js", 1.5],
   "/about": ["app/(sky)/about/page_client-reference-manifest.js", 1.5],

@@ -14,11 +14,12 @@
 // run's answers go to whoever the route hands in, and the page says so at
 // the top.
 
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
+import { SkyInfo } from "@/sky/components/sky-info";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyMenuChip } from "@/sky/components/sky-menu-chip";
 import { SkyStepper } from "@/sky/components/sky-stepper";
@@ -43,8 +44,6 @@ export interface SkyPracticeProps {
   onStart: (recipe: Recipe) => void;
   /** A recipe handed back from a run to save. */
   toSave?: Recipe;
-  /** The app's info mark, for the note on saving. */
-  tip?: ComponentType<{ label: string; children: ReactNode }>;
   height?: string;
 }
 
@@ -52,7 +51,7 @@ const LOOKUP_DELAY = 150;
 
 const same = (a: Recipe, b: Recipe) => JSON.stringify(a) === JSON.stringify(b);
 
-export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, tip: Tip, height }: SkyPracticeProps) {
+export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(toSave ?? initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
@@ -207,7 +206,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             ) : (
               <SkyButton variant="outline" onClick={() => setSaving(true)} disabled={!!chosen}>{chosen ? `Saved as ${chosen.name}` : "Save this recipe"}</SkyButton>
             )}
-            {Tip && !saving && <Tip label="What a saved recipe keeps">A saved recipe keeps the recipe, not today&apos;s list, so it changes as you do.</Tip>}
+            {!saving && <SkyInfo className="ml-1.5" label="What a saved recipe keeps">A saved recipe keeps the recipe, not today&apos;s list, so it changes as you do.</SkyInfo>}
           </div>
         </SkyPanel>
 

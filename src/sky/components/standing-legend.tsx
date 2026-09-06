@@ -8,10 +8,10 @@
 // every dot with its label, and anything else that wants to colour by standing
 // (a star fill, a coverage bar segment) sits next to one of these.
 
-import { useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { useEqualChips } from "@/sky/components/chip-row";
-import { aboveAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
+import { SkyInfo } from "@/sky/components/sky-info";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
@@ -137,42 +137,6 @@ export function StandingTally({ counts, standings = STANDING_ORDER, empty = "Not
   );
 }
 
-/** The legend's "i": the key opens above it on hover or focus, above
- * because the legend usually sits at the bottom of a sky with nothing below
- * to spill into. */
-function InfoButton({ standings }: { standings: readonly Standing[] }) {
-  const button = useRef<HTMLButtonElement>(null);
-  const [at, setAt] = useState<Anchor | null>(null);
-  const open = () => { const r = button.current?.getBoundingClientRect(); if (r) setAt(aboveAnchor(r)); };
-  const close = () => setAt(null);
-  return (
-    <div className="inline-flex items-center" onPointerEnter={open} onPointerLeave={close}>
-      <button
-        ref={button}
-        type="button"
-        aria-expanded={at !== null}
-        aria-controls="sky-standing-key"
-        onFocus={open}
-        onBlur={close}
-        onClick={() => (at ? close() : open())}
-        aria-label="What the standings mean"
-        className={`inline-flex size-3.5 items-center justify-center rounded-full border border-sky-accent text-sky-accent hover:bg-sky-accent/15 ${at ? "bg-sky-accent/15" : ""}`}
-      >
-        {/* the i is drawn, not typed, so it sits dead centre whatever the font does (the app's own mark) */}
-        <svg viewBox="0 0 10 10" aria-hidden className="size-[7px] fill-current">
-          <circle cx="5" cy="1.6" r="1.15" />
-          <rect x="4.05" y="3.7" width="1.9" height="5.2" rx="0.7" />
-        </svg>
-      </button>
-      {at && (
-        <Floating id="sky-standing-key" at={at} gap={8} className="w-max max-w-[min(420px,calc(100vw-16px))]">
-          <SkyCard className="px-3 py-2.5"><StandingKey standings={standings} /></SkyCard>
-        </Floating>
-      )}
-    </div>
-  );
-}
-
 /** Every dot with its word. Put one wherever standings are painted. */
 export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, info = false, groups, onGroup, note, className = "" }: StandingLegendProps) {
   const live = Boolean(onHover);
@@ -213,7 +177,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           <dt className="capitalize text-sky-ink">{row.label}</dt>
         </div>
       ))}
-      {info && <InfoButton standings={standings} />}
+      {info && <SkyInfo label="What the standings mean" wide><StandingKey standings={standings} /></SkyInfo>}
       {groups && groups.length > 0 && (
         <>
           {/* a break, so the collections start their own row and are still

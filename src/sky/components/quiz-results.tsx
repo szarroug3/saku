@@ -5,10 +5,11 @@
 // where questions are asked and the room where they are looked back on
 // are two components, not one long one.
 
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useState } from "react";
 
 import type { PitchComponent } from "@/sky/components/lesson-card";
 import { SkyButton } from "@/sky/components/sky-button";
+import { SkyInfo } from "@/sky/components/sky-info";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
@@ -29,7 +30,6 @@ export interface QuizResultsProps {
   failed: boolean;
   skyHref: string;
   pitch?: PitchComponent;
-  tip?: ComponentType<{ label: string; children: ReactNode }>;
   onRetry?: (cardIds: readonly string[]) => void;
   /** An offer to keep the recipe this deck came from (practice). */
   onSave?: () => void;
@@ -39,7 +39,7 @@ export interface QuizResultsProps {
   height?: string;
 }
 
-export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, tip: Tip, onRetry, onSave, next, height }: QuizResultsProps) {
+export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onRetry, onSave, next, height }: QuizResultsProps) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [lastPick, setLastPick] = useState<number | null>(null);
@@ -50,7 +50,7 @@ export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, tip
   const count = (label: string, n: number, meaning: string, tone: string) => (
     <div>
       <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{n}</dd>
-      <dt className="mt-1"><Eyebrow tone="inherit" className={`mb-0 inline-flex items-center ${tone}`}>{label}{Tip && <Tip label={`What ${label.toLowerCase()} means`}>{meaning}</Tip>}</Eyebrow></dt>
+      <dt className="mt-1"><Eyebrow tone="inherit" className={`mb-0 inline-flex items-center ${tone}`}>{label}<SkyInfo className="ml-1.5" label={`What ${label.toLowerCase()} means`}>{meaning}</SkyInfo></Eyebrow></dt>
     </div>
   );
 

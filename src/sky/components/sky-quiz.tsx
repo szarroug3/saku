@@ -17,7 +17,7 @@
 // what each does to the schedule, then the answers go to whoever records
 // them.
 
-import { useEffect, useRef, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
@@ -40,8 +40,6 @@ export interface SkyQuizProps {
   skyHref: string;
   hear?: HearComponent;
   pitch?: PitchComponent;
-  /** An info mark that shows `children` on hover: the app's own tooltip. */
-  tip?: ComponentType<{ label: string; children: ReactNode }>;
   /** Starts a new quiz of just these cards, from the results. */
   onRetry?: (cardIds: readonly string[]) => void;
   /** Practice's offer to keep the recipe, on the results. */
@@ -88,7 +86,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -281,7 +279,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} tip={tip} onRetry={onRetry} onSave={onSave} next={next} height={height} />;
+    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} onRetry={onRetry} onSave={onSave} next={next} height={height} />;
   }
 
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;

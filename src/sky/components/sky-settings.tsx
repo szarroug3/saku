@@ -4,10 +4,11 @@
 // left and its control on the right, in groups. Tracked under Sky: Settings.
 // A pure view: the route hands in the values and takes a patch back.
 
-import type { ComponentType, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
 import { SkyChip } from "@/sky/components/sky-button";
+import { SkyInfo } from "@/sky/components/sky-info";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
@@ -22,21 +23,20 @@ export interface SkySettingsProps {
   voicesEnabled?: boolean;
   /** The kana faces installed on this machine; the row hides when none are. */
   fonts: readonly FontChoice[];
-  tip?: ComponentType<{ label: string; children: ReactNode }>;
   height?: string;
 }
 
 /** What a font chip shows: the face is the label. */
 const FONT_SAMPLE = "あき";
 
-export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, tip: Tip, height }: SkySettingsProps) {
+export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, height }: SkySettingsProps) {
   const s = settings;
   const text = (key: keyof SkySettings) => SETTING_TEXT[key];
   const Row = ({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean; children: ReactNode }) => (
     <div className={`flex flex-col items-start gap-2 border-t border-sky-line py-3 first:border-t-0 md:flex-row md:items-center md:justify-between md:gap-6 ${dim ? "opacity-50" : ""}`}>
       <span className="flex items-center text-[14px] text-sky-ink">
         {text(k).label}
-        {Tip && text(k).info && <Tip label={`About ${text(k).label.toLowerCase()}`}>{text(k).info}</Tip>}
+        {text(k).info && <SkyInfo className="ml-1.5" label={`About ${text(k).label.toLowerCase()}`}>{text(k).info}</SkyInfo>}
       </span>
       <span className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">{children}</span>
     </div>

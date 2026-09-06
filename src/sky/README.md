@@ -430,3 +430,22 @@ a window onto the same sky rather than a panel over it, and the only
 stars inside it are the learner's own. With one or two constellations
 discovered, the wash's stardust showing through was indistinguishable
 from a sky.
+
+### One info mark, and the quiz's helpers moved out (2026-09-06, SAK-366)
+
+The "i" that opens a note existed twice: this tree's own, drawn for the
+standing legend, and the app's Radix tooltip restyled to match and handed
+to Practice, Settings and the results as a `tip` prop, since nothing in
+`src/sky` may import the app. They were made to look alike by hand and
+still behaved differently. `SkyInfo` (`sky-info.tsx`) is the one, so the
+prop is gone from `SkyQuiz`, `QuizResults`, `SkyPractice` and
+`SkySettings`. It opens above the mark, or below it near the top of the
+window, where there would be nothing above.
+
+`quiz-client.tsx` was also where `grade`, `retriesOf`, `retriesPatch` and
+that `Tip` lived, so Settings and Practice imported the Quiz to reach
+them. They are `grade.ts` and `retries.ts` now. Settings imports none of
+it, and the page went from 14.83 MB of JavaScript to 0.48 MB: one
+component from the quiz's client file had been pulling the app's engine
+and every data table in with it. SAK-380 is the same cut for the quiz and
+practice, which grade on the client and so genuinely reach the engine.

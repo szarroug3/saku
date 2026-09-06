@@ -24,7 +24,8 @@ import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { PitchMark } from "./pitch-reading";
 import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
 import { SkyLoading, useLoaded, useWho } from "./local";
-import { grade, retriesOf, retriesPatch, Tip } from "./quiz-client";
+import { grade } from "./grade";
+import { retriesOf, retriesPatch } from "./retries";
 import { readStored as read, useStored, writeStored } from "./stored";
 import type { Who } from "./who";
 
@@ -56,7 +57,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview, 
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} tip={Tip} height="100%" />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} height="100%" />;
 }
 
 /** A practice run: the Quiz's screen, with answers kept as misses only. The
@@ -81,5 +82,5 @@ function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: re
   };
   const retry = (ids: readonly string[]) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
   const save = () => router.push(`${back}${sample ? "&" : "?"}save=${packRecipe(recipe)}`);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

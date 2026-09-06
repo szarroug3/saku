@@ -15,7 +15,6 @@ import { SkySettings } from "@/sky/components/sky-settings";
 import type { SkySettings as SkySettingsValues } from "@/sky/lib/settings";
 import type { QuizConfig } from "@/types";
 
-import { Tip } from "./quiz-client";
 
 /** The app's config in the Sky's words. */
 export function fromConfig(cfg: QuizConfig): SkySettingsValues {
@@ -59,7 +58,6 @@ export function SettingsClient() {
       voices={VOICES_BY_NAME}
       voicesEnabled={voicesEnabled()}
       fonts={fonts}
-      tip={Tip}
       height="100%"
     />
   );
