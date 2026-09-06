@@ -45,6 +45,8 @@ import {
   OLD_THEME_KEY,
   THEME_KEY,
   APPEARANCE_KEY,
+  PRACTICE_MISSES_KEY,
+  PRACTICE_SAVED_KEY,
 } from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
 import type { QuizConfig, SettingsFile } from "@/types";
@@ -108,6 +110,16 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
       (id) => migratedGet(store, introShownKey(id), oldIntroShownKey(id)) === INTRO_SHOWN,
     );
     if (shown.length) out.introShown = shown;
+
+    // practice's keepsakes (SAK-342): only when either is set
+    const saved = parse(store.getItem(PRACTICE_SAVED_KEY));
+    const misses = parse(store.getItem(PRACTICE_MISSES_KEY));
+    if (Array.isArray(saved) || isPlainObject(misses)) {
+      out.practice = {
+        ...(Array.isArray(saved) ? { saved: saved as { name: string; recipe: unknown }[] } : {}),
+        ...(isPlainObject(misses) ? { misses: misses as Record<string, number> } : {}),
+      };
+    }
   } catch {
     // a throwing store — return what we have (the safe, partial answer)
   }
@@ -178,5 +190,10 @@ export function applyServerSettings(
       if (shown.has(id)) set(store, introShownKey(id), INTRO_SHOWN);
       else remove(store, introShownKey(id));
     }
+  }
+
+  if (settings.practice !== undefined) {
+    if (settings.practice.saved !== undefined) set(store, PRACTICE_SAVED_KEY, JSON.stringify(settings.practice.saved));
+    if (settings.practice.misses !== undefined) set(store, PRACTICE_MISSES_KEY, JSON.stringify(settings.practice.misses));
   }
 }

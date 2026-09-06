@@ -12,6 +12,8 @@ import {
   LESSON_WRITING_KEY,
   OLD_CFG_KEY,
   OLD_THEME_KEY,
+  PRACTICE_MISSES_KEY,
+  PRACTICE_SAVED_KEY,
   THEME_KEY,
 } from "./settings-keys";
 import {
@@ -119,4 +121,18 @@ test("round trip: applyServerSettings then readLocalSettings recovers the blob",
   applyServerSettings(store, settings);
   const back = readLocalSettings(store);
   assert.deepEqual(back, settings);
+});
+
+test("practice (SAK-342): the saved recipes and misses ride the blob both ways", () => {
+  const store = fakeStore();
+  const practice = { saved: [{ name: "Tonight", recipe: { collections: ["kana"] } }], misses: { "kana:あ/reading": 2 } };
+  applyServerSettings(store, { practice });
+  assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify(practice.saved));
+  assert.equal(store.data[PRACTICE_MISSES_KEY], JSON.stringify(practice.misses));
+  assert.deepEqual(readLocalSettings(store).practice, practice);
+  // a blob without practice leaves the keys alone
+  applyServerSettings(store, { theme: "kiri" });
+  assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify(practice.saved));
+  // an empty browser has no practice field to send up
+  assert.equal(readLocalSettings(fakeStore()).practice, undefined);
 });

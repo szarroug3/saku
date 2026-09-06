@@ -906,4 +906,14 @@ export interface SettingsFile {
   lessonReadings?: boolean;
   /** Which once-ever concept cards have already been shown, by intro id. */
   introShown?: string[];
+  /** Practice's own keepsakes (SAK-342): the saved recipes, and the misses
+   * practice notes for its own ordering. Never the schedule's business; kept
+   * here so they follow the learner across devices like every setting. The
+   * recipe's shape is the Sky's (`src/sky/lib/practice.ts`), opaque here. */
+  practice?: PracticeFile;
+}
+
+export interface PracticeFile {
+  saved?: { name: string; recipe: unknown }[];
+  misses?: Record<string, number>;
 }

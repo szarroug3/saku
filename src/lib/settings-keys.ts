@@ -55,6 +55,12 @@ export function oldIntroShownKey(id: string): string {
 /** The stored value meaning "shown"; anything else reads as "still owed". */
 export const INTRO_SHOWN = "shown";
 
+// Practice's saved recipes and its own misses (SAK-342). The Sky's practice
+// page reads and writes these two keys directly (src/app/dev/sky/practice-client.tsx)
+// and pushes them up as the `practice` field of the settings blob.
+export const PRACTICE_SAVED_KEY = "sky:practice:recipes";
+export const PRACTICE_MISSES_KEY = "sky:practice:misses";
+
 // ---------- quiz session snapshot (src/lib/quiz-session.tsx) ----------
 export const SESSION_KEY = "saku-session";
 export const OLD_SESSION_KEY = "kanaquiz-session";

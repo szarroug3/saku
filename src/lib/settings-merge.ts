@@ -16,6 +16,7 @@ const SETTINGS_KEYS = [
   "lessonWriting",
   "lessonReadings",
   "introShown",
+  "practice",
 ] as const;
 
 /** A plain JSON object — not null, not an array. */

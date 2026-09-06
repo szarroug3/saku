@@ -1,8 +1,10 @@
 "use client";
 
 // Practice's client side: the recipe page with its saved recipes and its own
-// misses, both kept in the browser and nowhere near the schedule (SAK-318);
-// the run is the Quiz's own screen with a recorder that only notes misses.
+// misses, kept in the browser and pushed up as the `practice` field of the
+// learner's settings (SAK-342), so they follow the learner across devices
+// and stay nowhere near the schedule (SAK-318); the run is the Quiz's own
+// screen with a recorder that only notes misses.
 // A server component cannot pass a function to a client one, so the route
 // hands in a bound lookup and this file does the navigating.
 
@@ -10,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { useMemo, useSyncExternalStore } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";
+import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { pushSettings } from "@/lib/settings-sync";
 import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import type { PracticeCollection, PracticeMisses, PracticePreview, Recipe, SavedRecipe } from "@/sky/lib/practice";
@@ -18,8 +22,8 @@ import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { PitchMark } from "./pitch-reading";
 import { grade, Tip } from "./quiz-client";
 
-const SAVED_KEY = "sky:practice:recipes";
-const MISSES_KEY = "sky:practice:misses";
+const SAVED_KEY = PRACTICE_SAVED_KEY;
+const MISSES_KEY = PRACTICE_MISSES_KEY;
 
 const CHANGED = "sky:practice:changed";
 
@@ -29,6 +33,9 @@ function read<T>(key: string, fallback: T): T {
 function write(key: string, value: unknown) {
   try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* a browser with no storage keeps nothing */ }
   window.dispatchEvent(new Event(CHANGED));
+  // and up to the learner's settings, both halves together, so one device's
+  // save never wipes another's misses
+  pushSettings({ practice: { saved: read<{ name: string; recipe: unknown }[]>(SAVED_KEY, []), misses: read<Record<string, number>>(MISSES_KEY, {}) } });
 }
 
 /** A value kept in the browser, read the way React likes an outside store
