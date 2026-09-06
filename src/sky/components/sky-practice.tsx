@@ -235,7 +235,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                         <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`} title={p.item.glyph}>{p.item.glyph}</span>
                         <span className="truncate text-[13.5px] text-sky-ink/90" title={p.item.english}>{p.item.english}</span>
                       </>}
-                  <span className="text-[12px] text-sky-shaky">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
+                  <span className="text-[12px] text-sky-accent">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
                   <button type="button" aria-label={`Leave out ${p.item.english}`} title="Leave it out" onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
                 </li>
               );
