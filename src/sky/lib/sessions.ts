@@ -40,7 +40,24 @@ export function gradeFromCounts(counts: { seen: number; correct: number; firstTr
   return counts.firstTry >= counts.seen ? "clean" : "help";
 }
 
-/** "Sep 6, 9:17 PM" */
-export function formatWhen(ts: number): string {
-  return new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+/**
+ * "Sep 6, 9:17 PM", or "Sep 6, 2025, 9:17 PM" when it was not this year.
+ *
+ * The year only when it is needed, because a list of this week's sessions
+ * does not want it on every row, and a session from last September read
+ * exactly like one from this September without it (SAK-355).
+ *
+ * In the reader's own timezone, which means it can only be called in a
+ * browser: see `useMounted`, and the callers that use it.
+ */
+export function formatWhen(ts: number, now = Date.now()): string {
+  const then = new Date(ts);
+  const thisYear = then.getFullYear() === new Date(now).getFullYear();
+  return then.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    ...(thisYear ? {} : { year: "numeric" }),
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

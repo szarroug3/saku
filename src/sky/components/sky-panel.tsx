@@ -29,7 +29,10 @@ export function SkySurface({ as: Tag = "div", pad = "md", className = "", childr
 }
 
 export interface SkyPanelProps {
-  title: string;
+  /** The heading. A node rather than a string so a title can hold something
+   * that only a browser can render, such as a time in the reader's own
+   * timezone (SAK-355). */
+  title: ReactNode;
   /** The line beside the title: "470 of 15,347 Discovered". */
   aside?: ReactNode;
   className?: string;

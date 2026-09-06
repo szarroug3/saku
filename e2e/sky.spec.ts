@@ -224,6 +224,17 @@ test("the account page, signed out, offers to keep the sky", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Delete my progress" })).toBeVisible();
 });
 
+test("a session's time is the reader's own, and carries the instant regardless", async ({ page }) => {
+  // SAK-355. Signed in, this page renders on the server, and formatting there
+  // printed the server's timezone into the HTML. The instant is in dateTime
+  // from the first byte; the readable time is the browser's own.
+  await page.goto("/sessions?sample");
+  const when = page.locator("time[datetime]").first();
+  await expect(when).toBeVisible();
+  await expect(when).toHaveAttribute("datetime", /^\d{4}-\d{2}-\d{2}T/);
+  await expect(when).not.toBeEmpty();
+});
+
 test("recent sessions list the pretend learner's quizzes", async ({ page }) => {
   await page.goto("/sessions?sample");
   await expect(page.getByRole("heading", { name: "What have you done lately?" })).toBeVisible();

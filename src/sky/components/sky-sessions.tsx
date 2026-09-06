@@ -14,6 +14,7 @@ import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, type Grade } from "@/sky/lib/quiz";
 import { formatWhen, SESSION_KIND, tally, type SkySession } from "@/sky/lib/sessions";
+import { useMounted } from "@/sky/components/use-mounted";
 import { STANDING } from "@/sky/lib/standing";
 
 export interface SkySessionsProps {
@@ -26,6 +27,21 @@ export interface SkySessionsProps {
 }
 
 const GRADES: readonly Grade[] = ["clean", "help", "missed"];
+
+/**
+ * When a session was, in the reader's own timezone.
+ *
+ * Only in a browser (SAK-355). Signed in, this page is rendered on the server
+ * with the route's data, so formatting during that render printed the
+ * SERVER's timezone into the HTML: a hydration mismatch, and the wrong
+ * wall-clock time in the list until the client caught up. The instant itself
+ * is in `dateTime` from the first byte, so a machine reading the page has it
+ * whether or not a browser ever arrives.
+ */
+function When({ ts }: { ts: number }) {
+  const mounted = useMounted();
+  return <time dateTime={new Date(ts).toISOString()}>{mounted ? formatWhen(ts) : ""}</time>;
+}
 
 export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessionsProps) {
   const [openId, setOpenId] = useState<string | null>(sessions[0]?.id ?? null);
@@ -53,7 +69,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                 return (
                   <li key={s.id}>
                     <button type="button" onClick={() => { setOpenId(s.id); setAsking(false); }} aria-current={on ? "true" : undefined} className={`grid w-full grid-cols-[1fr_auto] items-baseline gap-x-3 rounded-lg border px-3 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}>
-                      <span className="text-[13.5px] text-sky-ink">{formatWhen(s.when)}<span className="text-sky-muted"> · {SESSION_KIND[s.kind]} · {s.cards.length} {s.cards.length === 1 ? "card" : "cards"}</span></span>
+                      <span className="text-[13.5px] text-sky-ink"><When ts={s.when} /><span className="text-sky-muted"> · {SESSION_KIND[s.kind]} · {s.cards.length} {s.cards.length === 1 ? "card" : "cards"}</span></span>
                       <span className="flex gap-2 text-[12px] tabular-nums">
                         {GRADES.map((g) => <span key={g} className={VERDICT[g]}>{t[g]}</span>)}
                       </span>
@@ -64,7 +80,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
             </ul>
           </SkyPanel>
           {open && counts && (
-            <SkyPanel title={`${formatWhen(open.when)} · ${SESSION_KIND[open.kind]}`} className="flex min-h-0 flex-col">
+            <SkyPanel title={<><When ts={open.when} /> · {SESSION_KIND[open.kind]}</>} className="flex min-h-0 flex-col">
               <dl className="mt-2 grid shrink-0 grid-cols-3 gap-x-6 text-center">
                 {GRADES.map((g) => (
                   <div key={g}>
