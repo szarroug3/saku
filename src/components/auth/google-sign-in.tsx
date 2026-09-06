@@ -37,7 +37,8 @@ export function GoogleSignIn({ className = "", variant = "app" }: { className?: 
         onClick={go}
         disabled={busy}
         className={variant === "sky"
-          ? "flex w-full items-center justify-center gap-2.5 rounded-[10px] border border-sky-line bg-sky-card px-4 py-2.5 font-sky-ui text-[14px] font-semibold text-sky-ink hover:border-sky-accent disabled:opacity-50"
+          // the Sky's own primary button (SkyButton's solid), with the G in front
+          ? "inline-flex items-center justify-center gap-2 rounded-[10px] bg-sky-accent px-3.5 py-2 font-sky-ui text-[13px] font-semibold leading-5 text-sky-accent-ink transition-colors disabled:bg-sky-card-strong disabled:text-sky-faint"
           : "flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3 text-[15px] font-medium text-text hover:border-accent disabled:opacity-50"}
       >
         <GoogleG />
