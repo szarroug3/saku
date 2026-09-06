@@ -19,17 +19,22 @@ import type { SkyCatalogue, SkyPayload } from "./sky-payload";
  * with the hour would be a new download every hour. */
 const NO_CLOCK = 0;
 
-let built: SkyCatalogue | null = null;
+/** Every star, built as this module loads rather than on the first request
+ * that wants it. See atlas-catalogue.ts for why: a process is held ready
+ * before a request arrives, so work done here is work the request does not
+ * wait for, and work left until first use is paid for by whoever knocks
+ * first. */
+const built: SkyCatalogue = buildSkyCatalogue();
 
-/** Every star, cached for the life of the process. Serialising fifteen
- * thousand items is not free, and it is the same answer every time. */
 export function skyCatalogue(): SkyCatalogue {
-  if (built) return built;
+  return built;
+}
+
+function buildSkyCatalogue(): SkyCatalogue {
   const empty = skyFromHistory(emptyHistory(), NO_CLOCK, undefined, { everything: true, beyond: beyondWords });
   const items = empty.items.map(withoutStanding);
   const firmament = empty.firmament ?? [];
-  built = { version: versionOf(JSON.stringify({ items, firmament })), items, firmament };
-  return built;
+  return { version: versionOf(JSON.stringify({ items, firmament })), items, firmament };
 }
 
 /** One learner's sky as its difference from the catalogue. The inverse of

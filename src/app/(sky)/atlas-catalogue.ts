@@ -22,15 +22,30 @@ import type { AtlasCatalogue, AtlasPayload, AtlasShelfBase } from "./atlas-paylo
  * download every hour. */
 const NO_CLOCK = 0;
 
-let built: AtlasCatalogue | null = null;
+/**
+ * Built as this module loads, not on the first request that wants it.
+ *
+ * Lazily was the obvious choice and it was wrong here (SAK-382). Fluid Compute
+ * holds processes ready before a request arrives, so anything done at module
+ * load is done in that idle time and costs the request nothing, while anything
+ * left until first use is paid for by whoever knocks first. Measured on the
+ * deployed app: an Atlas whose payload takes 7 ms to work out took 554 ms on a
+ * process's first request, all of it building this.
+ *
+ * A process that is never warmed pays the same either way, so this is free at
+ * worst.
+ */
+const built: AtlasCatalogue = buildAtlasCatalogue();
 
 export function atlasCatalogue(): AtlasCatalogue {
-  if (built) return built;
+  return built;
+}
+
+function buildAtlasCatalogue(): AtlasCatalogue {
   const empty = atlasFromHistory(emptyHistory(), NO_CLOCK);
   const items = empty.items.map(withoutStanding);
   const shelves = empty.shelves.map(withoutCounts);
-  built = { version: versionOf(JSON.stringify({ items, shelves })), items, shelves, holds: empty.holds };
-  return built;
+  return { version: versionOf(JSON.stringify({ items, shelves })), items, shelves, holds: empty.holds };
 }
 
 function withoutCounts(shelf: AtlasShelf): AtlasShelfBase {

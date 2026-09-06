@@ -961,3 +961,25 @@ Tried and reverted: comparing items field by field instead of writing both
 out and comparing the text. It reads better and is not order-dependent, and
 it measured 56.5 ms against 54. Filtering the keys of fifteen thousand
 objects allocates more than `JSON.stringify` costs. Left as it was.
+
+### Lazy was the wrong instinct here (2026-09-06, SAK-382)
+
+An Atlas payload takes 7 ms to work out. On the deployed app it took 554 ms,
+and the trace said why: `first`, the request was the first its process had
+served. It was building the catalogue inside her request.
+
+Every memo added this round was lazy, which is the usual instinct and the
+wrong one under Fluid Compute. A process is held ready before a request
+arrives — the same trace showed one alive for 8.5 seconds having served
+nothing — so work done as a module loads is done in that idle time and costs
+the request nothing, while work left until first use is paid for by whoever
+knocks first. A process that is never warmed pays the same either way, so
+building eagerly is free at worst.
+
+Both catalogues are built as their modules load now. The first payload of a
+process went from 76.3 ms to 8.5 ms locally, and building them costs 722 ms
+of module evaluation that a warmed process does before anyone is waiting.
+
+The same reasoning applies to the other memos from this round (`all`,
+`shelfSections`, the standings), but they are all populated as a side effect
+of building the catalogues, so they come warm for free.
