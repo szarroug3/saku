@@ -97,6 +97,9 @@ export default defineConfig({
     // visitor the deterministic signed-out user these specs drive.
     env: {
       SAKU_DISABLE_AUTH: "1",
+      // The Sky's pages live under /dev/sky until cutover; the dev layout
+      // 404s them in a production build unless told otherwise (SAK-348).
+      SAKU_DEV_PAGES: "1",
       // Do not let `next build` overwrite a concurrently running dev server's
       // `.next` artifacts. Both `build` and `start` read this through
       // next.config.ts, so the E2E server owns an isolated output directory.

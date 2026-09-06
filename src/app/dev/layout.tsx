@@ -7,8 +7,11 @@ import { notFound } from "next/navigation";
 // any non-production build) renders them normally.
 //
 // NODE_ENV is inlined at build time, so the check costs nothing at runtime and
-// the pages are simply unreachable in the shipped app.
+// the pages are simply unreachable in the shipped app. The one exception is
+// the end-to-end suite, which runs a production build and sets
+// SAKU_DEV_PAGES=1 (playwright.config.ts) to reach the Sky's pages under
+// /dev/sky (SAK-348); nothing deployed sets it.
 export default function DevLayout({ children }: { children: React.ReactNode }) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (process.env.NODE_ENV === "production" && process.env.SAKU_DEV_PAGES !== "1") notFound();
   return <>{children}</>;
 }
