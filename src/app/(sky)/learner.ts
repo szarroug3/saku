@@ -58,7 +58,40 @@ export function factStanding(f: FactId, history: HistoryFile, now: number): AppS
   return s === "not-seen" && history.seen?.[f] ? "claimed" : s;
 }
 
+/**
+ * How an entry is going, and whether it has been met, worked out once per
+ * request instead of three times per entry (SAK-382).
+ *
+ * The Atlas asked for every entry's standing three times over: once for the
+ * offerings pass deciding whether the learner has met it, again when that pass
+ * built the item, and a third time in each shelf's counts. Over the whole
+ * curriculum, with a walk of every fact and date arithmetic on each, that was
+ * 737 ms of a 1778 ms response measured on the deployed app. The home does the
+ * same over fifteen thousand entries.
+ *
+ * Held against the history object itself, so it lives exactly as long as the
+ * request that read it and can never be shared between two learners. The clock
+ * is part of the key because a standing decays with time; a caller that passes
+ * a new `now` gets a fresh answer rather than yesterday's. This does assume the
+ * history is not mutated while it is being read, which is true of every path
+ * here: it is loaded once and written through a separate action.
+ */
+const standings = new WeakMap<HistoryFile, { now: number; byEntry: Map<string, { standing: Standing; met: boolean }> }>();
+
 export function standingFor(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
+  let held = standings.get(history);
+  if (!held || held.now !== now) {
+    held = { now, byEntry: new Map() };
+    standings.set(history, held);
+  }
+  const known = held.byEntry.get(entry.id);
+  if (known) return known;
+  const worked = workOutStanding(entry, history, now);
+  held.byEntry.set(entry.id, worked);
+  return worked;
+}
+
+function workOutStanding(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
   const facts = knownFactsOf(entry);
   let met = false;
   let worst: AppStanding = "not-seen";

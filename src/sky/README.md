@@ -839,3 +839,42 @@ The header will say whether that is worth fixing before anything else.
 Two things it is NOT, both measured on production rather than assumed: the
 catalogues, served from cache in 5 ms, and the join that puts them back
 together, 1 ms for the Atlas and 4 ms for the sky over 15,380 items.
+
+### Building a page three times over (2026-09-06, SAK-382)
+
+The header answered the question. Sam's 1778 ms Atlas response was 111 ms
+refreshing the session, 755 ms reading her history and 737 ms building the
+page. So the auth round trip I had suspected, on the strength of that 1.2 s
+comment in auth.ts, was not it at all: it costs a tenth of a second.
+
+Three things were being redone that had already been done.
+
+`standingFor` was asked for every entry's standing three times a request:
+once by the offerings pass deciding whether the learner had met it, again
+when that pass built the item, and a third time in each shelf's counts. It
+walks every fact of an entry and does date arithmetic on each. It is held
+against the history object now, so it lives exactly as long as the request
+that read that history and can never be shared between two learners; the
+clock is part of the key, because a standing decays.
+
+`all(kind)` filters thousands of entries to drop the twins, and
+`shelfSections` works out the cuts a shelf is divided into. Neither looks at
+a learner. Both were recomputed per shelf per request, and between them they
+were 28 ms of a 58 ms build. Both are held for the life of the process now,
+which is what they should always have been: they are functions of the
+shipped tables.
+
+| | before | after |
+| --- | --- | --- |
+| building the Atlas | 59 ms | 32 ms |
+| building the home | 52 ms | 47 ms |
+
+Locally, on the sample learner. On the function, where the same work took
+twelve times as long, the saving should be the same share of a much bigger
+number.
+
+The 755 ms is not answered yet, only made answerable. That one measurement
+covered making a database client, a query over the network, and normalising
+a whole record. Those want different fixes, so they report separately now:
+`db:client`, `db:query` and `db:normalise`, and the same for the shell's own
+read of the row.

@@ -45,7 +45,25 @@ import type { EntryId, NewKanjiOrder } from "@/types";
  * `kanjiOrder` is the one thing here that is a SETTING and not data — the kanji
  * shelf is cut by the order the reader is studying in (see shelves.tsx's file
  * header). The other four kinds ignore it, and should keep ignoring it. */
+/** The cuts a shelf is divided into, worked out once for the life of the
+ * process (SAK-382).
+ *
+ * A pure function of the kind and the ordering, over the shipped tables: the
+ * same answer on every request, and 14 ms of a 58 ms Atlas build when it was
+ * recomputed per shelf per request. No caller mutates what it hands back; they
+ * read the cuts and build their own lists. */
+const cuts = new Map<string, ShelfSection[]>();
+
 export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSection[] {
+  const key = `${kind}|${kanjiOrder}`;
+  const known = cuts.get(key);
+  if (known) return known;
+  const found = buildShelfSections(kind, kanjiOrder);
+  cuts.set(key, found);
+  return found;
+}
+
+function buildShelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSection[] {
   switch (kind) {
     case KANA_SUBJECT:
       return SETS.flatMap((set) =>

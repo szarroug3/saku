@@ -1,3 +1,4 @@
+import { timed } from "@/lib/server-timing";
 import "server-only";
 
 // The Supabase backend for a user's progress. Reads and writes the two JSON
@@ -72,12 +73,12 @@ async function normalizeHistory(raw: unknown, userId: string): Promise<HistoryFi
 export async function readProgressSeedRow(
   userId: string,
 ): Promise<ProgressSeedRow> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  const supabase = await timed("seed:client", () => createSupabaseServerClient(), "making the database client");
+  const { data, error } = await timed("seed:query", async () => await supabase
     .from("progress")
     .select("history, settings, session, lists")
     .eq("user_id", userId)
-    .maybeSingle();
+    .maybeSingle(), "selecting the whole progress row");
   if (error) throw new Error(`reading progress seed failed: ${error.message}`);
   const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
@@ -89,14 +90,18 @@ export async function readProgressSeedRow(
 }
 
 export async function readHistoryRow(userId: string): Promise<HistoryFile> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  // Split three ways on purpose (SAK-382). "Reading the history" measured
+  // 755 ms of a 1778 ms response on the deployed app, and that one number
+  // covers making a client, a query over the network, and normalising what
+  // comes back over a learner's whole record. They want different fixes.
+  const supabase = await timed("db:client", () => createSupabaseServerClient(), "making the database client");
+  const { data, error } = await timed("db:query", async () => await supabase
     .from("progress")
     .select("history")
     .eq("user_id", userId)
-    .maybeSingle();
+    .maybeSingle(), "selecting the history row");
   if (error) throw new Error(`reading progress.history failed: ${error.message}`);
-  return normalizeHistory(data?.history, userId);
+  return timed("db:normalise", async () => await normalizeHistory(data?.history, userId), "normalising the history");
 }
 
 export async function writeHistoryRow(userId: string, hist: HistoryFile): Promise<void> {

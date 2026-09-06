@@ -70,7 +70,20 @@ const SEARCH_PER_KIND = 24;
  * Keigo): the term's page carries it, so it is not shown twice. */
 const termNamed = (name: string | undefined) => !!name && TERMS.some((t) => t.name.toLowerCase() === name.toLowerCase());
 const twinned = (e: LibEntry): boolean => (e.kind === MARK_SUBJECT || e.kind === GRAMMAR_CONCEPT_SUBJECT) && termNamed(e.name);
-export const all = (kind: Kind): readonly LibEntry[] => (LIB_ENTRIES_BY_KIND.get(kind) ?? []).filter((e) => !twinned(e));
+/** Every entry of a kind that is its own thing, the twins folded away.
+ *
+ * Worked out once for the life of the process, not once per shelf per request
+ * (SAK-382). It is a filter over thousands of entries and it depends on the
+ * shipped tables alone, so it was the same answer every time: 13.6 ms of a
+ * 58 ms Atlas build. Nothing mutates what it hands back. */
+const allByKind = new Map<Kind, readonly LibEntry[]>();
+export const all = (kind: Kind): readonly LibEntry[] => {
+  const known = allByKind.get(kind);
+  if (known) return known;
+  const found = (LIB_ENTRIES_BY_KIND.get(kind) ?? []).filter((e) => !twinned(e));
+  allByKind.set(kind, found);
+  return found;
+};
 
 /** The page to read about a grammar concept: the term of that name when
  * there is one (Keigo), else the concept itself. */
