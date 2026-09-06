@@ -21,6 +21,7 @@ import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyMenuChip } from "@/sky/components/sky-menu-chip";
+import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -68,10 +69,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(!!toSave);
   const [renaming, setRenaming] = useState<string | null>(null);
-  // the number being typed for "how many": kept as text so a half-typed
-  // number is not a change to the recipe; the last good one is remembered
-  // for when "Limited" is picked again after "All of them"
-  const [count, setCount] = useState(String(typeof (toSave ?? initial.recipe).size === "number" ? (toSave ?? initial.recipe).size : DEFAULT_SIZE));
+  // the last number asked for, remembered for when "Limited" is picked
+  // again after "All of them"
+  const [count, setCount] = useState(typeof (toSave ?? initial.recipe).size === "number" ? (toSave ?? initial.recipe).size as number : DEFAULT_SIZE);
   // the saved recipe the page is working from, by name; it stays chosen as
   // the recipe drifts, so the drift can be written back to it
   const [loaded, setLoaded] = useState<string | null>(null);
@@ -131,10 +131,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     setRenaming(null);
   };
   const load = (d: SavedRecipe) => { set(d.recipe); setLoaded(d.name); };
-  const step = (by: number) => setRecipe((r) => { const n = Math.max(1, (typeof r.size === "number" ? r.size : DEFAULT_SIZE) + by); setCount(String(n)); return { ...r, size: n }; });
 
   return (
-    <SkyPageShell eyebrow="Practice" title="What would you like to practise?" height={height}>
+    <SkyPageShell eyebrow="Practice" title="What would you like to practice?" height={height}>
       <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
@@ -189,23 +188,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             })}
           </Facet>
           <Facet title="How many">
-            <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: Math.max(1, parseInt(count, 10) || DEFAULT_SIZE) })}>Limited</SkyChip>
+            <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: count })}>Limited</SkyChip>
             <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
-            {recipe.size !== "all" && (
-              // a stepper in the chip's shape: its own minus and plus, the
-              // browser's spinner hidden
-              <span className="inline-flex h-[26px] items-stretch overflow-hidden rounded-full border border-sky-line text-[12px] font-semibold">
-                <button type="button" aria-label="Fewer" onClick={() => step(-1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink">−</button>
-                <SkyInput
-                  type="number" min={1} step={1} inputMode="numeric" aria-label="How many"
-                  value={count}
-                  onChange={(e) => { setCount(e.target.value); const n = parseInt(e.target.value, 10); if (n >= 1) set({ size: n }); }}
-                  onBlur={() => { if (!(parseInt(count, 10) >= 1)) setCount(String(recipe.size)); }}
-                  className="w-11 !rounded-none !border-x !border-y-0 !border-sky-line !bg-transparent !px-1 !py-0 text-center !text-[12px] font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <button type="button" aria-label="More" onClick={() => step(1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink">+</button>
-              </span>
-            )}
+            {recipe.size !== "all" && <SkyStepper value={recipe.size} onChange={(n) => { setCount(n); set({ size: n }); }} label="How many" />}
           </Facet>
           <div className="mt-8 flex flex-wrap items-center gap-2">
             {saving ? (

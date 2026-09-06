@@ -381,7 +381,7 @@ function grammarPages(recipe: Recipe): TeachPage[] {
     pages.push({
       eyebrow: "Family",
       title: "Ways to say this",
-      paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are its near neighbours, and how each is built." }],
+      paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are its near neighbors, and how each is built." }],
       tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, ...(family.feel ? { note: family.feel } : {}) }],
       ...(family.link ? { link: { href: family.link.url, label: family.link.label } } : {}),
     });
