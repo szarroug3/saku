@@ -5,6 +5,7 @@
 // rehearsed with. No list of the round's cards, no misses, no preview of
 // what comes next. How long, a way to skip the wait, and the way out.
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { SkyButton } from "@/sky/components/sky-button";
@@ -68,7 +69,7 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
             <SkyStepper value={minutes} onChange={onMinutes} label="Minutes of rest" min={0} max={240} unit="minutes" />
           </div>
         </SkySurface>
-        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page. <a href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</a></p>
+        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page. <Link href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</Link></p>
       </div>
     </SkyPageShell>
   );
