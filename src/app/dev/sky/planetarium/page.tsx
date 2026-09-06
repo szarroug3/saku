@@ -9,8 +9,11 @@ import Link from "next/link";
 
 import { SkyHome } from "@/sky/components/sky-home";
 
+import { currentUserId } from "@/lib/auth";
 import { getStatsRows } from "@/lib/library/server-lookups";
+import { loadSettings } from "@/lib/settings";
 
+import { clearMixUp } from "../actions";
 import { learnerSky, skyFromHistory } from "../learner";
 import { metBeyondWords } from "../observatory";
 import { sampleHistory } from "../sample-learner";
@@ -22,7 +25,10 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const params = await searchParams;
   const sample = params.sample !== undefined;
   // everything, and the planets, asteroids and binaries the Observatory knows how to build
-  const options = { everything: true, beyond: metBeyondWords };
+  // the learner's own bar for clearing a mix-up, from Settings
+  const userId = sample ? null : await currentUserId();
+  const graduateRuns = userId ? ((await loadSettings(userId)).cfg?.graduateRuns ?? undefined) : undefined;
+  const options = { everything: true, beyond: metBeyondWords, ...(graduateRuns ? { graduateRuns } : {}) };
   const data = sample ? skyFromHistory(sampleHistory(), undefined, await getStatsRows(), options) : await learnerSky(undefined, options);
   return (
     <SkyPage
@@ -33,7 +39,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
         </>
       }
     >
-      <SkyHome data={data} observatoryHref="/dev/sky/observatory" height="100%" />
+      <SkyHome data={data} observatoryHref="/dev/sky/observatory" onClearMixUp={sample ? undefined : clearMixUp} height="100%" />
     </SkyPage>
   );
 }

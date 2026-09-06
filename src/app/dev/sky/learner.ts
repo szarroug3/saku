@@ -178,6 +178,8 @@ export interface SkyOptions {
    * kinds (the Observatory's counters, grammar, rules, pairs and keigo):
    * items to add, with their parts, and which of them count as met. */
   beyond?: (history: HistoryFile, now: number) => { items: readonly SkyItem[]; met: readonly string[] };
+  /** Clean runs in a row that clear a mix-up: the learner's setting. */
+  graduateRuns?: number;
 }
 
 /** The signed-in learner's sky, or an empty one for a visitor. */
@@ -244,9 +246,10 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
   const roots = skyRoots(graph, met);
   const rootSet = new Set(roots);
 
-  const mixUps: MixUp[] = activeWeaknessPairs(history, GRADUATE_RUNS, entryOf)
+  const needed = options.graduateRuns ?? GRADUATE_RUNS;
+  const mixUps: MixUp[] = activeWeaknessPairs(history, needed, entryOf)
     .filter((p) => items.has(p.a) && items.has(p.b))
-    .map((p) => ({ a: p.a, b: p.b, times: p.runsMixedUp }));
+    .map((p) => ({ key: p.key, a: p.a, b: p.b, times: p.runsMixedUp, cleanRuns: p.cleanStreak, needed }));
 
   return {
     items: list, roots, mixUps,

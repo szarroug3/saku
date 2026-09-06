@@ -67,12 +67,13 @@ export function quizFromHistory(history: HistoryFile, picks: readonly string[], 
 }
 
 /** What a listening card plays for a fact, or undefined when the fact has
- * no sound to ask by: a word's meaning card plays the reading asked about,
- * a kana's card plays the kana. */
+ * no sound to ask by: a word's meaning or reading card plays the reading
+ * asked about, a kana's card plays the kana. A reading card asked by ear is
+ * the app's transcription card: hear it, type the kana in romaji. */
 function listenTextFor(fact: FactId, item: SkyItem): string | undefined {
   const id = fact as string;
   if (item.kind === "kana") return item.glyph;
-  if (item.kind === "word" && id.includes("/meaning")) return wordReadingAsked(fact, item);
+  if (item.kind === "word" && (id.includes("/meaning") || id.includes("/reading"))) return wordReadingAsked(fact, item);
   return undefined;
 }
 
@@ -115,7 +116,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
     const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
     const instruction = listenIt
-      ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : "Listen, then type what it means.")
+      ? (item.kind === "kana" || (fact as string).includes("/reading") ? "Listen, then type the reading in romaji." : "Listen, then type what it means.")
       : construction
         ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
         : quizInstruction(fact, dir, typed ? "typed" : "mc");

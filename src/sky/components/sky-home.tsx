@@ -49,13 +49,15 @@ export interface SkyHomeProps {
   data: SkyHomeData;
   /** Where the Observatory lives, for the empty sky's way in. */
   observatoryHref?: string;
+  /** Clears a mix-up by hand. */
+  onClearMixUp?: (key: string) => Promise<void> | void;
   /** How tall the home is: one page, never scrolling. The sky fills what
    * the heading and the details leave, and shrinks when the details open.
    * A CSS length; the route knows its own chrome. */
   height?: string;
 }
 
-export function SkyHome({ data, observatoryHref = "/observatory", height = "calc(100vh - 8rem)" }: SkyHomeProps) {
+export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, height = "calc(100vh - 8rem)" }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
   // the sky opens on a planet if there is one, else a binary, else an
@@ -106,7 +108,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
         {details && (
           <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
             <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />
-            <MixUpsPanel className="min-h-0 overflow-y-auto" pairs={data.mixUps} itemOf={graph.itemOf} />
+            <MixUpsPanel className="min-h-0 overflow-y-auto" pairs={data.mixUps} itemOf={graph.itemOf} onClear={onClearMixUp} />
           </div>
         )}
       </div>

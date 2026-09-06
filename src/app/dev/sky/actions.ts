@@ -9,7 +9,7 @@ import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
-import { dropClaims, saveClaims, saveSession, saveSeen } from "@/lib/history";
+import { clearMixup, dropClaims, saveClaims, saveSession, saveSeen } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizAnswer } from "@/sky/lib/quiz";
 import type { FactId, SessionStats } from "@/types";
@@ -26,6 +26,15 @@ import { sampleHistory } from "./sample-learner";
 /** "I already know these": claim the picks, the app's own claim (a skip of
  * the lesson, untested; never mastery, and a later miss outranks it). Each
  * pick claims only itself. */
+/** Clears a mix-up by hand: the pair stops being watched until it happens
+ * again. The app's own clear, with now as the line it starts from. */
+export async function clearMixUp(key: string): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+  await clearMixup(userId, key, Date.now());
+  revalidatePath("/dev/sky/planetarium");
+}
+
 /** A star opened in a lesson enters rotation now (Sam, 2026-09-06): its
  * facts are marked seen, which is what the schedule reads, and the Sky
  * shows it as untested until its first quiz. Never a claim. */
