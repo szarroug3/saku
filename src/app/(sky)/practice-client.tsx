@@ -33,11 +33,26 @@ import type { Who } from "./who";
 const SAVED_KEY = PRACTICE_SAVED_KEY;
 const MISSES_KEY = PRACTICE_MISSES_KEY;
 
-/** Writes the browser's copy, then pushes both halves up to the learner's
- * settings together, so one device's save never wipes another's misses. */
+/**
+ * Writes the browser's copy, then pushes UP THE HALF THAT CHANGED (SAK-377).
+ *
+ * It used to push both halves every time, from this browser's own copies, and
+ * the merge on the way in replaced the pair whole. So a laptop renaming a
+ * recipe sent its own misses too, and if the phone had recorded some since
+ * this laptop last synced, they were gone. The comment here claimed the
+ * opposite; sending both was exactly what caused it.
+ *
+ * Saving a recipe now says only what it saved, and recording a miss says only
+ * what it missed. `mergeSettings` keeps the other half and takes the larger
+ * count per card.
+ */
 function write(key: string, value: unknown) {
   writeStored(key, value);
-  pushSettings({ practice: { saved: read<{ name: string; recipe: unknown }[]>(SAVED_KEY, []), misses: read<Record<string, number>>(MISSES_KEY, {}) } });
+  pushSettings({
+    practice: key === SAVED_KEY
+      ? { saved: read<{ name: string; recipe: unknown }[]>(SAVED_KEY, []) }
+      : { misses: read<Record<string, number>>(MISSES_KEY, {}) },
+  });
 }
 
 const NO_SAVED: readonly SavedRecipe[] = [];

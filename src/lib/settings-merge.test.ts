@@ -7,6 +7,7 @@ import {
   normalizeSettings,
   reconcileSettings,
 } from "./settings-merge";
+import type { SettingsFile } from "@/types";
 
 test("normalizeSettings: a non-object reads as empty", () => {
   assert.deepEqual(normalizeSettings(null), {});
@@ -64,4 +65,46 @@ test("isEmptySettings: true only when every field is absent", () => {
   assert.equal(isEmptySettings({ introShown: [] }), false);
   // A field explicitly set to false still counts as set.
   assert.equal(isEmptySettings({ claimHintDismissed: false }), false);
+});
+
+test("practice halves: a laptop saving a recipe does not carry its stale misses over a phone's", () => {
+  // the phone recorded a miss; this laptop last synced before that
+  const server: SettingsFile = { practice: { saved: [], misses: { "kana:あ/reading": 3 } } };
+  // the laptop saves a recipe, and says only that
+  const after = mergeSettings(server, { practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
+  assert.deepEqual(after.practice?.misses, { "kana:あ/reading": 3 });
+  assert.equal(after.practice?.saved?.length, 1);
+});
+
+test("practice halves: a phone recording a miss does not drop the recipes saved elsewhere", () => {
+  const server: SettingsFile = { practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: {} } };
+  const after = mergeSettings(server, { practice: { misses: { "kana:い/reading": 1 } } });
+  assert.equal(after.practice?.saved?.length, 1);
+  assert.deepEqual(after.practice?.misses, { "kana:い/reading": 1 });
+});
+
+test("practice halves: takes the larger count per card, since a miss only ever happens again", () => {
+  const server: SettingsFile = { practice: { misses: { a: 5, b: 1 } } };
+  const after = mergeSettings(server, { practice: { misses: { a: 2, b: 4, c: 1 } } });
+  assert.deepEqual(after.practice?.misses, { a: 5, b: 4, c: 1 });
+});
+
+test("practice halves: ignores a count that is not a number, rather than storing it", () => {
+  const server: SettingsFile = { practice: { misses: { a: 2 } } };
+  const after = mergeSettings(server, { practice: { misses: { a: "many", b: NaN } as never } });
+  assert.deepEqual(after.practice?.misses, { a: 2 });
+});
+
+test("practice halves: still lets a device empty its own saved recipes", () => {
+  const server: SettingsFile = { practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: { a: 1 } } };
+  const after = mergeSettings(server, { practice: { saved: [] } });
+  assert.deepEqual(after.practice?.saved, []);
+  assert.deepEqual(after.practice?.misses, { a: 1 });
+});
+
+test("practice halves: leaves every other field replaced whole, which is right for a single choice", () => {
+  const server: SettingsFile = { theme: "dark" as never, practice: { misses: { a: 1 } } };
+  const after = mergeSettings(server, { theme: "light" as never });
+  assert.equal(after.theme, "light" as never);
+  assert.deepEqual(after.practice?.misses, { a: 1 });
 });
