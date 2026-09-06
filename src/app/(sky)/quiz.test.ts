@@ -5,7 +5,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { sampleCards } from "./quiz";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { factsOf } from "@/lib/facts";
+import { emptyHistory } from "@/lib/history-ops";
+import { LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
+import type { FactId } from "@/types";
+
+import { grade } from "./grade";
+import { quizCards, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -57,5 +64,45 @@ describe("the sample quiz", () => {
     assert.ok(order.order!.pieces.length < 2 || !order.order!.pieces.every((p, i) => p === order.order!.answer[i]), "not dealt in order");
     assert.equal(order.answer, order.order!.answer.join(""));
     assert.ok(order.meta?.facts !== undefined);
+  });
+});
+
+describe("the verb a grammar card is drilled on", () => {
+  const KANJI = /[一-龯]/;
+  const production: FactId[] = [];
+  for (const entry of LIB_ENTRIES_BY_KIND.get(GRAMMAR_SUBJECT) ?? []) {
+    for (const fact of factsOf(entry.id)) if (!(fact as string).includes("/meaning")) production.push(fact as FactId);
+    if (production.length >= 10) break;
+  }
+  const deck = production.slice(0, 10);
+  const fresh = quizCards(emptyHistory(), deck, NOW);
+
+  it("has one, rather than falling back to the fact's baked lemma", () => {
+    // Nothing rolled a vehicle after the cutover, so every grammar card was
+    // asked on the verb baked into the fact, in kanji, whoever was looking.
+    assert.ok(fresh.length > 0, "the deck built");
+    assert.ok(fresh.every((c) => c.meta?.vehicle), "every card names the verb it rolled");
+  });
+
+  it("is drawn in kana for a learner who knows none of the pool", () => {
+    // Sam's standing rule: a card built on 買う measures whether you can read
+    // 買う, not whether you know the pattern. かう you can read from day one.
+    for (const card of fresh) {
+      assert.equal(card.meta?.vehicleKnown, "", `${card.id} counted its verb as known on an empty history`);
+      assert.ok(!KANJI.test(card.prompt.glyph), `${card.id} showed ${card.prompt.glyph}`);
+      for (const option of card.options) assert.ok(!KANJI.test(option.label), `${card.id} offered ${option.label}`);
+    }
+  });
+
+  it("grades the pattern built on the verb that was asked, in either script", () => {
+    // The answer is recomputed from the vehicle, so a card graded against the
+    // fact's baked verb would mark every right answer wrong.
+    for (const card of fresh.filter((c) => c.typed)) {
+      // the reveal shows the kana answer and, when they differ, the kanji one
+      const [kana, kanji] = /^(.*?)（(.*?)）$/.exec(card.answer)?.slice(1) ?? [card.answer];
+      assert.ok(grade(card, kana), `${card.id} rejected its own answer ${kana}`);
+      if (kanji) assert.ok(grade(card, kanji), `${card.id} rejected ${kanji}`);
+      assert.ok(!grade(card, "たべた"), `${card.id} accepted an unrelated form`);
+    }
   });
 });

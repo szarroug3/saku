@@ -495,3 +495,29 @@ not remembered across quizzes: that would need the app's storage, which
 
 `useNarrow` came out of `sky-atlas.tsx` into its own file for this, since
 two surfaces now ask the same question (part of SAK-369).
+
+### A grammar card rolls a verb again (2026-09-06, SAK-389)
+
+A grammar production card is a fact about a PATTERN, drilled on some verb,
+and which verb is a property of the showing rather than of the fact: the
+pool prefers one the learner already knows, and when she knows none of it
+the pool hands back a filler which every surface then draws in KANA. That
+is a standing rule of Sam's, because a card built on 買う measures whether
+you can read 買う and not whether you know the pattern.
+
+`grammarVehicleFor` lost its only caller at the cutover, when the old
+drill screen was archived. Nothing rolled a vehicle after that, so every
+grammar card fell back to the verb baked into the fact, in kanji,
+whoever was looking: 待つ, 話す, 食べる, 行く, one per conjugation class,
+to a learner who might read none of them.
+
+`quizCards` rolls one again and threads the context through the whole
+card: the prompt, the board (a distractor should be this verb's wrong
+form, not another verb's), the reveal, and the answer. The verb rides
+back in `meta` so the client grades the pattern built on the verb it was
+ASKED on, since the answer is recomputed from the vehicle and grading it
+against the baked one would mark every right answer wrong. A malformed or
+stale one is dropped by the engine's own check, which then grades the
+baked showing, so the round trip can only be right or harmless. The deck
+keeps a set of the verbs it has used, so two patterns in one sitting do
+not both roll およぐ.

@@ -18,7 +18,7 @@ import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
-import { answerIsJapanese, fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
+import { answerIsJapanese, fixedDirOf, grammarVehicleFor, mcOnlyIn, questionsFor, revealFor, type PromptContext } from "@/lib/engine/question";
 import { isKatakana } from "@/lib/romaji";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
@@ -84,6 +84,15 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   const o = offerings(history, now);
   const known = Object.keys(history.facts ?? {}) as FactId[];
   const cards: QuizCard[] = [];
+  // A grammar production card is drilled on a VERB, and which verb is a
+  // property of the showing rather than the fact: the pool prefers one the
+  // learner knows, and when she knows none it hands back a filler drawn in
+  // KANA, since a card built on 買う measures whether she can read 買う and
+  // not whether she knows the pattern (Sam's standing rule). Nothing called
+  // for one after the cutover, so every grammar card fell back to the fact's
+  // baked kanji lemma. The set is the deck's own: two patterns in a sitting
+  // should not both roll およぐ.
+  const usedVehicles = new Set<string>();
   for (const fact of facts) {
     // a sentence tier's marker is asked as an ordering (SAK-346)
     if (isSentenceTierMarkerFact(fact)) { const c = orderCard(history, fact, now); if (c) cards.push(c); continue; }
@@ -103,15 +112,22 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     if (isConstructionFact(fact) && !construction) continue;
     const dir: Direction = fixedDirOf(fact) ?? "jp2en";
     const typed = !mcOnlyIn(fact, dir);
-    const prompt = questionsFor(fact).prompt(fact, dir, construction ? { numberItem: construction } : undefined);
+    const vehicle = grammarVehicleFor(fact, history, Math.random, usedVehicles);
+    if (vehicle) usedVehicles.add(vehicle.surface);
+    // One context for the whole card, so the prompt, the board, the reveal
+    // and the grader all speak about the same showing. The board's other
+    // facts take it too: a distractor should be this vehicle's wrong form
+    // (食べたい against 食べてから), not another verb's.
+    const ctx: PromptContext | undefined = construction ? { numberItem: construction } : vehicle ? { grammarVehicle: vehicle } : undefined;
+    const prompt = questionsFor(fact).prompt(fact, dir, ctx);
     const qt = questionsFor(fact);
-    const options: QuizOption[] = buildMcOptions(fact, dir, undefined, known).map((f) => {
-      const label = qt.optionLabel?.(f, dir) ?? revealFor(f, dir);
+    const options: QuizOption[] = buildMcOptions(fact, dir, ctx, known).map((f) => {
+      const label = qt.optionLabel?.(f, dir, ctx) ?? revealFor(f, dir, ctx);
       return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label) };
     });
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition
-    if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir)) });
+    if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir, ctx), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir, ctx)) });
     const hint = hintFor(fact, dir);
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
@@ -121,7 +137,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // romaji for a meaning. A rolled counting card is read aloud, so it
     // answers in kana too.
     const typedCard = construction ? true : typed;
-    const answer = construction ? construction.reading : revealFor(fact, dir);
+    const answer = construction ? construction.reading : revealFor(fact, dir, ctx);
     const inKana = typedCard && (!!construction || answerIsJapanese(fact, dir));
     const instruction = listenIt
       ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
@@ -147,7 +163,13 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // plain one is the word's first), so its reveal is that reading's
       // lesson card, not the whole entry (Sam, 2026-09-05)
       teach: teachFor(item, { reading: wordReadingAsked(fact, item) }),
-      meta: { dir, ...(construction ? { accept: construction.accept.join("|") } : {}) },
+      // the vehicle rides back with the answer, so the client grades the
+      // pattern built on the verb it was ASKED on, not the fact's baked one
+      meta: {
+        dir,
+        ...(construction ? { accept: construction.accept.join("|") } : {}),
+        ...(vehicle ? { vehicle: vehicle.surface, vehicleKana: vehicle.kana, vehicleCls: vehicle.cls ?? "", vehicleKnown: vehicle.known ? "1" : "" } : {}),
+      },
     });
   }
   return cards;
