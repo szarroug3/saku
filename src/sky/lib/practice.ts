@@ -20,8 +20,9 @@ export const ASK: Record<Ask, { label: string; meaning: string }> = {
   pick: { label: "Picking from choices", meaning: "The things only ever asked by recognition: patterns, verb pairs, keigo." },
 };
 
-export type DeckSize = 5 | 10 | 20 | "all";
-export const DECK_SIZES: readonly DeckSize[] = [5, 10, 20, "all"];
+/** How many the deck holds: a number the learner types, or all of them. */
+export type DeckSize = number | "all";
+export const DEFAULT_SIZE = 10;
 
 /** The description of a deck. Everything empty means everything. */
 export interface Recipe {

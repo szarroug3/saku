@@ -24,7 +24,7 @@ import { SkyMenuChip } from "@/sky/components/sky-menu-chip";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, cutsOf, DECK_SIZES, deckSize, shortfall, type DeckSize, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER } from "@/sky/lib/standing";
 
 export interface SkyPracticeProps {
@@ -68,6 +68,10 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(!!toSave);
   const [renaming, setRenaming] = useState<string | null>(null);
+  // the number being typed for "how many": kept as text so a half-typed
+  // number is not a change to the recipe; the last good one is remembered
+  // for when "Limited" is picked again after "All of them"
+  const [count, setCount] = useState(String(typeof (toSave ?? initial.recipe).size === "number" ? (toSave ?? initial.recipe).size : DEFAULT_SIZE));
   // the saved recipe the page is working from, by name; it stays chosen as
   // the recipe drifts, so the drift can be written back to it
   const [loaded, setLoaded] = useState<string | null>(null);
@@ -184,7 +188,17 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             })}
           </Facet>
           <Facet title="How many">
-            {DECK_SIZES.map((n) => <SkyChip key={String(n)} on={recipe.size === n} onClick={() => set({ size: n as DeckSize })}>{n === "all" ? "All of them" : n}</SkyChip>)}
+            <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: Math.max(1, parseInt(count, 10) || DEFAULT_SIZE) })}>Limited</SkyChip>
+            <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
+            {recipe.size !== "all" && (
+              <SkyInput
+                type="number" min={1} step={1} inputMode="numeric" aria-label="How many"
+                value={count}
+                onChange={(e) => { setCount(e.target.value); const n = parseInt(e.target.value, 10); if (n >= 1) set({ size: n }); }}
+                onBlur={() => { if (!(parseInt(count, 10) >= 1)) setCount(String(recipe.size)); }}
+                className="h-[26px] w-20 !rounded-full !px-3 !py-0 text-center !text-[12px] font-semibold"
+              />
+            )}
           </Facet>
           <div className="mt-8 flex flex-wrap items-center gap-2">
             {saving ? (
