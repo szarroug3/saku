@@ -2,7 +2,7 @@
 //
 // Used two ways: by src/sky/lib/night-theme.test.ts, which parses globals.css
 // and enforces the floors the tokens promise (4.5:1 for text, 3:1 for lines),
-// and by the /dev/sky/tokens gallery, which shows the same ratios live off the
+// and by the /tokens gallery, which shows the same ratios live off the
 // computed styles so a tweak can be judged before the test runs.
 
 export type Rgb = readonly [number, number, number];

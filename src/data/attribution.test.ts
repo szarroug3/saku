@@ -161,6 +161,7 @@ describe("the credits page names every borrowed source", () => {
     // The obligation is satisfied by REACHABILITY: a persistent link, in the
     // global chrome of every screen, pointing at the page that acknowledges in full.
     assert.ok(SHORT.trim().length > 0);
-    assert.equal(ATTRIBUTION_HREF, "/about/data");
+    // the Sky's About page carries the acknowledgement since cutover (2026-09-06)
+    assert.equal(ATTRIBUTION_HREF, "/about");
   });
 });

@@ -242,7 +242,7 @@ test("KeigoEntryView: gateToReachable defaults to false and only gates the keigo
 });
 
 test("the Library route never passes gateToReachable — it always shows everything", () => {
-  const s = src("../../app/library/[...entry]/page.tsx");
+  const s = src("../../app/_classic/library/[...entry]/page.tsx");
   assert.doesNotMatch(
     s,
     /gateToReachable/,

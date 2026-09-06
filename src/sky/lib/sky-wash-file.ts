@@ -3,7 +3,7 @@
 //
 // The file stays the source of truth and stays hand-editable: every layer is
 // a few named knobs, and the LAYERS block at the bottom is generated from them
-// by `renderWashFile`. The wash editor (/dev/sky/wash) parses the file with
+// by `renderWashFile`. The wash editor (/wash) parses the file with
 // `parseWashFile`, edits the model, previews it with `resolvedMesh`, and saves
 // it back through the dev API, which renders the file again. No React, no app
 // imports, so the test and the route can both use it.
@@ -218,7 +218,7 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
  * THE SKY WASH: the page background of the Sky redesign.
  *
  * THIS IS THE FILE TO EDIT when tuning the background, by hand or with the
- * editor at /dev/sky/wash (drag the glows, pick colours, add or remove layers,
+ * editor at /wash (drag the glows, pick colours, add or remove layers,
  * then Save, which rewrites this file). Every value in the KNOBS block is one
  * thing to change. The LAYERS block is generated from the knobs by
  * src/sky/lib/sky-wash-file.ts; edit the knobs, not the layers.

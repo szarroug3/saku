@@ -117,9 +117,13 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
         onBlur={close}
         onClick={() => (at ? close() : open())}
         aria-label="What the standings mean"
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border border-sky-accent font-sky-ui text-[11px] font-semibold leading-none text-sky-accent hover:bg-sky-accent/15 ${at ? "bg-sky-accent/15" : ""}`}
+        className={`inline-flex size-3.5 items-center justify-center rounded-full border border-sky-accent text-sky-accent hover:bg-sky-accent/15 ${at ? "bg-sky-accent/15" : ""}`}
       >
-        i
+        {/* the i is drawn, not typed, so it sits dead centre whatever the font does (the app's own mark) */}
+        <svg viewBox="0 0 10 10" aria-hidden className="size-[7px] fill-current">
+          <circle cx="5" cy="1.6" r="1.15" />
+          <rect x="4.05" y="3.7" width="1.9" height="5.2" rx="0.7" />
+        </svg>
       </button>
       {at && (
         <Floating id="sky-standing-key" at={at} gap={8} className="w-max max-w-[min(420px,calc(100vw-16px))]">

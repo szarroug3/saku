@@ -78,7 +78,7 @@ const eslintConfig = defineConfig([
     files: ["src/**/*.{ts,tsx}"],
     // src/app/api/dev is exempt for the same reason: it is the dev-only back
     // end of those gallery pages (the wash editor's save), and 404s in production.
-    ignores: ["src/sky/**", "src/app/dev/sky/**", "src/app/api/dev/**"],
+    ignores: ["src/sky/**", "src/app/(sky)/**", "src/app/_classic/**", "src/app/api/dev/**"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -87,7 +87,7 @@ const eslintConfig = defineConfig([
             {
               group: ["@/sky/*"],
               message:
-                "The current app must not depend on the Sky redesign. Only src/app/dev/sky renders it, until cutover.",
+                "Only the Sky's own routes (src/app/(sky)) render the Sky; the rest of the app reaches it through them.",
             },
           ],
         },

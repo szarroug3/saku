@@ -10,8 +10,6 @@ import { SignOut } from "@/components/auth/sign-out";
 import { SignedOutNotice } from "@/components/auth/signed-out-notice";
 import { Dock } from "@/components/dock";
 
-import { useHistory } from "@/lib/use-history";
-import { useQuizSession } from "@/lib/quiz-session";
 
 // Persisted as a COOKIE, not localStorage, so the SERVER can read it (see
 // layout.tsx) and render the bar at the right width on the very first paint.
@@ -65,50 +63,20 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 // with two front doors starts competing with the drill for the top of the page,
 // which is the same argument that keeps Library itself down here.
 const NAV: Array<{ href: string; label: ReactNode }> = [
-  // Home is the landing — the intro at /. Learn is the curriculum feed (/learn),
-  // its own screen so a signed-out visitor can work through it too (nothing they
-  // do there is saved, which the banner says). Signed in, / redirects to /learn.
+  // The Sky's pages, since cutover (2026-09-06). Home is the Planetarium, the
+  // learner's own sky; the Observatory is where the next lesson is picked.
   { href: "/", label: "Home" },
-  { href: "/learn", label: "Learn" },
-  // Practice owns the open-ended drill builder that used to live on Home: pick a
-  // pool and how to ask, then start. Learn is the curriculum feed; Practice is
-  // where you drill what you choose. It sits up top because building a drill is a
-  // top-level verb, not a corner of the reference.
+  { href: "/observatory", label: "Observatory" },
   { href: "/practice", label: "Practice" },
-  // "Progress", not "Statistics" — the page stopped being statistics. Nothing
-  // on it is a rate, an average or a trend any more; it is three counts of
-  // things you own. SAK-152: the route is now /progress, matching that label;
-  // the old /stats path still works (src/app/stats/page.tsx redirects here),
-  // so nobody's bookmark or old link breaks.
-  { href: "/progress", label: "Progress" },
-  { href: "/library", label: "Library" },
-  { href: "/lists", label: "Lists" },
-  // "Recent sessions" is NOT in this static list. It rides directly under Learn
-  // (see the assembly in Sidebar), shown only when there is finished history to
-  // open — a permanent nav slot pointing at "No sessions yet" is a door onto an
-  // empty room.
+  { href: "/atlas", label: "Atlas" },
+  { href: "/sessions", label: "Sessions" },
   { href: "/settings", label: "Settings" },
-  // SAK-27: the SRS / rounds-and-breaks / progress-words reference. Sits beside
-  // Resources rather than up with Learn/Practice — same argument the Grammar
-  // comment above makes: "the reference should exist as an easy way to look
-  // things up, not as the product." A newcomer meets this content once, up
-  // front, via the SrsIntro banner on Home; this nav entry is where it lives to
-  // be looked up again later.
+  { href: "/account", label: "Account" },
   { href: "/how-it-works", label: "How Saku works" },
-  // The credits/attributions page — where the data, the stroke-order glyphs,
-  // and the guides the app learned from are named. A courtesy list, not a
-  // licence obligation (that is "About the data" below, which the EDRDG licence
-  // requires by name); this one exists so the sources have a home in the chrome.
-  { href: "/resources", label: "Resources" },
-  // A LICENCE OBLIGATION, not a courtesy link — see attribution-link.tsx.
-  // facts.ts is imported by the quiz, session, results and stats screens, so
-  // KANJIDIC2 readings, JMdict glosses and Tatoeba sentences render on all of
-  // them. EDRDG requires the acknowledgement on each screen that shows the data
-  // OR reachable from it, and names a menu item as its own example. The Library
-  // pages carry an in-chrome link; every other screen was relying on nothing.
-  // This entry is what makes them compliant, and it is the whole fix: it is a
-  // menu item, NOT per-screen attribution.
-  { href: "/about/data", label: "About the data" },
+  // A LICENCE OBLIGATION, not a courtesy link: EDRDG requires the
+  // acknowledgement to be reachable from every screen that shows the data,
+  // and names a menu item as its own example. This entry is that.
+  { href: "/about", label: "About" },
 ];
 
 // The development-only reference surfaces (the design gallery, the scheduler view,
@@ -132,32 +100,14 @@ const DEV_PAGES: Array<{
   { href: "/dev/swatches", label: "Swatches" },
   { href: "/dev/quiz-gallery", label: "Quiz gallery" },
   { href: "/dev/pitch-accent", label: "Pitch accent" },
-  {
-    href: "/dev/sky",
-    label: "Sky (redesign)",
-    // The Sky pages on their real data, until cutover. Kept as a literal so
-    // this client component does not pull the Sky layout into the nav bundle.
-    children: [
-      { href: "/dev/sky/planetarium", label: "Planetarium" },
-      { href: "/dev/sky/observatory", label: "Observatory" },
-      { href: "/dev/sky/lesson?showcase", label: "Lesson" },
-      { href: "/dev/sky/atlas", label: "Atlas" },
-      { href: "/dev/sky/quiz?sample", label: "Quiz" },
-      { href: "/dev/sky/practice?sample", label: "Practice" },
-      { href: "/dev/sky/sessions?sample", label: "Sessions" },
-      { href: "/dev/sky/settings", label: "Settings" },
-      { href: "/dev/sky/account", label: "Account" },
-      { href: "/dev/sky/how", label: "How Saku works" },
-      { href: "/dev/sky/about", label: "About" },
-    ],
-  },
 ];
 
 export function Sidebar({
   signedIn,
   authEnabled,
   initialCollapsed,
-  initialRunCount,
+  // the layout still counts runs for the old nav; the Sky's has no entry for them
+  initialRunCount: _initialRunCount,
 }: {
   /** Whether there is a session (always true in file mode). Decides Sign in vs
    * Sign out, and hides the nav on the signed-out landing at /. */
@@ -182,10 +132,6 @@ export function Sidebar({
   // Practice — see below. It is the door to the page that lists every run you
   // have going so you can continue or discard any of them; it appears only while
   // at least one run is live, so it too never points at an empty room.
-  const { history } = useHistory();
-  const { restored, runs } = useQuizSession();
-  const hasRecent = history.sessions.length > 0;
-  const runCount = restored ? runs.length : initialRunCount;
 
   // Collapsed shrinks the bar to a thin rail so the page gets the width back.
   // Seeded from the server's cookie read, so the first paint is already correct
@@ -245,36 +191,9 @@ export function Sidebar({
   // when a run is in progress, then Recent sessions (when there is history) sat
   // directly ABOVE Progress since the two are the "look back at what I did" pair,
   // then the rest of the static list.
-  const items: Array<{ href: string; label: ReactNode; ariaLabel?: string }> = [
-    // Home is the signed-out landing; once you're in, "/" just redirects to
-    // /learn, so the nav item is a dead loop. Hidden when signed in.
-    ...(signedIn ? [] : [NAV[0]]),
-    NAV[1],
-    NAV[2],
-    ...(runCount > 0
-      ? [
-          {
-            // SAK-71: the two spans below concatenate to "Current sessions4"
-            // for assistive tech with no word break between the label and the
-            // count — an explicit aria-label on the rendered <Link> (added
-            // where `items` is mapped below) gives it a real, unambiguous
-            // name instead.
-            href: "/current",
-            label: (
-              <span className="flex w-full items-baseline justify-between gap-2">
-                <span>Current sessions</span>
-                <span className="tabular-nums text-xs text-text-muted">
-                  {runCount}
-                </span>
-              </span>
-            ),
-            ariaLabel: `Current sessions, ${runCount} in progress`,
-          },
-        ]
-      : []),
-    ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
-    ...NAV.slice(3),
-  ];
+  // The nav is the Sky's, top to bottom, for everyone: Home is the
+  // learner's own sky, signed in or not (cutover, 2026-09-06).
+  const items: Array<{ href: string; label: ReactNode; ariaLabel?: string }> = [...NAV];
 
   // Only the OAuth callback (/auth) hides the nav — it's a redirect route with no
   // real UI. Everywhere else the nav shows, including the landing and the sign-in

@@ -23,6 +23,8 @@ const PORT = 3249;
 
 export default defineConfig({
   testDir: "./e2e",
+  // The old app's specs, archived with its pages at cutover (2026-09-06).
+  testIgnore: "**/_classic/**",
   // Run separate spec files concurrently. Tests within one file remain ordered,
   // while each worker still gets Playwright's isolated browser context and
   // localStorage state through the seed fixture described above.
@@ -82,7 +84,10 @@ export default defineConfig({
   // the Practice pool reads 0, and no button does anything. `next start` has no
   // HMR socket and hydrates normally.
   webServer: {
-    command: `pnpm exec next build && pnpm exec next start -p ${PORT}`,
+    // The dev server's generated route types (.next/types) go stale when
+    // routes move and would clash with this build's own under .next-e2e; a
+    // running dev server writes them again on its next compile.
+    command: `rm -rf .next/types .next-e2e && pnpm exec next build && pnpm exec next start -p ${PORT}`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     // A cold production build of this app is not fast.
@@ -97,9 +102,6 @@ export default defineConfig({
     // visitor the deterministic signed-out user these specs drive.
     env: {
       SAKU_DISABLE_AUTH: "1",
-      // The Sky's pages live under /dev/sky until cutover; the dev layout
-      // 404s them in a production build unless told otherwise (SAK-348).
-      SAKU_DEV_PAGES: "1",
       // Do not let `next build` overwrite a concurrently running dev server's
       // `.next` artifacts. Both `build` and `start` read this through
       // next.config.ts, so the E2E server owns an isolated output directory.

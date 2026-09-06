@@ -214,7 +214,7 @@ export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";
 
 /** Where the in-app acknowledgement screen lives. The link that has to be
  * present in the chrome of every screen that renders dictionary data. */
-export const ATTRIBUTION_HREF = "/about/data";
+export const ATTRIBUTION_HREF = "/about";
 
 /** The persistent link's label. Short enough for a footer, explicit enough to
  * be the "easily accessible" route the licence asks for.

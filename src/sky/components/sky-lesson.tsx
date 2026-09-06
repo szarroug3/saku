@@ -126,7 +126,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, heigh
   const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
-      <SkyButton variant="quiet" disabled={!canBack} onClick={back}>Back</SkyButton>
+      <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
       {last && drillHref ? (
         <SkyButton href={drillHref}>Drill</SkyButton>
       ) : (
