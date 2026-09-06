@@ -37,17 +37,19 @@ describe("practicePreview", () => {
     assert.deepEqual([...misses].sort((a, b) => b - a), misses);
   });
 
-  it("draws the size asked for at random from the pool, less the drops", () => {
+  it("draws the size asked for at random from the pool, less what is left out", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: 5 as const };
     const pool = practicePreview(history, recipe, {}, NOW).items;
-    const dropped = [pool[0].item.id];
+    const excluded = [pool[0].item.id];
+    const left = { ...recipe, excluded };
+    assert.equal(practicePreview(history, left, {}, NOW).matched, pool.length - 1);
     let seed = 7;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const drawn = practiceDraw(history, recipe, {}, dropped, NOW, random);
+    const drawn = practiceDraw(history, left, {}, NOW, random);
     assert.equal(drawn.length, 5);
     assert.ok(drawn.every((d) => pool.some((p) => p.item.id === d.item.id)));
-    assert.ok(!drawn.some((d) => dropped.includes(d.item.id)));
-    const again = practiceDraw(history, recipe, {}, dropped, NOW, () => 0.5);
+    assert.ok(!drawn.some((d) => excluded.includes(d.item.id)));
+    const again = practiceDraw(history, left, {}, NOW, () => 0.5);
     assert.notDeepEqual(drawn.map((d) => d.item.id), again.map((d) => d.item.id));
   });
 });

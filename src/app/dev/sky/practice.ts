@@ -118,7 +118,7 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
   const o = offerings(history, now);
   const shelves = recipe.collections.length ? DRAWABLE.filter((s) => recipe.collections.includes(s.id)) : DRAWABLE;
   // an entry on two shelves (the numbers are words too) is drawn once
-  const drawn = new Set<string>();
+  const drawn = new Set<string>(recipe.excluded ?? []);
   const entries: LibEntry[] = shelves.flatMap((s) => { const pool = poolOf(s); return pool.entries.filter((e) => !drawn.has(e.id) && inCuts(recipe, s.id, pool, e.id) && drawn.add(e.id)); });
   const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
 
@@ -148,11 +148,11 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
   return { items: pool.slice(0, PREVIEW_CAP), matched: pool.length, asksAvailable };
 }
 
-/** The deck's items: a random draw of the size asked for from the pool,
- * less anything dropped by hand (Sam, 2026-09-06: not the first ten, a
- * draw from all of them). "All of them" is the pool in its own order. */
-export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, dropped: readonly string[], now = Date.now(), random = Math.random): PracticeItem[] {
-  const pool = resolve(history, recipe, practiceMisses, now).pool.filter((p) => !dropped.includes(p.item.id));
+/** The deck's items: a random draw of the size asked for from the pool
+ * (Sam, 2026-09-06: not the first ten, a draw from all of them). "All of
+ * them" is the pool in its own order. */
+export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), random = Math.random): PracticeItem[] {
+  const pool = resolve(history, recipe, practiceMisses, now).pool;
   if (recipe.size === "all") return pool;
   const drawn = [...pool];
   for (let i = drawn.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [drawn[i], drawn[j]] = [drawn[j], drawn[i]]; }
@@ -160,7 +160,7 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
 }
 
 /** The cards for a deck: the drawn items' facts, in the draw's order. */
-export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, dropped: readonly string[], now = Date.now()): QuizCard[] {
-  const facts = practiceDraw(history, recipe, practiceMisses, dropped, now).flatMap((p) => p.facts) as FactId[];
+export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now()): QuizCard[] {
+  const facts = practiceDraw(history, recipe, practiceMisses, now).flatMap((p) => p.facts) as FactId[];
   return quizCards(history, facts, now);
 }

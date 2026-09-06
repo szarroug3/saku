@@ -54,7 +54,7 @@ export function PracticeClient({ collections, sample, initial, lookup, toSave }:
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
-  const onStart = (recipe: Recipe, dropped: readonly string[]) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}${dropped.length ? `&dropped=${encodeURIComponent(dropped.join(","))}` : ""}`);
+  const onStart = (recipe: Recipe) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
   return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} height="100%" />;
 }
 

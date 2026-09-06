@@ -35,9 +35,12 @@ export interface Recipe {
   statuses: readonly Standing[];
   asks: readonly Ask[];
   size: DeckSize;
+  /** Items left out by hand, by id. Part of the recipe, so a saved one
+   * keeps them (Sam, 2026-09-06). */
+  excluded: readonly string[];
 }
 
-export const EMPTY_RECIPE: Recipe = { collections: [], cuts: {}, statuses: [], asks: [...ASKS], size: 10 };
+export const EMPTY_RECIPE: Recipe = { collections: [], cuts: {}, statuses: [], asks: [...ASKS], size: 10, excluded: [] };
 
 /** The cuts a recipe keeps within one collection: none listed means all. */
 export const cutsOf = (recipe: Recipe, collection: string): readonly string[] => recipe.cuts?.[collection] ?? [];
@@ -98,11 +101,10 @@ export function deckSize(recipe: Recipe, pool: number): number {
 }
 
 /** Why a deck cannot start, in the words the page shows, or null when it can. */
-export function cannotStart(recipe: Recipe, preview: PracticePreview | null, kept: number): string | null {
+export function cannotStart(recipe: Recipe, preview: PracticePreview | null): string | null {
   if (recipe.asks.length === 0) return "Pick at least one thing to be asked. A deck with no question is just a list.";
   if (!preview) return "Working it out.";
-  if (preview.matched === 0) return "Nothing matches. Loosen a filter, or add a collection to draw from.";
-  if (kept === 0) return "Everything was dropped. Put something back, or loosen a filter.";
+  if (preview.matched === 0) return recipe.excluded?.length ? "Everything was left out. Put something back, or loosen a filter." : "Nothing matches. Loosen a filter, or add a collection to draw from.";
   return null;
 }
 

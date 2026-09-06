@@ -37,7 +37,7 @@ export interface SkyPracticeProps {
   saved: readonly SavedRecipe[];
   onSaved: (saved: readonly SavedRecipe[]) => void;
   /** Starts the run. */
-  onStart: (recipe: Recipe, dropped: readonly string[]) => void;
+  onStart: (recipe: Recipe) => void;
   /** A recipe handed back from a run to save. */
   toSave?: Recipe;
   height?: string;
@@ -53,7 +53,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   // the recipe is that one; anything else is looked up
   const [fetched, setFetched] = useState<{ recipe: Recipe; preview: PracticePreview } | null>(null);
   const preview: PracticePreview | null = same(recipe, initial.recipe) ? initial.preview : fetched && same(fetched.recipe, recipe) ? fetched.preview : null;
-  const [dropped, setDropped] = useState<readonly string[]>([]);
+  // the last item left out, offered back
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(!!toSave);
@@ -71,7 +71,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     return () => clearTimeout(t);
   }, [recipe, misses, lookup, initial]);
 
-  const set = (change: Partial<Recipe>) => { setRecipe({ ...recipe, ...change }); setDropped([]); setUndo(null); };
+  const set = (change: Partial<Recipe>) => { setRecipe({ ...recipe, ...change }); setUndo(null); };
   const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
   // a collection turned off forgets its cuts, so the recipe reads as it looks
   const toggleCollection = (id: string) => {
@@ -84,17 +84,21 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     set({ cuts: next.length ? { ...rest, [collection]: next } : rest });
   };
 
-  const kept = preview ? preview.items.filter((p) => !dropped.includes(p.item.id)) : [];
-  // the pool the deck is drawn from: everything that matched, less the drops
-  const pool = preview ? preview.matched - dropped.length : 0;
+  const kept = preview ? preview.items : [];
+  // the pool the deck is drawn from: everything that matches, what is left
+  // out by hand already gone from it
+  const pool = preview ? preview.matched : 0;
   const unseen = preview ? preview.matched - preview.items.length : 0;
   const size = deckSize(recipe, pool);
-  const blocked = cannotStart(recipe, preview, pool);
+  const blocked = cannotStart(recipe, preview);
+  const excluded = recipe.excluded ?? [];
   const short = preview ? shortfall(recipe, pool) : null;
   const chosen = (loaded && saved.find((d) => d.name === loaded)) || saved.find((d) => same(d.recipe, recipe));
   const changed = !!chosen && !same(chosen.recipe, recipe);
 
-  const drop = (id: string, name: string) => { setDropped([...dropped, id]); setUndo({ id, name }); };
+  // leaving an item out is a change to the recipe, so a saved one can take it
+  const drop = (id: string, name: string) => { setRecipe({ ...recipe, excluded: [...excluded, id] }); setUndo({ id, name }); };
+  const restore = (ids: readonly string[]) => set({ excluded: excluded.filter((id) => !ids.includes(id)) });
   const save = () => {
     const name = saveName.trim();
     if (!name) return;
@@ -183,24 +187,29 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           </p>
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
           {blocked && preview && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
-          {undo && (
+          {undo ? (
             <p className="mt-1 shrink-0 text-[12.5px] text-sky-muted">
-              Dropped {undo.name}. <button type="button" className="underline hover:text-sky-ink" onClick={() => { setDropped(dropped.filter((id) => id !== undo.id)); setUndo(null); }}>Put it back</button>
+              Left out {undo.name}. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore([undo.id])}>Put it back</button>
+              {excluded.length > 1 && <> · <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put back all {excluded.length}</button></>}
             </p>
-          )}
+          ) : excluded.length > 0 ? (
+            <p className="mt-1 shrink-0 text-[12.5px] text-sky-muted">
+              {excluded.length === 1 ? "One item" : `${excluded.length} items`} left out by hand. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put {excluded.length === 1 ? "it" : "them"} back</button>
+            </p>
+          ) : null}
           <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
             {kept.map((p) => (
               <li key={p.item.id} className="grid grid-cols-[6rem_1fr_auto_auto] items-baseline gap-x-3 rounded-lg px-2 py-1.5 hover:bg-sky-card">
                 <span className={`truncate font-sky-display text-[18px] leading-none ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`}>{p.item.glyph}</span>
                 <span className="truncate text-[13px] text-sky-ink/90">{p.item.english !== p.item.glyph ? p.item.english : ""}</span>
                 <span className="text-[12px] text-sky-shaky">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
-                <button type="button" aria-label={`Drop ${p.item.english}`} onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
+                <button type="button" aria-label={`Leave out ${p.item.english}`} title="Leave it out" onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
               </li>
             ))}
             {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, not listed here</li>}
           </ul>
           <div className="mt-3 flex shrink-0 flex-wrap items-center gap-3">
-            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe, dropped)}>Start · {size}</SkyButton>
+            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe)}>Start · {size}</SkyButton>
             {blocked && <span className="text-[12.5px] text-sky-muted">{blocked}</span>}
           </div>
         </SkyPanel>
