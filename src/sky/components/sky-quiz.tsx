@@ -28,7 +28,7 @@ import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
-import { japaneseFont } from "@/sky/lib/japanese";
+import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 
@@ -337,11 +337,19 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
                   </div>
                 ) : card.prompt.within ? (
                   // the word, with the glyph asked about in ink and the rest muted
-                  <p className={`font-sky-display text-[56px] leading-none ${japaneseFont(card.prompt.within)}`}>
+                  <p className={`font-sky-display leading-none ${japaneseFont(card.prompt.within)}`} style={{ fontSize: promptSize(card.prompt.within) }}>
                     {[...card.prompt.within].map((ch, i) => <span key={i} className={ch === card.prompt.glyph ? "text-sky-ink" : "text-sky-muted/60"}>{ch}</span>)}
                   </p>
+                ) : card.prompt.jp ? (
+                  // One size for every Japanese prompt, coming down only when
+                  // the text is too long to fit at it (SAK-390). It used to
+                  // step from 64px to 36px at three characters, so 待つ and
+                  // 食べる were drawn half a size apart.
+                  <p className={`font-sky-display leading-none text-sky-ink ${japaneseFont(card.prompt.glyph)}`} style={{ fontSize: promptSize(card.prompt.glyph) }}>{card.prompt.glyph}</p>
                 ) : (
-                  <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[64px]" : "text-[36px]") : "text-[28px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
+                  // English is a different kind of thing to read, and its
+                  // letters are not square, so it keeps its own size
+                  <p className="font-sky-display text-[28px] leading-none text-sky-ink">{card.prompt.glyph}</p>
                 )}
                 {context && !listening && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
                 {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
@@ -407,7 +415,8 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
                             onClick={() => pick(o.id)}
                             disabled={struck}
                             aria-pressed={on}
-                            className={`w-[calc((100%-1rem)/3)] min-w-[140px] rounded-xl border px-3 py-2.5 text-left ${frame} ${struck ? "line-through" : ""} ${o.jp ? `font-sky-display text-[18px] ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
+                            className={`flex min-h-[52px] w-[calc((100%-1rem)/3)] min-w-[140px] items-center rounded-xl border px-3 py-2.5 text-left ${frame} ${struck ? "line-through" : ""} ${o.jp ? `whitespace-nowrap font-sky-display ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
+                            style={o.jp ? { fontSize: optionSize(o.label) } : undefined}
                           >
                             {o.label}
                           </button>

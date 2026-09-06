@@ -209,6 +209,32 @@ test("a button that is a link walks there instead of reloading the page", async 
   expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept ?? false)).toBe(true);
 });
 
+test("a Japanese choice fits its tile instead of breaking in half", async ({ page }) => {
+  // SAK-390 and SAK-391. Prompts stepped from 64px to 36px at three
+  // characters, and a choice longer than its tile wrapped mid-word, since
+  // Japanese has no spaces to break on.
+  await page.goto("/quiz?sample");
+  await page.getByRole("button", { name: "Multiple choice" }).click();
+  const measured = await page.evaluate(() => {
+    const tiles = [...document.querySelectorAll("main button")].filter((b) => b.getAttribute("aria-pressed") !== null);
+    return tiles.map((t) => {
+      const style = getComputedStyle(t);
+      return {
+        text: (t.textContent ?? "").trim(),
+        nowrap: style.whiteSpace === "nowrap",
+        overflows: t.scrollWidth > t.clientWidth + 1,
+        height: Math.round(t.getBoundingClientRect().height),
+      };
+    });
+  });
+  expect(measured.length).toBeGreaterThan(1);
+  for (const tile of measured) {
+    expect(tile.overflows, `"${tile.text}" spills out of its tile`).toBe(false);
+  }
+  // and the board is one height, so it does not jump as options light up
+  expect(new Set(measured.map((t) => t.height)).size, "tiles differ in height").toBe(1);
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the
