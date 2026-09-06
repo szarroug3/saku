@@ -6,7 +6,6 @@
 
 import { useRouter } from "next/navigation";
 
-import { GoogleSignIn } from "@/components/auth/google-sign-in";
 import { postDelete } from "@/lib/progress-fetch";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
@@ -23,6 +22,12 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
   };
   // the app's reset wipes history; practice's keepsakes live in settings,
   // so the page says it wipes them and does
+  // the app's Google flow: off to Google and back to /auth/callback, which
+  // exchanges the code for a session
+  const signIn = async () => {
+    const { error } = await createSupabaseBrowserClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/auth/callback` } });
+    if (error) throw new Error(error.message);
+  };
   const wipe = async () => {
     await postDelete({ reset: true });
     writeStored(PRACTICE_SAVED_KEY, []);
@@ -35,7 +40,7 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
       signedIn={signedIn}
       name={name}
       email={email}
-      signIn={authEnabled ? <GoogleSignIn variant="sky" /> : <p className="text-[13px] text-sky-muted">Sign-in is not set up on this deployment.</p>}
+      onSignIn={authEnabled ? signIn : undefined}
       onSignOut={signOut}
       onWipe={wipe}
       height="100%"

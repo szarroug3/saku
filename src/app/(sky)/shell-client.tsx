@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { SkyButton } from "@/sky/components/sky-button";
 import { SkyShell, type ShellEntry } from "@/sky/components/sky-shell";
 import { accentColor } from "@/sky/lib/settings";
 
@@ -44,8 +45,8 @@ export function SkyShellClient({ signedIn, authEnabled, children }: { signedIn: 
     window.location.href = "/";
   };
   const account = !authEnabled ? undefined : signedIn
-    ? <button type="button" onClick={signOut} disabled={busy} className="text-sky-muted hover:text-sky-ink disabled:opacity-50">{busy ? "Signing out…" : "Sign out"}</button>
-    : <a href="/login" className="rounded-full border border-sky-accent px-3 py-1 font-semibold text-sky-accent hover:bg-sky-accent/15">Sign in</a>;
+    ? <SkyButton variant="outline" onClick={signOut} disabled={busy}>{busy ? "Signing out…" : "Sign out"}</SkyButton>
+    : <SkyButton variant="outline" href="/login">Sign in</SkyButton>;
   // no notice band: the bar's Sign in is always there (Sam, 2026-09-06)
   return <SkyShell current={pathname} entries={ENTRIES} account={account} style={look}>{children}</SkyShell>;
 }

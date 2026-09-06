@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 export type SkyButtonVariant = "solid" | "outline" | "quiet" | "coral";
 
-const BASE = "inline-flex items-center justify-center rounded-[10px] px-3.5 py-2 text-[13px] font-semibold leading-5 transition-colors";
+const BASE = "inline-flex items-center justify-center gap-2 rounded-[10px] px-3.5 py-2 text-[13px] font-semibold leading-5 transition-colors";
 const VARIANT: Record<SkyButtonVariant, string> = {
   solid: "bg-sky-accent text-sky-accent-ink disabled:bg-sky-card-strong disabled:text-sky-faint",
   outline: "border border-sky-accent bg-transparent text-sky-accent hover:bg-sky-accent/10 disabled:border-sky-line disabled:text-sky-faint disabled:hover:bg-transparent",
