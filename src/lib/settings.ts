@@ -24,6 +24,7 @@
 // is now a PURE patch re-applied against whatever a concurrent writer left
 // behind, so a lost race merges instead of overwriting.
 
+import { timed } from "@/lib/server-timing";
 import "server-only";
 
 import { mergeSettings } from "@/lib/settings-merge";
@@ -47,7 +48,7 @@ const store: SettingsStore = {
 /** The signed-in learner's settings. readSettingsRow normalizes an unset column
  * into the empty (all-default) settings. */
 export async function loadSettings(userId: string): Promise<SettingsFile> {
-  return readSettingsRow(userId);
+  return timed("settings", () => readSettingsRow(userId), "reading the learner's settings");
 }
 
 /**

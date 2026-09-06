@@ -795,3 +795,47 @@ never reach `@/lib/facts` at all, and what the heavy routes do reach, they
 use. The 3.1 MB synonym pool is on the practice route's server path because
 grading needs it, which is right; it stopped being in the browser under
 SAK-380.
+
+### Asking the server where its time went (2026-09-06, SAK-382)
+
+Sam, signed in, timed a switch from Sessions to the Atlas at 2400 ms, on a
+warm deploy, against the 240 to 360 ms I had measured with curl. Both
+numbers were right. curl asks for the document; signed in, the document IS
+the work. Her first request had a 231 ms time to first byte and took
+1167 ms, so the server sent the shell and then spent about 936 ms before it
+finished the response.
+
+Which of the things inside that 936 ms is the expensive one cannot be
+answered from a laptop. The function is not this machine, and signed out,
+with no database involved at all, work that takes 58 ms here took about a
+second there.
+
+So the response says. Two halves, because Next gives a page no way to set a
+response header:
+
+* The proxy runs before rendering and can set one, so what it does goes out
+  as a real `Server-Timing` header and appears under Timing in the network
+  panel with no tooling. It calls `supabase.auth.getUser()` on every matched
+  request, which is a network round trip to Supabase's auth server. SAK-202
+  replaced that same call in `auth.ts` with `getClaims()`, which verifies
+  the token locally, and priced the network one at about 1.2 seconds in that
+  file's own comment. The proxy was left as it was. Whether it is really
+  costing that is now a number rather than a suspicion.
+* A page measures its own phases (`seeds`, `history`, `settings` for the
+  database reads, `sky` or `atlas` for the build) and renders them as a
+  `<meta name="server-timing">` in the same format. React hoists it into the
+  head, so it arrives with the stream.
+
+`timed` and `timedSync` write into a list scoped to the request with React's
+`cache`, so a layout and the page inside it report into one place.
+
+The other thing that came out of reading this path: a signed-in request
+reads the same `progress` row more than once and never memoises it. The
+root layout selects `history, settings, session, lists`; the page then
+selects `history` from the same row; the home selects `settings` on top of
+that. `sessionUserId` next door is wrapped in `cache` and these are not.
+The header will say whether that is worth fixing before anything else.
+
+Two things it is NOT, both measured on production rather than assumed: the
+catalogues, served from cache in 5 ms, and the join that puts them back
+together, 1 ms for the Atlas and 4 ms for the sky over 15,380 items.

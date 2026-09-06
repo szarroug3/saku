@@ -7,6 +7,7 @@ import { preload } from "react-dom";
 import { currentUserId } from "@/lib/auth";
 
 import { loadAtlas } from "../actions";
+import { ServerTimingMeta } from "../server-timing-meta";
 import { atlasCatalogue } from "../atlas-catalogue";
 import { AtlasClient } from "../atlas-client";
 
@@ -24,6 +25,7 @@ export default async function SkyAtlasPage({ searchParams }: { searchParams: Pro
   preload(`/api/atlas-catalogue/${atlasCatalogue().version}`, { as: "fetch", crossOrigin: "anonymous" });
   return (
     <>
+      <ServerTimingMeta />
       <AtlasClient sample={sample} signedIn={userId !== null} initial={initial} entry={entry} />
     </>
   );

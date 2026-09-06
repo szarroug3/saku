@@ -11,6 +11,7 @@ import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 
 import { loadSky } from "./actions";
+import { ServerTimingMeta } from "./server-timing-meta";
 import { skyCatalogue } from "./catalogue";
 import { PlanetariumClient } from "./planetarium-client";
 
@@ -31,6 +32,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   preload(`/api/sky-catalogue/${skyCatalogue().version}`, { as: "fetch", crossOrigin: "anonymous" });
   return (
     <>
+      <ServerTimingMeta />
       <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} graduateRuns={graduateRuns} />
     </>
   );

@@ -136,6 +136,23 @@ test("the home draws its sky from a cached catalogue, not from its own response"
   expect(html, `the home sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(400 * 1024);
 });
 
+test("a response says where the server spent its time", async ({ page }) => {
+  // SAK-382. The proxy's session refresh goes out as a real Server-Timing
+  // header; a page cannot set one, so its own phases ride in a meta tag in
+  // the same format. Both are read here so neither can quietly stop working.
+  const res = await page.goto("/?sample");
+  expect(res?.headers()["server-timing"]).toMatch(/session;dur=[\d.]+/);
+  await expect(page.getByRole("heading", { name: "What have you discovered?" })).toBeVisible();
+  const own = await page.locator('meta[name="server-timing"]').getAttribute("content");
+  expect(own, "the page should report building the sky").toMatch(/sky;dur=[\d.]+/);
+  // and the browser can read the header back, which is what the console snippet does
+  const fromBrowser = await page.evaluate(() => {
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
+    return (nav.serverTiming ?? []).map((s) => s.name);
+  });
+  expect(fromBrowser).toContain("session");
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the

@@ -7,6 +7,7 @@
 // on the account when signed in and in the browser when not, so a visitor's
 // sky is kept and carried up on sign-in. Dev-only, like the adapters.
 
+import { timedSync } from "@/lib/server-timing";
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
 import { getStatsRows } from "@/lib/library/server-lookups";
@@ -53,8 +54,8 @@ async function historyFor(who: Who): Promise<HistoryFile> {
  * /api/sky-catalogue and puts the two back together with `joinSky`. */
 export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPayload> {
   const history = await historyFor(who);
-  const data = skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
-  return splitSky(data);
+  const rows = await getStatsRows();
+  return timedSync("sky", () => splitSky(skyFromHistory(history, undefined, rows, { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) })), "building the sky");
 }
 
 export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {
@@ -101,7 +102,8 @@ export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeM
  * standings and the shelves' counts, without the 2,815 tiles and ten shelves
  * of sections that are the same for everyone. */
 export async function loadAtlas(who: Who): Promise<AtlasPayload> {
-  return splitAtlas(atlasFromHistory(await historyFor(who)));
+  const history = await historyFor(who);
+  return timedSync("atlas", () => splitAtlas(atlasFromHistory(history)), "building the atlas");
 }
 
 /** The Atlas's search, over the app's own index. */

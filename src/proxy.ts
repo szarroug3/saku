@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 
+import { formatPhases } from "@/lib/server-timing";
 import { updateSession } from "@/lib/supabase/middleware";
 
 // One job: keep the Supabase session fresh and gate the app behind sign-in (see
@@ -14,7 +15,22 @@ import { updateSession } from "@/lib/supabase/middleware";
 // learner the landing and its "Continue with Google" button.
 
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  // Timed, and reported (SAK-382). `updateSession` calls
+  // `supabase.auth.getUser()`, which is a network round trip to Supabase's
+  // auth server on EVERY matched request. SAK-202 replaced that same call in
+  // auth.ts with `getClaims()`, which verifies locally, and priced the network
+  // one at about 1.2 s in that file's own comment; this one was left as it
+  // was. Whether it is actually costing that here is the sort of thing that
+  // has to be measured on the function rather than guessed at from a laptop,
+  // so the answer rides back on the response.
+  const started = performance.now();
+  const response = await updateSession(request);
+  const spent = performance.now() - started;
+  response.headers.set(
+    "Server-Timing",
+    formatPhases([{ name: "session", ms: spent, desc: "refreshing the auth session" }]),
+  );
+  return response;
 }
 
 export const config = {

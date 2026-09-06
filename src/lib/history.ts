@@ -13,6 +13,7 @@
 // the blob lives (the Supabase row) is store/supabase-store.ts; the ops are
 // shared with the client. This file is the seam between the two.
 
+import { timed } from "@/lib/server-timing";
 import "server-only";
 
 import { foldSessions } from "@/lib/aggregate";
@@ -77,13 +78,13 @@ function mutateHistory(
  * always returns a well-formed HistoryFile.
  */
 export async function loadHistory(userId: string): Promise<HistoryFile> {
-  return readHistoryRow(userId);
+  return timed("history", () => readHistoryRow(userId), "reading the learner's history");
 }
 
 /** One read for the three app-shell seeds (history/settings/session), so layout
  * hydration can avoid three independent progress-row queries. */
 export async function loadProgressSeeds(userId: string) {
-  return readProgressSeedRow(userId);
+  return timed("seeds", () => readProgressSeedRow(userId), "the shell's progress row");
 }
 
 /** The write half — upserts the `history` column, leaving lists/settings/session
