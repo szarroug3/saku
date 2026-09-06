@@ -5,6 +5,7 @@
 // (SAK-318); the run's misses are kept by the client as signal only.
 
 import { isConstructionFact } from "@/data/counter-categories";
+import { isPitchFact } from "@/data/pitch";
 import { grammarMeaning } from "@/data/grammar";
 import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
@@ -96,6 +97,8 @@ export function askOf(fact: FactId): Ask | null {
   const dir = fixedDirOf(fact) ?? "jp2en";
   // a counting rule is asked on a number rolled for the showing: how is 六十七 said
   if (isConstructionFact(fact)) return "reading";
+  // a word's pitch: two clips, pick the one that means it
+  if (isPitchFact(id)) return "pick";
   if (grammarMeaning(fact)) return "pick";
   if (id.startsWith("grammar:")) return "form";
   const anchored = /^kanji:(.+?)\/reading@([^#]+)/.exec(id);

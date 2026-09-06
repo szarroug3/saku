@@ -33,6 +33,7 @@ import {
 import { KANJI_SUBJECT, meaningFactId, readingFactId } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { isConstructionFact } from "@/data/counter-categories";
+import { isPitchFact } from "@/data/pitch";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
 import { toKana } from "@/lib/romaji";
 import { answerIsJapanese, en2jpTypeable, questionsFor, type GrammarVehicle } from "./question";
@@ -81,6 +82,8 @@ describe("the seven card kinds", () => {
       // nor the meaning side of this fixed-showing split. Its input handling is
       // pinned directly on the rolled item in drill-screen, not by this predicate.
       if (isConstructionFact(f)) continue;
+      // A pitch fact (SAK-344) is picked by ear, never typed: no box to convert.
+      if (isPitchFact(f)) continue;
       const kind = `${info.subject}/${f.replace(/^[^:]*:/, "").replace(/^.*?\//, "").replace(/@.*$/, "")}`;
       (byKind.get(kind) ?? byKind.set(kind, new Set()).get(kind)!).add(
         answerIsJapanese(f, "jp2en"),

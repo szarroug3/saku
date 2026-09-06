@@ -25,6 +25,7 @@
 // So a subject does not just supply facts. It supplies facts plus the three
 // things you need to ask one, and the drill screen knows none of them.
 
+import { PITCH_SUBJECT } from "@/data/pitch";
 import { CHAR_INDEX, KANA_SUBJECT, LOOK_GROUP, kanaFact } from "@/data/characters";
 import { distractorsFor } from "@/data/confusable";
 import { crossScriptLookalikes } from "@/data/cross-script";
@@ -1929,7 +1930,32 @@ const constructionQuestions: QuestionType = {
   },
 };
 
+/** A pitch fact (SAK-344): only ever a pitch showing, two clips of the
+ * word's reading and "which one means X". The drill builds the board itself
+ * (rollPitchQuestion / buildPitchShowing) when it sees the subject; what is
+ * here is the prompt and the shape, so nothing generic ever types it. */
+const pitchQuestions: QuestionType = {
+  id: "pitch",
+  fixedDir: "jp2en",
+  mcOnly: true,
+  maxOptions: 2,
+  prompt(fact) {
+    const info = factInfo(fact);
+    return { glyph: info?.glyph ?? "", jp: true, context: info?.meaning ?? "", hint: null };
+  },
+  // never typed in the drill (the pitch board grades the pick); the reading
+  // is what the fact answers with, so a reveal of it is accepted here
+  check(fact, _dir, given) {
+    const reading = factInfo(fact)?.answers[0] ?? "";
+    return !!reading && (given.trim() === reading || romajiMatches(given, reading));
+  },
+  distractors() {
+    return [];
+  },
+};
+
 const BY_SUBJECT: Record<string, QuestionType> = {
+  [PITCH_SUBJECT]: pitchQuestions,
   [KANA_SUBJECT]: kanaQuestions,
   [KANJI_SUBJECT]: kanjiQuestions,
   [VOCAB_SUBJECT]: wordQuestions,

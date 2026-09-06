@@ -278,3 +278,17 @@ together with the status list. A shelf over 3,000 entries (Words) ships
 its cuts as ids only: each cut fetches its tiles as it scrolls near
 (`AtlasLookup.tiles`), and a status cut of it is answered by the server
 (`AtlasLookup.sections`).
+
+### Settings, account, reading pages, rests and the pitch fact (2026-09-06)
+
+`SkySettings` (`sky-settings.tsx`, model `lib/settings.ts`) is a row per
+setting over the app's own QuizConfig, mapped in the dev route; the Sky
+never invents a setting. `SkyAccount` lays out the app's sign-in and
+sign-out, handed in. `SkyReading` (`lib/reading.ts`) renders How Saku
+works and About from the app's data files. `SkyRest` (`lib/rest.ts`) is
+the clock between a lesson's three rounds, a timestamp in the browser.
+New primitives: `SkyToggle`, `SkyStepper`, `ChipRow` (equal-width chips),
+`SkyMenuChip`. Pitch is a fact (`word:<keb>/pitch`, `src/data/pitch-facts.ts`):
+in the registry, so it schedules and records, but off its word's fact list,
+so the Library's known rule and the app's lessons are untouched; the Sky's
+lesson quiz adds it for each word taught while pitch questions are on.

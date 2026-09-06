@@ -10,7 +10,10 @@
 import { buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
+import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
+import { currentUserId } from "@/lib/auth";
+import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
 import { fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
@@ -38,16 +41,19 @@ export const QUIZ_CAP = 8;
 
 /** The facts a session asks: the picks' quizzable facts when picks are
  * named, else what is due, capped. */
-export function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now()): FactId[] {
+export function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): FactId[] {
   if (picks.length) {
     const facts = picks.flatMap((id) => quizzableFacts(pickFacts([id]), history));
+    // a word's pitch is asked in its lesson too, as its own fact (SAK-344),
+    // while pitch questions are on in Settings
+    if (pitch) for (const id of picks) { const e = libEntry(id as never); if (e?.kind === VOCAB_SUBJECT) { const pf = pitchFactId(e.glyph); if (factInfo(pf)) facts.push(pf); } }
     return [...new Set(facts)].slice(0, QUIZ_CAP);
   }
-  return dueFacts(history, [], now).slice(0, QUIZ_CAP);
+  return dueFacts(history, [], now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
 }
 
-export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now()): QuizCard[] {
-  return quizCards(history, quizFacts(history, picks, now), now);
+export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): QuizCard[] {
+  return quizCards(history, quizFacts(history, picks, now, pitch), now);
 }
 
 /** The cards for some facts, in order. */
@@ -58,6 +64,8 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   for (const fact of facts) {
     const info = factInfo(fact);
     if (!info) continue;
+    // a pitch fact is the app's pitch question, as a card of its own
+    if (info.subject === PITCH_SUBJECT) { const c = pitchCard(history, info.glyph, now); if (c) cards.push(c); continue; }
     const item = o.offerPick(entryOf(fact));
     if (!item) continue;
     // a kanji is never asked how it is said on its own (Sam, 2026-09-05):
@@ -159,7 +167,7 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
  * twice, once with its true pitch and once with another (a homophone
  * partner's, or a made-up one), the learner picking which means the word.
  * Each choice is drawn with its pitch and can be heard through the app's
- * pitch clips. No fact of its own yet, so it records nothing. */
+ * pitch clips. The card is the word's pitch fact (SAK-344), so it records. */
 export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCard | undefined {
   const q = rollPitchQuestion(keb);
   const id = entryForGlyph(VOCAB_SUBJECT, keb);
@@ -184,8 +192,8 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     answerId: "pitch:right",
     answer: q.reading,
     answerPitch: q.downstep,
-    seen: 0,
-    missed: 0,
+    seen: history.facts?.[pitchFactId(keb)]?.seen ?? 0,
+    missed: history.facts?.[pitchFactId(keb)]?.missed ?? 0,
     teach: teachFor(item),
     meta: { dir: "jp2en" },
   };
@@ -218,5 +226,7 @@ export function cardsFor(history: HistoryFile, ids: readonly string[], now = Dat
 
 /** The signed-in learner's quiz, or a visitor's. */
 export async function learnerQuiz(picks: readonly string[], now = Date.now()): Promise<QuizCard[]> {
-  return quizFromHistory(await learnerHistory(), picks, now);
+  const userId = await currentUserId();
+  const pitch = userId ? ((await loadSettings(userId)).cfg?.pitchQuestions ?? true) : true;
+  return quizFromHistory(await learnerHistory(), picks, now, pitch);
 }

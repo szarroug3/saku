@@ -20,6 +20,16 @@ const PITCH: Record<string, number> = pitchJson as Record<string, number>;
  * hit here is safe to render against that word's reb. 箸 → 1, 橋 → 2, 端 → 0,
  * a word with no verified accent → null.
  */
+/** The subject of a pitch fact (`word:<keb>/pitch`, SAK-344); see
+ * src/data/pitch-facts.ts for the facts themselves. Here so the drill can
+ * name it without loading the registry. */
+export const PITCH_SUBJECT = "pitch";
+
+/** True for a pitch fact's id. */
+export function isPitchFact(fact: string): boolean {
+  return fact.endsWith("/pitch");
+}
+
 export function wordPitch(keb: string): number | null {
   const value = PITCH[keb];
   return value === undefined ? null : value;

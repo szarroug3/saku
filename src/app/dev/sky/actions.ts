@@ -76,7 +76,7 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   if (!userId || answers.length === 0) return;
   const stats: SessionStats = {};
   for (const a of answers) {
-    // a card the Sky asks on its own (a word's pitch) has no fact to record against yet
+    // a card with no fact behind it (a retry of something the data no longer has)
     if (!factInfo(a.cardId as FactId)) continue;
     const st = statForShowing(stats, a.cardId as FactId);
     const ok = a.grade !== "missed";

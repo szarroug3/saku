@@ -39,7 +39,7 @@ import { Dock } from "@/components/dock";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { HintBody } from "@/components/quiz/hint-content";
 import { Btn, ScrollCue, SmallBtn } from "@/components/ui";
-import { wordPitch } from "@/data/pitch";
+import { PITCH_SUBJECT, wordPitch } from "@/data/pitch";
 import { entryId, factId } from "@/lib/fact-id";
 import { VOCAB_KIND } from "@/lib/library/kinds";
 import {
@@ -1196,8 +1196,13 @@ export function DrillScreen() {
       wordPitch(pitchEligibleInfo.glyph) !== null
         ? pitchEligibleInfo.glyph
         : null;
-    const pitchQuestion =
-      form.pitch && pitchEligibleGlyph
+    // A pitch FACT of its own (SAK-344) is always its own pitch showing,
+    // whatever the form: the fact is the question.
+    const pitchFactGlyph =
+      localFactInfo(f)?.subject === PITCH_SUBJECT ? (localFactInfo(f)?.glyph ?? null) : null;
+    const pitchQuestion = pitchFactGlyph
+      ? rollPitchQuestion(pitchFactGlyph)
+      : form.pitch && pitchEligibleGlyph
         ? rollPitchQuestion(pitchEligibleGlyph)
         : null;
     const pitch: PitchShowing | null = pitchQuestion

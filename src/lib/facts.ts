@@ -23,6 +23,7 @@ import { CONSTRUCTION_CATEGORY_FACTS } from "@/data/counter-categories";
 import { KEIGO_FACTS } from "@/data/keigo";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { KANJI_FACTS } from "@/data/kanji";
+import { PITCH_FACTS, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { RADICAL_FACTS } from "@/data/radicals";
 import { TRANSITIVITY_FACTS } from "@/data/transitivity-facts";
 import { VOCAB_FACTS } from "@/data/vocab";
@@ -49,6 +50,11 @@ const SUBJECTS: FactInfo[][] = [
   // own (`keigo`), not `word`: it asks a relationship, not a meaning. Appended
   // after counters, the same offset-preserving reason.
   KEIGO_FACTS,
+  // Pitch as a fact of its own (SAK-344): registered here, so it schedules
+  // and records like any fact, but kept OFF its word's entry (see
+  // groupByEntry) so nothing that lists an entry's facts gains it. Appended
+  // last, the same offset-preserving reason.
+  PITCH_FACTS,
 ];
 
 /** Every fact in the app, in data order. */
@@ -63,6 +69,9 @@ const BY_ENTRY: Map<EntryId, FactInfo[]> = groupByEntry();
 function groupByEntry(): Map<EntryId, FactInfo[]> {
   const map = new Map<EntryId, FactInfo[]>();
   for (const f of SUBJECTS.flat()) {
+    // a pitch fact is the word's, but not among the facts an entry lists
+    // (see src/data/pitch-facts.ts): it is asked on purpose, never drawn
+    if (f.subject === PITCH_SUBJECT) continue;
     const list = map.get(f.entry);
     if (list) list.push(f);
     else map.set(f.entry, [f]);

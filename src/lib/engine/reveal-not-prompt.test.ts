@@ -45,6 +45,7 @@ import {
   wordReadingFactId,
 } from "../../data/vocab.ts";
 import { isConstructionFact } from "../../data/counter-categories.ts";
+import { isPitchFact } from "../../data/pitch.ts";
 import { ALL_FACTS, factInfo } from "../facts.ts";
 import { questionsFor, revealFor } from "./question.ts";
 import type { Direction, FactId } from "@/types";
@@ -56,7 +57,11 @@ const DIRS: Direction[] = ["jp2en", "en2jp"];
 // exactly as grammar's varied vehicle is. This file walks the FIXED showing (no
 // ctx), which for a category is degenerate, so they are excluded here and covered
 // by their own reveal/grade assertions in counter-categories.test.ts.
-const FIXED_FACTS: FactId[] = ALL_FACTS.filter((f) => !isConstructionFact(f));
+// A pitch fact (SAK-344) is never a typed card: its board is two clips and
+// its reveal is the reading drawn with its pitch (the drill's own `q.pitch`
+// reveal arm), which as bare text can equal the prompt of a kana-only word.
+// Excluded here like the categories, and covered by pitch-facts.test.ts.
+const FIXED_FACTS: FactId[] = ALL_FACTS.filter((f) => !isConstructionFact(f) && !isPitchFact(f));
 
 interface Violation {
   fact: FactId;

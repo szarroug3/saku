@@ -17,7 +17,7 @@ export const ASK: Record<Ask, { label: string; meaning: string }> = {
   reading: { label: "The reading", meaning: "Type how it is said." },
   "reading-in-word": { label: "The reading in a word", meaning: "How a kanji is said inside a word it is written in. Asked once you have met such a word." },
   form: { label: "Building a form", meaning: "Type the pattern built on a word." },
-  pick: { label: "Picking from choices", meaning: "The things only ever asked by recognition: patterns, verb pairs, keigo." },
+  pick: { label: "Picking from choices", meaning: "The things only ever asked by recognition: patterns, verb pairs, keigo, and a word's pitch." },
 };
 
 /** How many the deck holds: a number the learner types, or all of them. */
