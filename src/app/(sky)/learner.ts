@@ -222,9 +222,11 @@ export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOpt
       // shares its meaning fact) is the same star as the kanji: one node, one
       // state. The kanji entry carries it; the radical entry is not a star.
       if (kind === RADICAL_SUBJECT && entryForGlyph(KANJI_SUBJECT, entry.glyph)) continue;
-      // The firmament is every kana and every kanji, drawn as the constellation
-      // it would become; pieces live inside their kanji, words appear on discovery.
-      const inFirmament = options.everything && (kind === KANA_SUBJECT || kind === KANJI_SUBJECT);
+      // The firmament is everything that can be taught and drawn: every kana,
+      // kanji and word (Sam, 2026-09-06: nothing is excluded from the
+      // Planetarium, so if it gets taught it is up there). Pieces are not
+      // their own constellation; they live inside the kanji they build.
+      const inFirmament = options.everything && (kind === KANA_SUBJECT || kind === KANJI_SUBJECT || kind === VOCAB_SUBJECT);
       if (standingFor(entry, history, now).met) add(entry);
       else if (inFirmament) add(entry);
       if (inFirmament) firmament.push(entry.id);

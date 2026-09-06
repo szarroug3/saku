@@ -45,7 +45,21 @@ export interface SkyCanvasProps {
   center?: { x: number; y: number };
   label: string;
   className?: string;
+  /** What the window shows, in sky units, whenever it changes: the world
+   * rectangle and the zoom it is drawn at. A field with thousands of
+   * constellations draws only what falls in it (see sky-field.tsx); nothing
+   * else needs it, so it is optional and costs nothing when unused. */
+  onView?: (view: SkyView) => void;
   children?: ReactNode;
+}
+
+/** The part of the world on screen, in sky units, and the zoom. */
+export interface SkyView {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  k: number;
 }
 
 const MAX_ZOOM = 6;
@@ -53,7 +67,7 @@ const STEP = 1.3;
 /** Zoom per pixel of wheel delta: 100 pixels, one mouse notch, is about 1.15x. */
 const WHEEL_RATE = 0.0014;
 
-export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, label, className = "", children }: SkyCanvasProps) {
+export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, label, className = "", onView, children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   // opens at the home zoom: k of 0 means "the home zoom", resolved by the clamp
   const [view, setView] = useState({ k: 0, x: 0, y: 0 });
@@ -147,6 +161,17 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
     setView((v) => clamp({ k: v.k, x: d.vx + (e.clientX - d.px) * u.sx, y: d.vy + (e.clientY - d.py) * u.sy }));
   };
   const onPointerUp = () => { drag.current = null; };
+
+  // What the window shows, told to whoever asked, from the view the clamp
+  // settled on. Through a ref, so a caller that rebuilds the callback each
+  // render does not make this fire again; the numbers are the whole trigger.
+  const viewCb = useRef(onView);
+  useEffect(() => { viewCb.current = onView; });
+  const { x: vx, y: vy, k: vk } = shown;
+  useEffect(() => {
+    if (!(vk > 0)) return;
+    viewCb.current?.({ x: -vx / vk, y: -vy / vk, w: win.w / vk, h: win.h / vk, k: vk });
+  }, [vx, vy, vk, win.w, win.h]);
 
   const dustStars = useMemo(() => Array.from({ length: dust }, (_, i) => ({
     x: hashUnit(`${seed}:x${i}`) * width,

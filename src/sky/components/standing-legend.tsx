@@ -10,6 +10,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 
+import { useEqualChips } from "@/sky/components/chip-row";
 import { aboveAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
@@ -59,7 +60,45 @@ export interface StandingLegendProps {
   selected?: ReadonlySet<Standing>;
   /** An "i" after the words: hover or focus it for what each standing means. */
   info?: boolean;
+  /** The collections, as a second row of the same chips: a standing hides a
+   * star inside its constellation, a collection takes the whole
+   * constellation out of the sky. */
+  groups?: readonly LegendGroup[];
+  onGroup?: (id: string) => void;
+  /** A line under the rows: what showing more of the sky at once costs. */
+  note?: ReactNode;
   className?: string;
+}
+
+/** One collection in the second row: its name, how many constellations it
+ * puts in the sky, and whether it is shown. */
+export interface LegendGroup {
+  id: string;
+  label: string;
+  count: number;
+  on: boolean;
+}
+
+/** The mark on a note that warns, drawn rather than typed so it sits with
+ * the text whatever the font does (the app's own mark, like the legend's "i"). */
+export function WarnMark({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 14 13" aria-hidden className={`size-3.5 shrink-0 ${className}`}>
+      <path d="M7 1.2 13 12H1Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <rect x="6.35" y="5" width="1.3" height="3.7" rx="0.65" fill="currentColor" />
+      <circle cx="7" cy="10.2" r="0.78" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A quiet warning line: the mark in the shaky amber, the words muted. */
+export function SkyWarning({ children }: { children: ReactNode }) {
+  return (
+    <p className="inline-flex items-center gap-1.5 font-sky-ui text-[12px] text-sky-muted">
+      <WarnMark className="text-sky-shaky" />
+      {children}
+    </p>
+  );
 }
 
 /** What each standing means, one line per standing: the card behind the
@@ -135,11 +174,13 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
 }
 
 /** Every dot with its word. Put one wherever standings are painted. */
-export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, info = false, className = "" }: StandingLegendProps) {
+export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, info = false, groups, onGroup, note, className = "" }: StandingLegendProps) {
   const live = Boolean(onHover);
   const clickable = Boolean(onToggle);
+  // every chip on both rows one width (Sam, 2026-09-06)
+  const box = useEqualChips<HTMLDListElement>(true);
   return (
-    <dl className={`flex flex-wrap gap-x-4 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-muted ${className}`}>
+    <dl ref={box} className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-muted ${className}`}>
       {standings.map((standing) => {
         const n = counts ? (counts[standing] ?? 0) : undefined;
         const on = hovered === standing;
@@ -148,6 +189,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
         return (
           <Row
             key={standing}
+            data-sky-chip=""
             type={clickable ? "button" : undefined}
             aria-pressed={clickable ? picked : undefined}
             onClick={clickable ? () => onToggle?.(standing) : undefined}
@@ -161,7 +203,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           >
             <Dot standing={standing} />
             <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
-            {n !== undefined && <dd className="tabular-nums">{n.toLocaleString()}</dd>}
+            {n !== undefined && <dd className="ml-auto pl-2 tabular-nums">{n.toLocaleString()}</dd>}
           </Row>
         );
       })}
@@ -172,6 +214,28 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
         </div>
       ))}
       {info && <InfoButton standings={standings} />}
+      {groups && groups.length > 0 && (
+        <>
+          {/* a break, so the collections start their own row and are still
+              measured with the standings above them */}
+          <span aria-hidden className="basis-full" />
+          {groups.map((g) => (
+            <button
+              key={g.id}
+              data-sky-chip=""
+              type="button"
+              aria-pressed={g.on}
+              onClick={() => onGroup?.(g.id)}
+              title={g.on ? `Take ${g.label} out of the sky` : `Put ${g.label} back in the sky`}
+              className={`relative inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-1.5 py-0.5 ${g.on ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-card"}`}
+            >
+              <dt className={g.on ? "text-sky-ink" : ""}>{g.label}</dt>
+              <dd className="ml-auto pl-2 tabular-nums">{g.count.toLocaleString()}</dd>
+            </button>
+          ))}
+        </>
+      )}
+      {note && <><span aria-hidden className="basis-full" />{note}</>}
     </dl>
   );
 }

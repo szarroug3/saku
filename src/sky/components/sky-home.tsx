@@ -10,7 +10,7 @@
 // from the Observatory and the Lesson. A brand-new learner sees the whole
 // firmament, undiscovered, and a way to the Observatory.
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
@@ -20,8 +20,9 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SURFACE } from "@/sky/components/sky-panel";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
-import { StandingLegend } from "@/sky/components/standing-legend";
-import { useStandingFilter } from "@/sky/components/use-standing-filter";
+import { SkyWarning, StandingLegend } from "@/sky/components/standing-legend";
+import { useSkyFilter } from "@/sky/components/use-sky-filter";
+import { groupOf, SKY_GROUPS, type SkyGroup } from "@/sky/lib/groups";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING_ORDER } from "@/sky/lib/standing";
 import { buildGraph } from "@/sky/lib/graph";
@@ -74,8 +75,25 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
   const empty = STANDING_ORDER.filter((s) => s !== "not-seen").every((s) => !(counts[s] ?? 0));
   // the panels fold away, so the sky is most of the page
   const [details, setDetails] = useState(false);
-  // the legend is the filter: everything but "undiscovered" to start
-  const { selected, toggle, singled, setSingled, lookOf } = useStandingFilter();
+  // the legend is the filter: every collection, and every standing but
+  // "undiscovered", to start
+  const { selected, toggle, singled, setSingled, groups, toggleGroup, lookOf } = useSkyFilter();
+  // a collection turned off is not in the sky at all, so the rest packs in
+  const keepRoot = useCallback((id: string) => {
+    const kind = graph.itemOf(id)?.kind;
+    const group = kind ? groupOf(kind) : null;
+    return group === null || groups.has(group);
+  }, [graph, groups]);
+  // what each collection puts up there, so the cost of showing it is on its chip
+  const groupRows = useMemo(() => {
+    const n = new Map<SkyGroup, number>();
+    for (const id of [...data.roots, ...(data.firmament ?? [])]) {
+      const kind = graph.itemOf(id)?.kind;
+      const group = kind ? groupOf(kind) : null;
+      if (group) n.set(group, (n.get(group) ?? 0) + 1);
+    }
+    return SKY_GROUPS.filter((g) => (n.get(g.id) ?? 0) > 0).map((g) => ({ id: g.id, label: g.label, count: n.get(g.id) ?? 0, on: groups.has(g.id) }));
+  }, [graph, data.roots, data.firmament, groups]);
 
   return (
     <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" height={height}>
@@ -83,7 +101,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
           so the learner's own stars are the only stars in it: with one or two
           discovered they were lost among the background's (Sam, 2026-09-06) */}
       <div className="sky-wash-clear relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
-        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
+        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} keepRoot={keepRoot} label="Every constellation the sky holds, scattered across it, lit as you learn them" />
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>
@@ -92,7 +110,18 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
           </div>
         )}
       </div>
-      <StandingLegend className="mt-3" counts={counts} onHover={setSingled} hovered={singled} onToggle={toggle} selected={selected} info />
+      <StandingLegend
+        className="mt-3"
+        counts={counts}
+        onHover={setSingled}
+        hovered={singled}
+        onToggle={toggle}
+        selected={selected}
+        info
+        groups={groupRows}
+        onGroup={(id) => toggleGroup(id as SkyGroup)}
+        note={<SkyWarning>Showing more at once makes the sky slower to draw.</SkyWarning>}
+      />
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
         <button

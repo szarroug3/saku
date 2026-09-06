@@ -9,13 +9,23 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
-export function ChipRow({ className = "", children }: { className?: string; children: ReactNode }) {
-  const row = useRef<HTMLDivElement>(null);
+/** One width for every chip in a box: the ref goes on the box, and each
+ * chip inside comes out as wide as the widest. `deep` measures every chip
+ * under the box rather than its own children, for a box whose chips sit in
+ * groups (the sky's filters: standings on one row, collections on the
+ * next, all one size). */
+export function useEqualChips<T extends HTMLElement>(deep = false) {
+  const box = useRef<T>(null);
   useLayoutEffect(() => {
-    const chips = [...(row.current?.querySelectorAll<HTMLElement>(":scope > [data-sky-chip]") ?? [])];
+    const chips = [...(box.current?.querySelectorAll<HTMLElement>(deep ? "[data-sky-chip]" : ":scope > [data-sky-chip]") ?? [])];
     for (const c of chips) c.style.minWidth = "";
     const widest = Math.max(0, ...chips.map((c) => c.getBoundingClientRect().width));
     for (const c of chips) c.style.minWidth = `${Math.ceil(widest)}px`;
   });
+  return box;
+}
+
+export function ChipRow({ className = "", children }: { className?: string; children: ReactNode }) {
+  const row = useEqualChips<HTMLDivElement>();
   return <div ref={row} className={`flex flex-wrap gap-2 ${className}`}>{children}</div>;
 }

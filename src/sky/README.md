@@ -360,6 +360,43 @@ The root layout is providers only; the dev galleries keep the old frame in
 their own layout. `SkyNote` is the line over a page (whose progress, the
 sample toggle) that the old dev wrapper used to carry.
 
+### Everything in the sky, and only what the window shows (2026-09-06)
+
+Nothing is excluded from the Planetarium any more (Sam: "if it gets taught,
+it should appear"): the firmament is every kana, kanji AND word, on top of
+the counters, grammar, sentence rules, verb pairs and keigo added earlier,
+so about fifteen thousand constellations. Only the pages to read (a term, a
+writing rule, a concept) stay out; nothing is ever asked about them, so
+they have no standing to paint. Three things make that affordable.
+
+**The scatter is no longer quadratic.** Every box is registered in the
+cells of a uniform grid it touches, so a clash test looks at its
+neighbourhood rather than at every box already down (`scatter.ts`). Fifteen
+thousand boxes went from 1.7 seconds to 44 milliseconds. Placements are
+byte-for-byte what they were: only the candidate list got shorter.
+
+**A field draws only what the window can show.** `SkyCanvas` reports the
+world rectangle on screen and the zoom it is drawn at; `SkyField` cuts the
+world into 24 columns and keeps the constellations in the cells the window
+covers plus a ring of slack, so a pan redraws only when it crosses a cell
+(`CULL_ABOVE`, `CULL_CELLS`). Below 400 constellations nothing is culled,
+which keeps the previews and the lesson simple. Zoomed far out the hit
+circles go too (`HIT_ZOOM`): a dot that small cannot be aimed at, and there
+would be tens of thousands. The band the sky OPENS on comes from `focus`
+alone, so the server renders what the client first draws.
+
+**The sky packs around what is shown.** A constellation the filters leave
+out, or whose every star they hide, is not laid out at all. Turn
+Undiscovered off and the sky closes up around what the learner knows,
+instead of leaving it scattered across a world sized for everything.
+
+The filters are two rows of one-width chips (`useEqualChips`, the hook
+behind `ChipRow`): the standings, then the collections (`sky/lib/groups.ts`
+maps a kind to the Atlas's own names). A standing hides a star inside its
+constellation; a collection takes the whole constellation out, so turning
+Words off leaves the rest of the sky dense rather than full of holes.
+Under them, a warning: showing more at once makes the sky slower to draw.
+
 ### The whole firmament, and a clear box (2026-09-06)
 
 The undiscovered sky used to be every kana and every kanji and nothing
