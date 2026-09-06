@@ -359,3 +359,25 @@ Settings, as the tokens the Sky reads) and the sign-in or sign-out control.
 The root layout is providers only; the dev galleries keep the old frame in
 their own layout. `SkyNote` is the line over a page (whose progress, the
 sample toggle) that the old dev wrapper used to carry.
+
+### The whole firmament, and a clear box (2026-09-06)
+
+The undiscovered sky used to be every kana and every kanji and nothing
+else, so a learner saw no planet, asteroid or binary until they had
+learned one, while the legend counted all of them as undiscovered
+(Sam: "im not seeing any undiscovered planets/asteroids"). `beyondWords`
+(`src/app/(sky)/observatory.ts`, was `metBeyondWords`) now offers every
+counter, grammar pattern, sentence rule, verb pair and keigo set, not
+only the met ones, and returns the rest as `firmament` for
+`skyFromHistory` to append: 2,557 constellations undiscovered rather
+than 2,350, and 121 planets, 67 binaries and 10 asteroids among them.
+Words stay out, as they always have: twelve thousand of them would be
+the whole sky.
+
+The home's sky sits in a `.sky-wash-clear` box (`src/app/sky-wash.css`):
+the wash's baked gradient with neither of its two star layers, attached
+to the viewport so it lines up with the wash behind it. The box reads as
+a window onto the same sky rather than a panel over it, and the only
+stars inside it are the learner's own. With one or two constellations
+discovered, the wash's stardust showing through was indistinguishable
+from a sky.

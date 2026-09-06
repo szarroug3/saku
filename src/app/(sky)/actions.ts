@@ -28,7 +28,7 @@ import type { SkyItem } from "@/sky/lib/types";
 import { atlasEntryFromHistory, atlasFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { skyFromHistory } from "./learner";
 import { lessonFromPicks } from "./lesson";
-import { metBeyondWords, observatoryFromHistory, pickFacts } from "./observatory";
+import { beyondWords, observatoryFromHistory, pickFacts } from "./observatory";
 import { practiceCards, practicePreview } from "./practice";
 import { cardsFor, quizFromHistory, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
@@ -46,7 +46,7 @@ async function historyFor(who: Who): Promise<HistoryFile> {
 
 export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyHomeData> {
   const history = await historyFor(who);
-  return skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: metBeyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
+  return skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
 }
 
 export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {

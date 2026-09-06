@@ -270,26 +270,34 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   return { items, learned, sections, offerPick };
 }
 
-/** Everything the learner has met beyond kana, pieces, kanji and words:
- * the counters, grammar patterns, sentence rules, verb pairs and keigo sets
- * met so far, built the way the Observatory offers them (so a pair is named
- * by its two meanings and a rule by its short label) with every part under
- * them, for the Planetarium's sky. The learner's adapter draws only the
- * first four kinds itself; these are the planets, asteroids and binaries. */
-export function metBeyondWords(history: HistoryFile, now = Date.now()): { items: SkyItem[]; met: string[] } {
+/** Everything beyond kana, pieces, kanji and words: every counter, grammar
+ * pattern, sentence rule, verb pair and keigo set, built the way the
+ * Observatory offers them (so a pair is named by its two meanings and a rule
+ * by its short label) with every part under them, for the Planetarium's sky.
+ * These are the planets, asteroids and binaries; the learner's adapter draws
+ * only stars itself.
+ *
+ * Met ones become constellations in the sky. The rest go in the firmament
+ * (Sam, 2026-09-06): the undiscovered sky was every kana and kanji and
+ * nothing else, so a learner saw no planet or asteroid until they had
+ * learned one, while the legend counted all of them as undiscovered. Words
+ * stay out of the firmament, as they always have: twelve thousand of them
+ * would be the whole sky. */
+export function beyondWords(history: HistoryFile, now = Date.now()): { items: SkyItem[]; met: string[]; firmament: string[] } {
   const o = offerings(history, now);
   const met: string[] = [];
+  const firmament: string[] = [];
   for (const kind of [COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const) {
     for (const entry of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
-      if (!standingFor(entry, history, now).met) continue;
-      if (o.offerPick(entry.id)) met.push(entry.id);
+      if (!o.offerPick(entry.id)) continue;
+      (standingFor(entry, history, now).met ? met : firmament).push(entry.id);
     }
   }
   // the picks and everything under them, so their constellations are whole
   const keep = new Set<string>();
   const walk = (id: string) => { if (keep.has(id)) return; keep.add(id); for (const c of o.items.get(id)?.components ?? []) walk(c); };
-  met.forEach(walk);
-  return { items: [...keep].map((id) => o.items.get(id)).filter((x): x is SkyItem => !!x), met };
+  [...met, ...firmament].forEach(walk);
+  return { items: [...keep].map((id) => o.items.get(id)).filter((x): x is SkyItem => !!x), met, firmament };
 }
 
 /** The facts a set of picks claims when the learner says "I already know

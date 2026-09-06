@@ -174,10 +174,11 @@ export interface SkyOptions {
   /** Show the whole finite sky: every kana, piece and kanji as a point,
    * discovered or not. Words still appear only once discovered. */
   everything?: boolean;
-  /** More of what the learner has met, from an adapter that knows other
-   * kinds (the Observatory's counters, grammar, rules, pairs and keigo):
-   * items to add, with their parts, and which of them count as met. */
-  beyond?: (history: HistoryFile, now: number) => { items: readonly SkyItem[]; met: readonly string[] };
+  /** More kinds than this adapter knows (the Observatory's counters,
+   * grammar, rules, pairs and keigo): items to add with their parts, which
+   * of them the learner has met, and which belong in the firmament as the
+   * planets, asteroids and binaries not discovered yet. */
+  beyond?: (history: HistoryFile, now: number) => { items: readonly SkyItem[]; met: readonly string[]; firmament?: readonly string[] };
   /** Clean runs in a row that clear a mix-up: the learner's setting. */
   graduateRuns?: number;
 }
@@ -255,6 +256,6 @@ export function skyFromHistory(history: HistoryFile, now = Date.now(), stats?: S
     items: list, roots, mixUps,
     discovery: stats ? discoveryRows(history, stats, now) : [],
     standingCounts: stats ? standingTally(history, stats, now) : undefined,
-    firmament: firmament.filter((id) => !rootSet.has(id)),
+    firmament: [...firmament, ...(beyond?.firmament ?? [])].filter((id) => !rootSet.has(id)),
   };
 }

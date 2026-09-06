@@ -79,10 +79,10 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
 
   return (
     <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" height={height}>
-      {/* the wash's own stardust fades under the box, so the learner's stars are the
-          only stars in it: with one or two discovered they were lost among the
-          background's (Sam, 2026-09-06) */}
-      <div className="relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line bg-sky-ground-0/75">
+      {/* the box is the wash's colour with none of its stars (.sky-wash-clear),
+          so the learner's own stars are the only stars in it: with one or two
+          discovered they were lost among the background's (Sam, 2026-09-06) */}
+      <div className="sky-wash-clear relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
         <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">

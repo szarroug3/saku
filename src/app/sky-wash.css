@@ -165,6 +165,25 @@
   contain: paint;
 }
 
+/* A box of sky on a page that already wears the wash: the wash's colour with
+ * none of its stars, so the only stars inside it are the learner's own. Sam,
+ * 2026-09-06: with one or two constellations discovered, the wash's stardust
+ * showing through was indistinguishable from her own sky.
+ *
+ * The box is CLEAR, not darker: it repaints the same baked gradient the page
+ * behind it is painting, and `fixed` attachment measures that gradient
+ * against the viewport, which is exactly the area .sky-wash paints into. The
+ * two line up, so the box reads as a window onto the same sky rather than as
+ * a panel laid over it. Only the two star layers are left out. (The warning
+ * on .sky-wash is about the SCROLLING wash; this box never scrolls.) */
+.sky-wash-clear {
+  background-color: var(--sky-ground);
+  background-image: url("/sky/wash-baked.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
 /* The wash switch on the dev pages sets data-wash on <html>. "live" is the
  * CSS gradients straight from the knobs above: the mode to tune in, since
  * edits show on save (resizing is slow there, which is the whole reason for

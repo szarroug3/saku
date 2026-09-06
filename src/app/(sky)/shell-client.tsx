@@ -17,8 +17,8 @@ import { accentColor } from "@/sky/lib/settings";
 const ENTRIES: readonly ShellEntry[] = [
   { href: "/", label: "Home" },
   { href: "/observatory", label: "Observatory" },
-  { href: "/practice", label: "Practice" },
   { href: "/atlas", label: "Atlas" },
+  { href: "/practice", label: "Practice" },
   { href: "/sessions", label: "Sessions" },
   { href: "/settings", label: "Settings" },
   { href: "/account", label: "Account" },
