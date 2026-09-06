@@ -70,24 +70,28 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     paragraphs: [
       "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, but not on a fixed schedule.",
       "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's genuinely unsure, it asks again.",
-      "And if something's clearly slipped, Saku doesn't keep grinding on it as a \"hard\" item: it treats it as new again and re-teaches it, because testing you on something you don't know isn't teaching.",
+      "And if something's clearly slipped, Saku doesn't keep grinding on it as a \"hard\" item: a missed card opens its lesson right there under the quiz, and the Observatory offers it to be learned again, because testing you on something you don't know isn't teaching. It re-teaches it.",
     ],
     paragraphAccents: [["spaced repetition (SRS)"], [], []],
   },
   {
     id: "already-know",
-    title: "The \"I already know\" buttons",
+    title: "Skipping ahead: \"I know these\"",
     paragraphs: [
-      "When Saku offers material you're confident you already know, you get two ways to skip ahead of it.",
+      "When you come across material in the Atlas that you're confident you already know, you don't have to sit through it.",
     ],
     bullets: [
       {
-        label: "I already know this (or these)",
-        body: "Skips both the lesson and the quiz. It's recorded as a claim, immediately unblocks anything waiting on it (a later lesson gated on a kanji or word you just claimed, for example), and doesn't fabricate a test record: it stays blank on accuracy until you're actually tested. The claim fades over roughly three months, at which point Saku checks in on it for real.",
+        label: "I know these",
+        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unblocks anything waiting on it (a later lesson gated on a kanji or word you just claimed, for example), and it doesn't fabricate a test record: it stays untested until you're actually asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
+      },
+      {
+        label: "I don't know these",
+        body: "The reverse. Takes a claim back, so the thing is offered to be learned again.",
       },
       {
         label: "Quiz me",
-        body: "The middle option. Skips only the teaching walk-through and drops you straight into being tested.",
+        body: "Skips the teaching and drops you straight into being asked about what you selected.",
       },
     ],
     afterBullets: [
@@ -96,15 +100,15 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
   },
   {
     id: "progress-words",
-    title: "What the progress words mean",
+    title: "What the standings mean",
     paragraphs: [
-      "Every fact you've met gets one of these words, on its standing chip in the Library and on the Progress page. Here's exactly what each one is claiming:",
+      "Every star in your sky has a standing, and it is the star's color: on the sky, in the Atlas, in Practice. Here's exactly what each one is claiming:",
     ],
     bullets: [
-      { label: "Not seen", body: "Saku hasn't asked you about this yet." },
+      { label: "Undiscovered", body: "You haven't opened this in a lesson yet, and haven't claimed it. It isn't in your sky." },
       {
-        label: "Claimed",
-        body: "You said you already know it, using an \"I already know\" button. It's untested: no quiz results are behind it yet, so Saku can't call it solid. A claim fades: after about three months untested, Saku starts checking it again.",
+        label: "Untested",
+        body: "It's in your sky, but Saku has nothing to go on yet. Either you opened it in a lesson, which puts it in rotation from that moment, or you said you already know it with \"I know these\". Untested is untested: no quiz results are behind it, so Saku can't call it solid. From your first answer on, its standing comes from your answers alone.",
       },
       {
         label: "Solid",
@@ -122,37 +126,56 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       },
       {
         label: "Mix-ups",
-        body: "A separate thing from all of the above. This flags two items you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner.",
+        body: "A separate thing from all of the above. This flags two things you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner. A mix-up clears itself once you've kept the two apart for enough runs in a row; how many is yours to set in Settings.",
       },
+    ],
+    afterBullets: [
+      "A word's standing is the worst of its facts: it isn't solid until both its meaning and its reading are. Words with a verified pitch carry a pitch fact too, asked by ear, which has a standing of its own and never holds the word back.",
     ],
   },
   {
     id: "rounds-breaks",
     title: "Rounds and breaks",
     paragraphs: [
-      "A full Learn session runs in three rounds. Each round runs through the same whole set of material queued for the session, not just what you got wrong last time, so you may see an item more than once across a session, on purpose.",
-      "Between rounds, Saku schedules a short break: 5 minutes before round 2, 10 minutes before round 3 by default, adjustable in Settings. There's no break after round 3; you're offered \"Complete session\" instead.",
-      "During a break, Saku deliberately shows you nothing: no items, no answers, no preview, because a rest with the material still in front of you isn't a rest. You can skip a break early, or end the session at any point; whatever round you finished is already saved.",
+      "A lesson's quiz runs in three rounds. Each round runs through the same whole set of cards, not just what you got wrong last time, so you see everything more than once across the quiz, on purpose. A quiz of what's due, and a practice deck, run once.",
+      "Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, where you'd want to change it, and it's remembered.",
+      "During a break, Saku deliberately shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. The real learning happens when you come back and try to recall it. You can leave the page and come back; the clock keeps counting.",
     ],
     paragraphAccents: [
       ["three rounds"],
-      ["5 minutes before round 2", "10 minutes before round 3", "adjustable in Settings"],
+      ["5 minutes before round 2", "10 minutes before round 3", "adjustable on the break screen itself"],
       [],
     ],
   },
   {
     id: "pause-end",
-    title: "Pause vs. end session",
+    title: "Leaving a quiz",
     paragraphs: [],
     bullets: [
       {
-        label: "Pause",
-        body: "Pauses. Takes you back to Learn and keeps your place; pick it back up later.",
+        label: "End the quiz",
+        body: "Finishes it early. Whatever you've answered is recorded and shown on the results; the cards you didn't reach are left out, not marked wrong.",
       },
       {
-        label: "End session",
-        body: "Finishes it. Whatever you've completed is saved, and the session is marked done.",
+        label: "Back to the observatory",
+        body: "From a break, or from the results. A break you leave keeps counting, and the next round is there when you come back.",
       },
+    ],
+  },
+  {
+    id: "help",
+    title: "Help on a card",
+    paragraphs: [
+      "Every card has a help bar. Multiple choice narrows a typed card down to a few choices; Hint shows you the drawing or the note that goes with it (on a listening card, it shows the writing); I don't know gives up and shows the answer. A right answer with no help is Perfect. A right answer after a retry, a hint or multiple choice is With help. Running out of tries, or giving up, is Missed.",
+      "How many retries you get is set on the help bar itself, and is remembered.",
+    ],
+    paragraphAccents: [["Perfect", "With help", "Missed"], []],
+  },
+  {
+    id: "practice",
+    title: "Practice is never recorded",
+    paragraphs: [
+      "Practice is for drilling whatever you like, however you like: a collection or a part of one, a standing, a size, a saved recipe. It uses the same cards the quiz does, and nothing you do there touches your schedule. Miss everything in practice and not one standing moves. Practice keeps its own note of what you miss, only to put those first next time.",
     ],
   },
 ];

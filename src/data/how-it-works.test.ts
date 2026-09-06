@@ -68,12 +68,14 @@ describe("fact-checked claims stay in the copy", () => {
     assert.match(text, /re-teaches/i);
   });
 
-  test("the Claimed bullet is factual, not framed as Saku trusting the learner", () => {
+  test("the Untested bullet is factual, not framed as Saku trusting the learner", () => {
     const progress = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "progress-words")!;
-    const claimed = progress.bullets!.find((b) => b.label === "Claimed")!;
-    assert.ok(!/trust/i.test(claimed.body), "Claimed bullet still frames this as trust");
-    assert.ok(!/for now/i.test(claimed.body), "Claimed bullet still carries the 'for now' framing");
+    const claimed = progress.bullets!.find((b) => b.label === "Untested")!;
+    assert.ok(!/trust/i.test(claimed.body), "Untested bullet still frames this as trust");
+    assert.ok(!/for now/i.test(claimed.body), "Untested bullet still carries the 'for now' framing");
     assert.match(claimed.body, /untested/i);
+    // the rotation model (Sam, 2026-09-06): opened in a lesson is in rotation, untested
+    assert.match(claimed.body, /opened it in a lesson/i);
   });
 
   test("solid requires real test results, never a claim alone", () => {
@@ -83,17 +85,17 @@ describe("fact-checked claims stay in the copy", () => {
     assert.match(solid.body, /claim alone can never make something solid/i);
   });
 
-  test("the Settings break-time claim is present (confirmed true: settings-card.tsx renders it)", () => {
+  test("the break-time claim is present (confirmed true: the rest screen carries the stepper)", () => {
     const rounds = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "rounds-breaks")!;
     const text = rounds.paragraphs.join(" ");
     assert.match(text, /5 minutes before round 2/);
     assert.match(text, /10 minutes before round 3/);
-    assert.match(text, /adjustable in Settings/);
+    assert.match(text, /adjustable on the break screen itself/);
   });
 
-  test("pause vs end session names the real button labels", () => {
+  test("leaving a quiz names the real button labels", () => {
     const pauseEnd = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "pause-end")!;
     const labels = pauseEnd.bullets!.map((b) => b.label);
-    assert.deepEqual(labels, ["Pause", "End session"]);
+    assert.deepEqual(labels, ["End the quiz", "Back to the observatory"]);
   });
 });
