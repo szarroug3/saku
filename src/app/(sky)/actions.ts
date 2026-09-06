@@ -26,9 +26,9 @@ import type { SkySession } from "@/sky/lib/sessions";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
-import { atlasEntryFromHistory, atlasFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
+import { atlasEntryFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { skyFromHistory } from "./learner";
-import { splitAtlas } from "./atlas-catalogue";
+import { atlasPayloadFor } from "./atlas-catalogue";
 import type { AtlasPayload } from "./atlas-payload";
 import { splitSky } from "./catalogue";
 import { lessonFromPicks } from "./lesson";
@@ -103,7 +103,7 @@ export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeM
  * of sections that are the same for everyone. */
 export async function loadAtlas(who: Who): Promise<AtlasPayload> {
   const history = await historyFor(who);
-  return timedSync("atlas", () => splitAtlas(atlasFromHistory(history)), "building the atlas");
+  return timedSync("atlas", () => atlasPayloadFor(history), "working out the atlas");
 }
 
 /** The Atlas's search, over the app's own index. */

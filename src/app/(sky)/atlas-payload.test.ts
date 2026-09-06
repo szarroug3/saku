@@ -13,7 +13,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import type { FactId, HistoryFile } from "@/types";
 
 import { atlasFromHistory } from "./atlas";
-import { atlasCatalogue, splitAtlas } from "./atlas-catalogue";
+import { atlasCatalogue, atlasPayloadFor, splitAtlas } from "./atlas-catalogue";
 import { joinAtlas } from "./atlas-payload";
 import { sampleHistory } from "./sample-learner";
 
@@ -43,6 +43,17 @@ describe("the Atlas splits and joins back to itself", () => {
       const catalogue = wire(atlasCatalogue());
       const payload = wire(splitAtlas(original, atlasCatalogue()));
       assert.deepEqual(wire(joinAtlas(catalogue, payload)), wire(original));
+    });
+  }
+
+  for (const [name, make] of cases) {
+    it(`works the payload out directly and gets the same answer for ${name}`, () => {
+      // The direct route never builds a tile, so it cannot discover for itself
+      // that it needed none: that is what this asserts.
+      const built = splitAtlas(atlasFromHistory(make(), NOW));
+      const direct = atlasPayloadFor(make(), NOW);
+      assert.deepEqual(wire(direct), wire(built));
+      assert.deepEqual(direct.extras, []);
     });
   }
 

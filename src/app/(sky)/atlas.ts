@@ -94,7 +94,7 @@ const readAbout = (conceptId: string): EntryId => {
 };
 
 /** The learner's standings over a whole collection, for its coverage bar. */
-function countsOver(entries: readonly LibEntry[], history: HistoryFile, now: number): CoverageCounts {
+export function countsOver(entries: readonly LibEntry[], history: HistoryFile, now: number): CoverageCounts {
   const counts: CoverageCounts = {};
   for (const e of entries) {
     const s = standingFor(e, history, now).standing;
