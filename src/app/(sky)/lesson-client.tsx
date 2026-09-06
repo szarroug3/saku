@@ -28,5 +28,5 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks }: { s
       .map((i) => [i.id, <WrittenBlock key={i.id} glyph={i.glyph} />]),
   );
   const drillHref = `/quiz?${sample || showcase ? "sample&" : ""}picks=${encodeURIComponent(picks.join(","))}`;
-  return <SkyLesson data={data} drillHref={drillHref} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} height="100%" />;
+  return <SkyLesson data={data} drillHref={drillHref} observatoryHref={sample ? "/observatory?sample" : "/observatory"} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} height="100%" />;
 }

@@ -42,6 +42,9 @@ export interface SkyLessonProps {
   data: SkyLessonData;
   /** Where Next goes after the last step: the drill. */
   drillHref?: string;
+  /** Where to send someone whose picks are all already learned, since there
+   * is no lesson to walk them through (SAK-351). */
+  observatoryHref?: string;
   /** "How it's written" per star, from whoever has the stroke order. */
   written?: Readonly<Record<string, ReactNode>>;
   /** A button that speaks a reading, from whoever has the voice. */
@@ -53,7 +56,7 @@ export interface SkyLessonProps {
   height?: string;
 }
 
-export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
@@ -104,13 +107,18 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, heigh
   // lands on its last page. The lesson ends on the last page of the last star.
   const pageCount = selected ? pagesOf(selected) : 1;
   const lastPage = page >= pageCount - 1;
-  const last = stepIndex === steps.length - 1 && lastPage;
+  // Nothing to teach is a state of its own, not step zero of zero (SAK-351).
+  // Every pick was already in the sky, so there is no first step to be on and
+  // no next one to walk to: `next` used to index past the end of an empty list
+  // and throw, because `last` was false when there was no last.
+  const nothing = steps.length === 0;
+  const last = nothing || (stepIndex === steps.length - 1 && lastPage);
   const back = () => (page > 0 ? setPage(page - 1) : open(steps[stepIndex - 1].id, pagesOf(steps[stepIndex - 1].id) - 1));
   const next = () => (lastPage ? open(steps[stepIndex + 1].id) : setPage(page + 1));
 
   // the arrow keys page too: left is Back, right is Next (Sam's ask), unless
   // the keys are typing into something
-  const canBack = !(stepIndex === 0 && page === 0);
+  const canBack = !nothing && !(stepIndex === 0 && page === 0);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -123,7 +131,11 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, heigh
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const nav = (
+  const nav = nothing ? (
+    <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
+      {observatoryHref && <SkyButton href={observatoryHref}>Pick something to learn</SkyButton>}
+    </div>
+  ) : (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
       <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
@@ -178,7 +190,9 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, heigh
                 onSelect={open}
               />
             ) : (
-              <SkyPanel title="Nothing to teach"><p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky.</p></SkyPanel>
+              <SkyPanel title="Nothing to teach">
+                <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practise what you have.</p>
+              </SkyPanel>
             )}
           </div>
           <SkyPanel title="Tonight, in order" className="flex min-h-0 flex-col self-stretch !p-4">

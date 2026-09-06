@@ -175,6 +175,27 @@ test("the settings steppers keep focus while you type in them", async ({ page })
   await expect(seconds).toHaveValue("45");
 });
 
+test("a lesson with nothing to teach says so and offers a way on", async ({ page }) => {
+  // SAK-351. Picks that are all already in the sky used to show "Step 0 of 0"
+  // with a live Next, which indexed past the end of an empty list and threw.
+  const broke: string[] = [];
+  page.on("pageerror", (e) => broke.push(e.message));
+
+  await page.goto("/lesson?sample&picks=kana-row:h-k");
+  await expect(page.getByText("Nothing to teach")).toBeVisible();
+  // no step counter, because there are no steps
+  await expect(page.getByText(/Step \d+ of/)).toHaveCount(0);
+  // and no Next to press
+  await expect(page.getByRole("button", { name: "Next" })).toHaveCount(0);
+  // a way on instead
+  await expect(page.getByRole("link", { name: "Pick something to learn" })).toBeVisible();
+
+  // the right arrow used to throw too
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowLeft");
+  expect(broke, `the page threw: ${broke.join(", ")}`).toEqual([]);
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the
