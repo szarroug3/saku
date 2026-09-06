@@ -521,3 +521,17 @@ stale one is dropped by the engine's own check, which then grades the
 baked showing, so the round trip can only be right or harmless. The deck
 keeps a set of the verbs it has used, so two patterns in one sitting do
 not both roll およぐ.
+
+### Enter answers a card that has no box (2026-09-06, SAK-385)
+
+A typed card answers itself: its box sits in a form, and Enter there is
+that form's implicit submit. A card with no box has no form, so its Enter
+reached nothing and a pitch card, a verb pair, a keigo set or an ordering
+card all had to be answered by going and clicking Check.
+
+The window takes the key for those, but ONLY when it did not come from the
+box, so a typed card is still answered by its own form exactly once. Enter
+on a choice that is not yet picked falls through to the button, which
+picks it; a second Enter checks it. That is the same two steps the mouse
+takes, and the reason for them is unchanged: a pitch clip should be
+hearable before the pick is committed.

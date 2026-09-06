@@ -229,12 +229,25 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
 
   const go = (n: number) => { if (n >= 0 && n < cards.length) { setAt(n); setGiven(""); setFeedback(null); } };
 
-  // Enter moves on from a missed card's reveal; the arrow keys step through
-  // the cards when the box is empty
+  // Enter answers the card and then moves on from its reveal; the arrow keys
+  // step through the cards when the box is empty.
+  //
+  // A TYPED card answers itself: its box is in a form, and Enter there is a
+  // submit. A card with no box has no form, so its Enter never reached
+  // anything and the learner had to go and click Check (Sam, 2026-09-06).
+  // The window takes that key instead, but only when it did NOT come from
+  // the box, so a typed card is still answered by its own form exactly once.
+  // Enter on a choice not yet picked falls through to the button, which
+  // picks it; a second Enter then checks it, which is the same two steps the
+  // mouse takes and the reason a pitch clip can be heard before committing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (finished) return;
       if (e.key === "Enter" && answered) { e.preventDefault(); if (allAnswered) finish(answers); else advance(at, answers); }
+      if (e.key === "Enter" && !answered && e.target !== input.current) {
+        if (card.order) { if ((state.built ?? []).length === card.order.pieces.length) { e.preventDefault(); submitOrder(); } }
+        else if (state.chosen) { e.preventDefault(); submit(); }
+      }
       if (e.key === "ArrowLeft" && !given) go(at - 1);
       if (e.key === "ArrowRight" && !given) go(at + 1);
     };
