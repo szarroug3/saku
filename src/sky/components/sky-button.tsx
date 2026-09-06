@@ -89,7 +89,7 @@ export function SkyChip({ on = false, onClick, title, current, disabled = false,
       disabled={disabled}
       aria-pressed={current ? undefined : on}
       aria-current={on && current ? current : undefined}
-      className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${disabled ? "cursor-not-allowed border-transparent text-sky-faint line-through" : on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"} ${className}`}
+      className={`inline-flex h-[26px] items-center rounded-full border px-2.5 text-[12px] font-semibold leading-none ${disabled ? "cursor-not-allowed border-transparent text-sky-faint line-through" : on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"} ${className}`}
     >
       {children}
     </button>

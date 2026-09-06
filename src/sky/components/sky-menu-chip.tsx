@@ -45,9 +45,9 @@ export function SkyMenuChip({ on, onClick, title, marked = false, menuLabel, men
   const tone = on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink";
   return (
     <>
-      <span ref={chip} className={`inline-flex items-stretch overflow-hidden rounded-full border text-[12px] font-semibold ${tone} ${className}`}>
-        <button type="button" onClick={onClick} title={title} aria-pressed={on} className="py-0.5 pl-2.5 pr-1.5">{children}</button>
-        <button type="button" onClick={open} aria-label={menuLabel} aria-expanded={!!at} aria-haspopup="dialog" className={`inline-flex items-center gap-0.5 border-l py-0.5 pl-1.5 pr-2 ${on ? "border-sky-accent-ink/25" : "border-sky-line"}`}>
+      <span ref={chip} className={`inline-flex h-[26px] items-stretch overflow-hidden rounded-full border text-[12px] font-semibold leading-none ${tone} ${className}`}>
+        <button type="button" onClick={onClick} title={title} aria-pressed={on} className="inline-flex items-center pl-2.5 pr-1.5">{children}</button>
+        <button type="button" onClick={open} aria-label={menuLabel} aria-expanded={!!at} aria-haspopup="dialog" className={`inline-flex items-center gap-0.5 border-l pl-1.5 pr-2 ${on ? "border-sky-accent-ink/25" : "border-sky-line"}`}>
           {marked && <span aria-hidden className="text-[9px] leading-none">●</span>}
           <span aria-hidden className={`inline-block text-[10px] leading-none transition-transform ${at ? "rotate-180" : ""}`}>▼</span>
         </button>
