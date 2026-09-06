@@ -29,7 +29,6 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
-import { KIND_LABEL } from "@/sky/lib/tokens";
 
 export interface SkyQuizProps {
   cards: readonly QuizCard[];
