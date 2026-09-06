@@ -9,6 +9,8 @@ import { loadLesson } from "../actions";
 import { LessonClient } from "../lesson-client";
 import { lessonFromPicks, showcasePicks } from "../lesson";
 
+export const metadata = { title: "Lesson" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkyLessonPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

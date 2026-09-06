@@ -9,7 +9,9 @@ import { useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function GoogleSignIn({ className = "" }: { className?: string }) {
+/** The button in the app's own chrome, or in the Sky's (its tokens, its
+ * corner radius, its face) for the pages under the sky. */
+export function GoogleSignIn({ className = "", variant = "app" }: { className?: string; variant?: "app" | "sky" }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,12 +36,14 @@ export function GoogleSignIn({ className = "" }: { className?: string }) {
         type="button"
         onClick={go}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3 text-[15px] font-medium text-text hover:border-accent disabled:opacity-50"
+        className={variant === "sky"
+          ? "flex w-full items-center justify-center gap-2.5 rounded-[10px] border border-sky-line bg-sky-card px-4 py-2.5 font-sky-ui text-[14px] font-semibold text-sky-ink hover:border-sky-accent disabled:opacity-50"
+          : "flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3 text-[15px] font-medium text-text hover:border-accent disabled:opacity-50"}
       >
         <GoogleG />
         {busy ? "Redirecting…" : "Continue with Google"}
       </button>
-      {error ? <p className="mt-3 text-center text-[13px] text-danger">{error}</p> : null}
+      {error ? <p className={`mt-3 text-center text-[13px] ${variant === "sky" ? "text-sky-slipping" : "text-danger"}`}>{error}</p> : null}
     </div>
   );
 }

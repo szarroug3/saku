@@ -8,6 +8,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { AccountClient } from "../account-client";
 
+export const metadata = { title: "Account" };
+
 export const dynamic = "force-dynamic";
 
 /** The signed-in learner's name and email, from the session's claims. */

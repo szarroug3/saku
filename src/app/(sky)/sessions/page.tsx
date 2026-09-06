@@ -6,6 +6,8 @@ import { currentUserId } from "@/lib/auth";
 import { loadSessions } from "../actions";
 import { SessionsClient } from "../sessions-client";
 
+export const metadata = { title: "Sessions" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkySessionsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

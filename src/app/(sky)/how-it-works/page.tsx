@@ -5,6 +5,8 @@ import { SkyReading } from "@/sky/components/sky-reading";
 
 import { howItWorksPage } from "../reading";
 
+export const metadata = { title: "How Saku works" };
+
 export default function SkyHowPage() {
   return (
     <>

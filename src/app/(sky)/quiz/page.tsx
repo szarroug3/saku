@@ -9,6 +9,8 @@ import { LESSON_ROUNDS } from "@/sky/lib/rest";
 import { loadQuiz } from "../actions";
 import { QuizClient } from "../quiz-client";
 
+export const metadata = { title: "Quiz" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkyQuizPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

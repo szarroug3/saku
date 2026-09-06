@@ -8,6 +8,8 @@ import { currentUserId } from "@/lib/auth";
 import { loadObservatory } from "../actions";
 import { ObservatoryClient } from "../observatory-client";
 
+export const metadata = { title: "Observatory" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkyObservatoryPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

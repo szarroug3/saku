@@ -6,6 +6,8 @@ import { SkyReading } from "@/sky/components/sky-reading";
 
 import { aboutPage } from "../reading";
 
+export const metadata = { title: "About" };
+
 export default function SkyAboutPage() {
   return (
     <>

@@ -35,7 +35,7 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
       signedIn={signedIn}
       name={name}
       email={email}
-      signIn={authEnabled ? <GoogleSignIn /> : <p className="text-[13px] text-sky-muted">Sign-in is not set up on this deployment.</p>}
+      signIn={authEnabled ? <GoogleSignIn variant="sky" /> : <p className="text-[13px] text-sky-muted">Sign-in is not set up on this deployment.</p>}
       onSignOut={signOut}
       onWipe={wipe}
       height="100%"

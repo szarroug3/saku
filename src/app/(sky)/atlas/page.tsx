@@ -7,6 +7,8 @@ import { currentUserId } from "@/lib/auth";
 import { loadAtlas } from "../actions";
 import { AtlasClient } from "../atlas-client";
 
+export const metadata = { title: "Atlas" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkyAtlasPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

@@ -9,6 +9,8 @@ import { practiceLookup } from "../actions";
 import { practiceCollections } from "../practice";
 import { PracticeClient } from "../practice-client";
 
+export const metadata = { title: "Practice" };
+
 export const dynamic = "force-dynamic";
 
 function parseRecipe(raw: unknown): Recipe | undefined {

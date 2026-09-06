@@ -9,6 +9,8 @@ import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 import { loadPracticeCards, loadQuiz } from "../../actions";
 import { PracticeRunClient } from "../../practice-client";
 
+export const metadata = { title: "Practice" };
+
 export const dynamic = "force-dynamic";
 
 export default async function SkyPracticeRunPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
