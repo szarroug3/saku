@@ -177,11 +177,6 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             <div className="mt-3 overflow-hidden rounded-xl border border-sky-line">
               <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} seed="planetarium" label="Tonight's picks, as the constellations they will be" />
             </div>
-            <p className="mt-2 text-[12.5px] text-sky-muted">
-              {picks.length === 0
-                ? "Nothing picked yet. Pick something and it appears here."
-                : `${plural(picks.length, "new constellation")} for tonight. Stars you already know are lit; the rest wait for the lesson.`}
-            </p>
           </SkyPanel>
 
           <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} Pieces`} className="shrink-0 !p-4">
