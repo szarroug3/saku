@@ -54,7 +54,8 @@ export interface SavedRecipe {
 
 /** A named part of a collection: the Library's own cut of it (て-form,
  * the counting rules), or for kana one side of a pairing (hiragana or
- * katakana; plain, dakuten, yōon), the pairing named by `group`. */
+ * katakana; plain, dakuten, yōon), the pairing named by `group`, as the
+ * menu shows it. */
 export interface PracticeCut {
   id: string;
   label: string;

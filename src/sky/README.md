@@ -242,7 +242,12 @@ one small caps label, in a tone (muted, accent, or the caller's colour) and
 a size, wherever a label sits over content. Non-primary actions are the
 outline button; quiet is only for a step back. A raw `<button>` is for a
 thing that is selected (a tile, a row, a choice), never for an action. The
-Quiz's results screen is its own component (`quiz-results.tsx`).
+Quiz's results screen is its own component (`quiz-results.tsx`). Since
+(2026-09-06): `SkyMenuChip` (`sky-menu-chip.tsx`) is a chip with a caret
+that opens a floating card of finer choices (a collection's cuts in the
+practice recipe); it uses `Floating` with `interactive` and `belowAnchor`,
+so the card floats on the body like every other card and is never clipped
+by a scrolling panel.
 
 
 ### Practice (2026-09-05)
@@ -251,7 +256,9 @@ Quiz's results screen is its own component (`quiz-results.tsx`).
 it: a `Recipe` (`lib/practice.ts`) says what to draw from, which cuts of a
 collection to keep (kana by script and row type, grammar by form, the
 counting shelf's three parts, keigo's two: the Library's own sections,
-never the fifty-wide scroll buckets of kanji, words and radicals), what
+never the fifty-wide scroll buckets of kanji, words and radicals; chosen
+from a menu on the collection's chip, `SkyMenuChip`, which floats on the
+body like every other floating card), what
 standing it should have, what to be asked for, and how many. A collection's
 pool is its shelf's sections, so Counting holds the counting rules and the
 numbers as the Atlas shelf does. A saved recipe is the recipe under a name, kept

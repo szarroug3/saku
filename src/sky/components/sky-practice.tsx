@@ -6,7 +6,7 @@
 // The left column is the recipe (SAK-319): what to draw from, what standing
 // it should have, what to be asked for, and how many. A collection with
 // named parts (kana by script and row type, grammar by form, counting,
-// keigo) opens a row of them under its chip once it is on. Saved recipes (SAK-321) are recipes under
+// keigo) has a menu of them on its chip. Saved recipes (SAK-321) are recipes under
 // a name, so a saved one changes as the learner does; they show only once
 // there are any. The right column is the deck the recipe resolves to now
 // (SAK-320), shakiest first, with every item droppable and every edge case
@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInput } from "@/sky/components/sky-input";
+import { SkyMenuChip } from "@/sky/components/sky-menu-chip";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -86,10 +87,11 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     const { [id]: _gone, ...rest } = recipe.cuts ?? {};
     set({ collections: toggle(recipe.collections, id), cuts: recipe.collections.includes(id) ? rest : recipe.cuts ?? {} });
   };
+  // picking a cut of a collection that is off turns it on
   const toggleCut = (collection: string, id: string) => {
     const next = toggle(cutsOf(recipe, collection), id);
     const { [collection]: _old, ...rest } = recipe.cuts ?? {};
-    set({ cuts: next.length ? { ...rest, [collection]: next } : rest });
+    set({ cuts: next.length ? { ...rest, [collection]: next } : rest, collections: recipe.collections.includes(collection) ? recipe.collections : [...recipe.collections, collection] });
   };
 
   const excluded = recipe.excluded ?? [];
@@ -147,16 +149,27 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             </Facet>
           )}
           <Facet title="Draw from">
-            {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => toggleCollection(c.id)} title={`${c.total.toLocaleString()} to draw from`}>{c.title}</SkyChip>)}
-            {collections.filter((c) => c.cuts && recipe.collections.includes(c.id)).map((c) => {
-              // the cuts in their groups: one row each, the collection named on the first
-              const groups = [...new Set(c.cuts!.map((cut) => cut.group ?? ""))];
-              return groups.map((g, i) => (
-                <div key={`${c.id}:${g}`} className="ml-1 flex w-full flex-wrap items-center gap-2 border-l-2 border-sky-line pl-3">
-                  <span className="w-[4.5rem] text-[12px] text-sky-muted">{i === 0 ? c.title : ""}</span>
-                  {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutsOf(recipe, c.id).includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
+            {collections.map((c) => {
+              const on = recipe.collections.includes(c.id);
+              const total = `${c.total.toLocaleString()} to draw from`;
+              if (!c.cuts) return <SkyChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={total}>{c.title}</SkyChip>;
+              const chosen = cutsOf(recipe, c.id);
+              const groups = [...new Set(c.cuts.map((cut) => cut.group ?? ""))];
+              const menu = (
+                <div className="flex flex-col gap-2.5">
+                  {groups.map((g) => (
+                    <div key={g}>
+                      {g && <Eyebrow>{g}</Eyebrow>}
+                      <div className="flex flex-wrap gap-1.5">
+                        {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={chosen.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[12px] text-sky-muted">{chosen.length ? `${c.title}: ${chosen.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ")}` : `All of ${c.title.toLowerCase()}, until you pick a part.`}</p>
                 </div>
-              ));
+              );
+              const names = chosen.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
+              return <SkyMenuChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={names ? `${c.title}: ${names}` : total} marked={chosen.length > 0} menuLabel={`Which ${c.title.toLowerCase()}`} menu={menu}>{c.title}</SkyMenuChip>;
             })}
           </Facet>
           <Facet title="Only things that are">

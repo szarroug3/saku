@@ -37,22 +37,32 @@ export function aboveAnchor(rect: DOMRect): Anchor {
   return { x: flipX ? rect.right : rect.left, y: rect.top, flipX, flipY: true };
 }
 
+/** Below a control, starting at its left edge (or ending at its right edge
+ * when that leaves more room). */
+export function belowAnchor(rect: DOMRect): Anchor {
+  const flipX = rect.left > window.innerWidth * 0.55;
+  return { x: flipX ? rect.right : rect.left, y: rect.bottom, flipX, flipY: false };
+}
+
 export interface FloatingProps {
   at: Anchor;
   /** Space between the anchor and the card, in pixels. */
   gap?: number;
   id?: string;
+  /** A card to be used (a menu) rather than only read (a tooltip): it
+   * takes the pointer and names its role. */
+  interactive?: boolean;
   className?: string;
   children: ReactNode;
 }
 
-export function Floating({ at, gap = 14, id, className = "", children }: FloatingProps) {
+export function Floating({ at, gap = 14, id, interactive = false, className = "", children }: FloatingProps) {
   const style = {
     ...(at.flipX ? { right: window.innerWidth - at.x + gap } : { left: at.x + gap }),
     ...(at.flipY ? { bottom: window.innerHeight - at.y + gap } : { top: at.y + gap }),
   };
   return createPortal(
-    <div id={id} role="tooltip" style={style} className={`pointer-events-none fixed z-50 ${className}`}>{children}</div>,
+    <div id={id} role={interactive ? "dialog" : "tooltip"} style={style} className={`fixed z-50 ${interactive ? "" : "pointer-events-none"} ${className}`}>{children}</div>,
     document.body,
   );
 }

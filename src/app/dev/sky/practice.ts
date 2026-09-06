@@ -34,11 +34,11 @@ const POOLS = new Map<string, Pool>();
 
 /** Kana are cut two ways at once: by script, and by row type. */
 const KANA_CUTS: readonly PracticeCut[] = [
-  { id: "hiragana", label: "Hiragana", group: "script" },
-  { id: "katakana", label: "Katakana", group: "script" },
-  { id: "plain", label: "Plain rows", group: "rows" },
-  { id: "dakuten", label: "Dakuten and handakuten", group: "rows" },
-  { id: "yoon", label: "Yōon", group: "rows" },
+  { id: "hiragana", label: "Hiragana", group: "Script" },
+  { id: "katakana", label: "Katakana", group: "Script" },
+  { id: "plain", label: "Plain rows", group: "Row type" },
+  { id: "dakuten", label: "Dakuten and handakuten", group: "Row type" },
+  { id: "yoon", label: "Yōon", group: "Row type" },
 ];
 const kanaCuts = (sectionId: string, label: string): string[] => [
   sectionId.startsWith("katakana") ? "katakana" : "hiragana",
