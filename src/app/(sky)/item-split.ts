@@ -46,7 +46,7 @@ export interface ItemDiff {
  * correctness never depends on there being none.
  */
 export function splitItems(items: readonly SkyItem[], catalogue: readonly SkyItemBase[]): ItemDiff {
-  const base = new Map(catalogue.map((i) => [i.id, JSON.stringify(i)]));
+  const base = baseOf(catalogue);
   const standings: Record<string, Standing> = {};
   const extras: SkyItem[] = [];
   for (const item of items) {
@@ -58,6 +58,19 @@ export function splitItems(items: readonly SkyItem[], catalogue: readonly SkyIte
     extras.push(item);
   }
   return { standings, extras };
+}
+
+/** The catalogue, written out once, ready to compare against. Held against
+ * the catalogue itself: a request should not spend its time serialising
+ * fifteen thousand items that were the same on the last one. */
+const written = new WeakMap<readonly SkyItemBase[], Map<string, string>>();
+
+function baseOf(catalogue: readonly SkyItemBase[]): Map<string, string> {
+  const have = written.get(catalogue);
+  if (have) return have;
+  const made = new Map(catalogue.map((i) => [i.id, JSON.stringify(i)]));
+  written.set(catalogue, made);
+  return made;
 }
 
 /** The catalogue's items with this learner's standings on them, plus whatever
