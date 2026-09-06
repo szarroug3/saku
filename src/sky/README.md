@@ -747,3 +747,51 @@ what makes `immutable` honest. `use-catalogue.ts` is the fetch, held once
 per tab so a second visit to a page in one session does not go back even
 as far as the browser cache, and so two mounts in the same tick share one
 request.
+
+### The first request after a rest (2026-09-06, SAK-382)
+
+The first hit on a data-heavy route after an idle period took 3 to 4
+seconds in production, and about 1.3 seconds locally. The audit put it down
+to the function loading about 30 MB of JSON before it could answer
+anything. That was not it. The JSON parses in single-digit milliseconds;
+Node's JSON module import is fast. It was one line.
+
+`READINGS_BY_ANCHOR` in `src/data/kanji.ts` groups a kanji's readings by
+the word they are learned in. It collected its keys and then filtered the
+whole of `READINGS` once per key: about three thousand passes over three
+thousand rows, ten million string builds and comparisons, all at module
+level, so every cold start paid it before the app could answer anything at
+all. One grouping pass gives the same keys in the same order with the same
+rows in each.
+
+| | before | after |
+| --- | --- | --- |
+| loading `@/lib/facts` | 993 ms | 306 ms |
+| a cold `/practice`'s modules | 1268 ms | 607 ms |
+
+What is left is real work: 193 ms to build fourteen thousand vocabulary
+rows and their senses, 205 ms for the library and learn indexes, and the
+rest spread thin across fifty imports. Nothing else on the cold path has a
+shape like this one.
+
+The card's other three suggestions did not survive being looked at.
+
+Making the reading pages static cannot work while the shell asks who is
+looking. Both layouts await `currentUserId()`, which reads a cookie, and a
+dynamic layout takes the whole route with it, which is why `/about` and
+`/how-it-works` build as dynamic without ever declaring it. Moving the
+answer to the browser would trade a hundred milliseconds on two low-traffic
+pages for a flash of "Sign in" on every page in the app. Partial
+prerendering is the real answer there, and it is a decision about the whole
+app rather than about these two pages.
+
+Precomputing `practiceCollections()` at build time saves 21 milliseconds:
+it was 1.1 seconds in the audit because the measurement included the module
+load above.
+
+Splitting what a cold function loads turned out to be mostly done already.
+`node scripts/import_path.mjs` says the reading pages, Settings and Account
+never reach `@/lib/facts` at all, and what the heavy routes do reach, they
+use. The 3.1 MB synonym pool is on the practice route's server path because
+grading needs it, which is right; it stopped being in the browser under
+SAK-380.
