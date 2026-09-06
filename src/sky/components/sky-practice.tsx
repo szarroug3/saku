@@ -4,7 +4,9 @@
 // to SAK-322.
 //
 // The left column is the recipe (SAK-319): what to draw from, what standing
-// it should have, what to be asked for, and how many. Saved recipes (SAK-321) are recipes under
+// it should have, what to be asked for, and how many. A collection with
+// named parts (kana by script and row type, grammar by form, counting,
+// keigo) opens a row of them under its chip once it is on. Saved recipes (SAK-321) are recipes under
 // a name, so a saved one changes as the learner does; they show only once
 // there are any. The right column is the deck the recipe resolves to now
 // (SAK-320), shakiest first, with every item droppable and every edge case
@@ -20,7 +22,7 @@ import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, DECK_SIZES, deckSize, shortfall, type DeckSize, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, cutsOf, DECK_SIZES, deckSize, shortfall, type DeckSize, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER } from "@/sky/lib/standing";
 
 export interface SkyPracticeProps {
@@ -71,6 +73,16 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
 
   const set = (change: Partial<Recipe>) => { setRecipe({ ...recipe, ...change }); setDropped([]); setUndo(null); };
   const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
+  // a collection turned off forgets its cuts, so the recipe reads as it looks
+  const toggleCollection = (id: string) => {
+    const { [id]: _gone, ...rest } = recipe.cuts ?? {};
+    set({ collections: toggle(recipe.collections, id), cuts: recipe.collections.includes(id) ? rest : recipe.cuts ?? {} });
+  };
+  const toggleCut = (collection: string, id: string) => {
+    const next = toggle(cutsOf(recipe, collection), id);
+    const { [collection]: _old, ...rest } = recipe.cuts ?? {};
+    set({ cuts: next.length ? { ...rest, [collection]: next } : rest });
+  };
 
   const kept = preview ? preview.items.filter((p) => !dropped.includes(p.item.id)) : [];
   // the pool the deck is drawn from: everything that matched, less the drops
@@ -122,7 +134,17 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             </Facet>
           )}
           <Facet title="Draw from" note={recipe.collections.length ? undefined : "Everything, until you pick a collection."}>
-            {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => set({ collections: toggle(recipe.collections, c.id) })} title={`${c.total.toLocaleString()} to draw from`}>{c.title}</SkyChip>)}
+            {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => toggleCollection(c.id)} title={`${c.total.toLocaleString()} to draw from`}>{c.title}</SkyChip>)}
+            {collections.filter((c) => c.cuts && recipe.collections.includes(c.id)).map((c) => {
+              // the cuts in their groups: one row each, the collection named on the first
+              const groups = [...new Set(c.cuts!.map((cut) => cut.group ?? ""))];
+              return groups.map((g, i) => (
+                <div key={`${c.id}:${g}`} className="ml-1 flex w-full flex-wrap items-center gap-1.5 border-l-2 border-sky-line pl-3">
+                  <span className="w-[4.5rem] text-[12px] text-sky-muted">{i === 0 ? c.title : ""}</span>
+                  {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutsOf(recipe, c.id).includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
+                </div>
+              ));
+            })}
           </Facet>
           <Facet title="Only things that are" note={recipe.statuses.length ? undefined : "Any standing, until you pick one."}>
             {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })} className="capitalize">{STANDING[s].label}</SkyChip>)}

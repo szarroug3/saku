@@ -27,13 +27,20 @@ export const DECK_SIZES: readonly DeckSize[] = [5, 10, 20, "all"];
 export interface Recipe {
   /** Atlas collection ids to draw from. */
   collections: readonly string[];
+  /** Cut ids to keep within a collection, by collection id; a collection
+   * with none listed is drawn from whole. Cuts in different groups combine
+   * (katakana and yōon: the katakana yōon), cuts in one group widen. */
+  cuts: Readonly<Record<string, readonly string[]>>;
   /** Standings to keep; empty keeps every standing. */
   statuses: readonly Standing[];
   asks: readonly Ask[];
   size: DeckSize;
 }
 
-export const EMPTY_RECIPE: Recipe = { collections: [], statuses: [], asks: [...ASKS], size: 10 };
+export const EMPTY_RECIPE: Recipe = { collections: [], cuts: {}, statuses: [], asks: [...ASKS], size: 10 };
+
+/** The cuts a recipe keeps within one collection: none listed means all. */
+export const cutsOf = (recipe: Recipe, collection: string): readonly string[] => recipe.cuts?.[collection] ?? [];
 
 /** A recipe under a name, kept by the learner. It keeps the recipe, not
  * the list it resolved to, so it changes as the learner does. */
@@ -42,11 +49,22 @@ export interface SavedRecipe {
   recipe: Recipe;
 }
 
-/** One collection to draw from, with how much it holds. */
+/** A named part of a collection: the Library's own cut of it (て-form,
+ * the counting rules), or for kana one side of a pairing (hiragana or
+ * katakana; plain, dakuten, yōon), the pairing named by `group`. */
+export interface PracticeCut {
+  id: string;
+  label: string;
+  group?: string;
+}
+
+/** One collection to draw from, with how much it holds and, where it has
+ * named parts, the cuts it can be narrowed to. */
 export interface PracticeCollection {
   id: string;
   title: string;
   total: number;
+  cuts?: readonly PracticeCut[];
 }
 
 /** An item in the preview, with what it has been missed. */
