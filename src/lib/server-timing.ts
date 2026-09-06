@@ -76,7 +76,8 @@ export function bootPhases(): Phase[] {
   const first = served++ === 0;
   const up = typeof process !== "undefined" && typeof process.uptime === "function" ? process.uptime() * 1000 : 0;
   if (!up) return [];
-  return [{
+  const where = process.env.VERCEL_REGION;
+  return [...(where ? [{ name: "region", ms: 0, desc: `this page was built in ${where}` }] : []), {
     name: first ? "first" : "uptime",
     ms: up,
     desc: first

@@ -26,9 +26,16 @@ Measured on the deployed app, 2026-09-06, SAK-382:
 
 ## How to check it is still right
 
-Load any page on the deployed app and look at the response's `Server-Timing`
-header, which names the region the function ran in. Read it against the
-region on Supabase's project settings page. They should say the same place.
+Two regions appear on a response and they are not the same thing. The
+`Server-Timing` header carries `edge`, which is where the request landed:
+near whoever asked, and nothing to do with the database. The page's own
+timings carry `region`, which is where the page was built and is the one
+that decides how far the database is. `x-vercel-id` says both at once, as
+`<edge>::<function>::<id>`, so `iad1::pdx1` is a request that landed in
+Washington and was served from Portland.
+
+Read the page's `region` against the region on Supabase's project settings
+page. They should say the same place.
 
 If the database ever moves, move this with it. The two Vercel regions that
 matter here: `pdx1` is Oregon (`us-west-2`), `iad1` is Washington DC

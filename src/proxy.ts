@@ -26,16 +26,18 @@ export async function proxy(request: NextRequest) {
   const started = performance.now();
   const response = await updateSession(request);
   const spent = performance.now() - started;
-  // The region rides along because it is half of the answer to a slow query:
-  // a function far from the database pays that distance on every round trip,
-  // and no amount of rewriting the query changes it. Compare it with the
-  // region on Supabase's project settings page.
-  const where = process.env.VERCEL_REGION ?? "local";
+  // Where the request LANDED, which is not where the page is rendered: a proxy
+  // runs at the edge, near whoever asked, and the serverless function runs
+  // wherever vercel.json pins it. Reporting this one as "the region" was
+  // wrong, and wrong in the direction that matters — it said iad1 while the
+  // function had already moved to pdx1. The region that decides how far the
+  // database is comes from the page itself, in its own timings.
+  const edge = process.env.VERCEL_REGION ?? "local";
   response.headers.set(
     "Server-Timing",
     formatPhases([
       { name: "session", ms: spent, desc: "refreshing the auth session" },
-      { name: "region", ms: 0, desc: `this function runs in ${where}` },
+      { name: "edge", ms: 0, desc: `this request landed in ${edge}` },
     ]),
   );
   return response;

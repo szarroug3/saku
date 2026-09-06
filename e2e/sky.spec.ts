@@ -142,7 +142,7 @@ test("a response says where the server spent its time", async ({ page }) => {
   // the same format. Both are read here so neither can quietly stop working.
   const res = await page.goto("/?sample");
   expect(res?.headers()["server-timing"]).toMatch(/session;dur=[\d.]+/);
-  expect(res?.headers()["server-timing"], "the header should name the region").toMatch(/region;.*desc="this function runs in /);
+  expect(res?.headers()["server-timing"], "the header should name where the request landed").toMatch(/edge;.*desc="this request landed in /);
   await expect(page.getByRole("heading", { name: "What have you discovered?" })).toBeVisible();
   const own = await page.locator('meta[name="server-timing"]').getAttribute("content");
   expect(own, "the page should report building the sky").toMatch(/sky;dur=[\d.]+/);
