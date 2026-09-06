@@ -68,9 +68,6 @@ export interface SkyFieldProps {
   onStarClick?: (id: string) => void;
   /** A star that ignores input, and says so to assistive tech. */
   starDisabled?: (id: string) => boolean;
-  /** Whether a constellation belongs in this sky at all, by its root. One
-   * left out is not laid out, so the sky packs around what is kept. */
-  keepRoot?: (id: string) => boolean;
   /** A graph built by the caller, to share with panels beside the field. */
   graph?: PrerequisiteGraph;
   /** Fill the box the field sits in (which must be positioned): the field
@@ -104,7 +101,7 @@ const CULL_CELLS = 24;
  * dot that small cannot be aimed at, and there can be tens of thousands. */
 const HIT_ZOOM = 0.34;
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, keepRoot, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -117,15 +114,21 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   }, [graph, tonight, lookOf]);
 
   const layouts = useMemo(() => new Map(all.map((r) => [r, layoutConstellation(graph.constellationOf(r))] as const)), [graph, all]);
-  // What is laid out at all: a constellation the filters leave out, or whose
-  // every star they hide, takes no room, so the sky packs around what is
-  // shown rather than leaving it scattered across a world sized for
-  // everything (Sam, 2026-09-06).
+  // What is laid out at all, so the sky packs around what is shown rather
+  // than scattering it across a world sized for everything (Sam,
+  // 2026-09-06). A constellation IS its root: it is drawn when the ROOT is,
+  // and `lookOf` is the whole filter, star by star. Asking instead whether
+  // ANY star showed drew every undiscovered word that happened to hold a
+  // kanji the learner knows, and a kanji sits in dozens of words, so
+  // filtering to Words alone put thousands of stray pieces in the sky.
   const drawn = useMemo(() => all.filter((r) => {
-    if (keepRoot && !keepRoot(r)) return false;
     const l = layouts.get(r);
-    return !!l && l.stars.some((st) => !st.group && !baseLook(r, st.id).hidden);
-  }), [all, layouts, keepRoot, baseLook]);
+    if (!l) return false;
+    // a grouping (a kana row) is never a star of its own, so it shows for
+    // as long as anything under it does
+    const root = l.stars.find((st) => st.id === r);
+    return root && !root.group ? !baseLook(r, r).hidden : l.stars.some((st) => !st.group && !baseLook(r, st.id).hidden);
+  }), [all, layouts, baseLook]);
   const { placed, world } = useMemo(() => {
     // a box by star count, and never smaller than the root's body: a planet's
     // ring must fit inside it (the body scales with the box, so settle twice)

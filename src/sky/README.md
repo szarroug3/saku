@@ -391,11 +391,18 @@ Undiscovered off and the sky closes up around what the learner knows,
 instead of leaving it scattered across a world sized for everything.
 
 The filters are two rows of one-width chips (`useEqualChips`, the hook
-behind `ChipRow`): the standings, then the collections (`sky/lib/groups.ts`
-maps a kind to the Atlas's own names). A standing hides a star inside its
-constellation; a collection takes the whole constellation out, so turning
-Words off leaves the rest of the sky dense rather than full of holes.
-Under them, a warning: showing more at once makes the sky slower to draw.
+behind `ChipRow`): the standings, then the collections
+(`sky/lib/groups.ts`, the Atlas's own names). BOTH cut star by star, and a
+star answers to its own collection wherever it is: a word constellation is
+a word, the kanji it is written with and the pieces under those, so with
+Words and Radicals on and Kanji off it draws the word and the pieces and
+leaves the kanji dark (Sam, 2026-09-06). A constellation is laid out when
+its ROOT is drawn, so one whose collection or standing is off goes
+entirely. Asking instead whether ANY star showed drew every undiscovered
+word that held a kanji the learner knows, and a kanji sits in dozens of
+words, so filtering to Words alone put thousands of stray pieces up there.
+Under the rows, a warning: showing more at once makes the sky slower to
+draw.
 
 ### The whole firmament, and a clear box (2026-09-06)
 

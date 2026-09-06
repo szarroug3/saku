@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 
+import type { StarLook } from "@/sky/components/constellation";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { SkyField } from "@/sky/components/sky-field";
@@ -77,23 +78,30 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
   const [details, setDetails] = useState(false);
   // the legend is the filter: every collection, and every standing but
   // "undiscovered", to start
-  const { selected, toggle, singled, setSingled, groups, toggleGroup, lookOf } = useSkyFilter();
-  // a collection turned off is not in the sky at all, so the rest packs in
-  const keepRoot = useCallback((id: string) => {
+  const { selected, toggle, singled, setSingled, groups, toggleGroup, lookOf: byStanding } = useSkyFilter();
+  // A collection turned off is out of the sky WHEREVER it appears: not as a
+  // constellation of its own, and not as a piece of another one either
+  // (Sam, 2026-09-06: with Kanji off, a word's kanji should not be up
+  // there, part of its constellation or not). A word with its kanji hidden
+  // is then the one star it is, which is what "only words" asks for.
+  const lookOf = useCallback((id: string, base: StarLook): StarLook => {
     const kind = graph.itemOf(id)?.kind;
     const group = kind ? groupOf(kind) : null;
-    return group === null || groups.has(group);
-  }, [graph, groups]);
-  // what each collection puts up there, so the cost of showing it is on its chip
+    if (group !== null && !groups.has(group)) return { ...base, hidden: true };
+    return byStanding(id, base);
+  }, [graph, groups, byStanding]);
+  // how much each collection holds, so the cost of showing it is on its own
+  // chip. Counted over the items rather than the constellations: a piece is
+  // never a constellation of its own and still lights up inside every kanji
+  // and word built from it, so counting constellations would call it empty.
   const groupRows = useMemo(() => {
     const n = new Map<SkyGroup, number>();
-    for (const id of [...data.roots, ...(data.firmament ?? [])]) {
-      const kind = graph.itemOf(id)?.kind;
-      const group = kind ? groupOf(kind) : null;
+    for (const item of data.items) {
+      const group = groupOf(item.kind);
       if (group) n.set(group, (n.get(group) ?? 0) + 1);
     }
     return SKY_GROUPS.filter((g) => (n.get(g.id) ?? 0) > 0).map((g) => ({ id: g.id, label: g.label, count: n.get(g.id) ?? 0, on: groups.has(g.id) }));
-  }, [graph, data.roots, data.firmament, groups]);
+  }, [data.items, groups]);
 
   return (
     <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" height={height}>
@@ -101,7 +109,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
           so the learner's own stars are the only stars in it: with one or two
           discovered they were lost among the background's (Sam, 2026-09-06) */}
       <div className="sky-wash-clear relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
-        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} keepRoot={keepRoot} label="Every constellation the sky holds, scattered across it, lit as you learn them" />
+        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation the sky holds, scattered across it, lit as you learn them" />
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>
