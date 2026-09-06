@@ -510,12 +510,22 @@ export const READINGS: readonly ReadingRow[] = (readingsJson as readonly Reading
   .map(reattest)
   .map(reanchor);
 
-const READINGS_BY_ANCHOR: ReadonlyMap<string, readonly ReadingRow[]> = new Map(
-  [...new Set(READINGS.map((row) => `${row.k}|${row.anchor}`))].map((key) => [
-    key,
-    READINGS.filter((row) => `${row.k}|${row.anchor}` === key),
-  ]),
-);
+/** The readings of one kanji in one word, in READINGS' own order.
+ *
+ * Grouped in a single pass. It used to collect the keys and then filter the
+ * whole of READINGS once per key, which is three thousand passes over three
+ * thousand rows: 655 ms, on every cold start, before the app could answer
+ * anything at all (SAK-382). Same keys, same order, same rows. */
+const READINGS_BY_ANCHOR: ReadonlyMap<string, readonly ReadingRow[]> = (() => {
+  const byKey = new Map<string, ReadingRow[]>();
+  for (const row of READINGS) {
+    const key = `${row.k}|${row.anchor}`;
+    const rows = byKey.get(key);
+    if (rows) rows.push(row);
+    else byKey.set(key, [row]);
+  }
+  return byKey;
+})();
 
 /**
  * The default teaching order: `ramp B`.
