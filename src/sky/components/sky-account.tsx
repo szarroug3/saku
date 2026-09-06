@@ -36,7 +36,7 @@ export function SkyAccount({ signedIn, name, email, signIn, onSignOut, onWipe, h
     <SkyPageShell eyebrow="Account" title={signedIn ? "Who is learning?" : "Want to keep your sky?"} height={height}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
         {signedIn ? (
-          <SkyPanel title="You" className="max-w-xl">
+          <SkyPanel title="You">
             <p className="mt-2 text-[16px] font-semibold text-sky-ink">{name ?? email ?? "Signed in"}</p>
             {name && email && <p className="text-[13.5px] text-sky-muted">{email}</p>}
             <p className="mt-3 text-[13.5px] text-sky-ink/90">Your progress is kept with this account, so any device you sign in on shows the same sky.</p>
@@ -45,12 +45,12 @@ export function SkyAccount({ signedIn, name, email, signIn, onSignOut, onWipe, h
             </div>
           </SkyPanel>
         ) : (
-          <SkyPanel title="Sign in" className="max-w-xl">
+          <SkyPanel title="Sign in">
             <p className="mt-2 text-[14px] leading-relaxed text-sky-ink/90">Until you sign in, your progress lives in this browser only. Signing in is only to remember it across devices. Saku never emails you anything.</p>
             <div className="mt-4 max-w-xs">{signIn}</div>
           </SkyPanel>
         )}
-        <SkyPanel title="Your progress" className="max-w-xl">
+        <SkyPanel title="Your progress">
           {wiped ? (
             <p className="mt-2 text-[14px] text-sky-ink/90">Wiped. Your sky is empty again.</p>
           ) : asking ? (

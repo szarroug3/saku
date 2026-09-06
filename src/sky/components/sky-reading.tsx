@@ -10,10 +10,10 @@ import type { ReadingPage } from "@/sky/lib/reading";
 
 export function SkyReading({ page, height }: { page: ReadingPage; height?: string }) {
   return (
-    <SkyPageShell eyebrow={page.eyebrow} title={page.title} lede={page.lede} height={height}>
+    <SkyPageShell eyebrow={page.eyebrow} title={page.title} height={height}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
         {page.sections.map((s) => (
-          <SkyPanel key={s.id} title={s.title} className="max-w-3xl">
+          <SkyPanel key={s.id} title={s.title}>
             <div className="mt-2 flex flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90">
               {s.paragraphs?.map((p, i) => <p key={i}><Sound line={p} /></p>)}
               {s.bullets && (

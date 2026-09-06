@@ -2,8 +2,7 @@
 
 // Settings: how Saku should behave, one row per setting, the label on the
 // left and its control on the right, in groups. Tracked under Sky: Settings.
-// A pure view: the route hands in the values and takes a patch back, and
-// says "Saved" itself, since it is the one that knows.
+// A pure view: the route hands in the values and takes a patch back.
 
 import type { ComponentType, ReactNode } from "react";
 
@@ -13,7 +12,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyToggle } from "@/sky/components/sky-toggle";
-import { RETRIES, SETTING_GROUPS, SETTING_TEXT, type Retries, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
+import { RETRIES, SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type Retries, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
 
 export interface SkySettingsProps {
   settings: SkySettings;
@@ -21,13 +20,16 @@ export interface SkySettingsProps {
   voices: readonly VoiceChoice[];
   /** Whether the voices can be heard at all here. */
   voicesEnabled?: boolean;
-  /** "Saved as you go", "Saved in this browser only", or nothing. */
-  note?: string;
+  /** The kana faces installed on this machine; the row hides when none are. */
+  fonts: readonly FontChoice[];
   tip?: ComponentType<{ label: string; children: ReactNode }>;
   height?: string;
 }
 
-export function SkySettings({ settings, onChange, voices, voicesEnabled = true, note, tip: Tip, height }: SkySettingsProps) {
+/** What a font chip shows: the face is the label. */
+const FONT_SAMPLE = "あき";
+
+export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, tip: Tip, height }: SkySettingsProps) {
   const s = settings;
   const text = (key: keyof SkySettings) => SETTING_TEXT[key];
   const Row = ({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean; children: ReactNode }) => (
@@ -39,16 +41,13 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{children}</span>
     </div>
   );
-  const toggle = (k: "audioPrompts" | "pitchQuestions" | "requeue" | "showAnswer" | "timer" | "scriptLabel" | "submitOnBlur" | "showVolume", dim = false) => (
+  const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer" | "showVolume", dim = false) => (
     <Row key={k} k={k} dim={dim}><SkyToggle on={s[k]} onClick={() => onChange({ [k]: !s[k] })} label={text(k).label} /></Row>
   );
+  const toggleFont = (family: string) => onChange({ fonts: s.fonts.includes(family) ? s.fonts.filter((f) => f !== family) : [...s.fonts, family] });
   const control: Record<keyof SkySettings, () => ReactNode> = {
     audioPrompts: () => toggle("audioPrompts"),
     pitchQuestions: () => toggle("pitchQuestions", !s.audioPrompts),
-    requeue: () => toggle("requeue"),
-    showAnswer: () => toggle("showAnswer"),
-    scriptLabel: () => toggle("scriptLabel"),
-    submitOnBlur: () => toggle("submitOnBlur"),
     showVolume: () => toggle("showVolume"),
     retries: () => (
       <Row key="retries" k="retries">
@@ -73,22 +72,50 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
         ) : <span className="text-[12px] text-sky-muted">No voice audio configured</span>}
       </Row>
     ),
-    firstBreakMinutes: () => <Row key="first" k="firstBreakMinutes"><SkyStepper value={s.firstBreakMinutes} onChange={(n) => onChange({ firstBreakMinutes: n })} label={text("firstBreakMinutes").label} min={0} max={120} unit="minutes" /></Row>,
-    laterBreakMinutes: () => <Row key="later" k="laterBreakMinutes"><SkyStepper value={s.laterBreakMinutes} onChange={(n) => onChange({ laterBreakMinutes: n })} label={text("laterBreakMinutes").label} min={0} max={240} unit="minutes" /></Row>,
+    accent: () => (
+      <Row key="accent" k="accent">
+        <span className="flex flex-wrap gap-2" role="radiogroup" aria-label={text("accent").label}>
+          {SKY_ACCENTS.map((a) => (
+            <button
+              key={a.id} type="button" role="radio" aria-checked={s.accent === a.id} aria-label={a.label} title={a.label}
+              onClick={() => onChange({ accent: a.id })}
+              className={`h-7 w-7 rounded-full border-2 transition-transform ${s.accent === a.id ? "scale-110 border-sky-ink" : "border-transparent hover:border-sky-muted"}`}
+              style={{ backgroundColor: a.color }}
+            />
+          ))}
+        </span>
+      </Row>
+    ),
+    fonts: () => fonts.length === 0 ? null : (
+      <Row key="fonts" k="fonts">
+        <span className="flex flex-wrap gap-2">
+          {fonts.map((f) => {
+            const on = s.fonts.includes(f.family);
+            return (
+              <button
+                key={f.family} type="button" aria-pressed={on} aria-label={f.label} title={f.label}
+                onClick={() => toggleFont(f.family)}
+                style={{ fontFamily: f.family }}
+                className={`h-10 rounded-full border px-3.5 text-[21px] leading-none ${on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
+              >
+                {FONT_SAMPLE}
+              </button>
+            );
+          })}
+        </span>
+      </Row>
+    ),
     cleanRunsToClearMixup: () => <Row key="clean" k="cleanRunsToClearMixup"><SkyStepper value={s.cleanRunsToClearMixup} onChange={(n) => onChange({ cleanRunsToClearMixup: n })} label={text("cleanRunsToClearMixup").label} min={1} max={50} unit="runs" /></Row>,
   };
 
   return (
     <SkyPageShell eyebrow="Settings" title="How should Saku behave?" height={height}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
-        {note && <p className="text-[13px] text-sky-muted">{note}</p>}
-        {SETTING_GROUPS.map((g) => (
-          <SkyPanel key={g.title} title={g.title} className="max-w-3xl">
-            <div className="mt-1">{g.keys.map((k) => control[k]())}</div>
-          </SkyPanel>
-        ))}
+        {SETTING_GROUPS.map((g) => {
+          const rows = g.keys.map((k) => control[k]()).filter(Boolean);
+          return rows.length ? <SkyPanel key={g.title} title={g.title}><div className="mt-1">{rows}</div></SkyPanel> : null;
+        })}
       </div>
     </SkyPageShell>
   );
 }
-

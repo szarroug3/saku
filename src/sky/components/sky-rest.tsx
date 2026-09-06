@@ -11,6 +11,7 @@ import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
+import { SkyStepper } from "@/sky/components/sky-stepper";
 import { formatCountdown, formatReturnTime, restLeft } from "@/sky/lib/rest";
 
 export interface SkyRestProps {
@@ -19,6 +20,10 @@ export interface SkyRestProps {
   nextRound: number;
   rounds: number;
   onStart: () => void;
+  /** How long this rest is, in minutes, and the way to change it here:
+   * the setting lives on this screen (Sam, 2026-09-06), not in Settings. */
+  minutes: number;
+  onMinutes: (minutes: number) => void;
   /** The way out: back to the observatory. */
   skyHref: string;
   height?: string;
@@ -38,7 +43,7 @@ function useNow(ticking: boolean): number | null {
   return now;
 }
 
-export function SkyRest({ until, nextRound, rounds, onStart, skyHref, height }: SkyRestProps) {
+export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes, skyHref, height }: SkyRestProps) {
   const now = useNow(true);
   const left = now === null ? Number.POSITIVE_INFINITY : restLeft(until, now);
   const ready = left === 0;
@@ -57,6 +62,10 @@ export function SkyRest({ until, nextRound, rounds, onStart, skyHref, height }: 
           )}
           <div className="mt-6 flex justify-center gap-2">
             {ready ? <SkyButton onClick={onStart}>Start round {nextRound}</SkyButton> : <SkyButton variant="outline" onClick={onStart}>Start now</SkyButton>}
+          </div>
+          <div className="mt-6 flex items-center justify-center gap-2 text-[12.5px] text-sky-muted">
+            <span>{nextRound <= 2 ? "The first rest is" : "Every rest after the first is"}</span>
+            <SkyStepper value={minutes} onChange={onMinutes} label="Minutes of rest" min={0} max={240} unit="minutes" />
           </div>
         </SkySurface>
         <p className="text-center text-[12.5px] text-sky-muted">The rest is the point: what you just did settles while you are not looking at it. Leaving is free; the clock keeps counting. <a href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</a></p>

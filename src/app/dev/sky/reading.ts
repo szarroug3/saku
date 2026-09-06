@@ -15,7 +15,6 @@ export function howItWorksPage(): ReadingPage {
   return {
     eyebrow: "How Saku works",
     title: "How does Saku work?",
-    lede: "The spacing, the rounds, and what the standings mean.",
     sections: HOW_IT_WORKS_SECTIONS.map((s) => ({
       id: s.id,
       title: s.title,
@@ -42,7 +41,6 @@ export function aboutPage(): ReadingPage {
   return {
     eyebrow: "About",
     title: "Where does the data come from?",
-    lede: "Every kanji, reading, meaning and word in Saku is somebody else's work, and here is whose. Under it, other people's tools for the Japanese Saku does not cover.",
     sections: [
       { id: "acknowledgement", title: "Acknowledgement", paragraphs: [accented(american(LICENCE_NOTE))], links: [{ name: "The EDRDG license in full", href: LICENCE_HREF }] },
       { id: "files", title: "The files", links: SOURCES.map((s) => ({ name: s.name, href: s.href, blurb: s.what, note: `${s.holder} · ${american(s.licence)}` })) },

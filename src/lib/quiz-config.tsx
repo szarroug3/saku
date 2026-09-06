@@ -69,6 +69,7 @@ export function defaultConfig(): QuizConfig {
     showAnswer: true,
     scriptLabel: true,
     fonts: [...JP_FONTS],
+    skyAccent: "pink",
     blurSubmit: false,
     // The roster's default voice (SAK-98's sole hardcoded pitch voice, kept
     // as the default so an existing learner's pitch clips and cache don't

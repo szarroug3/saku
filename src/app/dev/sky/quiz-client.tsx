@@ -47,7 +47,7 @@ const NO_REST: RestState | null = null;
 
 export function QuizClient({ cards, skyHref, sample = false, onFinish, rounds = 1 }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>; rounds?: number }) {
   const router = useRouter();
-  const { cfg } = useQuizConfig();
+  const { cfg, update } = useQuizConfig();
   const deck = cards.map((c) => c.id).join("\n");
   // the rest between rounds, kept in the browser: the round that ended and
   // when its rest is over. Only this deck's counts.
@@ -66,12 +66,20 @@ export function QuizClient({ cards, skyHref, sample = false, onFinish, rounds = 
     if (round >= rounds) writeStored(REST_KEY, null);
   };
   const takeRest = () => {
-    writeStored(REST_KEY, { deck, round, until: Date.now() + restMinutes(round + 1, cfg.restFirstMin, cfg.restThenMin) * 60_000 } satisfies RestState);
+    const startedAt = Date.now();
+    writeStored(REST_KEY, { deck, round, startedAt, until: startedAt + restMinutes(round + 1, cfg.restFirstMin, cfg.restThenMin) * 60_000 } satisfies RestState);
     setStarted(null);
   };
   const startNext = () => setStarted((rest?.round ?? round) + 1);
+  // the rest length is changed on the rest screen itself: it is the setting
+  // (the first rest, or every one after), and this rest re-counts from its start
+  const setMinutes = (n: number) => {
+    if (!rest) return;
+    update(rest.round + 1 <= 2 ? { restFirstMin: n } : { restThenMin: n });
+    writeStored(REST_KEY, { ...rest, until: rest.startedAt + n * 60_000 } satisfies RestState);
+  };
 
-  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} skyHref={skyHref} height="100%" />;
+  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} skyHref={skyHref} height="100%" />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // keyed by its cards and round, so a retry or the next round starts fresh
   return <SkyQuiz key={`${deck}\n${round}`} cards={cards} grade={grade} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} next={next} height="100%" />;

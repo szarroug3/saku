@@ -263,6 +263,10 @@ export interface QuizConfig {
   scriptLabel: boolean;
   /** JP fonts to draw from per card — more than one selected = randomized. */
   fonts: string[];
+  /** The Sky's accent, by name (src/sky/lib/settings.ts SKY_ACCENTS). Kept
+   * here so it follows the learner like every setting; the app's own
+   * themes keep their accents in `accents`. */
+  skyAccent?: string;
   blurSubmit: boolean;
   /**
    * The learner's chosen voice for EVERY kind of speech in the app — quiz

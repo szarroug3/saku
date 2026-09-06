@@ -8,10 +8,24 @@
 // clipped to the gallery's content column by starting at the column's left
 // edge. Both are measured, not assumed, so a narrower shell still lines up.
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+
+import { availableFonts } from "@/lib/font-detect";
+import { useQuizConfig } from "@/lib/quiz-config";
+import { accentColor } from "@/sky/lib/settings";
 
 export function SkyPage({ note, children }: { note?: ReactNode; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  // the learner's accent and kana face, from Settings: set as the tokens the
+  // Sky's own styles read, on this page's root, so everything under it follows
+  const { cfg, ready } = useQuizConfig();
+  // one roll per page visit picks which of the chosen faces this page wears
+  const [roll] = useState(() => Math.random());
+  const look = useMemo(() => {
+    const vars: Record<string, string> = { "--sky-accent": accentColor(cfg.skyAccent) };
+    if (ready) { const usable = availableFonts(cfg.fonts); if (usable.length) vars["--font-kana"] = `${usable[Math.floor(roll * usable.length)]}, sans-serif`; }
+    return vars as React.CSSProperties;
+  }, [cfg.skyAccent, cfg.fonts, ready, roll]);
   const [box, setBox] = useState<{ left: number; height: number } | null>(null);
   // How much the shell needs below this page (its own padding): learned once,
   // from the overflow the first full-height layout produces.
@@ -41,7 +55,7 @@ export function SkyPage({ note, children }: { note?: ReactNode; children: ReactN
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   return (
-    <div ref={ref} className="relative isolate -mx-6 -my-8 flex flex-col overflow-hidden px-6 py-6" style={box ? { height: box.height } : { minHeight: "calc(100vh - 4rem)" }}>
+    <div ref={ref} className="relative isolate -mx-6 -my-8 flex flex-col overflow-hidden px-6 py-6" style={{ ...look, ...(box ? { height: box.height } : { minHeight: "calc(100vh - 4rem)" }) }}>
       {box && <div aria-hidden className="sky-wash fixed bottom-0 right-0 top-0 -z-10" style={{ left: box.left }} />}
       <div className="mx-auto flex min-h-0 w-full max-w-[1180px] flex-1 flex-col">
         {note && <p className="mb-3 shrink-0 font-sky-ui text-[12px] text-sky-muted">{note}</p>}

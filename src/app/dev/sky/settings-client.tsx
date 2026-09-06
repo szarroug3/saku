@@ -4,7 +4,11 @@
 // so the app and the Sky read one set of settings. The mapping between the
 // Sky's words and QuizConfig's fields lives here and nowhere else.
 
+import { useMemo } from "react";
+
 import { askFromAudioPrompts } from "@/lib/ask-config";
+import { fontLabel, JP_FONTS } from "@/lib/config";
+import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { VOICES, voicesEnabled } from "@/lib/voice";
 import { SkySettings } from "@/sky/components/sky-settings";
@@ -21,17 +25,13 @@ export function fromConfig(cfg: QuizConfig): SkySettingsValues {
   return {
     audioPrompts: cfg.audioPrompts,
     pitchQuestions: cfg.pitchQuestions,
-    requeue: cfg.requeue,
+    voice: cfg.voiceName,
     retries: RETRIES_FROM_APP[cfg.retries],
     retryCount: cfg.retryN,
-    showAnswer: cfg.showAnswer,
     timer: cfg.timer,
     timerSeconds: cfg.timerSec,
-    scriptLabel: cfg.scriptLabel,
-    submitOnBlur: cfg.blurSubmit,
-    voice: cfg.voiceName,
-    firstBreakMinutes: cfg.restFirstMin,
-    laterBreakMinutes: cfg.restThenMin,
+    accent: cfg.skyAccent ?? "pink",
+    fonts: cfg.fonts,
     showVolume: cfg.showVolume,
     cleanRunsToClearMixup: cfg.graduateRuns,
   };
@@ -42,31 +42,32 @@ export function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig>
   const out: Partial<QuizConfig> = {};
   if (patch.audioPrompts !== undefined) { out.audioPrompts = patch.audioPrompts; out.ask = askFromAudioPrompts(patch.audioPrompts); }
   if (patch.pitchQuestions !== undefined) out.pitchQuestions = patch.pitchQuestions;
-  if (patch.requeue !== undefined) out.requeue = patch.requeue;
+  if (patch.voice !== undefined) out.voiceName = patch.voice;
   if (patch.retries !== undefined) out.retries = RETRIES_TO_APP[patch.retries];
   if (patch.retryCount !== undefined) out.retryN = patch.retryCount;
-  if (patch.showAnswer !== undefined) out.showAnswer = patch.showAnswer;
   if (patch.timer !== undefined) out.timer = patch.timer;
   if (patch.timerSeconds !== undefined) out.timerSec = patch.timerSeconds;
-  if (patch.scriptLabel !== undefined) out.scriptLabel = patch.scriptLabel;
-  if (patch.submitOnBlur !== undefined) out.blurSubmit = patch.submitOnBlur;
-  if (patch.voice !== undefined) out.voiceName = patch.voice;
-  if (patch.firstBreakMinutes !== undefined) out.restFirstMin = patch.firstBreakMinutes;
-  if (patch.laterBreakMinutes !== undefined) out.restThenMin = patch.laterBreakMinutes;
+  if (patch.accent !== undefined) out.skyAccent = patch.accent;
+  if (patch.fonts !== undefined) out.fonts = [...patch.fonts];
   if (patch.showVolume !== undefined) out.showVolume = patch.showVolume;
   if (patch.cleanRunsToClearMixup !== undefined) out.graduateRuns = patch.cleanRunsToClearMixup;
   return out;
 }
 
-export function SettingsClient({ signedIn }: { signedIn: boolean }) {
+/** The voices by name (Sam, 2026-09-06), not the roster's order. */
+const VOICES_BY_NAME = [...VOICES].sort((a, b) => a.label.localeCompare(b.label)).map((v) => ({ id: v.id, label: v.label }));
+
+export function SettingsClient() {
   const { cfg, update, ready } = useQuizConfig();
+  // the fonts actually installed here, measured once the page is on a client
+  const fonts = useMemo(() => (ready ? availableFonts(JP_FONTS).map((family) => ({ family, label: fontLabel(family) })) : []), [ready]);
   return (
     <SkySettings
       settings={fromConfig(cfg)}
       onChange={(patch) => update(toConfig(patch))}
-      voices={VOICES.map((v) => ({ id: v.id, label: v.label }))}
+      voices={VOICES_BY_NAME}
       voicesEnabled={voicesEnabled()}
-      note={!ready ? undefined : signedIn ? "Saved as you go, on every device you sign in on." : "Saved as you go, in this browser. Sign in to keep them across devices."}
+      fonts={fonts}
       tip={Tip}
       height="100%"
     />

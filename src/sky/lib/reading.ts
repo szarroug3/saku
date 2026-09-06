@@ -33,7 +33,6 @@ export interface ReadingSection {
 export interface ReadingPage {
   eyebrow: string;
   title: string;
-  lede?: string;
   sections: readonly ReadingSection[];
 }
 

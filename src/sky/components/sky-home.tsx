@@ -76,7 +76,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", height = "calc
   const { selected, toggle, singled, setSingled, lookOf } = useStandingFilter();
 
   return (
-    <SkyPageShell title="Planetarium" lede="This is the planetarium. It will evolve as you explore and discover more of the Japanese language." height={height}>
+    <SkyPageShell title="Planetarium" height={height}>
       <div className="relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
         <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation you have learned, scattered across the sky" />
         {empty && (

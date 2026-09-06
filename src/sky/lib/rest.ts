@@ -36,6 +36,8 @@ export interface RestState {
   deck: string;
   /** The round that just ended. */
   round: number;
+  /** When the rest began, so a changed length re-counts from the same start. */
+  startedAt: number;
   /** When the rest ends. */
   until: number;
 }
