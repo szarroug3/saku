@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 
+import { ChipRow } from "@/sky/components/chip-row";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInput } from "@/sky/components/sky-input";
@@ -162,9 +163,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                   {groups.map((g) => (
                     <div key={g}>
                       {g && <Eyebrow>{g}</Eyebrow>}
-                      <div className="flex flex-wrap gap-1.5">
+                      <ChipRow>
                         {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={chosen.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
-                      </div>
+                      </ChipRow>
                     </div>
                   ))}
                 </div>
@@ -254,7 +255,7 @@ function Facet({ title, note, children }: { title: string; note?: string; childr
   return (
     <div className="mt-6 first:mt-3">
       <Eyebrow>{title}</Eyebrow>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <ChipRow>{children}</ChipRow>
       {note && <p className="mt-2 text-[12px] text-sky-muted">{note}</p>}
     </div>
   );
