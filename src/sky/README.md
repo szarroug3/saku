@@ -900,9 +900,28 @@ now names the region the function is running in, to be read against the one
 on Supabase's project settings page.
 
 The other thing the trace showed is that a slow response and a cold function
-look identical from outside and want opposite fixes. So a page reports
-`boot` when it is the first request a process has served, with the
-milliseconds that boot took, and `uptime` when it is not. Sam's 6375 ms
-switch was a 3246 ms time to first byte with only 99 ms of session in it: a
-cold start, not slow code, and a different problem from the 1550 ms that
-followed it.
+look identical from outside and want opposite fixes, so a page reports
+whether it was the first request its process served.
+
+That flag was called `boot` at first, on the assumption that a process
+starts when a request arrives, so its age at the first request is what
+booting cost. Fluid Compute breaks the assumption: it holds processes ready,
+and the deployed app duly reported a first request 114 seconds into its
+process's life, having waited for none of it. It is `first` now, and it is a
+flag rather than a cost: what it still tells you is whether a request was the
+one that paid for anything the modules do lazily.
+
+Measured after the parallel read went out, on a first-request-of-its-process
+Atlas load:
+
+| phase | ms |
+| --- | --- |
+| `session`, the auth refresh, cross-country and cold | 660 |
+| `db:query` and `db:facts`, now at the same time | 499 and 395 |
+| `history`, the two of them together plus shaping | 507 |
+| `atlas`, building the page | 577 |
+
+`history` at 507 against its parts adding to 901 is the parallel read
+working: the two queries overlap now instead of queueing. The same request's
+second visit to the server put `session` at 96 ms rather than 660, which is
+the connection being warm.

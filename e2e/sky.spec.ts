@@ -148,7 +148,7 @@ test("a response says where the server spent its time", async ({ page }) => {
   expect(own, "the page should report building the sky").toMatch(/sky;dur=[\d.]+/);
   // and whether this request hit a cold function, which looks identical from
   // the outside to slow code and wants the opposite fix
-  expect(own, "the page should say how long the function has been up").toMatch(/(boot|uptime);dur=[\d.]+/);
+  expect(own, "the page should say how long the process has been up").toMatch(/(first|uptime);dur=[\d.]+/);
   // and the browser can read the header back, which is what the console snippet does
   const fromBrowser = await page.evaluate(() => {
     const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;

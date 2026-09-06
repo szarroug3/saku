@@ -60,21 +60,29 @@ export function serverTimingValue(extra: readonly Phase[] = []): string {
     .join(", ");
 }
 
-/** How long this process has been alive, and whether this is the first
- * request it has served.
+/** How long this process had been alive when it answered, and whether this was
+ * the first thing it answered.
  *
- * A slow response and a cold function look identical from the outside, and
- * they want opposite fixes: one is our code, the other is the platform keeping
- * a function alive. `uptime` says which. On the first request of a process it
- * is the boot: loading the modules and the tables before anything could be
- * answered. On the hundredth it is just how long the box has been up, and can
- * be ignored. */
+ * Read it as a flag, not as a cost. It was `boot` at first, on the assumption
+ * that a process starts when a request arrives, so its age at the first
+ * request is what booting took. Fluid Compute breaks that: it holds processes
+ * ready, so the first request a process serves can be a hundred seconds into
+ * its life without having waited a moment for it — which is exactly what the
+ * deployed app reported. What the number still tells you is whether a request
+ * was the first of its process, which is the one that pays for anything the
+ * modules do lazily. */
 let served = 0;
 export function bootPhases(): Phase[] {
   const first = served++ === 0;
   const up = typeof process !== "undefined" && typeof process.uptime === "function" ? process.uptime() * 1000 : 0;
   if (!up) return [];
-  return [{ name: first ? "boot" : "uptime", ms: up, desc: first ? "this is the first request this function has served" : "how long this function has been up" }];
+  return [{
+    name: first ? "first" : "uptime",
+    ms: up,
+    desc: first
+      ? "the first request of this process, which had been alive this long already"
+      : "how long this process has been up",
+  }];
 }
 
 /** Format phases measured outside a request scope (the proxy). */
