@@ -144,6 +144,7 @@ const DEV_PAGES: Array<{
       { href: "/dev/sky/atlas", label: "Atlas" },
       { href: "/dev/sky/quiz?sample", label: "Quiz" },
       { href: "/dev/sky/practice?sample", label: "Practice" },
+      { href: "/dev/sky/sessions?sample", label: "Sessions" },
       { href: "/dev/sky/settings", label: "Settings" },
       { href: "/dev/sky/account", label: "Account" },
       { href: "/dev/sky/how", label: "How Saku works" },
