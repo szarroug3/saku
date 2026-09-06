@@ -21,7 +21,7 @@ import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, DECK_SIZES, shortfall, type DeckSize, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, DECK_SIZES, deckSize, shortfall, type DeckSize, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER } from "@/sky/lib/standing";
 
 export interface SkyPracticeProps {
@@ -74,8 +74,12 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
 
   const kept = preview ? preview.items.filter((p) => !dropped.includes(p.item.id)) : [];
-  const blocked = cannotStart(recipe, preview, kept.length);
-  const short = preview ? shortfall(recipe, preview) : null;
+  // the pool the deck is drawn from: everything that matched, less the drops
+  const pool = preview ? preview.matched - dropped.length : 0;
+  const unseen = preview ? preview.matched - preview.items.length : 0;
+  const size = deckSize(recipe, pool);
+  const blocked = cannotStart(recipe, preview, pool);
+  const short = preview ? shortfall(recipe, pool) : null;
   const chosen = (loaded && saved.find((d) => d.name === loaded)) || saved.find((d) => same(d.recipe, recipe));
   const changed = !!chosen && !same(chosen.recipe, recipe);
 
@@ -156,8 +160,8 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
 
         <SkyPanel title="What you would get" className="flex min-h-0 flex-col">
           <p className="mt-2 shrink-0 text-[14px]">
-            <span className="font-semibold text-sky-ink">{preview ? kept.length.toLocaleString() : "…"}</span> {kept.length === 1 ? "item" : "items"}
-            {preview && preview.matched > preview.items.length && recipe.size !== "all" && <span className="text-sky-muted"> of {preview.matched.toLocaleString()} that match</span>}
+            <span className="font-semibold text-sky-ink">{preview ? size.toLocaleString() : "…"}</span> {size === 1 ? "item" : "items"}
+            {preview && recipe.size !== "all" && pool > size && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
           </p>
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
           {blocked && preview && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
@@ -175,9 +179,10 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                 <button type="button" aria-label={`Drop ${p.item.english}`} onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
               </li>
             ))}
+            {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, not listed here</li>}
           </ul>
           <div className="mt-3 flex shrink-0 flex-wrap items-center gap-3">
-            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe, dropped)}>Start · {kept.length}</SkyButton>
+            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe, dropped)}>Start · {size}</SkyButton>
             {blocked && <span className="text-[12.5px] text-sky-muted">{blocked}</span>}
           </div>
         </SkyPanel>

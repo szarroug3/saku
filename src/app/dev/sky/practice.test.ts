@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 
 import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
-import { practicePreview } from "./practice";
+import { practiceDraw, practicePreview } from "./practice";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -29,11 +29,25 @@ describe("practicePreview", () => {
     assert.equal(preview.matched, 0);
   });
 
-  it("caps the deck at the size asked for, shakiest first", () => {
+  it("previews the whole pool, shakiest first, up to the cap", () => {
     const preview = practicePreview(history, { ...EMPTY_RECIPE, size: 5 }, {}, NOW);
-    assert.equal(preview.items.length, 5);
-    assert.ok(preview.matched > 5);
+    assert.ok(preview.items.length > 5);
+    assert.ok(preview.matched >= preview.items.length);
     const misses = preview.items.map((p) => p.misses);
     assert.deepEqual([...misses].sort((a, b) => b - a), misses);
+  });
+
+  it("draws the size asked for at random from the pool, less the drops", () => {
+    const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: 5 as const };
+    const pool = practicePreview(history, recipe, {}, NOW).items;
+    const dropped = [pool[0].item.id];
+    let seed = 7;
+    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const drawn = practiceDraw(history, recipe, {}, dropped, NOW, random);
+    assert.equal(drawn.length, 5);
+    assert.ok(drawn.every((d) => pool.some((p) => p.item.id === d.item.id)));
+    assert.ok(!drawn.some((d) => dropped.includes(d.item.id)));
+    const again = practiceDraw(history, recipe, {}, dropped, NOW, () => 0.5);
+    assert.notDeepEqual(drawn.map((d) => d.item.id), again.map((d) => d.item.id));
   });
 });

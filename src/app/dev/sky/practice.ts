@@ -9,7 +9,7 @@ import { knownFactsOf, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
-import type { Ask, PracticeCollection, PracticeItem, PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
+import { deckSize, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -45,17 +45,16 @@ function askable(e: LibEntry, history: HistoryFile): FactId[] {
   return quizzableFacts(e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e), history);
 }
 
-/** The recipe, resolved now: the items it holds (shakiest first), how many
- * matched, and which asks the pool could carry. */
-export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
+/** The recipe's whole pool, shakiest first, and which asks it could carry. */
+function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number): { pool: PracticeItem[]; asksAvailable: Record<Ask, boolean> } {
   const o = offerings(history, now);
   const shelves = recipe.collections.length ? SHELVES.filter((s) => recipe.collections.includes(s.id)) : SHELVES.filter((s) => s.sky !== "term");
-  const pool: LibEntry[] = shelves.flatMap((s) => s.kinds.flatMap(all));
+  const entries: LibEntry[] = shelves.flatMap((s) => s.kinds.flatMap(all));
   const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
 
   const asksAvailable: Record<Ask, boolean> = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
   const matched: PracticeItem[] = [];
-  for (const e of pool) {
+  for (const e of entries) {
     if (recipe.statuses.length && !recipe.statuses.includes(standingFor(e, history, now).standing)) continue;
     const byAsk = askable(e, history).map((f) => [f, askOf(f)] as const).filter((x): x is readonly [FactId, Ask] => x[1] !== null);
     for (const [, a] of byAsk) asksAvailable[a] = true;
@@ -67,14 +66,31 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
     matched.push({ item: lean as SkyItem, misses: kept.reduce((n, f) => n + missesOf(f), 0), facts: kept });
   }
   // shakiest first; ties keep the shelf's own order
-  const ordered = matched.map((m, i) => [m, i] as const).sort((a, b) => b[0].misses - a[0].misses || a[1] - b[1]).map(([m]) => m);
-  const items = recipe.size === "all" ? ordered : ordered.slice(0, recipe.size);
-  return { items, matched: matched.length, asksAvailable };
+  const pool = matched.map((m, i) => [m, i] as const).sort((a, b) => b[0].misses - a[0].misses || a[1] - b[1]).map(([m]) => m);
+  return { pool, asksAvailable };
 }
 
-/** The cards for a deck: the kept items' facts, in the deck's order. */
+/** The recipe, resolved now: the pool the deck is drawn from (shakiest
+ * first, the first PREVIEW_CAP of it), how many match in all, and which
+ * asks the pool could carry. */
+export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
+  const { pool, asksAvailable } = resolve(history, recipe, practiceMisses, now);
+  return { items: pool.slice(0, PREVIEW_CAP), matched: pool.length, asksAvailable };
+}
+
+/** The deck's items: a random draw of the size asked for from the pool,
+ * less anything dropped by hand (Sam, 2026-09-06: not the first ten, a
+ * draw from all of them). "All of them" is the pool in its own order. */
+export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, dropped: readonly string[], now = Date.now(), random = Math.random): PracticeItem[] {
+  const pool = resolve(history, recipe, practiceMisses, now).pool.filter((p) => !dropped.includes(p.item.id));
+  if (recipe.size === "all") return pool;
+  const drawn = [...pool];
+  for (let i = drawn.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [drawn[i], drawn[j]] = [drawn[j], drawn[i]]; }
+  return drawn.slice(0, deckSize(recipe, pool.length));
+}
+
+/** The cards for a deck: the drawn items' facts, in the draw's order. */
 export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, dropped: readonly string[], now = Date.now()): QuizCard[] {
-  const preview = practicePreview(history, recipe, practiceMisses, now);
-  const facts = preview.items.filter((p) => !dropped.includes(p.item.id)).flatMap((p) => p.facts) as FactId[];
+  const facts = practiceDraw(history, recipe, practiceMisses, dropped, now).flatMap((p) => p.facts) as FactId[];
   return quizCards(history, facts, now);
 }

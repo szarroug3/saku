@@ -59,11 +59,14 @@ export interface PracticeItem {
   facts: readonly string[];
 }
 
-/** What a recipe resolves to, now. */
+/** The most of the pool a preview carries; the rest is counted, not sent. */
+export const PREVIEW_CAP = 400;
+
+/** What a recipe resolves to, now: the pool the deck is drawn from. */
 export interface PracticePreview {
-  /** The items the deck holds, shakiest first, before any are dropped. */
+  /** The pool, shakiest first, up to PREVIEW_CAP of it. */
   items: readonly PracticeItem[];
-  /** How many matched before the size cap. */
+  /** How many match in all. */
   matched: number;
   /** Which asks the pool could support, before the recipe's own asks cut it. */
   asksAvailable: Readonly<Record<Ask, boolean>>;
@@ -71,6 +74,12 @@ export interface PracticePreview {
 
 /** Misses kept by practice itself, per fact: signal only, never the schedule. */
 export type PracticeMisses = Readonly<Record<string, number>>;
+
+/** How many the deck will hold: the size asked for, or the whole pool when
+ * that is smaller or "all" was asked. */
+export function deckSize(recipe: Recipe, pool: number): number {
+  return recipe.size === "all" ? pool : Math.min(recipe.size, pool);
+}
 
 /** Why a deck cannot start, in the words the page shows, or null when it can. */
 export function cannotStart(recipe: Recipe, preview: PracticePreview | null, kept: number): string | null {
@@ -82,7 +91,7 @@ export function cannotStart(recipe: Recipe, preview: PracticePreview | null, kep
 }
 
 /** "Only 6 items match, so the deck is shorter than the 10 you asked for." */
-export function shortfall(recipe: Recipe, preview: PracticePreview): string | null {
-  if (recipe.size === "all" || preview.matched === 0 || preview.matched >= recipe.size) return null;
-  return `Only ${preview.matched} ${preview.matched === 1 ? "item matches" : "items match"}, so the deck is shorter than the ${recipe.size} you asked for.`;
+export function shortfall(recipe: Recipe, pool: number): string | null {
+  if (recipe.size === "all" || pool === 0 || pool >= recipe.size) return null;
+  return `Only ${pool} ${pool === 1 ? "item matches" : "items match"}, so the deck is shorter than the ${recipe.size} you asked for.`;
 }
