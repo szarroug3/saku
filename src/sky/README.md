@@ -249,8 +249,7 @@ Quiz's results screen is its own component (`quiz-results.tsx`).
 
 `SkyPractice` (`sky-practice.tsx`) describes a deck rather than assembling
 it: a `Recipe` (`lib/practice.ts`) says what to draw from, what standing it
-should have, what to be asked for, how many, and whether the Quiz may offer
-its multiple-choice help. A saved recipe is the recipe under a name, kept
+should have, what to be asked for, and how many. A saved recipe is the recipe under a name, kept
 by the learner and shown only once there is one. The preview is the recipe
 resolved now, shakiest first, with any item droppable. A kanji's readings
 are asked inside the words that carry them, each once such a word has been

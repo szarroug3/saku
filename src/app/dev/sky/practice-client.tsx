@@ -71,5 +71,5 @@ export function PracticeRunClient({ cards, sample, recipe }: { cards: readonly Q
   };
   const retry = (ids: readonly string[]) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
   const save = () => router.push(`${back}${sample ? "&" : "?"}save=${packRecipe(recipe)}`);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} onSave={save} noNarrowing={recipe.noNarrowing} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} onSave={save} height="100%" />;
 }

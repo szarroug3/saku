@@ -4,8 +4,7 @@
 // to SAK-322.
 //
 // The left column is the recipe (SAK-319): what to draw from, what standing
-// it should have, what to be asked for, how many, and whether the Quiz may
-// offer its multiple-choice help. Saved recipes (SAK-321) are recipes under
+// it should have, what to be asked for, and how many. Saved recipes (SAK-321) are recipes under
 // a name, so a saved one changes as the learner does; they show only once
 // there are any. The right column is the deck the recipe resolves to now
 // (SAK-320), shakiest first, with every item droppable and every edge case
@@ -136,9 +135,6 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           </Facet>
           <Facet title="How many">
             {DECK_SIZES.map((n) => <SkyChip key={String(n)} on={recipe.size === n} onClick={() => set({ size: n as DeckSize })}>{n === "all" ? "All of them" : n}</SkyChip>)}
-          </Facet>
-          <Facet title="Help me" note={recipe.noNarrowing ? "The choices are never offered on a typed card. Hints and giving up stay." : "The Quiz may narrow a typed card down to choices when you ask."}>
-            <SkyChip on={!recipe.noNarrowing} onClick={() => set({ noNarrowing: !recipe.noNarrowing })}>Multiple choice</SkyChip>
           </Facet>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             {saving ? (

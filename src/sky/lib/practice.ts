@@ -31,11 +31,9 @@ export interface Recipe {
   statuses: readonly Standing[];
   asks: readonly Ask[];
   size: DeckSize;
-  /** The Quiz's multiple-choice help is never offered on a typed card. */
-  noNarrowing: boolean;
 }
 
-export const EMPTY_RECIPE: Recipe = { collections: [], statuses: [], asks: [...ASKS], size: 10, noNarrowing: false };
+export const EMPTY_RECIPE: Recipe = { collections: [], statuses: [], asks: [...ASKS], size: 10 };
 
 /** A recipe under a name, kept by the learner. It keeps the recipe, not
  * the list it resolved to, so it changes as the learner does. */
