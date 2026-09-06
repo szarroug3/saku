@@ -6,6 +6,8 @@
 
 import Link from "next/link";
 
+import { LESSON_ROUNDS } from "@/sky/lib/rest";
+
 import { recordQuiz } from "../actions";
 import { learnerHistory } from "../atlas";
 import { cardsFor, learnerQuiz, quizFromHistory, sampleCards } from "../quiz";
@@ -34,7 +36,7 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
         </>
       }
     >
-      <QuizClient cards={cards} sample={sample} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} />
+      <QuizClient cards={cards} sample={sample} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </SkyPage>
   );
 }

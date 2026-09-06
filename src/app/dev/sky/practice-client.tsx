@@ -9,7 +9,6 @@
 // hands in a bound lookup and this file does the navigating.
 
 import { useRouter } from "next/navigation";
-import { useMemo, useSyncExternalStore } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
@@ -21,33 +20,16 @@ import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 
 import { PitchMark } from "./pitch-reading";
 import { grade, Tip } from "./quiz-client";
+import { readStored as read, useStored, writeStored } from "./stored";
 
 const SAVED_KEY = PRACTICE_SAVED_KEY;
 const MISSES_KEY = PRACTICE_MISSES_KEY;
 
-const CHANGED = "sky:practice:changed";
-
-function read<T>(key: string, fallback: T): T {
-  try { const raw = window.localStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : fallback; } catch { return fallback; }
-}
+/** Writes the browser's copy, then pushes both halves up to the learner's
+ * settings together, so one device's save never wipes another's misses. */
 function write(key: string, value: unknown) {
-  try { window.localStorage.setItem(key, JSON.stringify(value)); } catch { /* a browser with no storage keeps nothing */ }
-  window.dispatchEvent(new Event(CHANGED));
-  // and up to the learner's settings, both halves together, so one device's
-  // save never wipes another's misses
+  writeStored(key, value);
   pushSettings({ practice: { saved: read<{ name: string; recipe: unknown }[]>(SAVED_KEY, []), misses: read<Record<string, number>>(MISSES_KEY, {}) } });
-}
-
-/** A value kept in the browser, read the way React likes an outside store
- * read: nothing on the server, the stored text on the client, re-read when
- * it is written. */
-function useStored<T>(key: string, fallback: T): T {
-  const raw = useSyncExternalStore(
-    (onChange) => { window.addEventListener(CHANGED, onChange); window.addEventListener("storage", onChange); return () => { window.removeEventListener(CHANGED, onChange); window.removeEventListener("storage", onChange); }; },
-    () => { try { return window.localStorage.getItem(key); } catch { return null; } },
-    () => null,
-  );
-  return useMemo(() => { try { return raw ? (JSON.parse(raw) as T) : fallback; } catch { return fallback; } }, [raw, fallback]);
 }
 
 const NO_SAVED: readonly SavedRecipe[] = [];

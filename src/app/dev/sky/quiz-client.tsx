@@ -6,19 +6,29 @@
 // uses: the fact's own check, romaji to kana, English synonyms) and grades
 // on the client, with no round trip per answer. Right or wrong, nothing in
 // between: a near miss gets another try instead (Sam, 2026-09-05).
+//
+// A lesson's quiz runs three rounds over the same cards with a rest
+// between them (SAK-343): the round's results offer the rest, the rest
+// screen counts down from a timestamp kept in the browser (so a reload
+// resumes it), and the next round starts fresh over the same cards. The
+// rest lengths are the learner's settings.
 
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-import { Info } from "@/components/ui";
 import { HearButton } from "@/components/ui/hear-button";
+import { Info } from "@/components/ui";
 import { checkTyped } from "@/lib/engine";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { romajiMatches } from "@/lib/romaji";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
+import { SkyRest } from "@/sky/components/sky-rest";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import { restMinutes, type RestState } from "@/sky/lib/rest";
 import type { Direction, FactId } from "@/types";
 
 import { PitchMark } from "./pitch-reading";
+import { useStored, writeStored } from "./stored";
 
 /** Whether `given` answers the card. A rolled counting card (say 六十七)
  * carries its own accepted readings; everything else asks the fact. */
@@ -32,10 +42,37 @@ export function Tip({ label, children }: { label: string; children: ReactNode })
   return <Info label={label} className="ml-1.5 border-sky-accent text-sky-accent hover:bg-sky-accent/15">{children}</Info>;
 }
 
-export function QuizClient({ cards, skyHref, sample = false, onFinish }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void> }) {
+const REST_KEY = "sky:quiz:rest";
+const NO_REST: RestState | null = null;
+
+export function QuizClient({ cards, skyHref, sample = false, onFinish, rounds = 1 }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>; rounds?: number }) {
   const router = useRouter();
+  const { cfg } = useQuizConfig();
+  const deck = cards.map((c) => c.id).join("\n");
+  // the rest between rounds, kept in the browser: the round that ended and
+  // when its rest is over. Only this deck's counts.
+  const stored = useStored<RestState | null>(REST_KEY, NO_REST);
+  const rest = stored && stored.deck === deck && stored.round < rounds ? stored : null;
+  // the round begun on this page since the last rest; null means the page
+  // opened onto the rest (or onto round one)
+  const [started, setStarted] = useState<number | null>(null);
+  const round = started ?? (rest ? rest.round : 0) + (rest ? 0 : 1);
+  const resting = !!rest && started === null;
+
   // a retry is the same route with just those cards named
   const retry = (ids: readonly string[]) => router.push(`/dev/sky/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
-  // keyed by its cards, so a retry (the same route, other cards) starts fresh
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={onFinish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} height="100%" />;
+  const finish = async (answers: readonly QuizAnswer[]) => {
+    if (onFinish) await onFinish(answers);
+    if (round >= rounds) writeStored(REST_KEY, null);
+  };
+  const takeRest = () => {
+    writeStored(REST_KEY, { deck, round, until: Date.now() + restMinutes(round + 1, cfg.restFirstMin, cfg.restThenMin) * 60_000 } satisfies RestState);
+    setStarted(null);
+  };
+  const startNext = () => setStarted((rest?.round ?? round) + 1);
+
+  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} skyHref={skyHref} height="100%" />;
+  const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
+  // keyed by its cards and round, so a retry or the next round starts fresh
+  return <SkyQuiz key={`${deck}\n${round}`} cards={cards} grade={grade} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} next={next} height="100%" />;
 }

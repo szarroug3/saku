@@ -33,10 +33,13 @@ export interface QuizResultsProps {
   onRetry?: (cardIds: readonly string[]) => void;
   /** An offer to keep the recipe this deck came from (practice). */
   onSave?: () => void;
+  /** What comes after this round, when there is a next one (a lesson's
+   * quiz rests, then runs again): the primary action, ahead of the way back. */
+  next?: { label: string; onClick: () => void };
   height?: string;
 }
 
-export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, tip: Tip, onRetry, onSave, height }: QuizResultsProps) {
+export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, tip: Tip, onRetry, onSave, next, height }: QuizResultsProps) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [lastPick, setLastPick] = useState<number | null>(null);
@@ -96,7 +99,8 @@ export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, tip
           {failed && <p className="mt-3 shrink-0 text-[12.5px] text-sky-slipping">Could not record this. Your schedule is unchanged.</p>}
         </SkySurface>
         <div className="flex flex-wrap gap-2">
-          <SkyButton href={skyHref}>{skyHref.includes("practice") ? "Back to practice" : "Back to the observatory"}</SkyButton>
+          {next && <SkyButton onClick={next.onClick}>{next.label}</SkyButton>}
+          <SkyButton href={skyHref} variant={next ? "outline" : "solid"}>{skyHref.includes("practice") ? "Back to practice" : "Back to the observatory"}</SkyButton>
           {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
           {onRetry && picked.size === 0 && counts.missed > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => answers[c.id]?.grade === "missed").map((c) => c.id))}>Retry the {counts.missed === 1 ? "miss" : `${counts.missed} misses`}</SkyButton>}
           {onSave && <SkyButton variant="outline" onClick={onSave}>Save this recipe</SkyButton>}
