@@ -8,7 +8,6 @@
 import { preload } from "react-dom";
 
 import { currentUserId } from "@/lib/auth";
-import { loadSettings } from "@/lib/settings";
 
 import { loadSky } from "./actions";
 import { ServerTimingMeta } from "./server-timing-meta";
@@ -21,11 +20,12 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const params = await searchParams;
   const sample = params.sample !== undefined;
   const userId = sample ? null : await currentUserId();
-  // the learner's own bar for clearing a mix-up, from Settings
-  const graduateRuns = userId ? ((await loadSettings(userId)).cfg?.graduateRuns ?? undefined) : undefined;
-  // the difference from the catalogue, not the sky itself: the stars come
-  // from /api/sky-catalogue, cached (SAK-381)
-  const initial = sample ? await loadSky({ sample: true }) : userId ? await loadSky({}, graduateRuns) : null;
+  // The difference from the catalogue, not the sky itself: the stars come
+  // from /api/sky-catalogue, cached (SAK-381). It reads the learner's bar for
+  // clearing a mix-up itself, alongside the history rather than before it
+  // (SAK-382), so the page does not wait for one database answer to ask for
+  // the next.
+  const initial = sample ? await loadSky({ sample: true }) : userId ? await loadSky({}) : null;
   // Start the stars downloading with the HTML instead of after hydration.
   // The version is the same for every learner, so the page knows it without
   // knowing whose sky this is (SAK-381).
@@ -33,7 +33,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   return (
     <>
       <ServerTimingMeta />
-      <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} graduateRuns={graduateRuns} />
+      <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} />
     </>
   );
 }

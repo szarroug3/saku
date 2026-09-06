@@ -983,3 +983,32 @@ of module evaluation that a warmed process does before anyone is waiting.
 The same reasoning applies to the other memos from this round (`all`,
 `shelfSections`, the standings), but they are all populated as a side effect
 of building the catalogues, so they come warm for free.
+
+### Two answers that have nothing to say to each other (2026-09-06, SAK-382)
+
+The eager catalogues took the Atlas from 554 ms to 200 on the deployed
+function. The home's trace then showed what was left:
+
+| phase | ms |
+| --- | --- |
+| `settings`, reading the learner's settings | 336 |
+| `history`, the row and the facts table together | 116 |
+| `sky`, building the home | 876 |
+
+`settings` was 336 ms of that and it was queued behind nothing and in front
+of everything: the page read the settings, waited, and only then called
+`loadSky`, which read the history and waited again. Two round trips to the
+same database, one after the other, for two answers with nothing to say to
+each other. `loadSky` reads both at once now.
+
+`sky` at 876 ms is the same waste the Atlas had and has not been fixed: the
+home builds 15,380 items, a graph over them and every root, then keeps the
+standings. The Atlas's cure does not transplant directly, because the home's
+roots genuinely need the graph, and what counts as met for the counters,
+grammar and keigo comes through the Observatory's offerings rather than
+straight off an entry. It is the largest number left on the server.
+
+Tried and reverted: memoising `offerings` per request, the way `standingFor`
+is. The home calls it once and the new Atlas path does not call it at all,
+so it bought nothing measurable, and an unmeasured cache with a subtle
+lifetime is worse than none.

@@ -53,9 +53,23 @@ async function historyFor(who: Who): Promise<HistoryFile> {
  * stars that are the same for everyone. The browser fetches those once from
  * /api/sky-catalogue and puts the two back together with `joinSky`. */
 export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPayload> {
-  const history = await historyFor(who);
+  // The history and the settings at the same time (SAK-382). The page used to
+  // read the settings, wait, and then call this, which read the history and
+  // waited again: two round trips to the same database, queued, for two
+  // answers that have nothing to say to each other. Measured on the deployed
+  // app, the settings read alone was 336 ms of a 1328 ms home.
+  const [history, runs] = await Promise.all([historyFor(who), graduateRuns ?? graduateRunsFor(who)]);
   const rows = await getStatsRows();
-  return timedSync("sky", () => splitSky(skyFromHistory(history, undefined, rows, { everything: true, beyond: beyondWords, ...(graduateRuns ? { graduateRuns } : {}) })), "building the sky");
+  return timedSync("sky", () => splitSky(skyFromHistory(history, undefined, rows, { everything: true, beyond: beyondWords, ...(runs ? { graduateRuns: runs } : {}) })), "building the sky");
+}
+
+/** The learner's own bar for clearing a mix-up. Undefined for anyone whose
+ * settings are the browser's, which is everyone not signed in. */
+async function graduateRunsFor(who: Who): Promise<number | undefined> {
+  if (who.sample || who.local) return undefined;
+  const userId = await currentUserId();
+  if (!userId) return undefined;
+  return (await loadSettings(userId)).cfg?.graduateRuns ?? undefined;
 }
 
 export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {
