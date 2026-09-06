@@ -20,8 +20,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
+import { QuizQuestions } from "@/sky/components/quiz-questions";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { QuizResults, VERDICT } from "@/sky/components/quiz-results";
+import { useNarrow } from "@/sky/components/use-narrow";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
@@ -57,13 +59,6 @@ export interface SkyQuizProps {
   timerSeconds?: number;
   height?: string;
 }
-
-/** The pip and verdict colours, by grade. */
-const PIP: Record<Grade, string> = {
-  clean: "bg-sky-solid",
-  help: "bg-sky-shaky",
-  missed: "bg-sky-slipping",
-};
 
 /** A context line that only names the kind of answer ("meaning") says
  * nothing the instruction does not; a frame or a gloss is worth showing. */
@@ -247,25 +242,20 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // The deck used to be a strip of pips here. It is a foldable list down
+  // the right now (SAK-384). Its width is held open on either side of the
+  // card at all times, so the card sits in the middle of the page whether
+  // the list is there or not: opening it must neither move the card (Sam,
+  // 2026-09-06) nor cover it. Below `lg` there is no room for both, so the
+  // list takes the card's place instead.
+  const narrow = useNarrow(1023);
+  const [asked, setAsked] = useState<boolean | null>(null);
+  const listOpen = asked ?? !narrow;
+  const cardShown = !(narrow && listOpen);
   const strip = (
     <div className="flex flex-wrap items-center gap-3 font-sky-ui text-[12.5px] text-sky-muted">
-      <div className="flex flex-wrap items-center gap-1" aria-label="The cards">
-        {cards.map((c, i) => {
-          const a = answers[c.id];
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => { if (!finished) go(i); }}
-              title={`${i + 1} of ${cards.length}${a ? `: ${GRADE[a.grade].label}` : ""}`}
-              aria-label={`Card ${i + 1}${a ? `, ${GRADE[a.grade].label}` : ""}`}
-              aria-current={i === at && !finished ? "step" : undefined}
-              className={`h-2.5 w-4 rounded-full transition-colors ${a ? PIP[a.grade] : "bg-sky-muted/70 hover:bg-sky-ink"} ${i === at && !finished ? "ring-2 ring-sky-ink ring-offset-1 ring-offset-transparent" : ""}`}
-            />
-          );
-        })}
-      </div>
       <span className="whitespace-nowrap tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
+      {!finished && cards.length > 0 && !listOpen && <SkyButton variant="outline" onClick={() => setAsked(true)}>The cards</SkyButton>}
       {!finished && cards.length > 0 && <SkyButton variant="outline" onClick={() => finish(answers)}>End the quiz</SkyButton>}
     </div>
   );
@@ -296,12 +286,15 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
 
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
+    {/* the list slides over the page rather than taking a column of it, so
+        opening it never moves the card (Sam, 2026-09-06) */}
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:px-60">
       {/* one width for the box whatever is on the card, so the arrows stay
           put while stepping back and forth; the help is a bar down its right
           side, so the box may grow downward for the choices without anything
           above moving (Sam, 2026-09-05); no arrow past either end. A hint,
           and a missed card's lesson, open in the panel underneath. */}
-      <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      {cardShown && <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
         <SkySurface className="flex shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
@@ -397,8 +390,10 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
                       })}
                     </div>
                   )}
-                  {/* a card without a box still checks its pick with a button */}
-                  {choices && !card.typed && (
+                  {/* a card without a box still checks its pick with a button.
+                      Never an ordering card: `choices` is true for anything not
+                      typed, and that one has its own Check under its pieces. */}
+                  {choices && !card.typed && !card.order && (
                     <div className="flex justify-center"><SkyButton onClick={() => submit()} disabled={!state.chosen}>Check</SkyButton></div>
                   )}
                 </div>
@@ -450,7 +445,17 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
         {answered && (
           <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} />
         )}
-      </div>
+      </div>}
+
+      <QuizQuestions
+        cards={cards}
+        answers={answers}
+        at={at}
+        open={listOpen}
+        onGo={(n) => { go(n); if (narrow) setAsked(false); }}
+        onClose={() => setAsked(false)}
+      />
+    </div>
     </SkyPageShell>
   );
 }

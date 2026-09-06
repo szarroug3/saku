@@ -18,19 +18,7 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
-
-/** Whether the screen is narrow (a phone): the rail folds away and an open
- * panel takes the whole width. Read from the viewport, never guessed on
- * the server. */
-const NARROW = "(max-width: 767px)";
-function useNarrow(): boolean {
-  return useSyncExternalStore(
-    (onChange) => { const mq = window.matchMedia(NARROW); mq.addEventListener("change", onChange); return () => mq.removeEventListener("change", onChange); },
-    () => window.matchMedia(NARROW).matches,
-    () => false,
-  );
-}
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { AtlasRail } from "@/sky/components/atlas-rail";
@@ -42,6 +30,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { useEntries } from "@/sky/components/use-entries";
+import { useNarrow } from "@/sky/components/use-narrow";
 import { useSelection } from "@/sky/components/use-selection";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
@@ -169,8 +158,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const itemsOf = useCallback((ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group), [graph]);
 
   // the rail: one collection open at a time, and one status or all. Open
-  // by default on a wide screen, folded on a narrow one, until the learner
-  // says otherwise.
+  // by default on a wide screen, folded on a narrow one (see useNarrow),
+  // until the learner says otherwise.
   const narrow = useNarrow();
   const [railPref, setRailPref] = useState<boolean | null>(null);
   const railOpen = railPref ?? !narrow;

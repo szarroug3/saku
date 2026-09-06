@@ -16,6 +16,11 @@ export interface SkySurfaceProps {
   className?: string;
   children?: ReactNode;
   "aria-label"?: string;
+  /** For a surface that is on the page but parked out of sight (the Quiz's
+   * list of cards, slid off the right edge): out of the tab order and out
+   * of what is read out, rather than merely translated away. */
+  "aria-hidden"?: boolean;
+  inert?: boolean;
 }
 
 export function SkySurface({ as: Tag = "div", pad = "md", className = "", children, ...aria }: SkySurfaceProps) {

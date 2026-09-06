@@ -468,3 +468,30 @@ transliteration itself is handed in like the grader (`typing.ts` over
 `@/lib/romaji`), since `src/sky` may not reach into the app. Grading is
 untouched: `romajiMatches` folds both sides to hiragana and passes kana
 through, so a box that now holds kana grades exactly as it did.
+
+### The deck as a list, not a strip of pips (2026-09-06, SAK-384)
+
+The Quiz's header carried one pip per card. At a couple of dozen that read
+as progress; at two hundred (a practice deck) it was three rows of grey
+lozenges, and finding a card meant hovering them one at a time for a
+title. `QuizQuestions` (`quiz-questions.tsx`) is a foldable list down the
+right instead: the number, what the card asks, and its grade once
+answered, with the card being asked lit and scrolled into view. It never
+spoils a listening card, which reads "Listen" until it is answered.
+
+It slides in from the right rather than taking a column, and its width is
+held open on BOTH sides of the card at all times, so the card sits in the
+middle of the page whether the list is there or not: opening it must
+neither move the card (Sam, 2026-09-06) nor cover it. The panel stays
+mounted so it can slide both ways, and is `inert` while parked, so nothing
+in it can be tabbed to or read out. Below `lg` there is no room for both,
+so it takes the card's place instead and tapping a row jumps there and
+folds it again, which is what the Atlas does with its entry panel.
+
+The header keeps the count and "End the quiz", and gains "The cards" when
+the list is away, in the same outline the other actions wear. The fold is
+not remembered across quizzes: that would need the app's storage, which
+`src/sky` cannot reach, and a quiz is one sitting.
+
+`useNarrow` came out of `sky-atlas.tsx` into its own file for this, since
+two surfaces now ask the same question (part of SAK-369).
