@@ -196,6 +196,19 @@ test("a lesson with nothing to teach says so and offers a way on", async ({ page
   expect(broke, `the page threw: ${broke.join(", ")}`).toEqual([]);
 });
 
+test("a button that is a link walks there instead of reloading the page", async ({ page }) => {
+  // SAK-362. SkyButton with an href rendered a plain anchor, so every one of
+  // them threw the loaded app away and fetched the whole page again.
+  await page.goto("/quiz?sample");
+  await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
+  // a mark on the window survives a client-side navigation and not a reload
+  await page.evaluate(() => { (window as unknown as { kept?: boolean }).kept = true; });
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await page.getByRole("link", { name: /observatory/i }).first().click();
+  await expect(page).toHaveURL(/\/observatory/);
+  expect(await page.evaluate(() => (window as unknown as { kept?: boolean }).kept ?? false)).toBe(true);
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the

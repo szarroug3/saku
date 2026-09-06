@@ -6,6 +6,7 @@
 // size), and the small round one for a control (close, widen, fold). A
 // button with an `href` is a link that looks the same.
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 export type SkyButtonVariant = "solid" | "outline" | "quiet" | "coral";
@@ -31,9 +32,23 @@ export interface SkyButtonProps {
   children: ReactNode;
 }
 
+/** A path inside the app, as opposed to a hash, a mailto, or somewhere else
+ * entirely. Only these can be walked to without leaving the page. */
+function isInternal(href: string): boolean {
+  return href.startsWith("/") && !href.startsWith("//");
+}
+
 export function SkyButton({ variant = "solid", href, onClick, disabled = false, block = false, title, className = "", children }: SkyButtonProps) {
   const cls = `${BASE} ${VARIANT[variant]} ${block ? "w-full" : ""} ${className}`;
-  if (href && !disabled) return <a href={href} title={title} className={cls}>{children}</a>;
+  // A plain anchor threw the whole page away and fetched it again: every
+  // "Start lesson", "Quiz me" and "Back to the observatory" was a full reload,
+  // losing the loaded app and starting over (SAK-362). Somewhere outside the
+  // app still gets a plain anchor, because there is nothing to keep.
+  if (href && !disabled) {
+    return isInternal(href)
+      ? <Link href={href} title={title} className={cls}>{children}</Link>
+      : <a href={href} title={title} className={cls}>{children}</a>;
+  }
   if (href) return <span aria-disabled title={title} className={cls}>{children}</span>;
   return <button type="button" onClick={onClick} disabled={disabled} title={title} className={cls}>{children}</button>;
 }
