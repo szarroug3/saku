@@ -489,7 +489,8 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
         </SkySurface>
 
         {!answered && state.hinted && card.hint && (card.hint.image || card.hint.text) && (
-          <SkySurface className="flex items-center gap-4 text-[14px] text-sky-ink/90">
+          // a long hint scrolls itself too, rather than pushing the card up
+          <SkySurface className="flex max-h-[40vh] shrink-0 items-center gap-4 overflow-y-auto text-[14px] text-sky-ink/90">
             {card.hint.image && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={card.hint.image} alt="" className="size-[96px] rounded-md object-contain" />
@@ -499,7 +500,15 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
         )}
 
         {answered && (
-          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} />
+          // The lesson scrolls inside itself rather than taking the card with
+          // it (SAK-392). One scroller for the whole column meant reading a
+          // long grammar page carried the card, the verdict, the answer and
+          // Next off the top, and the only way back to what you got wrong was
+          // to scroll up. It takes whatever the card leaves and scrolls within
+          // that, with a floor so it is never squeezed to nothing; past the
+          // floor the column scrolls as a whole, which is the safety valve for
+          // a screen too short to hold the card at all.
+          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} className="min-h-[120px] flex-1 overflow-y-auto" />
         )}
       </div>}
 

@@ -258,6 +258,29 @@ test("a missed card says what you said, all of it", async ({ page }) => {
   await expect(page.getByText(/You put/)).toHaveCount(0);
 });
 
+test("reading the reveal does not carry the card off the top", async ({ page }) => {
+  // SAK-392. One scroller held both, so reading a long lesson took the card,
+  // the verdict, the answer and Next away with it.
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto("/quiz?sample");
+  await page.getByRole("button", { name: "I don't know" }).click();
+  const next = page.getByRole("button", { name: /^(Next|Finish)$/ });
+  await expect(next).toBeVisible();
+  const before = await next.boundingBox();
+
+  // the reveal must actually have somewhere to scroll, or this proves nothing
+  const reveal = page.locator("main section").last();
+  const scrollable = await reveal.evaluate((el) => el.scrollHeight > el.clientHeight + 4);
+  expect(scrollable, "the reveal should be taller than the room it has").toBe(true);
+  await reveal.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await page.waitForTimeout(150);
+  expect(await reveal.evaluate((el) => el.scrollTop), "it should have scrolled").toBeGreaterThan(0);
+
+  const after = await next.boundingBox();
+  expect(after, "Next should still be on screen").not.toBeNull();
+  expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0)), "the card moved when the reveal scrolled").toBeLessThan(4);
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the
