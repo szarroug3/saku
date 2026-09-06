@@ -61,7 +61,7 @@ const NO_MISSES: PracticeMisses = {};
 /** The recipe in a URL, and back. */
 export const packRecipe = (recipe: Recipe) => encodeURIComponent(JSON.stringify(recipe));
 
-export function PracticeClient({ collections, sample, signedIn, initialPreview, toSave }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null; toSave?: Recipe }) {
+export function PracticeClient({ collections, sample, signedIn, initialPreview }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null }) {
   const router = useRouter();
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
@@ -73,7 +73,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview, 
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} height="100%" />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} height="100%" />;
 }
 
 /** A practice run: the Quiz's screen, with answers kept as misses only. The
@@ -91,12 +91,15 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe }: 
 
 function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: readonly QuizCard[]; sample: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
   const back = `/practice${sample ? "?sample" : ""}`;
+  const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const noteMisses = async (answers: readonly QuizAnswer[]) => {
     const misses = { ...read<Record<string, number>>(MISSES_KEY, {}) };
     for (const a of answers) if (a.grade === "missed") misses[a.cardId] = (misses[a.cardId] ?? 0) + 1;
     write(MISSES_KEY, misses);
   };
   const retry = (ids: readonly string[]) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
-  const save = () => router.push(`${back}${sample ? "&" : "?"}save=${packRecipe(recipe)}`);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  // Saved here, on the results, rather than by navigating back to Practice
+  // with the recipe in the query and throwing the results away (SAK-395).
+  const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} savedNames={saved.map((d) => d.name)} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

@@ -281,6 +281,27 @@ test("reading the reveal does not carry the card off the top", async ({ page }) 
   expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0)), "the card moved when the reveal scrolled").toBeLessThan(4);
 });
 
+test("practice keeps a recipe on the results, without leaving them", async ({ page }) => {
+  // SAK-395. It used to navigate back to Practice with the recipe in the
+  // query, so the counts, the misses and the other two buttons all vanished
+  // to do something that had nothing to do with any of them.
+  await page.goto("/practice?sample");
+  await page.getByRole("button", { name: /^Start/ }).click();
+  await expect(page).toHaveURL(/\/practice\/run/);
+  await page.getByRole("button", { name: "End the quiz" }).click();
+
+  const keep = page.getByRole("button", { name: "Keep this recipe" });
+  await expect(keep).toBeVisible();
+  await keep.click();
+  await page.getByPlaceholder("A name for this recipe").fill("Evening drill");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  // still on the results, and it says what it kept
+  await expect(page).toHaveURL(/\/practice\/run/);
+  await expect(page.getByText(/Kept as/)).toBeVisible();
+  await expect(page.getByText("Evening drill")).toBeVisible();
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the

@@ -8,6 +8,7 @@
 import { useState } from "react";
 
 import type { PitchComponent } from "@/sky/components/lesson-card";
+import { RecipeNameForm } from "@/sky/components/recipe-name-form";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyInfo } from "@/sky/components/sky-info";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -31,17 +32,24 @@ export interface QuizResultsProps {
   skyHref: string;
   pitch?: PitchComponent;
   onRetry?: (cardIds: readonly string[]) => void;
-  /** An offer to keep the recipe this deck came from (practice). */
-  onSave?: () => void;
+  /** Keep the recipe this run came from, under a name, without leaving the
+   * results to do it (SAK-395). */
+  onSave?: (name: string) => void;
+  /** The recipe names already taken, so saving over one announces itself.
+   * Only meaningful alongside `onSave`. */
+  savedNames?: readonly string[];
   /** What comes after this round, when there is a next one (a lesson's
    * quiz rests, then runs again): the primary action, ahead of the way back. */
   next?: { label: string; onClick: () => void };
   height?: string;
 }
 
-export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onRetry, onSave, next, height }: QuizResultsProps) {
+export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  // the naming box opens here rather than on another page
+  const [naming, setNaming] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
   const [lastPick, setLastPick] = useState<number | null>(null);
   const list = cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a);
   const counts = tally(list);
@@ -103,8 +111,16 @@ export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onR
           <SkyButton href={skyHref} variant={next ? "outline" : "solid"}>{skyHref.includes("practice") ? "Back to practice" : "Back to the observatory"}</SkyButton>
           {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
           {onRetry && picked.size === 0 && counts.missed > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => answers[c.id]?.grade === "missed").map((c) => c.id))}>Retry the {counts.missed === 1 ? "miss" : `${counts.missed} misses`}</SkyButton>}
-          {onSave && <SkyButton variant="outline" onClick={onSave}>Save this recipe</SkyButton>}
+          {onSave && !naming && !saved && <SkyButton variant="outline" onClick={() => setNaming(true)}>Keep this recipe</SkyButton>}
+          {onSave && saved && <span className="self-center text-[13px] text-sky-muted">Kept as <span className={`text-sky-ink ${japaneseFont(saved)}`}>{saved}</span>.</span>}
         </div>
+        {onSave && naming && (
+          <RecipeNameForm
+            taken={savedNames}
+            onSave={(name) => { onSave(name); setSaved(name); setNaming(false); }}
+            onCancel={() => setNaming(false)}
+          />
+        )}
       </div>
     </SkyPageShell>
   );

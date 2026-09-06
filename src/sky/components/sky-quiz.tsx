@@ -48,7 +48,9 @@ export interface SkyQuizProps {
   /** Starts a new quiz of just these cards, from the results. */
   onRetry?: (cardIds: readonly string[]) => void;
   /** Practice's offer to keep the recipe, on the results. */
-  onSave?: () => void;
+  onSave?: (name: string) => void;
+  /** The recipe names already taken, for the results' naming box. */
+  savedNames?: readonly string[];
   /** The round after this one, on the results (a lesson's quiz). */
   next?: { label: string; onClick: () => void };
   /** Retries after a first wrong answer, and the way to change it here:
@@ -88,7 +90,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said:
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -295,7 +297,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} onRetry={onRetry} onSave={onSave} next={next} height={height} />;
+    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} onRetry={onRetry} onSave={onSave} savedNames={savedNames} next={next} height={height} />;
   }
 
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;

@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
+import { RecipeNameForm } from "@/sky/components/recipe-name-form";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInfo } from "@/sky/components/sky-info";
@@ -43,7 +44,6 @@ export interface SkyPracticeProps {
   /** Starts the run. */
   onStart: (recipe: Recipe) => void;
   /** A recipe handed back from a run to save. */
-  toSave?: Recipe;
   height?: string;
 }
 
@@ -51,8 +51,8 @@ const LOOKUP_DELAY = 150;
 
 const same = (a: Recipe, b: Recipe) => JSON.stringify(a) === JSON.stringify(b);
 
-export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, height }: SkyPracticeProps) {
-  const [recipe, setRecipe] = useState<Recipe>(toSave ?? initial.recipe);
+export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, height }: SkyPracticeProps) {
+  const [recipe, setRecipe] = useState<Recipe>(initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
   // no round trip. The route's own preview serves for the opening recipe;
@@ -65,12 +65,11 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const shown = fresh ?? fetched?.preview ?? initial.preview;
   // the last item left out, offered back
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
-  const [saveName, setSaveName] = useState("");
-  const [saving, setSaving] = useState(!!toSave);
+  const [saving, setSaving] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
   // the last number asked for, remembered for when "Limited" is picked
   // again after "All of them"
-  const [count, setCount] = useState(typeof (toSave ?? initial.recipe).size === "number" ? (toSave ?? initial.recipe).size as number : DEFAULT_SIZE);
+  const [count, setCount] = useState(typeof initial.recipe.size === "number" ? initial.recipe.size as number : DEFAULT_SIZE);
   // the saved recipe the page is working from, by name; it stays chosen as
   // the recipe drifts, so the drift can be written back to it
   const [loaded, setLoaded] = useState<string | null>(null);
@@ -116,11 +115,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   // leaving an item out is a change to the recipe, so a saved one can take it
   const drop = (id: string, name: string) => { setRecipe({ ...recipe, excluded: [...excluded, id] }); setUndo({ id, name }); };
   const restore = (ids: readonly string[]) => set({ excluded: excluded.filter((id) => !ids.includes(id)) });
-  const save = () => {
-    const name = saveName.trim();
-    if (!name) return;
+  const save = (name: string) => {
     onSaved([...saved.filter((d) => d.name !== name), { name, recipe }]);
-    setLoaded(name); setSaveName(""); setSaving(false);
+    setLoaded(name); setSaving(false);
   };
   const update = () => { if (chosen) onSaved(saved.map((x) => (x.name === chosen.name ? { ...x, recipe } : x))); };
   const remove = () => { if (chosen) onSaved(saved.filter((x) => x.name !== chosen.name)); setLoaded(null); };
@@ -193,11 +190,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           </Facet>
           <div className="mt-8 flex flex-wrap items-center gap-2">
             {saving ? (
-              <form className="flex w-full gap-2" onSubmit={(e) => { e.preventDefault(); save(); }}>
-                <SkyInput value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="A name for this recipe" className="flex-1 !py-1.5 text-[14px]" autoFocus />
-                <SkyButton onClick={save} disabled={!saveName.trim()}>Save</SkyButton>
-                <SkyButton variant="outline" onClick={() => setSaving(false)}>Cancel</SkyButton>
-              </form>
+              <RecipeNameForm taken={saved.map((d) => d.name)} onSave={save} onCancel={() => setSaving(false)} />
             ) : chosen && changed ? (
               <>
                 <SkyButton onClick={update}>Update {chosen.name}</SkyButton>
