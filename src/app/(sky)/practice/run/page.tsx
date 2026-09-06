@@ -8,7 +8,6 @@ import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
 import { loadPracticeCards, loadQuiz } from "../../actions";
 import { PracticeRunClient } from "../../practice-client";
-import { SkyNote } from "../../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +24,6 @@ export default async function SkyPracticeRunPage({ searchParams }: { searchParam
   const initial = who ? (named.length ? await loadQuiz(who, { cards: named }) : await loadPracticeCards(who, recipe)) : null;
   return (
     <>
-      <SkyNote>{sample ? "A pretend learner. Nothing is recorded, here or ever: practice never touches the schedule." : "Practice is never recorded against your review schedule."}</SkyNote>
       <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={userId !== null} recipe={recipe} />
     </>
   );

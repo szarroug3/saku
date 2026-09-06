@@ -5,12 +5,10 @@
 import { SkyReading } from "@/sky/components/sky-reading";
 
 import { aboutPage } from "../reading";
-import { SkyNote } from "../sky-note";
 
 export default function SkyAboutPage() {
   return (
     <>
-      <SkyNote>{"The app's attribution page and its resources list, as one page."}</SkyNote>
       <SkyReading page={aboutPage()} height="100%" />
     </>
   );

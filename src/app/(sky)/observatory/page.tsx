@@ -3,13 +3,10 @@
 // opens with those picked (the Atlas's "Add to tonight's picks"). Signed
 // out, the browser's own progress.
 
-import Link from "next/link";
-
 import { currentUserId } from "@/lib/auth";
 
 import { loadObservatory } from "../actions";
 import { ObservatoryClient } from "../observatory-client";
-import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +18,6 @@ export default async function SkyObservatoryPage({ searchParams }: { searchParam
   const initial = sample ? await loadObservatory({ sample: true }) : userId ? await loadObservatory({}) : null;
   return (
     <>
-      <SkyNote><>
-          {sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
-          <Link href={sample ? "/observatory" : "/observatory?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </></SkyNote>
       <ObservatoryClient sample={sample} signedIn={userId !== null} initial={initial} picks={picks} />
     </>
   );

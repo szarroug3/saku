@@ -2,15 +2,12 @@
 // (`?sample` shows a pretend learner; `?save=` brings a recipe back from a
 // run to be named). Signed out, the browser's own standings.
 
-import Link from "next/link";
-
 import { currentUserId } from "@/lib/auth";
 import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
 import { practiceLookup } from "../actions";
 import { practiceCollections } from "../practice";
 import { PracticeClient } from "../practice-client";
-import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +24,6 @@ export default async function SkyPracticePage({ searchParams }: { searchParams: 
   const initialPreview = sample ? await practiceLookup({ sample: true }, EMPTY_RECIPE, {}) : userId ? await practiceLookup({}, EMPTY_RECIPE, {}) : null;
   return (
     <>
-      <SkyNote><>
-          {sample ? "A pretend learner. " : userId ? "Your own standings. " : "Your standings, kept in this browser. "}
-          <Link href={sample ? "/practice" : "/practice?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </></SkyNote>
       <PracticeClient collections={practiceCollections()} sample={sample} signedIn={userId !== null} initialPreview={initialPreview} toSave={toSave} />
     </>
   );

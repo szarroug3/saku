@@ -2,13 +2,10 @@
 // (`?sample` a pretend learner, `?entry=` opens one). Signed out, the
 // browser's own progress, handed up with each lookup.
 
-import Link from "next/link";
-
 import { currentUserId } from "@/lib/auth";
 
 import { loadAtlas } from "../actions";
 import { AtlasClient } from "../atlas-client";
-import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +17,6 @@ export default async function SkyAtlasPage({ searchParams }: { searchParams: Pro
   const initial = sample ? await loadAtlas({ sample: true }) : userId ? await loadAtlas({}) : null;
   return (
     <>
-      <SkyNote><>
-          {sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
-          <Link href={sample ? "/atlas" : "/atlas?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </></SkyNote>
       <AtlasClient sample={sample} signedIn={userId !== null} initial={initial} entry={entry} />
     </>
   );

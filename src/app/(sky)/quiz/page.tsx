@@ -3,14 +3,11 @@
 // learner, recording nothing). Signed out, the browser's own progress, and
 // the answers recorded there.
 
-import Link from "next/link";
-
 import { currentUserId } from "@/lib/auth";
 import { LESSON_ROUNDS } from "@/sky/lib/rest";
 
 import { loadQuiz } from "../actions";
 import { QuizClient } from "../quiz-client";
-import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +20,6 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const initial = sample ? await loadQuiz({ sample: true }, { picks, cards: named }) : userId ? await loadQuiz({}, { picks, cards: named }) : null;
   return (
     <>
-      <SkyNote><>
-          {sample ? "A pretend learner, so there is no one to record against. " : userId ? "Your own progress, recorded. " : "Your progress, recorded in this browser. "}
-          <Link href={sample ? "/quiz" : "/quiz?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </></SkyNote>
       <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} skyHref={sample ? "/observatory?sample" : "/observatory"} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </>
   );

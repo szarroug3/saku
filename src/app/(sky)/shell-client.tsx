@@ -46,8 +46,6 @@ export function SkyShellClient({ signedIn, authEnabled, children }: { signedIn: 
   const account = !authEnabled ? undefined : signedIn
     ? <button type="button" onClick={signOut} disabled={busy} className="text-sky-muted hover:text-sky-ink disabled:opacity-50">{busy ? "Signing out…" : "Sign out"}</button>
     : <a href="/login" className="rounded-full border border-sky-accent px-3 py-1 font-semibold text-sky-accent hover:bg-sky-accent/15">Sign in</a>;
-  const notice = authEnabled && !signedIn
-    ? <>Your progress is saved in this browser only. <a href="/login" className="underline hover:text-sky-ink">Sign in</a> to keep it across your devices.</>
-    : undefined;
-  return <SkyShell current={pathname} entries={ENTRIES} account={account} notice={notice} style={look}>{children}</SkyShell>;
+  // no notice band: the bar's Sign in is always there (Sam, 2026-09-06)
+  return <SkyShell current={pathname} entries={ENTRIES} account={account} style={look}>{children}</SkyShell>;
 }

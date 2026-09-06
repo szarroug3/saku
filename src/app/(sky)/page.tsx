@@ -5,14 +5,11 @@
 // prerendered. `?sample` shows a pretend learner. Signed out, the browser's
 // own sky (see local.tsx).
 
-import Link from "next/link";
-
 import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 
 import { loadSky } from "./actions";
 import { PlanetariumClient } from "./planetarium-client";
-import { SkyNote } from "./sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +22,6 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const initial = sample ? await loadSky({ sample: true }) : userId ? await loadSky({}, graduateRuns) : null;
   return (
     <>
-      <SkyNote><>
-          {sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
-          <Link href={sample ? "/" : "/?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </></SkyNote>
       <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} graduateRuns={graduateRuns} />
     </>
   );
