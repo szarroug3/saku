@@ -234,14 +234,14 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
               // name takes both columns, in the UI face
               const named = p.item.english === p.item.glyph;
               return (
-                <li key={p.item.id} className="grid grid-cols-[7rem_1fr_auto_auto] items-center gap-x-4 rounded-lg px-2 py-2 hover:bg-sky-card">
+                <li key={p.item.id} className="grid grid-cols-[5.5rem_1fr_auto_auto] items-center gap-x-3 rounded-lg px-2 py-2 hover:bg-sky-card sm:grid-cols-[7rem_1fr_auto_auto] sm:gap-x-4">
                   {named
                     ? <span className={`col-span-2 truncate font-sky-ui text-[14px] font-semibold ${STANDING[p.item.standing].text}`} title={p.item.english}>{p.item.english}</span>
                     : <>
                         <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`} title={p.item.glyph}>{p.item.glyph}</span>
                         <span className="truncate text-[13.5px] text-sky-ink/90" title={p.item.english}>{p.item.english}</span>
                       </>}
-                  <span className="text-[12px] text-sky-accent">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
+                  <span className="hidden text-[12px] text-sky-accent sm:inline">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
                   <button type="button" aria-label={`Leave out ${p.item.english}`} title="Leave it out" onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
                 </li>
               );

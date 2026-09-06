@@ -28,7 +28,7 @@ export function SkyPageShell({ eyebrow, title, aside, height = "calc(100vh - 8re
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
           {eyebrow && <Eyebrow className="mb-0">{eyebrow}</Eyebrow>}
-          <h1 className={`font-sky-display text-4xl leading-tight ${eyebrow ? "mt-1" : ""}`}>{title}</h1>
+          <h1 className={`font-sky-display text-3xl leading-tight md:text-4xl ${eyebrow ? "mt-1" : ""}`}>{title}</h1>
         </div>
         {aside}
       </header>

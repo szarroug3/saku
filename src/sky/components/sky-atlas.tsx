@@ -18,7 +18,19 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
+
+/** Whether the screen is narrow (a phone): the rail folds away and an open
+ * panel takes the whole width. Read from the viewport, never guessed on
+ * the server. */
+const NARROW = "(max-width: 767px)";
+function useNarrow(): boolean {
+  return useSyncExternalStore(
+    (onChange) => { const mq = window.matchMedia(NARROW); mq.addEventListener("change", onChange); return () => mq.removeEventListener("change", onChange); },
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
+}
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { AtlasRail } from "@/sky/components/atlas-rail";
@@ -156,8 +168,13 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const bring = useCallback((more: readonly SkyItem[]) => setExtra((prev) => [...prev, ...more]), []);
   const itemsOf = useCallback((ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group), [graph]);
 
-  // the rail: one collection open at a time, and one status or all
-  const [railOpen, setRailOpen] = useState(true);
+  // the rail: one collection open at a time, and one status or all. Open
+  // by default on a wide screen, folded on a narrow one, until the learner
+  // says otherwise.
+  const narrow = useNarrow();
+  const [railPref, setRailPref] = useState<boolean | null>(null);
+  const railOpen = railPref ?? !narrow;
+  const setRailOpen = setRailPref;
   const [shelfId, setShelf] = useState(data.shelves[0]?.id ?? "");
   // the kanji shelf can be cut by a radical (SAK-325): the way a kanji seen
   // in the wild is found, by what can be seen in it. It combines with the
@@ -279,7 +296,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const [wide, setWide] = useState(false);
   const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
   const showPanel = selection.ids.length > 0;
-  const shelvesShown = !(wide && showPanel);
+  // an open panel on a narrow screen takes the whole width, as "widen" does
+  const shelvesShown = !((wide || narrow) && showPanel);
   const columns = !shelvesShown ? "minmax(0, 1fr)" : `${railOpen ? "200px " : ""}minmax(0, 1fr)${showPanel ? ` ${panelWidth}px` : ""}`;
   const startResize = (e: ReactPointerEvent<HTMLDivElement>) => {
     const from = e.clientX, was = panelWidth;

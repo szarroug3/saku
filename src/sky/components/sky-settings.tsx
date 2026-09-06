@@ -33,12 +33,12 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
   const s = settings;
   const text = (key: keyof SkySettings) => SETTING_TEXT[key];
   const Row = ({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean; children: ReactNode }) => (
-    <div className={`flex items-center justify-between gap-6 border-t border-sky-line py-3 first:border-t-0 ${dim ? "opacity-50" : ""}`}>
+    <div className={`flex flex-col items-start gap-2 border-t border-sky-line py-3 first:border-t-0 md:flex-row md:items-center md:justify-between md:gap-6 ${dim ? "opacity-50" : ""}`}>
       <span className="flex items-center text-[14px] text-sky-ink">
         {text(k).label}
         {Tip && text(k).info && <Tip label={`About ${text(k).label.toLowerCase()}`}>{text(k).info}</Tip>}
       </span>
-      <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{children}</span>
+      <span className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">{children}</span>
     </div>
   );
   const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer", dim = false) => (

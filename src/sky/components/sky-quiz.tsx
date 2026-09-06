@@ -247,8 +247,8 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   });
 
   const strip = (
-    <div className="flex items-center gap-3 font-sky-ui text-[12.5px] text-sky-muted">
-      <div className="flex items-center gap-1" aria-label="The cards">
+    <div className="flex flex-wrap items-center gap-3 font-sky-ui text-[12.5px] text-sky-muted">
+      <div className="flex flex-wrap items-center gap-1" aria-label="The cards">
         {cards.map((c, i) => {
           const a = answers[c.id];
           return (
@@ -264,7 +264,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
           );
         })}
       </div>
-      <span className="tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
+      <span className="whitespace-nowrap tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
       {!finished && cards.length > 0 && <SkyButton variant="outline" onClick={() => finish(answers)}>End the quiz</SkyButton>}
     </div>
   );
@@ -306,7 +306,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
             <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
-          <div className="mt-3 flex min-h-0 flex-1 gap-4">
+          <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex flex-col items-center text-center">
                 {listening ? (
@@ -416,7 +416,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
             </div>
 
             {/* the bar: help while the card is open, the way on once it is done */}
-            <div className="flex w-[168px] shrink-0 flex-col gap-2 border-l border-sky-line pl-4">
+            <div className="flex shrink-0 flex-col gap-2 border-t border-sky-line pt-3 md:w-[168px] md:border-t-0 md:border-l md:pl-4 md:pt-0">
               <Eyebrow>{answered ? "Move on" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}${timeLeft !== null ? ` · ${Math.ceil(timeLeft / 1000)}s` : ""}`}</Eyebrow>
               {timeLeft !== null && timerSeconds > 0 && (
                 <div className="h-1 w-full overflow-hidden rounded-full bg-sky-line" aria-hidden>

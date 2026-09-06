@@ -138,7 +138,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, heigh
   return (
     <SkyPageShell eyebrow="Lesson" title="Tonight's lesson" aside={nav} height={height}>
       <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="relative h-[42%] min-h-[180px] shrink-0 overflow-hidden rounded-2xl border border-sky-line">
+        <div className="relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px]">
           <SkyField
             items={data.items}
             roots={taught}
