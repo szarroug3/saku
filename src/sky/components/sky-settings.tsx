@@ -69,7 +69,7 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
             <button
               key={a.id} type="button" role="radio" aria-checked={s.accent === a.id} aria-label={a.label} title={a.label}
               onClick={() => onChange({ accent: a.id })}
-              className={`h-7 w-7 rounded-full border-2 transition-transform ${s.accent === a.id ? "scale-110 border-sky-ink" : "border-transparent hover:border-sky-muted"}`}
+              className={`h-[22px] w-[22px] rounded-full border-2 transition-transform ${s.accent === a.id ? "scale-110 border-sky-ink" : "border-transparent hover:border-sky-muted"}`}
               style={{ backgroundColor: a.color }}
             />
           ))}
@@ -86,7 +86,7 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
                 key={f.family} type="button" aria-pressed={on} aria-label={f.label} title={f.label}
                 onClick={() => toggleFont(f.family)}
                 style={{ fontFamily: f.family }}
-                className={`h-10 rounded-full border px-3.5 text-[21px] leading-none ${on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
+                className={`h-[26px] rounded-full border px-3 text-[15px] leading-none ${on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
               >
                 {FONT_SAMPLE}
               </button>
