@@ -479,14 +479,13 @@ right instead: the number, what the card asks, and its grade once
 answered, with the card being asked lit and scrolled into view. It never
 spoils a listening card, which reads "Listen" until it is answered.
 
-It slides in from the right rather than taking a column, and its width is
-held open on BOTH sides of the card at all times, so the card sits in the
-middle of the page whether the list is there or not: opening it must
-neither move the card (Sam, 2026-09-06) nor cover it. The panel stays
-mounted so it can slide both ways, and is `inert` while parked, so nothing
-in it can be tabbed to or read out. Below `lg` there is no room for both,
-so it takes the card's place instead and tapping a row jumps there and
-folds it again, which is what the Atlas does with its entry panel.
+It slides in from the right rather than taking a column, and the card
+slides with it (see SAK-396 below, which reversed the first answer here).
+The panel stays mounted so it can slide both ways, and is `inert` while
+parked, so nothing in it can be tabbed to or read out. Below `lg` there is
+no room for both, so it takes the card's place instead and tapping a row
+jumps there and folds it again, which is what the Atlas does with its
+entry panel.
 
 The header keeps the count and "End the quiz", and gains "The cards" when
 the list is away, in the same outline the other actions wear. The fold is
@@ -575,3 +574,32 @@ a showcase deck, one card of every kind, and its sequence is chosen.
 `shuffled`, since the sky now wants chance for two opposite reasons: a
 placement is seeded so it never moves, and a deck is shuffled so it never
 repeats.
+
+### The card slides with the list, and stops being cut off (2026-09-06, SAK-396)
+
+Holding the card still while the list opened cost more than it was worth.
+The way it was done was to reserve the list's width on BOTH sides of the
+card at every width from `lg` up, 480px of the page, so the card never
+had to move. Just above the breakpoint that left a 1024px window only
+496px for a card whose row wants 470 at its narrowest, and the card body
+would not shrink: a flex item keeps its content's own minimum unless it
+is told otherwise, so the row overflowed and `overflow-clip` cropped the
+help bar off the right edge with no scrollbar and no warning. Plenty of
+empty page, a cut-off card.
+
+The card is centred in whatever space is left instead, and moves when the
+list does (Sam, 2026-09-06). The room is padding on the box the two share,
+so the only thing that moves the card is the same 200ms the list slides
+in; an absolutely positioned child sits against the padding box, so the
+list itself does not move with the padding. At 1024 the card is now 720px
+with the list open, where it was 496.
+
+`min-w-0` on the card body and its box is the other half. It is not
+needed at any width the app currently has, since the list only opens from
+1024 up and the card fits whole there, but without it the failure is
+silent: the row overflows into a clip nobody can scroll. With it a card
+too narrow for its row shrinks instead.
+
+The clip itself stays. `overflow-hidden` is still a scroll port, and the
+parked list hanging off the right edge made the box scrollable, so the
+browser scrolled to it and eased back, carrying the card along.

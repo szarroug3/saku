@@ -299,13 +299,18 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
 
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
-    {/* The list slides in beside the card rather than taking a column of
-        it, so opening it never moves the card (Sam, 2026-09-06).
+    {/* The list slides in beside the card, and the card slides with it: it
+        is centred in whatever space is left, never held still and never
+        squeezed (Sam, 2026-09-06, SAK-396). The room for the list is the
+        padding on this box, which is the only thing that moves the card,
+        so the two animate together; an absolutely positioned child sits
+        against the padding box, so the list itself does not move with it.
+
         `overflow-clip`, NOT `hidden`: a hidden box is still a scroll port,
         so the parked list hanging off the right edge made this scrollable,
         and the browser scrolled it there and eased back, carrying the card
         with it. Clip crops the same and can never be scrolled. */}
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-clip lg:px-60">
+    <div className={`relative flex min-h-0 flex-1 flex-col overflow-clip transition-[padding] duration-200 ease-out motion-reduce:transition-none ${listOpen ? "lg:pr-60" : ""}`}>
       {/* one width for the box whatever is on the card, so the arrows stay
           put while stepping back and forth; the help is a bar down its right
           side, so the box may grow downward for the choices without anything
@@ -318,7 +323,10 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
             <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
           <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-            <div className="flex min-h-0 flex-1 flex-col">
+            {/* min-w-0: a flex item will not shrink below its content's own
+                minimum without it, so a narrow card pushed the help bar off
+                the right edge and the clip above swallowed it (SAK-396) */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="flex flex-col items-center text-center">
                 {listening ? (
                   // the sound in place of the glyph: a big hear button, and the
@@ -349,7 +357,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
                         value={given}
                         onChange={(e) => setGiven(card.answerInKana && toKana ? toKana(e.target.value, card.answerInKana === "katakana") : e.target.value)}
                         placeholder={card.answerIs === "reading" ? (card.answerInKana ? "The reading" : "The reading, in romaji") : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
-                        className="flex-1"
+                        className="min-w-0 flex-1"
                       />
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
                     </form>

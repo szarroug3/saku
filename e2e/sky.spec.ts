@@ -64,6 +64,26 @@ test("the deck is dealt: two quizzes of the same picks are not asked in the same
   expect(differed).toBe(true);
 });
 
+test("the quiz card is centred in the space the list leaves, and never cut off", async ({ page }) => {
+  // SAK-396. 1024 is the tightest width the list opens beside the card at,
+  // and the width the card used to be squeezed and clipped at.
+  await page.setViewportSize({ width: 1024, height: 850 });
+  await page.goto("/quiz?sample");
+  await expect(page.getByRole("complementary", { name: "The cards" })).toBeVisible();
+  const measured = await page.evaluate(() => {
+    const panel = document.querySelector('aside[aria-label="The cards"]')!;
+    const box = panel.parentElement!;
+    const card = box.firstElementChild!;
+    const row = card.querySelector('[class*="md:flex-row"]')!;
+    const b = box.getBoundingClientRect(), c = card.getBoundingClientRect(), p = panel.getBoundingClientRect();
+    return { spilled: row.scrollWidth - row.clientWidth, left: Math.round(c.left - b.left), right: Math.round(Math.min(p.left, b.right) - c.right) };
+  });
+  // nothing of the card is outside the box that clips it
+  expect(measured.spilled).toBe(0);
+  // and it sits in the middle of what is left of the row, not held to one side
+  expect(Math.abs(measured.left - measured.right)).toBeLessThanOrEqual(2);
+});
+
 test("the atlas opens on its question", async ({ page }) => {
   await page.goto("/atlas?sample");
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
