@@ -286,9 +286,13 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
 
   return (
     <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
-    {/* the list slides over the page rather than taking a column of it, so
-        opening it never moves the card (Sam, 2026-09-06) */}
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden lg:px-60">
+    {/* The list slides in beside the card rather than taking a column of
+        it, so opening it never moves the card (Sam, 2026-09-06).
+        `overflow-clip`, NOT `hidden`: a hidden box is still a scroll port,
+        so the parked list hanging off the right edge made this scrollable,
+        and the browser scrolled it there and eased back, carrying the card
+        with it. Clip crops the same and can never be scrolled. */}
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-clip lg:px-60">
       {/* one width for the box whatever is on the card, so the arrows stay
           put while stepping back and forth; the help is a bar down its right
           side, so the box may grow downward for the choices without anything
