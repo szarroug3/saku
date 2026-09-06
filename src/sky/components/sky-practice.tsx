@@ -49,10 +49,16 @@ const same = (a: Recipe, b: Recipe) => JSON.stringify(a) === JSON.stringify(b);
 
 export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(toSave ?? initial.recipe);
-  // the preview the route resolved for the opening recipe serves as long as
-  // the recipe is that one; anything else is looked up
+  // the preview is looked up for the recipe without what is left out by
+  // hand: leaving an item out is then a filter on what is already here, with
+  // no round trip. The route's own preview serves for the opening recipe;
+  // while a new one is on its way the last one stays on screen, so nothing
+  // blinks (Sam, 2026-09-06).
+  const base: Recipe = { ...recipe, excluded: [] };
   const [fetched, setFetched] = useState<{ recipe: Recipe; preview: PracticePreview } | null>(null);
-  const preview: PracticePreview | null = same(recipe, initial.recipe) ? initial.preview : fetched && same(fetched.recipe, recipe) ? fetched.preview : null;
+  const fresh: PracticePreview | null = same(base, initial.recipe) ? initial.preview : fetched && same(fetched.recipe, base) ? fetched.preview : null;
+  const loading = !fresh;
+  const shown = fresh ?? fetched?.preview ?? initial.preview;
   // the last item left out, offered back
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
   const [saveName, setSaveName] = useState("");
@@ -64,12 +70,14 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const asked = useRef(0);
 
   // the preview follows the recipe, after a beat, and never lands out of order
+  const baseKey = JSON.stringify(base);
   useEffect(() => {
-    if (same(recipe, initial.recipe)) return;
+    const wanted = JSON.parse(baseKey) as Recipe;
+    if (same(wanted, initial.recipe)) return;
     const n = ++asked.current;
-    const t = setTimeout(() => { lookup(recipe, misses).then((p) => { if (n === asked.current) setFetched({ recipe, preview: p }); }); }, LOOKUP_DELAY);
+    const t = setTimeout(() => { lookup(wanted, misses).then((p) => { if (n === asked.current) setFetched({ recipe: wanted, preview: p }); }); }, LOOKUP_DELAY);
     return () => clearTimeout(t);
-  }, [recipe, misses, lookup, initial]);
+  }, [baseKey, misses, lookup, initial]);
 
   const set = (change: Partial<Recipe>) => { setRecipe({ ...recipe, ...change }); setUndo(null); };
   const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
@@ -84,15 +92,16 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     set({ cuts: next.length ? { ...rest, [collection]: next } : rest });
   };
 
-  const kept = preview ? preview.items : [];
-  // the pool the deck is drawn from: everything that matches, what is left
-  // out by hand already gone from it
-  const pool = preview ? preview.matched : 0;
-  const unseen = preview ? preview.matched - preview.items.length : 0;
-  const size = deckSize(recipe, pool);
-  const blocked = cannotStart(recipe, preview);
   const excluded = recipe.excluded ?? [];
-  const short = preview ? shortfall(recipe, pool) : null;
+  const kept = shown.items.filter((p) => !excluded.includes(p.item.id));
+  // the pool the deck is drawn from: everything that matches, less what is
+  // left out by hand (counted among the listed; the run counts exactly)
+  const pool = shown.matched - (shown.items.length - kept.length);
+  const unseen = shown.matched - shown.items.length;
+  const size = deckSize(recipe, pool);
+  const preview: PracticePreview = { ...shown, items: kept, matched: pool };
+  const blocked = cannotStart(recipe, preview);
+  const short = shortfall(recipe, pool);
   const chosen = (loaded && saved.find((d) => d.name === loaded)) || saved.find((d) => same(d.recipe, recipe));
   const changed = !!chosen && !same(chosen.recipe, recipe);
 
@@ -155,7 +164,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           </Facet>
           <Facet title="Ask me for">
             {ASKS.map((a) => {
-              const can = preview ? preview.asksAvailable[a] : true;
+              const can = preview.asksAvailable[a];
               return <SkyChip key={a} on={recipe.asks.includes(a)} disabled={!can} title={can ? ASK[a].meaning : `Nothing in this deck can be asked that way. ${ASK[a].meaning}`} onClick={() => set({ asks: toggle(recipe.asks, a) })}>{ASK[a].label}</SkyChip>;
             })}
           </Facet>
@@ -182,11 +191,11 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
 
         <SkyPanel title="What you would get" className="flex min-h-0 flex-col">
           <p className="mt-2 shrink-0 text-[14px]">
-            <span className="font-semibold text-sky-ink">{preview ? size.toLocaleString() : "…"}</span> {size === 1 ? "item" : "items"}
-            {preview && recipe.size !== "all" && pool > size && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
+            <span className="font-semibold text-sky-ink">{size.toLocaleString()}</span> {size === 1 ? "item" : "items"}
+            {recipe.size !== "all" && pool > size && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
           </p>
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
-          {blocked && preview && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
+          {blocked && !loading && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
           {undo ? (
             <p className="mt-1 shrink-0 text-[12.5px] text-sky-muted">
               Left out {undo.name}. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore([undo.id])}>Put it back</button>
@@ -197,7 +206,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
               {excluded.length === 1 ? "One item" : `${excluded.length} items`} left out by hand. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put {excluded.length === 1 ? "it" : "them"} back</button>
             </p>
           ) : null}
-          <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+          <ul className={`mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
             {kept.map((p) => (
               <li key={p.item.id} className="grid grid-cols-[6rem_1fr_auto_auto] items-baseline gap-x-3 rounded-lg px-2 py-1.5 hover:bg-sky-card">
                 <span className={`truncate font-sky-display text-[18px] leading-none ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`}>{p.item.glyph}</span>
