@@ -12,7 +12,7 @@ import { loadSettings } from "@/lib/settings";
 
 import { loadSky } from "./actions";
 import { PlanetariumClient } from "./planetarium-client";
-import { SkyPage } from "./sky-page";
+import { SkyNote } from "./sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -24,15 +24,12 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   const graduateRuns = userId ? ((await loadSettings(userId)).cfg?.graduateRuns ?? undefined) : undefined;
   const initial = sample ? await loadSky({ sample: true }) : userId ? await loadSky({}, graduateRuns) : null;
   return (
-    <SkyPage
-      note={
-        <>
+    <>
+      <SkyNote><>
           {sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
           <Link href={sample ? "/" : "/?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </>
-      }
-    >
+        </></SkyNote>
       <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} graduateRuns={graduateRuns} />
-    </SkyPage>
+    </>
   );
 }

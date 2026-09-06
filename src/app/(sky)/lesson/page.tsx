@@ -10,7 +10,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { loadLesson } from "../actions";
 import { LessonClient } from "../lesson-client";
 import { lessonFromPicks, showcasePicks } from "../lesson";
-import { SkyPage } from "../sky-page";
+import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -24,15 +24,12 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
   const initial = showcase ? lessonFromPicks(emptyHistory(), picks) : sample ? await loadLesson({ sample: true }, picks) : userId ? await loadLesson({}, picks) : null;
   const back = sample ? "/observatory?sample" : "/observatory";
   return (
-    <SkyPage
-      note={
-        <>
+    <>
+      <SkyNote><>
           {showcase ? "One of everything, on an empty history. " : sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
           <Link href={back} className="underline">Back to the Observatory</Link>
-        </>
-      }
-    >
+        </></SkyNote>
       <LessonClient sample={sample} showcase={showcase} signedIn={userId !== null || showcase} initial={initial} picks={picks} />
-    </SkyPage>
+    </>
   );
 }

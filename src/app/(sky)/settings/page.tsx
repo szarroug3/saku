@@ -3,14 +3,15 @@
 // settings blob when signed in), so this page and the app's agree.
 
 import { SettingsClient } from "../settings-client";
-import { SkyPage } from "../sky-page";
+import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
 export default function SkySettingsPage() {
   return (
-    <SkyPage note="The same settings the app keeps: change one here and the app sees it.">
+    <>
+      <SkyNote>{"The same settings the app keeps: change one here and the app sees it."}</SkyNote>
       <SettingsClient />
-    </SkyPage>
+    </>
   );
 }

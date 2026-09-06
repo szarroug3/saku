@@ -9,7 +9,7 @@ import { currentUserId } from "@/lib/auth";
 
 import { loadObservatory } from "../actions";
 import { ObservatoryClient } from "../observatory-client";
-import { SkyPage } from "../sky-page";
+import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -20,15 +20,12 @@ export default async function SkyObservatoryPage({ searchParams }: { searchParam
   const userId = sample ? null : await currentUserId();
   const initial = sample ? await loadObservatory({ sample: true }) : userId ? await loadObservatory({}) : null;
   return (
-    <SkyPage
-      note={
-        <>
+    <>
+      <SkyNote><>
           {sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
           <Link href={sample ? "/observatory" : "/observatory?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </>
-      }
-    >
+        </></SkyNote>
       <ObservatoryClient sample={sample} signedIn={userId !== null} initial={initial} picks={picks} />
-    </SkyPage>
+    </>
   );
 }

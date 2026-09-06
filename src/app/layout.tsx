@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
-import { DockHeightVar } from "@/components/dock-height-var";
 import { HydrationMarker } from "@/components/hydration-marker";
 import { SaveStatus } from "@/components/save-status";
-import { Sidebar } from "@/components/sidebar";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
 // global nav's Sign in control) — see src/components/sidebar.tsx.
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
@@ -22,7 +19,6 @@ import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { QuizSessionProvider } from "@/lib/quiz-session";
-import { CURRENT_RUN_COUNT_COOKIE } from "@/lib/settings-keys";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
 import type * as Theme from "@/lib/theme";
@@ -161,16 +157,6 @@ export default async function RootLayout({
   const initialLists = seeds?.lists.lists ?? null;
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
-  const cookieStore = await cookies();
-  const sidebarCollapsed =
-    cookieStore.get("saku-sidebar-collapsed")?.value === "1";
-  const runCountCookie = Number(
-    cookieStore.get(CURRENT_RUN_COUNT_COOKIE)?.value ?? "0",
-  );
-  const initialRunCount =
-    Number.isSafeInteger(runCountCookie) && runCountCookie > 0
-      ? runCountCookie
-      : 0;
   return (
     // suppressHydrationWarning: the script below rewrites these two attributes
     // before React hydrates, so the client <html> legitimately differs from
@@ -257,123 +243,15 @@ export default async function RootLayout({
                         that its own matching top padding didn't have. Horizontal
                         (px-3) stays; kq-content's own pt-3/pb-3 still gives every
                         page its top/bottom breathing room. */}
-                    <div className="flex gap-3.5 px-3">
-                      <Sidebar
-                        signedIn={signedIn}
-                        authEnabled={authEnabled}
-                        initialCollapsed={sidebarCollapsed}
-                        initialRunCount={initialRunCount}
-                      />
-                      {/* SAK-204: EVERY PAGE IS THIS SAME 3-ROW FRAME NOW — a
-                          frozen header, the one scrolling middle row, and a
-                          frozen footer, `main` itself pinned to exactly one
-                          viewport tall (`h-dvh`) so there is no outer document
-                          scroll left to fight any of the three. This replaces
-                          both the old "the page scrolls, sticky docks float
-                          over it" design AND the handful of pages
-                          (library-page.tsx, entry-view.tsx, session/page.tsx)
-                          that were each separately building their own
-                          -mb-15/h-calc version of this exact frame — one frame,
-                          used by every page, is the whole ask.
-
-                          FULL WIDTH, READING-WIDTH CONTENT: `main` carries no
-                          max-width of its own any more (that used to be exactly
-                          why the scrollbar sat inset from the true window edge
-                          on a wide monitor — the scrolling box itself was
-                          capped at 1400px, nowhere near the actual right edge).
-                          Each row's OWN box now spans every pixel `main` has;
-                          `.kq-content` (a max-w-[1400px] wrapper, no auto-
-                          margins — this column sits directly right of the
-                          sidebar, never centered) caps only what's INSIDE each
-                          row, so the reading width people are used to is
-                          unchanged and the scrollbar (and every row's
-                          background) reaches the far right edge. */}
-                      <main className="relative flex h-dvh min-w-0 flex-1 flex-col">
-                        {/* ROW 1 — THE FROZEN HEADER. A plain flex sibling, not
-                            `sticky`: nothing above it scrolls any more, so it
-                            never needs occlusion. Two dock slots stack inside
-                            it — the signed-out banner ABOVE a page's own top
-                            dock (the Library's search + filter chips) — so the
-                            banner never gets pushed under a page's header by
-                            mount order the way two children of one slot used
-                            to. Empty (and hidden) on pages that dock nothing. */}
-                        <div className="shrink-0">
-                          <div id="kq-dock-banner" className="kq-dock kq-content empty:hidden" />
-                          <div id="kq-dock-top" className="kq-dock kq-content empty:hidden" />
-                        </div>
-                        {/* Tracks row 2's own real height into --kq-scroll-h
-                            — see the component's own header for why
-                            .kq-center-frame needs this instead of a fixed
-                            chrome constant now. */}
-                        <DockHeightVar />
-                        {/* ROW 2 — THE ONLY THING THAT SCROLLS. `min-h-0` lets
-                            it shrink inside the frame instead of pushing rows
-                            1/3 off-screen; `flex-1` takes whatever height they
-                            don't. Full width for the scrollbar's sake (see
-                            above) — `.kq-content` below caps the actual
-                            content at reading width the same as every other
-                            row.
-
-                            IT IS NOT FROSTED, and this used to say it was. A
-                            live blur behind a scroll region re-blends every
-                            frame, which was the whole of the kiri scroll lag,
-                            so .kq-stage is a compositor layer and nothing
-                            more (globals.css). A sticky bar that has to
-                            occlude therefore cannot lean on the stage for it
-                            and must declare kq-band itself; see SessionHud's
-                            `float`. */}
-                        <div className="relative min-h-0 flex-1">
-                          <div
-                            className="kq-stage pointer-events-none absolute inset-0"
-                            aria-hidden
-                          />
-                          <div className="kq-scroll relative h-full overflow-x-clip overflow-y-auto">
-                            <div className="kq-content px-2 pt-3 pb-3">
-                              {/* On every page: the screens that would
-                                  otherwise show a learner's work as missing
-                                  are exactly the ones this has to appear on.
-                                  Renders nothing when nothing is unsaved. */}
-                              <SaveStatus />
-                              {/* Tell the progress write path whether an
-                                  account exists, so a 401 on a write is read
-                                  as "signed out, save local" or "signed-in
-                                  token lapsed, refresh and retry" correctly.
-                                  Renders nothing. */}
-                              <AuthModeInit signedIn={authEnabled && signedIn} />
-                              {/* When a signed-out learner signs in, their
-                                  local progress is replayed into the account
-                                  and the local copy cleared — once, best
-                                  effort. Renders nothing. */}
-                              <LocalMigration signedIn={authEnabled && signedIn} />
-                              {/* SAK-111 mounted a LibraryPrefetch here to warm
-                                  getLibraryShelves' client-side cache ahead of
-                                  LibraryPageClient's own useServerLookup call.
-                                  SAK-121 moved that call server-side (the
-                                  /library page itself now `await`s it, off
-                                  the same unstable_cache entry), so
-                                  LibraryPageClient no longer fetches it
-                                  client-side at all — nothing is left to
-                                  warm, so the prefetcher (and the POST it
-                                  fired on every app page load) was removed
-                                  rather than kept as dead weight. */}
-                              {children}
-                              {/* SAK-264: mounted last among the shell's own
-                                  client children on purpose — see the
-                                  component's own header. Renders nothing. */}
-                              <HydrationMarker />
-                            </div>
-                          </div>
-                        </div>
-                        {/* ROW 3 — THE FROZEN FOOTER. A page docks its bottom
-                            bar here (the Library's slice bar, a lesson's
-                            Back/Next, a quiz round's complete actions) — a
-                            plain flex sibling below row 2, never itself
-                            `sticky`/`fixed`: nothing scrolls behind it, so
-                            there is nothing for it to recede from or occlude.
-                            Empty (hidden) on pages that dock nothing. */}
-                        <div id="kq-dock-bottom" className="kq-dock kq-content shrink-0 empty:hidden" />
-                      </main>
-                    </div>
+                    {/* The shell is the Sky's own (src/app/(sky)/layout.tsx) since
+                        cutover (2026-09-06); the dev galleries keep the old frame in
+                        src/app/dev/layout.tsx. What is left here is every page's
+                        invisible housekeeping. */}
+                    <SaveStatus />
+                    <AuthModeInit signedIn={authEnabled && signedIn} />
+                    <LocalMigration signedIn={authEnabled && signedIn} />
+                    {children}
+                    <HydrationMarker />
                   </ConfirmProvider>
                 </TooltipProvider>
                 </ListsProvider>

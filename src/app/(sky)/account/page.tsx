@@ -7,7 +7,7 @@ import { isSupabaseStore } from "@/lib/store/mode";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { AccountClient } from "../account-client";
-import { SkyPage } from "../sky-page";
+import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,9 @@ export default async function SkyAccountPage() {
   const userId = authEnabled ? await currentUserId() : null;
   const who = userId ? await whoIsSignedIn() : {};
   return (
-    <SkyPage note={userId ? "Your own account." : "Signed out."}>
+    <>
+      <SkyNote>{userId ? "Your own account." : "Signed out."}</SkyNote>
       <AccountClient signedIn={!!userId} name={who.name} email={who.email} authEnabled={authEnabled} />
-    </SkyPage>
+    </>
   );
 }

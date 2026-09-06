@@ -10,7 +10,7 @@ import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 import { practiceLookup } from "../actions";
 import { practiceCollections } from "../practice";
 import { PracticeClient } from "../practice-client";
-import { SkyPage } from "../sky-page";
+import { SkyNote } from "../sky-note";
 
 export const dynamic = "force-dynamic";
 
@@ -26,15 +26,12 @@ export default async function SkyPracticePage({ searchParams }: { searchParams: 
   const toSave = parseRecipe(params.save);
   const initialPreview = sample ? await practiceLookup({ sample: true }, EMPTY_RECIPE, {}) : userId ? await practiceLookup({}, EMPTY_RECIPE, {}) : null;
   return (
-    <SkyPage
-      note={
-        <>
+    <>
+      <SkyNote><>
           {sample ? "A pretend learner. " : userId ? "Your own standings. " : "Your standings, kept in this browser. "}
           <Link href={sample ? "/practice" : "/practice?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
-        </>
-      }
-    >
+        </></SkyNote>
       <PracticeClient collections={practiceCollections()} sample={sample} signedIn={userId !== null} initialPreview={initialPreview} toSave={toSave} />
-    </SkyPage>
+    </>
   );
 }

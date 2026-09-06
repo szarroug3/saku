@@ -327,3 +327,17 @@ folder Next never routes), and its end-to-end specs in `e2e/_classic`,
 ignored by the runner, until Sam says to clean them up. The lint boundary
 now reads: only the Sky's own routes render the Sky. Anywhere this file
 says `/dev/sky`, read the top-level path.
+
+### The shell (2026-09-06)
+
+`SkyShell` (`sky-shell.tsx`) is the app's frame: the wash fixed under
+everything, a thin bar along the top with the Saku mark, the pages in a
+row of small caps with the current one underlined in the accent, and the
+account on the right; a visitor's notice as a slim band under it; the
+page below in a flex column, so a page passes `height="100%"` and fills.
+The route group's layout (`src/app/(sky)/layout.tsx`, `shell-client.tsx`)
+hands it the path, the learner's look (accent and kana face from
+Settings, as the tokens the Sky reads) and the sign-in or sign-out control.
+The root layout is providers only; the dev galleries keep the old frame in
+their own layout. `SkyNote` is the line over a page (whose progress, the
+sample toggle) that the old dev wrapper used to carry.
