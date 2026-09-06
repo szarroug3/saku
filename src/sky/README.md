@@ -723,3 +723,27 @@ from both and walking every constellation the sky shows, star for star.
 One thing deliberately not sent: the roots. The firmament never holds a
 root, so `joinSky` takes them out itself instead of the payload listing
 598 ids twice.
+
+The Atlas had the same shape of problem and got the same answer. It sent
+630 KB on every request, of which 2,815 tiles and ten shelves of section
+lists were identical for everybody; the only things that differed were
+each tile's standing and each shelf's counts. Its catalogue is at
+`/api/atlas-catalogue/<version>`, 570 KB and 133 KB compressed.
+
+| | before | after |
+| --- | --- | --- |
+| the home, a learner with a history | 2202 KB | 28 KB |
+| the home, a learner with nothing | 2201 KB | 1 KB |
+| the home's HTML response | about 2.2 MB | 49 KB |
+| the Atlas, a learner with a history | 630 KB | 10 KB |
+| the Atlas, a learner with nothing | 630 KB | 0.1 KB |
+| the Atlas's HTML response | about 630 KB | 31 KB |
+
+Three pieces are shared rather than written twice. `item-split.ts` holds
+the item half, which is the same question on both surfaces: which
+standings are not the default, and which items the catalogue does not have
+exactly. `catalogue-version.ts` names a catalogue by hashing it, which is
+what makes `immutable` honest. `use-catalogue.ts` is the fetch, held once
+per tab so a second visit to a page in one session does not go back even
+as far as the browser cache, and so two mounts in the same tick share one
+request.

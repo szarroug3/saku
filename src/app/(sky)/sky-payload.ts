@@ -16,22 +16,14 @@
 // Sky exactly the SkyHomeData it always took, so nothing in src/sky knows any
 // of this happened.
 //
-// The escape hatch is `extras`. The catalogue is built by running the real
-// pipeline against an empty history, and a learner's sky can hold an item
-// that one does not, or hold one differently: the Observatory offers things
-// by what has been met, and offering an entry can change its kind. Anything
-// that does not match the catalogue exactly travels whole. Normally there are
-// none; correctness never depends on there being none.
+// The items themselves are split by item-split.ts, which the Atlas uses too;
+// what is here is the rest of a sky, which is the home's alone.
 
 import type { MixUp } from "@/sky/components/mix-ups-panel";
 import type { DiscoveryRow } from "@/sky/components/discovery-panel";
 import type { SkyHomeData } from "@/sky/components/sky-home";
 import type { CoverageCounts } from "@/sky/lib/coverage";
-import type { Standing } from "@/sky/lib/standing";
-import type { SkyItem } from "@/sky/lib/types";
-
-/** A star with everything but how it is going. */
-export type SkyItemBase = Omit<SkyItem, "standing">;
+import { joinItems, type ItemDiff, type SkyItemBase } from "./item-split";
 
 /** Every star the sky could hold, for this build. Cached hard, so it carries
  * the version its contents hash to. */
@@ -43,13 +35,9 @@ export interface SkyCatalogue {
 }
 
 /** One learner's sky, as the difference from the catalogue. */
-export interface SkyPayload {
+export interface SkyPayload extends ItemDiff {
   /** The catalogue this was split against. */
   version: string;
-  /** Only the stars that have got somewhere. Anything absent is not-seen. */
-  standings: Readonly<Record<string, Standing>>;
-  /** Stars the catalogue does not have, or has differently. Usually none. */
-  extras: readonly SkyItem[];
   roots: readonly string[];
   mixUps: readonly MixUp[];
   discovery: readonly DiscoveryRow[];
@@ -64,23 +52,9 @@ export interface SkyPayload {
 /** The catalogue and one learner's difference, back into the sky the Sky
  * takes. Pure, and the browser's half of the split. */
 export function joinSky(catalogue: SkyCatalogue, payload: SkyPayload): SkyHomeData {
-  const extras = new Map(payload.extras.map((i) => [i.id, i]));
-  const items: SkyItem[] = [];
-  for (const base of catalogue.items) {
-    const instead = extras.get(base.id);
-    if (instead) {
-      items.push(instead);
-      extras.delete(base.id);
-      continue;
-    }
-    items.push({ ...base, standing: payload.standings[base.id] ?? "not-seen" });
-  }
-  // whatever was left is a star this learner has and the catalogue does not
-  items.push(...extras.values());
-
   const drop = new Set([...payload.firmamentDrop, ...payload.roots]);
   return {
-    items,
+    items: joinItems(catalogue.items, payload),
     roots: payload.roots,
     mixUps: payload.mixUps,
     discovery: payload.discovery,

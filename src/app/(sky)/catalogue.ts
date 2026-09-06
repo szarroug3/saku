@@ -6,17 +6,13 @@
 // another way on a learner's own sky. It is the same function the home calls,
 // given nobody.
 
-import { createHash } from "node:crypto";
-
-import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
 import { emptyHistory } from "@/lib/history-ops";
 import type { SkyHomeData } from "@/sky/components/sky-home";
-import type { Standing } from "@/sky/lib/standing";
-import type { SkyItem } from "@/sky/lib/types";
-
+import { versionOf } from "./catalogue-version";
+import { splitItems, withoutStanding } from "./item-split";
 import { skyFromHistory } from "./learner";
 import { beyondWords } from "./observatory";
-import type { SkyCatalogue, SkyItemBase, SkyPayload } from "./sky-payload";
+import type { SkyCatalogue, SkyPayload } from "./sky-payload";
 
 /** The clock the catalogue is built at. Nothing in an empty history ages, so
  * this only has to be the same number every time: a catalogue that changed
@@ -32,37 +28,13 @@ export function skyCatalogue(): SkyCatalogue {
   const empty = skyFromHistory(emptyHistory(), NO_CLOCK, undefined, { everything: true, beyond: beyondWords });
   const items = empty.items.map(withoutStanding);
   const firmament = empty.firmament ?? [];
-  // Versioned by its own contents, not by CURRICULUM_VERSION alone: the
-  // catalogue is a function of the tables AND of the code that shapes them,
-  // and a browser told to cache it forever must never be handed a stale one
-  // because a deploy changed the shaping and not the curriculum.
-  const body = JSON.stringify({ items, firmament });
-  const digest = createHash("sha1").update(body).digest("hex").slice(0, 12);
-  built = { version: `${CURRICULUM_VERSION}.${digest}`, items, firmament };
+  built = { version: versionOf(JSON.stringify({ items, firmament })), items, firmament };
   return built;
-}
-
-function withoutStanding(item: SkyItem): SkyItemBase {
-  const { standing: _standing, ...rest } = item;
-  return rest;
 }
 
 /** One learner's sky as its difference from the catalogue. The inverse of
  * `joinSky`, and `sky-payload.test.ts` holds the two together. */
 export function splitSky(data: SkyHomeData, catalogue = skyCatalogue()): SkyPayload {
-  const base = new Map(catalogue.items.map((i) => [i.id, JSON.stringify(i)]));
-  const standings: Record<string, Standing> = {};
-  const extras: SkyItem[] = [];
-  for (const item of data.items) {
-    const known = base.get(item.id);
-    // the same star, shaped the same way: send one word instead of the star
-    if (known !== undefined && known === JSON.stringify(withoutStanding(item))) {
-      if (item.standing !== "not-seen") standings[item.id] = item.standing;
-      continue;
-    }
-    extras.push(item);
-  }
-
   const mine = new Set(data.firmament ?? []);
   const theirs = new Set(catalogue.firmament);
   // the roots go without saying: the firmament never holds one, so `joinSky`
@@ -70,8 +42,7 @@ export function splitSky(data: SkyHomeData, catalogue = skyCatalogue()): SkyPayl
   const roots = new Set(data.roots);
   return {
     version: catalogue.version,
-    standings,
-    extras,
+    ...splitItems(data.items, catalogue.items),
     roots: data.roots,
     mixUps: data.mixUps,
     discovery: data.discovery,

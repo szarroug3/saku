@@ -16,7 +16,7 @@ import { buildSessionRecord } from "@/lib/session-record";
 import { loadSettings } from "@/lib/settings";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import type { FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
-import type { AtlasEntry, AtlasSearchResult, AtlasSection, SkyAtlasData } from "@/sky/components/sky-atlas";
+import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/components/sky-atlas";
 import type { SkyPayload } from "./sky-payload";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import type { SkyObservatoryData } from "@/sky/components/sky-observatory";
@@ -27,6 +27,8 @@ import type { SkyItem } from "@/sky/lib/types";
 
 import { atlasEntryFromHistory, atlasFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { skyFromHistory } from "./learner";
+import { splitAtlas } from "./atlas-catalogue";
+import type { AtlasPayload } from "./atlas-payload";
 import { splitSky } from "./catalogue";
 import { lessonFromPicks } from "./lesson";
 import { beyondWords, observatoryFromHistory, pickFacts } from "./observatory";
@@ -95,8 +97,11 @@ export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeM
   return practicePreview(await historyFor(who), recipe, misses);
 }
 
-export async function loadAtlas(who: Who): Promise<SkyAtlasData> {
-  return atlasFromHistory(await historyFor(who));
+/** The learner's Atlas as its difference from the catalogue (SAK-381): the
+ * standings and the shelves' counts, without the 2,815 tiles and ten shelves
+ * of sections that are the same for everyone. */
+export async function loadAtlas(who: Who): Promise<AtlasPayload> {
+  return splitAtlas(atlasFromHistory(await historyFor(who)));
 }
 
 /** The Atlas's search, over the app's own index. */

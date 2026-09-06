@@ -136,9 +136,26 @@ test("the home draws its sky from a cached catalogue, not from its own response"
   expect(html, `the home sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(400 * 1024);
 });
 
-test("the atlas opens on its question", async ({ page }) => {
+test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
+  // SAK-381, the same split the home got: the tiles and the shelves are the
+  // same for everybody, so they come from /api/atlas-catalogue and what the
+  // page sends is the standings and the counts.
+  const asked: string[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/atlas-catalogue/")) asked.push(r.url()); });
+
   await page.goto("/atlas?sample");
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  // the shelves really arrived
+  for (const shelf of ["Kana", "Kanji", "Words", "Grammar", "Keigo"]) {
+    await expect(page.getByText(shelf, { exact: true }).first()).toBeVisible();
+  }
+
+  expect(asked.length).toBe(1);
+  const answer = await page.request.get(asked[0]);
+  expect(answer.headers()["cache-control"]).toContain("immutable");
+
+  const html = (await (await page.request.get("/atlas?sample")).body()).length;
+  expect(html, `the atlas sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(200 * 1024);
 });
 
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
