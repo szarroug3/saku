@@ -343,8 +343,8 @@ To read anything from the old app, use the last commit that carried it:
     git show 0bccca51:src/app/_classic/library/page.tsx
     git ls-tree -r 0bccca51 --name-only | grep -E '_classic|components/(session|results|library)'
 
-The removal itself is the commit right after it on `main` (its hash is
-noted below once it exists, and in the memory file for this project).
+The removal itself is commit f2cf0827 ("Remove the old app's archive: the
+Sky is the app").
 
 ### The shell (2026-09-06)
 
