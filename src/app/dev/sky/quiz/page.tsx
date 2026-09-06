@@ -1,18 +1,15 @@
-// The Sky's Quiz, on the signed-in learner's real progress. Route:
-// /dev/sky/quiz (`?picks=a,b` asks those, else what is due; `?sample`
-// shows a pretend learner, recording nothing). One call: the route builds
-// the cards through the adapter and hands them to the client, which grades
-// with the app's matchers and records through a server action.
+// The Sky's Quiz. Route: /dev/sky/quiz (`?picks=a,b` asks those, else what
+// is due; `?cards=` names the exact cards, a retry; `?sample` a pretend
+// learner, recording nothing). Signed out, the browser's own progress, and
+// the answers recorded there.
 
 import Link from "next/link";
 
+import { currentUserId } from "@/lib/auth";
 import { LESSON_ROUNDS } from "@/sky/lib/rest";
 
-import { recordQuiz } from "../actions";
-import { learnerHistory } from "../atlas";
-import { cardsFor, learnerQuiz, quizFromHistory, sampleCards } from "../quiz";
+import { loadQuiz } from "../actions";
 import { QuizClient } from "../quiz-client";
-import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
 
 export const dynamic = "force-dynamic";
@@ -21,22 +18,19 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const sample = params.sample !== undefined;
   const picks = String(params.picks ?? "").split(",").filter(Boolean);
-  // `?cards=` names the exact cards (a retry from the results)
   const named = String(params.cards ?? "").split(",").filter(Boolean);
-  const history = sample ? sampleHistory() : await learnerHistory();
-  // the pretend learner has nothing due (everything was drilled just now), so
-  // the sample asks every question type of every kind unless picks are named
-  const cards = named.length ? cardsFor(history, named) : sample ? (picks.length ? quizFromHistory(history, picks) : sampleCards(history)) : await learnerQuiz(picks);
+  const userId = sample ? null : await currentUserId();
+  const initial = sample ? await loadQuiz({ sample: true }, { picks, cards: named }) : userId ? await loadQuiz({}, { picks, cards: named }) : null;
   return (
     <SkyPage
       note={
         <>
-          {sample ? "A pretend learner, so there is no one to record against. " : "Your own progress, recorded. "}
+          {sample ? "A pretend learner, so there is no one to record against. " : userId ? "Your own progress, recorded. " : "Your progress, recorded in this browser. "}
           <Link href={sample ? "/dev/sky/quiz" : "/dev/sky/quiz?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
         </>
       }
     >
-      <QuizClient cards={cards} sample={sample} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} onFinish={sample ? undefined : recordQuiz} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
+      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} skyHref={sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory"} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </SkyPage>
   );
 }

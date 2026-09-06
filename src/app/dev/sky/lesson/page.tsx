@@ -1,20 +1,16 @@
-// Tonight's lesson, for the picks in the URL. Route: /dev/sky/lesson?picks=…
-// One call: the route builds the lesson through the adapter and hands it to
-// SkyLesson. `?sample` uses the pretend learner's history.
+// The Sky's Lesson. Route: /dev/sky/lesson?picks=a,b (`?sample` a pretend
+// learner, `?showcase` one of everything on an empty history). Signed out,
+// the browser's own progress.
 
 import Link from "next/link";
 
-import { HearButton } from "@/components/ui/hear-button";
-import { SkyLesson } from "@/sky/components/sky-lesson";
-
-import { markSeen } from "../actions";
-import { learnerLesson, lessonFromPicks, showcasePicks } from "../lesson";
+import { currentUserId } from "@/lib/auth";
 import { emptyHistory } from "@/lib/history-ops";
 
-import { sampleHistory } from "../sample-learner";
-import { PitchMark } from "../pitch-reading";
+import { loadLesson } from "../actions";
+import { LessonClient } from "../lesson-client";
+import { lessonFromPicks, showcasePicks } from "../lesson";
 import { SkyPage } from "../sky-page";
-import { WrittenBlock } from "../written-block";
 
 export const dynamic = "force-dynamic";
 
@@ -24,25 +20,19 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
   const showcase = params.showcase !== undefined;
   const raw = Array.isArray(params.picks) ? params.picks.join(",") : (params.picks ?? "");
   const picks = showcase ? showcasePicks() : raw.split(",").map((s) => s.trim()).filter(Boolean);
-  const data = showcase ? lessonFromPicks(emptyHistory(), picks) : sample ? lessonFromPicks(sampleHistory(), picks) : await learnerLesson(picks);
+  const userId = sample || showcase ? null : await currentUserId();
+  const initial = showcase ? lessonFromPicks(emptyHistory(), picks) : sample ? await loadLesson({ sample: true }, picks) : userId ? await loadLesson({}, picks) : null;
   const back = sample ? "/dev/sky/observatory?sample" : "/dev/sky/observatory";
-  // the real stroke order for every character on the card, as a slot
-  const written = Object.fromEntries(
-    Object.keys(data.teach)
-      .map((id) => data.items.find((i) => i.id === id))
-      .filter((i): i is NonNullable<typeof i> => !!i && (i.kind === "kana" || i.kind === "kanji" || i.kind === "radical"))
-      .map((i) => [i.id, <WrittenBlock key={i.id} glyph={i.glyph} />]),
-  );
   return (
     <SkyPage
       note={
         <>
-          {showcase ? "One of everything, on an empty history. " : sample ? "A pretend learner. " : "Your own progress. "}
+          {showcase ? "One of everything, on an empty history. " : sample ? "A pretend learner. " : userId ? "Your own progress. " : "Your progress, kept in this browser. "}
           <Link href={back} className="underline">Back to the Observatory</Link>
         </>
       }
     >
-      <SkyLesson data={data} drillHref={`/dev/sky/quiz?${sample || showcase ? "sample&" : ""}picks=${encodeURIComponent(picks.join(","))}`} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : markSeen} height="100%" />
+      <LessonClient sample={sample} showcase={showcase} signedIn={userId !== null || showcase} initial={initial} picks={picks} />
     </SkyPage>
   );
 }

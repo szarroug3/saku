@@ -1,106 +1,139 @@
 "use server";
 
-// What the Observatory can do to the learner's history, as server actions
-// the route hands to the page. Dev-only, like the adapters beside it.
-
-import { revalidatePath } from "next/cache";
+// The Sky's server actions: every read the pages make, on whoever's
+// history the caller names (see who.ts), and the two computations a write
+// needs (a quiz's session records, a pick's facts). The writes themselves
+// happen on the client through the app's own progress calls, which land
+// on the account when signed in and in the browser when not, so a visitor's
+// sky is kept and carried up on sign-in. Dev-only, like the adapters.
 
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
+import { getStatsRows } from "@/lib/library/server-lookups";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
-import { clearMixup, dropClaims, saveClaims, saveSession, saveSeen } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
-import type { QuizAnswer } from "@/sky/lib/quiz";
-import type { FactId, SessionStats } from "@/types";
-import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/components/sky-atlas";
+import { loadSettings } from "@/lib/settings";
+import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import type { FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
+import type { AtlasEntry, AtlasSearchResult, AtlasSection, SkyAtlasData } from "@/sky/components/sky-atlas";
+import type { SkyHomeData } from "@/sky/components/sky-home";
+import type { SkyLessonData } from "@/sky/components/sky-lesson";
+import type { SkyObservatoryData } from "@/sky/components/sky-observatory";
+import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
+import type { SkySession } from "@/sky/lib/sessions";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
-import { atlasEntryFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
-import { pickFacts } from "./observatory";
-import { practicePreview } from "./practice";
-import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
+import { atlasEntryFromHistory, atlasFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
+import { skyFromHistory } from "./learner";
+import { lessonFromPicks } from "./lesson";
+import { metBeyondWords, observatoryFromHistory, pickFacts } from "./observatory";
+import { practiceCards, practicePreview } from "./practice";
+import { cardsFor, quizFromHistory, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
+import { sessionsFromHistory } from "./sessions";
+import type { Who } from "./who";
 
-/** "I already know these": claim the picks, the app's own claim (a skip of
- * the lesson, untested; never mastery, and a later miss outranks it). Each
- * pick claims only itself. */
-/** Clears a mix-up by hand: the pair stops being watched until it happens
- * again. The app's own clear, with now as the line it starts from. */
-export async function clearMixUp(key: string): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId) return;
-  await clearMixup(userId, key, Date.now());
-  revalidatePath("/dev/sky/planetarium");
+/** The history the caller names: the sample's, the browser's, or the account's. */
+async function historyFor(who: Who): Promise<HistoryFile> {
+  if (who.sample) return sampleHistory();
+  if (who.local) return who.local;
+  return learnerHistory();
 }
 
-/** A star opened in a lesson enters rotation now (Sam, 2026-09-06): its
- * facts are marked seen, which is what the schedule reads, and the Sky
- * shows it as untested until its first quiz. Never a claim. */
-export async function markSeen(id: string): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId) return;
-  const facts = pickFacts([id.replace(/^page:/, "")]);
-  if (!facts.length) return;
-  await saveSeen(userId, facts, Date.now());
-  revalidatePath("/dev/sky/planetarium");
-  revalidatePath("/dev/sky/observatory");
-  revalidatePath("/dev/sky/atlas");
+// ---------- reads ----------
+
+export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyHomeData> {
+  const history = await historyFor(who);
+  return skyFromHistory(history, undefined, await getStatsRows(), { everything: true, beyond: metBeyondWords, ...(graduateRuns ? { graduateRuns } : {}) });
 }
 
-export async function claimPicks(ids: readonly string[]): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId) return;
-  const facts = pickFacts(ids);
-  if (facts.length === 0) return;
-  await saveClaims(userId, facts, Date.now());
-  revalidatePath("/dev/sky/observatory");
-  revalidatePath("/dev/sky/planetarium");
-  revalidatePath("/dev/sky/atlas");
+export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {
+  return observatoryFromHistory(await historyFor(who));
 }
 
-/** "I don't know this": the mirror of a claim, the app's own withdrawal.
- * The picks' facts go back to brand new (claim and quiz record both), the
- * way the Library's "Mark as not known" does. */
-export async function unclaimPicks(ids: readonly string[]): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId) return;
-  const facts = pickFacts(ids);
-  if (facts.length === 0) return;
-  await dropClaims(userId, facts);
-  revalidatePath("/dev/sky/observatory");
-  revalidatePath("/dev/sky/planetarium");
-  revalidatePath("/dev/sky/atlas");
+export async function loadLesson(who: Who, picks: readonly string[]): Promise<SkyLessonData> {
+  return lessonFromPicks(await historyFor(who), picks);
 }
 
-/** The Atlas's search, over the app's own index, on the learner's history
- * (or the pretend learner's, when the page shows the sample). Bound to
- * `sample` by the route, so the page calls it with the query alone. */
-export async function atlasSearch(sample: boolean, query: string): Promise<AtlasSearchResult> {
-  const history = sample ? sampleHistory() : await learnerHistory();
-  return atlasSearchFromHistory(history, query);
+/** The quiz's cards: the named ones (a retry), else the picks' (a lesson),
+ * else what is due; the sample with no picks deals every kind. Which extra
+ * cards the learner allows come from Settings when signed in, or from the
+ * browser's config, handed in, when not. */
+export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards?: readonly string[]; audio?: boolean; pitch?: boolean }): Promise<QuizCard[]> {
+  const history = await historyFor(who);
+  const picks = ask.picks ?? [];
+  const named = ask.cards ?? [];
+  if (named.length) return cardsFor(history, named);
+  if (who.sample && !picks.length) return sampleCards(history);
+  let { audio, pitch } = ask;
+  if (!who.sample && !who.local && (audio === undefined || pitch === undefined)) {
+    const userId = await currentUserId();
+    const cfg = userId ? (await loadSettings(userId)).cfg : undefined;
+    audio ??= cfg?.audioPrompts ?? true;
+    pitch ??= cfg?.pitchQuestions ?? true;
+  }
+  return quizFromHistory(history, picks, Date.now(), { audio: audio ?? true, pitch: pitch ?? true });
+}
+
+export async function loadPracticeCards(who: Who, recipe: Recipe): Promise<QuizCard[]> {
+  return practiceCards(await historyFor(who), recipe, {});
+}
+
+/** Practice's live preview: the recipe resolved against the learner. Reads
+ * only; practice never writes the schedule. */
+export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeMisses): Promise<PracticePreview> {
+  return practicePreview(await historyFor(who), recipe, misses);
+}
+
+export async function loadAtlas(who: Who): Promise<SkyAtlasData> {
+  return atlasFromHistory(await historyFor(who));
+}
+
+/** The Atlas's search, over the app's own index. */
+export async function atlasSearch(who: Who, query: string): Promise<AtlasSearchResult> {
+  return atlasSearchFromHistory(await historyFor(who), query);
 }
 
 /** One Atlas entry, opened: the card's teaching and what relates to it. */
-export async function atlasEntry(sample: boolean, id: string): Promise<AtlasEntry> {
-  const history = sample ? sampleHistory() : await learnerHistory();
-  const entry = atlasEntryFromHistory(history, id);
+export async function atlasEntry(who: Who, id: string): Promise<AtlasEntry> {
+  const entry = atlasEntryFromHistory(await historyFor(who), id);
   if (!entry) throw new Error(`No Atlas entry: ${id}`);
   return entry;
 }
 
-/** The Quiz's answers, recorded as one session against the schedule, the
- * app's own way (a session record folded into the fact aggregates). The
+/** A streamed shelf's tiles, for the ids of a cut that scrolled near. */
+export async function atlasTiles(who: Who, ids: readonly string[]): Promise<SkyItem[]> {
+  return atlasTilesFromHistory(await historyFor(who), ids);
+}
+
+/** A streamed shelf's cuts, kept to one standing. */
+export async function atlasSections(who: Who, shelfId: string, status: Standing): Promise<AtlasSection[]> {
+  return atlasSectionsFromHistory(await historyFor(who), shelfId, status);
+}
+
+export async function loadSessions(who: Who): Promise<SkySession[]> {
+  return sessionsFromHistory(await historyFor(who));
+}
+
+// ---------- what a write needs ----------
+
+/** The facts behind some picks (a kana row's sounds, a star's own), for a
+ * claim, a withdrawal, or a lesson's "seen". */
+export async function factsOfPicks(ids: readonly string[]): Promise<FactId[]> {
+  return pickFacts(ids.map((id) => id.replace(/^page:/, "")));
+}
+
+/** The Quiz's answers as session records, the app's own way: a drill
+ * session of the cards' facts (a listening card is its fact, asked by
+ * ear) and, when ordering cards were answered, an assembly session of
+ * their sentences' pattern facts, which is what marks a tier done. The
  * three grades map onto the model's two: perfect is a hit; with help is
- * right but not a first-try hit; missed is a miss. A grade-aware interval
- * treatment (SAK-317) waits on the scoring model itself. */
-export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId || answers.length === 0) return;
+ * right but not a first-try hit; missed is a miss. */
+export async function quizRecords(answers: readonly QuizAnswer[]): Promise<QuizSessionRecord[]> {
+  if (answers.length === 0) return [];
   const stats: SessionStats = {};
-  // an ordering card credits its sentence's pattern facts, in a session of
-  // the app's assembly kind, which is what a tier's completion reads
   const assembly: SessionStats = {};
   for (const a of answers) {
     if (isSentenceTierMarkerFact(a.cardId as FactId)) {
@@ -112,38 +145,16 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
       }
       continue;
     }
-    // a listening card is its fact, asked by ear
     const fact = a.cardId.replace(/#listen$/, "") as FactId;
     // a card with no fact behind it (a retry of something the data no longer has)
     if (!factInfo(fact)) continue;
     const st = statForShowing(stats, fact);
     const ok = a.grade !== "missed";
-    const credit = a.grade === "clean";
-    resolveShowing(st, credit, ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: a.cardId.endsWith("#listen") });
+    resolveShowing(st, a.grade === "clean", ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: a.cardId.endsWith("#listen") });
     if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
   }
-  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.filter((a) => !isSentenceTierMarkerFact(a.cardId as FactId)).map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
-  if (record) await saveSession(userId, record);
-  const ordered = buildSessionRecord(assembly, { mode: "assembly", redrill: false, ts: Date.now() + 1, planned: Object.keys(assembly) as FactId[] });
-  if (ordered) await saveSession(userId, ordered);
-  if (!record && !ordered) return;
-  revalidatePath("/dev/sky/planetarium");
-  revalidatePath("/dev/sky/atlas");
-  revalidatePath("/dev/sky/quiz");
-}
-
-/** A streamed shelf's tiles, for the ids of a cut that scrolled near. */
-export async function atlasTiles(sample: boolean, ids: readonly string[]): Promise<SkyItem[]> {
-  return atlasTilesFromHistory(sample ? sampleHistory() : await learnerHistory(), ids);
-}
-
-/** A streamed shelf's cuts, kept to one standing. */
-export async function atlasSections(sample: boolean, shelfId: string, status: Standing): Promise<AtlasSection[]> {
-  return atlasSectionsFromHistory(sample ? sampleHistory() : await learnerHistory(), shelfId, status);
-}
-
-/** Practice's live preview: the recipe resolved against the learner (or the
- * pretend one). Reads only; practice never writes the schedule. */
-export async function practiceLookup(sample: boolean, recipe: Recipe, misses: PracticeMisses): Promise<PracticePreview> {
-  return practicePreview(sample ? sampleHistory() : await learnerHistory(), recipe, misses);
+  const ts = Date.now();
+  const drill = buildSessionRecord(stats, { mode: "drill", redrill: false, ts, planned: answers.filter((a) => !isSentenceTierMarkerFact(a.cardId as FactId)).map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
+  const ordered = buildSessionRecord(assembly, { mode: "assembly", redrill: false, ts: ts + 1, planned: Object.keys(assembly) as FactId[] });
+  return [drill, ordered].filter((r): r is QuizSessionRecord => !!r);
 }

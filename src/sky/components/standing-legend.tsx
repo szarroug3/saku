@@ -117,7 +117,7 @@ function InfoButton({ standings }: { standings: readonly Standing[] }) {
         onBlur={close}
         onClick={() => (at ? close() : open())}
         aria-label="What the standings mean"
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-accent font-sky-display text-[12px] font-bold leading-none text-sky-accent-ink ring-2 ring-transparent ${at ? "ring-sky-line" : ""}`}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border border-sky-accent font-sky-ui text-[11px] font-semibold leading-none text-sky-accent hover:bg-sky-accent/15 ${at ? "bg-sky-accent/15" : ""}`}
       >
         i
       </button>

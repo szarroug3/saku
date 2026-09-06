@@ -1,17 +1,15 @@
-// Practice, on the signed-in learner's real standings. Route:
-// /dev/sky/practice (`?sample` shows a pretend learner; `?save=` brings a
-// recipe back from a run to be named). One call: the route resolves the
-// opening recipe and hands the client a bound lookup for the rest.
+// Practice, on the learner's real standings. Route: /dev/sky/practice
+// (`?sample` shows a pretend learner; `?save=` brings a recipe back from a
+// run to be named). Signed out, the browser's own standings.
 
 import Link from "next/link";
 
+import { currentUserId } from "@/lib/auth";
 import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
 import { practiceLookup } from "../actions";
-import { learnerHistory } from "../atlas";
-import { practiceCollections, practicePreview } from "../practice";
+import { practiceCollections } from "../practice";
 import { PracticeClient } from "../practice-client";
-import { sampleHistory } from "../sample-learner";
 import { SkyPage } from "../sky-page";
 
 export const dynamic = "force-dynamic";
@@ -24,19 +22,19 @@ function parseRecipe(raw: unknown): Recipe | undefined {
 export default async function SkyPracticePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
-  const history = sample ? sampleHistory() : await learnerHistory();
+  const userId = sample ? null : await currentUserId();
   const toSave = parseRecipe(params.save);
-  const initial = { recipe: EMPTY_RECIPE, preview: practicePreview(history, EMPTY_RECIPE) };
+  const initialPreview = sample ? await practiceLookup({ sample: true }, EMPTY_RECIPE, {}) : userId ? await practiceLookup({}, EMPTY_RECIPE, {}) : null;
   return (
     <SkyPage
       note={
         <>
-          {sample ? "A pretend learner. " : "Your own standings. "}
+          {sample ? "A pretend learner. " : userId ? "Your own standings. " : "Your standings, kept in this browser. "}
           <Link href={sample ? "/dev/sky/practice" : "/dev/sky/practice?sample"} className="underline">{sample ? "Show mine" : "Show a sample learner"}</Link>
         </>
       }
     >
-      <PracticeClient collections={practiceCollections()} sample={sample} initial={initial} lookup={practiceLookup.bind(null, sample)} toSave={toSave} />
+      <PracticeClient collections={practiceCollections()} sample={sample} signedIn={userId !== null} initialPreview={initialPreview} toSave={toSave} />
     </SkyPage>
   );
 }

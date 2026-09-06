@@ -65,3 +65,18 @@ test("recent sessions list the pretend learner's quizzes", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "What have you done lately?" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Run it again" })).toBeVisible();
 });
+
+test("a visitor's quiz is kept in the browser and shows up under sessions", async ({ page }) => {
+  // signed out, no account: the Sky reads and writes the browser's own copy
+  await page.goto("/dev/sky/quiz?picks=kana-row:h-vowels");
+  await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+  await page.goto("/dev/sky/sessions");
+  await expect(page.getByRole("heading", { name: "What have you done lately?" })).toBeVisible();
+  await expect(page.getByText(/Quiz · 1 card/)).toBeVisible();
+  await page.goto("/dev/sky/planetarium");
+  await expect(page.getByText(/1 of [\d,]+ Discovered/)).toBeVisible();
+});

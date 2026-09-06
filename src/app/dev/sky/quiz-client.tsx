@@ -14,7 +14,7 @@
 // rest lengths are the learner's settings.
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";
 import { Info } from "@/components/ui";
@@ -27,8 +27,11 @@ import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
 import type { Direction, FactId, QuizConfig } from "@/types";
 
+import { loadQuiz } from "./actions";
+import { SkyLoading, useLoaded, useWho } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { useStored, writeStored } from "./stored";
+import { recordAnswers } from "./writes";
 
 /** Whether `given` answers the card. A rolled counting card (say 六十七)
  * carries its own accepted readings; everything else asks the fact. */
@@ -53,9 +56,18 @@ export function Tip({ label, children }: { label: string; children: ReactNode })
 const REST_KEY = "sky:quiz:rest";
 const NO_REST: RestState | null = null;
 
-export function QuizClient({ cards, skyHref, sample = false, onFinish, rounds = 1 }: { cards: readonly QuizCard[]; skyHref: string; sample?: boolean; onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>; rounds?: number }) {
+export function QuizClient({ initial, picks, named, skyHref, sample = false, signedIn, rounds = 1 }: { initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; skyHref: string; sample?: boolean; signedIn: boolean; rounds?: number }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
+  const who = useWho(sample, signedIn);
+  const load = useCallback((w: Parameters<typeof loadQuiz>[0]) => loadQuiz(w, { picks, cards: named, audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [picks, named, cfg.audioPrompts, cfg.pitchQuestions]);
+  const cards = useLoaded(who, load, initial);
+  if (!cards) return <SkyLoading />;
+  return <QuizRun cards={cards} skyHref={skyHref} sample={sample} rounds={rounds} cfg={cfg} update={update} router={router} />;
+}
+
+function QuizRun({ cards, skyHref, sample, rounds, cfg, update, router }: { cards: readonly QuizCard[]; skyHref: string; sample: boolean; rounds: number; cfg: QuizConfig; update: (patch: Partial<QuizConfig>) => void; router: ReturnType<typeof useRouter> }) {
+  const onFinish = sample ? undefined : recordAnswers;
   const deck = cards.map((c) => c.id).join("\n");
   // the rest between rounds, kept in the browser: the round that ended and
   // when its rest is over. Only this deck's counts.

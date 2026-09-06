@@ -10,18 +10,23 @@
 
 import { useRouter } from "next/navigation";
 
+import { useCallback } from "react";
+
 import { HearButton } from "@/components/ui/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
-import type { PracticeCollection, PracticeMisses, PracticePreview, Recipe, SavedRecipe } from "@/sky/lib/practice";
+import { EMPTY_RECIPE, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 
 import { PitchMark } from "./pitch-reading";
+import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
+import { SkyLoading, useLoaded, useWho } from "./local";
 import { grade, retriesOf, retriesPatch, Tip } from "./quiz-client";
 import { readStored as read, useStored, writeStored } from "./stored";
+import type { Who } from "./who";
 
 const SAVED_KEY = PRACTICE_SAVED_KEY;
 const MISSES_KEY = PRACTICE_MISSES_KEY;
@@ -39,10 +44,16 @@ const NO_MISSES: PracticeMisses = {};
 /** The recipe in a URL, and back. */
 export const packRecipe = (recipe: Recipe) => encodeURIComponent(JSON.stringify(recipe));
 
-export function PracticeClient({ collections, sample, initial, lookup, toSave }: { collections: readonly PracticeCollection[]; sample: boolean; initial: { recipe: Recipe; preview: PracticePreview }; lookup: (recipe: Recipe, misses: PracticeMisses) => Promise<PracticePreview>; toSave?: Recipe }) {
+export function PracticeClient({ collections, sample, signedIn, initialPreview, toSave }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null; toSave?: Recipe }) {
   const router = useRouter();
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
+  const who = useWho(sample, signedIn);
+  const loadFirst = useCallback((w: Who) => practiceLookup(w, EMPTY_RECIPE, {}), []);
+  const preview = useLoaded(who, loadFirst, initialPreview);
+  const lookup = useCallback((recipe: Recipe, m: PracticeMisses) => practiceLookup(who ?? {}, recipe, m), [who]);
+  if (!preview) return <SkyLoading />;
+  const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
   return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} tip={Tip} height="100%" />;
@@ -51,9 +62,17 @@ export function PracticeClient({ collections, sample, initial, lookup, toSave }:
 /** A practice run: the Quiz's screen, with answers kept as misses only. The
  * recorder is a plain client function, so there is no path from here to the
  * schedule at all. */
-export function PracticeRunClient({ cards, sample, recipe }: { cards: readonly QuizCard[]; sample: boolean; recipe: Recipe }) {
+export function PracticeRunClient({ initial, named, sample, signedIn, recipe }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
+  const who = useWho(sample, signedIn);
+  const load = useCallback((w: Who) => named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [named, recipe]);
+  const cards = useLoaded(who, load, initial);
+  if (!cards) return <SkyLoading />;
+  return <PracticeRun cards={cards} sample={sample} recipe={recipe} cfg={cfg} update={update} router={router} />;
+}
+
+function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: readonly QuizCard[]; sample: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
   const back = `/dev/sky/practice${sample ? "?sample" : ""}`;
   const noteMisses = async (answers: readonly QuizAnswer[]) => {
     const misses = { ...read<Record<string, number>>(MISSES_KEY, {}) };

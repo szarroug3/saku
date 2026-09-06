@@ -304,3 +304,14 @@ credits its pattern facts in an "assembly" session, the app's own kind.
 with the quiz's grades derived from each record's counts. The retries
 count lives on the quiz's help bar and the rest length on the rest
 screen: one home per setting, the place you would reach for it.
+
+### Sign-in preferred, never required (2026-09-06)
+
+Every Sky read is a server action that takes whose history to read
+(`who.ts`: the sample's, the browser's, or the account's). A route renders
+its data when it had a history to read (sample or signed in); signed out,
+the page's client (`local.tsx`: `useWho`, `useLoaded`) hands up the
+browser's own copy from the app's HistoryProvider, lean of its sessions
+except where they are needed. Every write goes through the app's own
+progress calls (`writes.ts`), which land on the account when signed in and
+in the browser when not, carried up on sign-in as the app has always done.

@@ -10,8 +10,14 @@ import { postDelete } from "@/lib/progress-fetch";
 import { SkySessions } from "@/sky/components/sky-sessions";
 import type { SkySession } from "@/sky/lib/sessions";
 
-export function SessionsClient({ sessions, sample }: { sessions: readonly SkySession[]; sample: boolean }) {
+import { loadSessions } from "./actions";
+import { SkyLoading, useLoaded, useWho } from "./local";
+
+export function SessionsClient({ initial, sample, signedIn }: { initial: readonly SkySession[] | null; sample: boolean; signedIn: boolean }) {
   const router = useRouter();
+  const who = useWho(sample, signedIn, true);
+  const sessions = useLoaded(who, loadSessions, initial);
+  if (!sessions) return <SkyLoading />;
   const rerun = (ids: readonly string[]) => router.push(`/dev/sky/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
   const forget = async (id: string) => {
     await postDelete({ ids: [/^\d+$/.test(id) ? Number(id) : id] });
