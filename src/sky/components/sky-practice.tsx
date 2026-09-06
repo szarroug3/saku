@@ -128,7 +128,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
       <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
-            <Facet title="Saved recipes" note={changed && chosen ? `Changed from ${chosen.name}. Update it below, or save this as a new one.` : "A saved recipe keeps the recipe, not today's list, so it changes as you do."}>
+            <Facet title="Saved recipes" note="A saved recipe keeps the recipe, not today's list, so it changes as you do.">
               {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
               {chosen && (
                 renaming !== null ? (
