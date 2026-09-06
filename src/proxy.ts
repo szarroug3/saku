@@ -26,9 +26,17 @@ export async function proxy(request: NextRequest) {
   const started = performance.now();
   const response = await updateSession(request);
   const spent = performance.now() - started;
+  // The region rides along because it is half of the answer to a slow query:
+  // a function far from the database pays that distance on every round trip,
+  // and no amount of rewriting the query changes it. Compare it with the
+  // region on Supabase's project settings page.
+  const where = process.env.VERCEL_REGION ?? "local";
   response.headers.set(
     "Server-Timing",
-    formatPhases([{ name: "session", ms: spent, desc: "refreshing the auth session" }]),
+    formatPhases([
+      { name: "session", ms: spent, desc: "refreshing the auth session" },
+      { name: "region", ms: 0, desc: `this function runs in ${where}` },
+    ]),
   );
   return response;
 }

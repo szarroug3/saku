@@ -55,9 +55,26 @@ export function timedSync<T>(name: string, work: () => T, desc?: string): T {
 /** This request's phases so far, as a `Server-Timing` value. Empty when
  * nothing was measured. */
 export function serverTimingValue(extra: readonly Phase[] = []): string {
-  return [...extra, ...phasesOf()]
+  return [...extra, ...phasesOf(), ...bootPhases()]
     .map((p) => `${p.name};dur=${p.ms.toFixed(1)}${p.desc ? `;desc="${p.desc.replace(/"/g, "")}"` : ""}`)
     .join(", ");
+}
+
+/** How long this process has been alive, and whether this is the first
+ * request it has served.
+ *
+ * A slow response and a cold function look identical from the outside, and
+ * they want opposite fixes: one is our code, the other is the platform keeping
+ * a function alive. `uptime` says which. On the first request of a process it
+ * is the boot: loading the modules and the tables before anything could be
+ * answered. On the hundredth it is just how long the box has been up, and can
+ * be ignored. */
+let served = 0;
+export function bootPhases(): Phase[] {
+  const first = served++ === 0;
+  const up = typeof process !== "undefined" && typeof process.uptime === "function" ? process.uptime() * 1000 : 0;
+  if (!up) return [];
+  return [{ name: first ? "boot" : "uptime", ms: up, desc: first ? "this is the first request this function has served" : "how long this function has been up" }];
 }
 
 /** Format phases measured outside a request scope (the proxy). */

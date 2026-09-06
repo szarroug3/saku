@@ -878,3 +878,31 @@ covered making a database client, a query over the network, and normalising
 a whole record. Those want different fixes, so they report separately now:
 `db:client`, `db:query` and `db:normalise`, and the same for the shell's own
 read of the row.
+
+### Two round trips where one would do (2026-09-06, SAK-382)
+
+The split header answered the 755 ms. On a cold function it read
+`db:client 0.0, db:query 1240.5, db:normalise 309.5`. Making the client is
+free. The rest is the database, twice.
+
+`readHistoryRow` selected the learner's row, and then, buried inside
+normalising what came back, called `readFactsTable` — a second query to a
+second table, one after the other. Nothing in the second depends on the
+first: the facts table is keyed by the learner, not by anything in the row.
+They run together now, and `normalizeHistory` split into `shapeHistory`,
+which takes the facts it needs rather than fetching them. The shell's read
+of the same row got the same treatment.
+
+That takes one round trip off every page a signed-in learner opens. It does
+not make the round trip that remains any faster, and 1240 ms for one row by
+primary key is not a query problem. It is distance, so the proxy's header
+now names the region the function is running in, to be read against the one
+on Supabase's project settings page.
+
+The other thing the trace showed is that a slow response and a cold function
+look identical from outside and want opposite fixes. So a page reports
+`boot` when it is the first request a process has served, with the
+milliseconds that boot took, and `uptime` when it is not. Sam's 6375 ms
+switch was a 3246 ms time to first byte with only 99 ms of session in it: a
+cold start, not slow code, and a different problem from the 1550 ms that
+followed it.

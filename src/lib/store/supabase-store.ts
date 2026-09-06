@@ -1,4 +1,4 @@
-import { timed } from "@/lib/server-timing";
+import { timed, timedSync } from "@/lib/server-timing";
 import "server-only";
 
 // The Supabase backend for a user's progress. Reads and writes the two JSON
@@ -52,10 +52,18 @@ function mergeFacts(
   return { ...legacy, ...table };
 }
 
-async function normalizeHistory(raw: unknown, userId: string): Promise<HistoryFile> {
+/**
+ * The stored row plus the facts table, as one history.
+ *
+ * Split from the read so the two can be fetched at the same time (SAK-382).
+ * They are independent — the facts table is keyed by the user, not by anything
+ * in the row — but they used to run one after the other, because the second
+ * was buried inside normalising the first. On a cold function that was two
+ * sequential round trips to a database that answers in about a second.
+ */
+function shapeHistory(raw: unknown, tableFacts: Record<FactId, FactAggregate>): HistoryFile {
   const h = (raw ?? {}) as Partial<HistoryFile>;
   const sessions = Array.isArray(h.sessions) ? h.sessions : [];
-  const { facts: tableFacts } = await readFactsTable(userId);
   const merged = mergeFacts((h.facts ?? {}) as Record<FactId, FactAggregate>, tableFacts);
   // Backfill learnedAt best-effort so every server read carries a populated map
   // (existing entries win — see withBackfilledLearnedAt). This is where legacy
@@ -74,15 +82,19 @@ export async function readProgressSeedRow(
   userId: string,
 ): Promise<ProgressSeedRow> {
   const supabase = await timed("seed:client", () => createSupabaseServerClient(), "making the database client");
-  const { data, error } = await timed("seed:query", async () => await supabase
-    .from("progress")
-    .select("history, settings, session, lists")
-    .eq("user_id", userId)
-    .maybeSingle(), "selecting the whole progress row");
+  const [row, table] = await Promise.all([
+    timed("seed:query", async () => await supabase
+      .from("progress")
+      .select("history, settings, session, lists")
+      .eq("user_id", userId)
+      .maybeSingle(), "selecting the whole progress row"),
+    timed("seed:facts", () => readFactsTable(userId), "selecting the facts table"),
+  ]);
+  const { data, error } = row;
   if (error) throw new Error(`reading progress seed failed: ${error.message}`);
   const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
-    history: await normalizeHistory(data?.history, userId),
+    history: shapeHistory(data?.history, table.facts),
     settings: normalizeSettings(data?.settings),
     session: normalizeEnvelope(data?.session),
     lists: { lists: rawLists?.lists ?? [] },
@@ -90,18 +102,22 @@ export async function readProgressSeedRow(
 }
 
 export async function readHistoryRow(userId: string): Promise<HistoryFile> {
-  // Split three ways on purpose (SAK-382). "Reading the history" measured
-  // 755 ms of a 1778 ms response on the deployed app, and that one number
-  // covers making a client, a query over the network, and normalising what
-  // comes back over a learner's whole record. They want different fixes.
+  // The row and the facts table at the same time, not one after the other
+  // (SAK-382). Reading the history measured 1550 ms on a cold function: a
+  // 1240 ms query, and then a second round trip to progress_facts that was
+  // hidden inside normalising the first. Nothing in the second depends on the
+  // first, so there was never a reason for them to queue.
   const supabase = await timed("db:client", () => createSupabaseServerClient(), "making the database client");
-  const { data, error } = await timed("db:query", async () => await supabase
-    .from("progress")
-    .select("history")
-    .eq("user_id", userId)
-    .maybeSingle(), "selecting the history row");
-  if (error) throw new Error(`reading progress.history failed: ${error.message}`);
-  return timed("db:normalise", async () => await normalizeHistory(data?.history, userId), "normalising the history");
+  const [row, table] = await Promise.all([
+    timed("db:query", async () => await supabase
+      .from("progress")
+      .select("history")
+      .eq("user_id", userId)
+      .maybeSingle(), "selecting the history row"),
+    timed("db:facts", () => readFactsTable(userId), "selecting the facts table"),
+  ]);
+  if (row.error) throw new Error(`reading progress.history failed: ${row.error.message}`);
+  return timedSync("db:shape", () => shapeHistory(row.data?.history, table.facts), "shaping the history");
 }
 
 export async function writeHistoryRow(userId: string, hist: HistoryFile): Promise<void> {
