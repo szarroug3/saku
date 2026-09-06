@@ -55,7 +55,7 @@ export function PracticeClient({ collections, sample, initial, lookup, toSave }:
   const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} height="100%" />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} toSave={toSave} tip={Tip} height="100%" />;
 }
 
 /** A practice run: the Quiz's screen, with answers kept as misses only. The

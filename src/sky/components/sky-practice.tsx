@@ -14,7 +14,7 @@
 // run's answers go to whoever the route hands in, and the page says so at
 // the top.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -41,6 +41,8 @@ export interface SkyPracticeProps {
   onStart: (recipe: Recipe) => void;
   /** A recipe handed back from a run to save. */
   toSave?: Recipe;
+  /** The app's info mark, for the note on saving. */
+  tip?: ComponentType<{ label: string; children: ReactNode }>;
   height?: string;
 }
 
@@ -48,7 +50,7 @@ const LOOKUP_DELAY = 150;
 
 const same = (a: Recipe, b: Recipe) => JSON.stringify(a) === JSON.stringify(b);
 
-export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, height }: SkyPracticeProps) {
+export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, toSave, tip: Tip, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(toSave ?? initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
@@ -130,7 +132,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
       <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
-            <Facet title="Saved recipes" note="A saved recipe keeps the recipe, not today's list, so it changes as you do.">
+            <Facet title="Saved recipes">
               {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
               {chosen && (
                 renaming !== null ? (
@@ -165,7 +167,6 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                       </div>
                     </div>
                   ))}
-                  <p className="text-[12px] text-sky-muted">{chosen.length ? `${c.title}: ${chosen.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ")}` : `All of ${c.title.toLowerCase()}, until you pick a part.`}</p>
                 </div>
               );
               const names = chosen.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
@@ -199,6 +200,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             ) : (
               <SkyButton variant="outline" onClick={() => setSaving(true)} disabled={!!chosen}>{chosen ? `Saved as ${chosen.name}` : "Save this recipe"}</SkyButton>
             )}
+            {Tip && !saving && <Tip label="What a saved recipe keeps">A saved recipe keeps the recipe, not today&apos;s list, so it changes as you do.</Tip>}
           </div>
         </SkyPanel>
 
