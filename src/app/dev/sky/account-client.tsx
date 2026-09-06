@@ -8,8 +8,12 @@ import { useRouter } from "next/navigation";
 
 import { GoogleSignIn } from "@/components/auth/google-sign-in";
 import { postDelete } from "@/lib/progress-fetch";
+import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { pushSettings } from "@/lib/settings-sync";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { SkyAccount } from "@/sky/components/sky-account";
+
+import { writeStored } from "./stored";
 
 export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn: boolean; name?: string; email?: string; authEnabled: boolean }) {
   const router = useRouter();
@@ -17,8 +21,13 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
     await createSupabaseBrowserClient().auth.signOut();
     window.location.href = "/dev/sky/account";
   };
+  // the app's reset wipes history; practice's keepsakes live in settings,
+  // so the page says it wipes them and does
   const wipe = async () => {
     await postDelete({ reset: true });
+    writeStored(PRACTICE_SAVED_KEY, []);
+    writeStored(PRACTICE_MISSES_KEY, {});
+    pushSettings({ practice: { saved: [], misses: {} } });
     router.refresh();
   };
   return (
