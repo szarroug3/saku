@@ -119,7 +119,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             </Facet>
           )}
           <Facet title="Draw from" note={recipe.collections.length ? undefined : "Everything, until you pick a collection."}>
-            {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => set({ collections: toggle(recipe.collections, c.id) })}>{c.title} · {c.total.toLocaleString()}</SkyChip>)}
+            {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => set({ collections: toggle(recipe.collections, c.id) })} title={`${c.total.toLocaleString()} to draw from`}>{c.title}</SkyChip>)}
           </Facet>
           <Facet title="Only things that are" note={recipe.statuses.length ? undefined : "Any standing, until you pick one."}>
             {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })} className="capitalize">{STANDING[s].label}</SkyChip>)}
