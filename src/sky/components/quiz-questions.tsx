@@ -49,14 +49,16 @@ export function QuizQuestions({ cards, answers, at, open, onGo, onClose }: QuizQ
     // Pinned to the right edge and slid in, never in the page's flow: the
     // card must not move when this opens (Sam, 2026-09-06). It stays
     // mounted so it can slide both ways, and is inert while parked, so
-    // nothing in it can be tabbed to or read out.
+    // nothing in it can be tabbed to or read out. It keeps the surface's
+    // own ground: it sits over the wash, never over the card, so it has no
+    // reason to be heavier than any other panel.
     <SkySurface
       as="aside"
       pad="sm"
       aria-label="The cards"
       aria-hidden={!open}
       inert={!open}
-      className={`absolute inset-y-0 right-0 flex w-full flex-col !bg-sky-ground-0/95 transition-transform duration-200 ease-out motion-reduce:transition-none lg:w-60 ${open ? "translate-x-0" : "pointer-events-none translate-x-[calc(100%+1.5rem)]"}`}
+      className={`absolute inset-y-0 right-0 flex w-full flex-col transition-transform duration-200 ease-out motion-reduce:transition-none lg:w-60 ${open ? "translate-x-0" : "pointer-events-none translate-x-[calc(100%+1.5rem)]"}`}
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
         <Eyebrow className="mb-0">{cards.length} {cards.length === 1 ? "card" : "cards"}</Eyebrow>
