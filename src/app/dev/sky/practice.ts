@@ -6,6 +6,7 @@
 
 import { isConstructionFact } from "@/data/counter-categories";
 import { isPitchFact } from "@/data/pitch";
+import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { grammarMeaning } from "@/data/grammar";
 import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
@@ -99,6 +100,8 @@ export function askOf(fact: FactId): Ask | null {
   if (isConstructionFact(fact)) return "reading";
   // a word's pitch: two clips, pick the one that means it
   if (isPitchFact(id)) return "pick";
+  // a sentence tier: put the pieces in order
+  if (isSentenceTierMarkerFact(fact)) return "pick";
   if (grammarMeaning(fact)) return "pick";
   if (id.startsWith("grammar:")) return "form";
   const anchored = /^kanji:(.+?)\/reading@([^#]+)/.exec(id);

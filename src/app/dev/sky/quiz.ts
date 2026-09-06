@@ -12,6 +12,9 @@ import { hintFor } from "@/lib/engine/hint";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
+import { assemblyFacts, canonicalOrder, pickAssemblyForTiers } from "@/data/assembly";
+import { isSentenceTierMarkerFact, sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
+import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
@@ -80,6 +83,8 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   const known = Object.keys(history.facts ?? {}) as FactId[];
   const cards: QuizCard[] = [];
   for (const fact of facts) {
+    // a sentence tier's marker is asked as an ordering (SAK-346)
+    if (isSentenceTierMarkerFact(fact)) { const c = orderCard(history, fact, now); if (c) cards.push(c); continue; }
     const info = factInfo(fact);
     if (!info) continue;
     // a pitch fact is the app's pitch question, as a card of its own
@@ -174,6 +179,9 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
     first(GRAMMAR_SUBJECT, (f) => !meaning(f)),
     first(TRANSITIVITY_SUBJECT, () => true),
     first(KEIGO_SUBJECT, () => true),
+    // a sentence tier: put the pieces in order (its marker is a known fact,
+    // never a listed one)
+    first(SENTENCE_RULE_KIND, () => true),
   ].filter((f): f is FactId => !!f);
   const cards = quizCards(history, [...new Set(facts)], now);
   // and one listening card: a word's meaning, asked by ear
@@ -191,6 +199,41 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
   const afterWords = cards.findIndex((c) => c.item.kind === "word" && c.answerIs === "reading");
   if (pitch) cards.splice(afterWords >= 0 ? afterWords + 1 : cards.length, 0, pitch);
   return cards;
+}
+
+/** A sentence tier's ordering (SAK-346): one of the tier's sentences the
+ * learner can read, its pieces dealt shuffled, the English as the prompt,
+ * the app's one accepted order as the answer. The card is the tier's
+ * marker fact; the recorder credits the sentence's pattern facts, as the
+ * app's assembly drill does. */
+export function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): QuizCard | undefined {
+  const tierId = (marker as string).replace(/^grammar:sentence-ordering-tier\//, "");
+  const entry = (LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).find((e) => knownFactsOf(e).includes(sentenceTierMarkerFact(tierId)));
+  const item = pickAssemblyForTiers(history, [tierId]);
+  const pick = entry ? offerings(history, now).offerPick(entry.id) : undefined;
+  if (!item || !pick) return undefined;
+  const answer = canonicalOrder(item);
+  const pieces = [...answer];
+  for (let i = pieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pieces[i], pieces[j]] = [pieces[j], pieces[i]]; }
+  // a deal that is already the answer is no question; deal again once
+  if (pieces.every((p, i) => p === answer[i]) && pieces.length > 1) pieces.push(pieces.shift()!);
+  const agg = history.facts?.[marker];
+  return {
+    id: marker,
+    item: pick,
+    prompt: { glyph: item.en, jp: false },
+    instruction: "Put the pieces in the order that says this.",
+    answerIs: "other",
+    typed: false,
+    options: [],
+    answerId: marker,
+    answer: item.jp,
+    order: { pieces, answer },
+    seen: agg?.seen ?? 0,
+    missed: agg?.missed ?? 0,
+    teach: teachFor(pick),
+    meta: { dir: "jp2en", assembly: String(item.id), facts: assemblyFacts(item).join("|") },
+  };
 }
 
 /** The app's own pitch question (SAK-128) as a card: the word's reading

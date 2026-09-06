@@ -73,6 +73,9 @@ export interface QuizCard {
   /** A listening card (SAK-345): what is played, in kana, with the glyph
    * and its context hidden until the card is answered or a hint asked. */
   listen?: string;
+  /** A sentence-ordering card (SAK-346): the pieces to put in order, shuffled,
+   * and the one order that is right. The prompt is the English. */
+  order?: { pieces: readonly string[]; answer: readonly string[] };
   /** How many times this fact has been seen, and missed, before tonight. */
   seen: number;
   missed: number;
@@ -86,6 +89,8 @@ export interface QuizCard {
 export interface QuizAnswer {
   cardId: string;
   grade: Grade;
+  /** The card's own notes for the recorder, carried back with the answer. */
+  meta?: Readonly<Record<string, string>>;
   /** What was typed, when something was. */
   given?: string;
   /** Attempts it took: 1 for a perfect answer. */

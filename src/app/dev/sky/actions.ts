@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
+import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
 import { dropClaims, saveClaims, saveSession, saveSeen } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
@@ -89,7 +90,19 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   const userId = await currentUserId();
   if (!userId || answers.length === 0) return;
   const stats: SessionStats = {};
+  // an ordering card credits its sentence's pattern facts, in a session of
+  // the app's assembly kind, which is what a tier's completion reads
+  const assembly: SessionStats = {};
   for (const a of answers) {
+    if (isSentenceTierMarkerFact(a.cardId as FactId)) {
+      for (const f of (a.meta?.facts ?? "").split("|").filter(Boolean) as FactId[]) {
+        const st = statForShowing(assembly, f);
+        const ok = a.grade !== "missed";
+        resolveShowing(st, a.grade === "clean", ok, { dir: "jp2en", mode: "typed", listen: false });
+        if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
+      }
+      continue;
+    }
     // a listening card is its fact, asked by ear
     const fact = a.cardId.replace(/#listen$/, "") as FactId;
     // a card with no fact behind it (a retry of something the data no longer has)
@@ -100,9 +113,11 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
     resolveShowing(st, credit, ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: a.cardId.endsWith("#listen") });
     if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
   }
-  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
-  if (!record) return;
-  await saveSession(userId, record);
+  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.filter((a) => !isSentenceTierMarkerFact(a.cardId as FactId)).map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
+  if (record) await saveSession(userId, record);
+  const ordered = buildSessionRecord(assembly, { mode: "assembly", redrill: false, ts: Date.now() + 1, planned: Object.keys(assembly) as FactId[] });
+  if (ordered) await saveSession(userId, ordered);
+  if (!record && !ordered) return;
   revalidatePath("/dev/sky/planetarium");
   revalidatePath("/dev/sky/atlas");
   revalidatePath("/dev/sky/quiz");

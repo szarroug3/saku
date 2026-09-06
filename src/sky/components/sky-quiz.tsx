@@ -80,6 +80,8 @@ interface Open {
   /** The choice picked and not yet checked (a pick only selects; Check
    * submits, so a clip can be heard first: Sam, 2026-09-05). */
   chosen?: string;
+  /** An ordering card's pieces placed so far, by their index in the deal. */
+  built?: readonly number[];
 }
 
 const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
@@ -141,7 +143,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   // fuller board, gets the retries
   // tries in all: the retries plus the first go, and never more than a
   // board of choices can honestly offer
-  const maxTries = card ? (card.typed ? retries + 1 : Math.min(retries + 1, Math.max(1, card.options.length - 1))) : retries + 1;
+  const maxTries = card ? (card.typed || card.order ? retries + 1 : Math.min(retries + 1, Math.max(1, card.options.length - 1))) : retries + 1;
 
   // the box takes focus for every card that is still open
   useEffect(() => { if (!answered) input.current?.focus(); }, [at, answered]);
@@ -167,7 +169,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   };
 
   const settle = (g: Grade, tries: number, extra: Partial<QuizAnswer> = {}) => {
-    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, given: given.trim() || undefined, ...extra };
+    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, given: given.trim() || undefined, ...(card.meta ? { meta: card.meta } : {}), ...extra };
     const all = { ...answers, [card.id]: answer };
     setAnswers(all);
     return all;
@@ -201,6 +203,19 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     if (tries >= maxTries) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
     patch({ tries, wrong: [...state.wrong, id], chosen: undefined });
     setFeedback(`Not that one. ${triesNote(maxTries - tries)}`);
+  };
+
+  /** Checks an ordering card's pieces as placed; a wrong order clears them. */
+  const submitOrder = () => {
+    if (answered || !card.order) return;
+    const built = state.built ?? [];
+    if (built.length !== card.order.pieces.length) return;
+    const tries = state.tries + 1;
+    const right = built.every((p, i) => card.order!.pieces[p] === card.order!.answer[i]);
+    if (right) { const all = settle(gradeFor(tries > 1 || state.hinted), tries, { given: built.map((p) => card.order!.pieces[p]).join(" ") }); advance(at, all); return; }
+    if (tries >= maxTries) { settle("missed", tries, { given: built.map((p) => card.order!.pieces[p]).join(" ") }); setFeedback(null); return; }
+    patch({ tries, built: [] });
+    setFeedback(`Not that order. ${triesNote(maxTries - tries)}`);
   };
 
   /** Picks a choice without checking it; a pitched choice plays its clip. */
@@ -331,7 +346,26 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
                     </form>
                   )}
-                  {choices && (
+                  {card.order && (
+                    // the pieces: tap one to place it next, tap a placed one to
+                    // take it back; Check once every piece is placed
+                    <div className="flex flex-col gap-3">
+                      <div className={`flex min-h-[44px] flex-wrap items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2 ${(state.built ?? []).length ? "border-sky-line" : "border-sky-line/60"}`}>
+                        {(state.built ?? []).length === 0 && <span className="text-[12.5px] text-sky-muted">Tap the pieces in order.</span>}
+                        {(state.built ?? []).map((p, i) => (
+                          <button key={`${p}-${i}`} type="button" onClick={() => patch({ built: (state.built ?? []).filter((_, j) => j !== i) })} className={`rounded-lg border border-sky-accent bg-sky-card-strong px-3 py-1.5 text-[17px] text-sky-ink ${japaneseFont(card.order!.pieces[p])}`}>{card.order!.pieces[p]}</button>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {card.order.pieces.map((piece, i) => {
+                          const placed = (state.built ?? []).includes(i);
+                          return <button key={i} type="button" disabled={placed} onClick={() => patch({ built: [...(state.built ?? []), i] })} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>{piece}</button>;
+                        })}
+                      </div>
+                      <div className="flex justify-center"><SkyButton onClick={submitOrder} disabled={(state.built ?? []).length !== card.order.pieces.length}>Check</SkyButton></div>
+                    </div>
+                  )}
+                  {choices && !card.order && (
                     <div className="flex flex-wrap justify-center gap-2">
                       {card.options.map((o, i) => {
                         const struck = state.wrong.includes(o.id);
