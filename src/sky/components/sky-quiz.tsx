@@ -128,7 +128,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
       if (shownAt + timerSeconds * 1000 <= Date.now()) setTimeout(() => onTimeOut.current(), 0);
       return { now: Date.now(), shownAt: c.shownAt[cardId] ? c.shownAt : { ...c.shownAt, [cardId]: shownAt } };
     });
-    const t = setInterval(tick, 250);
+    const t = setInterval(tick, 100);
     tick();
     return () => clearInterval(t);
   }, [cardId, answered, timerSeconds]);
@@ -285,7 +285,6 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} tip={tip} onRetry={onRetry} onSave={onSave} next={next} height={height} />;
   }
 
-  const meta = [KIND_LABEL[card.item.kind], card.seen > 0 ? `seen ${card.seen} ${card.seen === 1 ? "time" : "times"}` : "first time", card.missed > 0 ? `missed ${card.missed} ${card.missed === 1 ? "time" : "times"} before` : null].filter(Boolean).join(" · ");
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
   const triesLeft = maxTries - state.tries;
   const help = [
@@ -306,7 +305,6 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
         <SkySurface className="flex shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
-            <Eyebrow className="mb-0">{meta}</Eyebrow>
             <span className={at === cards.length - 1 ? "invisible" : ""}><RoundButton label="Skip to the next card" onClick={() => go(at + 1)}>›</RoundButton></span>
           </div>
           <div className="mt-3 flex min-h-0 flex-1 gap-4">
@@ -420,10 +418,10 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
 
             {/* the bar: help while the card is open, the way on once it is done */}
             <div className="flex w-[168px] shrink-0 flex-col gap-2 border-l border-sky-line pl-4">
-              <Eyebrow>{answered ? "Then" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}${timeLeft !== null ? ` · ${Math.ceil(timeLeft / 1000)}s` : ""}`}</Eyebrow>
+              <Eyebrow>{answered ? "Move on" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}${timeLeft !== null ? ` · ${Math.ceil(timeLeft / 1000)}s` : ""}`}</Eyebrow>
               {timeLeft !== null && timerSeconds > 0 && (
                 <div className="h-1 w-full overflow-hidden rounded-full bg-sky-line" aria-hidden>
-                  <div className={`h-full ${timeLeft < 3000 ? "bg-sky-slipping" : "bg-sky-accent"}`} style={{ width: `${(timeLeft / (timerSeconds * 1000)) * 100}%` }} />
+                  <div className={`h-full transition-[width] duration-100 ease-linear ${timeLeft < 3000 ? "bg-sky-slipping" : "bg-sky-accent"}`} style={{ width: `${(timeLeft / (timerSeconds * 1000)) * 100}%` }} />
                 </div>
               )}
               {answered

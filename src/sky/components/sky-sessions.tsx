@@ -78,7 +78,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                   <li key={c.id} className="grid grid-cols-[7rem_1fr_auto] items-center gap-x-4 rounded-lg px-2 py-1.5">
                     <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[c.item.standing].text} ${japaneseFont(c.item.glyph)}`} title={c.item.glyph}>{c.item.glyph}</span>
                     <span className="truncate text-[13.5px] text-sky-ink/90">{c.item.english !== c.item.glyph ? c.item.english : ""}</span>
-                    <Eyebrow tone="inherit" className={`mb-0 ${VERDICT[c.grade]}`}>{GRADE[c.grade].label}{c.seen > 1 ? ` · ${c.seen}×` : ""}</Eyebrow>
+                    <Eyebrow tone="inherit" className={`mb-0 ${VERDICT[c.grade]}`}>{GRADE[c.grade].label}</Eyebrow>
                   </li>
                 ))}
               </ul>
