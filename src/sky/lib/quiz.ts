@@ -122,8 +122,16 @@ export interface QuizAnswer {
   grade: Grade;
   /** The card's own notes for the recorder, carried back with the answer. */
   meta?: Readonly<Record<string, string>>;
-  /** What was typed, when something was. */
-  given?: string;
+  /**
+   * Everything tried on this card, in order (SAK-387).
+   *
+   * A list, not the last guess: missing a card twice used to show only the
+   * second one, so the two things that were confused could not both be seen,
+   * which is the whole point of the line. A typed attempt is what was typed,
+   * a picked one is the choice's label, an ordering one is the pieces as
+   * placed.
+   */
+  said?: readonly string[];
   /** Attempts it took: 1 for a perfect answer. */
   tries: number;
   /** The choices were shown before the answer landed. */

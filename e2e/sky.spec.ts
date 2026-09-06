@@ -235,6 +235,29 @@ test("a Japanese choice fits its tile instead of breaking in half", async ({ pag
   expect(new Set(measured.map((t) => t.height)).size, "tiles differ in height").toBe(1);
 });
 
+test("a missed card says what you said, all of it", async ({ page }) => {
+  // SAK-387. It read "You put" and showed only the last guess, so missing a
+  // card twice hid the two things you confused, which is what the line is for.
+  await page.goto("/quiz?sample");
+  const box = page.getByPlaceholder(/The reading, in romaji|The meaning, in English|Your answer/);
+  await box.fill("zzz");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText(/^Not that\./)).toBeVisible();
+  await box.fill("qqq");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText(/^Not that\./)).toBeVisible();
+  await box.fill("wwww");
+  await page.getByRole("button", { name: "Check" }).click();
+
+  // out of tries: both earlier guesses are still there, and it is "said"
+  const line = page.getByText(/^You said/);
+  await expect(line).toBeVisible();
+  await expect(line).toContainText("zzz");
+  await expect(line).toContainText("qqq");
+  await expect(line).toContainText("wwww");
+  await expect(page.getByText(/You put/)).toHaveCount(0);
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the

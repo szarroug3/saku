@@ -17,7 +17,7 @@
 // what each does to the schedule, then the answers go to whoever records
 // them.
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
@@ -72,6 +72,10 @@ interface Open {
   hinted: boolean;
   /** Choices already tried and found wrong. */
   wrong: readonly string[];
+  /** Everything tried on this card so far, in order, for the reveal to list
+   * (SAK-387). Each attempt is added as it is made, so an earlier guess is
+   * still there when a later one settles the card. */
+  said: readonly string[];
   /** The choice picked and not yet checked (a pick only selects; Check
    * submits, so a clip can be heard first: Sam, 2026-09-05). */
   chosen?: string;
@@ -79,7 +83,7 @@ interface Open {
   built?: readonly number[];
 }
 
-const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
+const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said: [] };
 
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
@@ -164,7 +168,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
   };
 
   const settle = (g: Grade, tries: number, extra: Partial<QuizAnswer> = {}) => {
-    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, given: given.trim() || undefined, ...(card.meta ? { meta: card.meta } : {}), ...extra };
+    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, ...(state.said.length ? { said: state.said } : {}), ...(card.meta ? { meta: card.meta } : {}), ...extra };
     const all = { ...answers, [card.id]: answer };
     setAnswers(all);
     return all;
@@ -178,13 +182,14 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
     if (answered) return;
     if (!text) { if (state.chosen) choose(state.chosen); return; }
     const tries = state.tries + 1;
+    const said = [...state.said, text];
     if (grade(card, text)) {
-      const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries);
+      const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said });
       advance(at, all);
       return;
     }
-    if (tries >= maxTries) { settle("missed", tries); setFeedback(null); return; }
-    patch({ tries });
+    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
+    patch({ tries, said });
     setGiven("");
     setFeedback(`Not that. ${triesNote(maxTries - tries)}`);
   };
@@ -194,9 +199,11 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
     const tries = state.tries + 1;
     // a card that opens on its choices is answered cold: help is only what
     // was asked for (the choices on a typed card, a hint) or a retry
-    if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { given: undefined }); advance(at, all); return; }
-    if (tries >= maxTries) { settle("missed", tries, { given: card.options.find((o) => o.id === id)?.label }); setFeedback(null); return; }
-    patch({ tries, wrong: [...state.wrong, id], chosen: undefined });
+    const label = card.options.find((o) => o.id === id)?.label;
+    const said = label ? [...state.said, label] : state.said;
+    if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said }); advance(at, all); return; }
+    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
+    patch({ tries, wrong: [...state.wrong, id], chosen: undefined, said });
     setFeedback(`Not that one. ${triesNote(maxTries - tries)}`);
   };
 
@@ -207,9 +214,10 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
     if (built.length !== card.order.pieces.length) return;
     const tries = state.tries + 1;
     const right = built.every((p, i) => card.order!.pieces[p] === card.order!.answer[i]);
-    if (right) { const all = settle(gradeFor(tries > 1 || state.hinted), tries, { given: built.map((p) => card.order!.pieces[p]).join(" ") }); advance(at, all); return; }
-    if (tries >= maxTries) { settle("missed", tries, { given: built.map((p) => card.order!.pieces[p]).join(" ") }); setFeedback(null); return; }
-    patch({ tries, built: [] });
+    const said = [...state.said, built.map((p) => card.order!.pieces[p]).join(" ")];
+    if (right) { const all = settle(gradeFor(tries > 1 || state.hinted), tries, { said }); advance(at, all); return; }
+    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
+    patch({ tries, built: [], said });
     setFeedback(`Not that order. ${triesNote(maxTries - tries)}`);
   };
 
@@ -225,7 +233,9 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
   const timeOut = () => { if (card && !answered) settle("missed", state.tries + 1); };
   useEffect(() => { onTimeOut.current = timeOut; });
 
-  const giveUp = () => { if (!answered) { settle("missed", state.tries + 1, { given: undefined }); setFeedback(null); } };
+  // Giving up adds nothing to the list. Whatever was tried before it still
+  // stands, and "I don't know" is not something you said (SAK-387).
+  const giveUp = () => { if (!answered) { settle("missed", state.tries + 1); setFeedback(null); } };
 
   const go = (n: number) => { if (n >= 0 && n < cards.length) { setAt(n); setGiven(""); setFeedback(null); } };
 
@@ -440,7 +450,19 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
                     <p className="mt-1 text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</p>
                   </div>
                   <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answerPitch !== undefined && Pitch ? <Pitch reading={card.answer} downstep={card.answerPitch} /> : card.answer}</p>
-                  {answered.grade === "missed" && answered.given && <p className="text-center text-[13px] text-sky-muted">You put <span className={`text-sky-ink ${japaneseFont(answered.given)}`}>{answered.given}</span>.</p>}
+                  {/* every attempt, in order, so the two things that were
+                      confused can both be seen (SAK-387) */}
+                  {answered.grade === "missed" && !!answered.said?.length && (
+                    <p className="text-center text-[13px] text-sky-muted">
+                      You said{" "}
+                      {answered.said.map((tried, i) => (
+                        <Fragment key={`${tried}-${i}`}>
+                          {i > 0 && (i === answered.said!.length - 1 ? ", then " : ", ")}
+                          <span className={`text-sky-ink ${japaneseFont(tried)}`}>{tried}</span>
+                        </Fragment>
+                      ))}.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
