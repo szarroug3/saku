@@ -103,7 +103,7 @@ export function deckSize(recipe: Recipe, pool: number): number {
 
 /** Why a deck cannot start, in the words the page shows, or null when it can. */
 export function cannotStart(recipe: Recipe, preview: PracticePreview | null): string | null {
-  if (recipe.asks.length === 0) return "Pick at least one thing to be asked. A deck with no question is just a list.";
+  if (recipe.asks.length === 0) return "Pick at least one thing to be asked.";
   if (!preview) return "Working it out.";
   if (preview.matched === 0) return recipe.excluded?.length ? "Everything was left out. Put something back, or loosen a filter." : "Nothing matches. Loosen a filter, or add a collection to draw from.";
   return null;

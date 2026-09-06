@@ -242,8 +242,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, not listed here</li>}
           </ul>
           <div className="mt-3 flex shrink-0 flex-wrap items-center gap-3">
-            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe)}>Start · {size}</SkyButton>
-            {blocked && <span className="text-[12.5px] text-sky-muted">{blocked}</span>}
+            <SkyButton disabled={!!blocked} onClick={() => onStart(recipe)}>Start</SkyButton>
           </div>
         </SkyPanel>
       </div>
