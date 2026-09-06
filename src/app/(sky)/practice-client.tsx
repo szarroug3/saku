@@ -25,6 +25,7 @@ import { PitchMark } from "./pitch-reading";
 import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { grade } from "./grade";
+import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
 import { readStored as read, useStored, writeStored } from "./stored";
 import type { Who } from "./who";
@@ -82,5 +83,5 @@ function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: re
   };
   const retry = (ids: readonly string[]) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
   const save = () => router.push(`${back}${sample ? "&" : "?"}save=${packRecipe(recipe)}`);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

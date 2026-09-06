@@ -29,6 +29,27 @@ describe("the sample quiz", () => {
     assert.equal(heard.typed, true);
   });
 
+  it("types kana for every typed answer that is Japanese, and romaji only for a kana", () => {
+    // Sam, 2026-09-06: nothing but a kana card should ever ask for romaji.
+    for (const card of cards.filter((c) => c.typed)) {
+      const wantsKana = card.answerInKana !== undefined;
+      if (card.item.kind === "kana" || card.answerIs === "meaning") {
+        assert.equal(wantsKana, false, `${card.id} should take romaji or English, not kana`);
+      } else if (card.answerIs === "reading") {
+        assert.equal(wantsKana, true, `${card.id} asks for a reading, so its box types kana`);
+      }
+    }
+  });
+
+  it("names the script a kana box types, so katakana does not come out hiragana", () => {
+    for (const card of cards.filter((c) => c.answerInKana)) {
+      assert.ok(["hiragana", "katakana"].includes(card.answerInKana!), card.id);
+      // the reveal is what the box is aiming at, so the two must agree
+      const katakana = /[゠-ヿ]/u.test(card.answer);
+      assert.equal(card.answerInKana === "katakana", katakana, `${card.id} reveals ${card.answer}`);
+    }
+  });
+
   it("deals an ordering card whose pieces are the answer, shuffled", () => {
     const order = cards.find((c) => c.order)!;
     assert.ok(order.id.startsWith("grammar:sentence-ordering-tier/"));

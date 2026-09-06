@@ -63,6 +63,11 @@ export interface QuizCard {
   /** Opens on the box; false opens on the options (a card only ever asked
    * by recognition). */
   typed: boolean;
+  /** The box turns romaji into kana as it is typed, in this script, because
+   * the answer is Japanese. Absent when the answer is not: a kana card is
+   * the whole of that case, since ROMAJI is what it asks you for ("a" for
+   * あ). Sam, 2026-09-06: nothing but kana should ever ask for romaji. */
+  answerInKana?: "hiragana" | "katakana";
   /** The narrowed set, the answer among them, shuffled. */
   options: readonly QuizOption[];
   answerId: string;

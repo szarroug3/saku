@@ -34,6 +34,9 @@ export interface SkyQuizProps {
   cards: readonly QuizCard[];
   /** Whether what was typed answers the card. */
   grade: (card: QuizCard, given: string) => boolean;
+  /** Romaji as kana, for a card whose answer is Japanese (`answerInKana`).
+   * Handed in like the grader: the transliterator is the app's. */
+  toKana?: (value: string, katakana: boolean) => string;
   /** Where the answers go when the session ends: the schedule. */
   onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
   /** Back to the observatory. */
@@ -86,7 +89,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -334,8 +337,8 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, onRetry,
                       <SkyInput
                         ref={input}
                         value={given}
-                        onChange={(e) => setGiven(e.target.value)}
-                        placeholder={card.answerIs === "reading" ? "The reading, in romaji" : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
+                        onChange={(e) => setGiven(card.answerInKana && toKana ? toKana(e.target.value, card.answerInKana === "katakana") : e.target.value)}
+                        placeholder={card.answerIs === "reading" ? (card.answerInKana ? "The reading" : "The reading, in romaji") : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
                         className="flex-1"
                       />
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>

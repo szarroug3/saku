@@ -18,7 +18,8 @@ import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
-import { fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
+import { answerIsJapanese, fixedDirOf, mcOnlyIn, questionsFor, revealFor } from "@/lib/engine/question";
+import { isKatakana } from "@/lib/romaji";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
@@ -115,8 +116,15 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
     const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
+    // The box types kana for any card whose answer is Japanese, which is
+    // every reading but a kana's: asked あ you say "a", and there is no
+    // romaji for a meaning. A rolled counting card is read aloud, so it
+    // answers in kana too.
+    const typedCard = construction ? true : typed;
+    const answer = construction ? construction.reading : revealFor(fact, dir);
+    const inKana = typedCard && (!!construction || answerIsJapanese(fact, dir));
     const instruction = listenIt
-      ? (item.kind === "kana" || (fact as string).includes("/reading") ? "Listen, then type the reading in romaji." : "Listen, then type what it means.")
+      ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
       : construction
         ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
         : quizInstruction(fact, dir, typed ? "typed" : "mc");
@@ -127,10 +135,11 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       ...(instruction ? { instruction } : {}),
       ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : {} } : {}),
       answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
-      typed: construction ? true : typed,
+      typed: typedCard,
+      ...(inKana ? { answerInKana: isKatakana(answer) ? "katakana" as const : "hiragana" as const } : {}),
       options: construction ? [{ id: fact, label: construction.reading, jp: true }] : options,
       answerId: fact,
-      answer: construction ? construction.reading : revealFor(fact, dir),
+      answer,
       seen: agg?.seen ?? 0,
       missed: agg?.missed ?? 0,
       ...(listenIt ? { listen: listenIt } : {}),

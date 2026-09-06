@@ -449,3 +449,22 @@ it, and the page went from 14.83 MB of JavaScript to 0.48 MB: one
 component from the quiz's client file had been pulling the app's engine
 and every data table in with it. SAK-380 is the same cut for the quiz and
 practice, which grade on the client and so genuinely reach the engine.
+
+### The box types kana (2026-09-06, SAK-386)
+
+A reading card used to ask for romaji and grade it against the kana, so a
+learner read Japanese all lesson and then answered in Latin letters, and
+the reveal showed kana they had never typed. The box now transliterates as
+it goes: `meihaku` becomes めいはく, `nanajuugo` becomes ななじゅうご, and
+an unfinished run stays latin (`meih` is めいh) so nothing is guessed at
+mid-word.
+
+The one exception is a kana card, where romaji IS the answer: shown あ you
+say "a". That falls out of the existing predicate rather than a new rule.
+The adapter asks the app's `answerIsJapanese` and puts `answerInKana` on
+the card, naming the script so a katakana reading does not come out
+hiragana; `SkyQuiz` reads that for the box and for its placeholder, and the
+transliteration itself is handed in like the grader (`typing.ts` over
+`@/lib/romaji`), since `src/sky` may not reach into the app. Grading is
+untouched: `romajiMatches` folds both sides to hiragana and passes kana
+through, so a box that now holds kana grades exactly as it did.
