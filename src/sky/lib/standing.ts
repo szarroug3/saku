@@ -9,7 +9,9 @@
 // behind `recall`: the caller hands that reading in, already made.
 //
 //   not seen       no showings, no claim ....... it has never asked you.
-//   claimed        a claim, never tested ....... YOU skipped the lesson. Untested.
+//   claimed        met or claimed, untested .... opened in a lesson, or marked
+//                                                known; not yet asked. Shown
+//                                                as "untested" (Sam, 2026-09-06).
 //   solid          ≥ 80% of recent runs ........ eight in ten or better.
 //   getting there  ≥ 60% of recent runs ........ six in ten or better.
 //   shaky          < 60% of recent runs ........ fewer than six in ten.
@@ -48,7 +50,7 @@ export const STANDING: Record<Standing, { label: string; dot: string; text: stri
   "getting-there": { label: "getting there", dot: "bg-sky-getting-there", text: "text-sky-getting-there", border: "border-sky-getting-there/40", meaning: "You got at least 6 of the last 10 attempts correct" },
   shaky: { label: "shaky", dot: "bg-sky-shaky", text: "text-sky-shaky", border: "border-sky-shaky/40", meaning: "You got fewer than 6 of the last 10 attempts correct" },
   slipping: { label: "slipping", dot: "bg-sky-slipping", text: "text-sky-slipping", border: "border-sky-slipping/40", meaning: "You haven't tested this recently" },
-  claimed: { label: "claimed", dot: "bg-sky-claimed", text: "text-sky-claimed", border: "border-sky-claimed/40", meaning: "You marked this as known but haven't tested it" },
+  claimed: { label: "untested", dot: "bg-sky-claimed", text: "text-sky-claimed", border: "border-sky-claimed/40", meaning: "Opened in a lesson or marked as known, but not tested yet" },
   // The app's word is "not seen"; the sky's is "undiscovered" (Sam, 2026-09-04), since the sky is about discovery.
   "not-seen": { label: "undiscovered", dot: "bg-sky-not-seen", text: "text-sky-muted", border: "border-sky-line", meaning: "You haven't learned this yet" },
 };

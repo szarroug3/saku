@@ -12,13 +12,10 @@ import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { VOICES, voicesEnabled } from "@/lib/voice";
 import { SkySettings } from "@/sky/components/sky-settings";
-import type { Retries, SkySettings as SkySettingsValues } from "@/sky/lib/settings";
+import type { SkySettings as SkySettingsValues } from "@/sky/lib/settings";
 import type { QuizConfig } from "@/types";
 
 import { Tip } from "./quiz-client";
-
-const RETRIES_TO_APP: Record<Retries, QuizConfig["retries"]> = { none: "none", limited: "lim", unlimited: "unl" };
-const RETRIES_FROM_APP: Record<QuizConfig["retries"], Retries> = { none: "none", lim: "limited", unl: "unlimited" };
 
 /** The app's config in the Sky's words. */
 export function fromConfig(cfg: QuizConfig): SkySettingsValues {
@@ -26,8 +23,6 @@ export function fromConfig(cfg: QuizConfig): SkySettingsValues {
     audioPrompts: cfg.audioPrompts,
     pitchQuestions: cfg.pitchQuestions,
     voice: cfg.voiceName,
-    retries: RETRIES_FROM_APP[cfg.retries],
-    retryCount: cfg.retryN,
     timer: cfg.timer,
     timerSeconds: cfg.timerSec,
     accent: cfg.skyAccent ?? "pink",
@@ -43,8 +38,6 @@ export function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig>
   if (patch.audioPrompts !== undefined) { out.audioPrompts = patch.audioPrompts; out.ask = askFromAudioPrompts(patch.audioPrompts); }
   if (patch.pitchQuestions !== undefined) out.pitchQuestions = patch.pitchQuestions;
   if (patch.voice !== undefined) out.voiceName = patch.voice;
-  if (patch.retries !== undefined) out.retries = RETRIES_TO_APP[patch.retries];
-  if (patch.retryCount !== undefined) out.retryN = patch.retryCount;
   if (patch.timer !== undefined) out.timer = patch.timer;
   if (patch.timerSeconds !== undefined) out.timerSec = patch.timerSeconds;
   if (patch.accent !== undefined) out.skyAccent = patch.accent;

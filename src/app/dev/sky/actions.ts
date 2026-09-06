@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
-import { dropClaims, saveClaims, saveSession } from "@/lib/history";
+import { dropClaims, saveClaims, saveSession, saveSeen } from "@/lib/history";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizAnswer } from "@/sky/lib/quiz";
 import type { FactId, SessionStats } from "@/types";
@@ -25,6 +25,20 @@ import { sampleHistory } from "./sample-learner";
 /** "I already know these": claim the picks, the app's own claim (a skip of
  * the lesson, untested; never mastery, and a later miss outranks it). Each
  * pick claims only itself. */
+/** A star opened in a lesson enters rotation now (Sam, 2026-09-06): its
+ * facts are marked seen, which is what the schedule reads, and the Sky
+ * shows it as untested until its first quiz. Never a claim. */
+export async function markSeen(id: string): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+  const facts = pickFacts([id.replace(/^page:/, "")]);
+  if (!facts.length) return;
+  await saveSeen(userId, facts, Date.now());
+  revalidatePath("/dev/sky/planetarium");
+  revalidatePath("/dev/sky/observatory");
+  revalidatePath("/dev/sky/atlas");
+}
+
 export async function claimPicks(ids: readonly string[]): Promise<void> {
   const userId = await currentUserId();
   if (!userId) return;

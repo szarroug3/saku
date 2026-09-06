@@ -40,7 +40,7 @@ import type { SkyHomeData } from "@/sky/components/sky-home";
 import { skyRoots } from "@/sky/lib/sky-scene";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile, FactId } from "@/types";
 
 const GRADUATE_RUNS = 10;
 
@@ -48,6 +48,15 @@ const GRADUATE_RUNS = 10;
 const WORST: readonly AppStanding[] = ["slipping", "shaky", "getting-there", "claimed", "solid", "not-seen"];
 
 const KIND: Partial<Record<string, SkyKind>> = { [KANA_SUBJECT]: "kana", [RADICAL_SUBJECT]: "radical", [PRIMITIVE_SUBJECT]: "radical", [KANJI_SUBJECT]: "kanji", [VOCAB_SUBJECT]: "word" };
+
+/** One fact's standing, the app's reading plus the Sky's one rule: a fact
+ * opened in a lesson and not yet asked is "claimed" (shown as untested),
+ * since it is in rotation from that moment (Sam, 2026-09-06), not
+ * undiscovered until its first quiz. */
+export function factStanding(f: FactId, history: HistoryFile, now: number): AppStanding {
+  const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
+  return s === "not-seen" && history.seen?.[f] ? "claimed" : s;
+}
 
 export function standingFor(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
   const facts = knownFactsOf(entry);
@@ -58,7 +67,7 @@ export function standingFor(entry: LibEntry, history: HistoryFile, now: number):
     const agg = history.facts[f];
     const claimedAt = history.claims?.[f];
     if ((agg?.seen ?? 0) > 0 || claimedAt || history.seen?.[f]) met = true;
-    const s = appStandingOf(agg, claimedAt, now).standing;
+    const s = factStanding(f, history, now);
     if (s !== "not-seen") anySeen = true;
     if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
   }
@@ -105,9 +114,10 @@ const SUBJECT_LABEL: Record<string, string> = {
   "counting-counters": "Counters",
 };
 
-/** Entries in a subject the learner has met: any of the entry's facts answered or claimed. */
+/** Entries in a subject the learner has met: any of the entry's facts
+ * answered, claimed, or opened in a lesson. */
 const metCount = (subject: StatsSubject, history: HistoryFile) =>
-  subject.entries.filter((e) => (subject.entryFacts[e as unknown as string] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f])).length;
+  subject.entries.filter((e) => (subject.entryFacts[e as unknown as string] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f] || history.seen?.[f])).length;
 
 /** Every entry Progress counts, tallied by standing: the legend's numbers,
  * which add up to the same total as the discovery panel. A multi-fact entry
@@ -128,7 +138,7 @@ function subjectTally(subject: StatsSubject, history: HistoryFile, now: number):
     const facts = subject.entryFacts[entry as unknown as string] ?? [];
     let worst: AppStanding = "not-seen";
     for (const f of facts) {
-      const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
+      const s = factStanding(f, history, now);
       if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
     }
     counts[worst] = (counts[worst] ?? 0) + 1;

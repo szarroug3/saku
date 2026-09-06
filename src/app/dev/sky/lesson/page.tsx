@@ -7,6 +7,7 @@ import Link from "next/link";
 import { HearButton } from "@/components/ui/hear-button";
 import { SkyLesson } from "@/sky/components/sky-lesson";
 
+import { markSeen } from "../actions";
 import { learnerLesson, lessonFromPicks, showcasePicks } from "../lesson";
 import { emptyHistory } from "@/lib/history-ops";
 
@@ -41,7 +42,7 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
         </>
       }
     >
-      <SkyLesson data={data} drillHref={`/dev/sky/quiz?${sample || showcase ? "sample&" : ""}picks=${encodeURIComponent(picks.join(","))}`} written={written} hear={HearButton} pitch={PitchMark} height="100%" />
+      <SkyLesson data={data} drillHref={`/dev/sky/quiz?${sample || showcase ? "sample&" : ""}picks=${encodeURIComponent(picks.join(","))}`} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : markSeen} height="100%" />
     </SkyPage>
   );
 }

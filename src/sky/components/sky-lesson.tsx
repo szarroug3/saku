@@ -48,10 +48,12 @@ export interface SkyLessonProps {
   hear?: HearComponent;
   /** A reading with its pitch drawn over it, from whoever draws it. */
   pitch?: PitchComponent;
+  /** A star opened for the first time this lesson: it enters rotation now. */
+  onOpen?: (id: string) => void;
   height?: string;
 }
 
-export function SkyLesson({ data, drillHref, written, hear, pitch, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, written, hear, pitch, onOpen, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
@@ -68,6 +70,7 @@ export function SkyLesson({ data, drillHref, written, hear, pitch, height }: Sky
   const open = (id: string, at = 0) => {
     const i = stepOf(id);
     if (i >= 0 && !isUnlocked(steps, i, opened)) return;
+    if (i >= 0 && !opened.has(id) && !learned.has(id)) onOpen?.(id);
     setOpened((o) => new Set([...o, id]));
     setSelected(id);
     setPage(at);

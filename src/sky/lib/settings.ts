@@ -6,11 +6,10 @@
 // Slimmer than the app's page (Sam, 2026-09-06): no requeue (never), no
 // "show the answer" (always), no submit on focus loss (Enter and Check
 // only), no script label (never). The break lengths live on the rest
-// screen itself, where they are changed. The theme's light-or-dark rows
+// screen and the retries on the quiz's help bar, where they are changed:
+// one home per setting, the place you would reach for it. The theme's light-or-dark rows
 // are gone too, the Sky being one night; its accent and the kana fonts
 // stay, under Look.
-
-export type Retries = "none" | "limited" | "unlimited";
 
 export interface SkySettings {
   /** Listening cards, with the word played and its glyph hidden. */
@@ -19,9 +18,6 @@ export interface SkySettings {
   pitchQuestions: boolean;
   /** The speech voice, by id; the route hands in the choices. */
   voice: string;
-  retries: Retries;
-  /** How many, when limited. */
-  retryCount: number;
   timer: boolean;
   timerSeconds: number;
   /** The Sky's accent, by name: see SKY_ACCENTS. */
@@ -38,8 +34,6 @@ export const DEFAULT_SETTINGS: SkySettings = {
   audioPrompts: true,
   pitchQuestions: true,
   voice: "aoyama",
-  retries: "limited",
-  retryCount: 2,
   timer: false,
   timerSeconds: 10,
   accent: "pink",
@@ -83,15 +77,11 @@ export interface SettingText {
   info?: string;
 }
 
-export const RETRIES: Record<Retries, string> = { none: "None", limited: "Limited", unlimited: "Unlimited" };
-
 /** The rows' words, so a test can read them. */
 export const SETTING_TEXT: Record<keyof SkySettings, SettingText> = {
   audioPrompts: { label: "Audio prompts", info: "Adds listening cards, using the speech voice below: the word is played with its glyph hidden, so you answer by ear. Text cards still appear too. Turn it off if this machine has no Japanese voice, or if you can't use sound." },
   pitchQuestions: { label: "Pitch questions", info: "Adds a pitch-accent question after an eligible word's meaning card: hear two clips and pick the one with the word's real pitch. Needs audio prompts on, since a pitch question is itself an audio prompt." },
   voice: { label: "Speech voice", info: "The voice that reads words aloud and speaks the pitch clips." },
-  retries: { label: "Retries" },
-  retryCount: { label: "Retries allowed" },
   timer: { label: "Timer", info: "Every question gets a countdown. Timing out counts as a wrong answer." },
   timerSeconds: { label: "Timer seconds" },
   accent: { label: "Accent", info: "The one color the sky uses for what is yours to press and what is being taught." },
@@ -106,7 +96,7 @@ export interface SettingGroup {
 }
 
 export const SETTING_GROUPS: readonly SettingGroup[] = [
-  { title: "The quiz", keys: ["audioPrompts", "pitchQuestions", "voice", "retries", "timer"] },
+  { title: "The quiz", keys: ["audioPrompts", "pitchQuestions", "voice", "timer"] },
   { title: "Look", keys: ["accent", "fonts"] },
   { title: "Progress", keys: ["showVolume", "cleanRunsToClearMixup"] },
 ];

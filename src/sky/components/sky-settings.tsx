@@ -12,7 +12,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyToggle } from "@/sky/components/sky-toggle";
-import { RETRIES, SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type Retries, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
+import { SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
 
 export interface SkySettingsProps {
   settings: SkySettings;
@@ -49,15 +49,6 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
     audioPrompts: () => toggle("audioPrompts"),
     pitchQuestions: () => toggle("pitchQuestions", !s.audioPrompts),
     showVolume: () => toggle("showVolume"),
-    retries: () => (
-      <Row key="retries" k="retries">
-        <ChipRow>
-          {(Object.keys(RETRIES) as Retries[]).map((r) => <SkyChip key={r} on={s.retries === r} onClick={() => onChange({ retries: r })}>{RETRIES[r]}</SkyChip>)}
-        </ChipRow>
-        {s.retries === "limited" && <SkyStepper value={s.retryCount} onChange={(n) => onChange({ retryCount: n })} label={text("retryCount").label} min={1} max={9} />}
-      </Row>
-    ),
-    retryCount: () => null,
     timer: () => (
       <Row key="timer" k="timer">
         <SkyToggle on={s.timer} onClick={() => onChange({ timer: !s.timer })} label={text("timer").label} />

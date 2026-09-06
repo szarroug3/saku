@@ -20,7 +20,10 @@ export type Grade = "clean" | "help" | "missed";
 export const GRADES: readonly Grade[] = ["clean", "help", "missed"];
 
 /** How many goes a card gets before it is missed: two retries. */
-export const MAX_TRIES = 3;
+/** Retries after a first wrong answer, until the learner changes it on the
+ * quiz itself (Sam, 2026-09-06: the one home for a setting is where you
+ * would change it). Tries in all are one more than this. */
+export const DEFAULT_RETRIES = 2;
 
 /** What each grade means, and what it does to the schedule. */
 export const GRADE: Record<Grade, { label: string; meaning: string; consequence: string }> = {

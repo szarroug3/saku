@@ -25,13 +25,21 @@ import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
-import type { Direction, FactId } from "@/types";
+import type { Direction, FactId, QuizConfig } from "@/types";
 
 import { PitchMark } from "./pitch-reading";
 import { useStored, writeStored } from "./stored";
 
 /** Whether `given` answers the card. A rolled counting card (say 六十七)
  * carries its own accepted readings; everything else asks the fact. */
+/** The retries setting as the quiz shows it (0 is none), and back. */
+export function retriesOf(cfg: QuizConfig): number {
+  return cfg.retries === "none" ? 0 : cfg.retries === "unl" ? 9 : cfg.retryN;
+}
+export function retriesPatch(n: number): Partial<QuizConfig> {
+  return n === 0 ? { retries: "none" } : { retries: "lim", retryN: n };
+}
+
 export function grade(card: QuizCard, given: string): boolean {
   if (card.meta?.accept) return card.meta.accept.split("|").some((a) => romajiMatches(given, a));
   return checkTyped(card.id as FactId, given, (card.meta?.dir ?? "jp2en") as Direction);
@@ -82,5 +90,5 @@ export function QuizClient({ cards, skyHref, sample = false, onFinish, rounds = 
   if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} skyHref={skyHref} height="100%" />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={cards} grade={grade} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} next={next} height="100%" />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={cards} grade={grade} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} next={next} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} height="100%" />;
 }

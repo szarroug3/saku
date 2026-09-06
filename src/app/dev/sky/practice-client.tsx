@@ -11,6 +11,7 @@
 import { useRouter } from "next/navigation";
 
 import { HearButton } from "@/components/ui/hear-button";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { SkyPractice } from "@/sky/components/sky-practice";
@@ -19,7 +20,7 @@ import type { PracticeCollection, PracticeMisses, PracticePreview, Recipe, Saved
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 
 import { PitchMark } from "./pitch-reading";
-import { grade, Tip } from "./quiz-client";
+import { grade, retriesOf, retriesPatch, Tip } from "./quiz-client";
 import { readStored as read, useStored, writeStored } from "./stored";
 
 const SAVED_KEY = PRACTICE_SAVED_KEY;
@@ -52,6 +53,7 @@ export function PracticeClient({ collections, sample, initial, lookup, toSave }:
  * schedule at all. */
 export function PracticeRunClient({ cards, sample, recipe }: { cards: readonly QuizCard[]; sample: boolean; recipe: Recipe }) {
   const router = useRouter();
+  const { cfg, update } = useQuizConfig();
   const back = `/dev/sky/practice${sample ? "?sample" : ""}`;
   const noteMisses = async (answers: readonly QuizAnswer[]) => {
     const misses = { ...read<Record<string, number>>(MISSES_KEY, {}) };
@@ -60,5 +62,5 @@ export function PracticeRunClient({ cards, sample, recipe }: { cards: readonly Q
   };
   const retry = (ids: readonly string[]) => router.push(`/dev/sky/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
   const save = () => router.push(`${back}${sample ? "&" : "?"}save=${packRecipe(recipe)}`);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} onSave={save} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} onFinish={noteMisses} skyHref={back} hear={HearButton} pitch={PitchMark} tip={Tip} onRetry={retry} onSave={save} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} height="100%" />;
 }

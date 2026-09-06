@@ -11,7 +11,7 @@
 // along the top, one per card, coloured by outcome; each is a button, so a
 // card can be skipped and come back to (Sam, 2026-09-05). Every card
 // opens on a blank box. A right answer moves straight on. A wrong one gets
-// another try, MAX_TRIES in all, before the card is missed and its answer
+// another try, the retries set on the bar plus one in all, before the card is missed and its answer
 // shown with the lesson's own card. Help is a small row of buttons:
 // multiple choice, a hint, giving up. At the end, the three counts and
 // what each does to the schedule, then the answers go to whoever records
@@ -27,7 +27,8 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, gradeFor, MAX_TRIES, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { SkyStepper } from "@/sky/components/sky-stepper";
+import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 
 export interface SkyQuizProps {
@@ -48,6 +49,10 @@ export interface SkyQuizProps {
   onSave?: () => void;
   /** The round after this one, on the results (a lesson's quiz). */
   next?: { label: string; onClick: () => void };
+  /** Retries after a first wrong answer, and the way to change it here:
+   * the setting lives in the help bar, not on the Settings page. */
+  retries?: number;
+  onRetries?: (retries: number) => void;
   height?: string;
 }
 
@@ -80,7 +85,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, onSave, next, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -102,7 +107,9 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const choices = card ? (state.narrowed || !card.typed) : false;
   // a card of two choices is wrong after one wrong pick; a typed card, or a
   // fuller board, gets the retries
-  const maxTries = card ? (card.typed ? MAX_TRIES : Math.min(MAX_TRIES, Math.max(1, card.options.length - 1))) : MAX_TRIES;
+  // tries in all: the retries plus the first go, and never more than a
+  // board of choices can honestly offer
+  const maxTries = card ? (card.typed ? retries + 1 : Math.min(retries + 1, Math.max(1, card.options.length - 1))) : retries + 1;
 
   // the box takes focus for every card that is still open
   useEffect(() => { if (!answered) input.current?.focus(); }, [at, answered]);
@@ -339,6 +346,12 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
               {answered
                 ? <SkyButton block onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton>
                 : help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
+              {onRetries && !answered && (
+                <div className="mt-auto pt-3">
+                  <Eyebrow>Retries</Eyebrow>
+                  <SkyStepper value={retries} onChange={onRetries} label="Retries after a wrong answer" min={0} max={9} />
+                </div>
+              )}
             </div>
           </div>
         </SkySurface>
