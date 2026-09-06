@@ -7,7 +7,7 @@
 // with the app's matchers (see quiz-client.tsx); recording is a server
 // action (see actions.ts).
 
-import { buildMcOptions } from "@/lib/engine";
+import { answerKeyFor, buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
@@ -168,8 +168,12 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // plain one is the word's first), so its reveal is that reading's
       // lesson card, not the whole entry (Sam, 2026-09-05)
       teach: teachFor(item, { reading: wordReadingAsked(fact, item) }),
-      // the vehicle rides back with the answer, so the client grades the
-      // pattern built on the verb it was ASKED on, not the fact's baked one
+      // What answers this card, worked out here so the browser can grade
+      // without the engine and its tables (SAK-380). It is the key for THIS
+      // showing: the rolled count, or the verb the pattern was built on.
+      key: answerKeyFor(fact, dir, ctx),
+      // the vehicle rides back with the answer, so the recorder knows the
+      // verb the pattern was asked on
       meta: {
         dir,
         ...(construction ? { accept: construction.accept.join("|") } : {}),
@@ -305,6 +309,7 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
     seen: history.facts?.[pitchFactId(keb)]?.seen ?? 0,
     missed: history.facts?.[pitchFactId(keb)]?.missed ?? 0,
     teach: teachFor(item),
+    key: answerKeyFor(pitchFactId(keb), "jp2en"),
     meta: { dir: "jp2en" },
   };
 }

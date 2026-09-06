@@ -89,6 +89,31 @@ export interface QuizCard {
   teach?: LessonTeach;
   /** Something the adapter wants back with the answer (the direction asked). */
   meta?: Readonly<Record<string, string>>;
+  /** What answers this card, as data, so the grader needs nothing but the
+   * card (SAK-380). The adapter fills it in; the Sky never reads it. */
+  key?: AnswerKey;
+}
+
+/** What answers a card, as data.
+ *
+ * A copy of the app's `src/lib/answer-key.ts`, kept here because the Sky owns
+ * its card model and does not import the app (see src/sky/README.md). The
+ * app's own type is the one with the rules written on it; the two are held
+ * together by a test, the way `standing.ts` is.
+ *
+ * The Sky itself never looks inside: the route hands in a grader, and this is
+ * only here so a card can carry its answer across the wire. */
+export interface AnswerKey {
+  /** Accepted by raw equality after a trim, nothing forgiven. */
+  strict?: readonly string[];
+  /** Japanese to produce: exact, or a romaji spelling when it is all kana. */
+  produce?: readonly string[];
+  /** Accepted once case and spacing are normalised. Stored normalised. */
+  loose?: readonly string[];
+  /** As `loose`, and additionally within a typo or two. Stored normalised. */
+  typo?: readonly string[];
+  /** A count as digits, with full-width digits folded before comparing. */
+  digits?: string;
 }
 
 /** What the learner did with one card. */

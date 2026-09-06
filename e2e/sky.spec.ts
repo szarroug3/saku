@@ -39,6 +39,26 @@ test("the quiz grades a typed answer and reveals on giving up", async ({ page })
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
 });
 
+test("the quiz accepts a right answer typed in romaji, with the engine nowhere near the browser", async ({ page }) => {
+  // SAK-380 moved grading off the engine and onto a key the server sends with
+  // the card. The sample deck opens on あ asked for its reading, so "a" is
+  // right and has to be graded right by the key alone.
+  await page.goto("/quiz?sample");
+  const box = page.getByPlaceholder("The reading, in romaji");
+  await box.fill("a");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Perfect", { exact: true })).toBeVisible();
+  // and the tables it used to need are not in the page
+  const scripts = await page.evaluate(() =>
+    [...document.querySelectorAll("script[src]")].map((s) => (s as HTMLScriptElement).src),
+  );
+  const sizes = await Promise.all(
+    scripts.map(async (src) => (await (await page.request.get(src)).body()).length),
+  );
+  const total = sizes.reduce((a, b) => a + b, 0);
+  expect(total, `the quiz shipped ${(total / 1024 / 1024).toFixed(1)} MB of script`).toBeLessThan(4 * 1024 * 1024);
+});
+
 test("a lesson's quiz rests between rounds", async ({ page }) => {
   await page.goto("/quiz?sample&picks=kana-row:h-vowels");
   await page.getByRole("button", { name: "End the quiz" }).click();

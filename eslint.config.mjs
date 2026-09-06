@@ -147,6 +147,9 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".next-e2e/**",
+    // a production build made somewhere else, so `next build` never rewrites
+    // the tree a dev server is running from (NEXT_DIST_DIR=.next-prod)
+    ".next-prod/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

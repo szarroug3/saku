@@ -603,3 +603,63 @@ too narrow for its row shrinks instead.
 The clip itself stays. `overflow-hidden` is still a scroll port, and the
 parked list hanging off the right edge made the box scrollable, so the
 browser scrolled to it and eased back, carrying the card along.
+
+### The quiz stops shipping the curriculum (2026-09-06, SAK-380)
+
+The Quiz, Practice and Practice's run page each sent about 15 MB of
+JavaScript to the browser. Everything else in the Sky sends about half a
+megabyte. The production audit measured 19 script chunks, 15.4 MB decoded,
+3.5 MB on the wire, first paint at 4.6 seconds against 1.1 elsewhere.
+
+One import did it. Grading happens on the client, deliberately, so an
+answer is right or wrong with no round trip; the grader called `checkTyped`,
+`checkTyped` is in the engine, and the engine's index reaches every table
+the app owns: word definitions at 4.6 MB, the library index at 6.6 MB, the
+learn index, the English synonyms, the reading frequencies, the vocabulary,
+the grammar corpus. Fifteen megabytes to answer one yes-or-no question.
+
+The answer travels with the card instead. The server already builds every
+card, so it also works out what that card accepts and sends it along as an
+`AnswerKey`: four rules, because the engine has four and no more. Strict
+equality (a kana card asked the other way wants the glyph, and forgiving
+romaji there would grade the prompt as the answer). Produce, which is exact
+or a romaji spelling when the target is all kana, since あ can be typed "a"
+and 生 has no romaji at all. Loose, for English, compared after normalising
+case and spacing, carrying the glosses, the curated synonyms and the
+gloss's comma and parenthetical slices, all expanded on the server. And
+typo, the same English candidates allowed a length-scaled edit distance,
+kept apart from loose because a synonym must never be fuzzed.
+
+The key is built where the check lives. Every question type in
+`question.ts` now has an `answerKey` sitting directly under its `check`,
+and `src/lib/answer-key.test.ts` grades the whole curriculum through both:
+every fact, both directions, a battery of answers built from the fact
+itself, plus the rolled showings the Sky actually sends (a counting card's
+count, a grammar card's verb, a word's sense). Over 100,000 gradings, and
+a single disagreement fails the test naming the fact and the answer that
+split them. That is what makes two implementations of one decision safe.
+
+Two things moved to make it possible. The English matcher's deterministic
+layers came out of `en-match.ts` into `en-text.ts`, which has no data
+behind it, leaving the 3.2 MB synonym pool with `matchesEnglish` where it
+belongs; the browser gets the layers and the expanded strings, never the
+pool. And `normalizeDigits` moved to `answer-key.ts`, where the rule that
+uses it lives.
+
+| route | before | after |
+| --- | --- | --- |
+| /quiz | 14.83 MB | 0.54 MB |
+| /practice | 14.83 MB | 0.55 MB |
+| /practice/run | 14.83 MB | 0.55 MB |
+
+Their budgets in `scripts/route_sizes.mjs` came down from 16 MB to 1.5, in
+line with every other page, so a table finding its way back into the
+browser fails CI. When it does, `node scripts/import_path.mjs <file>
+src/data` prints the shortest chain of imports that dragged it in. That
+script stops at a `"use server"` module by default, because the browser
+gets a call there and not the code, which is the difference between asking
+what a file mentions and asking what a learner downloads.
+
+Two things the audit also asked about came back clean. `HearButton`, which
+is in every Sky page, reaches 33 files and 0.25 MB of source with no table
+among them. Settings was fixed earlier by SAK-366 and stayed at 0.48 MB.

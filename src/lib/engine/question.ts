@@ -88,7 +88,9 @@ import {
   productionCue,
 } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
-import { isEnglishGloss, matchesEnglish, norm } from "@/lib/engine/en-match";
+import { matchesEnglish, synonymCandidates } from "@/lib/engine/en-match";
+import { glossCandidates, isEnglishGloss, norm } from "@/lib/en-text";
+import type { AnswerKey } from "@/lib/answer-key";
 import { gradeNumberItem, type NumberQuizItem } from "@/lib/engine/number-quiz";
 import {
   constructionCategory,
@@ -312,6 +314,16 @@ export interface QuestionType {
    * it prompted on, not the fixed one baked in the fact. */
   check(fact: FactId, dir: Direction, given: string, ctx?: PromptContext): boolean;
   /**
+   * What `check` accepts, as data a browser can carry (SAK-380).
+   *
+   * The twin of `check` and nothing more: same fact, same direction, same
+   * per-showing `ctx`, same verdict. It exists because the Sky's quiz grades
+   * in the browser, where the tables `check` reads are 15 MB of JavaScript.
+   * `answer-key.test.ts` runs both over the whole curriculum and asserts they
+   * agree, so a change to one that is not made to the other fails there.
+   */
+  answerKey(fact: FactId, dir: Direction, ctx?: PromptContext): AnswerKey;
+  /**
    * Plausible WRONG answers for a multiple-choice `fact`, as facts.
    *
    * Returns fewer than `n` — or none — rather than padding with randoms. An
@@ -486,6 +498,50 @@ function checkProduces(target: string, given: string): boolean {
   return isKanaOnly(target) && romajiMatches(given, target);
 }
 
+// ---------- the same three checks, as data ----------
+//
+// A card graded in a browser cannot call any of the above: reaching a fact
+// means reaching the tables, and the tables are 15 MB (SAK-380). So every
+// question type also says what it accepts, as an AnswerKey, and the browser
+// compares against that instead. Each builder below is the twin of the check
+// it sits under, and `answer-key.test.ts` grades the whole curriculum through
+// both to prove they never disagree. Change a check, change its key.
+
+/** `matchesEnglish`, expanded: every string it would have accepted, split by
+ * whether the typo layer is allowed to reach it. */
+function englishKey(answers: readonly string[]): AnswerKey {
+  const loose = new Set<string>();
+  for (const a of answers) {
+    const n = norm(a);
+    if (n) loose.add(n);
+  }
+  // exact-only, never fuzzed: the pool is compared against a normalised
+  // answer by `.has`, so its entries go in as they are
+  for (const syn of synonymCandidates(answers)) loose.add(syn);
+  const typo = new Set<string>();
+  for (const a of answers) {
+    if (!isEnglishGloss(a)) continue;
+    for (const c of glossCandidates(a)) {
+      typo.add(c);
+      loose.add(c);
+    }
+  }
+  return { loose: [...loose], typo: [...typo] };
+}
+
+/** The twin of `checkJp2en`: the English matcher, plus the answers as things
+ * to produce, since a kanji reading is kana and may be typed in romaji. */
+function jp2enKey(fact: FactId): AnswerKey {
+  const info = factInfo(fact);
+  if (!info) return {};
+  return { ...englishKey(info.answers), produce: [...info.answers] };
+}
+
+/** The twin of `checkEn2jp`. */
+function en2jpKey(fact: FactId): AnswerKey {
+  return { produce: [en2jpTarget(fact)] };
+}
+
 /**
  * On a TYPED word READING card, the fact to CREDIT and whether it is correct,
  * redirecting credit to the reading the learner actually produced.
@@ -583,6 +639,9 @@ const kanaQuestions: QuestionType = {
     return dir === "jp2en"
       ? checkJp2en(fact, given)
       : given.trim() === glyphOfFact(fact);
+  },
+  answerKey(fact, dir) {
+    return dir === "jp2en" ? jp2enKey(fact) : { strict: [glyphOfFact(fact)] };
   },
   // SAK-49: a beginner who knows five vowels was seeing しょ/ちゅ/じゃ as MC
   // options for a plain vowel — distractors came from the entire kana set
@@ -773,6 +832,9 @@ const kanjiQuestions: QuestionType = {
     return dir === "jp2en"
       ? checkJp2en(fact, given)
       : checkEn2jp(fact, given);
+  },
+  answerKey(fact, dir) {
+    return dir === "jp2en" ? jp2enKey(fact) : en2jpKey(fact);
   },
   distractors(fact, n) {
     const c = glyphOfFact(fact);
@@ -991,6 +1053,12 @@ const wordQuestions: QuestionType = {
     // here. Accepted typed (romaji or kana) exactly the way every other kana
     // target is.
     return checkEn2jp(fact, given);
+  },
+  answerKey(fact, dir, ctx) {
+    if (dir !== "jp2en") return en2jpKey(fact);
+    // SAK-225: a rolled sense grades against that sense's glosses alone
+    if (!isWordReading(fact) && ctx?.wordSense?.length) return englishKey(ctx.wordSense);
+    return jp2enKey(fact);
   },
   answerReveal(fact, dir, ctx) {
     // SAK-225: reveal the SENSE this showing actually asked about, not the
@@ -1638,6 +1706,24 @@ const grammarQuestions: QuestionType = {
     // vehicle, whose baked answer may be all kana. Same rule as everyone else.
     return dir === "jp2en" ? checkJp2en(fact, given) : accepts(fact, given);
   },
+  answerKey(fact, dir, ctx) {
+    const prod = grammarProduction(fact);
+    if (prod) {
+      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
+      if (v) {
+        const built = builtOn(prod.recipe, v);
+        if (built) return { produce: [built.form, built.kanaForm] };
+      }
+    }
+    if (dir === "en2jp") {
+      const base = englishKey(factInfo(fact)?.answers ?? []);
+      const mean = grammarMeaning(fact);
+      if (!mean) return base;
+      const pattern = mean.recipe.pattern;
+      return { ...base, strict: [pattern, pattern.replace(/^〜/, "")] };
+    }
+    return jp2enKey(fact);
+  },
   distractors(fact, n, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
@@ -1810,6 +1896,11 @@ const transitivityQuestions: QuestionType = {
     if (dir === "jp2en") return g === side.en;
     return g === side.word || g === side.reading;
   },
+  answerKey(fact, dir) {
+    const side = transitivitySide(fact);
+    if (!side) return {};
+    return dir === "jp2en" ? { strict: [side.en] } : { strict: [side.word, side.reading] };
+  },
   distractors(fact, n) {
     const side = transitivitySide(fact);
     if (!side || n <= 0) return [];
@@ -1861,6 +1952,11 @@ const keigoQuestions: QuestionType = {
     if (!info) return false;
     const g = given.trim();
     return g === info.word.word || g === info.word.reading;
+  },
+  answerKey(fact, dir) {
+    if (dir === "jp2en") return englishKey(factInfo(fact)?.answers ?? []);
+    const info = keigoWordInfo(fact);
+    return info ? { strict: [info.word.word, info.word.reading] } : {};
   },
   distractors(fact, n) {
     if (n <= 0) return [];
@@ -1914,6 +2010,12 @@ const constructionQuestions: QuestionType = {
     const item = ctx?.numberItem;
     return item ? gradeNumberItem(item, given) : false;
   },
+  answerKey(_fact, _dir, ctx) {
+    const item = ctx?.numberItem;
+    if (!item) return {};
+    // READ accepts the reading, in kana or romaji; WRITE and HEAR the count
+    return item.direction === "read" ? { produce: [...item.accept] } : { digits: item.digits };
+  },
   // The count is the question, and the answer is one string — never a board. An
   // empty distractor set makes buildMcOptions return short, so the drill keeps it
   // typed; drill-screen also refuses to pre-build a choices board for it.
@@ -1948,6 +2050,10 @@ const pitchQuestions: QuestionType = {
   check(fact, _dir, given) {
     const reading = factInfo(fact)?.answers[0] ?? "";
     return !!reading && (given.trim() === reading || romajiMatches(given, reading));
+  },
+  answerKey(fact) {
+    const reading = factInfo(fact)?.answers[0] ?? "";
+    return reading ? { produce: [reading] } : {};
   },
   distractors() {
     return [];

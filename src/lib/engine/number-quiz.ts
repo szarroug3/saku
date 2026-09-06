@@ -16,6 +16,7 @@
 // large enough count therefore contains every irregular of that counter — the
 // property counterIrregulars() names and number-quiz.test.ts pins.
 
+import { normalizeDigits } from "@/lib/answer-key";
 import {
   acceptableCounterReadings,
   acceptableNumberReadings,
@@ -412,14 +413,6 @@ export function rollConstructionItem(
 }
 
 /** Normalize a typed WRITE answer: trim and fold full-width ０-９ to ASCII. */
-function normalizeDigits(given: string): string {
-  return given
-    .trim()
-    .replace(/[０-９]/g, (d) =>
-      String.fromCharCode(d.charCodeAt(0) - 0xff10 + 0x30),
-    );
-}
-
 /**
  * Grade a typed answer for a number-reading item.
  *

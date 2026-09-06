@@ -33,7 +33,7 @@
 // ever stops being affordable, the fix is `useDeferredValue` (already on the
 // page) before it is a data structure.
 
-import { digitVariants } from "@/lib/engine/en-match";
+import { digitVariants } from "@/lib/en-text";
 import { KIND_LABEL, KINDS, LIB_ENTRIES } from "@/lib/library/library-index";
 import type { Kind, LibEntry } from "@/lib/library/entries";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";

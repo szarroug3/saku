@@ -3,6 +3,7 @@
 // (write-a-word, listen) and v3 (stroke order, draw) implement QuestionType
 // as pure data + logic additions.
 
+import type { AnswerKey } from "@/lib/answer-key";
 import { BEHAVIOR } from "@/lib/config";
 import { enabledDirs } from "@/lib/ask-config";
 import {
@@ -179,6 +180,24 @@ export function checkTyped(
   ctx?: PromptContext,
 ): boolean {
   return questionsFor(fact).check(fact, dir, given, ctx);
+}
+
+/**
+ * What `checkTyped` would accept for this showing, as data (SAK-380).
+ *
+ * The Sky's quiz grades in the browser, and reaching a fact there means
+ * shipping the tables: 15 MB of JavaScript to answer one yes-or-no question.
+ * So the server works the answer out where the card is built and sends it
+ * with the card, and the browser runs `matchesKey` from @/lib/answer-key
+ * against it. Same showing in, same verdict out; `answer-key.test.ts` holds
+ * the two together over the whole curriculum.
+ */
+export function answerKeyFor(
+  fact: FactId,
+  dir: Direction = "jp2en",
+  ctx?: PromptContext,
+): AnswerKey {
+  return questionsFor(fact).answerKey(fact, dir, ctx);
 }
 
 /**

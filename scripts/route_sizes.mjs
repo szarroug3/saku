@@ -35,15 +35,16 @@ const ROUTES = {
   "/": ["app/(sky)/page_client-reference-manifest.js", 1.5],
   "/observatory": ["app/(sky)/observatory/page_client-reference-manifest.js", 1.5],
   "/lesson": ["app/(sky)/lesson/page_client-reference-manifest.js", 2],
-  // The quiz and practice clients grade on the client, so they pull the
-  // app's engine and its tables into the browser (14.8 MB measured,
-  // 2026-09-06). Budgeted at what they are so growth still fails; SAK-380
-  // is the cut, and these should come back to about 2 MB. Settings used to
-  // be here too, for importing one component from the quiz's client file;
-  // SAK-366 moved it and the page went to 0.48 MB.
-  "/quiz": ["app/(sky)/quiz/page_client-reference-manifest.js", 16],
-  "/practice": ["app/(sky)/practice/page_client-reference-manifest.js", 16],
-  "/practice/run": ["app/(sky)/practice/run/page_client-reference-manifest.js", 16],
+  // These three used to be budgeted at 16 MB, because grading on the client
+  // meant importing the engine and the engine's index reaches every table the
+  // app owns: 14.8 MB of JavaScript to answer one yes-or-no question. SAK-380
+  // sent the answer with the card instead and they came back to 0.54 MB, in
+  // line with every other page. Anything that puts a table back in the
+  // browser fails here; `node scripts/import_path.mjs <file> src/data` says
+  // which import did it.
+  "/quiz": ["app/(sky)/quiz/page_client-reference-manifest.js", 1.5],
+  "/practice": ["app/(sky)/practice/page_client-reference-manifest.js", 1.5],
+  "/practice/run": ["app/(sky)/practice/run/page_client-reference-manifest.js", 1.5],
   "/atlas": ["app/(sky)/atlas/page_client-reference-manifest.js", 2],
   "/sessions": ["app/(sky)/sessions/page_client-reference-manifest.js", 1.5],
   "/settings": ["app/(sky)/settings/page_client-reference-manifest.js", 1.5],

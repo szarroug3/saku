@@ -8,7 +8,7 @@
 // drift, and a drifted audit is worse than no audit (false confidence).
 
 import { ALL_FACTS, factInfo } from "@/lib/facts";
-import { isEnglishGloss, stripParentheticals, synonymKeyOf } from "@/lib/engine/en-match";
+import { isEnglishGloss, stripParentheticals, synonymKeyOf } from "@/lib/en-text";
 
 /** Every distinct queryable synonym-pool key the app's current fact data
  * (ALL_FACTS/factInfo — vocab, kanji, radicals, grammar, keigo, counters,
