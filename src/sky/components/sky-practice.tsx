@@ -146,20 +146,20 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
               )}
             </Facet>
           )}
-          <Facet title="Draw from" note={recipe.collections.length ? undefined : "Everything, until you pick a collection."}>
+          <Facet title="Draw from">
             {collections.map((c) => <SkyChip key={c.id} on={recipe.collections.includes(c.id)} onClick={() => toggleCollection(c.id)} title={`${c.total.toLocaleString()} to draw from`}>{c.title}</SkyChip>)}
             {collections.filter((c) => c.cuts && recipe.collections.includes(c.id)).map((c) => {
               // the cuts in their groups: one row each, the collection named on the first
               const groups = [...new Set(c.cuts!.map((cut) => cut.group ?? ""))];
               return groups.map((g, i) => (
-                <div key={`${c.id}:${g}`} className="ml-1 flex w-full flex-wrap items-center gap-1.5 border-l-2 border-sky-line pl-3">
+                <div key={`${c.id}:${g}`} className="ml-1 flex w-full flex-wrap items-center gap-2 border-l-2 border-sky-line pl-3">
                   <span className="w-[4.5rem] text-[12px] text-sky-muted">{i === 0 ? c.title : ""}</span>
                   {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutsOf(recipe, c.id).includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
                 </div>
               ));
             })}
           </Facet>
-          <Facet title="Only things that are" note={recipe.statuses.length ? undefined : "Any standing, until you pick one."}>
+          <Facet title="Only things that are">
             {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })} className="capitalize">{STANDING[s].label}</SkyChip>)}
           </Facet>
           <Facet title="Ask me for">
@@ -171,7 +171,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           <Facet title="How many">
             {DECK_SIZES.map((n) => <SkyChip key={String(n)} on={recipe.size === n} onClick={() => set({ size: n as DeckSize })}>{n === "all" ? "All of them" : n}</SkyChip>)}
           </Facet>
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             {saving ? (
               <form className="flex w-full gap-2" onSubmit={(e) => { e.preventDefault(); save(); }}>
                 <SkyInput value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="A name for this recipe" className="flex-1 !py-1.5 text-[14px]" autoFocus />
@@ -206,15 +206,24 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
               {excluded.length === 1 ? "One item" : `${excluded.length} items`} left out by hand. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put {excluded.length === 1 ? "it" : "them"} back</button>
             </p>
           ) : null}
-          <ul className={`mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
-            {kept.map((p) => (
-              <li key={p.item.id} className="grid grid-cols-[6rem_1fr_auto_auto] items-baseline gap-x-3 rounded-lg px-2 py-1.5 hover:bg-sky-card">
-                <span className={`truncate font-sky-display text-[18px] leading-none ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`}>{p.item.glyph}</span>
-                <span className="truncate text-[13px] text-sky-ink/90">{p.item.english !== p.item.glyph ? p.item.english : ""}</span>
-                <span className="text-[12px] text-sky-shaky">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
-                <button type="button" aria-label={`Leave out ${p.item.english}`} title="Leave it out" onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
-              </li>
-            ))}
+          <ul className={`mt-4 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
+            {kept.map((p) => {
+              // a thing named in English (a sentence rule) has no glyph: its
+              // name takes both columns, in the UI face
+              const named = p.item.english === p.item.glyph;
+              return (
+                <li key={p.item.id} className="grid grid-cols-[7rem_1fr_auto_auto] items-center gap-x-4 rounded-lg px-2 py-2 hover:bg-sky-card">
+                  {named
+                    ? <span className={`col-span-2 truncate font-sky-ui text-[14px] font-semibold ${STANDING[p.item.standing].text}`} title={p.item.english}>{p.item.english}</span>
+                    : <>
+                        <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`} title={p.item.glyph}>{p.item.glyph}</span>
+                        <span className="truncate text-[13.5px] text-sky-ink/90" title={p.item.english}>{p.item.english}</span>
+                      </>}
+                  <span className="text-[12px] text-sky-shaky">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>
+                  <button type="button" aria-label={`Leave out ${p.item.english}`} title="Leave it out" onClick={() => drop(p.item.id, p.item.english)} className="text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
+                </li>
+              );
+            })}
             {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, not listed here</li>}
           </ul>
           <div className="mt-3 flex shrink-0 flex-wrap items-center gap-3">
@@ -229,10 +238,10 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
 
 function Facet({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <div className="mt-4 first:mt-2">
+    <div className="mt-6 first:mt-3">
       <Eyebrow>{title}</Eyebrow>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-      {note && <p className="mt-1.5 text-[12px] text-sky-muted">{note}</p>}
+      <div className="flex flex-wrap gap-2">{children}</div>
+      {note && <p className="mt-2 text-[12px] text-sky-muted">{note}</p>}
     </div>
   );
 }
