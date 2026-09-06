@@ -29,18 +29,32 @@ export interface SkySettingsProps {
 /** What a font chip shows: the face is the label. */
 const FONT_SAMPLE = "あき";
 
-export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, height }: SkySettingsProps) {
-  const s = settings;
-  const text = (key: keyof SkySettings) => SETTING_TEXT[key];
-  const Row = ({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean; children: ReactNode }) => (
+/**
+ * One setting: its name on the left, whatever changes it on the right.
+ *
+ * Out here, not inside SkySettings, and it matters (SAK-352). A component
+ * declared inside another is a NEW component type on every render, so React
+ * cannot match it to the one it drew last time: it unmounts the old subtree
+ * and mounts a fresh one. Anything with focus in it loses focus, which is why
+ * the steppers threw you out after a single keystroke and the timer could not
+ * be typed into at all.
+ */
+function Row({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean; children: ReactNode }) {
+  const text = SETTING_TEXT[k];
+  return (
     <div className={`flex flex-col items-start gap-2 border-t border-sky-line py-3 first:border-t-0 md:flex-row md:items-center md:justify-between md:gap-6 ${dim ? "opacity-50" : ""}`}>
       <span className="flex items-center text-[14px] text-sky-ink">
-        {text(k).label}
-        {text(k).info && <SkyInfo className="ml-1.5" label={`About ${text(k).label.toLowerCase()}`}>{text(k).info}</SkyInfo>}
+        {text.label}
+        {text.info && <SkyInfo className="ml-1.5" label={`About ${text.label.toLowerCase()}`}>{text.info}</SkyInfo>}
       </span>
       <span className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">{children}</span>
     </div>
   );
+}
+
+export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, height }: SkySettingsProps) {
+  const s = settings;
+  const text = (key: keyof SkySettings) => SETTING_TEXT[key];
   const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer", dim = false) => (
     <Row key={k} k={k} dim={dim}><SkyToggle on={s[k]} onClick={() => onChange({ [k]: !s[k] })} label={text(k).label} /></Row>
   );

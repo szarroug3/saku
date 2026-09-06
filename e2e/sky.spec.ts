@@ -157,6 +157,24 @@ test("a response says where the server spent its time", async ({ page }) => {
   expect(fromBrowser).toContain("session");
 });
 
+test("the settings steppers keep focus while you type in them", async ({ page }) => {
+  // SAK-352. The row was a component declared inside another, so every render
+  // made a new type, React remounted the subtree, and the field you were
+  // typing in went away under you.
+  await page.goto("/settings");
+  await page.getByRole("switch", { name: "Timer" }).click();
+  const seconds = page.getByRole("spinbutton", { name: /seconds/i }).first();
+  await expect(seconds).toBeVisible();
+  await seconds.click();
+  await seconds.press("ControlOrMeta+a");
+  await seconds.press("4");
+  await seconds.press("5");
+  // still the same field, still focused, and it took both keystrokes: before
+  // the fix the first one remounted the input and the second went nowhere
+  await expect(seconds).toBeFocused();
+  await expect(seconds).toHaveValue("45");
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the
