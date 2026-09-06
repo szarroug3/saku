@@ -48,7 +48,7 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
   const left = now === null ? Number.POSITIVE_INFINITY : restLeft(until, now);
   const ready = left === 0;
   return (
-    <SkyPageShell eyebrow="Quiz" title="A rest" height={height}>
+    <SkyPageShell eyebrow="Quiz" title="Take a break and come back." height={height}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4 font-sky-ui">
         <SkySurface className="px-6 py-10 text-center">
           <Eyebrow>{ready ? `Round ${nextRound} of ${rounds}` : `Until round ${nextRound} of ${rounds}`}</Eyebrow>
@@ -68,7 +68,7 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
             <SkyStepper value={minutes} onChange={onMinutes} label="Minutes of rest" min={0} max={240} unit="minutes" />
           </div>
         </SkySurface>
-        <p className="text-center text-[12.5px] text-sky-muted">The rest is the point: what you just did settles while you are not looking at it. Leaving is free; the clock keeps counting. <a href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</a></p>
+        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page. <a href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</a></p>
       </div>
     </SkyPageShell>
   );
