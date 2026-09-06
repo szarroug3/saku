@@ -535,3 +535,43 @@ on a choice that is not yet picked falls through to the button, which
 picks it; a second Enter checks it. That is the same two steps the mouse
 takes, and the reason for them is unchanged: a pitch clip should be
 hearable before the pick is committed.
+
+### The deck is dealt (2026-09-06, SAK-388)
+
+The quiz asked its cards in the order the facts came out of the tables:
+the picks in the order they were picked, or what is due in the schedule's
+order. That order never varied, so a lesson's three rounds were the same
+run three times and the second and third were partly answered from the
+rhythm of the first rather than from recall. A retry from the results and
+"Run it again" from Sessions re-asked in the order the answers were
+recorded in.
+
+`shuffleDeck` deals it. Two things, because a shuffle alone only fixes
+one of them: the order is random, and a word's own cards are then moved
+apart, since a word's meaning followed by its reading means the second is
+answered off the first. The spread trades each card that landed beside
+another of its own item for the nearest one that fits both places,
+looking ahead first and then back, because a clash in the last two places
+has nowhere ahead to go. A deck with nothing else to offer, every card of
+one word, keeps them together instead of looping.
+
+It is applied where the deck is built, never inside `quizCards`, so the
+cards themselves still come back in the order they were asked for: what
+is due is chosen in the schedule's order and cut to the cap FIRST, and
+only the order nobody chose is thrown away. Practice was already drawing
+at random, but it draws items, and a drawn word's facts came out
+together; a deck of "all of them" was not shuffled at all.
+
+The rounds after the first deal again in the browser, from a seeded
+generator rather than `Math.random`, so a re-render cannot move the card
+out from under whoever is answering it. The first round keeps the order
+it arrived in, which is the one the server rendered, so hydration has
+nothing to disagree with.
+
+The sample quiz with no picks is the exception and keeps its order: it is
+a showcase deck, one card of every kind, and its sequence is chosen.
+
+`seeded` moved out of `sky-stars.ts` into `random.ts` alongside
+`shuffled`, since the sky now wants chance for two opposite reasons: a
+placement is seeded so it never moves, and a deck is shuffled so it never
+repeats.

@@ -10,17 +10,18 @@
 // A lesson's quiz runs three rounds over the same cards with a rest
 // between them (SAK-343): the round's results offer the rest, the rest
 // screen counts down from a timestamp kept in the browser (so a reload
-// resumes it), and the next round starts fresh over the same cards. The
-// rest lengths are the learner's settings.
+// resumes it), and the next round starts fresh over the same cards, dealt
+// in a new order (SAK-388). The rest lengths are the learner's settings.
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { HearButton } from "@/components/ui/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";
-import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { seeded } from "@/sky/lib/random";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
 import type { QuizConfig } from "@/types";
 
@@ -58,6 +59,14 @@ function QuizRun({ cards, skyHref, sample, rounds, cfg, update, router }: { card
   const [started, setStarted] = useState<number | null>(null);
   const round = started ?? (rest ? rest.round : 0) + (rest ? 0 : 1);
   const resting = !!rest && started === null;
+  // Every round asks its own order (SAK-388). The first keeps the one the
+  // deck came in, which is the order the server rendered, so hydration has
+  // nothing to disagree with; the rounds after it deal again, or the second
+  // and third are answered from the rhythm of the first. Seeded, not
+  // Math.random: a re-render mid-round must not move the card underneath
+  // whoever is answering it.
+  const [seed] = useState(() => (Math.floor(Math.random() * 0x7fffffff) || 1));
+  const asked = useMemo(() => (round <= 1 ? cards : shuffleDeck(cards, seeded(seed + round))), [cards, round, seed]);
 
   // a retry is the same route with just those cards named
   const retry = (ids: readonly string[]) => router.push(`/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
@@ -82,5 +91,5 @@ function QuizRun({ cards, skyHref, sample, rounds, cfg, update, router }: { card
   if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} skyHref={skyHref} height="100%" />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={cards} grade={grade} toKana={typeKana} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} onRetry={retry} next={next} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} onRetry={retry} next={next} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

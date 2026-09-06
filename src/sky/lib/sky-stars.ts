@@ -5,6 +5,8 @@
 // preview, in the saved file and in the bake. No DOM, no Node: the editor turns
 // the stardust pixels into a PNG with a canvas, the save route with zlib.
 
+import { seeded } from "./random";
+
 /** The general stardust: how many dots per 480px tile, their radius range in
  * CSS pixels, their opacity range, and the seed that places them. */
 export interface StarSpec {
@@ -40,18 +42,6 @@ export const FIELD_H = 900;
 /** Where the band's centre sits along the gradient line before any shift, as
  * a share of the line: between the lilac (45%) and pink (53%) stops. */
 export const MILKY_CENTRE = 0.49;
-
-/** A small seeded generator (mulberry32): the same seed gives the same sky. */
-export function seeded(seed: number): () => number {
-  let a = (seed >>> 0) || 1;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 

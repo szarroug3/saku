@@ -14,7 +14,7 @@ import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
 import { buildSessionRecord } from "@/lib/session-record";
 import { loadSettings } from "@/lib/settings";
-import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import type { FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection, SkyAtlasData } from "@/sky/components/sky-atlas";
 import type { SkyHomeData } from "@/sky/components/sky-home";
@@ -65,7 +65,9 @@ export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards
   const history = await historyFor(who);
   const picks = ask.picks ?? [];
   const named = ask.cards ?? [];
-  if (named.length) return cardsFor(history, named);
+  // a retry, and "Run it again" from Sessions: dealt afresh, not re-asked
+  // in the order they were recorded in (SAK-388)
+  if (named.length) return shuffleDeck(cardsFor(history, named));
   if (who.sample && !picks.length) return sampleCards(history);
   let { audio, pitch } = ask;
   if (!who.sample && !who.local && (audio === undefined || pitch === undefined)) {

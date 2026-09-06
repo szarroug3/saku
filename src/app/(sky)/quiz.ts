@@ -32,7 +32,7 @@ import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntr
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
-import type { QuizCard, QuizOption } from "@/sky/lib/quiz";
+import { shuffleDeck, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
@@ -63,8 +63,13 @@ export function quizFacts(history: HistoryFile, picks: readonly string[], now = 
   return dueFacts(history, [], now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
 }
 
+/** The deck a session asks. Shuffled here rather than in `quizCards`, so
+ * the cards themselves stay in whatever order they were asked for and only
+ * the deck is dealt: what is due is picked in the schedule's order and cut
+ * to the cap first, and the order that survives is the one nobody chose
+ * (SAK-388). */
 export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), options: QuizOptions = {}): QuizCard[] {
-  return quizCards(history, quizFacts(history, picks, now, options.pitch ?? true), now, options);
+  return shuffleDeck(quizCards(history, quizFacts(history, picks, now, options.pitch ?? true), now, options));
 }
 
 /** What a listening card plays for a fact, or undefined when the fact has

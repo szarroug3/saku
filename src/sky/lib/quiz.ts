@@ -12,6 +12,7 @@
 // (wrong after the last try, or given up). Opening on choices is not help.
 // Cards can be skipped and come back to; the grades are per card.
 
+import { shuffled } from "./random";
 import type { LessonTeach } from "./lesson";
 import type { SkyItem } from "./types";
 
@@ -117,4 +118,43 @@ export function tally(answers: readonly QuizAnswer[]): Record<Grade, number> {
   const out: Record<Grade, number> = { clean: 0, help: 0, missed: 0 };
   for (const a of answers) out[a.grade]++;
   return out;
+}
+
+/** How far ahead the spread looks for a card to trade with, so a deck of
+ * one item does not walk the whole list per clash. */
+const REACH = 8;
+
+/** The deck in a random order, with a word's own cards moved apart
+ * (SAK-388). Two things, because a plain shuffle only fixes one of them:
+ * the deck was asked in the order the facts came out of the tables, and a
+ * word's meaning and its reading sitting back to back means the second is
+ * answered off the first rather than from memory.
+ *
+ * The source of numbers is handed in: `Math.random` where the deck is
+ * built, a seeded one where the order must survive a re-render. */
+export function shuffleDeck(cards: readonly QuizCard[], random: () => number = Math.random): QuizCard[] {
+  return spread(shuffled(cards, random));
+}
+
+/** Trade each card that landed beside another of its own item for the
+ * nearest one that fits both places, looking ahead first and then back,
+ * since a clash in the last two places has nowhere ahead to go. A deck
+ * with nothing else to offer, every card of one word, keeps them
+ * together. */
+function spread(cards: QuizCard[]): QuizCard[] {
+  for (let i = 1; i < cards.length; i++) {
+    if (cards[i].item.id !== cards[i - 1].item.id) continue;
+    // what each neighbour of the two places would be after the trade
+    const trade = (j: number) => {
+      const at = (k: number) => (k === i ? cards[j] : k === j ? cards[i] : cards[k])?.item.id;
+      if (at(i) === at(i - 1) || at(i) === at(i + 1) || at(j) === at(j - 1) || at(j) === at(j + 1)) return false;
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+      return true;
+    };
+    for (let d = 1; d <= REACH; d++) {
+      if (i + d < cards.length && trade(i + d)) break;
+      if (i - d >= 0 && trade(i - d)) break;
+    }
+  }
+  return cards;
 }

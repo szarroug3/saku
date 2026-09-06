@@ -49,6 +49,21 @@ test("a lesson's quiz rests between rounds", async ({ page }) => {
   await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
 });
 
+test("the deck is dealt: two quizzes of the same picks are not asked in the same order", async ({ page }) => {
+  // SAK-388. Five cards deal 120 ways, so a run that never differs across
+  // four loads is the fixed order coming back, not a coincidence.
+  const orderNow = async () => {
+    await page.goto("/quiz?sample&picks=kana-row:h-vowels");
+    const list = page.getByRole("complementary", { name: "The cards" }).getByRole("listitem");
+    await expect(list.first()).toBeVisible();
+    return (await list.allInnerTexts()).join("|");
+  };
+  const first = await orderNow();
+  let differed = false;
+  for (let i = 0; i < 3 && !differed; i++) differed = (await orderNow()) !== first;
+  expect(differed).toBe(true);
+});
+
 test("the atlas opens on its question", async ({ page }) => {
   await page.goto("/atlas?sample");
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();

@@ -21,7 +21,7 @@ import { all, SHELVES } from "./atlas";
 import { standingFor } from "./learner";
 import { offerings } from "./observatory";
 import { quizCards } from "./quiz";
-import type { QuizCard } from "@/sky/lib/quiz";
+import { shuffleDeck, type QuizCard } from "@/sky/lib/quiz";
 
 /** The shelves a deck can draw from. */
 const DRAWABLE = SHELVES.filter((s) => s.sky !== "term");
@@ -165,8 +165,11 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
   return drawn.slice(0, deckSize(recipe, pool.length));
 }
 
-/** The cards for a deck: the drawn items' facts, in the draw's order. */
+/** The cards for a deck: the drawn items' facts, shuffled. The draw is
+ * already random, but it draws ITEMS, and a drawn word's facts came out
+ * together, so its meaning and its reading were always asked back to back
+ * (SAK-388). A deck of "all of them" was not shuffled at all. */
 export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now()): QuizCard[] {
   const facts = practiceDraw(history, recipe, practiceMisses, now).flatMap((p) => p.facts) as FactId[];
-  return quizCards(history, facts, now);
+  return shuffleDeck(quizCards(history, facts, now));
 }
