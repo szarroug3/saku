@@ -90,15 +90,17 @@ export async function recordQuiz(answers: readonly QuizAnswer[]): Promise<void> 
   if (!userId || answers.length === 0) return;
   const stats: SessionStats = {};
   for (const a of answers) {
+    // a listening card is its fact, asked by ear
+    const fact = a.cardId.replace(/#listen$/, "") as FactId;
     // a card with no fact behind it (a retry of something the data no longer has)
-    if (!factInfo(a.cardId as FactId)) continue;
-    const st = statForShowing(stats, a.cardId as FactId);
+    if (!factInfo(fact)) continue;
+    const st = statForShowing(stats, fact);
     const ok = a.grade !== "missed";
     const credit = a.grade === "clean";
-    resolveShowing(st, credit, ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: false });
+    resolveShowing(st, credit, ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: a.cardId.endsWith("#listen") });
     if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
   }
-  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.map((a) => a.cardId as FactId) });
+  const record = buildSessionRecord(stats, { mode: "drill", redrill: false, ts: Date.now(), planned: answers.map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
   if (!record) return;
   await saveSession(userId, record);
   revalidatePath("/dev/sky/planetarium");

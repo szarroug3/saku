@@ -41,6 +41,13 @@ export const QUIZ_CAP = 8;
 
 /** The facts a session asks: the picks' quizzable facts when picks are
  * named, else what is due, capped. */
+/** What the learner's settings allow a quiz to ask: pitch cards, and
+ * listening cards (SAK-345). */
+export interface QuizOptions {
+  pitch?: boolean;
+  audio?: boolean;
+}
+
 export function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): FactId[] {
   if (picks.length) {
     const facts = picks.flatMap((id) => quizzableFacts(pickFacts([id]), history));
@@ -52,12 +59,23 @@ export function quizFacts(history: HistoryFile, picks: readonly string[], now = 
   return dueFacts(history, [], now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
 }
 
-export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): QuizCard[] {
-  return quizCards(history, quizFacts(history, picks, now, pitch), now);
+export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), options: QuizOptions = {}): QuizCard[] {
+  return quizCards(history, quizFacts(history, picks, now, options.pitch ?? true), now, options);
 }
 
-/** The cards for some facts, in order. */
-export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now()): QuizCard[] {
+/** What a listening card plays for a fact, or undefined when the fact has
+ * no sound to ask by: a word's meaning card plays the reading asked about,
+ * a kana's card plays the kana. */
+function listenTextFor(fact: FactId, item: SkyItem): string | undefined {
+  const id = fact as string;
+  if (item.kind === "kana") return item.glyph;
+  if (item.kind === "word" && id.includes("/meaning")) return wordReadingAsked(fact, item);
+  return undefined;
+}
+
+/** The cards for some facts, in order. With `audio`, a card that has a
+ * sound to ask by becomes a listening card half the time. */
+export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
   const o = offerings(history, now);
   const known = Object.keys(history.facts ?? {}) as FactId[];
   const cards: QuizCard[] = [];
@@ -89,9 +107,13 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir)) });
     const hint = hintFor(fact, dir);
     const agg = history.facts?.[fact];
-    const instruction = construction
-      ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
-      : quizInstruction(fact, dir, typed ? "typed" : "mc");
+    const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
+    const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
+    const instruction = listenIt
+      ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : "Listen, then type what it means.")
+      : construction
+        ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
+        : quizInstruction(fact, dir, typed ? "typed" : "mc");
     cards.push({
       id: fact,
       item,
@@ -105,6 +127,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       answer: construction ? construction.reading : revealFor(fact, dir),
       seen: agg?.seen ?? 0,
       missed: agg?.missed ?? 0,
+      ...(listenIt ? { listen: listenIt } : {}),
       // a word card asks about one reading (a qualified fact names it, a
       // plain one is the word's first), so its reveal is that reading's
       // lesson card, not the whole entry (Sam, 2026-09-05)
@@ -153,6 +176,13 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
     first(KEIGO_SUBJECT, () => true),
   ].filter((f): f is FactId => !!f);
   const cards = quizCards(history, [...new Set(facts)], now);
+  // and one listening card: a word's meaning, asked by ear
+  const spoken = facts.find((f) => (f as string).startsWith("word:") && (f as string).includes("/meaning"));
+  const spokenCard = spoken ? cards.find((c) => c.id === spoken) : undefined;
+  if (spoken && spokenCard) {
+    const heard: QuizCard = { ...spokenCard, id: `${spoken}#listen`, listen: wordReadingAsked(spoken, spokenCard.item), instruction: "Listen, then type what it means." };
+    cards.splice(cards.indexOf(spokenCard) + 1, 0, heard);
+  }
   // the pitch card sits with the word cards: a real homophone pair when
   // the curriculum has one (悪 and 開く share あく), else a mispitched twin
   const questions = VOCAB.map((w) => [w.keb, rollPitchQuestion(w.keb)] as const).filter((x) => x[1]);
@@ -227,6 +257,6 @@ export function cardsFor(history: HistoryFile, ids: readonly string[], now = Dat
 /** The signed-in learner's quiz, or a visitor's. */
 export async function learnerQuiz(picks: readonly string[], now = Date.now()): Promise<QuizCard[]> {
   const userId = await currentUserId();
-  const pitch = userId ? ((await loadSettings(userId)).cfg?.pitchQuestions ?? true) : true;
-  return quizFromHistory(await learnerHistory(), picks, now, pitch);
+  const cfg = userId ? (await loadSettings(userId)).cfg : undefined;
+  return quizFromHistory(await learnerHistory(), picks, now, { pitch: cfg?.pitchQuestions ?? true, audio: cfg?.audioPrompts ?? true });
 }

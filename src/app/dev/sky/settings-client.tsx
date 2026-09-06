@@ -27,7 +27,6 @@ export function fromConfig(cfg: QuizConfig): SkySettingsValues {
     timerSeconds: cfg.timerSec,
     accent: cfg.skyAccent ?? "pink",
     fonts: cfg.fonts,
-    showVolume: cfg.showVolume,
     cleanRunsToClearMixup: cfg.graduateRuns,
   };
 }
@@ -42,7 +41,6 @@ export function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig>
   if (patch.timerSeconds !== undefined) out.timerSec = patch.timerSeconds;
   if (patch.accent !== undefined) out.skyAccent = patch.accent;
   if (patch.fonts !== undefined) out.fonts = [...patch.fonts];
-  if (patch.showVolume !== undefined) out.showVolume = patch.showVolume;
   if (patch.cleanRunsToClearMixup !== undefined) out.graduateRuns = patch.cleanRunsToClearMixup;
   return out;
 }

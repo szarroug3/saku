@@ -24,8 +24,6 @@ export interface SkySettings {
   accent: string;
   /** The kana faces in use, by family; the route hands in which are installed. */
   fonts: readonly string[];
-  /** The count of cards answered, on the sky and in the quiz. */
-  showVolume: boolean;
   /** Clean runs in a row before a mix-up is considered cleared. */
   cleanRunsToClearMixup: number;
 }
@@ -38,7 +36,6 @@ export const DEFAULT_SETTINGS: SkySettings = {
   timerSeconds: 10,
   accent: "pink",
   fonts: [],
-  showVolume: true,
   cleanRunsToClearMixup: 10,
 };
 
@@ -86,7 +83,6 @@ export const SETTING_TEXT: Record<keyof SkySettings, SettingText> = {
   timerSeconds: { label: "Timer seconds" },
   accent: { label: "Accent", info: "The one color the sky uses for what is yours to press and what is being taught." },
   fonts: { label: "Kana fonts", info: "Cards use a random font from the ones you pick. Keep a few on so you don't just memorize one shape. Only fonts installed on this machine are offered." },
-  showVolume: { label: "Show how much you've practiced", info: "The count of cards you've answered, on the sky and in the quiz." },
   cleanRunsToClearMixup: { label: "Clean runs to clear a mix-up", info: "How many runs in a row you must get both of a mixed-up pair right before the mix-up is considered cleared." },
 };
 
@@ -98,5 +94,5 @@ export interface SettingGroup {
 export const SETTING_GROUPS: readonly SettingGroup[] = [
   { title: "The quiz", keys: ["audioPrompts", "pitchQuestions", "voice", "timer"] },
   { title: "Look", keys: ["accent", "fonts"] },
-  { title: "Progress", keys: ["showVolume", "cleanRunsToClearMixup"] },
+  { title: "Progress", keys: ["cleanRunsToClearMixup"] },
 ];

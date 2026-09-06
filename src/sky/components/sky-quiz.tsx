@@ -53,6 +53,8 @@ export interface SkyQuizProps {
    * the setting lives in the help bar, not on the Settings page. */
   retries?: number;
   onRetries?: (retries: number) => void;
+  /** Seconds a card gets before it counts as missed; none when unset. */
+  timerSeconds?: number;
   height?: string;
 }
 
@@ -85,7 +87,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [] };
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onRetry, onSave, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -97,6 +99,12 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const [finished, setFinished] = useState(false);
   const [saved, setSaved] = useState<"no" | "saving" | "yes" | "failed">("no");
   const input = useRef<HTMLInputElement>(null);
+  // the timer's clock: read every quarter second while a timed card is
+  // open, and when each card was first shown (set on the tick, so the
+  // render never reads the clock itself)
+  const [clock, setClock] = useState<{ now: number; shownAt: Readonly<Record<string, number>> }>({ now: 0, shownAt: {} });
+  // a listening card plays itself when it appears
+  const listenRef = useRef<HTMLSpanElement>(null);
 
   const card = cards[at];
   const state = card ? (open[card.id] ?? FRESH) : FRESH;
@@ -105,6 +113,30 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const allAnswered = cards.length > 0 && answeredCount === cards.length;
   // the choices show when asked for, or on a card only ever asked that way
   const choices = card ? (state.narrowed || !card.typed) : false;
+  // listening: the glyph stays hidden until the card is answered or a hint asked
+  const listening = !!card?.listen && !answered && !state.hinted;
+  const cardId = card?.id;
+  // the timeout fires from the tick, through a ref that always holds the
+  // latest handler, so the effect itself sets nothing
+  const onTimeOut = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (!cardId || answered || !timerSeconds) return;
+    const tick = () => setClock((c) => {
+      const shownAt = c.shownAt[cardId] ?? Date.now();
+      if (shownAt + timerSeconds * 1000 <= Date.now()) setTimeout(() => onTimeOut.current(), 0);
+      return { now: Date.now(), shownAt: c.shownAt[cardId] ? c.shownAt : { ...c.shownAt, [cardId]: shownAt } };
+    });
+    const t = setInterval(tick, 250);
+    tick();
+    return () => clearInterval(t);
+  }, [cardId, answered, timerSeconds]);
+  useEffect(() => {
+    if (!listening) return;
+    const t = setTimeout(() => listenRef.current?.querySelector("button")?.click(), 50);
+    return () => clearTimeout(t);
+  }, [listening, cardId]);
+  const timeLeft = timerSeconds && cardId && clock.shownAt[cardId] ? Math.max(0, clock.shownAt[cardId] + timerSeconds * 1000 - clock.now) : null;
+
   // a card of two choices is wrong after one wrong pick; a typed card, or a
   // fuller board, gets the retries
   // tries in all: the retries plus the first go, and never more than a
@@ -179,6 +211,10 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
     hears.current.get(id)?.querySelector("button")?.click();
   };
 
+  /** Time ran out: a miss, and the answer shown. */
+  const timeOut = () => { if (card && !answered) settle("missed", state.tries + 1); };
+  useEffect(() => { onTimeOut.current = timeOut; });
+
   const giveUp = () => { if (!answered) { settle("missed", state.tries + 1, { given: undefined }); setFeedback(null); } };
 
   const go = (n: number) => { if (n >= 0 && n < cards.length) { setAt(n); setGiven(""); setFeedback(null); } };
@@ -239,7 +275,8 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
   const triesLeft = maxTries - state.tries;
   const help = [
     !answered && card.typed && !state.narrowed && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
-    !answered && card.hint && !state.hinted ? { label: "Hint", run: () => patch({ hinted: true }) } : null,
+    // a listening card's hint is the writing itself
+    !answered && (card.hint || card.listen) && !state.hinted ? { label: card.listen ? "Show it" : "Hint", run: () => patch({ hinted: true }) } : null,
     !answered ? { label: "I don't know", run: giveUp } : null,
   ].filter((h): h is { label: string; run: () => void } => !!h);
 
@@ -260,7 +297,14 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
           <div className="mt-3 flex min-h-0 flex-1 gap-4">
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex flex-col items-center text-center">
-                {card.prompt.within ? (
+                {listening ? (
+                  // the sound in place of the glyph: a big hear button, and the
+                  // reading only once it is shown or answered
+                  <div className="flex flex-col items-center">
+                    <Eyebrow>Listen</Eyebrow>
+                    <span ref={listenRef} className="mt-1 inline-flex [&_button]:h-16 [&_button]:w-16 [&_button]:text-[26px]">{Hear && card.listen && <Hear glyph={card.listen} label="Play it again" />}</span>
+                  </div>
+                ) : card.prompt.within ? (
                   // the word, with the glyph asked about in ink and the rest muted
                   <p className={`font-sky-display text-[56px] leading-none ${japaneseFont(card.prompt.within)}`}>
                     {[...card.prompt.within].map((ch, i) => <span key={i} className={ch === card.prompt.glyph ? "text-sky-ink" : "text-sky-muted/60"}>{ch}</span>)}
@@ -268,7 +312,7 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
                 ) : (
                   <p className={`font-sky-display leading-none text-sky-ink ${card.prompt.jp ? ([...card.prompt.glyph].length <= 2 ? "text-[64px]" : "text-[36px]") : "text-[28px]"} ${japaneseFont(card.prompt.glyph)}`}>{card.prompt.glyph}</p>
                 )}
-                {context && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
+                {context && !listening && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
                 {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
               </div>
 
@@ -342,7 +386,12 @@ export function SkyQuiz({ cards, grade, onFinish, skyHref, hear, pitch, tip, onR
 
             {/* the bar: help while the card is open, the way on once it is done */}
             <div className="flex w-[168px] shrink-0 flex-col gap-2 border-l border-sky-line pl-4">
-              <Eyebrow>{answered ? "Then" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}`}</Eyebrow>
+              <Eyebrow>{answered ? "Then" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}${timeLeft !== null ? ` · ${Math.ceil(timeLeft / 1000)}s` : ""}`}</Eyebrow>
+              {timeLeft !== null && timerSeconds > 0 && (
+                <div className="h-1 w-full overflow-hidden rounded-full bg-sky-line" aria-hidden>
+                  <div className={`h-full ${timeLeft < 3000 ? "bg-sky-slipping" : "bg-sky-accent"}`} style={{ width: `${(timeLeft / (timerSeconds * 1000)) * 100}%` }} />
+                </div>
+              )}
               {answered
                 ? <SkyButton block onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton>
                 : help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}

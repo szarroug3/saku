@@ -41,14 +41,13 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">{children}</span>
     </div>
   );
-  const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer" | "showVolume", dim = false) => (
+  const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer", dim = false) => (
     <Row key={k} k={k} dim={dim}><SkyToggle on={s[k]} onClick={() => onChange({ [k]: !s[k] })} label={text(k).label} /></Row>
   );
   const toggleFont = (family: string) => onChange({ fonts: s.fonts.includes(family) ? s.fonts.filter((f) => f !== family) : [...s.fonts, family] });
   const control: Record<keyof SkySettings, () => ReactNode> = {
     audioPrompts: () => toggle("audioPrompts"),
     pitchQuestions: () => toggle("pitchQuestions", !s.audioPrompts),
-    showVolume: () => toggle("showVolume"),
     timer: () => (
       <Row key="timer" k="timer">
         <SkyToggle on={s.timer} onClick={() => onChange({ timer: !s.timer })} label={text("timer").label} />

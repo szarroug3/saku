@@ -70,6 +70,9 @@ export interface QuizCard {
   answer: string;
   /** The answer is a reading to draw with this pitch (a pitch card). */
   answerPitch?: number;
+  /** A listening card (SAK-345): what is played, in kana, with the glyph
+   * and its context hidden until the card is answered or a hint asked. */
+  listen?: string;
   /** How many times this fact has been seen, and missed, before tonight. */
   seen: number;
   missed: number;
