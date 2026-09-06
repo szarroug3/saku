@@ -128,7 +128,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const load = (d: SavedRecipe) => { set(d.recipe); setLoaded(d.name); };
 
   return (
-    <SkyPageShell eyebrow="Practice" title="Practice" lede="Practice is never recorded against your review schedule. Miss everything here and not one interval moves." height={height}>
+    <SkyPageShell eyebrow="Practice" title="What would you like to practise?" height={height}>
       <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
