@@ -1288,3 +1288,22 @@ kana row, the 〜つ rule) and built the whole Observatory to answer it, and
 answered nothing, as the whole Observatory does for an unknown id. Now
 only the Observatory's own ids go to the Observatory, and an unknown id is
 nothing straight away. 18 ms to 0.5.
+
+### The same rows, read twice (2026-09-07, SAK-382)
+
+The test account with a big synthetic learner on it (8,264 facts, 400
+sessions) showed two things the small one could not. The pages' own work
+held: the sky 52 to 87 ms on the function, the Atlas and Practice about
+10, Sessions 16 to 40. And two things scaled with the learner that should
+not have.
+
+The first: the root layout reads the learner's whole progress to seed the
+old app's providers, and the page reads it again for its own payload. Two
+round trips each, the facts table twice over, and at that size the facts
+table is four megabytes. The two reads are one now, held for the request
+with React's `cache`: whichever asks first pays, the other waits on the
+same promise. The `history` phase on a page is what was left to wait for.
+
+The second is on its own card (SAK-398): that seed puts the whole history
+into every page's HTML, 1.7 megabytes at that size, for providers a
+signed-in Sky page never reads. Retiring them is a round of its own.

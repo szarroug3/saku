@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { timed, timedSync } from "@/lib/server-timing";
 import "server-only";
 
@@ -78,20 +80,39 @@ function shapeHistory(raw: unknown, tableFacts: Record<FactId, FactAggregate>): 
   });
 }
 
-export async function readProgressSeedRow(
-  userId: string,
-): Promise<ProgressSeedRow> {
-  const supabase = await timed("seed:client", () => createSupabaseServerClient(), "making the database client");
+/**
+ * A learner's whole progress row and facts table, read ONCE per request
+ * (SAK-382). The shell's seeds (root layout) and the page's history read the
+ * same rows, and each was making its own two round trips, the facts table
+ * twice over: at 8,000 facts that is two reads of four megabytes for one
+ * page. React's `cache` scopes this to the request, so whichever of the two
+ * asks first pays, and the other waits on the same promise (they render
+ * concurrently, so it is usually a wait, not a free ride). Outside a request
+ * (a script, a test) `cache` does nothing and each call reads.
+ *
+ * The row and the facts table at the same time, not one after the other:
+ * reading the history once measured 1550 ms on a cold function, a 1240 ms
+ * query and then a second round trip to progress_facts hidden inside
+ * normalising the first. Nothing in the second depends on the first.
+ */
+const readProgress = cache(async (userId: string) => {
+  const supabase = await timed("db:client", () => createSupabaseServerClient(), "making the database client");
   const [row, table] = await Promise.all([
-    timed("seed:query", async () => await supabase
+    timed("db:query", async () => await supabase
       .from("progress")
       .select("history, settings, session, lists")
       .eq("user_id", userId)
-      .maybeSingle(), "selecting the whole progress row"),
-    timed("seed:facts", () => readFactsTable(userId), "selecting the facts table"),
+      .maybeSingle(), "selecting the progress row"),
+    timed("db:facts", () => readFactsTable(userId), "selecting the facts table"),
   ]);
-  const { data, error } = row;
-  if (error) throw new Error(`reading progress seed failed: ${error.message}`);
+  if (row.error) throw new Error(`reading progress failed: ${row.error.message}`);
+  return { data: row.data, table };
+});
+
+export async function readProgressSeedRow(
+  userId: string,
+): Promise<ProgressSeedRow> {
+  const { data, table } = await readProgress(userId);
   const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
     history: shapeHistory(data?.history, table.facts),
@@ -102,22 +123,8 @@ export async function readProgressSeedRow(
 }
 
 export async function readHistoryRow(userId: string): Promise<HistoryFile> {
-  // The row and the facts table at the same time, not one after the other
-  // (SAK-382). Reading the history measured 1550 ms on a cold function: a
-  // 1240 ms query, and then a second round trip to progress_facts that was
-  // hidden inside normalising the first. Nothing in the second depends on the
-  // first, so there was never a reason for them to queue.
-  const supabase = await timed("db:client", () => createSupabaseServerClient(), "making the database client");
-  const [row, table] = await Promise.all([
-    timed("db:query", async () => await supabase
-      .from("progress")
-      .select("history")
-      .eq("user_id", userId)
-      .maybeSingle(), "selecting the history row"),
-    timed("db:facts", () => readFactsTable(userId), "selecting the facts table"),
-  ]);
-  if (row.error) throw new Error(`reading progress.history failed: ${row.error.message}`);
-  return timedSync("db:shape", () => shapeHistory(row.data?.history, table.facts), "shaping the history");
+  const { data, table } = await readProgress(userId);
+  return timedSync("db:shape", () => shapeHistory(data?.history, table.facts), "shaping the history");
 }
 
 export async function writeHistoryRow(userId: string, hist: HistoryFile): Promise<void> {
