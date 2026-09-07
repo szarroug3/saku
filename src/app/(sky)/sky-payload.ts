@@ -62,3 +62,11 @@ export function joinSky(catalogue: SkyCatalogue, payload: SkyPayload): SkyHomeDa
     firmament: [...catalogue.firmament.filter((id) => !drop.has(id)), ...payload.firmamentAdd],
   };
 }
+
+/** What the sky holds before a learner has done anything, for the server's
+ * own use (built with the catalogue, catalogue-build.ts): the ids
+ * `skyItems` puts in for everyone, and the firmament of the five kinds. */
+export interface SkyBase {
+  readonly baseIds: readonly string[];
+  readonly fiveFirmament: readonly string[];
+}

@@ -6,11 +6,12 @@
 // another way on a learner's own sky. It is the same function the home calls,
 // given nobody.
 
+import skyBaseJson from "@/data/generated/sky-catalogue-base.json" with { type: "json" };
+import skyCatalogueJson from "@/data/generated/sky-catalogue.json" with { type: "json" };
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryOf } from "@/lib/facts";
-import { emptyHistory } from "@/lib/history-ops";
 import { libEntry, type LibEntry } from "@/lib/library/entries";
-import type { StatsData } from "@/lib/library/server-lookups";
+import type { StatsData } from "@/lib/library/stats-rows";
 import type { MixUp } from "@/sky/components/mix-ups-panel";
 import type { SkyHomeData } from "@/sky/components/sky-home";
 import { buildGraph } from "@/sky/lib/graph";
@@ -18,33 +19,20 @@ import { skyRoots } from "@/sky/lib/sky-scene";
 import type { Standing } from "@/sky/lib/standing";
 import type { EntryId, HistoryFile } from "@/types";
 import { timedSync } from "@/lib/server-timing";
-import { versionOf } from "./catalogue-version";
-import { splitItems, withoutStanding } from "./item-split";
-import { discoveryRows, skyFromHistory, skyItems, standingFor, sparse, standingTallyOf, touchedEntries, type SkyOptions } from "./learner";
-import { beyondWords } from "./observatory";
-import type { SkyCatalogue, SkyPayload } from "./sky-payload";
+import { splitItems } from "./item-split";
+import { discoveryRows, standingFor, sparse, standingTallyOf, touchedEntries, type SkyOptions } from "./learner";
+import type { SkyBase, SkyCatalogue, SkyPayload } from "./sky-payload";
 
-/** The clock the catalogue is built at. Nothing in an empty history ages, so
- * this only has to be the same number every time: a catalogue that changed
- * with the hour would be a new download every hour. */
-const NO_CLOCK = 0;
-
-/** Every star, built as this module loads rather than on the first request
- * that wants it. See atlas-catalogue.ts for why: a process is held ready
- * before a request arrives, so work done here is work the request does not
- * wait for, and work left until first use is paid for by whoever knocks
- * first. */
-const built: SkyCatalogue = buildSkyCatalogue();
+/** Every star, from the file scripts/build-catalogues.mjs wrote (the
+ * building is in catalogue-build.ts). It used to be built as this module
+ * loaded, on the theory that a held-ready process would do it before any
+ * request arrived; on the function the route's modules load with the first
+ * request, so the first request was paying for it (SAK-399). Parsing the
+ * file is a few milliseconds; a test holds the file to the builder. */
+const built: SkyCatalogue = skyCatalogueJson as SkyCatalogue;
 
 export function skyCatalogue(): SkyCatalogue {
   return built;
-}
-
-function buildSkyCatalogue(): SkyCatalogue {
-  const empty = skyFromHistory(emptyHistory(), NO_CLOCK, undefined, { everything: true, beyond: beyondWords });
-  const items = empty.items.map(withoutStanding);
-  const firmament = empty.firmament ?? [];
-  return { version: versionOf(JSON.stringify({ items, firmament })), items, firmament };
 }
 
 /** One learner's sky as its difference from the catalogue. The inverse of
@@ -94,11 +82,12 @@ export function splitSky(data: SkyHomeData, catalogue = skyCatalogue()): SkyPayl
 const GRAPH = buildGraph(built.items.map((i) => ({ ...i, standing: "not-seen" as const })));
 
 /** What the sky holds before a learner has done anything: the ids
- * `skyItems` puts in for everyone, and the firmament of the five kinds.
- * What `beyondWords` adds on top depends on the learner and is not here. */
-const EMPTY = skyItems(emptyHistory(), NO_CLOCK, { everything: true });
-const BASE_IDS: ReadonlySet<string> = new Set(EMPTY.items.keys());
-const FIVE_FIRMAMENT: readonly string[] = EMPTY.firmament;
+ * `skyItems` puts in for everyone, and the firmament of the five kinds
+ * (built with the catalogue, see catalogue-build.ts). What `beyondWords`
+ * adds on top depends on the learner and is not here. */
+const BASE: SkyBase = skyBaseJson;
+const BASE_IDS: ReadonlySet<string> = new Set(BASE.baseIds);
+const FIVE_FIRMAMENT: readonly string[] = BASE.fiveFirmament;
 
 /** Where each item sits in a catalogue, once per catalogue. */
 const orderOf = new WeakMap<SkyCatalogue, ReadonlyMap<string, number>>();

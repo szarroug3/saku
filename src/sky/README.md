@@ -1366,3 +1366,19 @@ Also that day: the proxy's session refresh went from `getUser()`, a round
 trip to the auth server on every request, to `getClaims()`, which verifies
 the token locally and refreshes only on expiry. On the function the
 `session` phase went from 80 to 130 ms to 1 to 32.
+
+### The catalogues, built once too (2026-09-07, SAK-399)
+
+The sky's and the Atlas's catalogues (SAK-381) were built as their modules
+loaded, on the theory written into their comments: a held-ready process
+would do it before any request arrived. On the function the route's
+modules load with the first request, so the first request paid for
+running both pipelines over an empty history, 75 ms on a laptop and most
+of a second there. They are the same for everyone per curriculum version,
+which is what made them catalogues in the first place, so
+`scripts/build-catalogues.mjs` runs the same builders once
+(`catalogue-build.ts`) and writes `sky-catalogue.json` (1.8 MB),
+`atlas-catalogue.json` (0.5 MB) and the server's own `sky-catalogue-base.json`
+(the ids every sky starts with and the firmament of the five kinds). The
+modules parse those. Versions came out identical to the ones the deployed
+app was serving, and a test holds each file to its builder.

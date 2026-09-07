@@ -5,54 +5,30 @@
 // empty history, so a tile cannot be shaped one way here and another way on a
 // learner's own Atlas.
 
-import { emptyHistory } from "@/lib/history-ops";
+import atlasCatalogueJson from "@/data/generated/atlas-catalogue.json" with { type: "json" };
 import { libEntry, type LibEntry } from "@/lib/library/entries";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import type { Standing } from "@/sky/lib/standing";
 import type { EntryId, HistoryFile } from "@/types";
-import type { AtlasShelf, SkyAtlasData } from "@/sky/components/sky-atlas";
+import type { SkyAtlasData } from "@/sky/components/sky-atlas";
 
-import { all, atlasFromHistory, countsOver, SHELVES } from "./atlas";
+import { all, countsOver, SHELVES } from "./atlas";
 import { timedSync } from "@/lib/server-timing";
 import { sparse, standingFor, touchedEntries } from "./learner";
-import { versionOf } from "./catalogue-version";
-import { splitItems, withoutStanding } from "./item-split";
-import type { AtlasCatalogue, AtlasPayload, AtlasShelfBase } from "./atlas-payload";
+import { splitItems } from "./item-split";
+import type { AtlasCatalogue, AtlasPayload } from "./atlas-payload";
+import { withoutCounts } from "./catalogue-build";
 
 /** Nothing in an empty history ages, so the clock only has to be the same
  * number every time: a catalogue that changed with the hour would be a new
  * download every hour. */
-const NO_CLOCK = 0;
-
-/**
- * Built as this module loads, not on the first request that wants it.
- *
- * Lazily was the obvious choice and it was wrong here (SAK-382). Fluid Compute
- * holds processes ready before a request arrives, so anything done at module
- * load is done in that idle time and costs the request nothing, while anything
- * left until first use is paid for by whoever knocks first. Measured on the
- * deployed app: an Atlas whose payload takes 7 ms to work out took 554 ms on a
- * process's first request, all of it building this.
- *
- * A process that is never warmed pays the same either way, so this is free at
- * worst.
- */
-const built: AtlasCatalogue = buildAtlasCatalogue();
+/** Every tile and shelf, from the file scripts/build-catalogues.mjs wrote
+ * (the building is in catalogue-build.ts). It was built as this module
+ * loaded, and on the function that is the first request's time (SAK-399). */
+const built: AtlasCatalogue = atlasCatalogueJson as AtlasCatalogue;
 
 export function atlasCatalogue(): AtlasCatalogue {
   return built;
-}
-
-function buildAtlasCatalogue(): AtlasCatalogue {
-  const empty = atlasFromHistory(emptyHistory(), NO_CLOCK);
-  const items = empty.items.map(withoutStanding);
-  const shelves = empty.shelves.map(withoutCounts);
-  return { version: versionOf(JSON.stringify({ items, shelves })), items, shelves, holds: empty.holds };
-}
-
-function withoutCounts(shelf: AtlasShelf): AtlasShelfBase {
-  const { counts: _counts, ...rest } = shelf;
-  return rest;
 }
 
 /**
