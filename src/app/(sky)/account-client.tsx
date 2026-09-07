@@ -14,7 +14,7 @@ import { SkyAccount } from "@/sky/components/sky-account";
 
 import { writeStored } from "./stored";
 
-export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn: boolean; name?: string; email?: string; authEnabled: boolean }) {
+export function AccountClient({ signedIn, name, email, authEnabled, emailSignIn }: { signedIn: boolean; name?: string; email?: string; authEnabled: boolean; emailSignIn: boolean }) {
   const router = useRouter();
   const signOut = async () => {
     await createSupabaseBrowserClient().auth.signOut();
@@ -27,6 +27,13 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
   const signIn = async () => {
     const { error } = await createSupabaseBrowserClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/auth/callback` } });
     if (error) throw new Error(error.message);
+  };
+  // a test account's way in (Sam, 2026-09-07): Supabase's email provider,
+  // on the secret /signin/<key> page only, and only ever a sign-in
+  const signInWithPassword = async (address: string, password: string) => {
+    const { error } = await createSupabaseBrowserClient().auth.signInWithPassword({ email: address, password });
+    if (error) throw new Error(error.message);
+    window.location.href = "/";
   };
   const wipe = async () => {
     await postDelete({ reset: true });
@@ -41,6 +48,7 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
       name={name}
       email={email}
       onSignIn={authEnabled ? signIn : undefined}
+      onSignInWithPassword={authEnabled && emailSignIn ? signInWithPassword : undefined}
       onSignOut={signOut}
       onWipe={wipe}
       height="100%"
