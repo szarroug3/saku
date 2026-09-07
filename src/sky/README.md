@@ -200,7 +200,7 @@ Page-level composition lives in the route that renders it, not here.
 
 ## Where to look at it
 
-`/dev/sky` — a gallery of every Sky component, one page per primitive.
+`/dev/sky`: a gallery of every Sky component, one page per primitive.
 Dev-only: the whole `/dev/*` subtree 404s in a production build, and the nav
 group is compiled out.
 
@@ -886,7 +886,7 @@ The split header answered the 755 ms. On a cold function it read
 free. The rest is the database, twice.
 
 `readHistoryRow` selected the learner's row, and then, buried inside
-normalising what came back, called `readFactsTable` — a second query to a
+normalising what came back, called `readFactsTable`: a second query to a
 second table, one after the other. Nothing in the second depends on the
 first: the facts table is keyed by the learner, not by anything in the row.
 They run together now, and `normalizeHistory` split into `shapeHistory`,
@@ -970,8 +970,8 @@ served. It was building the catalogue inside her request.
 
 Every memo added this round was lazy, which is the usual instinct and the
 wrong one under Fluid Compute. A process is held ready before a request
-arrives — the same trace showed one alive for 8.5 seconds having served
-nothing — so work done as a module loads is done in that idle time and costs
+arrives (the same trace showed one alive for 8.5 seconds having served
+nothing), so work done as a module loads is done in that idle time and costs
 the request nothing, while work left until first use is paid for by whoever
 knocks first. A process that is never warmed pays the same either way, so
 building eagerly is free at worst.
@@ -1061,13 +1061,13 @@ confused, which is what the line is for (SAK-387).
 **One scroller where two were wanted.** Reading a card's lesson carried the
 card, the verdict and Next off the top. The reveal takes what the card leaves
 and scrolls inside it now. The first attempt was a max-height that never
-engaged, and the test passed anyway — which is why that test now asserts the
+engaged, and the test passed anyway, which is why that test now asserts the
 reveal has somewhere to scroll before checking the card stayed put (SAK-392).
 
 **Leaving a page to do something that belonged on it.** Keeping a recipe
 navigated back to Practice with the recipe in the query, throwing the results
 away. It saves in place, through a naming form both screens now share, and a
-name that already exists says "Replace" rather than overwriting in silence —
+name that already exists says "Replace" rather than overwriting in silence,
 which the Practice page had been doing all along (SAK-395).
 
 **Guessing where you came from.** The results and the rest screen offered
@@ -1149,3 +1149,51 @@ one had been fetching a 404 from a function on every page load since the
 archive was removed.
 
 An e2e test loads the home and asserts no request carries a prefetch header.
+
+### Fifteen thousand items to send four hundred (2026-09-07, SAK-382)
+
+The Practice page was the one page with no timings on it, and the local
+probe put its whole server time at 111 ms with nothing to account for it.
+It had two things wrong, and the second turned out to be everywhere.
+
+The first: `resolve` built every item the recipe matched. The empty recipe
+matches the whole pool, fifteen thousand entries, and the preview sends
+four hundred of them. For each of the fifteen thousand it asked `askOf` of
+every fact (thirty thousand regular expressions per request, for an answer
+that depends on the fact alone), then had the Observatory build the item,
+then spread it to drop its components, and then sorted the lot. Now the
+asks are worked out once per entry and kept, since they depend on the
+shipped tables and not the learner; the pool is a list of candidates, an
+entry with its misses and its facts; and the items are built for the slice
+the preview sends or the deck draws. A deck of cards never builds an item at
+all, since a card wants the facts. 44 ms became 19 on the empty recipe, and
+10 became 1.6 on a recipe that keeps only kanji readings.
+
+The second: `offerings()` was how every adapter got hold of `offerPick`,
+and `offerings()` builds the whole sky and walks every section of the
+Observatory before it hands that function back. Eleven milliseconds, for a
+Sessions page that wants twenty items, an Atlas card that wants one, a
+`beyondWords` that wants the counters and the grammar. So the ways of
+offering are apart from the sections now (`picker`), over a sky that starts
+empty, and `offerPicker` hands out just that. The picks only the Observatory
+itself builds, a kana row or the 〜つ rule, have no library entry; asked for
+one, the picker builds the Observatory after all and takes its items in, so
+every id answers as it did. `beyondWords` went from 24 ms to under one,
+Sessions from 14 to nothing, an Atlas card from 14 to under one, and a
+streamed shelf's cuts from 30 to 7, those last by not building an item just
+to read its id off it (`hasOffer`).
+
+Two smaller ones on the home. The legend's counts were a second tally of
+every fact that the discovery rows had already tallied; they are the sum of
+the rows now. And a fact the history has nothing on was still put through
+the date arithmetic before coming back "not-seen"; it is skipped. The home's
+payload is 22 ms from 37, the Atlas's about the same as before.
+
+None of this changes an answer, and each piece was held against the
+previous version over the sample learner and an empty one before it stayed:
+the home and Atlas payloads, 84 asks for a shelf's cuts, searches, cards,
+tiles, sessions, and the preview and draw of five recipes. Two of those
+checks are tests now: the picker offers every drawable entry exactly as the
+Observatory does, and a preview's items count what its pool counted.
+
+The Practice pages carry the timing meta now too, with a `practice` phase.

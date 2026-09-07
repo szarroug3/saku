@@ -7,7 +7,7 @@ import { gradeFromCounts, type SessionKind, type SkySession } from "@/sky/lib/se
 import type { SkyItem } from "@/sky/lib/types";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
-import { offerings } from "./observatory";
+import { offerPicker } from "./observatory";
 
 const MOST = 100;
 
@@ -16,7 +16,7 @@ function kindOf(record: QuizSessionRecord): SessionKind {
 }
 
 export function sessionsFromHistory(history: HistoryFile, now = Date.now()): SkySession[] {
-  const o = offerings(history, now);
+  const o = offerPicker(history, now);
   const out: SkySession[] = [];
   for (const record of [...history.sessions].sort((a, b) => b.ts - a.ts).slice(0, MOST)) {
     const cards = [];

@@ -7,6 +7,7 @@ import { currentUserId } from "@/lib/auth";
 import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
 import { practiceLookup } from "../actions";
+import { ServerTimingMeta } from "../server-timing-meta";
 import { practiceCollections } from "../practice";
 import { PracticeClient } from "../practice-client";
 
@@ -22,6 +23,7 @@ export default async function SkyPracticePage({ searchParams }: { searchParams: 
   return (
     <>
       <PracticeClient collections={practiceCollections()} sample={sample} signedIn={userId !== null} initialPreview={initialPreview} />
+      <ServerTimingMeta />
     </>
   );
 }

@@ -99,6 +99,10 @@ function workOutStanding(entry: LibEntry, history: HistoryFile, now: number): { 
   for (const f of facts) {
     const agg = history.facts[f];
     const claimedAt = history.claims?.[f];
+    // a fact the history has nothing on is "not-seen" and cannot be met, so
+    // the date arithmetic in factStanding is skipped for it (most of the
+    // fifteen thousand entries the home walks are like this, SAK-382)
+    if (!agg && !claimedAt && !history.seen?.[f]) continue;
     if ((agg?.seen ?? 0) > 0 || claimedAt || history.seen?.[f]) met = true;
     const s = factStanding(f, history, now);
     if (s !== "not-seen") anySeen = true;
@@ -156,6 +160,16 @@ const metCount = (subject: StatsSubject, history: HistoryFile) =>
  * which add up to the same total as the discovery panel. A multi-fact entry
  * takes the worst of its facts, as a star does; a learned sentence tier is
  * "claimed", the closest word for a completion the model does not score. */
+/** The legend's numbers from the discovery rows already worked out: a top
+ * row's counts are its subject's, or the sum of its children's, and the
+ * Sentences row carries the tiers, so the sum over the top rows is exactly
+ * `standingTally` without tallying every fact a second time (SAK-382). */
+export function standingTallyOf(rows: readonly DiscoveryRow[]): CoverageCounts {
+  const counts: Partial<Record<Standing, number>> = {};
+  for (const row of rows) if (row.counts) addCounts(counts, row.counts);
+  return counts;
+}
+
 export function standingTally(history: HistoryFile, stats: StatsData, now: number): CoverageCounts {
   const counts: Partial<Record<Standing, number>> = {};
   const subjects = stats.rows.flatMap((r) => (r.kind === "subject" ? [r.subject] : r.children));
@@ -171,6 +185,8 @@ function subjectTally(subject: StatsSubject, history: HistoryFile, now: number):
     const facts = subject.entryFacts[entry as unknown as string] ?? [];
     let worst: AppStanding = "not-seen";
     for (const f of facts) {
+      // nothing on it, nothing to work out (as in workOutStanding)
+      if (!history.facts[f] && !history.claims?.[f] && !history.seen?.[f]) continue;
       const s = factStanding(f, history, now);
       if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
     }
@@ -233,7 +249,10 @@ export interface SkyItems {
   add: (entry: LibEntry) => void;
 }
 
-export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOptions = {}): SkyItems {
+/** An empty sky and the way into it: `add` builds an entry and everything
+ * under it. `skyItems` fills it with what the learner has met; a caller
+ * that only wants a few entries built (practice's preview) starts here. */
+export function skyAdder(history: HistoryFile, now = Date.now()): Pick<SkyItems, "items" | "met" | "add"> {
   const items = new Map<string, SkyItem>();
   const met = new Set<string>();
 
@@ -246,6 +265,11 @@ export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOpt
     if (isMet) met.add(entry.id);
     for (const p of parts) add(p);
   };
+  return { items, met, add };
+}
+
+export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOptions = {}): SkyItems {
+  const { items, met, add } = skyAdder(history, now);
 
   const firmament: string[] = [];
   for (const kind of [KANA_SUBJECT, RADICAL_SUBJECT, PRIMITIVE_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT] as const) {

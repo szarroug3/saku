@@ -19,7 +19,7 @@ import type { Standing } from "@/sky/lib/standing";
 import type { EntryId, HistoryFile } from "@/types";
 import { versionOf } from "./catalogue-version";
 import { splitItems, withoutStanding } from "./item-split";
-import { discoveryRows, skyFromHistory, skyItems, standingFor, standingTally, type SkyOptions } from "./learner";
+import { discoveryRows, skyFromHistory, skyItems, standingFor, standingTallyOf, type SkyOptions } from "./learner";
 import { beyondWords } from "./observatory";
 import type { SkyCatalogue, SkyPayload } from "./sky-payload";
 
@@ -140,14 +140,15 @@ export function skyPayloadFor(history: HistoryFile, now = Date.now(), stats?: St
 
   const mine = new Set([...FIVE_FIRMAMENT, ...(beyond?.firmament ?? [])].filter((id) => !rootSet.has(id)));
   const theirs = new Set(catalogue.firmament);
+  const discovery = stats ? discoveryRows(history, stats, now) : [];
   return {
     version: catalogue.version,
     standings,
     extras: [],
     roots,
     mixUps,
-    discovery: stats ? discoveryRows(history, stats, now) : [],
-    ...(stats ? { standingCounts: standingTally(history, stats, now) } : {}),
+    discovery,
+    ...(stats ? { standingCounts: standingTallyOf(discovery) } : {}),
     firmamentAdd: [...mine].filter((id) => !theirs.has(id)),
     firmamentDrop: [...theirs].filter((id) => !mine.has(id) && !rootSet.has(id)),
   };

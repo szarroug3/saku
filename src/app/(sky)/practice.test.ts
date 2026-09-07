@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { EMPTY_RECIPE } from "@/sky/lib/practice";
+import { EMPTY_RECIPE, PREVIEW_CAP } from "@/sky/lib/practice";
 
 import { askOf, practiceCollections, practiceDraw, practicePreview } from "./practice";
 import { sampleHistory } from "./sample-learner";
@@ -81,5 +81,18 @@ describe("the cuts within a collection", () => {
     assert.ok(rules.items.every((p) => p.facts.every((f) => askOf(f as never) === "reading")));
     const whole = practicePreview(history, { ...EMPTY_RECIPE, collections: ["counting"], size: "all" }, {}, NOW);
     assert.ok(whole.matched > rules.matched + 10);
+  });
+});
+
+describe("the pool's items are built for the ones sent", () => {
+  it("every drawable entry has an offer, so counting the pool and building part of it agree", () => {
+    // resolve counts candidates without building them and builds items only
+    // for the preview's slice or the deck's draw; that is only honest if
+    // nothing in a pool comes back empty from the Observatory's offerPick.
+    const history = sampleHistory();
+    for (const c of practiceCollections()) {
+      const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: [c.id], size: "all" }, {}, NOW);
+      assert.equal(preview.items.length, Math.min(preview.matched, PREVIEW_CAP), `${c.id}: ${preview.items.length} items for ${preview.matched} matched`);
+    }
   });
 });

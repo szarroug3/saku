@@ -44,7 +44,7 @@ import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sk
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { FactId, HistoryFile } from "@/types";
 
-import { componentEntry, skyItems, standingFor } from "./learner";
+import { componentEntry, skyAdder, skyItems, standingFor, type SkyItems } from "./learner";
 
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
@@ -128,11 +128,13 @@ export interface Offerings {
   offerPick: (id: string) => SkyItem | undefined;
 }
 
-export function offerings(history: HistoryFile, now = Date.now()): Offerings {
-  const sky = skyItems(history, now);
-  const { items, met, add } = sky;
-  const learned = new Set(met);
-  const sections: ObservatorySection[] = [];
+/** The ways an entry is offered, over a sky: the plain offer with a kind,
+ * the two that dress an entry in its words' kanji, and `offerPick`, any
+ * pick by id. Apart from the sections so a caller that wants a few items
+ * built the Observatory's way (practice's preview, SAK-382) does not walk
+ * the whole sky and every section first. */
+function picker(sky: Pick<SkyItems, "items" | "add">) {
+  const { items, add } = sky;
 
   /** An app entry on offer: added with its parts, given the sky kind it is picked as. */
   const offer = (entry: LibEntry, kind: SkyKind, extra: Partial<SkyItem> = {}): SkyItem => {
@@ -143,6 +145,104 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   };
   const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
   const kanjiIn = (text: string): string[] => [...text].filter((c) => kanjiRow(c)).map((c) => componentEntry(c)).filter((e): e is LibEntry => !!e).map((e) => { add(e); return e.id; });
+
+  // a verb pair: attached to the plain verb, with both members' kanji
+  const offerPair = (p: VerbPair, entry: LibEntry): SkyItem => {
+    const head = wordEntry(p.happens.word);
+    if (head) add(head);
+    // named by its two words' own meanings, "to get dirty · to make dirty":
+    // the pair table carries example sentences, not a name
+    const doIt = wordEntry(p.doIt.word);
+    const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
+    // the pair shows as what its two verbs share, the kanji (出 for 出る and
+    // 出す), since neither verb alone is the pair (Sam's call, 2026-09-05)
+    const shared = [...p.happens.word].filter((c) => kanjiRow(c) && p.doIt.word.includes(c)).join("");
+    return offer(entry, "verbPair", { english, glyph: shared || entry.glyph, reading: undefined, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] });
+  };
+
+  // a keigo set: attached to the plain verb, with the polite words' kanji
+  const offerKeigo = (set: KeigoSet, entry: LibEntry): SkyItem => {
+    const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
+    if (head) add(head);
+    return offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] });
+  };
+
+  /** Any pick by id, built the way its section would build it. */
+  const offerPick = (id: string): SkyItem | undefined => {
+    const have = items.get(id);
+    if (have) return have;
+    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    if (!entry) return undefined;
+    switch (entry.kind) {
+      case COUNTER_KIND: return offer(entry, "counter");
+      // a counting rule (numbers 11 to 99, the 〜本 counter's system): counted with the counters
+      case NUMBER_CONSTRUCTION_KIND: return offer(entry, "counter", { english: entry.name ?? entry.meanings[0] ?? entry.id });
+      case GRAMMAR_SUBJECT: return offer(entry, "grammar");
+      // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
+      case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
+      case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
+      case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
+      // a kana, a piece or a kanji picked on its own (the Atlas does): its own kind
+      case KANA_SUBJECT: return offer(entry, "kana");
+      case RADICAL_SUBJECT:
+      case PRIMITIVE_SUBJECT: return offer(entry, "radical");
+      case KANJI_SUBJECT: return offer(entry, "kanji");
+      // a term is its name: a page to read, never a star
+      case TERM_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "term", { english: name, glyph: name }); }
+      // a writing rule is its mark where it has one (゛, っ), else its name
+      // (long vowels, rendaku); a grammar concept is its name. Pages to read.
+      case MARK_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "mark", { english: name, glyph: entry.glyph || name }); }
+      case GRAMMAR_CONCEPT_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "concept", { english: name, glyph: name }); }
+      default: return offer(entry, "word");
+    }
+  };
+
+  return { offer, offerPair, offerKeigo, offerPick };
+}
+
+/** Whether `offerPick` would offer an entry, without building anything:
+ * every entry is offered except a verb pair or keigo set with no table row
+ * behind it. An offered item's id is the entry's own. For a caller that
+ * wants ids alone, over a whole shelf (the Atlas's streamed cuts). */
+export function hasOffer(entry: LibEntry): boolean {
+  switch (entry.kind) {
+    case TRANSITIVITY_SUBJECT: return !!pairForEntry(entry.id);
+    case KEIGO_SUBJECT: return !!keigoSetForEntry(entry.id);
+    default: return true;
+  }
+}
+
+/** Any pick by id, built the way the Observatory would offer it, without
+ * the Observatory: the sky starts empty and only what is picked is built,
+ * and `items` holds just that (with everything under it, so a closure over
+ * it is whole). The picks only the Observatory builds (a kana row, the 〜つ
+ * rule) have no library entry; asked for one of those, this builds the
+ * Observatory after all and takes its items in, so every id answers as it
+ * did when every caller built the whole thing (SAK-382). */
+export function offerPicker(history: HistoryFile, now = Date.now()): Pick<Offerings, "items" | "offerPick"> {
+  const sky = skyAdder(history, now);
+  const { offerPick } = picker(sky);
+  let whole: Offerings | undefined;
+  return {
+    items: sky.items,
+    offerPick: (id) => {
+      if (libEntry(id as Parameters<typeof libEntry>[0])) return offerPick(id);
+      if (!whole) {
+        whole = offerings(history, now);
+        for (const [k, v] of whole.items) if (!sky.items.has(k)) sky.items.set(k, v);
+      }
+      return whole.offerPick(id);
+    },
+  };
+}
+
+export function offerings(history: HistoryFile, now = Date.now()): Offerings {
+  const sky = skyItems(history, now);
+  const { items, met, add } = sky;
+  const learned = new Set(met);
+  const sections: ObservatorySection[] = [];
+  const { offer, offerPair, offerKeigo, offerPick } = picker(sky);
+  const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
 
   // kana: one item per row of either script, the row's kana under it
   const rows: string[] = [];
@@ -199,18 +299,6 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), gate: afterKana, started: grammar.length < allGrammar.length, complete: grammar.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
-  const offerPair = (p: VerbPair, entry: LibEntry): SkyItem => {
-    const head = wordEntry(p.happens.word);
-    if (head) add(head);
-    // named by its two words' own meanings, "to get dirty · to make dirty":
-    // the pair table carries example sentences, not a name
-    const doIt = wordEntry(p.doIt.word);
-    const english = pairName(head?.meanings ?? [], doIt?.meanings ?? []) ?? entry.meanings[0] ?? p.happens.en;
-    // the pair shows as what its two verbs share, the kanji (出 for 出る and
-    // 出す), since neither verb alone is the pair (Sam's call, 2026-09-05)
-    const shared = [...p.happens.word].filter((c) => kanjiRow(c) && p.doIt.word.includes(c)).join("");
-    return offer(entry, "verbPair", { english, glyph: shared || entry.glyph, reading: undefined, headword: head?.id, components: [...new Set([...kanjiIn(p.happens.word), ...kanjiIn(p.doIt.word)])] });
-  };
   const pairs: string[] = [];
   let pairsMet = 0;
   for (const p of VERB_PAIRS) {
@@ -222,11 +310,6 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), gate: afterKana, started: pairsMet > 0, complete: pairs.length === 0 });
 
   // keigo: attached to the plain verb, with the polite words' kanji
-  const offerKeigo = (set: KeigoSet, entry: LibEntry): SkyItem => {
-    const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
-    if (head) add(head);
-    return offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] });
-  };
   const keigo: string[] = [];
   let keigoMet = 0;
   for (const set of KEIGO_SETS) {
@@ -236,36 +319,6 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     keigo.push(offerKeigo(set, entry).id);
   }
   sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0, complete: keigo.length === 0 });
-
-  /** Any pick by id, built the way its section would build it. */
-  const offerPick = (id: string): SkyItem | undefined => {
-    const have = items.get(id);
-    if (have) return have;
-    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
-    if (!entry) return undefined;
-    switch (entry.kind) {
-      case COUNTER_KIND: return offer(entry, "counter");
-      // a counting rule (numbers 11 to 99, the 〜本 counter's system): counted with the counters
-      case NUMBER_CONSTRUCTION_KIND: return offer(entry, "counter", { english: entry.name ?? entry.meanings[0] ?? entry.id });
-      case GRAMMAR_SUBJECT: return offer(entry, "grammar");
-      // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
-      case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
-      case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
-      case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
-      // a kana, a piece or a kanji picked on its own (the Atlas does): its own kind
-      case KANA_SUBJECT: return offer(entry, "kana");
-      case RADICAL_SUBJECT:
-      case PRIMITIVE_SUBJECT: return offer(entry, "radical");
-      case KANJI_SUBJECT: return offer(entry, "kanji");
-      // a term is its name: a page to read, never a star
-      case TERM_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "term", { english: name, glyph: name }); }
-      // a writing rule is its mark where it has one (゛, っ), else its name
-      // (long vowels, rendaku); a grammar concept is its name. Pages to read.
-      case MARK_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "mark", { english: name, glyph: entry.glyph || name }); }
-      case GRAMMAR_CONCEPT_SUBJECT: { const name = entry.name ?? entry.glyph; return offer(entry, "concept", { english: name, glyph: name }); }
-      default: return offer(entry, "word");
-    }
-  };
 
   return { items, learned, sections, offerPick };
 }
@@ -284,7 +337,9 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
  * stay out of the firmament, as they always have: twelve thousand of them
  * would be the whole sky. */
 export function beyondWords(history: HistoryFile, now = Date.now()): { items: SkyItem[]; met: string[]; firmament: string[] } {
-  const o = offerings(history, now);
+  // only these picks and what is under them are wanted, so the sky is not
+  // built first (it was, and was half the home's payload time, SAK-382)
+  const o = offerPicker(history, now);
   const met: string[] = [];
   const firmament: string[] = [];
   for (const kind of [COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const) {

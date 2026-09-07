@@ -37,7 +37,7 @@ import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
 import { learnerHistory } from "./atlas";
-import { offerings, pickFacts } from "./observatory";
+import { offerPicker, pickFacts } from "./observatory";
 import { teachFor } from "./teach";
 
 /** The basket: how many cards a session asks (SAK-311's cap). */
@@ -103,7 +103,7 @@ function questionAsked(entry: string | undefined, dir: Direction, key: AnswerKey
 /** The cards for some facts, in order. With `audio`, a card that has a
  * sound to ask by becomes a listening card half the time. */
 export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
-  const o = offerings(history, now);
+  const o = offerPicker(history, now);
   const known = Object.keys(history.facts ?? {}) as FactId[];
   const cards: QuizCard[] = [];
   // A grammar production card is drilled on a VERB, and which verb is a
@@ -286,7 +286,7 @@ export function orderCard(history: HistoryFile, marker: FactId, now = Date.now()
   const tierId = (marker as string).replace(/^grammar:sentence-ordering-tier\//, "");
   const entry = (LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).find((e) => knownFactsOf(e).includes(sentenceTierMarkerFact(tierId)));
   const item = pickAssemblyForTiers(history, [tierId]);
-  const pick = entry ? offerings(history, now).offerPick(entry.id) : undefined;
+  const pick = entry ? offerPicker(history, now).offerPick(entry.id) : undefined;
   if (!item || !pick) return undefined;
   const answer = canonicalOrder(item);
   const pieces = [...answer];
@@ -321,7 +321,7 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
   const q = rollPitchQuestion(keb);
   const id = entryForGlyph(VOCAB_SUBJECT, keb);
   if (!q || !id) return undefined;
-  const item = offerings(history, now).offerPick(id);
+  const item = offerPicker(history, now).offerPick(id);
   if (!item) return undefined;
   const other = q.mode === "pair" ? q.partnerDownstep : q.wrongDownstep;
   if (other === null) return undefined;

@@ -37,7 +37,7 @@ import type { EntryId, HistoryFile } from "@/types";
 
 import { standingFor } from "./learner";
 import { conceptTwin, teachFor } from "./teach";
-import { offerings, pickFacts, TSU_RULE, type Offerings } from "./observatory";
+import { hasOffer, offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
@@ -105,7 +105,7 @@ export function countsOver(entries: readonly LibEntry[], history: HistoryFile, n
 
 /** The items for some ids with everything under them, from what the
  * offerings built: every part, so their constellations draw whole. */
-function closure(o: Offerings, ids: readonly string[]): SkyItem[] {
+function closure(o: Pick<Offerings, "items">, ids: readonly string[]): SkyItem[] {
   const keep = new Map<string, SkyItem>();
   const walk = (id: string) => {
     if (keep.has(id)) return;
@@ -170,7 +170,7 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
 /** The tile for each id, the way the shelves ship them: what a streamed
  * cut asks for as it scrolls near. */
 export function atlasTilesFromHistory(history: HistoryFile, ids: readonly string[], now = Date.now()): SkyItem[] {
-  const o = offerings(history, now);
+  const o = offerPicker(history, now);
   const out: SkyItem[] = [];
   for (const id of ids) {
     const it = o.offerPick(id);
@@ -186,10 +186,10 @@ export function atlasTilesFromHistory(history: HistoryFile, ids: readonly string
 export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, status: Standing, now = Date.now()): AtlasSection[] {
   const shelf = SHELVES.find((s) => s.id === shelfId);
   if (!shelf) return [];
-  const o = offerings(history, now);
   const out: AtlasSection[] = [];
   for (const cut of shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday"))) {
-    const ids = cut.entries.filter((e) => !twinned(e) && standingFor(e, history, now).standing === status).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id);
+    // ids alone: the tiles come later, for the cuts scrolled near
+    const ids = cut.entries.filter((e) => !twinned(e) && standingFor(e, history, now).standing === status && hasOffer(e)).map((e) => e.id);
     if (ids.length) out.push({ id: cut.id, label: cut.label, items: ids });
   }
   return out;
@@ -197,7 +197,7 @@ export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, 
 
 /** The app's search, by kind, as Atlas sections. */
 export function atlasSearchFromHistory(history: HistoryFile, query: string, now = Date.now()): AtlasSearchResult {
-  const o = offerings(history, now);
+  const o = offerPicker(history, now);
   // a section per shelf, keyed by the shelf's id so the page can match them
   const sections: AtlasSection[] = [];
   for (const s of searchByType(query, { perSection: SEARCH_PER_KIND })) {
@@ -215,7 +215,7 @@ export function atlasSearchFromHistory(history: HistoryFile, query: string, now 
 /** One entry opened: the card's teaching, and what is related to it both
  * ways, counted against the whole corpus. */
 export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Date.now()): AtlasEntry | undefined {
-  const o = offerings(history, now);
+  const o = offerPicker(history, now);
   // a pick the offerings build themselves (a kana row, the 〜つ rule) has no
   // library entry of its own; it still opens
   const item = o.offerPick(id);

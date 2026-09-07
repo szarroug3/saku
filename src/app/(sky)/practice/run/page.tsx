@@ -7,6 +7,7 @@ import { currentUserId } from "@/lib/auth";
 import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
 import { loadPracticeCards, loadQuiz } from "../../actions";
+import { ServerTimingMeta } from "../../server-timing-meta";
 import { PracticeRunClient } from "../../practice-client";
 
 export const metadata = { title: "Practice" };
@@ -27,6 +28,7 @@ export default async function SkyPracticeRunPage({ searchParams }: { searchParam
   return (
     <>
       <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={userId !== null} recipe={recipe} />
+      <ServerTimingMeta />
     </>
   );
 }

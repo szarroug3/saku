@@ -102,13 +102,15 @@ export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards
 }
 
 export async function loadPracticeCards(who: Who, recipe: Recipe): Promise<QuizCard[]> {
-  return practiceCards(await historyFor(who), recipe, {});
+  const history = await historyFor(who);
+  return timedSync("practice", () => practiceCards(history, recipe, {}), "dealing the deck");
 }
 
 /** Practice's live preview: the recipe resolved against the learner. Reads
  * only; practice never writes the schedule. */
 export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeMisses): Promise<PracticePreview> {
-  return practicePreview(await historyFor(who), recipe, misses);
+  const history = await historyFor(who);
+  return timedSync("practice", () => practicePreview(history, recipe, misses), "resolving the recipe");
 }
 
 /** The learner's Atlas as its difference from the catalogue (SAK-381): the

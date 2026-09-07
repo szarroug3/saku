@@ -30,16 +30,21 @@ export function quizzableFacts(
   facts: readonly FactId[],
   history: HistoryFile,
 ): FactId[] {
-  return facts.filter((fact) => {
-    const proofs = READING_PROOF_FACTS[fact as unknown as string];
-    if (proofs === undefined) return true;
-    return proofs.some((proof) => {
-      const state = effectiveState(
-        history.facts[proof],
-        history.claims?.[proof],
-        history.seen?.[proof],
-      );
-      return state.lastTested > 0;
-    });
+  return facts.filter((fact) => quizzable(fact, history));
+}
+
+/** One fact of the above: askable now, or still waiting on a proof. Its own
+ * function so a caller walking thousands of facts (practice's preview) can
+ * ask without building a list to filter. */
+export function quizzable(fact: FactId, history: HistoryFile): boolean {
+  const proofs = READING_PROOF_FACTS[fact as unknown as string];
+  if (proofs === undefined) return true;
+  return proofs.some((proof) => {
+    const state = effectiveState(
+      history.facts[proof],
+      history.claims?.[proof],
+      history.seen?.[proof],
+    );
+    return state.lastTested > 0;
   });
 }

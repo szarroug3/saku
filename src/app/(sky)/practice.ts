@@ -10,7 +10,7 @@ import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { grammarMeaning } from "@/data/grammar";
 import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
-import { quizzableFacts } from "@/lib/library/reading-proof-facts";
+import { quizzable } from "@/lib/library/reading-proof-facts";
 import { shelfSections } from "@/lib/library/shelf-sections";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
 import { cutsOf, deckSize, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
@@ -19,7 +19,7 @@ import type { FactId, HistoryFile } from "@/types";
 
 import { all, SHELVES } from "./atlas";
 import { standingFor } from "./learner";
-import { offerings } from "./observatory";
+import { offerPicker } from "./observatory";
 import { quizCards } from "./quiz";
 import { shuffleDeck, type QuizCard } from "@/sky/lib/quiz";
 
@@ -92,8 +92,17 @@ function inCuts(recipe: Recipe, shelfId: string, pool: Pool, entryId: string): b
   return [...groups].every((g) => chosen.some((id) => (pool.cuts!.find((c) => c.id === id)!.group ?? "") === g && mine.includes(id)));
 }
 
-/** What a fact asks for, in the recipe's terms. */
+/** What a fact asks for, in the recipe's terms. Worked out once per fact
+ * and kept: it depends on the fact alone, and a preview asks it of thirty
+ * thousand. */
+const ASK_OF = new Map<string, Ask | null>();
 export function askOf(fact: FactId): Ask | null {
+  const id = fact as string;
+  let ask = ASK_OF.get(id);
+  if (ask === undefined) { ask = workOutAsk(fact); ASK_OF.set(id, ask); }
+  return ask;
+}
+function workOutAsk(fact: FactId): Ask | null {
   const id = fact as string;
   const dir = fixedDirOf(fact) ?? "jp2en";
   // a counting rule is asked on a number rolled for the showing: how is 六十七 said
@@ -112,16 +121,42 @@ export function askOf(fact: FactId): Ask | null {
   return null;
 }
 
-/** The facts practice may ask of an entry. A kanji is known by its meaning
- * alone (knownFactsOf), but its readings inside words are asked too, each
- * once a word carrying it has been met: quizzableFacts keeps that gate. */
-function askable(e: LibEntry, history: HistoryFile): FactId[] {
-  return quizzableFacts(e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e), history);
+/** The facts practice may ask of an entry, each with its ask, before the
+ * learner is consulted. A kanji is known by its meaning alone
+ * (knownFactsOf), but its readings inside words are asked too, each once a
+ * word carrying it has been met: `quizzable` keeps that gate, per learner,
+ * in `resolve`. This part depends on the shipped tables alone, so it is
+ * worked out once per entry and kept. */
+type EntryAsk = readonly [FactId, Ask];
+const ASKS_OF = new Map<string, readonly EntryAsk[]>();
+function asksOf(e: LibEntry): readonly EntryAsk[] {
+  let asks = ASKS_OF.get(e.id);
+  if (!asks) {
+    const facts = e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e);
+    asks = facts.flatMap((f) => { const a = askOf(f); return a ? [[f, a] as const] : []; });
+    ASKS_OF.set(e.id, asks);
+  }
+  return asks;
+}
+
+/** An entry the recipe matched, before it is built into an item: the pool
+ * is fifteen thousand of these and a preview sends four hundred, so the
+ * items are built for the ones that are sent (`Resolved.items`) and the
+ * rest are only counted. */
+interface Candidate { entry: LibEntry; misses: number; facts: FactId[] }
+
+interface Resolved {
+  /** The whole pool, shakiest first. */
+  pool: Candidate[];
+  asksAvailable: Record<Ask, boolean>;
+  /** The items for some of the pool, built the way the Observatory would
+   * offer them. Every drawable entry has an offer (practice.test.ts holds
+   * that), so nothing is dropped here that was counted above. */
+  items: (picked: readonly Candidate[]) => PracticeItem[];
 }
 
 /** The recipe's whole pool, shakiest first, and which asks it could carry. */
-function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number): { pool: PracticeItem[]; asksAvailable: Record<Ask, boolean> } {
-  const o = offerings(history, now);
+function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number): Resolved {
   const shelves = recipe.collections.length ? DRAWABLE.filter((s) => recipe.collections.includes(s.id)) : DRAWABLE;
   // an entry on two shelves (the numbers are words too) is drawn once
   const drawn = new Set<string>(recipe.excluded ?? []);
@@ -129,40 +164,59 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
   const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
 
   const asksAvailable: Record<Ask, boolean> = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
-  const matched: PracticeItem[] = [];
+  const matched: Candidate[] = [];
   for (const e of entries) {
     if (recipe.statuses.length && !recipe.statuses.includes(standingFor(e, history, now).standing)) continue;
-    const byAsk = askable(e, history).map((f) => [f, askOf(f)] as const).filter((x): x is readonly [FactId, Ask] => x[1] !== null);
-    for (const [, a] of byAsk) asksAvailable[a] = true;
-    const kept = byAsk.filter(([, a]) => recipe.asks.includes(a)).map(([f]) => f);
+    const kept: FactId[] = [];
+    for (const [f, a] of asksOf(e)) {
+      if (!quizzable(f, history)) continue;
+      asksAvailable[a] = true;
+      if (recipe.asks.includes(a)) kept.push(f);
+    }
     if (!kept.length) continue;
-    const item = o.offerPick(e.id);
-    if (!item) continue;
-    const { components: _parts, ...lean } = item;
-    matched.push({ item: lean as SkyItem, misses: kept.reduce((n, f) => n + missesOf(f), 0), facts: kept });
+    let misses = 0;
+    for (const f of kept) misses += missesOf(f);
+    matched.push({ entry: e, misses, facts: kept });
   }
-  // shakiest first; ties keep the shelf's own order
-  const pool = matched.map((m, i) => [m, i] as const).sort((a, b) => b[0].misses - a[0].misses || a[1] - b[1]).map(([m]) => m);
-  return { pool, asksAvailable };
+  // shakiest first; ties keep the shelf's own order (the sort is stable)
+  const pool = matched.sort((a, b) => b.misses - a.misses);
+
+  let offered: ReturnType<typeof offerPicker> | undefined;
+  const items = (picked: readonly Candidate[]): PracticeItem[] => {
+    offered ??= offerPicker(history, now);
+    return picked.flatMap((c) => {
+      const item = offered!.offerPick(c.entry.id);
+      if (!item) return [];
+      const { components: _parts, ...lean } = item;
+      return [{ item: lean as SkyItem, misses: c.misses, facts: c.facts }];
+    });
+  };
+  return { pool, asksAvailable, items };
 }
 
 /** The recipe, resolved now: the pool the deck is drawn from (shakiest
  * first, the first PREVIEW_CAP of it), how many match in all, and which
  * asks the pool could carry. */
 export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
-  const { pool, asksAvailable } = resolve(history, recipe, practiceMisses, now);
-  return { items: pool.slice(0, PREVIEW_CAP), matched: pool.length, asksAvailable };
+  const { pool, asksAvailable, items } = resolve(history, recipe, practiceMisses, now);
+  return { items: items(pool.slice(0, PREVIEW_CAP)), matched: pool.length, asksAvailable };
 }
 
-/** The deck's items: a random draw of the size asked for from the pool
+/** The deck's draw: a random draw of the size asked for from the pool
  * (Sam, 2026-09-06: not the first ten, a draw from all of them). "All of
  * them" is the pool in its own order. */
-export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), random = Math.random): PracticeItem[] {
-  const pool = resolve(history, recipe, practiceMisses, now).pool;
-  if (recipe.size === "all") return pool;
+function draw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number, random: () => number): { drawn: Candidate[]; items: Resolved["items"] } {
+  const { pool, items } = resolve(history, recipe, practiceMisses, now);
+  if (recipe.size === "all") return { drawn: pool, items };
   const drawn = [...pool];
   for (let i = drawn.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [drawn[i], drawn[j]] = [drawn[j], drawn[i]]; }
-  return drawn.slice(0, deckSize(recipe, pool.length));
+  return { drawn: drawn.slice(0, deckSize(recipe, pool.length)), items };
+}
+
+/** The deck's items. */
+export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), random = Math.random): PracticeItem[] {
+  const { drawn, items } = draw(history, recipe, practiceMisses, now, random);
+  return items(drawn);
 }
 
 /** The cards for a deck: the drawn items' facts, shuffled. The draw is
@@ -170,6 +224,7 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
  * together, so its meaning and its reading were always asked back to back
  * (SAK-388). A deck of "all of them" was not shuffled at all. */
 export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now()): QuizCard[] {
-  const facts = practiceDraw(history, recipe, practiceMisses, now).flatMap((p) => p.facts) as FactId[];
+  // the cards want the facts alone, so the drawn items are never built
+  const facts = draw(history, recipe, practiceMisses, now, Math.random).drawn.flatMap((p) => p.facts);
   return shuffleDeck(quizCards(history, facts, now));
 }
