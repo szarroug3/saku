@@ -143,6 +143,12 @@ const curriculumVersion = createHash("sha256")
   .slice(0, 16);
 
 const index = { curriculumVersion, ...payload };
+// The version and the glyph spine on their own, for the pages: every server
+// bundle used to carry the whole index for those two (SAK-399).
+writeFileSync(
+  new URL("../src/data/generated/curriculum-meta.json", import.meta.url),
+  JSON.stringify({ curriculumVersion, curriculumGlyphs }) + "\n",
+);
 
 const outPath = fileURLToPath(
   new URL("../src/data/generated/learn-index.json", import.meta.url),

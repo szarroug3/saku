@@ -10,7 +10,7 @@
 
 import { createHash } from "node:crypto";
 
-import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
+import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
 
 export function versionOf(body: string): string {
   return `${CURRICULUM_VERSION}.${createHash("sha1").update(body).digest("hex").slice(0, 12)}`;

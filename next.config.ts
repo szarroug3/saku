@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/tts/**": ["./bin/ffmpeg"],
     "/api/pitch-tts/**": ["./bin/ffmpeg"],
+    // SAK-399: the tables read from disk on first use (src/lib/data-file.ts)
+    // rather than baked into every server bundle; every route may need them.
+    "/**": ["./src/data/generated/word-definitions.json", "./src/data/generated/en-synonyms.json"],
   },
 
   // SAK-125: several Server Actions in src/lib/library/server-lookups.ts

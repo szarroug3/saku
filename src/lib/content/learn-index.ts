@@ -56,13 +56,13 @@ export interface LearnTrack {
  * UNIT_TRACKS, carrying no content. */
 export const LEARN_TRACKS: readonly LearnTrack[] = INDEX.tracks;
 
-/** The content hash of the index (Phase 3 frontier cache key). */
-export const CURRICULUM_VERSION: string = INDEX.curriculumVersion;
+/** The content hash of the index (Phase 3 frontier cache key). From the
+ * meta file, so a page wanting only this never loads the index (SAK-399). */
+export { CURRICULUM_VERSION, CURRICULUM_GLYPHS } from "./curriculum-meta";
 
 /** Every curriculum glyph in prereq-respecting spine order. UNUSED today, and
  * UNSAFE to use for a per-lesson position span — see the long comment on
  * `curriculumGlyphs` in learn-index-types.ts before reaching for this. */
-export const CURRICULUM_GLYPHS: readonly string[] = INDEX.curriculumGlyphs;
 
 /** The whole precomputed index, for a caller that needs to run the
  * learn-scheduler.ts walk itself (server-lookups.ts's getLearnIndexData, which

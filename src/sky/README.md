@@ -1307,3 +1307,30 @@ same promise. The `history` phase on a page is what was left to wait for.
 The second is on its own card (SAK-398): that seed puts the whole history
 into every page's HTML, 1.7 megabytes at that size, for providers a
 signed-in Sky page never reads. Retiring them is a round of its own.
+
+### What a cold process loads (2026-09-07, SAK-399)
+
+A process's first request took 5.5 to 7 seconds on the function against
+600 to 850 warm. Profiled locally with V8's own profiler on a fresh
+`next start`: the first request is 745 ms there, about 630 of it reading
+and compiling the route's server chunks and 400 evaluating modules (the
+vocabulary's three tables 122 ms, the eager catalogue builds 54, the kana
+and kanji tables 64, then a long tail). A Sky page's server bundle was
+29 MB, 22 of them JSON text the bundler had inlined as `JSON.parse`
+literals, so the "ship JSON as JSON" idea on the card was already the
+case.
+
+Three of those tables the pages never read at load: `learn-index.json`
+(4.4 MB) was there for a version string and the glyph spine, which the
+build script now writes to a file of their own (`curriculum-meta.json`);
+the dictionary's senses per word (2.3 MB) and the English synonym pool
+(2.1 MB) are read from disk the first time a sense or a typed answer asks
+for them (`readDataJson`), and ride with the function through the tracing
+config. The bundle is 20 MB. Locally the first request did not move, which
+says the local cost is not proportional to bytes; the function's is what
+the round is for, and a fresh deployment's first request is the
+measurement.
+
+`fs` is looked up at run time (`process.getBuiltinModule`) rather than
+imported, because a dev page's client bundle reaches `data/vocab.ts` and a
+static `node:fs` import there stops the build.

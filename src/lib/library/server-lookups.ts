@@ -92,7 +92,7 @@ import type { Claims } from "@/lib/claims";
 import type { FactAggregate } from "@/types";
 import { unstable_cache } from "next/cache";
 import { createHash } from "node:crypto";
-import { CURRICULUM_VERSION, learnIndexSnapshot } from "@/lib/content/learn-index";
+import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
 import type { LearnIndex, IndexUnit } from "@/lib/content/learn-index-types";
 import { nextLearnLesson, nextSentenceLearnLesson } from "@/lib/content/learn-scheduler";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
@@ -118,6 +118,9 @@ import { realQuestionCount } from "@/lib/ask-forms";
 /** The whole precomputed /learn index, fetched once and cached client-side
  * (EMPTY_ARGS, like getLibraryShelves) — see this section's header. */
 export async function getLearnIndexData(): Promise<LearnIndex> {
+  // loaded when asked, not with the module: the index is 4.4 MB and the Sky's
+  // pages import this file for the stats rows alone (SAK-399)
+  const { learnIndexSnapshot } = await import("@/lib/content/learn-index");
   return learnIndexSnapshot();
 }
 
@@ -273,7 +276,8 @@ function toWalkHistory(slice: LearnHistorySlice): HistoryFile {
   };
 }
 
-function computeLearnFrontier(slice: LearnHistorySlice, range: LessonRange): LearnFrontierResult {
+async function computeLearnFrontier(slice: LearnHistorySlice, range: LessonRange): Promise<LearnFrontierResult> {
+  const { learnIndexSnapshot } = await import("@/lib/content/learn-index");
   const index = learnIndexSnapshot();
   const history = toWalkHistory(slice);
   const byTrack: Record<string, UnitLessonOf<IndexUnit> | null> = {};

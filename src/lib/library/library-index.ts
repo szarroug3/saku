@@ -53,7 +53,7 @@ import { COUNTER_TAIL_FORM_ALIASES, COUNTER_VOCAB_DUPLICATE_KEBS } from "@/data/
 // dictionary onto /library. CURRICULUM_GLYPHS is the SAME spine, in the same
 // order, precomputed by /learn's Phase-1 build (learn-index.json) — reused here
 // rather than duplicated into a second generated file.
-import { CURRICULUM_GLYPHS } from "@/lib/content/learn-index";
+import { CURRICULUM_GLYPHS } from "@/lib/content/curriculum-meta";
 
 export { VOCAB_SUBJECT };
 

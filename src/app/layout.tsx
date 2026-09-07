@@ -12,7 +12,7 @@ import { SaveStatus } from "@/components/save-status";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
-import { CURRICULUM_VERSION } from "@/lib/content/learn-index";
+import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
 import { loadProgressSeeds } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
 import { ListsProvider } from "@/lib/lists-provider";

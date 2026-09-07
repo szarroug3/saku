@@ -46,9 +46,9 @@
 
 import vocabJson from "./generated/vocab.json" with { type: "json" };
 import wordSensesJson from "./generated/word-senses.json" with { type: "json" };
+import { readDataJson } from "@/lib/data-file";
 import cejcReadingFrequencyJson from "./generated/cejc-reading-frequency.json" with { type: "json" };
 import numberWordAlternatesJson from "./number-word-alternates.json" with { type: "json" };
-import wordDefinitionsJson from "./generated/word-definitions.json" with { type: "json" };
 import { entryId, factId, meaningAspect, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
@@ -236,9 +236,12 @@ interface SourceDefinition {
   readonly register?: readonly string[];
 }
 
-const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
-  readonly words: Readonly<Record<string, readonly SourceDefinition[]>>;
-}).words;
+/** The dictionary's senses per word, 2.3 MB, read from disk the first time
+ * a sense is asked for rather than carried by every bundle that imports
+ * this module (SAK-399). */
+function sourceDefinitions(): Readonly<Record<string, readonly SourceDefinition[]>> {
+  return readDataJson<{ readonly words: Readonly<Record<string, readonly SourceDefinition[]>> }>("word-definitions.json").words;
+}
 
 /**
  * Register/formality tags (SAK-32) for one specific sense of `keb`, or empty.
@@ -256,7 +259,7 @@ export function wordSenseRegister(
   reb: string,
   glosses: readonly string[],
 ): readonly string[] {
-  const definitions = SOURCE_DEFINITIONS[keb] ?? [];
+  const definitions = sourceDefinitions()[keb] ?? [];
   const match = definitions.find(
     (definition) =>
       definition.readings.includes(reb) &&
@@ -498,7 +501,7 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
   }
   const used = new Map<string, number>();
   const covered = new Set<WordSense>();
-  const source = SOURCE_DEFINITIONS[word.keb] ?? [];
+  const source = sourceDefinitions()[word.keb] ?? [];
   const definitions: Array<{ id: string; glosses: readonly string[]; readings: WordSense[] }> = [];
   for (const definition of source) {
     const readings = definition.readings.flatMap((reb) => {
