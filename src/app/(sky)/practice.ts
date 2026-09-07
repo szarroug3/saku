@@ -10,7 +10,7 @@ import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { grammarMeaning } from "@/data/grammar";
 import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
-import { quizzable } from "@/lib/library/reading-proof-facts";
+import { isReadingFact, provenReadingFacts, quizzable } from "@/lib/library/reading-proof-facts";
 import { shelfSections } from "@/lib/library/shelf-sections";
 import { timedSync } from "@/lib/server-timing";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
@@ -19,7 +19,7 @@ import type { SkyItem } from "@/sky/lib/types";
 import type { FactId, HistoryFile } from "@/types";
 
 import { all, SHELVES } from "./atlas";
-import { standingFor } from "./learner";
+import { standingFor, touchedFacts } from "./learner";
 import { offerPicker } from "./observatory";
 import { quizCards } from "./quiz";
 import { shuffleDeck, type QuizCard } from "@/sky/lib/quiz";
@@ -156,31 +156,141 @@ interface Resolved {
   items: (picked: readonly Candidate[]) => PracticeItem[];
 }
 
+/** The entries a recipe draws from, in the shelves' order: an entry on two
+ * shelves (the numbers are words too) is drawn once. */
+function entriesOf(recipe: Recipe): LibEntry[] {
+  const shelves = recipe.collections.length ? DRAWABLE.filter((s) => recipe.collections.includes(s.id)) : DRAWABLE;
+  const drawn = new Set<string>(recipe.excluded ?? []);
+  return shelves.flatMap((s) => { const pool = poolOf(s); return pool.entries.filter((e) => !drawn.has(e.id) && inCuts(recipe, s.id, pool, e.id) && drawn.add(e.id)); });
+}
+
+/**
+ * What a recipe's pool is before any learner is consulted, worked out once
+ * per shape of recipe (collections, cuts, what was left out, asks) and kept
+ * for the process (SAK-382). The learner changes three things about it: a
+ * reading fact is askable only once a word carrying it has been tested
+ * (`gated`), a fact has misses, and an entry has a standing. The first two
+ * touch only the facts a history has anything on, so `resolve` applies
+ * them from the history's side and leaves the other fifteen thousand
+ * entries as they are here, most of them the very same objects.
+ */
+interface Base {
+  /** One per entry, in order, with the facts the recipe keeps of it: the
+   * candidate as it is for a learner with nothing on it, gated facts left
+   * out. Empty facts means the entry is not in the pool for that learner. */
+  plain: Candidate[];
+  /** Per entry, the recipe's kept facts in their own order, gated ones
+   * included; only for entries that have a gated fact. */
+  withGated: Map<number, FactId[]>;
+  /** The asks the ungated facts carry, over every entry. */
+  asksSure: Record<Ask, boolean>;
+  /** Each gated fact: whose it is, what it asks, and whether the recipe
+   * keeps it. */
+  gated: Map<string, { idx: number; ask: Ask; kept: boolean }[]>;
+  /** Each kept fact's entries, for the misses. */
+  keptBy: Map<string, number[]>;
+}
+const BASES = new Map<string, Base>();
+const MOST_BASES = 24;
+function baseFor(recipe: Recipe): Base {
+  const key = JSON.stringify([recipe.collections, recipe.cuts ?? {}, recipe.excluded ?? [], recipe.asks]);
+  const had = BASES.get(key);
+  if (had) return had;
+  const plain: Candidate[] = [];
+  const withGated = new Map<number, FactId[]>();
+  const asksSure: Record<Ask, boolean> = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
+  const gated = new Map<string, { idx: number; ask: Ask; kept: boolean }[]>();
+  const keptBy = new Map<string, number[]>();
+  for (const e of entriesOf(recipe)) {
+    const idx = plain.length;
+    const sure: FactId[] = [];
+    const all: FactId[] = [];
+    let anyGated = false;
+    for (const [f, a] of asksOf(e)) {
+      const kept = recipe.asks.includes(a);
+      if (isReadingFact(f)) {
+        anyGated = true;
+        const uses = gated.get(f as string);
+        if (uses) uses.push({ idx, ask: a, kept }); else gated.set(f as string, [{ idx, ask: a, kept }]);
+      } else {
+        asksSure[a] = true;
+        if (kept) sure.push(f);
+      }
+      if (kept) { all.push(f); const by = keptBy.get(f as string); if (by) by.push(idx); else keptBy.set(f as string, [idx]); }
+    }
+    plain.push({ entry: e, misses: 0, facts: sure });
+    if (anyGated) withGated.set(idx, all);
+  }
+  if (BASES.size >= MOST_BASES) BASES.delete(BASES.keys().next().value!);
+  const base = { plain, withGated, asksSure, gated, keptBy };
+  BASES.set(key, base);
+  return base;
+}
+
 /** The recipe's whole pool, shakiest first, and which asks it could carry. */
 function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number): Resolved {
-  const shelves = recipe.collections.length ? DRAWABLE.filter((s) => recipe.collections.includes(s.id)) : DRAWABLE;
-  // an entry on two shelves (the numbers are words too) is drawn once
-  const drawn = new Set<string>(recipe.excluded ?? []);
-  const entries: LibEntry[] = shelves.flatMap((s) => { const pool = poolOf(s); return pool.entries.filter((e) => !drawn.has(e.id) && inCuts(recipe, s.id, pool, e.id) && drawn.add(e.id)); });
   const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
-
-  const asksAvailable: Record<Ask, boolean> = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
-  const matched: Candidate[] = [];
-  for (const e of entries) {
-    if (recipe.statuses.length && !recipe.statuses.includes(standingFor(e, history, now).standing)) continue;
-    const kept: FactId[] = [];
-    for (const [f, a] of asksOf(e)) {
-      if (!quizzable(f, history)) continue;
-      asksAvailable[a] = true;
-      if (recipe.asks.includes(a)) kept.push(f);
+  let pool: Candidate[];
+  let asksAvailable: Record<Ask, boolean>;
+  if (recipe.statuses.length) {
+    // a recipe cut by standing asks every entry for its standing, and counts
+    // the asks of the ones that pass: the plain walk
+    asksAvailable = { meaning: false, reading: false, "reading-in-word": false, form: false, pick: false };
+    const matched: Candidate[] = [];
+    for (const e of entriesOf(recipe)) {
+      if (!recipe.statuses.includes(standingFor(e, history, now).standing)) continue;
+      const kept: FactId[] = [];
+      for (const [f, a] of asksOf(e)) {
+        if (!quizzable(f, history)) continue;
+        asksAvailable[a] = true;
+        if (recipe.asks.includes(a)) kept.push(f);
+      }
+      if (!kept.length) continue;
+      let misses = 0;
+      for (const f of kept) misses += missesOf(f);
+      matched.push({ entry: e, misses, facts: kept });
     }
-    if (!kept.length) continue;
-    let misses = 0;
-    for (const f of kept) misses += missesOf(f);
-    matched.push({ entry: e, misses, facts: kept });
+    // shakiest first; ties keep the shelf's own order (the sort is stable)
+    pool = matched.sort((a, b) => b.misses - a.misses);
+  } else {
+    // the recipe's base, with the learner applied from the history's side:
+    // the gated facts a tested word has opened, and the misses
+    const base = baseFor(recipe);
+    asksAvailable = { ...base.asksSure };
+    const proven = provenReadingFacts(history, touchedFacts(history));
+    const opened = new Set<number>();
+    for (const f of proven) for (const use of base.gated.get(f as string) ?? []) { asksAvailable[use.ask] = true; if (use.kept) opened.add(use.idx); }
+    const changed = new Map<number, Candidate>();
+    const candidate = (idx: number): Candidate => {
+      let c = changed.get(idx);
+      if (c) return c;
+      const all = base.withGated.get(idx);
+      const facts = all && opened.has(idx) ? all.filter((f) => !isReadingFact(f) || proven.has(f)) : base.plain[idx].facts;
+      c = { entry: base.plain[idx].entry, misses: 0, facts };
+      changed.set(idx, c);
+      return c;
+    };
+    for (const idx of opened) candidate(idx);
+    const missed = new Set<string>(touchedFacts(history) as readonly string[]);
+    for (const f of Object.keys(practiceMisses)) missed.add(f);
+    for (const f of missed) {
+      const m = missesOf(f as FactId);
+      if (!m) continue;
+      for (const idx of base.keptBy.get(f) ?? []) {
+        const c = candidate(idx);
+        if (c.facts.includes(f as FactId)) c.misses += m;
+      }
+    }
+    // shakiest first, ties in the shelf's order: the ones with misses sorted
+    // to the front, the rest as they stand
+    const shaky = [...changed.entries()].filter(([, c]) => c.misses > 0).sort((a, b) => b[1].misses - a[1].misses || a[0] - b[0]).map(([, c]) => c);
+    pool = shaky;
+    for (let idx = 0; idx < base.plain.length; idx++) {
+      const c = changed.get(idx) ?? base.plain[idx];
+      if (c.misses > 0 || !c.facts.length) continue;
+      pool.push(c);
+    }
   }
-  // shakiest first; ties keep the shelf's own order (the sort is stable)
-  const pool = matched.sort((a, b) => b.misses - a.misses);
 
   let offered: ReturnType<typeof offerPicker> | undefined;
   const items = (picked: readonly Candidate[]): PracticeItem[] => {

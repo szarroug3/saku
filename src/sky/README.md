@@ -1247,3 +1247,31 @@ order, on six learners from empty to seventeen thousand facts. On Sam's
 copy the sky payload went from 42 ms to 7 and the Atlas's from 10 to 0.5,
 on the laptop; the function's numbers are the ones that matter, and are
 on the card.
+
+### A recipe's pool is the same for everyone, nearly (2026-09-07, SAK-382)
+
+Practice's `resolve` was the other phase walking fifteen thousand entries a
+request: 78 to 117 ms on the function. A recipe's pool hardly depends on
+the learner. Which shelves, which cuts, what was left out, and which asks
+are the recipe's; the facts an entry could be asked are the library's. The
+learner changes three things: a kanji's reading inside a word is askable
+only once a word carrying it has been tested, a fact has misses, and an
+entry has a standing.
+
+So the pool is worked out once per shape of recipe and kept for the
+process (`baseFor`): the candidates in the shelves' order, the facts the
+recipe keeps of each, and which of those are gated on a proof. A request
+then applies the learner from the history's side. The tested facts among
+the ones the history has anything on open the gated facts they prove
+(`provenReadingFacts`, the proof table turned around once), the touched
+facts and the run's own misses put misses on the candidates that keep them,
+and only the candidates any of that changed are new objects; the rest are
+the base's own. The pool is the changed ones with misses sorted to the
+front, then everything else as it stands, which is the order the stable
+sort gave. A recipe cut by standing still walks every entry, since every
+entry has to be asked for its standing and the asks are counted over the
+ones that pass.
+
+Held to the old pool on 90 cases (five learners, nine recipes, with and
+without a run's misses, preview and draw). On Sam's copy the preview went
+from 19 ms to under one on the laptop, on the sample learner from 15 to 3.
