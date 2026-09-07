@@ -144,7 +144,8 @@ export async function atlasSections(who: Who, shelfId: string, status: Standing)
 }
 
 export async function loadSessions(who: Who): Promise<SkySession[]> {
-  return sessionsFromHistory(await historyFor(who));
+  const history = await historyFor(who);
+  return timedSync("sessions", () => sessionsFromHistory(history), "listing the sessions");
 }
 
 // ---------- what a write needs ----------

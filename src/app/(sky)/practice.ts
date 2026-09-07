@@ -12,6 +12,7 @@ import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
 import { factsOf, KANJI_SUBJECT } from "@/lib/library/library-index";
 import { quizzable } from "@/lib/library/reading-proof-facts";
 import { shelfSections } from "@/lib/library/shelf-sections";
+import { timedSync } from "@/lib/server-timing";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
 import { cutsOf, deckSize, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
@@ -198,8 +199,8 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
  * first, the first PREVIEW_CAP of it), how many match in all, and which
  * asks the pool could carry. */
 export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
-  const { pool, asksAvailable, items } = resolve(history, recipe, practiceMisses, now);
-  return { items: items(pool.slice(0, PREVIEW_CAP)), matched: pool.length, asksAvailable };
+  const { pool, asksAvailable, items } = timedSync("practice:resolve", () => resolve(history, recipe, practiceMisses, now));
+  return { items: timedSync("practice:items", () => items(pool.slice(0, PREVIEW_CAP))), matched: pool.length, asksAvailable };
 }
 
 /** The deck's draw: a random draw of the size asked for from the pool

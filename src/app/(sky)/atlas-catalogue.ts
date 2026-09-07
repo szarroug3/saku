@@ -12,6 +12,7 @@ import type { EntryId, HistoryFile } from "@/types";
 import type { AtlasShelf, SkyAtlasData } from "@/sky/components/sky-atlas";
 
 import { all, atlasFromHistory, countsOver, SHELVES } from "./atlas";
+import { timedSync } from "@/lib/server-timing";
 import { standingFor } from "./learner";
 import { versionOf } from "./catalogue-version";
 import { splitItems, withoutStanding } from "./item-split";
@@ -70,17 +71,19 @@ function withoutCounts(shelf: AtlasShelf): AtlasShelfBase {
  */
 export function atlasPayloadFor(history: HistoryFile, now = Date.now(), catalogue = atlasCatalogue()): AtlasPayload {
   const standings: Record<string, Standing> = {};
-  for (const item of catalogue.items) {
-    const entry = libEntry(item.id as EntryId);
-    if (!entry) continue;
-    const { standing } = standingFor(entry, history, now);
-    if (standing !== "not-seen") standings[item.id] = standing;
-  }
+  timedSync("atlas:standings", () => {
+    for (const item of catalogue.items) {
+      const entry = libEntry(item.id as EntryId);
+      if (!entry) continue;
+      const { standing } = standingFor(entry, history, now);
+      if (standing !== "not-seen") standings[item.id] = standing;
+    }
+  });
   return {
     version: catalogue.version,
     standings,
     extras: [],
-    counts: catalogue.shelves.map((shelf) => countsOver(shelvesByKind(shelf.id), history, now)),
+    counts: timedSync("atlas:counts", () => catalogue.shelves.map((shelf) => countsOver(shelvesByKind(shelf.id), history, now))),
   };
 }
 

@@ -17,6 +17,7 @@ import { buildGraph } from "@/sky/lib/graph";
 import { skyRoots } from "@/sky/lib/sky-scene";
 import type { Standing } from "@/sky/lib/standing";
 import type { EntryId, HistoryFile } from "@/types";
+import { timedSync } from "@/lib/server-timing";
 import { versionOf } from "./catalogue-version";
 import { splitItems, withoutStanding } from "./item-split";
 import { discoveryRows, skyFromHistory, skyItems, standingFor, standingTallyOf, type SkyOptions } from "./learner";
@@ -104,21 +105,25 @@ export function skyPayloadFor(history: HistoryFile, now = Date.now(), stats?: St
   const standings: Record<string, Standing> = {};
   const met = new Set<string>();
 
-  // the five kinds: how each is going, and whether it has been met
-  for (const item of catalogue.items) {
-    if (!BASE_IDS.has(item.id)) continue;
-    const entry = libEntry(item.id as EntryId);
-    if (!entry) continue;
-    const { standing, met: isMet } = standingFor(entry, history, now);
-    if (standing !== "not-seen") standings[item.id] = standing;
-    if (isMet) met.add(item.id);
-  }
+  // the five kinds: how each is going, and whether it has been met. The
+  // parts are timed apart (sky:*) because on the function this took ten
+  // times what it takes on a laptop, and one number could not say why.
+  timedSync("sky:standings", () => {
+    for (const item of catalogue.items) {
+      if (!BASE_IDS.has(item.id)) continue;
+      const entry = libEntry(item.id as EntryId);
+      if (!entry) continue;
+      const { standing, met: isMet } = standingFor(entry, history, now);
+      if (standing !== "not-seen") standings[item.id] = standing;
+      if (isMet) met.add(item.id);
+    }
+  });
 
   // The rest: what the Observatory offers, and what of it has been met.
   // `skyFromHistory` lets one of these replace the plainer version of itself
   // only when it is met or was not there at all, so its standing is taken on
   // the same terms.
-  const beyond = options.beyond?.(history, now);
+  const beyond = timedSync("sky:beyond", () => options.beyond?.(history, now));
   const beyondMet = new Set(beyond?.met ?? []);
   const have = new Set<string>(catalogue.items.map((i) => i.id));
   for (const it of beyond?.items ?? []) {
@@ -130,17 +135,17 @@ export function skyPayloadFor(history: HistoryFile, now = Date.now(), stats?: St
   }
   for (const id of beyondMet) met.add(id);
 
-  const roots = skyRoots(GRAPH, met);
+  const roots = timedSync("sky:roots", () => skyRoots(GRAPH, met));
   const rootSet = new Set(roots);
 
   const needed = options.graduateRuns ?? 10;
-  const mixUps: MixUp[] = activeWeaknessPairs(history, needed, entryOf)
+  const mixUps: MixUp[] = timedSync("sky:mixups", () => activeWeaknessPairs(history, needed, entryOf)
     .filter((p) => have.has(p.a) && have.has(p.b))
-    .map((p) => ({ key: p.key, a: p.a, b: p.b, times: p.runsMixedUp, cleanRuns: p.cleanStreak, needed }));
+    .map((p) => ({ key: p.key, a: p.a, b: p.b, times: p.runsMixedUp, cleanRuns: p.cleanStreak, needed })));
 
   const mine = new Set([...FIVE_FIRMAMENT, ...(beyond?.firmament ?? [])].filter((id) => !rootSet.has(id)));
   const theirs = new Set(catalogue.firmament);
-  const discovery = stats ? discoveryRows(history, stats, now) : [];
+  const discovery = stats ? timedSync("sky:discovery", () => discoveryRows(history, stats, now)) : [];
   return {
     version: catalogue.version,
     standings,

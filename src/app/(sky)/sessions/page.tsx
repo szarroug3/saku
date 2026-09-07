@@ -4,6 +4,7 @@
 import { currentUserId } from "@/lib/auth";
 
 import { loadSessions } from "../actions";
+import { ServerTimingMeta } from "../server-timing-meta";
 import { SessionsClient } from "../sessions-client";
 
 export const metadata = { title: "Sessions" };
@@ -18,6 +19,7 @@ export default async function SkySessionsPage({ searchParams }: { searchParams: 
   return (
     <>
       <SessionsClient initial={initial} sample={sample} signedIn={userId !== null} />
+      <ServerTimingMeta />
     </>
   );
 }
