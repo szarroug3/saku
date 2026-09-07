@@ -59,4 +59,13 @@ describe("offerPicker", () => {
     }
     assert.ok(compared > 10000, `${compared} entries compared`);
   });
+
+  it("answers the Observatory's own ids as the Observatory does, and an unknown id as nothing", () => {
+    const history = sampleHistory();
+    const o = offerings(history, NOW);
+    const pick = offerPicker(history, NOW).offerPick;
+    assert.deepEqual(pick("kana-row:h-vowels"), o.offerPick("kana-row:h-vowels"));
+    assert.deepEqual(pick("counter-rule:tsu"), o.offerPick("counter-rule:tsu"));
+    assert.equal(pick("word:nonsense-that-is-not-a-word"), undefined);
+  });
 });

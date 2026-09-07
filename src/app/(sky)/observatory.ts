@@ -226,7 +226,11 @@ export function offerPicker(history: HistoryFile, now = Date.now()): Pick<Offeri
   return {
     items: sky.items,
     offerPick: (id) => {
-      if (libEntry(id as Parameters<typeof libEntry>[0])) return offerPick(id);
+      // only the Observatory's own ids go to the Observatory: any other id
+      // the library does not know is nothing, not a reason to build it all
+      // (a session card for a word since dropped from the library did, and
+      // that was the whole cost of the Sessions page)
+      if (!id.startsWith("kana-row:") && id !== TSU_RULE) return offerPick(id);
       if (!whole) {
         whole = offerings(history, now);
         for (const [k, v] of whole.items) if (!sky.items.has(k)) sky.items.set(k, v);

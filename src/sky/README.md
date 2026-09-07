@@ -1275,3 +1275,16 @@ ones that pass.
 Held to the old pool on 90 cases (five learners, nine recipes, with and
 without a run's misses, preview and draw). On Sam's copy the preview went
 from 19 ms to under one on the laptop, on the sample learner from 15 to 3.
+
+### One card for a word that is gone (2026-09-07, SAK-382)
+
+The Sessions page took 62 to 75 ms on the function for 52 sessions, and
+0.1 ms on the laptop for the sample learner's four. On a copy of Sam's
+history it took 18 ms on the laptop too, and building its 122 distinct
+items accounted for 0.2 of them. The rest was one card: a word since
+dropped from the library, whose id the picker did not know. The picker
+took any id the library did not know for one of the Observatory's own (a
+kana row, the 〜つ rule) and built the whole Observatory to answer it, and
+answered nothing, as the whole Observatory does for an unknown id. Now
+only the Observatory's own ids go to the Observatory, and an unknown id is
+nothing straight away. 18 ms to 0.5.
