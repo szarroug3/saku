@@ -43,7 +43,7 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
       data={data}
       lookup={lookup}
       observatoryHref={sample ? "/observatory?sample" : "/observatory"}
-      quizHref={sample ? "/quiz?sample" : "/quiz"}
+      quizHref={sample ? "/quiz?sample&from=atlas" : "/quiz?from=atlas"}
       written={WrittenBlock}
       hear={HearButton}
       pitch={PitchMark}

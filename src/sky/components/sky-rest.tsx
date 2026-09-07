@@ -5,7 +5,6 @@
 // rehearsed with. No list of the round's cards, no misses, no preview of
 // what comes next. How long, a way to skip the wait, and the way out.
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { SkyButton } from "@/sky/components/sky-button";
@@ -14,6 +13,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { formatCountdown, formatReturnTime, restLeft } from "@/sky/lib/rest";
+import type { WayBack } from "@/sky/lib/quiz";
 
 export interface SkyRestProps {
   /** When the rest ends. */
@@ -26,7 +26,8 @@ export interface SkyRestProps {
   minutes: number;
   onMinutes: (minutes: number) => void;
   /** The way out: back to the observatory. */
-  skyHref: string;
+  /** Where this quiz came from, and what to call it (SAK-353). */
+  back: WayBack;
   height?: string;
 }
 
@@ -44,7 +45,7 @@ function useNow(ticking: boolean): number | null {
   return now;
 }
 
-export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes, skyHref, height }: SkyRestProps) {
+export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes, back, height }: SkyRestProps) {
   const now = useNow(true);
   const left = now === null ? Number.POSITIVE_INFINITY : restLeft(until, now);
   const ready = left === 0;
@@ -69,7 +70,9 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
             <SkyStepper value={minutes} onChange={onMinutes} label="Minutes of rest" min={0} max={240} unit="minutes" />
           </div>
         </SkySurface>
-        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page. <Link href={skyHref} className="underline hover:text-sky-ink">Back to the observatory</Link></p>
+        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page.</p>
+        {/* a button, like every other way off a screen (SAK-353) */}
+        <div className="flex justify-center"><SkyButton variant="outline" href={back.href}>{back.label}</SkyButton></div>
       </div>
     </SkyPageShell>
   );

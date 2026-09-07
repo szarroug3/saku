@@ -13,6 +13,25 @@ export const metadata = { title: "Quiz" };
 
 export const dynamic = "force-dynamic";
 
+/** Where the results and the rest screen send you (SAK-353).
+ *
+ * A quiz starts from the Observatory, the Atlas, Sessions or Practice, and
+ * only whoever linked here knows which; they say so with `?from=`. Both
+ * screens used to offer "Back to the observatory" whatever had sent you, and
+ * told practice apart by looking for the word in the href. */
+const FROM: Record<string, { path: string; label: string }> = {
+  atlas: { path: "/atlas", label: "Back to the Atlas" },
+  sessions: { path: "/sessions", label: "Back to your sessions" },
+  practice: { path: "/practice", label: "Back to practice" },
+  observatory: { path: "/observatory", label: "Back to the observatory" },
+};
+
+function wayBack(from: string | string[] | undefined, sample: boolean) {
+  const key = typeof from === "string" ? from : "";
+  const where = FROM[key] ?? FROM.observatory;
+  return { href: `${where.path}${sample ? "?sample" : ""}`, label: where.label };
+}
+
 export default async function SkyQuizPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const sample = params.sample !== undefined;
@@ -22,7 +41,7 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const initial = sample ? await loadQuiz({ sample: true }, { picks, cards: named }) : userId ? await loadQuiz({}, { picks, cards: named }) : null;
   return (
     <>
-      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} skyHref={sample ? "/observatory?sample" : "/observatory"} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
+      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} back={wayBack(params.from, sample)} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </>
   );
 }

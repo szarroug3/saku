@@ -302,6 +302,26 @@ test("practice keeps a recipe on the results, without leaving them", async ({ pa
   await expect(page.getByText("Evening drill")).toBeVisible();
 });
 
+test("a quiz sends you back where you came from", async ({ page }) => {
+  // SAK-353. Both the results and the rest screen offered "Back to the
+  // observatory" whatever had sent you, and told practice apart by looking
+  // for the word in the href.
+  await page.goto("/quiz?sample&from=atlas");
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  const backToAtlas = page.getByRole("link", { name: "Back to the Atlas" });
+  await expect(backToAtlas).toBeVisible();
+  await expect(backToAtlas).toHaveAttribute("href", /\/atlas/);
+
+  await page.goto("/quiz?sample&from=sessions");
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("link", { name: "Back to your sessions" })).toBeVisible();
+
+  // and with nobody saying, the Observatory is still the answer
+  await page.goto("/quiz?sample");
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("link", { name: "Back to the observatory" })).toBeVisible();
+});
+
 test("the atlas opens on its question, with its shelves from a cached catalogue", async ({ page }) => {
   // SAK-381, the same split the home got: the tiles and the shelves are the
   // same for everybody, so they come from /api/atlas-catalogue and what the

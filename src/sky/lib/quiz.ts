@@ -191,3 +191,15 @@ function spread(cards: QuizCard[]): QuizCard[] {
   }
   return cards;
 }
+
+/** Where a quiz came from, and what to call it (SAK-353).
+ *
+ * The results and the rest screen used to offer "Back to the observatory"
+ * whatever had sent you, and told practice apart by looking for the word
+ * "practice" in the href. A quiz can start from the Observatory, the Atlas,
+ * Sessions or Practice, and only the route that opened it knows which. */
+export interface WayBack {
+  href: string;
+  /** "Back to the Atlas". Written out, since it is a button. */
+  label: string;
+}

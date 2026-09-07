@@ -15,7 +15,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, GRADES, tally, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { GRADE, GRADES, tally, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 /** The verdict colours, by grade; the Quiz's pips use the same. */
 export const VERDICT: Record<Grade, string> = {
@@ -29,7 +29,8 @@ export interface QuizResultsProps {
   answers: Readonly<Record<string, QuizAnswer>>;
   /** Whether recording failed; the normal case says nothing. */
   failed: boolean;
-  skyHref: string;
+  /** Where this quiz came from, and what to call it (SAK-353). */
+  back: WayBack;
   pitch?: PitchComponent;
   onRetry?: (cardIds: readonly string[]) => void;
   /** Keep the recipe this run came from, under a name, without leaving the
@@ -44,7 +45,7 @@ export interface QuizResultsProps {
   height?: string;
 }
 
-export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
+export function QuizResults({ cards, answers, failed, back, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // the naming box opens here rather than on another page
@@ -108,7 +109,7 @@ export function QuizResults({ cards, answers, failed, skyHref, pitch: Pitch, onR
         </SkySurface>
         <div className="flex flex-wrap gap-2">
           {next && <SkyButton onClick={next.onClick}>{next.label}</SkyButton>}
-          <SkyButton href={skyHref} variant={next ? "outline" : "solid"}>{skyHref.includes("practice") ? "Back to practice" : "Back to the observatory"}</SkyButton>
+          <SkyButton href={back.href} variant={next ? "outline" : "solid"}>{back.label}</SkyButton>
           {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
           {onRetry && picked.size === 0 && counts.missed > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => answers[c.id]?.grade === "missed").map((c) => c.id))}>Retry the {counts.missed === 1 ? "miss" : `${counts.missed} misses`}</SkyButton>}
           {onSave && !naming && !saved && <SkyButton variant="outline" onClick={() => setNaming(true)}>Keep this recipe</SkyButton>}

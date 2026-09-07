@@ -30,7 +30,7 @@ import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
-import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 export interface SkyQuizProps {
   cards: readonly QuizCard[];
@@ -42,7 +42,8 @@ export interface SkyQuizProps {
   /** Where the answers go when the session ends: the schedule. */
   onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
   /** Back to the observatory. */
-  skyHref: string;
+  /** Where this quiz came from, and what to call it (SAK-353). */
+  back: WayBack;
   hear?: HearComponent;
   pitch?: PitchComponent;
   /** Starts a new quiz of just these cards, from the results. */
@@ -90,7 +91,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said:
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -290,14 +291,14 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, skyHref, hear, pitch, 
       <SkyPageShell eyebrow="Quiz" title="Nothing to quiz" height={height}>
         <SkySurface className="mx-auto max-w-[560px]">
           <p className="text-[14px] text-sky-muted">Nothing is due. Learn something in the Observatory, or pick things in the Atlas and ask for a quiz.</p>
-          <SkyButton href={skyHref} className="mt-4">Back to the observatory</SkyButton>
+          <SkyButton href={back.href} className="mt-4">{back.label}</SkyButton>
         </SkySurface>
       </SkyPageShell>
     );
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} skyHref={skyHref} pitch={pitch} onRetry={onRetry} onSave={onSave} savedNames={savedNames} next={next} height={height} />;
+    return <QuizResults cards={cards} answers={answers} failed={saved === "failed"} back={back} pitch={pitch} onRetry={onRetry} onSave={onSave} savedNames={savedNames} next={next} height={height} />;
   }
 
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;

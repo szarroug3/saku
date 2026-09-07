@@ -20,7 +20,7 @@ import { HearButton } from "@/components/ui/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";
-import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { shuffleDeck, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 import { seeded } from "@/sky/lib/random";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
 import type { QuizConfig } from "@/types";
@@ -37,17 +37,17 @@ import { recordAnswers } from "./writes";
 const REST_KEY = "sky:quiz:rest";
 const NO_REST: RestState | null = null;
 
-export function QuizClient({ initial, picks, named, skyHref, sample = false, signedIn, rounds = 1 }: { initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; skyHref: string; sample?: boolean; signedIn: boolean; rounds?: number }) {
+export function QuizClient({ initial, picks, named, back, sample = false, signedIn, rounds = 1 }: { initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; back: WayBack; sample?: boolean; signedIn: boolean; rounds?: number }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
   const who = useWho(sample, signedIn);
   const load = useCallback((w: Parameters<typeof loadQuiz>[0]) => loadQuiz(w, { picks, cards: named, audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [picks, named, cfg.audioPrompts, cfg.pitchQuestions]);
   const cards = useLoaded(who, load, initial);
   if (!cards) return <SkyLoading />;
-  return <QuizRun cards={cards} skyHref={skyHref} sample={sample} rounds={rounds} cfg={cfg} update={update} router={router} />;
+  return <QuizRun cards={cards} back={back} sample={sample} rounds={rounds} cfg={cfg} update={update} router={router} />;
 }
 
-function QuizRun({ cards, skyHref, sample, rounds, cfg, update, router }: { cards: readonly QuizCard[]; skyHref: string; sample: boolean; rounds: number; cfg: QuizConfig; update: (patch: Partial<QuizConfig>) => void; router: ReturnType<typeof useRouter> }) {
+function QuizRun({ cards, back, sample, rounds, cfg, update, router }: { cards: readonly QuizCard[]; back: WayBack; sample: boolean; rounds: number; cfg: QuizConfig; update: (patch: Partial<QuizConfig>) => void; router: ReturnType<typeof useRouter> }) {
   const onFinish = sample ? undefined : recordAnswers;
   const deck = cards.map((c) => c.id).join("\n");
   // the rest between rounds, kept in the browser: the round that ended and
@@ -88,8 +88,8 @@ function QuizRun({ cards, skyHref, sample, rounds, cfg, update, router }: { card
     writeStored(REST_KEY, { ...rest, until: rest.startedAt + n * 60_000 } satisfies RestState);
   };
 
-  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} skyHref={skyHref} height="100%" />;
+  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} back={back} height="100%" />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} onFinish={finish} skyHref={skyHref} hear={HearButton} pitch={PitchMark} onRetry={retry} next={next} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} onFinish={finish} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} next={next} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }
