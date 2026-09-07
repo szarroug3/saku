@@ -104,6 +104,21 @@ test("the quiz card is centred in the space the list leaves, and never cut off",
   expect(Math.abs(measured.left - measured.right)).toBeLessThanOrEqual(2);
 });
 
+test("loading a page does not fetch every other page behind your back", async ({ page }) => {
+  // SAK-382. The bar's links prefetched on load, and with every route dynamic
+  // a prefetch is a function call that carries nothing: twenty of them per
+  // home load on the deployed app, and a click afterwards fetched the page
+  // again regardless.
+  const prefetched: string[] = [];
+  page.on("request", (r) => {
+    if (r.headers()["next-router-prefetch"] || r.headers()["purpose"] === "prefetch") prefetched.push(new URL(r.url()).pathname);
+  });
+  await page.goto("/?sample");
+  await expect(page.getByRole("heading", { name: "What have you discovered?" })).toBeVisible();
+  await page.waitForTimeout(2500);
+  expect(prefetched, `prefetched: ${prefetched.join(", ")}`).toEqual([]);
+});
+
 test("the home draws its sky from a cached catalogue, not from its own response", async ({ page }) => {
   // SAK-381. The stars used to ride in every response, 2.2 MB of them. Now
   // the response carries the learner's difference and the stars come from

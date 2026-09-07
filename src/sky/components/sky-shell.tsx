@@ -11,6 +11,15 @@
 "use client";
 
 import Link from "next/link";
+
+// Nothing here prefetches, on purpose (SAK-382). Every Sky route is dynamic,
+// so a prefetch cannot carry the page: measured on the deployed app, one
+// load of the home fired twenty of them, one per bar link twice over, 23
+// seconds of server time between them, waking every cold function in the
+// app — and a click afterwards fetched the page again exactly as if none of
+// it had happened. A link that cannot be prefetched usefully should not be
+// prefetched at all; it costs a function, a session refresh and a database
+// read, and it competes with the request the learner actually made.
 import { useState, type CSSProperties, ReactNode } from "react";
 
 export interface ShellEntry {
@@ -41,7 +50,7 @@ export function SkyShell({ current, entries, account, notice, style, children }:
       <div aria-hidden className="sky-wash fixed inset-0 -z-10" />
       <header className="flex shrink-0 items-center gap-3 border-b border-sky-line/60 bg-sky-card px-4 md:gap-6 md:px-5">
         {/* the Saku mark, the same one the app has always worn (Sam: keep the logo) */}
-        <Link href="/" className="flex h-12 items-center" aria-label="Saku, home">
+        <Link prefetch={false} href="/" className="flex h-12 items-center" aria-label="Saku, home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/saku-wordmark.png" alt="" className="h-9 w-9 object-contain" />
         </Link>
@@ -50,7 +59,7 @@ export function SkyShell({ current, entries, account, notice, style, children }:
           {entries.map((e) => {
             const on = isCurrent(current, e.href);
             return (
-              <Link key={e.href} href={e.href} aria-current={on ? "page" : undefined} className={`relative shrink-0 px-2.5 py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] ${on ? "text-sky-ink" : "text-sky-muted hover:text-sky-ink"}`}>
+              <Link prefetch={false} key={e.href} href={e.href} aria-current={on ? "page" : undefined} className={`relative shrink-0 px-2.5 py-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] ${on ? "text-sky-ink" : "text-sky-muted hover:text-sky-ink"}`}>
                 {e.label}
                 {on && <span aria-hidden className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-sky-accent" />}
               </Link>
@@ -63,7 +72,7 @@ export function SkyShell({ current, entries, account, notice, style, children }:
         <nav id="sky-menu" aria-label="Pages" className="flex shrink-0 flex-col border-b border-sky-line/60 bg-sky-card px-4 py-2 md:hidden">
           {entries.map((e) => {
             const on = isCurrent(current, e.href);
-            return <Link key={e.href} href={e.href} aria-current={on ? "page" : undefined} onClick={() => setOpen(false)} className={`py-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${on ? "text-sky-accent" : "text-sky-muted"}`}>{e.label}</Link>;
+            return <Link prefetch={false} key={e.href} href={e.href} aria-current={on ? "page" : undefined} onClick={() => setOpen(false)} className={`py-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${on ? "text-sky-accent" : "text-sky-muted"}`}>{e.label}</Link>;
           })}
         </nav>
       )}

@@ -44,9 +44,13 @@ export function SkyButton({ variant = "solid", href, onClick, disabled = false, 
   // "Start lesson", "Quiz me" and "Back to the observatory" was a full reload,
   // losing the loaded app and starting over (SAK-362). Somewhere outside the
   // app still gets a plain anchor, because there is nothing to keep.
+  //
+  // And no prefetch, for the reason in sky-shell.tsx: every route is dynamic,
+  // so a prefetch is a function call that carries nothing, and a click after
+  // it fetches the page again anyway (SAK-382).
   if (href && !disabled) {
     return isInternal(href)
-      ? <Link href={href} title={title} className={cls}>{children}</Link>
+      ? <Link href={href} prefetch={false} title={title} className={cls}>{children}</Link>
       : <a href={href} title={title} className={cls}>{children}</a>;
   }
   if (href) return <span aria-disabled title={title} className={cls}>{children}</span>;

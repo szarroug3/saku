@@ -652,16 +652,13 @@ export function QuizSessionProvider({
 }) {
   const router = useRouter();
   const { cfg } = useQuizConfig();
-  // Warm the two destinations a run navigates to, so a Start / Quiz me click
-  // routes without a cold RSC fetch. On Start the button's own state commits and
-  // paints at once (it flips to "Continue session"); without this the route
-  // change trailed behind that paint, because a non-prefetched App Router
-  // transition waits on the network for the target segment. One-time and
-  // app-wide, since a run can begin from Home, the Library, or a rest screen.
-  useEffect(() => {
-    router.prefetch("/session");
-    router.prefetch("/quiz");
-  }, [router]);
+  // This used to prefetch /session and /quiz on every page, to warm the two
+  // destinations the old app's Start and Quiz me went to. Both reasons are
+  // gone (SAK-382). /session no longer exists, so the prefetch was fetching a
+  // 404 from a function on every page load; and /quiz is dynamic, so a
+  // prefetch of it carries nothing and a click fetches the page again anyway,
+  // which was measured on the deployed app rather than assumed. Two function
+  // calls per page view for nothing, on top of the bar's own nine.
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [session, setSession] = useState<StudySession | null>(null);
   const [results, setResults] = useState<ResultsPayload | null>(null);

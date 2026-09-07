@@ -1125,3 +1125,27 @@ because the direct route iterates the catalogue in the same order
 
 Tried and reverted: memoising `subjectTally`, which the discovery rows and
 the standing counts both call over the same subjects. One millisecond.
+
+### Twenty requests nobody asked for (2026-09-07, SAK-382)
+
+One load of the home on the deployed app fired twenty prefetches: the bar's
+nine links, each twice over, plus two from somewhere else. Between them,
+23 seconds of server time, and four of them over three and a half seconds,
+because they were waking every cold function in the app at once. Then a
+click on one of those links fetched the page again, exactly as if none of
+it had happened.
+
+That last part is the whole finding. Every Sky route is dynamic, so a
+prefetch cannot carry the page; it can only carry the layout, which here is
+nothing, since the layout is dynamic too. A prefetch that carries nothing is
+a function call, a session refresh and a database read for no one, and it
+competes with the request the learner actually made. So nothing in the Sky
+prefetches now: not the bar, and not a button that is a link.
+
+The two from somewhere else were the old app's `QuizSessionProvider`, still
+mounted by the root layout, warming `/session` and `/quiz` on every page for
+a Start button the Sky does not have. `/session` no longer exists, so that
+one had been fetching a 404 from a function on every page load since the
+archive was removed.
+
+An e2e test loads the home and asserts no request carries a prefetch header.
