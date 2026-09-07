@@ -27,7 +27,11 @@ export function DetailFrame({ toolbar, footer, scroll = false, pad = "md", class
     <SkySurface as="section" pad={pad} className={`flex flex-col ${scroll ? "h-full overflow-hidden" : ""} ${className}`}>
       {toolbar && <div className="mb-3 flex shrink-0 items-center justify-between gap-2">{toolbar}</div>}
       <div className={scroll ? "-mr-2 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2" : "flex flex-col"}>{children}</div>
-      {footer && <div className={`mt-auto grid grid-cols-2 gap-2 border-t border-sky-line pt-4 [&>*]:w-full ${scroll ? "shrink-0" : "[&:not(:first-child)]:mt-5"}`}>{footer}</div>}
+      {/* A row that shares itself out, not two fixed columns (SAK-360). One
+          button used to sit in the left cell with a hole beside it, and three
+          went two-then-one. Now one fills the row, two split it, three share
+          it, and a fourth wraps to a full row of its own. */}
+      {footer && <div className={`mt-auto flex flex-wrap gap-2 border-t border-sky-line pt-4 [&>*]:min-w-[8rem] [&>*]:flex-1 ${scroll ? "shrink-0" : "[&:not(:first-child)]:mt-5"}`}>{footer}</div>}
     </SkySurface>
   );
 }

@@ -368,6 +368,21 @@ test("a page shows its own heading while its body is still coming", async ({ pag
   await expect(page.getByText("Reading your sky…")).toBeVisible();
 });
 
+test("a lone button fills its row instead of leaving a hole beside it", async ({ page }) => {
+  // SAK-360. The footer was a two-column grid, so an entry offering only
+  // "I don't know this" put it in the left cell with an empty cell beside it.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:\u65e5")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  const measured = await page.evaluate(() => {
+    const footer = document.querySelector("section")?.lastElementChild as HTMLElement | null;
+    if (!footer || footer.children.length !== 1) return null;
+    return { button: Math.round((footer.firstElementChild as HTMLElement).getBoundingClientRect().width), row: footer.clientWidth };
+  });
+  expect(measured, "expected an entry panel with one action").not.toBeNull();
+  // it takes the row, rather than half of it
+  expect(measured!.button).toBeGreaterThan(measured!.row * 0.9);
+});
+
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Want to keep your sky?" })).toBeVisible();
