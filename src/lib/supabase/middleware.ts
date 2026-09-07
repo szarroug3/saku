@@ -6,8 +6,9 @@ import { requireSupabasePublishableKey, requireSupabaseUrl } from "@/lib/supabas
 
 // Runs on every matched request (see middleware.ts). Its ONE job, and only in
 // Supabase mode: refresh the auth session. The access token is short-lived, and
-// calling supabase.auth.getUser() here is what renews it and writes the rolled
-// cookies onto the response. Without this the session silently expires.
+// calling supabase.auth.getClaims() here is what renews it when it has expired
+// and writes the rolled cookies onto the response. Without this the session
+// silently expires.
 //
 // It does NOT gate the app. Saku is browsable signed out — the Library and every
 // reference page work without an account, and the data hooks treat a 401 as
@@ -41,9 +42,15 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Refreshes the session (and rolls the cookies via setAll above). Do not run
-  // code between createServerClient and getUser.
-  await supabase.auth.getUser();
+  // Refreshes the session if it needs it (rolling the cookies via setAll
+  // above), and otherwise costs nothing: getClaims verifies the access token
+  // locally with the project's signing key and only goes to the auth server
+  // when the token cannot be verified or has expired (SAK-382). getUser went
+  // to the auth server on EVERY request, 80 to 100 ms of every page on the
+  // function, to learn what the token already said. auth.ts made the same
+  // move for reading the user (SAK-202); this is the proxy catching up. Do
+  // not run code between createServerClient and this call.
+  await supabase.auth.getClaims();
 
   return response;
 }
