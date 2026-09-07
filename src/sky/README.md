@@ -1089,3 +1089,39 @@ two readings are interchangeable was already in the engine, in
 `wordReadingCredit`: their senses overlap. A deck keeps one card per question
 now rather than one per fact that asks it, and 日 is untouched, because ひ is
 a day and にち is Sunday (SAK-393).
+
+### The home gets the Atlas's cure (2026-09-07, SAK-382)
+
+The home's `sky` phase was 876 ms on the deployed function, the largest
+number left on the server after everything else this round. It was the same
+waste the Atlas had: build all 15,380 items, a graph over them and every
+root, then keep the standings.
+
+`skyPayloadFor` works the payload out directly. What is the same for every
+learner is done once as the module loads, which under Fluid Compute is
+before anyone is waiting: the graph, which reads only ids and components;
+the ids the sky holds before a learner has done anything; and the firmament
+of the five kinds. Per request it works out only what a learner changes:
+which stars they have met, how each is going, which constellations are
+theirs, and what the Observatory adds on top.
+
+| | built then thrown away | worked out |
+| --- | --- | --- |
+| the home | 58 ms | 26 ms |
+
+Less than the Atlas's 40 to 6, and honestly so: what remains is real. Eight
+milliseconds asking every entry how it is going, twelve for `beyondWords`,
+which has to build the Observatory's offerings to know which counters,
+patterns and keigo sets are met, and six for the discovery rows and the
+legend's counts. The offerings are the obvious next cut and the least safe
+one, since which entries are offered is exactly the learner-dependent
+question this whole split exists to answer carefully.
+
+The rules are `skyFromHistory`'s restated, which is the risk, so the test
+runs both over three learners and asserts the payloads agree exactly and in
+order, `extras` included. They did on the first attempt, roots and all,
+because the direct route iterates the catalogue in the same order
+`skyItems` inserts.
+
+Tried and reverted: memoising `subjectTally`, which the discovery rows and
+the standing counts both call over the same subjects. One millisecond.

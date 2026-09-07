@@ -27,10 +27,9 @@ import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 import { atlasEntryFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
-import { skyFromHistory } from "./learner";
 import { atlasPayloadFor } from "./atlas-catalogue";
 import type { AtlasPayload } from "./atlas-payload";
-import { splitSky } from "./catalogue";
+import { skyPayloadFor } from "./catalogue";
 import { lessonFromPicks } from "./lesson";
 import { beyondWords, observatoryFromHistory, pickFacts } from "./observatory";
 import { practiceCards, practicePreview } from "./practice";
@@ -60,7 +59,7 @@ export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPaylo
   // app, the settings read alone was 336 ms of a 1328 ms home.
   const [history, runs] = await Promise.all([historyFor(who), graduateRuns ?? graduateRunsFor(who)]);
   const rows = await getStatsRows();
-  return timedSync("sky", () => splitSky(skyFromHistory(history, undefined, rows, { everything: true, beyond: beyondWords, ...(runs ? { graduateRuns: runs } : {}) })), "building the sky");
+  return timedSync("sky", () => skyPayloadFor(history, undefined, rows, { everything: true, beyond: beyondWords, ...(runs ? { graduateRuns: runs } : {}) }), "working out the sky");
 }
 
 /** The learner's own bar for clearing a mix-up. Undefined for anyone whose

@@ -24,7 +24,7 @@ import { getStatsRows } from "@/lib/library/server-lookups";
 import { buildGraph } from "@/sky/lib/graph";
 import type { SkyHomeData } from "@/sky/components/sky-home";
 
-import { skyCatalogue, splitSky } from "./catalogue";
+import { skyCatalogue, skyPayloadFor, splitSky } from "./catalogue";
 import { skyFromHistory } from "./learner";
 import { beyondWords } from "./observatory";
 import { sampleHistory } from "./sample-learner";
@@ -68,6 +68,20 @@ describe("the sky splits and joins back to itself", () => {
       const catalogue = wire(skyCatalogue());
       const payload = wire(splitSky(original, skyCatalogue()));
       assert.deepEqual(comparable(joinSky(catalogue, payload)), comparable(original));
+    });
+  }
+
+  for (const [name, make] of cases) {
+    it(`works the payload out directly and gets the same answer for ${name}`, async () => {
+      // The direct route never builds an item to compare against the
+      // catalogue, so it cannot discover that it needed no extras: that is
+      // what this asserts, along with everything else, exactly and in order.
+      const rows = await getStatsRows();
+      const opts = { everything: true, beyond: beyondWords };
+      const built = splitSky(skyFromHistory(make(), NOW, rows, opts), skyCatalogue());
+      const direct = skyPayloadFor(make(), NOW, rows, opts, skyCatalogue());
+      assert.deepEqual(wire(direct), wire(built));
+      assert.deepEqual(direct.extras, []);
     });
   }
 
