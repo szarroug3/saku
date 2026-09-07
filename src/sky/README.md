@@ -1012,3 +1012,80 @@ Tried and reverted: memoising `offerings` per request, the way `standingFor`
 is. The home calls it once and the new Atlas path does not call it at all,
 so it bought nothing measurable, and an unmeasured cache with a subtle
 lifetime is worse than none.
+
+### A round of the things that were simply wrong (2026-09-06)
+
+Fourteen cards, mostly found by using the app rather than reading it. Worth
+keeping the reasons, since several were one mistake wearing different
+clothes.
+
+**Data loss.** Practice pushed its saved recipes and its misses together
+whenever either changed, and the merge replaced the pair whole, so a laptop
+renaming a recipe carried its own stale misses over a phone's. Each half is
+sent on its own now and the misses merge by the larger count, which is safe
+only because a miss count never goes down; the comment says so, because if
+that changes the merge has to change with it (SAK-377).
+
+**A component declared inside another.** `Row` in Settings was a new
+component type on every render, so React remounted the subtree and the field
+you were typing in went away under you (SAK-352). The rest of `src/sky` was
+swept for the same shape and had none.
+
+**A state that was not a state.** A lesson with nothing to teach was step
+zero of zero with a live Next, which indexed past the end of an empty list
+and threw. Nothing to teach is its own state now, with a way on instead of a
+counter (SAK-351).
+
+**Formatting where the reader is not.** Session times were formatted during
+render, so a signed-in page carried the server's timezone into the HTML. A
+new `useMounted` says whether this is the browser yet; the instant rides in
+`dateTime` from the first byte and the readable form arrives with the reader
+(SAK-355).
+
+**Links that were not links.** Every button with an href was a plain anchor,
+so Start lesson, Quiz me, Drill and every Back threw the loaded app away and
+fetched the page again. On this deployment that is a function, a session
+refresh and a database read for something the browser already had (SAK-362).
+
+**Japanese sized by rules that did not know how wide it would be.** The
+prompt stepped from 64px to 36 at three characters, so 待つ and 食べる were
+half a size apart; a choice longer than its tile wrapped, and Japanese has no
+spaces, so the break fell inside the word. Both are fitted now: a character
+is about as wide as the type is tall, so the size that fits n of them is the
+width over n (SAK-390, SAK-391).
+
+**One string where a list was wanted.** A missed card said "You put" and
+showed only the last guess, so missing twice hid the two things you had
+confused, which is what the line is for (SAK-387).
+
+**One scroller where two were wanted.** Reading a card's lesson carried the
+card, the verdict and Next off the top. The reveal takes what the card leaves
+and scrolls inside it now. The first attempt was a max-height that never
+engaged, and the test passed anyway — which is why that test now asserts the
+reveal has somewhere to scroll before checking the card stayed put (SAK-392).
+
+**Leaving a page to do something that belonged on it.** Keeping a recipe
+navigated back to Practice with the recipe in the query, throwing the results
+away. It saves in place, through a naming form both screens now share, and a
+name that already exists says "Replace" rather than overwriting in silence —
+which the Practice page had been doing all along (SAK-395).
+
+**Guessing where you came from.** The results and the rest screen offered
+"Back to the observatory" whatever had sent you, telling practice apart by
+looking for the word in the href. Whoever links to a quiz says so, and the
+route turns that into a way back with a name on it (SAK-353). The Atlas had
+the same shape of problem: `?entry=` opened the panel but left the shelf on
+Kana (SAK-354).
+
+**A frame that knew better than its contents.** The loading state was a line
+on an empty wash, so the whole page appeared at once when the data landed; it
+wears its own heading now (SAK-356). A panel's footer was two fixed columns,
+so one button sat beside a hole (SAK-360).
+
+**Asking the same question twice, and marking a right answer wrong.** 九 is
+きゅう and く, both nine, and it came up as four cards: two readings each
+refusing the other, and the same meaning question twice. The rule for when
+two readings are interchangeable was already in the engine, in
+`wordReadingCredit`: their senses overlap. A deck keeps one card per question
+now rather than one per fact that asks it, and 日 is untouched, because ひ is
+a day and にち is Sunday (SAK-393).
