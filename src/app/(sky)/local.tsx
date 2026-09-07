@@ -7,6 +7,7 @@
 // the app's HistoryProvider, so a write the page makes shows up here and
 // the page reloads its data.
 
+import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useHistory } from "@/lib/use-history";
@@ -41,6 +42,19 @@ export function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, in
   return loaded && loaded.who === who ? loaded.data : loaded?.data ?? null;
 }
 
-export function SkyLoading({ children = "Reading your sky…" }: { children?: ReactNode }) {
-  return <p className="font-sky-ui text-[14px] text-sky-muted">{children}</p>;
+/**
+ * The page, with its body still coming (SAK-356).
+ *
+ * It used to be the line alone on an empty wash, so when the data landed the
+ * eyebrow, the title and every panel appeared at once and the page visibly
+ * jumped. The heading is the part that is known before anything is fetched,
+ * so it is drawn first and only the body fills in.
+ *
+ * Each caller passes the same eyebrow and title its page uses when loaded, so
+ * the two renders are the same page rather than two different ones.
+ */
+export function SkyLoading({ eyebrow, title, children = "Reading your sky…" }: { eyebrow?: string; title?: string; children?: ReactNode }) {
+  const line = <p className="font-sky-ui text-[14px] text-sky-muted">{children}</p>;
+  if (!title) return line;
+  return <SkyPageShell eyebrow={eyebrow} title={title} height="100%">{line}</SkyPageShell>;
 }

@@ -354,6 +354,20 @@ test("the atlas opens on the shelf that holds what you asked for", async ({ page
   await expect(kanji).toHaveAttribute("aria-pressed", "true");
 });
 
+test("a page shows its own heading while its body is still coming", async ({ page }) => {
+  // SAK-356. Signed out, every page drew the loading line alone on an empty
+  // wash, so when the data landed the eyebrow, title and panels all appeared
+  // at once and the page jumped.
+  await page.route("**/observatory", async (route) => {
+    if (route.request().method() === "POST") await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  });
+  await page.goto("/observatory");
+  // the heading is there before the body is
+  await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeVisible();
+  await expect(page.getByText("Reading your sky…")).toBeVisible();
+});
+
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Want to keep your sky?" })).toBeVisible();

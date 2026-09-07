@@ -34,7 +34,7 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
     tiles: (ids) => atlasTiles(who, ids),
     sections: (shelfId, status) => atlasSections(who, shelfId, status),
   }), [who]);
-  if (!payload || !shelves || !lookup) return <SkyLoading />;
+  if (!payload || !shelves || !lookup) return <SkyLoading eyebrow="Atlas" title={"What would you like to know?"} />;
   const data = joinAtlas(shelves, payload);
   const claim = async (ids: readonly string[]) => { await claimIds(ids); router.refresh(); };
   const unclaim = async (ids: readonly string[]) => { await unclaimIds(ids); router.refresh(); };

@@ -19,7 +19,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks }: { s
   const who = useWho(sample, signedIn);
   const load = useCallback((w: Parameters<typeof loadLesson>[0]) => loadLesson(w, picks), [picks]);
   const data = useLoaded(who, load, initial);
-  if (!data) return <SkyLoading />;
+  if (!data) return <SkyLoading eyebrow="Lesson" title={"Tonight's lesson"} />;
   // the real stroke order for every character on the card, as a slot
   const written = Object.fromEntries(
     Object.keys(data.teach)

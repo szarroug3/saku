@@ -15,7 +15,7 @@ export function ObservatoryClient({ sample, signedIn, initial, picks }: { sample
   const router = useRouter();
   const who = useWho(sample, signedIn);
   const data = useLoaded(who, loadObservatory, initial);
-  if (!data) return <SkyLoading />;
+  if (!data) return <SkyLoading eyebrow="Observatory" title={"What would you like to learn next?"} />;
   const claim = async (ids: readonly string[]) => { await claimIds(ids); router.refresh(); };
   return <SkyObservatory data={data} lessonPath={sample ? "/lesson?sample" : "/lesson"} initialPicks={picks} height="100%" onClaim={sample ? undefined : claim} />;
 }

@@ -27,7 +27,7 @@ export function PlanetariumClient({ sample, signedIn, initial, graduateRuns }: {
   const load = useCallback((w: Parameters<typeof loadSky>[0]) => loadSky(w, graduateRuns), [graduateRuns]);
   const payload = useLoaded(who, load, initial);
   const stars = useCatalogue<SkyCatalogue>("/api/sky-catalogue", payload?.version);
-  if (!payload || !stars) return <SkyLoading />;
+  if (!payload || !stars) return <SkyLoading eyebrow="Planetarium" title={"What have you discovered?"} />;
   const clear = async (key: string) => { await clearMixUpKey(key); router.refresh(); };
   return <SkyHome data={joinSky(stars, payload)} observatoryHref={sample ? "/observatory?sample" : "/observatory"} onClearMixUp={sample ? undefined : clear} height="100%" />;
 }

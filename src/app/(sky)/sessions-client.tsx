@@ -17,7 +17,7 @@ export function SessionsClient({ initial, sample, signedIn }: { initial: readonl
   const router = useRouter();
   const who = useWho(sample, signedIn, true);
   const sessions = useLoaded(who, loadSessions, initial);
-  if (!sessions) return <SkyLoading />;
+  if (!sessions) return <SkyLoading eyebrow="Sessions" title={"What have you done lately?"} />;
   const rerun = (ids: readonly string[]) => router.push(`/quiz?${sample ? "sample&" : ""}from=sessions&cards=${encodeURIComponent(ids.join(","))}`);
   const forget = async (id: string) => {
     await postDelete({ ids: [/^\d+$/.test(id) ? Number(id) : id] });

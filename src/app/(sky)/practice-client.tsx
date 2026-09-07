@@ -69,7 +69,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
   const loadFirst = useCallback((w: Who) => practiceLookup(w, EMPTY_RECIPE, {}), []);
   const preview = useLoaded(who, loadFirst, initialPreview);
   const lookup = useCallback((recipe: Recipe, m: PracticeMisses) => practiceLookup(who ?? {}, recipe, m), [who]);
-  if (!preview) return <SkyLoading />;
+  if (!preview) return <SkyLoading eyebrow="Practice" title={"What would you like to practice?"} />;
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
@@ -85,7 +85,7 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe }: 
   const who = useWho(sample, signedIn);
   const load = useCallback((w: Who) => named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [named, recipe]);
   const cards = useLoaded(who, load, initial);
-  if (!cards) return <SkyLoading />;
+  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Quiz"} />;
   return <PracticeRun cards={cards} sample={sample} recipe={recipe} cfg={cfg} update={update} router={router} />;
 }
 
