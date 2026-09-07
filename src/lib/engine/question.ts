@@ -543,6 +543,33 @@ function en2jpKey(fact: FactId): AnswerKey {
 }
 
 /**
+ * Every reading that answers a word's reading card, not just the one it was
+ * minted for (SAK-393).
+ *
+ * 九 is read きゅう and く and both mean nine, so a card showing 九 and "nine"
+ * has two right answers, and marking one of them wrong marks the learner down
+ * for knowing the word. `wordReadingCredit` has decided this for the drill for
+ * a long time; this is the same rule stated as a list, for a surface that has
+ * to know what it accepts before anybody types.
+ *
+ * The rule is the one the data already carries: two readings answer the same
+ * card when their senses overlap. 日 read にち and ひ do not overlap, so they
+ * stay two questions, which is why this is a lookup and not a merge.
+ */
+export function interchangeableReadings(fact: FactId): string[] {
+  const u = wordReadingUnit(fact);
+  if (!u) return [];
+  const intended = new Set(u.unit.glosses.map(norm));
+  const out: string[] = [];
+  for (const wf of wordUnitFacts(u.keb)) {
+    if (!wf.reading) continue;
+    if (wf.unit.reb !== u.unit.reb && !wf.unit.glosses.some((g) => intended.has(norm(g)))) continue;
+    if (!out.includes(wf.unit.reb)) out.push(wf.unit.reb);
+  }
+  return out;
+}
+
+/**
  * On a TYPED word READING card, the fact to CREDIT and whether it is correct,
  * redirecting credit to the reading the learner actually produced.
  *

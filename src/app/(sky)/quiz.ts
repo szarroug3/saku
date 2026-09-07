@@ -18,7 +18,7 @@ import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { currentUserId } from "@/lib/auth";
 import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
-import { answerIsJapanese, fixedDirOf, grammarVehicleFor, mcOnlyIn, questionsFor, revealFor, type PromptContext } from "@/lib/engine/question";
+import { answerIsJapanese, fixedDirOf, grammarVehicleFor, interchangeableReadings, mcOnlyIn, questionsFor, revealFor, type PromptContext } from "@/lib/engine/question";
 import { isKatakana } from "@/lib/romaji";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
@@ -27,12 +27,12 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
-import { VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
+import { isWordReadingFact, VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
-import { shuffleDeck, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
+import { shuffleDeck, type AnswerKey, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
@@ -83,6 +83,23 @@ function listenTextFor(fact: FactId, item: SkyItem): string | undefined {
   return undefined;
 }
 
+/** A key that also takes these readings, for a word read more than one way
+ * for the same sense (SAK-393). */
+function withReadings(key: AnswerKey, readings: readonly string[]): AnswerKey {
+  // The readings ARE what it takes, not an addition to them. That is what
+  // makes 九's two reading cards the same question, so the deck keeps one.
+  const takes = [...readings].sort();
+  return { ...key, produce: takes, loose: takes, typo: [] };
+}
+
+/** What a card asks, for telling two cards that ask it apart from two that do
+ * not: the thing it is about, the direction, and what it will accept. Two
+ * facts of one entry that take the same answers are one question. */
+function questionAsked(entry: string | undefined, dir: Direction, key: AnswerKey): string {
+  const takes = [...(key.produce ?? []), ...(key.loose ?? []), ...(key.strict ?? [])].sort().join("|");
+  return `${entry ?? ""}|${dir}|${takes}`;
+}
+
 /** The cards for some facts, in order. With `audio`, a card that has a
  * sound to ask by becomes a listening card half the time. */
 export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
@@ -98,6 +115,12 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   // baked kanji lemma. The set is the deck's own: two patterns in a sitting
   // should not both roll およぐ.
   const usedVehicles = new Set<string>();
+  // One card per QUESTION, not per fact that asks it (SAK-393). 九 carries a
+  // meaning fact under each of its two readings, both answered "nine", and
+  // once the two reading cards accept each other's readings they are the same
+  // question too. A deck that asks the same thing twice teaches nothing the
+  // second time and costs a card of the eight it has.
+  const asked = new Set<string>();
   for (const fact of facts) {
     // a sentence tier's marker is asked as an ordering (SAK-346)
     if (isSentenceTierMarkerFact(fact)) { const c = orderCard(history, fact, now); if (c) cards.push(c); continue; }
@@ -142,8 +165,20 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // romaji for a meaning. A rolled counting card is read aloud, so it
     // answers in kana too.
     const typedCard = construction ? true : typed;
-    const answer = construction ? construction.reading : revealFor(fact, dir, ctx);
+    // A word read two ways for one sense has one right answer with two
+    // spellings (SAK-393): 九 is きゅう and く and both mean nine, so a card
+    // that takes only the one it was minted for marks the learner down for
+    // knowing the word. The engine has decided which readings count as the
+    // same for a long time, in wordReadingCredit; this asks it.
+    const alsoRead = dir === "jp2en" && isWordReadingFact(fact) ? interchangeableReadings(fact) : [];
+    const answer = construction
+      ? construction.reading
+      : alsoRead.length > 1 ? alsoRead.join(" · ") : revealFor(fact, dir, ctx);
     const inKana = typedCard && (!!construction || answerIsJapanese(fact, dir));
+    const key = alsoRead.length > 1 ? withReadings(answerKeyFor(fact, dir, ctx), alsoRead) : answerKeyFor(fact, dir, ctx);
+    const question = questionAsked(entryOf(fact), dir, key);
+    if (asked.has(question)) continue;
+    asked.add(question);
     const instruction = listenIt
       ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
       : construction
@@ -171,7 +206,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // What answers this card, worked out here so the browser can grade
       // without the engine and its tables (SAK-380). It is the key for THIS
       // showing: the rolled count, or the verb the pattern was built on.
-      key: answerKeyFor(fact, dir, ctx),
+      key,
       // the vehicle rides back with the answer, so the recorder knows the
       // verb the pattern was asked on
       meta: {

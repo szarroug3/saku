@@ -11,6 +11,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
 import type { FactId } from "@/types";
 
+import { matchesKey } from "@/lib/answer-key";
 import { grade } from "./grade";
 import { quizCards, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
@@ -104,5 +105,44 @@ describe("the verb a grammar card is drilled on", () => {
       if (kanji) assert.ok(grade(card, kanji), `${card.id} rejected ${kanji}`);
       assert.ok(!grade(card, "たべた"), `${card.id} accepted an unrelated form`);
     }
+  });
+});
+
+describe("a word read two ways (SAK-393)", () => {
+  const deckFor = (word: string) => quizCards(emptyHistory(), [...factsOf(word as never)] as FactId[], NOW);
+
+  it("asks 九 once for its reading and once for its meaning, not twice for each", () => {
+    // 九 is きゅう and く, both nine. It used to be four cards: two readings
+    // that each refused the other, and the same meaning question twice.
+    const cards = deckFor("word:九");
+    assert.equal(cards.length, 2, cards.map((c) => c.id).join(", "));
+    assert.equal(cards.filter((c) => c.id.includes("/reading")).length, 1);
+    assert.equal(cards.filter((c) => c.id.includes("/meaning")).length, 1);
+  });
+
+  it("takes either reading of 九, since the learner knowing one is not a miss", () => {
+    const reading = deckFor("word:九").find((c) => c.id.includes("/reading"))!;
+    assert.ok(matchesKey(reading.key, "きゅう"), "きゅう should be right");
+    assert.ok(matchesKey(reading.key, "く"), "く should be right");
+    // and the reveal shows both, so the one not said is still learned
+    assert.match(reading.answer, /きゅう/);
+    assert.match(reading.answer, /く/);
+  });
+
+  it("leaves 日 alone, because にち and ひ are different things to know", () => {
+    const cards = deckFor("word:日");
+    assert.equal(cards.length, 4, cards.map((c) => c.id).join(", "));
+    const readings = cards.filter((c) => c.id.includes("/reading"));
+    assert.equal(readings.length, 2);
+    for (const card of readings) {
+      const other = card.id.includes("にち") ? "ひ" : "にち";
+      assert.ok(!matchesKey(card.key, other), `${card.id} should not take ${other}`);
+    }
+  });
+
+  it("still marks a wrong reading wrong", () => {
+    const reading = deckFor("word:九").find((c) => c.id.includes("/reading"))!;
+    assert.ok(!matchesKey(reading.key, "はち"));
+    assert.ok(!matchesKey(reading.key, "nine"));
   });
 });
