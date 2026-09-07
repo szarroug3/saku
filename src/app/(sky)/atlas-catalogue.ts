@@ -7,13 +7,14 @@
 
 import { emptyHistory } from "@/lib/history-ops";
 import { libEntry, type LibEntry } from "@/lib/library/entries";
+import type { CoverageCounts } from "@/sky/lib/coverage";
 import type { Standing } from "@/sky/lib/standing";
 import type { EntryId, HistoryFile } from "@/types";
 import type { AtlasShelf, SkyAtlasData } from "@/sky/components/sky-atlas";
 
 import { all, atlasFromHistory, countsOver, SHELVES } from "./atlas";
 import { timedSync } from "@/lib/server-timing";
-import { standingFor } from "./learner";
+import { sparse, standingFor, touchedEntries } from "./learner";
 import { versionOf } from "./catalogue-version";
 import { splitItems, withoutStanding } from "./item-split";
 import type { AtlasCatalogue, AtlasPayload, AtlasShelfBase } from "./atlas-payload";
@@ -71,20 +72,59 @@ function withoutCounts(shelf: AtlasShelf): AtlasShelfBase {
  */
 export function atlasPayloadFor(history: HistoryFile, now = Date.now(), catalogue = atlasCatalogue()): AtlasPayload {
   const standings: Record<string, Standing> = {};
+  // over the entries the history touches, not every tile (SAK-382): the
+  // rest are "not-seen" and are not sent
   timedSync("atlas:standings", () => {
-    for (const item of catalogue.items) {
-      const entry = libEntry(item.id as EntryId);
-      if (!entry) continue;
+    const take = (id: string, entry: LibEntry) => {
       const { standing } = standingFor(entry, history, now);
-      if (standing !== "not-seen") standings[item.id] = standing;
+      if (standing !== "not-seen") standings[id] = standing;
+    };
+    if (sparse(history)) {
+      // in the tiles' order, as they were
+      const tiles = tileOrder(catalogue);
+      const mine = [...touchedEntries(history)].filter(([id]) => tiles.has(id)).sort((a, b) => tiles.get(a[0])! - tiles.get(b[0])!);
+      for (const [id, entry] of mine) take(id, entry);
+    } else {
+      for (const item of catalogue.items) { const entry = libEntry(item.id as EntryId); if (entry) take(item.id, entry); }
     }
   });
   return {
     version: catalogue.version,
     standings,
     extras: [],
-    counts: timedSync("atlas:counts", () => catalogue.shelves.map((shelf) => countsOver(shelvesByKind(shelf.id), history, now))),
+    counts: timedSync("atlas:counts", () => catalogue.shelves.map((shelf) => countsOverTouched(shelf.id, history, now))),
   };
+}
+
+/** Where each tile sits in a catalogue, once per catalogue. */
+const tileOrderOf = new WeakMap<AtlasCatalogue, ReadonlyMap<string, number>>();
+function tileOrder(catalogue: AtlasCatalogue): ReadonlyMap<string, number> {
+  let order = tileOrderOf.get(catalogue);
+  if (!order) { order = new Map(catalogue.items.map((it, i) => [it.id, i])); tileOrderOf.set(catalogue, order); }
+  return order;
+}
+
+/** The ids of the entries a shelf counts over, once per shelf. */
+const idsByShelf = new Map<string, ReadonlySet<string>>();
+function shelfIds(shelfId: string): ReadonlySet<string> {
+  let ids = idsByShelf.get(shelfId);
+  if (!ids) { ids = new Set(shelvesByKind(shelfId).map((e) => e.id)); idsByShelf.set(shelfId, ids); }
+  return ids;
+}
+
+/** `countsOver` for a shelf, walking the touched entries that are on it
+ * rather than the shelf: the untouched ones are "not-seen", which the
+ * counts leave out anyway. */
+function countsOverTouched(shelfId: string, history: HistoryFile, now: number): CoverageCounts {
+  if (!sparse(history)) return countsOver(shelvesByKind(shelfId), history, now);
+  const ids = shelfIds(shelfId);
+  const counts: CoverageCounts = {};
+  for (const [id, e] of touchedEntries(history)) {
+    if (!ids.has(id)) continue;
+    const s = standingFor(e, history, now).standing;
+    if (s !== "not-seen") counts[s] = (counts[s] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /** The entries a shelf counts over, held for the life of the process: the

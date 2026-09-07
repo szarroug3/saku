@@ -9,7 +9,7 @@
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
-import { libEntry } from "@/lib/library/entries";
+import { libEntry, type LibEntry } from "@/lib/library/entries";
 import type { StatsData } from "@/lib/library/server-lookups";
 import type { MixUp } from "@/sky/components/mix-ups-panel";
 import type { SkyHomeData } from "@/sky/components/sky-home";
@@ -20,7 +20,7 @@ import type { EntryId, HistoryFile } from "@/types";
 import { timedSync } from "@/lib/server-timing";
 import { versionOf } from "./catalogue-version";
 import { splitItems, withoutStanding } from "./item-split";
-import { discoveryRows, skyFromHistory, skyItems, standingFor, standingTallyOf, type SkyOptions } from "./learner";
+import { discoveryRows, skyFromHistory, skyItems, standingFor, sparse, standingTallyOf, touchedEntries, type SkyOptions } from "./learner";
 import { beyondWords } from "./observatory";
 import type { SkyCatalogue, SkyPayload } from "./sky-payload";
 
@@ -100,6 +100,14 @@ const EMPTY = skyItems(emptyHistory(), NO_CLOCK, { everything: true });
 const BASE_IDS: ReadonlySet<string> = new Set(EMPTY.items.keys());
 const FIVE_FIRMAMENT: readonly string[] = EMPTY.firmament;
 
+/** Where each item sits in a catalogue, once per catalogue. */
+const orderOf = new WeakMap<SkyCatalogue, ReadonlyMap<string, number>>();
+function itemOrder(catalogue: SkyCatalogue): ReadonlyMap<string, number> {
+  let order = orderOf.get(catalogue);
+  if (!order) { order = new Map(catalogue.items.map((it, i) => [it.id, i])); orderOf.set(catalogue, order); }
+  return order;
+}
+
 /** One learner's sky payload, worked out directly. */
 export function skyPayloadFor(history: HistoryFile, now = Date.now(), stats?: StatsData, options: SkyOptions = {}, catalogue = skyCatalogue()): SkyPayload {
   const standings: Record<string, Standing> = {};
@@ -108,14 +116,29 @@ export function skyPayloadFor(history: HistoryFile, now = Date.now(), stats?: St
   // the five kinds: how each is going, and whether it has been met. The
   // parts are timed apart (sky:*) because on the function this took ten
   // times what it takes on a laptop, and one number could not say why.
+  // Over the entries the history touches, not the fifteen thousand in the
+  // catalogue: every other one is "not-seen" and not met, and would only
+  // have been looked up to say so.
+  // In the catalogue's order, since the roots come out in the order the met
+  // items went in: the touched entries sorted into it, or, for a learner who
+  // has touched a good part of the catalogue, the catalogue itself (sorting
+  // most of it costs more than walking it).
   timedSync("sky:standings", () => {
-    for (const item of catalogue.items) {
-      if (!BASE_IDS.has(item.id)) continue;
-      const entry = libEntry(item.id as EntryId);
-      if (!entry) continue;
+    const take = (id: string, entry: LibEntry) => {
       const { standing, met: isMet } = standingFor(entry, history, now);
-      if (standing !== "not-seen") standings[item.id] = standing;
-      if (isMet) met.add(item.id);
+      if (standing !== "not-seen") standings[id] = standing;
+      if (isMet) met.add(id);
+    };
+    if (sparse(history)) {
+      const order = itemOrder(catalogue);
+      const mine = [...touchedEntries(history)].filter(([id]) => order.has(id) && BASE_IDS.has(id)).sort((a, b) => order.get(a[0])! - order.get(b[0])!);
+      for (const [id, entry] of mine) take(id, entry);
+    } else {
+      for (const item of catalogue.items) {
+        if (!BASE_IDS.has(item.id)) continue;
+        const entry = libEntry(item.id as EntryId);
+        if (entry) take(item.id, entry);
+      }
     }
   });
 

@@ -27,7 +27,7 @@ import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
-import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
+import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
 import { KIND_LABEL } from "@/lib/library/kinds";
 import { getStatsRows, type StatsData, type StatsSubject } from "@/lib/library/server-lookups";
 import { standingOf as appStandingOf, type Standing as AppStanding } from "@/lib/library/standing";
@@ -76,6 +76,69 @@ export function factStanding(f: FactId, history: HistoryFile, now: number): AppS
  * history is not mutated while it is being read, which is true of every path
  * here: it is loaded once and written through a separate action.
  */
+/**
+ * The facts a history has anything on: answered, claimed, or opened in a
+ * lesson. Every other fact reads "not-seen" and cannot be met, whatever
+ * entry asks, so the pages that used to walk all fifteen thousand entries to
+ * find the few hundred that are not "not-seen" walk these instead (SAK-382).
+ *
+ * The keys, not the values: a key present with a hollow value is a fact the
+ * standing code will look at and find nothing on, which is harmless, where
+ * a key left out would be a standing never worked out. Per request, held
+ * against the history like the standings are.
+ */
+const touched = new WeakMap<HistoryFile, readonly FactId[]>();
+export function touchedFacts(history: HistoryFile): readonly FactId[] {
+  let facts = touched.get(history);
+  if (!facts) {
+    const set = new Set<string>(Object.keys(history.facts ?? {}));
+    for (const f of Object.keys(history.claims ?? {})) set.add(f);
+    for (const f of Object.keys(history.seen ?? {})) set.add(f);
+    facts = [...set] as FactId[];
+    touched.set(history, facts);
+  }
+  return facts;
+}
+
+/** Every entry that reads a fact, from `knownFactsOf` turned around over the
+ * whole library, once. A merged radical reads its kanji's meaning fact, so
+ * that fact has two readers; this is why the map is built from the same
+ * function the standings read, not from a fact's own entry id. */
+let readers: Map<string, LibEntry[]> | undefined;
+function readersOf(fact: FactId): readonly LibEntry[] {
+  if (!readers) {
+    readers = new Map();
+    for (const e of LIB_ENTRIES) for (const f of knownFactsOf(e)) {
+      const list = readers.get(f as string);
+      if (list) list.push(e); else readers.set(f as string, [e]);
+    }
+  }
+  return readers.get(fact as string) ?? [];
+}
+
+/** Whether a history touches few enough facts that walking them beats
+ * walking the library: a learner years in has hundreds, the library has
+ * fifteen thousand entries. A learner who has touched most of it (a big
+ * synthetic one, one day a real one) is walked the old way, over the
+ * catalogue and the subjects, which costs the same as it always did. */
+export function sparse(history: HistoryFile): boolean {
+  return touchedFacts(history).length * 4 < LIB_ENTRIES.length;
+}
+
+/** The entries whose standing can be anything but "not-seen", by id: the
+ * readers of the touched facts. Per request. */
+const touchedByEntry = new WeakMap<HistoryFile, ReadonlyMap<string, LibEntry>>();
+export function touchedEntries(history: HistoryFile): ReadonlyMap<string, LibEntry> {
+  let map = touchedByEntry.get(history);
+  if (!map) {
+    const m = new Map<string, LibEntry>();
+    for (const f of touchedFacts(history)) for (const e of readersOf(f)) m.set(e.id, e);
+    map = m;
+    touchedByEntry.set(history, map);
+  }
+  return map;
+}
+
 const standings = new WeakMap<HistoryFile, { now: number; byEntry: Map<string, { standing: Standing; met: boolean }> }>();
 
 export function standingFor(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
@@ -151,10 +214,32 @@ const SUBJECT_LABEL: Record<string, string> = {
   "counting-counters": "Counters",
 };
 
+/** A subject's entries by the facts they carry in it, turned around from
+ * `entryFacts`, once per subject: the way from the touched facts to the
+ * subject's entries that could be anything but "not-seen". */
+const subjectReaders = new WeakMap<StatsSubject, ReadonlyMap<string, readonly string[]>>();
+function touchedInSubject(subject: StatsSubject, history: HistoryFile): ReadonlySet<string> {
+  let byFact = subjectReaders.get(subject);
+  if (!byFact) {
+    const m = new Map<string, string[]>();
+    const population = new Set<string>(subject.entries as readonly string[]);
+    for (const [e, facts] of Object.entries(subject.entryFacts)) {
+      if (!population.has(e)) continue;
+      for (const f of facts) { const list = m.get(f as string); if (list) list.push(e); else m.set(f as string, [e]); }
+    }
+    byFact = m;
+    subjectReaders.set(subject, byFact);
+  }
+  const out = new Set<string>();
+  for (const f of touchedFacts(history)) for (const e of byFact.get(f as string) ?? []) out.add(e);
+  return out;
+}
+
 /** Entries in a subject the learner has met: any of the entry's facts
- * answered, claimed, or opened in a lesson. */
+ * answered, claimed, or opened in a lesson. Only a touched entry can be. */
 const metCount = (subject: StatsSubject, history: HistoryFile) =>
-  subject.entries.filter((e) => (subject.entryFacts[e as unknown as string] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f] || history.seen?.[f])).length;
+  (sparse(history) ? [...touchedInSubject(subject, history)] : (subject.entries as readonly string[]))
+    .filter((e) => (subject.entryFacts[e] ?? []).some((f) => history.facts[f]?.seen || history.claims?.[f] || history.seen?.[f])).length;
 
 /** Every entry Progress counts, tallied by standing: the legend's numbers,
  * which add up to the same total as the discovery panel. A multi-fact entry
@@ -178,11 +263,14 @@ export function standingTally(history: HistoryFile, stats: StatsData, now: numbe
   return counts;
 }
 
-/** A subject's entries by standing: the worst of each entry's facts. */
+/** A subject's entries by standing: the worst of each entry's facts. Only
+ * the touched entries are worked out; the rest are "not-seen", counted. */
 function subjectTally(subject: StatsSubject, history: HistoryFile, now: number): CoverageCounts {
   const counts: Partial<Record<Standing, number>> = {};
-  for (const entry of subject.entries) {
-    const facts = subject.entryFacts[entry as unknown as string] ?? [];
+  const thin = sparse(history);
+  const some: ReadonlySet<string> | readonly string[] = thin ? touchedInSubject(subject, history) : (subject.entries as readonly string[]);
+  for (const entry of some) {
+    const facts = subject.entryFacts[entry] ?? [];
     let worst: AppStanding = "not-seen";
     for (const f of facts) {
       // nothing on it, nothing to work out (as in workOutStanding)
@@ -191,6 +279,10 @@ function subjectTally(subject: StatsSubject, history: HistoryFile, now: number):
       if (WORST.indexOf(s) < WORST.indexOf(worst)) worst = s;
     }
     counts[worst] = (counts[worst] ?? 0) + 1;
+  }
+  if (thin) {
+    const rest = subject.entries.length - (some as ReadonlySet<string>).size;
+    if (rest > 0) counts["not-seen"] = (counts["not-seen"] ?? 0) + rest;
   }
   return counts;
 }

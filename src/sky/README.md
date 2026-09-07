@@ -1215,3 +1215,35 @@ or the boards change under a learner for no reason. A test keeps the old
 sort as the reference and holds the two to the same answer on every 37th
 word of the vocabulary and both ends of the rank order, both kinds of fact,
 about six hundred facts.
+
+### Walking the history, not the library (2026-09-07, SAK-382)
+
+With a copy of Sam's account on a test user, the function's own numbers
+for the pages, split into parts: the sky's standings 51 to 83 ms, its
+discovery rows 89 to 118, the Atlas's counts 38 to 70, practice's resolve
+78 to 117. On a laptop those are 9, 9, 5 and 15. And they fall pass over
+pass on the same process (the sky 264, then 221, then 159), which is V8
+warming up: a process on Vercel serves a handful of requests, so the code
+runs mostly interpreted, five to ten times slower than a benchmark that
+warmed up first. There is no making that faster. There is only doing less.
+
+Every one of those phases walked the whole library to find what the
+learner had touched: fifteen thousand entries asked for their standing so
+that a few hundred could answer anything but "not-seen". Sam's history,
+years in, touches 227 facts. So the history is walked instead: the facts
+it has anything on (answered, claimed, or opened), and from each the
+entries that read it, from `knownFactsOf` turned around over the library
+once (`touchedFacts`, `touchedEntries`). The home's standings, the
+Atlas's standings and shelf counts, and the discovery rows' tallies go over
+those, with the rest counted as "not-seen" without being asked. The
+standings come out in the catalogue's order still, sorted into it, because
+the roots come out in the order the met items went in.
+
+A learner who has touched most of the library (a big synthetic one; one
+day a real one) is walked the old way, over the catalogue and the
+subjects, since sorting most of it costs more than walking it (`sparse`).
+Both ways were held to the same answer, standings and roots in the same
+order, on six learners from empty to seventeen thousand facts. On Sam's
+copy the sky payload went from 42 ms to 7 and the Atlas's from 10 to 0.5,
+on the laptop; the function's numbers are the ones that matter, and are
+on the card.
