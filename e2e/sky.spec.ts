@@ -344,6 +344,16 @@ test("the atlas opens on its question, with its shelves from a cached catalogue"
   expect(html, `the atlas sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(200 * 1024);
 });
 
+test("the atlas opens on the shelf that holds what you asked for", async ({ page }) => {
+  // SAK-354. /atlas?entry=kanji:日 opened 日 in the panel with the middle
+  // still showing Kana, so closing the panel left you on the wrong shelf.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  // the rail lights the shelf the entry is on
+  const kanji = page.getByRole("button", { name: /^Kanji/ }).first();
+  await expect(kanji).toHaveAttribute("aria-pressed", "true");
+});
+
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Want to keep your sky?" })).toBeVisible();

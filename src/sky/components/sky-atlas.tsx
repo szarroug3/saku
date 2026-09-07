@@ -144,6 +144,18 @@ const unknown = (it: SkyItem) => it.standing === "not-seen";
 /** "23 Words", "1 Word": a count with the collection's name, singular for one. */
 const countOf = (n: number, title: string) => `${n.toLocaleString()} ${n === 1 && title.endsWith("s") ? title.slice(0, -1) : title}`;
 
+/** The shelf an entry belongs on, or undefined when nothing says.
+ *
+ * By where it is listed first, which is exact, and by its kind second, for a
+ * shelf that streams its tiles and so has no list to search. */
+function shelfHolding(data: SkyAtlasData, entry: string | undefined): string | undefined {
+  if (!entry) return undefined;
+  const listed = data.shelves.find((s) => s.sections.some((section) => section.items.includes(entry)));
+  if (listed) return listed.id;
+  const kind = data.items.find((it) => it.id === entry)?.kind;
+  return kind ? data.shelves.find((s) => s.kind === kind)?.id : undefined;
+}
+
 export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entries brought with them, so every tile and card has its parts
@@ -164,7 +176,11 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const [railPref, setRailPref] = useState<boolean | null>(null);
   const railOpen = railPref ?? !narrow;
   const setRailOpen = setRailPref;
-  const [shelfId, setShelf] = useState(data.shelves[0]?.id ?? "");
+  // Opened on the shelf that holds what was asked for, not always the first
+  // one (SAK-354). /atlas?entry=kanji:日 used to open 日 in the panel with the
+  // middle showing Kana and the rail lighting Kana, so closing the panel left
+  // you on the wrong shelf with nothing to say why.
+  const [shelfId, setShelf] = useState(() => shelfHolding(data, initialEntry) ?? data.shelves[0]?.id ?? "");
   // the kanji shelf can be cut by a radical (SAK-325): the way a kanji seen
   // in the wild is found, by what can be seen in it. It combines with the
   // status, and clears when another shelf opens.
