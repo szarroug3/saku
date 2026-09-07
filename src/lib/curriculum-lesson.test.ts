@@ -30,13 +30,8 @@ import { describe, test } from "node:test";
 
 import { KANJI, kanjiRow, meaningFactId } from "../data/kanji.ts";
 import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
-import {
-  VOCAB,
-  readingUnits,
-  vocabRow,
-  wordMeaningFactId,
-  wordTeachingMetadata,
-} from "../data/vocab.ts";
+import { VOCAB, readingUnits, vocabRow, wordMeaningFactId } from "../data/vocab.ts";
+import { wordTeachingMetadata } from "../data/vocab-build.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {

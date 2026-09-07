@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import {
-  VOCAB,
-  vocabRow,
-  wordTeachingMetadata,
-} from "./vocab.ts";
+import { VOCAB, vocabRow } from "./vocab.ts";
+import { wordTeachingMetadata } from "./vocab-build.ts";
 import { CURRICULUM_WORDS } from "../lib/word-lesson.ts";
 
 describe("CEJC owns word-track priority", () => {

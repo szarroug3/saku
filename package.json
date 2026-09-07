@@ -16,6 +16,7 @@
     "build:library-index": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs",
     "build:word-rank": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs",
     "build:scheduling-preview": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-scheduling-preview.mjs",
+    "build:vocab-runtime": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-vocab-runtime.mjs",
     "build:en-synonyms": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-en-synonyms.mjs",
     "prebuild": "node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-curriculum-sequence.mjs && node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-learn-index.mjs && node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-library-index.mjs && node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-rank.mjs && node --conditions=react-server --import ./src/lib/conjugate/test-hooks.mjs scripts/build-scheduling-preview.mjs && node scripts/copy-ffmpeg-binary.mjs",
     "build": "next build",

@@ -78,7 +78,7 @@ import {
   isKanaWord,
   readingUnits,
   vocabRow,
-  wordTeachingMetadata,
+  wordPosFamily,
   wordUnitFacts,
 } from "@/data/vocab";
 import {
@@ -550,7 +550,7 @@ function classWordGate(it: CurriculumLessonItem): "adjective" | "ru-verb" | null
   // A spelling can have several JMdict senses. Gate the sense CEJC is actually
   // scheduling, not some other conjugating sense on the same Library page
   // (そう is an everyday adverb and also a grammatical auxiliary).
-  const family = wordTeachingMetadata(row.keb).dominantPosFamily;
+  const family = wordPosFamily(row.keb);
   if (family === "adjective" && adjectiveKind(row) !== null) return "adjective";
   if (family === "verb" && ruVerbKind(row) !== null) return "ru-verb";
   return null;

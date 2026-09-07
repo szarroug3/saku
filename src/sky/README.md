@@ -1334,3 +1334,35 @@ measurement.
 `fs` is looked up at run time (`process.getBuiltinModule`) rather than
 imported, because a dev page's client bundle reaches `data/vocab.ts` and a
 static `node:fs` import there stops the build.
+
+On the function that round bought about a second of the seven, and a
+second deployment's cold first request was 6.5 s again, so the bytes are
+not where a cold process spends its time there either. The evaluation is.
+
+### The vocabulary, built once (2026-09-07, SAK-399)
+
+`data/vocab.ts` was the biggest evaluator on a cold start: 122 ms on a
+laptop, a second or so on the function. It parsed vocab.json, the CEJC
+conversation-frequency tables and the shipped senses, then built every one
+of 12,555 rows: ordered them by CEJC's teaching rank, chose each word's
+sense and reading by its dominant part of speech, and attached its senses.
+None of that depends on anything but the tables.
+
+So it is built once now, by `scripts/build-vocab-runtime.mjs`, into
+`vocab-runtime.json`: the finished rows, the reading counts, each word's
+part-of-speech family (the one piece of the teaching metadata the app
+reads), and the legacy readings the old fact ids were minted from. The
+building itself moved to `vocab-build.ts`; `vocab.ts` parses the one file
+and keeps every function it had. A row whose only sense is the row itself
+(12,435 of them) is written without it and gets it back at load, which
+halves the file: 3.6 MB replacing the 6 MB of vocab.json and the CEJC
+table, which nothing else read at run time. 23 ms to parse.
+
+The rows came out byte-identical to what the old module built, checked
+row by row. A test holds the shipped file to what the builder produces, so
+a change to any source table without rerunning the script fails there.
+
+Also that day: the proxy's session refresh went from `getUser()`, a round
+trip to the auth server on every request, to `getClaims()`, which verifies
+the token locally and refreshes only on expiry. On the function the
+`session` phase went from 80 to 130 ms to 1 to 32.

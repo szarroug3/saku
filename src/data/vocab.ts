@@ -44,10 +44,9 @@
 // not everyday words, and a beginner quiz that can serve 錻 has a scope bug,
 // not a feature.
 
-import vocabJson from "./generated/vocab.json" with { type: "json" };
 import wordSensesJson from "./generated/word-senses.json" with { type: "json" };
 import { readDataJson } from "@/lib/data-file";
-import cejcReadingFrequencyJson from "./generated/cejc-reading-frequency.json" with { type: "json" };
+import vocabRuntimeJson from "./generated/vocab-runtime.json" with { type: "json" };
 import numberWordAlternatesJson from "./number-word-alternates.json" with { type: "json" };
 import { entryId, factId, meaningAspect, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
@@ -177,29 +176,8 @@ export interface VocabRow {
  * (ingest.test.ts) requires 1..N with no gaps, and appending one word past the
  * old max keeps that true without renumbering 12,553 rows.
  */
-const SUPPLEMENT: readonly JsonVocabRow[] = [
-  {
-    keb: "えっ",
-    reb: "えっ",
-    glosses: ["huh?", "what?"],
-    pos: ["interjection (kandoushi)"],
-    newspaperBand: null,
-    align: null,
-    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 1,
-  },
-  {
-    keb: "いらっしゃる",
-    reb: "いらっしゃる",
-    glosses: ["to come", "to go", "to be (honorific)"],
-    pos: ["Godan verb - -aru special class", "intransitive verb"],
-    newspaperBand: null,
-    align: null,
-    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 2,
-  },
-];
-
-/** A row as vocab.json ships it: one reading, no sense list. */
-type JsonVocabRow = Omit<VocabRow, "senses">;
+/** A row of vocab.json: a VocabRow before its senses (the builder's input). */
+export type JsonVocabRow = Omit<VocabRow, "senses">;
 
 /**
  * The forms JMdict files under more than one reading, cut by the same ingest
@@ -223,7 +201,7 @@ type JsonVocabRow = Omit<VocabRow, "senses">;
 // Through `unknown` because the JSON import types each `align` row as string[]
 // and `WordSense` says what it really is, a 3-tuple. Same widening vocab.json's
 // own rows carry; the ingest is what guarantees the arity.
-const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
+export const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
 
 interface SourceDefinition {
   readonly id: string;
@@ -269,7 +247,7 @@ export function wordSenseRegister(
   return match?.register ?? [];
 }
 
-type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
+export type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
 
 export type WordTeachingCategory =
   | "core"
@@ -287,33 +265,43 @@ export interface WordTeachingMetadata {
   readonly placementRule: string;
 }
 
-const CEJC_TEACHING = (cejcReadingFrequencyJson as {
-  readonly teaching: Readonly<Record<string, WordTeachingMetadata>>;
-}).teaching;
-
-const UNOBSERVED_TEACHING: WordTeachingMetadata = {
-  category: "unobserved",
-  cejcCount: 0,
-  categoryCounts: {},
-  dominantPosFamily: null,
-  teachingRank: null,
-  placementRule: "secondary-source-fallback",
-};
-
-/** CEJC's lexical/POS classification and approved placement policy for a word.
- * JMdict supplies its meanings and senses, never this curriculum decision. */
-export function wordTeachingMetadata(keb: string): WordTeachingMetadata {
-  return CEJC_TEACHING[keb] ?? UNOBSERVED_TEACHING;
+/**
+ * The vocabulary as the app uses it, built at build time by
+ * scripts/build-vocab-runtime.mjs from vocab.json, the CEJC frequency
+ * tables, the shipped senses and the dictionary's definitions (see
+ * vocab-build.ts, which holds the building). This module used to do all
+ * of that on every cold start: 12,555 rows, each choosing its reading and
+ * senses, after parsing three tables to have the inputs, 122 ms on a laptop
+ * and a second or so on the function (SAK-399). Now it parses one file. A
+ * test holds the file to what the builder produces, so it cannot drift.
+ */
+const RUNTIME = vocabRuntimeJson as unknown as VocabRuntime;
+export interface VocabRuntime {
+  /** The rows; one whose only sense is the row itself is written without
+   * `senses`, and gets it back at load (`withOwnSense`). */
+  readonly rows: readonly (VocabRow | Omit<VocabRow, "senses">)[];
+  /** Each word's dominant part-of-speech family where CEJC observed one:
+   * the one piece of the teaching metadata read at run time. */
+  readonly posFamilies: Readonly<Record<string, string>>;
+  readonly readingCounts: CejcReadingCounts;
+  /** Each word's reading before a sense chose one: what the legacy
+   * unqualified fact ids were minted from. */
+  readonly legacyReadings: Readonly<Record<string, string>>;
 }
+const POS_FAMILIES = RUNTIME.posFamilies;
 
-/** Content words and meaningful standalone responses belong to the word track.
- * Grammar has its own prerequisite-driven track; fillers and unobserved
- * dictionary reference material stay in Library. */
+/** The part-of-speech family CEJC found a word used as most, or null: the
+ * lesson picks the sense of that family. The rest of the teaching metadata
+ * (category, rank, placement) orders the words at build time (vocab-build.ts)
+ * and is not carried into the app. */
+export function wordPosFamily(keb: string): string | null {
+  return POS_FAMILIES[keb] ?? null;
+}
 export function isWordTrackCategory(category: WordTeachingCategory): boolean {
   return category === "core" || category === "conversation-essential";
 }
 
-function jmdictPosFamilies(pos: string): ReadonlySet<string> {
+export function jmdictPosFamilies(pos: string): ReadonlySet<string> {
   const lower = pos.toLowerCase();
   const families = new Set<string>();
   if (lower.includes("interjection")) families.add("interjection");
@@ -334,33 +322,7 @@ function jmdictPosFamilies(pos: string): ReadonlySet<string> {
 // Preserve beginnerRank as the app-wide total ordering field, but source its
 // curriculum head from CEJC. The unscheduled Library tail keeps its previous
 // deterministic order until the secondary-frequency migration is complete.
-const RAW_WORD_ROWS: readonly JsonVocabRow[] = [
-  ...(vocabJson as readonly JsonVocabRow[]),
-  ...SUPPLEMENT,
-];
-const CEJC_HEAD = RAW_WORD_ROWS
-  .filter((row) => wordTeachingMetadata(row.keb).teachingRank !== null)
-  .sort(
-    (a, b) =>
-      wordTeachingMetadata(a.keb).teachingRank! -
-      wordTeachingMetadata(b.keb).teachingRank!,
-  );
-const CEJC_HEAD_KEBS = new Set(CEJC_HEAD.map((row) => row.keb));
-const ORDERED_WORD_ROWS = [
-  ...CEJC_HEAD,
-  ...RAW_WORD_ROWS.filter((row) => !CEJC_HEAD_KEBS.has(row.keb)).sort(
-    (a, b) => a.beginnerRank - b.beginnerRank,
-  ),
-];
-const CEJC_BEGINNER_RANK = new Map(
-  ORDERED_WORD_ROWS.map((row, index) => [row.keb, index + 1]),
-);
-
-/** CEJC occurrence totals, reduced to words Saku carries and normalized to the
- * hiragana readings Saku uses. Raw CEJC files are ignored and never shipped. */
-const CEJC_READING_COUNTS = (cejcReadingFrequencyJson as {
-  readonly words: CejcReadingCounts;
-}).words;
+const CEJC_READING_COUNTS = RUNTIME.readingCounts;
 
 /** How often `keb` is spoken as `reb` in CEJC (0 if unobserved). The frequency a
  * pronunciation is ranked by — the only grain CEJC can rank (not senses). */
@@ -380,73 +342,6 @@ export function readingFrequency(keb: string, reb: string): number {
 export const NUMBER_WORD_ALTERNATES: Readonly<Record<string, readonly string[]>> = {
   ...numberWordAlternatesJson,
 };
-
-function withSenses(row: JsonVocabRow): VocabRow {
-  const shipped = SENSES[row.keb];
-  const base: readonly WordSense[] = (shipped?.length
-    ? shipped
-    : [{ reb: row.reb, glosses: row.glosses, pos: row.pos, align: row.align }]
-  ).map((sense, i) => ({
-    ...sense,
-    // The current sidecar predates source sense ids. Keep each source row a
-    // separate definition instead of guessing from similar English. A future
-    // JMdict recut writes its ent_seq+sense ordinal here directly.
-    definitionId:
-      "definitionId" in sense && typeof sense.definitionId === "string"
-        ? sense.definitionId
-        : `${row.keb}:${i}`,
-  }));
-  const alternates = NUMBER_WORD_ALTERNATES[row.keb] ?? [];
-  const senses = [
-    ...base,
-    ...alternates
-      .filter((reb) => !base.some((sense) => sense.reb === reb))
-      .map((reb) => ({
-        reb,
-        // These are explicitly alternate pronunciations of the SAME number
-        // meaning, so they join that definition by curation, not gloss matching.
-        definitionId: base[0].definitionId,
-        glosses: base[0].glosses,
-        pos: base[0].pos,
-        align: base[0].align,
-      })),
-  ];
-  const provisional: VocabRow = {
-    ...row,
-    beginnerRank: CEJC_BEGINNER_RANK.get(row.keb) ?? row.beginnerRank,
-    senses,
-  };
-  // JMdict supplies valid readings and their sense relationships, never Saku's
-  // primary pronunciation. Definition order stays semantic; CEJC ranks the
-  // interchangeable readings inside each definition.
-  const ranked = readingDefinitions(provisional)
-    .flatMap((definition) => definition.readings)
-    .find((reading) => senses.some((sense) => sense.reb === reading.reb));
-  const desiredFamily = wordTeachingMetadata(row.keb).dominantPosFamily;
-  const sameReading = senses.filter((sense) => sense.reb === ranked?.reb);
-  const selected =
-    sameReading.find(
-      (sense) =>
-        sense.definitionId === ranked?.definitionId &&
-        desiredFamily !== null &&
-        sense.pos.some((pos) => jmdictPosFamilies(pos).has(desiredFamily)),
-    ) ??
-    sameReading.find(
-      (sense) =>
-        desiredFamily !== null &&
-        sense.pos.some((pos) => jmdictPosFamilies(pos).has(desiredFamily)),
-    ) ??
-    sameReading.find((sense) => sense.definitionId === ranked?.definitionId) ??
-    sameReading[0] ??
-    senses[0];
-  return {
-    ...provisional,
-    reb: selected.reb,
-    glosses: selected.glosses,
-    pos: selected.pos,
-    align: selected.align,
-  };
-}
 
 export interface ReadingDefinition {
   readonly id: string;
@@ -478,6 +373,11 @@ function wilsonLower(successes: number, total: number): number {
  * below 5% of sufficiently observed comparable usage become Library reference
  * rows rather than ordinary teaching rows. */
 export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[] {
+  return readingDefinitionsWith(word, CEJC_READING_COUNTS);
+}
+
+/** The same, over given reading counts: the builder passes the source table. */
+export function readingDefinitionsWith(word: VocabRow, allCounts: CejcReadingCounts): readonly ReadingDefinition[] {
   const fallback = new Map<string, { glosses: readonly string[]; readings: WordSense[] }>();
   for (const sense of word.senses) {
     const group = fallback.get(sense.definitionId);
@@ -537,7 +437,7 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
     if (readings.length) definitions.push({ id, glosses: group.glosses, readings });
   }
 
-  const counts = CEJC_READING_COUNTS[word.keb] ?? {};
+  const counts = allCounts[word.keb] ?? {};
   return definitions.map((group) => {
     // CEJC is reading-counted but not sense-tagged. Counts are comparable only
     // when every reading participates in exactly the same set of JMdict senses;
@@ -613,22 +513,19 @@ export function teachingSenses(word: VocabRow): readonly WordSense[] {
   return word.senses.filter((sense) => teachingReadings.has(sense.reb));
 }
 
-export const VOCAB: readonly VocabRow[] = [
-  ...(vocabJson as readonly JsonVocabRow[]),
-  ...SUPPLEMENT,
-].map(withSenses);
+/** The sense a row is its own: what the builder left out. */
+function withOwnSense(row: VocabRow | Omit<VocabRow, "senses">): VocabRow {
+  if ("senses" in row) return row;
+  return { ...row, senses: [{ definitionId: `${row.keb}:0`, reb: row.reb, glosses: row.glosses, pos: row.pos, align: row.align }] };
+}
+export const VOCAB: readonly VocabRow[] = RUNTIME.rows.map(withOwnSense);
 
 const BY_KEB: ReadonlyMap<string, VocabRow> = new Map(VOCAB.map((w) => [w.keb, w]));
 
 // Existing unqualified fact ids predate CEJC ranking. Preserve the reading each
 // id already means so a corpus update cannot transfer learner history to a
 // different pronunciation. Compatibility metadata is not a preference signal.
-const LEGACY_UNQUALIFIED_READING: ReadonlyMap<string, string> = new Map(
-  [...(vocabJson as readonly JsonVocabRow[]), ...SUPPLEMENT].map((row) => [
-    row.keb,
-    SENSES[row.keb]?.[0]?.reb ?? row.reb,
-  ]),
-);
+const LEGACY_UNQUALIFIED_READING: ReadonlyMap<string, string> = new Map(Object.entries(RUNTIME.legacyReadings));
 
 export function legacyUnqualifiedReading(keb: string): string | null {
   return LEGACY_UNQUALIFIED_READING.get(keb) ?? null;
