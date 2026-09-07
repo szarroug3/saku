@@ -1197,3 +1197,21 @@ checks are tests now: the picker offers every drawable entry exactly as the
 Observatory does, and a preview's items count what its pool counted.
 
 The Practice pages carry the timing meta now too, with a `practice` phase.
+
+### Sorting twelve thousand words to pick sixteen (2026-09-07, SAK-382)
+
+With the Practice page's meta in place, the run page was the slowest thing
+left: 39 ms dealing a deck of nineteen cards, and 2 ms of every card was
+the word question's distractors. A word's distractors are its neighbours
+in rank, nearest first, and the way to find them was to filter and sort
+the whole vocabulary around the word, for every card. The vocabulary is in
+rank order once now, and the neighbours are found by walking out from the
+word's place in it, both ways at once, taking each distance's words as a
+group in the order the sort would have put them (length alike first, then
+the table's own order). 2 ms a card became 0.01, and the deck 59 ms to 19.
+
+The walk has to give exactly the order the sort gave, tie-breaks and all,
+or the boards change under a learner for no reason. A test keeps the old
+sort as the reference and holds the two to the same answer on every 37th
+word of the vocabulary and both ends of the rank order, both kinds of fact,
+about six hundred facts.

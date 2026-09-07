@@ -14,10 +14,15 @@ import assert from "node:assert/strict";
 import { buildMcOptions } from "@/lib/engine/index";
 import { en2jpTypeable, questionsFor } from "@/lib/engine/question";
 import {
+  VOCAB,
+  isKanaWord,
+  isWordReadingFact,
+  vocabRow,
   wordMeaningFactId,
   wordReadingFactId,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
+import type { FactId } from "@/types";
 
 const SENSEI_MEANING = wordMeaningFactId("先生"); // teacher
 const SENSEI_READING = wordReadingFactId("先生"); // せんせい
@@ -115,4 +120,36 @@ test("en→jp reading question shows the English gloss and reveals the reading",
   assert.equal(p.jp, false, "the prompt is English, not JP");
   // The answer the generic reveal prints is the reading kana.
   assert.equal(factInfo(SENSEI_READING)?.answers[0], "せんせい");
+});
+
+test("a word's neighbours by rank come out exactly as sorting the whole vocabulary did", () => {
+  // The walk out from a word's rank replaced a sort of all twelve thousand
+  // words for every card (SAK-382). This is the sort it replaced, kept here
+  // as the reference; the two must agree on every word, both kinds of fact.
+  const reference = (fact: FactId, n: number): FactId[] => {
+    const info = factInfo(fact);
+    const target = info && vocabRow(info.glyph);
+    if (!info || !target) return [];
+    const reading = isWordReadingFact(fact);
+    const toFact = reading ? wordReadingFactId : wordMeaningFactId;
+    const pool = VOCAB.filter((w) => w.keb !== info.glyph && (!reading || !isKanaWord(w))).sort((a, b) => {
+      const byRank = Math.abs(a.beginnerRank - target.beginnerRank) - Math.abs(b.beginnerRank - target.beginnerRank);
+      if (byRank !== 0) return byRank;
+      return Math.abs(a.keb.length - target.keb.length) - Math.abs(b.keb.length - target.keb.length);
+    });
+    const out: FactId[] = [];
+    for (const w of pool) { const f = toFact(w.keb); if (!factInfo(f)) continue; out.push(f); if (out.length >= n) break; }
+    return out;
+  };
+  // every 37th word, plus the ends of the rank order, where the walk runs out on one side
+  const sample = VOCAB.filter((_, i) => i % 37 === 0 || i < 3 || i >= VOCAB.length - 3);
+  let compared = 0;
+  for (const w of sample) {
+    for (const f of [wordMeaningFactId(w.keb), wordReadingFactId(w.keb)]) {
+      if (!factInfo(f)) continue;
+      assert.deepEqual(questionsFor(f).distractors(f, 16, {}), reference(f, 16), f);
+      compared++;
+    }
+  }
+  assert.ok(compared > 500, `${compared} facts compared`);
 });

@@ -68,6 +68,7 @@ import { curriculumPosition } from "@/lib/curriculum-sequence";
 import {
   VOCAB,
   VOCAB_SUBJECT,
+  type VocabRow,
   isKanaWord,
   isWordReadingFact,
   vocabRow,
@@ -1111,22 +1112,11 @@ const wordQuestions: QuestionType = {
     if (!info || !target) return [];
     const reading = isWordReading(fact);
     const toFact = reading ? wordReadingFactId : wordMeaningFactId;
-    const pool = VOCAB.filter(
-      // A reading question needs a word that HAS a reading fact — kana words do
-      // not (これ is its own reading), so they can only be meaning distractors.
-      (w) => w.keb !== info.glyph && (!reading || !isKanaWord(w)),
-    ).sort((a, b) => {
-      const byRank =
-        Math.abs(a.beginnerRank - target.beginnerRank) -
-        Math.abs(b.beginnerRank - target.beginnerRank);
-      if (byRank !== 0) return byRank;
-      return (
-        Math.abs(a.keb.length - target.keb.length) -
-        Math.abs(b.keb.length - target.keb.length)
-      );
-    });
+    // A reading question needs a word that HAS a reading fact — kana words do
+    // not (これ is its own reading), so they can only be meaning distractors.
+    const eligible = (w: VocabRow) => w.keb !== info.glyph && (!reading || !isKanaWord(w));
     const out: FactId[] = [];
-    for (const w of pool) {
+    for (const w of nearestByRank(target, eligible)) {
       const f = toFact(w.keb);
       if (!factInfo(f)) continue;
       out.push(f);
@@ -1135,6 +1125,43 @@ const wordQuestions: QuestionType = {
     return out;
   },
 };
+
+/** Every word in rank order, with its place in VOCAB, built once: the
+ * neighbours of a word are found by walking out from it, not by sorting
+ * the whole vocabulary around it for every card (2 ms a card, and a deck
+ * of twenty is forty; SAK-382). */
+let byRank: readonly { w: VocabRow; idx: number }[] | undefined;
+function vocabByRank(): readonly { w: VocabRow; idx: number }[] {
+  return (byRank ??= VOCAB.map((w, idx) => ({ w, idx })).sort((a, b) => a.w.beginnerRank - b.w.beginnerRank || a.idx - b.idx));
+}
+
+/**
+ * The words nearest a target in beginnerRank, nearest first, in exactly the
+ * order the old sort of the whole vocabulary gave: by distance in rank,
+ * then by how alike the written length is, then VOCAB's own order (a stable
+ * sort's tie-break). Walks out from the target's place in the rank order,
+ * both ways at once, taking each distance's words as a group, and yields
+ * lazily so a caller that wants sixteen touches about sixteen.
+ */
+function* nearestByRank(target: VocabRow, eligible: (w: VocabRow) => boolean): Generator<VocabRow> {
+  const ranked = vocabByRank();
+  const rank = target.beginnerRank;
+  // the first place at or after the target's rank
+  let lo = 0, hi = ranked.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (ranked[mid].w.beginnerRank < rank) lo = mid + 1; else hi = mid; }
+  let left = lo - 1, right = lo;
+  const lenDiff = (w: VocabRow) => Math.abs(w.keb.length - target.keb.length);
+  while (left >= 0 || right < ranked.length) {
+    const dl = left >= 0 ? rank - ranked[left].w.beginnerRank : Infinity;
+    const dr = right < ranked.length ? ranked[right].w.beginnerRank - rank : Infinity;
+    const d = Math.min(dl, dr);
+    const group: { w: VocabRow; idx: number }[] = [];
+    while (left >= 0 && rank - ranked[left].w.beginnerRank === d) group.push(ranked[left--]);
+    while (right < ranked.length && ranked[right].w.beginnerRank - rank === d) group.push(ranked[right++]);
+    group.sort((a, b) => lenDiff(a.w) - lenDiff(b.w) || a.idx - b.idx);
+    for (const g of group) if (eligible(g.w)) yield g.w;
+  }
+}
 
 /**
  * Whether `fact` may only be asked as multiple choice in `dir`.
