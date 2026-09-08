@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 
+import { InlineAsk } from "@/sky/components/inline-ask";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
@@ -78,13 +79,15 @@ export function SkyAccount({ signedIn, name, email, onSignIn, onSignOut, onWipe,
           {wiped ? (
             <p className="mt-2 text-[14px] text-sky-ink/90">Wiped. Your sky is empty again.</p>
           ) : asking ? (
-            <>
-              <p className="mt-2 text-[14px] leading-relaxed text-sky-ink/90">This wipes everything: every quiz, every claim, every lesson, every saved practice recipe. It cannot be undone.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <SkyButton variant="coral" disabled={busy !== null} onClick={() => run("wipe", onWipe)}>{busy === "wipe" ? "Wiping…" : "Delete everything"}</SkyButton>
-                <SkyButton variant="outline" disabled={busy !== null} onClick={() => setAsking(false)}>Keep it</SkyButton>
-              </div>
-            </>
+            <InlineAsk
+              className="mt-4"
+              what="This wipes everything: every quiz, every claim, every lesson, every saved practice recipe. It cannot be undone."
+              confirm="Delete everything"
+              busyLabel={busy === "wipe" ? "Wiping…" : undefined}
+              busy={busy !== null}
+              onConfirm={() => run("wipe", onWipe)}
+              onKeep={() => setAsking(false)}
+            />
           ) : (
             <>
               <p className="mt-2 text-[14px] leading-relaxed text-sky-ink/90">Start over from an empty sky. Everything Saku knows about what you have learned goes with it.</p>

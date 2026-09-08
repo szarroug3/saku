@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
+import { InlineAsk } from "@/sky/components/inline-ask";
 import { RecipeNameForm } from "@/sky/components/recipe-name-form";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -26,6 +27,7 @@ import { SkyMenuChip } from "@/sky/components/sky-menu-chip";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
+import { UndoLine } from "@/sky/components/undo-line";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
@@ -67,6 +69,8 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
+  // the saved recipe the Delete link is asking about
+  const [dropping, setDropping] = useState(false);
   // the last number asked for, remembered for when "Limited" is picked
   // again after "All of them"
   const [count, setCount] = useState(typeof initial.recipe.size === "number" ? initial.recipe.size as number : DEFAULT_SIZE);
@@ -142,10 +146,14 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                     <SkyButton onClick={() => rename(chosen.name)} disabled={!renaming.trim()}>Rename</SkyButton>
                     <SkyButton variant="outline" onClick={() => setRenaming(null)}>Cancel</SkyButton>
                   </form>
+                ) : dropping ? (
+                  // it asks now, like every other thing that cannot be got
+                  // back (SAK-364); it used to delete on the click
+                  <InlineAsk className="w-full" what="This recipe goes for good." confirm="Delete it" onConfirm={() => { remove(); setDropping(false); }} onKeep={() => setDropping(false)} />
                 ) : (
                   <span className="flex w-full gap-3 text-[12px] text-sky-muted">
                     <button type="button" className="underline hover:text-sky-ink" onClick={() => setRenaming(chosen.name)}>Rename</button>
-                    <button type="button" className="underline hover:text-sky-coral" onClick={remove}>Delete</button>
+                    <button type="button" className="underline hover:text-sky-coral" onClick={() => setDropping(true)}>Delete</button>
                   </span>
                 )
               )}
@@ -211,14 +219,21 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
           {blocked && !loading && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
           {undo ? (
-            <p className="mt-1 shrink-0 text-[12.5px] text-sky-muted">
-              Left out {undo.name}. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore([undo.id])}>Put it back</button>
-              {excluded.length > 1 && <> · <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put back all {excluded.length}</button></>}
-            </p>
+            <UndoLine
+              className="mt-1 shrink-0"
+              what={`Left out ${undo.name}`}
+              onUndo={() => restore([undo.id])}
+              also={excluded.length > 1 ? { label: `Undo all ${excluded.length}`, onClick: () => restore(excluded) } : undefined}
+            />
           ) : excluded.length > 0 ? (
-            <p className="mt-1 shrink-0 text-[12.5px] text-sky-muted">
-              {excluded.length === 1 ? "One item" : `${excluded.length} items`} left out by hand. <button type="button" className="underline hover:text-sky-ink" onClick={() => restore(excluded)}>Put {excluded.length === 1 ? "it" : "them"} back</button>
-            </p>
+            // not the last thing you did any more, so it says what it is and
+            // gives it its own verb rather than "Undo"
+            <UndoLine
+              className="mt-1 shrink-0"
+              what={`${excluded.length === 1 ? "One item" : `${excluded.length} items`} left out by hand`}
+              label={excluded.length === 1 ? "Put it back" : "Put them back"}
+              onUndo={() => restore(excluded)}
+            />
           ) : null}
           <ul className={`mt-4 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
             {kept.map((p) => {

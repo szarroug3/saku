@@ -21,6 +21,7 @@ import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
+import { UndoLine } from "@/sky/components/undo-line";
 import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import { KIND_LABEL } from "@/sky/lib/tokens";
@@ -186,7 +187,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
 
           <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} fit className="!p-4">
             {picks.length === 0 ? (
-              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
+              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Choose something to learn and it lands here.</p>
             ) : (
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
                 {summary.lines.map((line) => (
@@ -198,12 +199,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 ))}
               </ul>
             )}
-            {undo && (
-              <p className="mt-2 shrink-0 text-[12px] text-sky-muted">
-                Removed {nameOf(undo.removed)} ·{" "}
-                <button type="button" className="underline hover:text-sky-ink" onClick={() => { setPicks(undo.before); setUndo(null); }}>Undo</button>
-              </p>
-            )}
+            {undo && <UndoLine className="mt-2 shrink-0" what={`Removed ${nameOf(undo.removed)}`} onUndo={() => { setPicks(undo.before); setUndo(null); }} />}
             {picks.length > 0 && (
               <SkyButton
                 variant="outline"

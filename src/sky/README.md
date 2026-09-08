@@ -2296,3 +2296,41 @@ Development Group · CC BY-SA 4.0". It is a plain muted line at 12.5px now.
 
 `e2e/sky.spec.ts` gained a test: About opens, "Other places to learn" is
 there, and the first paragraph is under 600px inside a panel 200px wider.
+
+### Asking, undoing and saying there is nothing (2026-09-08, SAK-364)
+
+Three families of interaction that each worked several ways.
+
+**Asking.** The rule: ask before anything the learner cannot get back, and
+only then. `InlineAsk` (`inline-ask.tsx`) is the one shape: a line saying
+what happens, the verb in coral, "Keep it" beside it. Sessions and Account
+each carried a near-identical copy and now call it. Practice's saved-recipe
+"Delete" fired on the click with no ask at all; it asks now, "This recipe
+goes for good." / "Delete it" / "Keep it". Clearing a mix-up still does
+not ask, deliberately: a cleared pair is un-watched, not deleted, and comes
+back the next time the two get swapped.
+
+**Undoing.** `UndoLine` (`undo-line.tsx`): what happened, a period, the way
+back, and a second way back after a middot when there is one. The
+Observatory's "Removed 日 · Undo" is "Removed 日. Undo"; Practice's "Left
+out 日. Put it back" is "Left out 日. Undo" with "Undo all 3" beside it.
+Practice's standing line, "One item left out by hand. Put it back", is the
+same component keeping its own verb, since it is not the last thing you did.
+
+**Empty states**, all in the shape the home already used, what this is then
+what to do:
+
+* "You currently have no mix-ups." to "No mix-ups. When you keep swapping
+  two things for each other, they show up here."
+* "Every quiz you finish is kept here. There are none so far." to "Every
+  quiz you finish is kept here. Take one from the Observatory, or drill
+  something in Practice."
+* "Nothing picked. Your sky stays as it is." to "Nothing picked. Choose
+  something to learn and it lands here."
+* "Nothing here with that status." to "Nothing here with that status. Try
+  another, or clear the filter." (Same for the "built from X" variant.)
+* The quiz's "Nothing is due..." now names Practice alongside the
+  Observatory and the Atlas.
+
+`e2e/sky.spec.ts` gained a test for the one behaviour change: deleting a
+saved recipe asks, "Keep it" keeps it, "Delete it" deletes it.

@@ -378,7 +378,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                     </div>
                   )}
                   {cuts.length === 0 ? (
-                    <p className="mt-3 text-[13.5px] text-sky-muted">{part ? `Nothing here built from ${part}${filter ? " with that status" : ""}.` : "Nothing here with that status."}</p>
+                    <p className="mt-3 text-[13.5px] text-sky-muted">{part ? `Nothing here built from ${part}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>
                   ) : cuts.map((cut) => (
                     <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} expected={shelf.streamed ? cut.items.length : undefined} onNear={shelf.streamed ? () => fetchTiles(cut.items) : undefined} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
                   ))}

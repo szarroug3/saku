@@ -296,7 +296,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
     return (
       <SkyPageShell eyebrow="Quiz" title="Nothing to quiz" height={height}>
         <SkySurface className="mx-auto max-w-[560px]">
-          <p className="text-[14px] text-sky-muted">Nothing is due. Learn something in the Observatory, or pick things in the Atlas and ask for a quiz.</p>
+          <p className="text-[14px] text-sky-muted">Nothing is due. Learn something in the Observatory, drill whatever you like in Practice, or pick things in the Atlas and ask for a quiz.</p>
           <SkyButton href={back.href} className="mt-4">{back.label}</SkyButton>
         </SkySurface>
       </SkyPageShell>

@@ -46,7 +46,7 @@ export function MixUpsPanel({ pairs, itemOf, onClear, title = "Mix-ups", classNa
   return (
     <SkyPanel title={title} className={className}>
       {pairs.length === 0 ? (
-        <p className="mt-2 text-[14px] text-sky-muted">You currently have no mix-ups.</p>
+        <p className="mt-2 text-[14px] text-sky-muted">No mix-ups. When you keep swapping two things for each other, they show up here.</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2.5 text-[14px]">
           {pairs.map((p) => (

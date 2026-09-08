@@ -363,6 +363,25 @@ test("practice keeps a recipe on the results, without leaving them", async ({ pa
   await expect(page.getByText("Evening drill")).toBeVisible();
 });
 
+test("deleting a saved recipe asks first, and Keep it keeps it", async ({ page }) => {
+  // SAK-364. Delete fired on the click, with no ask and no undo, while
+  // forgetting a session and wiping progress both asked inline.
+  await page.goto("/practice?sample");
+  await page.getByRole("button", { name: "Save this recipe" }).click();
+  await page.getByPlaceholder("A name for this recipe").fill("Evening drill");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved as Evening drill" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.getByText("This recipe goes for good.")).toBeVisible();
+  await page.getByRole("button", { name: "Keep it" }).click();
+  await expect(page.getByRole("button", { name: "Saved as Evening drill" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete it" }).click();
+  await expect(page.getByRole("button", { name: "Save this recipe" })).toBeVisible();
+});
+
 test("a quiz sends you back where you came from", async ({ page }) => {
   // SAK-353. Both the results and the rest screen offered "Back to the
   // observatory" whatever had sent you, and told practice apart by looking
@@ -446,11 +465,11 @@ test("a lone button fills its row instead of leaving a hole beside it", async ({
 
 test("a short panel stops at its content instead of pinning its buttons to the page's foot", async ({ page }) => {
   // SAK-359. The Observatory's "Tonight" panel was told to fill its column,
-  // so with nothing picked "Nothing picked. Your sky stays as it is." sat at
-  // the top and the disabled Start lesson at the very bottom of the page.
+  // so with nothing picked its empty line sat at the top and the disabled
+  // Start lesson at the very bottom of the page.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/observatory?sample");
-  const empty = page.getByText("Nothing picked. Your sky stays as it is.");
+  const empty = page.getByText("Nothing picked. Choose something to learn and it lands here.");
   await expect(empty).toBeVisible();
   const line = await empty.boundingBox();
   const start = await page.getByText("Start lesson", { exact: true }).boundingBox();

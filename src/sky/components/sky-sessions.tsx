@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 
+import { InlineAsk } from "@/sky/components/inline-ask";
 import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -58,7 +59,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
   return (
     <SkyPageShell eyebrow="Sessions" title="What have you done lately?" height={height}>
       {sessions.length === 0 ? (
-        <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every quiz you finish is kept here. There are none so far.</p></SkyPanel>
+        <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every quiz you finish is kept here. Take one from the Observatory, or drill something in Practice.</p></SkyPanel>
       ) : (
         <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <SkyPanel title="Newest first" fit>
@@ -98,17 +99,22 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2">
-                {onRerun && open.kind === "quiz" && <SkyButton onClick={() => onRerun(open.cards.map((c) => c.id))}>Run it again</SkyButton>}
-                {onDelete && !asking && <SkyButton variant="outline" onClick={() => setAsking(true)}>Forget this session</SkyButton>}
-                {onDelete && asking && (
-                  <>
-                    <span className="text-[13px] text-sky-ink/90">Its answers leave your schedule.</span>
-                    <SkyButton variant="coral" disabled={busy} onClick={remove}>{busy ? "Forgetting…" : "Forget it"}</SkyButton>
-                    <SkyButton variant="outline" disabled={busy} onClick={() => setAsking(false)}>Keep it</SkyButton>
-                  </>
-                )}
-              </div>
+              {onDelete && asking ? (
+                <InlineAsk
+                  className="mt-3 shrink-0"
+                  what="Its answers leave your schedule."
+                  confirm="Forget it"
+                  busyLabel="Forgetting…"
+                  busy={busy}
+                  onConfirm={remove}
+                  onKeep={() => setAsking(false)}
+                />
+              ) : (
+                <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2">
+                  {onRerun && open.kind === "quiz" && <SkyButton onClick={() => onRerun(open.cards.map((c) => c.id))}>Run it again</SkyButton>}
+                  {onDelete && <SkyButton variant="outline" onClick={() => setAsking(true)}>Forget this session</SkyButton>}
+                </div>
+              )}
             </SkyPanel>
           )}
         </div>
