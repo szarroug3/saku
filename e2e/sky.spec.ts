@@ -688,10 +688,21 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
   await expect(count).toHaveText("3 of 5");
   await expect(page.getByRole("button", { name: "I don't know" })).toBeVisible();
 
+  // the two places a learner lands offer it back, and the offer walks
+  await page.goto("/");
+  const offer = page.getByRole("link", { name: "5 cards, 2 answered" });
+  await expect(page.getByText("Continue where you left off?")).toBeVisible();
+  await page.goto("/observatory");
+  await expect(page.getByText("Continue where you left off?")).toBeVisible();
+  await offer.click();
+  await expect(count).toHaveText("3 of 5");
+
   // and finishing it clears the run: there is nothing left to come back to
   await page.getByRole("button", { name: "End the quiz" }).click();
   await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => window.localStorage.getItem("sky:quiz:run")))
     .toBe(null);
+  await page.goto("/");
+  await expect(page.getByText("Continue where you left off?")).toHaveCount(0);
 });

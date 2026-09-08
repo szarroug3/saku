@@ -8,7 +8,9 @@ import { describe, it } from "node:test";
 
 import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
-import { idsFrom, skyHref } from "./hrefs";
+import { canonicalRecipe, recipeKey } from "@/sky/lib/practice";
+
+import { idsFrom, runHref, skyHref } from "./hrefs";
 
 const IDS = ["kanji:日", "kana:あ"];
 const JOINED = "kanji%3A%E6%97%A5%2Ckana%3A%E3%81%82";
@@ -85,5 +87,23 @@ describe("idsFrom reads back what the pages read before", () => {
 
   it("spaces around an id are not part of it", () => {
     assert.deepEqual(idsFrom(" a , b "), ["a", "b"]);
+  });
+});
+
+describe("where a saved run is answered (SAK-404)", () => {
+  it("is the quiz, on the same words the run was asked in", () => {
+    assert.equal(runHref({}), "/quiz");
+    assert.equal(runHref({ picks: IDS }), `/quiz?picks=${JOINED}`);
+    assert.equal(runHref({ cards: ["a", "b"] }), "/quiz?cards=a%2Cb");
+    assert.equal(runHref({}, true), "/quiz?sample");
+  });
+
+  it("is practice's run page when the deck came from a recipe", () => {
+    const key = recipeKey(EMPTY_RECIPE);
+    assert.equal(runHref({ recipe: key }), skyHref("/practice/run", { recipe: canonicalRecipe(EMPTY_RECIPE) }));
+  });
+
+  it("is the quiz when the recipe is of a shape we no longer write", () => {
+    assert.equal(runHref({ recipe: "not json" }), "/quiz");
   });
 });
