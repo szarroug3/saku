@@ -524,7 +524,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
           // that, with a floor so it is never squeezed to nothing; past the
           // floor the column scrolls as a whole, which is the safety valve for
           // a screen too short to hold the card at all.
-          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} className="min-h-[120px] flex-1 overflow-y-auto" />
+          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} onSelect={() => undefined} hear={hear} pitch={pitch} className="min-h-[120px] flex-1 overflow-y-auto" />
         )}
       </SkyPageBody>}
 

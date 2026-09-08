@@ -471,7 +471,6 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   teach={entry?.teach}
                   madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                   partOf={[]}
-                  known={false}
                   standing={!isPage(current.kind)}
                   toolbar={toolbar}
                   related={entry?.related ?? []}

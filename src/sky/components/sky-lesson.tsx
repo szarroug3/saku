@@ -6,10 +6,17 @@
 // One call from the route, given the items, what is learned, the picks and
 // what each star teaches. The heading stays put with "Step n of N" and the
 // fixed Back and Next beside it; under it the lesson sky, then the card for
-// the selected star and "Tonight, in order". Stars are the navigation: a
-// step opens once the one before it has been opened, a known star is open
-// from the start for reference, and a star opened stays lit. Order and
-// locking come from src/sky/lib/lesson.ts over the graph.
+// the selected star, "Tonight, in order" and, under that, "References".
+// Stars are the navigation: a step opens once the one before it has been
+// opened, a known star is open from the start for reference, and a star
+// opened stays lit. Order and locking come from src/sky/lib/lesson.ts over
+// the graph.
+//
+// The order is what tonight TEACHES. What it rests on is the references
+// (SAK-416): the stars already in the sky under tonight's items, and the
+// terms and intros that apply to what is in the order. A reference opens
+// on the constellation the way a taught star does and never moves the
+// lesson on, because it is not one of the steps.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -22,7 +29,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { isUnlocked, lessonSteps, starState, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
+import { isUnlocked, lessonSteps, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface SkyLessonData {
@@ -34,8 +41,9 @@ export interface SkyLessonData {
   picks: readonly string[];
   /** What the card teaches, by star. */
   teach: Readonly<Record<string, LessonTeach>>;
-  /** The pages read between the stars: intros, terms, sound shifts. */
-  pages?: readonly LessonPage[];
+  /** What tonight rests on and does not teach: the stars already in the
+   * sky under tonight's items, and the terms and intros behind them. */
+  references?: readonly LessonReference[];
 }
 
 export interface SkyLessonProps {
@@ -56,19 +64,71 @@ export interface SkyLessonProps {
   height?: string;
 }
 
+/** One row of either list beside the card: a button that opens what it
+ * names. A star is its glyph with its gloss beside it; a page is its name.
+ * An eyebrow at the far end says what the row is, for a reference.
+ *
+ * items-center, not items-baseline (SAK-415). A row holds two sizes at
+ * once, a 13px label with a 10.5px eyebrow or a 17px glyph with a 12.5px
+ * gloss, and sharing a baseline hangs both of them off the taller one,
+ * which left the whole row sitting high in its pill. Both parts centre on
+ * the row instead. One component for both lists so there is one row to
+ * measure and one to keep centred. */
+function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick }: {
+  /** What the row is current for: a step of the order, or a reference. */
+  current?: "step" | "true";
+  locked?: boolean;
+  lit: boolean;
+  glyph?: string;
+  label?: string;
+  eyebrow?: string;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        aria-current={current}
+        aria-disabled={locked || undefined}
+        onClick={onClick}
+        className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left ${current ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
+      >
+        {glyph !== undefined && (
+          <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${lit ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(glyph)}`}>{glyph}</span>
+        )}
+        {label !== undefined && (
+          <span className={glyph !== undefined ? "text-[12.5px] text-sky-muted" : `text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{label}</span>
+        )}
+        {/* !mb-0, and the bang is load-bearing: `Eyebrow` writes its own
+            mb-1 into the same class list, and Tailwind orders mb-1 after
+            mb-0, so a plain mb-0 here loses. Centring a row centres each
+            child's MARGIN box, so those four pixels below the eyebrow
+            lifted it two above the row's middle (SAK-415). */}
+        {eyebrow && <Eyebrow className="ml-auto !mb-0 font-normal">{eyebrow}</Eyebrow>}
+      </button>
+    </li>
+  );
+}
+
 export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
-  const steps = useMemo(() => lessonSteps(graph, data.picks, learned, data.pages ?? []), [graph, data.picks, learned, data.pages]);
+  const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
+  const references = useMemo(() => data.references ?? [], [data.references]);
+  const referenceOf = useMemo(() => new Map(references.map((r) => [r.id, r])), [references]);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.length ? [steps[0].id] : []));
   const [selected, setSelected] = useState<string | null>(steps[0]?.id ?? null);
+  // where the lesson stands. Apart from `selected` because a reference is
+  // shown without being stepped to: reading one used to reset "Step n of N"
+  // to the first step, since the count was read off whatever was showing.
+  const [stepAt, setStepAt] = useState<string | null>(steps[0]?.id ?? null);
   // which page of the selected star is showing, for a star taught over several
   const [page, setPage] = useState(0);
-  const stepIndex = Math.max(0, steps.findIndex((s) => s.id === selected));
+  const stepIndex = Math.max(0, steps.findIndex((s) => s.id === stepAt));
   const stepOf = (id: string) => steps.findIndex((s) => s.id === id);
-  const pagesOf = (id: string) => data.teach[id]?.pages?.length ?? 1;
+  const pagesOf = (id: string) => (referenceOf.get(id)?.page?.teach ?? data.teach[id])?.pages?.length ?? 1;
 
-  /** Open a star: a step only when unlocked; a known star any time, without
+  /** Open a star: a step only when unlocked; a reference any time, without
    * moving the lesson on. Opens on its first page unless told otherwise. */
   const open = (id: string, at = 0) => {
     const i = stepOf(id);
@@ -76,6 +136,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
     if (i >= 0 && !opened.has(id) && !learned.has(id)) onOpen?.(id);
     setOpened((o) => new Set([...o, id]));
     setSelected(id);
+    if (i >= 0) setStepAt(id);
     setPage(at);
   };
   const stateOf = (id: string) => starState(steps, id, opened, selected);
@@ -96,8 +157,10 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); }, [selected, page]);
   useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
 
-  const currentStep = steps.find((s) => s.id === selected);
-  const current = selected && !currentStep?.page ? graph.itemOf(selected) : undefined;
+  // a reference that is a page has no star and no item, so it carries its
+  // own card; a reference that is a known star is an item like any other
+  const openPage = selected ? referenceOf.get(selected)?.page : undefined;
+  const current = selected && !openPage ? graph.itemOf(selected) : undefined;
   const tonight = useMemo(() => new Set(steps.map((s) => s.id).concat(data.picks)), [steps, data.picks]);
   // only what is being taught is drawn: a pick with nothing left to teach stays off the sky
   const taught = useMemo(() => data.picks.filter((p) => steps.some((s) => s.pick === p)), [data.picks, steps]);
@@ -182,10 +245,10 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
         </div>
         <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div ref={cardBox} className="min-h-0 self-stretch overflow-y-auto pr-1">
-            {currentStep?.page ? (
+            {openPage ? (
               // a page is the same card a star gets (Sam, 2026-09-05), with
               // nothing under it and nothing to hear of its own
-              <LessonCard className="min-h-full" item={currentStep.page.item} teach={currentStep.page.teach} madeOf={[]} partOf={[]} known={false} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
+              <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
             ) : current ? (
               <LessonCard
                 className="min-h-full"
@@ -193,7 +256,6 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
                 teach={data.teach[current.id]}
                 madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                 partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
-                known={learned.has(current.id)}
                 written={written?.[current.id]}
                 hear={hear}
                 pitch={pitch}
@@ -207,52 +269,56 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
               </SkyPanel>
             )}
           </div>
-          <SkyPanel title="Tonight, in order" fit className="!p-4">
-            <p className="mt-1 shrink-0 text-[12px] text-sky-muted">Pieces first, then the character, then the word. Stars already in your sky are not listed; they are open on the constellation for reference.</p>
-            <ol ref={rail} className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-              {steps.map((s, i) => {
-                const it = graph.itemOf(s.id);
-                const locked = !isUnlocked(steps, i, opened);
-                const state = stateOf(s.id);
-                const row = (children: ReactNode) => (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      aria-current={state === "selected" ? "step" : undefined}
-                      aria-disabled={locked || undefined}
+          {/* one scroller for both lists, not one inside each: two panels
+              each scrolling in its own third of the column hid the end of
+              the order behind a list of references (SAK-416). Each panel is
+              as tall as its content, as SAK-359 left it. */}
+          <div className="flex min-h-0 flex-col gap-4 self-stretch overflow-y-auto pr-1">
+            <SkyPanel title="Tonight, in order" className="!p-4 shrink-0">
+              <p className="mt-1 text-[12px] text-sky-muted">Pieces first, then the character, then the word.</p>
+              <ol ref={rail} className="mt-3 flex flex-col gap-1">
+                {steps.map((s, i) => {
+                  const it = graph.itemOf(s.id);
+                  const state = stateOf(s.id);
+                  return (
+                    <RailRow
+                      key={s.id}
+                      current={state === "selected" ? "step" : undefined}
+                      locked={!isUnlocked(steps, i, opened)}
+                      lit={state === "lit" || state === "selected"}
+                      glyph={it?.glyph}
+                      label={it?.english !== it?.glyph ? it?.english : undefined}
                       onClick={() => open(s.id)}
-                      // items-center, not items-baseline (SAK-415). A row
-                      // holds two sizes at once, a 13px label with a 10.5px
-                      // eyebrow or a 17px glyph with a 12.5px gloss, and
-                      // sharing a baseline hangs both of them off the taller
-                      // one, which left the whole row sitting high in its
-                      // pill. Both parts centre on the row instead.
-                      className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
-                    >
-                      {children}
-                    </button>
-                  </li>
-                );
-                const lit = state === "lit" || state === "selected";
-                if (s.page) {
-                  return row(<>
-                    <span className={`text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.item.english}</span>
-                    {/* !mb-0, and the bang is load-bearing: `Eyebrow` writes
-                        its own mb-1 into the same class list, and Tailwind
-                        orders mb-1 after mb-0, so a plain mb-0 here loses.
-                        Centring a row centres each child's MARGIN box, so
-                        those four pixels below the eyebrow lifted it two above
-                        the row's middle (SAK-415). */}
-                    <Eyebrow className="ml-auto !mb-0 font-normal">{s.page.kind}</Eyebrow>
-                  </>);
-                }
-                return row(<>
-                  <span className={`shrink-0 whitespace-nowrap font-sky-display text-[17px] leading-none ${lit ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(it?.glyph ?? "")}`}>{it?.glyph}</span>
-                  {it?.english !== it?.glyph && <span className="text-[12.5px] text-sky-muted">{it?.english}</span>}
-                </>);
-              })}
-            </ol>
-          </SkyPanel>
+                    />
+                  );
+                })}
+              </ol>
+            </SkyPanel>
+            {/* what tonight rests on. Nothing here is a step, so a row wears
+                no lock and opening one leaves "Step n of N" where it was. An
+                empty list is not a panel (SAK-416). */}
+            {references.length > 0 && (
+              <SkyPanel title="References" className="!p-4 shrink-0">
+                <ul className="mt-3 flex flex-col gap-1">
+                  {references.map((r) => {
+                    const it = r.page ? undefined : graph.itemOf(r.id);
+                    const state = stateOf(r.id);
+                    return (
+                      <RailRow
+                        key={r.id}
+                        current={state === "selected" ? "true" : undefined}
+                        lit={state === "lit" || state === "selected"}
+                        glyph={it?.glyph}
+                        label={it ? (it.english !== it.glyph ? it.english : undefined) : r.label}
+                        eyebrow={r.page ? r.page.kind : "In your sky"}
+                        onClick={() => open(r.id)}
+                      />
+                    );
+                  })}
+                </ul>
+              </SkyPanel>
+            )}
+          </div>
         </div>
       </div>
     </SkyPageShell>

@@ -32,8 +32,6 @@ export interface LessonCardProps {
   /** The stars this one is built from, and the ones it is part of tonight. */
   madeOf: readonly SkyItem[];
   partOf: readonly SkyItem[];
-  /** Already in the sky: shown for reference, not re-taught. */
-  known: boolean;
   onSelect: (id: string) => void;
   /** The stroke order and its notes, from whoever has them; goes in the
    * "How it's written" fold. */
@@ -112,7 +110,7 @@ function Fold({ title, open: from = false, children }: { title: string; open?: b
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const pages = teach?.pages ?? [];
   const at = Math.max(0, Math.min(page, pages.length - 1));
@@ -330,7 +328,6 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
         {related.filter((g) => !g.early).map((group) => <RelatedFold key={group.title} group={group} onSelect={onSelect} />)}
       </div>
 
-      {known && <p className="mt-4 text-[13.5px] text-sky-muted">Already in your sky, so tonight doesn&apos;t re-teach it. Here for reference.</p>}
     </DetailFrame>
   );
 }
