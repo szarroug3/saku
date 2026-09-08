@@ -72,12 +72,15 @@ import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 import { CHAR_INDEX } from "@/data/characters";
+import { COUNTER_CURRICULUM } from "@/data/counters";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { RECIPES } from "@/data/grammar/recipes";
 import { READINGS } from "@/data/kanji";
+import { KEIGO_SETS } from "@/data/keigo";
+import { getMnemonic } from "@/data/mnemonics";
 import { wordPitch } from "@/data/pitch";
 import { VERB_PAIRS } from "@/data/transitivity";
-import { legacyUnqualifiedReading, VOCAB } from "@/data/vocab";
+import { legacyUnqualifiedReading, readingUnits, VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
@@ -97,6 +100,30 @@ function textSet(getTexts) {
     path: (raw, voiceId) => voiceObjectPath(voiceId, raw.text),
     label: (raw) => raw.text,
     synth: (raw, base, speakerId) => synthesizeText(base, speakerId, raw.text),
+  };
+}
+
+/** A "pitch" set: every item is a (reading, downstep) pair rather than free
+ * text, cached at `pitchObjectPath` and synthesized by the pitch-locked
+ * `synthesizeWordWav` (src/lib/tts-synth.ts) instead of the plain
+ * audio_query/synthesis pair a text item uses. Same job `textSet` does for the
+ * text sets: one factory, so a second pitch set (SAK-402 added one) is a list
+ * of pairs and nothing else. Deduped on the pair, since two callers asking for
+ * the same reading at the same downstep want the same clip. */
+function pitchSet(getItems) {
+  return {
+    items: () => {
+      const seen = new Set();
+      return getItems().filter((raw) => {
+        const key = `${raw.reading}:${raw.downstep}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    },
+    path: (raw, voiceId) => pitchObjectPath(raw.reading, raw.downstep, voiceId),
+    label: (raw) => `${raw.reading}:${raw.downstep}`,
+    synth: (raw, base, speakerId) => synthesizeWordWav(raw.reading, raw.downstep, speakerId),
   };
 }
 
@@ -280,13 +307,119 @@ export function verbPairTexts() {
   return VERB_PAIRS.flatMap((p) => [p.happens.reading, p.doIt.reading]);
 }
 
+/** SAK-402: every reading a word is TAUGHT under, not just the one preferred
+ * reading `words` above walks. `VOCAB.reb` is a single string per row, but a
+ * word read more than one way carries a reading unit per sense
+ * (`readingUnits`, src/data/vocab.ts), and the Sky speaks all of them:
+ *
+ *   - a lesson narrows a word's card to the reading it is teaching
+ *     (`teachFor(item, { reading })`, src/app/(sky)/teach.ts), and the head's
+ *     hear button then speaks THAT reading, not the row's preferred one;
+ *   - the card's "Readings" fold puts a hear button on every unit it lists
+ *     (lesson-card.tsx's `teach.pronunciations`);
+ *   - a quiz listening card plays the exact reading the card asks about
+ *     (quiz.ts's `wordReadingAsked`, off a fact qualified as word:日/reading@にち).
+ *
+ * So 金's こがね, 開く's ひらく and 何分's なんぷん were all live synthesis on
+ * first play: 22 readings across the corpus that no set reached. Walking every
+ * unit rather than hand-listing those 22 is the same discipline `verb-pairs`
+ * above uses, and the overlap with `words` costs nothing (`textSet` dedupes,
+ * and an already-uploaded clip is skipped). */
+export function taughtReadingTexts() {
+  return VOCAB.flatMap((row) => [row.reb, ...readingUnits(row).map((u) => u.reb)]);
+}
+
+/** SAK-402: the example word on every kana's mnemonic card (あ's あめ, ウ's
+ * ウニ), that is `teach.exampleWord.word`, which lesson-card.tsx gives its own hear
+ * button next to the story and the hook.
+ *
+ * These are WRITTEN forms from src/data/mnemonics.ts, not VOCAB readings, and
+ * most of them are kana already, so most hash to a clip some word's reading
+ * already seeded. 17 did not (ウニ, シール, タコ, ニット and the rest, plus the
+ * one example that carries a particle, パンを). That is the very first thing a learner
+ * meeting a kana might tap, and every one of them a cold synthesis. */
+export function mnemonicExampleTexts() {
+  const texts = [];
+  for (const glyph of Object.keys(CHAR_INDEX)) {
+    const word = getMnemonic(glyph)?.example?.word;
+    if (word) texts.push(word);
+  }
+  return texts;
+}
+
+/** SAK-402: every keigo word's reading, and the plain verb each one replaces
+ * (src/data/keigo.ts). A keigo set's card lists its forms with a hear button
+ * on each (`teach.forms` in teach.ts's keigo branch, spoken as `f.reading`),
+ * and the head speaks the set's own reading.
+ *
+ * Most of these coincide with a VOCAB reading and were already covered by
+ * `words`. Three were not: ごぞんじだ, ぞんじあげる and はいけんする are taught
+ * only as keigo, so nothing else in the corpus reaches them, the same shape of
+ * gap `verb-pairs` above was added for. */
+export function keigoTexts() {
+  return KEIGO_SETS.flatMap((set) => [...set.words.map((w) => w.reading), ...set.plain.map((v) => v.reading)]);
+}
+
+/** SAK-402: every (reading, downstep) pair a LESSON CARD's exact-pitch button
+ * can ask for, which is a different question from `pitchItems` above.
+ *
+ * `pitchItems` walks what the PITCH QUIZ asks: each word's own taught reading
+ * (`legacyUnqualifiedReading`) at its verified downstep, plus the distractor.
+ * A card asks something wider. lesson-card.tsx passes `downstep` to the hear
+ * button wherever the teaching data knows one, and the reading beside it is
+ * whatever the card is showing:
+ *
+ *   1. A word, under EVERY reading it is taught with, at the word's own
+ *      verified downstep (`teachFor`'s `t.pitch = wordPitch(glyph)`, which does
+ *      not change when a lesson narrows the card to another reading). That is
+ *      60 pairs `pitchItems` never produces, because it only ever pairs a
+ *      downstep with the one legacy reading: 人 at ひと, 七 at なな, 四 at よん.
+ *   2. Each verb pair member at its own word's downstep, and each keigo set's
+ *      plain verb at its downstep (the `teach.forms` rows, which carry
+ *      `pitch: wordPitch(...)`).
+ *   3. A counted form's card, at the counter form's own downstep.
+ *
+ * 2 and 3 are already covered in practice (their readings coincide with a
+ * VOCAB word's), and they are walked anyway rather than assumed, so a new
+ * pair or set cannot open a silent gap. Deduped by (reading, downstep) the
+ * same way `pitchItems` is, for the same reason: one clip, one path.
+ *
+ * No distractors here. A distractor downstep is a quiz invention; a card only
+ * ever plays a real, verified accent. */
+export function lessonPitchItems() {
+  const seen = new Set();
+  const items = [];
+  function add(reading, downstep) {
+    if (!reading || downstep === null || downstep === undefined) return;
+    const key = `${reading}:${downstep}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    items.push({ reading, downstep });
+  }
+  for (const row of VOCAB) {
+    const downstep = wordPitch(row.keb);
+    if (downstep === null) continue;
+    add(row.reb, downstep);
+    for (const unit of readingUnits(row)) add(unit.reb, downstep);
+  }
+  for (const p of VERB_PAIRS) for (const m of [p.happens, p.doIt]) add(m.reading, wordPitch(m.word));
+  for (const set of KEIGO_SETS) for (const v of set.plain) add(v.reading, wordPitch(v.keb));
+  for (const form of COUNTER_CURRICULUM) add(form.reading, wordPitch(form.glyph));
+  return items;
+}
+
 /** Each set describes how to enumerate, cache-path, label, and synthesize its
  * own items — the run/upload/skip/limit machinery below (`runPool`,
  * `seedOneWithRetry`) is generic over all four, so a new set (a new content
  * shape, not just a new text list) is one entry here, not a fork of the
  * script. Order matters only for what shows up first in the log — resume
- * behavior (the cache-skip check) doesn't care what order sets run in. */
-const SETS = {
+ * behavior (the cache-skip check) doesn't care what order sets run in.
+ *
+ * Exported (SAK-402) so scripts/list-speakable.mjs can ask THIS object what
+ * is seeded rather than restating the lists a second time: that script's job
+ * is to hold the sets below against everything the Sky can actually say, and
+ * a private copy of the answer is exactly how the two would drift. */
+export const SETS = {
   kana: textSet(() => Object.keys(CHAR_INDEX)),
   // On'yomi/kun'yomi readings — the same `r.base` string HearButton speaks
   // next to a kanji's reading rows on the Library page (character-entry-view).
@@ -323,18 +456,29 @@ const SETS = {
   // `pitch` above both miss. See verbPairTexts' own comment for why this
   // walks all 69 pairs rather than just the known gaps.
   "verb-pairs": textSet(verbPairTexts),
+  // SAK-402: every reading a word is taught under, not just its preferred one.
+  // A lesson narrows a word's card to the reading being taught and speaks it,
+  // and a listening card plays the exact reading its fact names. See
+  // taughtReadingTexts' own comment.
+  "word-readings": textSet(taughtReadingTexts),
+  // SAK-402: the example word on each kana's mnemonic card (あ's あめ), which
+  // has a hear button of its own. See mnemonicExampleTexts' own comment.
+  "mnemonic-words": textSet(mnemonicExampleTexts),
+  // SAK-402: every keigo word and the plain verb it replaces, as the keigo
+  // card's form rows speak them. See keigoTexts' own comment.
+  keigo: textSet(keigoTexts),
   // SAK-107: the EXACT-pitch cache `/api/pitch-tts` reads/writes — the
   // settings voice-picker preview and every Library word's pitch "hear it"
   // button. Different item shape (reading+downstep, not free text), different
   // cache path (pitchObjectPath), different synth (the pitch-locked
   // synthesizeWordWav, not the plain audio_query→synthesis pair `textSet`
-  // items use) — that's exactly what `path`/`label`/`synth` exist to isolate.
-  pitch: {
-    items: pitchItems,
-    path: (raw, voiceId) => pitchObjectPath(raw.reading, raw.downstep, voiceId),
-    label: (raw) => `${raw.reading}:${raw.downstep}`,
-    synth: (raw, base, speakerId) => synthesizeWordWav(raw.reading, raw.downstep, speakerId),
-  },
+  // items use), which is exactly what `pitchSet` exists to isolate.
+  pitch: pitchSet(pitchItems),
+  // SAK-402: the pitch clips a LESSON CARD asks for, which the quiz's set
+  // above does not reach: a word under each of its taught readings at its own
+  // downstep, plus the verb-pair, keigo and counter forms that carry one. See
+  // lessonPitchItems' own comment.
+  "lesson-pitch": pitchSet(lessonPitchItems),
 };
 
 /** Failed items get this many total attempts (1 try + retries) before being

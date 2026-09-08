@@ -1930,3 +1930,51 @@ delete. The type says all of that now.
 
 3,822 unit tests pass, 1 skipped, from 3,824: the two that went were the
 seed delta's. 26 e2e pass. The workflow parses and has one job left.
+
+### Every word, every voice, cached ahead (2026-09-08, SAK-402)
+
+Every string the app can speak is supposed to be sitting in Storage
+before a learner asks for it, in all six roster voices, so no hear button
+ever waits on live synthesis. `scripts/seed-voice-audio.mjs` puts it
+there in bulk, one set per shape of string, and its sets are hand
+written, so the app growing past them is silent by construction: SAK-216
+and SAK-244 were both a whole shape of string nobody noticed was live,
+found months after the button that spoke it shipped.
+
+The Sky grew. `scripts/list-speakable.mjs` is the noticing, done by the
+machine. It walks the Sky's own teaching code, calling `teachFor` on
+every item `offerPick` builds, and collects exactly what the hear buttons
+are handed: the head glyph of a kana, word, counter or keigo card, every
+on'yomi and kun'yomi row, a kana's mnemonic example word, a verb pair's
+and a keigo set's forms, a word's other readings, the quiz's listening
+card, and both clips of a pitch card. All speech in the Sky goes through
+one button and only two components mount it, so that is the whole
+surface. Anything the seed script's sets do not cover is reported by
+where it is spoken, and the script exits non-zero. It synthesizes
+nothing and uploads nothing, so it is safe to run against production at
+any time. `scripts/lib/server-only-shim.mjs` is what lets a plain script
+import the Sky's server adapters at all.
+
+It found 102 things the Sky can say that nothing seeded: 22 word
+readings, 17 kana mnemonic example words, 3 keigo words, and 60 exact
+pitch clips. The pitch ones are the interesting kind. The old `pitch`
+set walks what the pitch QUIZ asks, each word at its one legacy reading
+plus the quiz's distractor, but a lesson card narrows a word to the
+reading it is teaching and then speaks THAT reading at the word's own
+downstep, which is a pair the quiz never asks for: 人 at ひと, 七 at なな,
+四 at よん.
+
+Four sets cover them, and walk their whole source rather than the gap,
+so the next word read two ways cannot open a new one: `word-readings`
+(11,543 items), `mnemonic-words` (92), `keigo` (28) and `lesson-pitch`
+(8,117). `pitchSet` is the pitch-shaped twin of the existing `textSet`
+factory, so the second pitch set is a list of pairs and nothing else.
+Fourteen sets now, 62,166 items, 372,996 clips over the six voices.
+
+Against the bucket, 598 of those 372,996 clips were actually missing:
+`word-readings` 132, `mnemonic-words` 102, `keigo` 16, `lesson-pitch`
+348, spread evenly over the voices except where a live play had already
+cached one under the default voice. All 598 were generated on the local
+VOICEVOX container, never Cloud Run, and the recount afterwards is 0 of
+372,996 missing: every string the Sky can say is now cached ahead, in
+every voice.
