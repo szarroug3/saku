@@ -2,7 +2,6 @@
 // bottom. Tracked under Sky: Reading pages. Nothing here is interactive;
 // the words are the page.
 
-import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { Sound } from "@/sky/components/teach-page";
@@ -15,7 +14,10 @@ export function SkyReading({ page, height }: { page: ReadingPage; height?: strin
       <SkyPageBody>
         {page.sections.map((s) => (
           <SkyPanel key={s.id} title={s.title}>
-            <div className="mt-2 flex flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90">
+            {/* 68 characters, the way the lesson's page caps itself at 64
+                (SAK-361). A paragraph used to run the panel's whole width,
+                which on a wide window is 200 characters a line. */}
+            <div className="mt-2 flex max-w-[68ch] flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90">
               {s.paragraphs?.map((p, i) => <p key={i}><Sound line={p} /></p>)}
               {s.bullets && (
                 <ul className="flex flex-col gap-2.5">
@@ -29,9 +31,14 @@ export function SkyReading({ page, height }: { page: ReadingPage; height?: strin
                 <ul className="flex flex-col gap-3">
                   {s.links.map((l) => (
                     <li key={l.href}>
-                      <a href={l.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-accent">{l.name} ↗</a>
+                      {/* the arrow is the only sign the link leaves the app, so
+                          it stays on screen, but it is not part of the link's
+                          name: a screen reader says "JMdict" (SAK-361) */}
+                      <a href={l.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-accent">{l.name} <span aria-hidden>↗</span></a>
                       {l.blurb && <p className="mt-0.5 text-[13.5px] text-sky-ink/90">{l.blurb}</p>}
-                      {l.note && <Eyebrow className="mt-1 mb-0 normal-case tracking-normal">{l.note}</Eyebrow>}
+                      {/* a credit line, not an eyebrow: who holds it and on
+                          what terms, said quietly rather than in small caps */}
+                      {l.note && <p className="mt-1 text-[12.5px] text-sky-muted">{l.note}</p>}
                     </li>
                   ))}
                 </ul>

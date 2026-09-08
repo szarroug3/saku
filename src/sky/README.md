@@ -2269,3 +2269,30 @@ recipe" is left alone: it scrolls as a whole and pins nothing.
 
 `e2e/sky.spec.ts` gained a test that measures the gap from the empty line
 to the button on the Observatory: 204px before, 12px after.
+
+### The reading pages get a measure and a warning (2026-09-08, SAK-361)
+
+`SkyReading` had no width on its prose, so on a wide window About's
+acknowledgement was one block eleven lines long at about 200 characters a
+line. The column inside each panel is `max-w-[68ch]` now, next door to the
+lesson's `max-w-[64ch]`. The panel still takes the page's width; the words
+stop.
+
+About also changed subject with nothing to say so: three sections about
+where Saku's data comes from, then Kana, Kanji & vocab, Grammar and the
+rest of the reading list. `src/app/(sky)/reading.ts` puts a section between
+them, "Other places to learn", with one line: "Saku does not teach
+everything. These are other people's sites and books, worth going to for
+what it leaves out." Kept on About rather than split into its own page,
+because a licence obligation pins About to the bar and a split would put
+the list one more click away.
+
+Two small ones on the same component. The "↗" after a link's name is inside
+an `aria-hidden` span, so the link is named "JMdict" and not "JMdict
+up-right arrow"; it stays on screen, being the only sign the link leaves the
+app. The credit under each file was an `Eyebrow`, bold and letter-spaced at
+10.5px, which is a loud way to say "Electronic Dictionary Research and
+Development Group · CC BY-SA 4.0". It is a plain muted line at 12.5px now.
+
+`e2e/sky.spec.ts` gained a test: About opens, "Other places to learn" is
+there, and the first paragraph is under 600px inside a panel 200px wider.

@@ -45,6 +45,9 @@ export function aboutPage(): ReadingPage {
       { id: "acknowledgement", title: "Acknowledgement", paragraphs: [accented(american(LICENCE_NOTE))], links: [{ name: "The EDRDG license in full", href: LICENCE_HREF }] },
       { id: "files", title: "The files", links: SOURCES.map((s) => ({ name: s.name, href: s.href, blurb: s.what, note: `${s.holder} · ${american(s.licence)}` })) },
       { id: "share-alike", title: "Share-alike", paragraphs: SHARE_ALIKE.map((p) => accented(p)) },
+      // The page changes subject here, from what Saku is built on to where
+      // else to go, and used to do it with no warning (SAK-361).
+      { id: "other-places", title: "Other places to learn", paragraphs: [accented("Saku does not teach everything. These are other people's sites and books, worth going to for what it leaves out.")] },
       ...resources,
     ],
   };

@@ -461,6 +461,22 @@ test("a short panel stops at its content instead of pinning its buttons to the p
   expect(gap, `the panel left ${Math.round(gap)}px between the line and the button`).toBeLessThan(80);
 });
 
+test("about caps its prose and says when it changes the subject", async ({ page }) => {
+  // SAK-361. The acknowledgement ran the panel's whole width, eleven lines at
+  // about 200 characters, and the reading list was spliced on with no heading.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/about");
+  await expect(page.getByRole("heading", { name: "Where does the data come from?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Other places to learn" })).toBeVisible();
+  const measured = await page.evaluate(() => {
+    const p = document.querySelector("main section p") as HTMLElement;
+    return { line: Math.round(p.getBoundingClientRect().width), panel: Math.round((p.closest("section") as HTMLElement).clientWidth) };
+  });
+  // the words stop well short of the panel they sit in
+  expect(measured.line).toBeLessThan(600);
+  expect(measured.panel).toBeGreaterThan(measured.line + 200);
+});
+
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Want to keep your sky?" })).toBeVisible();
