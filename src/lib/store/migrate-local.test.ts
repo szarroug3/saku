@@ -3,7 +3,7 @@
 //
 // THE GUARDS, NOT THE HAPPY PATH.
 // ================================
-// migrateLocalProgress's actual replay (POSTing local history/lists to the
+// migrateLocalProgress's actual replay (POSTing the local history to the
 // account) reaches a live Supabase client and `fetch` with no injection seam
 // (unlike pending-records.ts's deliberately-injected store) — there is no
 // mocking convention for either in this codebase yet, so faking a convincing

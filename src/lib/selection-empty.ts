@@ -15,7 +15,6 @@ export function emptySelection(): Selection {
   return {
     subjects: [],
     types: [],
-    list: null,
     states: [],
     text: "",
     session: null,

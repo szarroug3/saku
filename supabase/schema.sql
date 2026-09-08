@@ -1,30 +1,38 @@
 -- Saku — Supabase schema for hosted, per-user progress.
 --
 -- Run this once in the Supabase SQL editor (Dashboard → SQL Editor → New query).
--- It replaces the local history.json / lists.json files: on Vercel the same two
--- JSON blobs live in one row per signed-in user, and Row-Level Security makes a
--- user able to touch only their own row.
+-- It replaces the local history.json file: on Vercel the same JSON blobs live in
+-- one row per signed-in user, and Row-Level Security makes a user able to touch
+-- only their own row.
 --
--- The app keeps its existing JSON shapes — history (facts + sessions) and lists
--- go into `history` and `lists` verbatim, so nothing about how the app reads or
--- writes those blobs changes; only WHERE they live does.
+-- The app keeps its existing JSON shapes — history (facts + sessions) goes into
+-- `history` verbatim, so nothing about how the app reads or writes that blob
+-- changes; only WHERE it lives does.
 --
--- Four jsonb blobs live on this one row, all read/written by
+-- Three live jsonb blobs on this one row, all read/written by
 -- src/lib/store/supabase-store.ts:
 --   history  — finished practice history (facts + sessions), folded in forever.
---   lists    — saved lists.
 --   settings — server-synced preferences (quiz config, theme/appearance/accents,
 --              dismissal flags); read/written via src/lib/settings.ts.
 --   session  — the IN-PROGRESS run envelope (deck position, current question,
 --              answers so far, requeue state, phase + round), separate from
 --              `history` on purpose so a stale in-progress copy can never
 --              resurrect a finished run; read/written via src/lib/session-store.ts.
+--
+-- And one dead one. `lists` held the old app's saved lists. Nothing reads or
+-- writes it as of SAK-375: the API route, the store primitives, the local copy
+-- and the sign-in replay are all gone, and readProgressSeedRow no longer selects
+-- it. The column is left in place because dropping it is a by-hand migration
+-- that buys nothing, and whatever a learner's row still holds is kept rather
+-- than thrown away. A fresh setup gets the column too, from the create below, so
+-- this file keeps describing the table as it actually is.
+--
 -- `settings` and `session` are read unconditionally by readProgressSeedRow
--- (`select history, settings, session, lists`) — unlike `progress_facts` below,
--- there is no fallback for these columns being absent, so they belong in this
--- table's own definition rather than a separate "run this by hand" script that
--- a fresh setup could skip. RLS policies gate the ROW, not the column list, so
--- both inherit the same policies as `history`/`lists` automatically.
+-- (`select history, settings, session`) — unlike `progress_facts` below, there
+-- is no fallback for these columns being absent, so they belong in this table's
+-- own definition rather than a separate "run this by hand" script that a fresh
+-- setup could skip. RLS policies gate the ROW, not the column list, so both
+-- inherit the same policies as `history` automatically.
 create table if not exists public.progress (
   user_id    uuid primary key references auth.users (id) on delete cascade,
   history    jsonb not null default '{}'::jsonb,

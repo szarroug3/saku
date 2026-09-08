@@ -138,7 +138,7 @@ function history(...details: SessionStats[]): HistoryFile {
 /** Practice's "Mix-ups" chip count — resolve() with the mixup band selected,
  * exactly as practice-selector.tsx's `statusCounts` calls it. */
 function practiceMixupFacts(h: HistoryFile): FactId[] {
-  return resolve({ ...emptySelection(), states: ["mixup"] }, h, [], 0, {
+  return resolve({ ...emptySelection(), states: ["mixup"] }, h, {
     graduateRuns: GRAD,
   });
 }

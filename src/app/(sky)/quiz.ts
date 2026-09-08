@@ -60,7 +60,7 @@ export function quizFacts(history: HistoryFile, picks: readonly string[], now = 
     if (pitch) for (const id of picks) { const e = libEntry(id as never); if (e?.kind === VOCAB_SUBJECT) { const pf = pitchFactId(e.glyph); if (factInfo(pf)) facts.push(pf); } }
     return [...new Set(facts)].slice(0, QUIZ_CAP);
   }
-  return dueFacts(history, [], now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
+  return dueFacts(history, now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
 }
 
 /** The deck a session asks. Shuffled here rather than in `quizCards`, so

@@ -17,19 +17,14 @@
 // Selection.session).
 //
 // Pure by contract: no React, no DOM, no fetch. Everything here is a function
-// of (query, history, lists) and nothing else.
+// of (query, history) and nothing else.
 
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { rangeLabel } from "@/lib/date-range";
 import { knownConstructionFacts } from "@/data/counter-categories";
 import { groupedByPair } from "@/lib/budget";
 import { grammarHostGroupOf } from "@/lib/grammar/host-group";
-import {
-  ALL_FACTS,
-  entryOf,
-  factInfo,
-  factsOf,
-} from "@/lib/facts";
+import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import { standingOf } from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
@@ -39,7 +34,6 @@ import type {
   FactId,
   FactBand,
   HistoryFile,
-  SavedList,
   Selection,
 } from "@/types";
 
@@ -147,37 +141,6 @@ function matchesText(fact: FactId, needle: string): boolean {
   return info.answers.some((a) => a.toLowerCase().includes(n));
 }
 
-// ---------- lists ----------
-
-/**
- * The facts a saved list names.
- *
- * The two kinds diverge here and ONLY here, which is the point of the split.
- * A fixed list stores entries and expands them to facts; a derived list stores
- * a rule and re-runs it. Both come out as FactId[] and no caller can tell which
- * it asked.
- *
- * `depth` stops a derived list whose query names a derived list whose query
- * names it back. Nothing in the UI can build that cycle today — you cannot save
- * a search that references a list — but resolve() is public and the failure
- * mode of a cycle is a locked tab, not a wrong answer, so it is guarded rather
- * than argued about.
- */
-function factsOfList(
-  id: string,
-  lists: SavedList[],
-  history: HistoryFile,
-    depth: number,
-  context: { now?: number; graduateRuns?: number },
-): FactId[] {
-  const list = lists.find((l) => l.id === id);
-  if (!list || depth > 4) return [];
-  if (list.kind === "fixed") {
-    return list.entries.flatMap((e) => factsOf(e));
-  }
-  return resolve(list.query, history, lists, depth + 1, context);
-}
-
 // ---------- ordering ----------
 
 /**
@@ -276,8 +239,6 @@ function knownFacts(history: HistoryFile): FactId[] {
 export function resolve(
   sel: Selection,
   history: HistoryFile,
-  lists: SavedList[] = [],
-  depth = 0,
   context: { now?: number; graduateRuns?: number } = {},
 ): FactId[] {
   const now = context.now ?? Date.now();
@@ -290,32 +251,19 @@ export function resolve(
     return Object.keys(record?.facts ?? {}) as FactId[];
   };
 
-  // The starting pool: a list if one is named; otherwise, for a PURE session
-  // query (Rerun — see "That session" in whatSentence, and results-view.tsx's
-  // rerunFacts), the session's own recorded facts directly — every fact it put
-  // on screen, answered or not, per session-record.ts's projectSessionFacts
-  // ("a card put on screen but not yet resolved has seen === 0 here... that
-  // is the point"). Narrowing that pool through knownFacts instead (as a plain
-  // filter, below) used to mean a fact shown but never answered — never having
-  // banked a seen count anywhere else — silently dropped out of its own
-  // Rerun, which is exactly backwards: Rerun's whole premise is "what this
-  // session put in front of you," not "of that, what you separately already
-  // know." Otherwise (no session, or a list further narrowed BY a session),
-  // fall back to knownFacts — the ordinary "everything you know" baseline.
-  let pool: FactId[] = sel.list
-    ? factsOfList(sel.list, lists, history, depth, context)
-    : sel.session !== null
-      ? sessionFacts(sel.session)
-      : knownFacts(history);
-
-  // A list ALSO narrowed to one session (not the common Rerun case, but a
-  // real composition — see the module header's "session is just another
-  // filter") still intersects, since the pool above came from the list, not
-  // the session, in that combination.
-  if (sel.list && sel.session !== null) {
-    const inSession = new Set<string>(sessionFacts(sel.session));
-    pool = pool.filter((f) => inSession.has(f));
-  }
+  // The starting pool: for a PURE session query (Rerun, "That session" in
+  // whatSentence), the session's own recorded facts directly, every fact it
+  // put on screen, answered or not, per session-record.ts's
+  // projectSessionFacts ("a card put on screen but not yet resolved has
+  // seen === 0 here... that is the point"). Narrowing that pool through
+  // knownFacts instead (as a plain filter, below) used to mean a fact shown
+  // but never answered, never having banked a seen count anywhere else,
+  // silently dropped out of its own Rerun, which is exactly backwards:
+  // Rerun's whole premise is "what this session put in front of you," not "of
+  // that, what you separately already know." Otherwise, fall back to
+  // knownFacts, the ordinary "everything you know" baseline.
+  const pool: FactId[] =
+    sel.session !== null ? sessionFacts(sel.session) : knownFacts(history);
 
   // The date window, read STRAIGHT off the stored learnedAt map — no derivation
   // here, because the normalizers (Part A) guarantee learnedAt is populated on
@@ -378,13 +326,8 @@ export function resolve(
  * blurs at all: it is the pool size, independent of the order the draw put it
  * in. Two calls disagree on the ORDER, never on how many.
  */
-export function countOf(
-  sel: Selection,
-  history: HistoryFile,
-  lists: SavedList[] = [],
-
-): number {
-  return resolve(sel, history, lists).length;
+export function countOf(sel: Selection, history: HistoryFile): number {
+  return resolve(sel, history).length;
 }
 
 // ---------- due for review ----------
@@ -412,11 +355,10 @@ export function countOf(
  */
 export function dueFacts(
   history: HistoryFile,
-  lists: SavedList[] = [],
   now = Date.now(),
   graduateRuns = 10,
 ): FactId[] {
-  const pool = resolve(emptySelection(), history, lists, 0, { now, graduateRuns });
+  const pool = resolve(emptySelection(), history, { now, graduateRuns });
   const due = pool.filter((f) => {
     const state = effectiveState(
       history.facts[f],
@@ -479,7 +421,6 @@ export function stateWord(s: FactBand): string {
 export function whatSentence(
   sel: Selection,
   count: number,
-  lists: SavedList[] = [],
   opts: { showCount?: boolean; now?: number } = {},
 ): string {
   const showCount = opts.showCount ?? true;
@@ -487,11 +428,7 @@ export function whatSentence(
   const now = opts.now ?? Date.now();
   const bits: string[] = [];
 
-  if (sel.list) {
-    const list = lists.find((l) => l.id === sel.list);
-    if (list) bits.push(list.name);
-  }
-  if (sel.session !== null && !sel.list) bits.push("That session");
+  if (sel.session !== null) bits.push("That session");
   for (const t of sel.types ?? []) bits.push(typeLabel(t));
   for (const s of sel.subjects) bits.push(subjectWord(s));
   if (sel.states.length) bits.push(sel.states.map(stateWord).join(" or "));

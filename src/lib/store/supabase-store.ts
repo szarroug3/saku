@@ -3,16 +3,20 @@ import { cache } from "react";
 import { timed, timedSync } from "@/lib/server-timing";
 import "server-only";
 
-// The Supabase backend for a user's progress. Reads and writes the two JSON
-// blobs — history and lists — as jsonb columns on that user's single `progress`
-// row. Every call runs through the request-bound server client, so RLS confines
-// it to the caller's own row; `userId` is passed for the explicit `.eq` and the
-// upsert key, never to reach across users (RLS would refuse that anyway).
+// The Supabase backend for a user's progress. Reads and writes the JSON blobs —
+// history, settings and the in-progress session — as jsonb columns on that
+// user's single `progress` row. Every call runs through the request-bound server
+// client, so RLS confines it to the caller's own row; `userId` is passed for the
+// explicit `.eq` and the upsert key, never to reach across users (RLS would
+// refuse that anyway).
 //
-// These are the primitives history.ts / lists.ts call in Supabase mode, in place
-// of the local file read/write. The read-modify-write LOGIC stays in those
+// These are the primitives history.ts / settings.ts call in Supabase mode, in
+// place of the local file read/write. The read-modify-write LOGIC stays in those
 // files; this only moves where the blob lives. Unset columns are left untouched
-// on upsert, so writing history never disturbs lists and vice versa.
+// on upsert, so writing history never disturbs settings and vice versa.
+//
+// The row also carries a `lists` column, which nothing reads or writes any more
+// (SAK-375). It is not selected below and not part of ProgressSeedRow.
 
 import {
   normalizeEnvelope,
@@ -21,18 +25,16 @@ import {
 import { hydrateRecentRuns } from "@/lib/aggregate";
 import { normalizeHistoryShell, withBackfilledLearnedAt } from "@/lib/history-ops";
 import type { VersionedRead } from "@/lib/history-mutate";
-import type { ListsVersionedRead } from "@/lib/lists-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import type { SettingsVersionedRead } from "@/lib/settings-mutate";
 import type { SessionVersionedRead } from "@/lib/session-mutate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { FactAggregate, FactId, HistoryFile, ListsFile, SettingsFile } from "@/types";
+import type { FactAggregate, FactId, HistoryFile, SettingsFile } from "@/types";
 
 export interface ProgressSeedRow {
   history: HistoryFile;
   settings: SettingsFile;
   session: SessionStateEnvelope;
-  lists: ListsFile;
 }
 
 /**
@@ -100,7 +102,7 @@ const readProgress = cache(async (userId: string) => {
   const [row, table] = await Promise.all([
     timed("db:query", async () => await supabase
       .from("progress")
-      .select("history, settings, session, lists")
+      .select("history, settings, session")
       .eq("user_id", userId)
       .maybeSingle(), "selecting the progress row"),
     timed("db:facts", () => readFactsTable(userId), "selecting the facts table"),
@@ -113,12 +115,10 @@ export async function readProgressSeedRow(
   userId: string,
 ): Promise<ProgressSeedRow> {
   const { data, table } = await readProgress(userId);
-  const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
     history: shapeHistory(data?.history, table.facts),
     settings: normalizeSettings(data?.settings),
     session: normalizeEnvelope(data?.session),
-    lists: { lists: rawLists?.lists ?? [] },
   };
 }
 
@@ -464,105 +464,17 @@ export async function factsTableMigrated(userId: string): Promise<boolean> {
   return true;
 }
 
-export async function readListsRow(userId: string): Promise<ListsFile> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("progress")
-    .select("lists")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(`reading progress.lists failed: ${error.message}`);
-  const raw = (data?.lists ?? {}) as Partial<ListsFile> | null;
-  return { lists: raw?.lists ?? [] };
-}
-
-/**
- * A versioned read of the lists row, for the compare-and-set write below. The
- * twin of readHistoryRowVersioned over the other column, and guarded on the SAME
- * `updated_at` token — right, because it is the same row: a history write
- * landing mid-flight costs a lists retry, never a lost list.
- */
-export async function readListsRowVersioned(
-  userId: string,
-): Promise<ListsVersionedRead> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("progress")
-    .select("lists, updated_at")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(`reading progress.lists failed: ${error.message}`);
-  const raw = (data?.lists ?? {}) as Partial<ListsFile> | null;
-  return {
-    lists: { lists: raw?.lists ?? [] },
-    version: (data?.updated_at as string | null | undefined) ?? null,
-    exists: data != null,
-  };
-}
-
-/**
- * Write the lists ONLY if the row still carries `expected` — the same optimistic
- * concurrency writeHistoryRowGuarded uses, applied to the column that never had
- * it. Returns true when it landed, false when a concurrent writer moved the
- * token first.
- *
- * Without this, two devices signing in within the same second each replayed
- * their own local lists over a stale read, both got a 2xx, and both cleared
- * their local copy — the later write's lists were the only ones left. See
- * lists-mutate.ts for the retry that turns a `false` here into a merge.
- *
- * The new `updated_at` is forced strictly greater than the one we guarded on, so
- * two writes landing in the same millisecond still leave DISTINCT tokens and the
- * second is reliably detected as a miss (identical reasoning to history's).
- */
-export async function writeListsRowGuarded(
-  userId: string,
-  file: ListsFile,
-  expected: ListsVersionedRead,
-): Promise<boolean> {
-  const supabase = await createSupabaseServerClient();
-  const prev = expected.version ? Date.parse(expected.version) : 0;
-  const nextTs = new Date(Math.max(Date.now(), prev + 1)).toISOString();
-
-  // No row yet: INSERT. A row that appeared since our read violates the user_id
-  // uniqueness, which is precisely the CAS miss we retry on.
-  if (!expected.exists) {
-    const { error } = await supabase
-      .from("progress")
-      .insert({ user_id: userId, lists: file, updated_at: nextTs });
-    if (error) {
-      if (isUniqueViolation(error)) return false;
-      throw new Error(`writing progress.lists failed: ${error.message}`);
-    }
-    return true;
-  }
-
-  // Row exists: UPDATE guarded on the token. `.select` reports the affected rows,
-  // so zero rows means the guard did not match. A legacy row with a null token is
-  // guarded with `.is`, not `.eq`.
-  const base = supabase
-    .from("progress")
-    .update({ lists: file, updated_at: nextTs })
-    .eq("user_id", userId);
-  const guarded =
-    expected.version == null
-      ? base.is("updated_at", null)
-      : base.eq("updated_at", expected.version);
-  const { data, error } = await guarded.select("user_id");
-  if (error) throw new Error(`writing progress.lists failed: ${error.message}`);
-  return (data?.length ?? 0) > 0;
-}
-
-// The `settings` jsonb is the third blob on the row, beside `history` and
-// `lists`. It is defined in supabase/schema.sql (SAK-253) and inherits the
-// row's existing RLS (which scopes every read/write to `user_id`), so no new
-// policy is needed. Same read-modify-write split as history/lists: the MERGE
+// The `settings` jsonb is the second live blob on the row, beside `history`.
+// It is defined in supabase/schema.sql (SAK-253) and inherits the row's
+// existing RLS (which scopes every read/write to `user_id`), so no new
+// policy is needed. Same read-modify-write split as history: the MERGE
 // logic lives in settings.ts, this only moves the blob to and from the row, and
 // an unset `settings` column reads as the empty (all-default) settings.
 //
 // SAK-258: the plain upsert this used to be (load -> merge -> write the WHOLE
 // blob back, unconditionally) had no concurrency guard at all — the same gap
-// SAK-220 closed for lists. readSettingsRowVersioned / writeSettingsRowGuarded
+// SAK-220 closed for the lists column. readSettingsRowVersioned /
+// writeSettingsRowGuarded
 // below are the CAS pair settings.ts's mutateSettingsWithRetry runs its
 // read-modify-write through, so two overlapping writes serialize instead of
 // racing. The old unguarded writeSettingsRow is gone so no unprotected path
@@ -581,10 +493,9 @@ export async function readSettingsRow(userId: string): Promise<SettingsFile> {
 
 /**
  * A versioned read of the settings row, for the compare-and-set write below.
- * The twin of readListsRowVersioned over the `settings` column, guarded on the
- * SAME `updated_at` token as history and lists — right, because it is the same
- * row: a history or lists write landing mid-flight costs a settings retry,
- * never a lost field.
+ * The twin of readHistoryRowVersioned over the `settings` column, guarded on
+ * the SAME `updated_at` token as history, right, because it is the same row: a
+ * history write landing mid-flight costs a settings retry, never a lost field.
  */
 export async function readSettingsRowVersioned(
   userId: string,
@@ -605,8 +516,8 @@ export async function readSettingsRowVersioned(
 
 /**
  * Write the settings ONLY if the row still carries `expected` — the same
- * optimistic concurrency writeHistoryRowGuarded / writeListsRowGuarded use,
- * applied to the column that never had it. Returns true when it landed, false
+ * optimistic concurrency writeHistoryRowGuarded uses, applied to the column
+ * that never had it. Returns true when it landed, false
  * when a concurrent writer moved the token first.
  *
  * Without this, two devices changing DIFFERENT settings in the same window
@@ -618,7 +529,7 @@ export async function readSettingsRowVersioned(
  * The new `updated_at` is forced strictly greater than the one we guarded on,
  * so two writes landing in the same millisecond still leave DISTINCT tokens
  * and the second is reliably detected as a miss (identical reasoning to
- * history's and lists').
+ * history's).
  */
 export async function writeSettingsRowGuarded(
   userId: string,
@@ -658,8 +569,8 @@ export async function writeSettingsRowGuarded(
   return (data?.length ?? 0) > 0;
 }
 
-// The `session` jsonb is the fourth blob on the row, beside `history`, `lists`
-// and `settings`. It holds the IN-PROGRESS run envelope (see session-state.ts) —
+// The `session` jsonb is the third live blob on the row, beside `history` and
+// `settings`. It holds the IN-PROGRESS run envelope (see session-state.ts) —
 // separate from `history`, which holds what you FINISHED. Defined in
 // supabase/schema.sql (SAK-253) and inherits the row's RLS. An unset column
 // reads as the empty envelope (no synced run).
@@ -673,7 +584,7 @@ export async function writeSettingsRowGuarded(
 // device took on its own. readSessionRowVersioned / writeSessionRowGuarded
 // below are the CAS pair session-mutate.ts's mutateSessionStateWithRetry runs
 // its read-reconcile-write through, so two overlapping writes serialize instead
-// of racing — the same guard lists.ts and settings.ts already have (SAK-220,
+// of racing — the same guard settings.ts already has (SAK-220,
 // SAK-258), applied here to round state.
 
 export async function readSessionRow(userId: string): Promise<SessionStateEnvelope> {
@@ -690,9 +601,9 @@ export async function readSessionRow(userId: string): Promise<SessionStateEnvelo
 /**
  * A versioned read of the session row, for the compare-and-set write below.
  * The twin of readSettingsRowVersioned over the `session` column, guarded on
- * the SAME `updated_at` token as history, lists and settings — right, because
- * it is the same row: a history, lists or settings write landing mid-flight
- * costs a session retry, never a lost round.
+ * the SAME `updated_at` token as history and settings — right, because it is
+ * the same row: a history or settings write landing mid-flight costs a session
+ * retry, never a lost round.
  */
 export async function readSessionRowVersioned(
   userId: string,
@@ -713,7 +624,7 @@ export async function readSessionRowVersioned(
 
 /**
  * Write the session envelope ONLY if the row still carries `expected` — the
- * same optimistic concurrency writeSettingsRowGuarded / writeListsRowGuarded
+ * same optimistic concurrency writeSettingsRowGuarded
  * use, applied to round state. Returns true when it landed, false when a
  * concurrent writer moved the token first.
  *
@@ -728,7 +639,7 @@ export async function readSessionRowVersioned(
  * The new `updated_at` is forced strictly greater than the one we guarded on,
  * so two writes landing in the same millisecond still leave DISTINCT tokens
  * and the second is reliably detected as a miss (identical reasoning to
- * history's, lists' and settings').
+ * history's and settings').
  */
 export async function writeSessionRowGuarded(
   userId: string,

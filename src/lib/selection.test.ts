@@ -233,7 +233,7 @@ describe('dueFacts — the "Practice what\'s due" one-click pool', () => {
   });
 
   test("keeps only the facts scoring.status() calls `probe`, drops quiet and teach", () => {
-    assert.deepEqual(dueFacts(h, [], NOW), [probeFact]);
+    assert.deepEqual(dueFacts(h, NOW), [probeFact]);
   });
 
   test("is exactly the everything-scope pool filtered to `probe` — not a second model", () => {
@@ -241,23 +241,23 @@ describe('dueFacts — the "Practice what\'s due" one-click pool', () => {
     // same "everything I know" pool the Scope buttons already produce
     // (resolve(emptySelection(), …)), narrowed by the identical status() call
     // budget.ts and library/slice.ts already use to decide what to ask first.
-    const everything = resolve(emptySelection(), h, [], 0, { now: NOW });
+    const everything = resolve(emptySelection(), h, { now: NOW });
     const wouldBeDue = everything.filter((f) => {
       const state = effectiveState(h.facts[f], h.claims?.[f], h.seen?.[f]);
       return status(state, NOW) === "probe";
     });
-    assert.deepEqual(dueFacts(h, [], NOW).sort(), wouldBeDue.sort());
+    assert.deepEqual(dueFacts(h, NOW).sort(), wouldBeDue.sort());
   });
 
   test("nothing due — day one, or an all-quiet history — is an empty pool, not everything", () => {
-    assert.deepEqual(dueFacts(history(), [], NOW), []);
+    assert.deepEqual(dueFacts(history(), NOW), []);
     const allQuiet = history({
       facts: { [quietFact]: seen({ ...stable, lastTested: NOW }) } as Record<
         FactId,
         FactAggregate
       >,
     });
-    assert.deepEqual(dueFacts(allQuiet, [], NOW), []);
+    assert.deepEqual(dueFacts(allQuiet, NOW), []);
   });
 });
 

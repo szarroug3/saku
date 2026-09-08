@@ -16,24 +16,19 @@ import { beforeEach, test } from "node:test";
 
 import {
   clearLocalHistory,
-  clearLocalLists,
   hasLocalProgress,
   loadLocalHistory,
-  loadLocalLists,
   LOCAL_HISTORY_KEY,
-  localAddToList,
   localClaim,
   localDeleteSessions,
   localDropClaim,
   localResetHistory,
-  localSaveList,
   localSeen,
   localSession,
 } from "@/lib/store/local-progress";
-import type { EntryId, FactId, QuizSessionRecord, SavedList } from "@/types";
+import type { FactId, QuizSessionRecord } from "@/types";
 
 const fid = (s: string) => s as unknown as FactId;
-const eid = (s: string) => s as unknown as EntryId;
 
 /** A localStorage in about the detail this module uses, plus a raw() peek. */
 function fakeStorage() {
@@ -81,7 +76,6 @@ test("an empty browser reads as the day-one shell", () => {
     // withBackfilledLearnedAt); on an empty history that is an empty map.
     learnedAt: {},
   });
-  assert.deepEqual(loadLocalLists(), []);
 });
 
 test("corrupt local data reads as empty — a disposable cache, not durable", () => {
@@ -181,42 +175,6 @@ test("localResetHistory returns the day-one shell and wipes the store", () => {
   assert.deepEqual(loadLocalHistory().claims ?? {}, {});
 });
 
-// ---------- lists ----------
-
-test("localSaveList then localAddToList persists a fixed list and its entries", () => {
-  const list: SavedList = {
-    kind: "fixed",
-    id: "list-1",
-    name: "Mine",
-    created: 1,
-    entries: [eid("kanji:生")],
-    origin: "manual",
-  };
-  localSaveList(list);
-  localAddToList("list-1", [eid("kanji:先")]);
-  const [saved] = loadLocalLists();
-  assert.equal(saved.kind, "fixed");
-  assert.deepEqual(
-    (saved as Extract<SavedList, { kind: "fixed" }>).entries,
-    [eid("kanji:生"), eid("kanji:先")],
-  );
-});
-
-test("localAddToList refuses a derived list, mirroring the server guard", () => {
-  const derived: SavedList = {
-    kind: "derived",
-    id: "d-1",
-    name: "Kanji I miss",
-    created: 1,
-    query: { subjects: [], types: [], list: null, states: [], text: "", session: null },
-    origin: "search",
-  };
-  localSaveList(derived);
-  localAddToList("d-1", [eid("kanji:生")]);
-  const [saved] = loadLocalLists();
-  assert.equal(saved.kind, "derived", "still a rule, no entries grafted on");
-});
-
 // ---------- migration bookkeeping ----------
 
 test("hasLocalProgress is false when empty and true after any write", () => {
@@ -227,16 +185,7 @@ test("hasLocalProgress is false when empty and true after any write", () => {
 
 test("clearing forgets the local copy so a merge does not re-run forever", () => {
   localClaim([fid("hira-a")], 1_000);
-  localSaveList({
-    kind: "fixed",
-    id: "l",
-    name: "x",
-    created: 1,
-    entries: [],
-    origin: "manual",
-  });
   assert.equal(hasLocalProgress(), true);
   clearLocalHistory();
-  clearLocalLists();
   assert.equal(hasLocalProgress(), false);
 });

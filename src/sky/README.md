@@ -1787,3 +1787,52 @@ filtered, so there is nothing lossless left in it; only a resize would
 help, and it is Sam's artwork rather than a generated file, so it is hers
 to decide. `public/brand/saku-mark.png` (877 KB) is reachable from nothing
 at all now that the landing page has gone.
+
+### The saved lists go (2026-09-08, SAK-375)
+
+Lists were the old app's way of naming what to drill: a fixed set you
+filed things into, or a saved search that re-ran itself. The Sky replaced
+them with practice recipes, which live in `settings.practice` and share
+none of this code. What was left was the whole line still standing with
+nothing on either end of it: `progress.lists`, `/api/lists`, `lists.ts`
+and its compare-and-set writer, the pure ops and their membership
+helpers, a `saku-local-lists` copy for a signed-out browser, and a replay
+of that copy into the account on sign-in.
+
+Seven files, 904 lines, deleted outright. Out of the files that stay:
+`SavedList` and `ListsFile` from the types, `postList` / `deleteList`
+and their local twins, the six local list writers and `clearLocalLists`,
+`replayLists` and the read-back that gated its clear, and
+`readListsRow` / `readListsRowVersioned` / `writeListsRowGuarded` from
+the store. 1,555 lines gone against 137 added.
+
+Two things went with them that the audit had not named. `Selection.list`,
+a field on the query every drill resolves, and with it `factsOfList`, the
+`lists` parameter threaded through `resolve`, `countOf`, `dueFacts` and
+`whatSentence`, and the `"lists"` member of `PracticeScope`. And
+`fixedRunList` in `server-lookups.ts`, which minted a `SavedList` out of
+an in-progress run for the old /current page and has had no caller since
+that page went. The audit's third claim, that `Selection` itself should
+go, is wrong: it is `QuizConfig.selection`, which the Sky's quiz and
+settings read on every page. Only its `list` field was list machinery.
+
+The `lists` column stays. Dropping it is a by-hand migration that buys
+nothing, and a learner's row keeps whatever it holds rather than having
+it thrown away; `schema.sql` now says the column is dead and names the
+card. The seed read is `select history, settings, session`, so a page
+load stops moving a blob nobody opens.
+
+Nothing a learner sees changes. No Sky page could make, read or name a
+list; `app/(sky)/quiz.ts` already called `dueFacts` with an empty lists
+array; `postList` had no caller. The one real behaviour change is that a
+signed-out browser still holding `saku-local-lists` from the old app
+stops replaying it into the dead column on sign-in, and stops clearing
+the key, so that copy is left alone rather than deleted. A stored
+`selection.list` survives too: `normalizeConfig` spreads the stored
+object over the defaults, so the value is carried forward and simply
+never read.
+
+3,843 unit tests pass, 1 skipped, from 3,872: the 29 that went were the
+list ops', the compare-and-set writer's, the local store's list half and
+`fixedRunList`'s. 26 e2e pass. `scripts/unreachable.mjs` still reports
+zero files.

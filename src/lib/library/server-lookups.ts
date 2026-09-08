@@ -72,7 +72,6 @@ import type { LessonItem } from "@/lib/lesson-items";
 import { weakestFacts as weakestFactsOf } from "@/lib/decks";
 import { characterEntryPayload } from "@/lib/library/character-entry-content";
 import type { CharacterEntryPayload } from "@/lib/library/character-entry-content";
-import type { SavedList } from "@/types";
 import { KINDS as ALL_KINDS_INDEX, LIB_ENTRIES } from "@/lib/library/library-index";
 import type { Kind } from "@/lib/library/kinds";
 import { shelfSections as shelfSectionsOf } from "@/lib/library/shelf-sections";
@@ -729,25 +728,6 @@ export async function getFactsOf(entry: EntryId): Promise<FactId[]> {
 
 export async function getGlyphOfEntry(entry: EntryId): Promise<string> {
   return glyphOf(entry);
-}
-
-/** An in-progress run as a FIXED list of its material — the entryOf fold moved
- * here (SAK-104) since it needs the server-only fact registry. Null if empty. */
-export async function fixedRunList(
-  runId: string,
-  name: string,
-  facts: readonly FactId[],
-): Promise<SavedList | null> {
-  const entries = [...new Set(facts.map((f) => entryOf(f)))];
-  if (!entries.length) return null;
-  return {
-    kind: "fixed",
-    id: `run-${runId}`,
-    name,
-    created: Date.now(),
-    entries,
-    origin: "manual",
-  };
 }
 
 /** KanaEntryView's whole auxiliary data need, batched: the shape-lookalike ids

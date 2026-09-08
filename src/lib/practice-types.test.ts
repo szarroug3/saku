@@ -159,21 +159,18 @@ describe("matchesTypes: empty means all, else membership", () => {
 describe("scope is read off, and written back to, a Selection", () => {
   test("withScope then scopeOf round-trips, carrying types", () => {
     // Everything is self-describing; custom needs a manual pick to be
-    // distinguishable from everything (a custom pool with no list/text/rerun IS
-    // just everything you know), so it starts from a selection that has a list.
+    // distinguishable from everything (a custom pool with no text or rerun IS
+    // just everything you know), so it starts from a selection with a text
+    // search on it.
     const bases = {
       everything: withTypes(emptySelection(), ["kanji", "hiragana"]),
-      lists: {
-        ...emptySelection(),
-        list: "abc",
-      },
       custom: {
         ...emptySelection(),
         types: ["kanji", "hiragana"],
         text: "先生",
       },
     };
-    for (const scope of ["everything", "lists", "custom"] as const) {
+    for (const scope of ["everything", "custom"] as const) {
       const moved = withScope(bases[scope], scope);
       assert.equal(scopeOf(moved), scope);
       assert.deepEqual(
@@ -181,11 +178,6 @@ describe("scope is read off, and written back to, a Selection", () => {
         scope === "everything" ? ["kanji", "hiragana"] : [],
       );
     }
-  });
-
-  test("a list makes the scope lists", () => {
-    const sel = { ...emptySelection(), list: "abc" };
-    assert.equal(scopeOf(sel), "lists");
   });
 
   test("toggleType flips one id without touching the rest", () => {
@@ -254,7 +246,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
     const sel = withTypes(withScope(emptySelection(), "everything"), [
       "hiragana",
     ]);
-    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, { now: NOW }));
 
     assert.equal(out.size, hira.length, "exactly the known hiragana");
     for (const id of hira) assert.ok(out.has(id), "every known hiragana");
@@ -272,7 +264,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
       "hiragana",
       "radical",
     ]);
-    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, { now: NOW }));
     assert.equal(out.size, hira.length + radical.length);
     for (const id of [...hira, ...radical]) assert.ok(out.has(id));
     for (const id of kata) assert.ok(!out.has(id));
@@ -292,7 +284,7 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
       { ...withScope(emptySelection(), "everything"), states: ["shaky"] },
       ["kanji"],
     );
-    const out = new Set(resolve(sel, h, [], 0, { now: NOW }));
+    const out = new Set(resolve(sel, h, { now: NOW }));
 
     assert.equal(out.size, shakyKanji.length);
     for (const id of shakyKanji) assert.ok(out.has(id), "the shaky kanji");
@@ -336,7 +328,7 @@ describe("pruneEmptyTypes drops a chosen type absent from the new scope", () => 
     };
     const pruned = pruneEmptyTypes(sel, new Set(["hiragana"]));
     assert.deepEqual(pruned.states, sel.states);
-    assert.equal(pruned.list, sel.list);
+    assert.equal(pruned.text, sel.text);
     assert.deepEqual(pruned.types, ["hiragana"]);
   });
 
@@ -358,9 +350,7 @@ describe("pruneEmptyTypes drops a chosen type absent from the new scope", () => 
     const present = new Set(
       availableTypes().filter(
         (id) =>
-          resolve(withTypes(moved, [id]), h, [], 0, {
-            now: NOW,
-          }).length > 0,
+          resolve(withTypes(moved, [id]), h, { now: NOW }).length > 0,
       ),
     );
     assert.ok(present.has("hiragana"), "hiragana are shaky → present");
@@ -385,14 +375,17 @@ describe("effectiveScope lets 'pick what I want' open with an empty pool (bug 2)
   });
 
   test("a self-describing selection ignores a stale intent", () => {
-    const listed = { ...emptySelection(), list: "abc" };
-    assert.equal(effectiveScope(listed, "everything"), "lists");
     const statusPool: Selection = { ...emptySelection(), states: ["shaky"] };
     assert.equal(effectiveScope(statusPool, "custom"), "custom");
+    const searched: Selection = { ...emptySelection(), text: "先生" };
+    assert.equal(effectiveScope(searched, "everything"), "custom");
   });
 
   test("no intent falls back to the derived scope", () => {
     assert.equal(effectiveScope(emptySelection(), null), "everything");
-    assert.equal(effectiveScope({ ...emptySelection(), list: "x" }, null), "lists");
+    assert.equal(
+      effectiveScope({ ...emptySelection(), text: "先生" }, null),
+      "custom",
+    );
   });
 });

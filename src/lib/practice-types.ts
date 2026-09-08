@@ -20,7 +20,6 @@
 // "known" or "shaky":
 //
 //   everything .. the known pool, optionally narrowed by kind and status.
-//   lists ....... one saved list, optionally narrowed by status.
 //   custom ...... a Library-built query, optionally narrowed by status.
 //
 // scopeOf() reads the scope OFF a Selection; withScope() writes it BACK, always
@@ -131,17 +130,16 @@ export function availableTypes(): string[] {
 
 // ---------- the scope axis ----------
 
-export type PracticeScope = "everything" | "lists" | "custom";
+export type PracticeScope = "everything" | "custom";
 
 /**
  * Which scope a Selection expresses. Read off the SAME fields resolve() reads,
- * so the label can never disagree with the pool: no state/list/session/text is
- * "everything I know"; status filters remain part of every scope. A saved list
- * is the Lists scope. A rerun, text search, or subject filter is a Library-built
- * "pick what I want" query. Types only belong to Everything.
+ * so the label can never disagree with the pool: no state, session or text is
+ * "everything I know"; status filters remain part of every scope. A rerun, text
+ * search, or subject filter is a Library-built "pick what I want" query. Types
+ * only belong to Everything.
  */
 export function scopeOf(sel: Selection): PracticeScope {
-  if (sel.list) return "lists";
   const bare =
     sel.session === null && !sel.text.trim() && !sel.subjects.length;
   return bare ? "everything" : "custom";
@@ -151,9 +149,8 @@ export function scopeOf(sel: Selection): PracticeScope {
  * The same Selection moved into a scope, carrying the chosen types through.
  *
  *   everything → the empty query (the whole known pool).
- *   lists .....→ keep the selected list, clear kind/manual filters.
- *   custom ...→ keep whatever manual narrowing is set (list, rerun, text) but
- *              clear list and kind filters.
+ *   custom ...→ keep whatever manual narrowing is set (rerun, text, subject)
+ *              but clear the kind filters.
  *
  * Types survive every switch — changing scope never silently discards the type
  * chooser, and vice versa.
@@ -161,7 +158,7 @@ export function scopeOf(sel: Selection): PracticeScope {
 export function withScope(sel: Selection, scope: PracticeScope): Selection {
   // `learned` (the date window) survives every switch alongside `states`: it is
   // a cross-scope narrowing the learner set on the always-shown date section, so
-  // moving between Everything/Lists/Custom must not silently drop it.
+  // moving between Everything and Custom must not silently drop it.
   switch (scope) {
     case "everything":
       return {
@@ -169,13 +166,6 @@ export function withScope(sel: Selection, scope: PracticeScope): Selection {
         types: sel.types,
         states: sel.states,
         learned: sel.learned,
-      };
-    case "lists":
-      return {
-        ...emptySelection(),
-        states: sel.states,
-        learned: sel.learned,
-        list: sel.list,
       };
     case "custom":
       return {
@@ -220,10 +210,10 @@ export function pruneEmptyTypes(
  * button the learner last pressed (their intent, or null for none yet).
  *
  * scopeOf() alone cannot tell "pick what I want, nothing chosen yet" apart from
- * "everything I know": a custom pool with no list, text or rerun is field-for-
- * field the empty query. So the moment the learner presses "pick what I want"
- * before naming a list, scopeOf still reads "everything", the custom button
- * never lights, and the panel that lets them pick never opens — the preset looks
+ * "everything I know": a custom pool with no text or rerun is field-for-field
+ * the empty query. So the moment the learner presses "pick what I want" before
+ * naming anything, scopeOf still reads "everything", the custom button never
+ * lights, and the panel that lets them pick never opens, and the preset looks
  * broken. When the intent is custom and the selection has not yet grown a manual
  * narrowing, honour the intent so the panel opens. Any self-describing custom
  * shape wins over a stale intent because it names its own scope.
@@ -233,12 +223,7 @@ export function effectiveScope(
   intent: PracticeScope | null,
 ): PracticeScope {
   const derived = scopeOf(sel);
-  if (
-    (intent === "custom" || intent === "lists") &&
-    derived === "everything"
-  ) {
-    return intent;
-  }
+  if (intent === "custom" && derived === "everything") return intent;
   return derived;
 }
 

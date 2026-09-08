@@ -169,7 +169,7 @@ describe("planSession keeps a 2-host recipe's due pair together (te-permission: 
         [adjFact]: aggregate(3),
       } as HistoryFile["facts"],
     });
-    const due = dueFacts(h, [], NOW);
+    const due = dueFacts(h, NOW);
     assert.ok(due.includes(verbFact));
     assert.ok(due.includes(adjFact));
     const ia = due.indexOf(verbFact);

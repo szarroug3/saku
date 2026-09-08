@@ -10,9 +10,9 @@
 // become account data — otherwise a learner who studied signed out, then signed
 // in, would see their account start empty and their work stranded in one
 // browser. So on the first authed load with local progress present, this reads
-// the local history and lists and POSTs them through the normal API routes, the
-// same writes a signed-in session makes. The server is now the durable copy; the
-// local keys are cleared.
+// the local history and POSTs it through the normal API routes, the same writes
+// a signed-in session makes. The server is now the durable copy; the local key
+// is cleared.
 //
 // WHY REPLAY IS SAFE TO REPEAT
 // ============================
@@ -22,20 +22,10 @@
 //     twice counts once.
 //   - claims and seen just SET a timestamp per fact, so re-posting overwrites
 //     with the same intent.
-//   - a list save replaces the list with the same id; add/remove are set ops.
-// So the failure plan is simply: clear a local key ONLY after its uploads
-// succeed, and if anything fails leave that key in place to be retried on the
+// So the failure plan is simply: clear the local key ONLY after its uploads
+// succeed, and if anything fails leave the key in place to be retried on the
 // next load. Nothing is lost by running twice; something is lost by clearing
 // before the upload lands, so we never do.
-//
-// AND "SUCCEEDED" IS NOT THE SAME AS "GOT A 2xx" FOR LISTS. Two devices signing
-// into one account within the same second both replayed their own lists over the
-// same stale row: the later write won, both requests answered 2xx, and both
-// devices then cleared local — so the losing device's lists were gone from the
-// server AND the browser. The server write is compare-and-set now (lists.ts /
-// lists-mutate.ts), which is the actual fix; on top of it, the lists key is
-// cleared only after the account can be READ BACK holding every replayed id.
-// The irreversible step gets independent evidence, not our own status code.
 //
 // GUARDING
 // ========
@@ -43,7 +33,7 @@
 // twice in development, "back online" and a fresh mount can overlap, and two
 // concurrent replays would race on the clear. It is deliberately NOT persisted:
 // a partial failure clears the flag so the next load retries, and a full success
-// has already cleared the local keys, so hasLocalProgress() is the real "is
+// has already cleared the local key, so hasLocalProgress() is the real "is
 // there anything left to do" gate. And it never runs while signed out — the
 // caller passes the server's own signed-in answer, and we re-check the browser
 // session is a real, non-anonymous user before touching anything.
@@ -51,14 +41,12 @@
 import { refreshSupabaseSession } from "@/lib/progress-fetch";
 import { resolveProgressWrite } from "@/lib/progress-write";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { FactId, ListsFile } from "@/types";
+import type { FactId } from "@/types";
 
 import {
   clearLocalHistory,
-  clearLocalLists,
   hasLocalProgress,
   loadLocalHistory,
-  loadLocalLists,
 } from "./local-progress";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -133,54 +121,6 @@ async function replayHistory(): Promise<boolean> {
 }
 
 /**
- * Read the account's lists back and answer whether EVERY id in `ids` is present.
- *
- * The clear gate, not a nicety. Two devices signing in at the same second used
- * to each replay their own lists over a stale read; both got a 2xx and both
- * cleared their local copy, so the losing device's lists were gone from the
- * server AND the browser. The server side of that is fixed (lists writes are
- * compare-and-set now — see lists-mutate.ts), which makes a 2xx mean "landed on
- * top of whatever else arrived". This confirms it independently, so the
- * irreversible step — dropping the only other copy — rests on the account
- * actually HOLDING the lists rather than on our own request's status code.
- *
- * Anything that is not a clean, complete answer reads as "not yet": a non-2xx, a
- * network throw, unparseable JSON, a missing id. The cost of a false negative is
- * one harmless idempotent re-replay next load; the cost of a false positive is
- * the learner's lists.
- */
-async function listsLanded(ids: readonly string[]): Promise<boolean> {
-  try {
-    const res = await fetch("/api/lists", { cache: "no-store" });
-    if (!res.ok) return false;
-    const file = (await res.json()) as Partial<ListsFile> | null;
-    const have = new Set((file?.lists ?? []).map((l) => l.id));
-    return ids.every((id) => have.has(id));
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Replay local lists to the account. Each list is saved whole under its own id
- * (idempotent replace), so a re-run overwrites rather than duplicates. Returns
- * true only if every list was accepted AND is then readable back from the
- * account — the gate for clearing the local lists key.
- */
-async function replayLists(): Promise<boolean> {
-  const lists = loadLocalLists();
-  if (!lists.length) return true; // nothing to send, nothing to verify
-  let allOk = true;
-  for (const list of lists) {
-    if (!(await post("/api/lists", list))) allOk = false;
-  }
-  // A refusal already means "keep the local copy"; don't spend a read to confirm
-  // what we know. Only a clean sweep is worth verifying.
-  if (!allOk) return false;
-  return listsLanded(lists.map((l) => l.id));
-}
-
-/**
  * Merge signed-out local progress into the freshly signed-in account, once.
  *
  * `signedIn` is the server's answer (from the layout), passed so this never runs
@@ -188,8 +128,8 @@ async function replayLists(): Promise<boolean> {
  * non-anonymous session before writing — a stale prop or an anonymous user must
  * not trigger a replay against the wrong (or no) account.
  *
- * Best-effort and self-healing: each local key is cleared only after its uploads
- * succeed, and any failure leaves that key for the next load. Safe to call on
+ * Best-effort and self-healing: the local key is cleared only after its uploads
+ * succeed, and any failure leaves it for the next load. Safe to call on
  * every authed mount — with nothing local, it returns immediately.
  *
  * Returns whether anything was actually replayed, which is the caller's cue to
@@ -215,15 +155,12 @@ export async function migrateLocalProgress(signedIn: boolean): Promise<boolean> 
       return false;
     }
 
-    // Two independent keys, two independent clears: history succeeding must not
-    // wait on lists, and neither is cleared until its own uploads land.
+    // The key is cleared only once its own uploads land.
     const historyMerged = await replayHistory();
     if (historyMerged) clearLocalHistory();
-    const listsMerged = await replayLists();
-    if (listsMerged) clearLocalLists();
 
     // If anything failed, leave the flag DOWN so the next load retries the
-    // leftovers (the succeeded keys are already gone, so the retry is small).
+    // leftovers.
     if (hasLocalProgress()) runningOrDone = false;
     return historyMerged;
   } catch {

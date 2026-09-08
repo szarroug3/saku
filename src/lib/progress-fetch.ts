@@ -52,21 +52,16 @@ import {
 } from "@/lib/progress-write";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  localAddToList,
   localClaim,
   localClearMixup,
-  localDeleteList,
   localDeleteSessions,
   localDropClaim,
-  localRemoveFromList,
   localDropSeen,
-  localRenameList,
   localResetHistory,
-  localSaveList,
   localSeen,
   localSession,
 } from "@/lib/store/local-progress";
-import type { EntryId, FactId, QuizSessionRecord, SavedList } from "@/types";
+import type { FactId, QuizSessionRecord } from "@/types";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -201,66 +196,4 @@ export function postDelete(body: {
       else localDeleteSessions(body.ids ?? null, body.all ?? false);
     }),
   );
-}
-
-// ---------- lists ----------
-
-/**
- * One of the four list writes POST /api/lists accepts, discriminated by which
- * key is present — the same union the route and useLists already speak. Restated
- * here (rather than imported from the route, which is server-only) so the local
- * fallback can branch to the matching local op.
- */
-export type ListWrite =
-  | { addTo: string; entries: EntryId[] }
-  | { removeFrom: string; entries: EntryId[] }
-  | { rename: string; name: string }
-  | SavedList;
-
-/**
- * A list write. Mirrors POST /api/lists. On 401 the same edit is made to this
- * browser's local lists — the derived-list guard rides along inside the shared
- * list-ops, so a signed-out add to a rule is refused exactly as the server
- * refuses it.
- */
-export function postList(body: ListWrite): Promise<ProgressResult> {
-  return postWithLocalFallback("/api/lists", body, () => {
-    if ("addTo" in body && body.addTo !== undefined) {
-      localAddToList(body.addTo, body.entries);
-    } else if ("removeFrom" in body && body.removeFrom !== undefined) {
-      localRemoveFromList(body.removeFrom, body.entries);
-    } else if ("rename" in body && body.rename !== undefined) {
-      localRenameList(body.rename, body.name);
-    } else {
-      localSaveList(body as SavedList);
-    }
-  });
-}
-
-/** Delete a whole list. Mirrors DELETE /api/lists?id=…. On 401 the list is
- * dropped from this browser's local lists. */
-export function deleteList(id: string): Promise<ProgressResult> {
-  return postWithLocalFallbackRequest(
-    () =>
-      fetch(`/api/lists?id=${encodeURIComponent(id)}`, { method: "DELETE" }),
-    () => localDeleteList(id),
-  );
-}
-
-/**
- * As postWithLocalFallback, but the caller supplies the whole request — DELETE
- * carries its argument in the query string, not a JSON body, so it cannot go
- * through the POST helper. Same decision (signed-out local, signed-in refresh +
- * retry), one implementation apart only in how the request is built.
- */
-function postWithLocalFallbackRequest(
-  send: () => Promise<Response>,
-  applyLocal: () => void,
-): Promise<ProgressResult> {
-  return resolveProgressWrite({
-    send,
-    applyLocal,
-    signedIn: isSignedIn(),
-    refreshSession: refreshSupabaseSession,
-  });
 }

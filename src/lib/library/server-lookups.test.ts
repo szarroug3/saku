@@ -490,25 +490,6 @@ describe("getActiveMixupEntries", () => {
 });
 
 /* -------------------------------------------------------------------------
- * FIXED RUN LIST
- * ---------------------------------------------------------------------- */
-
-describe("fixedRunList", () => {
-  test("builds a list of the run's own (de-duplicated) entries, or null for an empty run", async () => {
-    const facts = [wordReadingFactId("人"), wordMeaningFactId("人")];
-    const list = await SL.fixedRunList("run-1", "My run", facts);
-    assert.ok(list);
-    assert.equal(list!.kind, "fixed");
-    assert.equal(list!.id, "run-run-1");
-    assert.equal(list!.name, "My run");
-    assert.ok(list!.kind === "fixed");
-    assert.deepEqual(list.entries, [...new Set(facts.map((f) => entryOf(f)))]);
-
-    assert.equal(await SL.fixedRunList("run-2", "Empty", []), null);
-  });
-});
-
-/* -------------------------------------------------------------------------
  * BREAKDOWN ROWS
  * ---------------------------------------------------------------------- */
 

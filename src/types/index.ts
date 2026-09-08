@@ -385,8 +385,6 @@ export interface Selection {
    * src/lib/practice-types.ts — factType() computes it, resolve() filters on it.
    */
   types: string[];
-  /** A saved list's id, or null for "not restricted to a list". */
-  list: string | null;
   /** Bands to include, OR-ed together — a fact is in if it matches ANY of
    * them. Empty = no state filter. NOT a partition: `mixup` overlaps the
    * others, which is exactly why this is a set and not one value. */
@@ -406,7 +404,7 @@ export interface Selection {
   /** Narrow to facts FIRST LEARNED within this window (see HistoryFile.learnedAt).
    *  from/to are ms epochs; null on either side = open-ended. Absent/null = no
    *  date filter — the same "empty field = everything" rule every other Selection
-   *  field follows. Composes with states/types/list like any other narrowing. */
+   *  field follows. Composes with states and types like any other narrowing. */
   learned?: { from: number | null; to: number | null } | null;
 }
 
@@ -433,52 +431,6 @@ export type FactBand =
   | "shaky"
   | "slipping"
   | "mixup";
-
-/**
- * A named list of things to drill. ONE OBJECT, FOUR SOURCES: an imported file,
- * a saved search, a past session, a built-in shelf. All of them are a name and
- * a way to get keys, and everything downstream — the sidebar, the drill bar,
- * resolve() — treats them identically.
- *
- * EXCEPT AT ONE MOMENT, and this is a real hole rather than a tidy-up. The
- * "one object" claim is true for READING a list and false for WRITING to one:
- *
- *   You CAN add か to "Core 2k". Core 2k is a fixed set of words; adding to it
- *   means the set now has か in it, forever, and that is the whole of what
- *   happened.
- *
- *   You CANNOT add か to "Kanji I miss". That is not a set, it is a RULE that
- *   recomputes every time you look at it. A hand-added item would either vanish
- *   the next time the rule ran, or silently freeze your live search into a
- *   frozen list without telling you. Both are lies.
- *
- * So there are two kinds, and the split is exactly "does a person or a rule
- * decide what is in it". Derived lists are simply not offered for writing —
- * they are one object with fixed lists everywhere else.
- */
-export type SavedList =
-  | {
-      kind: "fixed";
-      id: string;
-      name: string;
-      created: number;
-      /** The set. ENTRIES, not facts: you file 生, not one of its readings. */
-      entries: EntryId[];
-      origin: "import" | "manual";
-    }
-  | {
-      kind: "derived";
-      id: string;
-      name: string;
-      created: number;
-      /** The rule. Re-resolved on every read, which is why you cannot add to it. */
-      query: Selection;
-      origin: "search" | "session";
-    };
-
-export interface ListsFile {
-  lists: SavedList[];
-}
 
 // ---------- per-session stats (in-memory during a quiz) ----------
 
