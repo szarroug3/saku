@@ -37,7 +37,7 @@ export const BATCH_02: Readonly<Record<string, string>> = {
   士: "The original glyph looked like a war axe, later meaning soldier and then scholar.",
   月: "The original glyph looked like a crescent moon.",
   明: "The sun (日) and the moon (月) side by side: bright.",
-  外: "This glyph means outside. It uses the definition of 卜 (divination) and the sound of 月.",
+  外: "This glyph means outside. It uses the definition of 卜 (divination) and the sound of 夕, which the record writes 月, a crescent moon with part of it missing.",
   自: "The original glyph looked like a nose. It was later borrowed to mean oneself.",
   斤: "The original glyph looked like an axe.",
   所: "This glyph originally meant the sound of chopping but changed to place over time. It uses the definition of 斤 (axe) and the sound of 戸.",

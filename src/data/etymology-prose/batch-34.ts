@@ -39,7 +39,7 @@ export const BATCH_34: Readonly<Record<string, string>> = {
   遵: "This glyph means to obey or follow. It uses the definition of 辵 (walk) and the sound of 尊.",
   駒: "This glyph means pony or colt. It uses the definition of 馬 (horse) and the sound of 句.",
   儒: "This glyph means Confucian scholar. It uses the definition of 人 (person) and the sound of 需 (じゅ).",
-  墾: "This glyph means to break ground for farmland. It uses the definition of 土 (earth) and the sound of 貇.",
+  墾: "This glyph means to break ground for farmland. It uses the definition of 土 (earth); the sound piece 貇 is drawn here as 豸 over 艮.",
   緻: "This glyph means fine or finely woven. It uses the definition of 糸 (thread) and the sound of 致 (ち).",
   膳: "This glyph means a small dining tray. It uses the definition of 肉 (flesh) and the sound of 善.",
   薪: "This glyph means firewood. It uses the definition of 艸 (plant) and the sound of 新 (しん).",

@@ -42,7 +42,7 @@ export const MANUAL_04: Readonly<Record<string, string>> = {
   斎: "This glyph is the simplified form of 齋, meaning ritual purification or a quiet room. It uses 示 (a deity, worship) for meaning and 斉 (齊) for the sound.", // source: https://en.wiktionary.org/wiki/齋
   猟: "This glyph is the simplified form of 獵, meaning to hunt. It uses the dog radical (⺨) for meaning and 巤 for the sound.", // source: https://en.wiktionary.org/wiki/獵
   粛: "This glyph means solemn, reverent. The Shuowen explains its old form as someone working carefully with a stylus at the edge of a deep pool, trembling with care.", // source: https://en.wiktionary.org/wiki/肅
-  堕: "This glyph means to fall or degenerate. It uses the earth (土) one falls to for meaning and 陏 (隋) for the sound.", // source: https://en.wiktionary.org/wiki/墮
+  堕: "This glyph means to fall or degenerate. It uses the earth (土) one falls to for its meaning and 陏 for its sound, the form 隋 takes here.", // source: https://en.wiktionary.org/wiki/墮
   塀: "This glyph is a Japanese coinage (kokuji): earth (土) plus 屏, a screen or partition, giving a wall or fence.", // source: https://en.wiktionary.org/wiki/塀
   湾: "This glyph is the simplified form of 灣, meaning bay or gulf. It uses water (氵) for meaning and 弯 (彎, a bend) for the sound and sense of curving.", // source: https://en.wiktionary.org/wiki/灣
   痩: "This glyph is the simplified form of 瘦, meaning thin, lean. It uses the sickness radical (疒) for meaning and 叟 for the sound.", // source: https://en.wiktionary.org/wiki/瘦

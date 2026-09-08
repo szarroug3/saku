@@ -12,7 +12,7 @@ export const BATCH_32: Readonly<Record<string, string>> = {
   佳: "This glyph means excellent, beautiful. It uses the definition of 人 (person) and the sound of 圭.",
   劾: "This glyph means to censure or investigate. It uses the definition of 力 (power) and the sound of 亥.",
   坪: "This glyph means a measured patch of ground. It uses the definition of 土 (earth) and the sound of 平.",
-  奔: "A person (人) over hurrying feet (止): to run and bustle.",
+  奔: "A person (大) above hurrying feet: to run and bustle. The feet were written 止 and are now the 卉 below.",
   岳: "This glyph means mountain peak. It uses the definition of 山 (mountain) and the sound of 羋.",
   弥: "This glyph means increasingly, all the more. It uses the definition of 弓 (bow) and the sound of 尔.",
   弦: "This glyph means bowstring. It uses the definition of 弓 (bow) and the sound of 玄 (げん).",

@@ -50,7 +50,7 @@ export const BATCH_29: Readonly<Record<string, string>> = {
   僕: "The old glyph showed a slave carrying a basket to clear away refuse. In its current form it means servant, using the definition of 人 (man) and the sound of 菐.",
   塾: "This glyph means a private school. It uses the definition of 土 (earth) and the sound of 孰.",
   墨: "This glyph means ink. It uses the definition of 土 (earth) and the sound of 黑.",
-  奪: "A hand (又) seizing a bird (雀) from a robe (衣): to snatch away by force.",
+  奪: "This glyph means to snatch away by force. The parts drawn are 奞 and 寸. The older form showed a hand seizing a bird from someone's clothing, written 又, 雀 and 衣, and the modern shape no longer separates them.",
   寡: "A single head (頁) under a roof (宀): only one person in the house, alone, few.",
   慕: "This glyph means to yearn for. It uses the definition of 心 (heart) and the sound of 莫.",
   漂: "This glyph means to drift on water. It uses the definition of 水 (water) and the sound of 票 (ひょう).",

@@ -41,7 +41,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   件: "A person (人) beside a cow (牛): a matter, a case, a thing to count.",
   巡: "This glyph means to patrol or go around. It uses the definition of 辵 (to walk) and the sound of 川.",
   扱: "This glyph means to handle or deal with. It uses the definition of 手 (hand) and the sound of 及: to take in by hand.",
-  即: "A food vessel (皀) beside a kneeling person (卩): to come near and eat, to approach.",
+  即: "A food vessel beside a kneeling person (卩): to come near and eat, to approach. The vessel was 皀; it is now drawn 艮.",
   呂: "The original glyph looked like two blocks, read as two vertebrae: the spine, the backbone.",
   困: "A tree (木) hemmed inside an enclosure (囗): to be boxed in, distressed.",
   妙: "This glyph means exquisite or subtle. It uses the definition of 女 (woman) and the sound of 少.",
@@ -53,6 +53,6 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   迎: "This glyph means to welcome or meet. It uses the definition of 辵 (to walk) and the sound of 卬.",
   協: "This glyph means cooperation. It builds on 劦 (to work together) with 十 added for the sound.",
   垂: "The original glyph showed flowers (𠂹) hanging down over the ground (土): to droop, to hang.",
-  妻: "A hand grabbing hair (肀) above a woman (女): a wife, marking her as taken.",
+  妻: "A hand grabbing hair above a woman (女): a wife, marked as taken. The hand and hair were written 肀; it is now drawn ⺕.",
   姉: "This glyph means elder sister. It uses the definition of 女 (woman) and the sound of 市 (し).",
 };

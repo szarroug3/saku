@@ -42,7 +42,7 @@ export const BATCH_23: Readonly<Record<string, string>> = {
   鹿: "The original glyph looked like a deer, drawing its antlers, head, and bent front and rear legs.",
   傍: "This glyph means beside, bystander. It uses the definition of 人 (person) and the sound of 旁.",
   喫: "This glyph means to eat, to drink. It uses the definition of 口 (mouth) and the sound of 契.",
-  堅: "This glyph means hard, solid. It uses the definition of 土 (earth) and the sound of 臤.",
+  堅: "This glyph means hard, solid. It uses the definition of 土 (earth); the sound piece 臤 is drawn here as 臣 with 又.",
   婿: "This glyph means bridegroom, son-in-law. It uses the definition of 女 (woman) and the sound of 胥.",
   循: "This glyph means to follow, to go in sequence. It uses the definition of 彳 (movement) and the sound of 盾 (じゅん).",
   愉: "This glyph means joy, pleasure. It uses the definition of 心 (heart) and the sound of 俞.",

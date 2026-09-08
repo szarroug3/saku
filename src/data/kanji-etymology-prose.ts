@@ -82,7 +82,7 @@ const BATCH_01: Readonly<Record<string, string>> = {
   生: "A young shoot (屮) rising from the ground (一): life and growth.",
   手: "The original glyph looked like a hand with its fingers spread.",
   口: "The original glyph looked like an open mouth.",
-  合: "A lid (亼) closing over a container's mouth (口): things coming together and fitting.",
+  合: "A lid closing over a container's mouth (口): things coming together and fitting. The lid was written 亼, now drawn 人 over 一.",
   中: "The original glyph looked like a flagpole standing in the center of a field, marking the middle.",
   行: "The original glyph looked like a crossroads. Its left half 彳 became the common radical for going and movement.",
   刀: "The original glyph looked like a knife.",

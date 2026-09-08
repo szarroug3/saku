@@ -25,7 +25,7 @@ export const BATCH_27: Readonly<Record<string, string>> = {
   剖: "This glyph means to divide. It uses the definition of 刀 (knife) and the sound of 咅.",
   匿: "This glyph means to hide. It uses the definition of 匸 (to conceal) and the sound of 若.",
   哲: "This glyph means wisdom. It uses the definition of 口 (mouth) and the sound of 折.",
-  唐: "This glyph names the Tang dynasty. It uses the definition of 口 (mouth) and the sound of 庚.",
+  唐: "This glyph names the Tang dynasty. It uses the definition of 口 (mouth); the sound piece 庚 is drawn here as 广 over ⺕.",
   娘: "This glyph means girl. It uses the definition of 女 (woman) and the sound of 良.",
   娠: "This glyph means pregnancy. It uses the definition of 女 (woman) and the sound of 辰.",
   峰: "This glyph means peak. It uses the definition of 山 (mountain) and the sound of 夆.",

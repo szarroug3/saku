@@ -34,7 +34,7 @@ export const BATCH_28: Readonly<Record<string, string>> = {
   喉: "This glyph means throat. It uses the definition of 口 (mouth) and the sound of 侯.",
   喚: "This glyph means to yell or call. It uses the definition of 口 (mouth) and the sound of 奐.",
   喩: "This glyph means metaphor. It uses the definition of 口 (mouth) and the sound of 兪.",
-  喪: "This glyph means mourning or loss. It uses the definition of 㗊 (many mouths) and the sound of 桑.",
+  喪: "This glyph means mourning or loss. Two mouths (口) drawn here stood for crying. The older form put 桑 above them for the sound, and the shape was reworked more than once, so the parts no longer line up with that account.",
   堤: "This glyph means an embankment. It uses the definition of 土 (soil) and the sound of 是.",
   堪: "This glyph means to endure. It uses the definition of 土 (earth) and the sound of 甚. It first pictured a heavy mound of earth, then the act of bearing that weight.",
   塔: "This glyph means a tower or pagoda. It uses the definition of 土 (earth) and the sound of 荅.",

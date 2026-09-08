@@ -38,7 +38,7 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   伐: "A spear (戈) held to a person's neck (人): to strike down, to attack.",
   匠: "An axe (斤) in a basket (匚): a carpenter's tools, an artisan.",
   吏: "The original glyph looked like a hand holding a flag: an official or representative.",
-  妃: "A woman (女) beside a kneeling man (卩): a consort, a queen.",
+  妃: "A woman (女) beside a kneeling man: a consort, a queen. The man was written 卩; it is now drawn 己.",
   妄: "This glyph means reckless or delusional. It uses the definition of 女 (woman) and the sound of 亡.",
   帆: "This glyph means a sail. It uses the definition of 巾 (cloth) and the sound of 凡.",
   朱: "A tree (木) with a mark on its trunk pointing to the reddish heartwood: vermilion, scarlet.",

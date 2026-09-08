@@ -221,7 +221,7 @@ function disagreements(): readonly { glyph: string; missing: string[] }[] {
 // stories are settled is the point; growing it needs a reason in the commit.
 // ---------------------------------------------------------------------------
 const SAK_421_LIST =
-  "卑印危即原去及受句可台号合向命唐善喜喪嘆器執堅堕報墾壱夏外夜天失奈奉奏契奔奪妃妻威孔存定宜宰害宴容宿寒寡寧封射将尚就尿屈届屋岡岳岸嵐巡差市布希帥常年幹庶庸延弥弱強彙形得微徳徹急恐惰愛慶憂憩懇成承拐拳捗携撤支改教敢散敬敵敷斑斥施旅旋族旗既旦旨早旬昔春暴更書替最服期棄業樹款正武死段殿毒汚法泰津淫滅滴漢灰炉炊炭為焦然熊爽狂獄珍班琴甚畏畝畿疫癒癖監直省真睦知砂硫祭稚稲突競第範籍系素細絶維緊練繭罰羨翌老耗聖肥肯肺腎膚膝臨臭興舞色茶荒菌蔑虐融血衡表衷装襲見親設診豊豪貌負責貴賊賢質赤赦軍軟辣農退送逸遂道達適選那配酎里重野開闘陛陰陶隆隊難雪雷電青韓類飲飾香騰骨鬱麻";
+  "威孔存定宜宰害宴容宿寒寡寧封射将尚就尿屈届屋岡岳岸嵐巡差市布希帥常年幹庶庸延弥弱強彙形得微徳徹急恐惰愛慶憂憩懇成承拐拳捗携撤支改教敢散敬敵敷斑斥施旅旋族旗既旦旨早旬昔春暴更書替最服期棄業樹款正武死段殿毒汚法泰津淫滅滴漢灰炉炊炭為焦然熊爽狂獄珍班琴甚畏畝畿疫癒癖監直省真睦知砂硫祭稚稲突競第範籍系素細絶維緊練繭罰羨翌老耗聖肥肯肺腎膚膝臨臭興舞色茶荒菌蔑虐融血衡表衷装襲見親設診豊豪貌負責貴賊賢質赤赦軍軟辣農退送逸遂道達適選那配酎里重野開闘陛陰陶隆隊難雪雷電青韓類飲飾香騰骨鬱麻";
 
 test("every origin story names only pieces the glyph has, or is on the SAK-421 list", () => {
   const failing = disagreements();
@@ -260,7 +260,7 @@ test("the check's reach is what the review says it is", () => {
   );
   assert.equal(
     disagreements().length,
-    277,
+    237,
     "Stories naming a piece the glyph does not have (the SAK-421 list).",
   );
 });

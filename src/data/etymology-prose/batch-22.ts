@@ -38,7 +38,7 @@ export const BATCH_22: Readonly<Record<string, string>> = {
   述: "This glyph means to state or relate. It uses the definition of 辵 (to go, walk) and the sound of 朮.",
   邸: "This glyph means a residence. It uses the definition of 邑 (settlement) and the sound of 氐.",
   冠: "A hand (寸) setting a hat (冖) onto a head (元): a crown.",
-  卑: "A hand (𠂇) holding up a fan (甲) for a master: a lowly servant, and so base.",
+  卑: "A hand (𠂇) holding up a fan for a master: a lowly servant, and so base. The fan was written 甲; it is now the 田 with the strokes around it.",
   哀: "This glyph means grief. It uses the definition of 口 (mouth) and the sound of 衣.",
   姿: "This glyph means figure or form. It uses the definition of 女 (woman) and the sound of 次 (し).",
   孤: "This glyph means orphan. It uses the definition of 子 (child) and the sound of 瓜.",

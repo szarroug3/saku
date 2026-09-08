@@ -11,9 +11,9 @@ export const MANUAL_05: Readonly<Record<string, string>> = {
   弐: "This is the formal, document form of the number two. The old form 貳 set 貝 (shell money) beside a form of 二, and the modern 弐 keeps 二 with 弋 above.", // source: https://en.wiktionary.org/wiki/貳
   亜: "The original glyph, 亞, showed a cross-shaped tomb chamber seen from above. It was borrowed for the senses second, inferior, and Asia.", // source: https://en.wiktionary.org/wiki/亞
   呉: "This glyph joins 口 (mouth) with 夨 (a person with head tilted back): to talk loudly. It also names the ancient kingdom of Wu.", // source: https://en.wiktionary.org/wiki/吳
-  壱: "This is the formal, document form of the number one. It is the simplified 壹, a jar (壺) enclosing 吉 for the sound.", // source: https://en.wiktionary.org/wiki/壹
+  壱: "This is the formal, document form of the number one. It comes from 壹, a jar with 吉 inside it for the sound, and its parts here are 士, 冖 and 匕.", // source: https://en.wiktionary.org/wiki/壹
   刹: "This glyph writes the Buddhist word for a temple or pagoda. It transcribes the sound of Sanskrit kṣetra, taken through 刹多羅.", // source: https://en.wiktionary.org/wiki/刹
-  奈: "This glyph began as 柰, a tree (木) standing on an altar (示). In Japanese it writes Nara and the question word what, how.", // source: https://en.wiktionary.org/wiki/柰
+  奈: "This glyph began as 柰, a tree standing on an altar (示). In Japanese it writes Nara and the question word what, how.", // source: https://en.wiktionary.org/wiki/柰
   枢: "This glyph means a door hinge or pivot. It uses 木 (wood) for the meaning and 区 for the sound; it is the simplified form of 樞.", // source: https://en.wiktionary.org/wiki/樞
   勅: "This glyph means an imperial command. Its source 敕 bound 束 (to tie, restrain) to 攴 (a hand with a stick, action), a binding order; the common form 勅 writes 力 (force).", // source: https://en.wiktionary.org/wiki/敕
   厘: "This glyph names a tiny fractional unit. It is a reduced form of 釐, which paired 里 (a land measure) with a sound piece, dropping the top.", // source: https://en.wiktionary.org/wiki/釐

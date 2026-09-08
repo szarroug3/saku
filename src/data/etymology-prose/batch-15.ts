@@ -32,7 +32,7 @@ export const BATCH_15: Readonly<Record<string, string>> = {
   酔: "This glyph means drunk. It uses the definition of 酉 (a wine jar) and the sound of 卒.",
   釣: "This glyph means fishing with a hook. It uses the definition of 金 (metal) and the sound of 勺.",
   鳥: "The original glyph pictured a bird with a long dangling tail.",
-  喜: "A drum (壴) above a mouth (口): singing to the beat, to rejoice.",
+  喜: "A drum above a mouth (口): singing to the beat, to rejoice. The drum was written 壴; it is now drawn 吉.",
   富: "This glyph means wealth. It uses the definition of 宀 (roof, a house) and the sound of 畐.",
   復: "This glyph means to return. It uses the definition of 彳 (to walk) and the sound of 复 (repeat): to walk back and come again.",
   握: "This glyph means to grip. It uses the definition of 手 (hand) and the sound of 屋.",

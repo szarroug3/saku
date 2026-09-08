@@ -37,7 +37,7 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   鈍: "This glyph means dull or blunt. It uses the definition of 金 (metal) and the sound of 屯.",
   陽: "This glyph means sunshine or the sunny side. It uses the definition of 阜 (hill) and the sound of 昜 (sunshine), which was the original character before the hill was added.",
   雄: "This glyph means male or heroic. It uses the definition of 隹 (bird) and the sound of 厷.",
-  嘆: "This glyph means to sigh or lament. It uses the definition of 口 (mouth) and the sound of 歎.",
+  嘆: "This glyph means to sigh or lament. It uses the definition of 口 (mouth); the sound piece is 歎, drawn here as 艹 over 口 and 夫.",
   墓: "This glyph means a grave or tomb. It uses the definition of 土 (earth) and the sound of 莫.",
   慎: "This glyph means careful or prudent. It uses the definition of 心 (heart) and the sound of 真 (しん).",
   暇: "This glyph means free time or leisure. It uses the definition of 日 (sun, day) and the sound of 叚.",
