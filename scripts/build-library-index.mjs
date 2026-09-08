@@ -1,20 +1,15 @@
-// BUILD THE LIBRARY LIST/SEARCH INDEX — src/data/generated/library-index.json.
+// BUILD THE LIBRARY INDEX — src/data/generated/library-index.json.
 //
-// WHY. `/library`'s list/search/shelf-grouping path pulls the ~9.5MB curriculum
-// dictionary because `library/entries.ts`'s `LIB_ENTRIES = build()` is an EAGER
-// top-level constant: importing anything from that file — even just `KINDS`,
-// even just the `LibEntry` type's runtime sibling `libEntry()` — evaluates the
-// whole build, which touches every content module (vocab, kanji, radicals,
-// grammar, marks, terms, transitivity…). This script runs that SAME build once,
-// at build time, and serializes its OUTPUT (plus two small derived lookups) —
-// never re-deriving. `library/entries.ts` remains the live build-time source of
-// truth; list/search, entry dispatch, and Library action gates consume this
-// serialized output instead.
+// WHY. The app reads its entries from this file (library/entries.ts, SAK-400).
+// They are minted by `buildEntries` in library/entries-build.ts, a walk over
+// every subject's tables that used to run in every process on its first
+// request; it runs here instead, once, and this script serializes its OUTPUT
+// plus the derived lookups — never re-deriving anything. entries-build.ts is
+// the source of truth for what an entry is; this file is what the app ships.
 //
-// BYTE-CORRECTNESS. `knownFacts`/`factEntry` gate what a learner can claim as
-// "already known" and how a claimed fact maps back to its entry — the same class
-// of stable-id correctness Phase 1's learn-index protects. Serialize the real
-// `knownFactsOf`/`entryOf`, never re-derive.
+// BYTE-CORRECTNESS. `knownFacts` gates what a learner can claim as "already
+// known" — the same class of stable-id correctness Phase 1's learn-index
+// protects. Serialize the real `knownFactsRule`, never re-derive.
 //
 // Run with the test harness's loader so Node resolves `@/` and extensionless
 // imports:
@@ -24,7 +19,8 @@ import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { LIB_ENTRIES, KINDS, KIND_LABEL, knownFactsOf } from "@/lib/library/entries";
+import { KINDS, KIND_LABEL } from "@/lib/library/entries";
+import { buildEntries, knownFactsRule } from "@/lib/library/entries-build";
 import { ALL_ENTRIES, factsOf } from "@/lib/facts";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { GRAMMAR_CONCEPTS } from "@/data/grammar-concepts";
@@ -36,6 +32,8 @@ import { VOCAB, legacyUnqualifiedReading } from "@/data/vocab";
 import { CHAR_INDEX } from "@/data/characters";
 import { strokeFallbackOf } from "@/lib/lesson-roles";
 import { allComponents, usedAsPartIn } from "@/lib/library/components";
+
+const LIB_ENTRIES = buildEntries();
 
 const entries = LIB_ENTRIES.map((e) => ({
   id: e.id,
@@ -52,7 +50,7 @@ const entries = LIB_ENTRIES.map((e) => ({
 
 const knownFacts = {};
 for (const e of LIB_ENTRIES) {
-  const facts = knownFactsOf(e);
+  const facts = knownFactsRule(e);
   if (facts.length) knownFacts[e.id] = [...facts];
 }
 

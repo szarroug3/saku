@@ -9,7 +9,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf, entryName as liveEntryName } from "@/lib/library/entries";
+import { KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf, entryName as liveEntryName } from "@/lib/library/entries";
+import { buildEntries, knownFactsRule as knownFactsOf } from "@/lib/library/entries-build";
+
+/** The entries as the build mints them, which is what the index must match. */
+const LIVE_ENTRIES = buildEntries();
 import { ALL_FACTS, ALL_ENTRIES, factsOf as liveFactsOf } from "@/lib/facts";
 import {
   claimableFacts as liveClaimableFacts,

@@ -1527,3 +1527,47 @@ index's own equivalence test had been proving for months that it agreed
 with `entryOf`, the live function, on every fact. The old actions call
 `entryOf` now, the map is no longer written, and the index is 5.0 MB on
 disk from 6.4.
+
+### One source for the entries (2026-09-07, SAK-400)
+
+The app had two sources for its entries. `entries.ts` built all 15,553 as
+it loaded, walking every subject's tables; `library-index.json` carried the
+same entries, minted by that same walk at build time, and the index loader
+read those. Twenty-three modules read the first and ten the second, and the
+loader's own header explained that it existed to avoid the first. The two
+agreed field for field, which the index's equivalence test had been proving
+for months. What they were was a second copy waiting to drift.
+
+The walk is `buildEntries` in `entries-build.ts` now, and nothing a page
+serves imports it. `scripts/build-library-index.mjs` runs it and writes the
+file; `entries.ts` reads the file and is the model: `LIB_ENTRIES`, the
+buckets by kind, `libEntry`, and one `knownFactsOf`, which reads back the
+answer the per-kind rule wrote into the index. The rule itself,
+`knownFactsRule`, moved with the build. The loader re-exports the model
+instead of re-declaring it and keeps the smaller tables it always added.
+The rebuilt index is byte-identical to the committed one.
+
+Checked before and after, over the code paths a page uses: every entry,
+the buckets, `libEntry` for every id, `entryForGlyph` for 14,597 glyphs on
+every kind, `knownFactsOf` for every entry, and the home, Atlas and
+practice payloads for the sample learner and an empty one. All identical.
+The 3,920 tests pass.
+
+Measured, and worth saying plainly: the walk was cheap. After the fact
+registry, `entries.ts` took about 60 ms to load and the loader's parse of
+the JSON 30 more; now the parse is in `entries.ts` and the two together
+take 85 to 90. So the build itself was 5 to 10 ms of a cold load, and
+this round shortens the cold path by about that. What it removes is the
+duplicate. The per-import numbers did turn up one real cost: `kanji-parts.ts`
+is 16 ms on the home and reaches it only through `builtFrom`, which nothing
+calls any more. That goes with the rest of the old entry-page code in the
+next round. `grammar-concepts.ts`, 25 ms, is reached through the Atlas
+regardless of this file.
+
+One difference between the two sources was found and kept: `entryForGlyph`
+for a word. `entries.ts` answers `wordEntry(keb)` for any VOCAB row; the
+loader answers null for the 98 kebs the build skips, the grammar and
+counter duplicates (だけ, 一つ, 一人, …), because no entry carries that id.
+The Sky reads the first, the shelf and lookup modules the second. Neither
+changed, and the loader's doc now names the difference rather than
+claiming the two agree.

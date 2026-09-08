@@ -27,7 +27,6 @@ import {
   factsTitle,
   libEntry,
   quizTrackLabel,
-  readingBasesOf,
   subjectLabel,
   trackLabel,
   LIB_ENTRIES,
@@ -37,6 +36,7 @@ import {
   type LibEntry,
   type Kind,
 } from "./entries.ts";
+import { readingBasesOf } from "./entries-build.ts";
 import { kanjiEntry } from "@/data/kanji";
 import { kanaEntry, KANA_SUBJECT } from "@/data/characters";
 import { wordEntry, VOCAB_SUBJECT } from "@/data/vocab";

@@ -1,26 +1,32 @@
-// NO `import "server-only"` YET (SAK-104): it hard-breaks `next build` while
-// manage-lists.tsx (lists page) still imports href.ts, which imports this
-// file, client-side. Re-add once that consumer is migrated to a Server
-// Action too.
+// LIBRARY INDEX LOADER — the smaller tables of the generated index, and the
+// content-light lookups built on them.
+//
+// The entries themselves, their buckets by kind, `libEntry` and `knownFactsOf`
+// live in entries.ts, which reads the same generated file (SAK-400); they are
+// re-exported here so the shelf, search and lookup modules that always read
+// them from this loader keep doing so. What this file adds is the rest of the
+// index — every entry's facts, the reading proofs, the kanji orders, the
+// component uses — and the handful of id builders re-declared content-free
+// for the modules that only need a string.
+//
+// Equivalence with the build that wrote the file is asserted by
+// library-index.equiv.test.ts — that test, not this module, is the safety net.
 
-// LIBRARY INDEX LOADER — the content-free list/search path for /library.
-//
-// Reads the precomputed index (library-index.json) instead of importing
-// library/entries.ts — that file's `LIB_ENTRIES = build()` is an eager top-level
-// constant that touches every content module the moment anything is imported
-// from the file. This loader carries none of that: it is a flat JSON read plus
-// the same bucketing logic `LIB_ENTRIES_BY_KIND` already used.
-//
-// Entry detail dispatch and shared Library actions also read this module. Their
-// display payloads still come from content_entries; the index supplies only
-// routing, ids, search fields, and small structural/history gates.
-//
-// Equivalence with the live path is asserted by library-index.equiv.test.ts —
-// that test, not this module, is the safety net.
-
-import libraryIndexJson from "@/data/generated/library-index.json" with { type: "json" };
-import type { LibraryIndex, IndexLibEntry } from "./library-index-types";
-import type { Kind } from "@/lib/library/entries";
+import {
+  LIBRARY_INDEX,
+  LIB_ENTRIES,
+  LIB_ENTRIES_BY_KIND,
+  libEntry,
+  knownFactsOf,
+  KINDS,
+  KIND_LABEL,
+  entryName,
+  shelfKindOf,
+  SENTENCE_RULE_KIND,
+  COUNTER_KIND,
+  NUMBER_CONSTRUCTION_KIND,
+  type Kind,
+} from "./entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
 import type { HistoryFile } from "@/types";
@@ -40,7 +46,6 @@ import { CHAR_INDEX, KANA_SUBJECT, kanaEntry, LOOK_GROUP } from "@/data/characte
 import { RADICAL_SUBJECT, radicalByGlyph, radicalEntry } from "@/data/radicals";
 import { PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveEntry } from "@/data/components";
 import { VOCAB_SUBJECT, wordEntry } from "@/lib/vocab-ids";
-import { NUMBER_CONSTRUCTION_SUBJECT } from "@/data/number-construction-id";
 import { entryId } from "@/lib/fact-id";
 // SAK-271: both maps are pure data (a Map literal keyed by keb string,
 // numberConstructionEntry/counterEntry id builders) — see counters.ts's own
@@ -57,50 +62,10 @@ import { CURRICULUM_GLYPHS } from "@/lib/content/curriculum-meta";
 
 export { VOCAB_SUBJECT };
 
-const INDEX = libraryIndexJson as unknown as LibraryIndex;
+/** The entry model, owned by entries.ts and read from the same file (SAK-400). */
+export { LIB_ENTRIES, LIB_ENTRIES_BY_KIND, libEntry, knownFactsOf, KINDS, KIND_LABEL, entryName, shelfKindOf, SENTENCE_RULE_KIND, COUNTER_KIND, NUMBER_CONSTRUCTION_KIND };
 
-/** The kind list, exactly as library/entries.ts's `KINDS` — serialized from it,
- * not restated. */
-export const KINDS: readonly Kind[] = INDEX.kinds as readonly Kind[];
-
-/** Kind -> display label, exactly as library/entries.ts's `KIND_LABEL`. */
-export const KIND_LABEL: Readonly<Record<Kind, string>> = INDEX.kindLabel as Readonly<
-  Record<Kind, string>
->;
-
-/** Every entry in the app, in browse order — the precomputed twin of
- * `LIB_ENTRIES`. */
-export const LIB_ENTRIES: readonly IndexLibEntry[] = INDEX.entries;
-
-/** Entries bucketed once by kind, seeded with every kind (even empty), mirroring
- * `LIB_ENTRIES_BY_KIND`'s own construction exactly. */
-export const LIB_ENTRIES_BY_KIND: ReadonlyMap<Kind, readonly IndexLibEntry[]> =
-  (() => {
-    const buckets = new Map<Kind, IndexLibEntry[]>();
-    for (const k of KINDS) buckets.set(k, []);
-    for (const e of LIB_ENTRIES) {
-      const list = buckets.get(e.kind);
-      if (list) list.push(e);
-    }
-    return buckets;
-  })();
-
-const BY_ID: ReadonlyMap<EntryId, IndexLibEntry> = new Map(
-  LIB_ENTRIES.map((e) => [e.id, e]),
-);
-
-/** One entry by id, or undefined — the precomputed twin of `libEntry`. */
-export function libEntry(id: EntryId): IndexLibEntry | undefined {
-  return BY_ID.get(id);
-}
-
-/** An entry's known-for-claiming facts — the precomputed twin of
- * `knownFactsOf`. Empty (not undefined) for an entry the index carries no
- * known-fact record for. */
-export function knownFactsOf(entry: IndexLibEntry | EntryId): readonly FactId[] {
-  const id = typeof entry === "string" ? entry : entry.id;
-  return INDEX.knownFacts[id as unknown as string] ?? [];
-}
+const INDEX = LIBRARY_INDEX;
 
 
 /**
@@ -160,30 +125,6 @@ export { isReadingFact, claimableFacts, quizzableFacts } from "@/lib/library/rea
 export const SENTENCE_TIERS: readonly { id: string; label: string }[] =
   INDEX.sentenceTiers;
 
-/** What to CALL an entry — byte-identical to library/entries.ts's `entryName`.
- * Pure (reads only the entry's own fields), so it is simply re-declared here
- * rather than pulled through entries.ts's heavy top-of-file imports. */
-export function entryName(entry: IndexLibEntry): string {
-  if (
-    (entry.kind === "transitivity" || entry.kind === "keigo") &&
-    entry.name
-  ) {
-    return entry.name;
-  }
-  return entry.glyph || entry.name || entry.id;
-}
-
-/** The shelf an entry kind browses under — byte-identical to the live
- * shelfKindOf. Number constructions are pages on the counters shelf; every
- * other kind browses under itself. */
-export function shelfKindOf(kind: Kind): Kind {
-  return kind === NUMBER_CONSTRUCTION_KIND ? COUNTER_KIND : kind;
-}
-
-/** The sentence-rule kind constant — byte-identical to library/entries.ts's
- * `SENTENCE_RULE_KIND`. A literal, re-declared for the same reason. */
-export const SENTENCE_RULE_KIND = "sentence-rule";
-
 /** The mark subject constant and its entry-id builder — byte-identical to
  * data/marks.ts's `MARK_SUBJECT` / `markEntry`. Re-declared content-free so a
  * caller that only needs a mark's entry id (SentenceEntryView, fetching the
@@ -193,15 +134,6 @@ export const MARK_SUBJECT = "writing-rule";
 export function markEntry(id: string): EntryId {
   return entryId(MARK_SUBJECT, id);
 }
-
-/** The counter kind constant — byte-identical to library/entries.ts's
- * `COUNTER_KIND`. A literal, re-declared for the same reason. */
-export const COUNTER_KIND = "counting";
-
-/** The number-construction kind constant — imported straight from its own
- * content-free source (data/number-construction-id.ts), which is what
- * library/entries.ts's `NUMBER_CONSTRUCTION_KIND` itself re-exports. */
-export const NUMBER_CONSTRUCTION_KIND = NUMBER_CONSTRUCTION_SUBJECT;
 
 /** The grammar subject constant — byte-identical to data/grammar/index.ts's
  * `GRAMMAR_SUBJECT`. A literal, re-declared: that module's `vehicles.ts`
@@ -378,13 +310,14 @@ export function pitchReadingCompatible(word: string): boolean {
   return !PITCH_INCOMPATIBLE_WORDS.has(word);
 }
 
-/** The entry a glyph resolves to for its kind — the content-free twin of
- * library/entries.ts's `entryForGlyph`. Every case matches it exactly: KANA,
- * KANJI, RADICAL and PRIMITIVE resolve by an existence check + pure id build;
- * VOCAB resolves through the precomputed index (equivalent to
- * `vocabRow(glyph) ? wordEntry(glyph) : null`, since `build()` creates exactly
- * one LIB_ENTRIES row per VOCAB row); every other kind has no glyph resolution
- * and returns null, matching the live switch's remaining cases. */
+/** The entry a glyph resolves to for its kind — the index's twin of
+ * entries.ts's `entryForGlyph`. KANA, KANJI, RADICAL and PRIMITIVE resolve by
+ * an existence check + pure id build, as there; every other kind has no glyph
+ * resolution and returns null, as there. VOCAB is the one place the two
+ * differ, on purpose for now (SAK-400): this answers null for a keb the build
+ * skips (the 98 grammar and counter duplicates, だけ, 一つ, 一人…), because no
+ * entry carries that id, while entries.ts's answers `wordEntry(keb)` for any
+ * VOCAB row. Which is right is a question for the caller that meets one. */
 export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
   switch (kind) {
     case KANA_SUBJECT:
