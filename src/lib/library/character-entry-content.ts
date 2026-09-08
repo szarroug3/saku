@@ -23,7 +23,7 @@ import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
 // The bushu-position fallback moved to the route layer with SAK-398; this
 // module is build-time code now and reads it from there.
-import { derivePosition, POSITION } from "@/app/(sky)/radical-position";
+import { derivePosition, POSITION } from "@/lib/radical-position";
 import type { EntryId, HistoryFile } from "@/types";
 
 /** Both of `strokeFallbackOf`'s answers for one glyph (normal + reference

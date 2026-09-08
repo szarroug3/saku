@@ -4,7 +4,7 @@
 // (including the KANJIDIC2 fallback for the kanji with no aligned reading),
 // its radical tip, its contrast note, and its parts.
 //
-// derivePosition's own cases moved with it to app/(sky)/radical-position.test.ts
+// derivePosition's own cases moved with it to lib/radical-position.test.ts
 // (SAK-398).
 
 import assert from "node:assert/strict";

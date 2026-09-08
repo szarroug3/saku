@@ -1647,7 +1647,7 @@ calls to name where a radical variant sits, reached through
 `character-entry-content.ts`, whose own imports were what dragged the
 library in; and `sentenceTierShortLabel`, three lines that trim a trailing
 "sentences" off a tier label. `derivePosition` moved to
-`app/(sky)/radical-position.ts`, `sentenceTierShortLabel` into
+`lib/radical-position.ts` (first under `app/(sky)`, moved at review so the library never imports the route layer), `sentenceTierShortLabel` into
 `data/assembly.ts` beside the tiers it describes. A lint rule holds it:
 nothing under `app/(sky)` or the root layout may import `@/lib/content/*`,
 `curriculum-meta` excepted, because the content library is build-time
@@ -1698,10 +1698,10 @@ and practice payloads) is identical before and after every deletion. 3,867
 unit tests pass, 26 e2e, and `route_sizes.mjs` passes for the first time
 in a while: it still listed a `/dev` route deleted a round earlier.
 
-One thing left deliberately odd, for a later pass:
-`lib/library/character-entry-content.ts` now imports
-`app/(sky)/radical-position.ts`. That is a build-time module reaching into
-the route layer, which is backwards. It survives because
-`scripts/seed-content-entries.mjs` still runs it, and the plan for this
-round assumed it would be deleted. It is a leaf import with no
-dependencies of its own, so it costs a page nothing; it is only untidy.
+One thing the round left odd and the review put right:
+`lib/library/character-entry-content.ts` imported `derivePosition` from
+under `app/(sky)`, a build-time module reaching into the route layer,
+because the plan had assumed that file would be deleted and
+`scripts/seed-content-entries.mjs` still runs it. The function and its
+table live in `lib/radical-position.ts` now, a leaf with no imports of
+its own, read by the page and the seed code alike.

@@ -1,4 +1,4 @@
-// Run: node --test "src/app/(sky)/radical-position.test.ts"
+// Run: node --test src/lib/radical-position.test.ts
 //
 // SAK-158: derivePosition() is the fallback that labels a radical variant's
 // position (top/left/right/bottom/bottom-left) from its bushu kana name when

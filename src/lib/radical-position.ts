@@ -1,7 +1,9 @@
 // Where a radical's variant sits in a kanji, worked out from its bushu name.
-// Moved here from lib/library/character-entry-content.ts (SAK-398): teach.ts
+// Moved out of lib/library/character-entry-content.ts (SAK-398): teach.ts
 // was the only thing on a page that still read it, and reaching for it there
-// pulled the old content library onto every Sky route.
+// pulled the old content library onto every Sky route. It lives under lib so
+// both the page and the build-time seed code can read it without either
+// importing the other.
 
 export const POSITION: Record<string, { en: string; rank: number }> = {
   "": { en: "Alternate", rank: 0 },
