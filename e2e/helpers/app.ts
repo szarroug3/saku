@@ -308,27 +308,6 @@ export function teachPositionText(n: number, total: number): RegExp {
   return new RegExp(`^${TRACK_PREFIX}${n} of ${total}$`);
 }
 
-/**
- * Wait for React to have hydrated and committed its first client render on
- * the CURRENT document (see components/hydration-marker.tsx).
- *
- * SAK-264: page-load-performance.spec.ts used to end its timing window with
- * `page.waitForLoadState("networkidle")`. That waits on ALL network activity
- * in the tab — including analytics beacons, Speed Insights, and any
- * background revalidation fetch — none of which gate real interactivity, and
- * all of which vary run to run with whatever the tab happens to have cached
- * already. That is what made the identical route measure up to 20x apart
- * between runs: the test was timing the tab's incidental network history, not
- * the route's own hydration cost. Waiting on the marker instead ties the
- * timing window to something that fires once, deterministically, per real
- * navigation, independent of what else the browser did before it.
- */
-export async function waitForHydration(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () => document.documentElement.dataset.appHydrated === "true",
-  );
-}
-
 export function requeuedPill(page: Page) {
   return page.getByText(/^\d+ re-queued$/);
 }

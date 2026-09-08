@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 
 import { useCallback } from "react";
 
-import { HearButton } from "@/components/ui/hear-button";
+import { HearButton } from "./hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";

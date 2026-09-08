@@ -12,8 +12,9 @@ const eslintConfig = defineConfig([
     // and new ones kept landing afterward (see SAK-235's ticket body — several
     // postdate SAK-84's own cleanup commit by hours or days). src/data holds
     // the app's content modules (lesson prose, reference-page text, tooltip
-    // copy) and src/components holds the JSX/labels/props a learner actually
-    // reads; those are the two trees SAK-84 itself audited. Test files are
+    // copy) and the JSX/labels/props a learner actually reads live in
+    // src/app/(sky) and src/sky (they were src/components when SAK-84 audited
+    // them; that tree went with the old app in SAK-398). Test files are
     // excluded because the em-dash regression tests (e.g. how-it-works.test.ts)
     // legitimately hold the "—" character as the very string they check for.
     // src/sky is included for the same reason: it is redesign UI a learner
@@ -21,7 +22,7 @@ const eslintConfig = defineConfig([
     // em dashes out of copy.
     files: [
       "src/data/**/*.{ts,tsx}",
-      "src/components/**/*.{ts,tsx}",
+      "src/app/(sky)/**/*.{ts,tsx}",
       "src/sky/**/*.{ts,tsx}",
     ],
     ignores: ["**/*.test.ts", "**/*.test.tsx"],

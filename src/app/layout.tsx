@@ -3,13 +3,10 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-import { AuthModeInit } from "@/components/auth/auth-mode-init";
-import { LocalMigration } from "@/components/auth/local-migration";
-import { HydrationMarker } from "@/components/hydration-marker";
+import { AuthModeInit } from "./(sky)/auth-mode-init";
+import { LocalMigration } from "./(sky)/local-migration";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
 // global nav's Sign in control) — see src/components/sidebar.tsx.
-import { ConfirmProvider } from "@/components/ui/confirm-dialog";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
 import { headers } from "next/headers";
@@ -216,47 +213,12 @@ export default async function RootLayout({
               that reads it: the Sidebar, the sign-in merge, and every page. */}
           <HistoryProvider userId={userId} initial={null} pageOwned={userId !== null}>
             <QuizConfigProvider>
-                {/* One lists copy for the whole app, seeded above. `useLists`
-                    used to fetch per mount (eight call sites, two on one Library
-                    open); this shares one read, the same move HistoryProvider
-                    made. Inside the quiz providers so a run saved as a list and
-                    the screens that show it read the same copy. */}
-                <TooltipProvider delayDuration={200}>
-                  {/* Inside the quiz providers, because what it asks about
-                      ("discard the quiz in progress?") is their state. */}
-                  <ConfirmProvider>
-                    {/* THE PAGE SCROLLS, NOT AN INNER FRAME. The shell is a plain
-                        flex row with no height cap and no overflow of its own, so
-                        <html> is the single scroll owner and the browser's own
-                        scrollbar is the one that moves. globals.css reserves that
-                        scrollbar's gutter (scrollbar-gutter: stable on html), so a
-                        page toggling between "tall enough to scroll" and "not"
-                        never re-centres the layout sideways — the whole-page shift
-                        the Settings "Start over" used to cause.
-
-                        The sidebar is flush LEFT (no mx-auto centring) and the main
-                        column takes the freed width — the max-width lives inside
-                        `main` now (`.kq-content`, see below), wider than the old
-                        shell-wide 1080 cap, so wide screens are used rather than
-                        boxed. */}
-                    {/* SAK-204: was `py-6` — that top/bottom padding, stacked on
-                        top of kq-content's own pt-3/pb-3 below, is what left every
-                        frozen bottom bar (the Library entry page, the lesson
-                        footer, the Library browse shelf) sitting well short of
-                        the true viewport edge with an asymmetric gap under it
-                        that its own matching top padding didn't have. Horizontal
-                        (px-3) stays; kq-content's own pt-3/pb-3 still gives every
-                        page its top/bottom breathing room. */}
-                    {/* The shell is the Sky's own (src/app/(sky)/layout.tsx) since
-                        cutover (2026-09-06); the dev galleries keep the old frame in
-                        src/app/dev/layout.tsx. What is left here is every page's
-                        invisible housekeeping. */}
-                    <AuthModeInit signedIn={authEnabled && signedIn} />
-                    <LocalMigration signedIn={authEnabled && signedIn} />
-                    {children}
-                    <HydrationMarker />
-                  </ConfirmProvider>
-                </TooltipProvider>
+              {/* The shell is the Sky's own (src/app/(sky)/layout.tsx) since
+                  cutover (2026-09-06). What is left here is every page's
+                  invisible housekeeping. */}
+              <AuthModeInit signedIn={authEnabled && signedIn} />
+              <LocalMigration signedIn={authEnabled && signedIn} />
+              {children}
             </QuizConfigProvider>
           </HistoryProvider>
         </ThemeProvider>

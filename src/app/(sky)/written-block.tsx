@@ -5,8 +5,8 @@
 // shows. Dev-side, because it reaches into the app; the route hands it to
 // the card as a slot, so nothing in src/sky imports it.
 
-import { StrokeOrder } from "@/components/lesson/stroke-order";
-import { WhyDisclosure } from "@/components/lesson/why";
+import { StrokeOrder } from "./stroke-order";
+import { WhyDisclosure } from "./why";
 import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 import { useGlyphStrokes } from "@/lib/use-glyph-strokes";
 

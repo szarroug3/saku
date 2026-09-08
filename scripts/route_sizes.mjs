@@ -51,7 +51,6 @@ const ROUTES = {
   "/account": ["app/(sky)/account/page_client-reference-manifest.js", 1.5],
   "/how-it-works": ["app/(sky)/how-it-works/page_client-reference-manifest.js", 1.5],
   "/about": ["app/(sky)/about/page_client-reference-manifest.js", 1.5],
-  "/dev/scheduling": ["app/dev/scheduling/page_client-reference-manifest.js", 8],
 };
 
 function routeSizeBytes(manifestRelPath) {

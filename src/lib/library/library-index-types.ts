@@ -65,7 +65,7 @@ export interface LibraryIndex {
    * `GRAMMAR_TEACHING_ORDER`, ids only). */
   readonly grammarTeachingOrderIds: readonly string[];
   /** Glyph -> strokeFallbackOf's two answers (normal, reference), for kana
-   * glyphs — see how-its-written.tsx's `PrecomputedStrokeFallback`. */
+   * glyphs — see character-entry-content.ts's `PrecomputedStrokeFallback`. */
   readonly strokeFallback: Readonly<
     Record<string, { normal: StrokeFallback; reference: StrokeFallback }>
   >;

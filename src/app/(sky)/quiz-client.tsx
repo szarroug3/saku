@@ -16,7 +16,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
-import { HearButton } from "@/components/ui/hear-button";
+import { HearButton } from "./hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";

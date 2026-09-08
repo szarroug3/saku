@@ -16,7 +16,7 @@ import { wordContrastNoteFor } from "@/data/word-contrast-notes";
 import { itemHeadline, type Headline } from "@/lib/content/headline";
 import type { ContentItem } from "@/lib/content/item";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
-import { strokeFallbackOf } from "@/lib/lesson-roles";
+import { strokeFallbackOf, type StrokeFallback } from "@/lib/lesson-roles";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
@@ -24,8 +24,16 @@ import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
 // The bushu-position fallback moved to the route layer with SAK-398; this
 // module is build-time code now and reads it from there.
 import { derivePosition, POSITION } from "@/app/(sky)/radical-position";
-import type { PrecomputedStrokeFallback } from "@/components/lesson/how-its-written";
 import type { EntryId, HistoryFile } from "@/types";
+
+/** Both of `strokeFallbackOf`'s answers for one glyph (normal + reference
+ * mode), precomputed — see scripts/build-library-index.mjs's `strokeFallback`.
+ * Declared here since SAK-398, when the shared renderer that used to own it
+ * went with src/components; this is its only reader now. */
+export interface PrecomputedStrokeFallback {
+  readonly normal: StrokeFallback;
+  readonly reference: StrokeFallback;
+}
 
 interface CharacterPart {
   readonly glyph: string;

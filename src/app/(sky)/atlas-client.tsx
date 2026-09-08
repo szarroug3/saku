@@ -12,7 +12,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
-import { HearButton } from "@/components/ui/hear-button";
+import { HearButton } from "./hear-button";
 import { SkyAtlas, type AtlasLookup } from "@/sky/components/sky-atlas";
 
 import { atlasEntry, atlasSearch, atlasSections, atlasTiles, loadAtlas } from "./actions";

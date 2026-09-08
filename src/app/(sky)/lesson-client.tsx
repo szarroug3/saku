@@ -6,7 +6,7 @@
 
 import { useCallback } from "react";
 
-import { HearButton } from "@/components/ui/hear-button";
+import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 
 import { loadLesson } from "./actions";
