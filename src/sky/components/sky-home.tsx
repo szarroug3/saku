@@ -55,11 +55,11 @@ export interface SkyHomeProps {
   onClearMixUp?: (key: string) => Promise<void> | void;
   /** How tall the home is: one page, never scrolling. The sky fills what
    * the heading and the details leave, and shrinks when the details open.
-   * A CSS length; the route knows its own chrome. */
+   * A CSS length, passed on to the page frame, which has the default. */
   height?: string;
 }
 
-export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, height = "calc(100vh - 8rem)" }: SkyHomeProps) {
+export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, height }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
   // the sky opens on a planet if there is one, else a binary, else an

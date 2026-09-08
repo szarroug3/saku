@@ -19,15 +19,14 @@ import { atlasEntry, atlasSearch, atlasSections, atlasTiles, loadAtlas } from ".
 import { joinAtlas, type AtlasCatalogue, type AtlasPayload } from "./atlas-payload";
 import { skyHref } from "./hrefs";
 import { useCatalogue } from "./use-catalogue";
-import { SkyLoading, useLoaded, useWho } from "./local";
+import { useSkyData } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { WrittenBlock } from "./written-block";
 import { claimIds, unclaimIds } from "./writes";
 
 export function AtlasClient({ sample, signedIn, initial, entry }: { sample: boolean; signedIn: boolean; initial: AtlasPayload | null; entry?: string }) {
   const router = useRouter();
-  const who = useWho(sample, signedIn);
-  const payload = useLoaded(who, loadAtlas, initial);
+  const { who, data: payload, loading } = useSkyData({ sample, signedIn, load: loadAtlas, initial, eyebrow: "Atlas", title: "What would you like to know?" });
   const shelves = useCatalogue<AtlasCatalogue>("/api/atlas-catalogue", payload?.version);
   const lookup = useMemo<AtlasLookup | null>(() => who && ({
     search: (q) => atlasSearch(who, q),
@@ -35,7 +34,7 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
     tiles: (ids) => atlasTiles(who, ids),
     sections: (shelfId, status) => atlasSections(who, shelfId, status),
   }), [who]);
-  if (!payload || !shelves || !lookup) return <SkyLoading eyebrow="Atlas" title={"What would you like to know?"} />;
+  if (!payload || !shelves || !lookup) return loading;
   const data = joinAtlas(shelves, payload);
   const claim = async (ids: readonly string[]) => { await claimIds(ids); router.refresh(); };
   const unclaim = async (ids: readonly string[]) => { await unclaimIds(ids); router.refresh(); };
@@ -51,7 +50,6 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
       initialEntry={entry}
       onClaim={sample ? undefined : claim}
       onUnclaim={sample ? undefined : unclaim}
-      height="100%"
     />
   );
 }

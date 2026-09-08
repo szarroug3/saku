@@ -14,7 +14,9 @@ export interface SkyPageShellProps {
   title: string;
   /** Anything beside the title, on the right. */
   aside?: ReactNode;
-  /** How tall the page is: a CSS length. The route knows its own chrome. */
+  /** How tall the page is: a CSS length. Every route in the Sky fills the
+   * frame its layout gives it, which is the default; the prop is here for a
+   * route whose chrome is its own. */
   height?: string;
   /** The body. It gets the space left under the heading and `min-h-0`, so a
    * child with `overflow-y-auto` scrolls inside it. */
@@ -22,7 +24,7 @@ export interface SkyPageShellProps {
   className?: string;
 }
 
-export function SkyPageShell({ eyebrow, title, aside, height = "calc(100vh - 8rem)", children, className = "" }: SkyPageShellProps) {
+export function SkyPageShell({ eyebrow, title, aside, height = "100%", children, className = "" }: SkyPageShellProps) {
   return (
     <div className={`flex flex-col overflow-hidden font-sky-ui text-sky-ink ${className}`} style={{ height }}>
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">

@@ -11,16 +11,15 @@ import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 
 import { loadLesson } from "./actions";
 import { skyHref } from "./hrefs";
-import { SkyLoading, useLoaded, useWho } from "./local";
+import { useSkyData } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { WrittenBlock } from "./written-block";
 import { seeId } from "./writes";
 
 export function LessonClient({ sample, showcase, signedIn, initial, picks }: { sample: boolean; showcase: boolean; signedIn: boolean; initial: SkyLessonData | null; picks: readonly string[] }) {
-  const who = useWho(sample, signedIn);
   const load = useCallback((w: Parameters<typeof loadLesson>[0]) => loadLesson(w, picks), [picks]);
-  const data = useLoaded(who, load, initial);
-  if (!data) return <SkyLoading eyebrow="Lesson" title={"Tonight's lesson"} />;
+  const { data, loading } = useSkyData({ sample, signedIn, load, initial, eyebrow: "Lesson", title: "Tonight's lesson" });
+  if (!data) return loading;
   // the real stroke order for every character on the card, as a slot
   const written = Object.fromEntries(
     Object.keys(data.teach)
@@ -29,5 +28,5 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks }: { s
       .map((i) => [i.id, <WrittenBlock key={i.id} glyph={i.glyph} />]),
   );
   const drillHref = skyHref("/quiz", { sample: sample || showcase, from: "observatory", picks });
-  return <SkyLesson data={data} drillHref={drillHref} observatoryHref={skyHref("/observatory", { sample })} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} height="100%" />;
+  return <SkyLesson data={data} drillHref={drillHref} observatoryHref={skyHref("/observatory", { sample })} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} />;
 }

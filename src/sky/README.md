@@ -2531,3 +2531,51 @@ stays in `practice-client.tsx` until then, and the builder packs its own.
 31 lines of hand-rolled URL gone against 62 in the builder. 3,822 unit
 tests pass, from 3,810, the twelve new ones being the pinned strings. 31
 e2e.
+
+### A Sky page says who is here in one line (2026-09-08, SAK-368)
+
+Eight route files opened with the same four lines: read the query, is it
+`?sample`, if not who is signed in, and then a three-armed conditional
+picking the sample's data, the account's, or nothing because the history
+is in a browser the server cannot see. Every one of the eight had typed
+it out.
+
+`page-data.ts` is `whoFor(params, pretend?)` and `initialFor(who, load)`.
+The first answers the three questions at once and hands back `{ sample,
+signedIn, who }`; the second is the conditional, which reads as what it
+is now that it is named: the route's data, or null because the browser
+holds it. `pretend` is the lesson's `?showcase`, one of everything on an
+empty history, which asks nobody's account and still says signed in.
+
+On the client the same three lines were in five files:
+`useWho(sample, signedIn)`, `useLoaded(who, load, initial)`, then a
+`SkyLoading` with the page's eyebrow and title. `useSkyData` in
+`local.tsx` is all three, returning `{ who, data, loading }`. It returns
+the loading page rather than rendering it, because the caller decides
+when to give up: the home waits on its stars and the Atlas on its
+shelves and its lookups, so `if (!payload || !stars) return loading` is
+still the page's own sentence. `who` comes back because the Atlas binds
+its four lookups to whose history they read.
+
+Six `<>…</>` wrappers holding a single child went with them, left from a
+dev frame that used to sit around each page.
+
+The height, folded in from the card. Every route caller passed
+`height="100%"`, and the `calc(100vh - 8rem)` default that two
+components carried was reached by nothing. `SkyPageShell` defaults to
+`100%`, `SkyHome` passes its own through instead of defaulting, and the
+ten `height="100%"` in the route layer are gone. The prop stays for a
+route whose chrome is its own; nothing renders one pixel differently,
+the new default being the string every caller was passing.
+
+Not this card's, and untouched: `quiz/page.tsx`, `practice/page.tsx`,
+`practice/run/page.tsx`, `quiz-client.tsx` and `practice-client.tsx`,
+which are another session's tonight (SAK-370, 372, 315, 316). Three
+`whoFor` calls, four `useSkyData` calls and two more fragments when they
+land, and the four `height="100%"` that are left are theirs.
+
+93 lines out against 73 in, the new module and the README included.
+3,822 unit tests pass, unchanged: this card moves lines rather than
+adding behavior, and the e2e is where the proof is. 31 e2e, which opens
+the home, the Observatory, the Atlas, a lesson, Sessions and the account
+page, sampled, signed out and as a visitor.

@@ -9,9 +9,5 @@ import { aboutPage } from "../reading";
 export const metadata = { title: "About" };
 
 export default function SkyAboutPage() {
-  return (
-    <>
-      <SkyReading page={aboutPage()} height="100%" />
-    </>
-  );
+  return <SkyReading page={aboutPage()} />;
 }

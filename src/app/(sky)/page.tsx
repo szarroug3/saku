@@ -7,9 +7,8 @@
 
 import { preload } from "react-dom";
 
-import { currentUserId } from "@/lib/auth";
-
 import { loadSky } from "./actions";
+import { initialFor, whoFor } from "./page-data";
 import { ServerTimingMeta } from "./server-timing-meta";
 import { skyCatalogue } from "./catalogue";
 import { PlanetariumClient } from "./planetarium-client";
@@ -17,15 +16,13 @@ import { PlanetariumClient } from "./planetarium-client";
 export const dynamic = "force-dynamic";
 
 export default async function SkyPlanetariumPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const params = await searchParams;
-  const sample = params.sample !== undefined;
-  const userId = sample ? null : await currentUserId();
+  const { sample, signedIn, who } = await whoFor(await searchParams);
   // The difference from the catalogue, not the sky itself: the stars come
   // from /api/sky-catalogue, cached (SAK-381). It reads the learner's bar for
   // clearing a mix-up itself, alongside the history rather than before it
   // (SAK-382), so the page does not wait for one database answer to ask for
   // the next.
-  const initial = sample ? await loadSky({ sample: true }) : userId ? await loadSky({}) : null;
+  const initial = await initialFor(who, loadSky);
   // Start the stars downloading with the HTML instead of after hydration.
   // The version is the same for every learner, so the page knows it without
   // knowing whose sky this is (SAK-381).
@@ -33,7 +30,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   return (
     <>
       <ServerTimingMeta />
-      <PlanetariumClient sample={sample} signedIn={userId !== null} initial={initial} />
+      <PlanetariumClient sample={sample} signedIn={signedIn} initial={initial} />
     </>
   );
 }

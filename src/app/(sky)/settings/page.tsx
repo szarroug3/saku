@@ -9,9 +9,5 @@ export const metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
 
 export default function SkySettingsPage() {
-  return (
-    <>
-      <SettingsClient />
-    </>
-  );
+  return <SettingsClient />;
 }

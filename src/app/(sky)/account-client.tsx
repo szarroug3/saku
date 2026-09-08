@@ -43,7 +43,6 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
       onSignIn={authEnabled ? signIn : undefined}
       onSignOut={signOut}
       onWipe={wipe}
-      height="100%"
     />
   );
 }

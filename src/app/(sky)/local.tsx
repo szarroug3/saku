@@ -8,7 +8,7 @@
 // the page reloads its data.
 
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 
 import { useHistory } from "@/lib/use-history";
 
@@ -42,6 +42,28 @@ export function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, in
   return loaded && loaded.who === who ? loaded.data : loaded?.data ?? null;
 }
 
+/** A page's whole client side: whose history it reads, its data, and what to
+ * render until the data is here (SAK-368).
+ *
+ * Five clients wrote the same three lines. The caller decides when to give up
+ * and show `loading`, because three of them wait on a cached catalogue as
+ * well as their own data, and the Atlas needs `who` besides, to bind its
+ * lookups to whose history they read. */
+export function useSkyData<T>({ sample, signedIn, full, load, initial, eyebrow, title }: {
+  sample: boolean;
+  signedIn: boolean;
+  /** Keep the whole browser copy, sessions included: the home, and Sessions. */
+  full?: boolean;
+  load: (who: Who) => Promise<T>;
+  initial: T | null;
+  eyebrow: string;
+  title: string;
+}): { who: Who | null; data: T | null; loading: ReactElement } {
+  const who = useWho(sample, signedIn, full);
+  const data = useLoaded(who, load, initial);
+  return { who, data, loading: <SkyLoading eyebrow={eyebrow} title={title} /> };
+}
+
 /**
  * The page, with its body still coming (SAK-356).
  *
@@ -56,5 +78,5 @@ export function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, in
 export function SkyLoading({ eyebrow, title, children = "Reading your sky…" }: { eyebrow?: string; title?: string; children?: ReactNode }) {
   const line = <p className="font-sky-ui text-[14px] text-sky-muted">{children}</p>;
   if (!title) return line;
-  return <SkyPageShell eyebrow={eyebrow} title={title} height="100%">{line}</SkyPageShell>;
+  return <SkyPageShell eyebrow={eyebrow} title={title}>{line}</SkyPageShell>;
 }

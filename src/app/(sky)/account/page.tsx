@@ -24,9 +24,5 @@ export default async function SkyAccountPage() {
   const authEnabled = isSupabaseStore();
   const userId = authEnabled ? await currentUserId() : null;
   const who = userId ? await whoIsSignedIn() : {};
-  return (
-    <>
-      <AccountClient signedIn={!!userId} name={who.name} email={who.email} authEnabled={authEnabled} />
-    </>
-  );
+  return <AccountClient signedIn={!!userId} name={who.name} email={who.email} authEnabled={authEnabled} />;
 }

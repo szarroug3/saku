@@ -8,9 +8,5 @@ import { howItWorksPage } from "../reading";
 export const metadata = { title: "How Saku works" };
 
 export default function SkyHowPage() {
-  return (
-    <>
-      <SkyReading page={howItWorksPage()} height="100%" />
-    </>
-  );
+  return <SkyReading page={howItWorksPage()} />;
 }

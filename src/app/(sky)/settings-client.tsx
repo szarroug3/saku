@@ -64,7 +64,6 @@ export function SettingsClient() {
       fonts={fonts}
       saveError={saveError ? SAVE_TEXT.failed : null}
       onRetrySave={retrySave}
-      height="100%"
     />
   );
 }
