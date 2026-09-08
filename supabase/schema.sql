@@ -9,30 +9,30 @@
 -- `history` verbatim, so nothing about how the app reads or writes that blob
 -- changes; only WHERE it lives does.
 --
--- Three live jsonb blobs on this one row, all read/written by
+-- Two live jsonb blobs on this one row, both read/written by
 -- src/lib/store/supabase-store.ts:
 --   history  — finished practice history (facts + sessions), folded in forever.
 --   settings — server-synced preferences (quiz config, theme/appearance/accents,
 --              dismissal flags); read/written via src/lib/settings.ts.
---   session  — the IN-PROGRESS run envelope (deck position, current question,
---              answers so far, requeue state, phase + round), separate from
---              `history` on purpose so a stale in-progress copy can never
---              resurrect a finished run; read/written via src/lib/session-store.ts.
 --
--- And one dead one. `lists` held the old app's saved lists. Nothing reads or
--- writes it as of SAK-375: the API route, the store primitives, the local copy
--- and the sign-in replay are all gone, and readProgressSeedRow no longer selects
--- it. The column is left in place because dropping it is a by-hand migration
--- that buys nothing, and whatever a learner's row still holds is kept rather
--- than thrown away. A fresh setup gets the column too, from the create below, so
--- this file keeps describing the table as it actually is.
+-- And two dead ones. `lists` held the old app's saved lists (SAK-375); `session`
+-- held its IN-PROGRESS run envelope, the deck position and current question a
+-- half-answered quiz could be resumed from on another device (SAK-376). Nothing
+-- reads or writes either one: the API routes, the store primitives, the client
+-- provider, the local copies and the sign-in replay are all gone, and
+-- readProgressSeedRow selects neither. Both columns are left in place because
+-- dropping them is a by-hand migration that buys nothing, and whatever a
+-- learner's row still holds is kept rather than thrown away. A fresh setup gets
+-- them too, from the create below, so this file keeps describing the table as it
+-- actually is. The Sky's quiz has no resume of its own yet; when it grows one,
+-- `session` is the column waiting for it.
 --
--- `settings` and `session` are read unconditionally by readProgressSeedRow
--- (`select history, settings, session`) — unlike `progress_facts` below, there
--- is no fallback for these columns being absent, so they belong in this table's
--- own definition rather than a separate "run this by hand" script that a fresh
--- setup could skip. RLS policies gate the ROW, not the column list, so both
--- inherit the same policies as `history` automatically.
+-- `settings` is read unconditionally by readProgressSeedRow (`select history,
+-- settings`) — unlike `progress_facts` below, there is no fallback for that
+-- column being absent, so it belongs in this table's own definition rather than
+-- a separate "run this by hand" script that a fresh setup could skip. RLS
+-- policies gate the ROW, not the column list, so it inherits the same policies
+-- as `history` automatically.
 create table if not exists public.progress (
   user_id    uuid primary key references auth.users (id) on delete cascade,
   history    jsonb not null default '{}'::jsonb,

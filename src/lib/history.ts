@@ -81,13 +81,14 @@ export async function loadHistory(userId: string): Promise<HistoryFile> {
   return timed("history", () => readHistoryRow(userId), "reading the learner's history");
 }
 
-/** One read for the three app-shell seeds (history/settings/session), so layout
- * hydration can avoid three independent progress-row queries. */
+/** One read for the app-shell's seeds, so layout hydration does not make its
+ * own progress-row query. Only the settings are read now (SAK-376): the
+ * history left the HTML in SAK-398 and the in-progress run envelope is gone. */
 export async function loadProgressSeeds(userId: string) {
   return timed("seeds", () => readProgressSeedRow(userId), "the shell's progress row");
 }
 
-/** The write half — upserts the `history` column, leaving lists/settings/session
+/** The write half — upserts the `history` column, leaving the others
  * untouched. */
 async function writeHistory(userId: string, hist: HistoryFile): Promise<void> {
   await writeHistoryRow(userId, hist);

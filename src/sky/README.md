@@ -1836,3 +1836,44 @@ never read.
 list ops', the compare-and-set writer's, the local store's list half and
 `fixedRunList`'s. 26 e2e pass. `scripts/unreachable.mjs` still reports
 zero files.
+
+### The in-progress run envelope goes (2026-09-08, SAK-376)
+
+The old app could hand a half-answered quiz from one device to another.
+The run's cursor, deck position, current question, answers so far, phase
+and round, lived in `progress.session` as a small envelope with an id and
+a timestamp, posted through `/api/session-state` and reconciled
+last-writer-wins under a compare-and-set. Four modules and a route, and
+by tonight not one caller: the provider that wrote it went with the old
+app, and `ProgressSeedRow.session` was read by nobody.
+
+Six files, 829 lines, deleted: the route, `session-state.ts` and its
+test, `session-store.ts`, `session-mutate.ts` and its test. With them,
+`readSessionRow` / `readSessionRowVersioned` / `writeSessionRowGuarded`
+from the store, `session` off the seed row and off the seed select, which
+is `select history, settings` now, and four localStorage keys in
+`settings-keys.ts` that nothing had read since the provider went:
+`saku-session`, `kanaquiz-session`, `saku-session-sync` and
+`saku-current-run-count`. 993 lines gone against 33 added.
+
+The column stays, noted dead in `schema.sql` beside `lists`, and that
+note says what it is waiting for. The Sky's quiz keeps its state in
+component memory and only the rest between rounds in `sky:quiz:rest`, so
+a reload mid-quiz still loses the round and there is no continue
+anywhere. Giving it a small envelope of its own is the good half of the
+card and it is Sam's to take: it changes what a signed-in learner sees
+and what is stored for them, which this pass does not do. Nothing in the
+shape it would take depended on the code deleted here.
+
+The card's other note, shrinking `QuizMode` to `drill` and `assembly`,
+is not ready. `pairs` and `grid` still have readers (the board-mode
+carve-out in `realQuestionCount`, the count-limited-pairs cases in the
+deck builder's tests), `listen-sentence` is migrated forward in
+`normalizeConfig` for a stored config that still names it, and the type
+also describes `QuizSessionRecord.mode`, a field in every session record
+a learner already has. Narrowing it would be a claim about their data,
+not only about our code.
+
+3,824 unit tests pass, 1 skipped, from 3,843: the 19 that went were the
+envelope's own and its compare-and-set writer's. 26 e2e pass. Nothing in
+`src` is unreachable.

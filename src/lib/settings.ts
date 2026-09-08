@@ -1,14 +1,14 @@
 // Server-side persistence for a signed-in learner's settings — the `settings`
-// jsonb on their `progress` row, beside history, lists and session.
+// jsonb on their `progress` row, beside history.
 //
 // WHO REACHES THIS. Only a signed-in request (getUserId → 401 otherwise). A
 // signed-out visitor's preferences live in this browser's localStorage cache
 // (theme especially — see the client settings store), never here.
 //
-// A SEPARATE BLOB FROM history AND lists, on the same row. Settings are not
-// something you DID and not a saved list; they outlive a "delete all my history"
-// and must never be collateral in one. Writing settings leaves history and lists
-// untouched (the upsert only sets the `settings` column), and vice versa.
+// A SEPARATE BLOB FROM history, on the same row. Settings are not something you
+// DID; they outlive a "delete all my history" and must never be collateral in
+// one. Writing settings leaves history untouched (the upsert only sets the
+// `settings` column), and vice versa.
 //
 // THE SERVER IS THE SOURCE OF TRUTH for a signed-in learner. The client mirrors
 // these values into localStorage as a paint cache (theme especially — the

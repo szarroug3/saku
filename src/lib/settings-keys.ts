@@ -61,22 +61,6 @@ export const INTRO_SHOWN = "shown";
 export const PRACTICE_SAVED_KEY = "sky:practice:recipes";
 export const PRACTICE_MISSES_KEY = "sky:practice:misses";
 
-// ---------- quiz session snapshot (src/lib/quiz-session.tsx) ----------
-export const SESSION_KEY = "saku-session";
-export const OLD_SESSION_KEY = "kanaquiz-session";
-/** A server-readable hint used only to render the conditional sidebar link on
- * first paint. The provider replaces it with the authoritative restored count. */
-export const CURRENT_RUN_COUNT_COOKIE = "saku-current-run-count";
-
-// ---------- in-progress session SYNC metadata (src/lib/quiz-session.tsx) ----------
-// The device's own view of the synced run: its stable id and the ms timestamp of
-// this device's last in-progress write. Separate from the SESSION_KEY snapshot
-// (which is the subject of the delicate cross-tab adoption protocol and must not
-// grow a per-write timestamp that would defeat its idempotence guard). Used to
-// build the last-writer-wins envelope on load. New in Sync Part 2 — no legacy
-// name to migrate. See src/lib/session-state.ts.
-export const SESSION_SYNC_KEY = "saku-session-sync";
-
 // ---------- unsent-record outbox (src/lib/pending-records.ts) ----------
 export const PENDING_KEY = "saku-pending-records";
 export const OLD_PENDING_KEY = "kanaquiz-pending-records";
