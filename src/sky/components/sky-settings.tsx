@@ -13,6 +13,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyToggle } from "@/sky/components/sky-toggle";
+import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
 
 export interface SkySettingsProps {
@@ -114,12 +115,12 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
 
   return (
     <SkyPageShell eyebrow="Settings" title="How should Saku behave?" height={height}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      <SkyPageBody>
         {SETTING_GROUPS.map((g) => {
           const rows = g.keys.map((k) => control[k]()).filter(Boolean);
           return rows.length ? <SkyPanel key={g.title} title={g.title}><div className="mt-1">{rows}</div></SkyPanel> : null;
         })}
-      </div>
+      </SkyPageBody>
     </SkyPageShell>
   );
 }

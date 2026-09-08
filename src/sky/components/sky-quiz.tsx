@@ -30,6 +30,7 @@ import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
+import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 export interface SkyQuizProps {
@@ -329,7 +330,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
           side, so the box may grow downward for the choices without anything
           above moving (Sam, 2026-09-05); no arrow past either end. A hint,
           and a missed card's lesson, open in the panel underneath. */}
-      {cardShown && <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      {cardShown && <SkyPageBody width="reading">
         <SkySurface className="flex shrink-0 flex-col">
           <div className="flex items-center justify-between gap-3">
             <span className={at === 0 ? "invisible" : ""}><RoundButton label="Back a card" onClick={() => go(at - 1)}>‹</RoundButton></span>
@@ -513,7 +514,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
           // a screen too short to hold the card at all.
           <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} known={false} onSelect={() => undefined} hear={hear} pitch={pitch} className="min-h-[120px] flex-1 overflow-y-auto" />
         )}
-      </div>}
+      </SkyPageBody>}
 
       <QuizQuestions
         cards={cards}

@@ -14,6 +14,7 @@ import { SkyInfo } from "@/sky/components/sky-info";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
+import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, GRADES, tally, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
@@ -65,7 +66,7 @@ export function QuizResults({ cards, answers, failed, back, pitch: Pitch, onRetr
 
   return (
     <SkyPageShell eyebrow="Quiz" title="How it went" height={height}>
-      <div className="mx-auto flex w-full max-w-[720px] min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      <SkyPageBody width="reading">
         <SkySurface>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-center sm:grid-cols-4">
             {GRADES.map((g) => <div key={g}>{count(GRADE[g].label, counts[g], GRADE[g].meaning, VERDICT[g])}</div>)}
@@ -122,7 +123,7 @@ export function QuizResults({ cards, answers, failed, back, pitch: Pitch, onRetr
             onCancel={() => setNaming(false)}
           />
         )}
-      </div>
+      </SkyPageBody>
     </SkyPageShell>
   );
 }

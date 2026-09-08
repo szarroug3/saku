@@ -6,12 +6,13 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { Sound } from "@/sky/components/teach-page";
+import { SkyPageBody } from "@/sky/components/sky-page-body";
 import type { ReadingPage } from "@/sky/lib/reading";
 
 export function SkyReading({ page, height }: { page: ReadingPage; height?: string }) {
   return (
     <SkyPageShell eyebrow={page.eyebrow} title={page.title} height={height}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      <SkyPageBody>
         {page.sections.map((s) => (
           <SkyPanel key={s.id} title={s.title}>
             <div className="mt-2 flex flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90">
@@ -38,7 +39,7 @@ export function SkyReading({ page, height }: { page: ReadingPage; height?: strin
             </div>
           </SkyPanel>
         ))}
-      </div>
+      </SkyPageBody>
     </SkyPageShell>
   );
 }

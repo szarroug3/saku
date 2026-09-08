@@ -1468,3 +1468,15 @@ nothing changed: the browser's own history is read there as before.
 What is not done here: the providers' files and the old app's remaining
 19,000 lines are still in the tree, and the settings' save errors, which
 the removed strip used to show, have no surface in the Sky yet.
+
+### Three files nothing imports, and one wrapper (2026-09-07, SAK-398)
+
+With the layout no longer mounting them, `quiz-session.tsx` (2,230 lines
+of the old app's quiz), `lists-provider.tsx` and `save-status.tsx` had no
+importer left but each other; they are gone. What mentions them now is
+comments, which is where they belong.
+
+And from the components review: five screens carried the same page-body
+class string, two with the reading width. `SkyPageBody` is that column,
+with `width="reading"` for the quiz and its results, so a change to how a
+page scrolls is a change in one place.

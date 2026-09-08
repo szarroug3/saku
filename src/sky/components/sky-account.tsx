@@ -11,6 +11,7 @@ import { SkyButton } from "@/sky/components/sky-button";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
+import { SkyPageBody } from "@/sky/components/sky-page-body";
 
 export interface SkyAccountProps {
   signedIn: boolean;
@@ -65,7 +66,7 @@ export function SkyAccount({ signedIn, name, email, onSignIn, onSignInWithPasswo
   };
   return (
     <SkyPageShell eyebrow="Account" title={signedIn ? "Who is learning?" : "Want to keep your sky?"} height={height}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto font-sky-ui">
+      <SkyPageBody>
         {signedIn ? (
           <SkyPanel title="You">
             <p className="mt-2 text-[16px] font-semibold text-sky-ink">{name ?? email ?? "Signed in"}</p>
@@ -114,7 +115,7 @@ export function SkyAccount({ signedIn, name, email, onSignIn, onSignInWithPasswo
             </>
           )}
         </SkyPanel>
-      </div>
+      </SkyPageBody>
     </SkyPageShell>
   );
 }
