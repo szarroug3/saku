@@ -43,7 +43,6 @@ export interface SkyQuizProps {
   toKana?: (value: string, katakana: boolean) => string;
   /** Where the answers go when the session ends: the schedule. */
   onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
-  /** Back to the observatory. */
   /** Where this quiz came from, and what to call it (SAK-353). */
   back: WayBack;
   hear?: HearComponent;
