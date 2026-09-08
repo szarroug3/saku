@@ -2243,3 +2243,29 @@ knows only `signedIn`; the name is in the session's claims, and reading it
 there is a second `getClaims()` on every page in the app, which is the cost
 SAK-382 spent the week cutting. One line to change if the layout ever holds
 the claims for another reason.
+
+### A panel stops at its content (2026-09-08, SAK-359)
+
+Four panels were told to fill their column so their body could scroll and
+their actions could sit at the end. That is right when the list is long and
+wrong when it is short: the Observatory's "Tonight" with nothing picked put
+"Nothing picked. Your sky stays as it is." at the top and a disabled Start
+lesson 204px below it at 1440 by 900, and Sessions, Practice and the
+lesson's rail did the same.
+
+`SkyPanel` takes `fit`: `flex max-h-full min-h-0 w-full flex-col self-start`.
+The panel is as tall as its content, capped at the room it was given, so the
+body's own `min-h-0 flex-1 overflow-y-auto` only starts scrolling, and the
+actions only end up pinned, once there is more content than room. The three
+classes cover both parents: in a grid cell `self-start` beats the stretch
+and `max-h-full` puts the ceiling back; in a flex column the caller drops
+its `flex-1` and `w-full` keeps `self-start` from narrowing it instead.
+
+Taking `fit`: the Observatory's "Tonight", both of Sessions' panels,
+Practice's "What you would get", and the lesson's "Tonight, in order"
+(which also dropped `self-stretch`). The Observatory's empty line dropped
+its own `flex-1`, which was the other half of the void. Practice's "The
+recipe" is left alone: it scrolls as a whole and pins nothing.
+
+`e2e/sky.spec.ts` gained a test that measures the gap from the empty line
+to the button on the Observatory: 204px before, 12px after.

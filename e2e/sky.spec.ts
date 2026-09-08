@@ -444,6 +444,23 @@ test("a lone button fills its row instead of leaving a hole beside it", async ({
   expect(measured!.button).toBeGreaterThan(measured!.row * 0.9);
 });
 
+test("a short panel stops at its content instead of pinning its buttons to the page's foot", async ({ page }) => {
+  // SAK-359. The Observatory's "Tonight" panel was told to fill its column,
+  // so with nothing picked "Nothing picked. Your sky stays as it is." sat at
+  // the top and the disabled Start lesson at the very bottom of the page.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/observatory?sample");
+  const empty = page.getByText("Nothing picked. Your sky stays as it is.");
+  await expect(empty).toBeVisible();
+  const line = await empty.boundingBox();
+  const start = await page.getByText("Start lesson", { exact: true }).boundingBox();
+  // the button follows the line it belongs to, rather than a screen below it.
+  // Measured from the line's TOP: the empty line used to be the thing that
+  // stretched, so its own box reached all the way down to the button.
+  const gap = (start?.y ?? 0) - (line?.y ?? 0);
+  expect(gap, `the panel left ${Math.round(gap)}px between the line and the button`).toBeLessThan(80);
+});
+
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Want to keep your sky?" })).toBeVisible();

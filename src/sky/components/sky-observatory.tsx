@@ -184,9 +184,9 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             <p className={`mt-2 text-[12.5px] ${over ? "text-sky-coral" : "text-sky-muted"}`}>{meterNote}</p>
           </SkyPanel>
 
-          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} className="flex min-h-0 flex-1 flex-col !p-4">
+          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} fit className="!p-4">
             {picks.length === 0 ? (
-              <p className="mt-3 flex-1 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
+              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Your sky stays as it is.</p>
             ) : (
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
                 {summary.lines.map((line) => (

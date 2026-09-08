@@ -35,13 +35,23 @@ export interface SkyPanelProps {
   title: ReactNode;
   /** The line beside the title: "470 of 15,347 Discovered". */
   aside?: ReactNode;
+  /** As tall as its content, and no taller than the room it has (SAK-359).
+   * A panel whose body scrolls and whose actions sit at the end used to be
+   * told to fill its column, so a short list left a void with the buttons
+   * pinned far below it. With `fit` the panel stops at its content, and the
+   * ceiling is the space it was given: past that the body's own
+   * `min-h-0 flex-1 overflow-y-auto` scrolls and the actions are back at the
+   * bottom. The same three classes work in a grid cell (`self-start` beats
+   * the stretch) and in a flex column (`w-full` keeps `self-start` from
+   * narrowing it instead); the caller drops its own `flex-1`. */
+  fit?: boolean;
   className?: string;
   children?: ReactNode;
 }
 
-export function SkyPanel({ title, aside, className = "", children }: SkyPanelProps) {
+export function SkyPanel({ title, aside, fit = false, className = "", children }: SkyPanelProps) {
   return (
-    <SkySurface as="section" className={className}>
+    <SkySurface as="section" className={`${fit ? "flex max-h-full min-h-0 w-full flex-col self-start " : ""}${className}`}>
       <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-sky-muted">{title}</h2>
         {aside && <span className="text-[13px] tabular-nums text-sky-muted">{aside}</span>}

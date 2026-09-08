@@ -195,7 +195,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
               </SkyPanel>
             )}
           </div>
-          <SkyPanel title="Tonight, in order" className="flex min-h-0 flex-col self-stretch !p-4">
+          <SkyPanel title="Tonight, in order" fit className="!p-4">
             <p className="mt-1 shrink-0 text-[12px] text-sky-muted">Pieces first, then the character, then the word. Stars already in your sky are not listed; they are open on the constellation for reference.</p>
             <ol ref={rail} className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
               {steps.map((s, i) => {

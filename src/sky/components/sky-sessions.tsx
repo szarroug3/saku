@@ -61,7 +61,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
         <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every quiz you finish is kept here. There are none so far.</p></SkyPanel>
       ) : (
         <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <SkyPanel title="Newest first" className="flex min-h-0 flex-col">
+          <SkyPanel title="Newest first" fit>
             <ul className="mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
               {sessions.map((s) => {
                 const t = tally(s);
@@ -80,7 +80,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
             </ul>
           </SkyPanel>
           {open && counts && (
-            <SkyPanel title={<><When ts={open.when} /> · {SESSION_KIND[open.kind]}</>} className="flex min-h-0 flex-col">
+            <SkyPanel title={<><When ts={open.when} /> · {SESSION_KIND[open.kind]}</>} fit>
               <dl className="mt-2 grid shrink-0 grid-cols-3 gap-x-6 text-center">
                 {GRADES.map((g) => (
                   <div key={g}>

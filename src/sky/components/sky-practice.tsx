@@ -203,7 +203,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           </div>
         </SkyPanel>
 
-        <SkyPanel title="What you would get" className="flex min-h-0 flex-col">
+        <SkyPanel title="What you would get" fit>
           <p className="mt-2 shrink-0 text-[14px]">
             <span className="font-semibold text-sky-ink">{size.toLocaleString()}</span> {size === 1 ? "item" : "items"}
             {recipe.size !== "all" && pool > size && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
