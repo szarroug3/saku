@@ -16,6 +16,7 @@ import { useCallback } from "react";
 import { SkyHome } from "@/sky/components/sky-home";
 
 import { loadSky } from "./actions";
+import { skyHref } from "./hrefs";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { joinSky, type SkyCatalogue, type SkyPayload } from "./sky-payload";
 import { useCatalogue } from "./use-catalogue";
@@ -29,5 +30,5 @@ export function PlanetariumClient({ sample, signedIn, initial, graduateRuns }: {
   const stars = useCatalogue<SkyCatalogue>("/api/sky-catalogue", payload?.version);
   if (!payload || !stars) return <SkyLoading eyebrow="Planetarium" title={"What have you discovered?"} />;
   const clear = async (key: string) => { await clearMixUpKey(key); router.refresh(); };
-  return <SkyHome data={joinSky(stars, payload)} observatoryHref={sample ? "/observatory?sample" : "/observatory"} onClearMixUp={sample ? undefined : clear} height="100%" />;
+  return <SkyHome data={joinSky(stars, payload)} observatoryHref={skyHref("/observatory", { sample })} onClearMixUp={sample ? undefined : clear} height="100%" />;
 }

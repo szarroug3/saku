@@ -66,9 +66,10 @@ export interface SkyObservatoryProps {
   height?: string;
   /** A comfortable lesson, in pieces. */
   cap?: number;
-  /** Where "Start tonight's lesson" goes; the picks are appended as
-   * `?picks=a,b,c`. A path, not a function: the route is a server component. */
-  lessonPath?: string;
+  /** Where "Start tonight's lesson" goes, given the picks. From the route
+   * layer, which is the only thing that knows what a Sky URL looks like
+   * (SAK-367). Absent means the button is there but cannot go anywhere. */
+  lessonHref?: (ids: readonly string[]) => string;
   /** Claims the picks ("I already know these"): a server action from the
    * route, given the picked ids. Each pick claims only itself (a word's kanji
    * stay unclaimed; a kana row claims its sounds). Absent when there is no
@@ -88,7 +89,7 @@ function kindLabel(item: SkyItem): string {
   return KIND_LABEL[item.kind];
 }
 
-export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, initialPicks = [], height, onClaim }: SkyObservatoryProps) {
+export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, initialPicks = [], height, onClaim }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   // what is claimed this visit joins what is learned; without a route to
   // write to, that is the whole of the claim
@@ -211,8 +212,8 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
                 {claiming ? "Claiming…" : "I already know these"}
               </SkyButton>
             )}
-            {picks.length > 0 && lessonPath ? (
-              <SkyButton variant={over ? "coral" : "solid"} block href={`${lessonPath}${lessonPath.includes("?") ? "&" : "?"}picks=${encodeURIComponent(picks.join(","))}`} className="mt-2 shrink-0 py-2.5">{startLabel}</SkyButton>
+            {picks.length > 0 && lessonHref ? (
+              <SkyButton variant={over ? "coral" : "solid"} block href={lessonHref(picks)} className="mt-2 shrink-0 py-2.5">{startLabel}</SkyButton>
             ) : (
               <SkyButton block disabled href="#" className="mt-3 shrink-0 py-2.5">Start lesson</SkyButton>
             )}

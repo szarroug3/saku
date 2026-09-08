@@ -2486,3 +2486,48 @@ fallback cases are gone and one new one takes their place, and the
 store's table-absent cases now assert a throw instead of a flag. 28 e2e.
 The entry-model dump is byte-identical across all 13 files, and `node
 scripts/unreachable.mjs --list` is still zero.
+
+### Every Sky URL is built in one place (2026-09-08, SAK-367)
+
+Nine places did the same string surgery, each with its own `sample ?
+"sample&" : ""` and `includes("?") ? "&" : "?"`: the Atlas's `withPicks`
+(twice), the Observatory's Start lesson, the lesson's Drill, Sessions'
+rerun, the quiz's retry, Practice's start, back and retry, and the
+`sample ? "/observatory?sample" : "/observatory"` ternaries in four
+clients and the quiz route.
+
+`src/app/(sky)/hrefs.ts` is `skyHref(path, { sample, from, recipe, picks,
+cards })`, and the keys come out in that order, which is the order every
+one of those nine already used. An empty list is no key at all, which is
+what "quiz me on what is due" looks like. `idsFrom(value)` is the mirror
+the pages read a `picks=` or `cards=` back with, and it handles the
+repeated key Next hands over as an array, which two of the pages did and
+two did not.
+
+Two Sky components knew query names and now do not. `SkyAtlas` takes
+`picksHref(ids)` and `quizHref(ids)`; `SkyObservatory` takes
+`lessonHref(ids)` where it took a `lessonPath` string it appended to. The
+prop's old comment said "a path, not a function: the route is a server
+component", which stopped being true when the clients were split out.
+`SkyHome` and `SkyLesson` keep plain string hrefs, neither one appending
+anything.
+
+Eight of the nine emit the same string they always did, pinned in
+`hrefs.test.ts` against the strings captured before the change. The ninth
+moved, and it is worth naming: the Atlas encoded a list as
+`ids.map(encodeURIComponent).join(",")` while the other five used
+`encodeURIComponent(ids.join(","))`, so `/observatory?picks=kanji%3A日,…`
+now separates with `%2C` like everywhere else. Both forms decode to the
+same two ids and both still parse, so a link written yesterday still
+opens; no id anywhere holds a comma (0 of 15,380 sky items, 0 of 2,815
+atlas items), so the two forms have never differed in meaning.
+
+`skyHref` covers `recipe` and `cards` but nothing here calls those yet:
+`quiz-client.tsx`, `practice-client.tsx` and the quiz and practice route
+modules are another session's tonight (SAK-370, 372, 315, 316), and their
+four call sites are one line each when that lane is in. `packRecipe`
+stays in `practice-client.tsx` until then, and the builder packs its own.
+
+31 lines of hand-rolled URL gone against 62 in the builder. 3,822 unit
+tests pass, from 3,810, the twelve new ones being the pinned strings. 31
+e2e.

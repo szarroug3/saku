@@ -11,6 +11,7 @@ import { SkySessions } from "@/sky/components/sky-sessions";
 import type { SkySession } from "@/sky/lib/sessions";
 
 import { loadSessions } from "./actions";
+import { skyHref } from "./hrefs";
 import { SkyLoading, useLoaded, useWho } from "./local";
 
 export function SessionsClient({ initial, sample, signedIn }: { initial: readonly SkySession[] | null; sample: boolean; signedIn: boolean }) {
@@ -18,7 +19,7 @@ export function SessionsClient({ initial, sample, signedIn }: { initial: readonl
   const who = useWho(sample, signedIn, true);
   const sessions = useLoaded(who, loadSessions, initial);
   if (!sessions) return <SkyLoading eyebrow="Sessions" title={"What have you done lately?"} />;
-  const rerun = (ids: readonly string[]) => router.push(`/quiz?${sample ? "sample&" : ""}from=sessions&cards=${encodeURIComponent(ids.join(","))}`);
+  const rerun = (ids: readonly string[]) => router.push(skyHref("/quiz", { sample, from: "sessions", cards: ids }));
   const forget = async (id: string) => {
     await postDelete({ ids: [/^\d+$/.test(id) ? Number(id) : id] });
     router.refresh();

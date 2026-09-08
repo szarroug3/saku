@@ -10,6 +10,7 @@ import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 
 import { loadLesson } from "./actions";
+import { skyHref } from "./hrefs";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { WrittenBlock } from "./written-block";
@@ -27,6 +28,6 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks }: { s
       .filter((i): i is NonNullable<typeof i> => !!i && (i.kind === "kana" || i.kind === "kanji" || i.kind === "radical"))
       .map((i) => [i.id, <WrittenBlock key={i.id} glyph={i.glyph} />]),
   );
-  const drillHref = `/quiz?${sample || showcase ? "sample&" : ""}from=observatory&picks=${encodeURIComponent(picks.join(","))}`;
-  return <SkyLesson data={data} drillHref={drillHref} observatoryHref={sample ? "/observatory?sample" : "/observatory"} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} height="100%" />;
+  const drillHref = skyHref("/quiz", { sample: sample || showcase, from: "observatory", picks });
+  return <SkyLesson data={data} drillHref={drillHref} observatoryHref={skyHref("/observatory", { sample })} written={written} hear={HearButton} pitch={PitchMark} onOpen={sample || showcase ? undefined : seeId} height="100%" />;
 }

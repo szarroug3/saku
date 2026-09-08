@@ -17,6 +17,7 @@ import { SkyAtlas, type AtlasLookup } from "@/sky/components/sky-atlas";
 
 import { atlasEntry, atlasSearch, atlasSections, atlasTiles, loadAtlas } from "./actions";
 import { joinAtlas, type AtlasCatalogue, type AtlasPayload } from "./atlas-payload";
+import { skyHref } from "./hrefs";
 import { useCatalogue } from "./use-catalogue";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { PitchMark } from "./pitch-reading";
@@ -42,8 +43,8 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
     <SkyAtlas
       data={data}
       lookup={lookup}
-      observatoryHref={sample ? "/observatory?sample" : "/observatory"}
-      quizHref={sample ? "/quiz?sample&from=atlas" : "/quiz?from=atlas"}
+      picksHref={(ids) => skyHref("/observatory", { sample, picks: ids })}
+      quizHref={(ids) => skyHref("/quiz", { sample, from: "atlas", picks: ids })}
       written={WrittenBlock}
       hear={HearButton}
       pitch={PitchMark}

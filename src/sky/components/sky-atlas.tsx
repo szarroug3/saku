@@ -107,10 +107,11 @@ export interface AtlasLookup {
 export interface SkyAtlasProps {
   data: SkyAtlasData;
   lookup: AtlasLookup;
-  /** Where "Add to tonight's picks" goes; the picks are appended as `?picks=`. */
-  observatoryHref: string;
-  /** Where "Quiz me" goes; the picks are appended as `?picks=`. */
-  quizHref?: string;
+  /** Where "Add to lesson" goes, given the picks. From the route layer, which
+   * is the only thing that knows what a Sky URL looks like (SAK-367). */
+  picksHref: (ids: readonly string[]) => string;
+  /** Where "Quiz me" goes, given the picks. Absent means no Quiz me. */
+  quizHref?: (ids: readonly string[]) => string;
   /** "How it's written" for a character, from whoever has the stroke order. */
   written?: WrittenComponent;
   hear?: HearComponent;
@@ -159,7 +160,7 @@ function shelfHolding(data: SkyAtlasData, entry: string | undefined): string | u
   return kind ? data.shelves.find((s) => s.kind === kind)?.id : undefined;
 }
 
-export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
+export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entries brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
@@ -281,9 +282,6 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
       setMarking(false);
     }
   };
-  const withPicks = (base: string, ids: readonly string[]) => `${base}${base.includes("?") ? "&" : "?"}picks=${ids.map(encodeURIComponent).join(",")}`;
-  const picksHref = (ids: readonly string[]) => withPicks(observatoryHref, ids);
-  const quizFor = (ids: readonly string[]) => (quizHref ? withPicks(quizHref, ids) : undefined);
 
   // the right panel: widened over the rail and the grid, or dragged wider
   // by its left edge (Sam's ask, 2026-09-05)
@@ -410,7 +408,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       {selectedItems.some(unknown) && <SkyButton href={picksHref(selectedItems.filter(unknown).map((it) => it.id))}>Add to lesson</SkyButton>}
                       {selectedItems.some(unknown) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, true)}>{marking ? "Marking…" : "I know these"}</SkyButton>}
                       {selectedItems.some((it) => !unknown(it)) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, false)}>{marking ? "Marking…" : "I don't know these"}</SkyButton>}
-                      {quizHref && <SkyButton variant="outline" href={quizFor(selection.ids)}>Quiz me</SkyButton>}
+                      {quizHref && <SkyButton variant="outline" href={quizHref(selection.ids)}>Quiz me</SkyButton>}
                     </>
                   }
                 >
@@ -452,7 +450,7 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
                       ) : (
                         <SkyButton variant="outline" disabled={marking} onClick={() => mark([current.id], false)}>{marking ? "Marking…" : "I don't know this"}</SkyButton>
                       )}
-                      {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizFor([current.id])}>Quiz me</SkyButton>}
+                      {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizHref([current.id])}>Quiz me</SkyButton>}
                       {/* a radical's panel jumps to every kanji built from it (SAK-325) */}
                       {current.kind === "radical" && <SkyButton variant="outline" onClick={() => { setShelf("kanji"); setComponent(current.glyph); selection.clear(); }}>Kanji built from it</SkyButton>}
                     </>
