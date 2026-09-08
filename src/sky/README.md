@@ -2785,3 +2785,41 @@ other patterns and no short phrase is honest about all of them.
 the board was in front of the learner: a card that opens on its choices, or
 one where Multiple choice was asked for. Naming options that were never on
 screen would be noise. Nothing to name, nothing shown.
+
+### The reveal explains which reading applies, and why (2026-09-08, SAK-316)
+
+The quiz is mostly not asking what a thing means. It is asking which
+reading applies, because that is the part of Japanese that actually goes
+wrong: 水 is みず alone and すい in 水曜. The reveal confirmed the answer and
+showed the Lesson's own card, which teaches the item; it explains the rule
+now, which teaches every item the rule touches.
+
+`READING_INDEX` in `src/data/kanji.ts` already held the answer per reading
+fact: `type` is KANJIDIC2's on / kun / both, `base` is the reading,
+`surface` is how it comes out in this word, `anchor` is the word. Rendaku
+and gemination are folded into one reading there on purpose (出口's ぐち is
+くち voiced, and scoring the two apart would split one piece of knowledge in
+two), so a surface differing from the base is never a different reading, and
+every difference in the tables is one of exactly two things: a first-mora
+voicing or a clip to っ. Nothing else, checked across all 117 of them.
+
+`quiz-rules.ts` is the authored prose and the picking. Four rules: the
+on'yomi, the kun'yomi, the reading the dictionary files both ways, and the
+two sets of numbers. **The prose is per RULE, not per item.** The character
+and the word are filled in and the sentences are fixed, so every card that
+exercises a rule says the same thing and the learner meets one explanation
+many times rather than a hundred near misses. A test holds that line: three
+thousand-odd readings produce three titles and at most nine shapes of
+sentence, one per rule with and without the note about what happens to the
+sound in this particular word.
+
+`QuizRuleBlock` (`quiz-verdict.tsx`) puts the prose on the left and the
+character's readings on the right, best attested first, capped at six, the
+one that applies marked. A reading is worth little except against the ones
+that did not apply, which is what the card asked for.
+
+A card with no rule to name carries none, and its reveal is what it always
+was: a meaning card is not a question about which reading applies, and a
+rule attached to it would be a rule about the wrong thing. Long vowels are
+the card's one item not done. おう against おお is a question about how a
+reading is WRITTEN, and the tables carry no flag for it.

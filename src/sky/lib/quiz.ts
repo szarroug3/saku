@@ -54,6 +54,36 @@ export interface QuizOption {
   why?: string;
 }
 
+/** One of a character's readings, as the reveal's breakdown lists it. */
+export interface QuizReading {
+  reading: string;
+  /** "on'yomi", "kun'yomi", "listed both ways"; absent when unknown. */
+  kind?: string;
+  /** A word this reading turns up in, so it is a reading of something. */
+  inWord?: string;
+  /** This is the one the card asked about. */
+  applies: boolean;
+}
+
+/** Which reading applies here, and why (SAK-316).
+ *
+ * The quiz is mostly not asking what a thing means. It is asking which
+ * reading applies, because that is the part of Japanese that goes wrong: 水 is
+ * みず alone and すい in 水曜日. So the reveal explains the rule rather than
+ * confirming the answer twice.
+ *
+ * The prose is authored per RULE, not per item, and the route fills the
+ * character and the word into it, so every card that exercises the same rule
+ * says the same thing. A card whose rule cannot be named honestly carries
+ * none, and the reveal is what it always was. */
+export interface QuizRule {
+  title: string;
+  prose: string;
+  /** The character's readings, the one asked marked: the reading that applies
+   * is worth little except against the ones that did not. */
+  readings?: readonly QuizReading[];
+}
+
 /** One question. */
 export interface QuizCard {
   /** The fact asked about: the card's id. */
@@ -97,6 +127,9 @@ export interface QuizCard {
   missed: number;
   /** What the reveal teaches: the card under the sky. */
   teach?: LessonTeach;
+  /** Which reading applies here, and why (SAK-316); absent when the card
+   * exercises no rule the app can name. */
+  rule?: QuizRule;
   /** Something the adapter wants back with the answer (the direction asked). */
   meta?: Readonly<Record<string, string>>;
   /** What answers this card, as data, so the grader needs nothing but the

@@ -2,8 +2,9 @@
 
 // What an answered card shows under itself: the verdict, the answer, and
 // every attempt in order when it was missed (SAK-387), so the two things
-// that were confused can both be seen; then why each of the other choices
-// was on the board (SAK-315). And the hint a card shows while open. These
+// that were confused can both be seen; then which reading applies here and
+// why (SAK-316), and why each of the other choices was on the board
+// (SAK-315). And the hint a card shows while open. These
 // were inline in the quiz screen (the components review, 2026-09-07);
 // apart, the screen is the card and its bar.
 
@@ -14,7 +15,7 @@ import type { PitchComponent } from "@/sky/components/lesson-card";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { GRADE, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
 
 export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
   answered: QuizAnswer;
@@ -39,6 +40,41 @@ export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
             </Fragment>
           ))}.
         </p>
+      )}
+    </div>
+  );
+}
+
+/** Which reading applies here, and why (SAK-316).
+ *
+ * The quiz is mostly not asking what a thing means. It is asking which
+ * reading applies, because that is the part of Japanese that actually goes
+ * wrong: 水 is みず alone and すい in 水曜日. So the reveal explains the rule
+ * rather than confirming the answer a second time.
+ *
+ * The prose on the left, the character's readings on the right with the one
+ * that applies marked, because a reading is worth little except against the
+ * ones that did not apply. Both come from the route: the wording is authored
+ * per rule, not per item, so every card that exercises the same rule says the
+ * same thing, and a card whose rule cannot be named honestly carries none.
+ */
+export function QuizRuleBlock({ rule }: { rule: QuizRule }) {
+  return (
+    <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-start">
+      <div className="min-w-0 flex-1">
+        <Eyebrow>{rule.title}</Eyebrow>
+        <p className="text-[13.5px] leading-relaxed text-sky-ink/90">{rule.prose}</p>
+      </div>
+      {!!rule.readings?.length && (
+        <ul className="flex shrink-0 flex-col gap-1 md:w-[188px]">
+          {rule.readings.map((r) => (
+            <li key={r.reading} className={`flex flex-wrap items-baseline gap-x-2 rounded-lg px-2 py-1 text-[12.5px] ${r.applies ? "bg-sky-card-strong" : ""}`}>
+              <span className={`font-sky-display text-[15px] ${r.applies ? "text-sky-ink" : "text-sky-muted"} ${japaneseFont(r.reading)}`}>{r.reading}</span>
+              {r.kind && <span className={r.applies ? "text-sky-ink/80" : "text-sky-muted"}>{r.kind}</span>}
+              {r.inWord && <span className={`${r.applies ? "text-sky-ink/60" : "text-sky-muted/70"} ${japaneseFont(r.inWord)}`}>{r.inWord}</span>}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

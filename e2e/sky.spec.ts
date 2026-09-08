@@ -597,3 +597,26 @@ test("the reveal says why each of the others was on the board", async ({ page })
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await expect(page.getByText("Why the others were there")).toHaveCount(0);
 });
+
+test("the reveal explains which reading applies, and why", async ({ page }) => {
+  // SAK-316. The quiz is mostly not asking what a thing means, it is asking
+  // which reading applies: 水 is みず alone and すい in 水曜. The reveal used to
+  // confirm the answer and show the lesson card; it explains the rule now.
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("kanji:水/reading@水曜")}`);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await expect(page.getByText("On'yomi: the borrowed reading")).toBeVisible();
+  await expect(page.getByText(/すい is an on'yomi/)).toBeVisible();
+  await expect(page.getByText(/Same character, and the company it keeps decides\./)).toBeVisible();
+  // and the breakdown, so the reading that applies is read against the one
+  // that did not: すい marked on'yomi, みず beside it as the kun'yomi
+  await expect(page.getByText("on'yomi", { exact: true })).toHaveCount(1);
+  await expect(page.getByRole("listitem").filter({ hasText: "みず" }).filter({ hasText: "kun'yomi" })).toHaveCount(1);
+
+  // a card that exercises no rule the app can name says nothing rather than
+  // inventing one
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("kanji:一/meaning")}`);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await expect(page.getByText(/is an on'yomi, a pronunciation borrowed/)).toHaveCount(0);
+  await expect(page.getByText(/Same character, and the company it keeps decides/)).toHaveCount(0);
+});

@@ -35,6 +35,7 @@ import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
 import { offerPicker, pickFacts } from "./observatory";
+import { readingRuleFor } from "./quiz-rules";
 import { teachFor } from "./teach";
 
 /** The basket: how many cards a session asks (SAK-311's cap). */
@@ -221,6 +222,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     const question = questionAsked(entryOf(fact), dir, key);
     if (asked.has(question)) continue;
     asked.add(question);
+    const rule = readingRuleFor(fact, item);
     const instruction = listenIt
       ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
       : construction
@@ -245,6 +247,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // plain one is the word's first), so its reveal is that reading's
       // lesson card, not the whole entry (Sam, 2026-09-05)
       teach: teachFor(item, { reading: wordReadingAsked(fact, item) }),
+      // and the rule the card exercises, which is mostly not what a thing
+      // means but which of its readings applies here (SAK-316)
+      ...(rule ? { rule } : {}),
       // What answers this card, worked out here so the browser can grade
       // without the engine and its tables (SAK-380). It is the key for THIS
       // showing: the rolled count, or the verb the pattern was built on.
