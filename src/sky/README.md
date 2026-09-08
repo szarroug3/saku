@@ -1499,3 +1499,21 @@ its bar and the way on. No behaviour changed; the e2e that reads the said
 list and the reveal holds it. The audio button stays where it is: it
 needs the speech and quiz-config libraries, which `src/sky` may not
 import, and the route layer hands it in as a prop, which is right.
+
+### The dev galleries and the old app go (2026-09-07, SAK-398)
+
+The `/dev` galleries were the last thing rendering the old app's
+components; Sam does not use them. `scripts/unreachable.mjs` walks every
+`import` from what still counts as an entry point (the app's routes, the
+root layout, the proxy, the scripts, the e2e specs, and every test whose
+subject the app still reaches) and lists what nothing reaches. With the
+galleries gone that was 84 files and 15,400 lines: the galleries, 48 old
+components (the library views, the lesson views, the old quiz), and the
+old sync and lesson libraries under `src/lib`. Deleted. What is left of
+`src/components` is what the Sky's route layer still hands in as props
+(the audio button, tooltips, the sign-in merge) and the content builders
+the scripts run.
+
+The rule that decided tests: a test goes only when the module beside it
+goes; every other test stays and keeps whatever it imports, which is how
+a helper only tests use survives.

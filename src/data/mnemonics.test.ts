@@ -16,8 +16,8 @@
 // behavior, since this file only owns `getMnemonic` itself.
 
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import {existsSync} from "node:fs";
+import {fileURLToPath} from "node:url";
 import test from "node:test";
 
 import { MNEMONICS, getMnemonic, kanaScript, type SoundLine } from "./mnemonics.ts";
@@ -221,23 +221,11 @@ test("every line is a well-formed span array; the analogy always cues its sound"
 // renderer turns such a span into an anchor that leaves the app safely, and the
 // accent invariant is unaffected — a linked span can ALSO be the accented sound
 // cue, and a line with links still has to cue its sound.
-test("an href span renders as a safe anchor, and links don't weaken the accent rule", () => {
-  // The renderer. Read as source because node:test strips types, not JSX, so
-  // the .tsx cannot be imported here (see this file's header).
-  const card = readFileSync(
-    fileURLToPath(new URL("../components/lesson/mnemonic-card.tsx", import.meta.url)),
-    "utf-8",
-  );
-  const lineFn = card.slice(card.indexOf("export function Line("), card.indexOf("export function MnemonicCard("));
-  assert.ok(lineFn.length > 0, "Line renderer not found in mnemonic-card.tsx");
-  assert.match(lineFn, /span\.href/, "Line must branch on span.href");
-  assert.match(lineFn, /<a\b/, "an href span must render as an anchor");
-  assert.match(lineFn, /href=\{span\.href\}/, "the anchor must carry the span's href");
-  assert.match(lineFn, /target="_blank"/, "the link must open in a new tab");
-  assert.match(lineFn, /rel="noopener noreferrer"/, "the link must not leak the opener");
-
-  // A span that is BOTH the sound and the link still satisfies the invariant
-  // every analogy is held to above.
+test("links don't weaken the accent rule", () => {
+  // The old renderer that turned an href span into an anchor went with the
+  // old app (SAK-398); the data rule it served stays: a span that is BOTH the
+  // sound and the link still satisfies the invariant every analogy is held
+  // to above.
   const cuesSound = (line: SoundLine, sound: string) =>
     line.some((s) => s.accent && s.text.toLowerCase().includes(sound.toLowerCase()));
   const linked: SoundLine = [
