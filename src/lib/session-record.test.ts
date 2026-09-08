@@ -52,7 +52,7 @@ function stat(p: Partial<FactSessionDetail> = {}): FactSessionDetail {
  *
  * A fixture, not a subject: what is under test below is `buildSessionRecord`
  * and `foldSession`, and this only has to build the same round two ways so
- * they can be compared. Three rules, and they are the whole fold — every
+ * they can be compared. Three rules, and they are the whole fold: every
  * count sums, `everCorrect` is an OR, and `firstTryCorrect` is the verdict on
  * the FIRST showing and so is never overwritten once set. The loop's own
  * `mergeStats` said this at length; it went with the old session loop in

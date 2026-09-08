@@ -6,8 +6,8 @@
 // touch NO subject data. But they used to live in facts.ts, which top-level
 // imports every subject's registry (KANA/KANJI/VOCAB/GRAMMAR facts), and an
 // ES module import pulls the WHOLE module in: any file that reached for
-// `factKeys` alone — the session loop, the results math, the always-mounted
-// quiz provider — dragged the entire ~3.6 MB vocab+kanji payload into the
+// `factKeys` alone (the session loop, the results math, the always-mounted
+// quiz provider) dragged the entire ~3.6 MB vocab+kanji payload into the
 // eager client bundle, on every route, just to call `Object.keys`.
 //
 // Splitting these two casts into a data-free module cuts that edge. Modules that

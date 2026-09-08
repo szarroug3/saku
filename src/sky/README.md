@@ -2823,3 +2823,62 @@ was: a meaning card is not a question about which reading applies, and a
 rule attached to it would be a rule about the wrong thing. Long vowels are
 the card's one item not done. おう against おお is a question about how a
 reading is WRITTEN, and the tables carry no flag for it.
+
+### What the overnight lanes left (2026-09-08, SAK-410)
+
+Four leftovers, each of which had sat in another lane's files the night it
+was found. Three commits, 1,635 lines deleted against 174 added.
+
+`grammarVehicleBucketOf` and `grammarVehicleSlotOf` went, with the two
+describes that were their only readers. They lost their caller in SAK-407,
+when the deck builder they fed went with the engine's unreached half, and
+were kept as the written-down account of what a vehicle slot is. That
+account is in the git history; a lookup nothing calls is a lookup nothing
+keeps honest.
+
+`src/lib/session.ts` went too: 685 lines of the old app's session loop, plus
+its 707-line test. `unreachable.mjs --list` read zero on it, and that was
+true and misleading at once. It IS reached, but only from tests: its own,
+and two LIVE ones that had borrowed it for fixtures. So the borrowers stand
+on live code now. `drill-stats.test.ts` read the round summary through
+`roundCompleteView`; the three numbers it asserted are `poolSessionCounts`'
+own, off the same `seen` and `misses`, and the audit's case is a REPEAT
+showing, which is pooled, so the test still refutes the bug it was written
+for. `session-record.test.ts` folded its round fixtures with `mergeStats`;
+what it tests is `buildSessionRecord` and `foldSession`, not the fold, so
+the fold is a documented local helper there. Five comments that pointed at
+the deleted file point elsewhere. The one in `data/how-it-works.ts` is left
+alone: every path in that block names a file the old app took, and fixing
+one line would not make it less stale.
+
+`sky-lesson.tsx`'s keydown effect had no dependency list, so React ran it
+after every render: every page turn, every star opened, every keystroke
+removed a window listener and added another. SAK-370 fixed the same effect
+in the Quiz and left this copy behind. It has the Quiz's shape now, the
+handler in a ref each render refreshes and one listener added at mount, so
+`canBack` and `last` are still read fresh on every press and nothing is
+subscribed after mount.
+
+And the results screen says where the record is. SAK-406 made a visitor's
+finished quiz reach the browser in the caller's own turn and named what was
+left: the answers still go through the `quizRecords` server action before
+there is a record at all, and the screen said nothing across that window
+even though `SkyQuiz` had been tracking `saved` the whole time. A visitor
+who left inside it lost the run. One quiet line under the list now, "Saving
+this run." then "Saved.", `aria-live` so it is not a corner you have to
+watch; a failure keeps its own sentence and a sample deck stays silent.
+
+The way back is held while it says Saving, and that is the part that
+actually closes the window, because it is the one control that leaves the
+page. The card asked for the action to be ordered after the write, and that
+way round is not open to us: `quizRecords` is what MAKES the record, and it
+is a server action because it reads `factInfo`, the ~3.6 MB fact registry.
+Moving it into the browser to save a sub-second gap would put the registry
+on every quiz page. `writes.ts` says so where the next reader will look.
+
+`e2e/sky.spec.ts` gained a test that finishes a visitor's quiz, watches the
+line settle from Saving to Saved, checks the record really is in the browser
+by then, and only then walks the way back. 35 e2e pass, the new one six for
+six at `--repeat-each=6`. 3,754 unit tests pass, 1 skipped (3,799 before,
+less the 45 that went with the deleted code). `unreachable.mjs --list` at
+zero.
