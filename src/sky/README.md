@@ -1558,11 +1558,15 @@ registry, `entries.ts` took about 60 ms to load and the loader's parse of
 the JSON 30 more; now the parse is in `entries.ts` and the two together
 take 85 to 90. So the build itself was 5 to 10 ms of a cold load, and
 this round shortens the cold path by about that. What it removes is the
-duplicate. The per-import numbers did turn up one real cost: `kanji-parts.ts`
-is 16 ms on the home and reaches it only through `builtFrom`, which nothing
-calls any more. That goes with the rest of the old entry-page code in the
-next round. `grammar-concepts.ts`, 25 ms, is reached through the Atlas
-regardless of this file.
+duplicate. The per-import numbers looked like they had found one real
+cost, `kanji-parts.ts` at 16 ms, reached through `builtFrom`, which nothing
+calls any more; but the import walker reports the shortest chain, and the
+production bundle (`scripts/route_sources.mjs`, which reads the build's
+source maps) shows every Sky route carries `teach.ts`, which imports the
+same module for its own reasons. Deleting `builtFrom` removes dead code,
+not milliseconds. `grammar-concepts.ts`, 25 ms, is reached through the
+Atlas regardless of this file. The lesson: a walker says what could load a
+module, the bundle says what does.
 
 One difference between the two sources was found and kept: `entryForGlyph`
 for a word. `entries.ts` answers `wordEntry(keb)` for any VOCAB row; the
