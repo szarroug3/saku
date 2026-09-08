@@ -119,17 +119,28 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   // the arrow keys page too: left is Back, right is Next (Sam's ask), unless
   // the keys are typing into something
   const canBack = !nothing && !(stepIndex === 0 && page === 0);
+  // ONE subscription, for the life of the lesson. This effect had no
+  // dependency list, so it re-ran on every render: each page turn, each star
+  // opened, each keystroke tore the window listener off and put a new one
+  // back, and the handler that was reading `canBack` and `last` was a
+  // different closure every time. The handler goes in a ref that each render
+  // refreshes, and the listener reads the ref, so what runs is always the
+  // latest and nothing is added or removed after mount. SAK-370 gave the
+  // Quiz's keys the same shape; this is the copy it left behind.
+  const pressed = (e: KeyboardEvent) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target as HTMLElement | null;
+    if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+    if (e.key === "ArrowLeft" && canBack) { e.preventDefault(); back(); }
+    if (e.key === "ArrowRight" && !last) { e.preventDefault(); next(); }
+  };
+  const onKey = useRef(pressed);
+  useEffect(() => { onKey.current = pressed; });
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
-      if (e.key === "ArrowLeft" && canBack) { e.preventDefault(); back(); }
-      if (e.key === "ArrowRight" && !last) { e.preventDefault(); next(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
+    const key = (e: KeyboardEvent) => onKey.current(e);
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
 
   const nav = nothing ? (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
