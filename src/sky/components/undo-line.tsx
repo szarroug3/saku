@@ -7,6 +7,8 @@
 
 import type { ReactNode } from "react";
 
+import { SkyTextButton } from "@/sky/components/sky-button";
+
 export interface UndoLineProps {
   /** What happened, with no closing punctuation: "Removed 日". */
   what: ReactNode;
@@ -23,8 +25,8 @@ export function UndoLine({ what, label = "Undo", onUndo, also, className = "" }:
   return (
     <p className={`text-[12px] text-sky-muted ${className}`.trim()}>
       {what}.{" "}
-      <button type="button" className="underline hover:text-sky-ink" onClick={onUndo}>{label}</button>
-      {also && <> · <button type="button" className="underline hover:text-sky-ink" onClick={also.onClick}>{also.label}</button></>}
+      <SkyTextButton onClick={onUndo}>{label}</SkyTextButton>
+      {also && <> · <SkyTextButton onClick={also.onClick}>{also.label}</SkyTextButton></>}
     </p>
   );
 }

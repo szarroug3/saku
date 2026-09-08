@@ -5,9 +5,9 @@
 // caller gives the panel a height and it scrolls. Practice shows the same
 // panel for its pool.
 
+import { Glyph } from "@/sky/components/glyph";
+import { SkyTextButton } from "@/sky/components/sky-button";
 import { SkyPanel } from "@/sky/components/sky-panel";
-import { japaneseFont } from "@/sky/lib/japanese";
-import { STANDING } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface MixUp {
@@ -36,7 +36,7 @@ function Name({ item, id }: { item: SkyItem | undefined; id: string }) {
   if (!item) return <span className="text-sky-muted">{id}</span>;
   return (
     <span className="inline-flex items-baseline gap-1.5">
-      <span className={`font-sky-display text-[17px] leading-none ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+      <Glyph glyph={item.glyph} standing={item.standing} />
       <span>{item.english}</span>
     </span>
   );
@@ -57,7 +57,7 @@ export function MixUpsPanel({ pairs, itemOf, onClear, title = "Mix-ups", classNa
               <span className="ml-auto flex items-baseline gap-3 pl-4 text-[13px] tabular-nums text-sky-muted">
                 <span>{p.times} {p.times === 1 ? "time" : "times"}</span>
                 <span title="Clean runs in a row; the mix-up clears itself at the number set in Settings">{p.cleanRuns} of {p.needed} clean</span>
-                {onClear && <button type="button" onClick={() => onClear(p.key)} className="underline hover:text-sky-ink">Clear</button>}
+                {onClear && <SkyTextButton onClick={() => onClear(p.key)}>Clear</SkyTextButton>}
               </span>
             </li>
           ))}

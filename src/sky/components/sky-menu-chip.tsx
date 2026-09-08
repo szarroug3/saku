@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { CHIP_TONE } from "@/sky/components/sky-button";
 import { belowAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
 
 export interface SkyMenuChipProps {
@@ -42,7 +43,7 @@ export function SkyMenuChip({ on, onClick, title, marked = false, menuLabel, men
   }, [at]);
 
   const open = () => setAt(at ? null : belowAnchor(chip.current!.getBoundingClientRect()));
-  const tone = on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink";
+  const tone = on ? CHIP_TONE.on : CHIP_TONE.off;
   return (
     <>
       <span ref={chip} data-sky-chip="" className={`inline-flex h-[26px] items-stretch overflow-hidden rounded-full border text-[12px] font-semibold leading-none ${tone} ${className}`}>

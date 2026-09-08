@@ -27,7 +27,7 @@ export interface SkySession {
 }
 
 /** How a session went: the grades, counted. */
-export function tally(session: SkySession): Record<Grade, number> {
+export function tallySession(session: SkySession): Record<Grade, number> {
   const t: Record<Grade, number> = { clean: 0, help: 0, missed: 0 };
   for (const c of session.cards) t[c.grade]++;
   return t;

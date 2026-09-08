@@ -16,6 +16,7 @@
 import type { ComponentType, ReactNode } from "react";
 
 import { DetailFrame } from "@/sky/components/detail-frame";
+import { Glyph } from "@/sky/components/glyph";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
@@ -81,7 +82,7 @@ export type HearComponent = ComponentType<{ glyph: string; downstep?: number; cl
 function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
-      <span className={`font-sky-display text-[18px] leading-none text-sky-ink ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+      <Glyph glyph={item.glyph} size="text-[18px]" />
       {note && <span className={`font-sky-display text-[13px] text-sky-muted ${japaneseFont(note)}`}>{note}</span>}
       {item.english !== item.glyph && <span className="text-[12.5px] text-sky-muted">{item.english}</span>}
     </button>

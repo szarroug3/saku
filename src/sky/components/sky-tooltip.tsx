@@ -7,6 +7,7 @@
 // Planetarium preview and the lesson; the lesson passes `brief` to show only
 // the English, which is what Sam asked for there ("car", nothing more).
 
+import { Glyph } from "@/sky/components/glyph";
 import { Eyebrow, SkyCard } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING } from "@/sky/lib/standing";
@@ -32,7 +33,7 @@ export function SkyTooltip({ item, pieces = [], brief = false, tonight = false, 
     <SkyCard className={`max-w-[260px] ${className}`}>
       <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
       <div className="flex items-baseline gap-2">
-        <span className={`font-sky-display text-2xl leading-none ${tonight ? "text-sky-ink" : STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+        <Glyph glyph={item.glyph} standing={tonight ? undefined : item.standing} size="text-2xl" />
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
       </div>
       {discovered && item.english !== item.glyph && <div className="mt-1.5">{item.english}</div>}

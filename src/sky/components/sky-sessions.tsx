@@ -13,8 +13,8 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, type Grade } from "@/sky/lib/quiz";
-import { formatWhen, SESSION_KIND, tally, type SkySession } from "@/sky/lib/sessions";
+import { GRADE, GRADES } from "@/sky/lib/quiz";
+import { formatWhen, SESSION_KIND, tallySession, type SkySession } from "@/sky/lib/sessions";
 import { useMounted } from "@/sky/components/use-mounted";
 import { STANDING } from "@/sky/lib/standing";
 
@@ -27,7 +27,6 @@ export interface SkySessionsProps {
   height?: string;
 }
 
-const GRADES: readonly Grade[] = ["clean", "help", "missed"];
 
 /**
  * When a session was, in the reader's own timezone.
@@ -49,7 +48,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const open = sessions.find((s) => s.id === openId) ?? sessions[0];
-  const counts = open ? tally(open) : null;
+  const counts = open ? tallySession(open) : null;
   const remove = async () => {
     if (!open || !onDelete) return;
     setBusy(true);
@@ -65,7 +64,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
           <SkyPanel title="Newest first" fit>
             <ul className="mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
               {sessions.map((s) => {
-                const t = tally(s);
+                const t = tallySession(s);
                 const on = open?.id === s.id;
                 return (
                   <li key={s.id}>

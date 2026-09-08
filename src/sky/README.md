@@ -2579,3 +2579,57 @@ land, and the four `height="100%"` that are left are theirs.
 adding behavior, and the e2e is where the proof is. 31 e2e, which opens
 the home, the Observatory, the Atlas, a lesson, Sessions and the account
 page, sampled, signed out and as a visitor.
+
+### The Sky stops writing the same small piece twice (2026-09-08, SAK-369)
+
+From a read of every component on 2026-09-06. Several of its bullets had
+already closed by tonight: `useNarrow` came out of the Atlas into its own
+file, `PIP` is gone, and `VERDICT` is exported from quiz-results and worn
+by three components. Three of the eight underlined text buttons went into
+`UndoLine` on SAK-364. What was left, and is now one thing each:
+
+**A glyph.** `glyph.tsx` is the display face, the Japanese font that
+suits the character, and its standing's color. Four places wrote those
+four classes out, differing only in size: the mix-ups panel's `Name`, the
+Atlas's selected pill, the tooltip's head glyph and the lesson card's
+`StarButton`. No standing means the ink, which is what the star card
+already did and what the tooltip means by `tonight`: a thing picked for
+tonight is not "not seen" any more. Every one of the four emits the same
+class attribute it emitted before, character for character.
+
+**An underlined word in a line of text.** `SkyTextButton`, in
+`sky-button.tsx` with the rest of them, ink or coral. Clear in the
+mix-ups panel and both of `UndoLine`'s.
+
+**A pill's colors.** `CHIP_TONE`, also in `sky-button.tsx`: lit, unlit and
+greyed, written once instead of inside `SkyChip`, again in
+`sky-menu-chip.tsx` and again by hand for Settings' font chips, which
+need their own size and face but not their own colors.
+
+**Two names.** `GRADES` was declared in `lib/quiz.ts` and again at the top
+of sky-sessions, which was already importing `GRADE` from that module.
+And there were three unrelated functions called `tally`: the quiz's over
+answers, the sessions module's over a session, and a local one in the
+Atlas over a shelf. They are `tally`, `tallySession` and `shelfCounts`
+now, so a reader who greps the name finds one thing.
+
+Four things the card asks for that did not happen, and why. A `SkyRow`:
+the exact pair of classes is in quiz-questions and quiz-results only, and
+the other four "selectable rows" are real variants, one sitting on
+`bg-sky-panel`, one on `bg-sky-accent/10` with a locked state, one a
+different row entirely; a component with five modes reads worse than five
+lines. The `×` and the big-number-over-a-colored-eyebrow block are two
+call sites each, and in both cases one is in a quiz or practice component,
+which another session had open tonight, so they want making when both
+halves can move together. `GlyphName` with a note and a click: Sessions
+and Practice draw their glyph in a different face, `font-medium
+leading-tight truncate` and no display face, so it is not the same piece.
+And `sky-tooltip.tsx:44` is the one glyph in the Sky with no
+`leading-none`, which is either an oversight or a decision, and not one to
+make blind.
+
+The British spellings, and `chosen` shadowing `chosen` in sky-practice,
+are SAK-371's.
+
+3,822 unit tests pass, unchanged, and 31 e2e. Nothing renders
+differently: every class attribute touched here is the same string it was.

@@ -7,7 +7,7 @@
 import type { ReactNode } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
-import { SkyButton, SkyChip } from "@/sky/components/sky-button";
+import { CHIP_TONE, SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { SkyInfo } from "@/sky/components/sky-info";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
@@ -106,7 +106,7 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
                 key={f.family} type="button" aria-pressed={on} aria-label={f.label} title={f.label}
                 onClick={() => toggleFont(f.family)}
                 style={{ fontFamily: f.family }}
-                className={`h-[26px] rounded-full border px-3 text-[15px] leading-none ${on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"}`}
+                className={`h-[26px] rounded-full border px-3 text-[15px] leading-none ${on ? CHIP_TONE.on : CHIP_TONE.off}`}
               >
                 {FONT_SAMPLE}
               </button>

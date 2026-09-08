@@ -21,6 +21,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
+import { Glyph } from "@/sky/components/glyph";
 import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { DetailFrame } from "@/sky/components/detail-frame";
@@ -36,7 +37,7 @@ import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
-import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
+import { STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 import { useStreamedShelf } from "./use-streamed-shelf";
 import { isPage, type SkyItem, type SkyKind } from "@/sky/lib/types";
 
@@ -136,7 +137,7 @@ const PANEL_WIDTH = 360;
 
 /** The learner's standings over a shelf, with the untouched remainder as
  * "undiscovered", for the status list and the coverage line. */
-function tally(shelf: AtlasShelf): Record<Standing, number> {
+function shelfCounts(shelf: AtlasShelf): Record<Standing, number> {
   const out = Object.fromEntries(STANDING_ORDER.map((s) => [s, shelf.counts[s] ?? 0])) as Record<Standing, number>;
   const seen = STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : out[s]), 0);
   out["not-seen"] = Math.max(0, shelf.total - seen);
@@ -197,7 +198,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   }, [data.items]);
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
-  const counts = shelf ? tally(shelf) : undefined;
+  const counts = shelf ? shelfCounts(shelf) : undefined;
   const known = counts ? STANDING_ORDER.reduce((n, s) => n + (s === "not-seen" ? 0 : counts[s]), 0) : 0;
   // a page to read (a term, a writing rule, a concept) carries no standing
   // (nothing is ever asked about it), so its
@@ -416,7 +417,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   <div className="mt-3 flex flex-wrap content-start gap-1.5">
                     {selectedItems.map((it) => (
                       <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
-                        <span className={`font-sky-display text-[16px] leading-none ${STANDING[it.standing].text} ${japaneseFont(it.glyph)}`}>{it.glyph}</span>
+                        <Glyph glyph={it.glyph} standing={it.standing} size="text-[16px]" />
                         {it.english !== it.glyph && <span className="max-w-[10ch] truncate text-[11px] text-sky-muted">{it.english}</span>}
                       </button>
                     ))}

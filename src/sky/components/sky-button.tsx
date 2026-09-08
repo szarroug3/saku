@@ -4,7 +4,9 @@
 // for the quieter choice beside it (I know this, Quiz me), quiet for a
 // step back (Back), coral for a warning (a lesson past its comfortable
 // size), and the small round one for a control (close, widen, fold). A
-// button with an `href` is a link that looks the same.
+// button with an `href` is a link that looks the same. The underlined word
+// in a line of text is one of these too, and a pill's colors are here rather
+// than in each of the three things that draw a pill (SAK-369).
 
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -57,6 +59,21 @@ export function SkyButton({ variant = "solid", href, onClick, disabled = false, 
   return <button type="button" onClick={onClick} disabled={disabled} title={title} className={cls}>{children}</button>;
 }
 
+export interface SkyTextButtonProps {
+  onClick: () => void;
+  /** Coral for the one that takes something away: Delete. */
+  tone?: "ink" | "coral";
+  className?: string;
+  children: ReactNode;
+}
+
+/** An underlined word inside a line of text: Clear, Undo, Rename, Delete.
+ * Not a button in a row of buttons, which is `SkyButton`. */
+export function SkyTextButton({ onClick, tone = "ink", className = "", children }: SkyTextButtonProps) {
+  const cls = tone === "coral" ? "underline hover:text-sky-coral" : "underline hover:text-sky-ink";
+  return <button type="button" onClick={onClick} className={`${cls}${className ? ` ${className}` : ""}`}>{children}</button>;
+}
+
 export interface RoundButtonProps {
   /** What it does, for the title and for assistive tech: "Close". */
   label: string;
@@ -85,6 +102,14 @@ export function RoundButton({ label, onClick, pressed, expanded, className = "",
   );
 }
 
+/** A pill's colors, lit, unlit and greyed. Written here, once: `SkyChip`,
+ * the menu chip and Settings' font chips all wear them. */
+export const CHIP_TONE = {
+  on: "border-sky-accent bg-sky-accent text-sky-accent-ink",
+  off: "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink",
+  disabled: "cursor-not-allowed border-transparent text-sky-faint line-through",
+} as const;
+
 export interface SkyChipProps {
   /** Lit in the accent: the current page, the picked one. */
   on?: boolean;
@@ -109,7 +134,7 @@ export function SkyChip({ on = false, onClick, title, current, disabled = false,
       aria-pressed={current ? undefined : on}
       aria-current={on && current ? current : undefined}
       data-sky-chip=""
-      className={`inline-flex h-[26px] items-center justify-center rounded-full border px-2.5 text-[12px] font-semibold leading-none ${disabled ? "cursor-not-allowed border-transparent text-sky-faint line-through" : on ? "border-sky-accent bg-sky-accent text-sky-accent-ink" : "border-sky-line text-sky-muted hover:border-sky-accent hover:text-sky-ink"} ${className}`}
+      className={`inline-flex h-[26px] items-center justify-center rounded-full border px-2.5 text-[12px] font-semibold leading-none ${disabled ? CHIP_TONE.disabled : on ? CHIP_TONE.on : CHIP_TONE.off} ${className}`}
     >
       {children}
     </button>
