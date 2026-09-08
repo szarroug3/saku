@@ -1489,3 +1489,13 @@ the effect that asked the server. `useStreamedShelf` holds that now and
 hands the component `streamedCuts`, `streamKey` and `fetchTiles`; the
 component is layout again. No behaviour changed; the e2e that scrolls a
 streamed shelf holds it.
+
+### The verdict and the hint, apart from the quiz screen (2026-09-07, from the review)
+
+The quiz screen rendered an answered card's verdict, the answer and the
+list of what was said inline, and the hint surface too. `QuizVerdict` and
+`QuizHint` hold those now (`quiz-verdict.tsx`); the screen is the card,
+its bar and the way on. No behaviour changed; the e2e that reads the said
+list and the reveal holds it. The audio button stays where it is: it
+needs the speech and quiz-config libraries, which `src/sky` may not
+import, and the route layer hands it in as a prop, which is right.

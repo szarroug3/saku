@@ -17,12 +17,13 @@
 // what each does to the schedule, then the answers go to whoever records
 // them.
 
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
+import { QuizHint, QuizVerdict } from "@/sky/components/quiz-verdict";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
-import { QuizResults, VERDICT } from "@/sky/components/quiz-results";
+import { QuizResults } from "@/sky/components/quiz-results";
 import { useNarrow } from "@/sky/components/use-narrow";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -31,7 +32,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { DEFAULT_RETRIES, GRADE, gradeFor, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
+import { DEFAULT_RETRIES, gradeFor, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 export interface SkyQuizProps {
   cards: readonly QuizCard[];
@@ -447,28 +448,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
                 </div>
               )}
 
-              {answered && (
-                <div className="mt-4 flex flex-col gap-2">
-                  <div className="text-center">
-                    <Eyebrow tone="inherit" size="md" className={`mb-0 ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</Eyebrow>
-                    <p className="mt-1 text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</p>
-                  </div>
-                  <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(card.answer)}`}>{card.answerPitch !== undefined && Pitch ? <Pitch reading={card.answer} downstep={card.answerPitch} /> : card.answer}</p>
-                  {/* every attempt, in order, so the two things that were
-                      confused can both be seen (SAK-387) */}
-                  {answered.grade === "missed" && !!answered.said?.length && (
-                    <p className="text-center text-[13px] text-sky-muted">
-                      You said{" "}
-                      {answered.said.map((tried, i) => (
-                        <Fragment key={`${tried}-${i}`}>
-                          {i > 0 && (i === answered.said!.length - 1 ? ", then " : ", ")}
-                          <span className={`text-sky-ink ${japaneseFont(tried)}`}>{tried}</span>
-                        </Fragment>
-                      ))}.
-                    </p>
-                  )}
-                </div>
-              )}
+              {answered && <QuizVerdict answered={answered} answer={card.answer} answerPitch={card.answerPitch} pitch={pitch} />}
             </div>
 
             {/* the bar: help while the card is open, the way on once it is done */}
@@ -492,16 +472,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
           </div>
         </SkySurface>
 
-        {!answered && state.hinted && card.hint && (card.hint.image || card.hint.text) && (
-          // a long hint scrolls itself too, rather than pushing the card up
-          <SkySurface className="flex max-h-[40vh] shrink-0 items-center gap-4 overflow-y-auto text-[14px] text-sky-ink/90">
-            {card.hint.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={card.hint.image} alt="" className="size-[96px] rounded-md object-contain" />
-            )}
-            {card.hint.text && <span>{card.hint.text}</span>}
-          </SkySurface>
-        )}
+        {!answered && state.hinted && card.hint && <QuizHint hint={card.hint} />}
 
         {answered && (
           // The lesson scrolls inside itself rather than taking the card with
