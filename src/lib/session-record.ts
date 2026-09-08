@@ -153,8 +153,8 @@ export function projectSessionFacts(
  * — the same per-fact unit `accuracy.ts`'s header calls out by name as one of
  * the two formulas the app moved away from ("the old forgiving formula...
  * scored a never-answered showing as 100%"). Every other screen that reports a
- * run's accuracy — the round-complete header (session.ts's roundCompleteView),
- * the results screen (summary.ts's runAggregate + accuracyOf) — already counts
+ * run's accuracy — the old round-complete header, the results screen
+ * (summary.ts's runAggregate + accuracyOf) — already counts
  * SHOWINGS, so a round that missed a fact cold and landed it on a retry pulls
  * the number down; the per-fact reading only asks "did you EVER land it",
  * which retries push toward 100% almost by construction. That mismatch is

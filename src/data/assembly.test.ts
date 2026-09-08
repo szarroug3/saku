@@ -154,7 +154,7 @@ describe("SAK-18: every sentence-ordering tier pattern is a real, creditable fac
   // the id it produced had no factInfo and assemblyFacts() filtered it out,
   // leaving rt.stats completely empty for every "Simple sentences" showing.
   // The round summary and session-complete screens read directly off rt.stats
-  // (via mergeStats/roundCompleteView, src/lib/session.ts), so a learner who
+  // (via the old session loop's round-summary math), so a learner who
   // built every sentence correctly still saw "0 forms · 0 solid · 0 needs
   // work" / "finished on 0 correct".
   //

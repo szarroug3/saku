@@ -213,7 +213,7 @@ export interface QuizConfig {
    */
   graduateRuns: number;
 
-  // ---------- the session loop (src/lib/session.ts) ----------
+  // ---------- the session loop ----------
   /**
    * Minutes of rest before round 2, and before every round after that.
    *

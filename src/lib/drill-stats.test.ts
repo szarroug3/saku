@@ -30,7 +30,6 @@ import { test } from "node:test";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { firstTryCredit } from "@/lib/engine";
 import { poolSessionCounts, sessionAccuracy } from "@/lib/session-accuracy";
-import { roundCompleteView, type StudySession } from "@/lib/session";
 import type { FactId, SessionStats } from "@/types";
 
 const f = (s: string): FactId => s as FactId;
@@ -38,22 +37,19 @@ const f = (s: string): FactId => s as FactId;
 /** The audit's group 1: あいうえお. */
 const POOL = ["a", "i", "u", "e", "o"].map(f);
 
-/** A session carrying `stats` as its round, enough for roundCompleteView. */
-function sessionWith(stats: SessionStats): StudySession {
-  return {
-    facts: POOL,
-    teach: [],
-    what: "test",
-    startedAt: 0,
-    round: 1,
-    phase: "drilling",
-    restUntil: null,
-    roundStats: stats,
-    recovered: [],
-    rounds: [],
-    totalStats: {},
-    lastActiveAt: 0,
-  };
+/**
+ * The round summary's three numbers, off the same counts the live pill reads.
+ *
+ * The audit's contradiction was between two of them: "questions" and "right
+ * first try" are one subtraction apart, while "nothing missed" is read off
+ * `misses` and knows nothing about that subtraction. So the pair has to be
+ * taken from one place and compared, which is what this returns. The screen
+ * that used to draw them (`roundCompleteView`, in the old session loop) went
+ * in SAK-410; the counts it summed are still exactly these.
+ */
+function summary(stats: SessionStats) {
+  const c = poolSessionCounts(stats);
+  return { total: c.seen, firstTry: c.firstTry, needAnother: c.seen - c.firstTry, missed: c.missed };
 }
 
 /**
@@ -122,17 +118,17 @@ test("the round summary agrees with itself while a card is on screen", () => {
   // look" over "Nothing missed."
   const stats = driveCorrectly(7);
   statForShowing(stats, POOL[2]); // the eighth card, unanswered
-  const view = roundCompleteView(sessionWith(stats));
+  const view = summary(stats);
 
   assert.equal(view.total, 7, "only answered showings are questions");
   assert.equal(view.firstTry, 7, "every one of them was landed cold");
   assert.equal(view.needAnother, 0, "nothing needed another look");
   // The contradiction itself: these two are computed from different sources
   // (a subtraction vs `misses`), so pinning them together is the point.
-  assert.deepEqual(view.missed, [], "and nothing was missed");
+  assert.equal(view.missed, 0, "and nothing was missed");
   assert.equal(
     view.needAnother === 0,
-    view.missed.length === 0,
+    view.missed === 0,
     '"needed another look" and "nothing missed" must never disagree',
   );
 });
@@ -156,11 +152,11 @@ test("a real miss still counts, on both screens", () => {
   st.misses++;
 
   assert.equal(sessionAccuracy(stats), 0);
-  const view = roundCompleteView(sessionWith(stats));
+  const view = summary(stats);
   assert.equal(view.total, 1);
   assert.equal(view.firstTry, 0);
   assert.equal(view.needAnother, 1);
-  assert.deepEqual(view.missed, [POOL[0]]);
+  assert.equal(view.missed, 1);
 });
 
 test("landing it on the retry is one showing, not first try", () => {

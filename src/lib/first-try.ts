@@ -3,15 +3,15 @@
 // WHY ITS OWN FILE
 // ================
 // Same reason as src/lib/fact-keys.ts, and the comment there is the long
-// version: session.ts sits on the always-mounted QuizSessionProvider's import
-// path, so anything it imports lands in the eager client bundle on every route.
-// The natural home for this would be next to the pooling in
+// version: this rule is read on a client path, so anything it imports lands in
+// the bundle beside it. The natural home for it would be next to the pooling in
 // src/lib/session-accuracy.ts — but that imports src/lib/accuracy.ts, which
 // imports src/lib/facts.ts, which is the whole ~3.6 MB subject registry.
 //
-// So the rule lives here, spelled once, and both `mergeStats` (light) and
-// `poolSessionCounts` (already registry-adjacent) read it from the same place.
-// Duplicating a migration rule in two modules is how the two copies drift.
+// So the rule lives here, spelled once, and both `buildSessionRecord`
+// (session-record.ts, light) and `poolSessionCounts` (already
+// registry-adjacent) read it from the same place. Duplicating a migration rule
+// in two modules is how the two copies drift.
 
 import type { FactSessionDetail } from "@/types";
 

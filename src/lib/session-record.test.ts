@@ -19,7 +19,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { emptyAggregate, foldSession } from "@/lib/aggregate";
-import { mergeStats } from "@/lib/session";
 import { buildSessionRecord } from "@/lib/session-record";
 import type {
   FactAggregate,
@@ -48,6 +47,34 @@ function stat(p: Partial<FactSessionDetail> = {}): FactSessionDetail {
   };
 }
 
+/**
+ * Two legs folded into one round's stats, the way the drill loop folded them.
+ *
+ * A fixture, not a subject: what is under test below is `buildSessionRecord`
+ * and `foldSession`, and this only has to build the same round two ways so
+ * they can be compared. Three rules, and they are the whole fold — every
+ * count sums, `everCorrect` is an OR, and `firstTryCorrect` is the verdict on
+ * the FIRST showing and so is never overwritten once set. The loop's own
+ * `mergeStats` said this at length; it went with the old session loop in
+ * SAK-410, and nothing outside these fixtures had asked for it in a while.
+ */
+function merge(into: SessionStats, from: SessionStats): SessionStats {
+  const out: SessionStats = {};
+  for (const f of Object.keys(into) as FactId[]) out[f] = { ...into[f], confused: { ...into[f].confused } };
+  for (const f of Object.keys(from) as FactId[]) {
+    const src = from[f];
+    const dst = out[f];
+    if (!dst) { out[f] = { ...src, confused: { ...src.confused } }; continue; }
+    dst.seen += src.seen;
+    dst.misses += src.misses;
+    dst.correct = (dst.correct ?? 0) + (src.correct ?? 0);
+    dst.firstTryCount = (dst.firstTryCount ?? 0) + (src.firstTryCount ?? 0);
+    dst.everCorrect = dst.everCorrect || src.everCorrect;
+    if (dst.firstTryCorrect === null) dst.firstTryCorrect = src.firstTryCorrect;
+  }
+  return out;
+}
+
 /** What ONE drill leg produced. A round is one of these, or several merged. */
 const LEG_1: SessionStats = {
   [A]: stat(),
@@ -68,10 +95,10 @@ const LEG_2: SessionStats = {
   [U]: stat({ misses: 1, firstTryCorrect: false, firstTryCount: 0 }),
 };
 
-const ROUND_1 = mergeStats(mergeStats({}, LEG_1), RETRY_LEG);
-const ROUND_2 = mergeStats({}, LEG_2);
+const ROUND_1 = merge(merge({}, LEG_1), RETRY_LEG);
+const ROUND_2 = merge({}, LEG_2);
 /** What `finishSession` used to write, in one record, at the end. */
-const TOTAL_STATS = mergeStats(ROUND_1, ROUND_2);
+const TOTAL_STATS = merge(ROUND_1, ROUND_2);
 
 const OPTS = { mode: "drill" as const, redrill: false };
 
