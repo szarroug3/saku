@@ -86,6 +86,12 @@ export const SETTING_TEXT: Record<keyof SkySettings, SettingText> = {
   cleanRunsToClearMixup: { label: "Clean runs to clear a mix-up", info: "How many runs in a row you must get both of a mixed-up pair right before the mix-up is considered cleared." },
 };
 
+/** What the page says when a change has not reached the account yet. */
+export const SAVE_TEXT = {
+  failed: "A change hasn't saved to your account yet. It's kept on this device and will keep trying.",
+  retry: "Try again",
+} as const;
+
 export interface SettingGroup {
   title: string;
   keys: readonly (keyof SkySettings)[];

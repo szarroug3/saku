@@ -10,9 +10,10 @@ import { askFromAudioPrompts } from "@/lib/ask-config";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { useSettings } from "@/lib/use-settings";
 import { VOICES, voicesEnabled } from "@/lib/voice";
 import { SkySettings } from "@/sky/components/sky-settings";
-import type { SkySettings as SkySettingsValues } from "@/sky/lib/settings";
+import { SAVE_TEXT, type SkySettings as SkySettingsValues } from "@/sky/lib/settings";
 import type { QuizConfig } from "@/types";
 
 
@@ -49,6 +50,10 @@ const VOICES_BY_NAME = [...VOICES].sort((a, b) => a.label.localeCompare(b.label)
 
 export function SettingsClient() {
   const { cfg, update, ready } = useQuizConfig();
+  // whether a change is still on its way to the account: the provider is
+  // mounted in the root layout, and reports null forever when signed out,
+  // which is right, since there is no account to save to
+  const { saveError, retrySave } = useSettings();
   // the fonts actually installed here, measured once the page is on a client
   const fonts = useMemo(() => (ready ? availableFonts(JP_FONTS).map((family) => ({ family, label: fontLabel(family) })) : []), [ready]);
   return (
@@ -58,6 +63,8 @@ export function SettingsClient() {
       voices={VOICES_BY_NAME}
       voicesEnabled={voicesEnabled()}
       fonts={fonts}
+      saveError={saveError ? SAVE_TEXT.failed : null}
+      onRetrySave={retrySave}
       height="100%"
     />
   );

@@ -7,14 +7,14 @@
 import type { ReactNode } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
-import { SkyChip } from "@/sky/components/sky-button";
+import { SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { SkyInfo } from "@/sky/components/sky-info";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyToggle } from "@/sky/components/sky-toggle";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
+import { SAVE_TEXT, SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
 
 export interface SkySettingsProps {
   settings: SkySettings;
@@ -24,6 +24,11 @@ export interface SkySettingsProps {
   voicesEnabled?: boolean;
   /** The kana faces installed on this machine; the row hides when none are. */
   fonts: readonly FontChoice[];
+  /** The line to show when a change has not reached the account yet; null or
+   * undefined when everything is saved. */
+  saveError?: string | null;
+  /** Send whatever has not been confirmed saved again. */
+  onRetrySave?: () => void;
   height?: string;
 }
 
@@ -53,7 +58,7 @@ function Row({ k, dim = false, children }: { k: keyof SkySettings; dim?: boolean
   );
 }
 
-export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, height }: SkySettingsProps) {
+export function SkySettings({ settings, onChange, voices, voicesEnabled = true, fonts, saveError, onRetrySave, height }: SkySettingsProps) {
   const s = settings;
   const text = (key: keyof SkySettings) => SETTING_TEXT[key];
   const toggle = (k: "audioPrompts" | "pitchQuestions" | "timer", dim = false) => (
@@ -116,6 +121,12 @@ export function SkySettings({ settings, onChange, voices, voicesEnabled = true, 
   return (
     <SkyPageShell eyebrow="Settings" title="How should Saku behave?" height={height}>
       <SkyPageBody>
+        {saveError && (
+          <div role="status" className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-sky-coral/40 bg-sky-panel px-4 py-3">
+            <p className="min-w-0 flex-1 text-[13px] text-sky-ink">{saveError}</p>
+            {onRetrySave && <SkyButton variant="outline" onClick={onRetrySave}>{SAVE_TEXT.retry}</SkyButton>}
+          </div>
+        )}
         {SETTING_GROUPS.map((g) => {
           const rows = g.keys.map((k) => control[k]()).filter(Boolean);
           return rows.length ? <SkyPanel key={g.title} title={g.title}><div className="mt-1">{rows}</div></SkyPanel> : null;
