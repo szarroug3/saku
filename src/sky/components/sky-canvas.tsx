@@ -18,9 +18,24 @@
 // for an element with no size (a hidden tab), so no NaN ever reaches a
 // transform.
 //
+// A GESTURE DOES NOT RENDER (SAK-411). A drag and a wheel write the
+// transform straight to the group and commit the view to state once, when
+// the gesture ends. This is not about React being slow: it is about what a
+// render sets off. The view is reported to whoever asked for it, the home's
+// field turns that into which cull cells it is over, and crossing one
+// rebuilds thousands of SVG elements. Measured on the whole sky, one 300px
+// drag added 5,988 nodes and removed 6,128 while the finger was still down,
+// and the worst frame in it was 442ms. Writing the transform, by contrast,
+// costs 2ms with 175,000 elements in the DOM. So a gesture writes and
+// nothing else, `live` holds what it is showing, and a render that happens
+// to land mid-gesture puts the live view back before the frame is painted.
+// The trade: the field keeps the band it had until the gesture ends, so a
+// long drag at the very smallest zoom can reach past its slack and show sky
+// that has not been drawn yet, which fills in on release.
+//
 // The wash behind it is the page's, not the canvas's: this is transparent.
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { hashUnit } from "@/sky/lib/constellation";
 
@@ -66,12 +81,26 @@ const MAX_ZOOM = 6;
 const STEP = 1.3;
 /** Zoom per pixel of wheel delta: 100 pixels, one mouse notch, is about 1.15x. */
 const WHEEL_RATE = 0.0014;
+/** A wheel has no end, so a glide is over when nothing has arrived for this
+ * long, and that is when the view is committed. */
+const WHEEL_SETTLE = 140;
+
+/** Where the sky is: the zoom, and the world's top left in window pixels. */
+interface View { k: number; x: number; y: number }
 
 export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, label, className = "", onView, children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const groupRef = useRef<SVGGElement>(null);
   // opens at the home zoom: k of 0 means "the home zoom", resolved by the clamp
-  const [view, setView] = useState({ k: 0, x: 0, y: 0 });
-  const drag = useRef<{ px: number; py: number; vx: number; vy: number } | null>(null);
+  const [view, setView] = useState<View>({ k: 0, x: 0, y: 0 });
+  const drag = useRef<{ px: number; py: number; vx: number; vy: number; k: number } | null>(null);
+  /** What a gesture is showing, written straight to the group; null when no
+   * gesture is running and React's own render is the truth. */
+  const live = useRef<View | null>(null);
+  /** The zoom a gesture is showing, for the readout, which is three
+   * elements and costs nothing to render. */
+  const [livePercent, setLivePercent] = useState<number | null>(null);
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // The box's size in pixels, for the maths only (never for what is drawn):
   // how much of the world the window shows, and how far it may pan. Zero
@@ -103,7 +132,7 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   // the fit, so a world larger than the window can be seen whole.
   // The stored view's k of 0 means "not touched yet": the home zoom, opened
   // on `center` when there is one.
-  const clamp = useCallback((v: { k: number; x: number; y: number }) => {
+  const clamp = useCallback((v: View) => {
     const opening = v.k === 0;
     const k = opening ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
     const x = opening && center ? win.w / 2 - center.x * k : v.x;
@@ -112,6 +141,37 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
     return { k, x: axis(win.w, width, x), y: axis(win.h, height, y) };
   }, [win.w, win.h, width, height, fit, home, center]);
   const shown = clamp(view);
+  const transform = (v: View) => `translate(${v.x} ${v.y}) scale(${v.k})`;
+
+  // ---- a gesture, which does not render ----
+  //
+  // `where` is the view the next gesture step starts from: what the gesture
+  // is already showing, or, at the start of one, what is on screen. It goes
+  // through a ref so the wheel listener, which is subscribed once, is never
+  // reading a view from the render it was subscribed in.
+  const at = useRef(shown);
+  const paint = useCallback((v: View) => {
+    live.current = v;
+    at.current = v;
+    groupRef.current?.setAttribute("transform", transform(v));
+  }, []);
+  // A render mid-gesture writes the COMMITTED view back onto the group, so
+  // the live one goes on again before the browser paints the frame. With no
+  // gesture running the render IS the view, and this is where that is
+  // caught up; a layout effect runs before any handler can read it.
+  useLayoutEffect(() => {
+    if (live.current) groupRef.current?.setAttribute("transform", transform(live.current));
+    else at.current = shown;
+  });
+  const commit = useCallback(() => {
+    if (settle.current) { clearTimeout(settle.current); settle.current = null; }
+    const v = live.current;
+    live.current = null;
+    setLivePercent(null);
+    if (v) setView(v);
+  }, []);
+  // nothing may be left half applied when the sky goes away
+  useEffect(() => () => { if (settle.current) clearTimeout(settle.current); }, []);
 
   /** Pointer position in sky units, or null when the element has no size. */
   const toSky = useCallback((clientX: number, clientY: number) => {
@@ -121,15 +181,22 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
     return { x: (clientX - r.left) / s, y: (clientY - r.top) / s, sx: 1 / s, sy: 1 / s };
   }, [width, height, fill]);
 
-  const zoom = useCallback((factor: number, at?: { x: number; y: number }) => {
-    setView((v) => {
-      const from = v.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
-      const k = Math.min(MAX_ZOOM, Math.max(fit, from * factor));
-      const ratio = k / from;
-      const px = at?.x ?? win.w / 2, py = at?.y ?? win.h / 2;
-      return clamp({ k, x: px - (px - v.x) * ratio, y: py - (py - v.y) * ratio });
-    });
+  /** The view `factor` more zoomed than `from`, holding `on` still. */
+  const zoomed = useCallback((from: View, factor: number, on?: { x: number; y: number }) => {
+    const was = from.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, from.k));
+    const k = Math.min(MAX_ZOOM, Math.max(fit, was * factor));
+    const ratio = k / was;
+    const px = on?.x ?? win.w / 2, py = on?.y ?? win.h / 2;
+    return clamp({ k, x: px - (px - from.x) * ratio, y: py - (py - from.y) * ratio });
   }, [clamp, win.w, win.h, fit, home]);
+  /** The buttons: one step, one render, which is what a click is. */
+  const zoom = useCallback((factor: number) => {
+    const next = zoomed(at.current, factor);
+    live.current = null;
+    at.current = next;
+    setLivePercent(null);
+    setView(next);
+  }, [zoomed]);
 
   // wheel must be a non-passive listener to stop the page scrolling under the sky
   useEffect(() => {
@@ -138,19 +205,26 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
     // Zoom by the wheel's delta rather than a fixed step per event: a mouse
     // notch is a real step, a trackpad's stream of tiny deltas is a smooth
     // glide, and the momentum a scroll leaves behind barely moves the sky.
+    // Each one paints and nothing more; the view is committed once the
+    // glide has stopped arriving.
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const at = toSky(e.clientX, e.clientY);
+      const on = toSky(e.clientX, e.clientY);
       const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY;
-      zoom(Math.exp(-Math.max(-300, Math.min(300, delta)) * WHEEL_RATE), at ?? undefined);
+      const next = zoomed(at.current, Math.exp(-Math.max(-300, Math.min(300, delta)) * WHEEL_RATE), on ?? undefined);
+      paint(next);
+      setLivePercent(Math.round((next.k / home) * 100));
+      if (settle.current) clearTimeout(settle.current);
+      settle.current = setTimeout(commit, WHEEL_SETTLE);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [interactive, toSky, zoom]);
+  }, [interactive, toSky, zoomed, paint, commit, home]);
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!interactive || e.button !== 0) return;
-    drag.current = { px: e.clientX, py: e.clientY, vx: shown.x, vy: shown.y };
+    const from = at.current;
+    drag.current = { px: e.clientX, py: e.clientY, vx: from.x, vy: from.y, k: from.k };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -158,9 +232,13 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
     if (!d) return;
     const u = toSky(e.clientX, e.clientY);
     if (!u) return;
-    setView((v) => clamp({ k: v.k, x: d.vx + (e.clientX - d.px) * u.sx, y: d.vy + (e.clientY - d.py) * u.sy }));
+    paint(clamp({ k: d.k, x: d.vx + (e.clientX - d.px) * u.sx, y: d.vy + (e.clientY - d.py) * u.sy }));
   };
-  const onPointerUp = () => { drag.current = null; };
+  const onPointerUp = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    commit();
+  };
 
   // What the window shows, told to whoever asked, from the view the clamp
   // settled on. Through a ref, so a caller that rebuilds the callback each
@@ -196,7 +274,7 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <g data-view transform={`translate(${shown.x} ${shown.y}) scale(${shown.k})`}>
+        <g ref={groupRef} data-view transform={transform(shown)}>
           <g data-dust>
             {dustStars.map((d, i) => (
               <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="var(--sky-star)" opacity={d.o} className={d.twinkle ? "sky-twinkle" : undefined} style={d.twinkle ? { animationDelay: `${d.delay}s` } : undefined} />
@@ -208,7 +286,7 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
       {interactive && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-sky-line bg-sky-card-strong p-1 font-sky-ui text-[12px] text-sky-ink">
           <button type="button" aria-label="Zoom out" onClick={() => zoom(1 / STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">−</button>
-          <button type="button" aria-label="Back to 100%" title="Back to 100%" onClick={() => zoom(home / shown.k)} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{Math.round((shown.k / home) * 100)}%</button>
+          <button type="button" aria-label="Back to 100%" title="Back to 100%" onClick={() => zoom(home / at.current.k)} className="h-7 min-w-[3.5rem] rounded-full px-2 tabular-nums hover:bg-sky-card">{livePercent ?? Math.round((shown.k / home) * 100)}%</button>
           <button type="button" aria-label="Zoom in" onClick={() => zoom(STEP)} className="h-7 w-7 rounded-full hover:bg-sky-card">+</button>
         </div>
       )}

@@ -959,3 +959,59 @@ test("the legend's key draws the real stars, tonight among them", async ({ page 
   await expect(key.getByText("Tonight", { exact: true })).toBeVisible();
   await expect(key.getByText("Undiscovered", { exact: true })).toBeVisible();
 });
+
+/** What the pan test hangs on the window while it watches one drag. */
+interface PanWatch { changes: number; was: string | null; group: Element; watch: MutationObserver }
+
+test("a pan moves the sky without rebuilding it", async ({ page }) => {
+  // SAK-411. Panning used to set React state on every pointer move, which
+  // told the field what the window was showing, which crossed a cull cell,
+  // which rebuilt thousands of constellations while the finger was still
+  // down: 5,988 elements added and 6,128 removed in one 300px drag on the
+  // whole sky, and a worst frame of 442ms. A drag writes the transform and
+  // nothing else now, and the view is committed once, on release. This
+  // holds that: the group moves, the group is the same element it was, and
+  // not one node is added to it or taken out of it while the drag runs.
+  await page.goto("/?sample");
+  const sky = page.getByLabel("Every constellation the sky holds, scattered across it, lit as you learn them");
+  await expect(sky).toBeVisible();
+  await expect(sky.locator("circle[data-hit]").first()).toBeVisible();
+  const box = await sky.boundingBox();
+  if (!box) throw new Error("the sky has no box");
+
+  await page.evaluate(() => {
+    const group = document.querySelector("svg[aria-label] [data-view]");
+    if (!group) throw new Error("the sky has no pan and zoom group");
+    const state = {
+      changes: 0,
+      was: group.getAttribute("transform"),
+      group,
+      watch: new MutationObserver((records) => {
+        for (const r of records) state.changes += r.addedNodes.length + r.removedNodes.length;
+      }),
+    };
+    state.watch.observe(group, { childList: true, subtree: true });
+    (window as unknown as { __pan: typeof state }).__pan = state;
+  });
+
+  // leftward: the world is anchored to the window's top left and the clamp
+  // pins the pan at zero, so a drag to the right would move nothing at all
+  const x = box.x + box.width / 2 + 150, y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 20; i++) await page.mouse.move(x - i * 15, y);
+  const during = await page.evaluate(() => {
+    const pan = (window as unknown as { __pan: PanWatch }).__pan;
+    pan.watch.disconnect();
+    return {
+      changes: pan.changes,
+      moved: pan.group.getAttribute("transform") !== pan.was,
+      same: document.querySelector("svg[aria-label] [data-view]") === pan.group,
+    };
+  });
+  await page.mouse.up();
+
+  expect(during.moved, "the drag moved the sky").toBe(true);
+  expect(during.same, "the same group, not a new one").toBe(true);
+  expect(during.changes, "nothing was added to the sky or taken out of it mid-drag").toBe(0);
+});
