@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ChipRow } from "@/sky/components/chip-row";
+import { GlyphName } from "@/sky/components/glyph";
 import { InlineAsk } from "@/sky/components/inline-ask";
 import { RecipeNameForm } from "@/sky/components/recipe-name-form";
 import { SkyButton, SkyChip } from "@/sky/components/sky-button";
@@ -255,7 +256,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                   {named
                     ? <span className={`col-span-2 truncate font-sky-ui text-[14px] font-semibold ${STANDING[p.item.standing].text}`} title={p.item.english}>{p.item.english}</span>
                     : <>
-                        <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[p.item.standing].text} ${japaneseFont(p.item.glyph)}`} title={p.item.glyph}>{p.item.glyph}</span>
+                        <GlyphName glyph={p.item.glyph} standing={p.item.standing} />
                         <span className="truncate text-[13.5px] text-sky-ink/90" title={p.item.english}>{p.item.english}</span>
                       </>}
                   <span className="hidden text-[12px] text-sky-accent sm:inline">{p.misses > 0 ? `missed ${p.misses} ${p.misses === 1 ? "time" : "times"}` : ""}</span>

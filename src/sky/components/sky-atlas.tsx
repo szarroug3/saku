@@ -21,7 +21,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
-import { Glyph } from "@/sky/components/glyph";
+import { Glyph, GlyphName } from "@/sky/components/glyph";
 import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { DetailFrame } from "@/sky/components/detail-frame";
@@ -400,7 +400,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " or "}<span className={`font-semibold text-sky-ink ${japaneseFont(p)}`}>{p}</span></span>)}</>}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " or "}<GlyphName glyph={p} cut={false} className="font-semibold" /></span>)}</>}</p>
                   {shelf.id === "kanji" && parts.length > 0 && (
                     <p className="mt-2 flex items-center gap-2">
                       <Eyebrow tight>Built from</Eyebrow>

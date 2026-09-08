@@ -6,17 +6,16 @@
 
 import { useState } from "react";
 
+import { GlyphName } from "@/sky/components/glyph";
 import { InlineAsk } from "@/sky/components/inline-ask";
 import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
-import { japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, GRADES } from "@/sky/lib/quiz";
 import { formatWhen, SESSION_KIND, tallySession, type SkySession } from "@/sky/lib/sessions";
 import { useMounted } from "@/sky/components/use-mounted";
-import { STANDING } from "@/sky/lib/standing";
 
 interface SkySessionsProps {
   sessions: readonly SkySession[];
@@ -95,7 +94,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
               <ul className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
                 {open.cards.map((c) => (
                   <li key={c.id} className="grid grid-cols-[5rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 sm:grid-cols-[7rem_1fr_auto] sm:gap-x-4">
-                    <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[c.item.standing].text} ${japaneseFont(c.item.glyph)}`} title={c.item.glyph}>{c.item.glyph}</span>
+                    <GlyphName glyph={c.item.glyph} standing={c.item.standing} />
                     <span className="truncate text-[13.5px] text-sky-ink/90">{c.item.english !== c.item.glyph ? c.item.english : ""}</span>
                     <Eyebrow tone="inherit" tight className={VERDICT[c.grade]}>{GRADE[c.grade].label}</Eyebrow>
                   </li>
