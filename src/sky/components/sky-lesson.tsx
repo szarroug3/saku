@@ -175,6 +175,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             briefTooltip={(id) => stateOf(id) === "locked"}
             onStarClick={open}
             starDisabled={(id) => stateOf(id) === "locked"}
+            fog
             seed="lesson"
             label="Tonight's constellations, with a star for every piece, character and word"
           />

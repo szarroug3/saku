@@ -41,6 +41,9 @@ export interface ConstellationProps {
   unit?: number;
   /** Lines only: the lesson draws its own stars on the returned positions. */
   dots?: boolean;
+  /** Keep a faint line to an undiscovered star (the lesson sky) instead of
+   * none (everywhere else). */
+  fog?: boolean;
   /** Anything to draw on top, in the same coordinates: labels, hit areas. */
   children?: ReactNode;
 }
@@ -133,7 +136,7 @@ export function StarGlyph({ look, size = 22, className = "" }: { look: StarLook;
 }
 
 /** The lines and stars of one constellation. Put it inside an <svg>. */
-export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots = true, children }: ConstellationProps) {
+export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots = true, fog = false, children }: ConstellationProps) {
   const u = Math.max(0.7, Math.min(1.8, unit));
   const stars = placeConstellation(layout, cx, cy, r);
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
@@ -147,7 +150,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
           if (gone(a.id) || gone(b.id)) return null;
           // the line reads the same either way round: it belongs to the pair,
           // not to the star it happens to point at (SAK-338)
-          const line = linePaintFor(looks.get(a.id)!, looks.get(b.id)!);
+          const line = linePaintFor(looks.get(a.id)!, looks.get(b.id)!, fog);
           if (!line) return null;
           return (
             <line

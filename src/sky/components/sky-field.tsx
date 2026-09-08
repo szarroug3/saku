@@ -61,6 +61,8 @@ export interface SkyFieldProps {
   lookOf?: (id: string, base: StarLook) => StarLook;
   /** Draw lines only; the caller puts its own stars on the positions. */
   dots?: boolean;
+  /** Faint lines to undiscovered stars, for a sky about what is coming. */
+  fog?: boolean;
   /** Only the English name in the tooltip, for every star or per star (the
    * lesson names a locked star and nothing more). */
   briefTooltip?: boolean | ((id: string) => boolean);
@@ -101,7 +103,7 @@ const CULL_CELLS = 24;
  * dot that small cannot be aimed at, and there can be tens of thousands. */
 const HIT_ZOOM = 0.34;
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, fog = false, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -196,7 +198,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
       <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} center={opening} onView={culling ? onView : undefined} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
         {seen.map((p) => (
-          <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} />
+          <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} fog={fog} />
         ))}
         {children?.(placed)}
         {/* hit areas last, so they sit above the stars: one per star */}

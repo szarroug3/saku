@@ -212,6 +212,9 @@ describe("the paint", () => {
     assert.equal(linePaintFor(star("solid"), star("not-seen")), null);
     assert.equal(linePaintFor(star("not-seen"), star("solid")), null);
     assert.equal(linePaintFor(star("not-seen"), star("not-seen")), null);
+    // the lesson sky asks for fog: the same line, faint, until the star is found
+    assert.deepEqual(linePaintFor(star("solid"), star("not-seen"), true), { stroke: "var(--sky-link)", width: 1.25, opacity: 0.35 });
+    assert.deepEqual(linePaintFor(star("solid"), star("solid"), true), { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 });
     // a picked or opened star is not fog, whatever its standing says
     assert.equal(linePaintFor(star("solid"), star("not-seen", { tonight: true }))?.opacity, 0.8);
     assert.equal(linePaintFor(star("solid"), star("not-seen", { lit: true }))?.opacity, 0.8);
