@@ -287,6 +287,9 @@ export interface VocabRuntime {
   /** Each word's reading before a sense chose one: what the legacy
    * unqualified fact ids were minted from. */
   readonly legacyReadings: Readonly<Record<string, string>>;
+  /** The reading units of the words whose units are not the row's own
+   * reading and glosses; every other word's are exactly that. */
+  readonly units: Readonly<Record<string, readonly ReadingUnit[]>>;
 }
 const POS_FAMILIES = RUNTIME.posFamilies;
 
@@ -506,7 +509,12 @@ export function readingDefinitionsWith(word: VocabRow, allCounts: CejcReadingCou
  * appears puts it in the reference tier; one teaching use keeps the reading in
  * lessons and quizzes. Source-only reference rows were never scored facts. */
 export function teachingSenses(word: VocabRow): readonly WordSense[] {
-  const definitions = readingDefinitions(word);
+  return teachingSensesWith(word, CEJC_READING_COUNTS);
+}
+
+/** The same, over given reading counts: what the builder runs. */
+export function teachingSensesWith(word: VocabRow, allCounts: CejcReadingCounts): readonly WordSense[] {
+  const definitions = readingDefinitionsWith(word, allCounts);
   const teachingReadings = new Set(
     definitions.flatMap((definition) => definition.readings.map((reading) => reading.reb)),
   );
@@ -673,13 +681,25 @@ export interface ReadingUnit {
 }
 
 export function readingUnits(w: VocabRow): ReadingUnit[] {
-  const teachable = teachingSenses(w);
+  // Built once for the words whose units are not the row's own reading and
+  // glosses (120 of 12,555); the rest are that (SAK-399). Working every
+  // word's units out at load was 98 ms of a cold start on a laptop, and read
+  // the dictionary's definitions to do it.
+  const built = RUNTIME.units[w.keb];
+  if (built) return built.map((u) => ({ ...u }));
+  return [{ reb: w.reb, glosses: w.glosses as string[] }];
+}
+
+/** The same, worked out from the senses and definitions, over given
+ * reading counts: what the builder runs. */
+export function readingUnitsWith(w: VocabRow, allCounts: CejcReadingCounts): ReadingUnit[] {
+  const teachable = teachingSensesWith(w, allCounts);
   const available = new Set(teachable.map((sense) => sense.reb));
   // Preserve semantic definition order. CEJC is the only authority allowed to
   // reorder pronunciations within a definition.
   const order = [
     ...new Set(
-      readingDefinitions(w).flatMap((definition) =>
+      readingDefinitionsWith(w, allCounts).flatMap((definition) =>
         definition.readings
           .map((reading) => reading.reb)
           .filter((reb) => available.has(reb)),

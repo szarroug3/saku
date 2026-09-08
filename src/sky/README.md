@@ -1408,3 +1408,27 @@ on the way: the home imported 1,392 lines of the old app's `/learn` and
 `/library` actions, and through one of them a lesson React component, for
 the discovery panel's rows. The tracer no longer finds a path from the
 home to either.
+
+Read from the top of the root layout's render (the meta renders last and
+was counting everything the page awaited), the first cold reading said
+something the totals never had: a fresh process on a deployment already
+running answered its first request in 2.7 s, 725 ms of it `edge-to-page`,
+about what a laptop takes to load the same modules. The 5 to 7 second
+colds were all measured on the first process of a new deployment, which
+is a new instance fetching the bundle onto its disk before it can load
+anything. Two kinds of cold, then: a fresh instance, after a deploy or a
+long idle, and a fresh process on an instance that has the files. A
+keep-warm ping is aimed at the first kind, and the idle window it needs
+is what the probe in the scratchpad is bisecting.
+
+### The words' facts, built once as well (2026-09-07, SAK-399)
+
+With the rows baked, `vocab.ts` still took 109 ms to load on a laptop, 98
+of them building the words' fact registry: every word segmented into its
+reading units, which reads the dictionary's definitions for all 12,555
+(so the lazy definitions file was being read at load after all). The
+units differ from "the row's own reading and glosses" for 120 words. The
+builder works those 120 out and writes them; `readingUnits` looks a word
+up and answers the trivial unit for the rest; the facts follow from the
+units in a millisecond. 23 ms to load now, the facts and every fact's
+unit byte-identical to before, checked against a dump of the old module.

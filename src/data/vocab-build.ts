@@ -13,9 +13,11 @@ import {
   jmdictPosFamilies,
   NUMBER_WORD_ALTERNATES,
   readingDefinitionsWith,
+  readingUnitsWith,
   SENSES,
   type CejcReadingCounts,
   type JsonVocabRow,
+  type ReadingUnit,
   type VocabRow,
   type VocabRuntime,
   type WordSense,
@@ -174,7 +176,14 @@ export function buildVocabRuntime(): VocabRuntime {
   });
   const legacyReadings: Record<string, string> = {};
   for (const row of RAW_WORD_ROWS) legacyReadings[row.keb] = SENSES[row.keb]?.[0]?.reb ?? row.reb;
+  // the reading units that are not the row's own reading and glosses
+  const units: Record<string, ReadingUnit[]> = {};
+  for (const row of RAW_WORD_ROWS.map(withSenses)) {
+    const u = readingUnitsWith(row, CEJC.words);
+    const trivial = u.length === 1 && u[0].reb === row.reb && u[0].senseGroups === undefined && JSON.stringify(u[0].glosses) === JSON.stringify(row.glosses);
+    if (!trivial) units[row.keb] = u;
+  }
   const posFamilies: Record<string, string> = {};
   for (const [keb, meta] of Object.entries(CEJC.teaching)) if (meta.dominantPosFamily) posFamilies[keb] = meta.dominantPosFamily;
-  return { rows, posFamilies, readingCounts: CEJC.words, legacyReadings };
+  return { rows, posFamilies, readingCounts: CEJC.words, legacyReadings, units };
 }
