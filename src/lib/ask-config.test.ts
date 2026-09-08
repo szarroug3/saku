@@ -5,9 +5,6 @@ import {
   askFromAudioPrompts,
   askIsEmpty,
   defaultAsk,
-  deriveAudioPrompts,
-  migrateLegacyAsk,
-  normalizeAsk,
   normalizeGridResponses,
   normalizePairResponses,
   sentenceAsks,
@@ -37,68 +34,9 @@ function emptyAsk(): AskConfig {
 }
 
 describe("AskConfig storage", () => {
-  test("normalization drops unknown values, dedupes, and keeps canonical order", () => {
-    assert.deepEqual(
-      normalizeAsk({
-        japanese: {
-          prompts: ["audio", "wat", "text", "audio"],
-          responses: ["romaji"],
-          answers: ["mc", "typed", "mc"],
-        },
-        sentence: {},
-        english: { answers: ["mc", "nope"] },
-      }),
-      {
-        japanese: {
-          prompts: ["text", "audio"],
-          responses: ["romaji"],
-          answers: ["typed", "mc"],
-        },
-        sentence: {
-          prompts: [],
-          responses: [],
-          answers: [],
-          englishResponses: ["ordering"],
-        },
-        english: { answers: ["mc"] },
-      },
-    );
-  });
-
-  test("legacy listening flags become an Audio prompt with the matching response", () => {
-    const ask = migrateLegacyAsk({
-      dirs: { jp2en: true, en2jp: true },
-      styleJp2en: "typed",
-      styleEn2jp: "mc",
-      listenMeaning: true,
-      listenRomaji: false,
-    });
-    assert.deepEqual(ask.japanese.prompts, ["text", "audio"]);
-    assert.ok(ask.japanese.responses.includes("definition"));
-    assert.deepEqual(ask.english.answers, ["mc"]);
-  });
-
   test("each source can be fully off and an all-off setup is empty", () => {
-    const empty = normalizeAsk({
-      japanese: {},
-      sentence: { englishResponses: [] },
-      english: {},
-    });
-    assert.equal(askIsEmpty(empty), true);
+    assert.equal(askIsEmpty(emptyAsk()), true);
     assert.equal(askIsEmpty(defaultAsk()), false);
-  });
-
-  test("an audio sentence-definition board is a complete way to ask", () => {
-    const ask = normalizeAsk({
-      japanese: {},
-      sentence: {
-        prompts: ["audio"],
-        responses: ["definition"],
-        answers: ["mc"],
-      },
-      english: {},
-    });
-    assert.equal(askIsEmpty(ask), false);
   });
 });
 
@@ -303,48 +241,5 @@ describe("askFromAudioPrompts — the derived, everything-on ask", () => {
     for (const audio of [true, false]) {
       assert.equal(askIsEmpty(askFromAudioPrompts(audio)), false, String(audio));
     }
-  });
-});
-
-describe("deriveAudioPrompts — migration precedence", () => {
-  test("an explicit audioPrompts boolean wins outright", () => {
-    assert.equal(deriveAudioPrompts({ audioPrompts: true }), true);
-    assert.equal(deriveAudioPrompts({ audioPrompts: false, input: "both" }), false);
-  });
-
-  test("the old tri-state input migrates: audio/both ⇒ on, text ⇒ off", () => {
-    assert.equal(deriveAudioPrompts({ input: "both" }), true);
-    assert.equal(deriveAudioPrompts({ input: "audio" }), true);
-    assert.equal(deriveAudioPrompts({ input: "text" }), false);
-  });
-
-  test("a bad input field falls through to the stored ask", () => {
-    assert.equal(deriveAudioPrompts({ input: "nonsense", ask: askFromAudioPrompts(true) }), true);
-  });
-
-  test("a stored task-30 ask reads its prompt format back", () => {
-    assert.equal(deriveAudioPrompts({ ask: askFromAudioPrompts(true) }), true);
-    assert.equal(deriveAudioPrompts({ ask: askFromAudioPrompts(false) }), false);
-    // A legacy audio-only ask still reads as audio-on.
-    const ask = defaultAsk();
-    assert.equal(
-      deriveAudioPrompts({ ask: { ...ask, japanese: { ...ask.japanese, prompts: ["audio"] } } }),
-      true,
-    );
-  });
-
-  test("pre-task-30 dirs/listen fields migrate through the same lens", () => {
-    // jp→en text + a listen flag ⇒ text+audio ⇒ audio on
-    assert.equal(
-      deriveAudioPrompts({ dirs: { jp2en: true }, styleJp2en: "typed", listenMeaning: true }),
-      true,
-    );
-    // jp→en text, no listening ⇒ audio off
-    assert.equal(deriveAudioPrompts({ dirs: { jp2en: true }, styleJp2en: "typed" }), false);
-  });
-
-  test("an empty/unknown object defaults to off", () => {
-    assert.equal(deriveAudioPrompts({}), false);
-    assert.equal(deriveAudioPrompts({ mode: "drill" }), false);
   });
 });

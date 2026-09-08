@@ -1,30 +1,25 @@
-// "How to ask", by source — the DATA-FREE half: defaults, migration, and the
-// pure enabled/empty checks that need no fact registry.
+// "How to ask", by source. The DATA-FREE half: the defaults and the pure
+// enabled/empty checks that need no fact registry.
 //
 // Kept apart from src/lib/ask-forms.ts (which imports the fact registry to turn
 // a config + a fact into concrete card forms) for the same reason
 // selection-empty.ts is kept apart from selection.ts: the always-mounted
-// QuizConfigProvider seeds and migrates a config on every route, and must not
-// pull the kanji/vocab payload to do it. Everything here is a function of the
-// config alone.
+// QuizConfigProvider seeds a config on every route, and must not pull the
+// kanji/vocab payload to do it. Everything here is a function of the config
+// alone.
+//
+// The migration half (deriveAudioPrompts, normalizeAsk, migrateLegacyAsk) went
+// with the config's own migrations in SAK-373. What is left below
+// askFromAudioPrompts answers questions about an ask, and only the engine's
+// own untaken paths ask them.
 
 import type {
-  AnswerStyle,
   AskConfig,
   GridResponse,
-  EnglishSentenceResponse,
-  PromptFormat,
   PairResponse,
-  ResponseKind,
+  PromptFormat,
 } from "@/types";
 
-const PROMPTS: readonly PromptFormat[] = ["text", "audio"];
-const RESPONSES: readonly ResponseKind[] = ["definition", "romaji"];
-const ANSWERS: readonly AnswerStyle[] = ["typed", "mc"];
-const ENGLISH_SENTENCE_RESPONSES: readonly EnglishSentenceResponse[] = [
-  "ordering",
-  "selection",
-];
 const PAIR_RESPONSES: readonly PairResponse[] = [
   "definition",
   "romaji",
@@ -94,134 +89,6 @@ export function askFromAudioPrompts(audioPrompts: boolean): AskConfig {
     english: { answers: ["typed"] },
   };
 }
-
-/**
- * Resolve the user-facing "audio prompts on?" boolean from a stored config
- * object — one-time migration only. Precedence:
- *   1. an explicit new `audioPrompts` boolean wins outright;
- *   2. else the old tri-state `input`: "audio"/"both" ⇒ on, "text" ⇒ off;
- *   3. else a stored task-30 `ask` has its prompt format read back (audio in the
- *      Japanese prompts ⇒ on);
- *   4. else the pre-task-30 dirs/styles/listen fields migrate through the same
- *      lens;
- *   5. else off — a legacy config with no audio signal keeps text-only, which is
- *      the safe read (no surprise audio for a machine that may have no TTS).
- * The `listen-sentence` mode's audio fold-in is mode-dependent and stays in
- * normalizeConfig (see quiz-config.tsx).
- */
-export function deriveAudioPrompts(rawObj: Record<string, unknown>): boolean {
-  const ap = rawObj["audioPrompts"];
-  if (typeof ap === "boolean") return ap;
-  const inp = rawObj["input"];
-  if (inp === "audio" || inp === "both") return true;
-  if (inp === "text") return false;
-  if (rawObj["ask"] && typeof rawObj["ask"] === "object") {
-    return normalizeAsk(rawObj["ask"]).japanese.prompts.includes("audio");
-  }
-  if (
-    "dirs" in rawObj ||
-    "styleJp2en" in rawObj ||
-    "styleEn2jp" in rawObj ||
-    "listenRomaji" in rawObj ||
-    "listenMeaning" in rawObj
-  ) {
-    return migrateLegacyAsk(rawObj as never).japanese.prompts.includes("audio");
-  }
-  return false;
-}
-
-/** Coerce any stored/parsed value into a valid AskConfig — unknown members
- * dropped, missing groups empty. A value that is not an object at all (or has
- * no keys) is the full default. Never throws. */
-export function normalizeAsk(raw: unknown): AskConfig {
-  if (!raw || typeof raw !== "object" || !Object.keys(raw).length) {
-    return defaultAsk();
-  }
-  const r = raw as Partial<AskConfig>;
-  const j = (r.japanese ?? {}) as never;
-  const s = (r.sentence ?? {}) as never;
-  const e = (r.english ?? {}) as never;
-  return {
-    japanese: {
-      prompts: clean<PromptFormat>(j["prompts"], PROMPTS),
-      responses: clean<ResponseKind>(j["responses"], RESPONSES),
-      answers: clean<AnswerStyle>(j["answers"], ANSWERS),
-    },
-    sentence: {
-      prompts: clean<PromptFormat>(s["prompts"], PROMPTS),
-      responses: clean<ResponseKind>(s["responses"], RESPONSES),
-      answers: clean<AnswerStyle>(s["answers"], ANSWERS),
-      englishResponses: Array.isArray(s["englishResponses"])
-        ? clean<EnglishSentenceResponse>(
-            s["englishResponses"],
-            ENGLISH_SENTENCE_RESPONSES,
-          )
-        : ["ordering"],
-    },
-    english: {
-      answers: clean<AnswerStyle>(e["answers"], ANSWERS),
-    },
-  };
-}
-
-/** The OLD config shape, before this source-based model. Only the fields the
- * migration reads — everything else on QuizConfig is untouched. */
-interface LegacyAsk {
-  dirs?: { jp2en?: boolean; en2jp?: boolean };
-  styleJp2en?: AnswerStyle;
-  styleEn2jp?: AnswerStyle;
-  listenRomaji?: boolean;
-  listenMeaning?: boolean;
-}
-
-/**
- * Build an AskConfig from a pre-task-30 saved config, so an existing selection
- * still loads instead of crashing on a missing `ask`.
- *
- *   dirs.jp2en   → the Japanese source (text prompt, both responses, its style)
- *   listen*      → adds an Audio prompt to the Japanese source
- *   dirs.en2jp   → the English source, at its style
- *
- * The old jp→en direction asked whatever the fact's aspect was (meaning OR
- * reading), so it maps to BOTH responses. Listening was independent of the
- * direction toggles (opt-in, word-only), so audio is added whenever either
- * listen flag was on, even if jp→en itself was off.
- */
-export function migrateLegacyAsk(old: LegacyAsk): AskConfig {
-  const jp = old.dirs?.jp2en ?? false;
-  const en = old.dirs?.en2jp ?? false;
-  const audioMeaning = !!old.listenMeaning;
-  const audioRomaji = !!old.listenRomaji;
-  const audio = audioMeaning || audioRomaji;
-
-  const prompts: PromptFormat[] = [];
-  if (jp) prompts.push("text");
-  if (audio) prompts.push("audio");
-
-  const responses: ResponseKind[] = [];
-  if (jp || audioMeaning) responses.push("definition");
-  if (jp || audioRomaji) responses.push("romaji");
-
-  const answers: AnswerStyle[] = jp || audio ? [old.styleJp2en ?? "typed"] : [];
-
-  return {
-    japanese:
-      prompts.length && responses.length && answers.length
-        ? { prompts, responses, answers }
-        : { prompts: [], responses: [], answers: [] },
-    // Not represented in the old model; default it on so grammar selection
-    // cards keep appearing exactly as before.
-    sentence: {
-      prompts: ["text"],
-      responses: ["definition"],
-      answers: ["mc"],
-      englishResponses: ["ordering"],
-    },
-    english: { answers: en ? [old.styleEn2jp ?? "mc"] : [] },
-  };
-}
-
-// ---------- pure enabled / empty checks (no fact registry) ----------
 
 /** Whether the Japanese source can produce any jp→en card at all: it needs a
  * prompt, a response and an answer format. Audio-only still counts (it produces

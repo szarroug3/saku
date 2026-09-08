@@ -2,8 +2,11 @@
 
 // Quiz configuration context — persisted to localStorage under "saku-cfg" (a
 // legacy "kanaquiz-cfg" value is migrated forward on first read), and mirrored to
-// the server as the `cfg` field of the settings blob (the source of truth). The
-// shape is unchanged from the legacy app so existing selections survive.
+// the server as the `cfg` field of the settings blob (the source of truth).
+//
+// The shape used to be the legacy app's whole settings panel. It is what the
+// Sky reads now (SAK-373): a stored blob is read field by field, so a key no
+// field names is gone the moment the config is next saved.
 
 import {
   createContext,
@@ -21,37 +24,22 @@ import { CFG_KEY, OLD_CFG_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { migratedGet } from "@/lib/storage-migrate";
 import { useSettings } from "@/lib/use-settings";
-// The DATA-FREE seed modules, not kanji-lesson/word-lesson/selection: this
-// provider is mounted in the root layout on every route, and those modules
-// top-level import the kanji+vocab curricula and the fact registry. Seeding a
-// config needs only these pure defaults/clamps.
-import {
-  LESSON_RANGE_DEFAULT,
-  clampLessonRange,
-  WORDS_PER_LESSON_DEFAULT,
-  clampWordsPerLesson,
-} from "@/lib/lesson-sizing";
 import { DEFAULT_VOICE_ID, isVoiceId } from "@/lib/voice";
-import { emptySelection } from "@/lib/selection-empty";
-import {
-  allGridResponses,
-  allPairResponses,
-  askFromAudioPrompts,
-  deriveAudioPrompts,
-  normalizeAsk,
-} from "@/lib/ask-config";
+import { allGridResponses, allPairResponses, askFromAudioPrompts } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
 export function defaultConfig(): QuizConfig {
   return {
+    // Nothing offers another mode: the screens that did went with the old app,
+    // so this is "drill" for every learner and is pinned again on every read.
     mode: "drill",
-    pairResponses: ["definition", "romaji", "sentence"],
-    gridResponses: ["definition", "romaji"],
+    // No per-mode chooser either. Both always drill the full response set.
+    pairResponses: allPairResponses(),
+    gridResponses: allGridResponses(),
     // The one user-facing "how to ask" knob, and it lives on Settings. Text is
-    // always on; this adds audio. `ask` is DERIVED from it (see
-    // askFromAudioPrompts / normalizeConfig) — everything else about how to ask
-    // is automatic and always-on. Default ON: audio is the richer default, and
-    // because text is always present, production cards stay reachable either way.
+    // always on; this adds audio. `ask` is DERIVED from it, so it is never read
+    // back from storage. Default ON: audio is the richer default, and because
+    // text is always present, production cards stay reachable either way.
     audioPrompts: true,
     ask: askFromAudioPrompts(true),
     // SAK-138: a separate knob from audioPrompts (see types/index.ts's doc
@@ -60,17 +48,12 @@ export function defaultConfig(): QuizConfig {
     length: "limited",
     limType: "cov",
     limCount: 50,
-    // Missed cards come back later in the run, by default.
-    requeue: true,
     retries: "lim",
     retryN: 2,
     timer: false,
     timerSec: 10,
-    showAnswer: true,
-    scriptLabel: true,
     fonts: [...JP_FONTS],
     skyAccent: "pink",
-    blurSubmit: false,
     // The roster's default voice (SAK-98's sole hardcoded pitch voice, kept
     // as the default so an existing learner's pitch clips and cache don't
     // change until they pick differently in Settings — see voice.ts's
@@ -78,154 +61,77 @@ export function defaultConfig(): QuizConfig {
     // clip is missing, speak() falls back to the browser voice, so this is
     // safe even before any audio is cached.
     voiceName: DEFAULT_VOICE_ID,
-    showVolume: true,
     graduateRuns: 10,
-    // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
-    lessonMinCost: LESSON_RANGE_DEFAULT.min,
-    lessonMaxCost: LESSON_RANGE_DEFAULT.max,
-    // How many new words a word lesson teaches — a count, not a cost.
-    wordsPerLesson: WORDS_PER_LESSON_DEFAULT,
     // The user's own numbers. Two settings, not a rule — see QuizConfig.
     restFirstMin: 5,
     restThenMin: 10,
-    showStreak: true,
-    showAccuracy: true,
-    showRetryPips: true,
-    fadeControls: true,
-    // Deliberately no `dirs` / `styleJp2en` / `styleEn2jp` / `listenRomaji` /
-    // `listenMeaning` here — they were replaced by `ask` above and are migrated
-    // forward from any saved config in normalizeConfig.
-    // Everything, on day one. An empty query narrows nothing, which is both the
-    // honest default and — unlike the 214-key map this replaced — a default
-    // that costs six fields no matter how much material the app grows.
-    selection: emptySelection(),
   };
 }
 
-/** Coerce a parsed/stored config object (from localStorage OR the server) into a
- * full, clamped QuizConfig. Anything that is not an object — or nothing at all —
- * is the default config. Shared by the local-cache read and the server reconcile
- * so both land on exactly the same shape. */
+const bool = (v: unknown, fallback: boolean): boolean => (typeof v === "boolean" ? v : fallback);
+const num = (v: unknown, fallback: number): number =>
+  typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+/**
+ * Coerce a parsed/stored config object (from localStorage OR the server) into a
+ * full QuizConfig. Anything that is not an object, or nothing at all, is the
+ * default config. Shared by the local-cache read and the server reconcile so
+ * both land on exactly the same shape.
+ *
+ * IT READS FIELD BY FIELD, and that is the point (SAK-373). This used to be
+ * `{ ...defaultConfig(), ...raw }` plus a list of stale keys to delete
+ * afterwards, which meant every key the old app ever stored rode the spread
+ * into the object and was written straight back to the server on the next
+ * save. Naming what we know is what lets a field leave the model and leave the
+ * row: an old blob normalizes to the smaller shape on first read, and the next
+ * save is the migration. The `delete` list went with the spread, and so did the
+ * migrations it existed for (`dirs`, `styleJp2en`, the two `listen*`, the
+ * tri-state `input`, `newKanjiOrder`, `enabled`, the retired modes, and
+ * `pitchVoiceId` with the Azure voice ids).
+ */
 function normalizeConfig(saved: unknown): QuizConfig {
+  const base = defaultConfig();
   try {
-    if (saved && typeof saved === "object") {
-      const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
-      const cfg: QuizConfig = { ...defaultConfig(), ...raw };
-      // Pairs and grid have no per-mode chooser any more: they ALWAYS drill the
-      // full relationship / response set, so a stored (possibly narrowed) value
-      // is discarded and pinned to the full set here.
-      cfg.pairResponses = allPairResponses();
-      cfg.gridResponses = allGridResponses();
-      // "How to ask" is now a single derived boolean. Resolve the user-facing
-      // `audioPrompts` (text is always on; this adds audio) from whatever was
-      // stored, then REGENERATE `ask` from it — the stored `ask` only matters
-      // for this one-time read:
-      //   - a new `audioPrompts` boolean wins outright;
-      //   - else the OLD tri-state `input` ("audio"/"both" ⇒ on, "text" ⇒ off);
-      //   - else a stored `ask` (task-30 shape) reads its prompt format back;
-      //   - else the OLDER dirs/styles/listen fields migrate through the same lens;
-      //   - else off.
-      // The old fields are then dropped so they can't shadow the new model.
-      const rawObj = raw as Record<string, unknown>;
-      // VOICE CONSOLIDATION (SAK-100). `voiceName` and the retired
-      // `pitchVoiceId` (SAK-99) collapse into ONE field, sourced from the
-      // unified VOICEVOX roster (src/lib/voice.ts's VOICES). A saved
-      // `pitchVoiceId`, if it still names a real roster voice, wins — it was
-      // the more deliberate of the two choices, since SAK-99's picker only
-      // ever offered roster voices. Otherwise a saved `voiceName` wins IF it
-      // is still a roster id. Anything else — the retired "Auto" (""), a
-      // pre-SAK-100 Azure id ("keita"/"nanami"), or garbage — falls back to
-      // the roster default. Auto is no longer an offered choice (Settings
-      // dropped it), so unlike before this migration no longer preserves "".
-      const legacyPitchVoiceId =
-        typeof rawObj.pitchVoiceId === "string" ? rawObj.pitchVoiceId : undefined;
-      cfg.voiceName =
-        legacyPitchVoiceId && isVoiceId(legacyPitchVoiceId)
-          ? legacyPitchVoiceId
-          : isVoiceId(cfg.voiceName)
-            ? cfg.voiceName
-            : DEFAULT_VOICE_ID;
-      delete (cfg as unknown as Record<string, unknown>).pitchVoiceId;
-      // A short-lived build exposed sentence practice as a separate "mixed"
-      // mode. Sentences now correctly use the Japanese-sentence source inside
-      // Drill, so migrate that saved UI state back to Drill.
-      if (rawObj.mode === "mixed") cfg.mode = "drill";
-      // Number generation now runs as category facts inside the ordinary Drill.
-      // Migrate the short-lived standalone Numbers mode instead of restoring a
-      // screen that no longer exists.
-      if (rawObj.mode === "number-reading") cfg.mode = "drill";
-      // Sentence listening used to be a standalone mode; it now folds into the
-      // Audio prompt format, so a saved listen-sentence config becomes an audio
-      // drill.
-      const wasListenSentence = raw.mode === "listen-sentence";
-      if (wasListenSentence) cfg.mode = "drill";
-      let audioPrompts = deriveAudioPrompts(rawObj);
-      // A standalone listen-sentence run was audio; fold that in so the audio
-      // prompt survives the mode migration.
-      if (wasListenSentence) audioPrompts = true;
-      cfg.audioPrompts = audioPrompts;
-      cfg.ask = askFromAudioPrompts(audioPrompts);
-      // TEST SEAM: a stored `askOverride` pins the exact AskConfig, bypassing the
-      // derive-from-audioPrompts regeneration above. The app has no UI that writes
-      // it, so a real config never carries one; the e2e seed fixtures set it so a
-      // spec can pin a direction / style / response that the simplified config
-      // otherwise rolls per card. Read off the raw stored value, never a field on
-      // QuizConfig, so it cannot leak into the real model.
-      if (rawObj.askOverride) {
-        cfg.ask = normalizeAsk(rawObj.askOverride);
-      }
-      // Missed cards requeue by default; only an explicit stored false turns it
-      // off. Absent (older config) means on.
-      cfg.requeue = rawObj.requeue === false ? false : true;
-      for (const stale of [
-        "dirs",
-        "styleJp2en",
-        "styleEn2jp",
-        "listenRomaji",
-        "listenMeaning",
-        // The retired tri-state prompt axis, replaced by the audioPrompts
-        // boolean above and read for migration in deriveAudioPrompts.
-        "input",
-        // Retired setting: the teaching order is always "everyday" now, so a
-        // saved newKanjiOrder is dropped rather than carried on the config.
-        "newKanjiOrder",
-      ]) {
-        delete (cfg as unknown as Record<string, unknown>)[stale];
-      }
-      // Migrate the pre-fonts shape: randomFont true → all fonts, false →
-      // just the first (the legacy app always rendered JP_FONTS[0] then).
-      if (!Array.isArray(cfg.fonts) || !cfg.fonts.length) {
-        cfg.fonts = raw.randomFont === false ? [JP_FONTS[0]] : [...JP_FONTS];
-      }
-      // A stored `enabled` map is from before selection was a query. It is not
-      // migrated and none is owed: those keys were CHARACTERS, and a character
-      // is not a selection — the same reasoning history.ts applied to its own
-      // rekey. Dropping it lands you on Everything, which is where a new user
-      // starts anyway.
-      if (!cfg.selection || typeof cfg.selection !== "object") {
-        cfg.selection = emptySelection();
-      } else {
-        // A partial/older selection object still has to answer every field, or
-        // resolve() reads undefined and returns nothing while the UI insists
-        // something is selected.
-        cfg.selection = { ...emptySelection(), ...cfg.selection };
-      }
-      // The second of the two enforcement points for the lesson range (the
-      // Settings control is the first): a stored max below min — from an older
-      // build, a hand edit, or a corrupt write — is pinned back here before it
-      // can reach a packer that has no defined behaviour for it.
-      const range = clampLessonRange(cfg.lessonMinCost, cfg.lessonMaxCost);
-      cfg.lessonMinCost = range.min;
-      cfg.lessonMaxCost = range.max;
-      // Same guard for the word lesson size: a stored/hand-edited value is
-      // pinned to a sane whole count before it reaches nextWordLesson.
-      cfg.wordsPerLesson = clampWordsPerLesson(cfg.wordsPerLesson);
-      return cfg;
-    }
+    if (!saved || typeof saved !== "object") return base;
+    const raw = saved as Record<string, unknown>;
+    const audioPrompts = bool(raw.audioPrompts, base.audioPrompts);
+    // The pre-fonts shape: randomFont true (or absent) meant all of them,
+    // false meant the one face the legacy app always drew.
+    const stored = Array.isArray(raw.fonts)
+      ? raw.fonts.filter((f): f is string => typeof f === "string")
+      : [];
+    const fonts = stored.length
+      ? stored
+      : raw.randomFont === false
+        ? [JP_FONTS[0]]
+        : [...JP_FONTS];
+    return {
+      mode: base.mode,
+      pairResponses: base.pairResponses,
+      gridResponses: base.gridResponses,
+      audioPrompts,
+      ask: askFromAudioPrompts(audioPrompts),
+      pitchQuestions: bool(raw.pitchQuestions, base.pitchQuestions),
+      length: raw.length === "endless" ? "endless" : "limited",
+      limType: raw.limType === "count" ? "count" : "cov",
+      limCount: num(raw.limCount, base.limCount),
+      retries: raw.retries === "none" || raw.retries === "unl" ? raw.retries : "lim",
+      retryN: num(raw.retryN, base.retryN),
+      timer: bool(raw.timer, base.timer),
+      timerSec: num(raw.timerSec, base.timerSec),
+      fonts,
+      skyAccent: typeof raw.skyAccent === "string" ? raw.skyAccent : base.skyAccent,
+      // A saved legacy id (the retired "Auto" of "", a pre-SAK-100 Azure name,
+      // or garbage) is not a roster voice, so it falls back to the default.
+      voiceName: typeof raw.voiceName === "string" && isVoiceId(raw.voiceName) ? raw.voiceName : base.voiceName,
+      graduateRuns: num(raw.graduateRuns, base.graduateRuns),
+      restFirstMin: num(raw.restFirstMin, base.restFirstMin),
+      restThenMin: num(raw.restThenMin, base.restThenMin),
+    };
   } catch {
     // corrupt storage — fall through to defaults
+    return base;
   }
-  return defaultConfig();
 }
 
 /** The config from this browser's localStorage cache — the new `saku-cfg` key,

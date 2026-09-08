@@ -2024,3 +2024,50 @@ and local tests say the same things over `cfg` and `practice` instead of
 over a theme and a dismissal flag. 1,095 lines deleted against 214 added,
 3,867 unit tests
 pass, 26 e2e.
+
+### The config keeps what the Sky reads (2026-09-08, SAK-373)
+
+`QuizConfig` was the old app's whole settings panel, 31 fields, and the
+Sky reads twelve of them. Thirteen of the dead ones are gone: `requeue`,
+`showAnswer`, `scriptLabel`, `blurSubmit`, `showVolume`, the two lesson
+costs and `wordsPerLesson`, the four drill-HUD booleans, and `selection`.
+
+Seven more stay, and it is worth writing down why, because the field
+count alone would say the job is half done. `QuizSnapshot` in
+`quiz-session-types.ts` is `Pick<QuizConfig, "mode" | "ask" |
+"pairResponses" | "gridResponses" | "length" | "limType" | "limCount">`,
+and that is the in-progress session envelope, which is SAK-376 in another
+session's hands tonight. Cutting those seven means editing a file that
+card may be deleting. `selection` left the config but the `Selection`
+type stayed, for the same reason from the other side: its `list` field is
+a saved list's id, and lists are SAK-375.
+
+The half that matters more landed whole. `normalizeConfig` used to be
+`{ ...defaultConfig(), ...raw }` followed by a list of stale keys to
+delete, which meant every key the old app had ever written rode the
+spread into the object and went straight back to the server on the next
+save. Cutting fields off the type would have changed nothing about what
+is stored. It reads field by field now, so a key no field names is gone
+the moment the config is next saved, and the delete list went with the
+spread.
+
+So did the migrations the list existed for: `dirs`, `styleJp2en`,
+`styleEn2jp`, the two `listen*`, the tri-state `input`, `newKanjiOrder`,
+`enabled`, the `mixed` / `number-reading` / `listen-sentence` mode
+rewrites, `pitchVoiceId` with the Azure voice ids, and the `askOverride`
+test seam, whose last reader went with the e2e helper trim. `voiceName`
+keeps its roster check and `fonts` its `randomFont` fallback, because
+both are values the Sky shows. With the migrations went their half of
+`ask-config.ts`: `deriveAudioPrompts`, `normalizeAsk` and
+`migrateLegacyAsk`, 128 lines whose only remaining caller was their own
+test. `clampLessonRange` went too, its last caller being the lesson-cost
+fields.
+
+493 lines deleted against 146 added, the README section included. 3,858
+unit tests pass, from 3,867: nine went with the migration functions they
+were written for. 26 e2e.
+
+Left for whoever picks it up after the session envelope lands: the seven
+fields above, the `Selection` type with `FactBand`, and folding `retries`
+plus `retryN` into one number, which `retriesOf` and `retriesPatch` in
+`app/(sky)/retries.ts` already present as one.

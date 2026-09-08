@@ -28,25 +28,13 @@ export interface LessonRange {
 
 /** 5 and 7: a short sitting is roughly a couple of ordinary kanji, a long one
  * three or so. Anchored to nothing but how long a beginner's session should
- * feel; move them in Settings. */
+ * feel. The only range there is: nothing offers a learner another one. */
 export const LESSON_RANGE_DEFAULT: LessonRange = { min: 5, max: 7 };
 
-/**
- * The one place a kanji range is made safe, and it is called on BOTH sides —
- * the Settings control and the config-load path — so a `max` below `min` cannot
- * reach the packer even through hand-edited localStorage.
- *
- * A packer handed max < min has no defined behaviour (fill toward a ceiling
- * under the floor?), so this does not trust the caller to have checked: `max`
- * is pinned at or above `min`, and both are whole and at least 1. It is a clamp
- * and not a throw because a bad stored value should degrade to a sane lesson,
- * not a blank screen — the same instinct history.ts has about stale data.
- */
-export function clampLessonRange(min: number, max: number): LessonRange {
-  const lo = Math.max(1, Math.round(Number.isFinite(min) ? min : LESSON_RANGE_DEFAULT.min));
-  const hi = Math.max(lo, Math.round(Number.isFinite(max) ? max : LESSON_RANGE_DEFAULT.max));
-  return { min: lo, max: hi };
-}
+// There used to be a `clampLessonRange` here, pinning a stored max at or above
+// its min on both the Settings control and the config-load path. Neither exists
+// any more: the control went with the old app and the config field with SAK-373,
+// so every caller now passes LESSON_RANGE_DEFAULT, which needs no clamping.
 
 /** Words met in one sitting. A single number, not a min/max: a word is
  * indivisible and uniform, so there is no "bundle bigger than the ceiling" case
@@ -54,7 +42,7 @@ export function clampLessonRange(min: number, max: number): LessonRange {
 export const WORDS_PER_LESSON_DEFAULT = 6;
 
 /** Clamp a stored/edited count to a sane lesson size — whole, at least 1. Same
- * instinct as `clampLessonRange`: a corrupt value should degrade to a small
+ * instinct the kanji range had: a corrupt value should degrade to a small
  * lesson, not a blank screen. Capped so a hand-edit can't ask for a 500-word
  * teach screen. */
 export function clampWordsPerLesson(n: number): number {

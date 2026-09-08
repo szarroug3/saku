@@ -142,8 +142,8 @@ export type GridResponse = "definition" | "romaji";
 // Japanese/Sentence + Romaji ⇒ jp→reading, English ⇒ en→jp.
 //
 // The old shape (`dirs`, `styleJp2en`, `styleEn2jp`, `listenRomaji`,
-// `listenMeaning`) is migrated forward in src/lib/quiz-config.tsx — audio is now
-// just `Prompt Format: Audio`, never a separate opt-in.
+// `listenMeaning`) was migrated forward for two years and is not read at all any
+// more (SAK-373); audio is `Prompt Format: Audio`, never a separate opt-in.
 
 /** How a Japanese card is PROMPTED: shown as text, or played as audio.
  * Audio is listening — the glyph is hidden and the word is spoken. Word-only,
@@ -224,10 +224,9 @@ export interface QuizConfig {
   /** Grid response types. Prompts are always Japanese text and answers typed. */
   gridResponses: GridResponse[];
   /**
-   * HOW TO ASK, by source — see AskConfig. Replaced `dirs` +
-   * `styleJp2en`/`styleEn2jp` (direction is now inferred) and the two
-   * `listen*` flags (audio is a Prompt Format). Migrated from the old shape in
-   * src/lib/quiz-config.tsx so a saved config still loads.
+   * HOW TO ASK, by source (see AskConfig). Derived from `audioPrompts` on every
+   * read (askFromAudioPrompts in src/lib/quiz-config.tsx) and never read back
+   * from storage, so it is a computed field that happens to be persisted.
    */
   ask: AskConfig;
   /**
@@ -235,8 +234,7 @@ export interface QuizConfig {
    * as well as text. Text is ALWAYS on, so this is a single boolean — on ⇒
    * text+audio prompts, off ⇒ text only. `ask` is DERIVED from it (regenerated
    * in normalizeConfig via askFromAudioPrompts), so this is the source of truth
-   * the Settings panel edits; the stored `ask` only survives for one-time
-   * migration of pre-toggle configs. Default ON. Lives on Settings, not Practice:
+   * the Settings page edits. Default ON. Lives on Settings, not Practice:
    * it is environmental (does this machine have a TTS voice?), not per-run.
    */
   audioPrompts: boolean;
@@ -251,23 +249,15 @@ export interface QuizConfig {
   length: "endless" | "limited";
   limType: "cov" | "count";
   limCount: number;
-  /** In-place retries on a wrong card BEFORE it is scored — see retries/retryN.
-   * When true, a card scored wrong (after those retries) comes back later in the
-   * run; when false, the run moves on and the card is not re-shown. Default on. */
-  requeue: boolean;
   retries: "none" | "lim" | "unl";
   retryN: number;
   timer: boolean;
   timerSec: number;
-  showAnswer: boolean;
-  scriptLabel: boolean;
   /** JP fonts to draw from per card — more than one selected = randomized. */
   fonts: string[];
   /** The Sky's accent, by name (src/sky/lib/settings.ts SKY_ACCENTS). Kept
-   * here so it follows the learner like every setting; the app's own
-   * themes keep their accents in `accents`. */
+   * here so it follows the learner like every setting. */
   skyAccent?: string;
-  blurSubmit: boolean;
   /**
    * The learner's chosen voice for EVERY kind of speech in the app — quiz
    * prompts, listening exercises, the ordinary Hear button, and the
@@ -284,14 +274,12 @@ export interface QuizConfig {
    * Defaults to "nana" (speaker id 30, DEFAULT_VOICE_ID) — SAK-98's original
    * hardcoded pitch voice, kept as the one default so an existing learner's
    * pitch-button clips don't change until they pick differently in Settings.
-   * A saved legacy Azure id ("keita"/"nanami") or SAK-99's `pitchVoiceId`
-   * migrates to this field in quiz-config.tsx's normalizeConfig.
+   * A stored value that is not a roster id (the retired "Auto" of "", a
+   * pre-SAK-100 Azure name, garbage) reads back as that default.
    */
   voiceName: string;
 
   // ---------- what the numbers mean (used everywhere) ----------
-  /** Show practice volume next to accuracy, so 88%-from-4-tries can't lie. */
-  showVolume: boolean;
   /**
    * Clean runs needed to clear a confusion — after this, its old misses stop
    * feeding Patterns, Home's Confusions card, and Weakest 20. Counts only runs
@@ -299,33 +287,6 @@ export interface QuizConfig {
    * lower; it is a judgement call, not a fact, so it is yours to set.
    */
   graduateRuns: number;
-
-  // ---------- what arrives next ----------
-  /**
-   * How long a kanji lesson should be, in reading-unit cost — see LessonRange
-   * and `costOf` in src/lib/curriculum-lesson.ts (SAK-239: the old draw+assembly
-   * cost model, `kanjiCost` in the now-deleted kanji-lesson.ts, was superseded by
-   * this reading-unit model when the kanji and word tracks merged into one
-   * spine — see curriculum-lesson.ts's header). A lesson fills toward `max` and
-   * only ends below `min` when the next indivisible piece won't fit.
-   *
-   * TWO NUMBERS with an ORDER between them: `max` may never be below `min`.
-   * That is enforced in two places — the Settings control and the config loader
-   * (`clampLessonRange`) — so a hand-edited value can't reach the packer, which
-   * has no defined behaviour for a ceiling under its floor.
-   */
-  lessonMinCost: number;
-  lessonMaxCost: number;
-  /**
-   * How many NEW words a word lesson teaches — the words track's lesson size.
-   *
-   * A COUNT, not a cost range like kanji's: a word adds no new kanji, so there
-   * is no draw+assembly work to size it, and a word is uniform and indivisible,
-   * so there is no "bundle over the ceiling" case a max exists to flag. The
-   * lesson is simply the next N teachable words. See WORDS_PER_LESSON_DEFAULT
-   * and `nextWordLesson` in src/lib/word-lesson.ts.
-   */
-  wordsPerLesson: number;
 
   // ---------- the session loop (src/lib/session.ts) ----------
   /**
@@ -339,16 +300,6 @@ export interface QuizConfig {
    */
   restFirstMin: number;
   restThenMin: number;
-
-  // ---------- drill HUD (all off = zen, all on = instrumented) ----------
-  showStreak: boolean;
-  showAccuracy: boolean;
-  showRetryPips: boolean;
-  /** Fade End quiz / gear while drilling; they wake on mouse move. */
-  fadeControls: boolean;
-  /** What you are about to drill. See Selection — this replaced `enabled`, a
-   * char→bool map with one key per selectable thing. */
-  selection: Selection;
 }
 
 // ---------- selection: a query, not a set ----------
