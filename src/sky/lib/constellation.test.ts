@@ -209,13 +209,12 @@ describe("the paint", () => {
   });
 
   it("fades a line into undiscovered ground to fog, from either end", () => {
-    const fog = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.35 };
-    assert.deepEqual(linePaintFor(star("solid"), star("not-seen")), fog);
-    assert.deepEqual(linePaintFor(star("not-seen"), star("solid")), fog);
-    assert.deepEqual(linePaintFor(star("not-seen"), star("not-seen")), fog);
+    assert.equal(linePaintFor(star("solid"), star("not-seen")), null);
+    assert.equal(linePaintFor(star("not-seen"), star("solid")), null);
+    assert.equal(linePaintFor(star("not-seen"), star("not-seen")), null);
     // a picked or opened star is not fog, whatever its standing says
-    assert.equal(linePaintFor(star("solid"), star("not-seen", { tonight: true })).opacity, 0.8);
-    assert.equal(linePaintFor(star("solid"), star("not-seen", { lit: true })).opacity, 0.8);
+    assert.equal(linePaintFor(star("solid"), star("not-seen", { tonight: true }))?.opacity, 0.8);
+    assert.equal(linePaintFor(star("solid"), star("not-seen", { lit: true }))?.opacity, 0.8);
     assert.equal(isUndiscovered(star("not-seen")), true);
     assert.equal(isUndiscovered(star("not-seen", { emphasis: true })), false);
   });
@@ -223,6 +222,6 @@ describe("the paint", () => {
   it("gives the accent to a line at the star being shown, and muting beats it", () => {
     assert.deepEqual(linePaintFor(star("solid"), star("shaky", { emphasis: true })), { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 });
     assert.deepEqual(linePaintFor(star("solid", { muted: true }), star("shaky")), { stroke: "var(--sky-link)", width: 1.25, opacity: 0.12 });
-    assert.equal(linePaintFor(star("solid", { muted: true }), star("shaky", { emphasis: true })).opacity, 0.12);
+    assert.equal(linePaintFor(star("solid", { muted: true }), star("shaky", { emphasis: true }))?.opacity, 0.12);
   });
 });

@@ -880,7 +880,7 @@ test("every line on the sky is the same line, and none of them is dashed", async
   expect(lines.strokes).toEqual(["var(--sky-link)"]);
   expect(lines.widths).toEqual(["1.25"]);
   // structure, or fog into what has not been discovered. Nothing else.
-  for (const o of lines.opacities) expect(["0.8", "0.35"], `line opacity ${o}`).toContain(o);
+  for (const o of lines.opacities) expect(["0.8"], `line opacity ${o}`).toContain(o);
 });
 
 test("the legend's key draws the real stars, tonight among them", async ({ page }) => {

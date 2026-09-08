@@ -148,6 +148,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
           // the line reads the same either way round: it belongs to the pair,
           // not to the star it happens to point at (SAK-338)
           const line = linePaintFor(looks.get(a.id)!, looks.get(b.id)!);
+          if (!line) return null;
           return (
             <line
               key={`${a.id}>${b.id}`}

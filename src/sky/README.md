@@ -116,7 +116,7 @@ thing that differs. Prerequisites + 1 stars, no more. `ConstellationFigure`
 verb pairs binary stars, the rest stars), colour by
 standing through the standing tokens, and the state in the glow and marks
 the star wears (SAK-338, at the end of this file). Lines are structure only:
-one colour, one weight, never dashed, fog into what is undiscovered. `lit`
+one colour, one weight, never dashed, none into what is undiscovered. `lit`
 and `emphasis` take a star over and `tonight` is a halo on top of whatever
 it already is, and `dots={false}` draws lines only so the
 lesson can put its own clickable stars on the returned positions, in the same
@@ -3122,13 +3122,12 @@ can be held to in a unit test rather than only seen.
 
 **Lines carry the shape and nothing else.** Every line is `--sky-link`, 1.25
 wide, at 0.8 (a first cut at one pixel and 0.45 was too faint to read, Sam,
-2026-09-08), and none of them is dashed. A line with an undiscovered
-star at either end drops to 0.35, so unknown ground reads as fog rather than
-as a different kind of joining. The lesson's accent still takes over the
-lines at the star the panel is showing, and something singled out elsewhere
-still takes every other line back to 0.12. `linePaintFor(a, b)` gives the
-same answer whichever way round the pair is handed to it, which is the whole
-point.
+2026-09-08), and none of them is dashed. A line to an undiscovered star is
+not drawn at all: solid for anything discovered, nothing for anything not (Sam, 2026-09-08; a first cut faded
+it to fog instead). The lesson's accent still takes over the lines at the
+star the panel is showing, and something singled out elsewhere still takes
+every other line back to 0.12. `linePaintFor(a, b)` gives the same answer
+whichever way round the pair is handed to it, which is the whole point.
 
 **State lives on the star, in its glow.** Solid reaches 4, getting there
 2.5, shaky 1, and nothing below that glows at all (a first cut at 6, 4 and

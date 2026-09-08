@@ -303,16 +303,18 @@ export function isUndiscovered(look: StarLook): boolean {
 /** How one line between two stars is drawn. */
 export interface LinePaint { stroke: string; width: number; opacity: number }
 
-/** Every line is the same line: one colour, one weight, never dashed. Fog is
- * the only fade, the accent the only other colour, and something singled out
- * elsewhere takes every other line right back. */
+/** Every line is the same line: one colour, one weight, never dashed. A
+ * line to an undiscovered star is not drawn at all (Sam, 2026-09-08: solid
+ * for anything discovered, nothing for anything not); the accent is the only
+ * other colour, and something singled out elsewhere takes every other line
+ * right back. */
 export const LINE = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 } as const;
-export const LINE_FOG = 0.35;
 export const LINE_MUTED = 0.12;
 export const LINE_EMPHASIS = { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 } as const;
 
-export function linePaintFor(a: StarLook, b: StarLook): LinePaint {
+export function linePaintFor(a: StarLook, b: StarLook): LinePaint | null {
+  if (isUndiscovered(a) || isUndiscovered(b)) return null;
   if (a.muted || b.muted) return { ...LINE, opacity: LINE_MUTED };
   if (a.emphasis || b.emphasis) return { ...LINE_EMPHASIS };
-  return { ...LINE, opacity: isUndiscovered(a) || isUndiscovered(b) ? LINE_FOG : LINE.opacity };
+  return { ...LINE };
 }
