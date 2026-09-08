@@ -1575,3 +1575,42 @@ counter duplicates (だけ, 一つ, 一人, …), because no entry carries that 
 The Sky reads the first, the shelf and lookup modules the second. Neither
 changed, and the loader's doc now names the difference rather than
 claiming the two agree.
+
+### The vehicles, built once (2026-09-08, SAK-399)
+
+`vehicles.ts` holds the pool a grammar production question is drilled on,
+and it derived the verb half of that pool as it loaded: for each of the
+ten regular conjugation classes a filter, a sort and a slice over all
+12,555 vocabulary rows, ten passes, to reach 220 vehicles. On the way it
+asked the dictionary for each candidate's register, so that an
+honorific-only verb never becomes an unlabeled filler, and that read
+`word-definitions.json` from disk. A 4.7 MB table meant to be read when
+a word card asks for a sense was therefore read by every process on its
+first request instead.
+
+Written out the pool is 18.6 KB. `vehicles-build.ts` holds the
+derivation, `scripts/build-vehicles.mjs` runs it into
+`src/data/generated/vehicles.json`, and `vehicles.ts` reads that file and
+keeps live everything that depends on the recipe or the learner:
+`vehiclesFor`, `pickVehicle`, `exampleVerb`, `showableWhenUnknown`,
+`transitivityOf`. Loading the module with its own dependencies already
+imported went from 50 ms to 3 on a laptop, middle of three fresh runs,
+and nothing under `src/data/generated` is read at its load any more.
+
+The proof it changed nothing: every export dumped over a fixed input set
+before and after, and compared. The four pools, `transitivityOf` over all
+12,555 words, and for each of the 114 recipes its worked example, both
+recipe predicates over the whole pool, and `vehiclesFor` and a seeded
+`pickVehicle` across every host, every known-word gate and every class
+and pinned-verb bucket, plus a 40-pick session-dedup run. Byte-identical.
+`vehicles.equiv.test.ts` holds the file to the builder from here, the way
+`vocab-runtime.test.ts` holds the vocabulary.
+
+The adjective and noun pools stayed where they are. They are ten
+hand-written rows that derive from nothing, so there is nothing to bake,
+and the prose explaining why いい leads the adjectives belongs beside it.
+
+Route sizes did not move, and were not expected to: `route_sizes.mjs`
+measures the JavaScript a visit ships to the browser, and none of this
+was ever on the client. This is server load time, which is what a cold
+start is made of.
