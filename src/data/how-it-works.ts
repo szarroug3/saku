@@ -69,7 +69,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     title: "Why things come back (SRS)",
     paragraphs: [
       "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, but not on a fixed schedule.",
-      "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's genuinely unsure, it asks again.",
+      "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's unsure, it asks again.",
       "And if something's clearly slipped, Saku doesn't keep grinding on it as a \"hard\" item: a missed card opens its lesson right there under the quiz, and the Observatory offers it to be learned again, because testing you on something you don't know isn't teaching. It re-teaches it.",
     ],
     paragraphAccents: [["spaced repetition (SRS)"], [], []],
@@ -83,7 +83,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     bullets: [
       {
         label: "I know these",
-        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unblocks anything waiting on it (a later lesson gated on a kanji or word you just claimed, for example), and it doesn't fabricate a test record: it stays untested until you're actually asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
+        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unblocks anything waiting on it (a later lesson gated on a kanji or word you just claimed, for example), and it doesn't fabricate a test record: it stays untested until you're asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
       },
       {
         label: "I don't know these",
@@ -95,24 +95,24 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       },
     ],
     afterBullets: [
-      "Either way, a claim only holds until you actually answer something. If you claim an item and then miss it later, the miss overrides the claim.",
+      "Either way, a claim only holds until you answer something. If you claim an item and then miss it later, the miss overrides the claim.",
     ],
   },
   {
     id: "progress-words",
     title: "What the standings mean",
     paragraphs: [
-      "Every star in your sky has a standing, and it is the star's color: on the sky, in the Atlas, in Practice. Here's exactly what each one is claiming:",
+      "Every star in your sky has a standing, and it is the star's color: on the sky, in the Atlas, in Practice. Here's what each one is claiming:",
     ],
     bullets: [
       { label: "Undiscovered", body: "You haven't opened this in a lesson yet, and haven't claimed it. It isn't in your sky." },
       {
         label: "Untested",
-        body: "It's in your sky, but Saku has nothing to go on yet. Either you opened it in a lesson, which puts it in rotation from that moment, or you said you already know it with \"I know these\". Untested is untested: no quiz results are behind it, so Saku can't call it solid. From your first answer on, its standing comes from your answers alone.",
+        body: "It's in your sky, but Saku has nothing to go on yet. Either you opened it in a lesson, which puts it in rotation from that moment, or you said you already know it with \"I know these\". It stays untested: no quiz results are behind it, so Saku can't call it solid. From your first answer on, its standing comes from your answers alone.",
       },
       {
         label: "Solid",
-        body: "You've actually been tested, recently, and it's gone well: at least 8 of your last 10 real attempts landed. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
+        body: "You've been tested recently, and it's gone well: at least 8 of your last 10 real attempts landed. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
         bodyAccents: ["8 of your last 10"],
       },
       {
@@ -137,9 +137,9 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "rounds-breaks",
     title: "Rounds and breaks",
     paragraphs: [
-      "A lesson's quiz runs in three rounds. Each round runs through the same whole set of cards, not just what you got wrong last time, so you see everything more than once across the quiz, on purpose. A quiz of what's due, and a practice deck, run once.",
+      "A lesson's quiz runs in three rounds. Each round runs through the whole set of cards, not just what you got wrong last time. A quiz of what's due, and a practice deck, run once.",
       "Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, where you'd want to change it, and it's remembered.",
-      "During a break, Saku deliberately shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. The real learning happens when you come back and try to recall it. You can leave the page and come back; the clock keeps counting.",
+      "During a break, Saku shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
     ],
     paragraphAccents: [
       ["three rounds"],

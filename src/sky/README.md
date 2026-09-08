@@ -2186,3 +2186,38 @@ sums a panel up title-cases its unit: "3 of 23,973 Discovered", "0 of 12
 Pieces", "17 of 214 Radicals Known". Prose in a row is prose, whatever
 number it starts with: "and 15,236 more that match, not listed here",
 "missed 1 time". A standing is never a unit, so it never gets title case.
+
+### The copy stops insisting (2026-09-08, SAK-365)
+
+A read of every rendered string. What it took out were the words a sentence
+leans on when it is worried you will not believe it.
+
+`src/data/how-it-works.ts`: "genuinely unsure" to "unsure"; "until you're
+actually asked" to "until you're asked"; "until you actually answer
+something" to "until you answer something"; "Here's exactly what each one
+is claiming" to "Here's what each one is claiming"; "You've actually been
+tested, recently" to "You've been tested recently"; "Untested is untested:"
+to "It stays untested:"; "Saku deliberately shows you nothing" to "Saku
+shows you nothing"; "The real learning happens when you come back and try
+to recall it" to "You learn it by coming back and trying to recall it". The
+rounds paragraph said its point twice, so the second half went: "Each round
+runs through the same whole set of cards, not just what you got wrong last
+time, so you see everything more than once across the quiz, on purpose"
+is now "Each round runs through the whole set of cards, not just what you
+got wrong last time."
+
+`src/app/(sky)/observatory.ts`: "the part you actually speak and read" to
+"the part you speak and read", and "memorising" to "memorizing", the only
+British spelling left in a rendered string.
+
+`sky-rest.tsx`: "The real learning happens when you take a break and then
+try to recall the thing you're learning. Feel free to leave and come back
+to this page. The timer will continue counting even if you close the page."
+is now "You learn it by taking a break and then trying to recall it. You
+can close this page; the timer keeps counting."
+
+`sky-quiz.tsx`, the help bar: the eyebrow packed three facts into small
+caps, "HELP ME · 2 TRIES LEFT · 8S". It is "Help me" again. The tries are
+their own muted line under it, in the words the card feedback already uses
+("2 tries left.", "One more try."), and the seconds sit beside the timer
+bar they count down.

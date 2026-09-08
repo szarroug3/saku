@@ -70,7 +70,7 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
             <SkyStepper value={minutes} onChange={onMinutes} label="Minutes of rest" min={0} max={240} unit="minutes" />
           </div>
         </SkySurface>
-        <p className="text-center text-[12.5px] text-sky-muted">The real learning happens when you take a break and then try to recall the thing you&apos;re learning. Feel free to leave and come back to this page. The timer will continue counting even if you close the page.</p>
+        <p className="text-center text-[12.5px] text-sky-muted">You learn it by taking a break and then trying to recall it. You can close this page; the timer keeps counting.</p>
         {/* a button, like every other way off a screen (SAK-353) */}
         <div className="flex justify-center"><SkyButton variant="outline" href={back.href}>{back.label}</SkyButton></div>
       </div>

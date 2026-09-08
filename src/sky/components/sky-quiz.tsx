@@ -457,10 +457,18 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
 
             {/* the bar: help while the card is open, the way on once it is done */}
             <div className="flex shrink-0 flex-col gap-2 border-t border-sky-line pt-3 md:w-[168px] md:border-t-0 md:border-l md:pl-4 md:pt-0">
-              <Eyebrow>{answered ? "Move on" : `Help me${state.tries > 0 ? ` · ${triesLeft} ${triesLeft === 1 ? "try" : "tries"} left` : ""}${timeLeft !== null ? ` · ${Math.ceil(timeLeft / 1000)}s` : ""}`}</Eyebrow>
+              {/* The eyebrow used to carry three facts in small caps, "HELP ME
+                  · 2 TRIES LEFT · 8S" (SAK-365). It is the bar's name again;
+                  the tries are their own line, in the words the feedback
+                  already uses, and the seconds sit beside the bar they count. */}
+              <Eyebrow className="mb-0">{answered ? "Move on" : "Help me"}</Eyebrow>
+              {!answered && state.tries > 0 && <p className="text-[12px] text-sky-muted">{triesNote(triesLeft)}</p>}
               {timeLeft !== null && timerSeconds > 0 && (
-                <div className="h-1 w-full overflow-hidden rounded-full bg-sky-line" aria-hidden>
-                  <div className={`h-full transition-[width] duration-100 ease-linear ${timeLeft < 3000 ? "bg-sky-slipping" : "bg-sky-accent"}`} style={{ width: `${(timeLeft / (timerSeconds * 1000)) * 100}%` }} />
+                <div className="flex items-center gap-2">
+                  <div className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-sky-line" aria-hidden>
+                    <div className={`h-full transition-[width] duration-100 ease-linear ${timeLeft < 3000 ? "bg-sky-slipping" : "bg-sky-accent"}`} style={{ width: `${(timeLeft / (timerSeconds * 1000)) * 100}%` }} />
+                  </div>
+                  <span className="shrink-0 text-[12px] tabular-nums text-sky-muted">{Math.ceil(timeLeft / 1000)}s</span>
                 </div>
               )}
               {answered
