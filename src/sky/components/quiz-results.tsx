@@ -25,11 +25,31 @@ export const VERDICT: Record<Grade, string> = {
   missed: "text-sky-slipping",
 };
 
+/**
+ * Where the run's record has got to.
+ *
+ * "no" is a quiz nobody is recording (the sample deck), which says nothing at
+ * all. The other three are the Quiz's own `saved` state, shown here rather
+ * than kept to itself: the screen paints in the click that ends the quiz, and
+ * for a visitor the record does not exist until a server action has turned
+ * the answers into one (SAK-406 left this as the open half, SAK-410 closed
+ * it). Leaving inside that window lost the quiz, so the screen says where it
+ * is and the way back waits for it.
+ */
+export type SaveState = "no" | "saving" | "saved" | "failed";
+
+/** What the screen says while the record is on its way, and after. */
+const SAVE_LINE: Record<Exclude<SaveState, "no">, string> = {
+  saving: "Saving this run.",
+  saved: "Saved.",
+  failed: "Could not record this. Your schedule is unchanged.",
+};
+
 export interface QuizResultsProps {
   cards: readonly QuizCard[];
   answers: Readonly<Record<string, QuizAnswer>>;
-  /** Whether recording failed; the normal case says nothing. */
-  failed: boolean;
+  /** How the recording is going. See SaveState. */
+  save: SaveState;
   /** Where this quiz came from, and what to call it (SAK-353). */
   back: WayBack;
   pitch?: PitchComponent;
@@ -46,7 +66,7 @@ export interface QuizResultsProps {
   height?: string;
 }
 
-export function QuizResults({ cards, answers, failed, back, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
+export function QuizResults({ cards, answers, save, back, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // the naming box opens here rather than on another page
@@ -105,12 +125,20 @@ export function QuizResults({ cards, answers, failed, back, pitch: Pitch, onRetr
               );
             })}
           </ul>
-          {/* recording is the normal case and says nothing; only a failure speaks */}
-          {failed && <p className="mt-3 shrink-0 text-[12.5px] text-sky-slipping">Could not record this. Your schedule is unchanged.</p>}
+          {/* one quiet line, and only while there is something to say: a
+              sample deck records nothing and stays silent. `aria-live` so a
+              reader who is not watching this corner still hears it settle. */}
+          {save !== "no" && (
+            <p aria-live="polite" className={`mt-3 shrink-0 text-[12.5px] ${save === "failed" ? "text-sky-slipping" : "text-sky-muted"}`}>
+              {SAVE_LINE[save]}
+            </p>
+          )}
         </SkySurface>
         <div className="flex flex-wrap gap-2">
           {next && <SkyButton onClick={next.onClick}>{next.label}</SkyButton>}
-          <SkyButton href={back.href} variant={next ? "outline" : "solid"}>{back.label}</SkyButton>
+          {/* held while it is saving: this is the one control that leaves the
+              page, and leaving before the record lands loses the run */}
+          <SkyButton href={back.href} disabled={save === "saving"} variant={next ? "outline" : "solid"}>{back.label}</SkyButton>
           {onRetry && picked.size > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => picked.has(c.id)).map((c) => c.id))}>Retry {picked.size === 1 ? "this one" : `these ${picked.size}`}</SkyButton>}
           {onRetry && picked.size === 0 && counts.missed > 0 && <SkyButton variant="outline" onClick={() => onRetry(cards.filter((c) => answers[c.id]?.grade === "missed").map((c) => c.id))}>Retry the {counts.missed === 1 ? "miss" : `${counts.missed} misses`}</SkyButton>}
           {onSave && !naming && !saved && <SkyButton variant="outline" onClick={() => setNaming(true)}>Keep this recipe</SkyButton>}

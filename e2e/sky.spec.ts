@@ -620,3 +620,39 @@ test("the reveal explains which reading applies, and why", async ({ page }) => {
   await expect(page.getByText(/is an on'yomi, a pronunciation borrowed/)).toHaveCount(0);
   await expect(page.getByText(/Same character, and the company it keeps decides/)).toHaveCount(0);
 });
+
+test("a visitor's finished quiz says it is saving, and opens the way back once it is saved", async ({ page }) => {
+  // SAK-410, the half SAK-406 left open. The results paint in the click that
+  // ends the quiz, but signed out the record does not exist yet: the answers
+  // have to go through a server action before anything reaches the browser's
+  // own store. That window said nothing at all, and a visitor who walked out
+  // of it lost the run. Now the screen says where it is, and the one control
+  // that leaves the page is not a link until the record has landed.
+  await page.goto("/quiz?picks=kana-row:h-vowels");
+  await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+
+  // it reads as one of the two the moment the screen is up, and it settles
+  await expect(page.getByText(/^(Saving this run\.|Saved\.)$/)).toBeVisible();
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+
+  // and by then the record really is in the browser, so leaving keeps it
+  const kept = await page.evaluate(() => {
+    try {
+      const raw = window.localStorage.getItem("saku-local-history");
+      return raw ? (JSON.parse(raw).sessions?.length ?? 0) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  expect(kept).toBeGreaterThan(0);
+
+  // the way back is a link again, and walks
+  const backOut = page.getByRole("link", { name: "Back to the observatory" });
+  await expect(backOut).toBeVisible();
+  await backOut.click();
+  await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeVisible();
+});

@@ -11,7 +11,21 @@ import type { QuizAnswer } from "@/sky/lib/quiz";
 
 import { factsOfPicks, quizRecords } from "./actions";
 
-/** The Quiz's answers, recorded as the app's session records. */
+/**
+ * The Quiz's answers, recorded as the app's session records.
+ *
+ * THE ROUND TRIP THAT CANNOT BE MOVED. `quizRecords` is what turns answers
+ * into a record, so the write cannot come before it: signed out, `postSession`
+ * writes to the browser in its own turn (SAK-406), which means the whole gap
+ * between finishing a quiz and having a record is this one server action. It
+ * stays a server action because it reads `factInfo`, and that is the ~3.6 MB
+ * fact registry -- moving it into the browser to close a sub-second window
+ * would put the registry on every quiz page to do it.
+ *
+ * So the window is closed at the other end instead: the results screen says
+ * "Saving this run." and holds its way back until this resolves (SAK-410, see
+ * SaveState in sky/components/quiz-results.tsx). Nobody leaves inside it.
+ */
 export async function recordAnswers(answers: readonly QuizAnswer[]): Promise<void> {
   for (const record of await quizRecords(answers)) {
     const r = await postSession(record);
