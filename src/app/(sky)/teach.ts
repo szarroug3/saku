@@ -15,7 +15,7 @@ import { wordContrastNoteFor } from "@/data/word-contrast-notes";
 import { builtPieces } from "@/data/kanji-etymology";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
-import { derivePosition } from "@/lib/library/character-entry-content";
+import { derivePosition } from "./radical-position";
 import { formsOfWord } from "@/lib/word-forms";
 import { COUNTER_CURRICULUM, counterForm, counterRoleNote } from "@/data/counters";
 import { TSU_INTRO } from "@/data/track-intros";

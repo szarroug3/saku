@@ -20,6 +20,7 @@ import { contentTypeLabel } from "./item";
 import {
   SENTENCE_ORDERING_TIERS,
   readableAssemblyForTier,
+  sentenceTierShortLabel,
   type AssemblyTier,
 } from "@/data/assembly";
 import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
@@ -53,17 +54,6 @@ function knowsEverything(): HistoryFile {
  * knowledge, or "" if the corpus has none. */
 function tierExample(tier: AssemblyTier): string {
   return readableAssemblyForTier(tier, knowsEverything())[0]?.jp ?? "";
-}
-
-/** The tile's main-glyph label for a sentence-ordering tier — the tier's
- * learner-facing `label` with a redundant trailing " sentences" stripped, since
- * the tile's own type slot already says "sentence structure"
- * (`contentTypeLabel`). "Simple sentences" → "Simple", "Conditional sentences"
- * → "Conditional". A label with no such suffix (e.g. "Te-form links and
- * helpers") is returned unchanged — this only trims the redundant word, it
- * never invents a new label (SAK-11). */
-export function sentenceTierShortLabel(label: string): string {
-  return label.replace(/\s+sentences$/i, "");
 }
 
 /** Each sentence-ordering tier as a ContentItem. Its fact is the tier's own

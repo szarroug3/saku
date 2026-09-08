@@ -824,6 +824,17 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
   },
 ];
 
+/** The tile's main-glyph label for a sentence-ordering tier — the tier's
+ * learner-facing `label` with a redundant trailing " sentences" stripped, since
+ * the tile's own type slot already says "sentence structure"
+ * (`contentTypeLabel`). "Simple sentences" → "Simple", "Conditional sentences"
+ * → "Conditional". A label with no such suffix (e.g. "Te-form links and
+ * helpers") is returned unchanged — this only trims the redundant word, it
+ * never invents a new label (SAK-11). */
+export function sentenceTierShortLabel(label: string): string {
+  return label.replace(/\s+sentences$/i, "");
+}
+
 /** The one unambiguous sentence-ordering tier represented by an assembly item.
  * A sentence that combines two taught structures is useful Japanese, but it is
  * a poor single-lesson exercise: “I'll lend you one if you like” should not be

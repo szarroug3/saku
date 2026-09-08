@@ -38,7 +38,7 @@ import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
-import { sentenceTierShortLabel } from "@/lib/content/sentence-track";
+import { sentenceTierShortLabel } from "@/data/assembly";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";

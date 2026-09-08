@@ -67,6 +67,34 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // THE CONTENT LIBRARY IS BUILD-TIME CODE.
+    //
+    // src/lib/content builds the curriculum indexes: scripts/build-learn-index.mjs
+    // and the rest run it, write the JSON, and the pages read the JSON. A page
+    // that imports one of those modules drags the whole library onto its cold
+    // path to read something it could have been handed (SAK-398). If the Sky
+    // needs a value that lives there, move the value out; do not import the
+    // module.
+    //
+    // curriculum-meta is the exception, and the only one: it reads a
+    // two-field JSON and nothing else.
+    files: ["src/app/(sky)/**/*.{ts,tsx}", "src/app/layout.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/content/*", "!@/lib/content/curriculum-meta"],
+              message:
+                "The content library is build-time code: the index scripts run it and a page reads the JSON they write. Move the value you need out of src/lib/content instead of importing it. See src/sky/README.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // THE SKY BOUNDARY, half two: the app may not depend on the redesign.
     //
     // Without this the boundary only holds one way, and the Sky redesign would slowly
