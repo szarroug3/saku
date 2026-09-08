@@ -15,17 +15,13 @@
 --   settings — server-synced preferences (quiz config, theme/appearance/accents,
 --              dismissal flags); read/written via src/lib/settings.ts.
 --
--- And two dead ones. `lists` held the old app's saved lists (SAK-375); `session`
--- held its IN-PROGRESS run envelope, the deck position and current question a
--- half-answered quiz could be resumed from on another device (SAK-376). Nothing
--- reads or writes either one: the API routes, the store primitives, the client
--- provider, the local copies and the sign-in replay are all gone, and
--- readProgressSeedRow selects neither. Both columns are left in place because
--- dropping them is a by-hand migration that buys nothing, and whatever a
--- learner's row still holds is kept rather than thrown away. A fresh setup gets
--- them too, from the create below, so this file keeps describing the table as it
--- actually is. The Sky's quiz has no resume of its own yet; when it grows one,
--- `session` is the column waiting for it.
+-- And one waiting one. `session` held the old app's IN-PROGRESS run
+-- envelope, the deck position and current question a half-answered quiz could
+-- be resumed from on another device (SAK-376). Nothing reads or writes it
+-- today; it is kept for the Sky's own quiz resume (SAK-404), which is the
+-- column's next reader. A second dead column, `lists`, held the old app's
+-- saved lists (SAK-375) and was dropped on 2026-09-08 together with the
+-- content_entries table (SAK-408), so this file describes the table as it is.
 --
 -- `settings` is read unconditionally by readProgressSeedRow (`select history,
 -- settings`) — unlike `progress_facts` below, there is no fallback for that
@@ -36,7 +32,6 @@
 create table if not exists public.progress (
   user_id    uuid primary key references auth.users (id) on delete cascade,
   history    jsonb not null default '{}'::jsonb,
-  lists      jsonb not null default '{}'::jsonb,
   settings   jsonb,
   session    jsonb,
   updated_at timestamptz not null default now()
