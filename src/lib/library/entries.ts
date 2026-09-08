@@ -32,63 +32,35 @@
 // library-index.equiv.test.ts asserts the file agrees with the build it came
 // from, and `npm run build` regenerates it before every deploy.
 
-import {
-  CHAR_INDEX,
-  KANA_SUBJECT,
-  kanaEntry,
-  kanaFact,
-  LOOK_GROUP,
-} from "@/data/characters";
+import { CHAR_INDEX, KANA_SUBJECT, kanaEntry, LOOK_GROUP } from "@/data/characters";
 import { CONFUSABLE_WITH } from "@/data/confusable";
 import {
   KANJI_SUBJECT,
   kanjiEntry,
   kanjiRow,
   READINGS,
-  readingFactId,
   type ReadingRow,
   variantTaughtKanji,
 } from "@/data/kanji";
-import { isExcludedVariant, variantForm, type VariantPosition } from "@/data/variant-forms";
-import { VOCAB_SUBJECT, vocabRow, wordEntry, wordUnitFacts } from "@/data/vocab";
-import {
-  GRAMMAR_SUBJECT,
-  SPECIAL_ADJ_ROWS,
-  SPECIAL_VERB_ROWS,
-  classProductionFactId,
-  conjugatesVerb,
-  patternEntry,
-  patternMeaningFactId,
-  patternProductionFactId,
-  productionHosts,
-  specialVerbProductionFactId,
-} from "@/data/grammar";
-import { CLASS_ANCHOR } from "@/lib/grammar/te-endings";
+import { isExcludedVariant } from "@/data/variant-forms";
+import { VOCAB_SUBJECT, vocabRow, wordEntry } from "@/data/vocab";
+import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT } from "@/data/marks";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { NUMBER_CONSTRUCTION_SUBJECT } from "@/data/number-construction";
-import { isNumberKanji } from "@/data/number-kanji";
 import { TERM_SUBJECT } from "@/data/terms";
-import {
-  COUNTER_ENTRIES,
-  counterForm,
-  counterMeaningFactId,
-  counterReadingFactId,
-  isKanaForm as isKanaCounterForm,
-} from "@/data/counters";
+import { COUNTER_ENTRIES } from "@/data/counters";
 import {
   RADICAL_SUBJECT,
   radicalEntry,
   radicalByGlyph,
   radicalByWrittenForm,
-  radicalMeaningFactId,
 } from "@/data/radicals";
 import { primitiveEntry, PRIMITIVE_SUBJECT, PRIMITIVE_STROKES } from "@/data/components";
 import { radicalConfusablePartner } from "@/data/radical-tips";
 import {
   RECIPES,
   isPrimaryPatternRecipe,
-  isProducible,
   patternGroup,
   type Recipe,
 } from "@/data/grammar/recipes";
@@ -97,22 +69,8 @@ import {
  * is redundant as a member's sub-line (see the grammar-entry `sub` below). Their
  * titles still ride `searchAlso`, so the family stays findable by name. */
 export const COMPARISON_CLUSTER_IDS: ReadonlySet<string> = new Set(["wa-ga", "ni-de"]);
-import {
-  TRANSITIVITY_SUBJECT,
-  pairForEntry,
-  sideFactId,
-  transitivitySide,
-} from "@/data/transitivity-facts";
-import {
-  KEIGO_SUBJECT,
-  keigoSetForEntry,
-  keigoWordFactId,
-  recognitionGloss,
-} from "@/data/keigo";
-import { buildExample } from "@/lib/grammar/example";
-import { HOST_LABEL } from "@/lib/grammar/formula";
-import { deframe } from "@/lib/kanji-parts";
-import { factInfo } from "@/lib/facts";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import { KEIGO_SUBJECT } from "@/data/keigo";
 import type { EntryId, FactId, FactInfo, QuizMode } from "@/types";
 import libraryIndexJson from "@/data/generated/library-index.json" with { type: "json" };
 import type { LibraryIndex } from "./library-index-types";
@@ -541,28 +499,6 @@ export function readingsOf(c: string): readonly ReadingRow[] {
 }
 
 /**
- * A kanji's readings, richest evidence first — the WHOLE row, not the flattened
- * FactRow the generic table takes.
- *
- * The entry page's kanji branch needs three things FactRow deliberately drops:
- * `nWords` (how common the reading is, as a real number rather than a bar), the
- * full `words` list (to name the word that OPENS a shut reading, which may be
- * one the four-word `askedIn` sample never reaches), and `anchor` (the word the
- * fact is keyed on). Widening FactRow with kanji-only fields would push subject
- * knowledge into a shape four kinds share; this is a second, narrower accessor
- * for the one kind that needs it.
- *
- * NO FILTER, EVER. Measured: the most readings any kanji has is 8, and it is 生;
- * 1,944 of 2,022 have three or fewer. There is no length to manage, so the page
- * shows them all and the "＋ N more" control that a words list needs has no
- * business here.
- */
-export function readingRowsOf(entry: LibEntry): readonly ReadingRow[] {
-  if (entry.kind !== KANJI_SUBJECT) return [];
-  return readingsOf(entry.glyph);
-}
-
-/**
  * The generated index, typed: the one runtime source of the entries and of
  * the maps derived from them (SAK-400). library-index.ts reads its smaller
  * tables from here too.
@@ -647,15 +583,6 @@ const RECIPE_OF_ENTRY: ReadonlyMap<EntryId, Recipe> = new Map(
 );
 
 /**
- * The cluster a grammar entry belongs to — the "compare similar patterns" view
- * its detail page links out to. Null for a pattern in no cluster, and for every
- * non-grammar entry.
- */
-export function clusterOf(entry: LibEntry): string | null {
-  return RECIPE_OF_ENTRY.get(entry.id)?.cluster ?? null;
-}
-
-/**
  * The recipe behind a grammar entry, or null for every other kind.
  *
  * The entry page needs the RECIPE and not just its cluster: the formula, the
@@ -675,25 +602,6 @@ export function recipesOf(entry: LibEntry): readonly Recipe[] {
 }
 
 // ---------- the links ----------
-
-/**
- * The DIRECT components a kanji is written with — 休 = 亻 + 木, 時 = 日 + 寺.
- * From KanjiVG's depth-1 element hierarchy (see KanjiRow.comps).
- *
- * NOT ALL COMPONENTS ARE ENTRIES. Variant and bound forms — 亻, 氵, 艹 — have no
- * KANJIDIC2 row, so each comes back with an entry id or null and the screen
- * renders a link or plain text. `c` is always the ACTUAL component to DISPLAY;
- * `id` is where tapping it goes. Where a component is a variant of a taught
- * character (亻 of 人, 刂 of 刀), `id` points at that character so the learner
- * can meet it — the shape shown is still 亻, only the link resolves to 人.
- */
-export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId }> {
-  if (entry.kind !== KANJI_SUBJECT) return [];
-  return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => ({
-    c,
-    id: builtPieceEntryId(c),
-  }));
-}
 
 /**
  * Where a "Built from" tile links when tapped: the Library page for the shape it
@@ -723,75 +631,6 @@ export function builtPieceEntryId(c: string): EntryId {
   const rad = radicalByWrittenForm(c);
   if (rad) return radicalEntry(rad.glyph);
   return primitiveEntry(c);
-}
-
-/** One piece of the kanji-page "Built from" section: the shape to show, where
- * tapping it goes, and the one-word meaning printed under it. */
-export interface BuiltPiece {
-  readonly c: string;
-  readonly id: EntryId;
-  readonly meaning: string;
-  /** Present only when the piece is a VARIANT form — 亻 for 人, 氵 for 水. It
-   * carries what the tile then says under the meaning: the character the shape is
-   * a form of, where it sits, and its position-name where one is verified. A
-   * plain piece (a kanji or a bare radical) has none. */
-  readonly variant?: {
-    readonly original: string;
-    readonly position?: VariantPosition;
-    readonly name?: string;
-  };
-}
-
-/**
- * The kanji page's "Built from" pieces — the FULL immediate decomposition, so
- * unlike the lesson's kanji-only `teachableParts` this KEEPS the radical and
- * variant pieces: 何 → 亻 person + 可 possible, 明 → 日 sun + 月 moon, 可 → 丁
- * street + 口 mouth. Every piece links to its library page (kanji, radical, or
- * primitive) and carries its meaning so the tile reads glyph-over-meaning.
- *
- * THE #32 FRAME-DEDUP APPLIES HERE. `madeOf` reads the raw KanjiVG comps, which
- * still double a split enclosure (可 → 丁,口,丁). `deframe` collapses that single
- * frame written twice while leaving a genuine repetition intact (品 → 口,口,口) —
- * it only ever drops the trailing copy, so slicing `madeOf` to the deframed
- * length keeps each surviving piece paired with its own id and meaning.
- *
- * Empty for an atomic kanji (一 has no components); the section renders nothing.
- */
-export function builtFrom(entry: LibEntry): BuiltPiece[] {
-  // The number kanji 一…十 are memorised wholes, not compositions: their KanjiVG
-  // pieces (囗 儿 亠 丿 乙, the 八 in 六) are shape-only and imply a meaning the
-  // number does not carry, so the page (and the lesson card, which mounts this
-  // same box and gates on this same length via lesson-roles) shows NO "Built
-  // from" for them. Every other kanji — counters included — keeps its breakdown.
-  if (entry.kind === KANJI_SUBJECT && isNumberKanji(entry.glyph)) return [];
-  const pieces = madeOf(entry);
-  if (!pieces.length) return [];
-  const kept = deframe(pieces.map((p) => p.c)).length;
-  return pieces.slice(0, kept).map((p) => {
-    const v = variantForm(p.c);
-    return {
-      c: p.c,
-      id: p.id,
-      meaning: builtPieceMeaning(p.c, p.id),
-      // A variant piece carries what the tile says under its meaning: 亻 is 人 in
-      // its left form. `variantForm` is defined only for the forms the `variants`
-      // map names, so a plain piece leaves this undefined.
-      ...(v
-        ? { variant: { original: v.original, position: v.position, name: v.name } }
-        : {}),
-    };
-  });
-}
-
-/** The meaning printed under a "Built from" piece. A kanji's own gloss; a
- * variant form's from the taught character it resolves to; a radical or
- * primitive's from its library entry if any. */
-function builtPieceMeaning(c: string, id: EntryId): string {
-  const kanji = kanjiRow(c);
-  if (kanji) return kanji.meanings[0] ?? "";
-  const entry = libEntry(id);
-  if (entry?.kind === PRIMITIVE_SUBJECT) return "Kanji part";
-  return entry?.meanings[0] ?? "";
 }
 
 /**
@@ -910,505 +749,3 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
   }
 }
 
-// ---------- an entry's facts, with what a screen needs to LABEL them ----------
-//
-// factsOf(entry) gives ids and nothing else, by design. The entry page has to
-// say what each one ASKS — and that is subject knowledge, so it is resolved
-// here, once, rather than every screen learning which subjects have anchors.
-
-/** One row of the entry page's facts table. */
-export interface FactRow {
-  readonly id: FactId;
-  /** "Meaning", "セイ", "い(きる)" — what this fact asks about. */
-  readonly label: string;
-  /** The answer. The entry page SHOWS it: this is a reference, not a quiz, and
-   * a reference that withholds the answer is a quiz with no marking. */
-  readonly answer: string;
-  /**
-   * The words this fact is asked in — 学生 · 先生 for 生's セイ.
-   *
-   * The reason the fact exists. A kanji reading fact is keyed on (kanji, word)
-   * precisely because the word is what makes it gradeable, so a table showing
-   * the reading without the word would be showing a question the app cannot ask.
-   * Empty for a meaning fact and for kana, which have no anchor and need none.
-   */
-  readonly askedIn: readonly string[];
-  /** A reading the ingest found no everyday word for: here to be READ, never
-   * asked. The design's "＋ 4 rarer readings — here if you look, never asked." */
-  readonly unattested: boolean;
-  /**
-   * Where this reading's SOUND came from, in beginner English — the answer to
-   * "why do 一's いち and ひと sound nothing like each other".
-   *
-   * THIS COLUMN still says "from Chinese" / "native Japanese", not "on'yomi" /
-   * "kun'yomi". It is a per-row label in a dense table, read at a glance, and
-   * there the plain phrase carries its own meaning where the jargon would need
-   * looking up.
-   *
-   * THE JARGON ITSELF IS NO LONGER BANNED, and that is a deliberate reversal.
-   * This column existed BECAUSE the words were forbidden app-wide, on the
-   * reasoning that a reading is taught through the WORD it surfaces in, so a
-   * learner never needs the term. Sam has since decided the term is worth
-   * teaching directly: the kanji entry now carries an on'yomi hint (the reading
-   * borrowed from Chinese, the one a kanji takes in compounds), and the concept
-   * is explained once, in a curriculum intro card, before the first kanji with
-   * an on'yomi. So "on'yomi" IS used in the UI now — introduced up front, then
-   * used as a brief label on the hint — while this reference table keeps the
-   * plainer phrase for the same at-a-glance reason it always did. See
-   * src/lib/kanji-onyomi.ts and the on'yomi intro in src/data/phase-intros.ts.
-   *
-   * `null` for every row that is not a kanji reading (a kana's romaji, a word's
-   * reading, a grammar pattern) — those have no such distinction, and printing
-   * an empty column for them would invent one.
-   */
-  readonly origin: "from Chinese" | "native Japanese" | "both" | null;
-  /**
-   * The kana to SPEAK for this row, or null when there is nothing to say.
-   *
-   * Null is the common case and the honest one: a grammar pattern has no single
-   * pronunciation (the same reason the page's Hear-it button is omitted for
-   * grammar), and a meaning row's answer is English. Only a row whose label IS
-   * Japanese sound gets a speaker.
-   */
-  readonly speak: string | null;
-}
-
-/**
- * What the entry page's facts table is CALLED, per kind.
- *
- * It used to be a sentence generated from the row count — "一 is one character
- * and 4 things to know" — which was accurate and unreadable, and which lost its
- * only justification when the meaning row left the kanji table. A heading names
- * the thing under it; these do.
- *
- * PER KIND, because the table is not the same table four times. Only kanji and
- * kana hold readings and nothing else. A word holds its reading AND its
- * meaning, which are separately scored and both belong. Grammar holds a meaning
- * and, when the pattern is producible, the form it builds — calling that
- * "Readings" would be false twice over.
- */
-export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
-  switch (entry.kind) {
-    case KANA_SUBJECT:
-      return "Reading";
-    case KANJI_SUBJECT:
-      return rows.length === 1 ? "Reading" : "Readings";
-    case VOCAB_SUBJECT:
-      return "Reading and meaning";
-    // A counter is a word, so its table is a word's — reading AND meaning for a
-    // counted form (一本 · いっぽん), meaning alone for a kana form whose reading is
-    // the glyph itself (ひとつ). Read off the row count, like grammar below, so a
-    // one-row kana counter is not promised a reading it does not test.
-    case COUNTER_KIND:
-      return rows.length > 1 ? "Reading and meaning" : "Meaning";
-    // A radical has one fact and it is its meaning, so the table is headed by
-    // what it holds.
-    case RADICAL_SUBJECT:
-      return "Meaning";
-    case GRAMMAR_SUBJECT:
-      // A non-producible pattern (は〜より, たり〜たり) has ONLY the meaning row,
-      // so promising a form here would be promising a row that is not there.
-      return rows.length > 1 ? "Meaning and form" : "Meaning";
-    // A mark never has rows (see factRows), so this string never reaches a
-    // screen — the page's `rows.length > 0` guard drops the whole section first.
-    // It is here because the switch is exhaustive and because a silent `""` for
-    // a kind that later grew a fact would ship a headed table with no heading.
-    case MARK_SUBJECT:
-    case SENTENCE_RULE_KIND:
-      return "Nothing to test";
-    // A grammar concept never has rows (see factRows), for the same reason a mark
-    // does not: "what is a conjugation form" has no gradeable answer. The page's
-    // `rows.length > 0` guard drops the whole section, so this never shows.
-    case GRAMMAR_CONCEPT_SUBJECT:
-      return "Nothing to test";
-    // A construction page never has rows (see factRows), for the same reason a
-    // concept does not: how a number is built is read, not graded. The page's
-    // `rows.length > 0` guard drops the whole section, so this never shows.
-    case NUMBER_CONSTRUCTION_KIND:
-      return "Nothing to test";
-    // A pair's facts are chips on its own page, never this generic table (the
-    // entry page excludes transitivity from genericRows), so this heading is not
-    // shown. Present for exhaustiveness, and named for what the rows would ask.
-    case TRANSITIVITY_SUBJECT:
-      return "Which verb";
-    // A keigo set's facts are shown on its own page (the set view, not this
-    // generic table — the entry page excludes keigo from genericRows), so this
-    // heading is not shown. Present for exhaustiveness, named for what the rows
-    // would ask.
-    case KEIGO_SUBJECT:
-      return "Which register";
-    // A term never has rows (see factRows), for the same reason a mark does not:
-    // "what is JLPT" has no gradeable answer. The page's `rows.length > 0` guard
-    // drops the whole section, so this string never reaches a screen.
-    case TERM_SUBJECT:
-      return "Nothing to test";
-    // A primitive has no facts — it is a shape, not a character.
-    case PRIMITIVE_SUBJECT:
-      return "Nothing to test";
-  }
-}
-
-/**
- * The first column's header, which is the same honesty problem one level down.
- *
- * It said "Reading" for every kind. For kanji that is now true (the meaning row
- * that made it false has gone) and for kana it always was. For a word the
- * column holds a reading AND a meaning, and for a pattern a meaning and a
- * build-it; "Reading" names neither. Those get a header that describes the
- * column it actually heads.
- */
-export function factsColumnHeader(entry: LibEntry): string {
-  return entry.kind === KANA_SUBJECT || entry.kind === KANJI_SUBJECT
-    ? "Reading"
-    : "What it asks";
-}
-
-/**
- * An entry's facts, in table order, each with what it asks.
- *
- * 生 comes back as 1 meaning + one row per distinct reading — the model's whole
- * thesis, made visible. This is the closest thing the app has to a proof that
- * "what is the reading of 生" is not a question.
- */
-export function factRows(entry: LibEntry): FactRow[] {
-  switch (entry.kind) {
-    case KANA_SUBJECT:
-      return [
-        {
-          id: kanaFact(entry.glyph),
-          label: "Reading",
-          answer: entry.readings.join(" / "),
-          askedIn: [],
-          unattested: false,
-          origin: null,
-          speak: entry.glyph,
-        },
-      ];
-    case KANJI_SUBJECT:
-      return kanjiFactRows(entry);
-    // A word KEEPS its meaning row. The kanji table could drop one because what
-    // remained was still a table; here the reading and meaning rows ARE the word
-    // — separately scored, and dropping either leaves a table that no longer says
-    // what the app tests.
-    //
-    // ONE PAIR PER READING-UNIT, not just the primary: 日 shows its ひ (day) row
-    // and its か (day-counter) row, because each is its own scored skill (see
-    // wordUnitFacts). The label stays "Reading"/"Meaning" on every unit — the
-    // rows sit under the one word entry and the answer disambiguates which
-    // reading each is about. A kana word has no reading fact, so it is the
-    // meaning row alone, exactly as before.
-    case VOCAB_SUBJECT:
-      return wordUnitFacts(entry.glyph).flatMap(({ unit, reading, meaning }) => {
-        const rows: FactRow[] = [];
-        if (reading) {
-          rows.push({
-            id: reading,
-            label: "Reading",
-            answer: unit.reb,
-            askedIn: [],
-            unattested: false,
-            origin: null,
-            // The word's own kana. Speaking the reading rather than the written
-            // form is the point: 先生 read aloud by a synthesiser is a coin flip,
-            // せんせい is not.
-            speak: unit.reb,
-          });
-        }
-        rows.push({
-          id: meaning,
-          label: "Meaning",
-          answer: unit.glosses.join(", "),
-          askedIn: [],
-          unattested: false,
-          origin: null,
-          speak: null,
-        });
-        return rows;
-      });
-    case GRAMMAR_SUBJECT:
-      return grammarFactRows(entry);
-    // A counter is a word, so it prints a word's rows — but keyed on the form's
-    // OWN facts (counterReadingFactId / counterMeaningFactId), not the vocab-keb
-    // minters the word branch uses: 一本 is no keb and に would collide with the
-    // particle. A counted form has both rows, its reading spoken (いっぽん, not the
-    // synthesiser's guess at 一本); a kana form has the meaning row alone.
-    case COUNTER_KIND:
-      return counterFactRows(entry);
-    // A radical's one fact is its meaning — the same meaning-recall row a kanji
-    // carries, and the fact that unlocks the kanji filed under it. No reading:
-    // a radical is a shape and an idea, never a sound.
-    case RADICAL_SUBJECT:
-      return [
-        {
-          id: radicalMeaningFactId(entry.glyph),
-          label: "Meaning",
-          answer: entry.meanings.join(", "),
-          askedIn: [],
-          unattested: false,
-          origin: null,
-          speak: null,
-        },
-      ];
-    // A MARK HAS NO FACTS AT ALL, and this empty array is the shape of that
-    // rather than a stub. "What is a dakuten" has no gradeable answer; the rule
-    // is read, not tested, and the thing that IS testable — きて vs きって — is a
-    // question about a WORD and is scored against the word's facts.
-    //
-    // It follows the precedent this table already sets: no rows, no section. The
-    // entry page's `rows.length > 0` guard (there for the 114 kanji with no
-    // attested reading) drops the whole box, so a mark page has no facts table
-    // instead of an empty one. Nothing here had to be added for that to work.
-    case MARK_SUBJECT:
-    case SENTENCE_RULE_KIND:
-      return [];
-    // A GRAMMAR CONCEPT HAS NO FACTS AT ALL — like a mark or a term. "What is a
-    // conjugation form" is a thing to read, not a question to mark, so the empty
-    // array is the shape of that and the entry page's `rows.length > 0` guard
-    // drops the facts box entirely.
-    case GRAMMAR_CONCEPT_SUBJECT:
-      return [];
-    // A CONSTRUCTION PAGE HAS NO FACTS AT ALL — like a concept, a mark or a term.
-    // How a number is built is read, not graded, so the empty array is the shape
-    // of that and the entry page's `rows.length > 0` guard drops the facts box.
-    case NUMBER_CONSTRUCTION_KIND:
-      return [];
-    // A pair's gradeable facts, one row per ASKABLE side. Not rendered by the
-    // entry page (which draws the pair itself), but kept honest for any generic
-    // caller: see transitivityFactRows.
-    case TRANSITIVITY_SUBJECT:
-      return transitivityFactRows(entry);
-    // A keigo set's gradeable facts, one row per keigo word. Not rendered by the
-    // entry page (which draws the set itself), but kept honest for any generic
-    // caller: see keigoFactRows.
-    case KEIGO_SUBJECT:
-      return keigoFactRows(entry);
-    // A TERM HAS NO FACTS AT ALL — like a mark. "What is a radical" is a thing to
-    // read, not a question to mark, so the empty array is the shape of that and
-    // the entry page's `rows.length > 0` guard drops the facts box entirely.
-    case TERM_SUBJECT:
-    case PRIMITIVE_SUBJECT:
-      return [];
-  }
-}
-
-/** A pair's facts as table rows: one per ASKABLE side — the English cue as the
- * label, the verb it points to as the answer, its reading to speak. The
- * unaskable side is omitted for the same reason knownFactsOf drops it (it is
- * never quizzed). Empty when the entry names no pair the build knows. */
-function transitivityFactRows(entry: LibEntry): FactRow[] {
-  const pair = pairForEntry(entry.id);
-  if (!pair) return [];
-  const rows: FactRow[] = [];
-  for (const side of ["happens", "doIt"] as const) {
-    const id = sideFactId(pair, side);
-    const info = transitivitySide(id);
-    if (!info?.askable) continue;
-    rows.push({
-      id,
-      label: info.en,
-      answer: info.word,
-      askedIn: [],
-      unattested: false,
-      origin: null,
-      // The reading, not the written form: a synthesiser handed 出す reads it
-      // as one of its verbs at random, だす is unambiguous — the same call the
-      // word table makes.
-      speak: info.reading,
-    });
-  }
-  return rows;
-}
-
-/** A keigo set's facts as table rows: one per keigo word — the word as the label,
- * its recognition gloss (register and action) as the answer, its reading to
- * speak. Empty when the entry names no set the build knows. */
-function keigoFactRows(entry: LibEntry): FactRow[] {
-  const set = keigoSetForEntry(entry.id);
-  if (!set) return [];
-  return set.words.map((w) => ({
-    id: keigoWordFactId(set, w),
-    label: w.word,
-    answer: recognitionGloss(set, w),
-    askedIn: [],
-    unattested: false,
-    origin: null,
-    // The reading, spoken off the word's own kana — a synthesiser handed
-    // 召し上がる may guess a reading, めしあがる is unambiguous.
-    speak: w.reading,
-  }));
-}
-
-/**
- * A counter's facts as table rows — its reading (for a counted form) and its
- * meaning, the two things the entry page exists to show side by side.
- *
- * The reading row is present only for a counted form: a kana form (ひとつ) IS its
- * reading, so there is nothing to test and buildCounterFacts mints no reading
- * fact — the same rule the word branch follows for kana words. The reading is
- * SPOKEN off the row's own kana (いっぽん), because handing a synthesiser 一本
- * gets a reading at random, which is precisely the mistake this shelf teaches
- * against. Empty when the id names no form this track minted.
- */
-function counterFactRows(entry: LibEntry): FactRow[] {
-  const form = counterForm(entry.id);
-  if (!form) return [];
-  const rows: FactRow[] = [];
-  if (!isKanaCounterForm(form)) {
-    rows.push({
-      id: counterReadingFactId(form),
-      label: "Reading",
-      answer: form.reading,
-      askedIn: [],
-      unattested: false,
-      origin: null,
-      speak: form.reading,
-    });
-  }
-  rows.push({
-    id: counterMeaningFactId(form),
-    label: "Meaning",
-    answer: form.meaning,
-    askedIn: [],
-    unattested: false,
-    origin: null,
-    speak: null,
-  });
-  return rows;
-}
-
-/**
- * A grammar entry's facts: what it MEANS, and — when it is producible — the form
- * it BUILDS, shown on the fixed representative verb the drill uses. A vacuous or
- * wrap pattern (は〜より, たり〜たり) has only the meaning row, which is the
- * same "shown, never asked" honesty the cluster page keeps.
- */
-// HOST_LABEL — what a host is called on screen — used to be a private copy
-// here. It is now imported from lib/grammar/formula.ts, because the entry page
-// names hosts in three more places (the line under the pattern, the production
-// chips, the formula's slot) and four copies of "い-adjective" are four chances
-// to disagree about it.
-
-function grammarFactRows(entry: LibEntry): FactRow[] {
-  const recipes = recipesOf(entry);
-  const rows: FactRow[] = [];
-  for (const r of recipes) {
-    rows.push({
-      id: patternMeaningFactId(r.id),
-      label: r.sense ? `Meaning (${r.sense})` : "Meaning",
-      answer: r.gloss,
-      askedIn: [],
-      unattested: false,
-      origin: null,
-      // A pattern is a shape, not a sound — 〜てから has no one pronunciation,
-      // which is why the page's Hear-it button is omitted for grammar too.
-      speak: null,
-    });
-    // ONE ROW PER VERB CLASS. Every conjugating recipe scores the nine godan
-    // endings and ichidan separately, so the Library must link to those actual
-    // facts rather than the former five 音便 buckets or one unqualified row-shift
-    // fact. The anchor is the same one the fact is baked on.
-    if (isProducible(r) && conjugatesVerb(r)) {
-      for (const anchor of CLASS_ANCHOR) {
-        const id = classProductionFactId(r.id, anchor.cls);
-        const info = factInfo(id);
-        if (!info) continue;
-        rows.push({
-          id,
-          label: `Build it (${anchor.ending || "る-verb"})`,
-          answer: `${anchor.surface} → ${info.glyph}`,
-          askedIn: [],
-          unattested: false,
-          origin: null,
-          speak: null,
-        });
-      }
-    }
-
-    // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
-    // page is a list of the entry's FACTS, so a pattern with a separate adjective
-    // fact has to show it — otherwise the split exists in the scheduler and the
-    // one screen that promises to enumerate what is scored still says there is a
-    // single "Build it". The label names the host for the same reason.
-    //
-    const hosts = isProducible(r) ? productionHosts(r) : [];
-    for (const host of hosts) {
-      const ex = buildExample(r, host);
-      if (!ex) continue;
-      rows.push({
-        id: patternProductionFactId(r.id, host),
-        // The host is named only when there is something to tell apart. One
-        // production fact needs no qualifier, and adding "(verb)" to all 45 of
-        // them to be uniform would be noise on every page to serve five.
-        label:
-          conjugatesVerb(r) || hosts.length > 1
-            ? `Build it (${HOST_LABEL[host]})`
-            : "Build it",
-        answer: `${ex.lemma} → ${ex.form}`,
-        askedIn: [],
-        unattested: false,
-        origin: null,
-        speak: null,
-      });
-    }
-    if (isProducible(r)) pushSpecialWordRows(r, rows);
-  }
-  return rows;
-}
-
-/** Append the exceptional verb and adjective production facts this pattern owns. */
-function pushSpecialWordRows(r: Recipe, rows: FactRow[]): void {
-  for (const sv of [...SPECIAL_VERB_ROWS, ...SPECIAL_ADJ_ROWS]) {
-    const id = specialVerbProductionFactId(r.id, sv.qualifier);
-    const info = factInfo(id);
-    if (!info) continue;
-    rows.push({
-      id,
-      label: `Build it (${sv.label})`,
-      answer: info.glyph,
-      askedIn: [],
-      unattested: false,
-      origin: null,
-      speak: null,
-    });
-  }
-}
-
-/** How a reading's KANJIDIC2 type reads to someone who has never heard the
- * words on'yomi and kun'yomi. See FactRow.origin. */
-const ORIGIN_LABEL = {
-  on: "from Chinese",
-  kun: "native Japanese",
-  // KANJIDIC2 lists the same reading under both types for different senses.
-  // Said out loud rather than resolved: the dictionary declines to choose, so
-  // this does too.
-  both: "both",
-} as const;
-
-/**
- * A kanji's rows: ONE PER READING, and no meaning row.
- *
- * The meaning row used to lead this table, which made the "Reading" column
- * header a lie about its own first row — 一's read as "one, one radical
- * (no.1)", which is neither a reading nor, as it turns out, a meaning. The
- * meaning is already the page's title, so the row was duplicating it; what the
- * row uniquely carried was its own scoring, and that moved to a StandingChip
- * beside the definition rather than being lost. See the entry page.
- */
-function kanjiFactRows(entry: LibEntry): FactRow[] {
-  const rows: FactRow[] = [];
-  for (const r of readingsOf(entry.glyph)) {
-    rows.push({
-      id: readingFactId(r.k, r.anchor, r.base),
-      label: r.base,
-      origin: r.type ? ORIGIN_LABEL[r.type] : null,
-      speak: r.base,
-      // How the reading SURFACES in its anchor — 口 in 出口 is ぐち, and the
-      // fact accepts both (see buildKanjiFacts). The table shows the surface,
-      // because that is what you would actually say.
-      answer: r.surface,
-      askedIn: r.words.slice(0, 4),
-      unattested: r.nWords === 0,
-    });
-  }
-  return rows;
-}

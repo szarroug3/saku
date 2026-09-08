@@ -29,8 +29,6 @@ import {
   KINDS,
   KIND_LABEL,
   entryName,
-  factRows,
-  factsTitle,
   libEntry,
   LIB_ENTRIES,
 } from "./entries.ts";
@@ -163,8 +161,6 @@ describe("the shelf exists and lists the counters", () => {
       assert.equal(entry.name, c.name);
       assert.equal(entry.meanings[0], c.name);
       assert.equal(entryName(entry), c.glyph);
-      // The reference does not print a generic facts table, either way.
-      assert.deepEqual(factRows(entry), []);
       // Every construction page owns exactly the one category fact the normal
       // Drill rolls a round from — day/month included, since SAK-163 round 4
       // made them generative categories too, matching every page above them.
@@ -189,17 +185,6 @@ describe("a counter entry resolves to a real Library page", () => {
       const [, , kind, slug] = href.split("/");
       assert.equal(entryFromSlug(kind, slug), id, `${glyph} URL round-trips`);
     }
-  });
-
-  test("a kana form's page shows only its meaning, never a redundant reading row", () => {
-    // ひとつ IS its reading, so there is no reading row — meaning alone. (The
-    // one counted form that DID carry its own reading, 二十歳/はたち, no longer
-    // has a page of its own — see "SAK-172" below for where it went instead.)
-    const tsu = libEntry(counterEntry(byGlyph("ひとつ")))!;
-    const tsuRows = factRows(tsu);
-    assert.ok(!tsuRows.some((r) => r.label === "Reading"), "ひとつ has no reading row");
-    assert.equal(tsuRows.find((r) => r.label === "Meaning")!.answer, "one thing");
-    assert.equal(factsTitle(tsu, tsuRows), "Meaning");
   });
 });
 

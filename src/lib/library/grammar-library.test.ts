@@ -26,7 +26,7 @@ import {
 } from "@/data/grammar";
 import { buildDeck, buildMcOptions, checkTyped, questionsFor } from "@/lib/engine";
 import { factInfo } from "@/lib/facts";
-import { LIB_ENTRIES, clusterOf, libEntry } from "@/lib/library/entries";
+import { LIB_ENTRIES, libEntry } from "@/lib/library/entries";
 import { search } from "@/lib/library/search";
 
 /** A section's entries as a flat set of glyphs, for asserting membership. */
@@ -67,10 +67,6 @@ describe("grammar is a Library kind", () => {
     );
   });
 
-  test("a pattern's cluster is reachable for the entry-page link", () => {
-    assert.equal(clusterOf(libEntry(patternEntry("nakya"))!), "obligation");
-    assert.equal(clusterOf(libEntry(patternEntry("wo"))!), null);
-  });
 });
 
 describe("search surfaces grammar", () => {

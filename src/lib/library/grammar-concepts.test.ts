@@ -26,7 +26,6 @@ import {
   KIND_LABEL,
   LIB_ENTRIES,
   entryName,
-  factRows,
   libEntry,
 } from "@/lib/library/entries";
 import { entryFromSlug, entryHref } from "@/lib/library/href";
@@ -64,14 +63,6 @@ describe("the grammar concept is a real, resolvable reference entry", () => {
     // The て-form's Library page is the te-sequence form recipe's own entry now, so
     // the standalone concept was removed. Its id must resolve to nothing.
     assert.equal(grammarConceptRow("te-form"), undefined);
-  });
-
-  test("a concept has no gradeable facts, like a mark or a term", () => {
-    for (const c of GRAMMAR_CONCEPTS) {
-      const entry = libEntry(grammarConceptEntry(c.id));
-      assert.ok(entry);
-      assert.deepEqual(factRows(entry), []);
-    }
   });
 
   test("grammarConceptFor is the inverse of grammarConceptEntry", () => {

@@ -48,11 +48,10 @@ import { radicalEntry } from "@/data/radicals";
 import { readingUnits, vocabRow, wordEntry } from "@/data/vocab";
 import type { LessonItem, LessonKind } from "@/lib/lesson-items";
 import { usedAsPartIn } from "@/lib/library/components";
-import { libEntry, readingRowsOf } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/entries";
 import {
   canHearItem,
   headwordSubtitle,
-  kanjiEntryOf,
   kanjiMeanings,
   radicalMeaningOf,
   allReadingSenses,
@@ -456,17 +455,6 @@ describe("the Library keeps what the lesson dropped", () => {
     fileURLToPath(new URL("./library/character-entry-content.ts", import.meta.url)),
     "utf8",
   );
-
-  test("人's five in-word readings are still there to be read, off the same entry", () => {
-    const shape = kanjiEntryOf(FOLDED);
-    assert.ok(shape, "人 has a kanji entry");
-    assert.equal(readingRowsOf(shape).length, 5);
-    // Two of the five, り and と, are readings of the character and no word of
-    // their own, which is why no list of word senses could ever stand in for
-    // this table. The lesson does not try; it sends you here.
-    const senses = vocabRow("人")!.senses.map((x) => x.reb);
-    for (const r of ["り", "と"]) assert.ok(!senses.includes(r));
-  });
 
   test("and the 22 kanji built on the shape are still joined up", () => {
     assert.ok(usedAsPartIn("人").length > 10);

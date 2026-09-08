@@ -36,12 +36,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import kanjiComponents from "@/data/generated/kanji-components.json" with { type: "json" };
-import { kanjiEntry, kanjiRow } from "@/data/kanji";
+import { kanjiRow } from "@/data/kanji";
 import { variantForm, variantsOf, type VariantPosition } from "@/data/variant-forms";
-import { builtFrom, libEntry } from "@/lib/library/entries";
 
 const VARIANTS = (kanjiComponents as { variants: Record<string, string> }).variants;
-const COMPS = (kanjiComponents as { comps: Record<string, string[]> }).comps;
 const GLYPHS = Object.keys(VARIANTS);
 
 // ---------------------------------------------------------------------------
@@ -61,8 +59,8 @@ const EVERY_GLYPH: ReadonlySet<string> = new Set([
 
 // The forms DROPPED from the teaching, with the reason each is not a true variant
 // of its recorded original. `variantForm` returns undefined for these, and the
-// component link/meaning path (madeOf → builtPieceMeaning) routes them to their
-// own shape instead of the false original — pinned in the "built-from" block.
+// component link path (builtPieceEntryId) routes them to their own shape
+// instead of the false original.
 //
 //   MISLABEL (false cross-character identity):
 //     儿  にんにょう/ひとあし (legs), a radical of its own — NOT a form of 八 (eight).
@@ -278,80 +276,6 @@ describe("variantForm — the derived model of one form", () => {
     assert.equal(form.position, "left");
     assert.equal(form.name, "にんべん");
     assert.equal(form.example, "体");
-  });
-});
-
-describe("the built-from label respects the exclusion set — no mislabel leaks", () => {
-  // The link/meaning path (madeOf → builtPieceMeaning) reads the RAW map through
-  // variantTaughtKanji, a separate route from variantForm. Left unguarded it
-  // printed a 儿 tile as "eight" (its false original 八) while 儿's own radical
-  // page says "legs". The fix makes that path consult isExcludedVariant, so an
-  // excluded glyph shows its OWN shape. These pin that no excluded glyph's tile
-  // ever carries its false original's meaning.
-
-  /** The "Built from" piece for `glyph` inside a host that actually contains it,
-   * or undefined when no taught host does. */
-  function builtPiece(glyph: string) {
-    for (const [host, comps] of Object.entries(COMPS)) {
-      if (!comps.includes(glyph)) continue;
-      if (!kanjiRow(host)) continue;
-      const entry = libEntry(kanjiEntry(host));
-      if (!entry) continue;
-      const piece = builtFrom(entry).find((p) => p.c === glyph);
-      if (piece) return piece;
-    }
-    return undefined;
-  }
-
-  test("匹's 儿 tile reads its own meaning 'legs', never the false 'eight'", () => {
-    // 匹 (匸 + 儿) is a counter kanji, not a number kanji, so it keeps its Built
-    // from — the number kanji 四, which also carries 儿, no longer shows one (it is
-    // a memorised whole; see src/data/number-kanji.ts), so this pins the exclusion
-    // fix on a host that still renders the tile.
-    const entry = libEntry(kanjiEntry("匹"))!;
-    const piece = builtFrom(entry).find((p) => p.c === "儿");
-    assert.ok(piece, "匹 has no 儿 piece in its Built from");
-    assert.equal(piece!.meaning, "legs");
-    assert.notEqual(piece!.meaning, "eight");
-    // And it carries no variant note pointing at 八.
-    assert.equal(piece!.variant, undefined);
-  });
-
-  test("a 士 tile reads its own meaning, never the false original 'earth'", () => {
-    // 士 is itself a taught kanji, so its piece links to 士 and shows 士's own
-    // gloss — it never resolved through the 士→土 mislabel. The guard confirms it.
-    const piece = builtPiece("士");
-    assert.ok(piece, "no taught host renders a 士 built-from piece");
-    assert.equal(piece!.meaning, "gentleman");
-    assert.notEqual(piece!.meaning, "earth");
-    assert.equal(piece!.variant, undefined);
-  });
-
-  test("no excluded glyph's built-from tile carries its false original's meaning", () => {
-    for (const glyph of EXCLUDED) {
-      const piece = builtPiece(glyph);
-      if (!piece) continue; // no taught host renders it — cannot leak
-      const originalMeaning = kanjiRow(VARIANTS[glyph])?.meanings[0];
-      if (originalMeaning !== undefined) {
-        assert.notEqual(
-          piece.meaning,
-          originalMeaning,
-          `${glyph}'s tile leaked the false original ${VARIANTS[glyph]} (${originalMeaning})`,
-        );
-      }
-      // An excluded glyph is never dressed as a variant of anything.
-      assert.equal(piece.variant, undefined, `${glyph}'s tile still carries a variant note`);
-    }
-  });
-
-  test("a KEPT variant still links and notes through its original (亻 → 人)", () => {
-    // The guard must not over-fire: a legitimate form keeps its variant note.
-    const entry = libEntry(kanjiEntry("休"))!; // 休 = 亻 + 木
-    const piece = builtFrom(entry).find((p) => p.c === "亻");
-    assert.ok(piece, "休 has no 亻 piece");
-    assert.equal(piece!.meaning, "person"); // 人's meaning, reached through the variant
-    assert.equal(piece!.variant?.original, "人");
-    assert.equal(piece!.variant?.name, "にんべん");
   });
 });
 

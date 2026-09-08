@@ -54,7 +54,6 @@ import { factsOf } from "@/lib/facts";
 import {
   KINDS,
   SENTENCE_RULE_KIND,
-  factRows,
   libEntry,
 } from "@/lib/library/entries";
 import { sliceIsDrillable } from "@/lib/library/slice";
@@ -244,13 +243,6 @@ describe("a mark is not drillable, and not by omission", () => {
     assert.deepEqual(sliceIsDrillable(all, factsOf), false);
   });
 
-  test("a mark has no facts table — not an empty one", () => {
-    // The precedent the 114 reading-less kanji set: no rows means the page
-    // renders no section, rather than a headed box with a header row in it.
-    for (const m of MARKS) {
-      assert.deepEqual(factRows(entryOfMark(m.id)), []);
-    }
-  });
 });
 
 describe("the Library shows the LESSON's explanation, not a copy of it", () => {
