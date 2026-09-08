@@ -194,7 +194,7 @@ function StepCell({ strokes, upTo }: { strokes: string[]; upTo: number }) {
           })}
         </g>
       </svg>
-      <span className="text-[10px] leading-none text-text-muted">{upTo}</span>
+      <span className="text-[10px] leading-none text-sky-muted">{upTo}</span>
     </div>
   );
 }
@@ -320,7 +320,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
               they carry a count no glyph can say: how many frames are folded. */}
           {clipped || open ? (
             <div className="mt-1.5 flex items-center gap-2">
-              <span className="text-[11px] text-text-muted">All {strokes.length} strokes</span>
+              <span className="text-[11px] text-sky-muted">All {strokes.length} strokes</span>
               <RoundButton
                 label={open ? `Fold the ${strokes.length} strokes back` : `Show all ${strokes.length} strokes`}
                 expanded={open}

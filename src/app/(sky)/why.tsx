@@ -25,7 +25,7 @@ export function WhyDisclosure({ why }: { why: Why }) {
     // A quiet caption — muted and small, no rule — so it reads as a footnote to
     // its section, not a boundary. The reasoning opens behind "Why?".
     <div className="mt-3">
-      <p className="text-[11px] leading-relaxed text-text-muted">
+      <p className="text-[11px] leading-relaxed text-sky-muted">
         {why.lede.strong}{" "}
         {/* Optional: some ledes say everything they honestly can in the strong
             fragment, and the rest of the reasoning lives behind the button. */}
@@ -34,7 +34,7 @@ export function WhyDisclosure({ why }: { why: Why }) {
             because a bare chevron in a footnote names nothing: "Why?" is the
             question the fold answers. */}
         <span className="inline-flex items-center gap-1.5 whitespace-nowrap align-middle">
-          <span className="text-[11px] text-accent">Why?</span>
+          <span className="text-[11px] text-sky-accent">Why?</span>
           <RoundButton
             label={open ? "Hide the reason why" : "Show the reason why"}
             expanded={open}
@@ -47,13 +47,16 @@ export function WhyDisclosure({ why }: { why: Why }) {
       </p>
 
       {/* Rendered only when asked. The paragraphs are the teaching; nothing here
-          narrates the app, so they earn their full length once opened. */}
+          narrates the app, so they earn their full length once opened. They are
+          the body of the fold, so they take the Sky's ink: the app's old
+          `--text-muted` was a warm near-black, which on the night wash was
+          barely a shade off the panel it sat on (SAK-413). */}
       {open ? (
         <div id={panelId} className="mt-2.5 flex flex-col gap-2.5">
           {why.paras.map((p, i) => (
             <p
               key={i}
-              className="text-[13px] leading-relaxed text-text-muted"
+              className="text-[13px] leading-relaxed text-sky-ink"
             >
               {p}
             </p>

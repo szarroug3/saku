@@ -83,7 +83,7 @@ export function PitchReading({
               "inline-block leading-tight",
               mora.high ? "border-t border-current" : "",
               mora.drop ? "border-r border-current" : "",
-              hasFollowUp && i >= wordMoraCount! ? "text-text-muted/70" : "",
+              hasFollowUp && i >= wordMoraCount! ? "text-sky-muted/70" : "",
             ]
               .filter(Boolean)
               .join(" ")}
