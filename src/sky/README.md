@@ -3278,3 +3278,63 @@ rather than on a number.
 skipped, unchanged: none of this is model code. 46 e2e pass, unchanged, since
 nothing here changes what a page does. Before-and-after screenshots of the rail
 row, a chip, the top bar and a round button went to Sam on the card.
+
+### The rail says what tonight teaches, and what it rests on (2026-09-08, SAK-416)
+
+Sam opened a lesson for 電車 and read "Step 1 of 8". Four of those eight steps
+were a term, one was an intro, and three were the thing she had asked to learn.
+`/lesson?picks=kanji:日` was worse: "Step 1 of 4", of which Kanji, Radical and
+Kun'yomi and on'yomi were three. Meanwhile 日, which is under 電 and already in
+her sky, was drawn on the constellation, was clickable, and was in no list at
+all. Clicking it said "Already in your sky, so tonight doesn't re-teach it.
+Here for reference." to a learner who had no way of knowing it was there to
+click.
+
+**One list became two.** "Tonight, in order" is what tonight teaches: the
+pieces, then the character, then the word, and the step count is the count of
+those. "References" under it is what tonight rests on and does not teach: the
+stars already in the sky under tonight's picks, then the terms and intros the
+walk put behind them. 電車 reads "Step 1 of 4" now, with 日 and four pages in
+the second list. The card's apology is gone, and with it `LessonCard`'s `known`
+prop, which nothing else read.
+
+**Neither half is a hand list.** The known stars fall out of the graph the
+lesson already walks: `graph.orderOf(pick)` without the groups, keeping the
+nodes the learner is already carrying. The terms and intros fall out of the
+app's own teaching walk, which is the thing that decides a kanji with readings
+puts Kun'yomi and on'yomi in play and a kanji with parts puts "How a kanji is
+built" in play. That walk was already running and its pages were already being
+built through `teach.ts`; all they gained is a one-word `why`, "term" or
+"intro", so a row can be labelled without reading the page. `lessonReferences`
+in `src/sky/lib/lesson.ts` assembles the two halves, drops a page whose star is
+not tonight's, and names each page once however many stars put it in play.
+
+**A reference is not a step.** `lessonSteps` lost its `pages` argument
+entirely: a page is a reference now and can never be a step, so there is no
+list a page can be in twice and no count to keep in step with a second one.
+Opening a reference goes through the lesson's own `open`, which for an id that
+is not a step neither checks a lock nor calls `onOpen`. That exposed something
+the known stars on the constellation had been doing quietly since they became
+clickable: "Step n of N" was read off whatever was SHOWING, so opening a known
+star reset the lesson to step one. Where the lesson stands is its own piece of
+state now, and only a step moves it.
+
+**One row, two lists.** Both lists draw `RailRow`, which is the row SAK-415
+measured and centred, with its `items-center` and its load-bearing `!mb-0` in
+one place instead of two. A star row is a glyph and a gloss, a page row is a
+name, and a reference row adds the eyebrow that says what it is: "Term",
+"Intro" or "In your sky". An empty References list is not a panel.
+
+**Two panels, one scroller.** The first cut gave each panel its own
+`overflow-y-auto`, and the column split its height between them: the order
+scrolled 電車 out of sight while the references sat there complete. The column
+scrolls now and each panel is as tall as its content, which is the shape
+SAK-359 wanted anyway.
+
+**The gates.** 3,807 unit tests pass, 1 skipped, from 3,801: six for the
+references (a kanji whose parts are known, a word whose kanji are known, a
+fresh learner with only the terms and intros, the order of the two halves, a
+page behind a star that is not tonight's, a page named twice). 47 e2e pass,
+from 46. `node scripts/button-centering.mjs` finds 0 over a pixel on the lesson
+page with the new rows on it. Before and after screenshots of both lessons went
+to Sam on the card.

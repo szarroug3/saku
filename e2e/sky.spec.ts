@@ -257,6 +257,39 @@ test("a lesson with nothing to teach says so and offers a way on", async ({ page
   expect(broke, `the page threw: ${broke.join(", ")}`).toEqual([]);
 });
 
+test("the lesson's order holds only what it teaches, and the references what it rests on", async ({ page }) => {
+  // SAK-416. "Tonight, in order" used to run the terms and intros the walk
+  // slots in among the stars, so 電車 read "Step 1 of 8" with four of the
+  // eight being a term or an intro, and 田, already in the sky under 電, was
+  // on the constellation and in no list at all.
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("word:電車")}`);
+  const order = page.getByRole("list").first();
+  const references = page.getByRole("list").nth(1);
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
+
+  // the order is the stars: 雨, 電, 車, 電車, and nothing wearing a TERM or
+  // an INTRO beside it
+  await expect(page.getByText(/Step \d+ of 4/)).toBeVisible();
+  await expect(order.getByRole("listitem")).toHaveCount(4);
+  await expect(order.getByText(/^(Term|Intro)$/i)).toHaveCount(0);
+
+  // and the references hold 田 with the terms and the intro behind tonight
+  await expect(references.getByRole("listitem").filter({ hasText: "In your sky" })).toHaveCount(1);
+  await expect(references.getByText("Kanji", { exact: true })).toBeVisible();
+  await expect(references.getByText("How a kanji is built")).toBeVisible();
+
+  // opening one shows it and leaves the lesson where it was
+  await page.getByRole("button", { name: "Next" }).first().click();
+  await expect(page.getByText("Step 2 of 4")).toBeVisible();
+  const built = references.getByRole("button").filter({ hasText: "How a kanji is built" });
+  await built.click();
+  // its name is on the page twice now: its row, and the head of the card
+  await expect(page.getByText("How a kanji is built")).toHaveCount(2);
+  await expect(built).toHaveAttribute("aria-current", "true");
+  await expect(page.getByText("Step 2 of 4")).toBeVisible();
+});
+
 test("a button that is a link walks there instead of reloading the page", async ({ page }) => {
   // SAK-362. SkyButton with an href rendered a plain anchor, so every one of
   // them threw the loaded app away and fetched the whole page again.
@@ -863,8 +896,9 @@ test("the built-from filter picks several parts at once and keeps the kanji carr
 test("a lesson card's readings line up in three columns", async ({ page }) => {
   // SAK-413. The reading came first, so か and にち pushed the hear button and
   // the word list to a different x on every row.
+  // 日 is the lesson's one step: the terms it rests on are references now
+  // and not steps to walk past (SAK-416).
   await page.goto(`/lesson?picks=${encodeURIComponent("kanji:日")}`);
-  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Next" }).first().click();
   await page.getByRole("button", { name: "Open Readings" }).first().click();
   const panel = page.locator(`[id="${await page.getByRole("button", { name: "Close Readings" }).first().getAttribute("aria-controls")}"]`);
   await expect(panel).toBeVisible();
