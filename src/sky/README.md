@@ -1517,3 +1517,13 @@ the scripts run.
 The rule that decided tests: a test goes only when the module beside it
 goes; every other test stays and keeps whatever it imports, which is how
 a helper only tests use survives.
+
+### A map nobody read (2026-09-07, SAK-399)
+
+`library-index.json` carried `factEntry`, every fact's entry id, 1.1 MB
+of the 5.3 the index weighed in every server bundle. Nothing read it: its
+one reader outside the index module was the old app's actions, and the
+index's own equivalence test had been proving for months that it agreed
+with `entryOf`, the live function, on every fact. The old actions call
+`entryOf` now, the map is no longer written, and the index is 5.0 MB on
+disk from 6.4.

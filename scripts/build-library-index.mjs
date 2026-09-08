@@ -25,7 +25,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { LIB_ENTRIES, KINDS, KIND_LABEL, knownFactsOf } from "@/lib/library/entries";
-import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf } from "@/lib/facts";
+import { ALL_ENTRIES, factsOf } from "@/lib/facts";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { GRAMMAR_CONCEPTS } from "@/data/grammar-concepts";
 import { FORM_LABEL } from "@/lib/grammar/formula";
@@ -56,8 +56,8 @@ for (const e of LIB_ENTRIES) {
   if (facts.length) knownFacts[e.id] = [...facts];
 }
 
-const factEntry = {};
-for (const f of ALL_FACTS) factEntry[f] = entryOf(f);
+// factEntry, the fact-to-entry map, is no longer written (SAK-399): nothing
+// read it, and it was 1.1 MB of every server bundle that parsed this index.
 
 const entryFacts = {};
 for (const e of ALL_ENTRIES) {
@@ -157,7 +157,6 @@ const payload = {
   kindLabel,
   entries,
   knownFacts,
-  factEntry,
   entryFacts,
   readingProofFacts,
   sentenceTiers,
@@ -199,7 +198,6 @@ writeFileSync(readingProofPath, JSON.stringify({ readingProofFacts }) + "\n");
 console.log(
   `library-index.json written: ${entries.length} entries, ` +
     `${Object.keys(knownFacts).length} known-fact entries, ` +
-    `${Object.keys(factEntry).length} fact-entry mappings, ` +
     `${Object.keys(entryFacts).length} entry-facts mappings, ` +
     `${Object.keys(readingProofFacts).length} reading-proof mappings, ` +
     `${Object.keys(componentUses).length} component-use mappings, ` +

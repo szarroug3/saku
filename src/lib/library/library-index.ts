@@ -102,12 +102,6 @@ export function knownFactsOf(entry: IndexLibEntry | EntryId): readonly FactId[] 
   return INDEX.knownFacts[id as unknown as string] ?? [];
 }
 
-/** The entry a fact belongs to — the precomputed twin of `entryOf` (facts.ts).
- * Falls back to the raw id, matching `entryOf`'s own fallback for an id the data
- * no longer has. */
-export function factEntryOf(fact: FactId): EntryId {
-  return INDEX.factEntry[fact as unknown as string] ?? (fact as unknown as EntryId);
-}
 
 /**
  * SAK-271: some VOCAB rows (１万/１０万/１００万/１００億, 一つ…九つ, 一人/二人,

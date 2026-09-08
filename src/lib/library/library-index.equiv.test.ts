@@ -10,7 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { LIB_ENTRIES as LIVE_ENTRIES, KINDS as LIVE_KINDS, KIND_LABEL as LIVE_KIND_LABEL, knownFactsOf, entryForGlyph as liveEntryForGlyph, recipeOf as liveRecipeOf, recipesOf as liveRecipesOf, shelfKindOf as liveShelfKindOf, entryName as liveEntryName } from "@/lib/library/entries";
-import { ALL_FACTS, ALL_ENTRIES, entryOf, factsOf as liveFactsOf } from "@/lib/facts";
+import { ALL_FACTS, ALL_ENTRIES, factsOf as liveFactsOf } from "@/lib/facts";
 import {
   claimableFacts as liveClaimableFacts,
   quizzableFacts as liveQuizzableFacts,
@@ -40,7 +40,6 @@ import {
   KIND_LABEL,
   libEntry,
   knownFactsOf as precomputedKnownFactsOf,
-  factEntryOf,
   factsOf,
   SENTENCE_TIERS,
   entryForGlyph,
@@ -191,16 +190,7 @@ test("knownFactsOf matches live knownFactsOf for every entry", () => {
   }
 });
 
-test("factEntryOf matches live entryOf for every fact in the app", () => {
-  for (const fact of ALL_FACTS) {
-    assert.equal(factEntryOf(fact), entryOf(fact), `fact ${fact} entry mismatch`);
-  }
-});
 
-test("factEntryOf falls back like entryOf for an id the data doesn't have", () => {
-  const bogus = "kanji:not-a-real-fact" as Parameters<typeof entryOf>[0];
-  assert.equal(factEntryOf(bogus), entryOf(bogus));
-});
 
 test("SENTENCE_TIERS ids/labels match live SENTENCE_ORDERING_TIERS, in order", () => {
   assert.deepEqual(

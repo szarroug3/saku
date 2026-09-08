@@ -31,7 +31,6 @@ import {
   claimableFacts as claimableFactsOf,
   entryForGlyph as entryForGlyphOf,
   entryName as libEntryName,
-  factEntryOf as factEntryOfIndex,
   kanaConfusables as kanaConfusablesOf,
   kanjiEntry as kanjiEntryFor,
   knownFactsOf as knownFactsOfIndex,
@@ -545,7 +544,7 @@ export async function getActiveMixupEntries(
   graduateRuns: number,
 ): Promise<string[]> {
   const entries = new Set<string>();
-  for (const pair of activeWeaknessPairs(history, graduateRuns, factEntryOfIndex)) {
+  for (const pair of activeWeaknessPairs(history, graduateRuns, entryOf)) {
     entries.add(canonicalMixupEntry(pair.a));
     entries.add(canonicalMixupEntry(pair.b));
   }
@@ -681,7 +680,7 @@ export async function getKnownFactsOf(id: EntryId): Promise<readonly FactId[]> {
 }
 
 export async function getFactEntryOf(fact: FactId): Promise<EntryId> {
-  return factEntryOfIndex(fact);
+  return entryOf(fact);
 }
 
 export async function getEntryForGlyph(

@@ -7,7 +7,7 @@
 // stay on the live derivation in library/entries.ts, read only by entry detail
 // routes, which this index deliberately does not touch.
 
-import type { EntryId, FactId } from "@/types";
+import type {FactId} from "@/types";
 import type { LibEntry } from "@/lib/library/entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 
@@ -35,7 +35,6 @@ export interface LibraryIndex {
    * output, serialized — not re-derived). */
   readonly knownFacts: Readonly<Record<string, readonly FactId[]>>;
   /** Fact id -> its entry id (entryOf's output for every fact in the app). */
-  readonly factEntry: Readonly<Record<string, EntryId>>;
   /** Entry id -> every one of its facts (factsOf's output, unfiltered — unlike
    * knownFacts, which applies knownFactsOf's per-kind "known" filtering). */
   readonly entryFacts: Readonly<Record<string, readonly FactId[]>>;
