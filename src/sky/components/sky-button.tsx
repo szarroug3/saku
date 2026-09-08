@@ -87,10 +87,33 @@ export interface RoundButtonProps {
   children: ReactNode;
 }
 
+/** Where each glyph's ink has to move to land on the circle's centre.
+ *
+ * Centring the BOX does not centre the INK, and it never did (SAK-413): Sam saw
+ * the ⌃ riding high in its ring. Two things push it. The text baseline sits
+ * `(ascent − descent) / 2` below the middle of any line box, which for the UI
+ * font at 13px is 4.5px down; and then each glyph draws its ink its own
+ * distance above that baseline — 6.8px for ⌃, 0.5px for ⌄, a 6.3px spread
+ * inside a 28px circle. `place-items-center` cannot see either.
+ *
+ * So the shift is measured, not guessed: `measureText(glyph)` in the rendered
+ * font gives `actualBoundingBoxAscent/Descent`, the ink's own middle is half
+ * their difference, and the shift is that middle minus the baseline's 4.5px.
+ * Rounded to the half pixel a 2x screen can actually draw. Re-measure these if
+ * the UI font or the button's font-size changes; nothing else affects them. */
+const INK_SHIFT: Record<string, string> = {
+  "⌃": "translate-y-[2.5px]",
+  "⌄": "translate-y-[-4px]",
+  "‹": "translate-y-[-1px]",
+  "›": "translate-y-[-1px]",
+  "×": "translate-y-[-1px]",
+};
+
 /** A small round control: a glyph in a hairline ring that takes the accent on
  * hover. Every fold in the Sky opens with one of these (SAK-412): ‹ › for a
  * panel that slides aside, ⌄ closed and ⌃ open for content that folds down. */
 export function RoundButton({ label, onClick, pressed, expanded, controls, className = "", children }: RoundButtonProps) {
+  const shift = typeof children === "string" ? INK_SHIFT[children] ?? "" : "";
   return (
     <button
       type="button"
@@ -99,9 +122,9 @@ export function RoundButton({ label, onClick, pressed, expanded, controls, class
       aria-pressed={pressed}
       aria-expanded={expanded}
       aria-controls={controls}
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink ${className}`}
+      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink ${className}`}
     >
-      <span aria-hidden>{children}</span>
+      <span aria-hidden className={`block leading-none ${shift}`}>{children}</span>
       <span className="sr-only">{label}</span>
     </button>
   );
