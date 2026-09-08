@@ -574,3 +574,26 @@ test("a saved recipe stays saved when the same chips are clicked in another orde
   // and the chip says what it draws from, so "Everything" is not a mystery
   await expect(page.getByRole("button", { name: "Kana and words", exact: true })).toHaveAttribute("title", /^Kana and Words, /);
 });
+
+test("the reveal says why each of the others was on the board", async ({ page }) => {
+  // SAK-315. The board is already the confusable set, but nothing named the
+  // confusion, so the escape hatch confirmed the answer and taught nothing.
+  // 一 in 統一 is いつ; the other two choices are 一's own readings, which is
+  // the mistake the card is actually about.
+  const card = encodeURIComponent("kanji:一/reading@統一");
+  await page.goto(`/quiz?sample&cards=${card}`);
+  await expect(page.getByRole("button", { name: "Multiple choice" })).toBeVisible();
+
+  // nothing is named until the board has been in front of you
+  await page.getByRole("button", { name: "Multiple choice" }).click();
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await expect(page.getByText("Why the others were there")).toBeVisible();
+  await expect(page.getByText("another reading of the same character").first()).toBeVisible();
+
+  // and a card answered without ever asking for the board names nothing:
+  // choices you never saw are noise
+  await page.goto(`/quiz?sample&cards=${card}`);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
+  await expect(page.getByText("Why the others were there")).toHaveCount(0);
+});

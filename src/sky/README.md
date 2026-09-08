@@ -2744,3 +2744,44 @@ chip carries its count. "Kana (Hiragana and Yōon) and Words, only shaky,
 asked for the meaning and the reading, 10 of them". A clause that says
 nothing is left out, so no standing picked means any standing and all five
 asks means asked every way. Everything empty says "Everything".
+
+### The reveal says why each of the others was on the board (2026-09-08, SAK-315)
+
+The board was already the confusable set. `quizCards` builds it from the
+app's own `buildMcOptions`, which draws the flagged lookalike pairs, a
+kanji's own other readings, a word's neighbours in rank, a keigo set's
+opposite register, a verb pair's other side and another pattern on the
+same verb. What was missing was the naming: a distractor is the shape of a
+mistake you were about to make, and the reveal confirmed the answer without
+ever saying which shape.
+
+`QuizOption.why` carries a few words, worked out by the route in
+`whyOption(fact, option, onAVehicle)`, a ladder of relationships the app can
+actually check between the asked fact and the option, sharpest first:
+
+* the same entry, both reading facts: "another reading of the same character"
+* `confusableWith` links the two entries, either way round (kana's
+  `LOOK_GROUP`, `CONFUSABLE_WITH` for kanji, the hand-authored radical
+  pairs): "drawn almost the same". This is Sam's own three, 未 against 末,
+  土 against 士, 大 against 犬.
+* a keigo set's other register, then another polite verb
+* a verb pair's other side: "the other verb of the pair"
+* a grammar production card that rolled a vehicle: "the same verb in another
+  pattern"
+* a word's rank neighbour: "a word about as common as this one"
+* the pitch card's wrong clip, set in `pitchCard`: on a real homophone pair
+  "another word said the same way", else "the same reading, said with the
+  other pitch"
+
+Anything landing on no rung gets no line. That is the engine's own backstop
+showing through: when a subject runs out of sharp distractors the board is
+filled from the subject at large, and there is nothing true to say about
+such an option beyond "it was another one of these". 一 has no flagged
+pair, so its meaning board is named nowhere, and that is the right answer.
+A grammar MEANING board is the other unnamed case, since its options are
+other patterns and no short phrase is honest about all of them.
+
+`QuizWhy` (`quiz-verdict.tsx`) shows them under the verdict, and only when
+the board was in front of the learner: a card that opens on its choices, or
+one where Multiple choice was asked for. Naming options that were never on
+screen would be noise. Nothing to name, nothing shown.

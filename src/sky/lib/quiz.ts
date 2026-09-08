@@ -42,6 +42,16 @@ export interface QuizOption {
   /** The label is a reading to draw with this pitch (the mora the voice
    * falls after; 0 for none): a card asking which pitch is right. */
   pitch?: number;
+  /** Why this wrong choice was on the board, in a few words: "another
+   * reading of the same character", "drawn almost the same" (SAK-315).
+   *
+   * The reveal lists these, so the escape hatch teaches: a distractor is the
+   * shape of the mistake you were about to make, and saying which shape it
+   * was is worth more than confirming the answer twice. The route works it
+   * out from the confusable set the board was drawn from; an option it
+   * cannot name honestly carries nothing and is simply not listed, since a
+   * vague reason is worse than none. Never set on the answer. */
+  why?: string;
 }
 
 /** One question. */

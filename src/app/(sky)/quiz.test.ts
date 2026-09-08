@@ -1,6 +1,6 @@
 // The Sky's quiz cards from the app's tables: the kinds of card the sample
-// deals, and the two that carry their own board (a listening card, an
-// ordering card).
+// deals, the two that carry their own board (a listening card, an ordering
+// card), and why each wrong choice was on the board (SAK-315).
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -144,5 +144,73 @@ describe("a word read two ways (SAK-393)", () => {
     const reading = deckFor("word:九").find((c) => c.id.includes("/reading"))!;
     assert.ok(!matchesKey(reading.key, "はち"));
     assert.ok(!matchesKey(reading.key, "nine"));
+  });
+});
+
+describe("why each of the others was on the board (SAK-315)", () => {
+  const boardFor = (fact: string) => quizCards(emptyHistory(), [fact as FactId], NOW)[0];
+  const whyOf = (fact: string, label: string) => boardFor(fact).options.find((o) => o.label === label)?.why;
+
+  it("names a flagged pair, which is what that data is for", () => {
+    // Sam's own three: 未 against 末, 土 against 士, 大 against 犬
+    assert.equal(whyOf("kanji:未/meaning", "end"), "drawn almost the same");
+    assert.equal(whyOf("kanji:土/meaning", "gentleman"), "drawn almost the same");
+    assert.equal(whyOf("kanji:大/meaning", "dog"), "drawn almost the same");
+  });
+
+  it("names a kana's same-shape sibling: さ against き is a visual confusion", () => {
+    assert.equal(whyOf("kana:き/reading", "sa"), "drawn almost the same");
+    assert.equal(whyOf("kana:あ/reading", "o"), "drawn almost the same");
+  });
+
+  it("names the other readings of the same character, which is the whole question", () => {
+    // 一 in 統一 is いつ; いち and ひと are the readings you met first
+    const board = boardFor("kanji:一/reading@統一");
+    const others = board.options.filter((o) => o.id !== board.answerId);
+    assert.ok(others.length > 0);
+    for (const o of others) assert.equal(o.why, "another reading of the same character", o.label);
+  });
+
+  it("names a word's neighbour for what it is: about as common", () => {
+    const board = boardFor("word:明白/meaning");
+    const others = board.options.filter((o) => o.id !== board.answerId);
+    assert.ok(others.length > 0);
+    for (const o of others) assert.equal(o.why, "a word about as common as this one", o.label);
+  });
+
+  it("names the other half of a verb pair, and the other register of a keigo set", () => {
+    const pair = boardFor("transitivity:出る/出す/happens");
+    const other = pair.options.find((o) => o.id !== pair.answerId)!;
+    assert.equal(other.why, "the other verb of the pair");
+    const keigo = boardFor("keigo:welcome/irasshaimase");
+    for (const o of keigo.options.filter((o) => o.id !== keigo.answerId)) assert.ok(o.why, o.label);
+  });
+
+  it("names the same verb in another pattern, not another verb", () => {
+    const board = boardFor("grammar:prenominal-form/production");
+    const others = board.options.filter((o) => o.id !== board.answerId);
+    assert.ok(others.length > 0);
+    for (const o of others) assert.equal(o.why, "the same verb in another pattern", o.label);
+  });
+
+  it("says nothing at all rather than inventing a reason", () => {
+    // 一 has no flagged pair, so its meaning board is filled from nearby
+    // meanings and there is nothing true to say about any of them
+    const board = boardFor("kanji:一/meaning");
+    assert.ok(board.options.length > 1, "it still has a board");
+    assert.ok(board.options.every((o) => !o.why), board.options.map((o) => o.label).join(", "));
+  });
+
+  it("never puts a reason on the answer", () => {
+    for (const card of sampleCards(sampleHistory(NOW), NOW)) {
+      const answer = card.options.find((o) => o.id === card.answerId);
+      assert.ok(!answer?.why, card.id);
+    }
+  });
+
+  it("tells the pitch card's wrong clip what it is", () => {
+    const pitch = sampleCards(sampleHistory(NOW), NOW).find((c) => c.id.endsWith("/pitch"))!;
+    const other = pitch.options.find((o) => o.id !== pitch.answerId)!;
+    assert.match(other.why ?? "", /said the same way|the other pitch/);
   });
 });

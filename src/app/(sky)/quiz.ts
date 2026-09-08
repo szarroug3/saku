@@ -14,7 +14,7 @@ import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
 import { assemblyFacts, canonicalOrder, pickAssemblyForTiers } from "@/data/assembly";
 import { isSentenceTierMarkerFact, sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
-import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
+import { confusableWith, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
 import { answerIsJapanese, fixedDirOf, grammarVehicleFor, interchangeableReadings, mcOnlyIn, questionsFor, revealFor, type PromptContext } from "@/lib/engine/question";
 import { isKatakana } from "@/lib/romaji";
@@ -67,6 +67,49 @@ export function quizFacts(history: HistoryFile, picks: readonly string[], now = 
  * (SAK-388). */
 export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), options: QuizOptions = {}): QuizCard[] {
   return shuffleDeck(quizCards(history, quizFacts(history, picks, now, options.pitch ?? true), now, options));
+}
+
+/** Why a wrong choice was on the board, in a few words, or nothing when the
+ * app cannot say honestly (SAK-315).
+ *
+ * The board is already the confusable set: `buildMcOptions` draws it from the
+ * lookalike tables, a kanji's own other readings, a word's neighbours in rank,
+ * a keigo set's opposite register, a verb pair's other side, another pattern
+ * on the same verb. A random distractor tests nothing, because you can throw
+ * it out without knowing anything, and a distractor you cannot NAME teaches
+ * nothing either: the shape of the mistake you were about to make is the
+ * lesson. So each rung below is a relationship the app can check between the
+ * asked fact and the option, and it says that relationship in a few words.
+ *
+ * The rungs are ordered sharpest first, and anything that lands on none of
+ * them gets no line. That is the engine's own backstop showing through: when a
+ * subject runs out of sharp distractors the board is filled from the subject
+ * at large, and there is nothing true to say about such an option beyond "it
+ * was another one of these". Better to say nothing than to invent a reason.
+ */
+export function whyOption(fact: FactId, option: FactId, onAVehicle: boolean): string | undefined {
+  if (option === fact) return undefined;
+  const asked = entryOf(fact);
+  const other = entryOf(option);
+  const subject = factInfo(fact)?.subject;
+  const reading = (f: FactId) => (f as string).includes("/reading");
+  if (other === asked) {
+    // 生 in 人生 against 生 in 先生: the same character, and which reading
+    // applies is the whole question
+    if (reading(fact) && reading(option)) return "another reading of the same character";
+    if (subject === KEIGO_SUBJECT) return "the same verb in the other register";
+  }
+  // the flagged pairs: kana's look groups, CONFUSABLE_WITH for kanji, the
+  // hand-authored radical pairs. Either way round, since which side carries
+  // the pair depends on which of the two is taught as a kanji.
+  const a = libEntry(asked);
+  const b = libEntry(other);
+  if (a && b && (confusableWith(a).includes(other) || confusableWith(b).includes(asked))) return "drawn almost the same";
+  if (subject === KEIGO_SUBJECT) return "another polite verb";
+  if (subject === TRANSITIVITY_SUBJECT) return "the other verb of the pair";
+  if (subject === GRAMMAR_SUBJECT && onAVehicle) return "the same verb in another pattern";
+  if (subject === VOCAB_SUBJECT && factInfo(option)?.subject === VOCAB_SUBJECT) return "a word about as common as this one";
+  return undefined;
 }
 
 /** What a listening card plays for a fact, or undefined when the fact has
@@ -148,7 +191,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     const qt = questionsFor(fact);
     const options: QuizOption[] = buildMcOptions(fact, dir, ctx, known).map((f) => {
       const label = qt.optionLabel?.(f, dir, ctx) ?? revealFor(f, dir, ctx);
-      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label) };
+      // and why it was there, for the reveal to name (SAK-315)
+      const why = whyOption(fact, f, !!vehicle);
+      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label), ...(why ? { why } : {}) };
     });
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition
@@ -323,7 +368,12 @@ export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): 
   const other = q.mode === "pair" ? q.partnerDownstep : q.wrongDownstep;
   if (other === null) return undefined;
   const correctFirst = Math.random() < 0.5;
-  const pair: QuizOption[] = [{ id: "pitch:right", label: q.reading, jp: true, pitch: q.downstep }, { id: "pitch:other", label: q.reading, jp: true, pitch: other }];
+  // the wrong clip says what it is: a real homophone partner when the
+  // curriculum has one, else the same word said with a pitch it does not take
+  const pair: QuizOption[] = [
+    { id: "pitch:right", label: q.reading, jp: true, pitch: q.downstep },
+    { id: "pitch:other", label: q.reading, jp: true, pitch: other, why: q.mode === "pair" ? "another word said the same way" : "the same reading, said with the other pitch" },
+  ];
   return {
     id: `${id}/pitch`,
     item,
