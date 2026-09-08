@@ -2128,3 +2128,26 @@ a concurrent card. It wants to happen once both lanes are in.
 259 lines deleted against 315 added, the sweep and its test included. 3,853 unit tests pass, from 3,858:
 nine went with the rename shim and two with the legacy-key half of the
 settings map, and six new ones hold the sweep. 26 e2e.
+
+### One rule for a page's title (2026-09-08, SAK-357)
+
+The eyebrow is the page's name in the bar. The title is a question on a
+page that asks something of you, and a noun for what is in front of you on
+the screens inside a run. No title ends in a period.
+
+Questions, unchanged: "What have you discovered?", "What would you like to
+learn next?", "What would you like to know?", "What would you like to
+practice?", "What have you done lately?", "How should Saku behave?", "Who
+is learning?", "Want to keep your sky?", "How does Saku work?", "Where does
+the data come from?".
+
+Nouns: "Tonight's lesson" and "How it went" already were. Three changed.
+
+* The bar: "Home" is now "Planetarium". The page has called itself that
+  everywhere else since the cutover; the bar was the last holdout.
+* The quiz: title "Quiz" under the eyebrow "Quiz" is now what the quiz is
+  of. `SkyQuiz` takes an optional `title`, default "Tonight's drill";
+  `/practice/run` passes "Your practice deck".
+* The rest: "Take a break and come back." is now "A break between rounds".
+
+`e2e/sky.spec.ts` asserts the two new headings in place of the old ones.

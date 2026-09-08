@@ -50,7 +50,7 @@ export function SkyRest({ until, nextRound, rounds, onStart, minutes, onMinutes,
   const left = now === null ? Number.POSITIVE_INFINITY : restLeft(until, now);
   const ready = left === 0;
   return (
-    <SkyPageShell eyebrow="Quiz" title="Take a break and come back." height={height}>
+    <SkyPageShell eyebrow="Quiz" title="A break between rounds" height={height}>
       <div className="mx-auto flex w-full max-w-[520px] flex-col gap-4 font-sky-ui">
         <SkySurface className="px-6 py-10 text-center">
           <Eyebrow>{ready ? `Round ${nextRound} of ${rounds}` : `Until round ${nextRound} of ${rounds}`}</Eyebrow>

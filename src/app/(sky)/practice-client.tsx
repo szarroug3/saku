@@ -85,7 +85,7 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe }: 
   const who = useWho(sample, signedIn);
   const load = useCallback((w: Who) => named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [named, recipe]);
   const cards = useLoaded(who, load, initial);
-  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Quiz"} />;
+  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Your practice deck"} />;
   return <PracticeRun cards={cards} sample={sample} recipe={recipe} cfg={cfg} update={update} router={router} />;
 }
 
@@ -101,5 +101,5 @@ function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: re
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
   const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} savedNames={saved.map((d) => d.name)} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} savedNames={saved.map((d) => d.name)} title="Your practice deck" retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

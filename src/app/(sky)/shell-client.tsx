@@ -15,7 +15,7 @@ import { SkyShell, type ShellEntry } from "@/sky/components/sky-shell";
 import { accentColor } from "@/sky/lib/settings";
 
 const ENTRIES: readonly ShellEntry[] = [
-  { href: "/", label: "Home" },
+  { href: "/", label: "Planetarium" },
   { href: "/observatory", label: "Observatory" },
   { href: "/atlas", label: "Atlas" },
   { href: "/practice", label: "Practice" },

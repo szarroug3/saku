@@ -62,6 +62,10 @@ export interface SkyQuizProps {
   onRetries?: (retries: number) => void;
   /** Seconds a card gets before it counts as missed; none when unset. */
   timerSeconds?: number;
+  /** What this quiz is of, as the page's title. The eyebrow is always
+   * "Quiz"; the title says what is in front of you (SAK-357), which is
+   * tonight's drill off a lesson and the deck off a practice recipe. */
+  title?: string;
   height?: string;
 }
 
@@ -93,7 +97,7 @@ const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said:
 /** "One more try." or "2 tries left." */
 const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
-export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, title = "Tonight's drill", height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
@@ -313,7 +317,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   ].filter((h): h is { label: string; run: () => void } => !!h);
 
   return (
-    <SkyPageShell eyebrow="Quiz" title="Quiz" aside={strip} height={height}>
+    <SkyPageShell eyebrow="Quiz" title={title} aside={strip} height={height}>
     {/* The list slides in beside the card, and the card slides with it: it
         is centred in whatever space is left, never held still and never
         squeezed (Sam, 2026-09-06, SAK-396). The room for the list is the

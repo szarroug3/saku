@@ -30,7 +30,7 @@ test("settings keep a change across a reload", async ({ page }) => {
 
 test("the quiz grades a typed answer and reveals on giving up", async ({ page }) => {
   await page.goto("/quiz?sample");
-  await expect(page.getByRole("heading", { name: "Quiz", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tonight's drill", exact: true })).toBeVisible();
   const box = page.getByPlaceholder(/The reading, in romaji|The meaning, in English|Your answer/);
   await box.fill("zzz");
   await page.getByRole("button", { name: "Check" }).click();
@@ -63,7 +63,7 @@ test("a lesson's quiz rests between rounds", async ({ page }) => {
   await page.goto("/quiz?sample&picks=kana-row:h-vowels");
   await page.getByRole("button", { name: "End the quiz" }).click();
   await page.getByRole("button", { name: /Take a rest, then round 2 of 3/ }).click();
-  await expect(page.getByRole("heading", { name: "Take a break and come back." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A break between rounds" })).toBeVisible();
   await expect(page.getByText(/Come back at/)).toBeVisible();
   await page.getByRole("button", { name: "Start now" }).click();
   await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();

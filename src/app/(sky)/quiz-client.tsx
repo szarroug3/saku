@@ -43,7 +43,7 @@ export function QuizClient({ initial, picks, named, back, sample = false, signed
   const who = useWho(sample, signedIn);
   const load = useCallback((w: Parameters<typeof loadQuiz>[0]) => loadQuiz(w, { picks, cards: named, audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [picks, named, cfg.audioPrompts, cfg.pitchQuestions]);
   const cards = useLoaded(who, load, initial);
-  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Quiz"} />;
+  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Tonight's drill"} />;
   return <QuizRun cards={cards} back={back} sample={sample} rounds={rounds} cfg={cfg} update={update} router={router} />;
 }
 
