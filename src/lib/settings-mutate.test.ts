@@ -25,9 +25,13 @@ import {
   type SettingsStore,
   type SettingsVersionedRead,
 } from "@/lib/settings-mutate";
-import type { SettingsFile } from "@/types";
+import type { QuizConfig, SettingsFile } from "@/types";
 
 const USER = "user-1";
+
+/** A config stands in for "one device's whole field"; the mutation never looks
+ * inside it, so a one-field object is config enough for these. */
+const cfg = (mode: string) => ({ mode }) as unknown as QuizConfig;
 
 /**
  * An in-memory store that models the real compare-and-set exactly: a write
@@ -103,35 +107,34 @@ describe("two devices changing different settings in the same window (SAK-258)",
     // Pre-fix, A's write was a blind upsert of its own merged copy over B's
     // row, and B's field was silently gone.
     store.onRead = async () => {
-      await save(store, { theme: "dark" });
+      await save(store, { cfg: cfg("drill") });
     };
 
-    const result = await save(store, { claimHintDismissed: true });
+    const result = await save(store, { practice: { misses: { a: 1 } } });
 
     assert.deepEqual(
       result,
-      { theme: "dark", claimHintDismissed: true },
+      { cfg: cfg("drill"), practice: { misses: { a: 1 } } },
       "the resolved file holds both devices' fields",
     );
-    assert.deepEqual(store.state.settings, { theme: "dark", claimHintDismissed: true });
+    assert.deepEqual(store.state.settings, { cfg: cfg("drill"), practice: { misses: { a: 1 } } });
     assert.ok(store.conflicts >= 1, "device A lost the CAS at least once and retried");
   });
 
   test("a change to the SAME field: the later write wins that field, but not the other device's field", async () => {
-    const store = new CasStore({ settings: { theme: "light" }, version: "seed" });
+    const store = new CasStore({ settings: { cfg: cfg("pairs") }, version: "seed" });
     store.onRead = async () => {
-      await save(store, { theme: "dark", introShown: ["kana"] });
+      await save(store, { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
     };
 
-    const result = await save(store, { theme: "dark", claimHintDismissed: true });
+    const result = await save(store, { cfg: cfg("drill"), practice: { misses: { a: 1 } } });
 
-    // Both devices asked for theme "dark" here, so there is no real conflict to
-    // observe on that field — the point is introShown (B's) and
-    // claimHintDismissed (A's) both survive regardless of who touched theme.
+    // Both devices asked for the same cfg here, so there is no real conflict to
+    // observe on that field. The point is B's saved recipes and A's misses both
+    // surviving regardless of who touched the config.
     assert.deepEqual(result, {
-      theme: "dark",
-      introShown: ["kana"],
-      claimHintDismissed: true,
+      cfg: cfg("drill"),
+      practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: { a: 1 } },
     });
   });
 
@@ -143,35 +146,34 @@ describe("two devices changing different settings in the same window (SAK-258)",
       write: async () => false,
     };
     await assert.rejects(
-      () => mutateSettingsWithRetry(jammed, USER, (s) => mergeSettings(s, { theme: "dark" }), 3),
+      () => mutateSettingsWithRetry(jammed, USER, (s) => mergeSettings(s, { cfg: cfg("drill") }), 3),
       /lost to concurrent writers 3 times/,
     );
   });
 
   test("the first write on an empty row inserts", async () => {
     const store = new CasStore();
-    const result = await save(store, { theme: "dark" });
-    assert.deepEqual(result, { theme: "dark" });
+    const result = await save(store, { cfg: cfg("drill") });
+    assert.deepEqual(result, { cfg: cfg("drill") });
     assert.ok(store.state.exists, "the row now exists");
   });
 
   test("a later write to an existing row updates rather than duplicating", async () => {
-    const store = new CasStore({ settings: { theme: "light" }, version: "seed" });
-    const result = await save(store, { theme: "dark" });
-    assert.deepEqual(result, { theme: "dark" });
+    const store = new CasStore({ settings: { cfg: cfg("pairs") }, version: "seed" });
+    const result = await save(store, { cfg: cfg("drill") });
+    assert.deepEqual(result, { cfg: cfg("drill") });
     assert.equal(store.state.exists, true);
   });
 
   test("a patch never clobbers a field it doesn't name", async () => {
     const store = new CasStore({
-      settings: { theme: "dark", claimHintDismissed: true },
+      settings: { cfg: cfg("drill") },
       version: "seed",
     });
-    const result = await save(store, { introShown: ["kana"] });
+    const result = await save(store, { practice: { misses: { a: 1 } } });
     assert.deepEqual(result, {
-      theme: "dark",
-      claimHintDismissed: true,
-      introShown: ["kana"],
+      cfg: cfg("drill"),
+      practice: { misses: { a: 1 } },
     });
   });
 });

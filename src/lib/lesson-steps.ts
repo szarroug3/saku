@@ -92,7 +92,8 @@ export type LessonStep =
   // out — so a concept moved onto a term page is still shown exactly once. Absent
   // for term steps that are not once-ever (the kana openers, counter/keigo track
   // pages, rendaku, okurigana): those are gated by track history or per-lesson
-  // and record nothing. See src/lib/intro-shown.ts.
+  // and record nothing. Nothing records a card as shown any more: the registry
+  // that did went with the old app's screens (SAK-374).
   | { type: "term"; key: string; entry: EntryId; conceptId?: string }
   | { type: "conversion"; key: string; row: DakutenRow }
   | { type: "item"; key: string; item: LessonItem };
@@ -265,8 +266,8 @@ export function lessonSteps(
   // The concept cards this learner has already been shown, by intro id. Absent
   // means none, which is the right default for a caller with no store to read
   // (SSR, a test naming a teach set) and the safe error either way: a card seen
-  // twice costs ten seconds, a card never seen costs the learner the word. See
-  // src/lib/intro-shown.ts.
+  // twice costs ten seconds, a card never seen costs the learner the word. No
+  // caller passes one now (SAK-374): the Sky shows the cards every time.
   shownIntros: ReadonlySet<string> = new Set(),
 ): LessonStep[] {
   // GRAMMAR takes a different walk: its pages are AUTHORED, not derived from the

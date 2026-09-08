@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -17,8 +16,6 @@ import { HistoryProvider } from "@/lib/history-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { isSupabaseStore } from "@/lib/store/mode";
-import { ThemeProvider } from "@/lib/theme";
-import type * as Theme from "@/lib/theme";
 
 import "./globals.css";
 
@@ -34,85 +31,14 @@ export const metadata: Metadata = {
     "Learn Japanese from the ground up: kana, kanji, vocabulary, grammar, and more.",
 };
 
-/* These are re-declared instead of imported, and that is load-bearing.
- * layout.tsx is a Server Component; src/lib/theme.tsx is "use client". Every
- * VALUE exported from a client module reaches a Server Component as a
- * client-reference stub, not the value — importing THEME_KEY here compiles
- * and renders happily but emits `localStorage.getItem(undefined)`, silently
- * disabling the no-flash script.
- *
- * Types are erased at build time, so they DO cross the boundary: pinning each
- * const to `typeof Theme.X` turns any drift from theme.tsx — a renamed key, a
- * changed default, a fifth theme — into a type error rather than a silent
- * flash. (`import type * as` never emits a require.) */
-const THEME_KEY: typeof Theme.THEME_KEY = "saku-theme";
-const APPEARANCE_KEY: typeof Theme.APPEARANCE_KEY = "saku-appearance";
-const ACCENTS_KEY: typeof Theme.ACCENTS_KEY = "saku-accents";
-// The legacy names, pinned the same way, so the no-flash script can fall back to
-// a returning user's un-migrated value and not flash the default at them.
-const OLD_THEME_KEY: typeof Theme.OLD_THEME_KEY = "kanaquiz-theme";
-const OLD_APPEARANCE_KEY: typeof Theme.OLD_APPEARANCE_KEY = "kanaquiz-appearance";
-const OLD_ACCENTS_KEY: typeof Theme.OLD_ACCENTS_KEY = "kanaquiz-accents";
-const DEFAULT_THEME: typeof Theme.DEFAULT_THEME = "kiri";
-const DEFAULT_APPEARANCE: typeof Theme.DEFAULT_APPEARANCE = "system";
-const DEFAULT_ACCENT: typeof Theme.DEFAULT_ACCENT = "default";
-const DEFAULT_ACCENTS: typeof Theme.DEFAULT_ACCENTS = { kiri: "magenta" };
-const THEMES: typeof Theme.THEMES = [
-  "aizome",
-  "graphite",
-  "momentum",
-  "kiri",
-] as const;
-const APPEARANCES: typeof Theme.APPEARANCES = ["system", "light", "dark"] as const;
-const ACCENTS: typeof Theme.ACCENTS = [
-  "default",
-  "cyan",
-  "azure",
-  "violet",
-  "orchid",
-  "magenta",
-  "pearl",
-] as const;
-
-// Runs in <head>, blocking, before the browser paints anything — otherwise
-// every hard reload flashes the default theme before React hydrates. Kept
-// dependency-free and IIFE-wrapped (no globals) because it runs ahead of all
-// other code. It only ever writes a value it recognizes, so an unknown or
-// corrupt entry just leaves the server-rendered defaults in place, same as
-// no-JS or blocked storage.
-//
-// The accent costs one more getItem and a JSON.parse, and it has to happen
-// HERE for the same reason the other two do: it is a paint-blocking fact. It
-// also has to happen AFTER the theme is resolved, because the accent is stored
-// per theme — the map is keyed by theme id, so reading it means knowing which
-// theme you are about to be in. Note `t` is reassigned to DEFAULT_THEME when
-// storage holds junk: the provider will mount as DEFAULT_THEME, so the accent
-// looked up here must be DEFAULT_THEME's too or the pre-paint stamp and the
-// post-mount state disagree and you get the flash this script exists to stop.
-//
-// "default" is deliberately not stampable — it means "no data-accent", i.e.
-// the theme's own — so the guard rejects it along with anything unknown.
-// `g(newKey, oldKey)` reads the renamed `saku-*` key, falling back to the legacy
-// `kanaquiz-*` value so a returning user whose data has not been migrated yet
-// still paints their real theme instead of flashing the default. Read-only on
-// purpose: the copy-forward write is left to the providers on mount (see
-// migratedGet / theme.tsx), keeping this script minimal and paint-blocking.
-const NO_FLASH = `(function(){try{var d=document.documentElement,g=function(k,o){var v=localStorage.getItem(k);return v!==null?v:localStorage.getItem(o);},t=g(${JSON.stringify(
-  THEME_KEY,
-)},${JSON.stringify(OLD_THEME_KEY)}),a=g(${JSON.stringify(APPEARANCE_KEY)},${JSON.stringify(
-  OLD_APPEARANCE_KEY,
-)});
-if(${JSON.stringify(THEMES)}.indexOf(t)>=0)d.setAttribute("data-theme",t);else t=${JSON.stringify(
-  DEFAULT_THEME,
-)};
-if(${JSON.stringify(APPEARANCES)}.indexOf(a)>=0)d.setAttribute("data-appearance",a);
-var m=JSON.parse(g(${JSON.stringify(ACCENTS_KEY)},${JSON.stringify(
-  OLD_ACCENTS_KEY,
-)})||"{}"),c=(m&&m[t])||(${JSON.stringify(DEFAULT_ACCENTS)})[t];
-if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
-  ACCENTS,
-)}.indexOf(c)>=0)d.setAttribute("data-accent",c);
-}catch(e){}})()`;
+// The palette the app's own tokens resolve under. The Sky wears its own
+// `--sky-*` tokens and the wash, but three files in the route layer still use
+// the app's (stroke-order.tsx, why.tsx, pitch-mark.tsx) and globals.css only
+// defines those inside a `[data-theme]` block. So the attributes stay, as
+// literals; nothing reads or writes them after this (SAK-374).
+const THEME = "kiri";
+const APPEARANCE = "system";
+const ACCENT = "magenta";
 
 /** All four progress-row seeds in one DB round-trip. Each field falls back to
  * null on error so a partial Supabase failure cannot take down the whole shell. */
@@ -164,31 +90,8 @@ export default async function RootLayout({
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   return (
-    // suppressHydrationWarning: the script below rewrites these two attributes
-    // before React hydrates, so the client <html> legitimately differs from
-    // the server markup.
-    <html
-      lang="en"
-      data-theme={DEFAULT_THEME}
-      data-appearance={DEFAULT_APPEARANCE}
-      // The default theme's out-of-the-box accent (kiri → magenta), so the first
-      // paint already wears it; the no-flash script overrides for a returning
-      // user, and `undefined` (a theme with no default accent) omits the attr.
-      data-accent={DEFAULT_ACCENTS[DEFAULT_THEME]}
-      suppressHydrationWarning
-    >
+    <html lang="en" data-theme={THEME} data-appearance={APPEARANCE} data-accent={ACCENT}>
       <head>
-        {/* next/script with strategy="beforeInteractive": Next.js's own inline-script
-            mechanism for exactly this case (must run in <head>, before hydration).
-            It still emits a real <script> in <head> ahead of hydration — same timing
-            guarantee a raw <script> tag had — but routes through Next's runtime
-            instead of a JSX <script> element, which React 19 warns about renderer-side
-            since script tags outside this mechanism are never executed on the client. */}
-        <Script
-          id="no-flash"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: NO_FLASH }}
-        />
         {/* Preload the wordmark so it's decoded before first paint — the sidebar
             shows it on every page, so without this its <img> flashes blank until
             the PNG arrives. The mark is landing-only, so it's preloaded there
@@ -204,11 +107,10 @@ export default async function RootLayout({
       </head>
       <body>
         {/* Server-synced settings, seeded above. Outermost of the client
-            providers because the theme and quiz-config providers below reconcile
-            their state against it (server wins), and the plain settings writers
-            push through it. */}
+            providers because the quiz-config provider below reconciles its
+            state against it (server wins), and the plain settings writers push
+            through it. */}
         <SettingsProvider userId={userId} initial={initialSettings}>
-        <ThemeProvider>
           {/* One history for the whole app, seeded above. Outside everything
               that reads it: the Sidebar, the sign-in merge, and every page. */}
           <HistoryProvider userId={userId} initial={null} pageOwned={userId !== null}>
@@ -221,7 +123,6 @@ export default async function RootLayout({
               {children}
             </QuizConfigProvider>
           </HistoryProvider>
-        </ThemeProvider>
         </SettingsProvider>
         <Analytics />
         <SpeedInsights />

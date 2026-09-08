@@ -2,19 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  ACCENTS_KEY,
   CFG_KEY,
-  CLAIM_HINT_DISMISSED,
-  CLAIM_HINT_KEY,
-  introShownKey,
-  INTRO_SHOWN,
-  LESSON_OPEN,
-  LESSON_WRITING_KEY,
   OLD_CFG_KEY,
-  OLD_THEME_KEY,
   PRACTICE_MISSES_KEY,
   PRACTICE_SAVED_KEY,
-  THEME_KEY,
 } from "./settings-keys";
 import {
   applyServerSettings,
@@ -40,17 +31,8 @@ function fakeStore(seed: Record<string, string> = {}): SettingsStore & {
 }
 
 test("readLocalSettings: gathers only the keys that are set", () => {
-  const store = fakeStore({
-    [THEME_KEY]: "aizome",
-    [CLAIM_HINT_KEY]: CLAIM_HINT_DISMISSED,
-    [LESSON_WRITING_KEY]: LESSON_OPEN,
-  });
-  const out = readLocalSettings(store);
-  assert.deepEqual(out, {
-    theme: "aizome",
-    claimHintDismissed: true,
-    lessonWriting: true,
-  });
+  const store = fakeStore({ [CFG_KEY]: JSON.stringify({ mode: "drill" }) });
+  assert.deepEqual(readLocalSettings(store), { cfg: { mode: "drill" } });
 });
 
 test("readLocalSettings: an empty store reads as empty settings", () => {
@@ -58,22 +40,15 @@ test("readLocalSettings: an empty store reads as empty settings", () => {
   assert.deepEqual(readLocalSettings(null), {});
 });
 
-test("readLocalSettings: parses structured cfg / accents", () => {
-  const store = fakeStore({
-    [CFG_KEY]: JSON.stringify({ mode: "drill" }),
-    [ACCENTS_KEY]: JSON.stringify({ kiri: "magenta" }),
-  });
-  const out = readLocalSettings(store);
-  assert.deepEqual(out.cfg, { mode: "drill" });
-  assert.deepEqual(out.accents, { kiri: "magenta" });
+test("readLocalSettings: a corrupt cfg is not sent up", () => {
+  assert.deepEqual(readLocalSettings(fakeStore({ [CFG_KEY]: "{not json" })), {});
 });
 
 test("readLocalSettings: migrates a legacy kanaquiz- value forward on read", () => {
-  const store = fakeStore({ [OLD_THEME_KEY]: "graphite" });
-  const out = readLocalSettings(store);
-  assert.equal(out.theme, "graphite");
+  const store = fakeStore({ [OLD_CFG_KEY]: JSON.stringify({ mode: "old" }) });
+  assert.deepEqual(readLocalSettings(store).cfg, { mode: "old" });
   // The value was copied under the new key as a side effect of the read.
-  assert.equal(store.data[THEME_KEY], "graphite");
+  assert.equal(store.data[CFG_KEY], JSON.stringify({ mode: "old" }));
 });
 
 test("readLocalSettings: does not send a legacy cfg default over the new key when both differ", () => {
@@ -87,40 +62,25 @@ test("readLocalSettings: does not send a legacy cfg default over the new key whe
 
 test("applyServerSettings: writes present fields into the individual keys", () => {
   const store = fakeStore();
-  applyServerSettings(store, {
-    theme: "kiri",
-    claimHintDismissed: true,
-    lessonWriting: false,
-    introShown: ["track-kanji"],
-  });
-  assert.equal(store.data[THEME_KEY], "kiri");
-  assert.equal(store.data[CLAIM_HINT_KEY], CLAIM_HINT_DISMISSED);
-  // false clears the flag rather than storing a falsy sentinel.
-  assert.equal(LESSON_WRITING_KEY in store.data, false);
-  assert.equal(store.data[introShownKey("track-kanji")], INTRO_SHOWN);
+  applyServerSettings(store, { cfg: { mode: "drill" } as never });
+  assert.equal(store.data[CFG_KEY], JSON.stringify({ mode: "drill" }));
 });
 
 test("applyServerSettings: a field the server did not send leaves the local key alone", () => {
-  const store = fakeStore({ [THEME_KEY]: "aizome" });
-  applyServerSettings(store, { appearance: "dark" });
-  // theme untouched, appearance added.
-  assert.equal(store.data[THEME_KEY], "aizome");
-  assert.equal(store.data["saku-appearance"], "dark");
+  const store = fakeStore({ [CFG_KEY]: JSON.stringify({ mode: "drill" }) });
+  applyServerSettings(store, { practice: { misses: { a: 1 } } });
+  assert.equal(store.data[CFG_KEY], JSON.stringify({ mode: "drill" }));
+  assert.equal(store.data[PRACTICE_MISSES_KEY], JSON.stringify({ a: 1 }));
 });
 
 test("round trip: applyServerSettings then readLocalSettings recovers the blob", () => {
   const store = fakeStore();
   const settings = {
-    theme: "momentum",
-    appearance: "light",
-    accents: { kiri: "cyan" },
-    claimHintDismissed: true,
-    lessonReadings: true,
-    introShown: ["track-kanji"],
+    cfg: { mode: "drill" } as never,
+    practice: { saved: [{ name: "Tonight", recipe: {} }], misses: { "kana:あ/reading": 2 } },
   };
   applyServerSettings(store, settings);
-  const back = readLocalSettings(store);
-  assert.deepEqual(back, settings);
+  assert.deepEqual(readLocalSettings(store), settings);
 });
 
 test("practice (SAK-342): the saved recipes and misses ride the blob both ways", () => {
@@ -131,7 +91,7 @@ test("practice (SAK-342): the saved recipes and misses ride the blob both ways",
   assert.equal(store.data[PRACTICE_MISSES_KEY], JSON.stringify(practice.misses));
   assert.deepEqual(readLocalSettings(store).practice, practice);
   // a blob without practice leaves the keys alone
-  applyServerSettings(store, { theme: "kiri" });
+  applyServerSettings(store, { cfg: { mode: "drill" } as never });
   assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify(practice.saved));
   // an empty browser has no practice field to send up
   assert.equal(readLocalSettings(fakeStore()).practice, undefined);

@@ -1218,8 +1218,7 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
 // .ts), right after 1-10 and before the generative 11-99 reading round, which is
 // where "you can build the rest yourself" is true rather than hypothetical. It is
 // no longer word-gated on a run of 11-99 forms (those forms are gone; the unit
-// owns showing this card). Still in CONCEPT_CARD_IDS so the reset sweep and the
-// settings mirror know it. Script-neutral (NO_SCRIPT): a number is a sound, not a
+// owns showing this card). Script-neutral (NO_SCRIPT): a number is a sound, not a
 // spelling of one script. The READINGS in `examples` are verified data
 // (number-reading.ts); the prose is the owner's to finalize.
 export const NUMBERS_COMPOSE: PhaseIntro = {
@@ -1256,7 +1255,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
 // three base words the compose rule cannot build (ひゃく, せん, いちまん), the
 // hundreds/thousands hardening (300 さんびゃく, 8,000 はっせん), and that Japanese
 // groups in ten-thousands (100,000 = 十万) rather than reaching for a word for
-// "million". A once-ever concept card (id in CONCEPT_CARD_IDS). Script-neutral
+// "million". A once-ever concept card. Script-neutral
 // (NO_SCRIPT). The READINGS in `examples` are verified against number-reading.ts;
 // the prose is the owner's to finalize. Mirrors NUMBERS_COMPOSE's structure.
 export const NUMBERS_BIG: PhaseIntro = {
@@ -1310,8 +1309,9 @@ export const NUMBERS_BIG: PhaseIntro = {
 // meant: a mark a learner cannot read is at best noise and at worst a habit set
 // wrong. So this card is word-gated in lesson-steps.ts ONCE, ahead of the first
 // word the learner meets that carries a verified pitch, so the line is always
-// taught before it is first drawn. It is a once-ever concept card (its id is in
-// CONCEPT_CARD_IDS, src/lib/intro-shown.ts), not a per-lesson rule reminder:
+// taught before it is first drawn. It is a once-ever concept card (a lesson can
+// gate on its id, though nothing remembers it since SAK-374), not a per-lesson
+// rule reminder:
 // ~69% of words carry pitch, so re-firing it per lesson would put it ahead of
 // almost every word lesson. Script-neutral (NO_SCRIPT): pitch is a sound, not a
 // spelling of one script.
@@ -1379,7 +1379,7 @@ export const PITCH_INTRO: PhaseIntro = {
 // meets that HAS an on'yomi (word-gated in lesson-steps.ts, the same shape the
 // pitch card uses). A kanji entry then carries a brief side-by-side reading hint
 // with example words; this card is where the CONCEPT is taught, so that hint can
-// stay practical. Once-ever (id in CONCEPT_CARD_IDS).
+// stay practical. Once-ever.
 // Script-neutral (NO_SCRIPT): a reading is a sound, not a spelling. The example
 // readings are real (人 じん/ひと, 車 しゃ/くるま). The stable id and exported
 // constant keep existing completion history valid even though the card now names
@@ -1412,7 +1412,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
 // (word-gated in lesson-steps.ts), so the distinction arrives with a real example
 // on screen rather than in the abstract. Leans on the on'yomi card having been
 // read — the "sound piece" is exactly the on-reading that card just named.
-// Once-ever (id in CONCEPT_CARD_IDS). Script-neutral. Examples are real jōyō
+// Once-ever. Script-neutral. Examples are real jōyō
 // kanji (河 = 氵 + 可, 明 = 日 + 月).
 export const BUILT_FROM_INTRO: PhaseIntro = {
   id: "intro-built-from",

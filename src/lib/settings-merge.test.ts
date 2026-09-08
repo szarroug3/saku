@@ -7,7 +7,11 @@ import {
   normalizeSettings,
   reconcileSettings,
 } from "./settings-merge";
-import type { SettingsFile } from "@/types";
+import type { QuizConfig, SettingsFile } from "@/types";
+
+/** A config stands in for "the whole value the client owns"; the merge never
+ * looks inside it, so a one-field object is config enough for these. */
+const cfg = (mode: string) => ({ mode }) as unknown as QuizConfig;
 
 test("normalizeSettings: a non-object reads as empty", () => {
   assert.deepEqual(normalizeSettings(null), {});
@@ -16,55 +20,46 @@ test("normalizeSettings: a non-object reads as empty", () => {
 });
 
 test("normalizeSettings: keeps known fields, drops unknown ones", () => {
-  const out = normalizeSettings({ theme: "kiri", bogus: 1, introShown: ["a"] });
-  assert.deepEqual(out, { theme: "kiri", introShown: ["a"] });
+  // `theme` is one of the seven the old app stored (SAK-374): a row written
+  // before that reads as the two fields that are left.
+  const out = normalizeSettings({ cfg: cfg("drill"), bogus: 1, theme: "kiri" });
+  assert.deepEqual(out, { cfg: cfg("drill") });
 });
 
 test("mergeSettings: a present field replaces, an absent field is untouched", () => {
-  const prev = { theme: "aizome", appearance: "dark", claimHintDismissed: true };
-  const next = mergeSettings(prev, { theme: "kiri" });
-  assert.deepEqual(next, {
-    theme: "kiri",
-    appearance: "dark",
-    claimHintDismissed: true,
-  });
+  const prev: SettingsFile = { cfg: cfg("drill"), practice: { misses: { a: 1 } } };
+  const next = mergeSettings(prev, { cfg: cfg("pairs") });
+  assert.deepEqual(next, { cfg: cfg("pairs"), practice: { misses: { a: 1 } } });
 });
 
 test("mergeSettings: undefined in the patch means 'not sent', not 'clear'", () => {
-  const prev = { theme: "kiri", claimHintDismissed: true };
-  const next = mergeSettings(prev, { theme: undefined, claimHintDismissed: false });
-  // theme survives (skipped), the boolean is explicitly set to false.
-  assert.deepEqual(next, { theme: "kiri", claimHintDismissed: false });
-});
-
-test("mergeSettings: [] and false are real values that replace", () => {
-  const prev = { introShown: ["track-kanji"], lessonWriting: true };
-  const next = mergeSettings(prev, { introShown: [], lessonWriting: false });
-  assert.deepEqual(next, { introShown: [], lessonWriting: false });
+  const prev: SettingsFile = { cfg: cfg("drill"), practice: { saved: [] } };
+  const next = mergeSettings(prev, { cfg: undefined, practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
+  // cfg survives (skipped), the recipes are explicitly replaced.
+  assert.deepEqual(next.cfg, cfg("drill"));
+  assert.equal(next.practice?.saved?.length, 1);
 });
 
 test("reconcileSettings: server value wins over local cache", () => {
-  const local = { theme: "aizome", appearance: "light", cfg: { a: 1 } as never };
-  const server = { theme: "kiri" };
+  const local: SettingsFile = { cfg: cfg("drill"), practice: { saved: [] } };
+  const server: SettingsFile = { cfg: cfg("pairs") };
   const merged = reconcileSettings(local, server);
-  // Server's theme wins; local fields the server never spoke to survive.
-  assert.equal(merged.theme, "kiri");
-  assert.equal(merged.appearance, "light");
-  assert.deepEqual(merged.cfg, { a: 1 });
+  // Server's cfg wins; local fields the server never spoke to survive.
+  assert.deepEqual(merged.cfg, cfg("pairs"));
+  assert.deepEqual(merged.practice?.saved, []);
 });
 
 test("reconcileSettings: an empty server leaves the local cache intact", () => {
-  const local = { theme: "aizome" };
+  const local: SettingsFile = { cfg: cfg("drill") };
   const merged = reconcileSettings(local, {});
   assert.deepEqual(merged, local);
 });
 
 test("isEmptySettings: true only when every field is absent", () => {
   assert.equal(isEmptySettings({}), true);
-  assert.equal(isEmptySettings({ theme: "kiri" }), false);
-  assert.equal(isEmptySettings({ introShown: [] }), false);
-  // A field explicitly set to false still counts as set.
-  assert.equal(isEmptySettings({ claimHintDismissed: false }), false);
+  assert.equal(isEmptySettings({ cfg: cfg("drill") }), false);
+  // A field set to an empty value still counts as set.
+  assert.equal(isEmptySettings({ practice: {} }), false);
 });
 
 test("practice halves: a laptop saving a recipe does not carry its stale misses over a phone's", () => {
@@ -103,8 +98,8 @@ test("practice halves: still lets a device empty its own saved recipes", () => {
 });
 
 test("practice halves: leaves every other field replaced whole, which is right for a single choice", () => {
-  const server: SettingsFile = { theme: "dark" as never, practice: { misses: { a: 1 } } };
-  const after = mergeSettings(server, { theme: "light" as never });
-  assert.equal(after.theme, "light" as never);
+  const server: SettingsFile = { cfg: cfg("drill"), practice: { misses: { a: 1 } } };
+  const after = mergeSettings(server, { cfg: cfg("pairs") });
+  assert.deepEqual(after.cfg, cfg("pairs"));
   assert.deepEqual(after.practice?.misses, { a: 1 });
 });

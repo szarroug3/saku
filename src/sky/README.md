@@ -1978,3 +1978,49 @@ cached one under the default voice. All 598 were generated on the local
 VOICEVOX container, never Cloud Run, and the recount afterwards is 0 of
 372,996 missing: every string the Sky can say is now cached ahead, in
 every voice.
+
+### The look the Sky never asked for (2026-09-08, SAK-374)
+
+Four palettes, three modes, seven accents, and a paint-blocking script in
+every page's head to stamp the learner's choice on `<html>` before the
+first pixel. All of it for a screen that is one night sky. The Sky wears
+its own `--sky-*` tokens and the wash, and the Settings page has offered
+no theme picker since cutover, so the machinery ran on every load to
+answer a question nothing asked.
+
+Gone: `theme.tsx`, the pinned constants and the no-flash script in the
+root layout, `ThemeProvider` around every page, and `intro-shown.ts`, the
+registry that remembered which once-ever concept cards a learner had
+read. With them the seven dead fields of the settings blob: `theme`,
+`appearance`, `accents`, `claimHintDismissed`, `lessonWriting`,
+`lessonReadings`, `introShown`. `SettingsFile` is `cfg` and `practice`
+now, and `SETTINGS_KEYS` in `settings-merge.ts` says so, which is what
+drops the other seven from a row on its next save.
+
+`introShown` was dead twice over. The Sky's lesson calls the app's
+`lessonSteps(facts, history)` with no shown set, so a concept card is
+shown every time its lesson reaches it, and has been since cutover.
+Nothing was reading the field to decide anything.
+
+Two things the card asked for that did not happen, and why.
+`settings-local.ts` stays, stripped to two fields: besides the seven it
+carries `cfg` and `practice`, and Practice's saved recipes and misses live
+in localStorage and nowhere else, so `applyServerSettings` is the only
+way an account's practice reaches a second browser. And `<html>` keeps
+`data-theme="kiri" data-appearance="system" data-accent="magenta"` as
+literals, because `globals.css` defines the app's tokens only inside a
+`[data-theme]` block and three files in the route layer still wear them:
+`stroke-order.tsx`, `why.tsx`, `pitch-mark.tsx`. Nothing reads or writes
+those attributes now.
+
+So the one visible change: a learner whose account carried a theme from
+the old app sees those three in kiri from here. That is the whole surface
+of it, and there has been no way to pick a theme for two days.
+
+The tests followed the modules. `intro-shown.test.ts` went with its
+subject; `spine-intros.test.ts` and `pitch-intro.test.ts` each lost the
+one line pinning a card's id to the registry; the settings merge, mutate
+and local tests say the same things over `cfg` and `practice` instead of
+over a theme and a dismissal flag. 1,095 lines deleted against 214 added,
+3,867 unit tests
+pass, 26 e2e.

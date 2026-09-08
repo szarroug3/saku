@@ -43,7 +43,6 @@ import {
 import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
-import { CONCEPT_CARD_IDS } from "./intro-shown.ts";
 import { SPINE_ANCHORS, spineIntroPlan } from "./spine-intros.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
@@ -215,17 +214,11 @@ describe("every role is anchored where its card has something to point at", () =
     assert.equal(spineIntroPlan(walk, BLANK, new Set(), all).size, 0);
   });
 
-  test("every spine card's id is one intro-shown.ts remembers", () => {
-    // intro-shown.ts spells the ids out rather than importing the card data, so
-    // that the Settings reset path does not drag the phase-intro table into its
-    // bundle. This is the line that stops the SPINE ids drifting. CONCEPT_CARD_IDS
-    // also carries the once-ever pitch card ("intro-pitch"), pinned to its own
-    // card by pitch-intro.test.ts, so this is a subset check rather than equality.
-    const remembered = new Set(CONCEPT_CARD_IDS);
-    for (const id of SPINE_ANCHORS.map((a) => a.intro.id)) {
-      assert.ok(remembered.has(id), `intro-shown.ts forgot the spine card ${id}`);
-    }
-  });
+  // There used to be a line here pinning every spine card's id to the registry
+  // in intro-shown.ts, which remembered per card whether a learner had read it.
+  // The Sky shows the cards every time (it calls lessonSteps with no shown set),
+  // so the registry and its stored field went (SAK-374) and the ids answer to
+  // nothing outside this file now.
 });
 
 describe("each card lands in its anchor's lesson, ahead of the anchor", () => {

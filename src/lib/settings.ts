@@ -3,7 +3,7 @@
 //
 // WHO REACHES THIS. Only a signed-in request (getUserId → 401 otherwise). A
 // signed-out visitor's preferences live in this browser's localStorage cache
-// (theme especially — see the client settings store), never here.
+// (see the client settings store), never here.
 //
 // A SEPARATE BLOB FROM history, on the same row. Settings are not something you
 // DID; they outlive a "delete all my history" and must never be collateral in
@@ -11,9 +11,8 @@
 // `settings` column), and vice versa.
 //
 // THE SERVER IS THE SOURCE OF TRUTH for a signed-in learner. The client mirrors
-// these values into localStorage as a paint cache (theme especially — the
-// no-flash script cannot read the server), but the durable copy is the row. A
-// write MERGES a partial patch into the stored blob (mergeSettings) so a
+// these values into localStorage as a paint cache, but the durable copy is the
+// row. A write MERGES a partial patch into the stored blob (mergeSettings) so a
 // single-field change never clobbers the rest.
 //
 // EVERY MUTATOR GOES THROUGH COMPARE-AND-SET (SAK-258). This used to be load ->
@@ -53,10 +52,10 @@ export async function loadSettings(userId: string): Promise<SettingsFile> {
 
 /**
  * Merge a partial settings patch into the stored blob and persist it, safe
- * against a concurrent writer. So a POST that changes only the theme leaves
- * cfg, the accent map and the dismissal flags exactly as they were — AND, if
- * another device's write to a different field lands in between, that field
- * survives too instead of being overwritten by this write's stale copy of it.
+ * against a concurrent writer. So a POST that saves one practice recipe leaves
+ * cfg and the misses exactly as they were. AND, if another device's write to a
+ * different field lands in between, that field survives too instead of being
+ * overwritten by this write's stale copy of it.
  */
 export async function saveSettings(
   userId: string,

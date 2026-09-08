@@ -5,23 +5,23 @@
 // WHY A PROVIDER, AND WHERE IT SITS
 // =================================
 // Settings are the source of truth on the SERVER; localStorage holds a per-field
-// cache only so the app (and the pre-hydration no-flash script) can paint before
-// the server answers. This provider owns the server copy — seeded server-side in
-// the root layout, exactly like HistoryProvider — and hands it to the theme and
-// quiz-config providers (which reconcile their own state against it, server
-// winning) and to the plain settings writers (via the settings-sync bridge).
+// cache only so the app can paint before the server answers. This provider owns
+// the server copy, seeded server-side in the root layout exactly like
+// HistoryProvider, and hands it to the quiz-config provider (which reconciles
+// its own state against it, server winning) and to the plain settings writers
+// (via the settings-sync bridge).
 //
-// It sits ABOVE ThemeProvider and QuizConfigProvider in the layout so those can
-// consume it. It does three things:
+// It sits ABOVE QuizConfigProvider in the layout so that can consume it. It does
+// three things:
 //
 //   1. RECONCILE DOWN. On the first client render it writes the seeded server
 //      settings into the individual localStorage keys (applyServerSettings), so
-//      the readers that consult localStorage directly — the lesson sections, the
-//      concept cards and the claim explainer — see the source
-//      of truth. This is done synchronously in the render body (guarded to run
-//      once) rather than in an effect, because those readers mount as descendants
-//      and their mount effects run BEFORE a parent effect would; the cache has to
-//      be correct before they read it.
+//      the readers that consult localStorage directly (Practice, whose saved
+//      recipes and misses live there and nowhere else) see the source of truth.
+//      This is done synchronously in the render body (guarded to run once)
+//      rather than in an effect, because those readers mount as descendants and
+//      their mount effects run BEFORE a parent effect would; the cache has to be
+//      correct before they read it.
 //
 //   2. WRITE UP. `save(patch)` merges the change into the held server copy and
 //      POSTs it through the reliable write path (a signed-in 401 refreshes the
@@ -244,8 +244,8 @@ export function SettingsProvider({
     [userId, queueWrite],
   );
 
-  // Register save() as the bridge the plain writers (claim-hint, lesson-prefs,
-  // intro-shown) push through.
+  // Register save() as the bridge the plain writers (Practice's recipes and
+  // misses) push through.
   useEffect(() => {
     registerSettingsPusher(save);
     return () => unregisterSettingsPusher(save);
@@ -263,7 +263,7 @@ export function SettingsProvider({
   //
   // This is the settings counterpart of migrate-local.ts, kept here rather than
   // there because it must also run in FILE mode (where migrate-local does not) —
-  // theme/config have always lived in localStorage, so settings.json needs the
+  // the config has always lived in localStorage, so settings.json needs the
   // same one-time seeding a hosted account does.
   const migratedFor = useRef<string | null>(null);
   useEffect(() => {

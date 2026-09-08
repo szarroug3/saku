@@ -30,8 +30,8 @@
 //
 // HAS IT FIRED: THE CARD'S OWN RECORD
 // ===================================
-// src/lib/intro-shown.ts remembers, per card id, that the card has been through
-// a walk. That is the only thing that actually means "shown", and a card the
+// The caller says which cards have been through a walk, by id. That is the only
+// thing that actually means "shown", and a card the
 // learner never read is not a card they have outgrown. History is not consulted
 // for this and cannot be: it records what a learner LEARNED, and these cards are
 // about what they were TOLD.
@@ -221,8 +221,9 @@ const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = (() =
  * when the sharp item has already been learned and so can never appear again. See
  * the header.
  *
- * `glyphs` are the walk's items in order, `shown` the cards already read (see
- * intro-shown.ts), and `exclude` the teach set of the lesson being walked. The
+ * `glyphs` are the walk's items in order, `shown` the cards already read (empty
+ * from every caller since SAK-374), and `exclude` the teach set of the lesson
+ * being walked. The
  * exclusion matters for the fallback test alone: the app marks a lesson's facts
  * seen before the walk renders, so that starting it unlocks the readings its
  * words prove, and without the exclusion every sharp item would read as already

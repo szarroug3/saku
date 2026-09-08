@@ -225,8 +225,8 @@ export const WORD_TRACK: PhaseIntro = {
 // character but never SAID the two are one. This card is the first thing that
 // does, so it fires once, ahead of the first item that teaches a variant at all
 // (see the variant anchor in src/lib/spine-intros.ts). It is not a track and so
-// is not in TRACK_INTROS; it is a once-ever concept card whose id lives in
-// CONCEPT_CARD_IDS (src/lib/intro-shown.ts).
+// is not in TRACK_INTROS; it is a once-ever concept card, which since SAK-374
+// means once per lesson that reaches it, nothing being remembered between them.
 //
 // The `examples` are common, real jōyō kanji, each built from the form it shows:
 // 体 from 亻, 海 from 氵, 情 from 忄. They are illustrative rather than derived, the

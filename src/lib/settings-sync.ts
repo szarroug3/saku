@@ -3,12 +3,11 @@
 //
 // WHY A MODULE-LEVEL SIGNAL (like auth-mode.ts)
 // =============================================
-// The React providers (theme, quiz-config) can consume the settings context
-// directly. But several settings are written by pure helpers called from deep in
-// the tree — the claim explainer's dismissal, a lesson section's open state, a
-// concept card marking itself shown. Those
-// helpers take a `Storage` and stay DOM-pure and testable; threading a React
-// callback through every one of their call sites would undo that.
+// The quiz-config provider can consume the settings context directly. But some
+// settings are written by plain functions called from deep in the tree:
+// Practice saving a recipe, Practice noting a miss. Those writers take a
+// `Storage` and stay DOM-pure and testable; threading a React callback through
+// every one of their call sites would undo that.
 //
 // So SettingsProvider registers a single pusher here on mount, and every writer
 // calls `pushSettings(patch)` after it updates localStorage. When no provider is

@@ -7,17 +7,7 @@ import type { PracticeFile, SettingsFile } from "@/types";
 
 /** The keys a SettingsFile carries, spelled once so normalise/merge/empty stay
  * in step as fields are added. */
-const SETTINGS_KEYS = [
-  "cfg",
-  "theme",
-  "appearance",
-  "accents",
-  "claimHintDismissed",
-  "lessonWriting",
-  "lessonReadings",
-  "introShown",
-  "practice",
-] as const;
+const SETTINGS_KEYS = ["cfg", "practice"] as const;
 
 /** A plain JSON object — not null, not an array. */
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -48,9 +38,10 @@ export function normalizeSettings(raw: unknown): SettingsFile {
 
 /**
  * Merge a partial write into the stored settings — field-level replace, not a
- * deep merge. Each field is a whole value the client owns (the entire cfg, the
- * entire accent map, the entire shown-intro list), so a present field in `patch`
- * REPLACES the stored one and an absent field leaves the stored one untouched.
+ * deep merge. Each field is a whole value the client owns (the entire cfg), so a
+ * present field in `patch` REPLACES the stored one and an absent field leaves the
+ * stored one untouched. `practice` is the one exception, a level deeper; see
+ * mergePractice.
  *
  * `undefined` in the patch is treated as "not sent" (skipped), never as "clear
  * this field" — a caller that means to clear a boolean sends `false`, and one

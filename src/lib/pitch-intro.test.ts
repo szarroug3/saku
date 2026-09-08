@@ -12,7 +12,6 @@ import { describe, test } from "node:test";
 
 import { lessonSteps } from "./lesson-steps.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
-import { CONCEPT_CARD_IDS } from "./intro-shown.ts";
 import { moraeOf, pitchPatternForLength } from "./pitch.ts";
 import { PHASE_INTROS, PITCH_INTRO } from "../data/phase-intros.ts";
 import { wordMeaningFactId, wordReadingFactId } from "../data/vocab.ts";
@@ -39,8 +38,10 @@ function ids(steps: ReturnType<typeof lessonSteps>): string[] {
 }
 
 describe("the pitch card is remembered once-ever", () => {
-  test("intro-shown.ts knows the pitch card by its own id", () => {
-    assert.ok(CONCEPT_CARD_IDS.includes(PITCH_INTRO.id));
+  test("the card keeps its own id", () => {
+    // It used to be pinned to the registry in intro-shown.ts, which remembered
+    // per card whether a learner had read it; the Sky shows the cards every
+    // time, so the registry went with its stored field (SAK-374).
     assert.equal(PITCH_INTRO.id, "intro-pitch");
   });
 

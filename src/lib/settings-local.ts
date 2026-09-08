@@ -13,41 +13,17 @@
 //
 //   applyServerSettings(store, s)     — DOWN. Write the server's copy back into
 //                                       the individual keys, so the readers that
-//                                       consult localStorage directly (the lesson
-//                                       sections, the concept cards, the claim
-//                                       explainer, and the
-//                                       pre-hydration no-flash script on the next
-//                                       load) all see the source of truth.
+//                                       consult localStorage directly (Practice,
+//                                       whose saved recipes and misses live there
+//                                       and nowhere else) see the source of
+//                                       truth.
 //
-// The keys and their stored sentinel values come from settings-keys.ts; the
-// concept-card id list comes from intro-shown.ts. Nothing here imports the React
-// providers, which is what keeps it out of the use-settings → provider → here
-// cycle.
+// Two fields, since the old app's screens went (SAK-374): the config the Settings
+// page writes, and Practice's keepsakes. The keys come from settings-keys.ts.
+// Nothing here imports the React providers, which is what keeps it out of the
+// use-settings → provider → here cycle.
 
-import { CONCEPT_CARD_IDS } from "@/lib/intro-shown";
-import {
-  ACCENTS_KEY,
-  CFG_KEY,
-  CLAIM_HINT_DISMISSED,
-  CLAIM_HINT_KEY,
-  introShownKey,
-  INTRO_SHOWN,
-  LESSON_OPEN,
-  LESSON_READINGS_KEY,
-  LESSON_WRITING_KEY,
-  OLD_ACCENTS_KEY,
-  OLD_CFG_KEY,
-  OLD_CLAIM_HINT_KEY,
-  OLD_LESSON_READINGS_KEY,
-  OLD_LESSON_WRITING_KEY,
-  oldIntroShownKey,
-  OLD_APPEARANCE_KEY,
-  OLD_THEME_KEY,
-  THEME_KEY,
-  APPEARANCE_KEY,
-  PRACTICE_MISSES_KEY,
-  PRACTICE_SAVED_KEY,
-} from "@/lib/settings-keys";
+import { CFG_KEY, OLD_CFG_KEY, PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
 import type { QuizConfig, SettingsFile } from "@/types";
 
@@ -72,7 +48,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * Gather this browser's individual settings keys into one SettingsFile, migrating
- * each legacy `kanaquiz-*` value forward as it reads (migratedGet). Only SET
+ * the legacy `kanaquiz-*` config value forward as it reads (migratedGet). Only SET
  * fields are included — an absent key is omitted, never defaulted, so replaying
  * this up to the server cannot overwrite a server value with a local default.
  *
@@ -86,30 +62,6 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
   try {
     const cfg = parse(migratedGet(store, CFG_KEY, OLD_CFG_KEY));
     if (isPlainObject(cfg)) out.cfg = cfg as unknown as QuizConfig;
-
-    const theme = migratedGet(store, THEME_KEY, OLD_THEME_KEY);
-    if (theme !== null) out.theme = theme;
-
-    const appearance = migratedGet(store, APPEARANCE_KEY, OLD_APPEARANCE_KEY);
-    if (appearance !== null) out.appearance = appearance;
-
-    const accents = parse(migratedGet(store, ACCENTS_KEY, OLD_ACCENTS_KEY));
-    if (isPlainObject(accents)) out.accents = accents as Record<string, string>;
-
-    if (migratedGet(store, CLAIM_HINT_KEY, OLD_CLAIM_HINT_KEY) === CLAIM_HINT_DISMISSED) {
-      out.claimHintDismissed = true;
-    }
-    if (migratedGet(store, LESSON_WRITING_KEY, OLD_LESSON_WRITING_KEY) === LESSON_OPEN) {
-      out.lessonWriting = true;
-    }
-    if (migratedGet(store, LESSON_READINGS_KEY, OLD_LESSON_READINGS_KEY) === LESSON_OPEN) {
-      out.lessonReadings = true;
-    }
-
-    const shown = CONCEPT_CARD_IDS.filter(
-      (id) => migratedGet(store, introShownKey(id), oldIntroShownKey(id)) === INTRO_SHOWN,
-    );
-    if (shown.length) out.introShown = shown;
 
     // practice's keepsakes (SAK-342): only when either is set
     const saved = parse(store.getItem(PRACTICE_SAVED_KEY));
@@ -135,29 +87,6 @@ function set(store: SettingsStore, key: string, value: string): void {
   }
 }
 
-/** removeItem that swallows a throwing store. */
-function remove(store: SettingsStore, key: string): void {
-  try {
-    store.removeItem(key);
-  } catch {
-    // best effort
-  }
-}
-
-/** Write one boolean flag to its key: the sentinel when true, the key removed
- * when false — so the default reads back correctly whether it was never set or
- * explicitly turned off. Skipped entirely when the server did not send the field. */
-function applyFlag(
-  store: SettingsStore,
-  value: boolean | undefined,
-  key: string,
-  onValue: string,
-): void {
-  if (value === undefined) return;
-  if (value) set(store, key, onValue);
-  else remove(store, key);
-}
-
 /**
  * Write the server's settings blob into the individual localStorage keys — the
  * paint cache reconciling down to the source of truth. Only fields the server
@@ -174,23 +103,6 @@ export function applyServerSettings(
   if (!store) return;
 
   if (settings.cfg !== undefined) set(store, CFG_KEY, JSON.stringify(settings.cfg));
-  if (settings.theme !== undefined) set(store, THEME_KEY, settings.theme);
-  if (settings.appearance !== undefined) set(store, APPEARANCE_KEY, settings.appearance);
-  if (settings.accents !== undefined) {
-    set(store, ACCENTS_KEY, JSON.stringify(settings.accents));
-  }
-
-  applyFlag(store, settings.claimHintDismissed, CLAIM_HINT_KEY, CLAIM_HINT_DISMISSED);
-  applyFlag(store, settings.lessonWriting, LESSON_WRITING_KEY, LESSON_OPEN);
-  applyFlag(store, settings.lessonReadings, LESSON_READINGS_KEY, LESSON_OPEN);
-
-  if (settings.introShown !== undefined) {
-    const shown = new Set(settings.introShown);
-    for (const id of CONCEPT_CARD_IDS) {
-      if (shown.has(id)) set(store, introShownKey(id), INTRO_SHOWN);
-      else remove(store, introShownKey(id));
-    }
-  }
 
   if (settings.practice !== undefined) {
     if (settings.practice.saved !== undefined) set(store, PRACTICE_SAVED_KEY, JSON.stringify(settings.practice.saved));
