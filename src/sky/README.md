@@ -2689,3 +2689,29 @@ are American.
 
 109 lines out against 17 in. `scripts/unreachable.mjs --list` stays at
 zero, 3,822 unit tests pass with one assertion fewer, and 31 e2e.
+
+### The quiz's three tries become one (2026-09-08, SAK-370)
+
+`sky-quiz.tsx` had the same rule written three times. Typing an answer,
+picking a choice and placing an ordering card's pieces each counted a try,
+graded a right answer with `gradeFor`, and on a wrong one either settled
+"missed" at the last try or patched the card and wrote a "Not that ..."
+line. The three differed only in what they compared, what they recorded as
+said, and what a wrong go left behind.
+
+`attempt({ right, said, note, wrong })` holds it once and says which of the
+three things happened, so a caller with more to do on a wrong go can do it:
+the typed box empties itself, and nothing else needs to. The card's open
+state went to `lib/quiz.ts` with it: `Open`, `FRESH`, `triesNote`, and
+`maxTriesFor(card, retries)`, which is the rule that a board of choices
+runs out one pick short of giving itself away. Two choices give one go,
+three give two, and a typed or ordering card has no board to exhaust, so it
+gets the retries as set. That last one was an expression in the middle of
+the component and is a tested function now.
+
+The keyboard effect had no dependency list, so it took the window listener
+off and put it back on every render, which on a timed card is ten times a
+second. It subscribes once now, through a ref holding the latest handler,
+the way `onTimeOut` in the same file already did. The handler also returns
+early when there is no card: on the empty quiz, Enter read `card.order` and
+threw.

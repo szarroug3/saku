@@ -146,6 +146,43 @@ export function gradeFor(helped: boolean): Grade {
   return helped ? "help" : "clean";
 }
 
+/** Where a card stands while it is still open: what has been tried and
+ * what help was taken. Kept per card, so a skipped card resumes. */
+export interface Open {
+  tries: number;
+  narrowed: boolean;
+  hinted: boolean;
+  /** Choices already tried and found wrong. */
+  wrong: readonly string[];
+  /** Everything tried on this card so far, in order, for the reveal to list
+   * (SAK-387). Each attempt is added as it is made, so an earlier guess is
+   * still there when a later one settles the card. */
+  said: readonly string[];
+  /** The choice picked and not yet checked (a pick only selects; Check
+   * submits, so a clip can be heard first: Sam, 2026-09-05). */
+  chosen?: string;
+  /** An ordering card's pieces placed so far, by their index in the deal. */
+  built?: readonly number[];
+}
+
+/** A card nobody has touched yet. */
+export const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said: [] };
+
+/** "One more try." or "2 tries left." */
+export const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
+
+/** How many goes this card gets in all: the retries plus the first, and
+ * never more than a board of choices can honestly offer.
+ *
+ * A card answered by picking runs out when one wrong choice is left, since
+ * the last one standing is the answer and picking it proves nothing: two
+ * choices give one try, three give two. A typed card and an ordering card
+ * have no board to exhaust, so they get the retries as set. */
+export function maxTriesFor(card: QuizCard | undefined, retries: number): number {
+  if (!card || card.typed || card.order) return retries + 1;
+  return Math.min(retries + 1, Math.max(1, card.options.length - 1));
+}
+
 /** The three counts. */
 export function tally(answers: readonly QuizAnswer[]): Record<Grade, number> {
   const out: Record<Grade, number> = { clean: 0, help: 0, missed: 0 };

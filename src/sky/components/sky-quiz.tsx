@@ -32,7 +32,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { DEFAULT_RETRIES, gradeFor, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
+import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 export interface SkyQuizProps {
   cards: readonly QuizCard[];
@@ -72,30 +72,6 @@ export interface SkyQuizProps {
 /** A context line that only names the kind of answer ("meaning") says
  * nothing the instruction does not; a frame or a gloss is worth showing. */
 const LABEL_ONLY = /^(meaning|reading|in japanese)$/i;
-
-/** Where a card stands while it is still open: what has been tried and
- * what help was taken. Kept per card, so a skipped card resumes. */
-interface Open {
-  tries: number;
-  narrowed: boolean;
-  hinted: boolean;
-  /** Choices already tried and found wrong. */
-  wrong: readonly string[];
-  /** Everything tried on this card so far, in order, for the reveal to list
-   * (SAK-387). Each attempt is added as it is made, so an earlier guess is
-   * still there when a later one settles the card. */
-  said: readonly string[];
-  /** The choice picked and not yet checked (a pick only selects; Check
-   * submits, so a clip can be heard first: Sam, 2026-09-05). */
-  chosen?: string;
-  /** An ordering card's pieces placed so far, by their index in the deal. */
-  built?: readonly number[];
-}
-
-const FRESH: Open = { tries: 0, narrowed: false, hinted: false, wrong: [], said: [] };
-
-/** "One more try." or "2 tries left." */
-const triesNote = (left: number) => (left === 1 ? "One more try." : `${left} tries left.`);
 
 export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, title = "Tonight's drill", height }: SkyQuizProps) {
   const Pitch = pitch;
@@ -147,11 +123,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   }, [listening, cardId]);
   const timeLeft = timerSeconds && cardId && clock.shownAt[cardId] ? Math.max(0, clock.shownAt[cardId] + timerSeconds * 1000 - clock.now) : null;
 
-  // a card of two choices is wrong after one wrong pick; a typed card, or a
-  // fuller board, gets the retries
-  // tries in all: the retries plus the first go, and never more than a
-  // board of choices can honestly offer
-  const maxTries = card ? (card.typed || card.order ? retries + 1 : Math.min(retries + 1, Math.max(1, card.options.length - 1))) : retries + 1;
+  const maxTries = maxTriesFor(card, retries);
 
   // the box takes focus for every card that is still open
   useEffect(() => { if (!answered) input.current?.focus(); }, [at, answered]);
@@ -183,6 +155,31 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
     return all;
   };
 
+  /** One go at the card, whichever way it was answered.
+   *
+   * Typing, picking and placing differ only in what they compare, what they
+   * record as said and what a wrong go leaves behind; the rule about tries
+   * is the same for all three and lives here once. A right answer settles
+   * and moves on; a wrong one at the last try is a miss with the answer
+   * shown; otherwise the card keeps its place and says how many tries are
+   * left. What comes back says which of the three happened, so a caller
+   * with more to do on a wrong go (the box empties itself) can.
+   *
+   * A card that opens on its choices is answered cold: help is only what was
+   * asked for (the choices on a typed card, a hint) or a retry. An ordering
+   * card is never `typed`, so "Multiple choice" is never offered on it and
+   * `narrowed` cannot be true there.
+   */
+  const attempt = ({ right, said, note, wrong }: { right: boolean; said?: string; note: string; wrong?: Partial<Open> }): "right" | "missed" | "again" => {
+    const tries = state.tries + 1;
+    const tried = said === undefined ? state.said : [...state.said, said];
+    if (right) { advance(at, settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said: tried })); return "right"; }
+    if (tries >= maxTries) { settle("missed", tries, { said: tried }); setFeedback(null); return "missed"; }
+    patch({ tries, said: tried, ...wrong });
+    setFeedback(`${note} ${triesNote(maxTries - tries)}`);
+    return "again";
+  };
+
   /** A right answer moves straight on; a wrong one costs a try. Typed text
    * is graded when there is any; else the picked choice. */
   const submit = (e?: FormEvent) => {
@@ -190,30 +187,17 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
     const text = given.trim();
     if (answered) return;
     if (!text) { if (state.chosen) choose(state.chosen); return; }
-    const tries = state.tries + 1;
-    const said = [...state.said, text];
-    if (grade(card, text)) {
-      const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said });
-      advance(at, all);
-      return;
-    }
-    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
-    patch({ tries, said });
-    setGiven("");
-    setFeedback(`Not that. ${triesNote(maxTries - tries)}`);
+    if (attempt({ right: grade(card, text), said: text, note: "Not that." }) === "again") setGiven("");
   };
 
   const choose = (id: string) => {
     if (answered || state.wrong.includes(id)) return;
-    const tries = state.tries + 1;
-    // a card that opens on its choices is answered cold: help is only what
-    // was asked for (the choices on a typed card, a hint) or a retry
-    const label = card.options.find((o) => o.id === id)?.label;
-    const said = label ? [...state.said, label] : state.said;
-    if (id === card.answerId) { const all = settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said }); advance(at, all); return; }
-    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
-    patch({ tries, wrong: [...state.wrong, id], chosen: undefined, said });
-    setFeedback(`Not that one. ${triesNote(maxTries - tries)}`);
+    attempt({
+      right: id === card.answerId,
+      said: card.options.find((o) => o.id === id)?.label,
+      note: "Not that one.",
+      wrong: { wrong: [...state.wrong, id], chosen: undefined },
+    });
   };
 
   /** Checks an ordering card's pieces as placed; a wrong order clears them. */
@@ -221,13 +205,12 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
     if (answered || !card.order) return;
     const built = state.built ?? [];
     if (built.length !== card.order.pieces.length) return;
-    const tries = state.tries + 1;
-    const right = built.every((p, i) => card.order!.pieces[p] === card.order!.answer[i]);
-    const said = [...state.said, built.map((p) => card.order!.pieces[p]).join(" ")];
-    if (right) { const all = settle(gradeFor(tries > 1 || state.hinted), tries, { said }); advance(at, all); return; }
-    if (tries >= maxTries) { settle("missed", tries, { said }); setFeedback(null); return; }
-    patch({ tries, built: [], said });
-    setFeedback(`Not that order. ${triesNote(maxTries - tries)}`);
+    attempt({
+      right: built.every((p, i) => card.order!.pieces[p] === card.order!.answer[i]),
+      said: built.map((p) => card.order!.pieces[p]).join(" "),
+      note: "Not that order.",
+      wrong: { built: [] },
+    });
   };
 
   /** Picks a choice without checking it; a pitched choice plays its clip. */
@@ -259,20 +242,28 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   // Enter on a choice not yet picked falls through to the button, which
   // picks it; a second Enter then checks it, which is the same two steps the
   // mouse takes and the reason a pitch clip can be heard before committing.
+  //
+  // One subscription, through a ref that holds the latest handler, the way
+  // `onTimeOut` above does it. The effect used to have no dependency list, so
+  // it took the window listener off and put it back on every render, which on
+  // a timed card is ten times a second (SAK-370).
+  const pressed = (e: KeyboardEvent) => {
+    if (finished || !card) return;
+    if (e.key === "Enter" && answered) { e.preventDefault(); if (allAnswered) finish(answers); else advance(at, answers); }
+    if (e.key === "Enter" && !answered && e.target !== input.current) {
+      if (card.order) { if ((state.built ?? []).length === card.order.pieces.length) { e.preventDefault(); submitOrder(); } }
+      else if (state.chosen) { e.preventDefault(); submit(); }
+    }
+    if (e.key === "ArrowLeft" && !given) go(at - 1);
+    if (e.key === "ArrowRight" && !given) go(at + 1);
+  };
+  const onKey = useRef(pressed);
+  useEffect(() => { onKey.current = pressed; });
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (finished) return;
-      if (e.key === "Enter" && answered) { e.preventDefault(); if (allAnswered) finish(answers); else advance(at, answers); }
-      if (e.key === "Enter" && !answered && e.target !== input.current) {
-        if (card.order) { if ((state.built ?? []).length === card.order.pieces.length) { e.preventDefault(); submitOrder(); } }
-        else if (state.chosen) { e.preventDefault(); submit(); }
-      }
-      if (e.key === "ArrowLeft" && !given) go(at - 1);
-      if (e.key === "ArrowRight" && !given) go(at + 1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
+    const key = (e: KeyboardEvent) => onKey.current(e);
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
 
   // The deck used to be a strip of pips here. It is a foldable list down
   // the right now (SAK-384). Its width is held open on either side of the

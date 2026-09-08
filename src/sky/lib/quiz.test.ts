@@ -1,11 +1,12 @@
 // The deck's order (SAK-388): dealt, not asked in the order the facts came
-// out of the tables, and a word's own cards moved apart.
+// out of the tables, and a word's own cards moved apart. And how many goes a
+// card gets, which the quiz screen used to work out inline (SAK-370).
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { seeded } from "./random";
-import { shuffleDeck, type QuizCard } from "./quiz";
+import { maxTriesFor, shuffleDeck, triesNote, type QuizCard, type QuizOption } from "./quiz";
 import type { SkyItem } from "./types";
 
 const item = (id: string): SkyItem => ({ id, kind: "word", glyph: id, english: id } as SkyItem);
@@ -78,5 +79,48 @@ describe("shuffleDeck", () => {
   it("is happy with an empty deck and a deck of one", () => {
     assert.deepEqual(shuffleDeck([], seeded(1)), []);
     assert.equal(order(shuffleDeck(deck("a"), seeded(1))), "a0");
+  });
+});
+
+/** A card of `n` choices, typed or not. */
+const board = (n: number, over: Partial<QuizCard> = {}): QuizCard => {
+  const options: QuizOption[] = Array.from({ length: n }, (_, i) => ({ id: `o${i}`, label: `o${i}`, jp: false }));
+  return { ...card("a", 0), typed: false, options, answerId: "o0", ...over } as QuizCard;
+};
+
+describe("maxTriesFor", () => {
+  it("gives a typed card the retries plus its first go", () => {
+    assert.equal(maxTriesFor(board(4, { typed: true }), 2), 3);
+    assert.equal(maxTriesFor(board(4, { typed: true }), 0), 1);
+  });
+
+  it("gives an ordering card the retries too: there is no board to exhaust", () => {
+    const ordering = board(0, { order: { pieces: ["a", "b"], answer: ["a", "b"] } });
+    assert.equal(maxTriesFor(ordering, 2), 3);
+  });
+
+  it("stops a board of choices one short of giving itself away", () => {
+    // two choices: one wrong pick leaves only the answer, so there is one go
+    assert.equal(maxTriesFor(board(2), 2), 1);
+    assert.equal(maxTriesFor(board(3), 2), 2);
+    assert.equal(maxTriesFor(board(4), 2), 3);
+    // and never more than the retries allow, however wide the board
+    assert.equal(maxTriesFor(board(8), 2), 3);
+  });
+
+  it("always leaves one go, even on a board of one", () => {
+    assert.equal(maxTriesFor(board(1), 2), 1);
+    assert.equal(maxTriesFor(board(0), 2), 1);
+  });
+
+  it("answers for no card at all, since the quiz asks before it has one", () => {
+    assert.equal(maxTriesFor(undefined, 2), 3);
+  });
+});
+
+describe("triesNote", () => {
+  it("counts down, and says the last one in words", () => {
+    assert.equal(triesNote(2), "2 tries left.");
+    assert.equal(triesNote(1), "One more try.");
   });
 });
