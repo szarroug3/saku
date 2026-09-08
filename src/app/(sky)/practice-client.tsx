@@ -91,10 +91,10 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
   const who = useWho(sample, signedIn);
   const source = useMemo<RunSource>(() => ({ ...(named.length ? { cards: named } : {}), recipe: recipeKey(recipe) }), [named, recipe]);
   const local = useRunAtOpen();
-  const saved = sample ? null : (local ?? accountRun);
+  const savedRun = sample ? null : (local ?? accountRun);
   const [replaced, setReplaced] = useState(false);
-  const clash = saved && !sameSource(saved.from, source) ? saved : null;
-  const resume = clash ? null : saved;
+  const clash = savedRun && !sameSource(savedRun.from, source) ? savedRun : null;
+  const resume = clash ? null : savedRun;
   // the deck as one string, so writing the run down after every answer does
   // not re-deal it underneath whoever is answering (see quiz-client.tsx)
   const deckKey = resume ? resume.deck.join("\n") : "";

@@ -174,7 +174,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
               const on = recipe.collections.includes(c.id);
               const total = `${c.total.toLocaleString()} to draw from`;
               if (!c.cuts) return <SkyChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={total}>{c.title}</SkyChip>;
-              const chosen = cutsOf(recipe, c.id);
+              const cutIds = cutsOf(recipe, c.id);
               const groups = [...new Set(c.cuts.map((cut) => cut.group ?? ""))];
               const menu = (
                 <div className="flex flex-col gap-2.5">
@@ -182,14 +182,14 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
                     <div key={g}>
                       {g && <Eyebrow>{g}</Eyebrow>}
                       <ChipRow>
-                        {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={chosen.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
+                        {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutIds.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
                       </ChipRow>
                     </div>
                   ))}
                 </div>
               );
-              const names = chosen.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
-              return <SkyMenuChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={names ? `${c.title}: ${names}` : total} marked={chosen.length > 0} menuLabel={`Which ${c.title.toLowerCase()}`} menu={menu}>{c.title}</SkyMenuChip>;
+              const names = cutIds.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
+              return <SkyMenuChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={names ? `${c.title}: ${names}` : total} marked={cutIds.length > 0} menuLabel={`Which ${c.title.toLowerCase()}`} menu={menu}>{c.title}</SkyMenuChip>;
             })}
           </Facet>
           <Facet title="Only things that are">
