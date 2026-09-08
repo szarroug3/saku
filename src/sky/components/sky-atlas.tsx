@@ -18,7 +18,7 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { AtlasRail } from "@/sky/components/atlas-rail";
@@ -37,6 +37,7 @@ import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
 import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
+import { useStreamedShelf } from "./use-streamed-shelf";
 import { isPage, type SkyItem, type SkyKind } from "@/sky/lib/types";
 
 /** One cut of a shelf: a name and the entries under it. */
@@ -206,22 +207,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter) && (part === null || it.kind !== "kanji" || !!it.parts?.includes(part)); }, [graph, filter, part]);
 
   // a streamed shelf: its cuts fetch their tiles as they near; with a status
-  // picked its cuts come from the server, since no standings are here to cut by
-  const [streamedCuts, setStreamedCuts] = useState<ReadonlyMap<string, readonly AtlasSection[]>>(new Map());
-  const streamKey = shelf?.streamed && filter ? `${shelf.id}:${filter}` : null;
-  useEffect(() => {
-    if (!streamKey || streamedCuts.has(streamKey) || !shelf) return;
-    let live = true;
-    lookup.sections(shelf.id, filter!).then((cuts) => { if (live) setStreamedCuts((prev) => new Map(prev).set(streamKey, cuts)); });
-    return () => { live = false; };
-  }, [streamKey, streamedCuts, shelf, filter, lookup]);
-  const fetching = useRef(new Set<string>());
-  const fetchTiles = useCallback((ids: readonly string[]) => {
-    const missing = ids.filter((id) => !graph.itemOf(id) && !fetching.current.has(id));
-    if (!missing.length) return;
-    for (const id of missing) fetching.current.add(id);
-    lookup.tiles(missing).then((tiles) => bring(tiles)).catch(() => { for (const id of missing) fetching.current.delete(id); });
-  }, [graph, lookup, bring]);
+  // picked its cuts come from the server (use-streamed-shelf.ts)
+  const { streamedCuts, streamKey, fetchTiles } = useStreamedShelf({ shelf, filter, lookup, graph, bring });
 
   // search: the app's answer, by shelf, after a short pause in typing. The
   // answer is kept with the query it answers, so a cleared or changed box

@@ -1480,3 +1480,12 @@ And from the components review: five screens carried the same page-body
 class string, two with the reading width. `SkyPageBody` is that column,
 with `width="reading"` for the quiz and its results, so a change to how a
 page scrolls is a change in one place.
+
+### The Atlas's streaming, apart from its layout (2026-09-07, from the review)
+
+The Atlas component carried the Words shelf's streaming inline: which
+cuts had been fetched for which standing, which tiles were being fetched,
+the effect that asked the server. `useStreamedShelf` holds that now and
+hands the component `streamedCuts`, `streamKey` and `fetchTiles`; the
+component is layout again. No behaviour changed; the e2e that scrolls a
+streamed shelf holds it.
