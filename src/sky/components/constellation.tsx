@@ -1,4 +1,4 @@
-// One constellation, drawn. Tracked as SAK-296.
+// One constellation, drawn. Tracked as SAK-296; the look is SAK-338.
 //
 // Renders the lines and stars of a placed layout into an SVG group. Every
 // screen uses this: the home sky, the Planetarium's preview, the lesson sky,
@@ -8,66 +8,26 @@
 // the dots at all. The lesson draws its own clickable stars on the positions
 // `placeConstellation` returns and asks for the lines only.
 //
-// Colour is by standing through the standing tokens, so a star is the same
-// colour as its chip. Lines fade and dash to stars that are not lit or known.
+// THE STARS CARRY THE STATE AND THE LINES CARRY THE SHAPE (SAK-338). Every
+// line is one colour and one weight and is never dashed: it says two things
+// are joined, and nothing more. A star says how it is going, by its glow and
+// by the marks it wears. Which paint that is, is `paintFor` and
+// `linePaintFor` in src/sky/lib/constellation.ts, tested there; this file
+// only draws it. Colour is still by standing through the standing tokens, so
+// a star is the same colour as its chip.
 //
-// THE LOOK IS STILL MOSTLY A PLACEHOLDER. Sam's call (2026-09-04): get the
-// model right first and decide the visuals later. So this draws the plainest
-// thing that shows the shape and the state: a dot per star, a line per edge,
-// paint from the tokens. Halos, glows, sizes and line weights are all open;
-// the card for that is "Sky: star and line visuals" in Sky: Shared
-// components. What IS decided (Sam, 2026-09-05) is the bodies: a grammar
-// pattern or a sentence rule is a planet with a ring, a counter an asteroid,
-// a verb pair a binary star; everything else a star. Every consumer reads
-// positions from placeConstellation and looks from paintFor, so the drawing
-// can change without touching them.
+// What each thing IS was settled first (Sam, 2026-09-05): a grammar pattern
+// or a sentence rule is a planet with a ring, a counter an asteroid, a verb
+// pair a binary star; everything else a star. Every consumer reads positions
+// from placeConstellation and paint from paintFor, so the drawing can change
+// without touching them.
 
 import type { ReactNode } from "react";
 
-import { ASTEROID, asteroidShape, BINARY, placeConstellation, PLANET, STAR_RADIUS, type Body, type ConstellationLayout, type StarRole } from "@/sky/lib/constellation";
-import type { Standing } from "@/sky/lib/standing";
+import { ASTEROID, asteroidShape, BINARY, bodyRadius, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
 
-/** What one star looks like. Standing first; the lesson's looks override it. */
-export interface StarLook {
-  role: StarRole;
-  /** What it is drawn as: a star unless said otherwise (see bodyOf). */
-  body?: Body;
-  standing: Standing;
-  /** Picked for tonight and not yet learned: faint and dashed. */
-  tonight?: boolean;
-  /** Opened during this lesson: bright, and it stays that way. */
-  lit?: boolean;
-  /** The star the panel is showing: the learner's accent. */
-  emphasis?: boolean;
-  /** Faded right back, while something else is singled out. */
-  muted?: boolean;
-  /** Not drawn at all, nor its lines: the legend is showing only others. */
-  hidden?: boolean;
-}
-
-/** The paint for a look: fill token, glow radius, line opacity, line dash. */
-interface Paint { fill: string; glow: number; opacity: number; dash?: string }
-
-const BY_STANDING: Record<Standing, Paint> = {
-  solid: { fill: "var(--sky-solid)", glow: 5, opacity: 0.85 },
-  "getting-there": { fill: "var(--sky-getting-there)", glow: 3, opacity: 0.7 },
-  shaky: { fill: "var(--sky-shaky)", glow: 3, opacity: 0.6 },
-  slipping: { fill: "var(--sky-slipping)", glow: 3, opacity: 0.55, dash: "4 3" },
-  claimed: { fill: "var(--sky-claimed)", glow: 0, opacity: 0.5 },
-  "not-seen": { fill: "var(--sky-not-seen)", glow: 0, opacity: 0.22, dash: "2 4" },
-};
-const TONIGHT: Paint = { fill: "var(--sky-star-mid)", glow: 4, opacity: 0.5, dash: "3 3" };
-const LIT: Paint = { fill: "var(--sky-star)", glow: 4, opacity: 0.75 };
-const EMPHASIS: Paint = { fill: "var(--sky-accent)", glow: 6, opacity: 0.9 };
-
-/** The paint a look resolves to. Exported so the lesson's own clickable
- * stars can wear the same colours. */
-export function paintFor(look: StarLook): Paint {
-  if (look.emphasis) return EMPHASIS;
-  if (look.lit) return LIT;
-  if (look.tonight) return TONIGHT;
-  return BY_STANDING[look.standing];
-}
+export { paintFor };
+export type { Paint, StarLook };
 
 export interface ConstellationProps {
   layout: ConstellationLayout;
@@ -87,57 +47,89 @@ export interface ConstellationProps {
 
 /** One body at a point: a star's dot, a planet's disc and ring, an
  * asteroid's lump, a binary's two suns. The glow, when the paint has one,
- * sits under all of them. */
+ * sits under all of them; so does the halo, when it wears one. The ring
+ * goes over the top, because it is a mark and has to be seen. */
 function BodyFigure({ id, x, y, body, role, paint, glowOpacity, u }: { id: string; x: number; y: number; body: Body; role: StarRole; paint: Paint; glowOpacity: number; u: number }) {
-  const glow = (r: number) => paint.glow > 0 && <circle cx={x} cy={y} r={r + paint.glow} fill={paint.fill} opacity={glowOpacity} />;
-  switch (body) {
-    case "planet": {
-      const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u, w = 2 * u;
-      // the disc in its standing's colour with a shaded limb; the ring in
-      // starlight so it reads against any disc, its far half behind the
-      // disc and its near half in front. No glow: it would swallow the ring.
-      return (
-        <g transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
-          <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.35} />
-          <circle cx={x} cy={y} r={r} fill={paint.fill} />
-          <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill="var(--sky-ground-0)" opacity={0.3} />
-          <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.9} />
-        </g>
-      );
+  const reach = bodyRadius(body, role) * u;
+  const glow = (r: number) => paint.glow > 0 && <circle cx={x} cy={y} r={r + paint.glow * u} fill={paint.fill} opacity={glowOpacity} />;
+  const figure = () => {
+    switch (body) {
+      case "planet": {
+        const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u, w = 2 * u;
+        // the disc in its standing's colour with a shaded limb; the ring in
+        // starlight so it reads against any disc, its far half behind the
+        // disc and its near half in front. No glow: it would swallow the ring.
+        return (
+          <g transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
+            <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.35} />
+            <circle cx={x} cy={y} r={r} fill={paint.fill} />
+            <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill="var(--sky-ground-0)" opacity={0.3} />
+            <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.9} />
+          </g>
+        );
+      }
+      case "asteroid": {
+        const r = ASTEROID.r * u;
+        const points = asteroidShape(id).map(([px, py]) => `${x + px * r},${y + py * r}`).join(" ");
+        // a lump with a crater on it, so it is a rock and not a fat star
+        return (
+          <>
+            <polygon points={points} fill={paint.fill} />
+            <circle cx={x + r * 0.3} cy={y - r * 0.15} r={r * 0.32} fill="var(--sky-ground-0)" opacity={0.45} />
+            <circle cx={x - r * 0.35} cy={y + r * 0.3} r={r * 0.2} fill="var(--sky-ground-0)" opacity={0.35} />
+          </>
+        );
+      }
+      case "binary": {
+        const a = BINARY.a, b = BINARY.b;
+        // two suns, a shared glow between them
+        return (
+          <>
+            {glow(a.r * u + 4 * u)}
+            <circle cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />
+            <circle cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />
+          </>
+        );
+      }
+      default: {
+        const r = STAR_RADIUS[role] * u;
+        return (
+          <>
+            {glow(r)}
+            <circle cx={x} cy={y} r={r} fill={paint.fill} />
+          </>
+        );
+      }
     }
-    case "asteroid": {
-      const r = ASTEROID.r * u;
-      const points = asteroidShape(id).map(([px, py]) => `${x + px * r},${y + py * r}`).join(" ");
-      // a lump with a crater on it, so it is a rock and not a fat star
-      return (
-        <>
-          <polygon points={points} fill={paint.fill} />
-          <circle cx={x + r * 0.3} cy={y - r * 0.15} r={r * 0.32} fill="var(--sky-ground-0)" opacity={0.45} />
-          <circle cx={x - r * 0.35} cy={y + r * 0.3} r={r * 0.2} fill="var(--sky-ground-0)" opacity={0.35} />
-        </>
-      );
-    }
-    case "binary": {
-      const a = BINARY.a, b = BINARY.b;
-      // two suns, a shared glow between them
-      return (
-        <>
-          {glow(a.r * u + 4 * u)}
-          <circle cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />
-          <circle cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />
-        </>
-      );
-    }
-    default: {
-      const r = STAR_RADIUS[role] * u;
-      return (
-        <>
-          {glow(r)}
-          <circle cx={x} cy={y} r={r} fill={paint.fill} />
-        </>
-      );
-    }
-  }
+  };
+  return (
+    <>
+      {paint.halo && <circle cx={x} cy={y} r={reach + paint.halo.grow * u} fill={paint.halo.fill} opacity={paint.halo.opacity} />}
+      <g opacity={paint.opacity === 1 ? undefined : paint.opacity}>{figure()}</g>
+      {paint.ring && <circle cx={x} cy={y} r={reach + paint.ring.grow * u} fill="none" stroke={paint.ring.stroke} strokeWidth={paint.ring.width * u} opacity={paint.ring.opacity} />}
+    </>
+  );
+}
+
+/** The room a glyph needs round its centre: its body, plus the widest mark
+ * any look can put on it, so every row of a key draws at one size and the
+ * sizes are honest against each other. */
+function glyphReach(look: StarLook, paint: Paint): number {
+  const body = bodyRadius(look.body ?? "star", look.role);
+  const mine = Math.max(paint.glow, paint.halo?.grow ?? 0, paint.ring?.grow ?? 0);
+  return Math.max(body + mine, STAR_RADIUS.word + TONIGHT_HALO.grow) + 1;
+}
+
+/** One body on its own, in a box of its own: the legend's key, drawn by the
+ * code the sky is drawn with, so the key IS the drawing (SAK-338). */
+export function StarGlyph({ look, size = 22, className = "" }: { look: StarLook; size?: number; className?: string }) {
+  const paint = paintFor(look);
+  const reach = glyphReach(look, paint);
+  return (
+    <svg aria-hidden viewBox={`${-reach} ${-reach} ${reach * 2} ${reach * 2}`} width={size} height={size} className={`shrink-0 ${className}`}>
+      <BodyFigure id={look.role} x={0} y={0} body={look.body ?? "star"} role={look.role} paint={paint} glowOpacity={0.16} u={1} />
+    </svg>
+  );
 }
 
 /** The lines and stars of one constellation. Put it inside an <svg>. */
@@ -145,8 +137,6 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
   const u = Math.max(0.7, Math.min(1.8, unit));
   const stars = placeConstellation(layout, cx, cy, r);
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
-  const hot = (id: string) => looks.get(id)?.emphasis === true;
-  const dim = (id: string) => looks.get(id)?.muted === true;
   const gone = (id: string) => looks.get(id)?.hidden === true;
   const MUTED = 0.12;
   return (
@@ -155,16 +145,16 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
         {layout.lines.map(([i, j]) => {
           const a = stars[i], b = stars[j];
           if (gone(a.id) || gone(b.id)) return null;
-          const paint = paintFor(looks.get(b.id)!);
-          const emphasised = hot(a.id) || hot(b.id);
+          // the line reads the same either way round: it belongs to the pair,
+          // not to the star it happens to point at (SAK-338)
+          const line = linePaintFor(looks.get(a.id)!, looks.get(b.id)!);
           return (
             <line
               key={`${a.id}>${b.id}`}
               x1={a.px} y1={a.py} x2={b.px} y2={b.py}
-              stroke={emphasised ? "var(--sky-accent)" : "var(--sky-link)"}
-              strokeWidth={emphasised ? 1.4 : 1}
-              opacity={dim(a.id) || dim(b.id) ? MUTED : emphasised ? 0.9 : paint.opacity}
-              strokeDasharray={!emphasised && paint.dash ? paint.dash : undefined}
+              stroke={line.stroke}
+              strokeWidth={line.width}
+              opacity={line.opacity}
             />
           );
         })}

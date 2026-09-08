@@ -1,23 +1,34 @@
 "use client";
 
 // The standing legend and chip: the only two places a standing's colour is
-// painted as a dot. Tracked as SAK-294.
+// painted on its own. Tracked as SAK-294.
 //
-// THE RULE: a bare coloured dot never appears without its word. That is why
-// the dot itself is not exported. A chip is a dot with its label, a legend is
-// every dot with its label, and anything else that wants to colour by standing
-// (a star fill, a coverage bar segment) sits next to one of these.
+// THE RULE: a bare coloured mark never appears without its word. That is why
+// the mark itself is not exported. A chip is a mark with its label, a legend
+// is every mark with its label, and anything else that wants to colour by
+// standing (a star fill, a coverage bar segment) sits next to one of these.
+//
+// The mark is the STAR (SAK-338), not a flat dot: the same body, glow, halo
+// and ring the sky draws, at the same relative sizes, through `StarGlyph`
+// and `paintFor`. So the key is the drawing, and a learner reading "solid"
+// beside a glowing star is reading the sky itself. The key spells out
+// tonight as well, which is a mark on a star and never a standing.
 
 import type { ReactNode } from "react";
 
 import { useEqualChips } from "@/sky/components/chip-row";
+import { StarGlyph } from "@/sky/components/constellation";
 import { SkyInfo } from "@/sky/components/sky-info";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 
 function Dot({ standing, className = "" }: { standing: Standing; className?: string }) {
-  return <span aria-hidden className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${STANDING[standing].dot} ${className}`} />;
+  return <StarGlyph look={{ role: "word", standing }} className={className} />;
 }
+
+/** The tonight mark and its word: not a standing, so never a chip and never
+ * a filter, but it belongs in the key beside them. */
+const TONIGHT_LOOK = { role: "word", standing: "not-seen", tonight: true } as const;
 
 /** A standing as a worded chip: dot, word, and optionally a count. */
 export function StandingChip({ standing, count, title }: { standing: Standing; count?: number; title?: string }) {
@@ -91,11 +102,12 @@ export function SkyWarning({ children }: { children: ReactNode }) {
   );
 }
 
-/** What each standing means, one line per standing: the card behind the
- * legend's "i", and anywhere else the words need spelling out. */
+/** What each standing means, one line per standing and then one for tonight:
+ * the card behind the legend's "i", and anywhere else the words need
+ * spelling out. Every row draws its real star, so the key is the drawing. */
 export function StandingKey({ standings = STANDING_ORDER, className = "" }: { standings?: readonly Standing[]; className?: string }) {
   return (
-    <dl className={`grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-ink ${className}`}>
+    <dl className={`grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-ink ${className}`}>
       {standings.map((standing) => (
         <div key={standing} className="contents">
           <dt className="inline-flex items-center gap-1.5">
@@ -105,6 +117,13 @@ export function StandingKey({ standings = STANDING_ORDER, className = "" }: { st
           <dd className="text-sky-muted">{STANDING[standing].meaning}</dd>
         </div>
       ))}
+      <div className="contents">
+        <dt className="inline-flex items-center gap-1.5">
+          <StarGlyph look={TONIGHT_LOOK} />
+          <span className="text-sky-star-mid">Tonight</span>
+        </dt>
+        <dd className="text-sky-muted">Picked for tonight, whatever it is otherwise</dd>
+      </div>
     </dl>
   );
 }

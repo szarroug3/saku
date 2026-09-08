@@ -71,10 +71,11 @@ app's decision table; the caller runs the model and hands over showings, the
 model's verdict (teach, probe, quiet) and the last-ten-runs accuracy, and
 `standing.test.ts` proves the copy agrees with `src/lib/library/standing.ts`
 on a grid of scenarios (that test is the one place Sky code imports the app,
-and it goes at cutover). **A bare coloured dot never appears without its
-word:** the dot is not exported; `StandingChip` and `StandingLegend` in
+and it goes at cutover). **A bare coloured mark never appears without its
+word:** the mark is not exported; `StandingChip` and `StandingLegend` in
 `src/sky/components/standing-legend.tsx` are the only ways to paint one, and a
-star fill or coverage bar sits beside a legend. Inside the lesson a star is
+star fill or coverage bar sits beside a legend. Since SAK-338 the mark is the
+star itself, drawn by the sky's own `StarGlyph` and `paintFor`. Inside the lesson a star is
 locked, open, lit or selected (`LessonState`), never a standing; "tonight" and
 "lit" are legend rows there, never chips. `/standings` (gallery page removed 2026-09-04) shows all of it.
 
@@ -113,9 +114,11 @@ thing that differs. Prerequisites + 1 stars, no more. `ConstellationFigure`
 `<svg>`: star size by role (`roleOf(kind)`: word, kanji, piece), body by kind
 (`bodyOf(kind)`: grammar and sentence rules are planets, counters asteroids,
 verb pairs binary stars, the rest stars), colour by
-standing through the standing tokens, glow on known stars, lines that fade
-and dash to stars not lit or known; the lesson's looks (`tonight`, `lit`,
-`emphasis`) override the standing, and `dots={false}` draws lines only so the
+standing through the standing tokens, and the state in the glow and marks
+the star wears (SAK-338, at the end of this file). Lines are structure only:
+one colour, one weight, never dashed, fog into what is undiscovered. `lit`
+and `emphasis` take a star over and `tonight` is a halo on top of whatever
+it already is, and `dots={false}` draws lines only so the
 lesson can put its own clickable stars on the returned positions, in the same
 colours via `paintFor`. `/constellations` (gallery page removed 2026-09-04) shows all of it on real words.
 
@@ -3103,3 +3106,56 @@ holding: the built-from control takes a second part from the keyboard alone and
 narrows to the kanji carrying both, and a readings table's three columns each
 have exactly one x. Before-and-after screenshots of all four went to Sam on the
 card.
+
+### The stars carry the state, the lines the shape (2026-09-08, SAK-338)
+
+The constellation's look was a placeholder from the day it was written, held
+open on purpose until the model underneath it was right. Three screenshots
+from Sam said it could not be read. The reason was in one line of the
+drawing: a line took its fade AND its dash from the standing of the star it
+happened to point at, so the same edge between the same two stars read
+differently depending on which way round the layout drew it, and the sky's
+warmest colour, coral, was spent on "slipping".
+
+Five rules, and the paint moved into `src/sky/lib/constellation.ts` so they
+can be held to in a unit test rather than only seen.
+
+**Lines carry the shape and nothing else.** Every line is `--sky-link`, one
+pixel wide, at 0.45, and none of them is dashed. A line with an undiscovered
+star at either end drops to 0.18, so unknown ground reads as fog rather than
+as a different kind of joining. The lesson's accent still takes over the
+lines at the star the panel is showing, and something singled out elsewhere
+still takes every other line back to 0.12. `linePaintFor(a, b)` gives the
+same answer whichever way round the pair is handed to it, which is the whole
+point.
+
+**State lives on the star, in its glow.** Solid reaches 6, getting there 4,
+shaky 2, and nothing below that glows at all. Sizes are still by role.
+
+**Slipping is a star going out**, not the friendliest thing on the sky: it
+keeps its coral, dimmed to 0.7, loses its glow, and takes a thin solid ring
+where the glow used to be (three past the body, coral at 0.6). The ring is
+the mark, so no dashes are needed anywhere. Untested has no glow either but
+wears a faint halo, star-mid at 0.15; undiscovered is a bare dim dot.
+
+**Tonight is a mark, not a state.** Picked for tonight is a wide soft halo in
+star-mid, nine past the body at 0.12, drawn round whatever the star already
+is: a shaky pick is still shaky underneath, with its own colour and its own
+glow. `lit` and `emphasis` still take a star over completely, as they did.
+
+**The key is the drawing.** The legend's marks are stars now, drawn by
+`StarGlyph` through the same `paintFor` and the same `BodyFigure` the sky
+uses, at the same relative sizes, and the key behind the legend's "i" spells
+out tonight as a seventh row. A flat coloured dot said nothing about a glow
+or a ring, so reading the key told you a colour and left the rest of the
+drawing unexplained.
+
+Unchanged on purpose: the wash, the standing colours, the bodies (planet,
+asteroid, binary), and every position. What did change beyond the rules is
+that a glow now scales with the constellation's `unit` the way the star's own
+radius always did; it used to be a fixed pixel count at every size.
+
+`constellation.test.ts` pins all of it: the glow per standing, the ring, the
+two halos, tonight over each standing, and the line rule from both ends.
+`e2e/sky.spec.ts` gained two, one that no line on the home sky is dashed or
+any colour but the link's, and one that the key draws seven stars.

@@ -4,8 +4,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { asteroidShape, bodyOf, hashUnit, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
+import { asteroidShape, bodyOf, hashUnit, isUndiscovered, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
+import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
 const item = (id: string, kind: SkyItem["kind"], components?: string[]): SkyItem => ({ id, kind, glyph: id, english: id, standing: "not-seen", components });
@@ -133,5 +134,94 @@ describe("the constellation layout", () => {
     for (const [x, y] of a) { const r = Math.hypot(x, y); assert.ok(r >= 0.72 && r <= 1.17, `${r}`); }
     assert.equal(sizeFor(6, 48), 48 + 45);
     assert.equal(sizeFor(1, 48), 48);
+  });
+});
+
+// The look, SAK-338: the stars carry the state, the lines carry the shape.
+describe("the paint", () => {
+  const star = (standing: Standing, more: Partial<StarLook> = {}): StarLook => ({ role: "word", standing, ...more });
+
+  it("puts the standing in the glow, brightest for solid and none below shaky", () => {
+    assert.equal(paintFor(star("solid")).glow, 6);
+    assert.equal(paintFor(star("getting-there")).glow, 4);
+    assert.equal(paintFor(star("shaky")).glow, 2);
+    assert.equal(paintFor(star("slipping")).glow, 0);
+    assert.equal(paintFor(star("claimed")).glow, 0);
+    assert.equal(paintFor(star("not-seen")).glow, 0);
+  });
+
+  it("keeps each standing on its own token, and only slipping is dimmed", () => {
+    assert.equal(paintFor(star("solid")).fill, "var(--sky-solid)");
+    assert.equal(paintFor(star("slipping")).fill, "var(--sky-slipping)");
+    assert.equal(paintFor(star("claimed")).fill, "var(--sky-claimed)");
+    assert.equal(paintFor(star("not-seen")).fill, "var(--sky-not-seen)");
+    for (const s of ["solid", "getting-there", "shaky", "claimed", "not-seen"] as const) {
+      assert.equal(paintFor(star(s)).opacity, 1, s);
+    }
+    assert.equal(paintFor(star("slipping")).opacity, 0.7);
+  });
+
+  it("marks slipping with a ring rather than a dash: a star going out", () => {
+    const p = paintFor(star("slipping"));
+    assert.deepEqual(p.ring, { stroke: "var(--sky-slipping)", grow: 3, opacity: 0.6, width: 1 });
+    assert.equal(p.halo, undefined);
+    for (const s of ["solid", "getting-there", "shaky", "claimed", "not-seen"] as const) {
+      assert.equal(paintFor(star(s)).ring, undefined, s);
+    }
+  });
+
+  it("gives untested a faint halo and undiscovered a bare dot", () => {
+    assert.deepEqual(paintFor(star("claimed")).halo, { fill: "var(--sky-star-mid)", grow: 5, opacity: 0.15 });
+    const bare = paintFor(star("not-seen"));
+    assert.equal(bare.halo, undefined);
+    assert.equal(bare.ring, undefined);
+    assert.equal(bare.glow, 0);
+  });
+
+  it("makes tonight a mark on the star's own paint, not a state of its own", () => {
+    const picked = paintFor(star("not-seen", { tonight: true }));
+    assert.equal(picked.fill, "var(--sky-not-seen)", "still undiscovered underneath");
+    assert.deepEqual(picked.halo, TONIGHT_HALO);
+    assert.equal(TONIGHT_HALO.grow, 9);
+    // shaky picked for tonight is still shaky, halo and all
+    const shaky = paintFor(star("shaky", { tonight: true }));
+    assert.equal(shaky.fill, "var(--sky-shaky)");
+    assert.equal(shaky.glow, 2);
+    assert.deepEqual(shaky.halo, TONIGHT_HALO);
+    // and it takes over the untested halo rather than doubling it
+    assert.deepEqual(paintFor(star("claimed", { tonight: true })).halo, TONIGHT_HALO);
+  });
+
+  it("lets lit and emphasis take the star over", () => {
+    assert.equal(paintFor(star("not-seen", { lit: true })).fill, "var(--sky-star)");
+    assert.equal(paintFor(star("not-seen", { emphasis: true })).fill, "var(--sky-accent)");
+    assert.equal(paintFor(star("solid", { lit: true, emphasis: true })).fill, "var(--sky-accent)");
+    assert.equal(paintFor(star("solid", { lit: true, tonight: true })).fill, "var(--sky-star)");
+  });
+
+  it("draws every line the same, whichever way round it is read", () => {
+    const a = star("solid"), b = star("shaky");
+    assert.deepEqual(linePaintFor(a, b), linePaintFor(b, a));
+    assert.deepEqual(linePaintFor(a, b), { stroke: "var(--sky-link)", width: 1, opacity: 0.45 });
+    // a slipping star used to dash the line that pointed at it
+    assert.deepEqual(linePaintFor(a, star("slipping")), { stroke: "var(--sky-link)", width: 1, opacity: 0.45 });
+  });
+
+  it("fades a line into undiscovered ground to fog, from either end", () => {
+    const fog = { stroke: "var(--sky-link)", width: 1, opacity: 0.18 };
+    assert.deepEqual(linePaintFor(star("solid"), star("not-seen")), fog);
+    assert.deepEqual(linePaintFor(star("not-seen"), star("solid")), fog);
+    assert.deepEqual(linePaintFor(star("not-seen"), star("not-seen")), fog);
+    // a picked or opened star is not fog, whatever its standing says
+    assert.equal(linePaintFor(star("solid"), star("not-seen", { tonight: true })).opacity, 0.45);
+    assert.equal(linePaintFor(star("solid"), star("not-seen", { lit: true })).opacity, 0.45);
+    assert.equal(isUndiscovered(star("not-seen")), true);
+    assert.equal(isUndiscovered(star("not-seen", { emphasis: true })), false);
+  });
+
+  it("gives the accent to a line at the star being shown, and muting beats it", () => {
+    assert.deepEqual(linePaintFor(star("solid"), star("shaky", { emphasis: true })), { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 });
+    assert.deepEqual(linePaintFor(star("solid", { muted: true }), star("shaky")), { stroke: "var(--sky-link)", width: 1, opacity: 0.12 });
+    assert.equal(linePaintFor(star("solid", { muted: true }), star("shaky", { emphasis: true })).opacity, 0.12);
   });
 });

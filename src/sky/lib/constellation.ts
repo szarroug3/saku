@@ -14,6 +14,7 @@
 // key, so the shape is the same tonight, tomorrow and in every test.
 
 import type { Constellation } from "./graph";
+import type { Standing } from "./standing";
 import type { SkyKind } from "./types";
 
 /** A hash of a string to [0, 1): the prototype's `seeded`, kept as is so the
@@ -207,4 +208,110 @@ export const STAR_RADIUS: Record<StarRole, number> = { word: 3.2, kanji: 2.5, pi
  * prototype's sizing, so the home sky's scatter and the tiles agree. */
 export function sizeFor(starCount: number, base: number): number {
   return base + 9 * Math.max(0, starCount - 1);
+}
+
+// ---------------------------------------------------------------------------
+// The paint (SAK-338)
+// ---------------------------------------------------------------------------
+//
+// Two rules decide all of it. THE LINES CARRY THE SHAPE and nothing else, so
+// every line is one colour and one weight, and only two things change it: a
+// line reaching into what has not been discovered fades to fog, and the
+// lesson's accent takes over a line at the star it is showing. THE STARS
+// CARRY THE STATE: how far a star's glow reaches says how well it is going,
+// and the two marks a star can wear say the rest. Slipping is a star going
+// out, so it loses its glow and takes a thin ring instead; picked for
+// tonight is a wide soft halo round whatever the star already is, because
+// being on the list is a mark, not a state.
+//
+// This lives in the model rather than in the drawing so the rules can be
+// held to in a unit test, and so the lesson's own clickable stars and the
+// legend's key wear exactly what the sky wears.
+
+/** What one star looks like. Standing first; the lesson's looks are marks on
+ * top of it, except `lit` and `emphasis`, which take the star over. */
+export interface StarLook {
+  role: StarRole;
+  /** What it is drawn as: a star unless said otherwise (see bodyOf). */
+  body?: Body;
+  standing: Standing;
+  /** Picked for tonight and not yet learned: a wide halo round its own paint. */
+  tonight?: boolean;
+  /** Opened during this lesson: bright, and it stays that way. */
+  lit?: boolean;
+  /** The star the panel is showing: the learner's accent. */
+  emphasis?: boolean;
+  /** Faded right back, while something else is singled out. */
+  muted?: boolean;
+  /** Not drawn at all, nor its lines: the legend is showing only others. */
+  hidden?: boolean;
+}
+
+/** A wide soft disc behind a body. `grow` is how far past the body's own
+ * reach it goes, at unit scale. */
+export interface Halo { fill: string; grow: number; opacity: number }
+/** A thin ring round a body, drawn over it. */
+export interface Ring { stroke: string; grow: number; opacity: number; width: number }
+
+/** The paint for one look: what the body is filled with and how brightly,
+ * how far its glow reaches, and the marks it wears. */
+export interface Paint {
+  fill: string;
+  /** The body's own fill. 1 unless the standing dims it. */
+  opacity: number;
+  /** Extra radius on the soft glow under the body; 0 for no glow. */
+  glow: number;
+  halo?: Halo;
+  ring?: Ring;
+}
+
+/** Being on tonight's list: a wide, soft halo, the same on every standing. */
+export const TONIGHT_HALO: Halo = { fill: "var(--sky-star-mid)", grow: 9, opacity: 0.12 };
+
+const BY_STANDING: Record<Standing, Paint> = {
+  solid: { fill: "var(--sky-solid)", opacity: 1, glow: 6 },
+  "getting-there": { fill: "var(--sky-getting-there)", opacity: 1, glow: 4 },
+  shaky: { fill: "var(--sky-shaky)", opacity: 1, glow: 2 },
+  // a star going out: dimmed, no glow at all, and a thin ring where the glow
+  // used to be. The ring is the mark, so nothing here is dashed.
+  slipping: { fill: "var(--sky-slipping)", opacity: 0.7, glow: 0, ring: { stroke: "var(--sky-slipping)", grow: 3, opacity: 0.6, width: 1 } },
+  // untested: nothing has been proved, so no glow; a faint halo says it has
+  // been met.
+  claimed: { fill: "var(--sky-claimed)", opacity: 1, glow: 0, halo: { fill: "var(--sky-star-mid)", grow: 5, opacity: 0.15 } },
+  // undiscovered: a bare dim dot, and the lines into it are fog.
+  "not-seen": { fill: "var(--sky-not-seen)", opacity: 1, glow: 0 },
+};
+const LIT: Paint = { fill: "var(--sky-star)", opacity: 1, glow: 4 };
+const EMPHASIS: Paint = { fill: "var(--sky-accent)", opacity: 1, glow: 6 };
+
+/** The paint a look resolves to. Exported so the lesson's own clickable
+ * stars and the legend's key wear the same paint the sky does. */
+export function paintFor(look: StarLook): Paint {
+  if (look.emphasis) return EMPHASIS;
+  if (look.lit) return LIT;
+  const base = BY_STANDING[look.standing];
+  return look.tonight ? { ...base, halo: TONIGHT_HALO } : base;
+}
+
+/** Nothing has been opened or claimed here, and the lesson is not showing
+ * it either: the sky's own word is "undiscovered". */
+export function isUndiscovered(look: StarLook): boolean {
+  return !look.emphasis && !look.lit && !look.tonight && look.standing === "not-seen";
+}
+
+/** How one line between two stars is drawn. */
+export interface LinePaint { stroke: string; width: number; opacity: number }
+
+/** Every line is the same line: one colour, one weight, never dashed. Fog is
+ * the only fade, the accent the only other colour, and something singled out
+ * elsewhere takes every other line right back. */
+export const LINE = { stroke: "var(--sky-link)", width: 1, opacity: 0.45 } as const;
+export const LINE_FOG = 0.18;
+export const LINE_MUTED = 0.12;
+export const LINE_EMPHASIS = { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 } as const;
+
+export function linePaintFor(a: StarLook, b: StarLook): LinePaint {
+  if (a.muted || b.muted) return { ...LINE, opacity: LINE_MUTED };
+  if (a.emphasis || b.emphasis) return { ...LINE_EMPHASIS };
+  return { ...LINE, opacity: isUndiscovered(a) || isUndiscovered(b) ? LINE_FOG : LINE.opacity };
 }

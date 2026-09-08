@@ -18,7 +18,7 @@
 //   slipping       lost, but you HAVE seen it .. you had it. It's gone.
 //
 // Two lesson-only visual states are NOT standings and never appear as chips:
-// "tonight" (picked, unlearned: faint and dashed) and "lit" (opened during
+// "tonight" (picked: a wide halo over its own paint) and "lit" (opened during
 // this lesson). Inside the lesson a star is locked, open, lit or selected, and
 // nothing else. See `LessonState`.
 

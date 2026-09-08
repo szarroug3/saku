@@ -857,3 +857,42 @@ test("a lesson card's readings line up in three columns", async ({ page }) => {
   expect(row.hear!).toBeLessThan(row.reading!);
   expect(row.reading!).toBeLessThan(row.words!);
 });
+
+test("every line on the sky is the same line, and none of them is dashed", async ({ page }) => {
+  // SAK-338. A line used to take its dash and its fade from the standing of
+  // the star it pointed AT, so the same edge read differently depending on
+  // which way round it was drawn. Lines carry the shape now; the state is
+  // on the star.
+  await page.goto("/?sample");
+  await page.waitForFunction(() => document.querySelectorAll("[data-lines] line").length > 0);
+  const lines = await page.evaluate(() => {
+    const all = [...document.querySelectorAll("[data-lines] line")];
+    return {
+      count: all.length,
+      dashed: all.filter((l) => l.getAttribute("stroke-dasharray")).length,
+      strokes: [...new Set(all.map((l) => l.getAttribute("stroke")))].sort(),
+      widths: [...new Set(all.map((l) => l.getAttribute("stroke-width")))].sort(),
+      opacities: [...new Set(all.map((l) => l.getAttribute("opacity")))].sort(),
+    };
+  });
+  expect(lines.count).toBeGreaterThan(0);
+  expect(lines.dashed, "no line on the sky is dashed").toBe(0);
+  expect(lines.strokes).toEqual(["var(--sky-link)"]);
+  expect(lines.widths).toEqual(["1"]);
+  // structure, or fog into what has not been discovered. Nothing else.
+  for (const o of lines.opacities) expect(["0.45", "0.18"], `line opacity ${o}`).toContain(o);
+});
+
+test("the legend's key draws the real stars, tonight among them", async ({ page }) => {
+  // SAK-338. The key used to be flat coloured dots beside the words, which
+  // said nothing about the glows and marks the sky actually draws.
+  await page.goto("/?sample");
+  // the mark opens on hover; a click would toggle it shut again
+  await page.getByRole("button", { name: "What the standings mean" }).hover();
+  const key = page.locator("dl").filter({ hasText: "at least 8 of the last 10" }).first();
+  await expect(key).toBeVisible();
+  // six standings and tonight, each one drawn rather than described
+  await expect(key.locator("svg")).toHaveCount(7);
+  await expect(key.getByText("Tonight", { exact: true })).toBeVisible();
+  await expect(key.getByText("Undiscovered", { exact: true })).toBeVisible();
+});
