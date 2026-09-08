@@ -26,7 +26,7 @@
 //
 // ATTRIBUTION: Tatoeba is CC BY 2.0 FR. See src/data/attribution.ts.
 
-import corpusJson from "../generated/grammar-corpus.json" with { type: "json" };
+import { readDataJson } from "@/lib/data-file";
 import metaJson from "../generated/grammar-corpus-meta.json" with { type: "json" };
 import { AUTHORED } from "./authored";
 
@@ -63,7 +63,14 @@ export interface Example {
   readonly sp: Readonly<Record<string, readonly [number, number, string | null]>>;
 }
 
-export const CORPUS: readonly Example[] = corpusJson as readonly Example[];
+/** The corpus: 4,700 sentences, 1.5 MB, read from disk the first time a
+ * pattern's examples are asked for rather than carried by every server
+ * bundle that imports this module (SAK-399); every Sky page did, through
+ * the library's entries, and none of them at load. */
+let loaded: readonly Example[] | undefined;
+export function corpus(): readonly Example[] {
+  return (loaded ??= readDataJson<readonly Example[]>("grammar-corpus.json"));
+}
 
 export interface CorpusMeta {
   readonly generated: string;
@@ -108,7 +115,10 @@ export interface CorpusMeta {
 
 export const CORPUS_META = metaJson as CorpusMeta;
 
-const BY_PATTERN: ReadonlyMap<string, Example[]> = groupByPattern();
+let grouped: ReadonlyMap<string, Example[]> | undefined;
+function byPattern(): ReadonlyMap<string, Example[]> {
+  return (grouped ??= groupByPattern());
+}
 
 function groupByPattern(): Map<string, Example[]> {
   const map = new Map<string, Example[]>();
@@ -117,7 +127,7 @@ function groupByPattern(): Map<string, Example[]> {
   // authored わけだ sentence exactly like a tagged one and it DRILLS. Only this
   // grouping sees AUTHORED; the CORPUS array stays pure so every count invariant
   // measures the ingest alone.
-  for (const ex of [...CORPUS, ...AUTHORED]) {
+  for (const ex of [...corpus(), ...AUTHORED]) {
     for (const p of ex.p) {
       const list = map.get(p);
       if (list) list.push(ex);
@@ -129,7 +139,7 @@ function groupByPattern(): Map<string, Example[]> {
 
 /** Every example for a recipe. Empty is a real answer — see `SCARCE`. */
 export function examplesFor(recipeId: string): readonly Example[] {
-  return BY_PATTERN.get(recipeId) ?? [];
+  return byPattern().get(recipeId) ?? [];
 }
 
 /**

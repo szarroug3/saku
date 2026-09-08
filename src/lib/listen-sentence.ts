@@ -34,7 +34,7 @@
 // CONSERVATIVE (it would rather drop a fair distractor than admit a risky one),
 // and `pickRecognition` asserts the finished board is clean before returning it.
 
-import { CORPUS, type Example } from "@/data/grammar/corpus";
+import { corpus, type Example } from "@/data/grammar/corpus";
 import { patternMeaningFactId } from "@/data/grammar";
 import { factInfo } from "@/lib/facts";
 import { readerFor } from "@/lib/grammar/readable";
@@ -140,11 +140,11 @@ function shuffledIndices(n: number, rng: Rng): number[] {
 function pickDistractors(answer: Example, rng: Rng): string[] {
   const answerLen = wordCount(answer.en);
   const chosen: string[] = [];
-  const order = shuffledIndices(CORPUS.length, rng);
+  const order = shuffledIndices(corpus().length, rng);
   for (const window of [LENGTH_WINDOW, Infinity]) {
     for (const i of order) {
       if (chosen.length >= WANT_DISTRACTORS) break;
-      const c = CORPUS[i];
+      const c = corpus()[i];
       if (c.id === answer.id) continue;
       const en = c.en.trim();
       if (!en) continue;
@@ -174,7 +174,7 @@ function recognitionFacts(ex: Example): FactId[] {
  */
 export function readableRecognition(history: HistoryFile): readonly Example[] {
   const reader = readerFor(history);
-  return CORPUS.filter((ex) => ex.jp.trim() && ex.en.trim() && reader(ex));
+  return corpus().filter((ex) => ex.jp.trim() && ex.en.trim() && reader(ex));
 }
 
 /**

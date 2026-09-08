@@ -10,7 +10,7 @@
 // importing the 1.8 MB corpus into its client bundle; the reasoning is in
 // src/lib/library/word-example.ts, which owns the choosing.
 //
-// A candidate pool per word is CORPUS's sentences plus word-example.ts's
+// A candidate pool per word is 's sentences plus word-example.ts's
 // EXTRA_EXAMPLES — a small, hand-verified supplement of real Tatoeba
 // sentences for the rare word whose only corpus candidate teaches the wrong
 // sense and the corpus (filtered to grammar-pattern matches, not "every
@@ -28,14 +28,14 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { CORPUS } from "../src/data/grammar/corpus.ts";
+import { corpus } from "../src/data/grammar/corpus.ts";
 import { VOCAB } from "../src/data/vocab.ts";
 import { EXTRA_EXAMPLES, chooseExample, indexByWord } from "../src/lib/library/word-example.ts";
 
 const rank = new Map(VOCAB.map((w) => [w.keb, w.beginnerRank]));
 const rankOf = (lemma: string) => rank.get(lemma);
 
-const byWord = indexByWord(CORPUS);
+const byWord = indexByWord(corpus());
 
 // Sorted by written form so the file's key order is stable across runs.
 //

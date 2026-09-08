@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
     "/api/pitch-tts/**": ["./bin/ffmpeg"],
     // SAK-399: the tables read from disk on first use (src/lib/data-file.ts)
     // rather than baked into every server bundle; every route may need them.
-    "/**": ["./src/data/generated/word-definitions.json", "./src/data/generated/en-synonyms.json"],
+    "/**": ["./src/data/generated/word-definitions.json", "./src/data/generated/en-synonyms.json", "./src/data/generated/kanji-etymology.json", "./src/data/generated/grammar-corpus.json"],
   },
 
   // SAK-125: several Server Actions in src/lib/library/server-lookups.ts

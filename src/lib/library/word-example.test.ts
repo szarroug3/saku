@@ -20,7 +20,7 @@ import {
   indexByWord,
 } from "./word-example";
 import type { Example } from "../../data/grammar/corpus";
-import { CORPUS } from "../../data/grammar/corpus";
+import { corpus } from "../../data/grammar/corpus";
 import { VOCAB } from "../../data/vocab";
 import { EXAMPLE_COUNT, exampleFor } from "../../data/word-examples";
 
@@ -110,7 +110,7 @@ describe("chooseExample", () => {
 });
 
 describe("the generated artifact", () => {
-  const index = indexByWord(CORPUS);
+  const index = indexByWord(corpus());
 
   test("covers exactly the words the corpus can cover", () => {
     const covered = VOCAB.filter((w) => index.has(w.keb)).length;

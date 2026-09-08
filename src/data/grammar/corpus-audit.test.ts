@@ -10,13 +10,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { CORPUS, CORPUS_META, examplesFor } from "./corpus.ts";
+import { corpus, CORPUS_META, examplesFor } from "./corpus.ts";
 import { AUDITED, confoundFor } from "./corpus-audit.ts";
 
 describe("no shipped example lacks its own pattern", () => {
   test("the audit finds nothing left to drop", () => {
     const guilty: string[] = [];
-    for (const ex of CORPUS) {
+    for (const ex of corpus()) {
       for (const p of ex.p) {
         const why = confoundFor(ex, p);
         if (why) guilty.push(`${ex.id} ${ex.jp} filed as ${p}: ${why}`);
@@ -40,16 +40,16 @@ describe("no shipped example lacks its own pattern", () => {
   test("every sentence still claims at least one pattern", () => {
     // The audit removes claims, and a sentence that loses all of them must
     // leave rather than sit in the file untagged.
-    for (const ex of CORPUS) assert.ok(ex.p.length > 0, `${ex.id} has no patterns`);
+    for (const ex of corpus()) assert.ok(ex.p.length > 0, `${ex.id} has no patterns`);
   });
 
   test("meta.perPattern is the file's real content, not the cap", () => {
     const actual: Record<string, number> = {};
-    for (const ex of CORPUS) for (const p of ex.p) actual[p] = (actual[p] ?? 0) + 1;
+    for (const ex of corpus()) for (const p of ex.p) actual[p] = (actual[p] ?? 0) + 1;
     for (const [p, n] of Object.entries(CORPUS_META.perPattern)) {
       assert.equal(n, actual[p] ?? 0, `meta says ${p}=${n}, the file holds ${actual[p] ?? 0}`);
     }
-    assert.equal(CORPUS_META.counts.kept, CORPUS.length);
+    assert.equal(CORPUS_META.counts.kept, corpus().length);
   });
 });
 

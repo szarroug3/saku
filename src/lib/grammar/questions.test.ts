@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { BLANK, isValidDistractor, production, selection, selectableRecipes, variedProduction } from "./questions";
-import { CORPUS, CORPUS_META, SCARCE, coverage, examplesFor, isReadable } from "../../data/grammar/corpus";
+import { corpus, CORPUS_META, SCARCE, coverage, examplesFor, isReadable } from "../../data/grammar/corpus";
 import { RECIPES, DRILLABLE, isVacuous, recipe } from "../../data/grammar/recipes";
 import { apply } from "./apply";
 import type { Rng } from "./vehicles";
@@ -149,7 +149,7 @@ describe("SELECTION — the distractor rules are the safety argument", () => {
         assert.equal(isValidDistractor(other, r), false, `${id} must never be a distractor`);
       }
     }
-    for (const q of CORPUS.slice(0, 2000).flatMap((ex) => ex.p.map((p) => selection(ex, p)))) {
+    for (const q of corpus().slice(0, 2000).flatMap((ex) => ex.p.map((p) => selection(ex, p)))) {
       if (!q) continue;
       for (const c of q.choices) {
         assert.ok(c.pattern !== recipe("wa")!.pattern && c.pattern !== recipe("ga")!.pattern);
@@ -189,7 +189,7 @@ describe("SELECTION — the item itself", () => {
 
   test("every generated item, across the whole corpus, is internally sound", () => {
     let n = 0;
-    for (const ex of CORPUS) {
+    for (const ex of corpus()) {
       for (const p of ex.p) {
         const q = selection(ex, p);
         if (!q) continue;
@@ -206,7 +206,7 @@ describe("SELECTION — the item itself", () => {
   });
 
   test("a sentence matching several patterns is refused, not guessed at", () => {
-    const multi = CORPUS.find((ex) => ex.p.length > 1);
+    const multi = corpus().find((ex) => ex.p.length > 1);
     assert.ok(multi);
     for (const p of multi.p) assert.equal(selection(multi, p), null);
   });
@@ -255,11 +255,11 @@ describe("the corpus knows what it doesn't have", () => {
   });
 
   test("no corpus sentence exceeds the token filter", () => {
-    for (const ex of CORPUS) assert.ok(ex.n <= CORPUS_META.maxTokens, `${ex.id}: ${ex.n} tokens`);
+    for (const ex of corpus()) assert.ok(ex.n <= CORPUS_META.maxTokens, `${ex.id}: ${ex.n} tokens`);
   });
 
   test("every corpus sentence has a span for each pattern it claims", () => {
-    for (const ex of CORPUS) {
+    for (const ex of corpus()) {
       for (const p of ex.p) {
         const sp = ex.sp[p];
         assert.ok(sp, `${ex.id} claims ${p} with no span`);
@@ -272,7 +272,7 @@ describe("the corpus knows what it doesn't have", () => {
 
 describe("vocabulary coverage is a RUNTIME question", () => {
   test("coverage is computed against the caller's known set", () => {
-    const ex = CORPUS.find((e) => e.v.length >= 2)!;
+    const ex = corpus().find((e) => e.v.length >= 2)!;
     assert.equal(coverage(ex, new Set()), 0);
     assert.equal(coverage(ex, new Set(ex.v)), 1);
     assert.ok(isReadable(ex, new Set(ex.v)));

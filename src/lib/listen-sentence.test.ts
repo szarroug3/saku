@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { CORPUS } from "@/data/grammar/corpus";
+import { corpus } from "@/data/grammar/corpus";
 import { VOCAB, wordMeaningFactId } from "@/data/vocab";
 import { lemmaKnown } from "@/lib/grammar/readable";
 import {
@@ -68,7 +68,7 @@ describe("opt-in and non-gating", () => {
     assert.ok(narrow < wide, "knowing less reads strictly fewer sentences");
     // And the gate is not vacuous: sentences the tiny learner cannot read exist.
     assert.ok(
-      CORPUS.length > wide,
+      corpus().length > wide,
       "some corpus sentences are unreadable even at full vocabulary",
     );
   });
@@ -101,7 +101,7 @@ describe("every served sentence is within the known-words set", () => {
         `served ${item.id} is outside the readable set`,
       );
       // …and every content lemma in it is a word this learner knows.
-      const ex = CORPUS.find((e) => e.id === item.id)!;
+      const ex = corpus().find((e) => e.id === item.id)!;
       for (const lemma of ex.v) {
         assert.ok(
           lemmaKnown(lemma, ONE_WORD),

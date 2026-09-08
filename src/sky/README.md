@@ -1432,3 +1432,14 @@ builder works those 120 out and writes them; `readingUnits` looks a word
 up and answers the trivial unit for the rest; the facts follow from the
 units in a millisecond. 23 ms to load now, the facts and every fact's
 unit byte-identical to before, checked against a dump of the old module.
+
+### Two more tables read when asked (2026-09-07, SAK-399)
+
+The kanji etymology table (0.9 MB) and the grammar corpus (1.5 MB) were
+in every Sky page's bundle because the library's entries import the
+modules that own them, and neither is read at load: an origin is asked
+for on a kanji's card, a pattern's examples on a grammar card. They are
+read from disk on first use now, the way the dictionary's senses and the
+synonym pool already are, and `CORPUS` became `corpus()` for its four
+readers. Both leave the bundle; the entry model that drags their modules
+in at all is SAK-400.

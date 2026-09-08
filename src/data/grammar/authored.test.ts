@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { AUTHORED } from "./authored.ts";
-import { CORPUS, examplesFor } from "./corpus.ts";
+import { corpus, examplesFor } from "./corpus.ts";
 import { recipe } from "./recipes.ts";
 import { selection } from "../../lib/grammar/questions.ts";
 
@@ -52,9 +52,9 @@ describe("the hand-authored example lane", () => {
   });
 
   test("wake-da lives only in the authored lane, never in the corpus", () => {
-    // The clean split the whole design rests on: the CORPUS array stays pure, so
+    // The clean split the whole design rests on: the  array stays pure, so
     // perPattern / the confound audit / the token filter measure the ingest alone.
-    assert.ok(!CORPUS.some((ex) => ex.p.includes("wake-da")), "wake-da leaked into CORPUS");
+    assert.ok(!corpus().some((ex) => ex.p.includes("wake-da")), "wake-da leaked into corpus()");
     const wakeDaRows = AUTHORED.filter((ex) => ex.p.includes("wake-da"));
     assert.deepEqual(examplesFor("wake-da"), wakeDaRows, "examplesFor(wake-da) is not its authored rows");
   });

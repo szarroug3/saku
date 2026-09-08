@@ -26,7 +26,7 @@
 // LICENCE: the DATA (generated/kanji-etymology.json) is CC BY-SA, derived from
 // Wiktionary. This CODE is MIT like the rest of src/. See src/data/attribution.ts.
 
-import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
+import { readDataJson } from "@/lib/data-file";
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
 import { PROSE_OVERRIDE, PROSE_SKIP, MANUAL_ORIGIN } from "./kanji-etymology-prose.ts";
 import { REASSEMBLY_A } from "./etymology-prose/reassembly-A.ts";
@@ -85,15 +85,19 @@ export interface PieceRole {
 // later written 寺), re-mapped onto the VISIBLE piece so the by-glyph join lands.
 // Each manual entry cites its source; the schema is identical, so a manual entry
 // simply replaces the generated one for that kanji. See src/data/attribution.ts.
-const GENERATED: Readonly<Record<string, KanjiEtymology>> = (
-  etymologyJson as { data: Record<string, KanjiEtymology> }
-).data;
 
 const MANUAL: Readonly<Record<string, KanjiEtymology>> = (
   etymologyManualJson as { data: Record<string, KanjiEtymology> }
 ).data;
 
-const RAW: Readonly<Record<string, KanjiEtymology>> = { ...GENERATED, ...MANUAL };
+/** The generated table (0.9 MB) under the manual one, read from disk the
+ * first time a kanji's origin is asked for rather than carried by every
+ * server bundle that imports this module (SAK-399): every Sky page did,
+ * through the library's entries, and none of them at load. */
+let merged: Readonly<Record<string, KanjiEtymology>> | undefined;
+function table(): Readonly<Record<string, KanjiEtymology>> {
+  return (merged ??= { ...readDataJson<{ data: Record<string, KanjiEtymology> }>("kanji-etymology.json").data, ...MANUAL });
+}
 
 /** KanjiVG's variant form → the character it is a form of (亻→人, 氵→水, 月→肉). */
 const VARIANTS: Readonly<Record<string, string>> = (
@@ -150,7 +154,7 @@ function canonical(glyph: string): string {
 
 /** A kanji's raw glyph origin, or undefined when Wiktionary carries none. */
 export function etymologyOf(kanji: string): KanjiEtymology | undefined {
-  const raw = RAW[kanji];
+  const raw = table()[kanji];
   // A hand-authored, researched story wins over everything and shows even when
   // Wiktionary has no record at all (the recovery layer for the kanji the
   // automated pass left blank or suppressed).
@@ -184,7 +188,7 @@ export function etymologyOf(kanji: string): KanjiEtymology | undefined {
  */
 export function builtFromRoles(kanji: string): readonly (PieceRole | null)[] {
   const row = kanjiRow(kanji);
-  const etym = RAW[kanji];
+  const etym = table()[kanji];
   const pieces = row?.comps ?? [];
   if (!etym) return pieces.map(() => null);
 
@@ -207,7 +211,7 @@ export function builtFromRoles(kanji: string): readonly (PieceRole | null)[] {
 
 /** True when Wiktionary gives this kanji a glyph origin we could parse. */
 export function hasEtymology(kanji: string): boolean {
-  return kanji in RAW;
+  return kanji in table();
 }
 
 // ── Phonetic reading: the sound a phonetic component lends its host ──────────
@@ -308,7 +312,7 @@ const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly EtymologyPiece[]>>
 export function builtPieces(kanji: string): readonly EtymologyPiece[] {
   const override = BUILT_PIECES_OVERRIDE[kanji];
   if (override) return override;
-  const etym = RAW[kanji];
+  const etym = table()[kanji];
   const roles = builtFromRoles(kanji);
   if (!etym) return [];
   const comps = kanjiRow(kanji)?.comps ?? [];
