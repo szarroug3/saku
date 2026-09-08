@@ -22,7 +22,7 @@
 // from placeConstellation and paint from paintFor, so the drawing can change
 // without touching them.
 
-import type { ReactNode } from "react";
+import { cloneElement, type ReactElement, type ReactNode } from "react";
 
 import { ASTEROID, asteroidShape, BINARY, bodyRadius, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
 
@@ -48,70 +48,82 @@ export interface ConstellationProps {
   children?: ReactNode;
 }
 
-/** One body at a point: a star's dot, a planet's disc and ring, an
- * asteroid's lump, a binary's two suns. The glow, when the paint has one,
- * sits under all of them; so does the halo, when it wears one. The ring
- * goes over the top, because it is a mark and has to be seen. */
-function BodyFigure({ id, x, y, body, role, paint, glowOpacity, u }: { id: string; x: number; y: number; body: Body; role: StarRole; paint: Paint; glowOpacity: number; u: number }) {
+interface BodyProps { id: string; x: number; y: number; body: Body; role: StarRole; paint: Paint; glowOpacity: number; u: number }
+
+/** How much a muted star is dimmed to. */
+const MUTED = 0.12;
+
+/** Every element one body is drawn from, in order: the halo and glow under
+ * it, the body itself, the ring over the top because it is a mark and has
+ * to be seen.
+ *
+ * An ARRAY, not a fragment, and that is the point (SAK-411). Most stars in
+ * the sky are undiscovered, and an undiscovered star is one dim dot: no
+ * halo, no glow, no ring, full opacity. It used to be drawn as a group
+ * holding a group holding that dot, and with fifteen thousand
+ * constellations up there those two wrappers were 78,054 of the 181,533
+ * elements in the DOM, drawing nothing. Handing the parts back as a list
+ * lets the caller tell a star that is ONE element from one that is several
+ * and skip the wrapper when there is nothing to wrap. Nothing about the
+ * drawing changes: an SVG group with no attributes on it is a no-op. */
+function bodyParts({ id, x, y, body, role, paint, glowOpacity, u }: BodyProps): ReactElement[] {
   const reach = bodyRadius(body, role) * u;
-  const glow = (r: number) => paint.glow > 0 && <circle cx={x} cy={y} r={r + paint.glow * u} fill={paint.fill} opacity={glowOpacity} />;
-  const figure = () => {
+  const glow = (r: number) => (paint.glow > 0 ? [<circle key="glow" cx={x} cy={y} r={r + paint.glow * u} fill={paint.fill} opacity={glowOpacity} />] : []);
+  const figure = (): ReactElement[] => {
     switch (body) {
       case "planet": {
         const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u, w = 2 * u;
         // the disc in its standing's colour with a shaded limb; the ring in
         // starlight so it reads against any disc, its far half behind the
         // disc and its near half in front. No glow: it would swallow the ring.
-        return (
-          <g transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
+        return [
+          <g key="planet" transform={`rotate(${PLANET.tilt} ${x} ${y})`}>
             <ellipse cx={x} cy={y} rx={rx} ry={ry} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.35} />
             <circle cx={x} cy={y} r={r} fill={paint.fill} />
             <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill="var(--sky-ground-0)" opacity={0.3} />
             <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.9} />
-          </g>
-        );
+          </g>,
+        ];
       }
       case "asteroid": {
         const r = ASTEROID.r * u;
         const points = asteroidShape(id).map(([px, py]) => `${x + px * r},${y + py * r}`).join(" ");
         // a lump with a crater on it, so it is a rock and not a fat star
-        return (
-          <>
-            <polygon points={points} fill={paint.fill} />
-            <circle cx={x + r * 0.3} cy={y - r * 0.15} r={r * 0.32} fill="var(--sky-ground-0)" opacity={0.45} />
-            <circle cx={x - r * 0.35} cy={y + r * 0.3} r={r * 0.2} fill="var(--sky-ground-0)" opacity={0.35} />
-          </>
-        );
+        return [
+          <polygon key="rock" points={points} fill={paint.fill} />,
+          <circle key="crater-a" cx={x + r * 0.3} cy={y - r * 0.15} r={r * 0.32} fill="var(--sky-ground-0)" opacity={0.45} />,
+          <circle key="crater-b" cx={x - r * 0.35} cy={y + r * 0.3} r={r * 0.2} fill="var(--sky-ground-0)" opacity={0.35} />,
+        ];
       }
       case "binary": {
         const a = BINARY.a, b = BINARY.b;
         // two suns, a shared glow between them
-        return (
-          <>
-            {glow(a.r * u + 4 * u)}
-            <circle cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />
-            <circle cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />
-          </>
-        );
+        return [
+          ...glow(a.r * u + 4 * u),
+          <circle key="a" cx={x + a.x * u} cy={y + a.y * u} r={a.r * u} fill={paint.fill} />,
+          <circle key="b" cx={x + b.x * u} cy={y + b.y * u} r={b.r * u} fill={paint.fill} opacity={0.85} />,
+        ];
       }
       default: {
         const r = STAR_RADIUS[role] * u;
-        return (
-          <>
-            {glow(r)}
-            <circle cx={x} cy={y} r={r} fill={paint.fill} />
-          </>
-        );
+        return [...glow(r), <circle key="dot" cx={x} cy={y} r={r} fill={paint.fill} />];
       }
     }
   };
-  return (
-    <>
-      {paint.halo && <circle cx={x} cy={y} r={reach + paint.halo.grow * u} fill={paint.halo.fill} opacity={paint.halo.opacity} />}
-      <g opacity={paint.opacity === 1 ? undefined : paint.opacity}>{figure()}</g>
-      {paint.ring && <circle cx={x} cy={y} r={reach + paint.ring.grow * u} fill="none" stroke={paint.ring.stroke} strokeWidth={paint.ring.width * u} opacity={paint.ring.opacity} />}
-    </>
-  );
+  const inner = figure();
+  return [
+    ...(paint.halo ? [<circle key="halo" cx={x} cy={y} r={reach + paint.halo.grow * u} fill={paint.halo.fill} opacity={paint.halo.opacity} />] : []),
+    // the body's own opacity wraps the body and nothing else, so a halo
+    // under it and a ring over it keep theirs
+    ...(paint.opacity === 1 ? inner : [<g key="body" opacity={paint.opacity}>{inner}</g>]),
+    ...(paint.ring ? [<circle key="ring" cx={x} cy={y} r={reach + paint.ring.grow * u} fill="none" stroke={paint.ring.stroke} strokeWidth={paint.ring.width * u} opacity={paint.ring.opacity} />] : []),
+  ];
+}
+
+/** One body at a point: a star's dot, a planet's disc and ring, an
+ * asteroid's lump, a binary's two suns. */
+function BodyFigure(props: BodyProps) {
+  return <>{bodyParts(props)}</>;
 }
 
 /** The room a glyph needs round its centre: its body, plus the widest mark
@@ -141,7 +153,6 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
   const stars = placeConstellation(layout, cx, cy, r);
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
   const gone = (id: string) => looks.get(id)?.hidden === true;
-  const MUTED = 0.12;
   return (
     <g data-constellation={layout.root}>
       <g data-lines>
@@ -169,9 +180,19 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             const look = looks.get(s.id)!;
             if (look.hidden || s.group) return null;
             const paint = paintFor(look);
+            const body = look.body ?? "star";
+            const parts = bodyParts({ id: s.id, x: s.px, y: s.py, body, role: look.role, paint, glowOpacity: look.emphasis ? 0.22 : 0.16, u });
+            const mark = { "data-star": s.id, "data-body": body };
+            // A star that is one element says which star it is on that
+            // element, rather than in a group around it. That is the whole
+            // saving (SAK-411): most of the sky is undiscovered, an
+            // undiscovered star is one dot, and a group round one dot draws
+            // nothing. Anything with a glow, a halo, a ring or a mute still
+            // gets its group, because it is several things at once.
+            if (parts.length === 1 && !look.muted) return cloneElement(parts[0], { key: s.id, ...mark });
             return (
-              <g key={s.id} data-star={s.id} data-body={look.body ?? "star"} opacity={look.muted ? MUTED : undefined}>
-                <BodyFigure id={s.id} x={s.px} y={s.py} body={look.body ?? "star"} role={look.role} paint={paint} glowOpacity={look.emphasis ? 0.22 : 0.16} u={u} />
+              <g key={s.id} {...mark} opacity={look.muted ? MUTED : undefined}>
+                {parts}
               </g>
             );
           })}
