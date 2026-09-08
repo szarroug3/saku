@@ -138,6 +138,7 @@ async function fetchHistory(): Promise<RevalidationOutcome> {
 export function HistoryProvider({
   userId,
   initial,
+  pageOwned = false,
   children,
 }: {
   /** The signed-in account, or null for a signed-out visitor. Also the cache
@@ -146,9 +147,18 @@ export function HistoryProvider({
   /** The server's read of that account's history, or null when there was none to
    * read (signed out) or it could not be read (503). */
   initial: HistoryFile | null;
+  /**
+   * The pages own the history (SAK-398): a signed-in Sky page reads the
+   * learner's progress on the server and renders from it, so this provider
+   * has nothing to seed, fetch or refresh for it. It sits here loaded and
+   * empty for the few things still mounted under it (the sign-in merge), and
+   * never asks the server for a history the HTML no longer carries. Signed
+   * out, the browser's own history is still read here as before.
+   */
+  pageOwned?: boolean;
   children: ReactNode;
 }) {
-  const [state, setState] = useState<HistoryState>(() => seededState(initial));
+  const [state, setState] = useState<HistoryState>(() => (pageOwned ? { ...seededState(null), loaded: true } : seededState(initial)));
 
   // The monotonic stamp that decides which read is allowed to land (see
   // history-sync.ts). Two revalidations can overlap (a write's refresh landing
@@ -173,6 +183,7 @@ export function HistoryProvider({
   const pendingId = useRef(0);
 
   const refresh = useCallback(async () => {
+    if (pageOwned) return;
     const mine = generation.current = advanceGeneration(generation.current);
     issuedAt.current = Date.now();
     const outcome = await fetchHistory();
@@ -190,7 +201,7 @@ export function HistoryProvider({
     // pending then. Caching the folded copy would persist a write the server has
     // not confirmed.
     if (won && userId && outcome.kind === "server") writeCachedHistory(userId, outcome.history);
-  }, [userId]);
+  }, [userId, pageOwned]);
 
   // The seed and the account it was read for, frozen at mount. Held in refs
   // because both questions this asks are about mount time: has the seed already
@@ -199,6 +210,7 @@ export function HistoryProvider({
   const seedUser = useRef(userId);
 
   useEffect(() => {
+    if (pageOwned) return;
     // The seed is already the server's answer for this request, so there is
     // nothing to revalidate — just keep the cache current for the next reload.
     // If the account has changed under us the seed belongs to someone else, so
@@ -219,13 +231,14 @@ export function HistoryProvider({
     const cached = readCachedHistory(userId);
     if (cached) setState((prev) => applyCached(prev, cached));
     void refresh();
-  }, [userId, refresh]);
+  }, [userId, refresh, pageOwned]);
 
   // Writes go to the server and come back the same way. This is the ear for
   // them: the copy on screen was read before the write, so it re-reads — unless
   // the screen that wrote has already asked for itself, which is the common case
   // and costs nothing here.
   useEffect(() => {
+    if (pageOwned) return;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const stop = onHistoryWrite((at) => {
       const timer = setTimeout(() => {
@@ -239,7 +252,7 @@ export function HistoryProvider({
       stop();
       for (const t of timers) clearTimeout(t);
     };
-  }, [refresh]);
+  }, [refresh, pageOwned]);
 
   // Applied to whatever is on screen at the time, via the updater form: an
   // optimistic write and a revalidation can land in either order, and reading

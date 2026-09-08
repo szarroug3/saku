@@ -10,6 +10,7 @@
 // effort" guarding (see migrate-local.ts), so this stays a one-line effect that
 // cannot accumulate logic of its own.
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { migrateLocalProgress } from "@/lib/store/migrate-local";
@@ -21,13 +22,18 @@ export function LocalMigration({ signedIn }: { signedIn: boolean }) {
   // which is the moment the work done signed out appears in the account's
   // screens. A failed or empty run reports false and costs no request.
   const { refresh } = useHistory();
+  const router = useRouter();
   useEffect(() => {
     // Fire-and-forget: the merge is best-effort and reports nothing to the UI —
     // the local copy is intact until an upload lands, so there is no failure the
     // learner needs to see here.
     void migrateLocalProgress(signedIn).then((merged) => {
-      if (merged) void refresh();
+      if (!merged) return;
+      void refresh();
+      // the pages render the learner's progress on the server (SAK-398), so
+      // the one this ran on is re-rendered to show what was just merged
+      router.refresh();
     });
-  }, [signedIn, refresh]);
+  }, [signedIn, refresh, router]);
   return null;
 }

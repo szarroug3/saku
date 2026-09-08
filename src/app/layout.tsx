@@ -6,7 +6,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
 import { HydrationMarker } from "@/components/hydration-marker";
-import { SaveStatus } from "@/components/save-status";
 // SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
 // global nav's Sign in control) — see src/components/sidebar.tsx.
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
@@ -18,10 +17,8 @@ import { headers } from "next/headers";
 import { loadProgressSeeds } from "@/lib/history";
 import { markEdgeToPage } from "@/lib/server-timing";
 import { HistoryProvider } from "@/lib/history-provider";
-import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
-import { QuizSessionProvider } from "@/lib/quiz-session";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
 import type * as Theme from "@/lib/theme";
@@ -158,11 +155,15 @@ export default async function RootLayout({
   // as history: reconcile providers against the server copy on first paint,
   // instead of waiting on a client fetch. Signed-out visitors have no account to
   // read, so all three are null and local browser caches take over.
+  // Only the settings are seeded now (SAK-398). The history used to be put
+  // in the HTML here too, for providers the old app read on every screen;
+  // a signed-in Sky page reads the learner's progress on the server and
+  // renders from it, so the history in the HTML was a copy nobody read, and
+  // it grew with the learner (1.7 MB for a big one). The read itself is
+  // shared with the page's own (see readProgress in the store), so nothing
+  // is queried twice; only what goes to the browser changed.
   const seeds = userId === null ? null : await seedAll(userId);
-  const initialHistory = seeds?.history ?? null;
   const initialSettings = seeds?.settings ?? null;
-  const initialSessionState = seeds?.session ?? null;
-  const initialLists = seeds?.lists.lists ?? null;
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   return (
@@ -213,18 +214,13 @@ export default async function RootLayout({
         <ThemeProvider>
           {/* One history for the whole app, seeded above. Outside everything
               that reads it: the Sidebar, the sign-in merge, and every page. */}
-          <HistoryProvider userId={userId} initial={initialHistory}>
+          <HistoryProvider userId={userId} initial={null} pageOwned={userId !== null}>
             <QuizConfigProvider>
-              <QuizSessionProvider
-                userId={userId}
-                initialSession={initialSessionState}
-              >
                 {/* One lists copy for the whole app, seeded above. `useLists`
                     used to fetch per mount (eight call sites, two on one Library
                     open); this shares one read, the same move HistoryProvider
                     made. Inside the quiz providers so a run saved as a list and
                     the screens that show it read the same copy. */}
-                <ListsProvider userId={userId} initial={initialLists}>
                 <TooltipProvider delayDuration={200}>
                   {/* Inside the quiz providers, because what it asks about
                       ("discard the quiz in progress?") is their state. */}
@@ -255,15 +251,12 @@ export default async function RootLayout({
                         cutover (2026-09-06); the dev galleries keep the old frame in
                         src/app/dev/layout.tsx. What is left here is every page's
                         invisible housekeeping. */}
-                    <SaveStatus />
                     <AuthModeInit signedIn={authEnabled && signedIn} />
                     <LocalMigration signedIn={authEnabled && signedIn} />
                     {children}
                     <HydrationMarker />
                   </ConfirmProvider>
                 </TooltipProvider>
-                </ListsProvider>
-              </QuizSessionProvider>
             </QuizConfigProvider>
           </HistoryProvider>
         </ThemeProvider>

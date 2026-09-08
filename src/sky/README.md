@@ -1443,3 +1443,28 @@ read from disk on first use now, the way the dictionary's senses and the
 synonym pool already are, and `CORPUS` became `corpus()` for its four
 readers. Both leave the bundle; the entry model that drags their modules
 in at all is SAK-400.
+
+### The history leaves the HTML (2026-09-07, SAK-398)
+
+The root layout read the learner's whole progress and put it in every
+page's HTML to seed the old app's providers: the history for
+`HistoryProvider`, the in-progress run for `QuizSessionProvider` (2,230
+lines, mounted on every page), the lists for `ListsProvider`. A signed-in
+Sky page reads the progress on the server and renders from it, so for a
+signed-in learner every one of those was a copy nobody read, hydrated on
+every page and growing with the learner: 1.7 MB of HTML for the big
+synthetic one. The Sky's own client code, checked hook by hook, reads
+`useQuizConfig` (which sits on the settings) and, signed out, `useHistory`
+for the browser's own standings. Nothing else.
+
+So the layout seeds the settings and nothing more; the session and lists
+providers and the old save-status strip are gone from it; and
+`HistoryProvider` has a page-owned mode for a signed-in learner, in which
+it neither seeds nor fetches nor refreshes, and sits loaded and empty for
+the one thing still under it that asks, the sign-in merge, which now
+re-renders the page it ran on so the merged progress shows. Signed out,
+nothing changed: the browser's own history is read there as before.
+
+What is not done here: the providers' files and the old app's remaining
+19,000 lines are still in the tree, and the settings' save errors, which
+the removed strip used to show, have no surface in the Sky yet.
