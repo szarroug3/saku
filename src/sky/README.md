@@ -3429,3 +3429,109 @@ lands somewhere else now. 3,801 unit tests pass, 1 skipped, unchanged. 47
 e2e pass, one more than before: a drag moves the group, the group is the
 same element it was, and nothing is added to it or taken out of it while the
 drag runs.
+
+### Ten things the review found, finished (2026-09-08, SAK-419)
+
+A read-only review of the day's seventy commits found the components clean and
+the layer boundary intact, and ten things to finish. All ten are in, one commit
+each.
+
+**One builder, one page-data helper.** `practice-client.tsx` carried a
+byte-identical copy of `hrefs.ts`'s private `packRecipe`, and four call sites
+across it and `quiz-client.tsx` still wrote `sample ? "sample&" : ""` by hand.
+The copy is gone and the four go through `skyHref`, which is now the only place
+a Sky URL is assembled. `quiz/page.tsx`, `practice/page.tsx` and
+`practice/run/page.tsx` were the three routes still working out sample, userId
+and who for themselves and splitting a `cards=` by hand; they ask `whoFor`,
+`initialFor` and `idsFrom` like the six that already did. The quiz's `wayBack`
+went through `skyHref` with them, since it was the last hand-rolled `?sample`
+in the file.
+
+**The eyebrow's margin is a prop now, and SAK-417 is done.** `Eyebrow` wrote
+its own `mb-1`, and Tailwind orders `mb-0` before `mb-1` in the sheet, so
+fourteen call sites asked for no margin and never once got it, while two had
+found `!mb-0` and worked. Asking is a `tight` prop, which the component
+answers, so there is nothing for two classes to argue about. Two of the
+sixteen are in files another lane holds tonight and keep their class for now,
+one of them the `!mb-0` that does apply.
+
+**Names.** `sky-quiz.tsx` had two doc comments stacked over `back`, one of them
+left from before the way back knew where it went. `practice-client.tsx` had two
+bindings called `saved` twenty-four lines apart, of unrelated types: the run is
+`savedRun`. `sky-practice.tsx` had a `chosen` inside a map shadowing the
+`chosen` outside it, which the README had already named and left; the inner one
+is `cutIds`, which is what it holds.
+
+**A pass for exports, one level under the file walker.**
+`scripts/unreachable.mjs` asks whether anything loads a file, so everything a
+loaded file exports rides along however private it really is. Three names had
+been found by hand: `NO_RUN`, standing in for a literal `null` in one line of
+its own test, and `runProgress` and `QUIZ_RUN_KEY`, read only by the modules
+that declare them. `scripts/unused-exports.mjs` asks the question of a name:
+it walks every import in `src`, the scripts and the specs, and prints what no
+other file asks for.
+
+It reports TWO lists and fails on the first. The first is a name nothing
+outside its own file imports at all, where there is nothing to weigh: either
+the module reads it and the `export` comes off, or nothing does and the name
+goes. That list was 106 and is zero. `DEFAULT_SETTINGS` and the lesson's
+`LessonState` had no reader anywhere and are gone, `sky-scene`'s re-export of
+`STANDING_ORDER` went with them, and 104 keep their names and lose the keyword:
+props interfaces, module-private constants, helpers.
+
+The second list is a name whose only importer is the test beside it. That one
+prints and does not fail, and the distinction is the point. `NO_RUN` was in it
+and deserved deleting. The other twenty-seven are things like `standingOf`,
+`scatterLayout` and the wash file's `layerCss`: a lib module's unit test is a
+real reader of exactly the surface the module exists to offer, and clearing
+that list by reflex would delete tested work rather than tidy it. `runProgress`
+went anyway, as the review asked, because `runNote` is its one caller and its
+two assertions read better through it.
+
+**A class name is not a selector.** `e2e/sky.spec.ts` found the quiz card's
+row with `[class*="md:flex-row"]`, so renaming a utility would have quietly
+passed the test instead of failing it. It walks the card now: one surface, and
+the row is the last thing on it.
+
+**One glyph named in a row.** Sessions and Practice each wrote out the same
+four classes and the same tooltip for a glyph sitting beside its English, and
+the Atlas a third variant in its "built from" line. `GlyphName` in `glyph.tsx`
+is that piece: the UI face rather than the display one, its standing's colour,
+the Japanese font the character wants, and the whole of it in the title when it
+has a column to fit in. `cut={false}` is the third case, a glyph named inside a
+sentence, which takes the sentence's size and hides nothing.
+
+**Nineteen props, then seventeen.** `startAt`, `startAnswers` and `onProgress`
+arrived on SAK-404 and are one idea, so they are one `run` prop: where the run
+was left, what was answered there, and where to say it stands now. Splitting
+the file is a separate card and was not touched.
+
+**And no em dashes in what we write to each other.** The SAK-235 lint rule
+looks at strings, template literals and JSX text on purpose, so comments were
+never covered, and the day's work put em dashes into fresh lines of comment.
+The test beside that rule gains a second one that reads the files as text,
+because a comment, a doc block and a line of README are all just characters.
+Sixty-eight lines were rewritten with a comma, a period, a colon or
+parentheses, whichever the sentence wanted, and none of them says anything
+different. Scoped to `src/sky`, `src/app/(sky)`, `e2e` and the two READMEs:
+`src/lib` and `src/data` carry thousands from before the rule, that is its own
+job, and a gate nobody can reach zero on teaches people to skip it.
+
+**Two temporary skip lists, and why.** SAK-416 held `sky-lesson.tsx`,
+`lesson.ts` and `teach.ts` tonight and SAK-411 held `sky-home.tsx`,
+`sky-field.tsx`, `constellation.tsx` and `constellation.ts`, so neither the
+export pass nor the em-dash test was allowed to edit them underneath another
+session. Both lists say so in place and say they are temporary. `src/sky/README.md`
+is on the em-dash list too, at nine lines, because it is the one file every lane
+appends to; it gets its own pass once they are all in. None of the seven held
+files carries an em dash today, and between them they carry twenty unread
+exports for whoever clears the lists.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint` clean. 3,802 unit tests
+pass, 1 skipped: 3,801 as before, plus the new em-dash test, with
+`quiz-run.test.ts`'s two `runProgress` assertions rewritten through `runNote`
+and its `NO_RUN` line reading `null`. 46 e2e pass, unchanged, before every one
+of the ten commits. `scripts/unreachable.mjs --list` stays at zero,
+`scripts/unused-exports.mjs` is at zero on its failing list, and
+`scripts/button-centering.mjs` measures the same 1,378 elements with none over
+a pixel, identical to SAK-415's after.
