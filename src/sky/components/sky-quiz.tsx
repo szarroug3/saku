@@ -33,6 +33,7 @@ import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
+import { allAnswered, answeredCount, finishPass, nextOpen, openPass, passAnswers, stepTo, withAnswer, type QuizPass } from "@/sky/lib/quiz-pass";
 
 interface SkyQuizProps {
   cards: readonly QuizCard[];
@@ -93,12 +94,16 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const Pitch = pitch;
   const Hear = hear;
 
-  const [at, setAt] = useState(run?.at ?? 0);
-  const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>(() => Object.fromEntries((run?.answers ?? []).map((a) => [a.cardId, a])));
+  // The pass over this deck, in one object: where it is, what has been
+  // answered, whether it is over (SAK-420, and quiz-pass.ts for the moves).
+  // Opened ONCE, on nothing or on where a saved run was left; the quiz owns it
+  // from then on, and the caller writing the run down after every answer must
+  // not push it back in.
+  const [pass, setPass] = useState<QuizPass>(() => openPass(run));
+  const { at, answers, finished } = pass;
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
   const [given, setGiven] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [finished, setFinished] = useState(false);
   // where the run's record has got to. Handed to the results rather than kept
   // here: see SaveState in quiz-results.tsx for why the screen has to say.
   const [saved, setSaved] = useState<SaveState>("no");
@@ -113,8 +118,6 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const card = cards[at];
   const state = card ? (open[card.id] ?? FRESH) : FRESH;
   const answered = card ? answers[card.id] : undefined;
-  const answeredCount = Object.keys(answers).length;
-  const allAnswered = cards.length > 0 && answeredCount === cards.length;
   // the choices show when asked for, or on a card only ever asked that way
   const choices = card ? (state.narrowed || !card.typed) : false;
   // listening: the glyph stays hidden until the card is answered or a hint asked
@@ -160,35 +163,34 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const report = useRef(run?.onProgress);
   useEffect(() => { report.current = run?.onProgress; });
   useEffect(() => {
-    if (finished) return;
-    report.current?.({ at, answers: cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a) });
-  }, [at, answers, finished, cards]);
+    if (pass.finished) return;
+    report.current?.({ at: pass.at, answers: passAnswers(pass, cards) });
+  }, [pass, cards]);
 
   const patch = (change: Partial<Open>) => setOpen({ ...open, [card.id]: { ...state, ...change } });
 
-  /** Moves to the next open card after `from`, wrapping; finishes when
-   * every card is answered. */
-  const advance = (from: number, all: Readonly<Record<string, QuizAnswer>>) => {
+  /** Moves to the next open card, wrapping; finishes when every card is
+   * answered. Takes the pass to move ON from, which for an answer that has
+   * just settled is the one that settled it, not the one on screen. */
+  const advance = (from: QuizPass) => {
     setGiven(""); setFeedback(null);
-    if (Object.keys(all).length >= cards.length) { finish(all); return; }
-    for (let step = 1; step <= cards.length; step++) {
-      const n = (from + step) % cards.length;
-      if (!all[cards[n].id]) { setAt(n); return; }
-    }
+    const next = nextOpen(from, cards);
+    if (next.finished) finish(next); else setPass(next);
   };
 
-  const finish = (all: Readonly<Record<string, QuizAnswer>>) => {
-    setFinished(true);
+  const finish = (from: QuizPass) => {
+    const over = finishPass(from);
+    setPass(over);
     if (!onFinish) return;
     setSaved("saving");
-    onFinish(cards.map((c) => all[c.id]).filter((a): a is QuizAnswer => !!a)).then(() => setSaved("saved"), () => setSaved("failed"));
+    onFinish(passAnswers(over, cards)).then(() => setSaved("saved"), () => setSaved("failed"));
   };
 
-  const settle = (g: Grade, tries: number, extra: Partial<QuizAnswer> = {}) => {
+  /** The card's answer written into the pass, its position unmoved: a miss
+   * stays on its own reveal, and a right answer is moved on separately. */
+  const settle = (g: Grade, tries: number, extra: Partial<QuizAnswer> = {}): QuizPass => {
     const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, ...(state.said.length ? { said: state.said } : {}), ...(card.meta ? { meta: card.meta } : {}), ...extra };
-    const all = { ...answers, [card.id]: answer };
-    setAnswers(all);
-    return all;
+    return withAnswer(pass, answer);
   };
 
   /** One go at the card, whichever way it was answered.
@@ -209,8 +211,8 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const attempt = ({ right, said, note, wrong }: { right: boolean; said?: string; note: string; wrong?: Partial<Open> }): "right" | "missed" | "again" => {
     const tries = state.tries + 1;
     const tried = said === undefined ? state.said : [...state.said, said];
-    if (right) { advance(at, settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said: tried })); return "right"; }
-    if (tries >= maxTries) { settle("missed", tries, { said: tried }); setFeedback(null); return "missed"; }
+    if (right) { advance(settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said: tried })); return "right"; }
+    if (tries >= maxTries) { setPass(settle("missed", tries, { said: tried })); setFeedback(null); return "missed"; }
     patch({ tries, said: tried, ...wrong });
     setFeedback(`${note} ${triesNote(maxTries - tries)}`);
     return "again";
@@ -258,14 +260,14 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   };
 
   /** Time ran out: a miss, and the answer shown. */
-  const timeOut = () => { if (card && !answered) settle("missed", state.tries + 1); };
+  const timeOut = () => { if (card && !answered) setPass(settle("missed", state.tries + 1)); };
   useEffect(() => { onTimeOut.current = timeOut; });
 
   // Giving up adds nothing to the list. Whatever was tried before it still
   // stands, and "I don't know" is not something you said (SAK-387).
-  const giveUp = () => { if (!answered) { settle("missed", state.tries + 1); setFeedback(null); } };
+  const giveUp = () => { if (!answered) { setPass(settle("missed", state.tries + 1)); setFeedback(null); } };
 
-  const go = (n: number) => { if (n >= 0 && n < cards.length) { setAt(n); setGiven(""); setFeedback(null); } };
+  const go = (n: number) => { if (n >= 0 && n < cards.length) { setPass(stepTo(pass, cards, n)); setGiven(""); setFeedback(null); } };
 
   // Enter answers the card and then moves on from its reveal; the arrow keys
   // step through the cards when the box is empty.
@@ -285,7 +287,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   // a timed card is ten times a second (SAK-370).
   const pressed = (e: KeyboardEvent) => {
     if (finished || !card) return;
-    if (e.key === "Enter" && answered) { e.preventDefault(); if (allAnswered) finish(answers); else advance(at, answers); }
+    if (e.key === "Enter" && answered) { e.preventDefault(); if (allAnswered(pass, cards)) finish(pass); else advance(pass); }
     if (e.key === "Enter" && !answered && e.target !== input.current) {
       if (card.order) { if ((state.built ?? []).length === card.order.pieces.length) { e.preventDefault(); submitOrder(); } }
       else if (state.chosen) { e.preventDefault(); submit(); }
@@ -313,9 +315,9 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const cardShown = !(narrow && listOpen);
   const strip = (
     <div className="flex flex-wrap items-center gap-3 font-sky-ui text-[12.5px] text-sky-muted">
-      <span className="whitespace-nowrap tabular-nums">{finished ? `${answeredCount} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
+      <span className="whitespace-nowrap tabular-nums">{finished ? `${answeredCount(pass)} of ${cards.length}` : `${at + 1} of ${cards.length}`}</span>
       {!finished && cards.length > 0 && !listOpen && <SkyButton variant="outline" onClick={() => setAsked(true)}>The cards</SkyButton>}
-      {!finished && cards.length > 0 && <SkyButton variant="outline" onClick={() => finish(answers)}>End the quiz</SkyButton>}
+      {!finished && cards.length > 0 && <SkyButton variant="outline" onClick={() => finish(pass)}>End the quiz</SkyButton>}
     </div>
   );
 
@@ -505,7 +507,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
                 </div>
               )}
               {answered
-                ? <SkyButton block onClick={() => allAnswered ? finish(answers) : advance(at, answers)}>{allAnswered ? "Finish" : "Next"}</SkyButton>
+                ? <SkyButton block onClick={() => allAnswered(pass, cards) ? finish(pass) : advance(pass)}>{allAnswered(pass, cards) ? "Finish" : "Next"}</SkyButton>
                 : help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
               {onRetries && !answered && (
                 <div className="mt-auto pt-3">
