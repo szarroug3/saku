@@ -2920,3 +2920,81 @@ kebs and are now byte-identical to each other. The home, Atlas and
 practice payloads for the sample learner and an empty one did not move.
 3,758 unit tests pass, 1 skipped (3,754 before, plus four for the rule).
 35 e2e pass.
+
+### A run you leave is there when you come back (2026-09-08, SAK-404)
+
+Close the tab halfway through twelve cards and the twelve were gone. SAK-376
+had deleted the old app's 2,700-line envelope for exactly this, which nothing
+read, and left the `session` column on `progress` waiting for a Sky-shaped
+replacement. This is that replacement, and it is four fields.
+
+`src/sky/lib/quiz-run.ts` is the whole model: the deck as it was dealt (card
+ids, in order), where the learner had got to, the answers so far, and what
+the run was asked from, plus when it was left. The per-card open state is
+deliberately NOT in it, so a card you were three tries into opens fresh on the
+way back. That is the kinder reading of a run left an hour ago, and it keeps
+the envelope to things that are already the shape the recorder wants.
+
+**Two copies, and which one is authoritative.** The browser's copy is written
+every time, signed in or out, and it is the one a resume reads: it is there
+before the write function returns, so the page never waits on a round trip to
+find out whether there is a run. For an account the same run also goes to the
+`session` column, which is what survives a cleared browser or a second
+machine. `readSessionRow` / `writeSessionRow` are back in the store, and the
+write is a plain upsert rather than the history's compare-and-set: the column
+holds ONE run, nothing is folded onto it, and the run you are answering now is
+the run you should come back to. Its own test holds the property nothing else
+would catch, which is that an upsert of a run never names the `history` or
+`settings` column.
+
+**Nothing merges on sign-in.** The key is the same one both ways, so a visitor
+who signs in halfway through a run still has that run in this browser, resumes
+from it, and carries it up with their next answer. It does not ride
+`migrateLocalProgress`, which would mean picking a winner when the account has
+a run of its own, and that is the between-two-devices question the card puts
+out of scope.
+
+**The two ordering traps.** Both are the same shape, and both were found by
+reasoning about the write rather than by a failing test.
+
+The run is read ONCE per page load, not live. The page that reads it is also
+the page writing it, so a live value changes after every answer; and the deck
+the page deals is worked out from what it read. A live read would re-deal the
+cards under whoever was answering them, and the moment the first answer landed
+`useLoaded` would drop back to null and the screen would say "Reading your
+sky…" mid-quiz. `useRunAtOpen` settles the question once and `keepRun` moves
+the answer on when it writes, which is what a later screen in the same page
+load would find anyway. The Planetarium and the Observatory only ever offer a
+run, so they take the live value through `useSavedRun`.
+
+And a write that would say the same thing twice is not made. `SkyQuiz` reports
+where it stands the moment it mounts, and on a deck nobody has answered yet
+that is nothing to keep. Without the guard, opening the quiz would clear the
+column on every visit, and, worse, would throw away the run the learner had
+not yet decided to replace, in the window between arriving on a different deck
+and answering its first card. Starting a different run replaces the old one
+when its first answer lands, which is the moment there is something to replace
+it with.
+
+**What a learner sees.** `/quiz` opened on the same ask deals the saved deck,
+in the order it was dealt, on the card that was next, with the answers already
+given still counted against it. Opened on a different ask it asks first,
+through `InlineAsk` (SAK-364): "Only one run is kept, so starting this one lets
+that one go", and "Keep it" goes back to the run you had. The Planetarium and
+the Observatory carry one line beside the heading, "Continue where you left
+off?" with the deck's size and how far in, linking to wherever that run is
+answered. Finishing clears it. Practice runs the same way, keyed by its
+recipe, so its line goes back to the practice deck rather than to the quiz.
+
+A lesson's later rounds keep nothing: they are the same deck dealt again over
+a rest, and coming back to a page offering round two of three as "the run you
+left" is a worse answer than no offer at all. The rest between rounds already
+survives a reload on its own key.
+
+**The gate.** 3,788 unit tests pass, 1 skipped, from 3,754: the model's own,
+the two store primitives against a fake `progress` table, and `runHref`. 36
+e2e pass: the new one answers two cards as a visitor, reloads, finds the third
+waiting, walks in from the home's own offer, and watches the line go once the
+run is finished. A signed-in learner cannot be driven end to end here, since
+auth is off in the e2e build, so the store tests are that half of the card's
+gate.

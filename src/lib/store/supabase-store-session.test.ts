@@ -1,11 +1,11 @@
-// SAK-404 — `readSessionRow` / `writeSessionRow` in supabase-store.ts: the
+// SAK-404: `readSessionRow` and `writeSessionRow` in supabase-store.ts, the
 // `session` jsonb column, which now holds the quiz run a signed-in learner
 // left part way through.
 //
 // A signed-in resume cannot be driven end to end in this repo's e2e build
 // (auth is disabled there), so this file is that half of the gate: the read
 // and the write exercised as written, against a fake `progress` table that
-// reproduces only what Postgres itself guarantees — one row per user, an
+// reproduces only what Postgres itself guarantees: one row per user, an
 // upsert that touches the named columns and no others, `maybeSingle`
 // answering null for a user with no row.
 //
