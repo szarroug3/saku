@@ -1614,3 +1614,94 @@ Route sizes did not move, and were not expected to: `route_sizes.mjs`
 measures the JavaScript a visit ships to the browser, and none of this
 was ever on the client. This is server load time, which is what a cold
 start is made of.
+
+### The last of the old app (2026-09-08, SAK-398)
+
+Four rounds after the history left the HTML, this is what was still in
+the tree: `src/components`, twelve files the Sky's routes handed in or
+the root layout mounted; `src/lib/content`, which every Sky route's
+server bundle carried thirteen modules of; and the old entry page's code,
+still exported from `entries.ts` with no caller outside its own tests.
+
+**The settings page says when a save has not landed.** The old app's
+save-status banner showed the settings provider's `saveError` with a
+retry button, and it went with the layout's strip, leaving the Sky no
+surface. The settings page carries it now, above the groups, in the Sky's
+own words (`SAVE_TEXT`) rather than the provider's string. `role="status"`,
+not `alert`: it is never urgent enough to cut into a screen reader.
+Signed out the provider reports null forever, which is right, since there
+is no account to save to. There is no test: `src/sky` has no component
+test harness, and nothing in the tree renders React in a unit test.
+
+**The entry page's code left `entries.ts`.** The generic facts table
+(`factRows`, `factsTitle`, `factsColumnHeader`, `FactRow`, five per-kind
+row builders), the kanji "Built from" section (`builtFrom`, `BuiltPiece`,
+`builtPieceMeaning`, `madeOf`), `readingRowsOf` and `clusterOf`: 793
+lines from 1,414, and twenty-five imports with them. What stays is what a
+page still reads, `builtPieceEntryId` included, so the exclusion set still
+guards which shape a piece links to.
+
+**The Sky stopped loading the content library.** It read exactly two
+things out of those thirteen modules: `derivePosition`, which `teach.ts`
+calls to name where a radical variant sits, reached through
+`character-entry-content.ts`, whose own imports were what dragged the
+library in; and `sentenceTierShortLabel`, three lines that trim a trailing
+"sentences" off a tier label. `derivePosition` moved to
+`app/(sky)/radical-position.ts`, `sentenceTierShortLabel` into
+`data/assembly.ts` beside the tiers it describes. A lint rule holds it:
+nothing under `app/(sky)` or the root layout may import `@/lib/content/*`,
+`curriculum-meta` excepted, because the content library is build-time
+code, run by the index scripts, read by a page as JSON.
+
+**The components moved into the route layer.** Seven files, `git mv`'d
+flat into `app/(sky)`: the audio button, the stroke order and its
+why-disclosure, the pitch mark, the two auth components. Two providers
+went instead of moving, `ConfirmProvider` and `TooltipProvider`, mounted
+on every page with nothing under the Sky asking either for anything, and
+`HydrationMarker` with them, its one reader having lost its last caller
+when the performance spec went. `src/components` is gone.
+
+Measured off the production build's source maps
+(`scripts/route_sources.mjs`, which reads what the bundle actually
+carries rather than what a walker says could):
+
+| | before | after |
+| --- | --- | --- |
+| `lib/content` modules per route | 13 on six of seven | 1 (`curriculum-meta`) |
+| `components/` sources per route | 5 to 15 | 0 |
+| sources on `/` | 807 | 755 |
+| sources on `/atlas` | 873 | 836 |
+| `/` client bundle | 0.48 MB, 8 chunks | 0.38 MB, 6 chunks |
+| `/atlas` client bundle | 0.52 MB, 9 chunks | 0.44 MB, 7 chunks |
+| `/sessions` client bundle | 0.46 MB, 8 chunks | 0.36 MB, 6 chunks |
+
+The client-bundle drop is all step four: the two providers and `ui.tsx`
+leaving every page. Steps two and three moved nothing there, and it is
+worth saying which round earned which number.
+
+**No load-time win, and the numbers say so.** `teach.ts` loads in about
+188 ms before and after; `observatory.ts` in 169 before and 155 after,
+against a shared `@/lib/facts` baseline that itself drifted from 220 to
+300 ms between the two rounds, so the second is inside the noise. The
+content modules were thin over the same data tables the routes load
+anyway, and `kanji-parts.ts`, the one module a walker blamed on
+`builtFrom`, stays on every route through `teach.ts`. What these rounds
+remove is bundle surface and a dependency, not milliseconds. This is the
+same lesson SAK-400's section ends on, met again from the other side.
+
+Nothing in `src` is unreachable now: `scripts/unreachable.mjs` reports
+zero files, from 84 two rounds ago. Sixteen files and 2,503 lines were
+deleted outright this round and seven more moved, 3,671 lines removed
+across the four commits; the entry-model dump (every entry, the buckets, `libEntry`,
+`entryForGlyph` over 14,597 glyphs, `knownFactsOf`, and the home, Atlas
+and practice payloads) is identical before and after every deletion. 3,867
+unit tests pass, 26 e2e, and `route_sizes.mjs` passes for the first time
+in a while: it still listed a `/dev` route deleted a round earlier.
+
+One thing left deliberately odd, for a later pass:
+`lib/library/character-entry-content.ts` now imports
+`app/(sky)/radical-position.ts`. That is a build-time module reaching into
+the route layer, which is backwards. It survives because
+`scripts/seed-content-entries.mjs` still runs it, and the plan for this
+round assumed it would be deleted. It is a leaf import with no
+dependencies of its own, so it costs a page nothing; it is only untidy.
