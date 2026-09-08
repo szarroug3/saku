@@ -26,7 +26,7 @@ import type { LessonTeach } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
-export interface LessonCardProps {
+interface LessonCardProps {
   item: SkyItem;
   teach?: LessonTeach;
   /** The stars this one is built from, and the ones it is part of tonight. */

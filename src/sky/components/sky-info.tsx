@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { aboveAnchor, belowAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
 
-export interface SkyInfoProps {
+interface SkyInfoProps {
   /** What the mark explains, for assistive tech: "About audio prompts". */
   label: string;
   /** Room for a table rather than a sentence (the standings' key). */

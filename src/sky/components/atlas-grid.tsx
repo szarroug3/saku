@@ -14,10 +14,10 @@ import type { SkyItem } from "@/sky/lib/types";
 
 /** How a tile was clicked: plain opens it alone, cmd or ctrl adds it to
  * the selection, shift takes the run from the last one clicked to it. */
-export interface Pick { toggle: boolean; range: boolean }
+interface Pick { toggle: boolean; range: boolean }
 export type OnPick = (id: string, pick: Pick) => void;
 
-export interface TileGridProps {
+interface TileGridProps {
   items: readonly SkyItem[];
   selected: ReadonlySet<string>;
   onPick: OnPick;
@@ -28,13 +28,13 @@ export interface TileGridProps {
 /** A glyph that is really a name in English (a sentence rule's "Because /
  * so", a counter's "one thing"): set smaller, allowed to wrap, given a
  * wider tile. */
-export const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(glyph) && glyph.length > 2;
+const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(glyph) && glyph.length > 2;
 
 /** Whether a thing is shown by its name rather than a glyph: its glyph is
  * its name (a term, a concept, a rule with no mark), or reads as one. */
-export const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph);
+const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph);
 
-export function Tile({ item, selected, onPick, onPeek, asName = false }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void; asName?: boolean }) {
+function Tile({ item, selected, onPick, onPeek, asName = false }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void; asName?: boolean }) {
   // in a cut of names every tile takes the name shape, so they stay one size
   // (Sam, 2026-09-05); a glyph then sits small above its name
   const name = named(item) || asName;

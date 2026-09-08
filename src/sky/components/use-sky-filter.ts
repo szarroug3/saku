@@ -18,7 +18,7 @@ import type { StarLook } from "@/sky/components/constellation";
 import { ALL_GROUPS, type SkyGroup } from "@/sky/lib/groups";
 import { STANDING_ORDER, type Standing } from "@/sky/lib/standing";
 
-export interface SkyFilter {
+interface SkyFilter {
   selected: ReadonlySet<Standing>;
   toggle: (s: Standing) => void;
   singled: Standing | null;
@@ -30,7 +30,7 @@ export interface SkyFilter {
   lookOf: (id: string, base: StarLook) => StarLook;
 }
 
-export const ALL_BUT_UNDISCOVERED: readonly Standing[] = STANDING_ORDER.filter((s) => s !== "not-seen");
+const ALL_BUT_UNDISCOVERED: readonly Standing[] = STANDING_ORDER.filter((s) => s !== "not-seen");
 
 export function useSkyFilter(initial: readonly Standing[] = ALL_BUT_UNDISCOVERED): SkyFilter {
   const [selected, setSelected] = useState<ReadonlySet<Standing>>(() => new Set(initial));

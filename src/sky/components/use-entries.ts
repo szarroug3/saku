@@ -7,7 +7,7 @@
 
 import { useCallback, useRef, useState } from "react";
 
-export interface Entries<T extends { id: string }> {
+interface Entries<T extends { id: string }> {
   get: (id: string) => T | undefined;
   /** Fetch, or return what is already fetched or in flight. */
   fetch: (id: string) => Promise<T>;

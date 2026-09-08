@@ -38,7 +38,7 @@ export type SkyKind =
 
 /** The kinds that are pages to read, never asked about: nothing to pick,
  * claim or quiz, and no standing to show. */
-export const PAGE_KINDS: ReadonlySet<SkyKind> = new Set<SkyKind>(["term", "mark", "concept"]);
+const PAGE_KINDS: ReadonlySet<SkyKind> = new Set<SkyKind>(["term", "mark", "concept"]);
 
 export function isPage(kind: SkyKind): boolean {
   return PAGE_KINDS.has(kind);

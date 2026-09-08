@@ -28,17 +28,6 @@ export interface SkySettings {
   cleanRunsToClearMixup: number;
 }
 
-export const DEFAULT_SETTINGS: SkySettings = {
-  audioPrompts: true,
-  pitchQuestions: true,
-  voice: "aoyama",
-  timer: false,
-  timerSeconds: 10,
-  accent: "pink",
-  fonts: [],
-  cleanRunsToClearMixup: 10,
-};
-
 export interface VoiceChoice {
   id: string;
   label: string;
@@ -69,7 +58,7 @@ export function accentColor(id: string | undefined): string {
 }
 
 /** One setting as the page shows it: a label, and what it does in a line. */
-export interface SettingText {
+interface SettingText {
   label: string;
   info?: string;
 }
@@ -92,7 +81,7 @@ export const SAVE_TEXT = {
   retry: "Try again",
 } as const;
 
-export interface SettingGroup {
+interface SettingGroup {
   title: string;
   keys: readonly (keyof SkySettings)[];
 }

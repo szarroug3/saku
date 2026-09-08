@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 
 export const SURFACE = "rounded-2xl border border-sky-line bg-sky-panel font-sky-ui text-sky-ink";
 
-export interface SkySurfaceProps {
+interface SkySurfaceProps {
   as?: "section" | "div" | "nav" | "aside";
   /** The padding: the usual, or the tighter one a rail uses. */
   pad?: "md" | "sm" | "none";
@@ -28,7 +28,7 @@ export function SkySurface({ as: Tag = "div", pad = "md", className = "", childr
   return <Tag className={`${SURFACE} ${padding} ${className}`} {...aria}>{children}</Tag>;
 }
 
-export interface SkyPanelProps {
+interface SkyPanelProps {
   /** The heading. A node rather than a string so a title can hold something
    * that only a browser can render, such as a time in the reader's own
    * timezone (SAK-355). */

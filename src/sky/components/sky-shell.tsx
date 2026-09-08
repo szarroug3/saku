@@ -33,7 +33,7 @@ export interface ShellEntry {
   quiet?: boolean;
 }
 
-export interface SkyShellProps {
+interface SkyShellProps {
   /** The current path, for the lit entry. */
   current: string;
   entries: readonly ShellEntry[];

@@ -60,7 +60,7 @@ export function composite(fg: Rgb, alpha: number, bg: Rgb): Rgb {
 }
 
 /** Relative luminance per WCAG 2.x. */
-export function luminance([r, g, b]: Rgb): number {
+function luminance([r, g, b]: Rgb): number {
   const linear = (c: number) => {
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);

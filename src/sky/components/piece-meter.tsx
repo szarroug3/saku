@@ -3,7 +3,7 @@
 // going over is allowed and warned, so the bar grows past its own end rather
 // than clipping.
 
-export interface PieceMeterProps {
+interface PieceMeterProps {
   pieces: number;
   cap: number;
   className?: string;

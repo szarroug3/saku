@@ -67,7 +67,7 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
 
 /** A paragraph of the teaching: a heading over it, a bold lead, the text
  * with a phrase picked out in the accent. */
-export function Paragraph({ para }: { para: TeachParagraph }) {
+function Paragraph({ para }: { para: TeachParagraph }) {
   const at = para.accent ? para.text.indexOf(para.accent) : -1;
   const text = para.runs ? <Sound line={para.runs} /> : at >= 0 && para.accent
     ? <>{para.text.slice(0, at)}<span className={`font-semibold text-sky-accent ${japaneseFont(para.accent)}`}>{para.accent}</span>{para.text.slice(at + para.accent.length)}</>

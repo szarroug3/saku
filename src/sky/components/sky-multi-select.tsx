@@ -29,14 +29,14 @@ import { belowAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sk
 /** Cells to a row in the open list, and the step the up and down arrows take. */
 const COLUMNS = 8;
 
-export interface SkyMultiSelectOption {
+interface SkyMultiSelectOption {
   value: string;
   /** What the row shows: the glyph itself, usually. */
   label: ReactNode;
   className?: string;
 }
 
-export interface SkyMultiSelectProps {
+interface SkyMultiSelectProps {
   /** What the control opens, for a screen reader: "Choose the parts". */
   label: string;
   /** What nothing-picked is called, on the control and at the top of the list. */

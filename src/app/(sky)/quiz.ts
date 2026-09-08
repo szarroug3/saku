@@ -39,18 +39,18 @@ import { readingRuleFor } from "./quiz-rules";
 import { teachFor } from "./teach";
 
 /** The basket: how many cards a session asks (SAK-311's cap). */
-export const QUIZ_CAP = 8;
+const QUIZ_CAP = 8;
 
 /** The facts a session asks: the picks' quizzable facts when picks are
  * named, else what is due, capped. */
 /** What the learner's settings allow a quiz to ask: pitch cards, and
  * listening cards (SAK-345). */
-export interface QuizOptions {
+interface QuizOptions {
   pitch?: boolean;
   audio?: boolean;
 }
 
-export function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): FactId[] {
+function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): FactId[] {
   if (picks.length) {
     const facts = picks.flatMap((id) => quizzableFacts(pickFacts([id]), history));
     // a word's pitch is asked in its lesson too, as its own fact (SAK-344),
@@ -88,7 +88,7 @@ export function quizFromHistory(history: HistoryFile, picks: readonly string[], 
  * at large, and there is nothing true to say about such an option beyond "it
  * was another one of these". Better to say nothing than to invent a reason.
  */
-export function whyOption(fact: FactId, option: FactId, onAVehicle: boolean): string | undefined {
+function whyOption(fact: FactId, option: FactId, onAVehicle: boolean): string | undefined {
   if (option === fact) return undefined;
   const asked = entryOf(fact);
   const other = entryOf(option);
@@ -329,7 +329,7 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
  * the app's one accepted order as the answer. The card is the tier's
  * marker fact; the recorder credits the sentence's pattern facts, as the
  * app's assembly drill does. */
-export function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): QuizCard | undefined {
+function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): QuizCard | undefined {
   const tierId = (marker as string).replace(/^grammar:sentence-ordering-tier\//, "");
   const entry = (LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).find((e) => knownFactsOf(e).includes(sentenceTierMarkerFact(tierId)));
   const item = pickAssemblyForTiers(history, [tierId]);
@@ -364,7 +364,7 @@ export function orderCard(history: HistoryFile, marker: FactId, now = Date.now()
  * partner's, or a made-up one), the learner picking which means the word.
  * Each choice is drawn with its pitch and can be heard through the app's
  * pitch clips. The card is the word's pitch fact (SAK-344), so it records. */
-export function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCard | undefined {
+function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCard | undefined {
   const q = rollPitchQuestion(keb);
   const id = entryForGlyph(VOCAB_SUBJECT, keb);
   if (!q || !id) return undefined;

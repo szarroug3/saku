@@ -56,9 +56,6 @@ export interface SavedRun {
   leftAt: number;
 }
 
-/** Nothing saved. Kept as a constant so a `useStored` fallback is stable. */
-export const NO_RUN: SavedRun | null = null;
-
 const isIds = (v: unknown): v is readonly string[] => Array.isArray(v) && v.every((s) => typeof s === "string");
 
 /** One answer as it comes back out of storage, or null.
@@ -110,7 +107,7 @@ export function readRun(raw: unknown): SavedRun | null {
 }
 
 /** The run as it stands: how big the deck is and how far in. */
-export function runProgress(run: SavedRun): { answered: number; total: number } {
+function runProgress(run: SavedRun): { answered: number; total: number } {
   const have = new Set(run.deck);
   return { answered: run.answers.filter((a) => have.has(a.cardId)).length, total: run.deck.length };
 }

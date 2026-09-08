@@ -44,7 +44,7 @@ export function belowAnchor(rect: DOMRect): Anchor {
   return { x: flipX ? rect.right : rect.left, y: rect.bottom, flipX, flipY: false };
 }
 
-export interface FloatingProps {
+interface FloatingProps {
   at: Anchor;
   /** Space between the anchor and the card, in pixels. */
   gap?: number;

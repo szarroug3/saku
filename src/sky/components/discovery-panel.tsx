@@ -26,7 +26,7 @@ export interface DiscoveryRow {
   children?: readonly DiscoveryRow[];
 }
 
-export interface DiscoveryPanelProps {
+interface DiscoveryPanelProps {
   rows: readonly DiscoveryRow[];
   title?: string;
   className?: string;

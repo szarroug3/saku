@@ -14,7 +14,7 @@ import { currentUserId } from "@/lib/auth";
 import type { Who } from "./who";
 
 /** A route's query, as Next hands it over. */
-export type SkyParams = Record<string, string | string[] | undefined>;
+type SkyParams = Record<string, string | string[] | undefined>;
 
 /** Whose history this page reads.
  *

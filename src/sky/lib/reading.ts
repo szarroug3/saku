@@ -5,13 +5,13 @@
 
 import type { SoundLine } from "./lesson";
 
-export interface ReadingBullet {
+interface ReadingBullet {
   /** The lead word or phrase, in the accent. */
   label: string;
   body: SoundLine;
 }
 
-export interface ReadingLink {
+interface ReadingLink {
   name: string;
   href: string;
   /** What it is, in a line. */

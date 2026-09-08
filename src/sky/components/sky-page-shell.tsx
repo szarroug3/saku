@@ -8,7 +8,7 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "@/sky/components/sky-card";
 
-export interface SkyPageShellProps {
+interface SkyPageShellProps {
   /** The small caps line over the title: "Planetarium". Omitted on the home. */
   eyebrow?: string;
   title: string;

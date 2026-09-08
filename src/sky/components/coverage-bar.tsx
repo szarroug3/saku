@@ -15,7 +15,7 @@
 import { coverageSegments, type CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING } from "@/sky/lib/standing";
 
-export interface CoverageBarProps {
+interface CoverageBarProps {
   counts: CoverageCounts;
   /** The size of the whole collection. Required, on purpose. */
   total: number;

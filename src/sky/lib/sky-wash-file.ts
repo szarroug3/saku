@@ -11,9 +11,9 @@
 // Relative, with the extension, so plain Node (the bake script) can load this file too.
 import { DEFAULT_STARS, milkyStarfield, type StarSpec } from "./sky-stars.ts";
 
-export type Rgb = [number, number, number];
+type Rgb = [number, number, number];
 
-export interface GlowLayer {
+interface GlowLayer {
   kind: "glow";
   visible: boolean; // hidden layers keep their knobs but are left out of the mesh
   id: string; // the knob name part: --sky-glow-<id>-*
@@ -24,7 +24,7 @@ export interface GlowLayer {
   size: [number, number]; // ellipse width%, height% of the page
   tail: [number, number, number, number]; // strength at 28%, 52%, 76%, 92% of the ellipse, as shares of full
 }
-export interface MilkyLayer {
+interface MilkyLayer {
   kind: "milky";
   visible: boolean;
   lilac: Rgb;
@@ -39,10 +39,10 @@ export interface MilkyLayer {
   starWidth: number; // spread across the band, share of the gradient line
   starX: number; // slides the star field left or right, % of the width (the band stays put)
 }
-export interface BandLayer { kind: "band"; visible: boolean; upper: Rgb; lower: Rgb; strength: number; from: number }
-export type WashLayer = GlowLayer | MilkyLayer | BandLayer;
+interface BandLayer { kind: "band"; visible: boolean; upper: Rgb; lower: Rgb; strength: number; from: number }
+type WashLayer = GlowLayer | MilkyLayer | BandLayer;
 
-export interface WashModel {
+interface WashModel {
   zenith: string; // hex
   ground: string;
   ground2: string;
@@ -52,10 +52,10 @@ export interface WashModel {
 }
 
 /** The softness that draws the band the way it was before the knob existed. */
-export const DEFAULT_MILKY_SOFTNESS = 0.3;
-export const DEFAULT_MILKY_STARS = { shift: 0, stars: 0, starSize: [0.4, 1.3] as [number, number], starBright: [0.3, 0.9] as [number, number], starWidth: 0.075, starX: 0 };
+const DEFAULT_MILKY_SOFTNESS = 0.3;
+const DEFAULT_MILKY_STARS = { shift: 0, stars: 0, starSize: [0.4, 1.3] as [number, number], starBright: [0.3, 0.9] as [number, number], starWidth: 0.075, starX: 0 };
 
-export const DEFAULT_TAIL: GlowLayer["tail"] = [0.74, 0.4, 0.14, 0.03];
+const DEFAULT_TAIL: GlowLayer["tail"] = [0.74, 0.4, 0.14, 0.03];
 
 const rgb = (s: string): Rgb => { const p = s.split(",").map((n) => Number(n.trim())); if (p.length !== 3 || p.some((n) => Number.isNaN(n))) throw new Error("not r, g, b: " + s); return [p[0], p[1], p[2]]; };
 const pair = (s: string): [number, number] => { const p = s.trim().split(/\s+/).map((v) => Number(v.replace("%", ""))); if (p.length !== 2 || p.some(Number.isNaN)) throw new Error("not two percents: " + s); return [p[0], p[1]]; };

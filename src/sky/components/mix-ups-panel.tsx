@@ -22,7 +22,7 @@ export interface MixUp {
   needed: number;
 }
 
-export interface MixUpsPanelProps {
+interface MixUpsPanelProps {
   pairs: readonly MixUp[];
   /** Names the ids: a graph's `itemOf`, or a lookup into any item list. */
   itemOf: (id: string) => SkyItem | undefined;

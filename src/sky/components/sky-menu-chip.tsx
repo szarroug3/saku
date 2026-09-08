@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CHIP_TONE } from "@/sky/components/sky-button";
 import { belowAnchor, Floating, SkyCard, type Anchor } from "@/sky/components/sky-card";
 
-export interface SkyMenuChipProps {
+interface SkyMenuChipProps {
   on: boolean;
   onClick: () => void;
   title?: string;

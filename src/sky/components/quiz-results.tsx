@@ -45,7 +45,7 @@ const SAVE_LINE: Record<Exclude<SaveState, "no">, string> = {
   failed: "Could not record this. Your schedule is unchanged.",
 };
 
-export interface QuizResultsProps {
+interface QuizResultsProps {
   cards: readonly QuizCard[];
   answers: Readonly<Record<string, QuizAnswer>>;
   /** How the recording is going. See SaveState. */

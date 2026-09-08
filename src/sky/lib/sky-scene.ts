@@ -3,7 +3,7 @@
 // the graph and the items; the page's data adapter decides which items the
 // learner has met.
 
-import { STANDING_ORDER, type Standing } from "./standing";
+import type { Standing } from "./standing";
 import type { PrerequisiteGraph } from "./graph";
 import type { CoverageCounts } from "./coverage";
 
@@ -43,5 +43,3 @@ export function bySizeDesc<T>(items: readonly T[], sizeOf: (t: T) => number): T[
   return [...items].map((t, i) => ({ t, i, s: sizeOf(t) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.t);
 }
 
-/** The order standings are listed in a tally. Re-exported for panels. */
-export { STANDING_ORDER };

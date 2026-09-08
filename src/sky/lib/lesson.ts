@@ -155,7 +155,7 @@ export interface TeachExample {
  * Runs without a label are the text between parts. */
 export type PartedSentence = ReadonlyArray<{ text: string; label?: string; active?: boolean }>;
 
-export interface LessonStep {
+interface LessonStep {
   id: string;
   /** The pick this step belongs to: the word or row it is taught for. */
   pick: string;
@@ -255,7 +255,7 @@ export function lessonReferences(graph: PrerequisiteGraph, picks: readonly strin
   return [...known, ...read];
 }
 
-export type StarState = "locked" | "open" | "lit" | "selected";
+type StarState = "locked" | "open" | "lit" | "selected";
 
 /** The state of one star tonight, given which have been opened and which is
  * showing. A star not in the steps (already in the sky) is open, or lit once

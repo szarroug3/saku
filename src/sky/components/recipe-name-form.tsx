@@ -17,7 +17,7 @@ import { SkyButton } from "@/sky/components/sky-button";
 import { SkyInput } from "@/sky/components/sky-input";
 import { useState } from "react";
 
-export interface RecipeNameFormProps {
+interface RecipeNameFormProps {
   /** The names already taken, so an overwrite can announce itself. */
   taken: readonly string[];
   onSave: (name: string) => void;

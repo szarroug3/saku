@@ -34,7 +34,7 @@ import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
-export interface SkyQuizProps {
+interface SkyQuizProps {
   cards: readonly QuizCard[];
   /** Whether what was typed answers the card. */
   grade: (card: QuizCard, given: string) => boolean;

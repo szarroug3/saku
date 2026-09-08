@@ -14,7 +14,7 @@ import { STANDING } from "@/sky/lib/standing";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
-export interface SkyTooltipProps {
+interface SkyTooltipProps {
   item: SkyItem;
   /** The stars under it, in lesson order, each with its standing. */
   pieces?: readonly SkyItem[];

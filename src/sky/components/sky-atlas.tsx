@@ -99,7 +99,7 @@ export interface AtlasEntry {
 }
 
 /** What the stroke-order block takes: the character to draw. */
-export type WrittenComponent = ComponentType<{ glyph: string }>;
+type WrittenComponent = ComponentType<{ glyph: string }>;
 
 export interface AtlasLookup {
   search: (query: string) => Promise<AtlasSearchResult>;
@@ -110,7 +110,7 @@ export interface AtlasLookup {
   sections: (shelfId: string, status: Standing) => Promise<readonly AtlasSection[]>;
 }
 
-export interface SkyAtlasProps {
+interface SkyAtlasProps {
   data: SkyAtlasData;
   lookup: AtlasLookup;
   /** Where "Add to lesson" goes, given the picks. From the route layer, which

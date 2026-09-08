@@ -50,7 +50,7 @@ const KIND: Partial<Record<string, SkyKind>> = { [KANA_SUBJECT]: "kana", [RADICA
  * opened in a lesson and not yet asked is "claimed" (shown as untested),
  * since it is in rotation from that moment (Sam, 2026-09-06), not
  * undiscovered until its first quiz. */
-export function factStanding(f: FactId, history: HistoryFile, now: number): AppStanding {
+function factStanding(f: FactId, history: HistoryFile, now: number): AppStanding {
   const s = appStandingOf(history.facts[f], history.claims?.[f], now).standing;
   return s === "not-seen" && history.seen?.[f] ? "claimed" : s;
 }
@@ -178,13 +178,13 @@ export function componentEntry(glyph: string): LibEntry | undefined {
 }
 
 /** The parts an entry is made of, as entries: a word's kanji, a kanji's components. */
-export function partsOf(entry: LibEntry): LibEntry[] {
+function partsOf(entry: LibEntry): LibEntry[] {
   if (entry.kind === VOCAB_SUBJECT) return [...entry.glyph].map((c) => (kanjiRow(c) ? componentEntry(c) : undefined)).filter((e): e is LibEntry => !!e);
   if (entry.kind === KANJI_SUBJECT) return (kanjiRow(entry.glyph)?.comps ?? []).map(componentEntry).filter((e): e is LibEntry => !!e);
   return [];
 }
 
-export function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[]): SkyItem {
+function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[]): SkyItem {
   const kind = KIND[entry.kind] ?? "word";
   const english = entry.meanings[0] ?? entry.readings[0] ?? entry.glyph;
   return {
@@ -252,7 +252,7 @@ export function standingTallyOf(rows: readonly DiscoveryRow[]): CoverageCounts {
   return counts;
 }
 
-export function standingTally(history: HistoryFile, stats: StatsData, now: number): CoverageCounts {
+function standingTally(history: HistoryFile, stats: StatsData, now: number): CoverageCounts {
   const counts: Partial<Record<Standing, number>> = {};
   const subjects = stats.rows.flatMap((r) => (r.kind === "subject" ? [r.subject] : r.children));
   for (const subject of subjects) addCounts(counts, subjectTally(subject, history, now));

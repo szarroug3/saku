@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { NO_RUN, orderDeck, readRun, resumeAt, runNote, runProgress, runToKeep, sameSource, trimRun, type SavedRun } from "./quiz-run";
+import { orderDeck, readRun, resumeAt, runNote, runToKeep, sameSource, trimRun, type SavedRun } from "./quiz-run";
 import type { QuizAnswer, QuizCard } from "./quiz";
 
 const answer = (cardId: string, over: Partial<QuizAnswer> = {}): QuizAnswer => ({ cardId, grade: "clean", tries: 1, narrowed: false, hinted: false, ...over });
@@ -38,7 +38,7 @@ describe("a saved run, read back", () => {
   });
 
   it("is nothing at all when there is no deck", () => {
-    assert.equal(readRun(null), NO_RUN);
+    assert.equal(readRun(null), null);
     assert.equal(readRun({}), null);
     assert.equal(readRun({ deck: [] }), null);
     assert.equal(readRun("a run"), null);
@@ -67,15 +67,14 @@ describe("a saved run, read back", () => {
 
 describe("how far in a run is", () => {
   it("counts the answers against the deck", () => {
-    assert.deepEqual(runProgress(run()), { answered: 2, total: 4 });
+    assert.equal(runNote(run()), "4 cards, 2 answered");
   });
 
   it("does not count an answer to a card no longer in the deck", () => {
-    assert.deepEqual(runProgress(run({ deck: ["c", "d"] })), { answered: 0, total: 2 });
+    assert.equal(runNote(run({ deck: ["c", "d"] })), "2 cards, 0 answered");
   });
 
-  it("says so in the app's words, and says card once for one", () => {
-    assert.equal(runNote(run()), "4 cards, 2 answered");
+  it("says card once for one", () => {
     assert.equal(runNote(run({ deck: ["a"], answers: [] })), "1 card, 0 answered");
   });
 });

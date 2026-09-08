@@ -16,7 +16,7 @@ import { SkyToggle } from "@/sky/components/sky-toggle";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { SAVE_TEXT, SETTING_GROUPS, SETTING_TEXT, SKY_ACCENTS, type FontChoice, type SkySettings, type VoiceChoice } from "@/sky/lib/settings";
 
-export interface SkySettingsProps {
+interface SkySettingsProps {
   settings: SkySettings;
   onChange: (patch: Partial<SkySettings>) => void;
   voices: readonly VoiceChoice[];

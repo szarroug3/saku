@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 import { SkySurface } from "@/sky/components/sky-panel";
 
-export interface DetailFrameProps {
+interface DetailFrameProps {
   /** Controls across the top: a widen, a close. */
   toolbar?: ReactNode;
   /** Actions pinned at the bottom, under a hairline. */

@@ -9,7 +9,7 @@ import { useState } from "react";
 
 import { SkyInput } from "@/sky/components/sky-input";
 
-export interface SkyStepperProps {
+interface SkyStepperProps {
   value: number;
   onChange: (value: number) => void;
   label: string;

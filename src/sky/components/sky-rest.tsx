@@ -15,7 +15,7 @@ import { SkyStepper } from "@/sky/components/sky-stepper";
 import { formatCountdown, formatReturnTime, restLeft } from "@/sky/lib/rest";
 import type { WayBack } from "@/sky/lib/quiz";
 
-export interface SkyRestProps {
+interface SkyRestProps {
   /** When the rest ends. */
   until: number;
   nextRound: number;

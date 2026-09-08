@@ -10,7 +10,7 @@
 
 import { STANDING_ORDER, type Standing } from "./standing";
 
-export interface CoverageSegment {
+interface CoverageSegment {
   standing: Standing;
   count: number;
   /** 0 to 1 of the whole collection. */

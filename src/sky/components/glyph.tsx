@@ -10,7 +10,7 @@
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING, type Standing } from "@/sky/lib/standing";
 
-export interface GlyphProps {
+interface GlyphProps {
   glyph: string;
   /** Its standing's color. Omitted, the glyph is the ink. */
   standing?: Standing;

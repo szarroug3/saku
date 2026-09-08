@@ -13,9 +13,9 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 
-export interface RailCollection { id: string; title: string; total: number }
+interface RailCollection { id: string; title: string; total: number }
 
-export interface AtlasRailProps {
+interface AtlasRailProps {
   collections: readonly RailCollection[];
   open: string;
   onOpen: (id: string) => void;

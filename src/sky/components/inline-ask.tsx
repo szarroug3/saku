@@ -14,7 +14,7 @@
 import { SkyButton } from "@/sky/components/sky-button";
 import type { ReactNode } from "react";
 
-export interface InlineAskProps {
+interface InlineAskProps {
   /** What happens, in a line: "Its answers leave your schedule." */
   what: ReactNode;
   /** The verb on the coral button: "Forget it", "Delete everything". */

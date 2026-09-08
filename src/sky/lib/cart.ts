@@ -38,7 +38,7 @@ export function locksOn(graph: PrerequisiteGraph, id: string): string[] {
   return graph.prerequisitesOf(id).filter((p) => { const it = graph.itemOf(p); return !!it && isPickable(it); });
 }
 
-export interface PickState {
+interface PickState {
   /** Can be picked now: every locking prerequisite is learned or in the cart. */
   available: boolean;
   /** Locking prerequisites neither learned nor in the cart. */
@@ -59,13 +59,13 @@ export function pickState(graph: PrerequisiteGraph, id: string, learned: Learned
   return { available: needs.length === 0, needs, openedByCart };
 }
 
-export interface PickLine {
+interface PickLine {
   id: string;
   /** Beside what is learned and what earlier picks bring. */
   cost: PickCost;
 }
 
-export interface CartSummary {
+interface CartSummary {
   lines: PickLine[];
   /** Distinct new pieces for the whole cart: what the lesson will teach. */
   pieces: number;
@@ -93,7 +93,7 @@ export function withoutPick(graph: PrerequisiteGraph, picks: readonly string[], 
 /** What a pick brings, by kind, not counting the pick itself: "1 kanji, 2
  * pieces under it". `free` are the learned prerequisites it would have
  * needed; `shared` the ones an earlier pick already brings. */
-export interface PickBreakdown {
+interface PickBreakdown {
   brings: Partial<Record<SkyKind, number>>;
   free: SkyItem[];
   shared: SkyItem[];

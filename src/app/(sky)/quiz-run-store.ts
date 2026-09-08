@@ -28,7 +28,7 @@ import { readStored, useStored, writeStored } from "./stored";
 
 /** The browser's copy. A live key: it is in the note at the top of
  * storage-sweep.ts, not in its list of dead ones. */
-export const QUIZ_RUN_KEY = "sky:quiz:run";
+const QUIZ_RUN_KEY = "sky:quiz:run";
 
 /**
  * What this page load found when it first looked, kept here rather than read

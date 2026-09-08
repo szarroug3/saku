@@ -17,7 +17,7 @@
 import type { ReactNode } from "react";
 import { SkyButton } from "@/sky/components/sky-button";
 
-export interface ItemSectionProps {
+interface ItemSectionProps {
   title: string;
   /** What this kind of thing is, in one or two sentences. */
   intro?: string;

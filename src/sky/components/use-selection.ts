@@ -8,7 +8,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import type { OnPick } from "@/sky/components/atlas-grid";
 
-export interface Selection {
+interface Selection {
   ids: readonly string[];
   set: ReadonlySet<string>;
   /** The one selected, when exactly one is. */

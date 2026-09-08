@@ -15,7 +15,7 @@ import type { Recipe } from "@/sky/lib/practice";
 import type { RunSource } from "@/sky/lib/quiz-run";
 
 /** What can ride in a Sky URL's query. */
-export interface SkyQuery {
+interface SkyQuery {
   /** The pretend learner, recording nothing. A flag with no value. */
   sample?: boolean;
   /** Who linked here, so the way back can say where it goes (SAK-353). */

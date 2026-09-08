@@ -34,7 +34,7 @@ export interface MilkyStars {
 export const DEFAULT_STARS: StarSpec = { density: 72, size: [0.5, 1.4], brightness: [0.3, 1], seed: 7 };
 
 /** The stardust tile is TILE CSS px, drawn at 2x so it stays crisp on retina. */
-export const TILE = 480;
+const TILE = 480;
 export const TILE_PX = TILE * 2;
 
 /** The Milky Way field is drawn for a 16:9 box and shown with cover, like the
@@ -44,11 +44,11 @@ export const FIELD_H = 900;
 
 /** Where the band's centre sits along the gradient line before any shift, as
  * a share of the line: between the lilac (45%) and pink (53%) stops. */
-export const MILKY_CENTRE = 0.49;
+const MILKY_CENTRE = 0.49;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-export interface Dot { x: number; y: number; r: number; a: number }
+interface Dot { x: number; y: number; r: number; a: number }
 
 /** The stardust's dots, in tile pixels (2x). Radii favour the small end, so
  * a field reads as a few bright stars among many faint ones. */

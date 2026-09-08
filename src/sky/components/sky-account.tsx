@@ -13,7 +13,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 
-export interface SkyAccountProps {
+interface SkyAccountProps {
   signedIn: boolean;
   name?: string;
   email?: string;

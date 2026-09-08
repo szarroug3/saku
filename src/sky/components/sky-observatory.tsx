@@ -60,9 +60,9 @@ export interface SkyObservatoryData {
 }
 
 /** How many of a section are laid out. */
-export const SHOWN = 9;
+const SHOWN = 9;
 
-export interface SkyObservatoryProps {
+interface SkyObservatoryProps {
   data: SkyObservatoryData;
   /** How tall the page is; the heading stays put and the picker scrolls. */
   height?: string;

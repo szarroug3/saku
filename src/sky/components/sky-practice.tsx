@@ -32,7 +32,7 @@ import { japaneseFont } from "@/sky/lib/japanese";
 import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
 
-export interface SkyPracticeProps {
+interface SkyPracticeProps {
   collections: readonly PracticeCollection[];
   /** The recipe resolved, now. */
   lookup: (recipe: Recipe, misses: PracticeMisses) => Promise<PracticePreview>;

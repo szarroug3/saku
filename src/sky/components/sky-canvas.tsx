@@ -39,7 +39,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 
 import { hashUnit } from "@/sky/lib/constellation";
 
-export interface SkyCanvasProps {
+interface SkyCanvasProps {
   /** The world, in sky units; children draw in these. */
   width: number;
   height: number;

@@ -45,7 +45,7 @@ export function StandingChip({ standing, count, title }: { standing: Standing; c
   );
 }
 
-export interface StandingLegendProps {
+interface StandingLegendProps {
   /** Which standings to list, in this order. Default: all six, best first. */
   standings?: readonly Standing[];
   /** Counts to show beside each word, when the legend doubles as a tally. */
@@ -73,7 +73,7 @@ export interface StandingLegendProps {
 
 /** One collection in the second row: its name, how many constellations it
  * puts in the sky, and whether it is shown. */
-export interface LegendGroup {
+interface LegendGroup {
   id: string;
   label: string;
   count: number;
@@ -82,7 +82,7 @@ export interface LegendGroup {
 
 /** The mark on a note that warns, drawn rather than typed so it sits with
  * the text whatever the font does (the app's own mark, like the legend's "i"). */
-export function WarnMark({ className = "" }: { className?: string }) {
+function WarnMark({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 14 13" aria-hidden className={`size-3.5 shrink-0 ${className}`}>
       <path d="M7 1.2 13 12H1Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
@@ -105,7 +105,7 @@ export function SkyWarning({ children }: { children: ReactNode }) {
 /** What each standing means, one line per standing and then one for tonight:
  * the card behind the legend's "i", and anywhere else the words need
  * spelling out. Every row draws its real star, so the key is the drawing. */
-export function StandingKey({ standings = STANDING_ORDER, className = "" }: { standings?: readonly Standing[]; className?: string }) {
+function StandingKey({ standings = STANDING_ORDER, className = "" }: { standings?: readonly Standing[]; className?: string }) {
   return (
     <dl className={`grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-ink ${className}`}>
       {standings.map((standing) => (

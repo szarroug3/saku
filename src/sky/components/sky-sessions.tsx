@@ -18,7 +18,7 @@ import { formatWhen, SESSION_KIND, tallySession, type SkySession } from "@/sky/l
 import { useMounted } from "@/sky/components/use-mounted";
 import { STANDING } from "@/sky/lib/standing";
 
-export interface SkySessionsProps {
+interface SkySessionsProps {
   sessions: readonly SkySession[];
   /** Runs the same cards again. */
   onRerun?: (cardIds: readonly string[]) => void;

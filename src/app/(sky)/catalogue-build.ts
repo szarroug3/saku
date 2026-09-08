@@ -20,7 +20,7 @@ import type { SkyBase, SkyCatalogue } from "./sky-payload";
 /** The clock the catalogues are built at. Nothing in an empty history ages,
  * so this only has to be the same number every time: a catalogue that
  * changed with the hour would be a new download every hour. */
-export const NO_CLOCK = 0;
+const NO_CLOCK = 0;
 
 export function buildSkyCatalogue(): SkyCatalogue {
   const empty = skyFromHistory(emptyHistory(), NO_CLOCK, undefined, { everything: true, beyond: beyondWords });

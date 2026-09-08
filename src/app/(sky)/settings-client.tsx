@@ -17,7 +17,7 @@ import type { QuizConfig } from "@/types";
 
 
 /** The app's config in the Sky's words. */
-export function fromConfig(cfg: QuizConfig): SkySettingsValues {
+function fromConfig(cfg: QuizConfig): SkySettingsValues {
   return {
     audioPrompts: cfg.audioPrompts,
     pitchQuestions: cfg.pitchQuestions,
@@ -31,7 +31,7 @@ export function fromConfig(cfg: QuizConfig): SkySettingsValues {
 }
 
 /** A change in the Sky's words as the app's config patch. */
-export function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig> {
+function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig> {
   const out: Partial<QuizConfig> = {};
   if (patch.audioPrompts !== undefined) out.audioPrompts = patch.audioPrompts;
   if (patch.pitchQuestions !== undefined) out.pitchQuestions = patch.pitchQuestions;

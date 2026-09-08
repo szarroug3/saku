@@ -12,7 +12,7 @@
 
 import { hashUnit } from "./constellation";
 
-export interface ScatterItem {
+interface ScatterItem {
   /** Seeds the placement. The item's id. */
   key: string;
   /** The box's side, in sky units. */

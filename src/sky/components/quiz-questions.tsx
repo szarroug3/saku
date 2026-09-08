@@ -23,7 +23,7 @@ import { SkySurface } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 
-export interface QuizQuestionsProps {
+interface QuizQuestionsProps {
   cards: readonly QuizCard[];
   answers: Readonly<Record<string, QuizAnswer>>;
   /** Which card is being asked. */

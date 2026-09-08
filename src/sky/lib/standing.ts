@@ -35,8 +35,8 @@ export type Standing =
 export const STANDING_ORDER: readonly Standing[] = ["solid", "getting-there", "shaky", "slipping", "claimed", "not-seen"];
 
 /** At least 60% of recent runs is "getting there"; at least 80% is solid. */
-export const GETTING_THERE_PCT = 60;
-export const SOLID_PCT = 80;
+const GETTING_THERE_PCT = 60;
+const SOLID_PCT = 80;
 
 /**
  * How each standing reads and paints. The classes are the `--sky-<standing>`
@@ -122,11 +122,3 @@ export function standingOf(e: StandingEvidence): Standing {
   if (pct !== null && pct >= SOLID_PCT) return "solid";
   return pct !== null && pct >= GETTING_THERE_PCT ? "getting-there" : "shaky";
 }
-
-/**
- * The lesson's own vocabulary for a star, which is not a standing. A star
- * there is locked (its prerequisites are not lit yet), open (clickable), lit
- * (opened during this lesson; once lit it stays lit) or selected (the one the
- * panel is showing). Standings never appear inside the lesson.
- */
-export type LessonState = "locked" | "open" | "lit" | "selected";

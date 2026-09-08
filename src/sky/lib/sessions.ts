@@ -10,7 +10,7 @@ export type SessionKind = "quiz" | "ordering" | "other";
 
 export const SESSION_KIND: Record<SessionKind, string> = { quiz: "Quiz", ordering: "Sentence ordering", other: "Session" };
 
-export interface SessionCard {
+interface SessionCard {
   /** The fact asked. */
   id: string;
   item: SkyItem;

@@ -37,9 +37,9 @@
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { SkyItem } from "@/sky/lib/types";
 
-export type ItemCardDensity = "comfortable" | "compact";
+type ItemCardDensity = "comfortable" | "compact";
 
-export interface ItemCardProps {
+interface ItemCardProps {
   item: SkyItem;
   /** Which arrangement to use. The Planetarium picks by meaning, the Atlas by
    * character. Default `english`. */

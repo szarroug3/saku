@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 
 import { SkyTextButton } from "@/sky/components/sky-button";
 
-export interface UndoLineProps {
+interface UndoLineProps {
   /** What happened, with no closing punctuation: "Removed 日". */
   what: ReactNode;
   /** The way back. "Undo" for the last thing you did; its own verb for a
