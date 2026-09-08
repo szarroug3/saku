@@ -818,10 +818,23 @@ export interface HistoryFile {
    * by the character itself — which gave 生 one accuracy slot for eleven
    * readings.
    *
-   * DERIVED, entirely, from `sessions` — src/lib/aggregate.ts is the fold, and
-   * the only writer. It is stored rather than recomputed on read because
-   * saveSession folds incrementally and the 200-session cap means the sessions
-   * no longer say everything the aggregate knows.
+   * DERIVED from `sessions` — src/lib/aggregate.ts is the fold, and the only
+   * writer. Stored rather than recomputed on read because saveSession folds
+   * incrementally.
+   *
+   * AND THE INCREMENTAL FOLD WINS OVER A REPLAY, which is worth saying because
+   * two true sentences about this field contradict each other. `sessions` is
+   * capped at 200 (see history.saveSession), so past that cap this map holds
+   * contributions from sessions that are no longer in the file, and no replay
+   * can recover them. `deleteSessions` nevertheless REBUILDS this map by
+   * folding the survivors, which is the Sessions page's "Forget this session":
+   * forgetting one session also silently drops whatever the evicted ones had
+   * contributed. That is the accepted cost of an honest delete — a learner who
+   * asks for a session to be forgotten gets an aggregate that no longer counts
+   * it — and it is why `deleteSessions` refuses to rebuild for a request that
+   * selects nothing. On a signed-in account this map lives in the
+   * `progress_facts` table rather than here (SAK-237); the rule is the same
+   * either way.
    */
   facts: Record<FactId, FactAggregate>;
 }

@@ -236,8 +236,9 @@ export async function writeHistoryRowGuarded(
 // ---------- progress_facts (SAK-237) ----------
 //
 // One row per (user_id, fact_id) instead of one entry in `progress.history`'s
-// `facts` blob — see scripts/sql/add-progress-facts-table.sql for the schema
-// and the full rationale. Every primitive below is written to be safe to call
+// `facts` blob — see supabase/schema.sql for the schema and the full
+// rationale (moved there from scripts/sql in SAK-379, so one file describes
+// the whole database). Every primitive below is written to be safe to call
 // BEFORE that migration is applied: a Postgres 42P01 ("relation does not
 // exist") is caught and reported through a `migrated: false` result (or, for
 // the void-returning deletes, simply swallowed — there is nothing to delete
@@ -247,7 +248,7 @@ export async function writeHistoryRowGuarded(
 // SQL.
 
 /** Postgres "relation does not exist" — thrown by every query below until
- * scripts/sql/add-progress-facts-table.sql has been applied. */
+ * supabase/schema.sql's progress_facts has been applied. */
 function isUndefinedTable(error: { code?: string }): boolean {
   return error.code === "42P01";
 }

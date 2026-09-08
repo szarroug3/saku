@@ -1,10 +1,13 @@
-// The complete view-model for CharacterEntryView.
+// The complete view-model for a Han glyph's entry.
 //
-// This intentionally lives on the LIVE content side: it reads the same source
-// registries the view historically read and is the single derivation called by
-// both the lesson/dev live path and scripts/seed-content-entries.mjs. Library
-// detail pages deserialize its exact output instead of rebuilding it in the
-// browser (which would pull the curriculum dictionary into their bundle).
+// This lives on the LIVE content side: it reads the same source registries the
+// old Library view read, and `server-lookups.ts` calls it per request through
+// resolveCharacterEntryPayload. It used to have a second caller,
+// scripts/seed-content-entries.mjs, which precomputed the same payload into the
+// content_entries table so a detail page could deserialize it instead of
+// rebuilding it in the browser. That table's readers went with the old app and
+// the seed went with them (SAK-379); the derivation stays because the live path
+// still asks for it.
 
 import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";

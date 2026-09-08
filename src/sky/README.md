@@ -1877,3 +1877,56 @@ not only about our code.
 3,824 unit tests pass, 1 skipped, from 3,843: the 19 that went were the
 envelope's own and its compare-and-set writer's. 26 e2e pass. Nothing in
 `src` is unreachable.
+
+### A table written on every deploy and read by nobody (2026-09-08, SAK-379)
+
+`content_entries` held a precomputed detail payload per Library entry, so
+a detail page could deserialize one instead of pulling the curriculum
+dictionary into the browser to rebuild it. The views that read it went
+with the old app in SAK-398 and the Atlas builds an entry from the
+bundled tables per request, so what was left was a write with no read:
+`scripts/seed-content-entries.mjs`, 365 lines, run by a `seed-content`
+job in CI on every push to main.
+
+Gone: the script, `lib/library/content-seed-delta.ts` and its test (its
+only caller was the script), and the CI job, 39 lines of workflow.
+`character-entry-content.ts` stays, because `server-lookups.ts` calls it
+per request on the live path, and its header now says so instead of
+naming a script that is not there. `scripts/unreachable.mjs` reports zero
+files before and after.
+
+The table is noted dead in `schema.sql`, the way `lists` and `session`
+were tonight, with one difference said out loud: it holds no learner
+data, only content, so unlike those two columns dropping it is free. The
+`drop table` is written into the note for Sam and nothing needs it to
+run.
+
+The other half of the card was `progress_facts`, whose definition lived
+in `scripts/sql/add-progress-facts-table.sql` and not in `schema.sql`, so
+nothing in the repo said whether a given database had the table.
+`schema.sql` is the one definition now: the table, the index, the four
+policies and `clear_legacy_history_facts`, verbatim, with the rollout
+note that says to run `backfill-progress-facts.mjs` in the same window.
+The four references to the old path are repointed.
+
+**The 42P01 fallback stays, and that is the answer, not a deferral.**
+`isUndefinedTable` is the only thing between a missing table and every
+signed-in read throwing. Whether production has the table is a question
+about production, which this pass may not query. Confirming it is one
+line in the SQL editor, and the follow-up is small and named on the card.
+Removing a fallback because it looks unused, without checking the thing
+it guards against, is how a deploy takes an app down.
+
+Last, a real contradiction the audit found in `HistoryFile.facts`. The
+type said the aggregate is derived "entirely" from `sessions`; `sessions`
+is capped at 200; `deleteSessions` rebuilds the aggregate by folding the
+survivors. All three cannot hold. The code already knew which wins:
+`history.ts`'s `deleteSessions` carries a comment about the aggregate
+legitimately holding contributions from evicted sessions, which is why it
+refuses to rebuild for a delete that selects nothing. The incremental
+fold wins, forgetting one session past the cap silently drops what the
+evicted ones contributed, and that is the accepted cost of an honest
+delete. The type says all of that now.
+
+3,822 unit tests pass, 1 skipped, from 3,824: the two that went were the
+seed delta's. 26 e2e pass. The workflow parses and has one job left.

@@ -1,9 +1,9 @@
 // SAK-237 — one-time backfill: copy every learner's `progress.history.facts`
 // (the legacy whole-document blob) into the new per-row `progress_facts` table
-// (see scripts/sql/add-progress-facts-table.sql).
+// (see supabase/schema.sql, which defines it).
 //
-// RUN THIS IMMEDIATELY AFTER applying that SQL migration, in the same
-// maintenance window — see the migration file's own "ROLLOUT ORDER" note for
+// RUN THIS IMMEDIATELY AFTER applying that schema, in the same
+// maintenance window — see schema.sql's own "ROLLOUT ORDER" note for
 // why the gap between "table exists" and "data copied" is not fully safe on
 // its own (a fact touched for the first time in that gap starts its
 // stability/recentRuns over instead of continuing from what was already known).
@@ -26,9 +26,8 @@
 // row. Skipped for a user with no legacy facts to begin with (nothing to
 // clear) and — in --dry-run — reported but not called.
 //
-// Writes with the SERVICE ROLE key (bypasses RLS) — same discipline as
-// scripts/seed-content-entries.mjs — because this touches every learner's row,
-// not one request-scoped user.
+// Writes with the SERVICE ROLE key (bypasses RLS), because this touches every
+// learner's row, not one request-scoped user.
 //
 // Run with:
 //   node --env-file=.env.local scripts/backfill-progress-facts.mjs

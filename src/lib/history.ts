@@ -208,7 +208,8 @@ export async function clearMixup(
  * an account whose progress_facts table has not been created yet (see
  * store/supabase-store.ts's `migrated` flag): saveSession falls back to the
  * original one-shot `applySession` so a deploy that lands before
- * scripts/sql/add-progress-facts-table.sql does not break session saving.
+ * supabase/schema.sql's progress_facts is applied does not break session
+ * saving.
  */
 export async function saveSession(
   userId: string,

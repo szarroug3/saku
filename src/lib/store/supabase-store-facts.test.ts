@@ -3,8 +3,8 @@
 // to a `migrated: false` result (or a silent no-op, for the void-returning
 // deletes) instead of throwing when the table does not exist yet (Postgres
 // 42P01, "relation does not exist"). That fallback is what makes merging this
-// code safe regardless of whether scripts/sql/add-progress-facts-table.sql has
-// been applied yet — see history.ts's callers, which branch on exactly this.
+// code safe regardless of whether supabase/schema.sql's progress_facts has been
+// applied yet — see history.ts's callers, which branch on exactly this.
 //
 // A separate file from supabase-store.test.ts (which does the same job for
 // `writeHistoryRowGuarded` against the `progress` table) rather than an
