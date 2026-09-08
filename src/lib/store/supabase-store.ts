@@ -15,9 +15,12 @@ import "server-only";
 // files; this only moves where the blob lives. Unset columns are left untouched
 // on upsert, so writing history never disturbs settings and vice versa.
 //
-// The row also carries a `lists` column and a `session` column, neither of
-// which anything reads or writes any more (SAK-375, SAK-376). Neither is
-// selected below, and neither is part of ProgressSeedRow.
+// The row also carries a `lists` column, which nothing reads or writes any
+// more (SAK-375); it is not selected below and is not part of ProgressSeedRow.
+// The `session` column is live again, and holds one thing: the quiz run a
+// signed-in learner has left part way through (SAK-404). It is read and
+// written by the pair at the bottom of this file, on its own, never as part
+// of the seed row -- a page that is not the quiz has no use for it.
 
 import { hydrateRecentRuns } from "@/lib/aggregate";
 import { normalizeHistoryShell, withBackfilledLearnedAt } from "@/lib/history-ops";
@@ -509,4 +512,54 @@ export async function writeSettingsRowGuarded(
   const { data, error } = await guarded.select("user_id");
   if (error) throw new Error(`writing progress.settings failed: ${error.message}`);
   return (data?.length ?? 0) > 0;
+}
+
+/**
+ * The quiz run this learner left part way through, as it was stored, or null
+ * when there is none (SAK-404).
+ *
+ * `unknown`, deliberately. The shape of a run is the Sky's (see
+ * `src/sky/lib/quiz-run.ts`, whose `readRun` turns this into one), and the
+ * store has no business knowing it: a jsonb read is a JSON value, and every
+ * version of the envelope this app has ever written comes back through the
+ * same call. The caller validates.
+ *
+ * Its own read, never part of `readProgressSeedRow`: one page in the app
+ * wants this, and folding it into the seed would put it on the wire for
+ * every other one.
+ */
+export async function readSessionRow(userId: string): Promise<unknown> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress")
+    .select("session")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress.session failed: ${error.message}`);
+  return (data as { session?: unknown } | null)?.session ?? null;
+}
+
+/**
+ * Write the run, or clear it with null.
+ *
+ * A plain upsert, not a compare-and-set. The history's guarded write exists
+ * because two devices folding sessions onto the same blob must not clobber
+ * each other, and a lost fold is lost progress. This column is the opposite
+ * case: it holds ONE run, the last one touched, and last writer wins is the
+ * behaviour you actually want, since the run you are answering right now is
+ * the run you should come back to. Nothing is folded, so nothing can be lost
+ * by being overwritten.
+ *
+ * `history` and `settings` are not named in the upsert, so they are left
+ * exactly as they were: writing a run never disturbs progress.
+ */
+export async function writeSessionRow(userId: string, run: unknown): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("progress")
+    .upsert(
+      { user_id: userId, session: run ?? null, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+  if (error) throw new Error(`writing progress.session failed: ${error.message}`);
 }

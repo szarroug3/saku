@@ -25,6 +25,9 @@
 //   saku-local-history, saku-local-lists: a signed-out visitor's own progress
 //     and lists, still written by store/local-progress.ts.
 //   saku-history-cache:*, sky:quiz:rest: live caches.
+//   sky:quiz:run: the quiz run left part way through, so it is there when the
+//     learner comes back (SAK-404). Live, and NOT the old `saku-session` below,
+//     which is the dead envelope of a quiz that could never be resumed.
 //   saku-server-lookup-cache: an IndexedDB database, not a Storage key, so it is
 //     out of this sweep's reach. Its module went with the old app; the database
 //     is the owner's to drop.
