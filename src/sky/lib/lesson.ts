@@ -10,6 +10,11 @@
 // prerequisites are open from the start, for reference, and opening one
 // does not advance the lesson. Nothing dims when you move on: a star opened
 // stays lit for the rest of the lesson.
+//
+// The order holds only what tonight teaches (SAK-416). What tonight RESTS
+// on is a list of its own: the stars already in the sky under tonight's
+// items, and the terms and intros that apply to what is in the order. Those
+// are references, opened like a star and never a step.
 
 import type { SkyItem } from "./types";
 import type { Learned, PrerequisiteGraph } from "./graph";
@@ -159,14 +164,16 @@ export interface LessonStep {
   page?: LessonPage;
 }
 
-/** A page in the order: what a track is, what a term means, how a mark
- * changes a sound. The same page shape a star's teaching uses, placed
- * before a star. */
+/** A page the order rests on: what a track is, what a term means, how a
+ * mark changes a sound. The same page shape a star's teaching uses,
+ * belonging to the star it stands behind. */
 export interface LessonPage {
-  /** The star this page comes before. */
+  /** The star this page stands behind: the one that puts it in play. */
   before: string;
   /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
   kind: string;
+  /** Which of the two it is, in one word, for the references. */
+  why: "term" | "intro";
   /** The thing the page is: a term, a counting rule, a mark. It is shown
    * with the same card every star and every Atlas entry is (Sam,
    * 2026-09-05), only what the card holds differing. */
@@ -174,23 +181,78 @@ export interface LessonPage {
   teach: LessonTeach;
 }
 
+/** One thing tonight rests on and does not teach: a star already in the
+ * sky under tonight's items, or a term or intro that applies to what is in
+ * the order. Listed under the order, opened on the constellation the way a
+ * taught star is, and never a step. */
+export interface LessonReference {
+  /** The star's id, or the page's ("page:" and the page's item). */
+  id: string;
+  /** What the row reads: a star's glyph, a page's name. */
+  label: string;
+  /** What the thing is, for the row. */
+  kind: SkyItem["kind"];
+  /** Why it is here, in one word. */
+  why: "known" | "term" | "intro";
+  /** A page carries its own card. A known star's card comes from the items
+   * and the teaching the lesson already holds. */
+  page?: LessonPage;
+}
+
 const has = (learned: Learned, id: string) => (typeof learned === "function" ? learned(id) : learned.has(id));
 
-/** Every step of the night, in teaching order: the stars, with any pages
- * slotted in front of the star each comes before (a page whose star is not
- * tonight's is dropped). A page's id is "page:" and its title. */
-export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned, pages: readonly LessonPage[] = []): LessonStep[] {
+/** Every step of the night, in teaching order: the stars tonight teaches,
+ * and nothing else. The terms and intros that stand behind them are
+ * references, not steps (SAK-416). */
+export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned): LessonStep[] {
   const steps: LessonStep[] = [];
   const seen = new Set<string>();
   for (const pick of picks) {
     for (const id of graph.orderOf(pick)) {
       if (seen.has(id) || has(learned, id) || graph.itemOf(id)?.group) continue;
       seen.add(id);
-      for (const page of pages) if (page.before === id) steps.push({ id: `page:${page.item.id}`, pick, page });
       steps.push({ id, pick });
     }
   }
   return steps;
+}
+
+/** The id a page is opened by. A page is not an item, so it needs one of
+ * its own, and it has to be the same on both sides of the rail. */
+export const pageId = (page: LessonPage) => `page:${page.item.id}`;
+
+/** What tonight rests on: the stars already in the sky under tonight's
+ * picks, then the terms and intros that apply to what is in the order.
+ * Both are things the learner can open and nothing tonight re-teaches, so
+ * they are one list under the order, in that order (Sam, 2026-09-08).
+ *
+ * Nothing here is a hand list. The known stars fall out of the graph the
+ * lesson already walks, and the pages out of the app's own teaching walk,
+ * which is what puts a term or an intro in play in the first place. A page
+ * standing behind a star that is not tonight's is dropped, the same rule
+ * the order used when a page was still a step. */
+export function lessonReferences(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned, pages: readonly LessonPage[] = []): LessonReference[] {
+  const known: LessonReference[] = [];
+  const reached = new Set<string>();
+  const seen = new Set<string>();
+  for (const pick of picks) {
+    for (const id of graph.orderOf(pick)) {
+      const item = graph.itemOf(id);
+      if (!item || item.group || seen.has(id)) continue;
+      seen.add(id);
+      reached.add(id);
+      if (has(learned, id)) known.push({ id, label: item.glyph, kind: item.kind, why: "known" });
+    }
+  }
+  const read: LessonReference[] = [];
+  const pageSeen = new Set<string>();
+  for (const page of pages) {
+    const id = pageId(page);
+    if (!reached.has(page.before) || pageSeen.has(id)) continue;
+    pageSeen.add(id);
+    read.push({ id, label: page.item.english, kind: page.item.kind, why: page.why, page });
+  }
+  return [...known, ...read];
 }
 
 export type StarState = "locked" | "open" | "lit" | "selected";

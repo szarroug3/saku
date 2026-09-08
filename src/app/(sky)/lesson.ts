@@ -1,8 +1,9 @@
 // Tonight's lesson, from the app's tables. Server-side and dev-only, like
 // the adapters beside it: the items come from the same build the
 // Observatory uses (so a pick is the same thing here), what each star
-// teaches comes from ./teach, and the pages between the stars (a track's
-// intro, a term, a sound shift) from the app's own lesson walk.
+// teaches comes from ./teach, and the pages behind the stars (a track's
+// intro, a term, a sound shift) from the app's own lesson walk. Those
+// pages, with the stars already in the sky, are the order's references.
 
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
@@ -19,7 +20,7 @@ import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RU
 import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
-import { lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
+import { lessonReferences, lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types";
 
@@ -78,7 +79,10 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
     .flatMap((pick) => walkFor(stars.filter((s) => s.pick === pick).map((s) => s.id), history, offer, readings))
     .filter((page) => { if (seen.has(page.item.id)) return false; seen.add(page.item.id); return true; });
   for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id) }); }
-  return { items, learned, picks: known, teach, pages };
+  // what tonight rests on and does not teach: the stars already in the sky
+  // under tonight's picks, and the pages the walk put behind them
+  const references = lessonReferences(graph, known, learnedSet, pages);
+  return { items, learned, picks: known, teach, references };
 }
 
 /** The reading a lesson item teaches, from its facts: a qualified reading
@@ -88,19 +92,24 @@ function taughtReading(facts: readonly string[]): string | undefined {
   return undefined;
 }
 
-/** The pages the app's own lesson walk puts between these stars (a track's
- * intro, the terms it defines, a sound shift), each attached to the star it
- * comes before, and each the thing it is about, shown with the same card a
- * star gets (Sam, 2026-09-05): a term is its Atlas entry, the 〜つ intro
- * is the 〜つ rule, a sound shift is the mark's page kept to that one row.
- * The walk reads history, so an intro already shown is not shown again.
- * `readings` collects which reading of a word the walk teaches. */
+/** The pages the app's own lesson walk puts behind these stars (a track's
+ * intro, the terms it defines, a sound shift), each attached to the star
+ * that puts it in play, and each the thing it is about, shown with the same
+ * card a star gets (Sam, 2026-09-05): a term is its Atlas entry, the 〜つ
+ * intro is the 〜つ rule, a sound shift is the mark's page kept to that one
+ * row. The walk reads history, so an intro already shown is not shown
+ * again. `readings` collects which reading of a word the walk teaches.
+ *
+ * This is where the references come from (SAK-416). The walk already knows
+ * which term or intro a star puts in play, so the list under the order is
+ * derived from it rather than written out by hand; each page says in one
+ * word which of the two it is. */
 function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offerings, readings: Map<string, string>): LessonPage[] {
   const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
-  const push = (kind: string, item: SkyItem | undefined, teach?: LessonTeach) => { if (item) pending.push({ kind, item, teach: teach ?? teachFor(item) }); };
-  // pages go before the first of OUR stars not yet passed, not before the
+  const push = (kind: string, why: LessonPage["why"], item: SkyItem | undefined, teach?: LessonTeach) => { if (item) pending.push({ kind, why, item, teach: teach ?? teachFor(item) }); };
+  // a page belongs to the first of OUR stars not yet passed, not to the
   // app's next item: a piece with no facts of its own (艹) is a star here
   // but never an item there, and a page must not land after it
   let cursor = 0;
@@ -115,13 +124,13 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       pending = [];
       cursor = at + 1;
     } else if (step.type === "intro") {
-      if (step.intro.id === TSU_INTRO.id) { push("Counting rule", offer.offerPick(TSU_RULE)); continue; }
+      if (step.intro.id === TSU_INTRO.id) { push("Counting rule", "intro", offer.offerPick(TSU_RULE)); continue; }
       // an intro with no entry of its own is a page to read, named the way
       // the app's own rail names it: a short name, else the eyebrow
       const name = step.intro.name ?? step.intro.eyebrow ?? step.intro.title;
-      push("Intro", { id: `page:${step.intro.id}`, kind: "term", glyph: name, english: name, standing: "not-seen" }, { pages: [pageFromIntro(step.intro)] });
+      push("Intro", "intro", { id: `page:${step.intro.id}`, kind: "term", glyph: name, english: name, standing: "not-seen" }, { pages: [pageFromIntro(step.intro)] });
     } else if (step.type === "term") {
-      push("Term", offer.offerPick(step.entry));
+      push("Term", "term", offer.offerPick(step.entry));
     } else if (step.type === "conversion") {
       // the mark's own page, kept to the one conversion being taught
       const term = TERMS.find((t) => t.name === (step.row.mark === "゜" ? "Handakuten" : "Dakuten"));
@@ -129,7 +138,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       if (!item) continue;
       const whole = teachFor(item);
       const title = `${step.row.from} to ${step.row.to}`;
-      push("Sound shift", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
+      push("Sound shift", "term", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
     }
   }
   return pages;
