@@ -15,9 +15,9 @@ delete process.env.NO_COLOR;
  * so that every run starts from a fresh server, rather than whatever a
  * previously running one had mutated. The suite runs as a SIGNED-OUT visitor
  * whose progress lives in the browser's localStorage (there is no file store or
- * always-signed-in local user any more), so each test's state is seeded straight
- * into localStorage by the `seed` fixture (see e2e/helpers/app.ts) and isolated
- * automatically by Playwright's per-test browser context.
+ * always-signed-in local user any more), so each test builds the state it needs
+ * through the app's own pages, isolated automatically by Playwright's per-test
+ * browser context.
  */
 const PORT = 3249;
 
@@ -25,8 +25,8 @@ export default defineConfig({
   testDir: "./e2e",
   // The old app's specs, archived with its pages at cutover (2026-09-06).
   // Run separate spec files concurrently. Tests within one file remain ordered,
-  // while each worker still gets Playwright's isolated browser context and
-  // localStorage state through the seed fixture described above.
+  // while each worker still gets Playwright's isolated browser context and its
+  // own empty localStorage.
   //
   // DROPPED FROM 6 TO 2 (SAK-140/141). 6 workers against ONE dev-mode
   // Next.js server (not a production build — no build-time optimization,
@@ -35,9 +35,9 @@ export default defineConfig({
   // reading a stale count long after an answer. 3 workers cut this a lot but
   // did not fully eliminate it on every machine — the progress-pill lag in
   // particular kept recurring on a slower box even at 3. 2 is the more
-  // conservative choice; the per-assertion timeout on the progress pill
-  // (answerTypedCorrectly, helpers/app.ts) was also raised as a second,
-  // independent hedge against the same symptom. Drop to 1 if it still
+  // conservative choice; the per-assertion timeout on the old drill's
+  // progress pill was also raised as a second, independent hedge against the
+  // same symptom (that helper is gone with the old app). Drop to 1 if it still
   // resurfaces — the suite is fully reliable there, just slower.
   fullyParallel: false,
   workers: 2,
