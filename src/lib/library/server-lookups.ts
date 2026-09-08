@@ -63,7 +63,6 @@ import {
 import { radicalConfusableTip } from "@/data/radical-tips";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { numberConstructionFor } from "@/data/number-construction";
-import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { itemHeadline } from "@/lib/content/headline";
 import type { Headline } from "@/lib/content/headline";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
@@ -88,6 +87,7 @@ import type { FactAggregate } from "@/types";
 import { unstable_cache } from "next/cache";
 import { createHash } from "node:crypto";
 import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
+import { getStatsRows as statsRows, type StatsData } from "./stats-rows";
 import type { LearnIndex, IndexUnit } from "@/lib/content/learn-index-types";
 import { nextLearnLesson, nextSentenceLearnLesson } from "@/lib/content/learn-scheduler";
 import type { UnitLessonOf } from "@/lib/content/unit-scheduler-core";
@@ -813,9 +813,12 @@ export async function getSelectionSlice(
 }
 
 /* -------------------------------------------------------------------------
- * STATS PAGE rows live in stats-rows.ts now (SAK-399); re-exported here so
- * the client's action name for getStatsRows still resolves to this file. */
-export { getStatsRows } from "./stats-rows";
+ * STATS PAGE rows live in stats-rows.ts now (SAK-399). The client's action
+ * name for getStatsRows still resolves to this file, through this wrapper: a
+ * "use server" file may export only async functions, not re-exports. */
+export async function getStatsRows(): Promise<StatsData> {
+  return statsRows();
+}
 export type { StatsData, StatsRow, StatsSubject } from "./stats-rows";
 
 /* -------------------------------------------------------------------------
