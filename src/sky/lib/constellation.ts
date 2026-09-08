@@ -177,10 +177,11 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
   return { root: shape.root, stars, lines };
 }
 
-/** Each member to the next, and the last back to the first when there are
- * enough to close. */
+/** Each member to the next, and the last back to the first. Two members are
+ * not a ring: their parent already joins them, and a third line between
+ * them drew a sliver of a triangle that read as a bundle (Sam, 2026-09-08). */
 function ring(members: readonly number[]): Array<readonly [number, number]> {
-  if (members.length < 2) return [];
+  if (members.length < 3) return [];
   const out = members.slice(0, -1).map((m, i) => [m, members[i + 1]] as const);
   if (members.length >= 3) out.push([members[members.length - 1], members[0]] as const);
   return out;
@@ -266,23 +267,23 @@ export interface Paint {
 }
 
 /** Being on tonight's list: a wide, soft halo, the same on every standing. */
-export const TONIGHT_HALO: Halo = { fill: "var(--sky-star-mid)", grow: 9, opacity: 0.12 };
+export const TONIGHT_HALO: Halo = { fill: "var(--sky-star-mid)", grow: 3, opacity: 0.14 };
 
 const BY_STANDING: Record<Standing, Paint> = {
-  solid: { fill: "var(--sky-solid)", opacity: 1, glow: 6 },
-  "getting-there": { fill: "var(--sky-getting-there)", opacity: 1, glow: 4 },
-  shaky: { fill: "var(--sky-shaky)", opacity: 1, glow: 2 },
+  solid: { fill: "var(--sky-solid)", opacity: 1, glow: 4 },
+  "getting-there": { fill: "var(--sky-getting-there)", opacity: 1, glow: 2.5 },
+  shaky: { fill: "var(--sky-shaky)", opacity: 1, glow: 1 },
   // a star going out: dimmed and with no glow at all. That is the whole mark
   // (Sam, 2026-09-08: no ring), so nothing here is dashed or drawn over.
   slipping: { fill: "var(--sky-slipping)", opacity: 0.7, glow: 0 },
   // untested: nothing has been proved, so no glow; a faint halo says it has
   // been met.
-  claimed: { fill: "var(--sky-claimed)", opacity: 1, glow: 0, halo: { fill: "var(--sky-star-mid)", grow: 5, opacity: 0.15 } },
+  claimed: { fill: "var(--sky-claimed)", opacity: 1, glow: 0, halo: { fill: "var(--sky-star-mid)", grow: 2, opacity: 0.15 } },
   // undiscovered: a bare dim dot, and the lines into it are fog.
   "not-seen": { fill: "var(--sky-not-seen)", opacity: 1, glow: 0 },
 };
-const LIT: Paint = { fill: "var(--sky-star)", opacity: 1, glow: 4 };
-const EMPHASIS: Paint = { fill: "var(--sky-accent)", opacity: 1, glow: 6 };
+const LIT: Paint = { fill: "var(--sky-star)", opacity: 1, glow: 3 };
+const EMPHASIS: Paint = { fill: "var(--sky-accent)", opacity: 1, glow: 4 };
 
 /** The paint a look resolves to. Exported so the lesson's own clickable
  * stars and the legend's key wear the same paint the sky does. */

@@ -3130,17 +3130,21 @@ still takes every other line back to 0.12. `linePaintFor(a, b)` gives the
 same answer whichever way round the pair is handed to it, which is the whole
 point.
 
-**State lives on the star, in its glow.** Solid reaches 6, getting there 4,
-shaky 2, and nothing below that glows at all. Sizes are still by role.
+**State lives on the star, in its glow.** Solid reaches 4, getting there
+2.5, shaky 1, and nothing below that glows at all (a first cut at 6, 4 and
+2 made a solid star a blob beside its parts, Sam, 2026-09-08). Sizes are
+still by role.
 
 **Slipping is a star going out**, not the friendliest thing on the sky: it
 keeps its coral, dimmed to 0.7, and loses its glow. A thin ring was tried as
 the mark and Sam did not like it (2026-09-08), so the dimming is the whole
 mark, and no dashes are needed anywhere. Untested has no glow either but
-wears a faint halo, star-mid at 0.15; undiscovered is a bare dim dot.
+wears a faint halo, star-mid at 0.15, two past the body; undiscovered is a
+bare dim dot.
 
 **Tonight is a mark, not a state.** Picked for tonight is a wide soft halo in
-star-mid, nine past the body at 0.12, drawn round whatever the star already
+star-mid, three past the body at 0.14 (nine was five times a piece star's
+width, Sam, same day), drawn round whatever the star already
 is: a shaky pick is still shaky underneath, with its own colour and its own
 glow. `lit` and `emphasis` still take a star over completely, as they did.
 
@@ -3160,3 +3164,8 @@ radius always did; it used to be a fixed pixel count at every size.
 two halos, tonight over each standing, and the line rule from both ends.
 `e2e/sky.spec.ts` gained two, one that no line on the home sky is dashed or
 any colour but the link's, and one that the key draws seven stars.
+
+One more from the same review: a two-member group no longer links its
+members to each other. Their parent already joins them, and the third line
+drew a sliver of a triangle that read as a bundle once the lines were
+bright enough to see.

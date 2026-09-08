@@ -142,9 +142,9 @@ describe("the paint", () => {
   const star = (standing: Standing, more: Partial<StarLook> = {}): StarLook => ({ role: "word", standing, ...more });
 
   it("puts the standing in the glow, brightest for solid and none below shaky", () => {
-    assert.equal(paintFor(star("solid")).glow, 6);
-    assert.equal(paintFor(star("getting-there")).glow, 4);
-    assert.equal(paintFor(star("shaky")).glow, 2);
+    assert.equal(paintFor(star("solid")).glow, 4);
+    assert.equal(paintFor(star("getting-there")).glow, 2.5);
+    assert.equal(paintFor(star("shaky")).glow, 1);
     assert.equal(paintFor(star("slipping")).glow, 0);
     assert.equal(paintFor(star("claimed")).glow, 0);
     assert.equal(paintFor(star("not-seen")).glow, 0);
@@ -172,7 +172,7 @@ describe("the paint", () => {
   });
 
   it("gives untested a faint halo and undiscovered a bare dot", () => {
-    assert.deepEqual(paintFor(star("claimed")).halo, { fill: "var(--sky-star-mid)", grow: 5, opacity: 0.15 });
+    assert.deepEqual(paintFor(star("claimed")).halo, { fill: "var(--sky-star-mid)", grow: 2, opacity: 0.15 });
     const bare = paintFor(star("not-seen"));
     assert.equal(bare.halo, undefined);
     assert.equal(bare.ring, undefined);
@@ -183,11 +183,11 @@ describe("the paint", () => {
     const picked = paintFor(star("not-seen", { tonight: true }));
     assert.equal(picked.fill, "var(--sky-not-seen)", "still undiscovered underneath");
     assert.deepEqual(picked.halo, TONIGHT_HALO);
-    assert.equal(TONIGHT_HALO.grow, 9);
+    assert.equal(TONIGHT_HALO.grow, 3);
     // shaky picked for tonight is still shaky, halo and all
     const shaky = paintFor(star("shaky", { tonight: true }));
     assert.equal(shaky.fill, "var(--sky-shaky)");
-    assert.equal(shaky.glow, 2);
+    assert.equal(shaky.glow, 1);
     assert.deepEqual(shaky.halo, TONIGHT_HALO);
     // and it takes over the untested halo rather than doubling it
     assert.deepEqual(paintFor(star("claimed", { tonight: true })).halo, TONIGHT_HALO);
