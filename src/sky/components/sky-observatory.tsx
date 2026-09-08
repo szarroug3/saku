@@ -159,7 +159,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
                 title={section.title}
                 intro={started ? undefined : section.intro}
                 when={started ? undefined : section.when}
-                start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])), disabled: ids.length === 0 }}
+                start={started ? undefined : { label: `Start ${section.title.toLowerCase()}`, onClick: () => setOpened((o) => new Set([...o, section.id])) }}
               >
                 {started && ids.length > 0 && (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">

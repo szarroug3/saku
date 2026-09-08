@@ -24,7 +24,7 @@ export interface ItemSectionProps {
   /** When to start it: "Learn these first. They are what lets you read." */
   when?: string;
   /** The way in: a button after the intro, "Start kana". */
-  start?: { label: string; onClick: () => void; disabled?: boolean };
+  start?: { label: string; onClick: () => void };
   children?: ReactNode;
 }
 
@@ -41,7 +41,7 @@ export function ItemSection({ title, intro, when, start, children }: ItemSection
             {intro && <p className="text-[13.5px] leading-relaxed text-sky-ink">{intro}</p>}
             {when && <p className={`text-[12.5px] leading-relaxed text-sky-muted ${intro ? "mt-1" : ""}`}>{when}</p>}
           </div>
-          {start && <SkyButton onClick={start.onClick} disabled={start.disabled} className="shrink-0">{start.label}</SkyButton>}
+          {start && <SkyButton onClick={start.onClick} className="shrink-0">{start.label}</SkyButton>}
         </div>
       )}
 

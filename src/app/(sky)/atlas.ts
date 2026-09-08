@@ -118,11 +118,6 @@ function closure(o: Pick<Offerings, "items">, ids: readonly string[]): SkyItem[]
   return [...keep.values()];
 }
 
-/** The signed-in learner's Atlas, or a visitor's. */
-export async function learnerAtlas(now = Date.now()): Promise<SkyAtlasData> {
-  return atlasFromHistory(await learnerHistory(), now);
-}
-
 export async function learnerHistory(): Promise<HistoryFile> {
   const userId = await currentUserId();
   return userId ? await loadHistory(userId) : emptyHistory();

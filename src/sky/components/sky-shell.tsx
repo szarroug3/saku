@@ -1,7 +1,6 @@
 // The app's shell under the sky (cutover, 2026-09-06): the wash painted
 // full-bleed under everything, a thin bar along the top with the wordmark,
-// the pages in one row of small caps and the account on the right, a slim
-// notice under it for a visitor whose sky lives in this browser, and the
+// the pages in one row of small caps and the account on the right, and the
 // page below taking every pixel left. Sam's call: a bar, not a rail; the
 // pages are one screen each and want the width, and a sky has a horizon.
 //
@@ -39,7 +38,6 @@ export interface SkyShellProps {
   /** Sign in, or who is signed in and the way out. */
   account?: ReactNode;
   /** A visitor's line: their sky lives in this browser. */
-  notice?: ReactNode;
   /** The learner's accent and kana face, as the tokens the Sky reads. */
   style?: CSSProperties;
   children: ReactNode;
@@ -47,7 +45,7 @@ export interface SkyShellProps {
 
 const isCurrent = (current: string, href: string) => (href === "/" ? current === "/" : current === href || current.startsWith(`${href}/`));
 
-export function SkyShell({ current, entries, account, notice, style, children }: SkyShellProps) {
+export function SkyShell({ current, entries, account, style, children }: SkyShellProps) {
   // on a narrow screen the pages fold behind a Menu button
   const [open, setOpen] = useState(false);
   return (
@@ -92,7 +90,6 @@ export function SkyShell({ current, entries, account, notice, style, children }:
           })}
         </nav>
       )}
-      {notice && <div className="shrink-0 border-b border-sky-line/60 bg-sky-card/60 px-5 py-1.5 text-[12px] text-sky-muted">{notice}</div>}
       <main className="flex min-h-0 flex-1 flex-col px-4 py-3 md:px-6 md:py-4">{children}</main>
     </div>
   );

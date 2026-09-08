@@ -4,7 +4,7 @@
 //
 // Every card opens on a blank box (SAK-313), or on its choices when that is
 // all it is ever asked by. A right answer moves straight on; a wrong one
-// gets more tries (MAX_TRIES in all; one only on a card of two choices)
+// gets more tries (DEFAULT_RETRIES in all; one only on a card of two choices)
 // before the card is missed. Help is there to ask for: the choices, a
 // hint. Three grades (Sam, 2026-09-05; the old "nearly" went, since ka for
 // ki is not a slip): perfect (right, first try, nothing asked for), with

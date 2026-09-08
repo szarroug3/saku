@@ -33,10 +33,7 @@ import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry, keigoSetForEntry, type KeigoS
 import { VERB_PAIRS, type VerbPair } from "@/data/transitivity";
 import { pairEntry, pairForEntry, TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
-import { emptyHistory } from "@/lib/history-ops";
-import { loadHistory } from "@/lib/history";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import { sentenceTierShortLabel } from "@/data/assembly";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
@@ -103,13 +100,6 @@ function pairName(happens: readonly string[], doIt: readonly string[]): string |
   for (const h of happens) for (const d of doIt) if (related(h, d)) return `${h} · ${d}`;
   if (happens[0] && doIt[0]) return `${happens[0]} · ${doIt[0]}`;
   return happens[0] ?? doIt[0];
-}
-
-/** The signed-in learner's Observatory, or a visitor's. */
-export async function learnerObservatory(now = Date.now()): Promise<SkyObservatoryData> {
-  const userId = await currentUserId();
-  const history = userId ? await loadHistory(userId) : emptyHistory();
-  return observatoryFromHistory(history, now);
 }
 
 export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {

@@ -1,47 +1,15 @@
-// Kind colour for the ItemCard era, mapped onto the app's existing semantic
-// tokens.
+// What a kind is called, in the Sky's own words.
 //
-// The Sky's own palette is the night theme: the --sky-* tokens in globals.css
-// (SAK-291), reached as bg-sky-*, text-sky-* and font-sky-* classes. The kind
-// map below predates it and still points at the current app's tokens, because
-// the components that use it (ItemCard, ItemSection) render inside current-app
-// chrome for now. Status colour is no longer here: standings, with their own
-// tokens, legend and chip, live in src/sky/lib/standing.ts (SAK-294).
+// This file used to carry a colour per kind as well, pointing at the old
+// app's sentence-part tokens, with a note saying the components using it drew
+// inside the old app's chrome. That app is gone, and nothing had read the map
+// for some time before it went (SAK-371). Standings, which do have colours,
+// live in src/sky/lib/standing.ts (SAK-294), and the Sky's palette is the
+// --sky-* tokens in globals.css (SAK-291).
 //
-// Either way: no hex values in this file, and none anywhere in src/sky.
+// No hex values in this file, and none anywhere in src/sky.
 
 import type { SkyKind } from "./types";
-
-/**
- * The accent for each content kind, as a Tailwind class on an existing token.
- *
- * Saku's palette is deliberately small — one accent, plus the three sentence-part
- * hues and the semantic danger/success/warning. There is no six-colour categorical
- * ramp to borrow, and inventing one would break every theme. So kinds reuse the
- * sentence-part colours (which already exist per theme and are already used to
- * distinguish parts of speech) and the accent.
- *
- * If this proves too few distinctions once several kinds sit side by side, the fix
- * is to add tokens to globals.css for every theme, NOT to hardcode here.
- */
-export const KIND_DOT: Record<SkyKind, string> = {
-  kana: "bg-sentence-core",
-  radical: "bg-sentence-ending",
-  kanji: "bg-accent",
-  word: "bg-sentence-topic",
-  counter: "bg-warning",
-  grammar: "bg-success",
-  sentence: "bg-success",
-  term: "bg-success",
-  mark: "bg-sentence-core",
-  concept: "bg-success",
-  // Verb pairs and keigo are word families, so they share the word hue rather
-  // than inventing two more. Saku's palette has no categorical ramp to draw an
-  // eighth distinct colour from, and these three never appear in the same
-  // section, so the collision is never seen side by side.
-  verbPair: "bg-sentence-topic",
-  keigo: "bg-sentence-topic",
-};
 
 /** Human label for a kind, for eyebrows and tooltips. */
 export const KIND_LABEL: Record<SkyKind, string> = {

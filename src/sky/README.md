@@ -2633,3 +2633,59 @@ are SAK-371's.
 
 3,822 unit tests pass, unchanged, and 31 e2e. Nothing renders
 differently: every class attribute touched here is the same string it was.
+
+### The Sky drops what nothing reaches (2026-09-08, SAK-371)
+
+A grep across `src` on 2026-09-06, checked again tonight against a tree
+two rounds of cuts smaller.
+
+**Four entry points from before `Who`.** `learnerSky`,
+`learnerObservatory`, `learnerAtlas` and `learnerQuiz` each read the
+session, loaded the signed-in learner's history and handed a page its
+data. Every page asks a server action with a `Who` now, so a visitor's
+own history can ride up with the call, and the four had no caller left,
+tests included. The card named three; the Atlas's is the same thing and
+went with them. With them go their imports: `currentUserId`,
+`loadHistory`, `emptyHistory`, `getStatsRows` and `loadSettings` are read
+by nothing in three of those modules any more. `learnerHistory` stays,
+`actions.ts` being its reader.
+
+**A colour per kind.** `KIND_DOT` in `lib/tokens.ts` mapped each kind to
+one of the old app's `bg-sentence-*` tokens, and its header explained
+that the components using it drew inside the old app's chrome. That app
+went last night, and nothing had read the map for a while before that.
+The file is `KIND_LABEL` now, which is what a kind is called, and the
+header says what the file is rather than what it used to be.
+
+**Three props nothing passes.** `SkyShell`'s `notice`, a band under the
+bar for a visitor whose sky is in this browser, removed on Sam's ask when
+the bar got a permanent Sign in; the header sentence about it went too.
+`StandingLegend`'s `extra`, rows for the lesson's own "tonight" and
+"lit", which its one caller does not pass, along with `LegendExtra`.
+`ItemSection`'s `start.disabled`, whose one caller computed it as
+`ids.length === 0` three lines under an early return for exactly that,
+so it was always false.
+
+**`isInSky`** in standing.ts, whose only caller was one line of its own
+test, which now checks the other two helpers and not a third that does
+not exist.
+
+**One word in a comment.** `lib/quiz.ts` said a wrong answer gets
+"MAX_TRIES in all"; the constant is `DEFAULT_RETRIES`.
+
+Two of the card's items were already gone: the README's "Migration, when
+the time comes" section, and `SkyPageShell`'s unused default height,
+which went on SAK-368 an hour ago.
+
+Left where they are, and why. `Facet`'s `note` prop, the `chosen` that
+shadows `chosen`, and the stale header line about the page saying so at
+the top are all in `sky-practice.tsx`, which another session had open
+tonight. And the British spellings in identifiers and comments (`colour`
+in sky-card.tsx and through sky-wash-file.ts, "centre", "labelled",
+`licence` as a field name in attribution.ts) are Sam's call, as the card
+says: none of it renders, and renaming a field called `licence` moves the
+attribution data and its tests for a spelling nobody sees. New comments
+are American.
+
+109 lines out against 17 in. `scripts/unreachable.mjs --list` stays at
+zero, 3,822 unit tests pass with one assertion fewer, and 31 e2e.

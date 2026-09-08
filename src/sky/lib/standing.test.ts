@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isInSky, isKnown, needsWork, STANDING, STANDING_ORDER, standingOf, standingWord, type Standing, type StandingEvidence } from "@/sky/lib/standing";
+import { isKnown, needsWork, STANDING, STANDING_ORDER, standingOf, standingWord, type Standing, type StandingEvidence } from "@/sky/lib/standing";
 
 // The ONE place Sky code reaches into the app, and it is a test: the point of
 // the Sky's copy of the decision table is that it says what the app says, and
@@ -47,7 +47,6 @@ describe("standingOf, the Sky's copy of the app's decision", () => {
 
   it("the helpers read the words the way the app does", () => {
     assert.deepEqual(STANDING_ORDER.filter(isKnown), ["solid", "claimed"]);
-    assert.deepEqual(STANDING_ORDER.filter((s) => !isInSky(s)), ["not-seen"]);
     assert.deepEqual(STANDING_ORDER.filter(needsWork), ["shaky", "slipping"]);
   });
 

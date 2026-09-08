@@ -73,12 +73,6 @@ export function isKnown(standing: Standing): boolean {
   return standing === "solid" || standing === "claimed";
 }
 
-/** True when the item belongs in the learner's sky at all: anything met or
- * claimed. "Not seen" is the one standing that is not a star yet. */
-export function isInSky(standing: Standing): boolean {
-  return standing !== "not-seen";
-}
-
 /** What tonight's drill reaches for first: the two standings that say the
  * learner had it and is losing it, or never quite had it. */
 export function needsWork(standing: Standing): boolean {

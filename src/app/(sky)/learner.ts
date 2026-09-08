@@ -22,14 +22,11 @@ import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { currentUserId } from "@/lib/auth";
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryOf } from "@/lib/facts";
-import { emptyHistory } from "@/lib/history-ops";
-import { loadHistory } from "@/lib/history";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
 import { KIND_LABEL } from "@/lib/library/kinds";
-import { getStatsRows, type StatsData, type StatsSubject } from "@/lib/library/stats-rows";
+import type { StatsData, StatsSubject } from "@/lib/library/stats-rows";
 import { standingOf as appStandingOf, type Standing as AppStanding } from "@/lib/library/standing";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import { buildGraph } from "@/sky/lib/graph";
@@ -322,13 +319,6 @@ export interface SkyOptions {
   beyond?: (history: HistoryFile, now: number) => { items: readonly SkyItem[]; met: readonly string[]; firmament?: readonly string[] };
   /** Clean runs in a row that clear a mix-up: the learner's setting. */
   graduateRuns?: number;
-}
-
-/** The signed-in learner's sky, or an empty one for a visitor. */
-export async function learnerSky(now = Date.now(), options: SkyOptions = {}): Promise<SkyHomeData> {
-  const userId = await currentUserId();
-  const history = userId ? await loadHistory(userId) : emptyHistory();
-  return skyFromHistory(history, now, await getStatsRows(), options);
 }
 
 /** The learner's items and what they have met, as a growing map: the home

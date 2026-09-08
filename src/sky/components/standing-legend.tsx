@@ -34,21 +34,11 @@ export function StandingChip({ standing, count, title }: { standing: Standing; c
   );
 }
 
-/** An extra row a legend can carry beside the standings: the lesson's
- * "tonight" and "lit", which are visual states, not standings, and so bring
- * their own swatch. */
-export interface LegendExtra {
-  label: string;
-  swatch: ReactNode;
-}
-
 export interface StandingLegendProps {
   /** Which standings to list, in this order. Default: all six, best first. */
   standings?: readonly Standing[];
   /** Counts to show beside each word, when the legend doubles as a tally. */
   counts?: Partial<Record<Standing, number>>;
-  /** Rows after the standings, for the lesson's own states. */
-  extra?: LegendExtra[];
   /** Called with the standing under the pointer, and null when it leaves,
    * so a sky beside the legend can single those stars out. */
   onHover?: (standing: Standing | null) => void;
@@ -138,7 +128,7 @@ export function StandingTally({ counts, standings = STANDING_ORDER, empty = "Not
 }
 
 /** Every dot with its word. Put one wherever standings are painted. */
-export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [], onHover, hovered = null, onToggle, selected, info = false, groups, onGroup, note, className = "" }: StandingLegendProps) {
+export function StandingLegend({ standings = STANDING_ORDER, counts, onHover, hovered = null, onToggle, selected, info = false, groups, onGroup, note, className = "" }: StandingLegendProps) {
   const live = Boolean(onHover);
   const clickable = Boolean(onToggle);
   // every chip on both rows one width (Sam, 2026-09-06)
@@ -171,12 +161,6 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
           </Row>
         );
       })}
-      {extra.map((row) => (
-        <div key={row.label} className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="inline-flex h-2.5 w-2.5 items-center justify-center">{row.swatch}</span>
-          <dt className="text-sky-ink">{row.label}</dt>
-        </div>
-      ))}
       {info && <SkyInfo label="What the standings mean" wide><StandingKey standings={standings} /></SkyInfo>}
       {groups && groups.length > 0 && (
         <>

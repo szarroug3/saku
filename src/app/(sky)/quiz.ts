@@ -15,8 +15,6 @@ import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
 import { assemblyFacts, canonicalOrder, pickAssemblyForTiers } from "@/data/assembly";
 import { isSentenceTierMarkerFact, sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { SENTENCE_RULE_KIND } from "@/lib/library/entries";
-import { currentUserId } from "@/lib/auth";
-import { loadSettings } from "@/lib/settings";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
 import { answerIsJapanese, fixedDirOf, grammarVehicleFor, interchangeableReadings, mcOnlyIn, questionsFor, revealFor, type PromptContext } from "@/lib/engine/question";
 import { isKatakana } from "@/lib/romaji";
@@ -36,7 +34,6 @@ import { shuffleDeck, type AnswerKey, type QuizCard, type QuizOption } from "@/s
 import type { SkyItem } from "@/sky/lib/types";
 import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
 
-import { learnerHistory } from "./atlas";
 import { offerPicker, pickFacts } from "./observatory";
 import { teachFor } from "./teach";
 
@@ -374,9 +371,3 @@ export function cardsFor(history: HistoryFile, ids: readonly string[], now = Dat
   return out;
 }
 
-/** The signed-in learner's quiz, or a visitor's. */
-export async function learnerQuiz(picks: readonly string[], now = Date.now()): Promise<QuizCard[]> {
-  const userId = await currentUserId();
-  const cfg = userId ? (await loadSettings(userId)).cfg : undefined;
-  return quizFromHistory(await learnerHistory(), picks, now, { pitch: cfg?.pitchQuestions ?? true, audio: cfg?.audioPrompts ?? true });
-}
