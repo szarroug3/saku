@@ -22,7 +22,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   請: "This glyph means to request or ask. It uses the definition of 言 (words, speech) and the sound of 青 (せい).",
   橋: "This glyph means bridge. It uses the definition of 木 (wood) and the sound of 喬.",
   臼: "The original glyph looked like a mortar.",
-  興: "Four hands (舁) lifting an object together: to raise up, to revive.",
+  興: "Four hands lifting an object together: to raise up, to revive. The hands are the two 𦥑 with the 八, together written 舁, and the object standardized into the 同 between them.",
   輸: "This glyph means to transport. It uses the definition of 車 (cart) and the sound of 俞.",
   隣: "This glyph means neighboring. It uses the definition of 阜 (mound, hill) and the sound of 粦.",
   償: "This glyph means to recompense or make up for. It uses the definition of 人 (person) and the sound of 賞 (しょう).",

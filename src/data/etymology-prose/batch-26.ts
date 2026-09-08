@@ -42,7 +42,7 @@ export const BATCH_26: Readonly<Record<string, string>> = {
   祉: "This glyph means welfare or blessing. It uses the definition of 示 (altar) and the sound of 止 (し).",
   股: "This glyph means thigh. It uses the definition of 肉 (flesh) and the sound of 殳.",
   肪: "This glyph means fat. It uses the definition of 肉 (flesh) and the sound of 方.",
-  肯: "Meat (肉) attached to the bone (冎): to consent, to agree.",
+  肯: "Meat (月) attached to the bone: to consent, to agree. The bone was written 冎, and it later corrupted into the 止 above.",
   茂: "This glyph means to grow thick and luxuriant. It uses the definition of 艸 (grass) and the sound of 戊.",
   虎: "The original glyph pictured a tiger: 虍 is its head, and its legs became the 儿 at the bottom.",
   阻: "This glyph means to thwart or block. It uses the definition of 阜 (mound) and the sound of 且.",

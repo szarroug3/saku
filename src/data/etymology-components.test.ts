@@ -221,7 +221,7 @@ function disagreements(): readonly { glyph: string; missing: string[] }[] {
 // stories are settled is the point; growing it needs a reason in the commit.
 // ---------------------------------------------------------------------------
 const SAK_421_LIST =
-  "肥肯肺腎膚膝臨臭興舞色茶荒菌蔑虐融血衡表衷装襲見親設診豊豪貌負責貴賊賢質赤赦軍軟辣農退送逸遂道達適選那配酎里重野開闘陛陰陶隆隊難雪雷電青韓類飲飾香騰骨鬱麻";
+  "辣農退送逸遂道達適選那配酎里重野開闘陛陰陶隆隊難雪雷電青韓類飲飾香騰骨鬱麻";
 
 test("every origin story names only pieces the glyph has, or is on the SAK-421 list", () => {
   const failing = disagreements();
@@ -260,7 +260,7 @@ test("the check's reach is what the review says it is", () => {
   );
   assert.equal(
     disagreements().length,
-    77,
+    37,
     "Stories naming a piece the glyph does not have (the SAK-421 list).",
   );
 });

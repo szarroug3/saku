@@ -40,7 +40,7 @@ export const BATCH_13: Readonly<Record<string, string>> = {
   祖: "This glyph means ancestor. It uses the definition of 示 (altar) and the sound of 且.",
   祝: "A person with an open mouth (兄) beside an altar (示): to pray, to celebrate.",
   紅: "This glyph means crimson. It uses the definition of 糸 (silk) and the sound of 工 (こう).",
-  荒: "This glyph means laid waste. It uses the definition of 艸 (grass, plant) and the sound of 巟.",
+  荒: "This glyph means laid waste, wild. It uses the definition of 艸 (grass); the sound piece 巟 is drawn here as 亡 over 川.",
   迷: "This glyph means to go astray. It uses the definition of 辵 (to walk) and the sound of 米.",
   倒: "This glyph means to fall over. It uses the definition of 人 (person) and the sound of 到 (とう).",
   借: "This glyph means to borrow. It uses the definition of 人 (person) and the sound of 昔 (しゃく).",

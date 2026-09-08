@@ -52,5 +52,5 @@ export const BATCH_08: Readonly<Record<string, string>> = {
   政: "This glyph means government. It uses the definition of 攴 (a hand with a stick, action) and the sound of 正 (せい).",
   故: "This glyph means cause or reason. It uses the definition of 攴 (a hand with a stick) and the sound of 古 (こ).",
   段: "This glyph means steps, and a grade or rank. It uses the definition of 殳 (a hammer in hand): a hammer breaking stone into pieces. The sound piece was 厂, and it is now the strokes on the left.",
-  茶: "This glyph means tea. It uses the definition of 艸 (plant) and the sound of 余.",
+  茶: "This glyph means tea. It uses the definition of 艸 (plant); the sound piece 余 is drawn here as 人 over 木.",
 };

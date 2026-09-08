@@ -9,7 +9,7 @@ export const BATCH_02: Readonly<Record<string, string>> = {
   弓: "The original glyph looked like a bow.",
   引: "A bow (弓) with a short stroke marking where the string is drawn back: to pull.",
   目: "The original glyph looked like a human eye, now stood on its end.",
-  見: "A kneeling person (卩) with a big eye (目) for a head: to see.",
+  見: "A kneeling person with a big eye (目) for a head: to see. The kneeling piece is written 卩 in the record and drawn 儿 here.",
   牛: "The original glyph looked like a bull's head with two horns and two ears.",
   物: "This glyph means thing. It uses the definition of 牛 (ox) and the sound of 勿.",
   子: "The original glyph looked like a baby with a large head and outspread arms, its legs wrapped in a blanket.",

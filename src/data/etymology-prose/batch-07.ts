@@ -16,7 +16,7 @@ export const BATCH_07: Readonly<Record<string, string>> = {
   始: "This glyph means to begin. It uses the definition of 女 (woman) and the sound of 台.",
   服: "This glyph means to serve and obey, and from that clothing. Its sound piece is 𠬝, drawn here as 卩 with 又. The meaning came from 凡, a tray, which corrupted into 舟 and then the 月 on the left.",
   犯: "This glyph means crime or to offend. It uses the definition of 犬 (dog) and the sound of 𢎘.",
-  軍: "Chariots (車) drawn up in an encircling ring (勹): an army, troops.",
+  軍: "This glyph means an army, troops. It uses the definition of 車 (chariots) with 冖 drawn over it. The record reads that top as 勹, surrounding, though it may be a reduced 螾 carrying the sound, so it is not settled.",
   値: "This glyph means value or price. It uses the definition of 人 (person) and the sound of 直.",
   谷: "The original glyph looked like an opening (口) between two mountain walls: a valley.",
   容: "This glyph means to hold or contain. It uses the definition of 宀 (roof) and the sound of 谷, which the record writes 公.",

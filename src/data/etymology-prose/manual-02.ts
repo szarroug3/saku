@@ -5,7 +5,7 @@ export const MANUAL_02: Readonly<Record<string, string>> = {
   済: "This glyph is the simplified form of 濟: the water radical (氵) for crossing a river, plus 斉 (齊) for its sound. From ferrying people across came helping and settling.", // source: https://en.wiktionary.org/wiki/濟
   脱: "This glyph means to shed or slip off. It uses the flesh radical (⺼, the body) for its meaning and 兌 for its sound.", // source: https://en.wiktionary.org/wiki/脫
   歯: "This glyph is the simplified form of 齒, a picture of a mouth full of teeth, later given 止 on top for its sound.", // source: https://en.wiktionary.org/wiki/齒
-  装: "This glyph means to dress or outfit. It uses 衣 (clothing) for its meaning and 壮 (壯) for its sound.", // source: https://en.wiktionary.org/wiki/裝
+  装: "This glyph means to dress or outfit. It uses 衣 (clothing) for its meaning and 壮 for its sound, the form 壯 takes here.", // source: https://en.wiktionary.org/wiki/裝
   団: "This glyph is the simplified form of 團: an enclosure (囗) holding things together, with 專 for its sound. A round gathering, a group.", // source: https://en.wiktionary.org/wiki/團
   巻: "This glyph is the simplified form of 卷, which showed hands rolling something up above a kneeling body (卩): to curl, hence a rolled scroll or volume.", // source: https://en.wiktionary.org/wiki/卷
   昼: "This glyph is the simplified form of 晝, which sets the sun (日) beneath a brush-like top: the marked-off span of daylight, daytime.", // source: https://en.wiktionary.org/wiki/晝

@@ -26,7 +26,7 @@ export const BATCH_28: Readonly<Record<string, string>> = {
   菓: "This glyph means candy or fruit. It uses the definition of 艸 (plant) and the sound of 果 (か).",
   訟: "This glyph means to sue. It uses the definition of 言 (words) and the sound of 公.",
   貫: "Two cowrie shells (貝) threaded on a string: to pierce through, to run through.",
-  赦: "This glyph means to pardon. It uses the definition of 攴 (a hand holding a stick) and the sound of 亦.",
+  赦: "This glyph means to pardon. It uses the definition of 攴 (a hand holding a stick) and the sound of 赤. That sound piece was 亦 in the bronze script.",
   逮: "This glyph means to apprehend or chase. It uses the definition of 辵 (movement) and the sound of 隶.",
   郭: "A tall tower (𩫖) beside a city (邑): the outer city walls.",
   傘: "The original glyph looked like an umbrella.",
