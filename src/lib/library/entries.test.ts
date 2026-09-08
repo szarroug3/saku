@@ -15,6 +15,7 @@ import test, { describe } from "node:test";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import {
   confusableWith,
+  entryForGlyph,
   libEntry,
   quizTrackLabel,
   subjectLabel,
@@ -42,8 +43,10 @@ import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
-import { COUNTER_CURRICULUM, counterMeaningFactId } from "@/data/counters";
-import { patternMeaningFactId } from "@/data/grammar";
+import { COUNTER_CURRICULUM, counterEntry, counterMeaningFactId } from "@/data/counters";
+import { numberConstructionEntry } from "@/data/number-construction";
+import { patternEntry, patternMeaningFactId } from "@/data/grammar";
+import { wordEntry } from "@/data/vocab";
 import { RECIPES } from "@/data/grammar/recipes";
 import type { FactInfo } from "@/types";
 
@@ -613,5 +616,41 @@ describe("quizTrackLabel — the quiz HUDs' track name over a fact pool", () => 
   test("omitting mode keeps the old fact-only behavior — a plain Grammar quiz over the same facts", () => {
     const infos = [factInfo(patternMeaningFactId(RECIPES[0]!.id))];
     assert.equal(quizTrackLabel(infos), "Grammar");
+  });
+});
+
+describe("SAK-409: entryForGlyph sends a skipped word to the page that teaches it", () => {
+  test("a keb the Words shelf skips for a grammar pattern names that pattern", () => {
+    const id = entryForGlyph(VOCAB_SUBJECT, "だけ");
+    assert.equal(id, patternEntry("dake"));
+    const entry = id ? libEntry(id) : undefined;
+    assert.ok(entry, "だけ must name a real entry, not a minted id that resolves to nothing");
+    assert.equal(entry!.kind, GRAMMAR_SUBJECT);
+  });
+
+  test("a keb the Words shelf skips for a counting page names that page", () => {
+    const tsu = entryForGlyph(VOCAB_SUBJECT, "一つ");
+    // COUNTER_CURRICULUM opens with the native 〜つ forms, so [0] is ひとつ.
+    assert.equal(tsu, counterEntry(COUNTER_CURRICULUM[0]!));
+    assert.ok(tsu && libEntry(tsu), "一つ must name the ひとつ counting entry");
+
+    const nin = entryForGlyph(VOCAB_SUBJECT, "一人");
+    assert.equal(nin, numberConstructionEntry("nin"));
+    assert.ok(nin && libEntry(nin), "一人 must name the 〜人 construction entry");
+  });
+
+  test("a word the shelf does teach still names its own entry", () => {
+    const id = entryForGlyph(VOCAB_SUBJECT, "先生");
+    assert.equal(id, wordEntry("先生"));
+    assert.ok(id && libEntry(id));
+  });
+
+  test("a keb no entry carries at all is null", () => {
+    // １日 is a real dictionary row the Words shelf skips (the counters track
+    // owns the day forms), but no per-form entry teaches it and no duplicate
+    // map names a target — so there is nothing to link to. See the 43 day and
+    // month forms in entryForGlyph's own doc comment.
+    assert.equal(entryForGlyph(VOCAB_SUBJECT, "１日"), null);
+    assert.equal(entryForGlyph(VOCAB_SUBJECT, "not-a-word"), null);
   });
 });

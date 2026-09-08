@@ -43,13 +43,13 @@ import {
   variantTaughtKanji,
 } from "@/data/kanji";
 import { isExcludedVariant } from "@/data/variant-forms";
-import { VOCAB_SUBJECT, vocabRow, wordEntry } from "@/data/vocab";
-import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
+import { VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
+import { GRAMMAR_SUBJECT, GRAMMAR_VOCAB_DUPLICATE_KEBS, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT } from "@/data/marks";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { NUMBER_CONSTRUCTION_SUBJECT } from "@/data/number-construction";
 import { TERM_SUBJECT } from "@/data/terms";
-import { COUNTER_ENTRIES } from "@/data/counters";
+import { COUNTER_ENTRIES, COUNTER_TAIL_FORM_ALIASES, COUNTER_VOCAB_DUPLICATE_KEBS } from "@/data/counters";
 import {
   RADICAL_SUBJECT,
   radicalEntry,
@@ -680,12 +680,36 @@ export function confusableWith(entry: LibEntry): EntryId[] {
 }
 
 /**
+ * SAK-409: the words the entries walk skips because another page already
+ * teaches them, each mapped to that page — a grammar recipe's own pattern
+ * (だけ, まで, しか…) to the pattern entry, a counting duplicate (一つ, 一人,
+ * １００億…) and 二十歳 to the counting or construction entry. Read straight off
+ * the three source maps that make the walk skip them (entries-build.ts), so
+ * this cannot come to disagree with them about which word which page teaches.
+ * `canonicalMixupEntry` (library-index.ts) makes the same redirect for a
+ * mix-up recorded against one of these words, off two of the same maps.
+ */
+const DUPLICATE_KEB_ENTRY: ReadonlyMap<string, EntryId> = new Map([
+  ...GRAMMAR_VOCAB_DUPLICATE_KEBS,
+  ...COUNTER_VOCAB_DUPLICATE_KEBS,
+  ...COUNTER_TAIL_FORM_ALIASES,
+]);
+
+/**
  * The entry a glyph names on a given shelf, when the glyph is all a link has —
  * an "appears in" word, a component kanji.
  *
  * Null when there is no such entry, which the caller must handle rather than
  * mint an id for data it does not have. A minted id that resolves to nothing is
- * a broken link that type-checks.
+ * a broken link that type-checks — which is why a VOCAB keb is answered against
+ * `libEntry`, the entries themselves, rather than against the dictionary row it
+ * was built from. The two differ for the 98 kebs the walk skips: 55 of them
+ * name the page that teaches the word instead (DUPLICATE_KEB_ENTRY above), and
+ * the 43 day and month forms (１日…３１日, １月…１２月, skipped by
+ * COUNTER_KANJI_GLYPHS, which carries no target) are null.
+ *
+ * There is one of this function. library-index.ts re-exports it (SAK-409); it
+ * used to carry a second copy that answered null for all 98.
  */
 export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
   switch (kind) {
@@ -700,8 +724,12 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
       return radicalByGlyph(glyph) ? radicalEntry(glyph) : null;
     case PRIMITIVE_SUBJECT:
       return PRIMITIVE_STROKES.has(glyph) ? primitiveEntry(glyph) : null;
-    case VOCAB_SUBJECT:
-      return vocabRow(glyph) ? wordEntry(glyph) : null;
+    case VOCAB_SUBJECT: {
+      const taughtElsewhere = DUPLICATE_KEB_ENTRY.get(glyph);
+      if (taughtElsewhere) return taughtElsewhere;
+      const id = wordEntry(glyph);
+      return libEntry(id) ? id : null;
+    }
     // A counter is NOT resolved by its glyph, and for the same reason a bare
     // number gets a low weight above: に the number and に the particle share a
     // glyph, and 一本 is not a vocab keb at all. Counter links are minted from the

@@ -21,11 +21,11 @@ import {
   KINDS,
   KIND_LABEL,
   entryName,
+  entryForGlyph,
   shelfKindOf,
   SENTENCE_RULE_KIND,
   COUNTER_KIND,
   NUMBER_CONSTRUCTION_KIND,
-  type Kind,
 } from "./entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 import type { EntryId, FactId } from "@/types";
@@ -36,15 +36,9 @@ import { wordBeginnerRank } from "@/lib/word-rank";
 import { RECIPES, isPrimaryPatternRecipe, patternGroup, type Recipe } from "@/data/grammar/recipes";
 import type { Form } from "@/lib/conjugate";
 
-// The four small, genuinely content-LIGHT subjects entryForGlyph resolves
-// directly — none of these files import data/vocab.ts, so reading them here
-// carries none of the ~8.6MB dictionary. Only KANJI_SUBJECT is different: its
-// own data/kanji.ts module has a top-level import of vocab.ts (for its separate
-// reading-attestation logic), so its existence check is precomputed instead
-// (INDEX.kanjiGlyphs) and its id builder reproduced as the pure one-liner it is.
-import { CHAR_INDEX, KANA_SUBJECT, kanaEntry, LOOK_GROUP } from "@/data/characters";
-import { RADICAL_SUBJECT, radicalByGlyph, radicalEntry } from "@/data/radicals";
-import { PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveEntry } from "@/data/components";
+// characters.ts is content-LIGHT — it does not import data/vocab.ts, so
+// reading it here for kanaConfusables carries none of the ~8.6MB dictionary.
+import { CHAR_INDEX, kanaEntry, LOOK_GROUP } from "@/data/characters";
 import { VOCAB_SUBJECT, wordEntry } from "@/lib/vocab-ids";
 import { entryId } from "@/lib/fact-id";
 // SAK-271: both maps are pure data (a Map literal keyed by keb string,
@@ -62,8 +56,12 @@ import { CURRICULUM_GLYPHS } from "@/lib/content/curriculum-meta";
 
 export { VOCAB_SUBJECT };
 
-/** The entry model, owned by entries.ts and read from the same file (SAK-400). */
-export { LIB_ENTRIES, LIB_ENTRIES_BY_KIND, libEntry, knownFactsOf, KINDS, KIND_LABEL, entryName, shelfKindOf, SENTENCE_RULE_KIND, COUNTER_KIND, NUMBER_CONSTRUCTION_KIND };
+/** The entry model, owned by entries.ts and read from the same file (SAK-400).
+ * `entryForGlyph` joined it in SAK-409: this loader used to carry a second copy
+ * of it that answered null for the 98 kebs the entries walk skips, while
+ * entries.ts's minted a word id no entry carried. There is one now, in
+ * entries.ts, and it names the page that teaches the word. */
+export { LIB_ENTRIES, LIB_ENTRIES_BY_KIND, libEntry, knownFactsOf, KINDS, KIND_LABEL, entryName, entryForGlyph, shelfKindOf, SENTENCE_RULE_KIND, COUNTER_KIND, NUMBER_CONSTRUCTION_KIND };
 
 const INDEX = LIBRARY_INDEX;
 
@@ -246,8 +244,6 @@ export { CURRICULUM_GLYPHS };
  * `KANJI_SUBJECT`. A literal, re-declared so nothing here imports kanji.ts. */
 export const KANJI_SUBJECT = "kanji";
 
-const KANJI_GLYPHS: ReadonlySet<string> = new Set(INDEX.kanjiGlyphs);
-
 /** A kanji's entry id — byte-identical to data/kanji.ts's `kanjiEntry`
  * (`entryId(KANJI_SUBJECT, c)`), a pure one-liner reproduced content-free. */
 export function kanjiEntry(c: string): EntryId {
@@ -308,33 +304,6 @@ const PITCH_INCOMPATIBLE_WORDS: ReadonlySet<string> = new Set(
  * reading — the content-free twin of comparing it to legacyUnqualifiedReading. */
 export function pitchReadingCompatible(word: string): boolean {
   return !PITCH_INCOMPATIBLE_WORDS.has(word);
-}
-
-/** The entry a glyph resolves to for its kind — the index's twin of
- * entries.ts's `entryForGlyph`. KANA, KANJI, RADICAL and PRIMITIVE resolve by
- * an existence check + pure id build, as there; every other kind has no glyph
- * resolution and returns null, as there. VOCAB is the one place the two
- * differ, on purpose for now (SAK-400): this answers null for a keb the build
- * skips (the 98 grammar and counter duplicates, だけ, 一つ, 一人…), because no
- * entry carries that id, while entries.ts's answers `wordEntry(keb)` for any
- * VOCAB row. Which is right is a question for the caller that meets one. */
-export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
-  switch (kind) {
-    case KANA_SUBJECT:
-      return CHAR_INDEX[glyph] ? kanaEntry(glyph) : null;
-    case KANJI_SUBJECT:
-      return KANJI_GLYPHS.has(glyph) ? kanjiEntry(glyph) : null;
-    case RADICAL_SUBJECT:
-      return radicalByGlyph(glyph) ? radicalEntry(glyph) : null;
-    case PRIMITIVE_SUBJECT:
-      return PRIMITIVE_STROKES.has(glyph) ? primitiveEntry(glyph) : null;
-    case VOCAB_SUBJECT: {
-      const id = wordEntry(glyph);
-      return libEntry(id) ? id : null;
-    }
-    default:
-      return null;
-  }
 }
 
 /** Both of strokeFallbackOf's answers for a glyph, precomputed — content-free

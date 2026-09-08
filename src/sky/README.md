@@ -2882,3 +2882,41 @@ by then, and only then walks the way back. 35 e2e pass, the new one six for
 six at `--repeat-each=6`. 3,754 unit tests pass, 1 skipped (3,799 before,
 less the 45 that went with the deleted code). `unreachable.mjs --list` at
 zero.
+
+### One answer for a word the Library skips (2026-09-08, SAK-409)
+
+There were two `entryForGlyph`s, and for 98 words they disagreed. Those
+are the kebs the entries walk skips because another page already teaches
+them: 30 particles and connectives a grammar recipe owns (だけ, まで,
+しか), 25 counting duplicates (一つ, 一人, １００億, 二十歳), and the 43 day
+and month forms the counters track owns (１日, ７月). `entries.ts` answered
+`word:だけ`, an id no entry carries, and the Sky read that one; the index
+loader answered null, and the shelf and the lookup modules read that one.
+A minted id that resolves to nothing is a broken link that type-checks,
+which is what `entryForGlyph`'s own doc had been saying about it.
+
+The 55 with a page now name that page. `だけ` answers `grammar:dake`, 一つ
+the ひとつ counting entry, 一人 the 〜人 construction page, off the same
+three maps that make the walk skip them in the first place
+(`GRAMMAR_VOCAB_DUPLICATE_KEBS`, `COUNTER_VOCAB_DUPLICATE_KEBS`,
+`COUNTER_TAIL_FORM_ALIASES`) — the redirect `canonicalMixupEntry` already
+made for a mix-up recorded against one of these words. The Atlas dropped
+those words out of its related groups and WordsWith left them unlinked;
+both send a reader to the page that teaches the word now.
+
+The 43 day and month forms answer null, as the loader always did. Their
+`numbers:day` and `numbers:month` pages exist, but no map names them and
+no per-form entry does either, so there is no id to hand back. Worth a
+card if it ever matters; the three maps are what this one followed.
+
+There is one function, in `entries.ts`, and `library-index.ts` re-exports
+it beside `libEntry` and `knownFactsOf`. The loader's copy resolved a
+kanji through a precomputed glyph set, `INDEX.kanjiGlyphs`, which nothing
+reads now — the field is still written, and is the next thing to drop.
+
+Checked with the SAK-400 dump before and after: every file identical
+except the two `entryForGlyph` dumps, which changed on exactly those 98
+kebs and are now byte-identical to each other. The home, Atlas and
+practice payloads for the sample learner and an empty one did not move.
+3,758 unit tests pass, 1 skipped (3,754 before, plus four for the rule).
+35 e2e pass.

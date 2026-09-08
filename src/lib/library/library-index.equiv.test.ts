@@ -203,23 +203,22 @@ test("SENTENCE_TIERS ids/labels match live SENTENCE_ORDERING_TIERS, in order", (
   );
 });
 
-test("entryForGlyph matches live entryForGlyph for every kind, sampled across entries", () => {
-  // Every kind that resolves by glyph, plus one kind that never does (control).
-  const kindsToCheck = [...new Set(LIVE_ENTRIES.map((e) => e.kind))];
-  for (const kind of kindsToCheck) {
-    const sample = LIVE_ENTRIES.filter((e) => e.kind === kind).slice(0, 25);
-    for (const e of sample) {
-      assert.equal(
-        entryForGlyph(kind, e.glyph),
-        liveEntryForGlyph(kind, e.glyph),
-        `kind ${kind} glyph ${e.glyph}`,
-      );
-    }
-  }
+// SAK-409: this loader used to carry its own copy of entryForGlyph, and these
+// two tests compared the copies. There is one function now — entries.ts's, which
+// the loader re-exports — so what is left to check is that it IS that one, and
+// no copy has crept back. The rule it answers by is tested in entries.test.ts.
+test("entryForGlyph is entries.ts's own function, not a second copy", () => {
+  assert.equal(entryForGlyph, liveEntryForGlyph);
 });
 
-test("entryForGlyph returns null for a glyph no kind resolves", () => {
-  assert.equal(entryForGlyph("kana", "not-a-glyph"), liveEntryForGlyph("kana", "not-a-glyph"));
+test("entryForGlyph still resolves a glyph of every kind, and null for a glyph no kind resolves", () => {
+  for (const kind of [...new Set(LIVE_ENTRIES.map((e) => e.kind))]) {
+    for (const e of LIVE_ENTRIES.filter((x) => x.kind === kind).slice(0, 25)) {
+      const id = entryForGlyph(kind, e.glyph);
+      if (id !== null) assert.ok(libEntry(id), `kind ${kind} glyph ${e.glyph} -> ${id}`);
+    }
+  }
+  assert.equal(entryForGlyph("kana", "not-a-glyph"), null);
 });
 
 test("KANJI_SUBJECT matches live KANJI_SUBJECT", () => {
