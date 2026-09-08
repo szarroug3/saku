@@ -735,6 +735,18 @@ export interface HistoryFile {
    */
   claims?: Record<FactId, number>;
   /**
+   * WHAT THIS MEANS NOW (SAK-378). The name and the story below are the old
+   * app's: a "quiz me" button the learner pressed on material they wanted asked.
+   * The Sky has no such button. It writes this when a star is OPENED in a lesson
+   * (`seeId` in src/app/(sky)/writes.ts), and reads it back through
+   * `factStanding` in learner.ts as "in your knowledge base, untested".
+   *
+   * The two intents are not the same thing, and the model gets away with it
+   * because it only ever asks this field one question: is this fact in rotation
+   * and due to be asked soon? "Quiz me" and "I read this in a lesson" both
+   * answer yes. If anything ever needs to tell them apart, this is the field
+   * that has to split first.
+   *
    * What you asked to be QUIZZED on, per fact: ms epoch you said "quiz me". A
    * FOURTH record, and it exists for the same structural reason `claims` does —
    * it is neither something you DID (so it is not a session) nor something
@@ -760,6 +772,16 @@ export interface HistoryFile {
    *  that tested it). WRITE-ONCE / KEEP-EARLIEST: unlike `seen`/`claims`, which
    *  move their timestamp forward on re-record, this only ever moves earlier, so
    *  it answers "when did I first meet this" for the Practice date filter.
+   *
+   *  NOTHING ASKS IT THAT ANY MORE (SAK-378). The date filter went with the old
+   *  Practice screen, and the one reader left is `resolve`'s date window in
+   *  src/lib/selection.ts, which no live path calls. Every history write still
+   *  maintains the map (history-ops.ts), so the cost is a timestamp per fact on
+   *  every write and a growing map in the row, paid for a question no screen
+   *  asks. Left in place rather than dropped: it is write-once and keep-earliest,
+   *  so it cannot be rebuilt accurately once thrown away, and a learner's first
+   *  meeting with a word is the kind of thing a Sky screen may well want back.
+   *
    *  Backfilled best-effort for history predating this field (see the normalizers
    *  and deriveLearnedAt); a fact whose only sessions were evicted by the
    *  200-session cap can only recover a learnedAt from `seen`/`claims`. */

@@ -2071,3 +2071,60 @@ Left for whoever picks it up after the session envelope lands: the seven
 fields above, the `Selection` type with `FactBand`, and folding `retries`
 plus `retryN` into one number, which `retriesOf` and `retriesPatch` in
 `app/(sky)/retries.ts` already present as one.
+
+### The keys of features that are gone (2026-09-08, SAK-378)
+
+A learner's browser was still holding a theme for a picker that does not
+exist, an in-progress run for a quiz that cannot be resumed, nine "you
+have read this card" flags for a registry deleted an hour earlier, and an
+outbox whose module went with the old app. None of it was read, so none
+of it was breaking anything. What it cost was honesty: open the storage
+inspector and you read a version of this app that has not existed for
+weeks, and every one of those keys would have been carried forward by the
+next shim someone wrote.
+
+`storage-sweep.ts` removes them on the first client render, from
+`SettingsProvider`, which is the one module mounted on every page that
+already owns localStorage. Nine keys by name, plus every `saku-intro-*`
+and every `kanaquiz-*`, and the run-count cookie, which is expired rather
+than removed because that is the only way a cookie goes. It runs on every
+load rather than recording that it has run: a `removeItem` on an absent
+key is a miss on a hash map, and a "swept" marker would be one more dead
+key a year from now, which is the thing the file exists to remove.
+
+With them went `storage-migrate.ts`, the 2024 rename shim that copied a
+`kanaquiz-*` value forward on first read. Its last two readers were the
+config's own load path and the settings map, both of which read
+`saku-cfg` directly now. `settings-keys.ts` is three keys: the config and
+Practice's two. The session pair, the run-count cookie and the
+pending-records pair were constants nothing had imported since the old
+app went; the dead names live in the sweep instead, which is where a dead
+name belongs.
+
+One key the card called dead is not, and it stays: `saku-local-lists`.
+`store/local-progress.ts` still writes a signed-out visitor's lists
+there. `saku-server-lookup-cache` is an IndexedDB database rather than a
+Storage key, so the sweep cannot reach it; its module went tonight and
+the database is Sam's to drop.
+
+Two things the card asked to be written down rather than changed, and
+they are now doc comments on the fields themselves. `HistoryFile.seen`
+still told the old app's story, "quiz me": in the Sky it is written when
+a star is opened in a lesson (`seeId`) and read back as "in your
+knowledge base, untested". The model gets away with the two meanings
+because it only ever asks the field one question, whether the fact is in
+rotation and due soon, and both answer yes. And `learnedAt` is maintained
+on every history write for a question no screen asks any more, the
+Practice date filter having gone; its one reader is `resolve`'s date
+window in `selection.ts`, which no live path calls. It stays because it
+is write-once and keep-earliest, so it cannot be rebuilt once dropped.
+
+Not done, and deliberately: splitting `src/types/index.ts` into four
+files. The card asks for it after the QuizConfig, lists and session cuts,
+and two of those three are being made in another session tonight, in that
+same file. Rewriting every import of every type is the worst diff to hand
+a concurrent card. It wants to happen once both lanes are in.
+
+259 lines deleted against 315 added, the sweep and its test included. 3,853 unit tests pass, from 3,858:
+nine went with the rename shim and two with the legacy-key half of the
+settings map, and six new ones hold the sweep. 26 e2e.

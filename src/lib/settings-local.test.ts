@@ -3,7 +3,6 @@ import { test } from "node:test";
 
 import {
   CFG_KEY,
-  OLD_CFG_KEY,
   PRACTICE_MISSES_KEY,
   PRACTICE_SAVED_KEY,
 } from "./settings-keys";
@@ -42,22 +41,6 @@ test("readLocalSettings: an empty store reads as empty settings", () => {
 
 test("readLocalSettings: a corrupt cfg is not sent up", () => {
   assert.deepEqual(readLocalSettings(fakeStore({ [CFG_KEY]: "{not json" })), {});
-});
-
-test("readLocalSettings: migrates a legacy kanaquiz- value forward on read", () => {
-  const store = fakeStore({ [OLD_CFG_KEY]: JSON.stringify({ mode: "old" }) });
-  assert.deepEqual(readLocalSettings(store).cfg, { mode: "old" });
-  // The value was copied under the new key as a side effect of the read.
-  assert.equal(store.data[CFG_KEY], JSON.stringify({ mode: "old" }));
-});
-
-test("readLocalSettings: does not send a legacy cfg default over the new key when both differ", () => {
-  // New key present wins over the old one (migratedGet contract).
-  const store = fakeStore({
-    [CFG_KEY]: JSON.stringify({ mode: "new" }),
-    [OLD_CFG_KEY]: JSON.stringify({ mode: "old" }),
-  });
-  assert.deepEqual(readLocalSettings(store).cfg, { mode: "new" });
 });
 
 test("applyServerSettings: writes present fields into the individual keys", () => {

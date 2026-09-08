@@ -23,8 +23,7 @@
 // Nothing here imports the React providers, which is what keeps it out of the
 // use-settings → provider → here cycle.
 
-import { CFG_KEY, OLD_CFG_KEY, PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
-import { migratedGet } from "@/lib/storage-migrate";
+import { CFG_KEY, PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import type { QuizConfig, SettingsFile } from "@/types";
 
 /** The Storage surface both directions need. Injected so the whole map is
@@ -47,8 +46,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 }
 
 /**
- * Gather this browser's individual settings keys into one SettingsFile, migrating
- * the legacy `kanaquiz-*` config value forward as it reads (migratedGet). Only SET
+ * Gather this browser's individual settings keys into one SettingsFile. Only SET
  * fields are included — an absent key is omitted, never defaulted, so replaying
  * this up to the server cannot overwrite a server value with a local default.
  *
@@ -60,7 +58,7 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
   const out: SettingsFile = {};
   if (!store) return out;
   try {
-    const cfg = parse(migratedGet(store, CFG_KEY, OLD_CFG_KEY));
+    const cfg = parse(store.getItem(CFG_KEY));
     if (isPlainObject(cfg)) out.cfg = cfg as unknown as QuizConfig;
 
     // practice's keepsakes (SAK-342): only when either is set

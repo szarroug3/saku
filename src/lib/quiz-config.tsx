@@ -1,8 +1,8 @@
 "use client";
 
-// Quiz configuration context — persisted to localStorage under "saku-cfg" (a
-// legacy "kanaquiz-cfg" value is migrated forward on first read), and mirrored to
-// the server as the `cfg` field of the settings blob (the source of truth).
+// Quiz configuration context, persisted to localStorage under "saku-cfg" and
+// mirrored to the server as the `cfg` field of the settings blob (the source of
+// truth).
 //
 // The shape used to be the legacy app's whole settings panel. It is what the
 // Sky reads now (SAK-373): a stored blob is read field by field, so a key no
@@ -20,9 +20,8 @@ import {
 } from "react";
 
 import { JP_FONTS } from "@/lib/config";
-import { CFG_KEY, OLD_CFG_KEY } from "@/lib/settings-keys";
+import { CFG_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
-import { migratedGet } from "@/lib/storage-migrate";
 import { useSettings } from "@/lib/use-settings";
 import { DEFAULT_VOICE_ID, isVoiceId } from "@/lib/voice";
 import { allGridResponses, allPairResponses, askFromAudioPrompts } from "@/lib/ask-config";
@@ -134,11 +133,10 @@ function normalizeConfig(saved: unknown): QuizConfig {
   }
 }
 
-/** The config from this browser's localStorage cache — the new `saku-cfg` key,
- * migrated forward from the legacy `kanaquiz-cfg` on first read. */
+/** The config from this browser's localStorage cache. */
 function loadConfig(): QuizConfig {
   try {
-    return normalizeConfig(JSON.parse(migratedGet(localStorage, CFG_KEY, OLD_CFG_KEY) ?? "null"));
+    return normalizeConfig(JSON.parse(localStorage.getItem(CFG_KEY) ?? "null"));
   } catch {
     return defaultConfig();
   }

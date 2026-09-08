@@ -74,6 +74,7 @@ import {
   registerSettingsPusher,
   unregisterSettingsPusher,
 } from "@/lib/settings-sync";
+import { sweepDeadCookie, sweepDeadKeys } from "@/lib/storage-sweep";
 import type { SettingsFile } from "@/types";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -147,8 +148,13 @@ export function SettingsProvider({
   // when there is nothing seeded. The state itself is unused; the initializer is
   // just the one-time hook the reconcile hangs on.
   useState(() => {
-    if (typeof window !== "undefined" && initial) {
-      applyServerSettings(window.localStorage, initial);
+    if (typeof window !== "undefined") {
+      if (initial) applyServerSettings(window.localStorage, initial);
+      // And, in the same one-time block, the sweep: this is the one client
+      // module mounted on every page that already owns localStorage, so the
+      // keys of features that are gone leave here (SAK-378).
+      sweepDeadKeys(window.localStorage);
+      sweepDeadCookie(window.document);
     }
     return null;
   });
