@@ -195,10 +195,13 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   // in the wild is found, by what can be seen in it. It combines with the
   // status, and clears when another shelf opens.
   //
-  // SEVERAL parts at once, and a kanji has to carry them ALL (SAK-413). That is
-  // what this cut is for: you have a character in front of you and you can name
-  // two of its pieces, so naming the second should narrow the answer, not widen
-  // it. Picking every part in a union would have shown almost the whole shelf.
+  // SEVERAL parts at once, and a kanji only has to carry ONE of them: the
+  // picks are an OR (SAK-414). The intersection was the first guess and it was
+  // wrong on the page. Two parts you can see in one character are almost never
+  // both in the app's list for it, so 丆 and 丈 answered "Nothing here built
+  // from 丆 and 丈" and the second pick emptied the shelf instead of helping.
+  // A union always answers: it is "show me the kanji made of these pieces",
+  // which is the question a learner staring at a character actually has.
   const [components, setComponents] = useState<ReadonlySet<string>>(() => new Set());
   const toggleComponent = useCallback((glyph: string) => setComponents((prev) => { const next = new Set(prev); if (next.has(glyph)) next.delete(glyph); else next.add(glyph); return next; }), []);
   const clearComponents = useCallback(() => setComponents(new Set()), []);
@@ -236,8 +239,8 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
     if (!it) return false;
     if (filter !== null && it.standing !== filter) return false;
     if (picked.size === 0 || it.kind !== "kanji") return true;
-    for (const p of picked) if (!it.parts?.includes(p)) return false;
-    return true;
+    for (const p of picked) if (it.parts?.includes(p)) return true;
+    return false;
   }, [graph, filter, picked]);
   const pickedList = [...picked];
 
@@ -397,7 +400,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " · "}<span className={`font-semibold text-sky-ink ${japaneseFont(p)}`}>{p}</span></span>)}</>}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " or "}<span className={`font-semibold text-sky-ink ${japaneseFont(p)}`}>{p}</span></span>)}</>}</p>
                   {shelf.id === "kanji" && parts.length > 0 && (
                     <p className="mt-2 flex items-center gap-2">
                       <Eyebrow className="mb-0">Built from</Eyebrow>
@@ -413,7 +416,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                     </p>
                   )}
                   {cuts.length === 0 ? (
-                    <p className="mt-3 text-[13.5px] text-sky-muted">{pickedList.length > 0 ? `Nothing here built from ${pickedList.join(" and ")}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>
+                    <p className="mt-3 text-[13.5px] text-sky-muted">{pickedList.length > 0 ? `Nothing here built from ${pickedList.join(" or ")}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>
                   ) : cuts.map((cut) => (
                     <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} expected={shelf.streamed ? cut.items.length : undefined} onNear={shelf.streamed ? () => fetchTiles(cut.items) : undefined} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
                   ))}
