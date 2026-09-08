@@ -219,7 +219,7 @@ export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], 
 
 /** The id a page is opened by. A page is not an item, so it needs one of
  * its own, and it has to be the same on both sides of the rail. */
-export const pageId = (page: LessonPage) => `page:${page.item.id}`;
+const pageId = (page: LessonPage) => `page:${page.item.id}`;
 
 /** What tonight rests on: the stars already in the sky under tonight's
  * picks, then the terms and intros that apply to what is in the order.
