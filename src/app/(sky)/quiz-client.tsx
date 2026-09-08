@@ -36,7 +36,7 @@ import type { QuizConfig } from "@/types";
 
 import { loadQuiz } from "./actions";
 import { grade } from "./grade";
-import { runHref } from "./hrefs";
+import { runHref, skyHref } from "./hrefs";
 import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
 import { SkyLoading, useLoaded, useWho } from "./local";
@@ -120,7 +120,7 @@ function QuizRun({ cards, run, source, back, sample, signedIn, rounds, cfg, upda
   const asked = useMemo(() => (round <= 1 ? cards : shuffleDeck(cards, seeded(seed + round))), [cards, round, seed]);
 
   // a retry is the same route with just those cards named
-  const retry = (ids: readonly string[]) => router.push(`/quiz?${sample ? "sample&" : ""}cards=${encodeURIComponent(ids.join(","))}`);
+  const retry = (ids: readonly string[]) => router.push(skyHref("/quiz", { sample, cards: ids }));
   const finish = async (answers: readonly QuizAnswer[]) => {
     // the run is over the moment the answers go to the recorder: nothing to
     // come back to, so nothing kept (SAK-404)

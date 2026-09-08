@@ -25,7 +25,7 @@ import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, ty
 
 import { PitchMark } from "./pitch-reading";
 import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
-import { runHref } from "./hrefs";
+import { runHref, skyHref } from "./hrefs";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { grade } from "./grade";
 import { keepRun, useRunAtOpen } from "./quiz-run-store";
@@ -62,9 +62,6 @@ function write(key: string, value: unknown) {
 const NO_SAVED: readonly SavedRecipe[] = [];
 const NO_MISSES: PracticeMisses = {};
 
-/** The recipe in a URL, and back. */
-export const packRecipe = (recipe: Recipe) => encodeURIComponent(JSON.stringify(recipe));
-
 export function PracticeClient({ collections, sample, signedIn, initialPreview }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null }) {
   const router = useRouter();
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
@@ -76,7 +73,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
   if (!preview) return <SkyLoading eyebrow="Practice" title={"What would you like to practice?"} />;
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
-  const onStart = (recipe: Recipe) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}`);
+  const onStart = (recipe: Recipe) => router.push(skyHref("/practice/run", { sample, recipe }));
   return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} height="100%" />;
 }
 
@@ -117,7 +114,7 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
 }
 
 function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update, router }: { cards: readonly QuizCard[]; run: SavedRun | null; source: RunSource; sample: boolean; signedIn: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
-  const back = { href: `/practice${sample ? "?sample" : ""}`, label: "Back to practice" };
+  const back = { href: skyHref("/practice", { sample }), label: "Back to practice" };
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const noteMisses = async (answers: readonly QuizAnswer[]) => {
     if (!sample) keepRun(null, signedIn);
@@ -129,7 +126,7 @@ function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update
     if (sample) return;
     keepRun(runToKeep(cards.map((c) => c.id), at, answers, source, Date.now()), signedIn);
   };
-  const retry = (ids: readonly string[]) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
+  const retry = (ids: readonly string[]) => router.push(skyHref("/practice/run", { sample, recipe, cards: ids }));
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
   const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
