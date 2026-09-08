@@ -29,6 +29,7 @@ import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup 
 import { RoundButton, SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyInput } from "@/sky/components/sky-input";
+import { SkyMultiSelect } from "@/sky/components/sky-multi-select";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { useEntries } from "@/sky/components/use-entries";
 import { useNarrow } from "@/sky/components/use-narrow";
@@ -49,6 +50,10 @@ export interface AtlasSection {
   /** Entries in this cut beyond the ones listed, when it is a sample. */
   more?: number;
 }
+
+/** No parts picked, as one value, so every shelf but Kanji hands `keep` the
+ * same empty set instead of a fresh one on each render. */
+const NO_PARTS: ReadonlySet<string> = new Set();
 
 /** One shelf: a kind, its whole size, the learner's standings over all of
  * it, and its cuts in teaching order. */
@@ -186,15 +191,33 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   // middle showing Kana and the rail lighting Kana, so closing the panel left
   // you on the wrong shelf with nothing to say why.
   const [shelfId, setShelf] = useState(() => shelfHolding(data, initialEntry) ?? data.shelves[0]?.id ?? "");
-  // the kanji shelf can be cut by a radical (SAK-325): the way a kanji seen
+  // the kanji shelf can be cut by its radicals (SAK-325): the way a kanji seen
   // in the wild is found, by what can be seen in it. It combines with the
   // status, and clears when another shelf opens.
-  const [component, setComponent] = useState<string | null>(null);
-  const setShelfId = useCallback((id: string) => { setShelf(id); setComponent(null); }, []);
+  //
+  // SEVERAL parts at once, and a kanji has to carry them ALL (SAK-413). That is
+  // what this cut is for: you have a character in front of you and you can name
+  // two of its pieces, so naming the second should narrow the answer, not widen
+  // it. Picking every part in a union would have shown almost the whole shelf.
+  const [components, setComponents] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleComponent = useCallback((glyph: string) => setComponents((prev) => { const next = new Set(prev); if (next.has(glyph)) next.delete(glyph); else next.add(glyph); return next; }), []);
+  const clearComponents = useCallback(() => setComponents(new Set()), []);
+  const setShelfId = useCallback((id: string) => { setShelf(id); setComponents(new Set()); }, []);
+  // Rarest first: the common radicals cut almost nothing, so the part that
+  // actually narrows a search is the one worth reaching first. The counts
+  // themselves were noise on the control and are not shown.
+  //
+  // A handful of components in the data have no character of their own and
+  // carry a catalogue name instead ("CDP-8BC4"). They are dropped: this cut is
+  // for a piece you can SEE in the character in front of you, and a name you
+  // cannot recognise on sight can never be the one you reach for.
   const parts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const it of data.items) if (it.kind === "kanji") for (const r of it.parts ?? []) counts.set(r, (counts.get(r) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([glyph, count]) => ({ glyph, count }));
+    return [...counts.entries()]
+      .filter(([glyph]) => [...glyph].length === 1)
+      .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
+      .map(([glyph, count]) => ({ glyph, count }));
   }, [data.items]);
   const shelf = data.shelves.find((s) => s.id === shelfId) ?? data.shelves[0];
   const [status, setStatus] = useState<Standing | null>(null);
@@ -207,8 +230,16 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   const filter = tracked ? status : null;
   // "2,136 Shown", or with a status picked "43 Shaky"
   const shownWord = filter ? standingWord(filter) : "Shown";
-  const part = shelf?.id === "kanji" ? component : null;
-  const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter) && (part === null || it.kind !== "kanji" || !!it.parts?.includes(part)); }, [graph, filter, part]);
+  const picked = shelf?.id === "kanji" ? components : NO_PARTS;
+  const keep = useCallback((id: string) => {
+    const it = graph.itemOf(id);
+    if (!it) return false;
+    if (filter !== null && it.standing !== filter) return false;
+    if (picked.size === 0 || it.kind !== "kanji") return true;
+    for (const p of picked) if (!it.parts?.includes(p)) return false;
+    return true;
+  }, [graph, filter, picked]);
+  const pickedList = [...picked];
 
   // a streamed shelf: its cuts fetch their tiles as they near; with a status
   // picked its cuts come from the server (use-streamed-shelf.ts)
@@ -366,18 +397,23 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                 </>
               ) : shelf ? (
                 <>
-                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{part && <> · built from <span className={`font-semibold text-sky-ink ${japaneseFont(part)}`}>{part}</span></>}</p>
+                  <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " · "}<span className={`font-semibold text-sky-ink ${japaneseFont(p)}`}>{p}</span></span>)}</>}</p>
                   {shelf.id === "kanji" && parts.length > 0 && (
-                    <div className="mt-2">
-                      <Eyebrow className="mb-1.5">Built from</Eyebrow>
-                      <div className="flex flex-wrap gap-1.5">
-                        <SkyChip on={component === null} onClick={() => setComponent(null)}>Any</SkyChip>
-                        {parts.slice(0, 48).map((r) => <SkyChip key={r.glyph} on={component === r.glyph} onClick={() => setComponent(component === r.glyph ? null : r.glyph)} className={japaneseFont(r.glyph)}>{r.glyph} · {r.count}</SkyChip>)}
-                      </div>
-                    </div>
+                    <p className="mt-2 flex items-center gap-2">
+                      <Eyebrow className="mb-0">Built from</Eyebrow>
+                      <SkyMultiSelect
+                        label="Choose the parts a kanji is built from"
+                        empty="Any"
+                        unit="parts"
+                        options={parts.map((r) => ({ value: r.glyph, label: r.glyph, className: japaneseFont(r.glyph) }))}
+                        chosen={components}
+                        onToggle={toggleComponent}
+                        onClear={clearComponents}
+                      />
+                    </p>
                   )}
                   {cuts.length === 0 ? (
-                    <p className="mt-3 text-[13.5px] text-sky-muted">{part ? `Nothing here built from ${part}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>
+                    <p className="mt-3 text-[13.5px] text-sky-muted">{pickedList.length > 0 ? `Nothing here built from ${pickedList.join(" and ")}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>
                   ) : cuts.map((cut) => (
                     <LazyTileGrid key={cut.id} label={shelf.sections.length > 1 ? cut.label : undefined} items={itemsOf(cut.items)} expected={shelf.streamed ? cut.items.length : undefined} onNear={shelf.streamed ? () => fetchTiles(cut.items) : undefined} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
                   ))}
@@ -453,7 +489,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                       )}
                       {quizHref && (current.quizzable ?? 0) > 1 && <SkyButton variant="outline" href={quizHref([current.id])}>Quiz me</SkyButton>}
                       {/* a radical's panel jumps to every kanji built from it (SAK-325) */}
-                      {current.kind === "radical" && <SkyButton variant="outline" onClick={() => { setShelf("kanji"); setComponent(current.glyph); selection.clear(); }}>Kanji built from it</SkyButton>}
+                      {current.kind === "radical" && <SkyButton variant="outline" onClick={() => { setShelf("kanji"); setComponents(new Set([current.glyph])); selection.clear(); }}>Kanji built from it</SkyButton>}
                     </>
                   )}
                 />
