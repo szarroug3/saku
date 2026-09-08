@@ -784,3 +784,76 @@ test("on a phone the pages fold behind the same round button", async ({ page }) 
   await page.getByRole("button", { name: "Hide the pages" }).click();
   await expect(page.locator("#sky-menu")).toHaveCount(0);
 });
+
+test("the built-from filter picks several parts at once and keeps only the kanji carrying them all", async ({ page }) => {
+  // SAK-413. The filter was fifty-odd chips in four rows; it is one control
+  // now, and it takes more than one part, because naming a second piece of a
+  // character you are staring at should narrow the answer.
+  await page.goto("/atlas?sample");
+  await page.getByRole("button", { name: /^Kanji/ }).first().click();
+  const shown = page.getByText(/^[\d,]+ Shown/);
+  await expect(shown).toBeVisible();
+  const count = async () => Number((await shown.innerText()).replace(/\D/g, ""));
+  const all = await count();
+
+  const control = page.getByRole("button", { name: "Choose the parts a kanji is built from" });
+  await expect(control).toHaveText(/Any/);
+  await control.click();
+  const list = page.getByRole("listbox", { name: "Choose the parts a kanji is built from" });
+  await expect(list).toHaveAttribute("aria-multiselectable", "true");
+
+  // the keyboard alone reaches the list and toggles a row on it
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press(" ");
+  const picked = list.getByRole("option", { selected: true });
+  await expect(picked).toHaveCount(1);
+  const first = (await picked.innerText()).trim();
+  const afterOne = await count();
+  expect(afterOne).toBeLessThan(all);
+
+  // a second part narrows again rather than widening, and both are named
+  const second = list.getByRole("option", { selected: false }).nth(3);
+  const secondText = (await second.innerText()).trim();
+  await second.click();
+  await expect(list.getByRole("option", { selected: true })).toHaveCount(2);
+  expect(await count()).toBeLessThanOrEqual(afterOne);
+  await expect(control).toHaveText(new RegExp(`${first}[\\s\\S]*${secondText}|${secondText}[\\s\\S]*${first}`));
+
+  // Escape closes it, and the picks survive
+  await page.keyboard.press("Escape");
+  await expect(list).toHaveCount(0);
+  await expect(control).toHaveAttribute("aria-expanded", "false");
+
+  // "Any" is the empty selection, and it puts every kanji back
+  await control.click();
+  await page.getByRole("option", { name: "Any" }).click();
+  await expect(control).toHaveText(/Any/);
+  expect(await count()).toBe(all);
+});
+
+test("a lesson card's readings line up in three columns", async ({ page }) => {
+  // SAK-413. The reading came first, so か and にち pushed the hear button and
+  // the word list to a different x on every row.
+  await page.goto(`/lesson?picks=${encodeURIComponent("kanji:日")}`);
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Next" }).first().click();
+  await page.getByRole("button", { name: "Open Readings" }).first().click();
+  const panel = page.locator(`[id="${await page.getByRole("button", { name: "Close Readings" }).first().getAttribute("aria-controls")}"]`);
+  await expect(panel).toBeVisible();
+
+  const columns = await panel.evaluate((box) => {
+    const at = (el: Element | null | undefined) => (el ? Math.round(el.getBoundingClientRect().x) : null);
+    return [...box.querySelectorAll("li")].map((li) => {
+      const spans = [...li.children].filter((c) => c.tagName === "SPAN");
+      return { hear: at(li.querySelector("button")), reading: at(spans[0]), words: at(spans[1]) };
+    });
+  });
+  expect(columns.length).toBeGreaterThan(2);
+  // one x for the hear buttons, one for the readings, one for the word lists
+  for (const key of ["hear", "reading", "words"] as const) {
+    expect([...new Set(columns.map((c) => c[key]))], `the ${key} column`).toHaveLength(1);
+  }
+  // and they run in that order across a row
+  const [row] = columns;
+  expect(row.hear!).toBeLessThan(row.reading!);
+  expect(row.reading!).toBeLessThan(row.words!);
+});

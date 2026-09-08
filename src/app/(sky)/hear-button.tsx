@@ -129,7 +129,7 @@ export function HearButton({
           void fetch(pitchApiUrl(glyph, downstep, voiceId)).catch(() => {});
         }}
         aria-label={label ?? `Hear ${glyph} with its pitch accent`}
-        className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-accent ${className}`}
+        className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-sky-accent ${className}`}
       >
         <SoundIcon />
       </button>
@@ -162,7 +162,7 @@ export function HearButton({
       // `align-middle` does the same job inline. Baked in here so no caller needs
       // its own nudge — the per-caller `align-[-0.15em]` / `mt-0.5` guesses this
       // replaces were never quite right anyway.
-      className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-accent ${className}`}
+      className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-sky-accent ${className}`}
     >
       <SoundIcon />
     </button>

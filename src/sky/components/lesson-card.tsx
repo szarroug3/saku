@@ -118,13 +118,25 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
   const partSense = new Map((teach?.parts ?? []).filter((p) => p.sense).map((p) => [p.glyph, p.sense]));
   const on = teach?.readings?.filter((r) => r.kind === "on") ?? [];
   const kun = teach?.readings?.filter((r) => r.kind === "kun") ?? [];
-  const readingList = (rows: typeof on) => (
-    <ul className="flex flex-col gap-1">
+  // The readings are a table, so they are laid out as one (SAK-413). Three
+  // columns: the hear button, then the reading, then the words it is read that
+  // way in. The button leads because it is the one cell the same width on every
+  // row; with the reading first, か and にち and じつ each pushed the button and
+  // the word list to a different x and nothing lined up.
+  //
+  // ONE grid holds both On'yomi and Kun'yomi, with the eyebrows spanning it, so
+  // the two lists share their columns instead of each measuring its own. The ul
+  // and li are `contents`: the rows are cells of that one grid, and the list is
+  // still a list to a screen reader. A long list of words wraps inside column
+  // three, never back under the reading.
+  const readingGrid = Hear ? "grid grid-cols-[auto_auto_minmax(0,1fr)]" : "grid grid-cols-[auto_minmax(0,1fr)]";
+  const readingRows = (rows: typeof on) => (
+    <ul className="contents">
       {rows.map((r) => (
-        <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        <li key={r.reading} className="contents">
+          {Hear && <Hear glyph={r.reading} />}
           <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
-          {Hear && <span className="self-center"><Hear glyph={r.reading} /></span>}
-          {r.words.length > 0 && <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
+          <span className={r.words.length > 0 ? `font-sky-display ${japaneseFont(r.words[0])}` : ""}>{r.words.join("  ")}</span>
         </li>
       ))}
     </ul>
@@ -269,22 +281,24 @@ export function LessonCard({ item, teach, madeOf, partOf, known, onSelect, writt
       <div className="mt-4">
         {(on.length > 0 || kun.length > 0) && (
           <Fold title="Readings">
-            <div className="flex flex-col gap-3">
-              {on.length > 0 && <div><Eyebrow>On&apos;yomi · the reading that came with the character</Eyebrow>{readingList(on)}</div>}
-              {kun.length > 0 && <div><Eyebrow>Kun&apos;yomi · the native reading</Eyebrow>{readingList(kun)}</div>}
+            <div className={`${readingGrid} items-baseline gap-x-3 gap-y-1.5`}>
+              {on.length > 0 && <><Eyebrow className="col-span-full">On&apos;yomi · the reading that came with the character</Eyebrow>{readingRows(on)}</>}
+              {kun.length > 0 && <><Eyebrow className={`col-span-full${on.length > 0 ? " mt-2.5" : ""}`}>Kun&apos;yomi · the native reading</Eyebrow>{readingRows(kun)}</>}
             </div>
           </Fold>
         )}
         {related.filter((g) => g.early).map((group) => <RelatedFold key={group.title} group={group} onSelect={onSelect} />)}
         {teach?.pronunciations && teach.pronunciations.length > 1 && (
           <Fold title="Readings">
-            <ul className="flex flex-col gap-1.5">
+            {/* A word's readings are the same table in the same three columns:
+                hear, the reading, what it means read that way. */}
+            <ul className={`${readingGrid} items-baseline gap-x-3 gap-y-1.5`}>
               {teach.pronunciations.map((r) => (
-                <li key={r.reading} className="flex flex-wrap items-baseline gap-x-3">
+                <li key={r.reading} className="contents">
+                  {Hear && <Hear glyph={r.reading} downstep={r.pitch ?? undefined} />}
                   {Pitch && typeof r.pitch === "number"
                     ? <Pitch reading={r.reading} downstep={r.pitch} className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`} />
                     : <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>}
-                  {Hear && <span className="self-center"><Hear glyph={r.reading} downstep={r.pitch ?? undefined} /></span>}
                   <span>{r.glosses.join(", ")}</span>
                 </li>
               ))}
