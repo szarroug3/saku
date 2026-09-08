@@ -55,5 +55,5 @@ export const BATCH_28: Readonly<Record<string, string>> = {
   湖: "This glyph means a lake. It uses the definition of 水 (water) and the sound of 胡.",
   湧: "This glyph means to well up or seethe. It uses the definition of 水 (water) and the sound of 勇 (ゆう).",
   猶: "This glyph means still or yet. It uses the definition of 犬 (dog) and the sound of 酋.",
-  琴: "This glyph means a koto or harp. It uses the definition of 珡 and the sound of 今.",
+  琴: "This glyph means a koto or harp. It uses the sound of 今, and the strings above it, the two 王, stand for 珡, the old character for the instrument.",
 };

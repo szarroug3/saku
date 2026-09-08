@@ -25,7 +25,7 @@ export const BATCH_13: Readonly<Record<string, string>> = {
   束: "The original glyph showed a bag tied shut at both ends: a bundle.",
   求: "The original glyph pictured a centipede. It was later borrowed to mean to request, to want.",
   私: "This glyph means private. It uses the definition of 禾 (grain) and the sound of 厶 (private).",
-  系: "A hand (手) holding silk threads (糸): connected threads, a lineage, a system.",
+  系: "A hand holding silk threads (糸): connected threads, a lineage, a system. The hand was written 手; it is now the single stroke 丿 on top.",
   周: "The original glyph pictured an object carved with dense, fine patterns. It was later borrowed to mean circumference, a circuit.",
   呼: "This glyph means to call out. It uses the definition of 口 (mouth) and the sound of 乎.",
   押: "This glyph means to push. It uses the definition of 手 (hand) and the sound of 甲.",

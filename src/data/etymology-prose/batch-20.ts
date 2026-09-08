@@ -10,7 +10,7 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   瓶: "This glyph means bottle or jar. It uses the definition of 瓦 (earthenware) and the sound of 并.",
   笛: "This glyph means flute or pipe. It uses the definition of 竹 (bamboo) and the sound of 由.",
   符: "This glyph means a token or tally. It uses the definition of 竹 (bamboo) and the sound of 付 (ふ).",
-  翌: "This glyph means the next or following day. It uses the definition of 昱 (daylight) and the sound of 羽.",
+  翌: "This glyph means the next or following day. It uses the sound of 羽, and its meaning comes from 昱, daylight, which the modern shape reduces to the 立 below.",
   菜: "This glyph means vegetable or greens. It uses the definition of 艸 (plant) and the sound of 采.",
   袋: "This glyph means a bag or sack. It uses the definition of 衣 (clothes, cloth) and the sound of 代.",
   訪: "This glyph means to visit or call on. It uses the definition of 言 (speech) and the sound of 方 (ほう).",
@@ -54,6 +54,6 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   飽: "This glyph means full or sated. It uses the definition of 食 (food) and the sound of 包 (ほう).",
   層: "This glyph means a layer or story. It uses the definition of 尸 (building) and the sound of 曾: the tiers of a building.",
   慢: "This glyph means idle or slow. It uses the definition of 心 (heart) and the sound of 曼, which also carries the sense of long and drawn out.",
-  維: "This glyph means fiber, or a rope tie. It uses the definition of 糸 (thread) and the sound of 唯.",
+  維: "This glyph means fiber, or a rope tie. It uses the definition of 糸 (thread) and the sound of 隹, which the record writes 唯.",
   岡: "This glyph means a hill or ridge. It uses the definition of 山 (mountain) and the sound of 冂, which was written 网, a net.",
 };

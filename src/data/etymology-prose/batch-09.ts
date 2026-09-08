@@ -7,7 +7,7 @@ export const BATCH_09: Readonly<Record<string, string>> = {
   接: "This glyph means to touch or join. It uses the definition of 手 (hand) and the sound of 妾.",
   玄: "Two interwoven threads (幺) under a mark (亠): a twisted cord, later borrowed for dark and mysterious.",
   率: "The original glyph looked like a net for catching birds, later borrowed to mean ratio and rate.",
-  細: "This glyph means thin or fine. It uses the definition of 糸 (thread) and the sound of 囟.",
+  細: "This glyph means thin or fine. It uses the definition of 糸 (thread) and the sound of 田. That sound piece was 囟, unrelated to the field it corrupted into.",
   規: "The original glyph looked like a measuring compass. Later rewritten as 夫 (man) plus 見 (to see): a standard, a measure.",
   週: "This glyph means week. It uses the definition of 辵 (walking) and the sound of 周 (しゅう).",
   報: "Handcuffs and a hand subduing a person (𠬝): to convict and pass judgment, hence to report. The handcuffs were written 㚔 and are now drawn 幸.",

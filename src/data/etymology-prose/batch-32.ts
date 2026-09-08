@@ -37,7 +37,7 @@ export const BATCH_32: Readonly<Record<string, string>> = {
   柳: "This glyph means willow. It uses the definition of 木 (tree) and the sound of 卯.",
   柵: "This glyph means fence or stockade. It uses the definition of 木 (wood) and the sound of 冊 (さく).",
   狩: "This glyph means to hunt. It uses the definition of 犬 (dog) and the sound of 守.",
-  疫: "This glyph means epidemic. It uses the definition of 疒 (sickness) and the sound of 役 (えき).",
+  疫: "This glyph means an epidemic. It uses the definition of 疒 (sickness) and the sound of 殳, which the record writes 役.",
   糾: "This glyph means to twist or investigate. It uses the definition of 糸 (silk) and the sound of 丩.",
   胎: "This glyph means womb. It uses the definition of 肉 (flesh) and the sound of 台 (たい).",
   茨: "This glyph means briar, thorn. It uses the definition of 艸 (grass) and the sound of 次.",

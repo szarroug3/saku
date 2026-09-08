@@ -30,7 +30,7 @@ export const BATCH_18: Readonly<Record<string, string>> = {
   贈: "This glyph means to give a gift. It uses the definition of 貝 (cowry money) and the sound of 曽.",
   鎖: "This glyph means chain. It uses the definition of 金 (metal) and the sound of 𧴪.",
   鏡: "This glyph means mirror. It uses the definition of 金 (metal) and the sound of 竟.",
-  競: "Two men (儿, 儿) with an argument (誩) between them: to compete, to contend.",
+  競: "Two men (儿, 儿) each under a 立, with an argument between them: to compete, to contend. That argument was written 誩, two 言 side by side.",
   露: "This glyph means dew. It uses the definition of 雨 (rain) and the sound of 路 (ろ).",
   丈: "The original glyph put a hand (又) beside ten (十): ten chi make one zhang, a measure of length. The shape has since flattened, and neither piece is visible in the 一 and 乂 drawn now.",
   凡: "The origin is unclear.",

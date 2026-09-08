@@ -47,7 +47,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   境: "This glyph means boundary. It uses the definition of 土 (earth) and the sound of 竟.",
   察: "This glyph means to surmise. It uses the definition of 宀 (roof) and the sound of 祭.",
   種: "This glyph means kind, species. It uses the definition of 禾 (grain) and the sound of 重.",
-  罰: "Verbal abuse (詈) together with a knife (刀): a crime and its punishment.",
+  罰: "This glyph means a penalty or punishment. The parts drawn are 罒 and 䚯. It joins verbal abuse, 詈, with a knife, 刀: a crime and what it earns.",
   聞: "This glyph means to hear. It uses the definition of 耳 (ear) and the sound of 門.",
   誤: "This glyph means to err. It uses the definition of 言 (speech) and the sound of 呉 (ご).",
   暴: "Hands lifting a plant up into the sun (日) to dry it out. Those hands were written 共 and are drawn here inside the 㳟. The sense of violence and outburst comes from a separate character this one took over.",

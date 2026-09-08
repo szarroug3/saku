@@ -34,7 +34,7 @@ export const MANUAL_01: Readonly<Record<string, string>> = {
   楽: "This glyph is the simplified form of 樂, which pictured strings set on a wooden stand (木), a musical instrument. From music come joy and ease.", // source: https://en.wiktionary.org/wiki/樂
   様: "This glyph is the simplified form of 樣. Built on wood (木) with 羕 for its sound (よう), it came to mean form, manner, and appearance.", // source: https://en.wiktionary.org/wiki/樣
   読: "This glyph is the simplified form of 讀: built on speech (言), the image of saying words aloud, to recite, and so to read.", // source: https://en.wiktionary.org/wiki/讀
-  絶: "A knife (刀) cutting silk threads (糸): to sever, to cut off, to break away.", // source: https://en.wiktionary.org/wiki/絕
+  絶: "A knife cutting silk threads (糸): to sever, to cut off, to break away. The knife was written 刀, and here it is folded into the 色 beside the thread.", // source: https://en.wiktionary.org/wiki/絕
   続: "This glyph is the simplified form of 續: built on thread (糸), the image of joining threads end to end, hence to continue, to carry on.", // source: https://en.wiktionary.org/wiki/續
   独: "This glyph is the simplified form of 獨. It means single or alone, using the dog (犭) for its sense and 蜀 for its sound.", // source: https://en.wiktionary.org/wiki/獨
   帰: "This glyph is the simplified form of 歸. The old form joined a troops sign with a broom (帚), sweeping the enemy away and returning, hence to return home.", // source: https://en.wiktionary.org/wiki/歸

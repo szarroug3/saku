@@ -11,7 +11,7 @@ export const MANUAL_04: Readonly<Record<string, string>> = {
   寛: "This glyph is the simplified form of 寬, meaning broad, roomy, lenient. It uses the roof (宀) of a spacious house for meaning and 萈 for the sound.", // source: https://en.wiktionary.org/wiki/寬
   禅: "This glyph is the simplified form of 禪, meaning meditation, Zen. It uses 礻 (an altar, worship) for meaning and 単 (單) for the sound; the Buddhist sense renders Sanskrit dhyana.", // source: https://en.wiktionary.org/wiki/禪
   暦: "This glyph means calendar. It uses the sun and day (日) for meaning and 厤 for the sound.", // source: https://en.wiktionary.org/wiki/曆
-  稲: "This glyph means the rice plant: the grain stalk (禾) gives the meaning, and 舀, a hand scooping grain from a mortar (旧 stands for 臼), gives the sound.", // source: https://en.wiktionary.org/wiki/稻
+  稲: "This glyph means the rice plant: the grain stalk (禾) gives the meaning, and 舀, a hand scooping grain from a mortar, gives the sound. The mortar is written 臼 in the fuller form and 旧 here.", // source: https://en.wiktionary.org/wiki/稻
   緑: "This glyph is the simplified form of 綠, meaning green. It uses silk (糸), for dyed thread, as the meaning and 彔 for the sound.", // source: https://en.wiktionary.org/wiki/綠
   銭: "This glyph is the simplified form of 錢, meaning coin, money. It uses metal (金) for meaning and 戋 (戔) for the sound.", // source: https://en.wiktionary.org/wiki/錢
   隠: "This glyph is the simplified form of 隱, meaning to hide. It uses the mound (⻖) one hides behind for meaning and 㥯 for the sound.", // source: https://en.wiktionary.org/wiki/隱
@@ -35,7 +35,7 @@ export const MANUAL_04: Readonly<Record<string, string>> = {
   桜: "This glyph is the simplified form of 櫻, meaning cherry. It uses the tree (木) for meaning and 嬰 for the sound.", // source: https://en.wiktionary.org/wiki/櫻
   桟: "This glyph is the simplified form of 棧, meaning a plank structure, scaffold, or cleat. It uses wood (木) for meaning and 戋 (戔) for the sound.", // source: https://en.wiktionary.org/wiki/棧
   涙: "This glyph is the simplified form of 淚, meaning tears. It uses water (氵) for meaning and 戻 (戾) for the sound.", // source: https://en.wiktionary.org/wiki/淚
-  耗: "This glyph means to consume or wear down. It uses 耒, a plough, for meaning and 毛 for the sound; it was first written 秏, with grain (禾).", // source: https://en.wiktionary.org/wiki/耗
+  耗: "This glyph means to consume or wear down. It uses 耒, a plough, for its meaning and 毛 for its sound. It was first written 秏, with a grain stalk in place of the plough.", // source: https://en.wiktionary.org/wiki/耗
   剰: "This glyph is the simplified form of 剩, meaning surplus, leftover. It uses the knife (刂) for meaning and 乗 (乘) for the sound.", // source: https://en.wiktionary.org/wiki/剩
   啓: "A hand (攵) opening a door (戸), with a mouth (口) added for speech: to open, to disclose, to enlighten.", // source: https://en.wiktionary.org/wiki/啟
   巣: "The original glyph showed baby birds (⺍) in a nest set atop a tree (木): a nest. 巣 is the simplified form of 巢.", // source: https://en.wiktionary.org/wiki/巢

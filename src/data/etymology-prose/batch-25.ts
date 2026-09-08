@@ -27,7 +27,7 @@ export const BATCH_25: Readonly<Record<string, string>> = {
   醜: "This glyph means ugly. It uses the definition of 鬼 (ghost, demon) and the sound of 酉: demons are ugly.",
   鮮: "Fish (魚) and sheep (羊), both delicious: fresh, vivid.",
   懲: "This glyph means to chastise, to punish. It uses the definition of 心 (heart) and the sound of 徴 (ちょう): to punish so the heart takes warning.",
-  癖: "This glyph means a habit or vice. It uses the definition of 病 (illness) and the sound of 辟.",
+  癖: "This glyph means a habit or a vice. It uses the definition of 疒 (sickness) and the sound of 辟. The record writes the sickness piece as the whole character 病.",
   簡: "This glyph means simple, brief. It uses the definition of 竹 (bamboo) and the sound of 間 (かん): a bamboo writing slip, hence brief.",
   繕: "This glyph means to mend, to repair. It uses the definition of 糸 (thread) and the sound of 善 (ぜん).",
   翻: "This glyph means to flip over. It uses the definition of 羽 (wings) and the sound of 番: to flutter.",

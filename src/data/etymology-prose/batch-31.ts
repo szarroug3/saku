@@ -9,7 +9,7 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   霜: "This glyph means frost. It uses the definition of 雨 (rain) and the sound of 相.",
   濫: "This glyph means to overflow. It uses the definition of 水 (water) and the sound of 監.",
   璧: "This glyph means a round jade disc. It uses the definition of 玉 (jade) and the sound of 辟.",
-  癒: "This glyph means to heal. It uses the definition of 病 (illness) and the sound of 愈.",
+  癒: "This glyph means to heal. It uses the definition of 疒 (sickness) and the sound of 愈. The record writes the sickness piece as the whole character 病.",
   礎: "This glyph means a foundation stone. It uses the definition of 石 (stone) and the sound of 楚.",
   穫: "This glyph means to harvest. It uses the definition of 禾 (grain) and the sound of 蒦.",
   韓: "This glyph means Korea. It uses the definition of 韋 (surround) and the sound of 倝.",

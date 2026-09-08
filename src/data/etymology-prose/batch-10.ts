@@ -26,7 +26,7 @@ export const BATCH_10: Readonly<Record<string, string>> = {
   非: "The original glyph showed two wings facing opposite ways: to go against, not.",
   建: "A hand (聿) planting a pole into the ground, with a stride (廴) alongside: to set up, to build.",
   柄: "This glyph means a handle. It uses the definition of 木 (wood) and the sound of 丙 (へい).",
-  省: "This glyph means to inspect, and by extension to leave out. It uses the definition of 目 (eye) and the sound of 生 (しょう).",
+  省: "This glyph means to inspect, and by extension to leave out. It uses the definition of 目 (eye) and the sound of 少. That sound piece was 生 before it corrupted.",
   負: "A person (人) with shell money (貝) on their back: to shoulder a burden, to owe, to lose.",
   逃: "This glyph means to flee or escape. It uses the definition of 辵 (to walk) and the sound of 兆.",
   座: "This glyph means a seat. It uses the definition of 广 (a building) and the sound of 坐 (to sit).",

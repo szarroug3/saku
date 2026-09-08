@@ -47,7 +47,7 @@ export const BATCH_22: Readonly<Record<string, string>> = {
   拭: "This glyph means to wipe. It uses the definition of 手 (hand) and the sound of 式.",
   柱: "This glyph means pillar. It uses the definition of 木 (wood) and the sound of 主.",
   泉: "Water (水) flowing out from the mouth of a spring (白): a fountain, a spring.",
-  甚: "Something sweet (甘) taken with a spoon (匕): great indulgence, and so extremely, very.",
+  甚: "Something sweet (甘) taken with a spoon: great indulgence, and so extremely, very. The spoon was written 匕; it is now the 匹 below.",
   畑: "Fire (火) and field (田): a dry field cleared by burning, as opposed to a wet rice paddy.",
   皇: "This glyph means emperor. It uses the definition of 𤼽 (a radiant plume) and the sound of 王.",
   眉: "The original glyph looked like hair (𠃜) above an eye (目): an eyebrow.",
