@@ -7,10 +7,13 @@
 // Read it with:
 //   document.querySelector('meta[name="server-timing"]').content
 
-import { serverTimingValue } from "@/lib/server-timing";
+import { headers } from "next/headers";
 
-export function ServerTimingMeta() {
-  const value = serverTimingValue();
+import { edgeToPage, serverTimingValue } from "@/lib/server-timing";
+
+export async function ServerTimingMeta() {
+  // plus the edge-to-page gap, the cold start's own measure (SAK-399)
+  const value = serverTimingValue(edgeToPage((await headers()).get("x-edge-at")));
   if (!value) return null;
   return <meta name="server-timing" content={value} />;
 }

@@ -10,7 +10,7 @@
 import { timedSync } from "@/lib/server-timing";
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
-import { getStatsRows } from "@/lib/library/server-lookups";
+import { getStatsRows } from "@/lib/library/stats-rows";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
 import { buildSessionRecord } from "@/lib/session-record";

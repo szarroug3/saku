@@ -29,7 +29,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { loadHistory } from "@/lib/history";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
 import { KIND_LABEL } from "@/lib/library/kinds";
-import { getStatsRows, type StatsData, type StatsSubject } from "@/lib/library/server-lookups";
+import { getStatsRows, type StatsData, type StatsSubject } from "@/lib/library/stats-rows";
 import { standingOf as appStandingOf, type Standing as AppStanding } from "@/lib/library/standing";
 import { learnedSentenceTierIds } from "@/lib/sentence-ordering-learned";
 import { buildGraph } from "@/sky/lib/graph";

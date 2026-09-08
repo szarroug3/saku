@@ -1382,3 +1382,29 @@ which is what made them catalogues in the first place, so
 (the ids every sky starts with and the firmament of the five kinds). The
 modules parse those. Versions came out identical to the ones the deployed
 app was serving, and a test holds each file to its builder.
+
+### Where the bytes are, and a clock that starts at the edge (2026-09-07, SAK-399)
+
+The three rounds took a Sky page's server bundle from 29 MB to 19 and a
+laptop's cold first request from 745 ms to 700, and the function's cold
+first request stayed where it was: 6.0 s, against 6.5 and 5.8 on the two
+deployments before. Reading the bundle back through its source maps says
+why the code-side ideas would not help either: of the 17.7 MB the home
+page loads, 16 are the JSON tables under `src/data/generated` and about
+1.7 are code, the old app's included. So the old app is not the cold
+start, and neither, apparently, are the bytes, since nine of them left
+without a trace.
+
+What is left to measure is the one span nothing inside the modules can
+time: from the request arriving to the first line of the page's own code
+running, which on a cold process is the load of every module the route
+needs. The proxy now stamps each request with the time it reached the
+edge (`x-edge-at`), and the page's meta reports `edge-to-page`, the gap
+to its render. Warm, that is routing; cold, it is the cold start itself,
+finally as a number of its own rather than a total minus everything else.
+
+`getStatsRows` also moved out of `server-lookups.ts` into `stats-rows.ts`
+on the way: the home imported 1,392 lines of the old app's `/learn` and
+`/library` actions, and through one of them a lesson React component, for
+the discovery panel's rows. The tracer no longer finds a path from the
+home to either.

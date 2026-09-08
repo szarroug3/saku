@@ -15,6 +15,10 @@ import { updateSession } from "@/lib/supabase/middleware";
 // learner the landing and its "Continue with Google" button.
 
 export async function proxy(request: NextRequest) {
+  // When the request reached the edge, for the page to measure how long the
+  // function took to get to its render: on a cold process that is the whole
+  // load of the route's modules, which nothing inside them can time (SAK-399).
+  request.headers.set("x-edge-at", String(Date.now()));
   // Timed, and reported (SAK-382). `updateSession` calls
   // `supabase.auth.getUser()`, which is a network round trip to Supabase's
   // auth server on EVERY matched request. SAK-202 replaced that same call in
