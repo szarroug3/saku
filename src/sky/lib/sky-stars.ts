@@ -5,7 +5,10 @@
 // preview, in the saved file and in the bake. No DOM, no Node: the editor turns
 // the stardust pixels into a PNG with a canvas, the save route with zlib.
 
-import { seeded } from "./random";
+// Relative, with the extension, the way sky-wash-file.ts imports this file:
+// plain Node runs the bake script, and it resolves neither the extension nor
+// the alias. Without it `npm run bake:sky` cannot load this module at all.
+import { seeded } from "./random.ts";
 
 /** The general stardust: how many dots per 480px tile, their radius range in
  * CSS pixels, their opacity range, and the seed that places them. */

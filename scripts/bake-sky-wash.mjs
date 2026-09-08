@@ -1,6 +1,6 @@
-// Bakes the sky wash's gradients (not the stars) into public/sky/wash-baked.png,
-// after regenerating sky-wash.css from its knobs (the layer list, the stardust
-// tile and the Milky Way field), the same as the editor's Save does.
+// Bakes the sky wash's gradients (not the stars) into public/sky, after
+// regenerating sky-wash.css from its knobs (the layer list, the stardust tile
+// and the Milky Way field), the same as the editor's Save used to.
 //
 // Reads the knobs from src/app/sky-wash.css, renders the same layers the CSS
 // would (ellipse radii, angled lines, premultiplied colour stops), dithers so
@@ -13,11 +13,16 @@
 // Why a bitmap: CSS gradients are re-rasterised on every resize; a bitmap is
 // decoded once and scaled by the GPU. Gradients have no fine detail, so a
 // 1600px image scaled to any viewport looks the same as the live CSS.
+//
+// SAK-383: the file is named for its own contents (wash-baked-<hash>.png) and
+// the CSS is pointed at the new name here, which is what lets next.config.ts
+// serve it `immutable`. Without the hash a re-bake would leave every returning
+// visitor on a wash a year out of date; with it, a re-bake is a new URL.
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { deflateSync } from "node:zlib";
+import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
-import { pngDataUrl } from "../src/sky/lib/png-encode.ts";
+import { encodePngRgb, pngDataUrl } from "../src/sky/lib/png-encode.ts";
 import { stardustPixels, TILE_PX } from "../src/sky/lib/sky-stars.ts";
 import { parseWashFile, renderWashFile, trailingRules } from "../src/sky/lib/sky-wash-file.ts";
 
@@ -73,13 +78,12 @@ const sample = (stops, t) => {
   }
   return stops[stops.length - 1].c;
 };
-const rgb = Buffer.alloc((W * 3 + 1) * H);
+const rgb = Buffer.alloc(W * 3 * H);
 // A 4x4 ordered (Bayer) dither: breaks banding like noise does, but repeats,
 // so the PNG stays a fraction of the size random noise would give.
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const dither = (x, y) => BAYER[(y & 3) * 4 + (x & 3)] / 16 - 0.5;
 for (let y = 0; y < H; y++) {
-  rgb[y * (W * 3 + 1)] = 0;
   for (let x = 0; x < W; x++) {
     let r = 0, g = 0, b = 0; // composite bottom-up: start with the last layer (the sweep)
     for (let i = layers.length - 1; i >= 0; i--) {
@@ -88,15 +92,23 @@ for (let y = 0; y < H; y++) {
       const [cr, cg, cb, ca] = sample(L.stops, t);
       r = cr * ca + r * (1 - ca); g = cg * ca + g * (1 - ca); b = cb * ca + b * (1 - ca);
     }
-    const o = y * (W * 3 + 1) + 1 + x * 3, d = dither(x, y); // one dither value per pixel keeps hue steady
+    const o = (y * W + x) * 3, d = dither(x, y); // one dither value per pixel keeps hue steady
     rgb[o] = Math.max(0, Math.min(255, Math.round(r + d))); rgb[o + 1] = Math.max(0, Math.min(255, Math.round(g + d))); rgb[o + 2] = Math.max(0, Math.min(255, Math.round(b + d)));
   }
 }
-const table = new Int32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c; });
-const crc32 = (buf) => { let c = -1; for (const v of buf) c = table[(c ^ v) & 0xff] ^ (c >>> 8); return (c ^ -1) >>> 0; };
-const chunk = (type, data) => { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]); const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td)); return Buffer.concat([len, td, crc]); };
-const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4); ihdr[8] = 8; ihdr[9] = 2;
-const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(rgb, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
-const out = new URL("../public/sky/wash-baked.png", import.meta.url);
-writeFileSync(out, png);
-console.log(`baked ${layers.length} layers to public/sky/wash-baked.png (${W}x${H}, ${(png.length / 1024).toFixed(0)} KB)`);
+const png = encodePngRgb(rgb, W, H);
+
+// Name the file for its contents, drop whatever the last bake left, and point
+// the CSS at the new name. Both .sky-wash and .sky-wash-clear name it, and
+// both live in the trailing rules, which renderWashFile keeps verbatim, so
+// rewriting the file here is the last word.
+const dir = new URL("../public/sky/", import.meta.url);
+const name = `wash-baked-${createHash("sha256").update(png).digest("hex").slice(0, 8)}.png`;
+writeFileSync(new URL(name, dir), png);
+for (const f of readdirSync(dir)) {
+  if (f !== name && /^wash-baked(?:-[0-9a-f]+)?\.png$/.test(f)) { rmSync(new URL(f, dir)); console.log(`dropped public/sky/${f}`); }
+}
+const pointed = readFileSync(cssPath, "utf8");
+const repointed = pointed.replace(/\/sky\/wash-baked(?:-[0-9a-f]+)?\.png/g, `/sky/${name}`);
+if (repointed !== pointed) { writeFileSync(cssPath, repointed); console.log(`pointed src/app/sky-wash.css at /sky/${name}`); }
+console.log(`baked ${layers.length} layers to public/sky/${name} (${W}x${H}, ${(png.length / 1024).toFixed(0)} KB)`);

@@ -119,6 +119,52 @@ test("loading a page does not fetch every other page behind your back", async ({
   expect(prefetched, `prefetched: ${prefetched.join(", ")}`).toEqual([]);
 });
 
+test("the wash is a small bitmap the browser may keep", async ({ page }) => {
+  // SAK-383. It was 611 KB, because the bake wrote filter 0 on all 900 rows
+  // and deflate never saw a delta, and it was served max-age=0, so a browser
+  // could not paint the background without revalidating it first: a 304 on
+  // every navigation of every page. The url comes off the painted element
+  // rather than out of the CSS file, so a stale hand-edited hash fails here.
+  await page.goto("/?sample");
+  const url = await page.evaluate(() => {
+    const el = document.querySelector(".sky-wash");
+    const m = el && getComputedStyle(el).backgroundImage.match(/url\("([^"]*wash-baked[^"]*)"\)/);
+    return m ? m[1] : null;
+  });
+  expect(url, "the wash element should paint a baked bitmap").toBeTruthy();
+  expect(url).toMatch(/\/sky\/wash-baked-[0-9a-f]+\.png$/);
+
+  const res = await page.request.get(url!);
+  expect(res.status()).toBe(200);
+  const bytes = (await res.body()).length;
+  expect(bytes, `the wash is ${(bytes / 1024).toFixed(0)} KB`).toBeLessThan(400_000);
+  expect(res.headers()["cache-control"]).toContain("immutable");
+});
+
+test("a signed-out page is one document and one action, not two of anything", async ({ page }) => {
+  // SAK-383 called this "the signed-out path loads every page twice". It does
+  // not: the page comes down once and then asks a server action for the data
+  // that lives in this browser, which is what "sign-in preferred, never
+  // required" costs. What would be a real regression is a second document or
+  // an RSC fetch of the page it is already on.
+  const documents: string[] = [];
+  const actions: string[] = [];
+  const rsc: string[] = [];
+  page.on("request", (r) => {
+    const h = r.headers();
+    const where = new URL(r.url()).pathname;
+    if (r.resourceType() === "document") documents.push(where);
+    else if (h["next-action"]) actions.push(where);
+    else if (h["rsc"]) rsc.push(where);
+  });
+  await page.goto("/sessions");
+  await expect(page.getByRole("heading", { name: "What have you done lately?" })).toBeVisible();
+  await page.waitForTimeout(2000);
+  expect(documents, `documents: ${documents.join(", ")}`).toEqual(["/sessions"]);
+  expect(actions.length, `actions: ${actions.join(", ")}`).toBeLessThanOrEqual(1);
+  expect(rsc, `rsc: ${rsc.join(", ")}`).toEqual([]);
+});
+
 test("the home draws its sky from a cached catalogue, not from its own response", async ({ page }) => {
   // SAK-381. The stars used to ride in every response, 2.2 MB of them. Now
   // the response carries the learner's difference and the stars come from

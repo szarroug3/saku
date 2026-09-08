@@ -74,6 +74,24 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+
+  // SAK-383: the baked wash is the page's background, so a browser cannot
+  // paint it without having it. Next serves everything in public/ with
+  // `max-age=0`, which measured as a conditional GET and a 304 on every
+  // navigation of every page: cached, but not without asking first.
+  //
+  // `immutable` is honest here because scripts/bake-sky-wash.mjs names the
+  // file for its own contents and repoints the CSS, the same trick
+  // catalogue-version.ts plays on the catalogues. A re-bake is a new URL, so
+  // nothing can be left holding a wash a year out of date.
+  async headers() {
+    return [
+      {
+        source: "/sky/wash-baked-:hash.png",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
+  },
 };
 
 export default withBundleAnalyzer(nextConfig);

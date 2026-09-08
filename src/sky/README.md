@@ -1718,3 +1718,72 @@ page, the form, the `onSignInWithPassword` prop that carried it, and the
 The reviewing session removed the `EMAIL_SIGNIN_KEY` variable from Vercel
 and deleted the account's 8,265 rows on 2026-09-08. The auth user row
 itself, under `auth.users`, is Sam's to delete in the Supabase dashboard.
+
+### A gradient that never met a filter (2026-09-08, SAK-383)
+
+The baked wash was 611 KB, the second largest thing on any page, and the
+reason was one byte per row. A PNG row carries a filter type, and the bake
+wrote 0, none, on all nine hundred of them, so deflate saw absolute pixel
+values instead of differences between neighbours. The same pixels with the
+Sub filter are 319 KB. Decoded they are byte for byte what they were: the
+same colours, the same stops, the same 4x4 dither, the same 1600x900.
+
+Choosing a filter per row, which is what most encoders do, is worse here
+and was measured twice: the usual sum-of-absolute heuristic gives 436 KB
+and an entropy one 438, because mixing filter types row to row costs
+deflate the matches it would otherwise find between one row and the next.
+So `png-encode.ts` compresses the whole image five times, once per filter,
+and keeps the smallest, which for a script that runs when Sam edits the
+knobs costs a few seconds and cannot lose.
+
+The card's other idea did not survive being measured. Lossless WebP is
+367 KB and lossless AVIF is 507, both bigger than the filtered PNG: the
+dither is about 1.8 bits a pixel of real entropy and no lossless codec
+takes it away. "Well under 100 KB" only happens lossy (WebP q90 13 KB,
+AVIF q80 8 KB), and lossy takes the dither with it: the longest flat run
+in a row goes from a median of 14 pixels to about 110, which is the
+banding the bake dithers against. That is the one property of the wash
+worth 300 KB, and it is Sam's to spend, not mine.
+
+The other half was the header. Next serves everything in public/ with
+`max-age=0`, so a browser could not paint the background without asking
+first: a conditional GET and a 304 on every navigation of every page,
+which is not what "cached after the first visit" means. The bake now names
+the file for its own contents (`wash-baked-<hash>.png`, the trick
+`catalogue-version.ts` plays on the catalogues) and rewrites the two rules
+that point at it, so `next.config.ts` can serve it `immutable` honestly: a
+re-bake is a new URL rather than a stale one.
+
+| | before | after |
+| --- | --- | --- |
+| the wash on disk | 625,314 bytes | 326,784 |
+| its rows' filters | 0, all 900 | 1 (Sub) |
+| a repeat visit | a 304 per navigation | nothing |
+
+`npm run bake:sky` had not run since the wash editor's route went (SAK-398
+took the last thing that imported it): `sky-stars.ts` imports `./random`,
+and plain Node, which is what runs the script, resolves neither the
+extension nor the alias. It says `./random.ts` now, the way
+`sky-wash-file.ts` already imported it.
+
+### What "loads every page twice" turned out to be (2026-09-08, SAK-383)
+
+It does not. Counted request by request on the e2e production build, a
+signed-out navigation is one document and one server action, never two
+documents and never an RSC fetch of the page it is already on: `/` is
+20,650 bytes and 1,405, `/atlas` 21,439 and 180, `/sessions` 20,998 and
+71, `/about` 59,473 and no action at all. The 1.7 MB payload the card
+describes went with SAK-381 and SAK-382, and the prefetch half was fixed
+in SAK-382 and is held by a test already. What is left is the shell, then
+the browser's own history going up and the page's data coming back, which
+is what "sign-in preferred, never required" costs. Two e2e tests hold the
+shape rather than change it.
+
+One thing the card has backwards, worth writing down because it is still
+true: the largest asset on every page is not the wash.
+`/brand/saku-wordmark.png` is 973 KB, 1254 by 1254, preloaded in the root
+layout, and drawn at 36 by 36 CSS pixels. It is already adaptively
+filtered, so there is nothing lossless left in it; only a resize would
+help, and it is Sam's artwork rather than a generated file, so it is hers
+to decide. `public/brand/saku-mark.png` (877 KB) is reachable from nothing
+at all now that the landing page has gone.

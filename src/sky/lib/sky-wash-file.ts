@@ -218,10 +218,11 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
  * THE SKY WASH: the page background of the Sky redesign.
  *
  * THIS IS THE FILE TO EDIT when tuning the background, by hand or with the
- * editor at /wash (drag the glows, pick colours, add or remove layers,
- * then Save, which rewrites this file). Every value in the KNOBS block is one
- * thing to change. The LAYERS block is generated from the knobs by
- * src/sky/lib/sky-wash-file.ts; edit the knobs, not the layers.
+ * editor that used to live at /dev/sky/wash (removed 2026-09-04; restore it
+ * from git if the wash needs tuning again) (drag the glows, pick colours, add
+ * or remove layers, then Save, which rewrites this file). Every value in the
+ * KNOBS block is one thing to change. The LAYERS block is generated from the
+ * knobs by src/sky/lib/sky-wash-file.ts; edit the knobs, not the layers.
  *
  * A layer is a glow (--sky-glow-<id>-*), the Milky Way band (--sky-milky-*)
  * or the bottom band (--sky-band-*). Layers paint in the order their knobs
@@ -239,8 +240,9 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
  * stars* knobs its own star field. Both images are generated on Save.
  *
  * When you are happy, run \`npm run bake:sky\`. That renders the layers to
- * public/sky/wash-baked.png, which is what the pages actually paint (the live
- * CSS gradients make resizing lag; a bitmap does not).
+ * public/sky/wash-baked-<hash>.png, which is what the pages actually paint
+ * (the live CSS gradients make resizing lag; a bitmap does not), and points
+ * the rules at the bottom of this file at the file it just wrote.
  * ========================================================================== */
 :root {
   /* ---------------------------------------------------------------- KNOBS */
