@@ -56,7 +56,7 @@ export function promptSize(text: string): number {
  * The size a Japanese answer is drawn at on a multiple-choice tile (SAK-391).
  *
  * The board is three fixed columns, so a label longer than its tile used to
- * wrap — and Japanese has no spaces, so the break fell inside the word.
+ * wrap, and Japanese has no spaces, so the break fell inside the word.
  * 行ってはいけない broke in half next to 行ってから sitting on one line.
  *
  * The tile keeps its place in the grid and the text comes down to fit it

@@ -1,6 +1,6 @@
 "use client";
 
-// The stroke-order diagram — the real thing, drawn from KanjiVG data.
+// The stroke-order diagram: the real thing, drawn from KanjiVG data.
 //
 // WHAT IT RENDERS
 // ===============
@@ -15,24 +15,24 @@
 //      glyph is shown still, and the numbered chart below carries the order.
 //
 //      HOW THE STAGGER SURVIVES LOOPING
-//      Every stroke runs the SAME animation on the SAME clock — one cycle
-//      length, no delay — and takes its turn via a per-stroke linear() easing
+//      Every stroke runs the SAME animation on the SAME clock (one cycle
+//      length, no delay) and takes its turn via a per-stroke linear() easing
 //      that holds the stroke undrawn until its moment, draws it, then holds it
 //      drawn for the rest of the cycle. The obvious alternative, staggering
 //      with animation-delay, only staggers the FIRST iteration: after that
 //      every stroke loops on its own offset clock and the character is never
 //      whole at any instant. See strokeEase() below.
 //
-//   2. A STEP-BY-STEP numbered chart — the classic KanjiVG sequence. One small
+//   2. A STEP-BY-STEP numbered chart: the classic KanjiVG sequence. One small
 //      cell per stroke: cell i shows strokes 1..i with the newest stroke picked
 //      out in the accent colour and the ones before it faint, and the stroke's
 //      ordinal under it. Reading left to right is watching the character built.
 //
 // COLOUR
 // ======
-// Everything is drawn in theme tokens — var(--text) for drawn strokes,
+// Everything is drawn in theme tokens (var(--text) for drawn strokes,
 // var(--accent) for the stroke being introduced, var(--border) for the writing
-// guide — so it reads on all four palettes in light and dark.
+// guide), so it reads on all four palettes in light and dark.
 //
 // AND ONE LINE OF PROSE
 // =====================
@@ -84,7 +84,7 @@ function usePrefersReducedMotion(): boolean {
 /** Timing for the draw-along, in seconds. Each stroke draws over DRAW, then a
  * short GAP before the next begins; once the last one lands the finished
  * character HOLDs before the loop starts over. The hold is what keeps a loop
- * from reading as a strobe — it's the beat where you actually see the glyph. */
+ * from reading as a strobe: it's the beat where you actually see the glyph. */
 const DRAW = 0.7;
 const GAP = 0.18;
 const HOLD = 1.4;
@@ -100,7 +100,7 @@ function cycleSeconds(n: number): number {
  * The keyframes run undrawn→drawn over the WHOLE cycle; this curve decides
  * when within that cycle the progress actually moves. It pins progress at 0
  * until the stroke's start, ramps linearly to 1 over DRAW, then pins it at 1
- * to the end — so the stroke waits, draws, and stays drawn until every stroke
+ * to the end, so the stroke waits, draws, and stays drawn until every stroke
  * has landed and the shared clock wraps.
  */
 function strokeEase(i: number, cycle: number): string {
@@ -109,7 +109,7 @@ function strokeEase(i: number, cycle: number): string {
   return `linear(0 0%, 0 ${pct(start)}, 1 ${pct(start + DRAW)}, 1 100%)`;
 }
 
-/** The faint square-plus writing guide behind every diagram — the same crutch a
+/** The faint square-plus writing guide behind every diagram, the same crutch a
  * genkō-yōshi practice box gives, so the eye can judge balance. */
 function Guide() {
   const c = STROKE_GRID / 2;
@@ -123,7 +123,7 @@ function Guide() {
 }
 
 /** The looping draw-along. When `animate` is false every stroke is shown
- * finished and nothing moves — the reduced-motion still. */
+ * finished and nothing moves: the reduced-motion still. */
 function DrawAlong({
   strokes,
   animate,
@@ -206,19 +206,19 @@ function StepCell({ strokes, upTo }: { strokes: string[]; upTo: number }) {
  * measuring rather than a `slice`. A fixed count has to be wrong on one screen
  * or the other: 12 frames is two tidy rows on a laptop and six on a phone.
  * Cutting by rows means a wide window simply shows more per row and fewer rows
- * are hidden — one rule that produces the right answer at every width, with no
+ * are hidden: one rule that produces the right answer at every width, with no
  * breakpoint to keep in sync.
  *
  * Two rows because of the measured distribution: kana top out at 4 strokes (き
  * is 4, not 3) so they never truncate at any width, and of 2,136 kanji the
- * median is 10 — 1,095 sit at 1–10 and only 11 are past 21. The cap exists for
+ * median is 10, with 1,095 at 1–10 and only 11 past 21. The cap exists for
  * the tail (鬱 is 29 and printed 29 cells before this), not for the common case.
  */
 const COLLAPSED_ROWS = 2;
 
 /** One frame's full height: the 48px cell, the 4px gap under it, and the ordinal.
- * Kept beside the markup it measures — `h-12`, `gap-1`, `text-[10px]
- * leading-none` — because a change there and not here silently clips a row. */
+ * Kept beside the markup it measures (`h-12`, `gap-1`, `text-[10px]
+ * leading-none`), because a change there and not here silently clips a row. */
 const CELL_H = 62;
 /** `gap-2` between wrapped rows. */
 const ROW_GAP = 8;
@@ -275,7 +275,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           fixed 138px of the ~330px a card gets at 390px, so the frame column was
           down to three cells a row and the "Show all 29 strokes" button, which
           cannot wrap mid-word, ran past the card edge. Under @md the two views
-          stack and the frames get the full width — six a row instead of three,
+          stack and the frames get the full width, six a row instead of three,
           so the chart is SHORTER stacked than it was squeezed.
 
           A container query, not a media query, and for the reason the whole
@@ -296,7 +296,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
             `min-w-0` IS LOAD-BEARING and is not the same as `flex-1`. A flex
             item's default `min-width: auto` refuses to shrink below its content,
             so without this a 29-frame chart forces the row wider than its
-            container and the row breaks rather than the frames wrapping — the
+            container and the row breaks rather than the frames wrapping, which is
             exact failure the `flex-nowrap` above is trying to prevent. */}
         {/* `w-full` carries the stacked case: in a column the flex basis is a
             HEIGHT, so without it the frames size to their content and wrap at
@@ -314,7 +314,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           </div>
           {/* EXPANDS IN PLACE. Never a modal: this page IS the reference, and a
               dialog puts a dismissal between the reader and the thing they came
-              for — and costs them reading the strokes and the mnemonic together,
+              for, and costs them reading the strokes and the mnemonic together,
               which is the pairing the page is arranged around. */}
           {/* The Sky's one expander (SAK-412). The words stay beside it because
               they carry a count no glyph can say: how many frames are folded. */}
@@ -336,13 +336,13 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
 
       {/* NO INLINE CREDIT HERE, AND THAT IS NOT AN OVERSIGHT.
           The stroke data is KanjiVG's (© Ulrich Apel and contributors, CC BY-SA
-          3.0) and MUST be credited. It is — on /about/data, which every screen
+          3.0) and MUST be credited. It is, on /about/data, which every screen
           reaches through the "About the data" link in the global sidebar (see
           src/components/sidebar.tsx). CC BY-SA 3.0 asks for credit "in any
           reasonable manner", and a credits screen one click away from the diagram
           is that; a line of 10px legalese under every character was not the only
           way to satisfy it. The link is global chrome now, not per-screen, so a
-          new screen that renders this component inherits it automatically —
+          new screen that renders this component inherits it automatically, and
           src/data/attribution.test.ts guards that the sidebar keeps carrying it,
           and that failure is a licence violation, not a lint. */}
     </div>

@@ -5,7 +5,7 @@
 // For anything whose right answer depends on WHERE it is being read: a time in
 // the reader's own timezone, a width, a locale. Rendered on the server those
 // come out as the server's answer, which is then either kept or swapped under
-// the reader — a hydration mismatch, and on a deployed server the wrong
+// the reader: a hydration mismatch, and on a deployed server the wrong
 // wall-clock time (SAK-355).
 //
 // `useSyncExternalStore` is the honest way to say it: the server snapshot is

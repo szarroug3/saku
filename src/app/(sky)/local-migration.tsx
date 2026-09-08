@@ -6,7 +6,7 @@
 // boundary and runs the merge once the app shell is mounted.
 //
 // Renders nothing. It exists only so migrateLocalProgress has a useEffect to run
-// in — the function itself owns the "at most once, never signed out, best
+// in: the function itself owns the "at most once, never signed out, best
 // effort" guarding (see migrate-local.ts), so this stays a one-line effect that
 // cannot accumulate logic of its own.
 
@@ -24,7 +24,7 @@ export function LocalMigration({ signedIn }: { signedIn: boolean }) {
   const { refresh } = useHistory();
   const router = useRouter();
   useEffect(() => {
-    // Fire-and-forget: the merge is best-effort and reports nothing to the UI —
+    // Fire-and-forget: the merge is best-effort and reports nothing to the UI.
     // the local copy is intact until an upload lands, so there is no failure the
     // learner needs to see here.
     void migrateLocalProgress(signedIn).then((merged) => {

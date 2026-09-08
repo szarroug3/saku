@@ -568,7 +568,7 @@ test("a visitor's quiz is kept in the browser and shows up under sessions", asyn
   // record it is describing has been written anywhere: the answers still have
   // to go through a server action to become a session record. So the record
   // reaching the browser's copy is a separate event, and this waits for it
-  // rather than assuming the paint implies it (SAK-406 — under a loaded suite
+  // rather than assuming the paint implies it (SAK-406: under a loaded suite
   // it did not, and the assertion below failed on a store that was still
   // empty). Waiting on the store itself, not on a longer timeout.
   await expect

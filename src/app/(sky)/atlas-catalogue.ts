@@ -43,7 +43,7 @@ export function atlasCatalogue(): AtlasCatalogue {
  * So this asks the catalogue what it holds and works out only what a learner
  * changes about it. `atlas-payload.test.ts` runs both over several learners
  * and asserts they agree exactly, including that the direct route never needs
- * `extras` — which is the one thing it cannot discover for itself, since it
+ * `extras`, which is the one thing it cannot discover for itself, since it
  * never builds a tile to compare.
  */
 export function atlasPayloadFor(history: HistoryFile, now = Date.now(), catalogue = atlasCatalogue()): AtlasPayload {

@@ -15,7 +15,7 @@ import Link from "next/link";
 // so a prefetch cannot carry the page: measured on the deployed app, one
 // load of the home fired twenty of them, one per bar link twice over, 23
 // seconds of server time between them, waking every cold function in the
-// app — and a click afterwards fetched the page again exactly as if none of
+// app, and a click afterwards fetched the page again exactly as if none of
 // it had happened. A link that cannot be prefetched usefully should not be
 // prefetched at all; it costs a function, a session refresh and a database
 // read, and it competes with the request the learner actually made.

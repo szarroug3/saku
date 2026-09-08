@@ -1,7 +1,7 @@
 // The pitch-accent mark: a reading drawn in the standard overline notation.
 //
 // A line sits over the morae the voice stays HIGH on, and turns down at the
-// downstep — the same mark the NHK accent dictionary and OJAD print. It is DRAWN
+// downstep, the same mark the NHK accent dictionary and OJAD print. It is DRAWN
 // with borders, not written with colour, so it reads the same to someone who
 // cannot tell the line's colour from the text's (the overline is a shape); the
 // pattern is also spelled out in an aria-label for a screen reader. It is
@@ -9,7 +9,7 @@
 //
 // The DISPLAY-ONLY rule lives above this component: the app shows pitch so a
 // learner does not set a wrong habit that is very hard to unlearn, but never
-// grades it. This only ever renders — a word with no verified pitch is given no
+// grades it. This only ever renders: a word with no verified pitch is given no
 // `downstep` and this is not mounted at all.
 
 import { pitchPattern, accentName } from "@/lib/pitch";
@@ -18,7 +18,7 @@ import { pitchPattern, accentName } from "@/lib/pitch";
  * A reading with its pitch-accent overline.
  *
  * `downstep` is the mora position of the drop (0 heiban, 1 atamadaka, n odaka /
- * nakadaka) — see src/lib/pitch.ts. The line runs over every high mora; on the
+ * nakadaka); see src/lib/pitch.ts. The line runs over every high mora; on the
  * drop mora it also closes down the right-hand side, giving the ¬ that marks
  * where the voice falls. Heiban has an overline from the second mora to the end
  * and no closing fall, because the voice stays up into a following particle.
@@ -31,7 +31,7 @@ import { pitchPattern, accentName } from "@/lib/pitch";
  * `reading` belong to the word actually being taught. Set it when `reading`
  * has been extended past the word with a follow-up mora purely so an odaka
  * word's drop has something to land on (see `PitchExampleRow.followUp` in
- * src/data/phase-intros.ts) — the trailing morae still take part in the
+ * src/data/phase-intros.ts). The trailing morae still take part in the
  * pattern (the overline must run through them to show the real drop) but
  * render in a visibly muted colour and are named separately in the
  * `aria-label`, so neither sight nor a screen reader mistakes the follow-up

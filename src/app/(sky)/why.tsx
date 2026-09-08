@@ -1,6 +1,6 @@
 "use client";
 
-// The "why?" affordance — pull, not push.
+// The "why?" affordance: pull, not push.
 //
 // A beginner staring at a Start button does not want a wall of text between
 // them and starting. So the reason a script comes when it does arrives in two
@@ -9,7 +9,7 @@
 // Japanese; leave it shut and the lede already told the truth, just shorter.
 //
 // This holds no state anywhere but its own useState, blocks nothing below it,
-// and never fires a dialog. It renders content from src/data/why.ts — the words
+// and never fires a dialog. It renders content from src/data/why.ts, and the words
 // are the data file's problem, the disclosure is this file's.
 
 import { useId, useState } from "react";
@@ -22,7 +22,7 @@ export function WhyDisclosure({ why }: { why: Why }) {
   const panelId = useId();
 
   return (
-    // A quiet caption — muted and small, no rule — so it reads as a footnote to
+    // A quiet caption, muted and small with no rule, so it reads as a footnote to
     // its section, not a boundary. The reasoning opens behind "Why?".
     <div className="mt-3">
       <p className="text-[11px] leading-relaxed text-sky-muted">

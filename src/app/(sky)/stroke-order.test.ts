@@ -14,10 +14,10 @@
 // looks fine and reads fine, and it shipped broken: NOTHING IN THE STYLESHEET
 // referenced the name, so the CSS build treated the rule as dead and dropped
 // it. (Turbopack's dev pipeline did; the production build happened to keep it,
-// which is worse — it means the failure only showed up in the app you develop
+// which is worse: it means the failure only showed up in the app you develop
 // against.) The DOM still carried a perfectly valid `animation` shorthand, the
 // computed stroke-dashoffset just never moved off 1, and the panel rendered as
-// an empty writing guide. `path.getAnimations()` returned [] — no keyframes by
+// an empty writing guide. `path.getAnimations()` returned []: no keyframes by
 // that name existed to match.
 //
 // `gshake` and `kq-pairs-miss` survived the same build because the stylesheet
@@ -32,20 +32,20 @@
 // WHAT IT ASSERTS
 // ===============
 //  1. THE GENERAL INVARIANT: every `@keyframes NAME` in globals.css is
-//     referenced from somewhere ELSE in globals.css — an `animation:` /
+//     referenced from somewhere ELSE in globals.css, by an `animation:` /
 //     `animation-name:` declaration, or an `--animate-*` theme token. This is
 //     the one that generalises: it fails for ANY future keyframes wired up only
 //     from a JS style string, not just this one.
 //  2. The specific wiring for the draw-along still holds end to end: the
 //     keyframes exist, a `--animate-kvg-draw` token names them, and
-//     stroke-order.tsx applies the resulting `animate-kvg-draw` class — which
+//     stroke-order.tsx applies the resulting `animate-kvg-draw` class, which
 //     is also what makes Tailwind emit the utility, since it scans source text.
 //  3. stroke-order.tsx does not go back to an inline `animation:` shorthand.
 //  4. The reduced-motion opt-out is still wired, and the loop is a real loop.
 //
 // WHAT IT WOULD NOT CATCH: a keyframes rule referenced by a selector that no
 // element ever matches. Checking that needs a renderer, and the realistic
-// mistake here was never that — it was the CSS build not being able to SEE the
+// mistake here was never that: it was the CSS build not being able to SEE the
 // dependency at all.
 
 import assert from "node:assert/strict";
@@ -72,7 +72,7 @@ function declaredKeyframes(css: string): string[] {
 }
 
 /**
- * Does the stylesheet itself reference `name` as an animation — i.e. would the
+ * Does the stylesheet itself reference `name` as an animation, i.e. would the
  * CSS build see the keyframes as live?
  *
  * Two shapes count, matching the two the app already uses:
@@ -102,10 +102,10 @@ describe("globals.css keyframes are visible to the CSS build", () => {
       [],
       `@keyframes declared but never referenced from globals.css: ${orphans.join(", ")}.\n` +
         "A keyframes name used only from a JS/inline style string is invisible to the\n" +
-        "CSS build, which drops the rule — the element keeps a valid `animation`\n" +
-        "shorthand and silently never animates. Drive it from CSS instead: add a\n" +
-        "`--animate-<name>` token in @theme and apply the generated `animate-<name>`\n" +
-        "class, passing anything per-element as a custom property.",
+        "CSS build, which drops the rule, and the element keeps a valid\n" +
+        "`animation` shorthand and silently never animates. Drive it from CSS\n" +
+        "instead: add a `--animate-<name>` token in @theme and apply the generated\n" +
+        "`animate-<name>` class, passing anything per-element as a custom property.",
     );
   });
 
@@ -130,8 +130,8 @@ describe("globals.css keyframes are visible to the CSS build", () => {
     assert.match(
       TSX,
       /className=\{?[^}\n]*animate-kvg-draw/,
-      "stroke-order.tsx must apply the animate-kvg-draw class — that literal is\n" +
-        "also how Tailwind's source scan learns to emit the utility",
+      "stroke-order.tsx must apply the animate-kvg-draw class, since that literal\n" +
+        "is also how Tailwind's source scan learns to emit the utility",
     );
   });
 
@@ -154,7 +154,7 @@ describe("globals.css keyframes are visible to the CSS build", () => {
       /prefers-reduced-motion:\s*reduce/,
       "stroke-order.tsx must still consult prefers-reduced-motion",
     );
-    // Under reduce the class must not be applied at all — a looping animation
+    // Under reduce the class must not be applied at all: a looping animation
     // is precisely what that media query exists to suppress.
     assert.match(
       TSX,
@@ -181,7 +181,7 @@ describe("the diagram says which shape it is showing", () => {
 
   test("it follows the copy rules and closes on the reassurance", () => {
     assert.ok(
-      !WRITTEN_VS_PRINTED.includes("—"),
+      !WRITTEN_VS_PRINTED.includes("\u2014"),
       "no em dash in learner-facing copy",
     );
     assert.ok(

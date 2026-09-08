@@ -1,4 +1,4 @@
-// The Sky redesign's own item model. Deliberately NOT the app's `ContentItem` — this
+// The Sky redesign's own item model. Deliberately NOT the app's `ContentItem`: this
 // tree owns its types so the old content model can be deleted without touching
 // anything in here. See src/sky/README.md.
 
@@ -83,7 +83,7 @@ export interface SkyItem {
    * src/sky/lib/standing.ts. Painted only beside a legend or as a chip. */
   standing: Standing;
   /**
-   * IDs of the items this one is built from, if any — a word's kanji, a
+   * IDs of the items this one is built from, if any: a word's kanji, a
    * kanji's radicals. Absent or empty for something with no parts (most
    * radicals, kana). Deliberately named for the relationship, not the kinds
    * involved, so the same field composes a word from kanji today and

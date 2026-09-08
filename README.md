@@ -140,18 +140,18 @@ type, lint, or unit-test errors.
 Which backend holds a learner's progress is chosen by an explicit switch,
 `STORAGE_BACKEND` (`src/lib/store/mode.ts`). It has two values.
 
-### `file` (default) — local development
+### `file` (default): local development
 
 With `STORAGE_BACKEND` unset (or anything other than `supabase`), everything a
 learner has done lives in two JSON files at the repo root:
 
-- `history.json` — practice history and progress (`src/lib/history.ts`)
-- `lists.json` — saved lists (`src/lib/lists.ts`)
+- `history.json`: practice history and progress (`src/lib/history.ts`)
+- `lists.json`: saved lists (`src/lib/lists.ts`)
 
 Both are gitignored local learner data. This is the **file** backend: no auth, a
 single implicit "local" user, and no database to stand up.
 
-### `supabase` — hosted, per-user
+### `supabase`: hosted, per-user
 
 With `STORAGE_BACKEND=supabase`, the same two JSON blobs live in one row per
 signed-in user in a `progress` table, with Row-Level Security so a user can touch
@@ -248,8 +248,8 @@ implements.
 
 Two licenses, split at one directory:
 
-- **Code** — MIT. Everything except `src/data/generated/`. See [`LICENSE`](LICENSE).
-- **Generated data** — primarily CC BY-SA 4.0, with source-specific CEJC and
+- **Code**: MIT. Everything except `src/data/generated/`. See [`LICENSE`](LICENSE).
+- **Generated data**: primarily CC BY-SA 4.0, with source-specific CEJC and
   Tatoeba carve-outs. See `src/data/generated/LICENSE` for the exact boundary
   and full attribution.
 
