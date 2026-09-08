@@ -5,6 +5,11 @@
 // scripts and the e2e specs. Written for SAK-398, retiring the old app once
 // its dev galleries went. Prints the list; `--delete` removes the files.
 // Tables read by name (readDataJson) are kept by that name.
+//
+// `--runtime` walks from the app alone (routes, layout, proxy), leaving the
+// scripts and the e2e specs out: what it lists is code no page loads, which
+// is either build-time code (a script reaches it; keep it, out of src/app and
+// src/sky) or dead (nothing does; delete it). Never deletes in that mode.
 import { readdirSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
@@ -45,12 +50,13 @@ const srcFiles = walk(path.join(ROOT, "src")).filter((f) => /\.(ts|tsx|mjs|js)$/
 const DEV = path.join(ROOT, "src/app/dev");
 // the test loader is named on the command line, not imported
 const protectedFiles = new Set(walk(path.join(ROOT, "src/lib/conjugate")).filter((f) => f.endsWith(".mjs")));
+const RUNTIME_ONLY = process.argv.includes("--runtime");
 const baseEntries = [
   ...srcFiles.filter((f) => f.startsWith(path.join(ROOT, "src/app")) && !f.startsWith(DEV) && !isTest(f)),
   path.join(ROOT, "src/proxy.ts"),
   ...protectedFiles,
-  ...walk(path.join(ROOT, "scripts")).filter((f) => /\.(mjs|ts|js)$/.test(f)),
-  ...walk(path.join(ROOT, "e2e")),
+  ...(RUNTIME_ONLY ? [] : walk(path.join(ROOT, "scripts")).filter((f) => /\.(mjs|ts|js)$/.test(f))),
+  ...(RUNTIME_ONLY ? [] : walk(path.join(ROOT, "e2e"))),
 ].filter((f) => { try { return statSync(f).isFile(); } catch { return false; } });
 const reach = (entries) => { const seen = new Set(); const stack = [...entries]; while (stack.length) { const f = stack.pop(); if (seen.has(f)) continue; seen.add(f); for (const t of edges(f)) if (!seen.has(t)) stack.push(t); } return seen; };
 // Pass one: what the app itself reaches. A test whose subject (the module
@@ -75,4 +81,4 @@ for (const f of all) { const d = path.relative(ROOT, path.dirname(f)).split("/")
 console.log(`${all.length} files (${dev.length} under /dev, ${gone.length} unreachable, ${finalGoneTests.length} their tests), ${all.reduce((n, f) => n + lines(f), 0)} lines`);
 for (const [d, v] of [...byDir].sort((a, b) => b[1].lines - a[1].lines)) console.log(`${String(v.lines).padStart(7)} lines ${String(v.files).padStart(4)} files  ${d}`);
 if (process.argv.includes("--list")) for (const f of all.sort()) console.log("  " + path.relative(ROOT, f));
-if (DELETE) { for (const f of all) unlinkSync(f); console.log("deleted"); }
+if (DELETE && !RUNTIME_ONLY) { for (const f of all) unlinkSync(f); console.log("deleted"); }
