@@ -63,7 +63,7 @@ export function SkyShell({ current, entries, account, style, children }: SkyShel
             else in this row says what the fold holds */}
         <span className="flex items-center gap-2 px-2 py-2 md:hidden">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Menu</span>
-          <RoundButton label={open ? "Hide the pages" : "Show the pages"} expanded={open} controls="sky-menu" onClick={() => setOpen((o) => !o)}>{open ? "⌃" : "⌄"}</RoundButton>
+          <RoundButton label={open ? "Hide the pages" : "Show the pages"} expanded={open} controls="sky-menu" onClick={() => setOpen((o) => !o)}>⌃</RoundButton>
         </span>
         <nav aria-label="Pages" className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex">
           {entries.map((e, i) => {

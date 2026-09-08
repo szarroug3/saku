@@ -41,7 +41,7 @@ export function WhyDisclosure({ why }: { why: Why }) {
             controls={panelId}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? "⌃" : "⌄"}
+            ⌃
           </RoundButton>
         </span>
       </p>

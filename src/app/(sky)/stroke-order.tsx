@@ -327,7 +327,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
                 controls={framesId}
                 onClick={() => setOpen(!open)}
               >
-                {open ? "⌃" : "⌄"}
+                ⌃
               </RoundButton>
             </div>
           ) : null}

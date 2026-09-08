@@ -152,7 +152,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
               controls="sky-home-details"
               onClick={() => setDetails((d) => !d)}
             >
-              {details ? "⌃" : "⌄"}
+              ⌃
             </RoundButton>
           </span>
         </div>

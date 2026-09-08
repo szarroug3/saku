@@ -101,7 +101,7 @@ function Fold({ title, open: from = false, children }: { title: string; open?: b
     <div className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
       <div className="flex items-center justify-between gap-3">
         <span className="font-semibold text-sky-ink">{title}</span>
-        <RoundButton label={open ? `Close ${title}` : `Open ${title}`} expanded={open} controls={id} onClick={() => setOpen(!open)}>{open ? "⌃" : "⌄"}</RoundButton>
+        <RoundButton label={open ? `Close ${title}` : `Open ${title}`} expanded={open} controls={id} onClick={() => setOpen(!open)}>⌃</RoundButton>
       </div>
       {open && <div id={id} className="mt-2.5">{children}</div>}
     </div>

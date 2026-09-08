@@ -83,9 +83,20 @@ export interface RoundButtonProps {
   /** The id of what this opens, for `aria-expanded` to point at. */
   controls?: string;
   className?: string;
-  /** The glyph: ×, ‹, ›, ⌄, ⌃. */
+  /** The glyph: ×, ‹, ›, ⌃. */
   children: ReactNode;
 }
+
+/**
+ * The chevron, and the only one there is.
+ *
+ * A fold used to draw ⌄ when it was shut and ⌃ when it was open, and the two
+ * are not one shape turned over: in the UI font ⌄ is a narrow, tall, pointed v
+ * and ⌃ is a wide, flat arrowhead, so shutting a fold changed the glyph rather
+ * than the direction it pointed, and Sam read the shut one as a letter
+ * (SAK-414). So there is one glyph now and a shut fold rotates it.
+ */
+const CHEVRON = "⌃";
 
 /** Where each glyph's ink has to move to land on the circle's centre.
  *
@@ -93,8 +104,8 @@ export interface RoundButtonProps {
  * the ⌃ riding high in its ring. Two things push it. The text baseline sits
  * `(ascent − descent) / 2` below the middle of any line box, which for the UI
  * font at 13px is 4.5px down; and then each glyph draws its ink its own
- * distance above that baseline: 6.8px for ⌃, 0.5px for ⌄, a 6.3px spread
- * inside a 28px circle. `place-items-center` cannot see either.
+ * distance above that baseline: 6.8px for ⌃, a 2.3px spread against ‹ inside a
+ * 28px circle. `place-items-center` cannot see either.
  *
  * So the shift is measured, not guessed: `measureText(glyph)` in the rendered
  * font gives `actualBoundingBoxAscent/Descent`, the ink's own middle is half
@@ -103,17 +114,29 @@ export interface RoundButtonProps {
  * the UI font or the button's font-size changes; nothing else affects them. */
 const INK_SHIFT: Record<string, string> = {
   "⌃": "translate-y-[2.5px]",
-  "⌄": "translate-y-[-4px]",
   "‹": "translate-y-[-1px]",
   "›": "translate-y-[-1px]",
   "×": "translate-y-[-1px]",
 };
 
+/** The chevron turned over, for a fold that is shut.
+ *
+ * NOT A SECOND MEASUREMENT. The rotation is about the span's own middle, and
+ * the CSS individual transform properties rotate the ink before they translate
+ * it, so the same ink that sat 2.5px above the middle now sits 2.5px below it.
+ * The shift is therefore exactly the negative of the upright one, and it stays
+ * that way for whatever `⌃` re-measures to. */
+const FLIPPED_CHEVRON = "rotate-180 translate-y-[-2.5px]";
+
 /** A small round control: a glyph in a hairline ring that takes the accent on
  * hover. Every fold in the Sky opens with one of these (SAK-412): ‹ › for a
- * panel that slides aside, ⌄ closed and ⌃ open for content that folds down. */
+ * panel that slides aside, and ⌃ for content that folds down, upright while it
+ * is open and turned over while it is shut. A caller passes the chevron and
+ * says whether the fold is open; which way it points is this file's business.
+ * ‹ and › are already each other turned over, so they are left alone. */
 export function RoundButton({ label, onClick, pressed, expanded, controls, className = "", children }: RoundButtonProps) {
-  const shift = typeof children === "string" ? INK_SHIFT[children] ?? "" : "";
+  const flipped = children === CHEVRON && expanded === false;
+  const shift = typeof children === "string" ? (flipped ? FLIPPED_CHEVRON : INK_SHIFT[children] ?? "") : "";
   return (
     <button
       type="button"
