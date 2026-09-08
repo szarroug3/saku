@@ -20,7 +20,7 @@ export const BATCH_09: Readonly<Record<string, string>> = {
   鉄: "This glyph means iron. It uses the definition of 金 (metal) and the sound of 失.",
   歌: "This glyph means song. It uses the definition of 欠 (an open mouth breathing out) and the sound of 哥.",
   滴: "This glyph means a drip or drop. It uses the definition of 水 (water) and the sound of 啇, which the older form writes 啻.",
-  適: "This glyph means suitable. It uses the definition of 辵 (to walk) and the sound of 啻.",
+  適: "This glyph means suitable. It uses the definition of 辵 (to walk) and the sound of 啇, which was written 啻 before it was stylized.",
   締: "This glyph means to tie or tighten. It uses the definition of 糸 (thread) and the sound of 帝.",
   談: "This glyph means to discuss or talk. It uses the definition of 言 (speech) and the sound of 炎.",
   積: "This glyph means to pile up. It uses the definition of 禾 (grain) and the sound of 責 (せき).",

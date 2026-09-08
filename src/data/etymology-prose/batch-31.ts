@@ -12,7 +12,7 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   癒: "This glyph means to heal. It uses the definition of 疒 (sickness) and the sound of 愈. The record writes the sickness piece as the whole character 病.",
   礎: "This glyph means a foundation stone. It uses the definition of 石 (stone) and the sound of 楚.",
   穫: "This glyph means to harvest. It uses the definition of 禾 (grain) and the sound of 蒦.",
-  韓: "This glyph means Korea. It uses the definition of 韋 (surround) and the sound of 倝.",
+  韓: "This glyph means Korea. It uses the definition of 韋 (to surround) and the sound of 𠦝, written 倝 in full.",
   顎: "This glyph means the jaw. It uses the definition of 頁 (head) and the sound of 咢.",
   簿: "This glyph means a register or record book. It uses the definition of 竹 (bamboo) and the sound of 溥.",
   羅: "A net (网) over a bird tied with string (維): a net for catching birds, and by extension thin silk gauze.",

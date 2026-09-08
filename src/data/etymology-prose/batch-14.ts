@@ -22,7 +22,7 @@ export const BATCH_14: Readonly<Record<string, string>> = {
   渡: "This glyph means to cross or ferry. It uses the definition of 水 (water) and the sound of 度.",
   訴: "This glyph means to accuse or sue. It uses the definition of 言 (words, speech) and the sound of 斥: to accuse out loud.",
   階: "This glyph means a storey or stair. It uses the definition of 阜 (mound, hill) and the sound of 皆 (かい).",
-  飲: "This glyph means to drink. It uses the definition of 欠 (an open mouth) and the sound of 酓.",
+  飲: "This glyph means to drink. It uses the definition of 欠 (an open mouth) and the sound of 飠, which was written 酓 before the clerical script made it 食.",
   準: "This glyph means a standard or to correspond to. It uses the definition of 水 (water) and the sound of 隼, from the idea of a level water surface.",
   漢: "This glyph means China or Sino-, and began as the name of a river. It uses the definition of 水 (water); the sound piece was 熯, whose upper part 𦰩 is drawn here as 艹 over 口 and 夫.",
   態: "This glyph means attitude or condition. It uses the definition of 心 (heart) and the sound of 能: one's heartfelt bearing.",

@@ -44,7 +44,7 @@ export const BATCH_29: Readonly<Record<string, string>> = {
   遡: "This glyph means to go upstream. It uses the definition of 辵 (movement) and the sound of 朔.",
   酬: "This glyph means to repay. It uses the definition of 酉 (liquor vessel) and the sound of 州 (しゅう).",
   雅: "This glyph means elegant. It uses the definition of 隹 (short-tailed bird) and the sound of 牙. It first named a kind of crow, then came to mean refined.",
-  雷: "This glyph means thunder. It uses the definition of 雨 (rain) and the sound of 畾.",
+  雷: "This glyph means thunder. It uses the definition of 雨 (rain) and the sound of 田, reduced from 畾, three of them stacked.",
   頓: "This glyph means to bow the head, and by extension suddenly. It uses the definition of 頁 (head) and the sound of 屯.",
   鼓: "A hand holding a drumstick (支) beside a drum (壴): to drum, to beat.",
   僕: "The old glyph showed a slave carrying a basket to clear away refuse. In its current form it means servant, using the definition of 人 (man) and the sound of 菐.",

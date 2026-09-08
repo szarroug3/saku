@@ -30,6 +30,6 @@ export const BATCH_07: Readonly<Record<string, string>> = {
   羽: "The original glyph looked like a pair of wings or feathers.",
   習: "Wings (羽) beating in the sun (日, now written 白): a bird learning to fly, hence to practice and learn.",
   葉: "This glyph means leaf. It uses the definition of 艸 (plant) and the sound of 枼, which itself pictured a leaf.",
-  達: "This glyph means to reach or arrive. It uses the definition of 辵 (to walk) and the sound of 羍.",
+  達: "This glyph means to reach or arrive. It uses the definition of 辵 (to walk); the sound piece 羍 is drawn here as 土 over 羊, and it is not 幸.",
   買: "A net (网) scooping up cowrie shells (貝, money): to buy.",
 };

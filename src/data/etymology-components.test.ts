@@ -36,10 +36,17 @@
 // Those three are counted here rather than asserted, so a change in their size
 // is visible.
 //
+// THE 317, AND WHY THERE IS NO LIST HERE ANY MORE
+// -----------------------------------------------
+// On its first run this check found 317 stories naming a piece their glyph does
+// not have, and pinned them in a list so a NEW one would fail rather than join
+// them quietly. SAK-424 rewrote all 317 against each glyph's Wiktionary record
+// and the list went to empty, so it was removed. The count below is zero and is
+// meant to stay zero.
+//
 // A FAILURE IS A CONTENT BUG, NOT A TEST BUG. The story and the tiles are
 // disagreeing in front of the learner. The fix is to the story, or to the
-// decomposition, and never to this file except to move a glyph OFF the list
-// below once its story is settled.
+// decomposition, and never to this file.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -213,35 +220,22 @@ function disagreements(): readonly { glyph: string; missing: string[] }[] {
 }
 
 // ---------------------------------------------------------------------------
-// The list. Every glyph whose story names a piece the glyph does not have, as
-// of SAK-421, awaiting Sam's research: docs/content-review-2026-09.md, section
-// "Origin stories, the rest". These are NOT approved wordings. The list is
-// pinned the way source-pins.test.ts pins a deliberate difference, for the same
-// reason: so a new one fails here instead of shipping quietly. Shrinking it as
-// stories are settled is the point; growing it needs a reason in the commit.
+// There is no list any more. SAK-421 found 317 stories naming a piece their
+// glyph does not have and pinned them here so a new one would fail rather than
+// ship quietly; SAK-424 rewrote all 317 (docs/content-review-2026-09.md, "The
+// 317, rewritten") and the list went to empty, so it is gone. This test now
+// says the plain thing: no story names a piece its glyph lacks. Anything that
+// fails here is a story to fix, not a line to add back.
 // ---------------------------------------------------------------------------
-const SAK_421_LIST =
-  "辣農退送逸遂道達適選那配酎里重野開闘陛陰陶隆隊難雪雷電青韓類飲飾香騰骨鬱麻";
 
-test("every origin story names only pieces the glyph has, or is on the SAK-421 list", () => {
-  const failing = disagreements();
-  const unlisted = failing
-    .filter(({ glyph }) => !SAK_421_LIST.includes(glyph))
-    .map(({ glyph, missing }) => `${glyph} names ${missing.join(" ")}, which it is not made of`);
-  assert.deepEqual(
-    unlisted,
-    [],
-    "A story names a piece the glyph does not have. Fix the story (or the decomposition); do not add it to the list without a card.",
+test("every origin story names only pieces the glyph has", () => {
+  const failing = disagreements().map(
+    ({ glyph, missing }) => `${glyph} names ${missing.join(" ")}, which it is not made of`,
   );
-});
-
-test("the SAK-421 list has no stale entries", () => {
-  const failing = new Set(disagreements().map((d) => d.glyph));
-  const settled = [...SAK_421_LIST].filter((g) => !failing.has(g));
   assert.deepEqual(
-    settled,
+    failing,
     [],
-    "These stories now agree with the glyph's parts. Take them off SAK_421_LIST.",
+    "A story names a piece the glyph does not have. Fix the story, or the decomposition.",
   );
 });
 
@@ -260,8 +254,8 @@ test("the check's reach is what the review says it is", () => {
   );
   assert.equal(
     disagreements().length,
-    37,
-    "Stories naming a piece the glyph does not have (the SAK-421 list).",
+    0,
+    "Stories naming a piece the glyph does not have. SAK-424 took this to zero.",
   );
 });
 

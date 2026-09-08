@@ -37,7 +37,7 @@ export const BATCH_08: Readonly<Record<string, string>> = {
   端: "This glyph means edge or origin. It uses the definition of 立 (to stand) and the sound of 耑.",
   示: "The original glyph looked like an altar.",
   際: "This glyph means edge or occasion. It uses the definition of 阜 (mound) and the sound of 祭 (さい).",
-  選: "This glyph means to choose. It uses the definition of 止 (foot) and the sound of 巽.",
+  選: "This glyph means to choose. It uses the definition of 辵 (a foot on the move) and the sound of 巽. The record writes the walking piece as 止 on its own.",
   職: "This glyph means office or post. It uses the definition of 耳 (ear) and the sound of 戠.",
   題: "This glyph means topic. It uses the definition of 頁 (head) and the sound of 是: originally the forehead.",
   片: "The original glyph looked like one half of a split tree: a slice, one side.",

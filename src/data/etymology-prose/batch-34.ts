@@ -20,7 +20,7 @@ export const BATCH_34: Readonly<Record<string, string>> = {
   瘍: "This glyph means a boil or tumor. It uses the definition of 疒 (illness) and the sound of 昜.",
   碑: "This glyph means tombstone. It uses the definition of 石 (stone) and the sound of 卑 (ひ).",
   膜: "This glyph means membrane. It uses the definition of 肉 (flesh) and the sound of 莫.",
-  辣: "This glyph means pungent or spicy. It uses the definition of 辛 (spicy) and the sound of 剌.",
+  辣: "This glyph means pungent or spicy. It uses the definition of 辛 (spicy) and the sound of 束, which the record writes 剌, the same piece with a knife.",
   酵: "This glyph means fermentation. It uses the definition of 酉 (fermented drink) and the sound of 孝 (こう).",
   銃: "This glyph means gun. It uses the definition of 金 (metal) and the sound of 充 (じゅう).",
   墳: "This glyph means a burial mound. It uses the definition of 土 (earth) and the sound of 賁.",

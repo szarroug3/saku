@@ -2,7 +2,7 @@
 export const BATCH_16: Readonly<Record<string, string>> = {
   跡: "This glyph means tracks or a mark. It uses the definition of 足 (foot) and the sound of 亦.",
   遣: "Two hands in a commanding gesture beside 𠂤: to send off, to dispatch. A movement piece (辵, road) was added later.",
-  飾: "This glyph means to decorate or adorn. It uses the definition of 巾 (cloth) and the sound of 飤.",
+  飾: "This glyph means to decorate or adorn. It uses the definition of 巾 (cloth); the sound piece 飤 is drawn here as 飠 with 𠂉, its 人 flattened.",
   憎: "This glyph means to hate or detest. It uses the definition of 忄 (heart) and the sound of 曾: a feeling of the heart.",
   魚: "The original glyph looked like a fish.",
   漁: "Water (水) beside a fish (魚): to fish, fishing. The 魚 also lends the sound ぎょ.",

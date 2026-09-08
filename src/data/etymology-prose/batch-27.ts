@@ -48,7 +48,7 @@ export const BATCH_27: Readonly<Record<string, string>> = {
   託: "This glyph means to entrust. It uses the definition of 言 (words) and the sound of 乇.",
   辱: "A hoe (辰) held in a hand (寸): to humiliate, to shame.",
   郡: "This glyph means county. It uses the definition of 邑 (town) and the sound of 君.",
-  酎: "This glyph means refined sake. It uses the definition of 酉 (wine) and the sound of 肘.",
+  酎: "This glyph means refined sake. It uses the definition of 酉 (wine) and the sound of 寸, which the record writes 肘, an elbow.",
   釜: "This glyph means cauldron. It uses the definition of 金 (metal) and the sound of 父.",
   偵: "This glyph means to spy. It uses the definition of 人 (person) and the sound of 貞.",
   唯: "This glyph means only. It uses the definition of 口 (mouth) and the sound of 隹.",

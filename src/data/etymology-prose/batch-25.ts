@@ -37,7 +37,7 @@ export const BATCH_25: Readonly<Record<string, string>> = {
   艦: "This glyph means warship. It uses the definition of 舟 (boat) and the sound of 監 (かん).",
   籠: "This glyph means basket. It uses the definition of 竹 (bamboo) and the sound of 龍.",
   襲: "This glyph means to attack. It uses the definition of 衣 (cloth) and the sound of 龍. That sound piece was 龖, two dragons, reduced to one.",
-  鬱: "People (大, 勹) hiding in a lush forest (林): dense growth, and by extension gloom and depression.",
+  鬱: "This glyph means dense growth, and from that gloom and depression. Two trees (木, 木) are what is left of a lush forest, 林, with people hiding in it, 大 and 勹. An abbreviated 爵 was added later, giving the crowded shape drawn now.",
   刃: "A knife (刀) with a mark added on the edge to point out the blade.",
   冗: "The original glyph put a person (儿) at home under a roof (宀) with nothing to do: idle, superfluous. The parts drawn now are 冖 and 几.",
   勾: "A variant of 句, with 口 written as 厶.",

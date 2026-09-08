@@ -16,7 +16,7 @@ export const BATCH_26: Readonly<Record<string, string>> = {
   狂: "This glyph means crazy. It uses the definition of 犬 (dog) and the sound of 王, which stands here for 㞷, an early form of 往.",
   肘: "This glyph means elbow. It uses the definition of 肉 (flesh) and the sound of 寸.",
   芯: "This glyph means wick. It uses the definition of 艸 (plant) and the sound of 心 (しん).",
-  那: "This glyph means what or that. It uses the definition of 邑 (city) and the sound of 冉. It began as the name of a state and was later borrowed for its sound.",
+  那: "This glyph means what, or that. It uses the definition of 邑 (city) and the sound of 二, which the record writes 冉. It began as the name of a state and was later taken for its sound.",
   併: "This glyph means to join together. It uses the definition of 人 (person) and the sound of 并.",
   侍: "This glyph means to wait upon, a samurai. It uses the definition of 人 (person) and the sound of 寺 (じ).",
   奉: "This glyph means to offer or present. The parts drawn are 𡗗 and 丨. The older form had two hands, 廾, with 丰 above for the sound, and both were corrupted into the 𡗗 drawn now.",

@@ -4,7 +4,7 @@ export const BATCH_13: Readonly<Record<string, string>> = {
   詰: "This glyph means packed. It uses the definition of 言 (speech) and the sound of 吉 (きつ).",
   像: "This glyph means image. It uses the definition of 人 (person) and the sound of 象 (ぞう).",
   慣: "This glyph means to get used to. It uses the definition of 心 (heart) and the sound of 貫 (かん).",
-  麻: "Hemp plants (𣏟) drying under a shelter (厂): hemp, flax.",
+  麻: "Hemp plants drying under a shelter: hemp, flax. The plants are the two 木, written 𣏟 together, and the shelter, 厂, is drawn 广 here.",
   精: "This glyph means refined. It uses the definition of 米 (rice) and the sound of 青 (しょう).",
   踏: "This glyph means to step. It uses the definition of 足 (foot) and the sound of 沓.",
   遺: "This glyph means to leave behind. It uses the definition of 辵 (movement) and the sound of 貴.",

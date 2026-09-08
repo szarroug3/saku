@@ -46,7 +46,7 @@ export const BATCH_15: Readonly<Record<string, string>> = {
   診: "This glyph means to examine a patient. It uses the definition of 言 (words); the sound piece 㐱 is drawn here as 人 over 彡.",
   評: "This glyph means to evaluate. It uses the definition of 言 (words) and the sound of 平.",
   貴: "This glyph means precious. It uses the definition of 貝 (a cowrie shell used as money) and the sound of 中, which the record writes 臾.",
-  遂: "This glyph means to accomplish. It uses the definition of 辵 (movement) and the sound of 㒸.",
+  遂: "This glyph means to accomplish. It uses the definition of 辵 (movement); the sound piece 㒸 is drawn here as the strokes above 豕, the pig being part of the sound and not the meaning.",
   飯: "This glyph means a meal of rice. It uses the definition of 食 (food) and the sound of 反 (はん).",
   催: "This glyph means to host or hold an event. It uses the definition of 人 (person) and the sound of 崔.",
   傾: "This glyph means to lean or tilt. It uses the definition of 人 (person) and the sound of 頃.",
