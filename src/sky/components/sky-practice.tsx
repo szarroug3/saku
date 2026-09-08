@@ -29,7 +29,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { UndoLine } from "@/sky/components/undo-line";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
 
 export interface SkyPracticeProps {
@@ -51,7 +51,10 @@ export interface SkyPracticeProps {
 
 const LOOKUP_DELAY = 150;
 
-const same = (a: Recipe, b: Recipe) => JSON.stringify(a) === JSON.stringify(b);
+// Two recipes that describe the same deck are one recipe, whatever order the
+// chips were clicked in (SAK-372). `sameRecipe` and `recipeKey` live in
+// lib/practice.ts, with the reason written out there.
+const same = sameRecipe;
 
 export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(initial.recipe);
@@ -79,8 +82,11 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   const [loaded, setLoaded] = useState<string | null>(null);
   const asked = useRef(0);
 
-  // the preview follows the recipe, after a beat, and never lands out of order
-  const baseKey = JSON.stringify(base);
+  // the preview follows the recipe, after a beat, and never lands out of
+  // order. The key is the recipe written one way, so a recipe that only
+  // changed the order of a list does not send the page back for a preview it
+  // already has; parsing it gives back a recipe that draws the same deck.
+  const baseKey = recipeKey(base);
   useEffect(() => {
     const wanted = JSON.parse(baseKey) as Recipe;
     if (same(wanted, initial.recipe)) return;
@@ -138,7 +144,11 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
             <Facet title="Saved recipes">
-              {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
+              {/* a saved recipe carries what it draws from, the way a
+                  collection's chip carries its count: "Everything" says
+                  nothing about itself until you read every other chip
+                  (SAK-372) */}
+              {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} title={recipeSummary(d.recipe, collections)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
               {chosen && (
                 renaming !== null ? (
                   <form className="flex w-full gap-2" onSubmit={(e) => { e.preventDefault(); rename(chosen.name); }}>

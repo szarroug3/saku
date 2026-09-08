@@ -2715,3 +2715,32 @@ second. It subscribes once now, through a ref holding the latest handler,
 the way `onTimeOut` in the same file already did. The handler also returns
 early when there is no card: on the empty quiz, Enter read `card.order` and
 threw.
+
+### Two recipes that mean the same deck are one recipe (2026-09-08, SAK-372)
+
+A recipe is a description, and nothing in it is ordered: drawing from kana
+and words is the same deck as drawing from words and kana. Practice
+compared two recipes with `JSON.stringify`, which is neither key-order nor
+array-order blind, and the page builds its recipes by appending. So
+turning a collection off and back on moved it to the end of the list,
+`toggleCut` moved a collection's key to the end of `cuts` every time a cut
+was picked, and a recipe that came back through the URL was rebuilt as
+`{ ...EMPTY_RECIPE, ...parsed }`, in `EMPTY_RECIPE`'s key order. Each of
+those read as a different recipe: "Saved as X" flipped to "Update X" with
+nothing on the page changed, and the preview cache in `fresh` missed and
+refetched a preview it already had.
+
+`canonicalRecipe` writes the six fields in one order with every list
+sorted, `recipeKey` is that as JSON and `sameRecipe` compares the two keys.
+The key is deliberately a valid recipe, so the effect that follows the
+recipe can key on it and parse it back to send, without keeping a second
+copy. What a recipe means and what it draws are untouched, since none of
+those orders was ever read for anything.
+
+`recipeSummary(recipe, collections)` is the other half of the card. Sam
+took the panel's summary line out on purpose, so this is not that: it is
+the saved recipe's chip carrying what it draws from, the way a collection's
+chip carries its count. "Kana (Hiragana and Yōon) and Words, only shaky,
+asked for the meaning and the reading, 10 of them". A clause that says
+nothing is left out, so no standing picked means any standing and all five
+asks means asked every way. Everything empty says "Everything".

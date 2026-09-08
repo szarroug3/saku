@@ -4,7 +4,7 @@
 // the review schedule (SAK-318): a run's answers go to whoever the route
 // hands in, and that is never the recorder the Quiz uses.
 
-import type { Standing } from "./standing";
+import { STANDING, STANDING_ORDER, type Standing } from "./standing";
 import type { SkyItem } from "./types";
 
 /** What a card asks for. */
@@ -46,6 +46,43 @@ export const EMPTY_RECIPE: Recipe = { collections: [], cuts: {}, statuses: [], a
 /** The cuts a recipe keeps within one collection: none listed means all. */
 export const cutsOf = (recipe: Recipe, collection: string): readonly string[] => recipe.cuts?.[collection] ?? [];
 
+/** The same recipe, written one way (SAK-372).
+ *
+ * A recipe is a description, and nothing in it is ordered: drawing from kana
+ * and words is the same deck as drawing from words and kana. But the page
+ * built its recipes by appending, so which chip was clicked first decided the
+ * order of the list, `toggleCut` moved a collection's key to the end of
+ * `cuts` every time a cut was picked, and a recipe that came back through the
+ * URL was rebuilt as `{ ...EMPTY_RECIPE, ...parsed }`, in EMPTY_RECIPE's key
+ * order. Comparing the two by `JSON.stringify` called all of those different
+ * recipes: "Saved as X" flipped to "Update X" for no visible change, and the
+ * preview cache missed and refetched.
+ *
+ * So: the six fields in a fixed order, every list sorted, the `cuts` keys
+ * sorted and their lists sorted too. What it means and what it draws are
+ * untouched, since none of those orders was ever read for anything. */
+export function canonicalRecipe(recipe: Recipe): Recipe {
+  const cuts = recipe.cuts ?? {};
+  return {
+    collections: [...recipe.collections].sort(),
+    cuts: Object.fromEntries(Object.keys(cuts).sort().map((id) => [id, [...(cuts[id] ?? [])].sort()])),
+    statuses: [...recipe.statuses].sort(),
+    asks: [...recipe.asks].sort(),
+    size: recipe.size,
+    excluded: [...(recipe.excluded ?? [])].sort(),
+  };
+}
+
+/** A recipe as one string, for comparing and for keying an effect.
+ *
+ * It is the canonical recipe as JSON, so parsing it back gives a recipe that
+ * draws the same deck; the page leans on that to send the looked-up recipe
+ * without keeping a second copy of it. */
+export const recipeKey = (recipe: Recipe): string => JSON.stringify(canonicalRecipe(recipe));
+
+/** Whether two recipes describe the same deck. */
+export const sameRecipe = (a: Recipe, b: Recipe): boolean => recipeKey(a) === recipeKey(b);
+
 /** A recipe under a name, kept by the learner. It keeps the recipe, not
  * the list it resolved to, so it changes as the learner does. */
 export interface SavedRecipe {
@@ -70,6 +107,44 @@ export interface PracticeCollection {
   title: string;
   total: number;
   cuts?: readonly PracticeCut[];
+}
+
+/** "a", "a and b", "a, b and c". */
+const listed = (parts: readonly string[]): string =>
+  parts.length < 3 ? parts.join(" and ") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+
+/** A recipe in one line, for a saved recipe's chip to carry the way a
+ * collection's chip carries its count (SAK-372).
+ *
+ * The panel had a summary line and Sam took it out on purpose, so this is not
+ * that: a recipe called "Everything" tells you nothing about what it draws
+ * from until you read every chip, and this is what the chip says when you
+ * rest on it. Only what has been narrowed is worth saying, so a clause is
+ * left out when it says nothing: no standing picked means any standing, and
+ * all five asks means asked every way.
+ *
+ * "Kana (Hiragana and Yōon) and Words, only shaky, asked for the meaning and
+ * the reading, 10 of them" */
+export function recipeSummary(recipe: Recipe, collections: readonly PracticeCollection[]): string {
+  const drawn = recipe.collections.length === 0
+    ? "Everything"
+    : listed(collections.filter((c) => recipe.collections.includes(c.id)).map((c) => {
+      const kept = cutsOf(recipe, c.id);
+      if (!kept.length) return c.title;
+      // named in the order the menu offers them, not the order they were
+      // picked; anything the collection no longer offers keeps its id, so a
+      // stale saved recipe still says something
+      const known = (c.cuts ?? []).filter((x) => kept.includes(x.id)).map((x) => x.label);
+      const rest = kept.filter((id) => !(c.cuts ?? []).some((x) => x.id === id));
+      return `${c.title} (${listed([...known, ...rest])})`;
+    }));
+  const clauses = [drawn];
+  if (recipe.statuses.length) clauses.push(`only ${listed(STANDING_ORDER.filter((s) => recipe.statuses.includes(s)).map((s) => STANDING[s].label))}`);
+  if (ASKS.some((a) => !recipe.asks.includes(a))) clauses.push(`asked for ${listed(ASKS.filter((a) => recipe.asks.includes(a)).map((a) => ASK[a].label.toLowerCase()))}`);
+  clauses.push(recipe.size === "all" ? "all of them" : `${recipe.size.toLocaleString()} of them`);
+  const left = recipe.excluded?.length ?? 0;
+  if (left) clauses.push(`less ${left === 1 ? "one" : left.toLocaleString()} left out by hand`);
+  return clauses.join(", ");
 }
 
 /** An item in the preview, with what it has been missed. */

@@ -550,3 +550,27 @@ test("a visitor's quiz is kept in the browser and shows up under sessions", asyn
   await page.goto("/");
   await expect(page.getByText(/1 of [\d,]+ Discovered/)).toBeVisible();
 });
+
+test("a saved recipe stays saved when the same chips are clicked in another order", async ({ page }) => {
+  // SAK-372. Recipes were compared by JSON.stringify, and the recipe is built
+  // by appending, so turning a collection off and back on put it at the end of
+  // the list: the same deck, a different string, and "Saved as X" flipped to
+  // "Update X" with nothing on the page changed.
+  await page.goto("/practice?sample");
+  await page.getByRole("button", { name: "Kana", exact: true }).click();
+  await page.getByRole("button", { name: "Words", exact: true }).click();
+  await page.getByRole("button", { name: "Save this recipe" }).click();
+  await page.getByPlaceholder("A name for this recipe").fill("Kana and words");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved as Kana and words" })).toBeVisible();
+
+  // off and on again: the same two collections, in the other order
+  await page.getByRole("button", { name: "Kana", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Update Kana and words" })).toBeVisible();
+  await page.getByRole("button", { name: "Kana", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved as Kana and words" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Update Kana and words" })).toHaveCount(0);
+
+  // and the chip says what it draws from, so "Everything" is not a mystery
+  await expect(page.getByRole("button", { name: "Kana and words", exact: true })).toHaveAttribute("title", /^Kana and Words, /);
+});
