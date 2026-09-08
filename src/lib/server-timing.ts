@@ -53,13 +53,15 @@ export function timedSync<T>(name: string, work: () => T, desc?: string): T {
 }
 
 /** From the edge receiving the request (the proxy stamps `x-edge-at`) to
- * now: on a warm process a few tens of milliseconds of routing, on a cold
- * one the load of every module the route needs, which is the cold start
- * itself and which nothing inside those modules can time (SAK-399). Empty
- * when the request did not come through the proxy. */
-export function edgeToPage(edgeAt: string | null | undefined): Phase[] {
+ * now, recorded as a phase: called at the top of the root layout's render,
+ * before anything is awaited, so on a warm process it is the routing and on
+ * a cold one the load of every module the route needs, which is the cold
+ * start itself and which nothing inside those modules can time (SAK-399).
+ * Nothing recorded when the request did not come through the proxy. */
+export function markEdgeToPage(edgeAt: string | null | undefined): void {
   const at = Number(edgeAt ?? 0);
-  return at ? [{ name: "edge-to-page", ms: Date.now() - at, desc: "from the edge receiving the request to the page rendering" }] : [];
+  if (!at || phasesOf().some((p) => p.name === "edge-to-page")) return;
+  phasesOf().push({ name: "edge-to-page", ms: Date.now() - at, desc: "from the edge receiving the request to the render starting" });
 }
 
 /** This request's phases so far, as a `Server-Timing` value. Empty when

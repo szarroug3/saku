@@ -13,7 +13,10 @@ import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
 import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
+import { headers } from "next/headers";
+
 import { loadProgressSeeds } from "@/lib/history";
+import { markEdgeToPage } from "@/lib/server-timing";
 import { HistoryProvider } from "@/lib/history-provider";
 import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
@@ -134,6 +137,11 @@ export default async function RootLayout({
   // app: hidden for a signed-out visitor (who sees the landing) and on the auth
   // pages. `authEnabled` (Supabase keys present, so an account is possible) is
   // what puts a Sign in/out in it — with no keys there is no session to end.
+  // First thing, before anything is awaited: how long the request took to
+  // get from the edge to here, which on a cold process is the load of the
+  // route's modules, the cold start itself (SAK-399). Reported in the page's
+  // server-timing meta as edge-to-page.
+  markEdgeToPage((await headers()).get("x-edge-at"));
   const userId = await currentUserId();
   const [signedIn, authEnabled] = [userId !== null, isSupabaseStore()];
   // THE HISTORY, IN THE FIRST RESPONSE. Every screen that shows progress reads
