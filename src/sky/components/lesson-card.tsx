@@ -79,10 +79,14 @@ export type PitchComponent = ComponentType<{ reading: string; downstep: number; 
  * pitch falls after. */
 export type HearComponent = ComponentType<{ glyph: string; downstep?: number; className?: string; label?: string }>;
 
-/** What each kind is, in the learner's terms. */
+/** What each kind is, in the learner's terms.
+ *
+ * items-center, not items-baseline (SAK-415): an 18px glyph beside a 12.5px
+ * gloss centres on the pill rather than hanging the gloss off the glyph's
+ * baseline, which left the pair sitting high. */
 function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
-    <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-baseline gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
+    <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-center gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
       <Glyph glyph={item.glyph} size="text-[18px]" />
       {note && <span className={`font-sky-display text-[13px] text-sky-muted ${japaneseFont(note)}`}>{note}</span>}
       {item.english !== item.glyph && <span className="text-[12.5px] text-sky-muted">{item.english}</span>}

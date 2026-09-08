@@ -102,6 +102,9 @@ export function QuizResults({ cards, answers, save, back, pitch: Pitch, onRetry,
               const on = picked.has(c.id);
               return (
                 <li key={c.id}>
+                  {/* items-center, not items-baseline (SAK-415): a 20px glyph
+                      beside 13px and 12px text centres on the row rather than
+                      dragging the smaller two down to its own baseline */}
                   <button
                     type="button"
                     aria-pressed={on}
@@ -114,7 +117,7 @@ export function QuizResults({ cards, answers, save, back, pitch: Pitch, onRetry,
                       setPicked(next);
                       setLastPick(i);
                     }}
-                    className={`grid w-full grid-cols-[10rem_1fr_auto] items-baseline gap-x-3 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
+                    className={`grid w-full grid-cols-[10rem_1fr_auto] items-center gap-x-3 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
                   >
                     {/* the glyph column is one width, so the answers line up */}
                     <span className={`truncate font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>

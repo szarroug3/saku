@@ -71,11 +71,14 @@ export function QuizQuestions({ cards, answers, at, open, onGo, onClose }: QuizQ
           const name = nameOf(card, !!answer);
           return (
             <li key={card.id}>
+              {/* items-center, not items-baseline (SAK-415): a row of three
+                  sizes centres all of them on the row rather than hanging
+                  them off the tallest one's baseline */}
               <button
                 type="button"
                 onClick={() => onGo(i)}
                 aria-current={here ? "step" : undefined}
-                className={`grid w-full grid-cols-[1.6rem_minmax(0,1fr)_auto] items-baseline gap-x-2 rounded-lg border px-2 py-1.5 text-left ${here ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
+                className={`grid w-full grid-cols-[1.6rem_minmax(0,1fr)_auto] items-center gap-x-2 rounded-lg border px-2 py-1.5 text-left ${here ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
               >
                 <span className="text-[11px] tabular-nums text-sky-faint">{i + 1}</span>
                 <span className={`truncate text-[13px] ${here ? "text-sky-ink" : answer ? "text-sky-muted" : "text-sky-ink/90"} ${japaneseFont(name)}`}>{name}</span>

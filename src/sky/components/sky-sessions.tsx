@@ -68,7 +68,10 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                 const on = open?.id === s.id;
                 return (
                   <li key={s.id}>
-                    <button type="button" onClick={() => { setOpenId(s.id); setAsking(false); }} aria-current={on ? "true" : undefined} className={`grid w-full grid-cols-[1fr_auto] items-baseline gap-x-3 rounded-lg border px-3 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}>
+                    {/* items-center, not items-baseline (SAK-415): a row of two
+                        sizes centres both on the row rather than hanging them
+                        off the taller one's baseline */}
+                    <button type="button" onClick={() => { setOpenId(s.id); setAsking(false); }} aria-current={on ? "true" : undefined} className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-3 rounded-lg border px-3 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}>
                       <span className="text-[13.5px] text-sky-ink"><When ts={s.when} /><span className="text-sky-muted"> · {SESSION_KIND[s.kind]} · {s.cards.length} {s.cards.length === 1 ? "card" : "cards"}</span></span>
                       <span className="flex gap-2 text-[12px] tabular-nums">
                         {GRADES.map((g) => <span key={g} className={VERDICT[g]}>{t[g]}</span>)}

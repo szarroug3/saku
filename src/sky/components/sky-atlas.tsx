@@ -454,8 +454,10 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                 >
                   <Eyebrow size="md" className="shrink-0">{selection.ids.length} selected</Eyebrow>
                   <div className="mt-3 flex flex-wrap content-start gap-1.5">
+                    {/* items-center, not items-baseline (SAK-415): a 16px glyph
+                        beside 11px text centres on the pill */}
                     {selectedItems.map((it) => (
-                      <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-baseline gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
+                      <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-center gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
                         <Glyph glyph={it.glyph} standing={it.standing} size="text-[16px]" />
                         {it.english !== it.glyph && <span className="max-w-[10ch] truncate text-[11px] text-sky-muted">{it.english}</span>}
                       </button>
