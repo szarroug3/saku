@@ -1,6 +1,6 @@
 // Plain-language etymology rewrites, batch 22. See kanji-etymology-prose.ts for house style.
 export const BATCH_22: Readonly<Record<string, string>> = {
-  徹: "A hand (又) clearing away a pot (鬲) after a meal: to remove, and so to pierce through and make clear.",
+  徹: "A hand (攵) clearing away a pot after a meal, on the road (彳): to remove, and so to pierce through and make clear. The pot was 鬲, and it corrupted into the unrelated 育.",
   伴: "This glyph means companion. It uses the definition of 人 (person) and the sound of 半 (はん).",
   克: "The origin is unclear.",
   含: "This glyph means to hold in the mouth. It uses the definition of 口 (mouth) and the sound of 今.",

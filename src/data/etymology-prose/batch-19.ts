@@ -36,7 +36,7 @@ export const BATCH_19: Readonly<Record<string, string>> = {
   勉: "This glyph means to make an effort. It uses the definition of 力 (strength) and the sound of 免.",
   唇: "This glyph means lips. It uses the definition of 口 (mouth) and the sound of 辰.",
   島: "This glyph means island. It uses the definition of 山 (mountain) and the sound of 鳥.",
-  既: "A person kneeling (旡) turned away from a bowl of rice (皀): already finished eating, already done.",
+  既: "A kneeling figure (旡) turned away from a bowl of rice: already finished eating, already done. The bowl was written 皀; it is now drawn 艮.",
   朗: "This glyph means bright and clear. It uses the definition of 月 (moon) and the sound of 良.",
   株: "This glyph means tree stump, and by extension shares of stock. It uses the definition of 木 (tree) and the sound of 朱.",
   浜: "This glyph means seashore. It uses the definition of 水 (water) and the sound of 兵.",

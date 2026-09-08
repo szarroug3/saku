@@ -20,7 +20,7 @@ export const BATCH_30: Readonly<Record<string, string>> = {
   弊: "This glyph means abuse or vice. It uses the definition of 廾 (both hands) and the sound of 敝 (destroy, tatters): destroying something with both hands.",
   慰: "This glyph means consolation. It uses the definition of 心 (heart) and the sound of 尉 (い).",
   憤: "This glyph means to be aroused or indignant. It uses the definition of 心 (heart) and the sound of 賁.",
-  撤: "This glyph means to remove or withdraw. It uses the definition of 手 (hand) and the sound of 徹 (てつ), from the idea of removing by hand.",
+  撤: "This glyph means to remove or withdraw. It uses the definition of 手 (hand); the sound piece is 徹, whose own parts 育 and 攵 are drawn beside the hand.",
   槽: "This glyph means a vat or tub. It uses the definition of 木 (wood) and the sound of 曹 (そう), a wooden trough.",
   潮: "This glyph means the tide. It uses the definition of 水 (water) and the sound of 朝 (ちょう).",
   澄: "This glyph means clear, as of water. It uses the definition of 水 (water) and the sound of 登.",

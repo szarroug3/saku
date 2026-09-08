@@ -19,7 +19,7 @@ export const BATCH_29: Readonly<Record<string, string>> = {
   塊: "This glyph means a lump. It uses the definition of 土 (earth) and the sound of 鬼, a clod of dirt.",
   塗: "This glyph means to plaster or daub. It uses the definition of 土 (earth) and the sound of 涂.",
   嫉: "This glyph means to be jealous. It uses the definition of 女 (woman) and the sound of 疾 (しつ).",
-  彙: "This glyph means to collect or classify. It uses the definition of 㣇 and the sound of 胃 (い).",
+  彙: "This glyph means to collect or classify, and once named the hedgehog. The parts drawn are 彑, 冖 and 果. The record builds it from 㣇 for the meaning with 胃 for the sound, and neither is whole in the shape as drawn.",
   愁: "This glyph means to grieve. It uses the definition of 心 (heart) and the sound of 秋 (しゅう).",
   慨: "This glyph means to lament. It uses the definition of 心 (heart) and the sound of 既.",
   搬: "This glyph means to carry. It uses the definition of 手 (hand) and the sound of 般 (はん).",

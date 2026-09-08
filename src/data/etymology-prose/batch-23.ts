@@ -47,7 +47,7 @@ export const BATCH_23: Readonly<Record<string, string>> = {
   循: "This glyph means to follow, to go in sequence. It uses the definition of 彳 (movement) and the sound of 盾 (じゅん).",
   愉: "This glyph means joy, pleasure. It uses the definition of 心 (heart) and the sound of 俞.",
   揮: "This glyph means to brandish, to wave. It uses the definition of 手 (hand) and the sound of 軍.",
-  敢: "A hand (又) wielding a tool to hunt a wild boar (豕): to be daring, bold.",
+  敢: "This glyph means daring or bold. The parts drawn are 耳 and 攵. The older glyph had a hand using a tool to hunt a wild boar, 豕, and those pieces corrupted into the shape drawn now.",
   森: "Three trees (木) stacked together to suggest a great many: a forest.",
   椅: "This glyph means chair. It uses the definition of 木 (wood) and the sound of 奇.",
   欺: "This glyph means to deceive, to cheat. It uses the definition of 欠 (open mouth, breath) and the sound of 其.",

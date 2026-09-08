@@ -44,7 +44,7 @@ export const BATCH_33: Readonly<Record<string, string>> = {
   隆: "This glyph means high and prosperous. It uses the definition of 生 (to grow) and the sound of 降.",
   塚: "This glyph means a mound or tomb. It uses the definition of 土 (earth) and the sound of 冢.",
   媛: "This glyph means a beautiful woman. It uses the definition of 女 (woman) and the sound of 爰.",
-  斑: "This glyph means a spot or speckle. It uses the definition of 文 (pattern) and the sound of 班.",
+  斑: "This glyph means a spot or speckle. It uses the definition of 文 (pattern), set between two 王. Its sound piece is 班, which puts a knife in that same place.",
   棺: "This glyph means a coffin. It uses the definition of 木 (wood) and the sound of 官 (かん).",
   椎: "This glyph means a mallet, also the spine. It uses the definition of 木 (wood) and the sound of 隹, wood used to smash things.",
   款: "This glyph means goodwill, also an article or clause. It uses the definition of 欠 (to lack, to desire) and the sound of 柰.",

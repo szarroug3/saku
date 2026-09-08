@@ -6,7 +6,7 @@ export const BATCH_07: Readonly<Record<string, string>> = {
   業: "Chisel-teeth (丵) over something big (大): the notched board this pictured came to mean work and vocation.",
   曜: "This glyph means weekday. It uses the definition of 日 (sun) and the sound of 翟.",
   想: "This glyph means thought or idea. It uses the definition of 心 (heart, mind) and the sound of 相 (そう).",
-  愛: "This glyph means love. It uses the definition of 心 (heart) and the sound of 旡.",
+  愛: "This glyph means love. It uses the definition of 心 (heart). Its sound piece was 旡, which corrupted into the ⺤ and 冖 above the heart.",
   線: "This glyph means line. It uses the definition of 糸 (thread) and the sound of 泉 (せん).",
   必: "The original glyph looked like the handle of a weapon such as 戈, with two strokes added at the sides. It is not related to 心.",
   打: "This glyph means to strike or hit. It uses the definition of 手 (hand) and the sound of 丁.",

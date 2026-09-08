@@ -54,7 +54,7 @@ export const MANUAL_04: Readonly<Record<string, string>> = {
   虜: "This glyph means a captive. It pairs 力 (force) with 虍 (tiger), which gives the sound: a prisoner seized by force.", // source: https://en.wiktionary.org/wiki/虜
   誉: "This glyph is the simplified form of 譽, meaning praise, honor. It uses speech (言) for meaning and 與 for the sound.", // source: https://en.wiktionary.org/wiki/譽
   践: "This glyph is the simplified form of 踐, meaning to tread or step on. It uses the foot (足) for meaning and 戋 (戔) for the sound.", // source: https://en.wiktionary.org/wiki/踐
-  徳: "A straight line (直) over a heart (心), set on the road (彳): straight-hearted conduct, virtue.", // source: https://en.wiktionary.org/wiki/德
+  徳: "A straight line over a heart (心), set on the road (彳): straight-hearted conduct, virtue. The straight piece is 直, drawn here as 十 over 罒.", // source: https://en.wiktionary.org/wiki/德
   歓: "This glyph is the simplified form of 歡, meaning joy, delight. It uses 欠, an open mouth, for meaning and 雚 for the sound.", // source: https://en.wiktionary.org/wiki/歡
   穂: "This glyph is the simplified form of 穗, meaning an ear of grain. It uses the grain stalk (禾) for meaning and 恵 (惠) for the sound.", // source: https://en.wiktionary.org/wiki/穗
   遷: "This glyph means to move or relocate. It uses the movement radical (⻌) for meaning and 䙴 for the sound, carrying the idea of moving up and across.", // source: https://en.wiktionary.org/wiki/遷

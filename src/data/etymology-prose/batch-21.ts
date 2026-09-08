@@ -55,7 +55,7 @@ export const BATCH_21: Readonly<Record<string, string>> = {
   吐: "This glyph means to spit or vomit. It uses the definition of 口 (mouth) and the sound of 土.",
   因: "A person (大) lying on a mat (囗): originally a mattress, borrowed to mean a cause or basis to rely on.",
   寺: "Originally a hand (又) grasping, from 之 (to go): to hold. It later came to mean a Buddhist temple.",
-  旨: "This glyph means delicious. It uses the definition of 甘 (tasty) and the sound of 匕 (a spoon).",
+  旨: "This glyph means delicious, and by extension the gist of something. It uses the sound of 匕, a spoon. The piece below stands for 甘, tasty, though it is drawn 日.",
   汗: "This glyph means sweat. It uses the definition of 水 (water) and the sound of 干 (かん).",
   芝: "This glyph means turf or a type of plant. It uses the definition of 艸 (grass) and the sound of 之.",
 };

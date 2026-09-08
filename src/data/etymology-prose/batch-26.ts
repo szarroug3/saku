@@ -27,7 +27,7 @@ export const BATCH_26: Readonly<Record<string, string>> = {
   征: "This glyph means to go on a campaign, to subjugate. It uses the definition of 彳 (to step, to go) and the sound of 正 (せい).",
   披: "This glyph means to open or expose. It uses the definition of 手 (hand) and the sound of 皮 (ひ).",
   抹: "This glyph means to rub or erase. It uses the definition of 手 (hand) and the sound of 末 (まつ).",
-  拐: "This glyph means to kidnap. It uses the definition of 手 (hand) and the sound of 冎.",
+  拐: "This glyph means to kidnap. It uses the definition of 手 (hand); the sound piece 冎 is drawn here as 口 with 刀.",
   拓: "This glyph means to clear or open up land. It uses the definition of 手 (hand) and the sound of 石.",
   拘: "This glyph means to seize or arrest. It uses the definition of 手 (hand) and the sound of 句.",
   松: "This glyph means pine tree. It uses the definition of 木 (wood) and the sound of 公.",

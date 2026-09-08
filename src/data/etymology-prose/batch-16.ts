@@ -13,7 +13,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   儀: "This glyph means ceremony or rule. It uses the definition of 人 (person) and the sound of 義 (ぎ).",
   導: "This glyph means to guide or lead. It uses the definition of 寸 (hand) and the sound of 道 (どう), a path.",
   履: "Early forms showed a foot (止) and a shoe-shaped boat (舟): footgear, and by extension to tread or carry out. The modern glyph combines 尸 and 復 (return).",
-  敵: "This glyph means enemy or foe. It uses the definition of 攴 (to hit) and the sound of 啻.",
+  敵: "This glyph means enemy or foe. It uses the definition of 攴 (to hit) and the sound of 啇, which the older form writes 啻.",
   標: "This glyph means a mark or signpost. It uses the definition of 木 (tree) and the sound of 票 (ひょう).",
   熟: "This glyph means to ripen or mature. It uses the definition of 火 (fire) and the sound of 孰 (cooked, ripe): cooked with fire.",
   編: "This glyph means to knit or compile. It uses the definition of 糸 (thread) and the sound of 扁: to knit a book together with thread.",

@@ -1,6 +1,6 @@
 // Plain-language etymology rewrites, batch 05. See kanji-etymology-prose.ts for house style.
 export const BATCH_05: Readonly<Record<string, string>> = {
-  教: "A hand holding a cane of authority (攴) teaching a child (子), with the sound of 爻: to teach.",
+  教: "A hand holding a cane of authority (攴) teaching a child (子): to teach. The sound piece was 爻, and it has merged into the 耂 above the child.",
   集: "A bird (隹) settled on a tree (木): birds gathering, to gather.",
   今: "The origin is unclear.",
   末: "A tree (木) with an extra stroke marking its top: the tip, the end. Contrast 本.",
@@ -23,7 +23,7 @@ export const BATCH_05: Readonly<Record<string, string>> = {
   雨: "The original glyph looked like drops of rain falling from a cloud.",
   矛: "The original glyph looked like a bamboo spear with a ring in the middle.",
   務: "This glyph means task or duty. It uses the definition of 力 (strength); the sound piece 敄 is drawn here as 矛 with 攵.",
-  得: "A hand (又) picking up a cowry shell (貝) on the road (彳): to obtain, to gain.",
+  得: "A hand picking up a cowry shell on the road (彳): to obtain, to gain. The hand and the shell are the 㝵 beside it, once written 又 over 貝.",
   現: "This glyph means to appear. It uses the definition of 玉 (jade) and the sound of 見.",
   費: "This glyph means expense. It uses the definition of 貝 (cowry, money) and the sound of 弗.",
   開: "Two hands (廾) lifting the latch (一) off a door (門): to open.",

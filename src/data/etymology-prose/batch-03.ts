@@ -16,7 +16,7 @@ export const BATCH_03: Readonly<Record<string, string>> = {
   止: "The original glyph looked like a footprint, originally meaning foot.",
   正: "This glyph means correct. It uses the definition of 止 (foot) and the sound of 丁, a foot marching straight toward a goal.",
   先: "A foot above a person (儿): to go forward, to be ahead. The foot was written 止, and it later flattened into the strokes across the top.",
-  成: "This glyph means become. It uses the definition of 戊 (a weapon guarding city walls) and the sound of 丁.",
+  成: "This glyph means to become or turn into. The parts drawn are 𠂊 and 戈. The record has a weapon, 戊, guarding city walls, with 丁 for the sound, and the modern shape keeps neither piece whole.",
   家: "This glyph means house. It uses the definition of 宀 (roof) and the sound of 𢑓 (a pig), a home under a roof.",
   時: "This glyph means time. It uses the definition of 日 (sun, day) and the sound of 寺 (じ), the passing of the days.",
   真: "This glyph means true. It uses the definition of 貝 (shell) and the sound of 𠂈.",

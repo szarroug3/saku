@@ -37,7 +37,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   貨: "This glyph means goods. It uses the definition of 貝 (shell, money) and the sound of 化 (か).",
   閉: "A bar of timber (才) set across a door (門): to close, to shut.",
   惑: "This glyph means to be perplexed. It uses the definition of 心 (heart, mind) and the sound of 或.",
-  敬: "A kneeling person (茍) and a hand holding a stick (攴): to show respect, reverence.",
+  敬: "A kneeling person (苟) and a hand holding a stick (攵): to show respect, reverence. The sources write that left piece 茍, a different character from the 苟 drawn here.",
   免: "The original glyph showed a man wearing a ceremonial hat, later borrowed for abstract meanings like to excuse.",
   短: "This glyph means short. It uses the definition of 矢 (arrow) and the sound of 豆.",
   統: "This glyph means to unite, to govern. It uses the definition of 糸 (thread) and the sound of 充.",

@@ -8,7 +8,7 @@ export const BATCH_06: Readonly<Record<string, string>> = {
   速: "This glyph means quick or fast. It uses the definition of 辵 (to walk) and the sound of 束 (そく).",
   寄: "This glyph means to draw near or lodge. It uses the definition of 宀 (house) and the sound of 奇 (き).",
   野: "This glyph means open field or plains. It uses the definition of 田 (field) and 土 (earth), and the sound of 予.",
-  支: "A hand (又) holding half a bamboo branch (竹): a branch, to prop up and support.",
+  支: "A hand (又) holding half a bamboo branch: a branch, and so to prop up and support. The branch was written 竹; here it is the 十 above the hand.",
   可: "This glyph means can or approval. It uses the definition of 口 (mouth) and the sound of 丁, which was written 丂, a breath pushed out.",
   失: "This glyph means to lose. The parts drawn are 丿 and 夫. Shuowen reads it as something slipping from a hand, 手, but the earliest forms show no hand, so the origin is not settled.",
   市: "This glyph means market or town. The parts drawn are 亠 and 巾. The oracle bone form built it from 兮 for bustling with 之 for the sound, and neither piece survives in the modern shape.",

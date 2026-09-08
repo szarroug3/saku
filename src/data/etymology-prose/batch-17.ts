@@ -16,7 +16,7 @@ export const BATCH_17: Readonly<Record<string, string>> = {
   削: "This glyph means to whittle or sharpen. It uses the definition of 刀 (knife) and the sound of 肖.",
   威: "A broad axe beside a woman (女): overawing, commanding force. The axe was 戌; it is drawn here as 戍.",
   怠: "This glyph means laziness or neglect. It uses the definition of 心 (heart) and the sound of 台 (たい).",
-  施: "This glyph means to bestow or carry out. It uses the definition of 㫃 (a fluttering banner) and the sound of 也.",
+  施: "This glyph means to bestow or carry out. It uses the sound of 也; its meaning comes from 㫃, a fluttering banner, drawn here as 方 with 𠂉.",
   星: "This glyph means star. It combines 晶 (a cluster of twinkling stars) with the sound of 生 (しょう).",
   枯: "This glyph means to wither. It uses the definition of 木 (tree) and the sound of 古 (こ).",
   架: "This glyph means a frame or rack. It uses the definition of 木 (wood) and the sound of 加 (か): a wooden prop.",
