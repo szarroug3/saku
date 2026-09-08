@@ -2379,3 +2379,60 @@ tonight.
 Two files touched, 3 lines deleted against 46 added. 3,809 unit tests
 pass, 1 skipped. 28 e2e, run at `--repeat-each=6`: 168 passed, the
 visitor test six times for six.
+
+### The seven fields the Sky never read leave the config, and the types file splits (2026-09-08, SAK-407)
+
+The seven were pinned twice. `QuizSnapshot` in `quiz-session-types.ts`
+named five of them in a `Pick`, and four functions in the engine's
+unreached half still took a whole `QuizConfig` and read them: `buildDeck`
+and `pickDir` in `engine/index.ts`, `realQuestionCount` in
+`ask-forms.ts`, and its server wrapper `getRealQuestionCount`, whose one
+caller (`slice-bar.tsx`) went with the old app. Nothing outside a test
+imported any of them; the live imports from `@/lib/engine` are
+`answerKeyFor`, `buildMcOptions` and `newFactStat`.
+
+So they went, and the cut ran further than the card guessed. `enabledDirs`
+was `pickDir`'s only caller, and it was the last live use of
+`ask-config.ts` — the predicates, `defaultAsk`, the pair and grid response
+helpers, and finally `askFromAudioPrompts` itself, once `QuizConfig.ask`
+was gone and nothing built an `AskConfig` at runtime any more. The Sky
+reaches its cards from `audioPrompts` directly (`quizFromHistory`), never
+through an ask. `vehicle-spread.ts` went the same way, as `buildDeck`'s
+only caller of it. `AskConfig` stays as a type: `enabledFormsFor`,
+`buildCoverageDeck`, `coverageQuestionCount` and `configIsReachable` take
+one directly, and the coverage tests that drive them are real.
+
+`QuizSnapshot`'s own reader was `StudySession.snapshot`, which nothing
+read: its only mention outside the type was `{} as
+StudySession["snapshot"]` in a test's fixture.
+
+`retries` and `retryN` are one number now. `{ retries: "none", retryN: 3 }`
+was representable and meant nothing; the quiz always wanted the number,
+and `retriesOf` existed to compute it. `normalizeConfig` migrates a stored
+mode-plus-count on first read — "none" to 0, "unl" to the 9 the quiz
+always read it as, "lim" to its own `retryN` — so a learner who set 3
+keeps 3.
+
+`engine/retries.test.ts` went with `effectiveRetries`, and the SAK-54 rule
+it guarded is not lost: `SkyQuiz` enforces it live, `Math.min(retries + 1,
+options.length - 1)`, which is zero retries for a two-option board.
+
+The types split. `src/types/index.ts` is three files and a barrel:
+`facts.ts` for the identities everything is keyed by, `sky.ts` for the
+Sky's own in-flight shapes, `store.ts` for what is written to and read
+from a learner's `progress` row. The arrow only points one way, store to
+sky, and only twice: `SettingsFile.cfg` and `QuizSessionRecord.detail`
+carry a Sky shape whole. What did NOT happen is the import rewrite: 194
+files import `@/types` and 135 name a stored type, including both other
+lanes' files tonight, so `@/types` stays the one surface and no call site
+changed. That is a separate change from splitting the file.
+
+The root layout loses the `curriculum-version` meta tag, whose reader
+(`use-server-lookup.ts`) is gone, and four comments that pointed at
+`sidebar.tsx` and `landing.tsx`. The wordmark preload stays: the Sky's
+shell draws it on every page.
+
+2,286 lines deleted against 964 added, seven files gone. 3,750 unit tests
+pass, 1 skipped, from 3,809: the 59 that went were the deleted engine and
+ask-config tests. 28 e2e. The entry-model dump is byte-identical across
+all 13 files, and `node scripts/unreachable.mjs --list` is still zero.

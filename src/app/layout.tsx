@@ -4,10 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { AuthModeInit } from "./(sky)/auth-mode-init";
 import { LocalMigration } from "./(sky)/local-migration";
-// SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
-// global nav's Sign in control) — see src/components/sidebar.tsx.
 import { currentUserId } from "@/lib/auth";
-import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";
 import { headers } from "next/headers";
 
 import { loadProgressSeeds } from "@/lib/history";
@@ -53,10 +50,9 @@ async function seedAll(userId: string) {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // The sidebar is the app's nav, so it only belongs to someone who's in the
-  // app: hidden for a signed-out visitor (who sees the landing) and on the auth
-  // pages. `authEnabled` (Supabase keys present, so an account is possible) is
-  // what puts a Sign in/out in it — with no keys there is no session to end.
+  // `authEnabled` (Supabase keys present, so an account is possible) is what
+  // decides whether there is a session to sign out of at all; the Sky's shell
+  // reads it through AuthModeInit below.
   // First thing, before anything is awaited: how long the request took to
   // get from the edge to here, which on a cold process is the load of the
   // route's modules, the cold start itself (SAK-399). Reported in the page's
@@ -64,46 +60,28 @@ export default async function RootLayout({
   markEdgeToPage((await headers()).get("x-edge-at"));
   const userId = await currentUserId();
   const [signedIn, authEnabled] = [userId !== null, isSupabaseStore()];
-  // THE HISTORY, IN THE FIRST RESPONSE. Every screen that shows progress reads
-  // it through useHistory, which used to mean waiting for hydration and then a
-  // GET /api/history before anything could render. Reading it here — the same
-  // loadHistory the API route calls, not an HTTP request back into ourselves —
-  // puts it in the HTML, so the first paint is the real screen.
+  // THE SETTINGS, IN THE FIRST RESPONSE, so the providers below reconcile
+  // against the server's copy at first paint instead of waiting on a client
+  // fetch. Signed out there is no account to read and the local browser cache
+  // takes over.
   //
-  // Only for a signed-in learner: a signed-out visitor has no account to read,
-  // and the pages they see (the landing, the auth screens) are exactly the ones
-  // that would have nothing to show for the query. Their progress lives in this
-  // browser and the provider reads it there.
-  // THE SETTINGS and IN-PROGRESS RUN, IN THE FIRST RESPONSE, for the same reason
-  // as history: reconcile providers against the server copy on first paint,
-  // instead of waiting on a client fetch. Signed-out visitors have no account to
-  // read, so all three are null and local browser caches take over.
-  // Only the settings are seeded now (SAK-398). The history used to be put
-  // in the HTML here too, for providers the old app read on every screen;
-  // a signed-in Sky page reads the learner's progress on the server and
-  // renders from it, so the history in the HTML was a copy nobody read, and
-  // it grew with the learner (1.7 MB for a big one). The read itself is
-  // shared with the page's own (see readProgress in the store), so nothing
-  // is queried twice; only what goes to the browser changed.
+  // The settings are all that is seeded now (SAK-398). The history used to
+  // ride here too, for providers the old app read on every screen; a signed-in
+  // Sky page reads the learner's progress on the server and renders from it,
+  // so the copy in the HTML was one nobody read, and it grew with the learner
+  // (1.7 MB for a big one). The read itself is shared with the page's own (see
+  // readProgress in the store), so nothing is queried twice; only what goes to
+  // the browser changed.
   const seeds = userId === null ? null : await seedAll(userId);
   const initialSettings = seeds?.settings ?? null;
-  // Read the sidebar's collapsed state server-side so it renders at the right
-  // width on the first paint instead of loading expanded and snapping closed.
   return (
     <html lang="en" data-theme={THEME} data-appearance={APPEARANCE} data-accent={ACCENT}>
       <head>
-        {/* Preload the wordmark so it's decoded before first paint — the sidebar
-            shows it on every page, so without this its <img> flashes blank until
-            the PNG arrives. The mark is landing-only, so it's preloaded there
-            (src/components/landing.tsx) instead of globally, where it would go
-            unused on every other route. */}
+        {/* Preload the wordmark so it is decoded before first paint. The
+            Sky's shell draws it on every page (src/sky/components/
+            sky-shell.tsx), so without this its <img> flashes blank until the
+            PNG arrives. */}
         <link rel="preload" as="image" href="/brand/saku-wordmark.png" />
-        {/* SAK-112: use-server-lookup.ts's IndexedDB persistence reads this to
-            key/validate its cache, instead of importing @/lib/content/
-            learn-index (and its multi-megabyte learn-index.json) into a
-            "use client" module every page would then bundle. A plain server-
-            rendered meta tag costs nothing beyond the string itself. */}
-        <meta name="curriculum-version" content={CURRICULUM_VERSION} />
       </head>
       <body>
         {/* Server-synced settings, seeded above. Outermost of the client

@@ -386,7 +386,7 @@ export function planSession(query: PlanQuery): SessionPlan {
   // not called — so the SELECTION of which items make the cap is a fair shuffle.
   // Quiet is already gone (it never entered probe/teach), and each item keeps
   // its teach-vs-probe role for how the session presents it; only the ORDERING
-  // by weakness is dropped, and buildDeck re-shuffles the deck after this anyway.
+  // by weakness is dropped, and the deck is shuffled after this anyway.
   if (random) {
     const drillable: Array<{ id: FactId; teach: boolean }> = [
       ...probeCandidates.map((c) => ({ id: c.id, teach: false })),

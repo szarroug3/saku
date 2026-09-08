@@ -56,7 +56,6 @@ import type {
   Direction,
   FactId,
   HistoryFile,
-  QuizConfig,
   ResponseKind,
 } from "@/types";
 
@@ -82,8 +81,8 @@ export interface CardForm {
    * (see drill-screen.tsx's queuePitchCard) to force one specific slot to
    * render as a pitch-accent question — an ADDITIONAL card for an eligible
    * word's fact, never a substitute for its ordinary meaning-card showing.
-   * Never set by enabledFormsFor/buildCoverageDeck/buildDeck; those still
-   * produce only ordinary forms, exactly as before. */
+   * Never set by enabledFormsFor or buildCoverageDeck; those produce only
+   * ordinary forms. */
   pitch?: boolean;
 }
 
@@ -376,8 +375,8 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
  * corpus sentence-recognition card with no safe board to draw
  * (`pickRecognitionForFact` returning null). `isBoxSelected` — the THIRD
  * condition in `keep` — is deliberately NOT mirrored here: it depends on a
- * retry run's `retryBoxes`, which no caller of `coverageQuestionCount` /
- * `realQuestionCount` ever has in hand (the retry buttons in
+ * retry run's `retryBoxes`, which no caller of `coverageQuestionCount`
+ * ever has in hand (the retry buttons in
  * round-complete.tsx / session-complete.tsx label themselves off the raw
  * picked/box count via `retryButtonLabel`, never off this module) — see
  * those two call sites and `retryLeg` in quiz-session.tsx.
@@ -477,68 +476,6 @@ export function coverageQuestionCount(
     total += forms * repeats;
   }
   return total;
-}
-
-/**
- * SAK-210: the real number of questions a quiz will ask, for a config already
- * resolved to what the launch will actually run with (mode/length/limType
- * included — see slice-bar.tsx's `startQuiz`, which snapshots the live
- * builder config and, for a generator pool, forces `length: "limited",
- * limType: "cov"` the same way this must be told to). This is the SAME
- * three-way branch drill-screen.tsx's `onMount` and `engine/index.ts`'s
- * `buildDeck` use to decide how big the deck is — not a second guess at their
- * number:
- *
- *   cov   — full coverage: `coverageQuestionCount`, above. History-aware
- *           since SAK-210 round 2.
- *   count — `buildDeck`'s repeat-fill tops a non-empty POST-FILTER pool up to
- *           `limCount` exactly (drill mode; see its own doc comment), so the
- *           answer is the configured count itself REGARDLESS of history —
- *           `onMount`'s `usableForms` filter (the same history-dependent
- *           checks `coverageQuestionCount` now applies) runs on `rt.pool`
- *           BEFORE `buildDeck` sees it, but the repeat-fill still lands
- *           exactly on `limCount` for any non-empty post-filter pool, so
- *           there is nothing for this branch to thread `history` into. (A
- *           pool that history-filters down to fully empty would under-fill —
- *           a pre-existing edge this ticket did not introduce and is not
- *           the reported bug: it already happens today for a *structurally*
- *           empty pool, with no history involved at all, e.g. an ask config
- *           under which every selected fact has zero enabled forms.)
- *   endless — no cap, no fill, and — unlike coverage — NO per-fact form
- *           expansion either: outside the coverage branch, drill-screen.tsx's
- *           `onMount` keeps `rt.pool` as ONE entry per fact, filtered through
- *           `usableForms` — the SAME two history-dependent checks
- *           `coverageQuestionCount` applies, at fact granularity rather than
- *           per-form — and rolls a single form for it per showing (see
- *           ask-forms.ts's own header, "Endless/Count — rolls ONE of them per
- *           showing"). SAK-210 round 2: this branch is ALSO history-aware now
- *           — a fact whose only enabled forms are all history-blocked (e.g.
- *           an ask config offering only Audio for a word whose meaning
- *           collides with a known homophone) no longer counts as an askable
- *           card, matching `usableForms` exactly.
- *
- * BOARD MODES ("pairs", "grid") are NOT covered — their card count comes from
- * page-specific board-building (`playablePairBoards`, `gridFacts`) this
- * module doesn't own. A caller launching one of those should size its own
- * button off the same board builder instead of this function.
- */
-export function realQuestionCount(
-  facts: readonly FactId[],
-  cfg: Pick<QuizConfig, "length" | "limType" | "limCount" | "ask">,
-  history: HistoryFile,
-): number {
-  if (facts.length === 0) return 0;
-  if (cfg.length === "limited" && cfg.limType === "cov") {
-    return coverageQuestionCount(facts, cfg.ask, history);
-  }
-  if (cfg.length === "limited" && cfg.limType === "count") {
-    return cfg.limCount;
-  }
-  return facts.filter((f) =>
-    enabledFormsFor(f, cfg.ask).some((form) =>
-      formSurvivesHistory(f, form, history),
-    ),
-  ).length;
 }
 
 function fisherYates<T>(a: T[]): T[] {

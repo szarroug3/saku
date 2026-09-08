@@ -10,10 +10,6 @@ import {
   grammarMeaning,
 } from "@/data/grammar";
 import { VOCAB, wordMeaningFactId } from "@/data/vocab";
-import {
-  englishSentenceAsksOrdering,
-  englishSentenceAsksSelection,
-} from "@/lib/ask-config";
 import { enabledFormsFor, formIsMc } from "@/lib/ask-forms";
 import {
   boardIsUnambiguous,
@@ -146,14 +142,9 @@ describe("question matrix §4: sentences", () => {
     }
   });
 
-  test("ordering and planned selection remain independent settings", () => {
+  test("neither English sentence response manufactures a typed translation card", () => {
     const ordering = sentenceAsk({ englishResponses: ["ordering"] });
     const selection = sentenceAsk({ englishResponses: ["selection"] });
-    assert.equal(englishSentenceAsksOrdering(ordering), true);
-    assert.equal(englishSentenceAsksSelection(ordering), false);
-    assert.equal(englishSentenceAsksOrdering(selection), false);
-    assert.equal(englishSentenceAsksSelection(selection), true);
-
     // The drill-form generator owns Japanese sentence recognition only.
     // Neither English response may manufacture a typed translation card.
     for (const config of [ordering, selection]) {

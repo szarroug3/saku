@@ -24,7 +24,7 @@ import {
   patternEntry,
   patternMeaningFactId,
 } from "@/data/grammar";
-import { buildDeck, buildMcOptions, checkTyped, questionsFor } from "@/lib/engine";
+import { buildMcOptions, checkTyped, questionsFor } from "@/lib/engine";
 import { factInfo } from "@/lib/facts";
 import { LIB_ENTRIES, libEntry } from "@/lib/library/entries";
 import { search } from "@/lib/library/search";
@@ -165,10 +165,13 @@ describe("a selected pattern DRILLS", () => {
     assert.equal(opts.filter((o) => factInfo(o)!.glyph === answer).length, 1);
   });
 
-  test("a built deck of grammar facts asks real questions, never zero-option ones", () => {
+  test("grammar facts ask real questions, never zero-option ones", () => {
     // The bug this guards: a grammar fact used to fall through to kanaQuestions
     // and render with no options. Every grammar fact must now yield either a
-    // gradeable typed answer or a multi-option board.
+    // gradeable typed answer or a multi-option board. Asked of the facts
+    // themselves since SAK-407 — this used to run them through `buildDeck`,
+    // which only shuffled and capped them and has gone with the rest of the
+    // engine's unreached half.
     const facts = [
       patternMeaningFactId("te-kara"),
       // A per-ending te-form production fact is exactly the kind that must not
@@ -177,12 +180,7 @@ describe("a selected pattern DRILLS", () => {
       classProductionFactId("tai", "v5k"),
       patternMeaningFactId("nakya"),
     ];
-    for (const f of buildDeck(facts, {
-      length: "endless",
-      limType: "count",
-      limCount: 0,
-      mode: "drill",
-    } as never)) {
+    for (const f of facts) {
       const info = factInfo(f)!;
       // A real answer to grade against (gloss, or built form) — never the empty
       // string the fallback would have shown.

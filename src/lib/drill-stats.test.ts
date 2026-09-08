@@ -44,7 +44,6 @@ function sessionWith(stats: SessionStats): StudySession {
     facts: POOL,
     teach: [],
     what: "test",
-    snapshot: {} as StudySession["snapshot"],
     startedAt: 0,
     round: 1,
     phase: "drilling",

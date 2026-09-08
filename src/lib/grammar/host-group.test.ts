@@ -222,9 +222,9 @@ describe("planSession generalises past two hosts (te-sequence: verb + adj-i + ad
 // SAK-203: grammarHostGroupOf (above) stopped being fine-grained enough the
 // day production split per conjugation class — see host-group.ts's own
 // "SAK-203: vehicle coverage" section for the full "why". These tests prove
-// the two new lookups read the right thing off REAL fact ids; the buildDeck
+// the two new lookups read the right thing off REAL fact ids; the deck
 // integration tests (engine/build-deck-grammar.test.ts) prove wiring them
-// into pairsKept/spreadGrammarVehicles actually fixes the reported bug.
+// passes they fed (gone in SAK-407) actually fixed the reported bug.
 
 describe("grammarVehicleBucketOf — the cross-recipe vehicle identity", () => {
   test("the same conjugation CLASS, on different recipes, is the same bucket", () => {

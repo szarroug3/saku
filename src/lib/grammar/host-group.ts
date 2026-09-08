@@ -92,10 +92,12 @@ export function grammarHostGroupOf(fact: FactId): HostGroup | null {
 // WORD, instead of just the host, makes `pairsKept` protect "one fact per
 // ENDING" for free, the same way it already protects "one fact per HOST".
 // `grammarVehicleSlotOf` below is that finer key; `grammarVehicleBucketOf` is
-// its recipe-agnostic half, used the other place SAK-203 needs (see
-// vehicle-spread.ts): spacing cards that share a vehicle WORD apart even
-// across DIFFERENT recipes, which `grammarHostGroupOf` (keyed per recipe) has
-// no way to see at all.
+// its recipe-agnostic half, which reads a vehicle WORD across DIFFERENT
+// recipes, something `grammarHostGroupOf` (keyed per recipe) cannot see at
+// all. Both lost their callers in SAK-407 when the deck builder they fed went
+// with the rest of the engine's unreached half; they are kept, with their
+// tests, because they are the only written-down account of what a vehicle
+// slot is.
 
 /**
  * The vehicle bucket a production fact draws from — which conjugation CLASS,
@@ -111,9 +113,9 @@ export function grammarHostGroupOf(fact: FactId): HostGroup | null {
  * decides purely from (bucket, known-word history) — which recipe is asking
  * never enters into it. te-kara's @iku fact and te-request's @iku fact both
  * key to `"verb:行く"` here, and that pairing is exactly SAK-203's example 1:
- * "how do you say after 行く" next to "how do you say please 行く". See
- * `vehicle-spread.ts`'s `spreadGrammarVehicles`, the caller that uses this
- * cross-recipe reading.
+ * "how do you say after 行く" next to "how do you say please 行く". The deck
+ * pass that read it this way, `spreadGrammarVehicles`, went in SAK-407 with
+ * the deck builder that ran it.
  *
  * NOT A GUARANTEE OF THE EXACT WORD, AND THAT IS FINE. A regular class with
  * more than one legal member (v5u, v5m, v1 in vehicles.ts's VERB_VEHICLES)
@@ -153,9 +155,9 @@ export function grammarVehicleBucketOf(fact: FactId): string | null {
  * from the SAME bucket collapse to one slot exactly as `grammarHostGroupOf`
  * already collapsed same-host facts.
  *
- * Fed to `pairsKept` (budget.ts, unchanged) wherever a length cut must not be
- * allowed to quietly keep one class/irregular and drop the rest — see
- * `buildDeck` (engine/index.ts), the one live call site.
+ * Written for `pairsKept` (budget.ts), so a length cut could not quietly keep
+ * one class or irregular and drop the rest. Its one caller was `buildDeck`,
+ * which went in SAK-407; nothing calls this now.
  */
 export function grammarVehicleSlotOf(fact: FactId): HostGroup | null {
   const bucket = grammarVehicleBucketOf(fact);

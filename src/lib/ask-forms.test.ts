@@ -19,7 +19,6 @@ import {
   enabledFormsFor,
   formIsMc,
   configIsReachable,
-  realQuestionCount,
   type CardForm,
 } from "@/lib/ask-forms";
 import { ALL_FACTS, entryOf, factsOf } from "@/lib/facts";
@@ -393,14 +392,14 @@ describe("buildCoverageDeck", () => {
 
 // SAK-210: "Quiz me N" printed quizFormCount's naive one-form-per-fact guess
 // (slice.ts), while the coverage branch of drill-screen.tsx's onMount — the
-// DEFAULT run mode (quiz-config.tsx's defaultConfig has limType: "cov") —
+// DEFAULT run mode of the app this came from —
 // actually builds from buildCoverageDeck's full per-fact form product, then
 // multiplies each entry by its construction-category repeat count. A word
 // reading alone (see "enabledFormsFor" above) is already two forms under
 // default settings, so any slice containing one was undercounted by one for
 // every such fact it held — the reported 28-vs-30 is that gap, not a
 // generator-only edge case.
-describe("coverageQuestionCount / realQuestionCount — the button's count must be the deck's count", () => {
+describe("coverageQuestionCount — the button's count must be the deck's count", () => {
   test("an ordinary multi-form fact is undercounted by the naive one-per-fact guess", () => {
     // The exact shape of the bug: `reading` alone produces 2 real cards (text
     // + audio, per the enabledFormsFor test above), but a naive count keyed
@@ -452,37 +451,6 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
     assert.equal(coverageQuestionCount(facts, textOnlyJp2en, NOBODY), 11);
   });
 
-  test("realQuestionCount, cov mode: delegates to coverageQuestionCount", () => {
-    const cfg = { length: "limited" as const, limType: "cov" as const, limCount: 50, ask: ALL };
-    assert.equal(
-      realQuestionCount([reading, generatorFact], cfg, NOBODY),
-      coverageQuestionCount([reading, generatorFact], ALL, NOBODY),
-    );
-  });
-
-  test("realQuestionCount, count mode: the configured cap, exactly (buildDeck's repeat-fill+pairsKept always lands there for a non-empty pool)", () => {
-    const cfg = { length: "limited" as const, limType: "count" as const, limCount: 7, ask: ALL };
-    assert.equal(realQuestionCount([reading, meaning], cfg, NOBODY), 7);
-    assert.equal(realQuestionCount([], cfg, NOBODY), 0, "an empty pool asks nothing, cap or not");
-  });
-
-  test("realQuestionCount, endless mode: one card per fact with a usable form, NOT one per form", () => {
-    // Outside coverage, drill-screen.tsx keeps rt.pool at one entry per fact
-    // (filtered to facts with ≥1 usable form) and rolls a single form per
-    // showing — so `reading`'s two forms still cost exactly one card.
-    const cfg = { length: "endless" as const, limType: "cov" as const, limCount: 50, ask: ALL };
-    assert.equal(realQuestionCount([reading, meaning], cfg, NOBODY), 2);
-    const noForms: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
-      english: { answers: [] },
-    };
-    assert.equal(
-      realQuestionCount([reading], { ...cfg, ask: noForms }, NOBODY),
-      0,
-      "a fact with no enabled form contributes no card",
-    );
-  });
 });
 
 // SAK-210 ROUND 2: round 1 made coverageQuestionCount count ENABLED forms —
@@ -494,7 +462,7 @@ describe("coverageQuestionCount / realQuestionCount — the button's count must 
 // own doc comment assumed — it is exactly the sentence-recognition case
 // below, which scales with how much of a pattern's tagged corpus the learner
 // can currently read.
-describe("coverageQuestionCount / realQuestionCount are HISTORY-AWARE (SAK-210 round 2)", () => {
+describe("coverageQuestionCount is HISTORY-AWARE (SAK-210 round 2)", () => {
   // 箸/橋/端 all read はし (see homophone.test.ts) — the same fixture, reused
   // rather than invented, since it is exactly the collision
   // meaningMustShowGlyph exists to detect.

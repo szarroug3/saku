@@ -6,7 +6,6 @@
 
 import { useMemo } from "react";
 
-import { askFromAudioPrompts } from "@/lib/ask-config";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -34,7 +33,7 @@ export function fromConfig(cfg: QuizConfig): SkySettingsValues {
 /** A change in the Sky's words as the app's config patch. */
 export function toConfig(patch: Partial<SkySettingsValues>): Partial<QuizConfig> {
   const out: Partial<QuizConfig> = {};
-  if (patch.audioPrompts !== undefined) { out.audioPrompts = patch.audioPrompts; out.ask = askFromAudioPrompts(patch.audioPrompts); }
+  if (patch.audioPrompts !== undefined) out.audioPrompts = patch.audioPrompts;
   if (patch.pitchQuestions !== undefined) out.pitchQuestions = patch.pitchQuestions;
   if (patch.voice !== undefined) out.voiceName = patch.voice;
   if (patch.timer !== undefined) out.timer = patch.timer;

@@ -45,7 +45,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import type { HistoryFile, QuizConfig } from "@/types";
+import type { HistoryFile } from "@/types";
 
 import { kanaEntry, kanaFact } from "@/data/characters";
 import { kanjiEntry, meaningFactId as kanjiMeaningFactId } from "@/data/kanji";
@@ -86,8 +86,6 @@ import { weakestFacts } from "@/lib/decks";
 import { itemHeadline } from "@/lib/content/headline";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { radicalConfusableTip } from "@/data/radical-tips";
-import { realQuestionCount } from "@/lib/ask-forms";
-import type { AskConfig } from "@/types";
 
 import * as SL from "@/lib/library/server-lookups";
 
@@ -641,26 +639,3 @@ describe("teach-walk pass-throughs", () => {
   });
 });
 
-/* -------------------------------------------------------------------------
- * QUIZ-ME BUTTON COUNT
- * ---------------------------------------------------------------------- */
-
-describe("getRealQuestionCount", () => {
-  const ALL: AskConfig = {
-    japanese: { prompts: ["text", "audio"], responses: ["definition", "romaji"], answers: ["typed", "mc"] },
-    sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
-    english: { answers: ["typed", "mc"] },
-  };
-  const cfg: Pick<QuizConfig, "length" | "limType" | "limCount" | "ask"> = {
-    length: "endless",
-    limType: "cov",
-    limCount: 50,
-    ask: ALL,
-  };
-
-  test("mirrors realQuestionCount for the same (facts, cfg, history)", async () => {
-    const facts = [wordReadingFactId("人"), wordMeaningFactId("人")];
-    assert.equal(await SL.getRealQuestionCount(facts, cfg, NOBODY), realQuestionCount(facts, cfg, NOBODY));
-    assert.equal(await SL.getRealQuestionCount([], cfg, NOBODY), 0);
-  });
-});

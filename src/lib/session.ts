@@ -48,7 +48,6 @@ import type {
   SessionStats,
 } from "@/types";
 
-import type { QuizSnapshot } from "@/lib/quiz-session-types";
 
 export type SessionPhase =
   /** Round 1 only, and only when the budget put new material in the session:
@@ -127,8 +126,6 @@ export interface StudySession {
    * reason as ActiveQuiz.what: the selection is a query over history, and
    * history moves the moment you answer anything. */
   what: string;
-  /** Builder settings frozen at start, same rule as a one-off quiz. */
-  snapshot: QuizSnapshot;
   startedAt: number;
   /** The round being drilled, or the one just finished. 1-based. */
   round: number;

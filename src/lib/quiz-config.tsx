@@ -24,31 +24,20 @@ import { CFG_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { useSettings } from "@/lib/use-settings";
 import { DEFAULT_VOICE_ID, isVoiceId } from "@/lib/voice";
-import { allGridResponses, allPairResponses, askFromAudioPrompts } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
 export function defaultConfig(): QuizConfig {
   return {
-    // Nothing offers another mode: the screens that did went with the old app,
-    // so this is "drill" for every learner and is pinned again on every read.
-    mode: "drill",
-    // No per-mode chooser either. Both always drill the full response set.
-    pairResponses: allPairResponses(),
-    gridResponses: allGridResponses(),
     // The one user-facing "how to ask" knob, and it lives on Settings. Text is
-    // always on; this adds audio. `ask` is DERIVED from it, so it is never read
-    // back from storage. Default ON: audio is the richer default, and because
-    // text is always present, production cards stay reachable either way.
+    // always on; this adds audio. Default ON: audio is the richer default, and
+    // because text is always present, production cards stay reachable either
+    // way. The derived `ask` it used to be stored beside went in SAK-407 — it
+    // was rebuilt from this on every read and never read back.
     audioPrompts: true,
-    ask: askFromAudioPrompts(true),
     // SAK-138: a separate knob from audioPrompts (see types/index.ts's doc
     // comment on pitchQuestions). Default ON, same reasoning as audioPrompts.
     pitchQuestions: true,
-    length: "limited",
-    limType: "cov",
-    limCount: 50,
-    retries: "lim",
-    retryN: 2,
+    retries: 2,
     timer: false,
     timerSec: 10,
     fonts: [...JP_FONTS],
@@ -70,6 +59,17 @@ export function defaultConfig(): QuizConfig {
 const bool = (v: unknown, fallback: boolean): boolean => (typeof v === "boolean" ? v : fallback);
 const num = (v: unknown, fallback: number): number =>
   typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+/** Retries, from either shape (SAK-407). A number is already the current one.
+ * A stored `"none" | "lim" | "unl"` is the old mode, and comes with its own
+ * count: "none" is 0, "unl" is the 9 the quiz has always read it as, and "lim"
+ * is the `retryN` that rode beside it. A learner who set 3 retries keeps 3. */
+function retriesFrom(raw: Record<string, unknown>, fallback: number): number {
+  if (typeof raw.retries === "number") return num(raw.retries, fallback);
+  if (raw.retries === "none") return 0;
+  if (raw.retries === "unl") return 9;
+  return num(raw.retryN, fallback);
+}
 
 /**
  * Coerce a parsed/stored config object (from localStorage OR the server) into a
@@ -105,17 +105,9 @@ function normalizeConfig(saved: unknown): QuizConfig {
         ? [JP_FONTS[0]]
         : [...JP_FONTS];
     return {
-      mode: base.mode,
-      pairResponses: base.pairResponses,
-      gridResponses: base.gridResponses,
       audioPrompts,
-      ask: askFromAudioPrompts(audioPrompts),
       pitchQuestions: bool(raw.pitchQuestions, base.pitchQuestions),
-      length: raw.length === "endless" ? "endless" : "limited",
-      limType: raw.limType === "count" ? "count" : "cov",
-      limCount: num(raw.limCount, base.limCount),
-      retries: raw.retries === "none" || raw.retries === "unl" ? raw.retries : "lim",
-      retryN: num(raw.retryN, base.retryN),
+      retries: retriesFrom(raw, base.retries),
       timer: bool(raw.timer, base.timer),
       timerSec: num(raw.timerSec, base.timerSec),
       fonts,
