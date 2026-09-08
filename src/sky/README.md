@@ -2221,3 +2221,25 @@ caps, "HELP ME · 2 TRIES LEFT · 8S". It is "Help me" again. The tries are
 their own muted line under it, in the words the card feedback already uses
 ("2 tries left.", "One more try."), and the seconds sit beside the timer
 bar they count down.
+
+### Nine entries in the bar become six, plus two to read (2026-09-08, SAK-358)
+
+Before: Planetarium, Observatory, Atlas, Practice, Sessions, Settings,
+Account, How Saku works, About, with "Sign in" on the right going to the
+same page as Account, or "Sign out" there when signed in.
+
+After: Planetarium, Observatory, Atlas, Practice, Sessions, Settings, then
+a hairline, then How Saku works and About at the far end of the row, in the
+same small caps but not bold. `ShellEntry` carries `quiet?: boolean` and
+`SkyShell` does the grouping; the Menu fold on a phone makes the same
+group, with a rule across it instead of down.
+
+The right-hand slot is the account and nothing else: "Sign in" signed out,
+"Account" signed in, both links to the same page. Signing out left the bar
+and lives on the account page, under "You", which already had the button.
+
+Not done: the learner's name in place of the word "Account". The layout
+knows only `signedIn`; the name is in the session's claims, and reading it
+there is a second `getClaims()` on every page in the app, which is the cost
+SAK-382 spent the week cutting. One line to change if the layout ever holds
+the claims for another reason.
