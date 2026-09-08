@@ -2151,3 +2151,38 @@ Nouns: "Tonight's lesson" and "How it went" already were. Three changed.
 * The rest: "Take a break and come back." is now "A break between rounds".
 
 `e2e/sky.spec.ts` asserts the two new headings in place of the old ones.
+
+### Casing, and what a standing means (2026-09-08, SAK-363)
+
+Four small disagreements, from a walkthrough that read the app as several
+hands.
+
+**Buttons are sentence case.** "Start Lesson" and "Start Lesson anyway" on
+the Observatory were the only two that were not. They are "Start lesson"
+and "Start lesson anyway" now.
+
+**A standing's word gets its first letter, and only that.** CSS
+`capitalize` was painting "Getting There" in the legend, the standing key,
+the tally, the Atlas rail and the practice chips, while How Saku works, the
+tooltips and the results all said "Getting there". The labels in `STANDING`
+stay lowercase, because they are also spoken inside a sentence ("Hide
+getting there", a coverage bar's read-out); `standingWord(standing)` in
+`lib/standing.ts` is what anything showing the word on its own calls, and
+every `capitalize` is gone. The Atlas's headline count made the same
+mistake in JavaScript, running the label through `titleCase`: it calls
+`standingWord` too, so a filtered shelf reads "43 Getting there".
+`titleCase` stays for a shelf's unit, "214 Radicals Known".
+
+**Two meanings did not match the page that explains them.** They are the
+short form of those sentences now:
+
+* slipping: "You haven't tested this recently" is now "You had this, and
+  Saku no longer expects you'd get it right today".
+* not seen: "You haven't learned this yet" is now "You haven't opened this
+  in a lesson, and haven't claimed it".
+
+**Title case after a number is for headline counts only.** The line that
+sums a panel up title-cases its unit: "3 of 23,973 Discovered", "0 of 12
+Pieces", "17 of 214 Radicals Known". Prose in a row is prose, whatever
+number it starts with: "and 15,236 more that match, not listed here",
+"missed 1 time". A standing is never a unit, so it never gets title case.

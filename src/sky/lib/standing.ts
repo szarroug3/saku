@@ -49,11 +49,23 @@ export const STANDING: Record<Standing, { label: string; dot: string; text: stri
   solid: { label: "solid", dot: "bg-sky-solid", text: "text-sky-solid", border: "border-sky-solid/40", meaning: "You got at least 8 of the last 10 attempts correct" },
   "getting-there": { label: "getting there", dot: "bg-sky-getting-there", text: "text-sky-getting-there", border: "border-sky-getting-there/40", meaning: "You got at least 6 of the last 10 attempts correct" },
   shaky: { label: "shaky", dot: "bg-sky-shaky", text: "text-sky-shaky", border: "border-sky-shaky/40", meaning: "You got fewer than 6 of the last 10 attempts correct" },
-  slipping: { label: "slipping", dot: "bg-sky-slipping", text: "text-sky-slipping", border: "border-sky-slipping/40", meaning: "You haven't tested this recently" },
+  slipping: { label: "slipping", dot: "bg-sky-slipping", text: "text-sky-slipping", border: "border-sky-slipping/40", meaning: "You had this, and Saku no longer expects you'd get it right today" },
   claimed: { label: "untested", dot: "bg-sky-claimed", text: "text-sky-claimed", border: "border-sky-claimed/40", meaning: "Opened in a lesson or marked as known, but not tested yet" },
   // The app's word is "not seen"; the sky's is "undiscovered" (Sam, 2026-09-04), since the sky is about discovery.
-  "not-seen": { label: "undiscovered", dot: "bg-sky-not-seen", text: "text-sky-muted", border: "border-sky-line", meaning: "You haven't learned this yet" },
+  "not-seen": { label: "undiscovered", dot: "bg-sky-not-seen", text: "text-sky-muted", border: "border-sky-line", meaning: "You haven't opened this in a lesson, and haven't claimed it" },
 };
+
+/**
+ * The standing's word as a line starts it: "Getting there", not "Getting
+ * There" (SAK-363). `label` stays lowercase because it is also spoken inside
+ * a sentence ("Hide getting there", a coverage bar's read-out); anything that
+ * shows the word on its own uses this. CSS `capitalize` was doing it before,
+ * and capitalised every word.
+ */
+export function standingWord(standing: Standing): string {
+  const label = STANDING[standing].label;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 /** True when the app is willing to count it as known: proved, or claimed. The
  * same bar the current Library's "known" filter uses, per fact. */

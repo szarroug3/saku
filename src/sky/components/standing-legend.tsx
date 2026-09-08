@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { useEqualChips } from "@/sky/components/chip-row";
 import { SkyInfo } from "@/sky/components/sky-info";
 import type { CoverageCounts } from "@/sky/lib/coverage";
-import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
+import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 
 function Dot({ standing, className = "" }: { standing: Standing; className?: string }) {
   return <span aria-hidden className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${STANDING[standing].dot} ${className}`} />;
@@ -25,10 +25,10 @@ export function StandingChip({ standing, count, title }: { standing: Standing; c
   return (
     <span
       title={title ?? s.meaning}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-sky-ui text-[12.5px] font-semibold capitalize ${s.border} ${s.text}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-sky-ui text-[12.5px] font-semibold ${s.border} ${s.text}`}
     >
       <Dot standing={standing} />
-      {s.label}
+      {standingWord(standing)}
       {count !== undefined && <span className="font-normal tabular-nums text-sky-muted">{count}</span>}
     </span>
   );
@@ -108,9 +108,9 @@ export function StandingKey({ standings = STANDING_ORDER, className = "" }: { st
     <dl className={`grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 font-sky-ui text-[12.5px] text-sky-ink ${className}`}>
       {standings.map((standing) => (
         <div key={standing} className="contents">
-          <dt className="inline-flex items-center gap-1.5 capitalize">
+          <dt className="inline-flex items-center gap-1.5">
             <Dot standing={standing} />
-            <span className={STANDING[standing].text}>{STANDING[standing].label}</span>
+            <span className={STANDING[standing].text}>{standingWord(standing)}</span>
           </dt>
           <dd className="text-sky-muted">{STANDING[standing].meaning}</dd>
         </div>
@@ -130,7 +130,7 @@ export function StandingTally({ counts, standings = STANDING_ORDER, empty = "Not
       {lines.map((s) => (
         <div key={s} className="contents">
           <dd className="text-right tabular-nums">{(counts[s] ?? 0).toLocaleString()}</dd>
-          <dt className={`capitalize ${STANDING[s].text}`}>{STANDING[s].label}</dt>
+          <dt className={STANDING[s].text}>{standingWord(s)}</dt>
         </div>
       ))}
     </dl>
@@ -166,7 +166,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
             tabIndex={live && !clickable ? 0 : undefined}
           >
             <Dot standing={standing} />
-            <dt className="capitalize text-sky-ink">{STANDING[standing].label}</dt>
+            <dt className="text-sky-ink">{standingWord(standing)}</dt>
             {n !== undefined && <dd className="ml-auto pl-2 tabular-nums">{n.toLocaleString()}</dd>}
           </Row>
         );
@@ -174,7 +174,7 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, extra = [],
       {extra.map((row) => (
         <div key={row.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden className="inline-flex h-2.5 w-2.5 items-center justify-center">{row.swatch}</span>
-          <dt className="capitalize text-sky-ink">{row.label}</dt>
+          <dt className="text-sky-ink">{row.label}</dt>
         </div>
       ))}
       {info && <SkyInfo label="What the standings mean" wide><StandingKey standings={standings} /></SkyInfo>}

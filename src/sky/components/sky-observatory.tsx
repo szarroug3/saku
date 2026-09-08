@@ -140,7 +140,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
       : summary.pieces === cap
         ? "A full lesson, right at the line."
         : `${cap - summary.pieces} more ${cap - summary.pieces === 1 ? "piece" : "pieces"} before this lesson gets uncomfortably large.`;
-  const startLabel = over ? "Start Lesson anyway" : "Start Lesson";
+  const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
   return (
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" height={height}>
@@ -218,7 +218,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonPath, ini
             {picks.length > 0 && lessonPath ? (
               <SkyButton variant={over ? "coral" : "solid"} block href={`${lessonPath}${lessonPath.includes("?") ? "&" : "?"}picks=${encodeURIComponent(picks.join(","))}`} className="mt-2 shrink-0 py-2.5">{startLabel}</SkyButton>
             ) : (
-              <SkyButton block disabled href="#" className="mt-3 shrink-0 py-2.5">Start Lesson</SkyButton>
+              <SkyButton block disabled href="#" className="mt-3 shrink-0 py-2.5">Start lesson</SkyButton>
             )}
           </SkyPanel>
         </aside>

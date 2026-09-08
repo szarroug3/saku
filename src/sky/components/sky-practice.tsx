@@ -28,7 +28,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
-import { STANDING, STANDING_ORDER } from "@/sky/lib/standing";
+import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
 
 export interface SkyPracticeProps {
   collections: readonly PracticeCollection[];
@@ -175,7 +175,7 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
             })}
           </Facet>
           <Facet title="Only things that are">
-            {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })} className="capitalize">{STANDING[s].label}</SkyChip>)}
+            {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })}>{standingWord(s)}</SkyChip>)}
           </Facet>
           <Facet title="Ask me for">
             {ASKS.map((a) => {

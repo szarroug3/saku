@@ -36,7 +36,7 @@ import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
-import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
+import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 import { useStreamedShelf } from "./use-streamed-shelf";
 import { isPage, type SkyItem, type SkyKind } from "@/sky/lib/types";
 
@@ -126,7 +126,9 @@ export interface SkyAtlasProps {
 }
 
 const SEARCH_DELAY = 180;
-/** Labels after a number are title case (Sam's rule): "17 of 214 Radicals Known". */
+/** A headline count title-cases its unit (Sam's rule): "17 of 214 Radicals
+ * Known". A standing is not a unit: it is a word the app speaks, so it gets
+ * its first letter only, "43 Getting there" (SAK-363). */
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** The panel's width to start, and the narrowest it can be dragged. */
 const PANEL_WIDTH = 360;
@@ -201,8 +203,8 @@ export function SkyAtlas({ data, lookup, observatoryHref, quizHref, written: Wri
   // shelf shows no status list, no coverage, and ignores the status filter
   const tracked = !shelf || !isPage(shelf.kind);
   const filter = tracked ? status : null;
-  // "2,136 Shown", or with a status picked "43 Shaky" (Sam's wording: title case)
-  const shownWord = filter ? titleCase(STANDING[filter].label) : "Shown";
+  // "2,136 Shown", or with a status picked "43 Shaky"
+  const shownWord = filter ? standingWord(filter) : "Shown";
   const part = shelf?.id === "kanji" ? component : null;
   const keep = useCallback((id: string) => { const it = graph.itemOf(id); return !!it && (filter === null || it.standing === filter) && (part === null || it.kind !== "kanji" || !!it.parts?.includes(part)); }, [graph, filter, part]);
 

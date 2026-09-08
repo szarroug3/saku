@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import { RoundButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkySurface } from "@/sky/components/sky-panel";
-import { STANDING, STANDING_ORDER, type Standing } from "@/sky/lib/standing";
+import { STANDING, STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 
 export interface RailCollection { id: string; title: string; total: number }
 
@@ -30,11 +30,11 @@ export interface AtlasRailProps {
 
 /** A rail row: a name with a count on the right, and a dot before it when
  * the row stands for a standing. */
-function RailRow({ on, dot, label, capitalize = false, count, onClick }: { on: boolean; dot?: ReactNode; label: string; capitalize?: boolean; count?: number; onClick: () => void }) {
+function RailRow({ on, dot, label, count, onClick }: { on: boolean; dot?: ReactNode; label: string; count?: number; onClick: () => void }) {
   return (
     <button type="button" aria-pressed={on} onClick={onClick} className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] ${on ? "bg-sky-card-strong font-semibold text-sky-ink" : "text-sky-muted hover:bg-sky-card hover:text-sky-ink"}`}>
       {dot}
-      <span className={`min-w-0 flex-1 truncate ${capitalize ? "capitalize" : ""}`}>{label}</span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
       {count !== undefined && <span className="text-[11px] tabular-nums text-sky-faint">{count.toLocaleString()}</span>}
     </button>
   );
@@ -57,7 +57,7 @@ export function AtlasRail({ collections, open, onOpen, counts, total, status, on
           <Eyebrow className="mb-1.5">Your status</Eyebrow>
           <RailRow on={status === null} dot={dot("border border-sky-line")} label="Everything" count={total} onClick={() => onStatus(null)} />
           {STANDING_ORDER.map((s) => (
-            <RailRow key={s} on={status === s} dot={dot(STANDING[s].dot)} label={STANDING[s].label} capitalize count={counts[s]} onClick={() => onStatus(status === s ? null : s)} />
+            <RailRow key={s} on={status === s} dot={dot(STANDING[s].dot)} label={standingWord(s)} count={counts[s]} onClick={() => onStatus(status === s ? null : s)} />
           ))}
         </div>
       )}

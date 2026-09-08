@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isInSky, isKnown, needsWork, STANDING, STANDING_ORDER, standingOf, type Standing, type StandingEvidence } from "@/sky/lib/standing";
+import { isInSky, isKnown, needsWork, STANDING, STANDING_ORDER, standingOf, standingWord, type Standing, type StandingEvidence } from "@/sky/lib/standing";
 
 // The ONE place Sky code reaches into the app, and it is a test: the point of
 // the Sky's copy of the decision table is that it says what the app says, and
@@ -49,6 +49,15 @@ describe("standingOf, the Sky's copy of the app's decision", () => {
     assert.deepEqual(STANDING_ORDER.filter(isKnown), ["solid", "claimed"]);
     assert.deepEqual(STANDING_ORDER.filter((s) => !isInSky(s)), ["not-seen"]);
     assert.deepEqual(STANDING_ORDER.filter(needsWork), ["shaky", "slipping"]);
+  });
+
+  it("a standing shown on its own gets its first letter only, never every word", () => {
+    // SAK-363: CSS `capitalize` was writing "Getting There" in the legend, the
+    // Atlas rail and the practice chips while the rest of the app said
+    // "Getting there".
+    assert.equal(standingWord("getting-there"), "Getting there");
+    assert.equal(standingWord("not-seen"), "Undiscovered");
+    for (const s of STANDING_ORDER) assert.equal(standingWord(s).slice(1), STANDING[s].label.slice(1));
   });
 
   it("every standing paints through its own alias token, and only not seen borrows muted for text", () => {
