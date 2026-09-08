@@ -4,8 +4,16 @@
 // grade, and a retry of the ones picked. Split from the Quiz so the room
 // where questions are asked and the room where they are looked back on
 // are two components, not one long one.
+//
+// Two components here, not one (SAK-420). `QuizResults` is the container: it
+// is what the Quiz turns into when the deck runs out, and it OWNS the
+// recording, which is the one thing on this screen that is not a picture of
+// what already happened. The answers go to whoever records them the moment it
+// appears, and it says where that has got to. `HowItWent` under it is the
+// screen itself and knows nothing about promises. The Quiz used to hold the
+// save state and thread a dozen props through to here.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { PitchComponent } from "@/sky/components/lesson-card";
 import { RecipeNameForm } from "@/sky/components/recipe-name-form";
@@ -29,14 +37,13 @@ export const VERDICT: Record<Grade, string> = {
  * Where the run's record has got to.
  *
  * "no" is a quiz nobody is recording (the sample deck), which says nothing at
- * all. The other three are the Quiz's own `saved` state, shown here rather
- * than kept to itself: the screen paints in the click that ends the quiz, and
- * for a visitor the record does not exist until a server action has turned
- * the answers into one (SAK-406 left this as the open half, SAK-410 closed
- * it). Leaving inside that window lost the quiz, so the screen says where it
- * is and the way back waits for it.
+ * all. The other three are this screen's own: it paints in the click that ends
+ * the quiz, and for a visitor the record does not exist until a server action
+ * has turned the answers into one (SAK-406 left this as the open half, SAK-410
+ * closed it). Leaving inside that window lost the quiz, so the screen says
+ * where it is and the way back waits for it.
  */
-export type SaveState = "no" | "saving" | "saved" | "failed";
+type SaveState = "no" | "saving" | "saved" | "failed";
 
 /** What the screen says while the record is on its way, and after. */
 const SAVE_LINE: Record<Exclude<SaveState, "no">, string> = {
@@ -45,14 +52,19 @@ const SAVE_LINE: Record<Exclude<SaveState, "no">, string> = {
   failed: "Could not record this. Your schedule is unchanged.",
 };
 
-interface QuizResultsProps {
-  cards: readonly QuizCard[];
-  answers: Readonly<Record<string, QuizAnswer>>;
-  /** How the recording is going. See SaveState. */
-  save: SaveState;
-  /** Where this quiz came from, and what to call it (SAK-353). */
+/** What the end of a deck offers, and where its answers go.
+ *
+ * The Quiz hands this straight through as its own `results` prop: none of it
+ * is anything the room where questions are asked has an opinion about. */
+interface QuizEnding {
+  /** Where this quiz came from, and what to call it (SAK-353). The empty
+   * deck's one button is this too: there is nothing else to do there. */
   back: WayBack;
-  pitch?: PitchComponent;
+  /** Where the answers go: the schedule, or practice's own note of a miss.
+   * A deck nobody records (the sample) has none, and this screen stays quiet
+   * about saving rather than claiming anything. */
+  onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
+  /** Starts a new quiz of just the cards picked here. */
   onRetry?: (cardIds: readonly string[]) => void;
   /** Keep the recipe this run came from, under a name, without leaving the
    * results to do it (SAK-395). */
@@ -63,17 +75,56 @@ interface QuizResultsProps {
   /** What comes after this round, when there is a next one (a lesson's
    * quiz rests, then runs again): the primary action, ahead of the way back. */
   next?: { label: string; onClick: () => void };
+}
+
+interface QuizResultsProps {
+  cards: readonly QuizCard[];
+  answers: Readonly<Record<string, QuizAnswer>>;
+  /** Everything about the end of this deck. See QuizEnding. */
+  ending: QuizEnding;
+  pitch?: PitchComponent;
   height?: string;
 }
 
-export function QuizResults({ cards, answers, save, back, pitch: Pitch, onRetry, onSave, savedNames = [], next, height }: QuizResultsProps) {
+/**
+ * The results screen, and the recording that goes with it.
+ *
+ * The answers go the moment this appears, which is the click that ended the
+ * quiz. `save` opens at "saving" rather than at nothing, because a first frame
+ * saying nothing and a second saying "Saving this run." would be a flicker
+ * rather than news: by the time anything is painted the answers are already on
+ * their way.
+ *
+ * Once, and once only. This screen appears once per run, but an effect is not
+ * a promise of that: React runs one twice over in development on purpose, and
+ * this one writes to a schedule. The ref says whether it has gone, and the
+ * recorder is read through a second ref so a caller passing a fresh closure
+ * every render does not look like a reason to send it again.
+ */
+export function QuizResults({ cards, answers, ending, pitch, height }: QuizResultsProps) {
+  const list = cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a);
+  const [save, setSave] = useState<SaveState>(ending.onFinish ? "saving" : "no");
+  // read on the first render and never again, which is the point: what goes is
+  // the run as it stood when this screen appeared
+  const record = useRef<{ send: QuizEnding["onFinish"]; answers: readonly QuizAnswer[] }>({ send: ending.onFinish, answers: list });
+  const sent = useRef(false);
+  useEffect(() => {
+    if (sent.current) return;
+    sent.current = true;
+    const { send, answers: going } = record.current;
+    send?.(going).then(() => setSave("saved"), () => setSave("failed"));
+  }, []);
+
+  return <HowItWent cards={cards} answers={answers} list={list} save={save} ending={ending} pitch={pitch} height={height} />;
+}
+
+function HowItWent({ cards, answers, list, save, ending: { back, onRetry, onSave, savedNames = [], next }, pitch: Pitch, height }: QuizResultsProps & { list: readonly QuizAnswer[]; save: SaveState }) {
   // rows picked for a retry of just those; shift picks a run
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // the naming box opens here rather than on another page
   const [naming, setNaming] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [lastPick, setLastPick] = useState<number | null>(null);
-  const list = cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a);
   const counts = tally(list);
   const unanswered = cards.length - list.length;
 

@@ -23,7 +23,7 @@ import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/compo
 import { QuizQuestions } from "@/sky/components/quiz-questions";
 import { QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
-import { QuizResults, type SaveState } from "@/sky/components/quiz-results";
+import { QuizResults } from "@/sky/components/quiz-results";
 import { useNarrow } from "@/sky/components/use-narrow";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -104,9 +104,6 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
   const [given, setGiven] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
-  // where the run's record has got to. Handed to the results rather than kept
-  // here: see SaveState in quiz-results.tsx for why the screen has to say.
-  const [saved, setSaved] = useState<SaveState>("no");
   const input = useRef<HTMLInputElement>(null);
   // the timer's clock: read every quarter second while a timed card is
   // open, and when each card was first shown (set on the tick, so the
@@ -174,17 +171,12 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
    * just settled is the one that settled it, not the one on screen. */
   const advance = (from: QuizPass) => {
     setGiven(""); setFeedback(null);
-    const next = nextOpen(from, cards);
-    if (next.finished) finish(next); else setPass(next);
+    setPass(nextOpen(from, cards));
   };
 
-  const finish = (from: QuizPass) => {
-    const over = finishPass(from);
-    setPass(over);
-    if (!onFinish) return;
-    setSaved("saving");
-    onFinish(passAnswers(over, cards)).then(() => setSaved("saved"), () => setSaved("failed"));
-  };
+  /** Done with the deck, whatever is left in it. Where the answers go from
+   * here is the results screen's own business (SAK-420). */
+  const finish = (from: QuizPass) => setPass(finishPass(from));
 
   /** The card's answer written into the pass, its position unmoved: a miss
    * stays on its own reveal, and a right answer is moved on separately. */
@@ -333,7 +325,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} save={saved} back={back} pitch={pitch} onRetry={onRetry} onSave={onSave} savedNames={savedNames} next={next} height={height} />;
+    return <QuizResults cards={cards} answers={answers} ending={{ back, onFinish, onRetry, onSave, savedNames, next }} pitch={pitch} height={height} />;
   }
 
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
