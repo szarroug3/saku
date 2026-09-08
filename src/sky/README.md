@@ -3168,3 +3168,50 @@ One more from the same review: a two-member group no longer links its
 members to each other. Their parent already joins them, and the third line
 drew a sliver of a triangle that read as a bundle once the lines were
 bright enough to see.
+
+### Three more from the live site (2026-09-08, SAK-414)
+
+**Built from means any of the parts.** The cut above shipped as an AND: a kanji
+had to carry every part picked. The argument was that naming a second piece of
+a character you are staring at should narrow the answer, and on the page it did
+not narrow, it emptied. Choose 丆 and 丈 and the Atlas said "Nothing here built
+from 丆 and 丈", because the list of parts the app holds for a character is
+short and two pieces you can see in one character are almost never both on it.
+So the picks are a union now: show me the kanji made of any of these. It always
+answers something, the count only grows as parts are added, and the line above
+the tiles says "built from 丆 or 丈" rather than listing them with a middle dot
+and leaving the reader to guess which it meant. The empty state, which now
+needs a status beside the parts to happen at all, says "or" too.
+
+**The two whys are two whys.** The stroke section asked two questions and gave
+one answer twice. "We don't recommend learning to write early. Why?" opened on
+the stroke-order rationale and then on the paragraph about handwriting and
+technology; and under the chart, "Stroke order is worth learning with each
+character. Why?" opened on that same rationale again, word for word, because
+both read it from one shared constant in `src/data/why.ts`. But they are not
+one question. Why the order matters is what the rationale answers, so it stays
+with the why under the chart, where the order is on the screen. Why not to
+learn writing yet is what the handwriting paragraph answers, and that is the
+whole of that fold now. Not a word was rewritten: one paragraph moved, the
+shared constant went with it, and each why owns its text where it is argued.
+
+**One chevron, turned over.** A fold drew `⌄` when it was shut and `⌃` when it
+was open, and those are not one shape the two ways up. In the UI font `⌄` is a
+narrow, tall, pointed v and `⌃` is a wide, flat arrowhead, so shutting a fold
+swapped the glyph rather than turning it, and Sam read the shut one as a
+letter. There is one glyph now. `RoundButton` draws `⌃` and rotates it 180
+degrees whenever `expanded` is false, so a caller passes the chevron and says
+whether its fold is open, and which way it points is `sky-button.tsx`'s
+business. The measured shift from the section above is untouched for the
+upright case and is exactly negated for the turned one: the rotation is about
+the span's own middle and CSS turns the ink before it moves it, so ink that sat
+2.5px above the middle sits 2.5px below it, and the same number the other way
+brings it back. `‹` and `›` were checked at 6x and are already each other
+turned over, same weight and same size, so they were left alone.
+
+**The gate.** 3,792 unit tests pass, 1 skipped, unchanged: none of this is
+model code. 44 e2e pass, from 43. The built-from test now asserts that a second
+part ADDS kanji rather than emptying the shelf and that the count line reads
+"or", the writing-early fold's test looks for its own paragraph, and the new
+one opens both whys and holds that neither carries the other's words.
+Before-and-after screenshots of all three went to Sam on the card.

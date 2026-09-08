@@ -708,7 +708,8 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
 });
 
 // ONE WAY TO OPEN AND CLOSE THINGS (SAK-412). Every fold in the Sky is now the
-// same round chevron button, ⌄ closed and ⌃ open, wired to what it opens. None
+// same round chevron button, one ⌃ turned over when shut (SAK-414), wired to
+// what it opens. None
 // of these folds had a test before, so each gets one: open it, see the content,
 // close it, see it gone.
 
@@ -749,10 +750,35 @@ test("the why behind writing early folds open under the card that raises it", as
 
   await why.click();
   await expect(page.getByRole("button", { name: "Hide the reason why" }).first()).toBeVisible();
-  await expect(page.getByText("Every character has a correct order").first()).toBeVisible();
+  await expect(page.getByText("People don’t do much handwriting").first()).toBeVisible();
 
   await page.getByRole("button", { name: "Hide the reason why" }).first().click();
-  await expect(page.getByText("Every character has a correct order")).toHaveCount(0);
+  await expect(page.getByText("People don’t do much handwriting")).toHaveCount(0);
+});
+
+test("the stroke section's two whys each open on their own answer", async ({ page }) => {
+  // SAK-414. Both folds opened on the same stroke-order paragraph, so the
+  // section made one case twice, in the same words, under two questions. "Why
+  // not learn to write yet" and "why does the order matter" are two questions,
+  // and the rationale answers the second.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  await page.getByRole("button", { name: "Open How it's written" }).click();
+  const rationale = page.getByText("Every character has a correct order");
+  const notYet = page.getByText("People don’t do much handwriting");
+
+  // both whys are there once the strokes have loaded, and both are shut
+  const shut = page.getByRole("button", { name: "Show the reason why" });
+  await expect(shut).toHaveCount(2);
+
+  // the "not yet" above the chart answers only itself
+  await shut.first().click();
+  await expect(notYet).toHaveCount(1);
+  await expect(rationale).toHaveCount(0);
+
+  // and the order's own why, under the chart, carries the rationale
+  await page.getByRole("button", { name: "Show the reason why" }).first().click();
+  await expect(rationale).toHaveCount(1);
+  await expect(notYet).toHaveCount(1);
 });
 
 test("the stroke chart shows all its frames and folds them back", async ({ page }) => {
@@ -785,10 +811,11 @@ test("on a phone the pages fold behind the same round button", async ({ page }) 
   await expect(page.locator("#sky-menu")).toHaveCount(0);
 });
 
-test("the built-from filter picks several parts at once and keeps only the kanji carrying them all", async ({ page }) => {
-  // SAK-413. The filter was fifty-odd chips in four rows; it is one control
-  // now, and it takes more than one part, because naming a second piece of a
-  // character you are staring at should narrow the answer.
+test("the built-from filter picks several parts at once and keeps the kanji carrying any of them", async ({ page }) => {
+  // SAK-413, corrected by SAK-414. The filter was fifty-odd chips in four rows;
+  // it is one control now, and it takes more than one part. The picks are an
+  // OR: two parts you can see in one character are almost never both in the
+  // app's list for it, so an AND emptied the shelf on the second pick.
   await page.goto("/atlas?sample");
   await page.getByRole("button", { name: /^Kanji/ }).first().click();
   const shown = page.getByText(/^[\d,]+ Shown/);
@@ -811,12 +838,14 @@ test("the built-from filter picks several parts at once and keeps only the kanji
   const afterOne = await count();
   expect(afterOne).toBeLessThan(all);
 
-  // a second part narrows again rather than widening, and both are named
+  // a second part ADDS its kanji rather than emptying the shelf, and the count
+  // line says so: "built from X or Y", not "and"
   const second = list.getByRole("option", { selected: false }).nth(3);
   const secondText = (await second.innerText()).trim();
   await second.click();
   await expect(list.getByRole("option", { selected: true })).toHaveCount(2);
-  expect(await count()).toBeLessThanOrEqual(afterOne);
+  expect(await count()).toBeGreaterThan(afterOne);
+  await expect(shown).toHaveText(new RegExp(`built from ${first} or ${secondText}`));
   await expect(control).toHaveText(new RegExp(`${first}[\\s\\S]*${secondText}|${secondText}[\\s\\S]*${first}`));
 
   // Escape closes it, and the picks survive
