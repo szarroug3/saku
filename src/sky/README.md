@@ -2998,3 +2998,47 @@ waiting, walks in from the home's own offer, and watches the line go once the
 run is finished. A signed-in learner cannot be driven end to end here, since
 auth is off in the e2e build, so the store tests are that half of the card's
 gate.
+
+### One way to open and close things (2026-09-08, SAK-412)
+
+The Sky had five ways to fold something away. The home's Details bar was one
+enormous button with the bare word "Show" at its right end. A lesson card's
+sections were native `<details>` elements wearing whatever triangle the browser
+felt like drawing. The "why?" behind writing early was a dotted-underline word
+in an 11px caption. The stroke chart's overflow hid behind a small underlined
+"Show all 29 strokes". The phone menu was the uppercase word "Menu". Meanwhile
+the panels that slide aside, the quiz's rail and the Atlas's, had settled on
+`RoundButton`: a glyph in a hairline circle. Sam liked that one. Now every fold
+is that one.
+
+**The glyph rule.** A panel that moves sideways keeps `‹` and `›`, pointing the
+way the panel goes. Content that folds down gets `⌄` when closed and `⌃` when
+open: the arrowhead points the way the content is about to travel, down as it
+unfolds, back up as it shuts. That is the whole rule, and it is the reason not
+to reach for `+`/`−` or a rotating triangle: a chevron already tells you which
+direction the thing you cannot see will arrive from.
+
+**When words stay beside the button.** A glyph cannot name a section or carry a
+count, so the words stay wherever they say something the chevron cannot:
+"Details" and its discovered count on the home, each fold's title on a lesson
+card, "Why?" in the caption that raises the question, "All 29 strokes" over the
+folded frames, and "Menu" in a header row that otherwise says nothing about what
+is behind it. Nothing keeps a word that only means "open" or "closed": "Show",
+"Hide", "Less" and "Show fewer" are all gone, because that is the chevron's job
+and saying it twice is the page explaining itself.
+
+**What each one is wired to.** `RoundButton` gained exactly one thing, an
+optional `controls` for `aria-controls`; it already carried `aria-expanded`, and
+its size and border did not change. Every fold now names what it opens rather
+than what it is doing to it: "Show the details", "Open Readings", "Show the
+reason why", "Show all 18 strokes", "Show the pages". A lesson card's `Fold` is
+no longer a `<details>`, because a `<summary>` cannot hold the button without
+becoming a click target of its own, so it holds its own open state and renders
+its body only when open.
+
+**The gate.** 3,792 unit tests pass, 1 skipped, unchanged: none of this is
+model code. 41 e2e pass, from 36. Not one of these five folds had a test before,
+so each got one that opens it, looks for something only the opened fold shows,
+closes it and looks again. The phone menu's runs at 390 wide, which is the only
+width it exists at. Screenshots of all five, closed and open, before and after,
+went to Sam on the card.

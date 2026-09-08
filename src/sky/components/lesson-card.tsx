@@ -13,10 +13,11 @@
 // page header. A star already in the sky says so and is here for
 // reference. Sparse items stay short: nothing is padded.
 
-import type { ComponentType, ReactNode } from "react";
+import { useId, useState, type ComponentType, type ReactNode } from "react";
 
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { Glyph } from "@/sky/components/glyph";
+import { RoundButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
@@ -89,12 +90,21 @@ function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; on
   );
 }
 
-function Fold({ title, open = false, children }: { title: string; open?: boolean; children: ReactNode }) {
+/** A section of the card that folds. The round button is the Sky's one way to
+ * open and close things (SAK-412), so this is no longer a `<details>` with the
+ * browser's own triangle; the title stays beside the button, because the words
+ * are what the section is called. */
+function Fold({ title, open: from = false, children }: { title: string; open?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(from);
+  const id = useId();
   return (
-    <details open={open} className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
-      <summary className="cursor-pointer font-semibold text-sky-ink">{title}</summary>
-      <div className="mt-2.5">{children}</div>
-    </details>
+    <div className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-semibold text-sky-ink">{title}</span>
+        <RoundButton label={open ? `Close ${title}` : `Open ${title}`} expanded={open} controls={id} onClick={() => setOpen(!open)}>{open ? "⌃" : "⌄"}</RoundButton>
+      </div>
+      {open && <div id={id} className="mt-2.5">{children}</div>}
+    </div>
   );
 }
 

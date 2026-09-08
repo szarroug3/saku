@@ -706,3 +706,81 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
   await page.goto("/");
   await expect(page.getByText("Continue where you left off?")).toHaveCount(0);
 });
+
+// ONE WAY TO OPEN AND CLOSE THINGS (SAK-412). Every fold in the Sky is now the
+// same round chevron button, ⌄ closed and ⌃ open, wired to what it opens. None
+// of these folds had a test before, so each gets one: open it, see the content,
+// close it, see it gone.
+
+test("the home's details fold opens and closes on its round button", async ({ page }) => {
+  await page.goto("/?sample");
+  const fold = page.getByRole("button", { name: "Show the details" });
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#sky-home-details")).toHaveCount(0);
+
+  await fold.click();
+  await expect(page.locator("#sky-home-details")).toBeVisible();
+
+  await page.getByRole("button", { name: "Hide the details" }).click();
+  await expect(page.locator("#sky-home-details")).toHaveCount(0);
+});
+
+test("a lesson card's sections fold and unfold on their round buttons", async ({ page }) => {
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  const open = page.getByRole("button", { name: "Open Readings" });
+  await expect(open).toHaveAttribute("aria-expanded", "false");
+  // what the button says it controls is the panel, and it is not there yet
+  const panel = page.locator(`[id="${await open.getAttribute("aria-controls")}"]`);
+  await expect(panel).toHaveCount(0);
+
+  await open.click();
+  await expect(panel).toBeVisible();
+  await expect(panel).not.toBeEmpty();
+
+  await page.getByRole("button", { name: "Close Readings" }).click();
+  await expect(panel).toHaveCount(0);
+});
+
+test("the why behind writing early folds open under the card that raises it", async ({ page }) => {
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  await page.getByRole("button", { name: "Open How it's written" }).click();
+  const why = page.getByRole("button", { name: "Show the reason why" }).first();
+  await expect(why).toHaveAttribute("aria-expanded", "false");
+
+  await why.click();
+  await expect(page.getByRole("button", { name: "Hide the reason why" }).first()).toBeVisible();
+  await expect(page.getByText("Every character has a correct order").first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Hide the reason why" }).first().click();
+  await expect(page.getByText("Every character has a correct order")).toHaveCount(0);
+});
+
+test("the stroke chart shows all its frames and folds them back", async ({ page }) => {
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:曜")}`);
+  await page.getByRole("button", { name: "Open How it's written" }).click();
+  const all = page.getByRole("button", { name: /Show all \d+ strokes/ });
+  await expect(all).toBeVisible();
+  await expect(all).toHaveAttribute("aria-expanded", "false");
+
+  await all.click();
+  const back = page.getByRole("button", { name: /Fold the \d+ strokes back/ });
+  await expect(back).toBeVisible();
+
+  await back.click();
+  await expect(page.getByRole("button", { name: /Show all \d+ strokes/ })).toBeVisible();
+});
+
+test("on a phone the pages fold behind the same round button", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?sample");
+  const menu = page.getByRole("button", { name: "Show the pages" });
+  await expect(menu).toHaveAttribute("aria-controls", "sky-menu");
+  await expect(page.locator("#sky-menu")).toHaveCount(0);
+
+  await menu.click();
+  await expect(page.locator("#sky-menu")).toBeVisible();
+  await expect(page.locator("#sky-menu").getByRole("link", { name: "Observatory" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Hide the pages" }).click();
+  await expect(page.locator("#sky-menu")).toHaveCount(0);
+});

@@ -20,7 +20,7 @@ import { SkyField } from "@/sky/components/sky-field";
 import { bodyOf, type Body } from "@/sky/lib/constellation";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SURFACE } from "@/sky/components/sky-panel";
-import { SkyButton } from "@/sky/components/sky-button";
+import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyWarning, StandingLegend } from "@/sky/components/standing-legend";
 import { useSkyFilter } from "@/sky/components/use-sky-filter";
@@ -139,19 +139,23 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
       />
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
-        <button
-          type="button"
-          onClick={() => setDetails((d) => !d)}
-          aria-expanded={details}
-          aria-controls="sky-home-details"
-          className={`${SURFACE} flex w-full shrink-0 items-center justify-between gap-4 px-5 py-3 text-left hover:bg-sky-card`}
-        >
+        {/* the round button is the only way to open this, as it is for every
+            fold in the Sky (SAK-412); the words beside it are the section's
+            name and its count, which no glyph can say */}
+        <div className={`${SURFACE} flex w-full shrink-0 items-center justify-between gap-4 px-5 py-3 text-left`}>
           <Eyebrow size="md" className="mb-0">Details</Eyebrow>
           <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
             {totals.total > 0 && <span>{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
-            <span aria-hidden className="text-sky-ink">{details ? "Hide" : "Show"}</span>
+            <RoundButton
+              label={details ? "Hide the details" : "Show the details"}
+              expanded={details}
+              controls="sky-home-details"
+              onClick={() => setDetails((d) => !d)}
+            >
+              {details ? "⌃" : "⌄"}
+            </RoundButton>
           </span>
-        </button>
+        </div>
         {details && (
           <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
             <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />

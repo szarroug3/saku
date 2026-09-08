@@ -80,13 +80,17 @@ export interface RoundButtonProps {
   onClick: () => void;
   pressed?: boolean;
   expanded?: boolean;
+  /** The id of what this opens, for `aria-expanded` to point at. */
+  controls?: string;
   className?: string;
-  /** The glyph: ×, ‹, ›. */
+  /** The glyph: ×, ‹, ›, ⌄, ⌃. */
   children: ReactNode;
 }
 
-/** A small round control: a glyph in a hairline ring that takes the accent on hover. */
-export function RoundButton({ label, onClick, pressed, expanded, className = "", children }: RoundButtonProps) {
+/** A small round control: a glyph in a hairline ring that takes the accent on
+ * hover. Every fold in the Sky opens with one of these (SAK-412): ‹ › for a
+ * panel that slides aside, ⌄ closed and ⌃ open for content that folds down. */
+export function RoundButton({ label, onClick, pressed, expanded, controls, className = "", children }: RoundButtonProps) {
   return (
     <button
       type="button"
@@ -94,6 +98,7 @@ export function RoundButton({ label, onClick, pressed, expanded, className = "",
       title={label}
       aria-pressed={pressed}
       aria-expanded={expanded}
+      aria-controls={controls}
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink ${className}`}
     >
       <span aria-hidden>{children}</span>

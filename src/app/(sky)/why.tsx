@@ -15,6 +15,7 @@
 import { useId, useState } from "react";
 
 import type { Why } from "@/data/why";
+import { RoundButton } from "@/sky/components/sky-button";
 
 export function WhyDisclosure({ why }: { why: Why }) {
   const [open, setOpen] = useState(false);
@@ -29,15 +30,20 @@ export function WhyDisclosure({ why }: { why: Why }) {
         {/* Optional: some ledes say everything they honestly can in the strong
             fragment, and the rest of the reasoning lives behind the button. */}
         {why.lede.rest ? <>{why.lede.rest} </> : null}
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((v) => !v)}
-          className="cursor-pointer whitespace-nowrap rounded border-none bg-transparent p-0 text-[11px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {open ? "Less" : "Why?"}
-        </button>
+        {/* The Sky's one expander (SAK-412). The word stays beside the button
+            because a bare chevron in a footnote names nothing: "Why?" is the
+            question the fold answers. */}
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap align-middle">
+          <span className="text-[11px] text-accent">Why?</span>
+          <RoundButton
+            label={open ? "Hide the reason why" : "Show the reason why"}
+            expanded={open}
+            controls={panelId}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "⌃" : "⌄"}
+          </RoundButton>
+        </span>
       </p>
 
       {/* Rendered only when asked. The paragraphs are the teaching; nothing here

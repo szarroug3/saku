@@ -52,6 +52,7 @@
 
 import {
   useCallback,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -60,6 +61,7 @@ import {
 } from "react";
 
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
+import { RoundButton } from "@/sky/components/sky-button";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -241,6 +243,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
   // does nothing.
   const [clipped, setClipped] = useState(false);
   const frames = useRef<HTMLDivElement>(null);
+  const framesId = useId();
 
   const measure = useCallback(() => {
     const el = frames.current;
@@ -301,6 +304,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
         <div className="w-full min-w-0 @md:flex-[1_1_0]">
           <div
             ref={frames}
+            id={framesId}
             className="flex flex-wrap gap-2 overflow-hidden"
             style={open ? undefined : { maxHeight: collapsedHeight(COLLAPSED_ROWS) }}
           >
@@ -312,14 +316,20 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
               dialog puts a dismissal between the reader and the thing they came
               for — and costs them reading the strokes and the mnemonic together,
               which is the pairing the page is arranged around. */}
+          {/* The Sky's one expander (SAK-412). The words stay beside it because
+              they carry a count no glyph can say: how many frames are folded. */}
           {clipped || open ? (
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-[11px] text-text-muted underline"
-            >
-              {open ? "Show fewer" : `Show all ${strokes.length} strokes`}
-            </button>
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className="text-[11px] text-text-muted">All {strokes.length} strokes</span>
+              <RoundButton
+                label={open ? `Fold the ${strokes.length} strokes back` : `Show all ${strokes.length} strokes`}
+                expanded={open}
+                controls={framesId}
+                onClick={() => setOpen(!open)}
+              >
+                {open ? "⌃" : "⌄"}
+              </RoundButton>
+            </div>
           ) : null}
         </div>
       </div>

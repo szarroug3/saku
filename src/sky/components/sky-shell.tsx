@@ -21,6 +21,8 @@ import Link from "next/link";
 // read, and it competes with the request the learner actually made.
 import { useState, type CSSProperties, ReactNode } from "react";
 
+import { RoundButton } from "@/sky/components/sky-button";
+
 export interface ShellEntry {
   href: string;
   label: string;
@@ -57,7 +59,12 @@ export function SkyShell({ current, entries, account, style, children }: SkyShel
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/saku-wordmark.png" alt="" className="h-9 w-9 object-contain" />
         </Link>
-        <button type="button" aria-expanded={open} aria-controls="sky-menu" onClick={() => setOpen((o) => !o)} className="px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-muted hover:text-sky-ink md:hidden">Menu</button>
+        {/* the Sky's one expander (SAK-412); the word stays because nothing
+            else in this row says what the fold holds */}
+        <span className="flex items-center gap-2 px-2 py-2 md:hidden">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-muted">Menu</span>
+          <RoundButton label={open ? "Hide the pages" : "Show the pages"} expanded={open} controls="sky-menu" onClick={() => setOpen((o) => !o)}>{open ? "⌃" : "⌄"}</RoundButton>
+        </span>
         <nav aria-label="Pages" className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex">
           {entries.map((e, i) => {
             const on = isCurrent(current, e.href);
