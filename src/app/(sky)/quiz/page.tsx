@@ -3,10 +3,11 @@
 // learner, recording nothing). Signed out, the browser's own progress, and
 // the answers recorded there.
 
-import { currentUserId } from "@/lib/auth";
 import { LESSON_ROUNDS } from "@/sky/lib/rest";
 
 import { loadQuiz, loadQuizRun } from "../actions";
+import { idsFrom, skyHref } from "../hrefs";
+import { initialFor, whoFor } from "../page-data";
 import { QuizClient } from "../quiz-client";
 
 export const metadata = { title: "Quiz" };
@@ -29,26 +30,25 @@ const FROM: Record<string, { path: string; label: string }> = {
 function wayBack(from: string | string[] | undefined, sample: boolean) {
   const key = typeof from === "string" ? from : "";
   const where = FROM[key] ?? FROM.observatory;
-  return { href: `${where.path}${sample ? "?sample" : ""}`, label: where.label };
+  return { href: skyHref(where.path, { sample }), label: where.label };
 }
 
 export default async function SkyQuizPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
-  const sample = params.sample !== undefined;
-  const picks = String(params.picks ?? "").split(",").filter(Boolean);
-  const named = String(params.cards ?? "").split(",").filter(Boolean);
-  const userId = sample ? null : await currentUserId();
+  const { sample, signedIn, who } = await whoFor(params);
+  const picks = idsFrom(params.picks);
+  const named = idsFrom(params.cards);
   // The deck and the run left part way through at the same time, not one
   // after the other (SAK-382's rule, SAK-404's read): they have nothing to
   // say to each other, and the run is a small select on the same row.
   // A visitor's run is in their browser, so there is nothing to read here.
   const [initial, accountRun] = await Promise.all([
-    sample ? loadQuiz({ sample: true }, { picks, cards: named }) : userId ? loadQuiz({}, { picks, cards: named }) : null,
-    sample || !userId ? null : loadQuizRun(),
+    initialFor(who, (w) => loadQuiz(w, { picks, cards: named })),
+    sample || !signedIn ? null : loadQuizRun(),
   ]);
   return (
     <>
-      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} accountRun={accountRun} back={wayBack(params.from, sample)} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
+      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={signedIn} accountRun={accountRun} back={wayBack(params.from, sample)} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </>
   );
 }
