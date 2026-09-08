@@ -61,7 +61,7 @@ export function QuizQuestions({ cards, answers, at, open, onGo, onClose }: QuizQ
       className={`absolute inset-y-0 right-0 flex w-full flex-col transition-transform duration-200 ease-out motion-reduce:transition-none lg:w-60 ${open ? "translate-x-0" : "pointer-events-none translate-x-[calc(100%+1.5rem)]"}`}
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-        <Eyebrow className="mb-0">{cards.length} {cards.length === 1 ? "card" : "cards"}</Eyebrow>
+        <Eyebrow tight>{cards.length} {cards.length === 1 ? "card" : "cards"}</Eyebrow>
         <RoundButton label="Hide the cards" expanded onClick={onClose}>›</RoundButton>
       </div>
       <ol ref={list} className="-mr-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pr-1">

@@ -50,14 +50,14 @@ function PartBoxes({ line }: { line: PartedSentence }) {
 function Example({ example, n, count }: { example: TeachExample; n: number; count: number }) {
   const block = (title: string, line: PartedSentence, big = false) => (
     <div className="mt-3 first:mt-1.5">
-      <Eyebrow tone="accent" className="!mb-0.5">{title}</Eyebrow>
+      <Eyebrow tone="accent" tight className="mb-0.5">{title}</Eyebrow>
       <Parted line={line} className={big ? `font-sky-display text-[20px] leading-snug ${japaneseFont(line.map((r) => r.text).join(""))}` : "text-[14px] leading-relaxed"} />
       <PartBoxes line={line} />
     </div>
   );
   return (
     <SkyBox>
-      <Eyebrow tone="accent" className="mb-0">{count > 1 ? `Example ${n}` : "In a sentence"}</Eyebrow>
+      <Eyebrow tone="accent" tight>{count > 1 ? `Example ${n}` : "In a sentence"}</Eyebrow>
       {block("Natural English", example.natural)}
       {example.ordered && block("English in Japanese order", example.ordered)}
       {block("Japanese", example.japanese, true)}
@@ -84,7 +84,7 @@ export function Paragraph({ para }: { para: TeachParagraph }) {
 function Formula({ formula }: { formula: TeachFormula }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5 text-[14px]">
-      {formula.label && <Eyebrow className="mb-0 mr-1">{formula.label}</Eyebrow>}
+      {formula.label && <Eyebrow tight className="mr-1">{formula.label}</Eyebrow>}
       <span className={`rounded-md border border-dashed border-sky-muted px-2 py-0.5 ${japaneseFont(formula.base)}`}>{formula.base}</span>
       {formula.trim && <><span className="text-sky-muted">−</span><span className={`font-sky-display ${japaneseFont(formula.trim)}`}>{formula.trim}</span></>}
       {formula.add && <><span className="text-sky-muted">+</span><span className={`font-sky-display font-semibold text-sky-accent ${japaneseFont(formula.add)}`}>{formula.add}</span></>}
@@ -97,7 +97,7 @@ export function Table({ table }: { table: TeachTable }) {
   const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
   return (
     <SkyBox>
-      {table.title && <Eyebrow tone="accent" className="mb-0">{table.title}</Eyebrow>}
+      {table.title && <Eyebrow tone="accent" tight>{table.title}</Eyebrow>}
       {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{typeof table.instruction === "string" ? table.instruction : <Sound line={table.instruction} />}</p>}
       {formulas.length > 0 && <div className="mt-2 flex flex-col gap-1">{formulas.map((f, i) => <Formula key={i} formula={f} />)}</div>}
       <div className="mt-2 overflow-x-auto">

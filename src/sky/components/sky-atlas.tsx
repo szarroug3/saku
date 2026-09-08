@@ -403,7 +403,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " or "}<span className={`font-semibold text-sky-ink ${japaneseFont(p)}`}>{p}</span></span>)}</>}</p>
                   {shelf.id === "kanji" && parts.length > 0 && (
                     <p className="mt-2 flex items-center gap-2">
-                      <Eyebrow className="mb-0">Built from</Eyebrow>
+                      <Eyebrow tight>Built from</Eyebrow>
                       <SkyMultiSelect
                         label="Choose the parts a kanji is built from"
                         empty="Any"

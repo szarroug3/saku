@@ -490,7 +490,7 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
                   · 2 TRIES LEFT · 8S" (SAK-365). It is the bar's name again;
                   the tries are their own line, in the words the feedback
                   already uses, and the seconds sit beside the bar they count. */}
-              <Eyebrow className="mb-0">{answered ? "Move on" : "Help me"}</Eyebrow>
+              <Eyebrow tight>{answered ? "Move on" : "Help me"}</Eyebrow>
               {!answered && state.tries > 0 && <p className="text-[12px] text-sky-muted">{triesNote(triesLeft)}</p>}
               {timeLeft !== null && timerSeconds > 0 && (
                 <div className="flex items-center gap-2">

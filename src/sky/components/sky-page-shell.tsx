@@ -29,7 +29,7 @@ export function SkyPageShell({ eyebrow, title, aside, height = "100%", children,
     <div className={`flex flex-col overflow-hidden font-sky-ui text-sky-ink ${className}`} style={{ height }}>
       <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
-          {eyebrow && <Eyebrow className="mb-0">{eyebrow}</Eyebrow>}
+          {eyebrow && <Eyebrow tight>{eyebrow}</Eyebrow>}
           <h1 className={`font-sky-display text-3xl leading-tight md:text-4xl ${eyebrow ? "mt-1" : ""}`}>{title}</h1>
         </div>
         {aside}

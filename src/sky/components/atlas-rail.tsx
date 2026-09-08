@@ -47,7 +47,7 @@ export function AtlasRail({ collections, open, onOpen, counts, total, status, on
     <SkySurface as="nav" pad="sm" aria-label="Collections and status" className="flex min-h-0 flex-col gap-5 self-stretch overflow-y-auto">
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <Eyebrow className="mb-0">Collections</Eyebrow>
+          <Eyebrow tight>Collections</Eyebrow>
           <RoundButton label="Hide the rail" expanded onClick={onHide}>‹</RoundButton>
         </div>
         {collections.map((c) => <RailRow key={c.id} on={c.id === open} label={c.title} count={c.total} onClick={() => onOpen(c.id)} />)}

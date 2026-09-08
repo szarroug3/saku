@@ -26,7 +26,7 @@ export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
   return (
     <div className="mt-4 flex flex-col gap-2">
       <div className="text-center">
-        <Eyebrow tone="inherit" size="md" className={`mb-0 ${VERDICT[answered.grade]}`}>{GRADE[answered.grade].label}</Eyebrow>
+        <Eyebrow tone="inherit" size="md" tight className={VERDICT[answered.grade]}>{GRADE[answered.grade].label}</Eyebrow>
         <p className="mt-1 text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</p>
       </div>
       <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(answer)}`}>{answerPitch !== undefined && Pitch ? <Pitch reading={answer} downstep={answerPitch} /> : answer}</p>

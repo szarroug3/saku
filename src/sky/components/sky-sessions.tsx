@@ -88,7 +88,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                 {GRADES.map((g) => (
                   <div key={g}>
                     <dd className="font-sky-display text-[26px] leading-none text-sky-ink">{counts[g]}</dd>
-                    <dt className="mt-1"><Eyebrow tone="inherit" className={`mb-0 ${VERDICT[g]}`}>{GRADE[g].label}</Eyebrow></dt>
+                    <dt className="mt-1"><Eyebrow tone="inherit" tight className={VERDICT[g]}>{GRADE[g].label}</Eyebrow></dt>
                   </div>
                 ))}
               </dl>
@@ -97,7 +97,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                   <li key={c.id} className="grid grid-cols-[5rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 sm:grid-cols-[7rem_1fr_auto] sm:gap-x-4">
                     <span className={`truncate text-[17px] font-medium leading-tight ${STANDING[c.item.standing].text} ${japaneseFont(c.item.glyph)}`} title={c.item.glyph}>{c.item.glyph}</span>
                     <span className="truncate text-[13.5px] text-sky-ink/90">{c.item.english !== c.item.glyph ? c.item.english : ""}</span>
-                    <Eyebrow tone="inherit" className={`mb-0 ${VERDICT[c.grade]}`}>{GRADE[c.grade].label}</Eyebrow>
+                    <Eyebrow tone="inherit" tight className={VERDICT[c.grade]}>{GRADE[c.grade].label}</Eyebrow>
                   </li>
                 ))}
               </ul>

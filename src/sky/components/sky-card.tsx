@@ -76,8 +76,18 @@ export function SkyCard({ className = "", children }: { className?: string; chil
 /** The small caps line over content: the kind of thing, a section's name,
  * a table's title. The ONE such label in the Sky (audit, 2026-09-05):
  * muted by default, in the accent when it names a thing being taught,
- * inheriting its colour when the caller colours it (a verdict). */
-export function Eyebrow({ tone = "muted", size = "sm", className = "", children }: { tone?: "muted" | "accent" | "inherit"; size?: "sm" | "md"; className?: string; children: ReactNode }) {
+ * inheriting its colour when the caller colours it (a verdict).
+ *
+ * `tight` is the eyebrow with nothing under it: a label on the same line as
+ * what it names, or one whose parent already spaces the row. It is a PROP and
+ * not a class because a class could not win (SAK-417). The gap here used to be
+ * a plain `mb-1`, and sixteen callers wrote `className="mb-0"` to take it off;
+ * Tailwind writes `mb-0` before `mb-1` in the stylesheet, so the later rule
+ * won every time and every one of those eyebrows kept a margin its author had
+ * asked it to drop. Two callers had found `!mb-0` and worked. Asking for the
+ * margin or not is now a question the component answers, so there is nothing
+ * for two classes to argue about. */
+export function Eyebrow({ tone = "muted", size = "sm", tight = false, className = "", children }: { tone?: "muted" | "accent" | "inherit"; size?: "sm" | "md"; tight?: boolean; className?: string; children: ReactNode }) {
   const colour = tone === "muted" ? "text-sky-muted" : tone === "accent" ? "text-sky-accent" : "";
-  return <div className={`mb-1 font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${colour} ${className}`}>{children}</div>;
+  return <div className={`${tight ? "" : "mb-1"} font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${colour} ${className}`}>{children}</div>;
 }

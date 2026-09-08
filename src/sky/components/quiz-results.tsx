@@ -80,7 +80,7 @@ export function QuizResults({ cards, answers, save, back, pitch: Pitch, onRetry,
   const count = (label: string, n: number, meaning: string, tone: string) => (
     <div>
       <dd className="font-sky-display text-[28px] leading-none text-sky-ink">{n}</dd>
-      <dt className="mt-1"><Eyebrow tone="inherit" className={`mb-0 inline-flex items-center ${tone}`}>{label}<SkyInfo className="ml-1.5" label={`What ${label.toLowerCase()} means`}>{meaning}</SkyInfo></Eyebrow></dt>
+      <dt className="mt-1"><Eyebrow tone="inherit" tight className={`inline-flex items-center ${tone}`}>{label}<SkyInfo className="ml-1.5" label={`What ${label.toLowerCase()} means`}>{meaning}</SkyInfo></Eyebrow></dt>
     </div>
   );
 
