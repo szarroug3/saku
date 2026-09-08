@@ -21,13 +21,10 @@ import { upsertSessionFacts } from "@/lib/fact-store";
 import {
   applyClearMixup,
   applyClaims,
-  applyDeleteSessions,
   applyDeleteSessionsMeta,
-  applyDropClaims,
   applyDropClaimsMeta,
   applyDropSeen,
   applySeen,
-  applySession,
   applySessionMeta,
   emptyHistory,
 } from "@/lib/history-ops";
@@ -39,7 +36,6 @@ import {
 import {
   deleteAllFactRows,
   deleteFactRows,
-  factsTableMigrated,
   readFactRowsVersioned,
   readHistoryRow,
   readHistoryRowVersioned,
@@ -144,15 +140,12 @@ export async function saveSeen(
  * ALSO deletes the fact's quiz-performance aggregate (SAK-103 — see
  * applyDropClaims's doc for why). SAK-237: that delete no longer touches the
  * whole `facts` blob — it is a direct `DELETE ... WHERE fact_id IN (...)`
- * against progress_facts, checked FIRST so a not-yet-migrated account still
- * gets the original one-shot whole-document behaviour (applyDropClaims)
- * rather than silently losing the aggregate-delete half of this call.
+ * against progress_facts. SAK-405: and nothing else, the whole-document
+ * fallback for an account whose table did not exist yet having gone with the
+ * migration window.
  */
 export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  const { migrated } = await deleteFactRows(userId, facts);
-  if (!migrated) {
-    return mutateHistory(userId, (hist) => applyDropClaims(hist, facts));
-  }
+  await deleteFactRows(userId, facts);
   return mutateHistory(userId, (hist) => applyDropClaimsMeta(hist, facts));
 }
 
@@ -204,12 +197,11 @@ export async function clearMixup(
  *      row, if any), folded, and written back — via fact-store.ts's
  *      upsertSessionFacts, each fact its own compare-and-set, in parallel.
  *
- * Both scale with the SESSION's size, not the account's. The one exception is
- * an account whose progress_facts table has not been created yet (see
- * store/supabase-store.ts's `migrated` flag): saveSession falls back to the
- * original one-shot `applySession` so a deploy that lands before
- * supabase/schema.sql's progress_facts is applied does not break session
- * saving.
+ * Both scale with the SESSION's size, not the account's. There used to be one
+ * exception — an account whose progress_facts table did not exist yet fell
+ * back to the original one-shot `applySession`, so a deploy landing ahead of
+ * supabase/schema.sql could not break session saving. The table has been there
+ * for a long time now, so that branch went in SAK-405.
  */
 export async function saveSession(
   userId: string,
@@ -223,12 +215,8 @@ export async function saveSession(
   }
 
   // Read the touched facts' current rows FIRST, before touching the small
-  // document — this is also how a not-yet-migrated account is detected, with
-  // no separate probe query.
-  const { rows, migrated } = await readFactRowsVersioned(userId, touched.map(([f]) => f));
-  if (!migrated) {
-    return mutateHistory(userId, (hist) => applySession(hist, session));
-  }
+  // document.
+  const rows = await readFactRowsVersioned(userId, touched.map(([f]) => f));
 
   // IDEMPOTENT ON `id`, and the dedup path must NOT write and must NOT fold —
   // a retried record whose original attempt already landed already folded its
@@ -268,15 +256,12 @@ export async function deleteSessions(
   // and returns the SAME object on the no-op, so `wrote` is exactly "did
   // anything change": bail before writing/rebuilding when it did not.
   //
-  // SAK-237: on a migrated account, the rebuild REPLACES the progress_facts
-  // table with `foldSessions` of the survivors — bounded by the 200-session
-  // cap, not by lifetime fact count, and the whole-document `facts` blob is
-  // never read OR written for this. A not-yet-migrated account falls back to
-  // the original one-shot applyDeleteSessions so the rebuild still lands
-  // somewhere.
-  if (!(await factsTableMigrated(userId))) {
-    return mutateHistory(userId, (hist) => applyDeleteSessions(hist, ids, deleteAll));
-  }
+  // SAK-237: the rebuild REPLACES the progress_facts table with
+  // `foldSessions` of the survivors — bounded by the 200-session cap, not by
+  // lifetime fact count, and the whole-document `facts` blob is never read OR
+  // written for this. SAK-405: the not-yet-migrated fallback that ran
+  // applyDeleteSessions instead, and the probe query that chose between them,
+  // are gone.
   const { history, wrote } = await mutateHistoryWithRetryTracked(store, userId, (hist) =>
     applyDeleteSessionsMeta(hist, ids, deleteAll),
   );

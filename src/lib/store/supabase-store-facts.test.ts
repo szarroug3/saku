@@ -196,7 +196,6 @@ before(() => {
 const {
   deleteAllFactRows,
   deleteFactRows,
-  factsTableMigrated,
   readFactRowVersioned,
   readFactRowsVersioned,
   readFactsTable,
@@ -216,39 +215,35 @@ describe("progress_facts: reads", () => {
   test("readFactsTable assembles every row for the user into a map", async () => {
     activeTable.userRows(USER).set("a", { aggregate: agg(1), updated_at: "t1" });
     activeTable.userRows(USER).set("b", { aggregate: agg(2), updated_at: "t2" });
-    const { facts, migrated } = await readFactsTable(USER);
-    assert.equal(migrated, true);
-    assert.deepEqual(facts, { a: agg(1), b: agg(2) });
+    assert.deepEqual(await readFactsTable(USER), { a: agg(1), b: agg(2) });
   });
 
-  test("readFactsTable: table absent → migrated:false, empty map, no throw", async () => {
+  // SAK-405: a missing table used to read as an empty map plus migrated:false,
+  // and history.ts fell back to the jsonb blob. The table is not missing, so
+  // the only way to see this now is a real fault, and a fault must be loud.
+  test("readFactsTable: an absent table throws rather than reading as empty", async () => {
     activeTable.exists = false;
-    const { facts, migrated } = await readFactsTable(USER);
-    assert.equal(migrated, false);
-    assert.deepEqual(facts, {});
+    await assert.rejects(() => readFactsTable(USER), /reading progress_facts failed/);
   });
 
   test("readFactRowsVersioned only returns the requested ids, others default to not-exists", async () => {
     activeTable.userRows(USER).set("a", { aggregate: agg(1), updated_at: "t1" });
     activeTable.userRows(USER).set("untouched", { aggregate: agg(99), updated_at: "t9" });
-    const { rows, migrated } = await readFactRowsVersioned(USER, [fid("a"), fid("missing")]);
-    assert.equal(migrated, true);
+    const rows = await readFactRowsVersioned(USER, [fid("a"), fid("missing")]);
     assert.deepEqual(rows.get(fid("a")), { aggregate: agg(1), version: "t1", exists: true });
     assert.deepEqual(rows.get(fid("missing")), { aggregate: null, version: null, exists: false });
     assert.equal(rows.has(fid("untouched")), false, "never asked for, never returned");
   });
 
   test("readFactRowsVersioned: empty id list short-circuits without a query", async () => {
-    activeTable.exists = false; // would report migrated:false if it queried at all
-    const { rows, migrated } = await readFactRowsVersioned(USER, []);
-    assert.equal(migrated, true);
+    activeTable.exists = false; // would throw if it queried at all
+    const rows = await readFactRowsVersioned(USER, []);
     assert.equal(rows.size, 0);
   });
 
-  test("readFactRowsVersioned: table absent → migrated:false", async () => {
+  test("readFactRowsVersioned: an absent table throws", async () => {
     activeTable.exists = false;
-    const { migrated } = await readFactRowsVersioned(USER, [fid("a")]);
-    assert.equal(migrated, false);
+    await assert.rejects(() => readFactRowsVersioned(USER, [fid("a")]), /reading progress_facts failed/);
   });
 
   test("readFactRowVersioned narrows to one fact", async () => {
@@ -257,11 +252,6 @@ describe("progress_facts: reads", () => {
     assert.deepEqual(row, { aggregate: agg(1), version: "t1", exists: true });
   });
 
-  test("factsTableMigrated reflects whether the table exists", async () => {
-    assert.equal(await factsTableMigrated(USER), true);
-    activeTable.exists = false;
-    assert.equal(await factsTableMigrated(USER), false);
-  });
 });
 
 describe("progress_facts: writeFactRowGuarded — per-fact CAS", () => {
@@ -326,16 +316,14 @@ describe("progress_facts: deletes, replace, and the pre-migration fallback", () 
   });
 
   test("deleteFactRows removes only the named ids", async () => {
-    const { migrated } = await deleteFactRows(USER, [fid("a")]);
-    assert.equal(migrated, true);
+    await deleteFactRows(USER, [fid("a")]);
     assert.equal(activeTable.userRows(USER).has("a"), false);
     assert.ok(activeTable.userRows(USER).has("b"));
   });
 
-  test("deleteFactRows: table absent → migrated:false, nothing thrown", async () => {
+  test("deleteFactRows: an absent table throws", async () => {
     activeTable.exists = false;
-    const { migrated } = await deleteFactRows(USER, [fid("a")]);
-    assert.equal(migrated, false);
+    await assert.rejects(() => deleteFactRows(USER, [fid("a")]), /deleting progress_facts rows failed/);
   });
 
   test("deleteAllFactRows wipes every row for the user", async () => {
@@ -343,29 +331,30 @@ describe("progress_facts: deletes, replace, and the pre-migration fallback", () 
     assert.equal(activeTable.userRows(USER).size, 0);
   });
 
-  test("deleteAllFactRows: table absent is a silent no-op, not a throw", async () => {
+  test("deleteAllFactRows: an absent table throws (SAK-405 — it used to be swallowed)", async () => {
     activeTable.exists = false;
-    await assert.doesNotReject(() => deleteAllFactRows(USER));
+    await assert.rejects(() => deleteAllFactRows(USER), /deleting progress_facts rows failed/);
   });
 
   test("replaceAllFactRows replaces the whole set — old ids not in the new set are gone", async () => {
-    const { migrated } = await replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
+    await replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
       import("@/types").FactId,
       import("@/types").FactAggregate
     >);
-    assert.equal(migrated, true);
     const rows = activeTable.userRows(USER);
     assert.equal(rows.has("a"), false);
     assert.equal(rows.has("b"), false);
     assert.deepEqual(rows.get("c")?.aggregate, agg(3));
   });
 
-  test("replaceAllFactRows: table absent → migrated:false, nothing written", async () => {
+  test("replaceAllFactRows: an absent table throws", async () => {
     activeTable.exists = false;
-    const { migrated } = await replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
-      import("@/types").FactId,
-      import("@/types").FactAggregate
-    >);
-    assert.equal(migrated, false);
+    await assert.rejects(
+      () => replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
+        import("@/types").FactId,
+        import("@/types").FactAggregate
+      >),
+      /deleting progress_facts rows failed/,
+    );
   });
 });

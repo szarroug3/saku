@@ -50,13 +50,11 @@ function emptyDoc(): Doc {
 
 let progress: Map<string, { doc: Doc; version: string | null }>;
 let facts: Map<string, Map<string, { aggregate: FactAggregate; version: string }>>;
-let tableExists: boolean;
 let clock: number;
 
 function reset() {
   progress = new Map();
   facts = new Map();
-  tableExists = true;
   clock = 0;
 }
 
@@ -69,11 +67,12 @@ function nextToken(prevVersion: string | null): string {
 const fakeExports = {
   async readHistoryRow(userId: string) {
     const doc = progress.get(userId)?.doc ?? emptyDoc();
-    const table = tableExists ? Object.fromEntries(facts.get(userId) ?? []) : {};
+    // SAK-405: the facts come from the table and only the table, exactly as
+    // shapeHistory does now. The jsonb `facts` key is not read.
     const tableFacts = Object.fromEntries(
-      Object.entries(table).map(([k, v]) => [k, (v as { aggregate: FactAggregate }).aggregate]),
+      [...(facts.get(userId) ?? [])].map(([k, v]) => [k, v.aggregate]),
     );
-    return { ...doc, facts: { ...doc.facts, ...tableFacts } } as unknown as HistoryFile;
+    return { ...doc, facts: tableFacts } as unknown as HistoryFile;
   },
   async readProgressSeedRow(): Promise<never> {
     throw new Error("not exercised by these tests");
@@ -100,7 +99,6 @@ const fakeExports = {
   async readFactRowsVersioned(userId: string, factIds: FactId[]) {
     const rows = new Map<FactId, { aggregate: FactAggregate | null; version: string | null; exists: boolean }>();
     for (const id of factIds) rows.set(id, { aggregate: null, version: null, exists: false });
-    if (!tableExists) return { rows, migrated: false };
     const userFacts = facts.get(userId);
     if (userFacts) {
       for (const id of factIds) {
@@ -108,10 +106,10 @@ const fakeExports = {
         if (r) rows.set(id, { aggregate: r.aggregate, version: r.version, exists: true });
       }
     }
-    return { rows, migrated: true };
+    return rows;
   },
   async readFactRowVersioned(userId: string, factId: FactId) {
-    const { rows } = await fakeExports.readFactRowsVersioned(userId, [factId]);
+    const rows = await fakeExports.readFactRowsVersioned(userId, [factId]);
     return rows.get(factId)!;
   },
   async writeFactRowGuarded(
@@ -120,7 +118,6 @@ const fakeExports = {
     aggregate: FactAggregate,
     expected: { version: string | null; exists: boolean },
   ) {
-    if (!tableExists) throw Object.assign(new Error("relation does not exist"), { code: "42P01" });
     let userFacts = facts.get(userId);
     if (!userFacts) {
       userFacts = new Map();
@@ -137,24 +134,16 @@ const fakeExports = {
     return true;
   },
   async deleteFactRows(userId: string, factIds: FactId[]) {
-    if (!tableExists) return { migrated: false };
     const userFacts = facts.get(userId);
     if (userFacts) for (const id of factIds) userFacts.delete(id);
-    return { migrated: true };
   },
   async deleteAllFactRows(userId: string) {
-    if (!tableExists) return;
     facts.delete(userId);
   },
   async replaceAllFactRows(userId: string, newFacts: Record<string, FactAggregate>) {
-    if (!tableExists) return { migrated: false };
     const m = new Map<string, { aggregate: FactAggregate; version: string }>();
     for (const [id, agg] of Object.entries(newFacts)) m.set(id, { aggregate: agg, version: nextToken(null) });
     facts.set(userId, m);
-    return { migrated: true };
-  },
-  async factsTableMigrated() {
-    return tableExists;
   },
 };
 
@@ -238,19 +227,15 @@ describe("saveSession — SAK-237 per-fact split", () => {
     assert.ok(facts.get(USER)!.get("b"));
   });
 
-  test("PRE-MIGRATION FALLBACK: when progress_facts does not exist, the whole document still gets the fold (no silent data loss)", async () => {
-    tableExists = false;
-    const result = await saveSession(
+  test("the fold lands in the table and nothing goes into the document's facts key", async () => {
+    await saveSession(
       USER,
       session(1000, { [fid("a")]: { seen: 1, missed: 0, firstTry: 1, correct: 1 } }),
     );
-    assert.equal(result.sessions.length, 1);
-    // Facts landed in the jsonb doc, exactly as pre-SAK-237 applySession did —
-    // never in the (nonexistent) table.
     const expected = emptyAggregate();
     foldSession(expected, { seen: 1, missed: 0, firstTry: 1, correct: 1 }, 1000);
-    assert.deepEqual(progress.get(USER)!.doc.facts["a"], expected);
-    assert.equal(facts.has(USER), false);
+    assert.deepEqual(facts.get(USER)!.get("a")!.aggregate, expected);
+    assert.deepEqual(progress.get(USER)!.doc.facts, {}, "the jsonb blob is not a second copy (SAK-405)");
   });
 
   test("a session with no facts (empty round) never touches the facts table at all", async () => {
@@ -272,18 +257,6 @@ describe("dropClaims — SAK-237: the fact-aggregate delete no longer reads/rewr
     assert.equal(facts.get(USER)!.has("a"), false);
   });
 
-  test("PRE-MIGRATION FALLBACK: falls back to the whole-document delete when progress_facts is absent", async () => {
-    tableExists = false;
-    // Seed the legacy jsonb with the fact directly, mirroring an account whose
-    // facts still live only in the jsonb blob.
-    const agg = emptyAggregate();
-    foldSession(agg, { seen: 1, missed: 0, firstTry: 1, correct: 1 }, 1000);
-    progress.get(USER)!.doc.facts = { a: agg };
-
-    const result = await dropClaims(USER, [fid("a")]);
-    assert.deepEqual(result.claims, { b: 2000 });
-    assert.equal("a" in (result.facts as Record<string, unknown>), false, "the legacy blob's fact entry is gone too");
-  });
 });
 
 describe("deleteSessions — SAK-237: the rebuild replaces the table, sized by surviving sessions", () => {

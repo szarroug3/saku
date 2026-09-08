@@ -2436,3 +2436,53 @@ shell draws it on every page.
 pass, 1 skipped, from 3,809: the 59 that went were the deleted engine and
 ask-config tests. 28 e2e. The entry-model dump is byte-identical across
 all 13 files, and `node scripts/unreachable.mjs --list` is still zero.
+
+### The facts have one home, and the reads stop asking the history column (2026-09-08, SAK-405)
+
+`progress_facts` shipped behind a fallback. Every query against it caught
+Postgres' 42P01 and reported `migrated: false`, and `history.ts` answered
+that by running the pre-SAK-237 whole-document op instead: `applySession`
+for a save, `applyDropClaims` for a withdrawn claim, `applyDeleteSessions`
+for a rebuild, with a probe query in front of the last one to choose. The
+read did the same thing more quietly, merging the `facts` key still
+sitting in the `history` jsonb under the table's rows.
+
+That was right for a window in which the code could reach production
+before the SQL did. The window closed a long time ago: the table is there
+and it has held every fold since. So the flag is gone, the three
+fallbacks are gone, `factsTableMigrated` is gone with the branch it
+existed for, and a 42P01 is now what it should have become the day after
+the migration landed — an error, loudly, rather than a silent slide back
+onto a document that has been stale ever since.
+
+`shapeHistory` takes the table and only the table, so `HistoryFile.facts`
+for a page read is one thing from one place. `mergeFacts` went with it.
+
+WHAT THIS DEPENDS ON, AND IT IS NOT SOMETHING THE CODE CAN CHECK.
+Reading the table alone is right exactly when every learner's legacy
+blob has been copied into it — that is `scripts/backfill-progress-facts.mjs`,
+which the schema's own rollout note says to run in the same maintenance
+window as the migration. `to_regclass` says the table exists; it does not
+say the copy happened. A fact last folded before SAK-237 on an account
+that was never backfilled lives only in the blob today, and after this
+change it reads as unknown: its counts and its stability start over, its
+claims and seen and sessions untouched. Answering that question needs a
+read of real learners' rows, which is not mine to make, so before this
+merges: `node --env-file=.env.local scripts/backfill-progress-facts.mjs
+--dry-run` reports the counts without writing anything. If it says there
+are rows still to copy, run it for real first.
+
+The `facts` key itself is not cleared here. That is
+`clear_legacy_history_facts`'s job, which the backfill already calls per
+user once that user's copy has landed, and two things clearing one key on
+two schedules is worse than one.
+
+The schema's rollout note said "the app code tolerates this table being
+ABSENT". It does not any more, and the note now says so.
+
+Four code files and the schema, 222 lines deleted against 167 added.
+3,748 unit tests pass, 1 skipped, from 3,750: the three pre-migration
+fallback cases are gone and one new one takes their place, and the
+store's table-absent cases now assert a throw instead of a flag. 28 e2e.
+The entry-model dump is byte-identical across all 13 files, and `node
+scripts/unreachable.mjs --list` is still zero.

@@ -110,21 +110,22 @@ create trigger on_auth_user_created
 --
 -- ROLLOUT ORDER — READ BEFORE APPLYING TO A DATABASE THAT ALREADY HAS LEARNERS
 -- ============================================================================
--- The app code tolerates this table being ABSENT: every query against it is
--- wrapped to detect Postgres' "relation does not exist" (42P01) and falls back
--- to the original whole-document behaviour, so merging code before applying
--- this is safe. The reverse is NOT safe on its own. Once the table exists, a
--- fact's FIRST post-migration session-fold looks up its prior aggregate ONLY
--- here, never in the legacy `history.facts` blob (reading that blob to seed one
--- fact would reintroduce the whole-document cost this table exists to avoid).
--- So run scripts/backfill-progress-facts.mjs IMMEDIATELY after applying this
--- file, in the same maintenance window: treat "apply the schema" and "run the
--- backfill" as ONE step. Until the backfill completes for a learner, any fact
--- their next session touches for the first time restarts that one fact's
--- stability and recent runs from zero (its counts and confidence, not their
--- claims/seen/sessions, which are untouched). Facts the backfill has already
--- copied are unaffected regardless of ordering. On an EMPTY database there is
--- nothing to back fill and nothing to sequence.
+-- THIS TABLE IS NOW REQUIRED. The app code used to tolerate it being absent:
+-- every query was wrapped to detect Postgres' "relation does not exist"
+-- (42P01) and fall back to the original whole-document behaviour, so code
+-- could safely merge ahead of the SQL. That tolerance went in SAK-405, the
+-- migration window having long closed. A missing table is an error now, and
+-- the reads assemble a learner's facts from here and nowhere else.
+--
+-- So on a database that already has learners, "apply the schema" and "run
+-- scripts/backfill-progress-facts.mjs" are ONE step, in one maintenance
+-- window, and the app must not be pointed at the database in between. Any
+-- fact not yet copied reads as unknown: that one fact's counts and stability
+-- start over (never their claims, seen or sessions, which live in the
+-- `history` column and are untouched). Facts the backfill has already copied
+-- are unaffected regardless of ordering, and the script is idempotent, so
+-- running it again is free. On an EMPTY database there is nothing to back
+-- fill and nothing to sequence.
 --
 -- RLS mirrors `progress`: every learner sees and edits only their own rows.
 
