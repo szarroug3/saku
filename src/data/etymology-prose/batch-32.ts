@@ -19,7 +19,7 @@ export const BATCH_32: Readonly<Record<string, string>> = {
   拉: "This glyph means to pull or crush. It uses the definition of 手 (hand) and the sound of 立.",
   拙: "This glyph means clumsy, unskillful. It uses the definition of 手 (hand) and the sound of 出.",
   旺: "This glyph means flourishing. It uses the definition of 日 (sun) and the sound of 王 (おう).",
-  炉: "This glyph means hearth or furnace. It uses the definition of 火 (fire) and the sound of 盧.",
+  炉: "This glyph means a hearth or furnace. It uses the definition of 火 (fire) and the sound of 戸, which stands here for 盧, the sound piece of the fuller 爐.",
   肢: "This glyph means limb. It uses the definition of 肉 (flesh) and the sound of 支 (し).",
   迭: "This glyph means alternation, to take turns. It uses the definition of 辵 (movement) and the sound of 失.",
   采: "A hand (爪) reaching into a tree (木): to pick or gather.",

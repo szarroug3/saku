@@ -38,7 +38,7 @@ export const MANUAL_02: Readonly<Record<string, string>> = {
   験: "This glyph is the simplified form of 驗. It uses 馬 (horse) for its meaning and 㑒 (僉) for its sound; it came to mean to test and to prove.", // source: https://en.wiktionary.org/wiki/驗
   写: "This glyph is the simplified form of 寫: a roof (宀) over a sound piece. From setting things down indoors came copying out and describing.", // source: https://en.wiktionary.org/wiki/寫
   庁: "This glyph is the simplified form of 廳: a building (广) plus 聽 (to hear). The hall where officials heard cases, a government office.", // source: https://en.wiktionary.org/wiki/廳
-  汚: "This glyph means dirty. It uses the water radical (氵), foul standing water, for its meaning and 于 for its sound.", // source: https://en.wiktionary.org/wiki/汙
+  汚: "This glyph means dirty. It uses the water radical (氵), foul standing water, for its meaning and 二 for its sound, which stands here for 于.", // source: https://en.wiktionary.org/wiki/汙
   芸: "This glyph is the simplified form of 藝, which first drew a person planting a seedling by hand. Growing and tending plants became cultivated skill, craft, and art.", // source: https://en.wiktionary.org/wiki/藝
   宝: "This glyph is the simplified form of 寶: jade (玉) kept safe under a roof (宀). Valuables in the house, a treasure.", // source: https://en.wiktionary.org/wiki/寶
   幸: "In its early forms this glyph combined animals counted as lucky, a dog and a sheep, and so came to mean good fortune, blessing, and happiness.", // source: https://en.wiktionary.org/wiki/幸

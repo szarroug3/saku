@@ -19,7 +19,7 @@ export const BATCH_12: Readonly<Record<string, string>> = {
   刻: "This glyph means to engrave. It uses the definition of 刀 (knife) and the sound of 亥.",
   季: "Grain (禾) above a child (子): the young or last of a series, hence season.",
   東: "The original glyph looked like a sack tied shut at both ends. It was later borrowed to mean east.",
-  毒: "This glyph means poison. It uses the definition of 屮 (vegetation) and the sound of 毐, suggesting a poisonous plant.",
+  毒: "This glyph means poison. The parts drawn are 龶 and 毋. One account reads it as vegetation, 屮, with 毐 for the sound, a poisonous plant; another has a woman wearing a feathered ornament, so it is not settled.",
   則: "A knife (刀) carving marks into a bronze cauldron: a fixed rule or law. The cauldron was written 鼎, and it later flattened into the 貝 drawn now.",
   厚: "A cliff or cave (厂) above a heavy jug (𣆪): thick, deep, generous.",
   型: "This glyph means mould or type. It uses the definition of 土 (earth) and the sound of 刑 (けい).",

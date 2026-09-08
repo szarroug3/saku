@@ -13,7 +13,7 @@ export const BATCH_26: Readonly<Record<string, string>> = {
   把: "This glyph means to grasp. It uses the definition of 手 (hand) and the sound of 巴.",
   杉: "This glyph means cedar. It uses the definition of 木 (tree) and the sound of 彡.",
   沖: "This glyph means the open sea. It uses the definition of 水 (water) and the sound of 中.",
-  狂: "This glyph means crazy. It uses the definition of 犬 (dog) and the sound of 㞷.",
+  狂: "This glyph means crazy. It uses the definition of 犬 (dog) and the sound of 王, which stands here for 㞷, an early form of 往.",
   肘: "This glyph means elbow. It uses the definition of 肉 (flesh) and the sound of 寸.",
   芯: "This glyph means wick. It uses the definition of 艸 (plant) and the sound of 心 (しん).",
   那: "This glyph means what or that. It uses the definition of 邑 (city) and the sound of 冉. It began as the name of a state and was later borrowed for its sound.",

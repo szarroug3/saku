@@ -15,7 +15,7 @@ export const BATCH_28: Readonly<Record<string, string>> = {
   涯: "This glyph means shore or limit. It uses the definition of 水 (water) and the sound of 厓, a cliff by the water.",
   淑: "This glyph means graceful and pure. It uses the definition of 水 (water) and the sound of 叔.",
   淡: "This glyph means thin or faint. It uses the definition of 水 (water) and the sound of 炎.",
-  爽: "A figure (大) with bright markings (㸚) at its sides: bright, refreshing.",
+  爽: "A figure (大) with bright markings at its sides: bright, refreshing. Those markings are written 㸚 in the record and drawn here as two 爻.",
   猛: "This glyph means fierce. It uses the definition of 犬 (dog) and the sound of 孟.",
   窒: "This glyph means to plug up. It uses the definition of 穴 (hole) and the sound of 至.",
   粒: "This glyph means a grain. It uses the definition of 米 (rice) and the sound of 立.",

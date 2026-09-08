@@ -18,7 +18,7 @@ export const BATCH_10: Readonly<Record<string, string>> = {
   位: "This glyph means rank or position. It uses the definition of 人 (person) and the sound of 立 (stand).",
   否: "This glyph means no or to deny. It uses the definition of 口 (mouth) and the sound of 不 (not).",
   快: "This glyph means cheerful and pleasant. It uses the definition of 心 (heart) and the sound of 夬.",
-  更: "This glyph means the night watch, sitting up late. It uses the definition of 攴 (a hand with a whip, action) and the sound of 𰀒, which pictured two chariots.",
+  更: "This glyph means the night watch, sitting up late, and also again. The parts drawn are 一, 日 and 乂. The older form had two chariots for the sound with 攴, a hand holding a whip, and both corrupted into the shape drawn now.",
   良: "The original glyph possibly showed corridors leading to a room: good, fine.",
   券: "This glyph means a ticket or contract. It uses the definition of 刀 (knife) and the sound of 𠔉; old contracts were cut in half.",
   効: "This glyph means effect or merit. It uses the definition of 力 (strength) and the sound of 交 (こう).",

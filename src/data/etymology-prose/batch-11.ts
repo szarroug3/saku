@@ -50,7 +50,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   罰: "Verbal abuse (詈) together with a knife (刀): a crime and its punishment.",
   聞: "This glyph means to hear. It uses the definition of 耳 (ear) and the sound of 門.",
   誤: "This glyph means to err. It uses the definition of 言 (speech) and the sound of 呉 (ご).",
-  暴: "Hands (共) lifting a plant up into the sun (日) to dry it out. It later also came to mean violent, an outburst.",
+  暴: "Hands lifting a plant up into the sun (日) to dry it out. Those hands were written 共 and are drawn here inside the 㳟. The sense of violence and outburst comes from a separate character this one took over.",
   舞: "This glyph means to dance. It uses the definition of 舛 (two feet stepping) and the sound of 無 (ぶ).",
   馬: "The original glyph looked like a horse in profile, its mane in the wind. The legs later became the four dots at the bottom.",
   識: "This glyph means to know, to discern. It uses the definition of 言 (speech) and the sound of 戠.",

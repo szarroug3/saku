@@ -5,7 +5,7 @@ export const BATCH_27: Readonly<Record<string, string>> = {
   昭: "This glyph means bright. It uses the definition of 日 (sun) and the sound of 召 (しょう).",
   柿: "This glyph means persimmon. It uses the definition of 木 (tree) and the sound of 市.",
   洞: "This glyph means cave. It uses the definition of 水 (water) and the sound of 同 (どう).",
-  津: "This glyph means harbor. It uses the definition of 水 (water) and the sound of 盡.",
+  津: "This glyph means a harbor or ferry crossing. It uses the definition of 水 (water) and the sound of 聿. That sound piece came from a reduced 盡, which corrupted into the brush shape.",
   洪: "This glyph means flood. It uses the definition of 水 (water) and the sound of 共.",
   牲: "This glyph means animal sacrifice. It uses the definition of 牛 (cow) and the sound of 生 (せい).",
   珍: "This glyph originally meant a fine gem but came to mean rare. It uses the definition of 玉 (jade) and the sound of 㐱.",

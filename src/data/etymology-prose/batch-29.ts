@@ -25,7 +25,7 @@ export const BATCH_29: Readonly<Record<string, string>> = {
   搬: "This glyph means to carry. It uses the definition of 手 (hand) and the sound of 般 (はん).",
   搾: "This glyph means to squeeze. It uses the definition of 手 (hand) and the sound of 窄.",
   楷: "This glyph means the correct, square style of writing. It uses the definition of 木 (tree) and the sound of 皆 (かい).",
-  殿: "This glyph means a hall or mansion. It uses the definition of 殳 (a hand holding a weapon) and the sound of 臀.",
+  殿: "This glyph means a hall or mansion. It uses the definition of 殳 (a hand holding a weapon), with 尸 and 共 beside it. The record gives 臀 for the sound, and another account builds it from 𠂤 instead, so it is not settled.",
   溝: "This glyph means a ditch. It uses the definition of 水 (water) and the sound of 冓.",
   溺: "This glyph means to drown. It uses the definition of 水 (water) and the sound of 弱.",
   滝: "This glyph means waterfall. It uses the definition of 水 (water) and the sound of 竜.",
@@ -55,5 +55,5 @@ export const BATCH_29: Readonly<Record<string, string>> = {
   慕: "This glyph means to yearn for. It uses the definition of 心 (heart) and the sound of 莫.",
   漂: "This glyph means to drift on water. It uses the definition of 水 (water) and the sound of 票 (ひょう).",
   漫: "This glyph means overflowing and unrestrained. It uses the definition of 水 (water) and the sound of 曼, water spreading without limit.",
-  熊: "This glyph means bear. It combines 能 (bear) with the sound of 炎. It first described a blazing fire, then took over the meaning bear when 能 was borrowed away.",
+  熊: "This glyph means bear. It uses the definition of 能, itself the old character for bear, with fire (灬) below it for the sound. That fire was written 炎, and the word it first named was the roar of a blaze.",
 };

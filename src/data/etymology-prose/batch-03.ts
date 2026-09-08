@@ -1,6 +1,6 @@
 // Plain-language etymology rewrites, batch 03. See kanji-etymology-prose.ts for house style.
 export const BATCH_03: Readonly<Record<string, string>> = {
-  書: "This glyph means write. It uses the definition of 聿 (writing brush) and the sound of 者.",
+  書: "This glyph means to write. It uses the definition of 聿 (a writing brush) and the sound of 日, which stands here for 者.",
   面: "The original glyph looked like a man's face with one eye exaggerated.",
   食: "A mouth (亼) over a bowl of rice on a stand (皀): food and eating.",
   虫: "The original glyph looked like a snake, later borrowed to mean insect.",
@@ -14,7 +14,7 @@ export const BATCH_03: Readonly<Record<string, string>> = {
   寸: "The original glyph marked the spot on the forearm where the pulse is felt, giving a small unit of measurement.",
   付: "A person (人) and a hand (寸) handing something over: to deliver, to attach.",
   止: "The original glyph looked like a footprint, originally meaning foot.",
-  正: "This glyph means correct. It uses the definition of 止 (foot) and the sound of 丁, a foot marching straight toward a goal.",
+  正: "This glyph means correct. It uses the definition of 止 (foot), a foot marching straight toward a goal, and the 一 above it was once 丁, a sound piece.",
   先: "A foot above a person (儿): to go forward, to be ahead. The foot was written 止, and it later flattened into the strokes across the top.",
   成: "This glyph means to become or turn into. The parts drawn are 𠂊 and 戈. The record has a weapon, 戊, guarding city walls, with 丁 for the sound, and the modern shape keeps neither piece whole.",
   家: "This glyph means house. It uses the definition of 宀 (roof) and the sound of 𢑓 (a pig), a home under a roof.",
@@ -40,7 +40,7 @@ export const BATCH_03: Readonly<Record<string, string>> = {
   平: "The origin is unclear.",
   反: "This glyph means to reverse. It uses the definition of 又 (hand) and the sound of 厂, picturing a hand turning over.",
   汁: "This glyph means juice. It uses the definition of 水 (water) and the sound of 十.",
-  法: "This glyph means law. It uses the definitions of 水 (water) and 廌 (a legendary beast) and the sound of 盍.",
+  法: "This glyph means law. It uses the definition of 水 (water), with 去 beside it. The older form also had 廌, a beast that judged, and 盍 for the sound; both have dropped out of the shape.",
   品: "Three mouths (口) stacked together, representing many objects, thus goods.",
   消: "This glyph means to extinguish. It uses the definition of 水 (water) and the sound of 肖 (しょう), to put out with water.",
   休: "A person (人) beside a tree (木): a man resting against a tree.",

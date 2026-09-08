@@ -26,7 +26,7 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   幅: "This glyph means width, or a hanging scroll. It uses the definition of 巾 (cloth) and the sound of 畐.",
   慌: "This glyph means flustered or confused. It uses the definition of 心 (heart) and the sound of 荒 (こう).",
   棚: "This glyph means a shelf or rack. It uses the definition of 木 (wood) and the sound of 朋.",
-  焦: "This glyph means to char or scorch. It uses the definition of 隹 (bird) and the sound of 小 (しょう).",
+  焦: "This glyph means to char or scorch. It uses the definition of 隹 (bird) over fire (灬). The record reads that fire as a corrupted 小, which once carried the sound.",
   筒: "This glyph means a tube or cylinder. It uses the definition of 竹 (bamboo) and the sound of 同.",
   絡: "This glyph means to entwine or coil around. It uses the definition of 糸 (thread) and the sound of 各: a web of thread.",
   葬: "Grass around a dead body (死), held up by two hands (廾): to bury the dead in the grass.",

@@ -1,6 +1,6 @@
 // Plain-language etymology rewrites, batch 30. See kanji-etymology-prose.ts for house style.
 export const BATCH_30: Readonly<Record<string, string>> = {
-  獄: "Two dogs (㹜) and words (言): dogs barking at each other, a jail with guard dogs.",
+  獄: "Two dogs (⺨ and 犬) with words (言) between them: dogs barking at each other, a jail with guard dogs. The pair of dogs is written 㹜 on its own.",
   磁: "This glyph means magnet. It uses the definition of 石 (stone) and the sound of 兹.",
   穀: "This glyph means grain. It uses the definition of 禾 (grain) and the sound of 𣪊.",
   箇: "This glyph means a counter for articles, from the image of a bamboo stalk. It uses the definition of 竹 (bamboo) and the sound of 固.",
@@ -39,7 +39,7 @@ export const BATCH_30: Readonly<Record<string, string>> = {
   憶: "This glyph means to remember. It uses the definition of 心 (heart) and the sound of 意 (thought).",
   憾: "This glyph means remorse or regret. It uses the definition of 心 (heart) and the sound of 感 (かん).",
   擁: "This glyph means to hug or embrace. It uses the definition of 手 (hand) and the sound of 雍.",
-  樹: "This glyph means trees or timber. It uses the definition of 木 (tree) and the sound of 尌 (to plant a tree).",
+  樹: "This glyph means trees or timber. It uses the definition of 木 (tree); the sound piece 尌, to plant a tree, is drawn here as 壴 with 寸.",
   篤: "This glyph means fervent and kind. It uses the definition of 馬 (horse) and the sound of 竹.",
   糖: "This glyph means sugar. It uses the definition of 米 (rice) and the sound of 唐 (とう).",
   緯: "This glyph means the horizontal weft thread. It uses the definition of 糸 (thread) and the sound of 韋.",

@@ -24,7 +24,7 @@ export const BATCH_14: Readonly<Record<string, string>> = {
   階: "This glyph means a storey or stair. It uses the definition of 阜 (mound, hill) and the sound of 皆 (かい).",
   飲: "This glyph means to drink. It uses the definition of 欠 (an open mouth) and the sound of 酓.",
   準: "This glyph means a standard or to correspond to. It uses the definition of 水 (water) and the sound of 隼, from the idea of a level water surface.",
-  漢: "This glyph means China or Sino-. It uses the definition of 水 (water) and the sound of 熯. It began as the name of a river.",
+  漢: "This glyph means China or Sino-, and began as the name of a river. It uses the definition of 水 (water); the sound piece was 熯, whose upper part 𦰩 is drawn here as 艹 over 口 and 夫.",
   態: "This glyph means attitude or condition. It uses the definition of 心 (heart) and the sound of 能: one's heartfelt bearing.",
   模: "This glyph means to imitate, or a model. It uses the definition of 木 (tree) and the sound of 莫.",
   疑: "The original glyph showed a man with a cane looking around with his mouth open, unsure which way to go: to be confused, to doubt.",

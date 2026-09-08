@@ -35,7 +35,7 @@ export const BATCH_13: Readonly<Record<string, string>> = {
   迫: "This glyph means to press, to force. It uses the definition of 辵 (to walk) and the sound of 白 (はく).",
   南: "The original glyph pictured a bell-like vessel. It was later borrowed to mean south.",
   封: "This glyph means to seal. A hand (寸) works earth mounded up as 圭, two heaps of it. The sound piece was 丰, a tree seedling planted to mark a boundary.",
-  春: "This glyph means spring. It uses the definition of 艸 (grass) and 日 (sun), and the sound of 屯 (swollen sprout).",
+  春: "This glyph means spring. It uses the definition of 日 (sun), with 𡗗 above it. That 𡗗 is what grass, 艸, and a swollen sprout, 屯, merged into, the sprout carrying the sound.",
   昨: "This glyph means yesterday. It uses the definition of 日 (sun) and the sound of 乍.",
   祖: "This glyph means ancestor. It uses the definition of 示 (altar) and the sound of 且.",
   祝: "A person with an open mouth (兄) beside an altar (示): to pray, to celebrate.",

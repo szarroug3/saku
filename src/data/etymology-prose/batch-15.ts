@@ -54,7 +54,7 @@ export const BATCH_15: Readonly<Record<string, string>> = {
   塩: "This glyph means salt. It is the simplified Japanese form of 鹽.",
   夢: "This glyph means dream. It pairs 夕 (night) for meaning with the sound of 瞢, and its old form pictured a person lying in bed with the eyes emphasized.",
   微: "This glyph means tiny or delicate. It uses the definition of 攴 (a hand with a tool), combing out fine hairs. Its sound piece was 美, a person with long hair, which corrupted into the 山 and 兀 in the middle.",
-  棄: "Two hands (廾) throwing out a child in a basket (𠀠): to abandon, to discard.",
+  棄: "This glyph means to abandon or discard. The older glyph had two hands, 廾, throwing out a child, 子, in a basket, 𠀠. The parts drawn now are 亠, 厶, 丗 and 木.",
   源: "This glyph means source or origin. It uses the definition of 水 (water) and the sound of 原 (origin, げん): the spring where water begins.",
   滑: "This glyph means slippery. It uses the definition of 水 (water) and the sound of 骨 (こつ).",
   罪: "A net (网) closing over wrongdoing (非): guilt, crime.",
