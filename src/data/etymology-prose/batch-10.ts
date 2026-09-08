@@ -42,7 +42,7 @@ export const BATCH_10: Readonly<Record<string, string>> = {
   盛: "This glyph means to heap up and flourish. It uses the definition of 皿 (a dish) and the sound of 成 (じょう).",
   設: "This glyph means to set up or establish. It uses the definition of 言 (speech) and the sound of 埶.",
   陸: "This glyph means dry land. It uses the definition of 阜 (mound) and the sound of 坴.",
-  勝: "This glyph means victory. It uses the definition of 力 (strength) and the sound of 朕.",
+  勝: "This glyph means victory. The parts drawn are 月 and 劵. The older account builds it from 力 for strength and 朕 for the sound, and neither piece survives in the shape.",
   悲: "This glyph means to grieve. It uses the definition of 心 (heart) and the sound of 非 (ひ).",
   換: "This glyph means to exchange. It uses the definition of 手 (hand) and the sound of 奐.",
   勢: "This glyph means force or momentum. It uses the definition of 力 (power) and the sound of 埶.",

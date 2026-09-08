@@ -21,7 +21,7 @@ export const MANUAL_05: Readonly<Record<string, string>> = {
   栃: "A Japanese-made kanji for the tochi, the horse chestnut tree, built on 木 (tree). The origin of its right side is unsettled.", // source: https://en.wiktionary.org/wiki/栃
   浄: "This glyph means clean, to cleanse. It uses 氵 (water) for the meaning and 争 for the sound; it is the simplified form of 淨.", // source: https://en.wiktionary.org/wiki/淨
   窃: "This glyph means to steal, stealthily. The old 竊 was elaborate, rice taken through an opening; the modern form pairs 穴 (a hole) with 切 for the sound (せつ).", // source: https://en.wiktionary.org/wiki/竊
-  准: "This glyph means standard, quasi. It comes from 準, a water (氵) leveling tool with 隹 for the sound (じゅん); the form 准 writes 冫.", // source: https://en.wiktionary.org/wiki/準
+  准: "This glyph means standard, quasi. It comes from 準, a leveling tool set by water, and takes the sound of 隹. The form 准 writes 冫 where 準 writes the water.", // source: https://en.wiktionary.org/wiki/準
   蚕: "This glyph means silkworm. The traditional 蠶 set many insects under a sound piece, and the modern 蚕 simply writes 虫 (insect) below 天.", // source: https://en.wiktionary.org/wiki/蠶
   逓: "This glyph means to relay, to pass in turn. It uses 辶 (to go along a road) for the meaning and 虒 for the sound; it is the simplified form of 遞.", // source: https://en.wiktionary.org/wiki/遞
   曽: "The original glyph pictured a tiered steamer for cooking food. It was borrowed for the senses formerly, once, and the cooking sense passed to 甑.", // source: https://en.wiktionary.org/wiki/曾

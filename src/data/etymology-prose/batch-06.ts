@@ -2,7 +2,7 @@
 export const BATCH_06: Readonly<Record<string, string>> = {
   防: "This glyph means to ward off or defend. It uses the definition of 阜 (mound) and the sound of 方.",
   巾: "The original glyph looked like a hanging piece of cloth: a towel.",
-  制: "A knife (刀) cutting a tree (朱) down to shape: to control, a system.",
+  制: "A knife (刀) cutting a tree down to shape: to control, hence a system. The tree was written 朱; it is now drawn 牛 over 巾.",
   送: "This glyph means to escort or send off. It uses the definition of 辵 (to walk) and the sound of 灷.",
   料: "Rice (米) measured out in a dipper (斗): to gauge, hence materials and fees.",
   速: "This glyph means quick or fast. It uses the definition of 辵 (to walk) and the sound of 束 (そく).",

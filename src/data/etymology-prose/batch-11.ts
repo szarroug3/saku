@@ -4,7 +4,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   万: "The origin is unclear.",
   毛: "The original glyph looked like a feather or a tuft of hair.",
   他: "This glyph means other. It uses the definition of 人 (man) and the sound of 也.",
-  包: "A fetus (巳) wrapped inside a womb (勹): to wrap, to cover.",
+  包: "A womb (勹) wrapped around what is inside: to wrap, to cover. The inner piece is drawn 己. The sources read it as a fetus, written 巳, or as a swaddled baby, and which is right is not settled.",
   北: "The original glyph showed two people standing back to back. It first meant back, then came to mean north.",
   句: "This glyph means phrase. It uses the definition of 丩 (two ropes entangled) and the sound of 口.",
   台: "This glyph means stand. It uses the definition of 口 (mouth) and the sound of 㠯.",

@@ -48,7 +48,7 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   迅: "This glyph means swift. It uses the definition of 辵 (movement) and the sound of 卂.",
   串: "The original glyph looked like objects strung together on a skewer.",
   伯: "This glyph means a chief or eldest. It uses the definition of 人 (person) and the sound of 白 (はく).",
-  冶: "Metal ingots (呂) with a ladle (刀): to melt and cast metal, smelting.",
+  冶: "This glyph means to melt and cast metal. The 冫 on the left stands for metal ingots, and 台 on the right holds the ladle with its mouth. Both were once drawn in full, 呂 for the ingots and 刀 for the ladle.",
   呈: "This glyph means to present or offer. It uses the definition of 口 (mouth) and the sound of 𡈼.",
   坑: "This glyph means a pit. It uses the definition of 土 (soil) and the sound of 亢.",
   妖: "This glyph means bewitching or calamitous. It uses the definition of 女 (woman) and the sound of 夭.",

@@ -32,7 +32,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   魔: "This glyph means demon or evil spirit. It uses the definition of 鬼 (demon) and the sound of 麻 (ま).",
   丁: "The origin is unclear.",
   久: "The origin is unclear.",
-  千: "This glyph means thousand. It uses the definition of 一 (one, a number) and the sound of 人.",
+  千: "This glyph means thousand. The parts drawn are 丿 and 十. The older account has a stroke for the number with 人 giving the sound, and the modern shape no longer shows either.",
   乏: "The origin is unclear.",
   介: "A person (人) with a mark on each side: to be in between, to come between.",
   仏: "A person (人) beside 厶, adopted as a simple substitute for 佛: Buddha.",

@@ -3,7 +3,7 @@ export const BATCH_15: Readonly<Record<string, string>> = {
   町: "This glyph means town. It uses the definition of 田 (field) and the sound of 丁 (ちょう).",
   究: "This glyph means research. It uses the definition of 穴 (cave) and the sound of 九 (きゅう).",
   供: "This glyph means to offer. It uses the definition of 人 (person) and the sound of 共 (きょう).",
-  典: "Official books (冊) resting on a table (丌): a canon of law, a ceremony.",
+  典: "The original glyph showed official books (冊) resting on a table (丌): a canon of law, a ceremony. The books flattened into the 曲 drawn now.",
   到: "This glyph means to arrive. It uses the definition of 至 (to arrive) and the sound of 刀 (とう).",
   奇: "This glyph means strange. It uses the definition of 大 (big) and the sound of 可.",
   官: "Rooms under a roof (宀): an official building, and the bureaucrat who works there.",

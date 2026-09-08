@@ -33,7 +33,7 @@ export const BATCH_30: Readonly<Record<string, string>> = {
   賠: "This glyph means compensation. It uses the definition of 貝 (shell, money) and the sound of 咅, from the idea of making amends.",
   賦: "This glyph means a levy or tax. It uses the definition of 貝 (shell, money) and the sound of 武, from the idea of collecting taxes.",
   鋭: "This glyph means sharp or pointed. It uses the definition of 金 (metal) and the sound of 兌, the sharp tip of a blade.",
-  凝: "This glyph means to congeal or freeze. It uses the definition of 仌 (ice) and the sound of 疑.",
+  凝: "This glyph means to congeal or freeze. It uses the definition of 冫 (ice) and the sound of 疑.",
   壁: "This glyph means a wall. It uses the definition of 土 (earth) and the sound of 辟, an earthen wall.",
   憲: "This glyph means law or constitution. It uses the definition of 心 (heart) and the sound of 𡩜.",
   憶: "This glyph means to remember. It uses the definition of 心 (heart) and the sound of 意 (thought).",

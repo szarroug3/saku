@@ -16,7 +16,7 @@ export const BATCH_13: Readonly<Record<string, string>> = {
   友: "Two hands (又) reaching the same way: friendship, a friend.",
   兄: "A mouth (口) over a person (儿): the one who gives orders, the elder brother.",
   百: "This glyph means hundred. It uses the definition of 一 (one) and the sound of 白.",
-  兵: "Two hands (廾) holding an axe (斤): a soldier bearing a weapon.",
+  兵: "Two hands holding a short axe (斤): a soldier bearing a weapon. The hands were written 廾, and they are now the 八 below.",
   坊: "This glyph means a town quarter. It uses the definition of 土 (earth) and the sound of 方.",
   床: "Wood (木) inside a building (广): a wooden piece of furniture, a bed or floor.",
   我: "The original glyph looked like a trident-like weapon. It was later borrowed to mean I, me.",

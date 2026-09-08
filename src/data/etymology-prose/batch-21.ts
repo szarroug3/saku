@@ -49,7 +49,7 @@ export const BATCH_21: Readonly<Record<string, string>> = {
   尻: "This glyph means the buttocks. It uses the definition of 尸 (body) and the sound of 九.",
   巧: "This glyph means skilled or ingenious. It uses the definition of 工 (craft) and the sound of 丂.",
   永: "The original glyph looked like a long river with branching tributaries, suggesting length and permanence.",
-  充: "A newborn (𠫓) above a standing person (儿): a child grows to full maturity, to fill out.",
+  充: "The original glyph put a newborn (𠫓) above a standing person (儿): a child grows to full maturity, to fill out. The parts drawn now are 亠 and 允.",
   兆: "The original glyph looked like the cracks that formed on a heated tortoise shell during divination, read as omens.",
   叫: "This glyph means to shout or yell. It uses the definition of 口 (mouth) and the sound of 丩.",
   吐: "This glyph means to spit or vomit. It uses the definition of 口 (mouth) and the sound of 土.",

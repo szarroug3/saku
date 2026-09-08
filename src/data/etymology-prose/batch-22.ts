@@ -13,7 +13,7 @@ export const BATCH_22: Readonly<Record<string, string>> = {
   秀: "A grain plant (禾) coming into bloom, an ear hanging from the stalk: to excel, outstanding.",
   京: "The original glyph looked like a tall building on a hill: a capital city.",
   依: "This glyph means to rely on. It uses the definition of 人 (person) and the sound of 衣 (い).",
-  刷: "This glyph means to print or brush. It uses the definition of 刀 (knife) and the sound of 㕞.",
+  刷: "This glyph means to print or brush. It uses the definition of 刀 (knife); the sound piece 㕞, a hand with a brush, is drawn here as 尸 over 巾.",
   卓: "The origin is unclear.",
   叔: "A hand (又) using a wooden stake (尗) to dig the ground. It was later borrowed to mean paternal uncle.",
   妬: "This glyph means jealousy. It uses the definition of 女 (woman) and the sound of 石.",

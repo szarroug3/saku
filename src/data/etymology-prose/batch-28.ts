@@ -30,7 +30,7 @@ export const BATCH_28: Readonly<Record<string, string>> = {
   逮: "This glyph means to apprehend or chase. It uses the definition of 辵 (movement) and the sound of 隶.",
   郭: "A tall tower (𩫖) beside a city (邑): the outer city walls.",
   傘: "The original glyph looked like an umbrella.",
-  僅: "This glyph means only a little. It uses the definition of 人 (person) and the sound of 堇.",
+  僅: "This glyph means only a little. It uses the definition of 人 (person); the sound piece 堇 is drawn here as 艹 over 三.",
   喉: "This glyph means throat. It uses the definition of 口 (mouth) and the sound of 侯.",
   喚: "This glyph means to yell or call. It uses the definition of 口 (mouth) and the sound of 奐.",
   喩: "This glyph means metaphor. It uses the definition of 口 (mouth) and the sound of 兪.",

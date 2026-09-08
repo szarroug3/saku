@@ -77,7 +77,7 @@ const BATCH_01: Readonly<Record<string, string>> = {
   乙: "The origin is unclear.",
   乞: "A variant of 气, set apart to mean to beg.",
   山: "The original glyph looked like three mountain peaks.",
-  出: "A foot (止) stepping out of a hollow (凵): to step outside, to exit.",
+  出: "A foot stepping out of a hollow (凵): to step outside, to exit. The foot was written 止, and it later flattened into the 山 above.",
   上: "A short stroke above a long line, marking what is above (the opposite of 下).",
   生: "A young shoot (屮) rising from the ground (一): life and growth.",
   手: "The original glyph looked like a hand with its fingers spread.",

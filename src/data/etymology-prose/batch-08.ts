@@ -43,7 +43,7 @@ export const BATCH_08: Readonly<Record<string, string>> = {
   片: "The original glyph looked like one half of a split tree: a slice, one side.",
   仕: "This glyph means to serve. It uses the definition of 人 (person) and the sound of 士 (し).",
   布: "This glyph means cloth. It uses the definition of 巾 (cloth) and the sound of 父 (ふ).",
-  光: "A fire (火) held above a kneeling person (卩): light, radiance.",
+  光: "The original glyph held a fire (火) above a kneeling person (卩): light, radiance. The parts drawn now are ⺌ and 兀.",
   列: "Bones (歹) and a knife (刀): to cut apart, hence to arrange in a row.",
   住: "This glyph means to dwell. It uses the definition of 人 (person) and the sound of 主.",
   余: "The original glyph looked like a thatched cottage.",

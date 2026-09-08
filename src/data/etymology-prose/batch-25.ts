@@ -39,7 +39,7 @@ export const BATCH_25: Readonly<Record<string, string>> = {
   襲: "This glyph means to attack. It uses the definition of 衣 (cloth) and the sound of 龖.",
   鬱: "People (大, 勹) hiding in a lush forest (林): dense growth, and by extension gloom and depression.",
   刃: "A knife (刀) with a mark added on the edge to point out the blade.",
-  冗: "A person (儿) at home under a roof (宀) with nothing to do: idle, superfluous.",
+  冗: "The original glyph put a person (儿) at home under a roof (宀) with nothing to do: idle, superfluous. The parts drawn now are 冖 and 几.",
   勾: "A variant of 句, with 口 written as 厶.",
   厄: "The original glyph pictured a person kneeling with a small stroke marking the bent knee.",
   双: "Two hands (又 doubled): a pair, a set.",

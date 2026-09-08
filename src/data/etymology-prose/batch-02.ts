@@ -22,7 +22,7 @@ export const BATCH_02: Readonly<Record<string, string>> = {
   耳: "The original glyph looked like an ear.",
   又: "The original glyph looked like a right hand.",
   取: "A hand (又) taking an ear (耳), from a hunter's rite of taking the ear of caught prey: to take.",
-  事: "A hand (又) holding up a flag on its pole (中): to carry out one's work, a matter.",
+  事: "The original glyph showed a hand (又) holding a flag on its pole (中): to carry out one's work, a matter. The shape has since flattened, so the parts drawn are 口, ⺕ and 亅.",
   力: "The original glyph looked like a flexed arm, or perhaps a plough: power, strength.",
   水: "The original glyph looked like flowing water.",
   木: "The original glyph looked like a tree, branches on top and roots below.",
@@ -52,6 +52,6 @@ export const BATCH_02: Readonly<Record<string, string>> = {
   作: "This glyph means to make. It uses the definition of 人 (person) and the sound of 乍.",
   車: "The original glyph looked like a carriage seen from above: a vehicle.",
   刈: "A sickle (乂) and a knife (刀): to reap, to cut.",
-  前: "A foot (止) on a boat (舟) moving ahead: in front, before.",
+  前: "The original glyph put a foot (止) on a boat (舟) moving ahead: in front, before. The foot flattened into the strokes on top and the boat into 月, with a knife added later.",
   通: "This glyph means to pass through. It uses the definition of 辵 (walk) and the sound of 甬.",
 };

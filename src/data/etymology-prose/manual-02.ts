@@ -10,7 +10,7 @@ export const MANUAL_02: Readonly<Record<string, string>> = {
   巻: "This glyph is the simplified form of 卷, which showed hands rolling something up above a kneeling body (卩): to curl, hence a rolled scroll or volume.", // source: https://en.wiktionary.org/wiki/卷
   昼: "This glyph is the simplified form of 晝, which sets the sun (日) beneath a brush-like top: the marked-off span of daylight, daytime.", // source: https://en.wiktionary.org/wiki/晝
   帯: "This glyph is the simplified form of 帶, a picture of a woven sash with ornaments hanging from it, above a cloth (巾): a belt.", // source: https://en.wiktionary.org/wiki/帶
-  勤: "This glyph means to work hard. It uses 力 (strength) for its meaning and 菫 (堇) for its sound.", // source: https://en.wiktionary.org/wiki/勤
+  勤: "This glyph means to work hard. It uses 力 (strength) for its meaning and 菫 for its sound, which is the form 堇 takes here.", // source: https://en.wiktionary.org/wiki/勤
   営: "This glyph is the simplified form of 營, which shows a light burning over a walled enclosure: working late by lamplight to build, run, and manage.", // source: https://en.wiktionary.org/wiki/營
   検: "This glyph is the simplified form of 檢. It uses 木 (wood, from the wooden tablet once used to seal and check documents) for its meaning and 㑒 (僉) for its sound.", // source: https://en.wiktionary.org/wiki/檢
   撃: "This glyph is the simplified form of 擊. It uses 手 (hand) for its meaning and 毄 (to hit) for both its sound and its sense: to strike.", // source: https://en.wiktionary.org/wiki/擊

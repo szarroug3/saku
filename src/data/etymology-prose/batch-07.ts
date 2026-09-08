@@ -12,7 +12,7 @@ export const BATCH_07: Readonly<Record<string, string>> = {
   打: "This glyph means to strike or hit. It uses the definition of 手 (hand) and the sound of 丁.",
   式: "This glyph means style or ceremony. It uses the definition of 工 (work) and the sound of 弋.",
   判: "This glyph means to judge. It uses the definition of 刀 (knife) and the sound of 半 (はん).",
-  具: "Two hands (廾) holding up a cauldron (鼎): to prepare and set out, hence tools and utensils.",
+  具: "The original glyph showed two hands (廾) holding up a bronze cauldron (鼎): to prepare and set out, hence tools and utensils. The cauldron flattened into the 目 drawn now.",
   始: "This glyph means to begin. It uses the definition of 女 (woman) and the sound of 台.",
   服: "This glyph means to serve and obey, later clothing. It uses the definition of 凡 (tray) and the sound of 𠬝.",
   犯: "This glyph means crime or to offend. It uses the definition of 犬 (dog) and the sound of 𢎘.",

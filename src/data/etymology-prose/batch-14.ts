@@ -47,7 +47,7 @@ export const BATCH_14: Readonly<Record<string, string>> = {
   幼: "Something tiny (幺) with only a little strength (力): the sense of infancy and childhood.",
   玉: "The original glyph looked like three pieces of jade strung together on a cord: a jewel.",
   企: "A person (人) up on tiptoe (止, a foot) reaching high: to stand on tiptoes, hence to plan or undertake.",
-  刑: "This glyph means punishment or penalty. It uses the definition of 刀 (knife) and the sound of 井.",
+  刑: "This glyph means punishment or penalty. It uses the definition of 刀 (knife) and the sound of 开. That sound piece was 井 before the shape corrupted.",
   吸: "This glyph means to inhale or suck. It uses the definition of 口 (mouth) and the sound of 及 (きゅう): to draw in through the mouth.",
   如: "This glyph means likeness, like, or such as. It uses the definition of 口 (mouth) and the sound of 女 (じょ).",
   吹: "A mouth (口) and a person blowing out breath (欠): to blow, to breathe out.",
