@@ -3042,3 +3042,64 @@ so each got one that opens it, looks for something only the opened fold shows,
 closes it and looks again. The phone menu's runs at 390 wide, which is the only
 width it exists at. Screenshots of all five, closed and open, before and after,
 went to Sam on the card.
+
+### Four things Sam saw on the live site (2026-09-08, SAK-413)
+
+**The parts a kanji is built from.** The Atlas's built-from cut was fifty-odd
+chips in four rows, half a screen of them between the count and the first tile.
+It is one control now: a chip that says what is picked, and a floating card of
+components behind it. `SkyMultiSelect` (`sky-multi-select.tsx`) is the new
+piece, and it follows `SkyMenuChip`: the same `Floating` over `SkyCard`, closing
+on a click elsewhere, on Escape, and on any scroll. The card holds a real
+`listbox` with `aria-multiselectable`, which takes the focus when it opens,
+carries `aria-activedescendant`, walks on the arrows, and toggles on space or
+enter. Its 868 options are cells in a grid, eight to a row, rather than rows in
+a column: they are single characters, you find one by its shape, and 109 rows
+beats 869. Left and right walk a cell, up and down walk a row.
+
+It takes several parts, and a kanji has to carry all of them. That is what the
+cut is for (SAK-325): a character is in front of you and you can name two of its
+pieces, so naming the second should narrow the answer, not widen it. The
+components are offered rarest first, because a common radical cuts almost
+nothing, and the counts are off the face of it. The few components with no
+character of their own, filed under a catalogue name like `CDP-8BC4`, are not
+offered: a name you cannot recognise on sight is never the one you reach for.
+Rarest-first does put 氵 and 口 at the very end of the grid; that is the order
+the card asked for, and it is one comparator to flip.
+
+**The readings.** They are a table, and they were flex rows: the reading came
+first, so か and じつ and にち each pushed the hear button and the word list to a
+different x, and a long list of words wrapped back under the reading. Three
+columns now, in this order: the hear button, the reading, the words. The button
+leads because it is the one cell that is the same width on every row. ONE grid
+holds both the on'yomi and the kun'yomi lists, their eyebrows spanning it, so
+the two share columns instead of each measuring its own; the `ul` and `li` are
+`contents`, so the rows are cells of that grid while the list stays a list. A
+word's own readings are the same table.
+
+**The round button's glyph.** Centring the box does not centre the ink, and Sam
+saw the `⌃` riding high. Two things push it, and neither is visible to
+`place-items-center`. The text baseline sits `(ascent − descent) / 2` below the
+middle of any line box, 4.5px down for the UI font at 13px; and each glyph then
+draws its ink its own distance above that baseline, 6.8px for `⌃` against 0.5px
+for `⌄`, which is a 6.3px spread inside a 28px circle. So `sky-button.tsx`
+carries a shift per glyph, measured with `measureText().actualBoundingBox*` in
+the font that actually renders it and rounded to the half pixel a 2x screen can
+draw. Re-measure them if the UI font or the button's font-size changes; nothing
+else moves them.
+
+**The old app's colours.** `why.tsx` came over in SAK-398 still wearing
+`text-text-muted`, which on the night wash is a warm near-black a shade off the
+panel behind it: the fold opened onto text nobody could read. The opened
+paragraphs are the body of the fold, so they take `text-sky-ink`; the caption
+above stays `text-sky-muted`, being a footnote to its section; "Why?" takes
+`text-sky-accent`. The three other files from that move were swept for the same
+classes: `stroke-order.tsx` twice, `pitch-mark.tsx` once, and `hear-button.tsx`,
+whose `text-accent` was reaching for the Sky's accent all along.
+
+**The gate.** 3,792 unit tests pass, 1 skipped, unchanged: none of this is model
+code. 43 e2e pass, from 41. The two new ones are the two behaviours worth
+holding: the built-from control takes a second part from the keyboard alone and
+narrows to the kanji carrying both, and a readings table's three columns each
+have exactly one x. Before-and-after screenshots of all four went to Sam on the
+card.

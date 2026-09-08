@@ -93,7 +93,7 @@ export interface RoundButtonProps {
  * the ⌃ riding high in its ring. Two things push it. The text baseline sits
  * `(ascent − descent) / 2` below the middle of any line box, which for the UI
  * font at 13px is 4.5px down; and then each glyph draws its ink its own
- * distance above that baseline — 6.8px for ⌃, 0.5px for ⌄, a 6.3px spread
+ * distance above that baseline: 6.8px for ⌃, 0.5px for ⌄, a 6.3px spread
  * inside a 28px circle. `place-items-center` cannot see either.
  *
  * So the shift is measured, not guessed: `measureText(glyph)` in the rendered
