@@ -220,7 +220,7 @@ export function sizeFor(starCount: number, base: number): number {
 // lesson's accent takes over a line at the star it is showing. THE STARS
 // CARRY THE STATE: how far a star's glow reaches says how well it is going,
 // and the two marks a star can wear say the rest. Slipping is a star going
-// out, so it loses its glow and takes a thin ring instead; picked for
+// out, so it loses its glow and dims; picked for
 // tonight is a wide soft halo round whatever the star already is, because
 // being on the list is a mark, not a state.
 //
@@ -272,9 +272,9 @@ const BY_STANDING: Record<Standing, Paint> = {
   solid: { fill: "var(--sky-solid)", opacity: 1, glow: 6 },
   "getting-there": { fill: "var(--sky-getting-there)", opacity: 1, glow: 4 },
   shaky: { fill: "var(--sky-shaky)", opacity: 1, glow: 2 },
-  // a star going out: dimmed, no glow at all, and a thin ring where the glow
-  // used to be. The ring is the mark, so nothing here is dashed.
-  slipping: { fill: "var(--sky-slipping)", opacity: 0.7, glow: 0, ring: { stroke: "var(--sky-slipping)", grow: 3, opacity: 0.6, width: 1 } },
+  // a star going out: dimmed and with no glow at all. That is the whole mark
+  // (Sam, 2026-09-08: no ring), so nothing here is dashed or drawn over.
+  slipping: { fill: "var(--sky-slipping)", opacity: 0.7, glow: 0 },
   // untested: nothing has been proved, so no glow; a faint halo says it has
   // been met.
   claimed: { fill: "var(--sky-claimed)", opacity: 1, glow: 0, halo: { fill: "var(--sky-star-mid)", grow: 5, opacity: 0.15 } },
@@ -305,8 +305,8 @@ export interface LinePaint { stroke: string; width: number; opacity: number }
 /** Every line is the same line: one colour, one weight, never dashed. Fog is
  * the only fade, the accent the only other colour, and something singled out
  * elsewhere takes every other line right back. */
-export const LINE = { stroke: "var(--sky-link)", width: 1, opacity: 0.45 } as const;
-export const LINE_FOG = 0.18;
+export const LINE = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 } as const;
+export const LINE_FOG = 0.35;
 export const LINE_MUTED = 0.12;
 export const LINE_EMPHASIS = { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 } as const;
 

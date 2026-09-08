@@ -3120,9 +3120,10 @@ warmest colour, coral, was spent on "slipping".
 Five rules, and the paint moved into `src/sky/lib/constellation.ts` so they
 can be held to in a unit test rather than only seen.
 
-**Lines carry the shape and nothing else.** Every line is `--sky-link`, one
-pixel wide, at 0.45, and none of them is dashed. A line with an undiscovered
-star at either end drops to 0.18, so unknown ground reads as fog rather than
+**Lines carry the shape and nothing else.** Every line is `--sky-link`, 1.25
+wide, at 0.8 (a first cut at one pixel and 0.45 was too faint to read, Sam,
+2026-09-08), and none of them is dashed. A line with an undiscovered
+star at either end drops to 0.35, so unknown ground reads as fog rather than
 as a different kind of joining. The lesson's accent still takes over the
 lines at the star the panel is showing, and something singled out elsewhere
 still takes every other line back to 0.12. `linePaintFor(a, b)` gives the
@@ -3133,9 +3134,9 @@ point.
 shaky 2, and nothing below that glows at all. Sizes are still by role.
 
 **Slipping is a star going out**, not the friendliest thing on the sky: it
-keeps its coral, dimmed to 0.7, loses its glow, and takes a thin solid ring
-where the glow used to be (three past the body, coral at 0.6). The ring is
-the mark, so no dashes are needed anywhere. Untested has no glow either but
+keeps its coral, dimmed to 0.7, and loses its glow. A thin ring was tried as
+the mark and Sam did not like it (2026-09-08), so the dimming is the whole
+mark, and no dashes are needed anywhere. Untested has no glow either but
 wears a faint halo, star-mid at 0.15; undiscovered is a bare dim dot.
 
 **Tonight is a mark, not a state.** Picked for tonight is a wide soft halo in
@@ -3155,7 +3156,7 @@ asteroid, binary), and every position. What did change beyond the rules is
 that a glow now scales with the constellation's `unit` the way the star's own
 radius always did; it used to be a fixed pixel count at every size.
 
-`constellation.test.ts` pins all of it: the glow per standing, the ring, the
+`constellation.test.ts` pins all of it: the glow per standing, no ring, the
 two halos, tonight over each standing, and the line rule from both ends.
 `e2e/sky.spec.ts` gained two, one that no line on the home sky is dashed or
 any colour but the link's, and one that the key draws seven stars.
