@@ -94,7 +94,11 @@ test("the quiz card is centred in the space the list leaves, and never cut off",
     const panel = document.querySelector('aside[aria-label="The cards"]')!;
     const box = panel.parentElement!;
     const card = box.firstElementChild!;
-    const row = card.querySelector('[class*="md:flex-row"]')!;
+    // the row that holds the question beside its help bar, which is what used
+    // to spill past the clip: the card holds one surface, and the row is the
+    // last thing on it, under the two arrows. Walked rather than picked out by
+    // a class, so renaming a Tailwind utility cannot quietly pass this test.
+    const row = card.firstElementChild!.lastElementChild!;
     const b = box.getBoundingClientRect(), c = card.getBoundingClientRect(), p = panel.getBoundingClientRect();
     return { spilled: row.scrollWidth - row.clientWidth, left: Math.round(c.left - b.left), right: Math.round(Math.min(p.left, b.right) - c.right) };
   });
