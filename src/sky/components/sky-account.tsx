@@ -5,10 +5,9 @@
 // Account. The sign-in control and the actions are the app's, handed in;
 // this only lays them out and asks before the one that cannot be undone.
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 
 import { SkyButton } from "@/sky/components/sky-button";
-import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
@@ -19,10 +18,6 @@ export interface SkyAccountProps {
   email?: string;
   /** Starts the sign-in (the app's Google flow); absent when sign-in is not set up here. */
   onSignIn?: () => Promise<void>;
-  /** Signs in with an email and a password: a test account's way in, shown
-   * only on the route's secret page. Never the learner's normal way in,
-   * which is Google, and never a way to make an account. */
-  onSignInWithPassword?: (email: string, password: string) => Promise<void>;
   onSignOut?: () => Promise<void>;
   /** Wipes every bit of progress. Asked twice for. */
   onWipe?: () => Promise<void>;
@@ -41,21 +36,13 @@ function GoogleMark() {
   );
 }
 
-export function SkyAccount({ signedIn, name, email, onSignIn, onSignInWithPassword, onSignOut, onWipe, height }: SkyAccountProps) {
+export function SkyAccount({ signedIn, name, email, onSignIn, onSignOut, onWipe, height }: SkyAccountProps) {
   const [busy, setBusy] = useState<"out" | "wipe" | "in" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const signIn = async () => {
     if (!onSignIn) return;
     setBusy("in"); setError(null);
     try { await onSignIn(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); setBusy(null); }
-  };
-  const [address, setAddress] = useState("");
-  const [password, setPassword] = useState("");
-  const signInWithPassword = async (e?: FormEvent) => {
-    e?.preventDefault();
-    if (!onSignInWithPassword || !address || !password) return;
-    setBusy("in"); setError(null);
-    try { await onSignInWithPassword(address, password); } catch (err) { setError(err instanceof Error ? err.message : String(err)); setBusy(null); }
   };
   const [asking, setAsking] = useState(false);
   const [wiped, setWiped] = useState(false);
@@ -83,14 +70,6 @@ export function SkyAccount({ signedIn, name, email, onSignIn, onSignInWithPasswo
               {onSignIn
                 ? <SkyButton variant="outline" disabled={busy !== null} onClick={signIn}><GoogleMark />{busy === "in" ? "Redirecting…" : "Continue with Google"}</SkyButton>
                 : <p className="text-[13px] text-sky-muted">Sign-in is not set up on this deployment.</p>}
-              {onSignInWithPassword && (
-                <form onSubmit={signInWithPassword} className="mt-4 flex flex-col gap-2" aria-label="Sign in with email">
-                  <p className="text-[13px] text-sky-muted">A test account, with an email and a password.</p>
-                  <SkyInput type="email" name="email" placeholder="Email" autoComplete="username" value={address} onChange={(ev) => setAddress(ev.target.value)} />
-                  <SkyInput type="password" name="password" placeholder="Password" autoComplete="current-password" value={password} onChange={(ev) => setPassword(ev.target.value)} />
-                  <div><SkyButton variant="outline" disabled={busy !== null || !address || !password} onClick={() => void signInWithPassword()}>{busy === "in" ? "Signing in…" : "Sign in with email"}</SkyButton></div>
-                </form>
-              )}
               {error && <p className="mt-2 text-[13px] text-sky-slipping">{error}</p>}
             </div>
           </SkyPanel>

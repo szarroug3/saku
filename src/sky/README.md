@@ -1705,3 +1705,16 @@ because the plan had assumed that file would be deleted and
 `scripts/seed-content-entries.mjs` still runs it. The function and its
 table live in `lib/radical-position.ts` now, a leaf with no imports of
 its own, read by the page and the seed code alike.
+
+### The test account goes (2026-09-08, SAK-397)
+
+A fake email-provider account and a secret way in for it: `/signin/<key>`,
+a 404 unless the address matched `EMAIL_SIGNIN_KEY`, showing the account
+page with an email and password form under the Google button. The form
+only ever signed in; it could not make an account. All of it is gone: the
+page, the form, the `onSignInWithPassword` prop that carried it, and the
+`.env.example` entry. The Google button is the only way in again.
+
+The reviewing session removed the `EMAIL_SIGNIN_KEY` variable from Vercel
+and deleted the account's 8,265 rows on 2026-09-08. The auth user row
+itself, under `auth.users`, is Sam's to delete in the Supabase dashboard.

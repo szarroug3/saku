@@ -26,7 +26,7 @@ export default async function SkyAccountPage() {
   const who = userId ? await whoIsSignedIn() : {};
   return (
     <>
-      <AccountClient signedIn={!!userId} name={who.name} email={who.email} authEnabled={authEnabled} emailSignIn={false} />
+      <AccountClient signedIn={!!userId} name={who.name} email={who.email} authEnabled={authEnabled} />
     </>
   );
 }
