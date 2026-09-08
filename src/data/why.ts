@@ -54,40 +54,35 @@ export interface Why {
 }
 
 /**
- * The stroke-order rationale, in the owner's own words.
+ * Why stroke order matters, and why it's worth learning.
  *
- * ONE COPY, TWO PANELS, and they disagree about what to DO with it. The
- * Library's panel is encouraging (a reference you looked something up in);
- * the lesson's is discouraging (do not drill handwriting yet). Those are the
- * ledes and the paragraphs that follow. But WHY stroke order matters is the
- * same argument in both places, so it lives here once and must not drift into
- * two slightly different versions again.
- */
-const STROKE_ORDER_RATIONALE =
-  "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.";
-
-/**
- * Why stroke order matters — and why it's worth learning.
+ * Shown under the stroke chart, where the order is actually on the screen.
+ * This is the fuller answer for the reader who opens it: what stroke order
+ * actually buys you, and why picking it up with each character is worth doing
+ * rather than a chore to defer. Content about the language, not the app: see
+ * the file header.
  *
- * Shown on the "how it's written" section. This is the fuller answer for the
- * reader who opens it: what stroke order actually buys you, and why picking it up
- * with each character is worth doing rather than a chore to defer. Content about
- * the language, not the app — see the file header.
+ * THE RATIONALE IS THIS WHY'S, AND ONLY THIS WHY'S (SAK-414). The first
+ * paragraph below used to be a shared constant that WHY_WRITING_EARLY printed
+ * too, so the lesson's stroke section argued the same case twice, once under
+ * each question, in the same words. They are two different questions: this one
+ * is "why does the order matter", the other is "why not learn to write yet".
+ * The rationale answers this one. Do not lift it back out to share it.
  *
- * NO `rest`, DELIBERATELY. The lede used to carry a second sentence — that stroke
- * order makes shapes come out even and is what handwriting input and paper
- * dictionaries expect — which is precisely the claim the paragraphs below already
- * make, at length and with the reason attached. On screen that read as the answer
- * being given twice: once as an unsupported assertion nobody asked for, then again
- * properly behind the "why?". So the claim now lives only where it is actually
- * argued, and the line on the page is the bare, honest one.
+ * NO `rest`, DELIBERATELY. The lede used to carry a second sentence, that
+ * stroke order makes shapes come out even and is what handwriting input and
+ * paper dictionaries expect, which is precisely the claim the paragraphs below
+ * already make, at length and with the reason attached. On screen that read as
+ * the answer being given twice: once as an unsupported assertion nobody asked
+ * for, then again properly behind the "why?". So the claim now lives only where
+ * it is actually argued, and the line on the page is the bare, honest one.
  */
 export const WHY_STROKE_ORDER: Why = {
   lede: {
     strong: "Stroke order is worth learning with each character.",
   },
   paras: [
-    STROKE_ORDER_RATIONALE,
+    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
     "It pays off the moment you write anything by hand. Handwriting-recognition input (the way you’ll look up a character you can’t yet type) and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
   ],
 };
@@ -142,13 +137,19 @@ export const WRITTEN_VS_PRINTED =
  * Distinct from WHY_STROKE_ORDER on purpose: that one is the encouraging note
  * shown on the Library reference page, where the diagram is always open; this one
  * is the "not yet" the lesson leads with. Two different messages, kept apart.
+ *
+ * ONE PARAGRAPH, AND THAT IS THE WHOLE ANSWER (SAK-414). This used to open on
+ * the stroke-order rationale as well, so the reader who asked "why not learn to
+ * write yet" was answered first with a case FOR learning the order, and then
+ * met the identical paragraph again under the stroke chart's own why. The
+ * rationale belongs to that question, and it lives there now. What stays here
+ * is the only paragraph that answers this one.
  */
 export const WHY_WRITING_EARLY: Why = {
   lede: {
     strong: "We don’t recommend learning to write early.",
   },
   paras: [
-    STROKE_ORDER_RATIONALE,
     "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understand what you hear.",
   ],
 };
