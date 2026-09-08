@@ -7,11 +7,17 @@
 // sizes each by its stars, scatters them without overlap (seeded, so a word
 // keeps its place) across a WORLD of fixed size, and draws them on a
 // SkyCanvas whose window shows as much of that world as fits: a box that
-// changes shape shows more or less sky, and never moves a constellation. Every star gets a
-// transparent hit circle inside the pan and zoom group, so it follows the
-// sky; hovering or focusing it shows the tooltip for THAT star, the radical,
-// the kanji or the word, which follows the cursor and flips to stay inside
-// the field. No labels: hover names things.
+// changes shape shows more or less sky, and never moves a constellation.
+//
+// Hovering a star names it: the tooltip for THAT star, the radical, the
+// kanji or the word, following the cursor and flipping to stay inside the
+// field. No labels; hover names things. A sky of a few thousand stars gives
+// each one a transparent hit circle inside the pan and zoom group, so it
+// follows the sky and can be focused and clicked. A sky of tens of
+// thousands does not: it works out the nearest star from the positions it
+// has already placed (SAK-411). Zoomed out, a star's dot is a third of a
+// pixel wide, so a circle round it was never something anyone could aim at,
+// and there were 37,702 of them in the DOM.
 //
 // The home uses it at full size with pan and zoom; the Planetarium's preview
 // and the lesson use the same field smaller or larger, with their own looks
@@ -102,6 +108,18 @@ const CULL_CELLS = 24;
 /** Stars stop taking hit circles below this much of their natural size. A
  * dot that small cannot be aimed at, and there can be tens of thousands. */
 const HIT_ZOOM = 0.34;
+/** Above this many stars nobody gets a hit circle and the sky finds the
+ * nearest star itself (SAK-411). One transparent circle per star is one
+ * more element to draw, one more thing for the browser to hit-test on every
+ * move, and one more tab stop: on the whole sky that was 37,702 of each. A
+ * pointer move against the placed positions is a loop over an array the
+ * field has already built, and it names the nearest star rather than the
+ * one you managed to land on. */
+const HIT_CIRCLES_UP_TO = 2000;
+/** How near the pointer has to be to name a star, in screen pixels, when
+ * the star's own dot is smaller than that. Zoomed out a dot is a third of a
+ * pixel wide, so without this there would be nothing to hover at all. */
+const HIT_SLOP = 8;
 
 export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, fog = false, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
@@ -184,26 +202,86 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
 
   // the tooltip: which star, and where it hangs, decided in the event
   const [hover, setHover] = useState<Hover | null>(null);
-  const place = (id: string, root: string, clientX: number, clientY: number) => setHover({ id, root, at: pointerAnchor(clientX, clientY) });
+  const place = useCallback((id: string, root: string, clientX: number, clientY: number) => setHover({ id, root, at: pointerAnchor(clientX, clientY) }), []);
 
   const hoverItem = hover ? graph.itemOf(hover.id) : undefined;
   // a star picked for tonight, or opened in the lesson, is named in full
   const hoverLook = hover ? baseLook(hover.root, hover.id) : undefined;
   const hoverTonight = !!hoverLook && !!(hoverLook.tonight || hoverLook.lit || hoverLook.emphasis);
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
-  // one hit circle per star, sized to its dot plus some slack
-  const hits = !hittable ? [] : seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOf(graph.itemOf(s.id)?.kind ?? "word"), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 })));
+  // Where every star on screen IS, and how near counts as hitting it.
+  // Memoised because it is the same walk over every drawn constellation
+  // that the drawing itself does, and hovering a star must not set that
+  // walk going again (SAK-411).
+  const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOf(graph.itemOf(s.id)?.kind ?? "word"), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 }))), [seen, layouts, baseLook, graph]);
+  // one hit circle per star, up to the point where that is absurd
+  const circles = hittable && hits.length <= HIT_CIRCLES_UP_TO ? hits : [];
+
+  // ---- naming a star without a circle round it ----
+  //
+  // The pointer's place in the world comes from the browser's own matrix
+  // for the pan and zoom group, so this stays right through a gesture that
+  // the field never hears about.
+  const viewGroup = useRef<SVGGraphicsElement | null>(null);
+  const nearest = useCallback((clientX: number, clientY: number) => {
+    const g = viewGroup.current ?? (viewGroup.current = fieldRef.current?.querySelector<SVGGraphicsElement>("[data-view]") ?? null);
+    const svg = fieldRef.current?.querySelector("svg");
+    const ctm = g?.getScreenCTM();
+    if (!g || !svg || !ctm) return null;
+    const at = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+    // a world unit is this many pixels, so the slop is honest at every zoom
+    const perPixel = 1 / Math.max(1e-6, Math.abs(ctm.a));
+    const slop = HIT_SLOP * perPixel;
+    let best: (typeof hits)[number] | null = null;
+    let bestD = Infinity;
+    for (const h of hits) {
+      const dx = h.x - at.x, dy = h.y - at.y;
+      const d = dx * dx + dy * dy;
+      const reach = Math.max(h.r, slop);
+      if (d < bestD && d <= reach * reach) { best = h; bestD = d; }
+    }
+    return best;
+  }, [hits]);
+  const useNearest = circles.length === 0 && hits.length > 0;
+  const onFieldMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!useNearest) return;
+    // a pan owns the pointer, and a sky sliding under the cursor should not
+    // be naming whatever it slides past
+    const svg = fieldRef.current?.querySelector("svg");
+    if (svg?.hasPointerCapture(e.pointerId)) { setHover(null); return; }
+    const near = nearest(e.clientX, e.clientY);
+    if (near) place(near.id, near.root, e.clientX, e.clientY);
+    else setHover(null);
+  };
+  // where the press started, so the click that ends a pan is not a pick
+  const pressed = useRef<{ x: number; y: number } | null>(null);
+  const onFieldDown = (e: React.PointerEvent<HTMLDivElement>) => { pressed.current = { x: e.clientX, y: e.clientY }; };
+  const onFieldClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!useNearest || !onStarClick) return;
+    const from = pressed.current;
+    pressed.current = null;
+    if (from && Math.hypot(e.clientX - from.x, e.clientY - from.y) > 4) return;
+    const near = nearest(e.clientX, e.clientY);
+    if (near && !(starDisabled?.(near.id) ?? false)) { setHover(null); onStarClick(near.id); }
+  };
+
+  // The drawing, held still while the tooltip comes and goes. `setHover`
+  // renders this component, and without this it would rebuild every
+  // constellation to produce exactly what was already on screen: on the
+  // whole sky that was 175,000 elements reconciled for one tooltip, and
+  // measured at 217ms with not a single DOM change to show for it.
+  const drawing = useMemo(() => seen.map((p) => (
+    <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} fog={fog} />
+  )), [seen, layouts, baseLook, dots, fog]);
 
   return (
-    <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)}>
+    <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)} onPointerDown={onFieldDown} onPointerMove={onFieldMove} onClick={onFieldClick}>
       <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} center={opening} onView={culling ? onView : undefined} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
-        {seen.map((p) => (
-          <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} fog={fog} />
-        ))}
+        {drawing}
         {children?.(placed)}
         {/* hit areas last, so they sit above the stars: one per star */}
         <g data-hits>
-          {hits.map((h) => {
+          {circles.map((h) => {
             const disabled = starDisabled?.(h.id) ?? false;
             const pick = () => { if (!disabled) { setHover(null); onStarClick?.(h.id); } };
             return (
