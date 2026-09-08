@@ -221,7 +221,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
                       aria-current={state === "selected" ? "step" : undefined}
                       aria-disabled={locked || undefined}
                       onClick={() => open(s.id)}
-                      className={`flex w-full items-baseline gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
+                      // items-center, not items-baseline (SAK-415). A row
+                      // holds two sizes at once, a 13px label with a 10.5px
+                      // eyebrow or a 17px glyph with a 12.5px gloss, and
+                      // sharing a baseline hangs both of them off the taller
+                      // one, which left the whole row sitting high in its
+                      // pill. Both parts centre on the row instead.
+                      className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left ${state === "selected" ? "border-sky-accent bg-sky-accent/10" : "border-transparent"} ${locked ? "cursor-not-allowed opacity-45" : "hover:bg-sky-card-strong"}`}
                     >
                       {children}
                     </button>
@@ -231,7 +237,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
                 if (s.page) {
                   return row(<>
                     <span className={`text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{s.page.item.english}</span>
-                    <Eyebrow className="ml-auto mb-0 font-normal">{s.page.kind}</Eyebrow>
+                    {/* !mb-0, and the bang is load-bearing: `Eyebrow` writes
+                        its own mb-1 into the same class list, and Tailwind
+                        orders mb-1 after mb-0, so a plain mb-0 here loses.
+                        Centring a row centres each child's MARGIN box, so
+                        those four pixels below the eyebrow lifted it two above
+                        the row's middle (SAK-415). */}
+                    <Eyebrow className="ml-auto !mb-0 font-normal">{s.page.kind}</Eyebrow>
                   </>);
                 }
                 return row(<>
