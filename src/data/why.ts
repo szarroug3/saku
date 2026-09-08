@@ -83,7 +83,6 @@ export const WHY_STROKE_ORDER: Why = {
   },
   paras: [
     "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
-    "It pays off the moment you write anything by hand. Handwriting-recognition input (the way you’ll look up a character you can’t yet type) and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
   ],
 };
 
