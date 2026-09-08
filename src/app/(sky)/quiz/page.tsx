@@ -6,7 +6,7 @@
 import { currentUserId } from "@/lib/auth";
 import { LESSON_ROUNDS } from "@/sky/lib/rest";
 
-import { loadQuiz } from "../actions";
+import { loadQuiz, loadQuizRun } from "../actions";
 import { QuizClient } from "../quiz-client";
 
 export const metadata = { title: "Quiz" };
@@ -38,10 +38,17 @@ export default async function SkyQuizPage({ searchParams }: { searchParams: Prom
   const picks = String(params.picks ?? "").split(",").filter(Boolean);
   const named = String(params.cards ?? "").split(",").filter(Boolean);
   const userId = sample ? null : await currentUserId();
-  const initial = sample ? await loadQuiz({ sample: true }, { picks, cards: named }) : userId ? await loadQuiz({}, { picks, cards: named }) : null;
+  // The deck and the run left part way through at the same time, not one
+  // after the other (SAK-382's rule, SAK-404's read): they have nothing to
+  // say to each other, and the run is a small select on the same row.
+  // A visitor's run is in their browser, so there is nothing to read here.
+  const [initial, accountRun] = await Promise.all([
+    sample ? loadQuiz({ sample: true }, { picks, cards: named }) : userId ? loadQuiz({}, { picks, cards: named }) : null,
+    sample || !userId ? null : loadQuizRun(),
+  ]);
   return (
     <>
-      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} back={wayBack(params.from, sample)} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
+      <QuizClient initial={initial} picks={picks} named={named} sample={sample} signedIn={userId !== null} accountRun={accountRun} back={wayBack(params.from, sample)} rounds={picks.length && !named.length ? LESSON_ROUNDS : 1} />
     </>
   );
 }

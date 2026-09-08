@@ -6,7 +6,7 @@
 import { currentUserId } from "@/lib/auth";
 import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
-import { loadPracticeCards, loadQuiz } from "../../actions";
+import { loadPracticeCards, loadQuiz, loadQuizRun } from "../../actions";
 import { ServerTimingMeta } from "../../server-timing-meta";
 import { PracticeRunClient } from "../../practice-client";
 
@@ -24,10 +24,15 @@ export default async function SkyPracticeRunPage({ searchParams }: { searchParam
   const who = sample ? { sample: true } : userId ? {} : null;
   // the client's own misses are not known here, so the draw's shakiest-first
   // order leans on the schedule's misses alone
-  const initial = who ? (named.length ? await loadQuiz(who, { cards: named }) : await loadPracticeCards(who, recipe)) : null;
+  // the deck and the run left part way through at the same time (SAK-404);
+  // a visitor's run is in their browser, so there is nothing to read here
+  const [initial, accountRun] = await Promise.all([
+    who ? (named.length ? loadQuiz(who, { cards: named }) : loadPracticeCards(who, recipe)) : null,
+    sample || !userId ? null : loadQuizRun(),
+  ]);
   return (
     <>
-      <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={userId !== null} recipe={recipe} />
+      <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={userId !== null} recipe={recipe} accountRun={accountRun} />
       <ServerTimingMeta />
     </>
   );

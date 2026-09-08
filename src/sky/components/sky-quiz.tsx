@@ -62,6 +62,18 @@ export interface SkyQuizProps {
   onRetries?: (retries: number) => void;
   /** Seconds a card gets before it counts as missed; none when unset. */
   timerSeconds?: number;
+  /** A run picked up where it was left (SAK-404): the card to open on, and
+   * what has already been answered. Read once, when the screen mounts: the
+   * quiz owns its state from then on, and the caller writing the run down
+   * after every answer must not push it back in. */
+  startAt?: number;
+  startAnswers?: readonly QuizAnswer[];
+  /** Where the run stands, after every answer and every step through the
+   * deck, for whoever writes it down. Not called once the quiz is finished:
+   * there is nothing left to come back to then, and clearing what was
+   * written is the caller's own business, next to recording the answers.
+   * The Sky does not know where a run goes; the route does (SAK-404). */
+  onProgress?: (run: { at: number; answers: readonly QuizAnswer[] }) => void;
   /** What this quiz is of, as the page's title. The eyebrow is always
    * "Quiz"; the title says what is in front of you (SAK-357), which is
    * tonight's drill off a lesson and the deck off a practice recipe. */
@@ -73,12 +85,12 @@ export interface SkyQuizProps {
  * nothing the instruction does not; a frame or a gloss is worth showing. */
 const LABEL_ONLY = /^(meaning|reading|in japanese)$/i;
 
-export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, title = "Tonight's drill", height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, startAt = 0, startAnswers, onProgress, title = "Tonight's drill", height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
 
-  const [at, setAt] = useState(0);
-  const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>({});
+  const [at, setAt] = useState(startAt);
+  const [answers, setAnswers] = useState<Readonly<Record<string, QuizAnswer>>>(() => Object.fromEntries((startAnswers ?? []).map((a) => [a.cardId, a])));
   const [open, setOpen] = useState<Readonly<Record<string, Open>>>({});
   const [given, setGiven] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -129,6 +141,24 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
 
   // the box takes focus for every card that is still open
   useEffect(() => { if (!answered) input.current?.focus(); }, [at, answered]);
+
+  // Where the run has got to, out to whoever writes it down (SAK-404).
+  //
+  // An effect on the state itself rather than a call inside `settle`, because
+  // the position a resume should open on is where the quiz ended up AFTER the
+  // answer settled it, and that is one render later. It fires on a step
+  // through the deck too, which is right: the card you were looking at is
+  // part of where you left off. Through a ref, the way `onTimeOut` does it,
+  // so a caller who passes a fresh closure every render does not resubscribe.
+  //
+  // Never once the quiz is finished: the run is over, and the route clears it
+  // as the answers go to the recorder.
+  const report = useRef(onProgress);
+  useEffect(() => { report.current = onProgress; });
+  useEffect(() => {
+    if (finished) return;
+    report.current?.({ at, answers: cards.map((c) => answers[c.id]).filter((a): a is QuizAnswer => !!a) });
+  }, [at, answers, finished, cards]);
 
   const patch = (change: Partial<Open>) => setOpen({ ...open, [card.id]: { ...state, ...change } });
 

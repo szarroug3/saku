@@ -12,6 +12,7 @@
 // before this still opens.
 
 import type { Recipe } from "@/sky/lib/practice";
+import type { RunSource } from "@/sky/lib/quiz-run";
 
 /** What can ride in a Sky URL's query. */
 export interface SkyQuery {
@@ -46,6 +47,25 @@ export function skyHref(path: string, query: SkyQuery = {}): string {
   if (query.picks?.length) parts.push(`picks=${packIds(query.picks)}`);
   if (query.cards?.length) parts.push(`cards=${packIds(query.cards)}`);
   return parts.length ? `${path}?${parts.join("&")}` : path;
+}
+
+/** Where a saved run is answered (SAK-404): the quiz, or practice's run page
+ * when the deck came from a recipe.
+ *
+ * A run keeps its recipe as `recipeKey` wrote it, which is the canonical
+ * recipe as JSON, so parsing it back gives a recipe that draws the same deck.
+ * A key this cannot parse is a run from a shape we no longer write, and the
+ * quiz is the honest place to send it: it will find no run of its own there
+ * and deal what is due. */
+export function runHref(from: RunSource, sample = false): string {
+  if (from.recipe) {
+    try {
+      return skyHref("/practice/run", { sample, recipe: JSON.parse(from.recipe) as Recipe });
+    } catch {
+      return skyHref("/quiz", { sample });
+    }
+  }
+  return skyHref("/quiz", { sample, picks: from.picks, cards: from.cards });
 }
 
 /** The ids in a `picks=` or `cards=`, however Next handed the value over.

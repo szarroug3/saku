@@ -10,21 +10,25 @@
 
 import { useRouter } from "next/navigation";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { HearButton } from "./hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
+import { ResumeAsk } from "@/sky/components/quiz-resume";
 import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
-import { EMPTY_RECIPE, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { EMPTY_RECIPE, recipeKey, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 
 import { PitchMark } from "./pitch-reading";
 import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
+import { runHref } from "./hrefs";
 import { SkyLoading, useLoaded, useWho } from "./local";
 import { grade } from "./grade";
+import { keepRun, useRunAtOpen } from "./quiz-run-store";
 import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
 import { readStored as read, useStored, writeStored } from "./stored";
@@ -78,28 +82,56 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
 
 /** A practice run: the Quiz's screen, with answers kept as misses only. The
  * recorder is a plain client function, so there is no path from here to the
- * schedule at all. */
-export function PracticeRunClient({ initial, named, sample, signedIn, recipe }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe }) {
+ * schedule at all.
+ *
+ * A practice deck is a run like any other, so it is written down and picked
+ * up the same way (SAK-404). What it was asked from is its recipe, as the key
+ * `recipeKey` makes of it, which is what sends the "Continue where you left
+ * off?" line back here rather than to the quiz. */
+export function PracticeRunClient({ initial, named, sample, signedIn, recipe, accountRun = null }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe; accountRun?: SavedRun | null }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
   const who = useWho(sample, signedIn);
-  const load = useCallback((w: Who) => named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [named, recipe]);
-  const cards = useLoaded(who, load, initial);
+  const source = useMemo<RunSource>(() => ({ ...(named.length ? { cards: named } : {}), recipe: recipeKey(recipe) }), [named, recipe]);
+  const local = useRunAtOpen();
+  const saved = sample ? null : (local ?? accountRun);
+  const [replaced, setReplaced] = useState(false);
+  const clash = saved && !sameSource(saved.from, source) ? saved : null;
+  const resume = clash ? null : saved;
+  // the deck as one string, so writing the run down after every answer does
+  // not re-deal it underneath whoever is answering (see quiz-client.tsx)
+  const deckKey = resume ? resume.deck.join("\n") : "";
+  const deck = useMemo(() => (deckKey ? deckKey.split("\n") : null), [deckKey]);
+  const load = useCallback((w: Who) => deck ? loadQuiz(w, { cards: deck }) : named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [deck, named, recipe]);
+  const loaded = useLoaded(who, load, deck ? null : initial);
+  const cards = useMemo(() => (loaded && deck ? orderDeck(loaded, deck) : loaded), [loaded, deck]);
+  const run = useMemo(() => (resume && cards ? trimRun(resume, cards.map((c) => c.id)) : null), [resume, cards]);
+  // the browser has not been asked yet, so which deck this page deals is not
+  // known; the heading is drawn while the rest catches up (SAK-356)
+  if (local === undefined) return <SkyLoading eyebrow="Quiz" title={"Your practice deck"} />;
+  if (clash && !replaced) {
+    return <ResumeAsk run={clash} href={runHref(clash.from, sample)} title="Your practice deck" height="100%" onStart={() => setReplaced(true)} onKeep={(href) => router.push(href)} />;
+  }
   if (!cards) return <SkyLoading eyebrow="Quiz" title={"Your practice deck"} />;
-  return <PracticeRun cards={cards} sample={sample} recipe={recipe} cfg={cfg} update={update} router={router} />;
+  return <PracticeRun cards={cards} run={run} source={source} sample={sample} signedIn={signedIn} recipe={recipe} cfg={cfg} update={update} router={router} />;
 }
 
-function PracticeRun({ cards, sample, recipe, cfg, update, router }: { cards: readonly QuizCard[]; sample: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
+function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update, router }: { cards: readonly QuizCard[]; run: SavedRun | null; source: RunSource; sample: boolean; signedIn: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
   const back = { href: `/practice${sample ? "?sample" : ""}`, label: "Back to practice" };
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const noteMisses = async (answers: readonly QuizAnswer[]) => {
+    if (!sample) keepRun(null, signedIn);
     const misses = { ...read<Record<string, number>>(MISSES_KEY, {}) };
     for (const a of answers) if (a.grade === "missed") misses[a.cardId] = (misses[a.cardId] ?? 0) + 1;
     write(MISSES_KEY, misses);
+  };
+  const progress = (at: number, answers: readonly QuizAnswer[]) => {
+    if (sample) return;
+    keepRun(runToKeep(cards.map((c) => c.id), at, answers, source, Date.now()), signedIn);
   };
   const retry = (ids: readonly string[]) => router.push(`/practice/run?${sample ? "sample&" : ""}recipe=${packRecipe(recipe)}&cards=${encodeURIComponent(ids.join(","))}`);
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
   const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} savedNames={saved.map((d) => d.name)} title="Your practice deck" retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} onFinish={noteMisses} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} onSave={save} savedNames={saved.map((d) => d.name)} title="Your practice deck" startAt={run ? resumeAt(run) : 0} startAnswers={run?.answers} onProgress={(state) => progress(state.at, state.answers)} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
 }

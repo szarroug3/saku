@@ -15,7 +15,9 @@ import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
 import { buildSessionRecord } from "@/lib/session-record";
 import { loadSettings } from "@/lib/settings";
+import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { readRun, type SavedRun } from "@/sky/lib/quiz-run";
 import type { FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/components/sky-atlas";
 import type { SkyPayload } from "./sky-payload";
@@ -141,6 +143,34 @@ export async function atlasTiles(who: Who, ids: readonly string[]): Promise<SkyI
 /** A streamed shelf's cuts, kept to one standing. */
 export async function atlasSections(who: Who, shelfId: string, status: Standing): Promise<AtlasSection[]> {
   return atlasSectionsFromHistory(await historyFor(who), shelfId, status);
+}
+
+/**
+ * The run this learner left part way through, off their account (SAK-404).
+ *
+ * Null for anyone not signed in, and that is not a gap: a visitor's run is in
+ * their browser, which the server cannot see, and the page reads it there.
+ * Read on its own rather than with the seed row, since one page in the app
+ * wants it.
+ *
+ * The stored value is whatever was last written, so it is read through the
+ * Sky's own `readRun`: an envelope of an older shape, or a run whose every
+ * card has since been answered, reads as no run at all.
+ */
+export async function loadQuizRun(): Promise<SavedRun | null> {
+  const userId = await currentUserId();
+  if (!userId) return null;
+  return readRun(await readSessionRow(userId));
+}
+
+/** The run as it stands, or null to clear it. A visitor never reaches here:
+ * their run is written to their browser and nowhere else. Validated on the
+ * way in as well as on the way out, so the column only ever holds a shape
+ * this app can read back. */
+export async function saveQuizRun(run: SavedRun | null): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+  await writeSessionRow(userId, run ? readRun(run) : null);
 }
 
 export async function loadSessions(who: Who): Promise<SkySession[]> {

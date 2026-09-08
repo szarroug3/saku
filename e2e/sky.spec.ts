@@ -656,3 +656,42 @@ test("a visitor's finished quiz says it is saving, and opens the way back once i
   await backOut.click();
   await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeVisible();
 });
+
+test("a visitor's quiz is where they left it after a reload", async ({ page }) => {
+  // SAK-404. The run is written down after every answer, and the same page
+  // opened again picks it up: the deck it dealt, in the order it dealt it,
+  // and the card that was next.
+  await page.goto("/quiz?picks=kana-row:h-vowels");
+  const count = page.getByText(/^\d+ of \d+$/);
+  await expect(count).toHaveText("1 of 5");
+
+  // two cards answered, so the third is the one waiting
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole("button", { name: "I don't know" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+  }
+  await expect(count).toHaveText("3 of 5");
+  // and the run really is in the browser by then, not only on the screen
+  await expect
+    .poll(() => page.evaluate(() => {
+      try {
+        const raw = window.localStorage.getItem("sky:quiz:run");
+        return raw ? (JSON.parse(raw).answers?.length ?? 0) : 0;
+      } catch {
+        return 0;
+      }
+    }))
+    .toBe(2);
+
+  await page.reload();
+  // the third card, open, with the two answers still counted against the deck
+  await expect(count).toHaveText("3 of 5");
+  await expect(page.getByRole("button", { name: "I don't know" })).toBeVisible();
+
+  // and finishing it clears the run: there is nothing left to come back to
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("sky:quiz:run")))
+    .toBe(null);
+});
