@@ -527,6 +527,23 @@ test("a visitor's quiz is kept in the browser and shows up under sessions", asyn
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByRole("button", { name: "End the quiz" }).click();
   await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+  // The results screen paints in the click that ends the quiz, before the
+  // record it is describing has been written anywhere: the answers still have
+  // to go through a server action to become a session record. So the record
+  // reaching the browser's copy is a separate event, and this waits for it
+  // rather than assuming the paint implies it (SAK-406 — under a loaded suite
+  // it did not, and the assertion below failed on a store that was still
+  // empty). Waiting on the store itself, not on a longer timeout.
+  await expect
+    .poll(() => page.evaluate(() => {
+      try {
+        const raw = window.localStorage.getItem("saku-local-history");
+        return raw ? (JSON.parse(raw).sessions?.length ?? 0) : 0;
+      } catch {
+        return 0;
+      }
+    }))
+    .toBeGreaterThan(0);
   await page.goto("/sessions");
   await expect(page.getByRole("heading", { name: "What have you done lately?" })).toBeVisible();
   await expect(page.getByText(/Quiz · 1 card/)).toBeVisible();

@@ -2334,3 +2334,48 @@ what to do:
 
 `e2e/sky.spec.ts` gained a test for the one behaviour change: deleting a
 saved recipe asks, "Keep it" keeps it, "Delete it" deletes it.
+
+### The visitor's finished quiz is in the browser before the next page (2026-09-08, SAK-406)
+
+The e2e "a visitor's quiz is kept in the browser and shows up under
+sessions" failed twice under a loaded suite and passed four times out of
+four alone. It was a real race, not a slow test.
+
+`SkyQuiz.finish` paints "How it went" in the same click that ends the
+quiz, then fires `onFinish` and never waits for it. Signed out, that
+promise was two round trips deep before anything durable happened: the
+`quizRecords` server action to turn answers into session records, then
+POST /api/session, which answers 401 because there is no account, and
+only then did `resolveProgressWrite` call `applyLocal` and the record
+reach `saku-local-history`. The test navigated the moment the heading
+painted, so under load it left before the write. Nothing about
+`/sessions` was late: `useWho` already waits on the provider's `loaded`,
+and a signed-out `HistoryProvider` reads localStorage in its mount
+effect.
+
+So the POST stops being made. When the shell has said there is no
+account, that request is a foregone 401 — every one of those routes
+loads the user through `getUserId()`, which throws before it reads the
+body — and the 401 branch does the only thing that was ever going to
+happen. `postWithLocalFallback` now does it first, in the caller's own
+turn, and returns. The condition is `isSignedIn() === false` and not
+"not signed in": the signal reads true while unknown, so a write made
+before the shell has spoken still takes the full path and is still
+queued rather than written to a store the learner may not own. The
+signed-in path is untouched, refresh-and-retry and all.
+
+The test stops assuming the write beat it and waits on the store itself
+before navigating, which is a wait on the real event and not a longer
+timeout.
+
+What is left, and it is worth a card. The `quizRecords` server action
+still runs before the record exists, so a visitor who navigates inside
+that window loses the quiz, and the results screen never says it is
+saving even though `SkyQuiz` already tracks the state. The honest fix is
+a saving state on the results screen, or computing the record before the
+screen paints; both are `src/sky/components`, which another lane held
+tonight.
+
+Two files touched, 3 lines deleted against 46 added. 3,809 unit tests
+pass, 1 skipped. 28 e2e, run at `--repeat-each=6`: 168 passed, the
+visitor test six times for six.

@@ -12,8 +12,13 @@
 // signed-in retry — a Supabase session refresh. Outcomes:
 //
 //   2xx            → the server saved it. Nothing local happens.
-//   401, signed OUT → this browser IS the store. Apply locally, report ok, and
-//                    the outbox drops it — the work is durably saved.
+//   signed OUT      → this browser IS the store, and the shell has said so, so
+//                    the write is applied here and now and the POST is not made
+//                    at all (SAK-406 — see postWithLocalFallback). Reported ok:
+//                    the work is durably saved and the outbox drops it.
+//   401, signed OUT → the same outcome, reached the long way, for the callers
+//                    that supply their own auth bit rather than reading the
+//                    shell's (settings-provider.ts, store/migrate-local.ts).
 //   401, signed IN  → a transient token lapse, NOT "no account". Refresh the
 //                    session and retry the POST once. If it lands, done; if it
 //                    still 401s, report NOT ok so the outbox keeps the record and
@@ -83,12 +88,39 @@ export async function refreshSupabaseSession(): Promise<void> {
  * status/auth branching (including the signed-in refresh + retry) lives there
  * once so no endpoint can get it subtly wrong. This wrapper only supplies the
  * real IO: the fetch, the local op, the current auth bit, and the refresh.
+ *
+ * SIGNED OUT, THE WRITE DOES NOT WAIT ON THE NETWORK (SAK-406).
+ * ============================================================
+ * When the shell has told us there is no account, the POST below is a foregone
+ * 401: every one of these routes loads the user through getUserId(), which
+ * throws before it reads the body. The 401 branch then does the only thing that
+ * was ever going to happen — apply the op to this browser's copy. So it happens
+ * here instead, in the caller's own turn, and the round trip is not made.
+ *
+ * That is not only a saved request. It closes a window in which a visitor's
+ * work did not exist yet: a finished quiz was durable only after the response
+ * came back, so navigating away in between lost it, which is what made the
+ * sessions e2e flake under load. Now the record is in localStorage before this
+ * function returns to its caller.
+ *
+ * The condition is `isSignedIn() === false` and not "not signed in": the signal
+ * reads TRUE while unknown (see auth-mode.ts), so a write made before the shell
+ * has spoken still takes the full path and is still queued rather than written
+ * to a browser-local store the learner may not own. The signed-in path — refresh
+ * and retry, never local, never a false ok — is untouched.
  */
 function postWithLocalFallback(
   url: string,
   body: unknown,
   applyLocal: () => void,
 ): Promise<ProgressResult> {
+  if (!isSignedIn()) {
+    applyLocal();
+    // 401 is what the server would have said, and what the signed-out branch of
+    // resolveProgressWrite reports for exactly this outcome. Callers read `ok`;
+    // the status stays truthful for the one that might not.
+    return Promise.resolve({ ok: true, status: 401 });
+  }
   return resolveProgressWrite({
     send: () =>
       fetch(url, {
