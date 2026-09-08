@@ -3338,3 +3338,94 @@ page behind a star that is not tonight's, a page named twice). 47 e2e pass,
 from 46. `node scripts/button-centering.mjs` finds 0 over a pixel on the lesson
 page with the new rows on it. Before and after screenshots of both lessons went
 to Sam on the card.
+
+### The Planetarium at a quarter size (2026-09-08, SAK-411)
+
+Sam reported the home sky smooth at 100% and above, and lagging once it is
+zoomed out: tooltips, panning, and zooming a little. `scripts/planetarium-perf.mjs`
+is the measurement, against the production build: it sets the zoom through
+the page's own minus button, which steps by 1.3, so a target of 60% is
+measured at 59% and 25% at 21%, and at each stop it counts the SVG elements
+in the DOM, drags 300px over about a second, wheel zooms, and hovers twenty
+stars. Headless Chromium draws as fast as it can rather than at 60Hz, so the
+floor in every number below is about 9ms rather than 16.7; what they say is
+what a frame costs, not what a monitor would show.
+
+**The sky the home opens on was never the problem.** The pretend learner has
+641 things discovered and undiscovered stars are filtered out to start, so
+that sky is under four thousand elements at its smallest and drops nothing
+at any zoom, before or after. The Undiscovered chip puts the other 23,332 up
+there, which is the fifteen thousand constellations, and that is the sky
+this section is about. The legend already warns that showing more at once
+makes the sky slower to draw, and it was right.
+
+| zoom | elements | slow frames in a drag | p95 frame | worst frame | on release | wheel p95 | tooltip |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 100% | 25,996 to 9,990 | 1/197 to 0/180 | 10.3 to 9.9 | 33.3 to 10.3 | 33.0 to 10.3 | 82.4 to 10.1 | 26.2 to 8.0 |
+| 59% | 46,886 to 17,989 | 3/194 to 0/210 | 9.9 to 9.9 | 75.6 to 18.3 | 57.3 to 26.0 | 75.3 to 9.2 | 50.9 to 8.4 |
+| 35% | 83,236 to 31,968 | 6/242 to 1/241 | 18.0 to 10.3 | 141.7 to 40.1 | 116.7 to 66.9 | 116.6 to 10.2 | 74.4 to 7.6 |
+| 21% | 175,191 to 67,153 | 62/256 to 1/256 | 57.3 to 16.9 | 309.7 to 109.8 | 301.2 to 191.7 | 259.9 to 41.6 | 190.3 to 16.3 |
+
+Milliseconds, and a slow frame is one over 32.
+
+**What the numbers said, in the order they said it.** Not the transform:
+writing it on the group and forcing layout costs 2ms with 175,000 elements
+in the DOM, measured on its own. Not hit testing either: turning
+`pointer-events` off on all 37,702 hit circles changed nothing. A
+MutationObserver over one pan said what it really was, 5,988 elements added
+and 6,128 removed while the finger was still down, and the same observer
+over one hover said 217ms with not a single DOM change to show for it. Both
+were React: state set on a gesture, and state set on a hover, on the
+component that draws the whole field.
+
+Three changes, each measured before the next was chosen.
+
+**A gesture does not render.** A drag and a wheel write the transform
+straight to the group and commit the view once, at the end. That took the
+adds and removes out of the drag entirely, and the wheel from 18 slow frames
+to 15. It also fixed two older mistakes that came from reading the raw
+stored view where the clamped one is what is on screen: the first drag on a
+fresh sky did nothing at all, and the first zoom threw the sky to the
+world's top left corner instead of keeping the centre it opened on.
+
+**A star that is one dot is one element.** Most of the sky is undiscovered,
+and an undiscovered star has no glow, no halo, no ring and full opacity, so
+it was a group holding a group holding one dot: 78,054 elements drawing
+nothing. That cut 175,191 to 104,855 and, on its own, did almost nothing to
+the frame rate, which is worth writing down. By then the cost of a frame had
+moved to painting.
+
+**The sky finds the nearest star itself.** The last of it was 37,702
+transparent hit circles, each an element, a hit-test target and a tab stop,
+and at that zoom each about half a pixel across, so there was nothing there
+to aim at anyway. Above a couple of thousand stars they go, and a pointer
+move looks up the nearest star in the positions the field has already
+placed, through the browser's own matrix for the pan and zoom group so it
+stays right through a gesture the field never hears about. Eight pixels of
+slop, which is what a hit circle is worth at 100%. That is the change that
+moved the pan, from 62 slow frames to one, and the tooltip, from 190ms to
+16.
+
+**What did not happen.** The canvas. The card kept it as a last resort and
+the numbers never called for it: the p95 at the smallest zoom is 16.9ms,
+under the 32 the gate asks for. Nor did anything get drawn less: no glow was
+skipped and no line was dropped, so the sky looks the same at every zoom,
+not only at 100%.
+
+**Two trades, both deliberate.** The field keeps the cull band it had until
+a gesture ends, so a long drag at the very smallest zoom can reach past its
+one cell of slack and show sky that has not been drawn yet, which fills in
+on release. At 100% a 300px drag is a third of one cell, so it cannot happen
+there. And a sky of tens of thousands of stars has no focusable stars: 37,702
+tab stops were not access to anything. A sky of a few thousand keeps its
+circles and everything that comes with them, which is the lesson's sky and
+the Planetarium's own preview.
+
+**The gate.** The look at 100% is byte for byte what it was: the whole page,
+the sky panel, the whole sky with everything showing, and the whole sky at
+21% pinned to the same corner, all at 2x, all zero different pixels. The
+21% shots have to be pinned to compare, because the reset button honestly
+lands somewhere else now. 3,801 unit tests pass, 1 skipped, unchanged. 47
+e2e pass, one more than before: a drag moves the group, the group is the
+same element it was, and nothing is added to it or taken out of it while the
+drag runs.
