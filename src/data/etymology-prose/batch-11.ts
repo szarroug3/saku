@@ -30,7 +30,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   除: "This glyph means to remove. It uses the definition of 阜 (mound, steps) and the sound of 余.",
   停: "This glyph means to halt. It uses the definition of 人 (person) and the sound of 亭 (てい).",
   商: "The origin is unclear.",
-  宿: "A person (人) resting on a mat under a roof (宀): lodging, an inn.",
+  宿: "A person resting on a mat under a roof (宀): lodging, an inn. The person and the mat are the 佰 beside it, the mat having become 百.",
   移: "This glyph means to shift. It uses the definition of 禾 (grain) and the sound of 多.",
   舟: "The original glyph looked like a boat.",
   船: "This glyph means ship. It uses the definition of 舟 (boat) and the sound of 㕣.",

@@ -28,7 +28,7 @@ export const BATCH_33: Readonly<Record<string, string>> = {
   埼: "This glyph means a cape or promontory. It uses the definition of 土 (earth) and the sound of 奇.",
   尉: "The glyph shows a hand (寸) holding fire (火) to press cloth flat, later borrowed for a military officer.",
   崎: "This glyph means a promontory or cape. It uses the definition of 山 (mountain) and the sound of 奇.",
-  庸: "This glyph means commonplace or ordinary. It uses the definition of 庚 and the sound of 同.",
+  庸: "This glyph means commonplace or ordinary. The parts drawn are 广, ⺕ and 用. The record builds it from 庚 with 同 for the sound, probably as the first graph for a large bell, and the modern shape keeps neither whole.",
   斬: "An axe (斤) and a cart (車): an old punishment of tearing a body apart by carts, thus to behead, to cut.",
   曹: "The old glyph doubled 東 (bundle) for the idea of a pair or peers, later an office and one's fellows.",
   梗: "This glyph means a stem or stalk. It uses the definition of 木 (tree) and the sound of 更 (こう).",

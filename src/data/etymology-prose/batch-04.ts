@@ -30,7 +30,7 @@ export const BATCH_04: Readonly<Record<string, string>> = {
   衣: "The original glyph looked like the outline of upper garments draped over the chest.",
   表: "Fur (毛) worn on the outside of a garment (衣): the outer surface.",
   至: "The original glyph looked like an arrow that has landed and stuck into the ground: to arrive.",
-  屋: "This glyph means house. It uses the definition of 室 (room) and the sound of 𡉉.",
+  屋: "This glyph means a house. The parts drawn are 尸 and 至. The record builds it from 室, a room, with 𡉉 for the sound, and the top has since corrupted into the unrelated 尸.",
   急: "This glyph means to hurry. It uses the definition of 心 (heart) and the sound of 及 (きゅう).",
   川: "The original glyph looked like flowing water running between two banks.",
   流: "This glyph means to flow. It uses the definition of 水 (water) and the sound of 㐬.",

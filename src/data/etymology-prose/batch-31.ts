@@ -29,7 +29,7 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   仁: "This glyph means benevolence. It uses the definition of 二 and the sound of 人 (じん).",
   凶: "A hole in the ground (凵) marked with a cross (㐅): a pitfall, misfortune, bad luck.",
   升: "The original glyph looked like a dipper for measuring out grain.",
-  孔: "An opening (丿) in a child's head (子): the soft spot in a newborn's skull, and by extension a hole.",
+  孔: "An opening in a child's head (子): the soft spot in a newborn's skull, and by extension a hole. The opening was drawn 丿 and is now the 乙 beside the child.",
   弔: "The original glyph looked like a person wrapped with a corded arrow: mourning, condolences.",
   丙: "The original meaning has been lost; it was borrowed early as the third of the heavenly stems.",
   仙: "A person (人) going into the mountains (山) to become immortal: a hermit or wizard.",
@@ -52,5 +52,5 @@ export const BATCH_31: Readonly<Record<string, string>> = {
   呈: "This glyph means to present or offer. It uses the definition of 口 (mouth) and the sound of 𡈼.",
   坑: "This glyph means a pit. It uses the definition of 土 (soil) and the sound of 亢.",
   妖: "This glyph means bewitching or calamitous. It uses the definition of 女 (woman) and the sound of 夭.",
-  尿: "A stream of water (水) below a body (尾): urine.",
+  尿: "A stream of water (水) below a body (尸): urine. That body was written 尾, a tail, and it later simplified to 尸.",
 };

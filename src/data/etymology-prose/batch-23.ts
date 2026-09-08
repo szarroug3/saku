@@ -9,7 +9,7 @@ export const BATCH_23: Readonly<Record<string, string>> = {
   倣: "This glyph means to imitate. It uses the definition of 人 (person) and the sound of 放 (ほう).",
   唆: "This glyph means to instigate, to tempt. It uses the definition of 口 (mouth) and the sound of 夋.",
   孫: "A child (子) and a continuing thread (系): a grandchild, the family line carrying on.",
-  宴: "This glyph means banquet. It uses the definition of 宀 (roof) and the sound of 妟.",
+  宴: "This glyph means a banquet. It uses the definition of 宀 (roof); the sound piece 妟 is drawn here as 日 over 女.",
   徒: "It first joined 辵 (to walk) with the sound of 土, then was reshaped into 彳 and 走: to go on foot.",
   悟: "This glyph means to perceive, to awaken. It uses the definition of 心 (heart) and the sound of 吾.",
   敏: "This glyph means quick, agile. It uses the definition of 攴 (hand, action) and the sound of 每.",

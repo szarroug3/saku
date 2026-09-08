@@ -7,7 +7,7 @@ export const BATCH_26: Readonly<Record<string, string>> = {
   吟: "This glyph means to recite or sing. It uses the definition of 口 (mouth) and the sound of 今.",
   坂: "This glyph means slope. It uses the definition of 土 (earth) and the sound of 反.",
   岐: "This glyph means a fork in the road. It uses the definition of 山 (mountain) and the sound of 支.",
-  希: "Crossed threads (爻) over cloth (巾): to hope, to beg.",
+  希: "Crossed threads over cloth (巾): to hope, to beg. The crossed threads were written 爻; here they are the 乂 at the top.",
   廷: "This glyph means the imperial court. It uses the definition of 廴 (a stride) and the sound of 𡈼.",
   弄: "Two hands (廾) holding a piece of jade (玉): to play with, to trifle with.",
   把: "This glyph means to grasp. It uses the definition of 手 (hand) and the sound of 巴.",

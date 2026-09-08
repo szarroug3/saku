@@ -31,7 +31,7 @@ export const BATCH_24: Readonly<Record<string, string>> = {
   靴: "This glyph means shoes. It uses the definition of 革 (leather) and the sound of 化.",
   飼: "This glyph means to raise or feed animals. It uses the definition of 食 (food) and the sound of 司 (し).",
   僚: "This glyph means a colleague or official. It uses the definition of 人 (person) and the sound of 尞.",
-  寧: "A house (宀) with a food vessel (皿) inside, contentment: peaceful, and by extension rather or preferably.",
+  寧: "This glyph means peaceful and quiet, and by extension rather or preferably. The parts drawn are 寍 and 丁. The older glyph had a house over a food vessel with 丂 below it, and the 丁 is what became of that 丂.",
   彰: "This glyph means clear or conspicuous. It uses the definition of 彡 (colorful patterns) and the sound of 章 (しょう).",
   旗: "This glyph means a flag or banner. It uses the definition of 㫃 (flag) and the sound of 其.",
   漬: "This glyph means to soak or pickle. It uses the definition of 水 (water) and the sound of 責.",

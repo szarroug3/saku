@@ -88,7 +88,7 @@ const BATCH_01: Readonly<Record<string, string>> = {
   刀: "The original glyph looked like a knife.",
   分: "八 (to split) over 刀 (a knife): to divide something up, a part.",
   干: "The original glyph looked like a shield, later also borrowed to write dry.",
-  年: "This glyph originally meant harvest but changed to year over time. It uses the definition of 禾 (grain) and the sound of 人.",
+  年: "This glyph first meant harvest and came to mean year. The parts drawn are 丿 and 干. The older form had grain, 禾, above 人 for the sound, and the strokes merged as the script was regularized.",
 };
 
 /** Every hand-cleaned story so far, batches merged in teaching order. Ranges are

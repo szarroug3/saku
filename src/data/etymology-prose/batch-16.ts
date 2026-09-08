@@ -39,7 +39,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   太: "A form of 大 (big) with an extra dot added to set it apart: big, thick, plump.",
   仰: "This glyph means to look up. It uses the definition of 人 (person) and the sound of 卬.",
   件: "A person (人) beside a cow (牛): a matter, a case, a thing to count.",
-  巡: "This glyph means to patrol or go around. It uses the definition of 辵 (to walk) and the sound of 川.",
+  巡: "This glyph means to patrol or go around. It uses the definition of 辵 (to walk) and the sound of 巛, the flowing water written 川 on its own.",
   扱: "This glyph means to handle or deal with. It uses the definition of 手 (hand) and the sound of 及: to take in by hand.",
   即: "A food vessel beside a kneeling person (卩): to come near and eat, to approach. The vessel was 皀; it is now drawn 艮.",
   呂: "The original glyph looked like two blocks, read as two vertebrae: the spine, the backbone.",

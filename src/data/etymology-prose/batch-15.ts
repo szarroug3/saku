@@ -7,7 +7,7 @@ export const BATCH_15: Readonly<Record<string, string>> = {
   到: "This glyph means to arrive. It uses the definition of 至 (to arrive) and the sound of 刀 (とう).",
   奇: "This glyph means strange. It uses the definition of 大 (big) and the sound of 可.",
   官: "Rooms under a roof (宀): an official building, and the bureaucrat who works there.",
-  岸: "This glyph means shore. It uses the definition of 屵 (cliff) and the sound of 干: the edge of the land.",
+  岸: "This glyph means shore. It uses the sound of 干, and its meaning comes from 屵, a cliff, drawn here as 山 over 厂: the edge of the land.",
   底: "This glyph means bottom. It uses the definition of 广 (building) and the sound of 氐: the base of a building.",
   彼: "This glyph means he, that one. It uses the definition of 彳 (a step) and the sound of 皮 (ひ).",
   房: "This glyph means a side room off the main hall. It uses the definition of 戸 (door) and the sound of 方.",

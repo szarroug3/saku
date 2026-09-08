@@ -55,5 +55,5 @@ export const BATCH_03: Readonly<Record<string, string>> = {
   西: "The original glyph looked like a bird's nest, later borrowed to mean west.",
   要: "The original glyph showed hands pointing to the waist of a figure, its first meaning being waist, now written 腰.",
   羊: "The original glyph looked like a ram's head.",
-  差: "Wheat (來) and a left hand (𠂇): hulling grain by rubbing it between the hands.",
+  差: "This glyph means a difference or discrepancy. The parts drawn are 羊, 丿 and 工. The older glyph rubbed wheat, 來, between the hands, and the 工 was added later, when the lower piece became 左.",
 };

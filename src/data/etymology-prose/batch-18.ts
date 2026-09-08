@@ -2,7 +2,7 @@
 export const BATCH_18: Readonly<Record<string, string>> = {
   雇: "This glyph originally meant a migratory bird but came to mean hire. It uses the definition of 隹 (bird) and the sound of 戸 (こ).",
   嫁: "This glyph means to marry into a family, or a bride. It uses the definition of 女 (woman) and the sound of 家 (か).",
-  幹: "This glyph means tree trunk. It uses the definition of 木 (tree) and the sound of 倝.",
+  幹: "This glyph means a tree trunk, and so the main part of a thing. Its sound piece is 倝, drawn here as 𠦝 with 人. The 干 below replaced an earlier 木, tree, so both pieces now carry the sound.",
   携: "This glyph means to carry in the hand. It uses the definition of 手 (hand) and the sound of 雟.",
   暖: "This glyph means warmth. It uses the definition of 日 (sun) and the sound of 爰.",
   溶: "This glyph means to dissolve. It uses the definition of 水 (water) and the sound of 容 (よう).",

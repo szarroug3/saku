@@ -53,7 +53,7 @@ export const MANUAL_02: Readonly<Record<string, string>> = {
   与: "This glyph is the simplified form of 與, which showed hands joined to lift and pass something across: to give, to take part.", // source: https://en.wiktionary.org/wiki/與
   児: "This glyph is the simplified form of 兒, a picture of a baby with the soft spot of the skull still open on top: an infant, a child.", // source: https://en.wiktionary.org/wiki/兒
   条: "This glyph is the simplified form of 條: 木 (wood) for its meaning with 攸 for its sound. A slim twig, and so a line, an item, a clause.", // source: https://en.wiktionary.org/wiki/條
-  届: "This glyph means to reach or arrive. It uses 尸 (a bent body) for its meaning and a sound piece (凷) below.", // source: https://en.wiktionary.org/wiki/屆
+  届: "This glyph means to reach or arrive. It uses 尸 (a bent body) for its meaning and 由 for its sound, which stands here for 凷.", // source: https://en.wiktionary.org/wiki/屆
   脳: "This glyph is the simplified form of 腦: the flesh radical (⺼) plus hair over the crown of a skull (囟). The matter inside the head, the brain.", // source: https://en.wiktionary.org/wiki/腦
   虚: "This glyph is the simplified form of 虛: 虍 (tiger) for its sound over 丘 (a mound). A great bare hilltop, hence emptiness and void.", // source: https://en.wiktionary.org/wiki/虛
   険: "This glyph is the simplified form of 險. It uses the hill radical (⻖) for its meaning of steep ground and 㑒 (僉) for its sound: precipitous, dangerous.", // source: https://en.wiktionary.org/wiki/險

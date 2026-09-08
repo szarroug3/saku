@@ -22,7 +22,7 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   陶: "This glyph means pottery. It uses the definition of 阜 (mound of earth) and the sound of 匋 (making pottery).",
   偉: "This glyph means great or admirable. It uses the definition of 人 (person) and the sound of 韋.",
   募: "This glyph means to recruit or gather. It uses the definition of 力 (strength, effort) and the sound of 莫.",
-  就: "A tall hall (享) and a high tower (京): to go to a high place, to settle down or take up.",
+  就: "A high tower (京) with 尤 beside it, marking a high place: to go to it, to settle down or take up. The older form had a temple, 享, where the 尤 now stands.",
   幅: "This glyph means width, or a hanging scroll. It uses the definition of 巾 (cloth) and the sound of 畐.",
   慌: "This glyph means flustered or confused. It uses the definition of 心 (heart) and the sound of 荒 (こう).",
   棚: "This glyph means a shelf or rack. It uses the definition of 木 (wood) and the sound of 朋.",
@@ -55,5 +55,5 @@ export const BATCH_20: Readonly<Record<string, string>> = {
   層: "This glyph means a layer or story. It uses the definition of 尸 (building) and the sound of 曾: the tiers of a building.",
   慢: "This glyph means idle or slow. It uses the definition of 心 (heart) and the sound of 曼, which also carries the sense of long and drawn out.",
   維: "This glyph means fiber, or a rope tie. It uses the definition of 糸 (thread) and the sound of 唯.",
-  岡: "This glyph means a hill or ridge. It uses the definition of 山 (mountain) and the sound of 网.",
+  岡: "This glyph means a hill or ridge. It uses the definition of 山 (mountain) and the sound of 冂, which was written 网, a net.",
 };

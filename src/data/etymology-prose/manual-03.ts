@@ -25,7 +25,7 @@ export const MANUAL_03: Readonly<Record<string, string>> = {
   欧: "This glyph is the simplified form of 歐. Once it meant to retch, joining 欠 (an open mouth) with the sound of 区; today it is the short spelling of 欧羅巴, Europa.", // source: https://en.wiktionary.org/wiki/歐
   狭: "This glyph is the simplified form of 狹. It uses the definition of 犭 (the dog radical) and the sound of 夹 (きょう, from 夾, to press between): pressed in, narrow.", // source: https://en.wiktionary.org/wiki/狹
   県: "This glyph comes from 縣, which showed a head hung by a cord from a tree, meaning to hang; it was borrowed for an administrative district, a prefecture.", // source: https://en.wiktionary.org/wiki/縣
-  将: "This glyph comes from 將. It showed meat (⺼) offered by a hand (寸) beside 爿 for the sound; from presenting offerings came the sense of one who leads, a commander.", // source: https://en.wiktionary.org/wiki/將
+  将: "This glyph comes from 將. It showed meat offered by a hand (寸) beside 爿 for the sound; from presenting offerings came the sense of one who leads, a commander.", // source: https://en.wiktionary.org/wiki/將
   悩: "This glyph is the simplified form of 惱. It uses the definition of 忄 (heart) and the sound of the right piece (linked to 脳, the brain): a troubled, worried mind.", // source: https://en.wiktionary.org/wiki/惱
   挙: "This glyph is the simplified form of 舉. Hands (手) lifting together, hence to raise, to hold up.", // source: https://en.wiktionary.org/wiki/舉
   称: "This glyph is the simplified form of 稱. It uses the definition of 禾 (grain being weighed) and the sound of the right piece (from 爯); from weighing came naming and praising.", // source: https://en.wiktionary.org/wiki/稱
