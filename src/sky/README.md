@@ -3215,3 +3215,66 @@ part ADDS kanji rather than emptying the shelf and that the count line reads
 "or", the writing-early fold's test looks for its own paragraph, and the new
 one opens both whys and holds that neither carries the other's words.
 Before-and-after screenshots of all three went to Sam on the card.
+
+### Everything inside a button sits in its middle (2026-09-08, SAK-415)
+
+Sam saw the lesson's "Tonight, in order" rail sitting high in its pills, and
+SAK-413 had already found the round button's chevron riding above the middle of
+its ring. Two sightings of the same thing is a rule, not a pair of bugs: every
+button in the Sky draws what it holds on its own middle. The interesting part
+is that you cannot check that by reading the classes. `items-baseline` looks
+like alignment. `place-items-center` looks like centring. Both can leave the
+ink somewhere else, and only a measurement says so.
+
+**The gate is a measurement.** `scripts/button-centering.mjs` drives a
+production build with Playwright, finds every button-like element on seven
+pages, and compares each container's border box against what is inside it. A
+child element is its own box; a child text node is a `Range` over it and the
+union of the rects that range draws. Anything more than a pixel out is
+reported with the page, the container, the child and the signed offset, and the
+script exits non-zero.
+
+Three things are taken back out before comparing, and each is a case where an
+offset is right. A screen-reader-only child is not on the screen at all, and is
+recognised by the `clip: rect(0,0,0,0)` every such helper sets rather than by a
+class name. An out-of-flow child is placed by its own offsets and not by the
+container's alignment, which is how the top bar pins the current page's
+underline to the bottom of its entry and how an `ItemCard` bleeds its watermark
+off its own corner. And a measured ink shift is not a box that is off:
+`RoundButton` moves its glyph's SPAN so the glyph's INK lands on the ring's
+centre, so the shift is read back off the computed `translate` and undone. The
+first cut of the script had none of those three and reported 31 offenders, 27
+of which were the page being right.
+
+There are also two rules, not one. Children that all overlap vertically are a
+row, and each of them has to centre on the container. Children that do not
+overlap are a stack on purpose, an Atlas tile drawing a glyph over its name, so
+it is their union that has to centre, which is the same padding question one
+level up.
+
+**What it found.** 1,378 button-like elements over the seven pages, 4 of them
+over a pixel, all four in the lesson rail: the label 1.62px high, the glyph
+1.87px high. Everything else was already right, and the before and after
+screenshots of a chip, the top bar and a round button are identical files.
+
+**What moved.** The rail's row was `items-baseline`, and a row that holds two
+sizes at once hangs the smaller off the taller one's baseline and lifts the
+pair off the row's middle. It centres now. That exposed a second thing:
+centring a row centres each child's MARGIN box, and `Eyebrow` writes an `mb-1`
+of its own, so the eyebrow was still two pixels high. The call site had asked
+for `mb-0` since the day it was written and had never once got it, because
+Tailwind orders `mb-0` before `mb-1` in the sheet and the component's default
+was winning over the caller. `!mb-0` is what makes the ask stick, and the row
+is 3.25px shorter for those four margin pixels leaving. Sixteen other call
+sites pass a plain `mb-0` to `Eyebrow` and are all quietly in the same
+position; that is its own ticket.
+
+Five more rows had the same baseline shape without being over the threshold:
+the Atlas's selected-item pills, a lesson card's star buttons, a session's row,
+and the quiz's card list and results list. They centre now too, on the rule
+rather than on a number.
+
+**The gate.** The script at 0 over 1px, from 4. 3,801 unit tests pass, 1
+skipped, unchanged: none of this is model code. 46 e2e pass, unchanged, since
+nothing here changes what a page does. Before-and-after screenshots of the rail
+row, a chip, the top bar and a round button went to Sam on the card.
