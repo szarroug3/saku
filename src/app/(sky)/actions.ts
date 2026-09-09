@@ -93,6 +93,15 @@ export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards
   // in the order they were recorded in (SAK-388)
   if (named.length) return shuffleDeck(cardsFor(history, named));
   if (who.sample && !picks.length) return sampleCards(history);
+  const extras = await extrasFor(who, ask);
+  return quizFromHistory(history, picks, Date.now(), extras);
+}
+
+/** The two extra kinds of card a deck may ask, whoever is asking: what the
+ * caller handed in (the browser's own config), else the account's saved
+ * Settings, else on. Both the lesson quiz and a practice deck read them the
+ * same way (SAK-426). */
+async function extrasFor(who: Who, ask: { audio?: boolean; pitch?: boolean }): Promise<{ audio: boolean; pitch: boolean }> {
   let { audio, pitch } = ask;
   if (!who.sample && !who.local && (audio === undefined || pitch === undefined)) {
     const userId = await currentUserId();
@@ -100,12 +109,16 @@ export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards
     audio ??= cfg?.audioPrompts ?? true;
     pitch ??= cfg?.pitchQuestions ?? true;
   }
-  return quizFromHistory(history, picks, Date.now(), { audio: audio ?? true, pitch: pitch ?? true });
+  return { audio: audio ?? true, pitch: pitch ?? true };
 }
 
-export async function loadPracticeCards(who: Who, recipe: Recipe): Promise<QuizCard[]> {
+/** A practice deck's cards. The learner's audio and pitch settings reach it
+ * the way the quiz's do, so a deck asks by ear and by pitch when Settings
+ * say so (SAK-426). */
+export async function loadPracticeCards(who: Who, recipe: Recipe, ask: { audio?: boolean; pitch?: boolean } = {}): Promise<QuizCard[]> {
   const history = await historyFor(who);
-  return timedSync("practice", () => practiceCards(history, recipe, {}), "dealing the deck");
+  const extras = await extrasFor(who, ask);
+  return timedSync("practice", () => practiceCards(history, recipe, {}, Date.now(), extras), "dealing the deck");
 }
 
 /** Practice's live preview: the recipe resolved against the learner. Reads

@@ -6,6 +6,9 @@
 
 import { isConstructionFact } from "@/data/counter-categories";
 import { isPitchFact } from "@/data/pitch";
+import { pitchFactId } from "@/data/pitch-facts";
+import { VOCAB_SUBJECT } from "@/data/vocab";
+import { factInfo } from "@/lib/facts";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { grammarMeaning } from "@/data/grammar";
 import { knownFactsOf, type Kind, type LibEntry } from "@/lib/library/entries";
@@ -21,7 +24,7 @@ import type { FactId, HistoryFile } from "@/types";
 import { all, SHELVES } from "./atlas";
 import { standingFor, touchedFacts } from "./learner";
 import { offerPicker } from "./observatory";
-import { quizCards } from "./quiz";
+import { quizCards, type QuizOptions } from "./quiz";
 import { shuffleDeck, type QuizCard } from "@/sky/lib/quiz";
 
 /** The shelves a deck can draw from. */
@@ -127,13 +130,22 @@ function workOutAsk(fact: FactId): Ask | null {
  * (knownFactsOf), but its readings inside words are asked too, each once a
  * word carrying it has been met: `quizzable` keeps that gate, per learner,
  * in `resolve`. This part depends on the shipped tables alone, so it is
- * worked out once per entry and kept. */
+ * worked out once per entry and kept.
+ *
+ * A word's pitch is added here (SAK-426). It is a registered fact but
+ * deliberately not a listed one (see data/pitch-facts.ts), so neither
+ * `factsOf` nor `knownFactsOf` hands it over and a practice deck could
+ * never ask a pitch question, whatever Settings said. The lesson quiz adds
+ * it the same way, per word taught. `askOf` already reads it as "pick", so
+ * a recipe that asks for picking from choices takes it from here; a deck
+ * dealt with pitch questions off drops it again in `practiceCards`. */
 type EntryAsk = readonly [FactId, Ask];
 const ASKS_OF = new Map<string, readonly EntryAsk[]>();
 function asksOf(e: LibEntry): readonly EntryAsk[] {
   let asks = ASKS_OF.get(e.id);
   if (!asks) {
-    const facts = e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e);
+    const facts = [...(e.kind === KANJI_SUBJECT ? factsOf(e.id) : knownFactsOf(e))];
+    if (e.kind === VOCAB_SUBJECT) { const pf = pitchFactId(e.glyph); if (factInfo(pf)) facts.push(pf); }
     asks = facts.flatMap((f) => { const a = askOf(f); return a ? [[f, a] as const] : []; });
     ASKS_OF.set(e.id, asks);
   }
@@ -333,9 +345,18 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
 /** The cards for a deck: the drawn items' facts, shuffled. The draw is
  * already random, but it draws ITEMS, and a drawn word's facts came out
  * together, so its meaning and its reading were always asked back to back
- * (SAK-388). A deck of "all of them" was not shuffled at all. */
-export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now()): QuizCard[] {
+ * (SAK-388). A deck of "all of them" was not shuffled at all.
+ *
+ * `opts` is the learner's Settings, threaded through the way the lesson
+ * quiz threads them (SAK-426): with `audio` a card that has a sound to ask
+ * by becomes a listening card half the time, and with `pitch` off the
+ * words' pitch facts are dropped before any card is built. Both default to
+ * on, as Settings do. */
+export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
+  const audio = opts.audio ?? true;
+  const pitch = opts.pitch ?? true;
   // the cards want the facts alone, so the drawn items are never built
-  const facts = draw(history, recipe, practiceMisses, now, Math.random).drawn.flatMap((p) => p.facts);
-  return shuffleDeck(quizCards(history, facts, now));
+  const drawn = draw(history, recipe, practiceMisses, now, Math.random).drawn.flatMap((p) => p.facts);
+  const facts = pitch ? drawn : drawn.filter((f) => !isPitchFact(f as string));
+  return shuffleDeck(quizCards(history, facts, now, { audio, pitch }));
 }

@@ -6,14 +6,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { factsOf } from "@/lib/facts";
+import { pitchFactId } from "@/data/pitch-facts";
+import { VOCAB_SUBJECT } from "@/data/vocab";
+import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
-import { LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
+import { knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
 import type { FactId } from "@/types";
 
 import { matchesKey } from "@/lib/answer-key";
 import { grade } from "./grade";
-import { quizCards, sampleCards } from "./quiz";
+import { quizCards, quizFromHistory, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -214,3 +216,40 @@ describe("why each of the others was on the board (SAK-315)", () => {
     assert.match(other.why ?? "", /said the same way|the other pitch/);
   });
 });
+
+describe("the two Settings a deck reads (SAK-426)", () => {
+  const history = sampleHistory(NOW);
+
+  /** A dozen words asked for their meaning: typed cards with a reading to
+   * play, which is what a listening card is made of. */
+  const wordMeanings = (LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? [])
+    .flatMap((e) => knownFactsOf(e).filter((f) => (f as string).includes("/meaning")))
+    .slice(0, 12);
+
+  /** The first word the app can ask a pitch question about. */
+  const withPitch = (LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? []).find((e) => factInfo(pitchFactId(e.glyph)))!;
+
+  it("asks by ear only with audio prompts on", () => {
+    // the coin flip inside quizCards is Math.random's, so it is pinned: one
+    // run says what the setting does rather than what the dice did
+    const heard = withRandom(0.1, () => quizCards(history, wordMeanings, NOW, { audio: true }));
+    assert.ok(heard.some((c) => c.listen), "a listening card");
+    const read = withRandom(0.1, () => quizCards(history, wordMeanings, NOW, {}));
+    assert.ok(!read.some((c) => c.listen), "none by ear with audio off");
+  });
+
+  it("asks a taught word's pitch only with pitch questions on", () => {
+    const asked = withRandom(0.1, () => quizFromHistory(history, [withPitch.id], NOW, { pitch: true }));
+    assert.ok(asked.some((c) => c.id.endsWith("/pitch")), withPitch.id);
+    const without = withRandom(0.1, () => quizFromHistory(history, [withPitch.id], NOW, { pitch: false }));
+    assert.ok(!without.some((c) => c.id.endsWith("/pitch")));
+  });
+});
+
+/** Runs `fn` with the dice pinned, so a card built on a coin flip is the
+ * same card every run. */
+function withRandom<T>(value: number, fn: () => T): T {
+  const real = Math.random;
+  Math.random = () => value;
+  try { return fn(); } finally { Math.random = real; }
+}

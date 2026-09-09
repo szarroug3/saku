@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 
 import { EMPTY_RECIPE, PREVIEW_CAP } from "@/sky/lib/practice";
 
-import { askOf, practiceCollections, practiceDraw, practicePreview } from "./practice";
+import { askOf, practiceCards, practiceCollections, practiceDraw, practicePreview } from "./practice";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -96,3 +96,39 @@ describe("the pool's items are built for the ones sent", () => {
     }
   });
 });
+
+describe("a deck asks by ear and by pitch when Settings say so (SAK-426)", () => {
+  const history = sampleHistory(NOW);
+  // words, asked what they mean and asked to pick from choices: the two
+  // asks a listening card and a pitch card come under
+  const words = { ...EMPTY_RECIPE, collections: ["words"], asks: ["meaning", "pick"] as const, size: 20 as const };
+
+  it("keeps a word's pitch in the pool, which is where it was missing", () => {
+    const preview = practicePreview(history, { ...words, size: "all" }, {}, NOW);
+    const pitch = preview.items.flatMap((p) => p.facts).filter((f) => (f as string).endsWith("/pitch"));
+    assert.ok(pitch.length > 0, "the pool carries pitch facts");
+    assert.ok(pitch.every((f) => askOf(f as never) === "pick"));
+  });
+
+  it("asks by ear only with audio prompts on", () => {
+    const heard = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: true }));
+    assert.ok(heard.some((c) => c.listen), "a listening card");
+    const read = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: false, pitch: true }));
+    assert.ok(!read.some((c) => c.listen), "none by ear with audio off");
+  });
+
+  it("asks a word's pitch only with pitch questions on", () => {
+    const asked = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: true }));
+    assert.ok(asked.some((c) => c.id.endsWith("/pitch")), "a pitch card");
+    const without = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: false }));
+    assert.ok(!without.some((c) => c.id.endsWith("/pitch")));
+  });
+});
+
+/** Runs `fn` with the dice pinned: the draw, the deal and the coin flip
+ * that makes a listening card all read Math.random. */
+function withRandom<T>(value: number, fn: () => T): T {
+  const real = Math.random;
+  Math.random = () => value;
+  try { return fn(); } finally { Math.random = real; }
+}

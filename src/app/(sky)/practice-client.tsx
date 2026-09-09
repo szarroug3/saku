@@ -99,7 +99,8 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
   // not re-deal it underneath whoever is answering (see quiz-client.tsx)
   const deckKey = resume ? resume.deck.join("\n") : "";
   const deck = useMemo(() => (deckKey ? deckKey.split("\n") : null), [deckKey]);
-  const load = useCallback((w: Who) => deck ? loadQuiz(w, { cards: deck }) : named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe), [deck, named, recipe]);
+  // the deck honors the same two Settings the lesson quiz does (SAK-426)
+  const load = useCallback((w: Who) => deck ? loadQuiz(w, { cards: deck }) : named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe, { audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [deck, named, recipe, cfg.audioPrompts, cfg.pitchQuestions]);
   const loaded = useLoaded(who, load, deck ? null : initial);
   const cards = useMemo(() => (loaded && deck ? orderDeck(loaded, deck) : loaded), [loaded, deck]);
   const run = useMemo(() => (resume && cards ? trimRun(resume, cards.map((c) => c.id)) : null), [resume, cards]);

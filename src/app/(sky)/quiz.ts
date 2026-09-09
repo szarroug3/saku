@@ -45,7 +45,7 @@ const QUIZ_CAP = 8;
  * named, else what is due, capped. */
 /** What the learner's settings allow a quiz to ask: pitch cards, and
  * listening cards (SAK-345). */
-interface QuizOptions {
+export interface QuizOptions {
   pitch?: boolean;
   audio?: boolean;
 }
