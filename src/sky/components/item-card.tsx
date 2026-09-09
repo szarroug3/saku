@@ -28,8 +28,13 @@
 //   beside it, and tinting the glyph instead just moves the same unlabelled
 //   signal somewhere more distracting. The Atlas carries status where it is
 //   worded: the coverage bar and the status filter.
-// - A locked state. What cannot be picked yet is not shown at all (Sam's call,
-//   2026-09-04), so a card that cannot be picked never reaches this component.
+// - A locked state, in general. What cannot be picked yet is not shown at all
+//   (Sam's call, 2026-09-04), so a card that cannot be picked normally never
+//   reaches this component. The one exception is `gate`: a thing whose place in
+//   an order is the point, and which would be a hole in that order if it were
+//   dropped, keeps its place and says in one line what opens it. That is the
+//   sentence types (SAK-430), where "Simple comes after は and が" is the
+//   teaching, and a missing card would teach nothing.
 //
 // Painted in the Sky's own tokens: it sits on the wash, never on the app's
 // light card. Selected keeps its ground and takes the accent on its border.
@@ -38,6 +43,14 @@ import { japaneseFont } from "@/sky/lib/japanese";
 import type { SkyItem } from "@/sky/lib/types";
 
 type ItemCardDensity = "comfortable" | "compact";
+
+/** What something is waiting on: the one line that says what opens it, and
+ * how far along that is when it can be counted. Defined here, where it is
+ * drawn; the Observatory's section shape carries one per gated item. */
+export interface ItemGate {
+  requirement: string;
+  progress?: { have: number; need: number; unit: string };
+}
 
 interface ItemCardProps {
   item: SkyItem;
@@ -52,6 +65,9 @@ interface ItemCardProps {
    * "hiragana", "word", "sentence rule" (Sam's call, 2026-09-04: the kind,
    * not the piece count; the cart carries the cost). */
   label?: string;
+  /** What opens this one, when it is shut. A gated card is never a button:
+   * it keeps its place in the order and says what it is waiting for. */
+  gate?: ItemGate;
   /** The click, with its event, so a page can read shift for a range. */
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
 }
@@ -106,6 +122,7 @@ export function ItemCard({
   density = "comfortable",
   selected = false,
   label,
+  gate,
   onClick,
 }: ItemCardProps) {
   const isButton = Boolean(onClick);
@@ -119,8 +136,10 @@ export function ItemCard({
         BOX[density],
         "border transition-colors",
         // an unselected card's edge in the muted ink, not the hairline: the
-        // hairline was hard to see against the wash (Sam, 2026-09-05)
-        selected ? "border-sky-accent bg-sky-panel" : "border-sky-muted/45 bg-sky-panel",
+        // hairline was hard to see against the wash (Sam, 2026-09-05). A shut
+        // card is the one thing that wants the hairline: it is on the page to
+        // hold its place in the order, not to be reached for.
+        selected ? "border-sky-accent bg-sky-panel" : gate ? "border-sky-line bg-sky-panel" : "border-sky-muted/45 bg-sky-panel",
         isButton && !selected ? "hover:border-sky-link hover:bg-sky-card-strong" : "",
       ]
         .filter(Boolean)
@@ -171,14 +190,24 @@ export function ItemCard({
               a name that wraps to two lines grows upward instead of shoving the
               cost line down. */}
           <span
-            className={`flex flex-1 items-center justify-center font-medium leading-snug text-sky-ink ${englishSize(item.english, density)}`}
+            className={`flex flex-1 items-center justify-center font-medium leading-snug ${gate ? "text-sky-muted" : "text-sky-ink"} ${englishSize(item.english, density)}`}
           >
             {item.english}
           </span>
 
           {/* What kind of thing it is, in the accent, anchored to the bottom so
-              it sits on one line across a whole row. */}
-          {label ? <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-accent">{label}</span> : null}
+              it sits on one line across a whole row. A gated card gives that
+              line to what opens it instead: the kind is the same word as every
+              card beside it, and what it is waiting for is the whole reason
+              this one is here and not takeable. */}
+          {gate ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] leading-snug text-sky-muted">
+              {gate.requirement}
+              {gate.progress ? ` (${gate.progress.have} of ${gate.progress.need})` : ""}
+            </span>
+          ) : label ? (
+            <span className="shrink-0 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-sky-accent">{label}</span>
+          ) : null}
         </>
       )}
     </Tag>

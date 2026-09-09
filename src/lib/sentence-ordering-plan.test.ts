@@ -12,6 +12,7 @@ import { describe, test } from "node:test";
 import {
   nextSentenceOrderingLesson,
   sentenceLessonFacts,
+  sentenceTierBlock,
 } from "./sentence-ordering-plan.ts";
 import { SENTENCE_ORDERING_TIERS, type AssemblyTier } from "../data/assembly.ts";
 import { sentenceTierMarkerFact } from "./sentence-ordering-progress.ts";
@@ -84,5 +85,31 @@ describe("sentenceLessonFacts", () => {
     const facts = sentenceLessonFacts(simple, EMPTY);
     assert.ok(facts.length > 0);
     assert.ok(!facts.includes(sentenceTierMarkerFact(simple.id)));
+  });
+});
+
+// SAK-430. The unlock rule now keeps its reason, because the Observatory lists
+// a tier it cannot start yet and says on the card what opens it. The yes-or-no
+// the planner uses is this same function, so the two cannot drift apart.
+describe("sentenceTierBlock", () => {
+  test("names the patterns any one of which opens the tier", () => {
+    const simple = SENTENCE_ORDERING_TIERS[0];
+    assert.deepEqual(sentenceTierBlock(simple, EMPTY), {
+      kind: "grammar",
+      patterns: simple.grammarPrereqs,
+    });
+    const taught = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
+    assert.equal(sentenceTierBlock(simple, taught), null);
+  });
+
+  test("says how far short the pool is when the tier has too few sentences", () => {
+    // every shipped tier clears its own floor today, so the short-pool half of
+    // the rule is exercised on a tier asking for more than the corpus holds
+    const simple = SENTENCE_ORDERING_TIERS[0];
+    const greedy: AssemblyTier = { ...simple, minReadable: 10_000, grammarPrereqs: [] };
+    const block = sentenceTierBlock(greedy, EMPTY);
+    assert.equal(block?.kind, "sentences");
+    assert.equal(block?.kind === "sentences" && block.need, 10_000);
+    assert.ok(block?.kind === "sentences" && block.have > 0 && block.have < 10_000);
   });
 });

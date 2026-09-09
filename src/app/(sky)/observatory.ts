@@ -11,7 +11,8 @@
 //               supply. Hiragana rows first, then katakana
 //   words       the curriculum's order, the next ones not yet met
 //   counting    the counters track in its own order (〜つ first)
-//   grammar     the patterns in the track's order
+//   sentence    the ten sentence types, each preceded by the patterns it
+//   rules       needs, in one order (src/lib/sentence-rule-order.ts)
 //   verb pairs  each attached to its plain verb as headword
 //   keigo       each set attached to its plain verb
 // Everything else in the sky rides along as parts, so costs are real.
@@ -22,7 +23,7 @@
 
 import { KANA_SUBJECT, SETS, kanaEntry } from "@/data/characters";
 import { TERM_SUBJECT } from "@/data/terms";
-import { MARK_SUBJECT } from "@/data/marks";
+import { MARK_SUBJECT, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { RADICAL_SUBJECT } from "@/data/radicals";
@@ -33,10 +34,12 @@ import { KEIGO_SETS, KEIGO_SUBJECT, keigoSetEntry, keigoSetForEntry, type KeigoS
 import { VERB_PAIRS, type VerbPair } from "@/data/transitivity";
 import { pairEntry, pairForEntry, TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
-import { sentenceTierShortLabel } from "@/data/assembly";
+import { SENTENCE_ORDERING_TIERS, sentenceTierShortLabel } from "@/data/assembly";
+import { sentenceTierBlock } from "@/lib/sentence-ordering-plan";
+import { sentenceRuleOrder } from "@/lib/sentence-rule-order";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
+import type { ItemGate } from "@/sky/components/item-card";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { FactId, HistoryFile } from "@/types";
@@ -100,6 +103,25 @@ function pairName(happens: readonly string[], doIt: readonly string[]): string |
   for (const h of happens) for (const d of doIt) if (related(h, d)) return `${h} · ${d}`;
   if (happens[0] && doIt[0]) return `${happens[0]} · ${doIt[0]}`;
   return happens[0] ?? doIt[0];
+}
+
+/** What a sentence type is still waiting on, in the learner's own words, or
+ * nothing when it is open. The app's unlock rule is `sentenceTierBlock`, read
+ * here rather than restated, so the picker can never offer a type the lesson
+ * planner would refuse. The grammar half of that rule wants ANY one of the
+ * listed patterns, which is why the line reads "or". */
+function tierBlock(tierId: string, history: HistoryFile): ItemGate | undefined {
+  const tier = SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId);
+  const shut = tier ? sentenceTierBlock(tier, history) : null;
+  if (!shut) return undefined;
+  if (shut.kind === "sentences") {
+    return { requirement: `Opens once ${shut.need} sentences of this shape are ready`, progress: { have: shut.have, need: shut.need, unit: "sentences" } };
+  }
+  // named by the pattern's own glyph without the host mark, so the line reads
+  // "は or が" rather than "〜は or 〜が"
+  const names = shut.patterns.map((id) => libEntry(patternEntry(id))?.glyph.replace(/^〜/, "") || id);
+  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}` : names[0];
+  return { requirement: `Opens once you know ${list}` };
 }
 
 export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {
@@ -287,10 +309,37 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
 
-  // grammar: sentence rules, in the track's order
-  const allGrammar = CURRICULUM_PATTERNS.map((r) => libEntry(patternEntry(r.id))).filter((e): e is LibEntry => !!e);
-  const grammar = allGrammar.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: grammar.slice(0, SHOW).map((e) => offer(e, "grammar").id), gate: afterKana, started: grammar.length < allGrammar.length, complete: grammar.length === 0 });
+  // sentence rules: the ten sentence types and, before each of them, the
+  // patterns that type needs, in one order (src/lib/sentence-rule-order.ts).
+  // It used to be the grammar track alone, which offered all nine case
+  // particles in one row and never a sentence type at all (Sam, 2026-09-08).
+  //
+  // The section STOPS at the next sentence type, which is Sam's own rule for
+  // it: "teach just what's needed for the next sentence type". So a learner is
+  // offered the handful of particles that type turns on and then the type
+  // itself, and nothing beyond it, however long the track goes on. It is short
+  // by construction, so it lays out whole rather than at the usual nine (a
+  // section that ended one card short of the thing its cards are FOR would
+  // teach the opposite of the order it is built on). A type the learner cannot
+  // start yet keeps its place with a line saying what opens it.
+  const rules: string[] = [];
+  const gates: Record<string, ItemGate> = {};
+  let rulesMet = 0;
+  for (const step of sentenceRuleOrder()) {
+    const entry = libEntry(step.kind === "tier" ? markEntry(`sentence-rule-${step.id}`) : patternEntry(step.id));
+    if (!entry) continue;
+    if (standingFor(entry, history, now).met) { rulesMet++; continue; }
+    // offerPick names each of the two the way every other sky does: a pattern
+    // by its meaning, a sentence type by its short label
+    const item = offerPick(entry.id);
+    if (!item) continue;
+    rules.push(item.id);
+    if (step.kind !== "tier") continue;
+    const shut = tierBlock(step.id, history);
+    if (shut) gates[item.id] = shut;
+    break;
+  }
+  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), gates, gate: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];

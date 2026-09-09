@@ -14,7 +14,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
-import { ItemCard } from "@/sky/components/item-card";
+import { ItemCard, type ItemGate } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
 import { ResumeLine } from "@/sky/components/quiz-resume";
@@ -39,10 +39,20 @@ export interface ObservatorySection {
   /** What is on offer, in order, by id. The page lays out those that can be
    * taken now, at most `SHOWN` of them. */
   items: readonly string[];
+  /** How many to lay out, when the default nine is the wrong number for this
+   * section. Sentence rules is short by construction and ends on the sentence
+   * type its rows lead up to (SAK-430), so it shows whole: cutting it one card
+   * early would drop the very thing the order exists to reach. */
+  show?: number;
   /** What the whole section is waiting on, when it is: such a section is
    * not shown at all (Sam's call, 2026-09-04), but the reason is kept so a
    * page can say what is coming. */
-  gate?: { requirement: string; progress?: { have: number; need: number; unit: string } };
+  gate?: ItemGate;
+  /** What a single listed item is waiting on, by its id, for the few items
+   * that keep their place in the order while they are shut (a sentence type
+   * whose grammar the learner has not met, SAK-430). Everything else that
+   * cannot be taken is simply left out; see `ItemCard`'s own note. */
+  gates?: Readonly<Record<string, ItemGate>>;
   /** The learner has already started this kind of thing, so its things are
    * laid out straight away; otherwise the section shows what it is and a
    * Start button, and the things appear once that is pressed. */
@@ -86,11 +96,14 @@ interface SkyObservatoryProps {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-/** What kind of thing a card is: a kana row by its script, grammar as a
- * sentence rule, the rest by the kind's own word. */
+/** What kind of thing a card is: a kana row by its script, a grammar pattern
+ * as a sentence rule, a whole shape of sentence as a sentence type (the two
+ * share the "Sentence rules" section and have to read apart on the card), the
+ * rest by the kind's own word. */
 function kindLabel(item: SkyItem): string {
   if (item.kind === "kana") return /[\u30a0-\u30ff]/.test(item.glyph) ? "katakana" : "hiragana";
-  if (item.kind === "grammar" || item.kind === "sentence") return "sentence rule";
+  if (item.kind === "grammar") return "sentence rule";
+  if (item.kind === "sentence") return "sentence type";
   return KIND_LABEL[item.kind];
 }
 
@@ -120,12 +133,15 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
       setPicks([...picks, id]);
     }
   };
-  /** What a section lays out: only what can be taken now, the first few. */
-  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, SHOWN);
+  /** What a section lays out: what can be taken now and, in its place, what
+   * the section says is shut for a reason. */
+  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, section.show ?? SHOWN);
   /** A click on a card: shift picks everything from the last click to this
-   * one within the section (a range, like files in a list); otherwise toggle. */
+   * one within the section (a range, like files in a list); otherwise toggle.
+   * A gated card is not in the range: it cannot be clicked itself, and a
+   * range drawn across it must not pick it either. */
   const clickCard = (section: ObservatorySection, id: string, shift: boolean) => {
-    const ids = offered(section);
+    const ids = offered(section).filter((x) => !section.gates?.[x]);
     const from = anchor ? ids.indexOf(anchor) : -1, to = ids.indexOf(id);
     if (shift && from >= 0 && to >= 0 && from !== to) {
       const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
@@ -170,7 +186,10 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={(e) => clickCard(section, id, e.shiftKey)} />;
+                      const shut = section.gates?.[id];
+                      // a gated card keeps its place and says what opens it;
+                      // with no onClick it is a plain tile, not a button
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} gate={shut} onClick={shut ? undefined : (e) => clickCard(section, id, e.shiftKey)} />;
                     })}
                   </div>
                 )}

@@ -38,12 +38,27 @@ export function sentenceLessonFacts(
   return [sentenceTierMarkerFact(tier.id)];
 }
 
-function sentenceTierUnlocked(
+/** What a tier is still waiting on, or null when it is open.
+ *
+ * This is `sentenceTierUnlocked` with its reason kept rather than thrown away.
+ * The planner only needs the yes or no, but the Observatory lists a tier it
+ * cannot start yet in its place in the track and says on the card WHY it is
+ * shut (SAK-430), and a second opinion about what unlocks a tier is exactly
+ * the drift that would let the picker offer a lesson the planner refuses. */
+export type SentenceTierBlock =
+  /** Not one of these patterns has been taught yet. Any ONE of them opens it. */
+  | { readonly kind: "grammar"; readonly patterns: readonly string[] }
+  /** Too few sentences in the tier's structural pool for a real drill. */
+  | { readonly kind: "sentences"; readonly have: number; readonly need: number };
+
+export function sentenceTierBlock(
   tier: (typeof SENTENCE_ORDERING_TIERS)[number],
   history: HistoryFile,
-): boolean {
+): SentenceTierBlock | null {
   const readable = readableAssemblyForTier(tier, history);
-  if (readable.length < tier.minReadable) return false;
+  if (readable.length < tier.minReadable) {
+    return { kind: "sentences", have: readable.length, need: tier.minReadable };
+  }
 
   // Grammar prereq: at least one of this tier's patterns must have been
   // taught in the grammar track (seen, claimed or tested). Tiers with no
@@ -58,10 +73,17 @@ function sentenceTierUnlocked(
       );
       return st.lastTested > 0;
     });
-    if (!prereqMet) return false;
+    if (!prereqMet) return { kind: "grammar", patterns: tier.grammarPrereqs };
   }
 
-  return true;
+  return null;
+}
+
+function sentenceTierUnlocked(
+  tier: (typeof SENTENCE_ORDERING_TIERS)[number],
+  history: HistoryFile,
+): boolean {
+  return sentenceTierBlock(tier, history) === null;
 }
 
 /**
