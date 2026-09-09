@@ -16,7 +16,7 @@ import { builtPieces } from "@/data/kanji-etymology";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { derivePosition } from "@/lib/radical-position";
-import { formsOfWord } from "@/lib/word-forms";
+import { formsOfWord, wordFormKind } from "@/lib/word-forms";
 import { COUNTER_CURRICULUM, counterForm, counterRoleNote } from "@/data/counters";
 import { TSU_INTRO } from "@/data/track-intros";
 import { patternEntry } from "@/data/grammar";
@@ -195,6 +195,11 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
       t.reading = head.reb; t.meanings = head.glosses;
       if (shown.length) t.pronunciations = shown.map((u) => ({ reading: u.reb, glosses: u.glosses, pitch: u.reb === row.reb ? wordPitch(glyph) : null }));
       if (row.align?.length) t.writtenWith = row.align.filter(([k]) => kanjiRow(k)).map(([kanji, surface]) => ({ kanji, reading: surface }));
+      // which group it conjugates in, and where to read about that group.
+      // Neither concept has a term of the same name, so the concept entry is
+      // the page (`readAbout` in atlas.ts is that rule, for the ones that do).
+      const kind = wordFormKind(row);
+      if (kind) t.wordKind = { label: kind, readAbout: grammarConceptEntry(kind.endsWith("adjective") ? "adjective-types" : "verb-classes") };
     }
     const ex = exampleFor(glyph);
     if (ex) t.example = { jp: ex.jp, en: ex.en };

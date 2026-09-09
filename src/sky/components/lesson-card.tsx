@@ -17,7 +17,7 @@ import { useId, useState, type ComponentType, type ReactNode } from "react";
 
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { Glyph } from "@/sky/components/glyph";
-import { RoundButton } from "@/sky/components/sky-button";
+import { RoundButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
@@ -33,6 +33,10 @@ interface LessonCardProps {
   madeOf: readonly SkyItem[];
   partOf: readonly SkyItem[];
   onSelect: (id: string) => void;
+  /** Opens a page that explains something the card names, when the route can
+   * reach one: the Atlas passes it, the lesson and the quiz review do not, and
+   * without it the word kind is a chip that only says what it says. */
+  onRead?: (id: string) => void;
   /** The stroke order and its notes, from whoever has them; goes in the
    * "How it's written" fold. */
   written?: ReactNode;
@@ -110,8 +114,9 @@ function Fold({ title, open: from = false, children }: { title: string; open?: b
   );
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, onSelect, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
+  const kind = teach?.wordKind;
   const pages = teach?.pages ?? [];
   const at = Math.max(0, Math.min(page, pages.length - 1));
   const reading = teach?.reading ?? item.reading;
@@ -170,6 +175,22 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, written, hea
         <p className="mt-3 text-[15px] leading-relaxed">
           <span className="font-semibold">{meanings[0]}</span>
           {meanings.length > 1 && <span className="text-sky-muted"> · {meanings.slice(1, 4).join(" · ")}</span>}
+        </p>
+      )}
+
+      {/* the group it conjugates in, under the meanings and before anything
+          the word is built from. Muted, because it is information rather than
+          a choice, and a tap on it opens the page that explains the group when
+          the route has one. */}
+      {kind && (
+        <p className="mt-2">
+          <SkyChip
+            onClick={onRead ? () => onRead(kind.readAbout) : undefined}
+            title={onRead ? `Read about what a ${kind.label} is` : undefined}
+            className={japaneseFont(kind.label)}
+          >
+            {kind.label}
+          </SkyChip>
         </p>
       )}
 

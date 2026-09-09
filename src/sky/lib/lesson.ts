@@ -48,6 +48,13 @@ export interface LessonTeach {
   etymology?: string;
   /** A kanji's readings, on'yomi and kun'yomi, each with words it is read that way in. */
   readings?: ReadonlyArray<{ reading: string; kind: "on" | "kun"; words: readonly string[] }>;
+  /** What kind of word it is, for a word that conjugates: "る-verb",
+   * "う-verb", "irregular verb", "い-adjective", "な-adjective". The forms
+   * folds showed every form a word takes without ever saying which group it
+   * belongs to (Sam, 2026-09-08). `readAbout` is the entry that explains the
+   * group, for the pages that can open one. A word that does not conjugate
+   * carries nothing. */
+  wordKind?: { label: string; readAbout: string };
   /** A word's kanji and how each is read in this word. */
   writtenWith?: ReadonlyArray<{ kanji: string; reading: string }>;
   /** An example sentence for a word. */

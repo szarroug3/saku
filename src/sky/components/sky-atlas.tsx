@@ -478,6 +478,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   hear={hear}
                   pitch={pitch}
                   onSelect={selection.only}
+                  onRead={selection.only}
                   page={page?.id === current.id ? page.at : 0}
                   onPage={(at) => setPage({ id: current.id, at })}
                   // a term is a page to read: nothing to pick, claim or quiz

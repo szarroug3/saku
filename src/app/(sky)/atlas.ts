@@ -277,5 +277,10 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     if (concept?.related?.length) group("Read about it", concept.related.map(readAbout));
   }
 
-  return { id: item.id, items: closure(o, [item.id, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach: teachFor(item), related };
+  // a word's kind chip opens the page that explains its group, so that page
+  // travels with the entry: the panel picks by id out of what it has been
+  // given, and an id it has never seen selects nothing
+  const teach = teachFor(item);
+  const alsoSent = teach?.wordKind ? [o.offerPick(teach.wordKind.readAbout)?.id].filter((x): x is string => !!x) : [];
+  return { id: item.id, items: closure(o, [item.id, ...alsoSent, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach, related };
 }
