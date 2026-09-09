@@ -48,7 +48,7 @@ import { answerIsJapanese } from "@/lib/engine/question";
 import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { isReadingFact } from "@/lib/word-unlock";
-import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
+import { wordKindOf } from "@/lib/word-forms";
 import { openExample } from "@/lib/grammar/example";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
 import type { Direction, FactId } from "@/types";
@@ -115,18 +115,23 @@ export function quizInstruction(
   // string that was the sub-label.
   const prod = grammarProduction(fact);
   if (prod) {
-    // NAME THE CLASS OF AN UNKNOWN CLASS WORD. 食べる and 帰る are both drawn in
-    // kana (たべる, かえる) because she has not met them, and 〜る alone does not
-    // say whether the conjugation is ichidan or godan. Adjectives have the same
-    // problem: きらい ends in い but is a な-adjective, while 静か has no visible
-    // class ending at all. The instruction supplies the fact spelling withholds:
-    // "this る-verb", "this う-verb", "this い-adjective", or
-    // "this な-adjective". A KNOWN word keeps the plain "word" because its class
-    // rides in the hint instead. Unambiguous non-る verbs stay plain too.
-    const kind =
-      vehicle && !vehicle.known
-        ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)
-        : null;
+    // NAME THE CLASS OF AN UNKNOWN WORD, WHATEVER CLASS IT IS. 食べる and 帰る
+    // are both drawn in kana (たべる, かえる) because she has not met them, and
+    // 〜る alone does not say whether the conjugation is ichidan or godan.
+    // Adjectives have the same problem: きらい ends in い but is a な-adjective,
+    // while 静か has no visible class ending at all. The instruction supplies
+    // the fact spelling withholds: "this る-verb", "this う-verb", "this
+    // い-adjective", "this な-adjective", "this irregular verb".
+    //
+    // `wordKindOf` rather than the two older labellers (SAK-427). They speak up
+    // only where the SPELLING is ambiguous, so a card on しれる said "this
+    // る-verb" while a card on する said only "this word" and left the learner
+    // to guess which of the three skills was being asked for. Naming the class
+    // is never the answer, so there is no reason to withhold it.
+    //
+    // A KNOWN word keeps the plain "word" because its class rides in the hint
+    // instead (see grammarHint).
+    const kind = vehicle && !vehicle.known ? wordKindOf(vehicle.cls) : null;
     const noun = kind ?? "word";
     if (prod.recipe.id === "prenominal-form") {
       return mode === "mc"

@@ -55,7 +55,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { deriveProduction, type Derivation } from "@/lib/grammar/derivation";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
+import { wordKindOf, type WordFormKind } from "@/lib/word-forms";
 import type { GrammarVehicle } from "./question";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
@@ -80,7 +80,13 @@ export type Hint =
   // instead of named ("uses the て-form") — see deriveProduction and
   // grammarHint below. Falls back to `text` when there is nothing to derive
   // (a wrap, or a refused conjugation).
-  | { kind: "derivation"; derivation: Derivation }
+  //
+  // `text` rides along as the CLASS line ("知る is an う-verb"), which SAK-427
+  // made the first thing every production hint says. It is a separate field
+  // rather than a first equation because it is a sentence in the UI face, not
+  // arithmetic in the Japanese one, and the renderer draws the two differently.
+  // Absent for a word whose class has no name (a noun host).
+  | { kind: "derivation"; derivation: Derivation; text?: string }
   // The WRITTEN FORM of the word, shown big enough to READ. Only a listening
   // MEANING card produces this: the audio played the word and hid its glyph, so
   // the honest nudge is to reveal WHICH word was heard (電話), not to gloss its
@@ -325,6 +331,45 @@ function formHintText(
   return label.startsWith("the ") ? `uses ${label}` : `uses the ${label}`;
 }
 
+/**
+ * "a" or "an" before a class name.
+ *
+ * Read by SOUND, not by first letter: う and い are vowels (an う-verb, an
+ * い-adjective) while る and な are consonants (a る-verb, a な-adjective), and
+ * no rule written over the characters themselves gets that right. The same
+ * table derivation.ts keeps for the same five words, and for the same reason
+ * its own header gives.
+ */
+const CLASS_ARTICLE: Readonly<Record<WordFormKind, string>> = {
+  "う-verb": "an",
+  "る-verb": "a",
+  "irregular verb": "an",
+  "い-adjective": "an",
+  "な-adjective": "a",
+};
+
+/**
+ * The first line of every grammar production hint: "知る is an う-verb",
+ * "する is an irregular verb" (SAK-427).
+ *
+ * `wordKindOf` rather than the older `ruVerbKindOf` / `adjectiveKindOf`, which
+ * speak only where the SPELLING leaves the class in doubt. That was the right
+ * gate for choosing a vehicle and the wrong one for a hint: a learner who asks
+ * what kind of word this is has asked a question every conjugating word can
+ * answer, and 知る being an う-verb is no less true for 〜る not being on the
+ * end of it.
+ *
+ * Null when there is no vehicle, and when the vehicle does not conjugate (a
+ * noun host): there is no class to name, and a hint that invents one would be
+ * worse than a hint that says nothing.
+ */
+function vehicleClassLine(vehicle?: GrammarVehicle): string | null {
+  if (!vehicle) return null;
+  const kind = wordKindOf(vehicle.cls);
+  if (!kind) return null;
+  return `${vehicle.known ? vehicle.surface : vehicle.kana} is ${CLASS_ARTICLE[kind]} ${kind}`;
+}
+
 function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
   const prod = grammarProduction(fact);
   if (prod) {
@@ -341,33 +386,41 @@ function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
     // GrammarVehicle.known), so the derivation reads kana too — building on
     // the real surface would show 食べる to a learner who has only ever seen
     // たべる on this card.
+    // THE CLASS COMES FIRST, AND IT COMES ALWAYS (SAK-427). Sam, on a card
+    // whose hint read "This is the 〜てはいけない pattern. uses the て-form":
+    // "i know it's the 〜てはいけない because that's in the question. it should
+    // tell me that this is a ru-verb or u-verb or something or if it's
+    // irregular, say that." So the pattern line is gone (the question names the
+    // pattern) and the class line replaces it, for a KNOWN vehicle and an
+    // unknown one alike. The word is written the way the rest of the card
+    // writes it: the surface once she has met it, kana while she has not (see
+    // GrammarVehicle.known).
+    const classText = vehicleClassLine(vehicle);
     if (vehicle) {
       const word = vehicle.known ? vehicle.surface : vehicle.kana;
       const derivation = deriveProduction(prod.recipe, prod.host, word, vehicle.cls);
-      if (derivation) return { kind: "derivation", derivation };
+      if (derivation) {
+        return { kind: "derivation", derivation, ...(classText ? { text: classText } : {}) };
+      }
     }
-    // THREE nudges, any or all. The PATTERN nudge (SAK-193) names the pattern
-    // itself — "This is the 〜てもいい pattern." — which the quiz instruction no
-    // longer spells out now that it asks in gloss terms ("How do you say 'may
-    // 食べる'?") rather than by form name. The FORM nudge is "uses the て-form";
-    // the CLASS nudge is "食べる is a る-verb" or "嫌い is a な-adjective". They
-    // are combined into one line, and the pattern name means every production
-    // card now has SOMETHING true to say, even a FORM recipe (te-sequence IS
-    // the て-form) whose own form nudge stays silent as a tautology.
-    const patternText = `This is the ${prod.recipe.pattern} pattern`;
+    // NOTHING TO DERIVE, so name the step instead. The FORM nudge is "uses the
+    // て-form", and it stays silent as a tautology on a FORM recipe (te-sequence
+    // IS the て-form).
+    //
+    // The PATTERN nudge is what is left when both of those are silent, and only
+    // then (SAK-427). It used to LEAD every production hint, which is what Sam
+    // reported: the question has named the pattern since SAK-193, so the hint
+    // opened by repeating the card back at her. It is still the honest last
+    // thing to say on the one card that reaches here with neither a class nor a
+    // form to name, which is しか〜ない, whose drilled verb slot lives on
+    // `recipe.wrap.close` where neither deriveProduction nor formHintText nor
+    // the vehicle picker can see it.
     const formText = formHintText(prod);
-    // The class of a KNOWN ambiguous verb or adjective, as an extra reminder. An
-    // UNKNOWN class word already carries its class in the instruction
-    // (quiz-instruction.ts), so it is NOT repeated here; a known one is not named
-    // there (she has met it), so the reminder rides in the hint instead. Absent
-    // for a non-る verb (spelling gives its class) and when there is no vehicle.
-    const kind =
-      vehicle && vehicle.known
-        ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)
-        : null;
-    const classText = kind ? `${vehicle!.surface} is a ${kind}` : null;
-    const text = [patternText, formText, classText].filter(Boolean).join(". ");
-    return text ? { kind: "text", text } : null;
+    const said = [classText, formText].filter(Boolean);
+    return {
+      kind: "text",
+      text: said.length ? said.join(". ") : `This is the ${prod.recipe.pattern} pattern`,
+    };
   }
   const mean = grammarMeaning(fact);
   if (!mean) return null;

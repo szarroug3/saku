@@ -141,28 +141,31 @@ test("a grammar meaning hints with what the pattern attaches to", () => {
   );
 });
 
-test("a grammar production hints with the pattern name and the form it builds on", () => {
+test("with no vehicle, a grammar production hints with the form it builds on", () => {
   // Never the built answer: knowing 〜てから takes the て-form does not tell you
   // 買ってから. te-kara's production is per-ending now, so this asks its te-utsu
-  // fact — the hint is the same "uses the て-form" for every ending, now led by
-  // the pattern name (SAK-193): the quiz instruction asks in gloss terms
-  // ("How do you say 'after 買う'?") and no longer names the pattern itself.
+  // fact, and the hint is the same "uses the て-form" for every ending.
+  //
+  // The pattern-name line that used to lead this sentence is gone (SAK-427).
+  // Sam, on a card hinted "This is the 〜てはいけない pattern. uses the て-form":
+  // "i know it's the 〜てはいけない because that's in the question." The question
+  // has named the pattern since SAK-193, so the hint was spending its first
+  // clause repeating the card.
   const text = textOf(
     hintFor(classProductionFactId("te-kara", "v5u"), "jp2en"),
     "〜てから's production",
   );
-  assert.equal(text, "This is the 〜てから pattern. uses the て-form");
+  assert.equal(text, "uses the て-form");
   assert.ok(!text.includes("買"), "the hint must not contain the built form");
 });
 
-test("a FORM recipe's production still hints with its pattern name, but no form nudge", () => {
+test("the pattern name is the LAST thing said, not the first (SAK-427)", () => {
   // te-sequence IS the て-form. On a card asking the learner to BUILD the
   // て-form, "uses the て-form" is the prompt restated, not a nudge — the same
   // tautology the dictionary-form guard refuses, so formHintText stays silent.
-  // But the pattern-name line (SAK-193) is not a tautology — it survives, so a
-  // FORM recipe's production is no longer the one production card with no hint
-  // at all. The te-form IRREGULARS are the same skill (produce 行って), so they
-  // get the same bare pattern-name hint.
+  // With no vehicle either there is no class to name, and the pattern name is
+  // what is left. It no longer LEADS a hint that has something better to say,
+  // which was the complaint; it is still better than nothing at all.
   assert.deepEqual(
     hintFor(classProductionFactId("te-sequence", "v5u"), "jp2en"),
     { kind: "text", text: "This is the 〜て pattern" },
@@ -171,6 +174,48 @@ test("a FORM recipe's production still hints with its pattern name, but no form 
     hintFor(specialVerbProductionFactId("te-sequence", "iku"), "jp2en"),
     { kind: "text", text: "This is the 〜て pattern" },
   );
+});
+
+test("the class line leads every production hint, irregulars included (SAK-427)", () => {
+  // Sam's two screenshots: the hint never said what kind of word was on the
+  // card, and neither did the question. `wordKindOf` names every conjugating
+  // class, so an irregular says "irregular verb" rather than nothing at all,
+  // and a non-る godan says う-verb rather than staying silent on the argument
+  // that its spelling gives it away.
+  const IKU = { surface: "行く", kana: "いく", cls: "v5k-s", known: true } as const;
+  const hint = hintFor(
+    specialVerbProductionFactId("te-sequence", "iku"),
+    "en2jp",
+    undefined,
+    false,
+    IKU,
+  );
+  assert.ok(hint);
+  assert.equal(hint.kind, "derivation");
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.text, "行く is an irregular verb");
+});
+
+test("a KNOWN う-verb's hint names its class, then derives (SAK-427)", () => {
+  // The first screenshot's own card, fixed: 知る + 〜てはいけない read "This is
+  // the 〜てはいけない pattern. uses the て-form" and now leads with the one
+  // fact she asked for.
+  const SHIRU = { surface: "知る", kana: "しる", cls: "v5r", known: true } as const;
+  const hint = hintFor(classProductionFactId("te-prohibition", "v5r"), "en2jp", undefined, false, SHIRU);
+  assert.ok(hint);
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.text, "知る is an う-verb");
+  assert.equal(hint.derivation.word, "知る");
+});
+
+test("an UNKNOWN vehicle's class line reads in the kana the card draws it in", () => {
+  // Same rule the derivation itself follows (see GrammarVehicle.known): a word
+  // she has only seen as しれる on this card must not be named as 知れる.
+  const UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
+  const hint = hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN);
+  assert.ok(hint);
+  assert.ok(hint.kind === "derivation");
+  assert.equal(hint.text, "たべる is a る-verb");
 });
 
 // SAK-194: given a VEHICLE, a production hint now tries the structured
@@ -298,7 +343,7 @@ test("the wrap recipe (shika-nai) has no derivation, so a vehicle still falls ba
       hintFor(classProductionFactId("shika-nai", "v1"), "en2jp", undefined, false, KNOWN),
       "shika-nai + known 食べる",
     ),
-    "This is the 〜しか〜ない pattern. 食べる is a る-verb",
+    "食べる is a る-verb",
   );
 });
 

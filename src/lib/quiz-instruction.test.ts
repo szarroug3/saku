@@ -31,7 +31,7 @@ import { radicalMeaningFactId } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId, transitivitySide } from "@/data/transitivity-facts";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
-import { classProductionFactId, patternProductionFactId } from "@/data/grammar";
+import { classProductionFactId, patternProductionFactId, specialVerbProductionFactId } from "@/data/grammar";
 import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
 import { isConstructionFact } from "@/data/counter-categories";
@@ -234,7 +234,11 @@ describe("a production card names the class of an unknown class word", () => {
     );
   });
 
-  test("a non-る verb takes its own script plainly, no class tag needed", () => {
+  test("a non-る verb is named too, though its spelling already says so", () => {
+    // SAK-427: it used to stay plain, on the argument that 〜く gives the class
+    // away. Sam asked for the class on every unknown word, and the argument was
+    // thin anyway: a learner who has not met かく is exactly the learner who has
+    // not learned to read 〜く as godan.
     assert.equal(
       quizInstruction(classProductionFactId("tai", "v5k"), "en2jp", "typed", {
         surface: "書く",
@@ -242,7 +246,22 @@ describe("a production card names the class of an unknown class word", () => {
         cls: "v5k",
         known: false,
       }),
-      'How do you say "want to かく"?',
+      'How do you say "want to かく" for this う-verb?',
+    );
+  });
+
+  test("an unknown IRREGULAR verb says irregular, rather than saying nothing", () => {
+    // The second of Sam's two screenshots (SAK-427): shown a word she has not
+    // met, she was left to guess which of the three skills the card wanted.
+    // する is none of them, and the honest answer is to say so.
+    assert.equal(
+      quizInstruction(specialVerbProductionFactId("te-sequence", "iku"), "en2jp", "typed", {
+        surface: "行く",
+        kana: "いく",
+        cls: "v5k-s",
+        known: false,
+      }),
+      'How do you say "いく, and then / because いく" for this irregular verb?',
     );
   });
 
