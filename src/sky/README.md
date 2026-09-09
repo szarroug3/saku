@@ -4108,3 +4108,82 @@ opens, and its lesson teaches its walk. `scripts/unreachable.mjs --list` is at
 zero, `scripts/unused-exports.mjs` at zero on its failing list, and
 `scripts/button-centering.mjs` measures 1,382 elements over seven pages with
 none more than a pixel out.
+
+### What you said on the way to the answer, and a chip that turns its page (2026-09-08, SAK-425)
+
+Two things Sam found in one quiz on 知る with 〜てから, and they are unrelated
+except that both are the reveal.
+
+**The retry history was never lost. It was never drawn.** A card answered
+after a retry showed the right answer and nothing else, so walking back to it
+with ‹ lost what the learner had actually said, which is the part of that card
+worth looking at. The obvious reading is that the state throws the attempts
+away: the per-card `Open` is deliberately not kept across a reload (SAK-404),
+and `Open.said` is where an attempt is added as it is made.
+
+It is not where an attempt ENDS UP. `settle` copies the list onto the answer,
+`QuizAnswer.said` has held every attempt in order since SAK-387, and
+`quiz-run.ts` has read and written that field since SAK-404, so a run left
+part way through has always carried it into the next page load. What was
+missing was in `QuizVerdict`, which listed the attempts only when
+`grade === "missed"`. So the fix is one derivation and one line of markup, and
+the work was proving the claim rather than making it true: the three tests
+that hold it are in `quiz.test.ts` (the derivation), `quiz-run.test.ts` (the
+field round-tripping through storage) and `quiz-pass.test.ts` (a pass opening
+on it), which are the three places the list travels through.
+
+`triedBefore` is the derivation, in `lib/quiz.ts` beside `tally`. On a card
+that was answered in the end, the LAST thing said is the answer, and the
+answer is already drawn large on its own line; what the reveal was missing is
+everything before it, so it is `said.slice(0, -1)`. On a missed card there is
+no right answer to be before, so it hands back nothing and SAK-387's line
+under the answer is left exactly as it was. A card answered first time hands
+back nothing either, which is the same code path and not a special case.
+
+The wrong ones are ABOVE the answer, struck through in `sky-slipping`: "You
+said ~~zzz~~ before this." Above, because that is the order the two happened
+in and the answer should be the last thing read. Struck through, because the
+card asks for them MARKED as wrong and a list of things you said with no mark
+on it reads as a list of things that were accepted. `Attempts` is the sentence
+both lines are made of ("A", "A, then B", "A, B, then C"), which the missed
+line was already spelling out inline.
+
+And the results screen says what a card cost, from the same `tries` it has
+always recorded: "With help" under a card that took two goes and one that took
+three read identically, and the run knew the difference all along. It is a
+second line under the grade, muted, and only when there was more than one go.
+
+**The Family chip was a pager with nowhere to send a click.** `LessonCard`
+draws a `Pager` when a star is taught over several pages, and the Quiz draws a
+`LessonCard` under a card it has just revealed. `onPage` was optional, the
+Quiz passed neither it nor `page`, and `onPage?.(i)` on every chip meant a row
+of buttons that did nothing: on 〜てから those chips are "〜てから" and
+"Family", and Family is the cluster page `teach.ts` already builds from
+`clusterOf`, listing 〜たあとで beside it with what each means and how each is
+built.
+
+So nothing needed wiring to the Atlas and no new panel was needed. The page
+existed, the chip pointed at it, and the caller that drew both had no way to
+turn one. The card keeps its own page when its caller does not, and drops back
+to the first page when the star under it changes, since page two of 〜てから is
+not page two of 水. A caller that DOES own the page (the Atlas, the lesson)
+passes `page` and `onPage` and keeps owning it, unchanged. `Pager`'s `onPage`
+is required now, so the next caller cannot draw a dead one by leaving it out.
+
+"Do not render the chip when a pattern has no family" was already true and
+stays true two ways over: `teach.ts` adds the Family page only when the
+cluster has more than one member, and `LessonCard` draws the pager only when
+there is more than one page at all.
+
+**The gate.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean.
+3,870 unit tests, 3,869 pass and 1 skipped, up eight. 50 e2e pass, two of them
+new: one answers a card wrong then right, walks back to it, sees what it said
+struck through above the answer, reloads and sees it again, which is the half
+that proves the list is on the run and not on the open card; the other opens
+〜てから's Family page from its chip and reads 〜たあとで out of the table.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on its failing list, and `scripts/button-centering.mjs` measures 1,380
+elements over seven pages with none more than a pixel out. Four screenshots on
+a build of this branch on a spare port: the stepped-back card, a close crop of
+the struck line, the results list with "after 2 tries", and the Family page
+open behind its chip.
