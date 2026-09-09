@@ -37,6 +37,29 @@ describe("practicePreview", () => {
     assert.deepEqual([...misses].sort((a, b) => b - a), misses);
   });
 
+  // Sam, 2026-09-08: the panel said 106 items and the run was 202 questions,
+  // because a deck is one card per fact and an item can carry several. The
+  // count is over the WHOLE pool, so a pool past the preview's cap still says
+  // how long it is.
+  it("counts the questions the whole pool holds, not the ones it sends", () => {
+    const all = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kana"], size: "all" }, {}, NOW);
+    assert.equal(all.items.length, all.matched, "this recipe should fit under the cap");
+    assert.equal(all.questions, all.items.reduce((n, p) => n + p.facts.length, 0));
+
+    const capped = practicePreview(history, { ...EMPTY_RECIPE, size: "all" }, {}, NOW);
+    assert.equal(capped.items.length, PREVIEW_CAP, "this recipe should run past the cap");
+    assert.ok(capped.matched > capped.items.length);
+    assert.ok(capped.questions > capped.items.reduce((n, p) => n + p.facts.length, 0));
+  });
+
+  it("takes an item's own questions out with it when it is left out by hand", () => {
+    const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: "all" as const };
+    const before = practicePreview(history, recipe, {}, NOW);
+    const gone = before.items[0];
+    const after = practicePreview(history, { ...recipe, excluded: [gone.item.id] }, {}, NOW);
+    assert.equal(after.questions, before.questions - gone.facts.length);
+  });
+
   it("draws the size asked for at random from the pool, less what is left out", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: 5 as const };
     const pool = practicePreview(history, recipe, {}, NOW).items;

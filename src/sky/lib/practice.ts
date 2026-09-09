@@ -164,6 +164,11 @@ export interface PracticePreview {
   items: readonly PracticeItem[];
   /** How many match in all. */
   matched: number;
+  /** How many questions the whole pool would ask: every matched item's facts,
+   * counted over all of them and not only the ones the preview carries. A
+   * deck is one card per fact, so 106 items were 202 questions and the panel
+   * had no way to say so (Sam, 2026-09-08). */
+  questions: number;
   /** Which asks the pool could support, before the recipe's own asks cut it. */
   asksAvailable: Readonly<Record<Ask, boolean>>;
 }

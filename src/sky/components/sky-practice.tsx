@@ -115,9 +115,16 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   // the pool the deck is drawn from: everything that matches, less what is
   // left out by hand (counted among the listed; the run counts exactly)
   const pool = shown.matched - (shown.items.length - kept.length);
+  // and the same subtraction for the questions: an item left out by hand
+  // takes its own facts out of the count with it
+  const questions = shown.questions - shown.items.reduce((n, p) => n + (excluded.includes(p.item.id) ? p.facts.length : 0), 0);
   const unseen = shown.matched - shown.items.length;
   const size = deckSize(recipe, pool);
-  const preview: PracticePreview = { ...shown, items: kept, matched: pool };
+  const limited = recipe.size !== "all" && pool > size;
+  // a whole pool asks every question in it; a limited draw asks the pool's
+  // rate over as many items as it takes, which is why it says "about"
+  const willAsk = limited ? (pool > 0 ? Math.round((size * questions) / pool) : 0) : questions;
+  const preview: PracticePreview = { ...shown, items: kept, matched: pool, questions };
   const blocked = cannotStart(recipe, preview);
   const short = shortfall(recipe, pool);
   const chosen = (loaded && saved.find((d) => d.name === loaded)) || saved.find((d) => same(d.recipe, recipe));
@@ -223,9 +230,17 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
         </SkyPanel>
 
         <SkyPanel title="What you would get" fit>
+          {/* a deck is one card per fact, so a pool of items is a longer run
+              of questions than it looks (Sam, 2026-09-08: her 106 items were
+              202 questions). A limited draw takes a random share of the pool,
+              so its question count is a rate rather than a total, and it says
+              "about" for exactly that reason. */}
           <p className="mt-2 shrink-0 text-[14px]">
-            <span className="font-semibold text-sky-ink">{size.toLocaleString()}</span> {size === 1 ? "item" : "items"}
-            {recipe.size !== "all" && pool > size && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
+            <span className="font-semibold text-sky-ink">{size.toLocaleString()}</span>{" "}
+            {size === 1 ? "item" : "items"}, {limited ? "about " : ""}
+            <span className="font-semibold text-sky-ink">{willAsk.toLocaleString()}</span>{" "}
+            {willAsk === 1 ? "question" : "questions"}
+            {limited && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
           </p>
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
           {blocked && !loading && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}

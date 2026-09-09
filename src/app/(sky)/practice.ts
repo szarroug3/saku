@@ -318,11 +318,14 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
 }
 
 /** The recipe, resolved now: the pool the deck is drawn from (shakiest
- * first, the first PREVIEW_CAP of it), how many match in all, and which
- * asks the pool could carry. */
+ * first, the first PREVIEW_CAP of it), how many match in all, how many
+ * questions they hold between them, and which asks the pool could carry. */
 export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
   const { pool, asksAvailable, items } = timedSync("practice:resolve", () => resolve(history, recipe, practiceMisses, now));
-  return { items: timedSync("practice:items", () => items(pool.slice(0, PREVIEW_CAP))), matched: pool.length, asksAvailable };
+  // the questions are counted over the WHOLE pool, not over the capped items:
+  // a deck is one card per fact, and the panel says how many that is
+  const questions = pool.reduce((n, c) => n + c.facts.length, 0);
+  return { items: timedSync("practice:items", () => items(pool.slice(0, PREVIEW_CAP))), matched: pool.length, questions, asksAvailable };
 }
 
 /** The deck's draw: a random draw of the size asked for from the pool
