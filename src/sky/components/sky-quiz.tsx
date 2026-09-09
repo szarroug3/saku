@@ -13,9 +13,13 @@
 // opens on a blank box. A right answer moves straight on. A wrong one gets
 // another try, the retries set on the bar plus one in all, before the card is missed and its answer
 // shown with the lesson's own card. Help is a small row of buttons:
-// multiple choice, a hint, giving up. At the end, the three counts and
-// what each does to the schedule, then the answers go to whoever records
-// them.
+// multiple choice, a hint, giving up. At the end, this screen hands over to
+// the results (quiz-results.tsx), which counts the run and records it.
+//
+// Three files, not one (SAK-420). This one is the room where questions are
+// asked. `quiz-results.tsx` is the room they are looked back on, and it owns
+// the recording. `lib/quiz-pass.ts` is where the pass over the deck has got
+// to, pure and tested, which this screen holds in one piece of state.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -23,7 +27,7 @@ import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/compo
 import { QuizQuestions } from "@/sky/components/quiz-questions";
 import { QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
-import { QuizResults } from "@/sky/components/quiz-results";
+import { QuizResults, type QuizEnding } from "@/sky/components/quiz-results";
 import { useNarrow } from "@/sky/components/use-narrow";
 import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -32,7 +36,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
+import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import { allAnswered, answeredCount, finishPass, nextOpen, openPass, passAnswers, stepTo, withAnswer, type QuizPass } from "@/sky/lib/quiz-pass";
 
 interface SkyQuizProps {
@@ -42,26 +46,24 @@ interface SkyQuizProps {
   /** Romaji as kana, for a card whose answer is Japanese (`answerInKana`).
    * Handed in like the grader: the transliterator is the app's. */
   toKana?: (value: string, katakana: boolean) => string;
-  /** Where the answers go when the session ends: the schedule. */
-  onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
-  /** Where this quiz came from, and what to call it (SAK-353). */
-  back: WayBack;
   hear?: HearComponent;
   pitch?: PitchComponent;
-  /** Starts a new quiz of just these cards, from the results. */
-  onRetry?: (cardIds: readonly string[]) => void;
-  /** Practice's offer to keep the recipe, on the results. */
-  onSave?: (name: string) => void;
-  /** The recipe names already taken, for the results' naming box. */
-  savedNames?: readonly string[];
-  /** The round after this one, on the results (a lesson's quiz). */
-  next?: { label: string; onClick: () => void };
-  /** Retries after a first wrong answer, and the way to change it here:
-   * the setting lives in the help bar, not on the Settings page. */
-  retries?: number;
-  onRetries?: (retries: number) => void;
-  /** Seconds a card gets before it counts as missed; none when unset. */
-  timerSeconds?: number;
+  /** What the end of this deck offers, and where its answers go, in one piece
+   * (SAK-420): the way back, the recorder, the retry, practice's naming, the
+   * round after this one. Handed straight to the results screen, which owns
+   * every one of them. The empty deck's one button is the way back out of it,
+   * which is this way back: there is nothing else to do on that screen. */
+  results: QuizEnding;
+  /** The quiz's own two settings, and the clock. Retries after a first wrong
+   * answer are changed on the help bar rather than on the Settings page (Sam,
+   * 2026-09-06: the one home for a setting is where you would change it);
+   * `timerSeconds` is how long a card gets before it counts as missed, and
+   * none when unset. */
+  settings?: {
+    retries?: number;
+    onRetries?: (retries: number) => void;
+    timerSeconds?: number;
+  };
   /** The run this screen is a pass over (SAK-404), in one piece: where it was
    * left, what was answered there, and where to say it stands now.
    *
@@ -90,9 +92,10 @@ interface SkyQuizProps {
  * nothing the instruction does not; a frame or a gloss is worth showing. */
 const LABEL_ONLY = /^(meaning|reading|in japanese)$/i;
 
-export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onRetry, onSave, savedNames, next, retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0, run, title = "Tonight's drill", height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
   const Pitch = pitch;
   const Hear = hear;
+  const { retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0 } = settings ?? {};
 
   // The pass over this deck, in one object: where it is, what has been
   // answered, whether it is over (SAK-420, and quiz-pass.ts for the moves).
@@ -318,14 +321,14 @@ export function SkyQuiz({ cards, grade, toKana, onFinish, back, hear, pitch, onR
       <SkyPageShell eyebrow="Quiz" title="Nothing to quiz" height={height}>
         <SkySurface className="mx-auto max-w-[560px]">
           <p className="text-[14px] text-sky-muted">Nothing is due. Learn something in the Observatory, drill whatever you like in Practice, or pick things in the Atlas and ask for a quiz.</p>
-          <SkyButton href={back.href} className="mt-4">{back.label}</SkyButton>
+          <SkyButton href={results.back.href} className="mt-4">{results.back.label}</SkyButton>
         </SkySurface>
       </SkyPageShell>
     );
   }
 
   if (finished) {
-    return <QuizResults cards={cards} answers={answers} ending={{ back, onFinish, onRetry, onSave, savedNames, next }} pitch={pitch} height={height} />;
+    return <QuizResults cards={cards} answers={answers} ending={results} pitch={pitch} height={height} />;
   }
 
   const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;

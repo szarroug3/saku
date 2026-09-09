@@ -56,7 +56,7 @@ const SAVE_LINE: Record<Exclude<SaveState, "no">, string> = {
  *
  * The Quiz hands this straight through as its own `results` prop: none of it
  * is anything the room where questions are asked has an opinion about. */
-interface QuizEnding {
+export interface QuizEnding {
   /** Where this quiz came from, and what to call it (SAK-353). The empty
    * deck's one button is this too: there is nothing else to do there. */
   back: WayBack;

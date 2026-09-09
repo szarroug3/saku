@@ -159,5 +159,5 @@ function QuizRun({ cards, run, source, back, sample, signedIn, rounds, cfg, upda
   // rounds after it are dealt again on purpose.
   const from = run && round <= 1 ? run : null;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} onFinish={finish} back={back} hear={HearButton} pitch={PitchMark} onRetry={retry} next={next} run={{ at: from ? resumeAt(from) : 0, answers: from?.answers, onProgress: (state) => progress(state.at, state.answers) }} retries={retriesOf(cfg)} onRetries={(n) => update(retriesPatch(n))} timerSeconds={cfg.timer ? cfg.timerSec : 0} height="100%" />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: finish, onRetry: retry, next }} run={{ at: from ? resumeAt(from) : 0, answers: from?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} height="100%" />;
 }
