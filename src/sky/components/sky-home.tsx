@@ -49,7 +49,7 @@ export interface SkyHomeData {
   standingCounts?: CoverageCounts;
 }
 
-export interface SkyHomeProps {
+interface SkyHomeProps {
   data: SkyHomeData;
   /** Where the Observatory lives, for the empty sky's way in. */
   observatoryHref?: string;

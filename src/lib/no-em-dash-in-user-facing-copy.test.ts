@@ -76,24 +76,6 @@ const EM_DASH = "\u2014";
 /** The trees whose comments are covered, and the two READMEs. */
 const COVERED = ["src/sky", "src/app/(sky)", "e2e", "README.md", "src/sky/README.md"];
 
-// TEMPORARY, and it goes when the lanes below land (SAK-419).
-//
-// SAK-416 holds sky-lesson.tsx, lesson.ts and teach.ts and SAK-411 holds
-// sky-home.tsx, sky-field.tsx, constellation.tsx and constellation.ts, so
-// those seven were not edited underneath another session. src/sky/README.md is
-// the one file every lane appends to, and it gets its own pass once they are
-// all in. None of the seven carries an em dash today; the README carries nine.
-// Delete this list and the line that reads it once those lanes are in.
-const HELD = new Set([
-  "src/app/(sky)/lesson.ts",
-  "src/app/(sky)/teach.ts",
-  "src/sky/components/sky-lesson.tsx",
-  "src/sky/components/sky-home.tsx",
-  "src/sky/components/sky-field.tsx",
-  "src/sky/components/constellation.tsx",
-  "src/sky/lib/constellation.ts",
-  "src/sky/README.md",
-]);
 
 const TEXT = /\.(ts|tsx|mjs|js|md)$/;
 
@@ -108,7 +90,6 @@ function filesUnder(rel: string): string[] {
 describe("no em dash anywhere in the Sky, comments included (SAK-419)", () => {
   test("the Sky's own trees, its specs and the two READMEs are free of em dashes", () => {
     const hits = [...new Set(COVERED.flatMap(filesUnder))]
-      .filter((f) => !HELD.has(f))
       .flatMap((f) =>
         readFileSync(path.join(REPO_ROOT, f), "utf8")
           .split("\n")

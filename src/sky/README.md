@@ -2357,9 +2357,9 @@ and a signed-out `HistoryProvider` reads localStorage in its mount
 effect.
 
 So the POST stops being made. When the shell has said there is no
-account, that request is a foregone 401 — every one of those routes
+account, that request is a foregone 401: every one of those routes
 loads the user through `getUserId()`, which throws before it reads the
-body — and the 401 branch does the only thing that was ever going to
+body, and the 401 branch does the only thing that was ever going to
 happen. `postWithLocalFallback` now does it first, in the caller's own
 turn, and returns. The condition is `isSignedIn() === false` and not
 "not signed in": the signal reads true while unknown, so a write made
@@ -2396,7 +2396,7 @@ imported any of them; the live imports from `@/lib/engine` are
 
 So they went, and the cut ran further than the card guessed. `enabledDirs`
 was `pickDir`'s only caller, and it was the last live use of
-`ask-config.ts` — the predicates, `defaultAsk`, the pair and grid response
+`ask-config.ts`: the predicates, `defaultAsk`, the pair and grid response
 helpers, and finally `askFromAudioPrompts` itself, once `QuizConfig.ask`
 was gone and nothing built an `AskConfig` at runtime any more. The Sky
 reaches its cards from `audioPrompts` directly (`quizFromHistory`), never
@@ -2412,8 +2412,8 @@ StudySession["snapshot"]` in a test's fixture.
 `retries` and `retryN` are one number now. `{ retries: "none", retryN: 3 }`
 was representable and meant nothing; the quiz always wanted the number,
 and `retriesOf` existed to compute it. `normalizeConfig` migrates a stored
-mode-plus-count on first read — "none" to 0, "unl" to the 9 the quiz
-always read it as, "lim" to its own `retryN` — so a learner who set 3
+mode-plus-count on first read ("none" to 0, "unl" to the 9 the quiz
+always read it as, "lim" to its own `retryN`), so a learner who set 3
 keeps 3.
 
 `engine/retries.test.ts` went with `effectiveRetries`, and the SAK-54 rule
@@ -2455,7 +2455,7 @@ before the SQL did. The window closed a long time ago: the table is there
 and it has held every fold since. So the flag is gone, the three
 fallbacks are gone, `factsTableMigrated` is gone with the branch it
 existed for, and a 42P01 is now what it should have become the day after
-the migration landed — an error, loudly, rather than a silent slide back
+the migration landed: an error, loudly, rather than a silent slide back
 onto a document that has been stale ever since.
 
 `shapeHistory` takes the table and only the table, so `HistoryFile.facts`
@@ -2463,7 +2463,7 @@ for a page read is one thing from one place. `mergeFacts` went with it.
 
 WHAT THIS DEPENDS ON, AND IT IS NOT SOMETHING THE CODE CAN CHECK.
 Reading the table alone is right exactly when every learner's legacy
-blob has been copied into it — that is `scripts/backfill-progress-facts.mjs`,
+blob has been copied into it; that is `scripts/backfill-progress-facts.mjs`,
 which the schema's own rollout note says to run in the same maintenance
 window as the migration. `to_regclass` says the table exists; it does not
 say the copy happened. A fact last folded before SAK-237 on an account
@@ -2902,7 +2902,7 @@ The 55 with a page now name that page. `だけ` answers `grammar:dake`, 一つ
 the ひとつ counting entry, 一人 the 〜人 construction page, off the same
 three maps that make the walk skip them in the first place
 (`GRAMMAR_VOCAB_DUPLICATE_KEBS`, `COUNTER_VOCAB_DUPLICATE_KEBS`,
-`COUNTER_TAIL_FORM_ALIASES`) — the redirect `canonicalMixupEntry` already
+`COUNTER_TAIL_FORM_ALIASES`); the redirect `canonicalMixupEntry` already
 made for a mix-up recorded against one of these words. The Atlas dropped
 those words out of its related groups and WordsWith left them unlinked;
 both send a reader to the page that teaches the word now.
@@ -2915,7 +2915,7 @@ card if it ever matters; the three maps are what this one followed.
 There is one function, in `entries.ts`, and `library-index.ts` re-exports
 it beside `libEntry` and `knownFactsOf`. The loader's copy resolved a
 kanji through a precomputed glyph set, `INDEX.kanjiGlyphs`, which nothing
-reads now — the field is still written, and is the next thing to drop.
+reads now; the field is still written, and is the next thing to drop.
 
 Checked with the SAK-400 dump before and after: every file identical
 except the two `entryForGlyph` dumps, which changed on exactly those 98

@@ -132,22 +132,6 @@ const ownTests = (file) => {
   return new Set([".test", ".spec"].flatMap((k) => [".ts", ".tsx", ".mjs", ".js"].map((e) => stem + k + e)).filter(statSyncSafe));
 };
 
-// TEMPORARY, and it goes when the two lanes below land (SAK-419).
-//
-// SAK-416 holds sky-lesson.tsx, lesson.ts and teach.ts; SAK-411 holds
-// sky-home.tsx, sky-field.tsx, constellation.tsx and constellation.ts. Both
-// were being written while this pass was added, so their unread exports were
-// left alone rather than edited underneath another session. Delete this list
-// and the line that reads it once they are in, and fix what it uncovers.
-const HELD = new Set([
-  "src/app/(sky)/lesson.ts",
-  "src/app/(sky)/teach.ts",
-  "src/sky/components/sky-lesson.tsx",
-  "src/sky/components/sky-home.tsx",
-  "src/sky/components/sky-field.tsx",
-  "src/sky/components/constellation.tsx",
-  "src/sky/lib/constellation.ts",
-]);
 
 const roots = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const scope = (roots.length ? roots : DEFAULT_ROOTS).map((r) => path.join(ROOT, r));
@@ -164,7 +148,7 @@ for (const r of readers) for (const [target, names] of imports(r)) {
   wanted.set(target, have);
 }
 
-const subjects = scope.flatMap((s) => (statSyncSafe(s) ? [s] : walk(s))).filter((f) => isCode(f) && !isTest(f) && !HELD.has(path.relative(ROOT, f)));
+const subjects = scope.flatMap((s) => (statSyncSafe(s) ? [s] : walk(s))).filter((f) => isCode(f) && !isTest(f));
 const unread = [];
 const testOnly = [];
 for (const file of subjects.sort()) {

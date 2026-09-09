@@ -46,7 +46,7 @@ export interface SkyLessonData {
   references?: readonly LessonReference[];
 }
 
-export interface SkyLessonProps {
+interface SkyLessonProps {
   data: SkyLessonData;
   /** Where Next goes after the last step: the drill. */
   drillHref?: string;

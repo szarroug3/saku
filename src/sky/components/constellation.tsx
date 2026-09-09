@@ -26,10 +26,9 @@ import { cloneElement, type ReactElement, type ReactNode } from "react";
 
 import { ASTEROID, asteroidShape, BINARY, bodyRadius, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
 
-export { paintFor };
 export type { Paint, StarLook };
 
-export interface ConstellationProps {
+interface ConstellationProps {
   layout: ConstellationLayout;
   cx: number;
   cy: number;

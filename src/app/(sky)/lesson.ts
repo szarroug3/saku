@@ -13,9 +13,6 @@ import { pairEntry } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { TERMS, termEntry } from "@/data/terms";
 import { TSU_INTRO } from "@/data/track-intros";
-import { currentUserId } from "@/lib/auth";
-import { emptyHistory } from "@/lib/history-ops";
-import { loadHistory } from "@/lib/history";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
@@ -45,13 +42,6 @@ export function showcasePicks(): string[] {
     pairEntry(VERB_PAIRS[0]),
     keigoSetEntry(KEIGO_SETS[0]),
   ].filter((id): id is string => !!id);
-}
-
-/** The signed-in learner's lesson for these picks, or a visitor's. */
-export async function learnerLesson(picks: readonly string[], now = Date.now()): Promise<SkyLessonData> {
-  const userId = await currentUserId();
-  const history = userId ? await loadHistory(userId) : emptyHistory();
-  return lessonFromPicks(history, picks, now);
 }
 
 export function lessonFromPicks(history: HistoryFile, picks: readonly string[], now = Date.now()): SkyLessonData {

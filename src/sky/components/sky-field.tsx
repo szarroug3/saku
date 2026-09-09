@@ -34,7 +34,7 @@ import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
 import type { SkyItem } from "@/sky/lib/types";
 
-export interface SkyFieldProps {
+interface SkyFieldProps {
   items: readonly SkyItem[];
   /** The constellations to draw, by root id. */
   roots: readonly string[];
@@ -89,7 +89,7 @@ export interface SkyFieldProps {
   children?: (placed: readonly PlacedConstellation[]) => ReactNode;
 }
 
-export interface PlacedConstellation extends Placed<{ key: string; size: number }> {
+interface PlacedConstellation extends Placed<{ key: string; size: number }> {
   root: string;
   cx: number;
   cy: number;

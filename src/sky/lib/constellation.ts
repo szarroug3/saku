@@ -88,7 +88,7 @@ export function asteroidShape(id: string): ReadonlyArray<readonly [number, numbe
   });
 }
 
-export interface Star {
+interface Star {
   id: string;
   depth: number;
   /** x and y in [-1, 1]; the root is (0, 0). */
@@ -187,7 +187,7 @@ function ring(members: readonly number[]): Array<readonly [number, number]> {
   return out;
 }
 
-export interface PlacedStar extends Star {
+interface PlacedStar extends Star {
   /** Absolute position. */
   px: number;
   py: number;
@@ -250,9 +250,9 @@ export interface StarLook {
 
 /** A wide soft disc behind a body. `grow` is how far past the body's own
  * reach it goes, at unit scale. */
-export interface Halo { fill: string; grow: number; opacity: number }
+interface Halo { fill: string; grow: number; opacity: number }
 /** A thin ring round a body, drawn over it. */
-export interface Ring { stroke: string; grow: number; opacity: number; width: number }
+interface Ring { stroke: string; grow: number; opacity: number; width: number }
 
 /** The paint for one look: what the body is filled with and how brightly,
  * how far its glow reaches, and the marks it wears. */
@@ -301,7 +301,7 @@ export function isUndiscovered(look: StarLook): boolean {
 }
 
 /** How one line between two stars is drawn. */
-export interface LinePaint { stroke: string; width: number; opacity: number }
+interface LinePaint { stroke: string; width: number; opacity: number }
 
 /** Every line is the same line: one colour, one weight, never dashed. A
  * line to an undiscovered star is not drawn at all (Sam, 2026-09-08: solid
@@ -310,10 +310,10 @@ export interface LinePaint { stroke: string; width: number; opacity: number }
  * learn is the point, so the line is there, faint, and turns solid the
  * moment the star is discovered. The accent is the only other colour, and
  * something singled out elsewhere takes every other line right back. */
-export const LINE = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 } as const;
-export const LINE_FOG = 0.35;
-export const LINE_MUTED = 0.12;
-export const LINE_EMPHASIS = { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 } as const;
+const LINE = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 } as const;
+const LINE_FOG = 0.35;
+const LINE_MUTED = 0.12;
+const LINE_EMPHASIS = { stroke: "var(--sky-accent)", width: 1.4, opacity: 0.9 } as const;
 
 export function linePaintFor(a: StarLook, b: StarLook, fog = false): LinePaint | null {
   if (isUndiscovered(a) || isUndiscovered(b)) return fog ? { ...LINE, opacity: LINE_FOG } : null;

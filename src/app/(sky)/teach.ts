@@ -75,7 +75,7 @@ function hookLine(hook: string): SkySoundLine {
 
 /** The writing rule (dakuten, yōon…) or the grammar concept (keigo) a term
  * shares its name with: the page that carries the fuller teaching. */
-export function markTwin(name: string): Mark | undefined {
+function markTwin(name: string): Mark | undefined {
   return MARKS.find((m) => m.shelf === "writing" && m.name.toLowerCase() === name.toLowerCase());
 }
 export function conceptTwin(name: string): GrammarConcept | undefined {
@@ -140,7 +140,7 @@ function romajiOf(glyph: string): string | undefined {
 
 /** What the card says for one star, from whatever the app knows about it. */
 /** What a lesson narrows the card to: the one reading being taught. */
-export interface TeachScope {
+interface TeachScope {
   reading?: string;
 }
 
@@ -470,7 +470,7 @@ function countTable(g: IntroCountGroup): TeachTable {
   };
 }
 
-export const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
+const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
   (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
 
 /** One of the app's teaching pages in the Sky's shape. */
