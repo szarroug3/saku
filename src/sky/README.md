@@ -3779,3 +3779,139 @@ own: 0.000 px between its text's middle and the pill's.
 `npx eslint .` still reports one parsing error in
 `docs/audits/workflows/06-content-style-voice.mjs`, which is on main and is not
 this lane's; `npx eslint src e2e scripts` is the clean run.
+
+
+### The 317 stories that named a part their glyph does not have (2026-09-08, SAK-424)
+
+**What the 317 were.** SAK-421 put a mechanical check beside the origin stories:
+`src/data/etymology-components.test.ts` reads the pieces a story names, in the
+two shapes the house style uses, and asks whether the glyph actually has them.
+Of the 2,136 stories a learner can reach, 317 named something that is not there.
+知 was told as "an adult (大), a mouth (口), and a child (子)" while the tiles
+beside it read 矢 and 口. 容 named 公, 早 named 棗, 改 named 巳, 就 named 享.
+They were pinned in a `SAK_421_LIST` so a new one would fail loudly, and left for
+this card.
+
+**The rule they now obey.** A story may name only the glyph's own parts, or a
+part of one of those parts, as `KanjiRow.comps` records them and the variant map
+collapses them, so a story that writes 水 meets a tile that draws 氵. Where the
+true origin is disputed or unknown, the story says so instead of inventing one:
+"How the two came to mean knowing is not settled" is a finished sentence, not a
+gap. All 317 were rewritten in eight batches of about forty, the test run after
+each, and `SAK_421_LIST` and the stale-entry test that read it are gone. The
+check now asserts zero exceptions with no list at all.
+
+**The reader pass.** Eight Sonnet readers, one per batch of forty, each given
+SAK-418's rubric and its forty stories and nothing else: no knowledge of the app,
+no sight of the other batches. Object only where a standard source contradicts
+the story; a story that says the origin is unsettled is not a doubt; mark a doubt
+high only when the objection is certain and the reference settles it.
+
+They raised **36 doubts: 17 high, 16 medium, 3 low.** Every one was read here
+against the glyph's own Wiktionary record in `src/data/generated` before anything
+was touched. **33 stories changed. 3 were read and left standing.**
+
+| Batch | Doubts | High | Medium | Low |
+|---|---|---|---|---|
+| 1 | 3 | 1 | 2 | 0 |
+| 2 | 4 | 2 | 2 | 0 |
+| 3 | 5 | 3 | 0 | 2 |
+| 4 | 5 | 2 | 3 | 0 |
+| 5 | 7 | 3 | 4 | 0 |
+| 6 | 4 | 2 | 2 | 0 |
+| 7 | 4 | 2 | 2 | 0 |
+| 8 | 4 | 2 | 1 | 1 |
+
+**What changed, and why.** Three kinds of thing came back.
+
+The first is a piece the generated record names that no standard source does.
+Wiktionary's parse gave 冶 as 呂 and 刀, 宰 as 乂, 慶 as 廌, 最 as 宀, 難 as 暵,
+色 as 爪, 貴's sound as 中, 設's as 埶, 維's as 唯, 知 as 大 with 口 and 子.
+Shuowen settles all ten the other way, and the rewrite follows Shuowen and says
+which source it is following: 慶 is an abbreviated 鹿, 最 sits under a cap 冃,
+難's sound is 堇, 色 is a person over a kneeling one, 設 joins speech and a
+weapon with no sound piece at all. 知 keeps 矢 and 口 and says outright that how
+they came to mean knowing is not settled, because no source has the adult and the
+child that the record invented.
+
+The second is a role swapped. 句 had the sound on 口 and the meaning on 丩;
+Shuowen has it the other way (从口丩聲), and the story now does too. 焦 had the
+bird carrying the meaning and the fire the sound; Shuowen is 从火雥聲, so the
+fire means and the bird sounds. 翌 called 羽 the sound piece when 羽 is what
+became of a 日, and the sound is 立. 外 and 旦 and 法 were told as sound-and-
+meaning compounds when the standard reading of all three is ideogrammic: evening
+plus divination, the sun over the ground line, water and 廌 and 去. Each now says
+what the source says and, where a second reading exists, names it as a second
+reading.
+
+The third is a gloss on the shape that is simply not what is drawn. 威's axe is
+戌, and the story says so; the invented history in which one axe became another
+is gone. 帥's left side is 𠂤, the piece 師 shares, not a pair of hands. 替 sits
+on 曰, not 日. 別 and 拐 are drawn with 另 on the side the record calls 冎. 里 is
+a field over soil and always has been; the sentence claiming its strokes had
+merged is gone. 見 is an eye on a pair of legs. 練's sound piece is 柬, which the
+Japanese form writes 東, and saying it that way round leaves nothing to trip on.
+勇's 甬 has a 用 in it that flattened into the 田 drawn here, not a 田 of its own.
+奪 held a 隹, not a 雀. 向's 口 is a window, not a mouth making an echo. 微, 更,
+昔 and 形 each named a sound piece the sources do not give and now name the one
+they do, or say the shape's history is unsettled. 退's food vessel 皀 belongs to
+the 即 and 既 family and not here; its foot now walks away from a setting sun,
+which is what the glyph's own record says.
+
+**Read and left standing, with the reason.** Three, all low confidence.
+
+- **就.** The reader doubted the older form's temple 享 on the ground that
+  Shuowen reads 就 as 京 plus 尤 with no substitution. The glyph's own Wiktionary
+  record names 享 and 京, so the story is following a source rather than inventing
+  one, and the reader said itself that it knew of none for the substitution
+  either way. The sentence already marks it as the older form.
+- **差.** The reader would have the hand rubbing 禾 rather than 來. The record in
+  `src/data/generated` names 來, wheat, as the semantic piece, which is what the
+  story follows. Two grain pictographs that look alike is a real question and not
+  one a story here should settle against its own source.
+- **那.** The reader objected to "the sound of 二, which the record writes 冉".
+  That is the house pattern used across the file for exactly this case: the piece
+  drawn is 二, the record's is 冉, and the sentence names both. Rewriting this one
+  alone would make it the odd sentence out.
+
+**A second pass over the 33.** The 33 rewritten stories went back to a fresh
+reader, same rubric, no sight of the first round. It raised three: 威 high, 慶
+medium, 帥 low. 威 was right and is the one real find of the round. The component
+data records 威 as 戍 plus 女 where every source has 戌 plus 女, and the first
+rewrite tried to narrate that difference as if it were history. It says the axe
+is 戌 now and nothing about 戍, which is the true sentence; the decomposition is
+what is wrong, and fixing KanjiVG's row for 威 is its own card. 帥 was right too:
+師 is 帀 with 𠂤 and neither piece is a sound piece, so 帥's story no longer says
+𠂤 gives 師 its sound. 慶 was left: the reader wanted Shuowen's 夊 where the story
+writes 夂, and 夂 is both what the glyph draws and what the data records. A third
+reader over those three raised nothing at all, and quoted Shuowen's entry for 慶
+as 从心从夂, the 夂 the story already had.
+
+**Ten for Sam to spot-check on Jisho.** Picked at random from the 317, none of
+them among the 36 the readers doubted, so they sample the rewrite rather than the
+repair. Jisho's kanji page lists the parts; the check is whether the story names
+any piece that is not on that list.
+
+| Glyph | The tiles beside it | The story's first sentence |
+|---|---|---|
+| 凍 | 冫 東 | This glyph means frozen. |
+| 膚 | 虍 胃 | This glyph means skin. |
+| 族 | 方 𠂉 矢 | Arrows (矢) gathered beneath a flag: a clan, a tribe. |
+| 旨 | 匕 日 | This glyph means delicious, and by extension the gist of something. |
+| 豪 | 亠 口 冖 豕 | This glyph means overpowering and great. |
+| 絶 | 糸 色 | A knife cutting silk threads (糸): to sever, to cut off, to break away. |
+| 奏 | 𡗗 天 | This glyph means to play music, and to present something to a ruler. |
+| 撤 | 扌 育 攵 | This glyph means to remove or withdraw. |
+| 闘 | 門 豆 寸 | This glyph means to fight, to war. |
+| 危 | 𠂊 厄 | A person at a cliff edge above someone kneeling (卩): a dangerous, fearful height. |
+
+**The gates.** `src/data/etymology-components.test.ts` at zero exceptions with no
+list, and its reach counts unchanged: 2,136 stories, 199 about the traditional
+character, 74 for a glyph with no recorded decomposition. `kanji-etymology.test.ts`
+keeps the prose plain: the rewrite tripped its jargon pin once, on the word
+"phonetic" in 旦, and that sentence says "carrying the sound" now. `npx tsc
+--noEmit` clean, `npx eslint src scripts` clean, 3,833 unit tests with 3,832
+passing and 1 skipped, the em-dash test among them. `npx eslint .` still reports
+one parse error in `docs/audits/workflows/06-content-style-voice.mjs`, which
+predates this card and was not touched. Nothing outside `src/data` and this file
+changed, so the e2e suite was not re-run.
