@@ -59,7 +59,7 @@ describe("the sentences shelf is cut into the sentence types", () => {
     const order = sentenceRuleOrder();
     const lastType = order.map((s) => s.kind).lastIndexOf("tier");
     const leftovers = order.slice(lastType + 1).map((s) => s.id);
-    const shelved = new Set(sections.flatMap((s) => s.entries.map((e) => e.id)));
+    const shelved = new Set<string>(sections.flatMap((s) => s.entries.map((e) => e.id)));
     assert.ok(leftovers.length > 0, "there are leftovers to keep off");
     for (const id of leftovers) assert.ok(!shelved.has(`grammar:${id}`), `${id} is not on the sentences shelf`);
   });
