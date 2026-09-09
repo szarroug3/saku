@@ -47,7 +47,10 @@ interface LessonCardProps {
    * used in place of the plain reading when the pitch is known. */
   pitch?: PitchComponent;
   /** Which of the star's pages is showing, when it is taught over several,
-   * and the pager's way of changing it. */
+   * and the pager's way of changing it. Both or neither: a caller that keeps
+   * the page across a change of star (the Atlas, the lesson) passes them, and
+   * one that has no opinion (the Quiz's reveal) passes neither and the card
+   * keeps its own. */
   page?: number;
   onPage?: (page: number) => void;
   /** The Atlas's additions: the standing chip in the eyebrow row, groups of
@@ -118,7 +121,18 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const kind = teach?.wordKind;
   const pages = teach?.pages ?? [];
-  const at = Math.max(0, Math.min(page, pages.length - 1));
+  // The pager turns pages even when nobody outside is listening (SAK-425).
+  // A caller that owns which page is showing passes `page` and `onPage` and
+  // keeps owning it; one that does not used to get a row of chips that were
+  // buttons and did nothing, which is what the Quiz draws under a card it has
+  // just revealed: the Family chip on 〜てから pointed at a page and went
+  // nowhere. The card keeps its own page in that case, and drops back to the
+  // first one when the star under it changes, since page three of 日 is not
+  // page three of 水.
+  const [ownPage, setOwnPage] = useState<{ id: string; at: number }>({ id: item.id, at: 0 });
+  const showing = onPage ? page : (ownPage.id === item.id ? ownPage.at : 0);
+  const turnTo = onPage ?? ((n: number) => setOwnPage({ id: item.id, at: n }));
+  const at = Math.max(0, Math.min(showing, pages.length - 1));
   const reading = teach?.reading ?? item.reading;
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
   // what each piece does in the character: "lends セイ", "water"
@@ -199,7 +213,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
       {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"} ${japaneseFont(note)}`}>{note}</p>)}
       {pages.length > 0 && (
         <>
-          {pages.length > 1 && <Pager pages={pages} page={at} onPage={onPage} />}
+          {pages.length > 1 && <Pager pages={pages} page={at} onPage={turnTo} />}
           {/* a lone page named after the thing itself carries no eyebrow: the
               name is right above it */}
           <TeachPageView page={pages.length === 1 && pages[at].eyebrow?.toLowerCase() === item.english.toLowerCase() ? { ...pages[at], eyebrow: undefined } : pages[at]} />

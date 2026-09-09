@@ -159,12 +159,16 @@ export function TeachPageView({ page, alone = false }: { page: TeachPage; alone?
 }
 
 /** The pager for a star with several pages: one pill per page, the one
- * showing in the accent. */
-export function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; page: number; onPage?: (page: number) => void }) {
+ * showing in the accent.
+ *
+ * `onPage` is not optional (SAK-425). Every chip here is a button, so a pager
+ * with nowhere to send a click is a row of controls that do nothing; the card
+ * turns its own pages when its caller does not. */
+export function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; page: number; onPage: (page: number) => void }) {
   return (
     <nav aria-label="Pages" className="mt-3 flex flex-wrap items-center gap-1.5">
       {pages.map((p, i) => (
-        <SkyChip key={i} on={i === page} current="page" onClick={() => onPage?.(i)} title={p.title} className={`max-w-[22ch] truncate ${japaneseFont(p.eyebrow ?? "")}`}>
+        <SkyChip key={i} on={i === page} current="page" onClick={() => onPage(i)} title={p.title} className={`max-w-[22ch] truncate ${japaneseFont(p.eyebrow ?? "")}`}>
           {p.eyebrow ?? `Page ${i + 1}`}
         </SkyChip>
       ))}
