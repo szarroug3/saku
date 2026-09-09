@@ -186,22 +186,67 @@ export type WordFormKind =
   | "い-adjective"
   | "な-adjective";
 
-/** The class badge shown beside a word's Forms heading. Unlike `ruVerbKind`,
- * this names every conjugating word: non-る godan verbs still say う-verb, and
- * irregular verbs get an honest label rather than being forced into either
- * regular paradigm. */
-export function wordFormKind(w: VocabRow): WordFormKind | null {
-  const cls = wordClassOf(w);
-  // adj-ix (いい) is an い-adjective for the Forms heading (see `adjectiveKind`),
-  // even though the drill's `adjectiveKindOf` withholds the label.
-  const adjective = cls === "adj-ix" ? "い-adjective" : adjectiveKindOf(cls);
-  if (adjective) return adjective;
+/**
+ * Every class `wordKindOf` calls "irregular verb", listed rather than pattern
+ * matched.
+ *
+ * The obvious shortcut is "a hyphenated v5 is special", and it is wrong: v5aru
+ * (ござる, an irregular い-stem) carries no hyphen, so a hyphen rule quietly
+ * calls it a plain う-verb. This file's own header is about a map that got
+ * built twice by pattern matching on the tag string and missed the special
+ * classes both times. The list is four godan classes and four suru/kuru ones,
+ * and writing them out costs nothing.
+ */
+const IRREGULAR_CLASSES: ReadonlySet<WordClass> = new Set([
+  "v5k-s", // 行く, whose て-form is 行って rather than 行いて
+  "v5u-s", // 問う, 問うて rather than 問って
+  "v5aru", // 下さる, ござる, irregular い-stem
+  "v5r-i", // ある, whose negative is ない rather than あらない
+  "vs-i", // する
+  "vs-s", // 〜する compounds
+  "vk", // 来る
+  "vz", // 演ずる
+]);
+
+/**
+ * The learner-facing class of a conjugating word, from its engine class alone.
+ *
+ * The OTHER two labellers on this page answer a narrower question and keep
+ * answering it. `ruVerbKindOf` speaks only when the SPELLING is ambiguous (a
+ * る-ending verb could be ichidan or godan) and `adjectiveKindOf` withholds the
+ * label from an irregular whose paradigm would mislead. Both were built to gate
+ * a card, so silence is a safe answer for them.
+ *
+ * This one is built to SAY SOMETHING, because a learner asking "what kind of
+ * word is this" is owed an answer for every word (SAK-427). 知る is an う-verb
+ * whether or not its ending gives that away, and する is an irregular verb
+ * rather than nothing at all. Only the four values below and null, which is a
+ * word that does not conjugate.
+ *
+ * The special godan classes are IRREGULAR here rather than う-verbs. 行く
+ * (v5k-s) and 問う (v5u-s) carry a 音便 the regular rule gets wrong (行って, not
+ * 行いて), ござる (v5aru) has an irregular い-stem, and ある (v5r-i) has a
+ * suppletive negative. Calling any of them a plain う-verb points the learner at
+ * a rule that does not produce their forms, which is exactly what the two older
+ * labellers refuse to do by staying silent.
+ */
+export function wordKindOf(cls: WordClass | null): WordFormKind | null {
+  if (cls === null) return null;
+  // adj-ix (いい) is an い-adjective here, as it is on the Forms heading (see
+  // `adjectiveKind`), even though the drill's `adjectiveKindOf` withholds it.
+  if (cls === "adj-i" || cls === "adj-ix") return "い-adjective";
+  if (cls === "adj-na") return "な-adjective";
   if (cls === "v1" || cls === "v1-s") return "る-verb";
-  if (cls?.startsWith("v5")) return "う-verb";
-  if (cls === "vs-i" || cls === "vs-s" || cls === "vk" || cls === "vz") {
-    return "irregular verb";
-  }
+  if (IRREGULAR_CLASSES.has(cls)) return "irregular verb";
+  if (cls.startsWith("v5")) return "う-verb";
   return null;
+}
+
+/** The class badge shown beside a word's Forms heading. One rule with the
+ * drill's, so the Atlas page and a quiz card can never disagree about what 行く
+ * is (SAK-427). */
+export function wordFormKind(w: VocabRow): WordFormKind | null {
+  return wordKindOf(wordClassOf(w));
 }
 
 /** Every conjugating class gets a Forms section. For a な-adjective this makes

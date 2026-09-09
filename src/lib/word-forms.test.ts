@@ -26,6 +26,7 @@ import {
   ruVerbKindOf,
   wordClassOf,
   wordFormKind,
+  wordKindOf,
 } from "@/lib/word-forms";
 import { formsFor } from "@/lib/conjugate";
 
@@ -242,4 +243,32 @@ test("an IRREGULAR verb/adjective class gets NO paradigm label — naming a rule
   assert.equal(ruVerbKindOf("帰る", "v5r"), "う-verb");
   assert.equal(adjectiveKindOf("adj-i"), "い-adjective");
   assert.equal(adjectiveKindOf("adj-na"), "な-adjective");
+});
+
+test("wordKindOf names every conjugating class, which is the point of it (SAK-427)", () => {
+  // The counterpart of the test above, and its opposite. The two older
+  // labellers exist to GATE a card, so silence is a safe answer for them. This
+  // one exists to ANSWER a learner asking what kind of word is on her card, and
+  // silence there is the bug Sam reported: 知る said nothing, する said nothing,
+  // and the card left her to guess which of the three skills it wanted.
+  assert.equal(wordKindOf("v5r"), "う-verb", "知る");
+  assert.equal(wordKindOf("v5k"), "う-verb", "書く");
+  assert.equal(wordKindOf("v1"), "る-verb", "食べる");
+  assert.equal(wordKindOf("v1-s"), "る-verb", "くれる");
+  assert.equal(wordKindOf("adj-i"), "い-adjective", "高い");
+  assert.equal(wordKindOf("adj-na"), "な-adjective", "静か");
+  // The irregulars are named as irregular rather than left unnamed. The two
+  // older labellers withhold here on purpose, because a PARADIGM label would
+  // point at the wrong rule; "irregular verb" points at no rule at all, which
+  // is the honest thing to say and is what Sam asked for.
+  assert.equal(wordKindOf("vs-i"), "irregular verb", "する");
+  assert.equal(wordKindOf("vk"), "irregular verb", "来る");
+  assert.equal(wordKindOf("v5k-s"), "irregular verb", "行く, whose て-form is 行って");
+  assert.equal(wordKindOf("v5u-s"), "irregular verb", "問う");
+  assert.equal(wordKindOf("v5r-i"), "irregular verb", "ある, whose negative is ない");
+  assert.equal(wordKindOf("v5aru"), "irregular verb", "ござる");
+  // いい is an い-adjective HERE (the Forms heading's own answer, see
+  // `adjectiveKind`), even though the drill's `adjectiveKindOf` withholds it.
+  assert.equal(wordKindOf("adj-ix"), "い-adjective", "いい");
+  assert.equal(wordKindOf(null), null, "a noun has no class to name");
 });
