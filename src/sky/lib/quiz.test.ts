@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { seeded } from "./random";
-import { maxTriesFor, shuffleDeck, triesNote, type QuizCard, type QuizOption } from "./quiz";
+import { maxTriesFor, shuffleDeck, triedBefore, triesNote, type QuizAnswer, type QuizCard, type QuizOption } from "./quiz";
 import type { SkyItem } from "./types";
 
 const item = (id: string): SkyItem => ({ id, kind: "word", glyph: id, english: id } as SkyItem);
@@ -122,5 +122,31 @@ describe("triesNote", () => {
   it("counts down, and says the last one in words", () => {
     assert.equal(triesNote(2), "2 tries left.");
     assert.equal(triesNote(1), "One more try.");
+  });
+});
+
+describe("what was said before the right answer", () => {
+  const answer = (over: Partial<QuizAnswer>): QuizAnswer => ({ cardId: "a", grade: "clean", tries: 1, narrowed: false, hinted: false, ...over });
+
+  it("is the attempts before the last one, since the last one is the answer", () => {
+    assert.deepEqual(triedBefore(answer({ grade: "help", tries: 3, said: ["みず", "すいよう", "すい"] })), ["みず", "すいよう"]);
+  });
+
+  it("is nothing on a card answered first time", () => {
+    assert.deepEqual(triedBefore(answer({ said: ["すい"] })), []);
+  });
+
+  it("is nothing on a card answered with a hint and no wrong go", () => {
+    assert.deepEqual(triedBefore(answer({ grade: "help", tries: 1, hinted: true, said: ["すい"] })), []);
+  });
+
+  it("is nothing on a missed card, which has no right answer to be before", () => {
+    // its whole list is what it said, and the reveal shows that under the
+    // answer instead (SAK-387)
+    assert.deepEqual(triedBefore(answer({ grade: "missed", tries: 3, said: ["みず", "すいよう"] })), []);
+  });
+
+  it("is nothing when the card recorded no attempt at all", () => {
+    assert.deepEqual(triedBefore(answer({ grade: "help", tries: 2 })), []);
   });
 });

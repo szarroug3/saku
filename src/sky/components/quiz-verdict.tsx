@@ -1,12 +1,17 @@
 "use client";
 
-// What an answered card shows under itself: the verdict, the answer, and
-// every attempt in order when it was missed (SAK-387), so the two things
-// that were confused can both be seen; then which reading applies here and
-// why (SAK-316), and why each of the other choices was on the board
-// (SAK-315). And the hint a card shows while open. These
-// were inline in the quiz screen (the components review, 2026-09-07);
-// apart, the screen is the card and its bar.
+// What an answered card shows under itself: the verdict, what was said on the
+// way to the answer, and the answer; then which reading applies here and why
+// (SAK-316), and why each of the other choices was on the board (SAK-315). And
+// the hint a card shows while open. These were inline in the quiz screen (the
+// components review, 2026-09-07); apart, the screen is the card and its bar.
+//
+// Every attempt is listed, in order, either way (SAK-387, SAK-425). A missed
+// card lists them all under the answer, so the two things that were confused
+// can both be seen. A card that was answered in the end lists the wrong ones
+// ABOVE it, struck through: the last thing said on that card IS the answer and
+// is already drawn large, and what a card answered after a retry was missing
+// was everything before it.
 
 import { Fragment } from "react";
 
@@ -15,7 +20,22 @@ import type { PitchComponent } from "@/sky/components/lesson-card";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
+import { GRADE, triedBefore, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
+
+/** The attempts as a sentence: "A", "A, then B", "A, B, then C". Struck
+ * through when they are the wrong ones on the way to a right answer. */
+function Attempts({ said, wrong = false }: { said: readonly string[]; wrong?: boolean }) {
+  return (
+    <>
+      {said.map((tried, i) => (
+        <Fragment key={`${tried}-${i}`}>
+          {i > 0 && (i === said.length - 1 ? ", then " : ", ")}
+          <span className={`${wrong ? "text-sky-slipping line-through" : "text-sky-ink"} ${japaneseFont(tried)}`}>{tried}</span>
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
   answered: QuizAnswer;
@@ -23,22 +43,27 @@ export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
   answerPitch?: number;
   pitch?: PitchComponent;
 }) {
+  // What was said before the right answer (SAK-425). A card answered after a
+  // retry, a hint or the choices used to show the right answer and nothing
+  // else, so stepping back to it lost what the learner had actually said,
+  // which is the part of that card worth looking at. It goes ABOVE the answer,
+  // struck through, so the two read in the order they happened.
+  const before = triedBefore(answered);
   return (
     <div className="mt-4 flex flex-col gap-2">
       <div className="text-center">
         <Eyebrow tone="inherit" size="md" tight className={VERDICT[answered.grade]}>{GRADE[answered.grade].label}</Eyebrow>
         <p className="mt-1 text-[13px] text-sky-muted">{GRADE[answered.grade].meaning}</p>
       </div>
+      {before.length > 0 && (
+        <p className="text-center text-[13px] text-sky-muted">
+          You said <Attempts said={before} wrong /> before this.
+        </p>
+      )}
       <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(answer)}`}>{answerPitch !== undefined && Pitch ? <Pitch reading={answer} downstep={answerPitch} /> : answer}</p>
       {answered.grade === "missed" && !!answered.said?.length && (
         <p className="text-center text-[13px] text-sky-muted">
-          You said{" "}
-          {answered.said.map((tried, i) => (
-            <Fragment key={`${tried}-${i}`}>
-              {i > 0 && (i === answered.said!.length - 1 ? ", then " : ", ")}
-              <span className={`text-sky-ink ${japaneseFont(tried)}`}>{tried}</span>
-            </Fragment>
-          ))}.
+          You said <Attempts said={answered.said} />.
         </p>
       )}
     </div>

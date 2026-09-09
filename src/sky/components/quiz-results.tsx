@@ -173,7 +173,13 @@ function HowItWent({ cards, answers, list, save, ending: { back, onRetry, onSave
                     {/* the glyph column is one width, so the answers line up */}
                     <span className={`truncate font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
                     <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answerPitch !== undefined && Pitch ? <Pitch reading={c.answer} downstep={c.answerPitch} /> : c.answer}</span>
-                    <span className={`text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
+                    {/* the grade, and what it cost (SAK-425): a card that took
+                        three goes and a card that took one both read "Help",
+                        and the run already knows which was which */}
+                    <span className="text-right">
+                      <span className={`block text-[12px] font-semibold ${a ? VERDICT[a.grade] : "text-sky-muted"}`}>{a ? GRADE[a.grade].label : "Unanswered"}</span>
+                      {a && a.tries > 1 && <span className="block text-[11px] text-sky-muted">after {a.tries} tries</span>}
+                    </span>
                   </button>
                 </li>
               );

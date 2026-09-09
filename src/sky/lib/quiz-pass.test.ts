@@ -36,6 +36,13 @@ describe("a pass as it opens", () => {
     assert.equal(p.finished, false);
   });
 
+  it("opens with every attempt a card took, so a resumed reveal still lists them", () => {
+    const said = ["みず", "すいよう", "すい"];
+    const p = openPass({ at: 1, answers: [answer("a", { grade: "help", tries: 3, said })] });
+    assert.deepEqual(p.answers["a"].said, said);
+    assert.deepEqual(passAnswers(p, deck)[0].said, said);
+  });
+
   it("opens where a saved run was left, with what was answered there", () => {
     const p = openPass({ at: 2, answers: [answer("a"), answer("b", { grade: "missed" })] });
     assert.equal(p.at, 2);

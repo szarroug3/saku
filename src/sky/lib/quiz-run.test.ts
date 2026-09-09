@@ -59,6 +59,20 @@ describe("a saved run, read back", () => {
     assert.equal(readRun(run({ at: -1 }))?.at, 0);
   });
 
+  it("keeps every attempt a card took, in order, and not just the last (SAK-425)", () => {
+    // What the learner said on the way to the answer is part of the record of
+    // that card, and it has to survive a closed tab: the reveal draws the
+    // wrong ones above the right one when the run is picked up again.
+    const said = ["みず", "すいよう", "すい"];
+    const back = readRun(JSON.parse(JSON.stringify(run({ answers: [answer("a", { grade: "help", tries: 3, said })] }))));
+    assert.deepEqual(back?.answers[0].said, said);
+  });
+
+  it("keeps an answer that recorded nothing said, without inventing a list", () => {
+    const back = readRun(JSON.parse(JSON.stringify(run({ answers: [answer("a")] }))));
+    assert.equal(back?.answers[0].said, undefined);
+  });
+
   it("keeps only the parts of the source it understands", () => {
     const back = readRun(run({ from: { picks: ["x"], cards: [], recipe: "{}" } }));
     assert.deepEqual(back?.from, { picks: ["x"], recipe: "{}" });

@@ -238,6 +238,24 @@ export function tally(answers: readonly QuizAnswer[]): Record<Grade, number> {
   return out;
 }
 
+/** What was said on the way to the right answer, in the order it was said
+ * (SAK-425).
+ *
+ * `said` is every attempt on the card, and on a card that was answered in the
+ * end the last of them IS the answer: it is already drawn, large, on its own
+ * line. What the reveal was missing is the ones before it. A card answered
+ * first time has none, and a missed card has no right answer to be before, so
+ * its whole list is what it said and `QuizVerdict` shows that instead
+ * (SAK-387).
+ *
+ * Off the answer, not off the open card, so it is the same on the way back to
+ * a card as it was when the card was settled, and it survives a reload: the
+ * saved run has carried `said` since SAK-404. */
+export function triedBefore(answer: QuizAnswer): readonly string[] {
+  if (answer.grade === "missed") return [];
+  return (answer.said ?? []).slice(0, -1);
+}
+
 /** How far ahead the spread looks for a card to trade with, so a deck of
  * one item does not walk the whole list per clash. */
 const REACH = 8;
