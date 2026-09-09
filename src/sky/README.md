@@ -4004,3 +4004,107 @@ card's question still says "said in the". 48 e2e pass.
 `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
 on its failing list, and `scripts/button-centering.mjs` measures 1,380 elements
 with none over a pixel.
+
+### A particle is taught right before the sentence it is for (2026-09-08, SAK-430)
+
+Sam sent a screenshot of the Observatory's "Sentence rules" section holding
+nine cards at once: 〜は marks the topic, 〜が marks the subject, and に, で, を,
+へ, まで, だけ, か behind them. "these are all missing from the atlas i think.
+also i think the ordering is wrong here. i don't think we should be teaching
+all of these at once. i think we should teach just what's needed for the next
+sentence type."
+
+She was right on both counts, and the second one had a cause. The section was
+the grammar track in its own order, `CURRICULUM_PATTERNS`, minus what the
+learner had met. That order groups patterns by what they DO, so the nine case
+particles sit in one run right behind the て patterns, and a learner who had
+finished those met all nine as their next row. Worse, the ten sentence TYPES
+that the particles exist to build (Simple, Te-form links, Requests, Want to,
+Conditional, Because, Giving, Even though, Must, I think) had a library entry,
+a teach walk and an offer shape, and no section on the Observatory offered
+them at all. The picker taught the parts and never named the thing.
+
+**The order is data now.** `src/lib/sentence-rule-order.ts` computes one list
+from the shipped tables. The adjective and noun form leads, as the track
+already has it, since the word classes it teaches come before everything. Then,
+for each sentence type in turn: its `grammarPrereqs`, all of them, in teaching
+order, because the learner has to be able to read the type's examples; then the
+patterns the type's own curated sentences actually use, most used first; and
+before any of those, the form it is built on when the track teaches one, which
+is the rule grammar-shelf.ts already runs on. Then the type. Then, after the
+last type, every recipe no type ever asked for, in the track's own order.
+
+The first three come out like this:
+
+    〜な  は  が  を  に  で  だけ  [Simple sentences]
+    〜て  〜ている  〜てから  〜てしまう  〜てみる  〜ておく  [Te-form links and helpers]
+    〜てください  〜ない  〜ないでください  〜ます  〜ましょう  [Requests and proposals]
+
+"the first type is simple so i don't think we need all of these, right?" is
+answered by counting rather than by taste. Simple's eight curated sentences use
+を five times and に, で and だけ once each, and never へ, まで or か. So Simple is
+preceded by は and が (its prereqs) and by を, に, で and だけ (what its sentences
+turn on), and the other three wait for the tail with the rest of the leftovers.
+Every recipe appears exactly once, every type exactly once, and 124 steps cover
+114 recipes and 10 types.
+
+**The Observatory stops at the next type.** The section is not the first nine
+of a long list any more; it is what the next sentence type needs and then that
+type, and nothing past it. That is Sam's sentence back as a rule, and it makes
+the section short by construction, so it lays out whole (`show` on the section)
+rather than being cut nine cards in, which could otherwise drop the very card
+the other eight lead up to.
+
+**A type you cannot start yet keeps its place and says so.** Everything else
+that cannot be taken is left off the page entirely, which has been the rule
+since 2026-09-04 and is still right: a locked card with no story is furniture.
+A sentence type is the exception, because its POSITION is the teaching. "Simple
+comes after は and が" is the lesson, and a missing card teaches nothing. So
+`ItemCard` takes a `gate`, draws the hairline border instead of the muted one,
+mutes its name, and gives its bottom line to what opens it: "Opens once you
+know は or が". It is a div, not a button, so it cannot be clicked, cannot be
+tabbed to, and is not in a shift-range.
+
+The words say "or" because the app's rule says or. `sentenceTierUnlocked` in
+sentence-ordering-plan.ts wants ANY one of a type's prereqs plus enough
+sentences in its pool, and that function is now `sentenceTierBlock`, which
+keeps the reason instead of throwing it away. The Observatory reads it rather
+than restating it, so the picker cannot offer a lesson the planner would
+refuse. Every shipped type clears its own sentence floor today, so the grammar
+half is the only gate anyone will see; the other half is tested on a type asked
+to want ten thousand sentences.
+
+**The Atlas's Sentences shelf is cut into the types.** It was one flat list of
+the ten, so a reader looking for は under Sentences found nothing: the particles
+were on Grammar, cut by the FORM they attach to, which answers "how is this
+made" and never "what is this for". Now there is a section per type in the same
+order, each holding the type and then the grammar placed before it, so は sits
+under "Simple sentences" and 〜てから under "Te-form links and helpers". A
+pattern is on two shelves, which is allowed and already true of the number
+construction pages, and the two cuts answer different questions. The leftovers
+stay off: a pattern no type needs has no type to sit under, and an "Other"
+bucket here would put half the grammar table on a shelf called Sentences.
+
+One thing to look at: the shelf's header still reads "2 of 10 Sentence Rules
+Known" over 50 tiles, because a shelf's total counts its own kind and the
+grammar riding along is counted on Grammar. That is exactly what Counting
+already does with its construction pages, so it is left alone rather than
+changed on the way past.
+
+**What was not touched.** Nothing in the sky's standing order or the
+constellation layout reads `CURRICULUM_PATTERNS`; the only reader left in
+`src/app/(sky)` is the sample learner, which takes the first five patterns to
+give the dev pages a started track. The Planetarium's `beyondWords` walks the
+library by kind and never an order, so it is unaffected.
+
+**The gates.** `npx tsc --noEmit` clean. `npx eslint .` reports only the parse
+error in `docs/audits/workflows/06-content-style-voice.mjs` that is already
+there at HEAD and is not ours. 3,851 unit tests pass and 1 is skipped, up from
+3,840: seven for the order, five for the Observatory's section, four for the
+shelf, and two for the block. `atlas-catalogue.json` was rebuilt with
+`build:catalogues`, since the Sentences shelf's cuts are baked into it. 49 e2e
+pass, one more than before: the section runs to a sentence type, the type
+opens, and its lesson teaches its walk. `scripts/unreachable.mjs --list` is at
+zero, `scripts/unused-exports.mjs` at zero on its failing list, and
+`scripts/button-centering.mjs` measures 1,382 elements over seven pages with
+none more than a pixel out.

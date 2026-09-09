@@ -1033,3 +1033,28 @@ test("a pan moves the sky without rebuilding it", async ({ page }) => {
   expect(during.same, "the same group, not a new one").toBe(true);
   expect(during.changes, "nothing was added to the sky or taken out of it mid-drag").toBe(0);
 });
+
+test("sentence rules end on the sentence type they lead to, and it opens a lesson", async ({ page }) => {
+  // SAK-430. The section was the grammar track in its own order: nine case
+  // particles offered in one row, and not one of the ten sentence types ever
+  // offered at all. It runs to the next type now and stops there.
+  await page.goto("/observatory?sample");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  await expect(cards.last()).toContainText("sentence type");
+  // the patterns that type needs come first, and nothing follows it
+  await expect(cards.first()).toContainText("sentence rule");
+  const type = cards.last();
+  const name = ((await type.textContent()) ?? "").replace(/sentence type$/, "").trim();
+  expect(name.length).toBeGreaterThan(0);
+
+  // picking it takes it to the lesson, which teaches it
+  await type.click();
+  await expect(type).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("link", { name: "Start lesson" }).click();
+  await expect(page).toHaveURL(/\/lesson\?/);
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.getByRole("list").first().getByText(name)).toBeVisible();
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  // and the type's own walk is what it teaches: the guide's intro and its steps
+  await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Intro" })).toBeVisible();
+});
