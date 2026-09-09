@@ -3535,3 +3535,67 @@ of the ten commits. `scripts/unreachable.mjs --list` stays at zero,
 `scripts/unused-exports.mjs` is at zero on its failing list, and
 `scripts/button-centering.mjs` measures the same 1,378 elements with none over
 a pixel, identical to SAK-415's after.
+
+### A practice deck asks by ear and by pitch, whatever Settings say (2026-09-08, SAK-426)
+
+Sam was 98 questions into a 202 card practice run with both switches on in
+Settings and had not been asked one question by ear or one about pitch. Neither
+could have happened, for two unrelated reasons, and both of them were in
+practice alone: the lesson quiz was asking both all along.
+
+**By ear.** `quizCards` makes a card a listening card only when it is handed
+`audio`, and then only half the time. The lesson quiz hands it over:
+`quiz-client.tsx` passes `cfg.audioPrompts` and `cfg.pitchQuestions`, and
+`loadQuiz` falls back to the account's saved Settings for a signed-in learner
+who did not. `practiceCards` called `quizCards(history, facts, now)` with no
+options at all, so the flag was off for every practice card ever dealt, and no
+draw of any size could turn one up. It takes an options object now,
+`practice-client.tsx` passes the same two the quiz passes, and
+`loadPracticeCards` reads the account's Settings through `extrasFor`, which is
+the settings read lifted out of `loadQuiz` so the two actions cannot drift.
+
+**By pitch.** A word's pitch is a registered fact and deliberately not a listed
+one (see `data/pitch-facts.ts`): `factsOf` and `knownFactsOf` hand back a
+word's reading and meaning and nothing else, so the Library's index is
+unchanged and the app's own lessons do not gain a card they cannot draw. The
+Sky's lesson quiz adds the fact itself, per word taught. Practice built its
+pool from `knownFactsOf`, so a pitch fact never reached it, and a recipe asking
+for picking from choices could not produce a pitch card however long it ran.
+`asksOf` adds it now, for a vocabulary entry the registry has a pitch fact for.
+`askOf` already read a pitch fact as "pick", so the ask side needed nothing.
+8,626 of the 12,555 words carry one.
+
+The two settings are read where they were always read, and only the deck's own
+step is new: with pitch questions off, `practiceCards` drops the pitch facts
+from the drawn facts before a card is built, which is the filter `quizFacts`
+already does for the lesson quiz. The preview counts the pool as it stands, so
+a word is in it for its pitch whether or not tonight's deck will ask.
+
+**The tests say the quiz did not change.** Two in `quiz.test.ts` and three in
+`practice.test.ts`, all with `Math.random` pinned so a coin flip cannot decide
+whether a test passes: `quizCards` over a dozen typed word facts deals a
+listening card with `{ audio: true }` and none without; a lesson deck for a
+word with a pitch question carries a card whose id ends in `/pitch` with
+`{ pitch: true }` and none with `{ pitch: false }`; and a practice deck of
+words asked for their meaning and for picking does the same two, plus the pool
+itself carries pitch facts and every one of them asks "pick".
+
+**The voice cache did not move.** `scripts/list-speakable.mjs` walks
+`teach.ts`, `observatory.ts` and the library entries, none of which this
+touched, and a practice listening card plays the same word reading or kana
+glyph a lesson listening card plays. It reports 15,536 items walked, 12,116
+strings and 8,089 exact pitch clips, all of them in a seeded set, nothing
+uncovered. Nothing was seeded.
+
+**The gates.** `npx tsc --noEmit` clean and `npx eslint src e2e scripts` clean
+(the one error `npx eslint .` reports is a parse error in
+`docs/audits/workflows/06-content-style-voice.mjs`, committed on 2026-08-29 and
+untouched here). 3,839 unit tests, 3,838 passing and 1 skipped: five more than
+the 3,834 that were there, the five above. 48 e2e pass, unchanged, the whole
+`sky.spec.ts` twice over. `scripts/unreachable.mjs --list`
+at zero, `scripts/unused-exports.mjs` at zero on its failing list. And a
+practice run driven on the pretend learner, over a recipe of words asked for
+their meaning and for picking, deals both: a card headed LISTEN with a play
+button, the word hidden and "Listen, then type what it means", and a pitch card
+asking which of two clips means "rate", the two of them written out as りつ with
+their pitch marks once the hint is asked for.
