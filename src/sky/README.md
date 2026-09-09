@@ -3915,3 +3915,92 @@ passing and 1 skipped, the em-dash test among them. `npx eslint .` still reports
 one parse error in `docs/audits/workflows/06-content-style-voice.mjs`, which
 predates this card and was not touched. Nothing outside `src/data` and this file
 changed, so the e2e suite was not re-run.
+
+### The grammar card says what kind of word it is (2026-09-08, SAK-427)
+
+Sam, on a practice run of 〜てはいけない, twice. On 知る, a word she knows, the
+hint read "This is the 〜てはいけない pattern. uses the て-form": "i know it's
+the 〜てはいけない because that's in the question. it should tell me that this
+is a ru-verb or u-verb or something or if it's irregular, say that." On しれる,
+drawn in kana because she has not met it, the question read "Type how this word
+is said in the 〜てはいけない form": "when an undiscovered word is given to
+conjugate and it's a ru or u verb or i/na adjective, say how do you say this
+x-type word in ... rather than making the user have to guess."
+
+**One missing argument, and both screenshots.** `quizCards` rolls the vehicle
+(the verb this showing is drilled on), hands it to the prompt and to the board,
+and then called `hintFor(fact, dir)` and `quizInstruction(fact, dir, mode)`
+without it. Both take one. With no vehicle there is no word whose class could
+be named and no word to fill the pattern gloss's X with, so the hint fell back
+to the pattern name and the instruction to the old form-named sentence. Every
+line Sam objected to is the no-vehicle fallback of a card that had a vehicle
+sitting in a local three lines up.
+
+**Naming the class is not a gate.** `ruVerbKindOf` and `adjectiveKindOf` answer
+a narrower question: is this word's class in doubt from its SPELLING? They were
+built to decide whether an unmet vehicle may be dealt at all, so they speak only
+for a る-ending verb and withhold from an irregular whose paradigm label would
+point at the wrong rule. Silence is a safe answer for a gate and the wrong
+answer for a learner asking what kind of word is on her card, which is why 書く
+got nothing (its ending "gives it away", to a reader who can already read it)
+and する got nothing either. `wordKindOf` in `word-forms.ts` is the labeller for
+that second question, and it answers for every conjugating class: う-verb for
+the nine regular godan, る-verb for ichidan, い- and な-adjective, and irregular
+verb for する, 来る, 行く, 問う, ござる and ある. `wordFormKind`, the badge on a
+word's Forms heading, is now that function with the row's class looked up, so
+the Atlas and a quiz card cannot disagree about 行く. It moves 行く's badge from
+う-verb to irregular verb, which is what its て-form has always said.
+
+The list of irregular classes is written out rather than pattern matched. The
+obvious shortcut is "a hyphenated v5 is special" and it is wrong: v5aru (ござる)
+carries no hyphen. That file's own header is about a map that was built twice
+by matching on the tag string and missed the special classes both times.
+
+**The class line first, then the arithmetic.** `grammarHint` used to lead with
+"This is the X pattern", which the question has spelled out since SAK-193. That
+line is now the LAST thing said rather than the first: it survives only on
+しか〜ない, whose drilled verb slot lives on `recipe.wrap.close` where the
+vehicle picker, `deriveProduction` and `formHintText` all cannot see it, so
+there is neither a class nor a form to name instead. Everywhere else the hint
+opens with "悩む is an う-verb", written in the script the rest of the card uses
+(the surface once she has met the word, kana while she has not), and then shows
+SAK-194's derivation under it: 悩む − む + んで → 悩んで, then 悩んで + はいけない
+→ 悩んではいけない. "an う-verb" and "a る-verb" read by sound rather than by
+first letter, the same table `derivation.ts` keeps for the same five words.
+
+**The derivation reached the card at last.** It has existed since SAK-194 and
+the Sky never drew it: `grammarHint` returns `{ kind: "derivation" }` and the
+card mapper kept only `image` and `text`, so it fell out on the way. `QuizCard`
+gains `hint.steps`, a list of already-written lines, because `src/sky` does not
+import the engine that builds them; `derivationLines` in `derivation.ts` writes
+them, in the format that file's own header uses. `QuizHint` draws the class line
+in the UI face and each equation under it in the Japanese one, down the page so
+the second reads as the first one continued.
+
+Worth saying plainly: the last equation ends in the built answer, and the hint
+opens while the card is still live. That is the leak SAK-198 closed on the OLD
+app's drill, and it is being reopened here on purpose, because it is what Sam
+asked for and because asking for a hint already costs the card its grade
+(`gradeFor(… || state.hinted)`). If she wants the equations held back until the
+card resolves, the pieces are all in place: `derivationNudge` is the safe
+one-line version and the reveal is the place to move the rest to.
+
+**The question names the type of an unmet word.** "How do you say "must not
+しれる" for this る-verb?", and now "for this irregular verb" and "for this
+う-verb" too, since `wordKindOf` has an answer for those. A word she HAS met
+keeps the plain "word": its class rides in the hint instead, where it does not
+crowd the sentence. `showableWhenUnknown` in `vehicles.ts` is untouched, and
+deliberately: naming 行く as irregular tells a learner that its 音便 must be
+memorized, not what it is, so it still may not be dealt on a free pick.
+
+**The gates.** `npx tsc --noEmit` clean; `npx eslint .` reports only the one
+parse error in `docs/audits/workflows/06-content-style-voice.mjs` that is
+already on main and is not ours. 3,844 unit tests pass, 1 skipped, up from
+3,838: `wordKindOf` over every class, `derivationLines` over its three shapes,
+the class line for a known う-verb, an unknown る-verb and an irregular, the
+instruction naming an unmet non-る verb and an unmet irregular, and two on
+`quizCards` itself, that every grammar card's hint names a class and no grammar
+card's question still says "said in the". 48 e2e pass.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on its failing list, and `scripts/button-centering.mjs` measures 1,380 elements
+with none over a pixel.
