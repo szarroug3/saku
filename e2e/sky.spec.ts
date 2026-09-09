@@ -672,6 +672,71 @@ test("the reveal explains which reading applies, and why", async ({ page }) => {
   await expect(page.getByText(/Same character, and the company it keeps decides/)).toHaveCount(0);
 });
 
+test("a card answered after a retry still shows what was said before it was right", async ({ page }) => {
+  // SAK-425. Every attempt has been on the answer since SAK-387 and in the
+  // saved run since SAK-404, but the reveal only listed them on a MISSED card.
+  // A card that got there in the end showed the right answer and nothing else,
+  // so walking back to it with the arrow lost what the learner had said, which
+  // is the part of that card worth looking at.
+  // Two named cards, so the deck is exactly these two and neither is ever
+  // asked by ear: a named deck carries no audio option, and a listening card
+  // would hide the glyph this test reads. Signed out, so the run is written to
+  // the browser and the reload below picks it up.
+  await page.goto(`/quiz?cards=${encodeURIComponent("kana:あ/reading,kana:い/reading")}`);
+  const count = page.getByText(/^\d+ of \d+$/);
+  await expect(count).toHaveText("1 of 2");
+
+  // the deck is dealt (SAK-388), so which vowel is in front of you is read off
+  // the card rather than assumed
+  const glyph = (await page.locator("p.font-sky-display").first().innerText()).trim();
+  const box = page.getByPlaceholder("The reading, in romaji");
+  await box.fill("zzz");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText(/^Not that\./)).toBeVisible();
+  await box.fill(glyph === "あ" ? "a" : "i");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(count).toHaveText("2 of 2");
+
+  // back a card: the verdict, what was said before the answer, and the answer
+  const backACard = page.getByRole("button", { name: "Back a card" });
+  await backACard.click();
+  await expect(count).toHaveText("1 of 2");
+  // the deck list down the right says it too, so the card's own is the first
+  await expect(page.getByText("With help", { exact: true }).first()).toBeVisible();
+  const before = page.getByText("You said zzz before this.");
+  await expect(before).toBeVisible();
+  // and it is marked as wrong, not just listed
+  await expect(page.getByText("zzz", { exact: true })).toHaveCSS("text-decoration-line", "line-through");
+
+  // and it survives the tab being closed, because it is on the run and not on
+  // the open card
+  await page.reload();
+  await expect(count).toHaveText("2 of 2");
+  await backACard.click();
+  await expect(before).toBeVisible();
+});
+
+test("the Family chip on a grammar card opens the family", async ({ page }) => {
+  // SAK-425. The reveal draws the lesson card under a card that is answered,
+  // and that card pages: 〜てから is taught over its own page and its family's,
+  // "after", which it shares with たあとで. The Quiz passed no page and no way
+  // to change one, so the pager drew a row of chips that were buttons and did
+  // nothing. The card turns its own pages when nobody outside owns them.
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("grammar:te-kara/meaning")}`);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  const family = page.getByRole("button", { name: "Family", exact: true });
+  await expect(family).toBeVisible();
+  await expect(page.getByText("Ways to say this")).toHaveCount(0);
+
+  await family.click();
+  await expect(page.getByText("Ways to say this")).toBeVisible();
+  // the family is the sibling patterns, and how each is built
+  await expect(page.getByRole("cell", { name: "〜たあとで", exact: true })).toBeVisible();
+
+  // and the chip that opened it says so, so the row reads as a pager
+  await expect(family).toHaveAttribute("aria-current", "page");
+});
+
 test("a visitor's finished quiz says it is saving, and opens the way back once it is saved", async ({ page }) => {
   // SAK-410, the half SAK-406 left open. The results paint in the click that
   // ends the quiz, but signed out the record does not exist yet: the answers
