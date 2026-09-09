@@ -16,14 +16,17 @@
 // multiple choice, a hint, giving up. At the end, this screen hands over to
 // the results (quiz-results.tsx), which counts the run and records it.
 //
-// Three files, not one (SAK-420). This one is the room where questions are
-// asked. `quiz-results.tsx` is the room they are looked back on, and it owns
-// the recording. `lib/quiz-pass.ts` is where the pass over the deck has got
-// to, pure and tested, which this screen holds in one piece of state.
+// Four files, not one (SAK-420). This one is the loop: the tries, the grading,
+// the keys, the way on. `quiz-results.tsx` is the room the run is looked back
+// on, and it owns the recording. `lib/quiz-pass.ts` is where the pass over the
+// deck has got to, pure and tested, which this screen holds in one piece of
+// state. `quiz-board.tsx` draws the prompt and the boards a card is answered
+// on, and holds nothing.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
+import { QuizChoices, QuizOrder, QuizPrompt } from "@/sky/components/quiz-board";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
 import { QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
@@ -33,7 +36,6 @@ import { SkyInput } from "@/sky/components/sky-input";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
-import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
@@ -88,13 +90,7 @@ interface SkyQuizProps {
   height?: string;
 }
 
-/** A context line that only names the kind of answer ("meaning") says
- * nothing the instruction does not; a frame or a gloss is worth showing. */
-const LABEL_ONLY = /^(meaning|reading|in japanese)$/i;
-
 export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
-  const Pitch = pitch;
-  const Hear = hear;
   const { retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0 } = settings ?? {};
 
   // The pass over this deck, in one object: where it is, what has been
@@ -331,7 +327,6 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
     return <QuizResults cards={cards} answers={answers} ending={results} pitch={pitch} height={height} />;
   }
 
-  const context = card.prompt.context && !LABEL_ONLY.test(card.prompt.context) ? card.prompt.context : null;
   const triesLeft = maxTries - state.tries;
   const help = [
     !answered && card.typed && !state.narrowed && card.options.length > 1 ? { label: "Multiple choice", run: () => patch({ narrowed: true }) } : null,
@@ -370,33 +365,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                 minimum without it, so a narrow card pushed the help bar off
                 the right edge and the clip above swallowed it (SAK-396) */}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <div className="flex flex-col items-center text-center">
-                {listening ? (
-                  // the sound in place of the glyph: a big hear button, and the
-                  // reading only once it is shown or answered
-                  <div className="flex flex-col items-center">
-                    <Eyebrow>Listen</Eyebrow>
-                    <span ref={listenRef} className="mt-1 inline-flex [&_button]:h-16 [&_button]:w-16 [&_button]:text-[26px]">{Hear && card.listen && <Hear glyph={card.listen} label="Play it again" />}</span>
-                  </div>
-                ) : card.prompt.within ? (
-                  // the word, with the glyph asked about in ink and the rest muted
-                  <p className={`font-sky-display leading-none ${japaneseFont(card.prompt.within)}`} style={{ fontSize: promptSize(card.prompt.within) }}>
-                    {[...card.prompt.within].map((ch, i) => <span key={i} className={ch === card.prompt.glyph ? "text-sky-ink" : "text-sky-muted/60"}>{ch}</span>)}
-                  </p>
-                ) : card.prompt.jp ? (
-                  // One size for every Japanese prompt, coming down only when
-                  // the text is too long to fit at it (SAK-390). It used to
-                  // step from 64px to 36px at three characters, so 待つ and
-                  // 食べる were drawn half a size apart.
-                  <p className={`font-sky-display leading-none text-sky-ink ${japaneseFont(card.prompt.glyph)}`} style={{ fontSize: promptSize(card.prompt.glyph) }}>{card.prompt.glyph}</p>
-                ) : (
-                  // English is a different kind of thing to read, and its
-                  // letters are not square, so it keeps its own size
-                  <p className="font-sky-display text-[28px] leading-none text-sky-ink">{card.prompt.glyph}</p>
-                )}
-                {context && !listening && <p className={`mt-3 text-[15px] text-sky-muted ${japaneseFont(context)}`}>{context}</p>}
-                {card.instruction && !answered && <p className="mt-2 text-[13px] text-sky-muted">{card.instruction}</p>}
-              </div>
+              <QuizPrompt card={card} listening={listening} answered={!!answered} listenRef={listenRef} hear={hear} />
 
               {!answered && (
                 <div className="mt-4 flex flex-col gap-3">
@@ -413,60 +382,8 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
                     </form>
                   )}
-                  {card.order && (
-                    // the pieces: tap one to place it next, tap a placed one to
-                    // take it back; Check once every piece is placed
-                    <div className="flex flex-col gap-3">
-                      <div className={`flex min-h-[44px] flex-wrap items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2 ${(state.built ?? []).length ? "border-sky-line" : "border-sky-line/60"}`}>
-                        {(state.built ?? []).length === 0 && <span className="text-[12.5px] text-sky-muted">Tap the pieces in order.</span>}
-                        {(state.built ?? []).map((p, i) => (
-                          <button key={`${p}-${i}`} type="button" onClick={() => patch({ built: (state.built ?? []).filter((_, j) => j !== i) })} className={`rounded-lg border border-sky-accent bg-sky-card-strong px-3 py-1.5 text-[17px] text-sky-ink ${japaneseFont(card.order!.pieces[p])}`}>{card.order!.pieces[p]}</button>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {card.order.pieces.map((piece, i) => {
-                          const placed = (state.built ?? []).includes(i);
-                          return <button key={i} type="button" disabled={placed} onClick={() => patch({ built: [...(state.built ?? []), i] })} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>{piece}</button>;
-                        })}
-                      </div>
-                      <div className="flex justify-center"><SkyButton onClick={submitOrder} disabled={(state.built ?? []).length !== card.order.pieces.length}>Check</SkyButton></div>
-                    </div>
-                  )}
-                  {choices && !card.order && (
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {card.options.map((o, i) => {
-                        const struck = state.wrong.includes(o.id);
-                        const on = state.chosen === o.id;
-                        const frame = struck ? "border-transparent bg-sky-card/40 text-sky-muted" : on ? "border-sky-accent bg-sky-card-strong" : "border-sky-line bg-sky-card hover:border-sky-accent";
-                        // a pitched choice is a sound to judge: a numbered clip with
-                        // its hear button, the reading only once a hint is asked for
-                        if (o.pitch !== undefined) {
-                          return (
-                            <div key={o.id} className={`flex w-[calc((100%-1rem)/3)] min-w-[140px] items-center gap-1 rounded-xl border pr-2 ${frame}`}>
-                              <button type="button" onClick={() => pick(o.id)} disabled={struck} aria-pressed={on} className={`flex min-h-[52px] min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left ${struck ? "line-through" : ""}`}>
-                                <span className="text-[12px] text-sky-muted">{i + 1}</span>
-                                {state.hinted && Pitch && <span className={`font-sky-display text-[18px] ${japaneseFont(o.label)}`}><Pitch reading={o.label} downstep={o.pitch} /></span>}
-                              </button>
-                              {Hear && <span ref={(el) => { if (el) hears.current.set(o.id, el); else hears.current.delete(o.id); }}><Hear glyph={o.label} downstep={o.pitch} /></span>}
-                            </div>
-                          );
-                        }
-                        return (
-                          <button
-                            key={o.id}
-                            type="button"
-                            onClick={() => pick(o.id)}
-                            disabled={struck}
-                            aria-pressed={on}
-                            className={`flex min-h-[52px] w-[calc((100%-1rem)/3)] min-w-[140px] items-center rounded-xl border px-3 py-2.5 text-left ${frame} ${struck ? "line-through" : ""} ${o.jp ? `whitespace-nowrap font-sky-display ${japaneseFont(o.label)}` : "text-[13.5px]"}`}
-                            style={o.jp ? { fontSize: optionSize(o.label) } : undefined}
-                          >
-                            {o.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {card.order && <QuizOrder order={card.order} built={state.built ?? []} onBuilt={(built) => patch({ built })} onCheck={submitOrder} />}
+                  {choices && !card.order && <QuizChoices card={card} state={state} onPick={pick} hear={hear} pitch={pitch} hears={hears} />}
                   {/* a card without a box still checks its pick with a button.
                       Never an ordering card: `choices` is true for anything not
                       typed, and that one has its own Check under its pieces. */}
