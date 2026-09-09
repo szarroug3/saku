@@ -3599,3 +3599,48 @@ their meaning and for picking, deals both: a card headed LISTEN with a play
 button, the word hidden and "Listen, then type what it means", and a pitch card
 asking which of two clips means "rate", the two of them written out as りつ with
 their pitch marks once the hint is asked for.
+
+### The kana under a word she is supposed to know (2026-09-08, SAK-429)
+
+Sam sent a screenshot of a meaning card: 行く, いく under it, "Type what this
+word means." Her words: "when i'm supposed to know the word, don't show the
+kana when it's kanji. that can be a hint instead."
+
+She is right about what that line does. The card asks what 行く means, and いく
+under it hands the reading over, so the question stops being about the kanji
+and becomes read the kana, say the word, remember what you said. The half that
+is actually hard is sitting there as decoration.
+
+The line is not always wrong, though. The first time a word is asked, the quiz
+is still teaching it, and its reading and its meaning are taught together. So
+the rule turns on whether the learner has met the fact at all: never asked and
+never claimed keeps the kana where it was, and anything else moves it behind
+the Hint button.
+
+That test lives in `quizCards` (`src/app/(sky)/quiz.ts`), not in the engine's
+prompt. The engine builds a prompt for a fact and has no idea who is looking at
+it, and the old app's callers still want the reading printed. `quizCards` is
+already the place that reads the learner's history for `seen` and `missed`, so
+it is the place that can tell the two showings apart.
+
+A word that already had a hint keeps it. 明白 breaks down into "明 is bright, 白
+is white", and the reading goes above that on its own line, so pressing Hint on
+a known word gives めいはく first and the breakdown under it. `QuizHint` writes
+its text a line at a time now and picks the face per line, so the Japanese line
+is in the Japanese face and the English one is not. That is the whole of the
+change to the hint's rendering, since SAK-427 is rebuilding the rest of it.
+
+Three things are untouched. A reading card keeps its context, because there the
+context is the glosses and they are what tells 日's にち from its ひ. A kana word
+never had a reading printed under it, since the reading is the glyph. And a
+listening card keeps its own hint, the written form, because its glyph is off
+screen and there is nothing on it to take away.
+
+**The gates.** `npx tsc --noEmit` clean and `npx eslint .` clean apart from the
+parse error it already reports on `docs/audits/workflows/06-content-style-voice.mjs`,
+which is there on a clean tree too. 3,839 unit tests pass and 1 skipped, six of
+them new: the first sight, the asked word, the claimed word, the word with a
+breakdown, a kana word, and a reading card. 48 e2e pass. `unreachable.mjs
+--list` at zero, `unused-exports.mjs` at zero on its failing list. Two
+screenshots of 明白 in the sample deck, before and after Hint, on a build of
+this branch on a spare port.
