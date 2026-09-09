@@ -4187,3 +4187,73 @@ elements over seven pages with none more than a pixel out. Four screenshots on
 a build of this branch on a spare port: the stepped-back card, a close crop of
 the struck line, the results list with "after 2 tries", and the Family page
 open behind its chip.
+
+### The wrong half of a pair, in the data rather than the story (2026-09-08, SAK-431)
+
+A kanji page puts the "Made of" tiles and the origin story next to each other.
+威's story reads "A broad axe (戌) beside a woman (女): overawing, commanding
+force", and its tiles drew 戍. Those are two characters, one stroke apart: 戌 is
+the eleventh earthly branch, the dog, drawn as a broad axe; 戍 means to
+garrison. SAK-421's components test had 威 on its list of 317 stories naming a
+piece the glyph does not have, which reads as a story awaiting a rewrite. It was
+the other way around. The story was right and the decomposition was wrong.
+
+**Where the 戍 came from.** Upstream, and provably not from us. KanjiVG's
+05a01.svg names the top-left piece twice, once per split half, as
+`kvg:element="戍" kvg:variant="true" kvg:original="戌"`. The ingest
+(`scripts/ingest/kanjivg.mjs`) keeps the element name and files the original in
+the `variants` map, which is exactly right for 亻 and 氵, so nothing in our
+pipeline invented this. KanjiVG then makes the same swap in the other direction:
+inside 歳 and 滅 it writes `kvg:element="戌" kvg:original="戍"`. Our variant map
+already refuses that pairing in both directions, as one of the nine mislabels
+the audit of every `kvg:original` found (`variant-forms.ts`, `EXCLUDED`), so
+neither character collapses into the other and whichever label KanjiVG picked is
+what the tiles draw.
+
+**Three sources, and then KanjiVG's own strokes.** Wiktionary, Shuowen and Jisho
+all give 戌 + 女, and the first of those is already in the repo:
+`generated/kanji-etymology.json` reads "Ideogrammic compound: semantic 戌 +
+semantic 女". The drawing settles it without leaving the file that got it wrong.
+戌 carries a horizontal inside the 戊 frame and 戍 carries a 丿 there, and
+05a01.svg's third stroke sits in a group marked `kvg:element="一"` of type ㇐.
+The glyph KanjiVG draws is 戌; only the name it wrote on it is 戍.
+
+**Fixed at the layer that survives an ingest.** `kanji-components.json` is re-cut
+from upstream, so a hand edit there is lost on the next run, and a source pin
+would be wrong on its face: the pin table records what the source says, and the
+source really does say 戍. `COMPS_OVERRIDE` in `kanji.ts` is the durable home and
+already held 威, since KanjiVG splits the piece across two groups and the row
+needed collapsing from three parts to two anyway. The entry now reads
+`威: ["戌", "女"]` and says in place why, because it is the one entry in that
+table that corrects a character and not just a count, and the table's own rule is
+that it may only lower a count, never invent a part. The exception is written
+down rather than left to be rediscovered.
+
+**What moved.** `build:library-index` and `build:catalogues`, and a value-level
+diff of the three files they rewrote shows 威's rows and nothing else: the atlas
+tile's parts go from `["女","戍"]` to `["戌","女"]`, the sky item's first
+component from `primitive:戍` to `primitive:戌`, and the library's component-use
+map moves 威 out of 戍's host list and into 戌's, leaving 幾 and 蔑 under 戍 and
+joining 滅 and 歳 under 戌. The three version hashes change with them.
+
+**The other four hosts are untouched, on purpose.** 幾 and 蔑 really are built on
+戍, the guard, and 歳 and 滅 really are built on 戌, so KanjiVG got four of the
+five right and the correction must not spread. A new block in
+`comps-audit.test.ts` pins all five: 威 is 戌 + 女 and contains no 戍, Wiktionary
+says the same, the generated file still says 戍 so the override is doing the
+work, and the four correct hosts keep their parts. If upstream ever fixes
+05a01.svg, the third of those fails and the override entry can go.
+
+**And a sweep for the same shape of bug.** Comparing every kanji's parts against
+the Wiktionary record, restricted to the nine pairings the variant map refuses,
+turns up four more places where the tiles draw one half of a refused pair and the
+record names the other: 匹 (record 八, tiles 儿), 在 (record 士, tiles 土), 巡
+(record 川, tiles 巛) and 替 (record 曰, tiles 日). None is the single-character
+confusion 威 was, each needs a reading rather than a rule, and they are listed on
+the card rather than changed here.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src scripts` clean. 3,838 unit
+tests pass, 1 skipped, up four for the new block. The components test is at zero
+unlisted exceptions with its list one shorter: 威 came off it, and the count it
+pins went from 317 to 316, which is the first entry taken off that list since it
+was written. No page changed, so no e2e run.
