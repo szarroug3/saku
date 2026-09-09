@@ -3722,3 +3722,60 @@ a reveal, resume a run after a reload and watch a finished quiz say it is
 saving. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs`
 at zero on its failing list, and `scripts/button-centering.mjs` measures the
 same 1,380 elements over seven pages with none more than a pixel out.
+
+### Two counts and a missing label (2026-09-08, SAK-428)
+
+Sam read "106 items" on a recipe and got a run of 202 questions, and read the
+whole of 知れる on its Atlas page without being told it was a る-verb. Both are
+a number or a word the page already had and never said.
+
+**An item is not a question.** A deck is one card per fact and an item carries
+as many facts as it has things to be asked, so the pool's length was never the
+run's length: 12,457 words are 23,012 questions. `PracticePreview` carries
+`questions` now, summed over the whole pool in `practicePreview` rather than
+over the `PREVIEW_CAP` items the preview actually sends, so a pool past the cap
+still says how long it is. The panel reads "12,457 items, 23,012 questions",
+and an item left out by hand takes its own facts out of both counts the same
+way it already came out of `matched`.
+
+**"About" is doing real work.** A limited draw is a random share of the pool,
+so its questions are a rate and not a total: ten items out of 12,457 is about
+18 questions, and which ten you get decides whether it is 16 or 21. The word
+"about" appears only in that case, and "All of them" says the exact number
+because it is exact. One item and one question take the singular.
+
+**The word's group was computed all along.** `wordFormKind` in
+`src/lib/word-forms.ts` has named every conjugating word since the old lesson
+code, and nothing in the Sky read it. The teach block carries `wordKind` now,
+the label with the entry that explains it, and `teach.ts` sets it for a word
+that conjugates and leaves it off one that does not. 知れる is a る-verb, 知る an
+う-verb, する an irregular verb, 静か a な-adjective, 高い an い-adjective, and 猫
+is nothing at all.
+
+**A chip that goes somewhere.** It renders as `SkyChip` in its unlit tone,
+which is the muted informational look rather than the accent, on its own line
+under the meanings and above "Written with". A tap opens the page for the
+group: Godan/ichidan for the verbs, Keiyōshi/keiyōdōshi for the adjectives.
+That page has to travel with the word for the tap to land, because the Atlas
+panel picks by id out of the items it was handed, so `atlasEntryFromHistory`
+offers the entry and puts it in the closure. Neither concept has a term of the
+same name, so the concept entry is the page; `readAbout` in `atlas.ts` is the
+rule for the ones that do. `onRead` is a separate prop from `onSelect` on
+purpose: the Atlas can reach another page and the lesson and the quiz review
+cannot, and without it the chip still says what it says.
+
+**The gates.** `npx tsc --noEmit` clean, `npx eslint src e2e scripts` clean.
+3,846 unit tests pass, 1 skipped, twelve of them new: two in `practice.test.ts`,
+one counting a pool's questions both under the preview cap and past it and one
+taking an excluded item's questions out with it, and ten in a new
+`teach.test.ts` on the word kind. 49 e2e pass, one more than the
+48 before: the practice panel reads "items, about N questions, drawn at
+random", and 知れる's chip opens Godan/ichidan. `scripts/unreachable.mjs --list`
+at zero, `scripts/unused-exports.mjs` at zero on its failing list,
+`scripts/button-centering.mjs` at 0 elements over 1px over the 1,380 it
+measures. The chip is on none of that script's pages, so it was measured on its
+own: 0.000 px between its text's middle and the pill's.
+
+`npx eslint .` still reports one parsing error in
+`docs/audits/workflows/06-content-style-voice.mjs`, which is on main and is not
+this lane's; `npx eslint src e2e scripts` is the clean run.

@@ -9,7 +9,10 @@ test("practice builds a deck from a collection and starts it", async ({ page }) 
   await page.goto("/practice?sample");
   await expect(page.getByRole("heading", { name: "What would you like to practice?" })).toBeVisible();
   await page.getByRole("button", { name: "Kana", exact: true }).click();
-  await expect(page.getByText(/drawn at random from the/)).toBeVisible();
+  // items and questions are two different counts and the panel says both
+  // (SAK-428): a limited draw is "10 items, about 19 questions, drawn at
+  // random from the 106 below"
+  await expect(page.getByText(/[\d,]+ items, about [\d,]+ questions, drawn at random from the [\d,]+ below/)).toBeVisible();
   const start = page.getByRole("button", { name: "Start" });
   await expect(start).toBeEnabled();
   await start.click();
@@ -469,6 +472,17 @@ test("the atlas opens on the shelf that holds what you asked for", async ({ page
   // the rail lights the shelf the entry is on
   const kanji = page.getByRole("button", { name: /^Kanji/ }).first();
   await expect(kanji).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a word's page says what kind of word it is, and the chip opens the page that explains it", async ({ page }) => {
+  // SAK-428. 知れる listed every form it takes and never said it was a る-verb.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:知れる")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  const kind = page.getByRole("button", { name: "る-verb", exact: true });
+  await expect(kind).toBeVisible();
+  await kind.click();
+  // the group's own page, which travelled with the word
+  await expect(page.getByText("Godan/ichidan")).toBeVisible();
 });
 
 test("a page shows its own heading while its body is still coming", async ({ page }) => {
