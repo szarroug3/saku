@@ -3644,3 +3644,81 @@ breakdown, a kana word, and a reading card. 48 e2e pass. `unreachable.mjs
 --list` at zero, `unused-exports.mjs` at zero on its failing list. Two
 screenshots of 明白 in the sample deck, before and after Hint, on a build of
 this branch on a spare port.
+
+### The Quiz is four files now (2026-09-08, SAK-420)
+
+`sky-quiz.tsx` was 546 lines with seventeen props, and it had grown three
+times that day: the resume (SAK-404), the reveal's explanations (SAK-315,
+SAK-316) and the saving line (SAK-410). It is the one file the quality review
+named to watch. Nothing else in the Sky is near it.
+
+**Where a pass has got to is one object.** The screen kept four things for one
+idea: which card is in front of you, what has been answered, whether the deck
+is done with, and, threaded through every handler, the answers as they would
+be after the answer that had not settled yet. `lib/quiz-pass.ts` is that idea
+and the moves between them: `openPass`, `withAnswer`, `nextOpen`, `stepTo`,
+`finishPass`, `answeredCount`, `allAnswered`, `passAnswers`. The component
+holds it in one `useState`, so a settled answer and the position it leaves you
+on are the same object rather than two that have to agree.
+
+It is pure and imports no React, and that is not taste. The unit tests run
+under `--conditions=react-server`, where `useState` does not exist, so a hook
+here could not be tested at all. Eighteen tests: opening on nothing and on a
+saved run, wrapping past the end so a skipped card comes back, a miss staying
+on its own reveal, the last answer finishing, a step out of range handing back
+the same object, deck order with a card the deck no longer has.
+
+Not to be confused with `lib/quiz-run.ts` beside it. That one is the small
+envelope a pass is written down as, so it survives a closed tab; this one is
+the pass while it is being answered. They meet twice.
+
+**The results screen records the run it is showing.** The recording belonged
+to the Quiz and the saying-so belonged to the results, so the Quiz held a
+`saved` state it never drew and threaded it through. `QuizResults` is the
+container now and owns both: the answers go the moment it appears, which is
+the click that ended the quiz, and the line under the list says where that has
+got to. `HowItWent` under it is the screen and knows nothing about promises.
+The state opens at "saving" rather than at nothing, because by the time
+anything is painted the answers are already on their way and a first frame
+saying nothing would be a flicker rather than news. It sends once, behind a
+ref, because React runs an effect twice over in development on purpose and
+this one writes to a schedule. `SaveState` lost its `export`.
+
+**Six props were about a screen the Quiz does not draw.** `back`, `onFinish`,
+`onRetry`, `onSave`, `savedNames` and `next` are the end of the deck, and the
+room where questions are asked has an opinion about none of them: they travel
+as one `results` prop, typed as `QuizEnding` where the results screen declares
+it. `retries`, `onRetries` and `timerSeconds` are the quiz's own two settings
+and its clock, so they are a `settings` prop. `SkyQuizProps` is ten: cards,
+grade, toKana, hear, pitch, results, settings, run, title, height. It was
+nineteen when the card was written.
+
+**And then the drawing.** Those three left the file at 543 lines, three under
+where it started: what came out was dense state and what went in was doc
+comments. The size is what the card is about, so one more seam.
+`quiz-board.tsx` is the half of the card with no opinions. `QuizPrompt` is the
+top of it and the four ways one prompt is drawn, which is a fact about the
+card rather than a choice: a sound, a glyph inside the word it is asked in,
+Japanese, English. `QuizOrder` is a sentence to put in order. `QuizChoices` is
+the board of options. Each takes what to draw and where to send a click, and
+holds nothing. The typed box stays with the loop, because it is one line
+inside the form the loop submits and pulling it out would mean handing over
+the box's ref, the transliterator and the grader to save four lines.
+
+**The numbers.** `sky-quiz.tsx` is 460 lines and ten props, from 546 and
+seventeen, and from the 542 and nineteen the card was written against. Beside
+it: `quiz-results.tsx` 211, `quiz-board.tsx` 156, `lib/quiz-pass.ts` 110 with
+137 lines of test.
+
+**Nothing was redrawn.** Every class string in the moved markup is the same
+string in the same order; the two that read differently do so only because
+`state.built` is `built` and `card.order` is `order` on the far side.
+
+**The gates.** `npx tsc --noEmit` clean and `npx eslint src e2e scripts`
+clean, before each of the four commits. 3,852 unit tests, 3,851 pass and 1
+skipped, up eighteen on the new module. 48 e2e pass, `e2e/sky.spec.ts`
+untouched, and they are the proof this is invisible: they answer a card, take
+a reveal, resume a run after a reload and watch a finished quiz say it is
+saving. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs`
+at zero on its failing list, and `scripts/button-centering.mjs` measures the
+same 1,380 elements over seven pages with none more than a pixel out.
