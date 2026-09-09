@@ -14,7 +14,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { deriveProduction, derivationNudge } from "./derivation";
+import { deriveProduction, derivationLines, derivationNudge } from "./derivation";
 import { recipe } from "../../data/grammar/recipes";
 import type { WordClass } from "../conjugate/types";
 import type { Host } from "../../data/grammar/recipes";
@@ -312,5 +312,28 @@ describe("derivationNudge", () => {
       pattern: "〜てもいい",
     });
     assert.ok(!JSON.stringify(nudge).includes("行ってもいい"));
+  });
+});
+
+// SAK-427: derivationLines, the same equations written out as text for a
+// renderer that cannot take the structured type. The Sky's quiz card is plain
+// data by rule (src/sky never imports from @/lib), so its hint carries strings.
+describe("derivationLines", () => {
+  test("a two-step build is two equations, each ending in what the word became", () => {
+    const d = deriveProduction(byId("tai"), "verb", "食べる", "v1");
+    assert.ok(d);
+    assert.deepEqual(derivationLines(d), ["食べる − る → 食べ", "食べ + たい → 食べたい"]);
+  });
+
+  test("a drop-and-add step keeps both halves, in the order the arithmetic runs", () => {
+    const d = deriveProduction(byId("te-sequence"), "adj-i", "たかい", "adj-i");
+    assert.ok(d);
+    assert.deepEqual(derivationLines(d), ["たかい − い + くて → たかくて"]);
+  });
+
+  test("a whole-word irregular is an arrow and nothing else, because there is no rule to spell out", () => {
+    const d = deriveProduction(byId("te-sequence"), "adj-i", "いい", "adj-ix");
+    assert.ok(d);
+    assert.deepEqual(derivationLines(d), ["いい → よくて"]);
   });
 });

@@ -333,3 +333,27 @@ export function derivationNudge(derivation: Derivation): DerivationNudge {
     ? { kind: "class", article: entry.article, classPhrase: entry.phrase, pattern: derivation.pattern }
     : { kind: "pattern-only", pattern: derivation.pattern };
 }
+
+/**
+ * A derivation as lines of text, one equation per line, for a renderer that
+ * cannot take the structured type (SAK-427).
+ *
+ * The Sky's quiz card is plain data by rule (src/sky never imports from
+ * @/lib), so its hint carries strings rather than a `Derivation`. The format is
+ * the one this file's own header writes the arithmetic in: "たかい − い + くて
+ * → たかくて" for a rule that can be spelled out, and a bare "いい → よくて"
+ * for a whole-word irregular, which has no rule to spell out and only a word to
+ * memorize.
+ *
+ * Empty for a derivation with no equations at all, which `deriveProduction`
+ * never returns (it refuses rather than hand back nothing).
+ */
+export function derivationLines(derivation: Derivation): readonly string[] {
+  return [derivation.step1, derivation.step2]
+    .filter((eq): eq is DerivationEquation => !!eq)
+    .map((eq) => {
+      const trim = eq.trim ? ` − ${eq.trim}` : "";
+      const add = eq.add ? ` + ${eq.add}` : "";
+      return `${eq.from}${trim}${add} → ${eq.to}`;
+    });
+}

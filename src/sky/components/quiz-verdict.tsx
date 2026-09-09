@@ -116,19 +116,30 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
  * than pushing the card up. The text is written a line at a time, so a hint
  * that is Japanese on one line and English on the next (a known word's
  * reading over its component breakdown, SAK-429) draws each in its own face
- * instead of putting the whole thing in the UI one. */
+ * instead of putting the whole thing in the UI one.
+ *
+ * A grammar card's hint is two things and they are drawn as two (SAK-427): the
+ * line that says what kind of word this is, in the UI face because it is a
+ * sentence, then the arithmetic that builds the answer, one equation to the
+ * line in the Japanese face because it is Japanese and is meant to be read.
+ * Down the page rather than across, so the equations line up on their left
+ * edges and the second reads as the first one continued. */
 export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
-  if (!hint.image && !hint.text) return null;
+  const steps = hint.steps ?? [];
+  if (!hint.image && !hint.text && !steps.length) return null;
   return (
     <SkySurface className="flex max-h-[40vh] shrink-0 items-center gap-4 overflow-y-auto text-[14px] text-sky-ink/90">
       {hint.image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={hint.image} alt="" className="size-[96px] rounded-md object-contain" />
       )}
-      {hint.text && (
-        <span className="flex flex-col gap-1">
-          {hint.text.split("\n").map((line, i) => <span key={i} className={japaneseFont(line)}>{line}</span>)}
-        </span>
+      {(hint.text || steps.length > 0) && (
+        <div className="flex min-w-0 flex-col gap-1">
+          {hint.text?.split("\n").map((line, i) => <span key={i} className={japaneseFont(line)}>{line}</span>)}
+          {steps.map((step) => (
+            <span key={step} className={`text-[17px] leading-snug text-sky-ink ${japaneseFont(step)}`}>{step}</span>
+          ))}
+        </div>
       )}
     </SkySurface>
   );

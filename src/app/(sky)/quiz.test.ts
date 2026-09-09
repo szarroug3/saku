@@ -97,6 +97,37 @@ describe("the verb a grammar card is drilled on", () => {
     }
   });
 
+  it("says what kind of word it rolled, in the hint and in the question (SAK-427)", () => {
+    // The vehicle was rolled here and then dropped on the floor: `hintFor` and
+    // `quizInstruction` both take one and neither was given it, so the hint
+    // could only name the pattern the question had already named, and the
+    // question fell back to "said in the 〜てはいけない form" with no word to
+    // fill its X. Both of Sam's screenshots, from one missing argument.
+    for (const card of fresh) {
+      assert.ok(card.hint, `${card.id} has no hint`);
+      assert.ok(
+        card.hint!.text?.includes(" is a") || card.hint!.text?.includes(" is an"),
+        `${card.id} hinted ${card.hint!.text ?? "(nothing)"} without naming a class`,
+      );
+      assert.ok(
+        !card.instruction?.includes("said in the"),
+        `${card.id} asked ${card.instruction}`,
+      );
+    }
+  });
+
+  it("shows the arithmetic under the class line, one equation to the line", () => {
+    // SAK-194's derivation reaches the Sky at last: grammarHint returns it and
+    // the card mapper used to keep only `image` and `text`, so the steps fell
+    // out on the way. Never the whole answer as a single word: each line is an
+    // equation ending in an arrow.
+    const derived = fresh.filter((c) => c.hint?.steps?.length);
+    assert.ok(derived.length > 0, "no card carried a derivation");
+    for (const card of derived) {
+      for (const step of card.hint!.steps!) assert.match(step, / → /, card.id);
+    }
+  });
+
   it("grades the pattern built on the verb that was asked, in either script", () => {
     // The answer is recomputed from the vehicle, so a card graded against the
     // fact's baked verb would mark every right answer wrong.

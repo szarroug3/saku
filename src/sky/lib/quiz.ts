@@ -97,8 +97,13 @@ export interface QuizCard {
   prompt: { glyph: string; jp: boolean; context?: string; within?: string };
   /** What to do, in the app's words: "Type the reading in romaji." */
   instruction?: string;
-  /** A nudge, shown on request: a line, or a drawing. */
-  hint?: { text?: string; image?: string };
+  /** A nudge, shown on request: a line, a drawing, or the arithmetic.
+   *
+   * `steps` is a grammar production card's derivation, one equation to the
+   * line, already written out ("たかい − い + くて → たかくて"). It arrives as
+   * strings because the Sky does not import the engine that builds it, and it
+   * is drawn under `text` in the Japanese face rather than as prose. */
+  hint?: { text?: string; image?: string; steps?: readonly string[] };
   /** What kind of answer is wanted, for the box's placeholder. */
   answerIs: "reading" | "meaning" | "other";
   /** Opens on the box; false opens on the options (a card only ever asked

@@ -9,6 +9,7 @@
 
 import { answerKeyFor, buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
+import { derivationLines } from "@/lib/grammar/derivation";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
@@ -221,7 +222,11 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition
     if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir, ctx), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir, ctx)) });
-    let hint = hintFor(fact, dir);
+    // The vehicle goes to the hint and the instruction too (SAK-427). Both take
+    // it and neither was given it, so a grammar card could say only "This is
+    // the 〜てはいけない pattern" and "said in the 〜てはいけない form": the
+    // pattern twice, and never which kind of word was on the card.
+    let hint = hintFor(fact, dir, undefined, false, vehicle ?? undefined);
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
     const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
@@ -255,13 +260,13 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
       : construction
         ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
-        : quizInstruction(fact, dir, typed ? "typed" : "mc");
+        : quizInstruction(fact, dir, typed ? "typed" : "mc", vehicle ?? undefined);
     cards.push({
       id: fact,
       item,
       prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored && !readingHint ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
       ...(instruction ? { instruction } : {}),
-      ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : {} } : {}),
+      ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : hint.kind === "derivation" ? { ...(hint.text ? { text: hint.text } : {}), steps: derivationLines(hint.derivation) } : {} } : {}),
       answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
       typed: typedCard,
       ...(inKana ? { answerInKana: isKatakana(answer) ? "katakana" as const : "hiragana" as const } : {}),
