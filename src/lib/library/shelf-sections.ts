@@ -34,6 +34,7 @@ import type { Kind, LibEntry } from "@/lib/library/entries";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
+import { sentenceShelfSections } from "@/lib/library/sentence-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import { curriculumRank, rangedGroups, wordClimbRank } from "@/lib/library/ranged-groups";
@@ -109,16 +110,13 @@ function buildShelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSection
           ),
         },
       ];
+    // One section per sentence TYPE, each holding the type and the grammar the
+    // curriculum places before it (see sentence-shelf.ts), so は sits under
+    // "Simple sentences" rather than only on the Grammar shelf. It used to be
+    // one flat list of the ten types, and a reader looking for a particle here
+    // found nothing (SAK-430).
     case SENTENCE_RULE_KIND:
-      return [
-        {
-          id: "sentence-rules",
-          label: "Sentence rules",
-          entries: MARKS.filter((m) => m.shelf === "sentence").flatMap((m) =>
-            resolve(markEntry(m.id)),
-          ),
-        },
-      ];
+      return sentenceShelfSections();
     // ONE SECTION, holding every pair, for the same reason marks take one: the
     // whole subject fits on a shelf and offers no cut worth inventing. Rendered
     // as rows (see asRows) because a pair has no glyph to tile — its name is

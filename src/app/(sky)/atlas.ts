@@ -125,7 +125,10 @@ export async function learnerHistory(): Promise<HistoryFile> {
 
 export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtlasData {
   const o = offerings(history, now);
-  const shown: string[] = [];
+  // every tile the shelves ship, once: a grammar pattern is on two shelves
+  // now (Grammar cuts it by the form it attaches to, Sentences by the sentence
+  // type it is for, SAK-430), and one payload does not need two of it
+  const shown = new Set<string>();
   const shelves: AtlasShelf[] = SHELVES.map((shelf) => {
     const entries = shelf.kinds.flatMap(all);
     const sections: AtlasSection[] = [];
@@ -143,7 +146,7 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     }
     const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     const streamed = entries.length > STREAM_ABOVE;
-    if (!streamed) shown.push(...sections.flatMap((s) => s.items));
+    if (!streamed) for (const id of sections.flatMap((s) => s.items)) shown.add(id);
     return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf), ...(streamed ? { streamed } : {}) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kinds.includes(kind))!.unit }));
@@ -159,7 +162,7 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     const parts = it.kind === "kanji" ? [...new Set([...builtPieces(it.glyph).map((p) => p.glyph), ...(kanjiRow(it.glyph)?.comps ?? [])])] : [];
     return { ...rest, quizzable: quizzableFacts(pickFacts([id]), history).length, ...(parts.length ? { parts } : {}) };
   };
-  return { items: shown.map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
+  return { items: [...shown].map(lean).filter((x): x is SkyItem => !!x), shelves, holds };
 }
 
 /** The tile for each id, the way the shelves ship them: what a streamed
