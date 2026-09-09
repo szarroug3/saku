@@ -113,7 +113,10 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
 }
 
 /** A card's hint, shown once asked for: a long one scrolls itself rather
- * than pushing the card up. */
+ * than pushing the card up. The text is written a line at a time, so a hint
+ * that is Japanese on one line and English on the next (a known word's
+ * reading over its component breakdown, SAK-429) draws each in its own face
+ * instead of putting the whole thing in the UI one. */
 export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
   if (!hint.image && !hint.text) return null;
   return (
@@ -122,7 +125,11 @@ export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={hint.image} alt="" className="size-[96px] rounded-md object-contain" />
       )}
-      {hint.text && <span>{hint.text}</span>}
+      {hint.text && (
+        <span className="flex flex-col gap-1">
+          {hint.text.split("\n").map((line, i) => <span key={i} className={japaneseFont(line)}>{line}</span>)}
+        </span>
+      )}
     </SkySurface>
   );
 }

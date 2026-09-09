@@ -141,6 +141,28 @@ function questionAsked(entry: string | undefined, dir: Direction, key: AnswerKey
   return `${entry ?? ""}|${dir}|${takes}`;
 }
 
+/** Whether a word's meaning card turns its reading into a hint instead of
+ * printing it under the glyph (SAK-429).
+ *
+ * Sam, 2026-09-08: "when i'm supposed to know the word, don't show the kana
+ * when it's kanji. that can be a hint instead." A meaning card asks what 行く
+ * means, and いく sitting under it answers half of that for free: read the
+ * kana, say the word out loud, remember what you said. The reading earns its
+ * place the first time the word is asked, where the quiz is still teaching
+ * the two halves together, and not after.
+ *
+ * So a word meaning card written with kanji hides the reading once the
+ * learner has been asked the fact before, or has claimed she knows it. A
+ * reading card keeps its context either way, because there the glosses are
+ * what tells a word's two readings apart, and a kana-only word never had a
+ * reading to print.
+ */
+function readingIsAHint(fact: FactId, glyph: string, history: HistoryFile): boolean {
+  if (factInfo(fact)?.subject !== VOCAB_SUBJECT || !(fact as string).includes("/meaning")) return false;
+  if (!/[一-龯]/.test(glyph)) return false;
+  return (history.facts?.[fact]?.seen ?? 0) > 0 || history.claims?.[fact] !== undefined;
+}
+
 /** The cards for some facts, in order. With `audio`, a card that has a
  * sound to ask by becomes a listening card half the time. */
 export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
@@ -199,10 +221,16 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition
     if (!options.some((op) => op.id === fact)) options.unshift({ id: fact, label: revealFor(fact, dir, ctx), jp: /[぀-ヿ一-龯]/.test(revealFor(fact, dir, ctx)) });
-    const hint = hintFor(fact, dir);
+    let hint = hintFor(fact, dir);
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
     const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
+    // SAK-429: the kana under a known word moves behind the Hint button. A
+    // listening card is left alone, since its glyph is off screen and its
+    // hint is already the written form. When the card has a hint of its own
+    // (the component breakdown), the reading goes first, on its own line.
+    const readingHint = !listenIt && prompt.context && !anchored && readingIsAHint(fact, prompt.glyph, history) ? prompt.context : "";
+    if (readingHint) hint = { kind: "text", text: hint?.kind === "text" ? `${readingHint}\n${hint.text}` : readingHint };
     // The box types kana for any card whose answer is Japanese, which is
     // every reading but a kana's: asked あ you say "a", and there is no
     // romaji for a meaning. A rolled counting card is read aloud, so it
@@ -231,7 +259,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     cards.push({
       id: fact,
       item,
-      prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
+      prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored && !readingHint ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
       ...(instruction ? { instruction } : {}),
       ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : {} } : {}),
       answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",

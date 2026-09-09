@@ -11,7 +11,7 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
-import type { FactId } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 import { matchesKey } from "@/lib/answer-key";
 import { grade } from "./grade";
@@ -253,3 +253,52 @@ function withRandom<T>(value: number, fn: () => T): T {
   Math.random = () => value;
   try { return fn(); } finally { Math.random = real; }
 }
+
+describe("the kana under a word she is supposed to know (SAK-429)", () => {
+  const asked = (fact: string): HistoryFile => ({
+    ...emptyHistory(),
+    facts: { [fact as FactId]: { seen: 2, missed: 0, firstTry: 2, correct: 2 } } as HistoryFile["facts"],
+  });
+  const claimed = (fact: string): HistoryFile => ({ ...emptyHistory(), claims: { [fact as FactId]: NOW } });
+  const cardFor = (history: HistoryFile, fact: string) => quizCards(history, [fact as FactId], NOW)[0];
+
+  it("keeps いく under 行く the first time the meaning is asked", () => {
+    // A lesson's first quiz teaches the reading alongside the meaning, so the
+    // one showing that has never been asked still prints it.
+    const card = cardFor(emptyHistory(), "word:行く/meaning");
+    assert.equal(card.prompt.context, "いく");
+    assert.ok(!card.hint?.text, "and it is not doubled into the hint");
+  });
+
+  it("takes it away once she has been asked, and puts it behind Hint", () => {
+    // Sam, 2026-09-08: the kana answers half of "what does 行く mean" for free.
+    const card = cardFor(asked("word:行く/meaning"), "word:行く/meaning");
+    assert.equal(card.prompt.context, undefined);
+    assert.equal(card.hint?.text, "いく");
+  });
+
+  it("treats a claimed word the same, since she said she knows it", () => {
+    const card = cardFor(claimed("word:行く/meaning"), "word:行く/meaning");
+    assert.equal(card.prompt.context, undefined);
+    assert.equal(card.hint?.text, "いく");
+  });
+
+  it("puts the reading first when the card already had a hint of its own", () => {
+    // 先生 breaks down into 先 and 生, and that breakdown keeps its place.
+    const card = cardFor(asked("word:先生/meaning"), "word:先生/meaning");
+    assert.equal(card.prompt.context, undefined);
+    assert.equal(card.hint?.text, "せんせい\n先 is before, 生 is life");
+  });
+
+  it("leaves a kana word alone, since it never had a reading to hide", () => {
+    const card = cardFor(asked("word:これ/meaning"), "word:これ/meaning");
+    assert.equal(card.prompt.context, undefined);
+    assert.ok(!card.hint?.text, "and there is nothing to hint at");
+  });
+
+  it("leaves a reading card its glosses, which are what tells its readings apart", () => {
+    const card = cardFor(asked("word:行く/reading"), "word:行く/reading");
+    assert.match(card.prompt.context ?? "", /to go/);
+    assert.ok(!card.hint?.text);
+  });
+});
