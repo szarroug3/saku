@@ -14,7 +14,7 @@ export const BATCH_17: Readonly<Record<string, string>> = {
   邪: "This glyph now means wicked, though it began as a place name. It uses the definition of 邑 (town) and the sound of 牙.",
   俗: "This glyph means customs or the vulgar. It uses the definition of 人 (person) and the sound of 谷: the ways of ordinary people.",
   削: "This glyph means to whittle or sharpen. It uses the definition of 刀 (knife) and the sound of 肖.",
-  威: "A broad axe beside a woman (女): overawing, commanding force. The axe was 戌; it is drawn here as 戍.",
+  威: "An axe beside a woman (女): overawing, commanding force. The axe is 戌, a broad blade on a shaft.",
   怠: "This glyph means laziness or neglect. It uses the definition of 心 (heart) and the sound of 台 (たい).",
   施: "This glyph means to bestow or carry out. It uses the sound of 也; its meaning comes from 㫃, a fluttering banner, drawn here as 方 with 𠂉.",
   星: "This glyph means star. It combines 晶 (a cluster of twinkling stars) with the sound of 生 (しょう).",

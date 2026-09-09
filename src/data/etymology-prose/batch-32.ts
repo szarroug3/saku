@@ -30,7 +30,7 @@ export const BATCH_32: Readonly<Record<string, string>> = {
   勃: "This glyph means to rise suddenly. It uses the definition of 力 (power) and the sound of 孛.",
   咽: "This glyph means throat. It uses the definition of 口 (mouth) and the sound of 因.",
   姻: "This glyph means marriage. It uses the definition of 女 (woman) and the sound of 因.",
-  帥: "A cloth sash (巾) with hands taking hold of it: to don the sash and lead troops. The hands were written 寻 and are now the strokes on the left.",
+  帥: "A cloth (巾) worn at the belt, which came to name the officer who leads troops. The strokes on its left are 𠂤, the same piece that stands in 師.",
   怨: "This glyph means grudge, resentment. It uses the definition of 心 (heart) and the sound of 夗.",
   拷: "This glyph means to beat or torture. It uses the definition of 手 (hand) and the sound of 考.",
   某: "A tree (木) bearing something sweet (甘): it once meant plum, then was borrowed for 'a certain one'.",
@@ -53,5 +53,5 @@ export const BATCH_32: Readonly<Record<string, string>> = {
   唄: "This glyph means song, ballad. It uses the definition of 口 (mouth) and the sound of 貝.",
   姫: "This glyph means princess. It uses the definition of 女 (woman) and the sound of 臣.",
   宮: "A roof (宀) over a run of connected rooms (呂): a palace.",
-  宰: "A house (宀) where governing is done: to manage, to rule. The governing piece was 乂, and it later corrupted into the 辛 below.",
+  宰: "A roof (宀) over a tattooing knife (辛), the mark put on a convict: the bound servant who ran the house, and so to manage and to rule.",
 };

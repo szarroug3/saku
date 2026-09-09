@@ -24,7 +24,7 @@ export const BATCH_34: Readonly<Record<string, string>> = {
   酵: "This glyph means fermentation. It uses the definition of 酉 (fermented drink) and the sound of 孝 (こう).",
   銃: "This glyph means gun. It uses the definition of 金 (metal) and the sound of 充 (じゅう).",
   墳: "This glyph means a burial mound. It uses the definition of 土 (earth) and the sound of 賁.",
-  慶: "A deer and a heart (心): the joy of receiving a prized deer, hence to celebrate. The deer was written 廌, and its body and tail corrupted into the 广 and 夂.",
+  慶: "A heart (心) and a foot (夂): going to congratulate someone. Shuowen reads the top as an abbreviated 鹿, a deer, because deerskin was the gift brought to a celebration.",
   憬: "This glyph means to yearn for. It uses the definition of 心 (heart) and the sound of 景.",
   摯: "This glyph means sincerity or a gift. It uses the definition of 手 (hand) and the sound of 執.",
   潟: "This glyph means lagoon. It uses the definition of 水 (water) and the sound of 舄.",

@@ -39,7 +39,7 @@ export const BATCH_18: Readonly<Record<string, string>> = {
   幻: "The origin is unclear.",
   令: "The original glyph put an open mouth (亼) above a kneeling man (卩): to command. The parts drawn now are 人, 一 and マ.",
   史: "A hand (又) holding a recording tool: the act of taking notes, now history.",
-  旦: "This glyph means daybreak. It uses the definition of 日 (sun) and the sound of 一, which was written 丁. Reading the 一 as the horizon is folk etymology.",
+  旦: "This glyph means daybreak. Shuowen reads it as the sun (日) coming up over the ground line (一). Some sources instead take the lower stroke as 丁, carrying the sound.",
   伏: "A person (人) beside a dog (犬) lying low: to prostrate, to bow down.",
   劣: "Little (少) strength (力): to be inferior, to be worse.",
   旬: "This glyph means a ten-day period. It uses the definition of 日 (sun, standing for days) and the sound of 勹. That 勹 is a misreading of an older sound piece, 螾, and the shape has kept the mistake.",

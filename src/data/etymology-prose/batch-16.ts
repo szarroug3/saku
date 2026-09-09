@@ -7,7 +7,7 @@ export const BATCH_16: Readonly<Record<string, string>> = {
   魚: "The original glyph looked like a fish.",
   漁: "Water (水) beside a fish (魚): to fish, fishing. The 魚 also lends the sound ぎょ.",
   緒: "This glyph means the end of a thread, or a beginning. It uses the definition of 糸 (thread) and the sound of 者.",
-  練: "This glyph means to train or practice. It uses the definition of 糸 (silk) and the sound of 東, which the record writes 柬.",
+  練: "This glyph means to train or practice. It uses the definition of 糸 (silk); the sound piece is 柬, which the Japanese form writes 東.",
   複: "This glyph means double or duplicate. It uses the definition of 衣 (clothes) and the sound of 复, originally a lined garment.",
   鳴: "A mouth (口) beside a bird (鳥): a bird's cry, to chirp.",
   儀: "This glyph means ceremony or rule. It uses the definition of 人 (person) and the sound of 義 (ぎ).",

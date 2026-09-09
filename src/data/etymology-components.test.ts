@@ -261,9 +261,10 @@ test("the check's reach is what the review says it is", () => {
 
 test("知, the case the review found by hand, now names its own parts", () => {
   // The story told the learner 知 was "an adult (大), a mouth (口), and a child
-  // (子)" while the tiles beside it read 矢 and 口. Rewritten in SAK-424: the
-  // adult and the child are still in the story, but as history the shape left
-  // behind, not as pieces on the page.
+  // (子)" while the tiles beside it read 矢 and 口. Rewritten in SAK-424, and
+  // then again after the reader pass: the adult and the child are gone, because
+  // no source has them, and the story now names 矢 and 口 and says plainly that
+  // how they came to mean knowing is not settled.
   assert.deepEqual([...partsOf("知")], ["矢", "口"]);
   assert.equal(
     disagreements().find((d) => d.glyph === "知"),

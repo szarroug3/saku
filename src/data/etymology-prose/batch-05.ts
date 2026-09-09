@@ -14,7 +14,7 @@ export const BATCH_05: Readonly<Record<string, string>> = {
   指: "This glyph means finger. It uses the definition of 手 (hand) and the sound of 旨 (し).",
   母: "The original glyph looked like 女 (woman) with two dots added for the breasts: a mother.",
   海: "This glyph means sea. It uses the definition of 水 (water) and the sound of 每.",
-  退: "A foot walking away (⻌) from a food vessel: rising from the table, to withdraw. The vessel was 皀, simplified into the unrelated 艮, and the foot was written 夊.",
+  退: "A foot walking away (⻌): to withdraw. The earlier shape set that foot beside 日, the sun going down, and wrote the walking piece 夊; the 艮 drawn now is what became of them.",
   配: "A person kneeling beside a wine jar (酉): pouring out and sharing wine, to distribute. The kneeling piece was 卩 and is now drawn 己.",
   張: "This glyph means to stretch. It uses the definition of 弓 (bow) and the sound of 長 (ちょう).",
   早: "This glyph means early. It uses the definition of 日 (sun) and the sound of 十, which the bronze forms write 棗. Shuowen reads the lower piece as 甲 instead, so it is not settled.",
@@ -58,5 +58,5 @@ export const BATCH_05: Readonly<Record<string, string>> = {
   共: "The original glyph showed two hands (廾) holding up an object (口): doing something together. Later the object fused with the hands, and only the 八 at the foot is left of them.",
   多: "Two pieces of meat stacked, later written as a doubled 夕: a pile of things, many.",
   安: "This glyph means calm. It uses the definition of 宀 (roof) and the sound of 女.",
-  死: "This glyph means death. It uses the definition of 歹 (bare bones) and the sound of 匕, which the record writes 尸, a body.",
+  死: "This glyph means death. It joins bare bones (歹) and a person (匕): the living parted from the dead. Shuowen writes that person 人.",
 };

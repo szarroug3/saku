@@ -6,7 +6,7 @@ export const BATCH_11: Readonly<Record<string, string>> = {
   他: "This glyph means other. It uses the definition of 人 (man) and the sound of 也.",
   包: "A womb (勹) wrapped around what is inside: to wrap, to cover. The inner piece is drawn 己. The sources read it as a fetus, written 巳, or as a swaddled baby, and which is right is not settled.",
   北: "The original glyph showed two people standing back to back. It first meant back, then came to mean north.",
-  句: "This glyph means phrase. It uses the sound of 口, and its meaning comes from two entangled ropes, once written 丩 and now drawn like the unrelated 勹.",
+  句: "This glyph means phrase. It uses the definition of 口 (mouth). The sound came from 丩, two entangled ropes, now drawn like the unrelated 勹.",
   台: "This glyph means a stand. It uses the definition of 口 (mouth) and the sound of 厶, which stands for 㠯 in the bronze inscriptions.",
   井: "The original glyph looked like the square wooden frame built around the mouth of a well.",
   囲: "This glyph means to surround. It uses the definition of 囗 (enclosure) and the sound of 井.",

@@ -43,7 +43,7 @@ export const BATCH_09: Readonly<Record<string, string>> = {
   造: "This glyph means to make or build. It uses the definition of 辵 (to go) and the sound of 告.",
   降: "This glyph means to descend. It uses the definition of 阜 (hill) and the sound of 夅, coming down a slope.",
   掛: "This glyph means to hang or hook. It uses the definition of 手 (hand) and the sound of 卦.",
-  替: "Two figures changing places above 日: to swap, to substitute. Those figures were 立 and 立, together written 竝, and they have become the two 夫.",
+  替: "Two figures changing places above 曰, a mouth speaking: to swap, to substitute. Those figures were 立 and 立, together written 竝, and they have become the two 夫.",
   減: "This glyph means to decrease. It uses the definition of 水 (water) and the sound of 咸, damming a stream to slow its flow.",
   番: "This glyph means a turn or a number in a series. It uses the definition of 田 (field) and the sound of 釆.",
   程: "This glyph means extent or degree. It uses the definition of 禾 (grain) and the sound of 呈 (てい).",

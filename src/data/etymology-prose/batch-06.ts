@@ -42,7 +42,7 @@ export const BATCH_06: Readonly<Record<string, string>> = {
   調: "This glyph means tune or tone. It uses the definition of 言 (speech) and the sound of 周.",
   冊: "The original glyph looked like bamboo writing slips strung together: a book, a volume.",
   論: "This glyph means argument or discourse. It uses the definition of 言 (speech) and the sound of 侖.",
-  難: "This glyph now means difficult, but it first named a kind of bird. It uses the definition of 隹 (bird); the sound piece was 暵, whose 𦰩 is drawn here as 艹 over 口 and 夫.",
+  難: "This glyph now means difficult, but it first named a kind of bird. It uses the definition of 隹 (bird); the sound piece was 堇, whose top is drawn here as 艹 over 口 and 夫.",
   義: "This glyph means righteousness. It uses the definition of 羊 (here meaning good and auspicious) and the sound of 我.",
   違: "This glyph means to differ. It uses the definition of 辵 (movement) and the sound of 韋.",
   質: "Two axes (斤 and 斤) set against a cowrie shell (貝, money): goods given as a pledge, hence substance and quality. The pair of axes is written 斦 on its own.",
