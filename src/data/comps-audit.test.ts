@@ -45,6 +45,8 @@ import { describe, test } from "node:test";
 
 import radicalsJson from "./generated/kanji-radicals.json" with { type: "json" };
 import radicalDefsJson from "./generated/radicals.json" with { type: "json" };
+import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
+import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import { primitiveStrokes } from "./components.ts";
 import { KANJI, KANJI_ORDER, kanjiRow, variantOriginal } from "./kanji.ts";
 
@@ -165,7 +167,7 @@ describe("over-count corrections — no fixed kanji lists a part too many times"
     斎: ["斉", "示"],
     // other single-shape splits
     可: ["丁", "口"], 吏: ["丈", "口"], 式: ["弋", "工"], 戒: ["戈", "廾"],
-    戚: ["戊", "尗"], 威: ["戍", "女"], 憩: ["舌", "息"], 必: ["心", "丿"],
+    戚: ["戊", "尗"], 威: ["戌", "女"], 憩: ["舌", "息"], 必: ["心", "丿"],
     黙: ["黒", "犬"], 修: ["攸", "彡"], 充: ["亠", "允"], 由: ["日", "丨"],
     東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
     // number kanji
@@ -198,6 +200,55 @@ describe("over-count corrections — no fixed kanji lists a part too many times"
         assert.ok(n <= (allow.get(p) ?? 0), `${c}: "${p}" appears ${n}×, over-count`);
       }
     }
+  });
+});
+
+describe("the 戌 / 戍 pair, which KanjiVG swaps in both directions (SAK-431)", () => {
+  // 戌 (the 11th earthly branch, drawn as a broad axe) and 戍 (to garrison) are
+  // two characters one stroke apart, and KanjiVG confuses them BOTH WAYS: it
+  // names the piece 戍 with kvg:original="戌" inside 威 and 幾, and names the
+  // same shape 戌 with kvg:original="戍" inside 歳 and 滅. The variant map
+  // already refuses the pairing in either direction (variant-forms.ts), so
+  // nothing collapses one into the other and the label KanjiVG picked is what
+  // the "Made of" tiles draw. Four of the five hosts got the right label
+  // anyway. 威 did not, and its tiles drew a piece the glyph does not have
+  // while its origin story named the piece it does. COMPS_OVERRIDE settles it.
+  const SOURCE: Readonly<Record<string, readonly string[]>> = (
+    kanjiComponentsJson as { comps: Record<string, readonly string[]> }
+  ).comps;
+  const WIKTIONARY = (
+    etymologyJson as { data: Record<string, { components: { glyph: string }[] }> }
+  ).data;
+
+  test("威 is built from 戌, not 戍", () => {
+    assert.deepEqual(kanjiRow("威")?.comps, ["戌", "女"]);
+    assert.ok(kanjiRow("威")?.comps.includes("戌"), "威 has the broad axe 戌.");
+    assert.ok(!kanjiRow("威")?.comps.includes("戍"), "威 has no garrison 戍.");
+  });
+
+  test("Wiktionary, the other source in the repo, says the same", () => {
+    assert.deepEqual(
+      WIKTIONARY["威"]?.components.map((c) => c.glyph),
+      ["戌", "女"],
+      "generated/kanji-etymology.json is read from Wiktionary, not from KanjiVG.",
+    );
+  });
+
+  test("the correction lives in the override, because the ingest is faithful", () => {
+    // KanjiVG really does say 戍 here, so a re-cut cannot be expected to fix it
+    // and the generated file is left exactly as the ingest wrote it. If this
+    // assertion ever fails, upstream has corrected 05a01.svg and the override
+    // entry can go.
+    assert.deepEqual(SOURCE["威"], ["戍", "女", "戍"]);
+  });
+
+  test("the four hosts KanjiVG labelled correctly are untouched", () => {
+    // 幾 and 蔑 really are built on 戍 (to guard); 歳 and 滅 really are built on
+    // 戌. Nothing here is overridden, and the fix must not spread to them.
+    assert.deepEqual(kanjiRow("幾")?.comps, ["幺", "幺", "戍"]);
+    assert.deepEqual(kanjiRow("蔑")?.comps, ["艹", "罒", "戍"]);
+    assert.deepEqual(kanjiRow("歳")?.comps, ["止", "戌", "小"]);
+    assert.deepEqual(kanjiRow("滅")?.comps, ["氵", "戌", "火"]);
   });
 });
 

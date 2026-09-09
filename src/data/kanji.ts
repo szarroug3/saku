@@ -277,6 +277,11 @@ const COMPS: Readonly<Record<string, readonly string[]>> = (
  * a single non-parent (母→毋, 巨→匚) or an arbitrary carving of a unitary
  * pictograph (兆, 曲) are set atomic [] — their parts are not a real build.
  *
+ * ONE entry corrects the CHARACTER and not only the count: 威, whose piece
+ * KanjiVG names 戍 while every source has 戌 (SAK-431, see the entry). That is
+ * the exception the rule above is stated against, and it is written out in
+ * place so a second one cannot arrive unexplained.
+ *
  * NOT edited into the generated JSON: kanji-components.json is re-cut by
  * scripts/ingest/kanjivg.mjs, so a hand fix there is lost on the next ingest.
  * The override is the durable home. src/data/comps-audit.test.ts pins the set.
@@ -302,7 +307,19 @@ export const COMPS_OVERRIDE: Readonly<Record<string, readonly string[]>> = {
   斎: ["斉", "示"],
   // Other single-shape splits: the part is drawn once, emitted twice.
   可: ["丁", "口"], 吏: ["丈", "口"], 式: ["弋", "工"], 戒: ["戈", "廾"],
-  戚: ["戊", "尗"], 威: ["戍", "女"], 憩: ["舌", "息"], 必: ["心", "丿"],
+  戚: ["戊", "尗"], 憩: ["舌", "息"], 必: ["心", "丿"],
+  // 威 is also the one WRONG-CHARACTER correction (SAK-431). KanjiVG splits the
+  // top-left piece part1/part2 like the rest of this group, but it also names
+  // that piece 戍 while marking it kvg:variant with kvg:original="戌", and it
+  // makes the swap in both directions, calling the same shape 戌 with original
+  // 戍 inside 歳 and 滅. Every source has 威 as 戌 (a broad axe) beside 女:
+  // Wiktionary (generated/kanji-etymology.json reads "semantic 戌 + semantic
+  // 女"), Shuowen and Jisho. KanjiVG's own strokes settle it too: the piece's
+  // inner stroke in 05a01.svg is a 一 (kvg:element="一", type ㇐), which is 戌;
+  // 戍 has a 丿 there. So this entry corrects the character as well as the
+  // count. Where KanjiVG names the piece 戍 and is RIGHT (幾, 蔑) nothing is
+  // overridden.
+  威: ["戌", "女"],
   黙: ["黒", "犬"], 修: ["攸", "彡"], 充: ["亠", "允"], 由: ["日", "丨"],
   東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
   // Number kanji the owner is reviewing.

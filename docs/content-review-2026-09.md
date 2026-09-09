@@ -645,6 +645,14 @@ and which reader. Nothing here has been changed.
 All 317, the ones whose named piece is in no etymology record first. "The
 glyph's parts" is what the "Made of" tiles show the learner.
 
+The list is a dated snapshot and its counts are left as they were read. One row
+is settled: **威 (SAK-431)**, where the story was right and the tiles were
+wrong. KanjiVG names its top-left piece 戍 while marking it a variant of 戌,
+and it makes the same swap the other way inside 歳 and 滅; Wiktionary, Shuowen
+and Jisho all give 戌 + 女, and KanjiVG's own strokes draw a 一 inside the
+frame, which is 戌. The decomposition was corrected rather than the wording, so
+威 is off the test's list and the check is at 316.
+
 | Glyph | Pieces the story names that it does not have | The glyph's parts | The story |
 |---|---|---|---|
 | 夜 | 亦 | 亠 亻 夕 | This glyph means night. It uses the definition of 夕 (moon) and the sound of 亦. |
