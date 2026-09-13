@@ -257,6 +257,89 @@ export const SETS: CharSet[] = [
   },
 ];
 
+// ---------- how the sound is spelled in English ----------
+//
+// A kana card asks how the character is SAID, and "a" is not how an English
+// speaker spells a sound. Shown あ she types "ah", and a drill that marks that
+// wrong is telling her that her own ear is wrong, over a question it asked in
+// English (SAK-435). So every kana accepts the sound spelling beside its
+// romaji. The romaji stays first everywhere it is shown, because it is what the
+// lesson teaches and what a keyboard takes.
+//
+// THE RULE, in one line: the Hepburn consonant, then the English spelling of
+// its vowel. a is ah, i is ee, u is oo, e is eh, o is oh. So か takes "kah",
+// し takes "shee", つ takes "tsoo", りょ takes "ryoh". Derived here from the
+// romaji the rows already carry rather than typed out a hundred times, so the
+// two cannot drift apart and a row added above is covered for free.
+//
+// ONLY THE HEPBURN FORM converts, which is the first of a row's accepted
+// answers. "si" is a keyboard spelling of し, not a sound anybody hears, so it
+// grows no "see"; the sound spelling follows the sound, and Hepburn is the one
+// that writes it.
+//
+// Two fixed forms the rule does not reach, both Sam's call:
+//   ぎ takes "gee" AND "ghee", since English spells this hard g both ways.
+//   を takes "woh" AND "oh", since it is written wo and said o.
+// ん keeps "n" and "nn" and gains nothing: it has no vowel for the rule to
+// convert. Nothing is added for long vowels or the small っ either, which are
+// word-level and typed in kana.
+//
+// NOT ACCEPTED: "ay" for え. It is the spelling an English speaker reaches for
+// and it is the wrong sound, since え has no glide, so accepting it would grade
+// as right the exact mistake the lesson warns about ("No glide. It's eh, not
+// ay."). Sam ruled on this one directly.
+//
+// WHY THIS IS A SECOND TABLE AND NOT MORE ENTRIES IN `R`. `R` is read by three
+// things that must not see these strings. `src/lib/romaji.ts` builds the
+// reverse index the typing box converts with, so "ah" inside `R` would type あ
+// and "koh" would eat the ko of こひ. The Library prints `r` as the entry's
+// readings, and あ is not read "ah". And the grader's English layer fuzzes any
+// answer of four letters or more by one edit, which over these would accept
+// "chee" for し and "soo" for つ. So the sound spellings are published
+// separately and the kana question type adds them as EXACT alternates only
+// (see `kanaQuestions` in src/lib/engine/question.ts).
+const VOWEL_SOUNDS: Record<string, string> = {
+  a: "ah",
+  i: "ee",
+  u: "oo",
+  e: "eh",
+  o: "oh",
+};
+
+/** The two the rule alone gets wrong, keyed by the Hepburn form. */
+const FIXED_SOUNDS: Record<string, string[]> = {
+  gi: ["gee", "ghee"],
+  wo: ["woh", "oh"],
+};
+
+function soundsOf(hepburn: string): string[] {
+  const fixed = FIXED_SOUNDS[hepburn];
+  if (fixed) return fixed;
+  const vowel = VOWEL_SOUNDS[hepburn.slice(-1)];
+  return vowel ? [hepburn.slice(0, -1) + vowel] : [];
+}
+
+const SOUND_SPELLINGS: Record<string, string[]> = buildSoundSpellings();
+
+function buildSoundSpellings(): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const set of SETS) {
+    for (const section of set.sections) {
+      for (const ch of section.chars) {
+        const sounds = soundsOf(ch.r[0]).filter((s) => !ch.r.includes(s));
+        if (sounds.length > 0) out[ch.c] = sounds;
+      }
+    }
+  }
+  return out;
+}
+
+/** How this kana's sound is spelled in English, accepted beside its romaji.
+ * Empty for ん, which has no vowel, and for anything that is not a kana. */
+export function soundSpellingsFor(c: string): string[] {
+  return SOUND_SPELLINGS[c] ?? [];
+}
+
 /** Commonly-confused characters — MC distractors + results grouping. */
 // Groups can mix scripts. Order preserved from legacy/characters.py.
 export const LOOKALIKES: string[][] = [

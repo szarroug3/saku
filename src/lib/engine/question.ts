@@ -26,7 +26,7 @@
 // things you need to ask one, and the drill screen knows none of them.
 
 import { PITCH_SUBJECT } from "@/data/pitch";
-import { CHAR_INDEX, KANA_SUBJECT, LOOK_GROUP, kanaFact } from "@/data/characters";
+import { CHAR_INDEX, KANA_SUBJECT, LOOK_GROUP, kanaFact, soundSpellingsFor } from "@/data/characters";
 import { distractorsFor } from "@/data/confusable";
 import { crossScriptLookalikes } from "@/data/cross-script";
 import {
@@ -540,6 +540,58 @@ function jp2enKey(fact: FactId): AnswerKey {
   return { ...englishKey(info.answers), produce: [...info.answers] };
 }
 
+// ---------- a kana's sound, spelled in English ----------
+//
+// SAK-435. Asked how あ is said, an English speaker types "ah", and that is the
+// right answer to the question the card asked. `soundSpellingsFor` publishes
+// the spelling for every kana, derived from the romaji by one rule (see the
+// block above it in src/data/characters.ts).
+//
+// EXACT, AND NOTHING ELSE. These strings deliberately do not join
+// `FactInfo.answers`, and a kana no longer grades through the English matcher
+// at all. Both halves of that are the same reason: a kana's answer is a SOUND
+// written in latin letters, and the English layers treat latin letters as an
+// English word.
+//
+// The typo layer fuzzes any candidate of four letters or more by one edit. Every
+// romaji in the table is three letters or fewer, so that layer has never had
+// anything to do here, and it wakes up the moment a four-letter sound spelling
+// is filed as an answer: "chee" would grade right for し, "soo" for つ, "kyoh"
+// for きゃ. Each of those is a DIFFERENT kana's answer, which is the one thing a
+// drill must never accept.
+//
+// The synonym pool is worse and was already here. It is built from WordNet and
+// keyed by the answer string, so it reads "sa", "ka" and "re" as English words
+// and hands each kana a pool of them: 210 of the 214 kana carried one, 1,762
+// strings in all. Most were only strange (さ took "cpp", ど took "karate"), but
+// 38 were another kana's own answer, so the drill graded "re" right for ら,
+// "ra" right for れ, "te" and "ti" right for し, and "oo", the approved sound
+// spelling of う, right for か. SAK-435 promises that a sound spelling never
+// reaches another kana, and it cannot promise that through a pool that was
+// already doing it, so kana stops using the pool. Nothing English is lost: あ
+// does not mean anything, which is why `answerIsMeaning` is false for every
+// card in this subject.
+//
+// So the whole of what a kana card accepts is its romaji and its sound
+// spellings, compared after `norm` (case and spacing), and the key says exactly
+// the same thing through `loose`, which is matched by equality and never fuzzed.
+
+/** Everything a kana card accepts: the romaji it is taught by, then the English
+ * spellings of the sound. */
+function kanaAnswers(fact: FactId): string[] {
+  return [...(factInfo(fact)?.answers ?? []), ...soundSpellingsFor(glyphOfFact(fact))];
+}
+
+function checkKanaJp2en(fact: FactId, given: string): boolean {
+  const g = norm(given);
+  return !!g && kanaAnswers(fact).some((a) => norm(a) === g);
+}
+
+/** The twin of `checkKanaJp2en`. */
+function kanaJp2enKey(fact: FactId): AnswerKey {
+  return { loose: kanaAnswers(fact).map(norm) };
+}
+
 /** The twin of `checkEn2jp`. */
 function en2jpKey(fact: FactId): AnswerKey {
   return { produce: [en2jpTarget(fact)] };
@@ -667,11 +719,11 @@ const kanaQuestions: QuestionType = {
     // romaji is the prompt, so forgiving it grades the prompt as the answer.
     // MC options carry the glyph, so exact match is all the board ever needs.
     return dir === "jp2en"
-      ? checkJp2en(fact, given)
+      ? checkKanaJp2en(fact, given)
       : given.trim() === glyphOfFact(fact);
   },
   answerKey(fact, dir) {
-    return dir === "jp2en" ? jp2enKey(fact) : { strict: [glyphOfFact(fact)] };
+    return dir === "jp2en" ? kanaJp2enKey(fact) : { strict: [glyphOfFact(fact)] };
   },
   // SAK-49: a beginner who knows five vowels was seeing しょ/ちゅ/じゃ as MC
   // options for a plain vowel — distractors came from the entire kana set
