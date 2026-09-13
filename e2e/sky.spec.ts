@@ -870,6 +870,18 @@ test("a lesson card's sections fold and unfold on their title rows", async ({ pa
   await expect(panel).toHaveCount(0);
 });
 
+test("a reading with no word behind it says so instead of showing a blank cell", async ({ page }) => {
+  // SAK-295. 面 is おもて in the dictionary and in no word this app teaches, so
+  // the third column of that row has nothing to hold. Six rows in the whole
+  // set are like this; the rest name the words the reading is read in.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:面")}`);
+  await page.getByRole("button", { name: "Open Readings" }).click();
+  const row = page.getByRole("listitem").filter({ hasText: "おもて" });
+  await expect(row.getByText("no word taught yet")).toBeVisible();
+  // and the reading beside it keeps its words and its ink
+  await expect(page.getByRole("listitem").filter({ hasText: "no word taught yet" })).toHaveCount(1);
+});
+
 test("the why behind writing early folds open under the card that raises it", async ({ page }) => {
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
   await page.getByRole("button", { name: "Open How it's written" }).click();

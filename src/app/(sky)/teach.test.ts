@@ -126,5 +126,44 @@ describe("a ずる verb says it is the older spelling", () => {
     for (const form of ["感じます", "感じられる", "感じれば"]) {
       assert.ok(note.includes(form), `${form} is missing from the note`);
     }
+
+  });
+});
+
+// A READING NOTHING TEACHES YET (SAK-295, SAK-432). The readings table on a
+// kanji's card has three columns: hear it, the reading, the words it is read
+// that way in. Six rows in the whole set reach the third column with nothing
+// to put in it, because every word that used to attest the reading was dropped
+// when the vocabulary said it no longer takes it. The card dims such a row and
+// writes "no word taught yet" where the words would be, and the empty list is
+// what it reads to decide: there is no separate flag to keep in step with it.
+describe("a kanji reading with no word behind it", () => {
+  const readingsOf = (glyph: string) => atlasEntryFromHistory(emptyHistory(), `kanji:${glyph}`, NOW)?.teach?.readings ?? [];
+  const find = (glyph: string, reading: string) => readingsOf(glyph).find((r) => r.reading === reading);
+
+  it("comes through the teaching with an empty word list, which is the mark", () => {
+    // 面 is おもて in the dictionary and in no word this app teaches
+    const omote = find("面", "おもて");
+    assert.ok(omote, "面 has no おもて row");
+    assert.deepEqual(omote.words, []);
+  });
+
+  it("is the rare one: the readings beside it carry their words", () => {
+    const rows = readingsOf("面");
+    assert.ok(rows.length > 1, "面 has only one reading");
+    const taught = rows.filter((r) => r.words.length > 0);
+    assert.ok(taught.length > 0, "not one of 面's readings has a word");
+    for (const r of taught) assert.ok(r.words.every((w) => w.includes("面")), `${r.reading} is attested by a word without 面 in it`);
+  });
+
+  it("is how the other five read too", () => {
+    // the whole set of them, so a change in the vocabulary that empties or
+    // fills one of these rows is a test that fails rather than a card that
+    // quietly says something new
+    const empty: string[] = [];
+    for (const [glyph, reading] of [["仏", "ふつ"], ["埋", "うず"], ["畳", "じょう"], ["背", "せい"], ["開", "ひら"], ["面", "おもて"]] as const) {
+      if (find(glyph, reading)?.words.length === 0) empty.push(`${glyph}/${reading}`);
+    }
+    assert.deepEqual(empty, ["仏/ふつ", "埋/うず", "畳/じょう", "背/せい", "開/ひら", "面/おもて"]);
   });
 });

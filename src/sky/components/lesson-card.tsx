@@ -151,15 +151,29 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
   // still a list to a screen reader. A long list of words wraps inside column
   // three, never back under the reading.
   const readingGrid = Hear ? "grid grid-cols-[auto_auto_minmax(0,1fr)]" : "grid grid-cols-[auto_minmax(0,1fr)]";
+  // A ROW WITH AN EMPTY THIRD COLUMN SAYS WHY IT IS EMPTY (SAK-295). Six of
+  // the 3,496 reading rows have no word left attesting them once the words
+  // that no longer take the reading are dropped: 面's おもて, 開's ひら, 仏's
+  // ふつ. The dictionary lists the reading, so the table lists it too, but
+  // nothing can teach it and `quizzableFacts` will not ask it, since the gate
+  // is "a word carrying this reading has been met" and there is no such word
+  // to meet. Printed as a blank cell it read as a bug; dimmed, with the reason
+  // in the column that would have held the words, it reads as the fact it is.
+  // The empty list IS the mark: there is no second flag to keep in step.
   const readingRows = (rows: typeof on) => (
     <ul className="contents">
-      {rows.map((r) => (
-        <li key={r.reading} className="contents">
-          {Hear && <Hear glyph={r.reading} />}
-          <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>
-          <span className={r.words.length > 0 ? `font-sky-display ${japaneseFont(r.words[0])}` : ""}>{r.words.join("  ")}</span>
-        </li>
-      ))}
+      {rows.map((r) => {
+        const untaught = r.words.length === 0;
+        return (
+          <li key={r.reading} className="contents">
+            {Hear && <Hear glyph={r.reading} />}
+            <span className={`font-sky-display text-[16px] ${untaught ? "text-sky-muted" : "text-sky-ink"} ${japaneseFont(r.reading)}`}>{r.reading}</span>
+            {untaught
+              ? <span className="text-sky-muted">no word taught yet</span>
+              : <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
+          </li>
+        );
+      })}
     </ul>
   );
 
