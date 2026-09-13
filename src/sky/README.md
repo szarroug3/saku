@@ -4317,6 +4317,18 @@ person rerunning happened to have. 判 is pinned in `SENTENCE_READING_OVERRIDES`
 the table that already exists for a tagger that is confidently wrong rather than
 refusing, so the file is now the same on either build.
 
+**One question the reading raised and did not answer.** 231 spans are the
+written form plus a tail, because the chain keeps absorbing after the word
+itself. For the 120 whose word is a na-adjective that is right: 危険です, 大好きな
+and 裕福に are the word's own forms, and the app's Forms section shows them. The
+other 111 are words with no conjugation class at all, where the tail is the
+copula rather than an inflection: 仕事です, 写真だ, 台風なら, あいつなら. Nothing
+there is on the wrong word, so the rule above accepts it, but whether a plain
+noun's underline should stop at the noun is a call about what the highlight is
+for, not something to settle inside a span check. UniDic's own tags cannot make
+it either, since it files 危険, 便利 and 冷静 as 名詞 alongside 仕事 and 写真.
+Left on the card for Sam.
+
 **The gates.** `npx tsc --noEmit` and `npx eslint src scripts` clean. 3,913 unit
 tests pass, 1 skipped, the same count as before: the span test was rewritten
 rather than added to. No page changed, so no e2e run.
