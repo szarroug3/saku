@@ -34,7 +34,7 @@ test("settings keep a change across a reload", async ({ page }) => {
 test("the quiz grades a typed answer and reveals on giving up", async ({ page }) => {
   await page.goto("/quiz?sample");
   await expect(page.getByRole("heading", { name: "Tonight's drill", exact: true })).toBeVisible();
-  const box = page.getByPlaceholder(/The reading, in romaji|The meaning, in English|Your answer/);
+  const box = page.getByPlaceholder(/In romaji, or how it sounds|The meaning, in English|Your answer/);
   await box.fill("zzz");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText(/^Not that\./)).toBeVisible();
@@ -47,7 +47,7 @@ test("the quiz accepts a right answer typed in romaji, with the engine nowhere n
   // the card. The sample deck opens on あ asked for its reading, so "a" is
   // right and has to be graded right by the key alone.
   await page.goto("/quiz?sample");
-  const box = page.getByPlaceholder("The reading, in romaji");
+  const box = page.getByPlaceholder("In romaji, or how it sounds");
   await box.fill("a");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("Perfect", { exact: true })).toBeVisible();
@@ -60,6 +60,17 @@ test("the quiz accepts a right answer typed in romaji, with the engine nowhere n
   );
   const total = sizes.reduce((a, b) => a + b, 0);
   expect(total, `the quiz shipped ${(total / 1024 / 1024).toFixed(1)} MB of script`).toBeLessThan(4 * 1024 * 1024);
+});
+
+test("the quiz takes how the sound is spelled in English, not only the romaji", async ({ page }) => {
+  // SAK-435. The same あ card, answered "ah", which is what an English speaker
+  // types when asked how a character is said. The spelling is worked out on the
+  // server and rides in the card's key, so this proves the whole chain.
+  await page.goto("/quiz?sample");
+  const box = page.getByPlaceholder("In romaji, or how it sounds");
+  await box.fill("ah");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Perfect", { exact: true })).toBeVisible();
 });
 
 test("a lesson's quiz rests between rounds", async ({ page }) => {
@@ -347,7 +358,7 @@ test("a missed card says what you said, all of it", async ({ page }) => {
   // SAK-387. It read "You put" and showed only the last guess, so missing a
   // card twice hid the two things you confused, which is what the line is for.
   await page.goto("/quiz?sample");
-  const box = page.getByPlaceholder(/The reading, in romaji|The meaning, in English|Your answer/);
+  const box = page.getByPlaceholder(/In romaji, or how it sounds|The meaning, in English|Your answer/);
   await box.fill("zzz");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText(/^Not that\./)).toBeVisible();
@@ -696,7 +707,7 @@ test("a card answered after a retry still shows what was said before it was righ
   // the deck is dealt (SAK-388), so which vowel is in front of you is read off
   // the card rather than assumed
   const glyph = (await page.locator("p.font-sky-display").first().innerText()).trim();
-  const box = page.getByPlaceholder("The reading, in romaji");
+  const box = page.getByPlaceholder("In romaji, or how it sounds");
   await box.fill("zzz");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText(/^Not that\./)).toBeVisible();

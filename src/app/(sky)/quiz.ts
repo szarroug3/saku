@@ -269,7 +269,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     asked.add(question);
     const rule = readingRuleFor(fact, item);
     const instruction = listenIt
-      ? (item.kind === "kana" ? "Listen, then type the reading in romaji." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
+      ? (item.kind === "kana" ? "Listen, then type the reading in romaji, or how it sounds." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
       : construction
         ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
         : quizInstruction(fact, dir, typed ? "typed" : "mc", vehicle ?? undefined);

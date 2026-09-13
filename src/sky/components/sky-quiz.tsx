@@ -376,7 +376,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                         ref={input}
                         value={given}
                         onChange={(e) => setGiven(card.answerInKana && toKana ? toKana(e.target.value, card.answerInKana === "katakana") : e.target.value)}
-                        placeholder={card.answerIs === "reading" ? (card.answerInKana ? "The reading" : "The reading, in romaji") : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
+                        placeholder={card.answerIs === "reading" ? (card.answerInKana ? "The reading" : "In romaji, or how it sounds") : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
                         className="min-w-0 flex-1"
                       />
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
