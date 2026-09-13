@@ -51,7 +51,50 @@ const ROUTES = {
   "/account": ["app/(sky)/account/page_client-reference-manifest.js", 1.5],
   "/how-it-works": ["app/(sky)/how-it-works/page_client-reference-manifest.js", 1.5],
   "/about": ["app/(sky)/about/page_client-reference-manifest.js", 1.5],
+  "/login": ["app/(sky)/login/page_client-reference-manifest.js", 1.5],
 };
+
+// WHY THIS LIST IS CHECKED AGAINST THE TREE (SAK-433). The comment above has
+// always asked for a line per route, and asking is all it did: this script ran
+// for months naming `/dev/scheduling`, a page deleted with the old app a round
+// earlier, and failed every time on a manifest that could not exist. It was
+// noticed by hand and fixed by hand (SAK-398). The reverse went unnoticed for
+// longer, which is the worse half: `/login` has had a page of its own and no
+// budget at all, so the one route where a stray import would ship the most to a
+// signed-out visitor was the one route nothing measured.
+//
+// So the list is now derived-checked rather than trusted. Every `page.tsx` under
+// src/app maps to exactly one route here, and every route here maps back. A new
+// page fails until it is budgeted; a deleted one fails until its line goes. The
+// `(sky)` segment is a route group and contributes nothing to the URL, which is
+// the one rule this needs to know.
+const APP_DIR = "src/app";
+
+/** Every route with its own page.tsx, as a URL path. */
+function routesOnDisk(dir = APP_DIR, url = "") {
+  const found = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      // A parenthesised segment is a route group: it organises files, not URLs.
+      const segment = /^\(.*\)$/.test(entry.name) ? url : `${url}/${entry.name}`;
+      found.push(...routesOnDisk(path.join(dir, entry.name), segment));
+    } else if (entry.name === "page.tsx") {
+      found.push(url === "" ? "/" : url);
+    }
+  }
+  return found;
+}
+
+function checkRouteList() {
+  const onDisk = new Set(routesOnDisk());
+  const listed = new Set(Object.keys(ROUTES));
+  const unbudgeted = [...onDisk].filter((r) => !listed.has(r)).sort();
+  const stale = [...listed].filter((r) => !onDisk.has(r)).sort();
+  const problems = [];
+  for (const r of unbudgeted) problems.push(`${r} has a page.tsx and no budget in ROUTES`);
+  for (const r of stale) problems.push(`${r} is in ROUTES and has no page.tsx`);
+  return problems;
+}
 
 function routeSizeBytes(manifestRelPath) {
   const file = path.join(NEXT_DIR, "server", manifestRelPath);
@@ -87,6 +130,9 @@ function routeSizeBytes(manifestRelPath) {
 let failed = false;
 const rows = [];
 
+const listProblems = checkRouteList();
+if (listProblems.length > 0) failed = true;
+
 for (const [route, [manifestPath, budgetMb]] of Object.entries(ROUTES)) {
   const result = routeSizeBytes(manifestPath);
 
@@ -114,11 +160,14 @@ for (const { route, status, detail } of rows) {
   console.log(`${marker}  ${route.padEnd(routeWidth)}  ${detail}`);
 }
 
+for (const problem of listProblems) console.log(`✗ FAIL  ${problem}`);
+
 if (failed) {
   console.error(
-    "\nroute_sizes: one or more routes exceeded their bundle-size budget, or their manifest could not be read.\n" +
-      "If the growth is expected, raise that route's budget in scripts/route_sizes.mjs deliberately — don't just re-run.\n" +
-      "If a route above says \"manifest not found\", it was likely renamed/removed; update ROUTES in this file to match.",
+    "\nroute_sizes: the route list does not match the tree, or a route exceeded its bundle-size budget,\n" +
+      "or a manifest could not be read.\n" +
+      "If the growth is expected, raise that route's budget in scripts/route_sizes.mjs deliberately, do not just re-run.\n" +
+      'If a route above says "manifest not found", it was likely renamed or removed; update ROUTES in this file to match.',
   );
   process.exit(1);
 } else {
