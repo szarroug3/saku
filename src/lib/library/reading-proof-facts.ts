@@ -11,7 +11,8 @@
 
 import readingProofFactsJson from "@/data/generated/reading-proof-facts.json" with { type: "json" };
 import { effectiveState } from "@/lib/claims";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 const READING_PROOF_FACTS: Readonly<Record<string, readonly FactId[]>> =
   readingProofFactsJson.readingProofFacts as unknown as Readonly<

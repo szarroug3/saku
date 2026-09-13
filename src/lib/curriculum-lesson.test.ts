@@ -51,7 +51,8 @@ import {
   type LessonRange,
 } from "./lesson-sizing.ts";
 import { CURRICULUM_WORDS, wordTeachable } from "./word-lesson.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const RANGE = LESSON_RANGE_DEFAULT;
 const GROUPS = curriculum(RANGE);

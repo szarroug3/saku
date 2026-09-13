@@ -42,13 +42,9 @@ import {
 } from "@/data/characters";
 import { ALL_FACTS, entryOf, factsOf, glyphOf } from "@/lib/facts";
 import { rank, stateOf, type RankCandidate } from "@/lib/scoring";
-import type {
-  CharSet,
-  EntryId,
-  FactId,
-  HistoryFile,
-  QuizSessionRecord,
-} from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { CharSet } from "@/types/sky";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 /** A named set of facts a quiz can draw from. */
 export interface Deck {

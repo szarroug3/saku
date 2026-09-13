@@ -12,7 +12,8 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { matchesKey } from "@/lib/answer-key";
 import { grade } from "./grade";

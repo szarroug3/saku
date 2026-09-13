@@ -24,7 +24,8 @@ import {
 } from "./unit-scheduler-core";
 import type { IndexSentenceGate, IndexTrack, IndexUnit, LearnIndex } from "./learn-index-types";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import { effectiveState } from "@/lib/claims";
 import {
   sentenceTierDone,

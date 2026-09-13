@@ -30,7 +30,8 @@ import { test } from "node:test";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { firstTryCredit } from "@/lib/engine";
 import { poolSessionCounts, sessionAccuracy } from "@/lib/session-accuracy";
-import type { FactId, SessionStats } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { SessionStats } from "@/types/sky";
 
 const f = (s: string): FactId => s as FactId;
 

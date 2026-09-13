@@ -23,7 +23,8 @@ import { grammarVehicleFor, wordSenseFor, type PromptContext } from "@/lib/engin
 import { keyIsEmpty, matchesKey } from "@/lib/answer-key";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 const DIRECTIONS: readonly Direction[] = ["jp2en", "en2jp"];
 

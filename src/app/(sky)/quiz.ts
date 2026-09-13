@@ -33,7 +33,9 @@ import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instructio
 import { dueFacts } from "@/lib/selection";
 import { shuffleDeck, type AnswerKey, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
-import type { Direction, EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 import { offerPicker, pickFacts } from "./observatory";
 import { readingRuleFor } from "./quiz-rules";

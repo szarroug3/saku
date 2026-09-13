@@ -22,7 +22,8 @@ import { grammarUnitsOf } from "./grammar-unit";
 import { verbPairUnitsOf } from "./verb-pair-unit";
 import { sentenceBuildUnitsOf } from "./sentence-track";
 import { isFactFresh } from "./scheduler";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
 

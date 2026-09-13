@@ -24,7 +24,7 @@ import { beforeEach, test } from "node:test";
 
 import { migrateLocalProgress } from "@/lib/store/migrate-local";
 import { hasLocalProgress, localClaim } from "@/lib/store/local-progress";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 const fid = (s: string) => s as unknown as FactId;
 

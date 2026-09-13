@@ -48,7 +48,8 @@ import { isConstructionFact } from "../../data/counter-categories.ts";
 import { isPitchFact } from "../../data/pitch.ts";
 import { ALL_FACTS, factInfo } from "../facts.ts";
 import { questionsFor, revealFor } from "./question.ts";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 const DIRS: Direction[] = ["jp2en", "en2jp"];
 

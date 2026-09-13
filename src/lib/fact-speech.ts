@@ -35,7 +35,7 @@ import {
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, vocabRow, wordReadingUnit } from "@/data/vocab";
-import type { FactInfo } from "@/types";
+import type { FactInfo } from "@/types/facts";
 
 /**
  * The Japanese text to speak for a fact, or null when it has no single sound.

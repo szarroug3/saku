@@ -26,7 +26,8 @@ import {
   localSeen,
   localSession,
 } from "@/lib/store/local-progress";
-import type { FactId, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { QuizSessionRecord } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

@@ -10,7 +10,7 @@
 //
 // Stage 0 of docs/architecture-refactor.md: additive, not yet consumed.
 
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 import type { ContentItem } from "./item";
 
 export interface Track {

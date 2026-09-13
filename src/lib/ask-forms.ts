@@ -50,14 +50,14 @@ import { spread } from "@/lib/engine/spread";
 import { listenKind } from "@/lib/listen";
 import { meaningMustShowGlyph } from "@/lib/homophone";
 import { pickRecognitionForFact } from "@/lib/listen-sentence";
+import type { FactId } from "@/types/facts";
 import type {
   AnswerStyle,
   AskConfig,
   Direction,
-  FactId,
-  HistoryFile,
   ResponseKind,
-} from "@/types";
+} from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * One way to ask a card, frozen onto the showing.

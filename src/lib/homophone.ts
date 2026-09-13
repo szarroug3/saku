@@ -37,7 +37,8 @@
 import { VOCAB, VOCAB_SUBJECT, isWordReadingFact, vocabRow } from "@/data/vocab";
 import { wordKnown } from "@/lib/grammar/readable";
 import { factInfo } from "@/lib/facts";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** reb → the written forms (keb) that read that way. Built once; shipped data. A
  * reading with one word has a one-entry list, which is the common case. */

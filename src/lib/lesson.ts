@@ -32,7 +32,8 @@
 import { KANA_SUBJECT, SETS, isExtendedSection, kanaFact } from "@/data/characters";
 import { DAKUTEN_ROWS, DAKUTEN_SECTIONS, type DakutenRow } from "@/data/dakuten-rows";
 import { freshFacts, nextGroup } from "@/lib/budget";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * Where to go and learn something before being quizzed on it.

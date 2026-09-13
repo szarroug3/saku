@@ -41,7 +41,8 @@ import {
   weakness,
   type RankCandidate,
 } from "./scoring.ts";
-import type { FactId, FactState } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { FactState } from "../types/store.ts";
 
 const DAY = 86_400_000;
 /** An arbitrary "now". Nothing here reads a clock; this is just a fixed point

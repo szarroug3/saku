@@ -51,7 +51,7 @@ import {
   NUMBER_CONSTRUCTION_SUBJECT,
   numberConstructionEntry,
 } from "@/data/number-construction-id";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 // DAY/MONTH are VALUE imports of two more NumberConstruction pages
 // (SAK-163's round 2); day-month-construction.ts imports this file's
 // `NumberConstruction` TYPE only (erased at compile time, see `import type`

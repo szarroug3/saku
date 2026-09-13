@@ -29,7 +29,7 @@ import { before, beforeEach, describe, test } from "node:test";
 import { mock } from "node:test";
 
 import { emptyHistory } from "@/lib/history-ops";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 import type { VersionedRead } from "@/lib/history-mutate";
 
 // ---------------------------------------------------------------------------

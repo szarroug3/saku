@@ -22,7 +22,7 @@ import {
   wordReadingFactId,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 const SENSEI_MEANING = wordMeaningFactId("先生"); // teacher
 const SENSEI_READING = wordReadingFactId("先生"); // せんせい

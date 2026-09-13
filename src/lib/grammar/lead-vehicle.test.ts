@@ -34,7 +34,7 @@ import { buildRow } from "@/lib/grammar/build";
 import { buildExample } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { VERB_VEHICLES, recipeAllows, vehiclesFor } from "@/lib/grammar/vehicles";
-import type { Direction } from "@/types";
+import type { Direction } from "@/types/sky";
 
 const NI_IKU = RECIPES.find((r) => r.id === "ni-iku");
 const PASSIVE = RECIPES.find((r) => r.id === "passive");

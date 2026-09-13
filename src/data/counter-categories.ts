@@ -38,7 +38,8 @@ import {
 import { NUMBERS_BIG, NUMBERS_COMPOSE, type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import { factId } from "@/lib/fact-id";
-import type { EntryId, FactId, FactInfo, HistoryFile } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** The aspect a category fact hangs off. Its OWN aspect — not "reading" or
  * "meaning" — so it can never be mistaken for a word's reading/meaning fact by a

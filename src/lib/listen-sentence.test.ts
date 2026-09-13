@@ -24,7 +24,7 @@ import {
   pickRecognitionForFact,
   readableRecognition,
 } from "./listen-sentence.ts";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 // A deterministic rng, so a rolled board is reproducible. Copied from
 // substitution.test.ts's approach.

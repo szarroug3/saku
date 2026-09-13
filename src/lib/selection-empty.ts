@@ -7,7 +7,7 @@
 // selection.ts dragged the whole ~3.6 MB registry into the eager client bundle.
 // selection.ts re-exports this so its own consumers are unchanged.
 
-import type { Selection } from "@/types";
+import type { Selection } from "@/types/sky";
 
 /** Everything. Every field empty means "not narrowed", so this is the query
  * that names the whole app — which is also the day-one default. */

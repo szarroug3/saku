@@ -23,7 +23,7 @@
 // nothing in this file needs to change to keep up.
 
 import { CHAR_INDEX } from "@/data/characters";
-import type { CharInfo } from "@/types";
+import type { CharInfo } from "@/types/sky";
 
 /** One yōon combo — きゃ, as the fields its Library page's composition block
  * needs. No `hook`: unlike DakutenRow, yōon has ONE shared rule (COMBO_H /

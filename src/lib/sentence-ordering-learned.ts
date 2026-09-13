@@ -15,7 +15,8 @@ import {
   sentenceTierDone,
   sentenceTierMarkerFact,
 } from "@/lib/sentence-ordering-progress";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** Sentence types the learner has explicitly claimed or completed in assembly. */
 export function learnedSentenceTierIds(history: HistoryFile): string[] {

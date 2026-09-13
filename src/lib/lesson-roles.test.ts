@@ -64,7 +64,7 @@ import {
   strokeFallbackOf,
   wordTypeOf,
 } from "@/lib/lesson-roles";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 function step(entry: EntryId, glyph: string, kind: LessonKind): LessonItem {
   return { entry, glyph, kind, facts: [] };

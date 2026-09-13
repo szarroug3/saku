@@ -27,7 +27,7 @@
 // kind", which is all the stepper needs.
 
 import { entryOf, factInfo, glyphOf } from "@/lib/facts";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 /** Which subject an item belongs to — its FactInfo.subject, which is exactly one
  * of these strings. The view switches on it (kana gets a mnemonic, kanji gets

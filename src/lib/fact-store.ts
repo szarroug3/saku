@@ -17,7 +17,8 @@ import {
   writeFactRowGuarded,
   type FactRowVersioned,
 } from "@/lib/store/supabase-store";
-import type { FactAggregate, FactId, SessionFactCounts } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate, SessionFactCounts } from "@/types/store";
 
 /** How many times ONE fact's write may lose its compare-and-set before giving
  * up. Bounded well below history's MAX_HISTORY_WRITE_ATTEMPTS (history-mutate.

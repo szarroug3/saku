@@ -16,7 +16,7 @@
 // simply syncs to the server the next time a provider is present (seeded reads
 // and the one-time migration cover that gap).
 
-import type { SettingsFile } from "@/types";
+import type { SettingsFile } from "@/types/store";
 
 /** Set by SettingsProvider; null when no provider is mounted. */
 let pusher: ((patch: SettingsFile) => void) | null = null;

@@ -10,7 +10,7 @@
 import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { loadSettings, saveSettings } from "@/lib/settings";
-import type { SettingsFile } from "@/types";
+import type { SettingsFile } from "@/types/store";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 

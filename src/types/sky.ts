@@ -3,8 +3,8 @@
 //
 // NONE OF THIS IS PERSISTED AS ITSELF. What reaches the `progress` row is
 // store.ts; the one crossing is QuizConfig, which SettingsFile carries whole.
-// Split out of a 923-line src/types/index.ts in SAK-407; read through @/types,
-// which re-exports this beside facts.ts and store.ts.
+// Split out of a 923-line src/types/index.ts in SAK-407, and imported as
+// `@/types/sky` since SAK-433 took the barrel that stood over the split away.
 
 import type { EntryId, FactId } from "./facts";
 

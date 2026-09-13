@@ -40,7 +40,7 @@
 // curriculum.
 
 import { grammarProduction } from "@/data/grammar";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 /** One fact's (recipe, host) slot, or null when the fact is not a grammar
  * PRODUCTION fact at all (a meaning fact, or a fact from another subject

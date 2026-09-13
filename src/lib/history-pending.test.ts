@@ -50,7 +50,8 @@ import {
 } from "@/lib/history-sync";
 import { nextCurriculumLesson } from "@/lib/curriculum-lesson";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 const RANGE = LESSON_RANGE_DEFAULT;
 

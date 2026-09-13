@@ -38,7 +38,8 @@ import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
 import { VOCAB, vocabRow } from "./vocab.ts";
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
-import type { EntryId, FactId, FactInfo, NewKanjiOrder } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
+import type { NewKanjiOrder } from "../types/sky.ts";
 
 export const KANJI_SUBJECT = "kanji";
 

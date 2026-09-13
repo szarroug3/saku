@@ -15,7 +15,7 @@
 // them so the registry-owning call sites are unchanged. This changes no
 // behaviour — the functions are byte-for-byte the same.
 
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 /**
  * A SessionStats / history.facts key list, with the brand restored.

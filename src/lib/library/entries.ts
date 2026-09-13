@@ -71,7 +71,8 @@ import {
 export const COMPARISON_CLUSTER_IDS: ReadonlySet<string> = new Set(["wa-ga", "ni-de"]);
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
-import type { EntryId, FactId, FactInfo, QuizMode } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
+import type { QuizMode } from "@/types/sky";
 import libraryIndexJson from "@/data/generated/library-index.json" with { type: "json" };
 import type { LibraryIndex } from "./library-index-types";
 

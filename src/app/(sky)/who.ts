@@ -4,7 +4,7 @@
 // (Sam, 2026-09-06): a visitor's sky is real, kept in the browser and
 // carried up on sign-in, the way the app has always done it.
 
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 export interface Who {
   sample?: boolean;

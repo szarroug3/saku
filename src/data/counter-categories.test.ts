@@ -30,7 +30,9 @@ import { factType } from "../lib/practice-types.ts";
 import { buildMcOptions } from "../lib/engine/index.ts";
 import { questionsFor, revealFor } from "../lib/engine/question.ts";
 import { makeItem } from "../lib/engine/number-quiz.ts";
-import type { Direction, HistoryFile, FactId } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { Direction } from "../types/sky.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const BLANK: HistoryFile = { sessions: [], facts: {} };
 

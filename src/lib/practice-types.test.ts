@@ -46,12 +46,9 @@ import {
   withTypes,
 } from "./practice-types.ts";
 import { emptySelection, resolve } from "./selection.ts";
-import type {
-  FactAggregate,
-  FactId,
-  HistoryFile,
-  Selection,
-} from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { Selection } from "../types/sky.ts";
+import type { FactAggregate, HistoryFile } from "../types/store.ts";
 
 // ---------- pick real representatives of each type ----------
 

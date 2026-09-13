@@ -14,7 +14,8 @@ import {
   questionsFor,
 } from "@/lib/engine/question";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
-import type { AskConfig, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { AskConfig } from "@/types/sky";
 
 const GRAMMAR_ONLY: AskConfig = {
   japanese: {

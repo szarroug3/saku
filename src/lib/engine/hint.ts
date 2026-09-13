@@ -60,7 +60,8 @@ import type { GrammarVehicle } from "./question";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
 import { readingFormula, type ReadingFormula } from "@/lib/reading-formula";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 /**
  * What a taken hint puts on screen.

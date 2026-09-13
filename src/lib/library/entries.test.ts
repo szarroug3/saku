@@ -48,7 +48,7 @@ import { numberConstructionEntry } from "@/data/number-construction";
 import { patternEntry, patternMeaningFactId } from "@/data/grammar";
 import { wordEntry } from "@/data/vocab";
 import { RECIPES } from "@/data/grammar/recipes";
-import type { FactInfo } from "@/types";
+import type { FactInfo } from "@/types/facts";
 
 const need = (e: LibEntry | undefined): LibEntry => {
   assert.ok(e);

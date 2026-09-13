@@ -26,7 +26,7 @@ import {
 import type { IndexSentenceGate, IndexTrack, IndexUnit } from "./learn-index-types.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 const fact = (id: string): FactId => id as FactId;
 const entry = (id: string): EntryId => id as EntryId;

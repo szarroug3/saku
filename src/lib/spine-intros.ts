@@ -66,7 +66,8 @@ import type { PhaseIntro } from "@/data/phase-intros";
 import { effectiveState } from "@/lib/claims";
 import { CURRICULUM_SEQUENCE, type CurriculumRole } from "@/lib/curriculum-sequence";
 import { ROLE_ORDER } from "@/lib/character-role";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** One card, and the item that owes it. */
 export interface SpineAnchor {

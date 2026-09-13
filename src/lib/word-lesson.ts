@@ -71,7 +71,7 @@
 import { kanjiKnown } from "@/lib/kanji-known";
 import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
 import { COUNTER_KANJI_GLYPHS } from "@/data/counters";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 // The words-per-lesson default and clamp live in the DATA-FREE
 // src/lib/lesson-sizing.ts so the always-mounted QuizConfigProvider can seed a

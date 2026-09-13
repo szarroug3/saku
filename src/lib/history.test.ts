@@ -23,7 +23,8 @@ import { before, beforeEach, describe, test } from "node:test";
 import { mock } from "node:test";
 
 import { emptyAggregate, foldSession } from "@/lib/aggregate";
-import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate, HistoryFile, QuizSessionRecord } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

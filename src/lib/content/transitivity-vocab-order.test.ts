@@ -39,7 +39,7 @@ import { transitivityItems } from "./verb-pair-unit.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { TeachingUnit } from "./teach-unit.ts";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 // Safety cap, not a threshold — mirrors interleaved-schedule.test.ts's own cap
 // with the same rationale: the walk is expected to exhaust well before this.

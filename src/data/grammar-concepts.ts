@@ -44,7 +44,7 @@ import {
 } from "@/data/grammar/lessons";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { entryId } from "@/lib/fact-id";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 /** The subject id, in the same shape as MARK_SUBJECT / TERM_SUBJECT. It is also
  * the URL kind segment (/library/grammar-concept/te-form) and the shelf's id. */

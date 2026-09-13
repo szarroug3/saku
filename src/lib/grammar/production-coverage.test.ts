@@ -24,7 +24,8 @@ import { grammarVehicleFor } from "@/lib/engine/question";
 import { apply } from "@/lib/grammar/apply";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { CLASS_ANCHOR } from "./te-endings";
-import type { AskConfig, HistoryFile } from "@/types";
+import type { AskConfig } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 const ALL: AskConfig = {
   japanese: {

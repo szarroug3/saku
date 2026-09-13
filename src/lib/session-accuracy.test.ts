@@ -18,7 +18,8 @@ import { test } from "node:test";
 
 import { firstTryShowings } from "@/lib/first-try";
 import { poolSessionCounts, sessionAccuracy } from "@/lib/session-accuracy";
-import type { FactId, FactSessionDetail, SessionStats } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactSessionDetail, SessionStats } from "@/types/sky";
 
 const f = (s: string): FactId => s as FactId;
 

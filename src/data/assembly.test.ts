@@ -33,7 +33,7 @@ import { CURRICULUM_WORDS } from "../lib/word-lesson.ts";
 import { applyClaims, emptyHistory } from "../lib/history-ops.ts";
 import { isProducible } from "./grammar/recipes.ts";
 import { VOCAB, wordMeaningFactId } from "./vocab.ts";
-import type { HistoryFile } from "../types/index.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 function seeded(seed: number): () => number {
   let s = seed >>> 0;

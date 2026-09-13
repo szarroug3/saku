@@ -28,7 +28,8 @@ import type { VersionedRead } from "@/lib/history-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import type { SettingsVersionedRead } from "@/lib/settings-mutate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { FactAggregate, FactId, HistoryFile, SettingsFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate, HistoryFile, SettingsFile } from "@/types/store";
 
 export interface ProgressSeedRow {
   history: HistoryFile;

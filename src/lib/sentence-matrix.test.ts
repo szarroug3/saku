@@ -17,7 +17,8 @@ import {
   pickRecognition,
 } from "@/lib/listen-sentence";
 import { ALL_FACTS } from "@/lib/facts";
-import type { AskConfig, HistoryFile } from "@/types";
+import type { AskConfig } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 const sentenceAsk = (
   overrides: Partial<AskConfig["sentence"]> = {},

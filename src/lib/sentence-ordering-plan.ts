@@ -14,7 +14,8 @@ import {
   sentenceTierDone,
   sentenceTierMarkerFact,
 } from "@/lib/sentence-ordering-progress";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 export interface SentenceOrderingLesson {
   facts: FactId[];

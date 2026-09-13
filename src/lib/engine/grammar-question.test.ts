@@ -26,7 +26,7 @@ import {
   VERB_VEHICLES,
 } from "@/lib/grammar/vehicles";
 import { wordMeaningFactId } from "@/data/vocab";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 // A verb-only, unrestricted production fact as the generic #50 fixture. te-kara
 // (and the whole 〜て family) now splits production by ENDING and carries no plain

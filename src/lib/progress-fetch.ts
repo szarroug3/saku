@@ -66,7 +66,8 @@ import {
   localSeen,
   localSession,
 } from "@/lib/store/local-progress";
-import type { FactId, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { QuizSessionRecord } from "@/types/store";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 

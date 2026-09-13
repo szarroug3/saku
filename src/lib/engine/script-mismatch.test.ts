@@ -18,7 +18,8 @@ import { kanaFact } from "../../data/characters.ts";
 import { wordMeaningFactId, wordReadingFactId } from "../../data/vocab.ts";
 import { meaningFactId, readingFactId } from "../../data/kanji.ts";
 import { checkTyped, scriptMismatch } from "./index.ts";
-import type { Direction, FactId } from "../../types/index.ts";
+import type { FactId } from "../../types/facts.ts";
+import type { Direction } from "../../types/sky.ts";
 
 /**
  * The exact gate the drill screen applies (see submit() in drill-screen.tsx):

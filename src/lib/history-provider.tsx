@@ -78,7 +78,7 @@ import {
   settleRevalidation,
 } from "@/lib/history-sync";
 import { loadLocalHistory } from "@/lib/store/local-progress";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 export interface HistoryContextValue {
   history: HistoryFile;

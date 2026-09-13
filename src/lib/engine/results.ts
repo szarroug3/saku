@@ -13,7 +13,8 @@
 // consumers are unchanged. This changes no behaviour.
 
 import { factKeys } from "@/lib/fact-keys";
-import type { FactId, SessionStats } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { SessionStats } from "@/types/sky";
 
 export interface ResultsSummary {
   facts: FactId[];

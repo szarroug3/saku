@@ -49,7 +49,7 @@ import { KANJI, kanjiRow, orderRow } from "@/data/kanji";
 import { isNumberKanji } from "@/data/number-kanji";
 import { VOCAB, vocabRow } from "@/data/vocab";
 import { wordKnown } from "@/lib/word-unlock";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * How many entries a "used as a part in" list may paint.

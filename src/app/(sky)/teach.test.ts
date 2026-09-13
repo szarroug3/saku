@@ -13,7 +13,7 @@ import { describe, it } from "node:test";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { emptyHistory } from "@/lib/history-ops";
 import { libEntry } from "@/lib/library/entries";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 import { atlasEntryFromHistory } from "./atlas";
 

@@ -25,7 +25,8 @@ import {
   sliceIsDrillable,
   sliceSentence,
 } from "@/lib/library/slice";
-import type { FactAggregate, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate } from "@/types/store";
 
 /** One real entry id of each kind, so the assertions run against ids the app
  * actually mints and the fact counts its data actually carries. */

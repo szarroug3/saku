@@ -28,8 +28,8 @@ import {
   NUMBER_CONSTRUCTION_KIND,
 } from "./entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
-import type { EntryId, FactId } from "@/types";
-import type { HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import { effectiveState } from "@/lib/claims";
 import { wordMeaningFactId } from "@/lib/vocab-ids";
 import { wordBeginnerRank } from "@/lib/word-rank";

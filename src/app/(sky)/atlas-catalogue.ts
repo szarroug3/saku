@@ -9,7 +9,8 @@ import atlasCatalogueJson from "@/data/generated/atlas-catalogue.json" with { ty
 import { libEntry, type LibEntry } from "@/lib/library/entries";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import type { Standing } from "@/sky/lib/standing";
-import type { EntryId, HistoryFile } from "@/types";
+import type { EntryId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import type { SkyAtlasData } from "@/sky/components/sky-atlas";
 
 import { all, countsOver, SHELVES } from "./atlas";

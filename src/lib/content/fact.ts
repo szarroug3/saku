@@ -22,7 +22,8 @@
 // scheduler through `factsOf(entry)` so a number's reading fact is in the lesson —
 // not adding a field. See docs/architecture-refactor.md.
 
-import type { FactId, ResponseKind } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { ResponseKind } from "@/types/sky";
 
 /**
  * What a fact asks the learner to PRODUCE — the meaning/reading axis. This is

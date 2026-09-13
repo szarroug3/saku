@@ -7,7 +7,7 @@
 // read and a write, kept as functions so Settings and Practice still reach
 // the setting without importing the Quiz (SAK-366).
 
-import type { QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types/sky";
 
 /** The setting as the quiz shows it: 0 is none. */
 export function retriesOf(cfg: QuizConfig): number {

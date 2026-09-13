@@ -30,12 +30,9 @@ import { standingOf } from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
 import { effectiveState } from "@/lib/claims";
 import { status } from "@/lib/scoring";
-import type {
-  FactId,
-  FactBand,
-  HistoryFile,
-  Selection,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactBand, Selection } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 // `emptySelection` lives in the DATA-FREE src/lib/selection-empty.ts so the
 // always-mounted QuizConfigProvider can seed a config without importing this

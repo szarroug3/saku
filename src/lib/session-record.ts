@@ -37,12 +37,9 @@
 import { accuracyOf, totalFor } from "@/lib/accuracy";
 import { factKeys } from "@/lib/fact-keys";
 import { firstTryShowings } from "@/lib/first-try";
-import type {
-  FactId,
-  QuizMode,
-  QuizSessionRecord,
-  SessionStats,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { QuizMode, SessionStats } from "@/types/sky";
+import type { QuizSessionRecord } from "@/types/store";
 
 /**
  * A fresh identity for a record.

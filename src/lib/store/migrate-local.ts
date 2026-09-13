@@ -41,7 +41,7 @@
 import { refreshSupabaseSession } from "@/lib/progress-fetch";
 import { resolveProgressWrite } from "@/lib/progress-write";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 import {
   clearLocalHistory,

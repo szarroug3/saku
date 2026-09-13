@@ -37,7 +37,8 @@ import { isPitchFact } from "@/data/pitch";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
 import { toKana } from "@/lib/romaji";
 import { answerIsJapanese, en2jpTypeable, questionsFor, type GrammarVehicle } from "./question";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 const DIRS: Direction[] = ["jp2en", "en2jp"];
 

@@ -9,7 +9,7 @@ import {
   type ShelfSection,
 } from "./shelf-view.ts";
 import type { LibEntry } from "./entries.ts";
-import type { EntryId } from "../../types/index.ts";
+import type { EntryId } from "../../types/facts.ts";
 
 function entry(id: string): LibEntry {
   return {

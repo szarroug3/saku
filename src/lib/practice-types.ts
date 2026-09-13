@@ -31,7 +31,8 @@
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { emptySelection } from "@/lib/selection-empty";
-import type { FactId, Selection } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Selection } from "@/types/sky";
 
 // ---------- the type descriptors ----------
 

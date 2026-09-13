@@ -19,7 +19,7 @@ import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
 import { lessonReferences, lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 import { offerings, TSU_RULE, type Offerings } from "./observatory";
 import { pageFromIntro, teachFor } from "./teach";

@@ -6,7 +6,7 @@
 // registry into every bundle that touches history. accuracy.ts re-exports this so
 // its own callers are unaffected.
 
-import type { FactCounts } from "@/types";
+import type { FactCounts } from "@/types/store";
 
 export const EMPTY_COUNTS: FactCounts = {
   seen: 0,

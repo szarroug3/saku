@@ -44,7 +44,7 @@
 // claim just re-sets the same timestamp, so a fold that overlaps the server's
 // own catch-up is harmless.
 
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /** One un-acknowledged optimistic write: a stable id (so the write that made it
  * can remove exactly itself when its post resolves) and the pure op it applied. */

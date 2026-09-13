@@ -24,7 +24,7 @@ import { CFG_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { useSettings } from "@/lib/use-settings";
 import { DEFAULT_VOICE_ID, isVoiceId } from "@/lib/voice";
-import type { QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types/sky";
 
 export function defaultConfig(): QuizConfig {
   return {

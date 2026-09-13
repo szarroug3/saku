@@ -35,7 +35,7 @@ import {
   transitivityOf,
   vehiclesFor,
 } from "@/lib/grammar/vehicles";
-import type { Direction } from "@/types";
+import type { Direction } from "@/types/sky";
 
 const TE_ARU = RECIPES.find((r) => r.id === "te-aru");
 const DIRS: Direction[] = ["jp2en", "en2jp"];

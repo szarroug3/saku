@@ -7,7 +7,8 @@ import {
   normalizeSettings,
   reconcileSettings,
 } from "./settings-merge";
-import type { QuizConfig, SettingsFile } from "@/types";
+import type { QuizConfig } from "@/types/sky";
+import type { SettingsFile } from "@/types/store";
 
 /** A config stands in for "the whole value the client owns"; the merge never
  * looks inside it, so a one-field object is config enough for these. */

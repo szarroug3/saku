@@ -10,7 +10,7 @@
 // components/library/shelves.tsx for the argument.
 
 import { curriculumPosition, kanjiGrade, kanjiTeachOrder } from "@/lib/library/library-index";
-import type { NewKanjiOrder } from "@/types";
+import type { NewKanjiOrder } from "@/types/sky";
 
 /** One cut of the kanji shelf, as glyphs. The shelf turns these into entries. */
 export interface KanjiCut {

@@ -28,7 +28,7 @@
 
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 /** Which listening type a fact can be asked as — or null when it cannot.
  *  "romaji"  → a word READING fact (hear it, type the romaji).

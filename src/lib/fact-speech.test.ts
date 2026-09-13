@@ -15,7 +15,7 @@ import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordMeaningFactId } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
-import type { EntryId, FactId, FactInfo } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
 
 import { speechForFact } from "./fact-speech.ts";
 

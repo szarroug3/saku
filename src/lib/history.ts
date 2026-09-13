@@ -44,7 +44,8 @@ import {
   writeHistoryRow,
   writeHistoryRowGuarded,
 } from "@/lib/store/supabase-store";
-import type { FactId, HistoryFile, QuizSessionRecord, SessionFactCounts } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord, SessionFactCounts } from "@/types/store";
 
 /** The compare-and-set store the mutators below run their read-modify-write
  * through, so two overlapping requests cannot clobber each other's field (see

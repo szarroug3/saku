@@ -30,15 +30,13 @@
 //   draw, and listen modes.
 
 import { entryId, factId } from "@/lib/fact-id";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
 import type {
   CharInfo,
   CharSection,
   CharSet,
-  EntryId,
-  FactId,
-  FactInfo,
   KanaChar,
-} from "@/types";
+} from "@/types/sky";
 
 /** One character's accepted answers: a single romaji or a variant list. */
 type Romaji = string | string[];

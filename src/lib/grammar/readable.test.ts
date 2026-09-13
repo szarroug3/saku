@@ -22,7 +22,7 @@ import { isBlankOnly, selection } from "./questions.ts";
 import { RECIPES } from "../../data/grammar/recipes.ts";
 import { examplesFor, type Example } from "../../data/grammar/corpus.ts";
 import { VOCAB, wordMeaningFactId } from "../../data/vocab.ts";
-import type { HistoryFile } from "../../types/index.ts";
+import type { HistoryFile } from "../../types/store.ts";
 
 const NOW = 1_700_000_000_000;
 

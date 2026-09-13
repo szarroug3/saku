@@ -4,7 +4,7 @@
 import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { saveSession } from "@/lib/history";
-import type { QuizSessionRecord } from "@/types";
+import type { QuizSessionRecord } from "@/types/store";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 

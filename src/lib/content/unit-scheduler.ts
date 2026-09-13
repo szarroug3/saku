@@ -49,7 +49,8 @@ import {
 } from "./unit-scheduler-core";
 import type { PronunciationUnit, TeachingUnit, UnitLesson } from "./teach-unit";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { EntryId, HistoryFile } from "@/types";
+import type { EntryId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** Whether an entry has been LEARNED — it has facts and all of them are claimed.
  * An entry with no facts (a word not in any curriculum) is never learned, so a

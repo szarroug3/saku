@@ -29,7 +29,8 @@ import { skyFromHistory } from "./learner";
 import { beyondWords } from "./observatory";
 import { sampleHistory } from "./sample-learner";
 import { joinSky } from "./sky-payload";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 const NOW = Date.UTC(2026, 8, 6);
 const wire = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;

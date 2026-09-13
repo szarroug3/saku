@@ -12,7 +12,7 @@ import { describe, test } from "node:test";
 import { readingFactId } from "../data/kanji.ts";
 import { hintFor } from "./engine/hint.ts";
 import { readingFormula } from "./reading-formula.ts";
-import type { FactId } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
 
 describe("readingFormula — the pieces of the nudge", () => {
   test("病院 asking 病 → [病 (blank)] + [院 / いん] = 病院", () => {

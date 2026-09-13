@@ -47,7 +47,8 @@
 import { effectiveState } from "../claims.ts";
 import { VOCAB, wordMeaningFactId, type VocabRow } from "../../data/vocab.ts";
 import type { Example } from "../../data/grammar/corpus.ts";
-import type { FactId, HistoryFile } from "../../types/index.ts";
+import type { FactId } from "../../types/facts.ts";
+import type { HistoryFile } from "../../types/store.ts";
 
 /**
  * Tatoeba's stock cast, treated as ALWAYS KNOWN.

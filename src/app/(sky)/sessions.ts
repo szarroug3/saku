@@ -5,7 +5,8 @@
 import { entryOf, factInfo } from "@/lib/facts";
 import { gradeFromCounts, type SessionKind, type SkySession } from "@/sky/lib/sessions";
 import type { SkyItem } from "@/sky/lib/types";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 import { offerPicker } from "./observatory";
 

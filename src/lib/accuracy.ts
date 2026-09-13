@@ -47,7 +47,8 @@
 // happens by default when you reach for the obvious function.
 
 import { EMPTY_COUNTS } from "@/lib/fact-counts";
-import type { FactCounts, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactCounts } from "@/types/store";
 
 // This module is CONTENT-FREE (no fact registry, no dictionary), so any history-
 // touching route can do accuracy math without pulling the ~8.6 MB curriculum

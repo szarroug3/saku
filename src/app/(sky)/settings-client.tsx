@@ -13,7 +13,7 @@ import { useSettings } from "@/lib/use-settings";
 import { VOICES, voicesEnabled } from "@/lib/voice";
 import { SkySettings } from "@/sky/components/sky-settings";
 import { SAVE_TEXT, type SkySettings as SkySettingsValues } from "@/sky/lib/settings";
-import type { QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types/sky";
 
 
 /** The app's config in the Sky's words. */

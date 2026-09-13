@@ -22,7 +22,8 @@
 import { accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
 import { factKeys } from "@/lib/fact-keys";
 import { firstTryShowings } from "@/lib/first-try";
-import type { FactCounts, SessionStats } from "@/types";
+import type { SessionStats } from "@/types/sky";
+import type { FactCounts } from "@/types/store";
 
 /**
  * Pool one run's stats into counts, on exactly the terms src/lib/accuracy.ts

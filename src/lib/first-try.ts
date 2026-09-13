@@ -13,7 +13,7 @@
 // registry-adjacent) read it from the same place. Duplicating a migration rule
 // in two modules is how the two copies drift.
 
-import type { FactSessionDetail } from "@/types";
+import type { FactSessionDetail } from "@/types/sky";
 
 /**
  * A fact's first-try-correct SHOWINGS this run — the strict numerator, in the

@@ -24,7 +24,7 @@ import { buildGlyphItem } from "./build-item.ts";
 import { emptyHistory, applyClaims, applyDropClaims } from "@/lib/history-ops";
 import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 import type { PronunciationUnit } from "./teach-unit";
 
 const roomy = { min: 100, max: 100 }; // never caps — for ordering/gate tests

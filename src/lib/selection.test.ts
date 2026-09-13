@@ -34,7 +34,8 @@ import {
   resolve,
   subjectWord,
 } from "./selection.ts";
-import type { FactAggregate, FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { FactAggregate, HistoryFile } from "../types/store.ts";
 
 const NOW = Date.UTC(2026, 0, 15);
 const KANA_IDS: FactId[] = KANA_FACTS.map((f) => f.id);

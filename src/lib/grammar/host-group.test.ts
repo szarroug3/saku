@@ -28,7 +28,8 @@ import { grammarHostGroupOf } from "./host-group.ts";
 import { planSession } from "@/lib/budget";
 import { dueFacts } from "@/lib/selection";
 import { rank } from "@/lib/scoring";
-import type { FactAggregate, FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate, HistoryFile } from "@/types/store";
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 0, 15);

@@ -58,7 +58,10 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["@/components/*", "@/lib/*", "@/data/*", "@/types/*"],
+              // "@/types" as well as "@/types/*": the barrel is gone (SAK-433)
+              // and cannot resolve today, but the rule should not go quiet if
+              // anyone writes one again.
+              group: ["@/components/*", "@/lib/*", "@/data/*", "@/types", "@/types/*"],
               message:
                 "The Sky redesign does not import from the existing app, so the old surfaces can be deleted at cutover. Bring a copy into src/sky instead. See src/sky/README.md.",
             },

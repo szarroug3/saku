@@ -23,7 +23,7 @@ import { KANJI } from "@/data/kanji";
 import { RADICALS } from "@/data/radicals";
 import { buildGlyphItem } from "./build-item";
 import type { ContentItem } from "./item";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 let corpusIndex: Map<EntryId, ContentItem> | null = null;
 

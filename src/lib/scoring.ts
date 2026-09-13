@@ -92,7 +92,8 @@
 //   - nothing outside this file knows how the list is ordered. Callers ask for
 //     `rank`, and the answer is a FactId[].
 
-import type { FactId, FactState } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactState } from "@/types/store";
 
 const DAY_MS = 86_400_000;
 

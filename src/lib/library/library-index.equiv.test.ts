@@ -73,7 +73,7 @@ import {
   entryName,
   pitchReadingCompatible,
 } from "@/lib/library/library-index";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 test("KINDS matches live KINDS, in order", () => {
   assert.deepEqual(KINDS, LIVE_KINDS);

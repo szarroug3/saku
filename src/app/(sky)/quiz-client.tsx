@@ -32,7 +32,7 @@ import { shuffleDeck, type QuizAnswer, type QuizCard, type WayBack } from "@/sky
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 import { seeded } from "@/sky/lib/random";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
-import type { QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types/sky";
 
 import { loadQuiz } from "./actions";
 import { grade } from "./grade";

@@ -17,7 +17,7 @@ import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { factType } from "@/lib/practice-types";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 /* -------------------------------------------------------------------------
  * STATS PAGE (Progress's "By subject") — SAK-104. by-subject.tsx's module

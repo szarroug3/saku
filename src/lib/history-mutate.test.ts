@@ -25,7 +25,8 @@ import {
   type VersionedRead,
 } from "@/lib/history-mutate";
 import { applyClaims, applySeen, applySession, emptyHistory } from "@/lib/history-ops";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 const USER = "user-1";
 const CLAIM = "kanji:人/meaning" as FactId;

@@ -51,7 +51,8 @@ import { isReadingFact } from "@/lib/word-unlock";
 import { wordKindOf } from "@/lib/word-forms";
 import { openExample } from "@/lib/grammar/example";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 /** A bare modal directly ahead of the X slot — "may X", "must (not) X", "can
  * X", "had better (not) X". A VERB host needs nothing more ("may eat"), but an

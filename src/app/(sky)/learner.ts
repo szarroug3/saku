@@ -37,7 +37,8 @@ import type { SkyHomeData } from "@/sky/components/sky-home";
 import { skyRoots } from "@/sky/lib/sky-scene";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
-import type { HistoryFile, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 const GRADUATE_RUNS = 10;
 

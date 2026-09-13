@@ -20,7 +20,9 @@
 // resolveFactInfos) so a deck/list/breakdown resolves in ONE round trip built
 // once, not one request per row.
 
-import type { EntryId, FactId, FactInfo, FactState, HistoryFile, QuizMode } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
+import type { QuizMode } from "@/types/sky";
+import type { FactState, HistoryFile } from "@/types/store";
 import type { IndexLibEntry } from "@/lib/library/library-index-types";
 import type { Recipe } from "@/data/grammar/recipes";
 import type { StrokeFallback } from "@/lib/lesson-roles";
@@ -81,7 +83,7 @@ import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryIsKnown, entryStanding, standingOf, type Standing } from "@/lib/library/standing";
 import type { StatusFilter } from "@/lib/library/url-state";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate } from "@/types";
+import type { FactAggregate } from "@/types/store";
 import { unstable_cache } from "next/cache";
 import { createHash } from "node:crypto";
 import { CURRICULUM_VERSION } from "@/lib/content/curriculum-meta";

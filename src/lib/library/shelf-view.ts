@@ -3,7 +3,7 @@
 // controlled by near-viewport mounting in shelves.tsx rather than data caps.
 
 import type { LibEntry, Kind } from "@/lib/library/entries";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 export interface ShelfSection {
   readonly id: string;

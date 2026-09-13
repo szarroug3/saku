@@ -40,15 +40,9 @@ import { describe, test } from "node:test";
 import { activeWeaknessPairs, pairKey, pairRecords } from "./confusions.ts";
 import { entryOf, factsOf } from "./facts.ts";
 import { emptySelection, resolve } from "./selection.ts";
-import type {
-  EntryId,
-  FactAggregate,
-  FactId,
-  FactSessionDetail,
-  HistoryFile,
-  QuizSessionRecord,
-  SessionStats,
-} from "../types/index.ts";
+import type { EntryId, FactId } from "../types/facts.ts";
+import type { FactSessionDetail, SessionStats } from "../types/sky.ts";
+import type { FactAggregate, HistoryFile, QuizSessionRecord } from "../types/store.ts";
 
 // ---------- fixtures ----------
 //

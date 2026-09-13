@@ -31,7 +31,8 @@ import { TRACK_INTROS, TRACK_ORDER, type TrackId } from "../data/track-intros.ts
 import { CURRICULUM_PATTERNS } from "./grammar-lesson.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import { startedTracks, trackOf } from "./track-open.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 /** A learner who has done nothing at all. */
 const BLANK: HistoryFile = { sessions: [], facts: {} };

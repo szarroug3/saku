@@ -33,7 +33,7 @@ import {
   readSettingsRowVersioned,
   writeSettingsRowGuarded,
 } from "@/lib/store/supabase-store";
-import type { SettingsFile } from "@/types";
+import type { SettingsFile } from "@/types/store";
 
 /** The compare-and-set store saveSettings runs its read-modify-write through,
  * so two overlapping requests cannot clobber each other's fields. One

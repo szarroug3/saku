@@ -5,7 +5,7 @@
 // the same barrel-avoidance split as fact-counts.ts/entry-summary.ts.
 
 import { entryId, factId } from "@/lib/fact-id";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 export const VOCAB_SUBJECT = "word";
 

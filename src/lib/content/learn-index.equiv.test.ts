@@ -33,7 +33,7 @@ import { VOCAB_FACTS } from "@/data/vocab";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { wordMeaningFactId } from "@/lib/vocab-ids";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { HistoryFile, QuizSessionRecord } from "@/types";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 /** A representative spread of lesson ranges — a tight single-unit lesson, the
  * default-ish band, and a wide one — so the budget/ceiling branches are exercised. */

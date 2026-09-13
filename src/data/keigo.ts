@@ -40,7 +40,7 @@
 
 import { entryId, factId } from "../lib/fact-id.ts";
 import { wordBeginnerRank } from "../lib/word-rank.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
 
 /**
  * The subject every keigo fact carries. Unlike the counters track (which is

@@ -49,7 +49,7 @@ import { readDataJson } from "@/lib/data-file";
 import vocabRuntimeJson from "./generated/vocab-runtime.json" with { type: "json" };
 import numberWordAlternatesJson from "./number-word-alternates.json" with { type: "json" };
 import { entryId, factId, meaningAspect, readingAspect } from "../lib/fact-id.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
 
 export const VOCAB_SUBJECT = "word";
 

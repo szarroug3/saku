@@ -18,7 +18,7 @@
 
 import { kanjiRow, meaningFactId } from "@/data/kanji";
 import { effectiveState } from "@/lib/claims";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * A kanji is KNOWN once its MEANING has been learned — seen, claimed, or tested.

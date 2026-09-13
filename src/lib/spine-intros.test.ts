@@ -45,7 +45,8 @@ import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import { SPINE_ANCHORS, spineIntroPlan } from "./spine-intros.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const GROUPS = curriculum(LESSON_RANGE_DEFAULT);
 const FIRST_SPINE_GROUP = GROUPS.find((g) =>

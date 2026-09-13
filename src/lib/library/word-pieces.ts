@@ -23,7 +23,7 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { READINGS } from "@/data/kanji";
 import type { VocabRow } from "@/data/vocab";
 import { entryForGlyph } from "@/lib/library/entries";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 /** The iteration mark. 人々 is written with one 人 and a 々 that repeats it, but
  * `align` expands both — so a walk over the written form has to know that 々

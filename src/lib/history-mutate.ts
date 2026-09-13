@@ -31,7 +31,7 @@
 // logic is testable without a database. store/supabase-store.ts supplies the real
 // read/CAS-write; history.ts wires the two together for every mutator.
 
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /** A versioned read of the row: the history, the concurrency token to write
  * against, and whether a row exists at all. */

@@ -31,7 +31,8 @@ import { buildMcOptions } from "@/lib/engine";
 import { emptyAggregate, foldSession } from "@/lib/aggregate";
 import { factInfo } from "@/lib/facts";
 import { VOCAB, wordMeaningFactId } from "@/data/vocab";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** A pinned rng, so a failure names one sentence and one board order rather
  * than "sometimes". Any deterministic sequence in [0,1) does. */

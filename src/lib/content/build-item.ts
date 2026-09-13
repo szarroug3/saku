@@ -22,7 +22,7 @@ import { kanjiEntry, kanjiRow, meaningFactId } from "@/data/kanji";
 import { radicalEntry, radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import { wordEntry, wordUnitFacts } from "@/data/vocab";
 import { contentTypeLabel } from "./item";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 import type { ContentItem, ContentKind, PlainKind } from "./item";
 import type { Fact } from "./fact";
 

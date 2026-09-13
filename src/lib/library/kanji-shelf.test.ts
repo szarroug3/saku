@@ -24,7 +24,7 @@ import { describe, test } from "node:test";
 import { KANJI, kanjiTeachOrder } from "@/data/kanji";
 import { curriculumPosition } from "@/lib/curriculum-order";
 import { KANJI_CHUNK, kanjiCuts } from "@/lib/library/kanji-shelf";
-import type { NewKanjiOrder } from "@/types";
+import type { NewKanjiOrder } from "@/types/sky";
 
 const MODES: readonly NewKanjiOrder[] = ["everyday", "grade", "newspaper"];
 const TOTAL = 2136;

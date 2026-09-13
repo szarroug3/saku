@@ -25,7 +25,8 @@ import { ALL_FACTS, entryOf, factsOf } from "@/lib/facts";
 import { LIB_ENTRIES, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
 import { meaningMustShowGlyph } from "@/lib/homophone";
 import { pickRecognitionForFact } from "@/lib/listen-sentence";
-import type { AskConfig, HistoryFile } from "@/types";
+import type { AskConfig } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);

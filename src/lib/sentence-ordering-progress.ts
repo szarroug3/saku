@@ -7,7 +7,8 @@
 // `learnedSentenceTierIds`/`learnedSentenceTierFacts` — live in
 // sentence-ordering-learned.ts for exactly that reason.
 
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** The Library/teaching entry for a sentence tier. */
 export function sentenceTierEntry(tierId: string): EntryId {

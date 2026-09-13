@@ -39,7 +39,8 @@ import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import { curriculumRank, rangedGroups, wordClimbRank } from "@/lib/library/ranged-groups";
 
-import type { EntryId, NewKanjiOrder } from "@/types";
+import type { EntryId } from "@/types/facts";
+import type { NewKanjiOrder } from "@/types/sky";
 
 /** The sections of a shelf.
  *

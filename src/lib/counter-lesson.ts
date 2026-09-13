@@ -20,7 +20,7 @@ import {
 import { CONSTRUCTION_CATEGORIES } from "@/data/counter-categories";
 import { type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 /**
  * A generative NUMBER unit — one scheduler step that teaches a range rule and

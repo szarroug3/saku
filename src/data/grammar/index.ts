@@ -52,7 +52,7 @@ import {
   type VehicleBucket,
 } from "../../lib/grammar/te-endings.ts";
 import type { Form, WordClass } from "../../lib/conjugate/index.ts";
-import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../../types/facts.ts";
 import {
   RECIPES,
   isProducible,

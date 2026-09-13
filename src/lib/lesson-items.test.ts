@@ -37,7 +37,8 @@ import { radicalMeaningFactId } from "../data/radicals.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 /** A learner who has done nothing — so every track's FIRST lesson is what the
  * curriculum modules return. */

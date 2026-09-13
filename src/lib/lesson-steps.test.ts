@@ -35,7 +35,8 @@ import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { radicalConsumerCount } from "./radical-order.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 /** A learner who has met exactly these facts, by the weakest record that
  * counts, "quiz me" — the same shape spine-intros.test.ts's `met` uses. Enough

@@ -1,7 +1,9 @@
 // The two identities everything else is keyed by, and what a consumer may know
 // about a fact. The root of src/types: the Sky's own shapes (sky.ts) and the
 // store's rows (store.ts) both speak this vocabulary, and it depends on
-// neither, which is what keeps the split acyclic. Read through @/types.
+// neither, which is what keeps the split acyclic. Imported as `@/types/facts`:
+// there is no barrel over these three, so an import says which of them it
+// wants and the three files stay three files (SAK-433).
 
 // ---------- identity: entries and facts ----------
 //

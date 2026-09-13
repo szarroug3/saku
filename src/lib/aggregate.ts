@@ -55,13 +55,13 @@
 
 import { EMPTY_COUNTS } from "@/lib/fact-counts";
 import { review, UNMET } from "@/lib/scoring";
+import type { FactId } from "@/types/facts";
 import type {
   FactAggregate,
   FactCounts,
-  FactId,
   QuizSessionRecord,
   SessionFactCounts,
-} from "@/types";
+} from "@/types/store";
 
 export const STANDING_RUN_WINDOW = 10;
 

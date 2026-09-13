@@ -37,7 +37,8 @@ import indexJson from "@/data/generated/learn-index.json" with { type: "json" };
 import type { UnitLessonOf } from "./unit-scheduler-core";
 import type { IndexUnit, LearnIndex } from "./learn-index-types";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import * as scheduler from "./learn-scheduler";
 
 const INDEX = indexJson as unknown as LearnIndex;

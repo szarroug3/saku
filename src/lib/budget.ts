@@ -91,7 +91,8 @@
 
 import { effectiveState } from "@/lib/claims";
 import { rank, status } from "@/lib/scoring";
-import type { FactId, FactState, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactState, HistoryFile } from "@/types/store";
 
 /** Fisher–Yates in place. Local rather than imported from engine/index: that
  * module pulls the whole question/answer runtime, and the budget is a leaf the

@@ -20,13 +20,9 @@ import { test } from "node:test";
 
 import { emptyAggregate, foldSession } from "@/lib/aggregate";
 import { buildSessionRecord } from "@/lib/session-record";
-import type {
-  FactAggregate,
-  FactId,
-  FactSessionDetail,
-  QuizSessionRecord,
-  SessionStats,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactSessionDetail, SessionStats } from "@/types/sky";
+import type { FactAggregate, QuizSessionRecord } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

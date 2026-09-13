@@ -32,7 +32,7 @@ import { entryStanding, entryIsKnown } from "@/lib/library/standing";
 import { ALL_FACTS } from "@/lib/facts";
 import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 // ---- extra claimable surfaces (not in ALL_FACTS) ----------------------------
 const EXTRA_CLAIMABLE: readonly FactId[] = SENTENCE_ORDERING_TIERS.map((t) =>

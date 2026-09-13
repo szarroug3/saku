@@ -20,7 +20,9 @@ import { factInfo } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
 import { grammarVehicleFor, questionsFor } from "@/lib/engine/question";
 import { CLASS_ANCHOR } from "./te-endings";
-import type { AskConfig, FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { AskConfig } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 const EMPTY: HistoryFile = { sessions: [], facts: {}, claims: {} };
 const ALL: AskConfig = {

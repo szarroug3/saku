@@ -52,7 +52,8 @@ import type { TrackId } from "@/data/track-intros";
 import { effectiveState } from "@/lib/claims";
 import { factInfo } from "@/lib/facts";
 import type { LessonItem } from "@/lib/lesson-items";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** Subject id → the track it opens, for the subjects that are one track each.
  * `kana` is absent because it is TWO tracks and needs the glyph to tell them

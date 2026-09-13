@@ -28,7 +28,7 @@ import {
   wordReadingFactId,
 } from "../data/vocab.ts";
 import { wordPitch } from "../data/pitch.ts";
-import type { HistoryFile } from "../types/index.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const NOW = 1_700_000_000_000;
 

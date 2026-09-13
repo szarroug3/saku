@@ -12,12 +12,9 @@ import { describe, test } from "node:test";
 
 import { confusionDecks, lastMisses, lastSession } from "@/lib/decks";
 import { entryOf } from "@/lib/facts";
-import type {
-  FactId,
-  FactSessionDetail,
-  HistoryFile,
-  QuizSessionRecord,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactSessionDetail } from "@/types/sky";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

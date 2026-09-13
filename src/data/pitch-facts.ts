@@ -13,7 +13,7 @@
 // and once answered it is in history and comes due like anything else.
 
 import { rollPitchQuestion } from "@/lib/pitch-quiz";
-import type { FactId, FactInfo } from "@/types";
+import type { FactId, FactInfo } from "@/types/facts";
 
 import { PITCH_SUBJECT } from "./pitch";
 import { VOCAB, wordEntry } from "./vocab";

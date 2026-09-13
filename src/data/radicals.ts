@@ -29,7 +29,7 @@ import kanjiRadicalsJson from "./generated/kanji-radicals.json" with { type: "js
 import orderJson from "./generated/order.json" with { type: "json" };
 import enrichmentJson from "./generated/radical-enrichment.json" with { type: "json" };
 import { entryId, factId } from "../lib/fact-id.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
 
 export const RADICAL_SUBJECT = "radical";
 

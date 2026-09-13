@@ -25,7 +25,7 @@
 // out that ended it.
 
 import { withBackfilledLearnedAt } from "@/lib/history-ops";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /** Namespace for the per-account entries. Distinct from `saku-local-*`, which is
  * the signed-out learner's durable progress and must never be confused with a

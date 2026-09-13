@@ -97,7 +97,9 @@ import {
   constructionCategory,
   isConstructionFact,
 } from "@/data/counter-categories";
-import type { Direction, FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * What to put on screen. Two parts, because one is not enough and three is

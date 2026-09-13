@@ -204,8 +204,8 @@ const {
 } = await import("@/lib/store/supabase-store.ts");
 
 const USER = "user-1";
-const fid = (s: string) => s as unknown as import("@/types").FactId;
-const agg = (n: number) => ({ seen: n }) as unknown as import("@/types").FactAggregate;
+const fid = (s: string) => s as unknown as import("@/types/facts").FactId;
+const agg = (n: number) => ({ seen: n }) as unknown as import("@/types/store").FactAggregate;
 
 describe("progress_facts: reads", () => {
   beforeEach(() => {
@@ -338,8 +338,8 @@ describe("progress_facts: deletes, replace, and the pre-migration fallback", () 
 
   test("replaceAllFactRows replaces the whole set — old ids not in the new set are gone", async () => {
     await replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
-      import("@/types").FactId,
-      import("@/types").FactAggregate
+      import("@/types/facts").FactId,
+      import("@/types/store").FactAggregate
     >);
     const rows = activeTable.userRows(USER);
     assert.equal(rows.has("a"), false);
@@ -351,8 +351,8 @@ describe("progress_facts: deletes, replace, and the pre-migration fallback", () 
     activeTable.exists = false;
     await assert.rejects(
       () => replaceAllFactRows(USER, { c: agg(3) } as unknown as Record<
-        import("@/types").FactId,
-        import("@/types").FactAggregate
+        import("@/types/facts").FactId,
+        import("@/types/store").FactAggregate
       >),
       /deleting progress_facts rows failed/,
     );

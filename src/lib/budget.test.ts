@@ -35,7 +35,8 @@ import {
 import { CLAIMED_DAYS, claimedState, effectiveState, seenState } from "./claims.ts";
 import { KANA_GROUPS, KANA_GROUP_FACTS, nextLesson, setFacts } from "./lesson.ts";
 import { rank } from "./scoring.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const DAY = 86_400_000;
 const NOW = Date.UTC(2026, 0, 15);

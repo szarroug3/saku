@@ -39,7 +39,8 @@ import { patternMeaningFactId } from "@/data/grammar";
 import { factInfo } from "@/lib/facts";
 import { readerFor } from "@/lib/grammar/readable";
 import type { Rng } from "@/lib/grammar/vehicles";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** One recognition showing — plain data, so it rides the screen's serialized
  * runtime exactly like an AssemblyItem does. */

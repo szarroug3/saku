@@ -11,7 +11,7 @@ import { describe, test } from "node:test";
 
 import { CLAIMED_DAYS, claimedState, effectiveState, seenState } from "@/lib/claims";
 import { SCORING, UNMET } from "@/lib/scoring";
-import type { FactState } from "@/types";
+import type { FactState } from "@/types/store";
 
 const DAY = 86_400_000;
 

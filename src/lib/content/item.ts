@@ -5,7 +5,7 @@
 // Stage 0 of docs/architecture-refactor.md: additive, not yet consumed.
 
 import type { ContextPronunciation } from "@/data/kana-context";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 import type { RoleName } from "@/lib/character-role";
 import type { Fact } from "./fact";
 

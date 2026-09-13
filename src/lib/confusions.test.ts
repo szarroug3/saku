@@ -32,14 +32,9 @@ import {
   pairKey,
   pairRecords,
 } from "./confusions.ts";
-import type {
-  EntryId,
-  FactId,
-  FactSessionDetail,
-  HistoryFile,
-  QuizSessionRecord,
-  SessionStats,
-} from "../types/index.ts";
+import type { EntryId, FactId } from "../types/facts.ts";
+import type { FactSessionDetail, SessionStats } from "../types/sky.ts";
+import type { HistoryFile, QuizSessionRecord } from "../types/store.ts";
 
 // ---------- a synthetic subject ----------
 //

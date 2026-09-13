@@ -15,7 +15,9 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
-import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord, SessionStats } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { SessionStats } from "@/types/sky";
+import type { FactAggregate, HistoryFile, QuizSessionRecord } from "@/types/store";
 
 const DAY = 86_400_000;
 

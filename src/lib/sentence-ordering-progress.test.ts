@@ -6,7 +6,8 @@ import {
   sentenceTierMarkerFact,
 } from "./sentence-ordering-progress.ts";
 import { learnedSentenceTierIds } from "./sentence-ordering-learned.ts";
-import type { FactId, HistoryFile, QuizSessionRecord } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile, QuizSessionRecord } from "../types/store.ts";
 
 const A = "grammar:te-request:meaning" as FactId;
 const B = "grammar:mashou:meaning" as FactId;

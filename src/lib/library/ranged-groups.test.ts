@@ -28,7 +28,7 @@ import {
   wordRank,
 } from "./ranged-groups.ts";
 import { type LibEntry } from "./entries.ts";
-import type { EntryId } from "../../types/index.ts";
+import type { EntryId } from "../../types/facts.ts";
 
 /** A stand-in entry. `rangedGroups` reads `.id` and hands the whole entry to the
  * rank function, which reads `.glyph`; the rest is filler for the type. */

@@ -74,7 +74,8 @@ import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** The tracks whose cards are anchored to a curriculum item instead of opened by
  * a subject. They are the three roles of the one spine, and spine-intros.ts owns

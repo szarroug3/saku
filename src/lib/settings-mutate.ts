@@ -36,7 +36,7 @@
 // logic is testable without a database — store/supabase-store.ts supplies the
 // real read/CAS-write and settings.ts wires them together.
 
-import type { SettingsFile } from "@/types";
+import type { SettingsFile } from "@/types/store";
 
 /** A versioned read of the settings half of the row: the file, the concurrency
  * token to write against, and whether a row exists at all. The twin of

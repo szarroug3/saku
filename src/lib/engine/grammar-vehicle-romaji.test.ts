@@ -44,7 +44,8 @@ import {
 } from "@/lib/grammar/vehicles";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
 import { questionsFor, type GrammarVehicle, type PromptContext } from "./question";
-import type { Direction, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { Direction } from "@/types/sky";
 
 /**
  * hiragana → one romaji spelling, read off the SAME kana table `lib/romaji`

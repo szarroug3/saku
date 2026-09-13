@@ -25,7 +25,8 @@ import assemblyJson from "./generated/assembly-corpus.json" with { type: "json" 
 import { patternMeaningFactId } from "./grammar/index.ts";
 import { factInfo } from "../lib/facts.ts";
 import type { Rng } from "../lib/grammar/vehicles.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 /** One draggable piece: its surface text, and the dictionary form of its head
  * content word (for a meaning hint), or null when the piece has no content head

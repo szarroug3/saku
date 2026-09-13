@@ -31,7 +31,8 @@ import {
   SOLID_PCT,
   standingOf,
 } from "@/lib/library/standing";
-import type { EntryId, FactAggregate, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { FactAggregate } from "@/types/store";
 
 
 const NOW = Date.UTC(2026, 0, 1);

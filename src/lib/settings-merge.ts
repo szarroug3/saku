@@ -3,7 +3,7 @@
 // DOM — so the server file (settings.ts) and the tests share one definition of
 // what these operations MEAN. Same split as history-ops.ts vs history.ts.
 
-import type { PracticeFile, SettingsFile } from "@/types";
+import type { PracticeFile, SettingsFile } from "@/types/store";
 
 /** The keys a SettingsFile carries, spelled once so normalise/merge/empty stay
  * in step as fields are added. */

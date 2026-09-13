@@ -75,7 +75,7 @@ import {
   type SentenceOrderingTierId,
 } from "@/data/sentence-ordering-guides";
 import { entryId } from "@/lib/fact-id";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 /** The subject id, in the same shape as KANA_SUBJECT / KANJI_SUBJECT. The URL
  * kind value is `writing-rule`: the shelf is called "Writing rules" on screen,

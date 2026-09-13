@@ -27,7 +27,7 @@ import { PITCH_FACTS, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { RADICAL_FACTS } from "@/data/radicals";
 import { TRANSITIVITY_FACTS } from "@/data/transitivity-facts";
 import { VOCAB_FACTS } from "@/data/vocab";
-import type { EntryId, FactId, FactInfo } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types/facts";
 
 /** Every subject's facts, in the order they should appear. */
 const SUBJECTS: FactInfo[][] = [

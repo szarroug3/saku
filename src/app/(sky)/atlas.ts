@@ -33,7 +33,8 @@ import type { AtlasEntry, AtlasSearchResult, AtlasSection, AtlasShelf, SkyAtlasD
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
-import type { EntryId, HistoryFile } from "@/types";
+import type { EntryId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { standingFor } from "./learner";
 import { conceptTwin, teachFor } from "./teach";

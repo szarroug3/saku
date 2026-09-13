@@ -46,7 +46,8 @@ import {
   emptyHistory,
   normalizeHistoryShell,
 } from "@/lib/history-ops";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 /** This browser's signed-out history. Namespaced `saku-local-` so it reads as
  * "local, awaiting an account" beside the app's other localStorage keys (the

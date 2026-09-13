@@ -22,7 +22,8 @@ import {
   volumeFor,
 } from "@/lib/accuracy";
 import type { CountsByFact } from "@/lib/accuracy";
-import type { FactCounts, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactCounts } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

@@ -25,7 +25,8 @@ import {
   wordKanji,
   wordTeachable,
 } from "./word-lesson.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/facts.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const AT = Date.UTC(2026, 0, 1);
 

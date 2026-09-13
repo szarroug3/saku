@@ -40,12 +40,8 @@
 // resolution. A card on screen has contributed nothing to any of them yet, so
 // there is no in-flight showing for a guard to have to exclude.
 
-import type {
-  FactSessionDetail,
-  SessionStats,
-  FactId,
-  ShowingPresentation,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactSessionDetail, SessionStats, ShowingPresentation } from "@/types/sky";
 import { newFactStat } from "@/lib/engine";
 
 /**

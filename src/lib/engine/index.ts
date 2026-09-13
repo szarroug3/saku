@@ -13,12 +13,8 @@ import {
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { isConstructionFact } from "@/data/counter-categories";
 import { spread } from "@/lib/engine/spread";
-import type {
-  Direction,
-  EntryId,
-  FactId,
-  FactSessionDetail,
-} from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { Direction, FactSessionDetail } from "@/types/sky";
 
 export {
   answerIsJapanese,

@@ -5,7 +5,7 @@ import { enabledFormsFor, formIsMc } from "@/lib/ask-forms";
 import { answerIsJapanese, revealFor } from "@/lib/engine/question";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
 import { isKanaOnly } from "@/lib/romaji";
-import type { AskConfig } from "@/types";
+import type { AskConfig } from "@/types/sky";
 
 const ALL: AskConfig = {
   japanese: {

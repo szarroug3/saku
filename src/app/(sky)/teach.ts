@@ -43,7 +43,7 @@ import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
 

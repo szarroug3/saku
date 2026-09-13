@@ -56,7 +56,7 @@
 // stored link made before this change says, so the one-segment `[entry]` route
 // stays and `entryFromParam` still unwraps it.
 
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { MARKS, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPT_IDS, grammarConceptEntry } from "@/lib/library/library-index";

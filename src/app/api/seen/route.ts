@@ -18,7 +18,7 @@
 import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { dropSeen, saveSeen } from "@/lib/history";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 

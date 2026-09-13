@@ -16,7 +16,7 @@ import { questionsFor, type PromptContext } from "@/lib/engine/question";
 import { CHAR_INDEX, kanaFact } from "@/data/characters";
 import { readingFactId } from "@/data/kanji";
 import { factInfo } from "@/lib/facts";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 const A = kanaFact("あ");
 const I = kanaFact("い");

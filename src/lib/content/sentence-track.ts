@@ -34,7 +34,8 @@ import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { jp2enResponse } from "@/lib/ask-forms";
 import type { ContentItem } from "./item";
 import type { SentenceBuildUnit } from "./teach-unit";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** A learner who knows every word and grammar pattern — the reference against
  * which a tier's canonical worked example is chosen (its readable pool is then

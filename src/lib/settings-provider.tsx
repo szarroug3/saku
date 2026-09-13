@@ -75,7 +75,7 @@ import {
   unregisterSettingsPusher,
 } from "@/lib/settings-sync";
 import { sweepDeadCookie, sweepDeadKeys } from "@/lib/storage-sweep";
-import type { SettingsFile } from "@/types";
+import type { SettingsFile } from "@/types/store";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 

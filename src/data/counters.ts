@@ -50,7 +50,7 @@
 // 二十歳 still carries a number kanji), no longer as a step-over gate.
 
 import { entryId, factId } from "../lib/fact-id.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
 import { numberConstructionEntry } from "./number-construction-id.ts";
 
 /**

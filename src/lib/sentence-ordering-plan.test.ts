@@ -18,7 +18,7 @@ import { SENTENCE_ORDERING_TIERS, type AssemblyTier } from "../data/assembly.ts"
 import { sentenceTierMarkerFact } from "./sentence-ordering-progress.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { applyClaims, emptyHistory } from "./history-ops.ts";
-import type { HistoryFile } from "../types/index.ts";
+import type { HistoryFile } from "../types/store.ts";
 
 const EMPTY: HistoryFile = { sessions: [], facts: {} };
 

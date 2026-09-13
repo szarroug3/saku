@@ -45,7 +45,8 @@ import {
   foldSessions,
   hydrateRecentRuns,
 } from "@/lib/aggregate";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 /**
  * Coerce whatever came out of storage into the four containers a HistoryFile

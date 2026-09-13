@@ -50,7 +50,8 @@ import type { LessonPosition } from "@/lib/lesson-position";
 import { GRAMMAR_SUBJECT, patternMeaningFactId } from "@/data/grammar";
 import { RECIPES, type Level, type Recipe } from "@/data/grammar/recipes";
 import { CURRICULUM_LESSONS, type GrammarLessonDef } from "@/data/grammar/lessons";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /**
  * How many NEW patterns a lesson teaches. The grammar analogue of the words

@@ -17,7 +17,7 @@ import { PHASE_INTROS, PITCH_INTRO } from "../data/phase-intros.ts";
 import { wordMeaningFactId, wordReadingFactId } from "../data/vocab.ts";
 import { meaningFactId, readingFactId, READING_INDEX } from "../data/kanji.ts";
 import { wordPitch } from "../data/pitch.ts";
-import type { HistoryFile } from "../types/index.ts";
+import type { HistoryFile } from "../types/store.ts";
 import type { PitchExampleRow } from "../data/phase-intros.ts";
 
 const HISTORY: HistoryFile = { sessions: [], facts: {} };

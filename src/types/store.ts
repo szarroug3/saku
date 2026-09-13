@@ -9,8 +9,8 @@
 // config field leaves). The Sky's in-flight shapes are sky.ts, and the arrow
 // only points this way: a stored record carries two of them whole
 // (`SettingsFile.cfg`, `QuizSessionRecord.detail`) and sky.ts names nothing
-// from here. Split out of a 923-line src/types/index.ts in SAK-407; read
-// through @/types.
+// from here. Split out of a 923-line src/types/index.ts in SAK-407, and
+// imported as `@/types/store` since SAK-433 took the barrel away.
 
 import type { FactId } from "./facts";
 import type { QuizConfig, QuizMode, SessionStats } from "./sky";

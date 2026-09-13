@@ -24,7 +24,8 @@ import { effectiveState, type Claims } from "@/lib/claims";
 import { constructionConfigForFact } from "@/data/counter-categories";
 import { rank, status, type RankCandidate } from "@/lib/scoring";
 import { transitivitySide } from "@/data/transitivity-facts";
-import type { EntryId, FactAggregate, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { FactAggregate } from "@/types/store";
 
 // SAK-226: `factsOf` (library-index.ts, the ~9.5MB dictionary it reads) used
 // to be imported directly here. slice-bar.tsx — this module's one CLIENT

@@ -53,7 +53,7 @@ import {
   OKURIGANA_MOVING,
   type PhaseIntro,
 } from "@/data/phase-intros";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 /** One page of a grammar lesson: a concept card, or a terse pattern tile.
  *

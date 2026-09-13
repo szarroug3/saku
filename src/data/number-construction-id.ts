@@ -1,5 +1,5 @@
 import { entryId } from "@/lib/fact-id";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 /** The shared subject for a number-construction reference and its drillable fact. */
 export const NUMBER_CONSTRUCTION_SUBJECT = "numbers";

@@ -14,7 +14,7 @@ import {
   writeCachedHistory,
   type HistoryState,
 } from "@/lib/history-cache";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 /** The parts of localStorage this module touches, in memory: get/set/remove plus
  * the length + key(i) pair the prune walks. `store` is exposed so a test can

@@ -25,7 +25,8 @@ import {
   type SettingsStore,
   type SettingsVersionedRead,
 } from "@/lib/settings-mutate";
-import type { QuizConfig, SettingsFile } from "@/types";
+import type { QuizConfig } from "@/types/sky";
+import type { SettingsFile } from "@/types/store";
 
 const USER = "user-1";
 

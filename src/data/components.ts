@@ -27,7 +27,7 @@
 // old stroke-artefacts (｜ a bare vertical, ノ a diagonal) are simply absent.
 
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
-import type { EntryId } from "../types/index.ts";
+import type { EntryId } from "../types/facts.ts";
 import { entryId } from "../lib/fact-id.ts";
 
 /**

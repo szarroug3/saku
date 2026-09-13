@@ -12,7 +12,7 @@ import { buildGlyphItem } from "./build-item.ts";
 import { emptyHistory } from "@/lib/history-ops";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 // A bare item with just the fields the scheduler reads.
 function mk(entry: string, prereqs: string[] = []): ContentItem {

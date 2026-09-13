@@ -45,7 +45,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 import { kanaEntry, kanaFact } from "@/data/characters";
 import { kanjiEntry, meaningFactId as kanjiMeaningFactId } from "@/data/kanji";

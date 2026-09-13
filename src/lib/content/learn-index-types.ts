@@ -6,7 +6,7 @@
 // serializes the live derivation's output into this shape; the loader
 // (learn-index.ts) rehydrates it and runs the content-free scheduler core over it.
 
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 import type { SchedulableItem, SchedulableUnit } from "./unit-scheduler-core";
 
 /** A content item, reduced to the fields the frontier walk and the preview read.

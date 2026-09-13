@@ -31,7 +31,8 @@ import { sentenceItems } from "./sentence-track";
 import { nextTrackLesson } from "./unit-scheduler";
 import type { TeachingUnit, UnitLesson } from "./teach-unit";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** A track at the unit grain: a title and its full teaching sequence of units, in
  * teaching order. History is accepted for symmetry with the item Track (a track

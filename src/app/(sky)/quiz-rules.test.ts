@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 
 import { READING_INDEX } from "@/data/kanji";
 import { markEntry, markFor } from "@/data/marks";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 import { readingRuleFor } from "./quiz-rules";
 

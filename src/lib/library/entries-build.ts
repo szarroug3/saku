@@ -50,7 +50,7 @@ import { pairPattern, shiftLabel } from "@/lib/transitivity-pattern";
 import { KEIGO_SUBJECT, keigoSetEntry, recognitionGloss } from "@/data/keigo";
 import { CURRICULUM_KEIGO_SETS } from "@/lib/keigo-lesson";
 import { factInfo, factsOf } from "@/lib/facts";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 import { COMPARISON_CLUSTER_IDS, COUNTER_KIND, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, readingsOf, type LibEntry } from "./entries";
 
 /**

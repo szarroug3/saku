@@ -11,12 +11,8 @@ import { describe, it } from "node:test";
 
 import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
 import { review } from "@/lib/scoring";
-import type {
-  FactAggregate,
-  FactId,
-  QuizSessionRecord,
-  SessionFactCounts,
-} from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate, QuizSessionRecord, SessionFactCounts } from "@/types/store";
 
 // ---------- the two writers, as they were and as they are ----------
 //

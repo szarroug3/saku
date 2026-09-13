@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { emptyHistory } from "@/lib/history-ops";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 import { pickState } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 

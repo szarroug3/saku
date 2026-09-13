@@ -17,7 +17,7 @@ import { isFactFresh, nextTrackLessonCore } from "@/lib/content/unit-scheduler-c
 import { SCHEDULING_PREVIEW_TRACKS } from "@/lib/content/scheduling-preview";
 import type { TeachingUnit, UnitLesson } from "@/lib/content/teach-unit";
 import type { LessonRange } from "@/lib/lesson-sizing";
-import type { HistoryFile } from "@/types";
+import type { HistoryFile } from "@/types/store";
 
 const MAX_LESSONS = 5000;
 

@@ -9,7 +9,8 @@ import { enabledFormsFor, formIsMc } from "@/lib/ask-forms";
 import { buildMcOptions, checkTyped } from "@/lib/engine";
 import { questionsFor } from "@/lib/engine/question";
 import { speechForFact } from "@/lib/fact-speech";
-import type { AskConfig, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { AskConfig } from "@/types/sky";
 
 const ALL: AskConfig = {
   japanese: {

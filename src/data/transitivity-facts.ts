@@ -37,7 +37,7 @@
 import { entryId, factId } from "../lib/fact-id.ts";
 import { question, type Side } from "../lib/transitivity.ts";
 import { VERB_PAIRS, type VerbPair } from "./transitivity.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo } from "../types/facts.ts";
 
 export const TRANSITIVITY_SUBJECT = "transitivity";
 

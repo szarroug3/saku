@@ -50,7 +50,8 @@ import {
   type ReadingRow,
 } from "@/data/kanji";
 import { vocabRow, wordMeaningFactId } from "@/data/vocab";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** A word is KNOWN once its meaning has been learned — seen, claimed, or tested.
  * The same "not fresh" signal the words and kanji tracks gate on, read here for

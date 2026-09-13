@@ -24,7 +24,7 @@ import { READING_INDEX, type ReadingRow } from "@/data/kanji";
 import { markEntry, markFor } from "@/data/marks";
 import type { QuizReading, QuizRule } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 /** The most readings the breakdown lists: the one asked, then the
  * best-attested others. A character with eleven of them teaches nothing by

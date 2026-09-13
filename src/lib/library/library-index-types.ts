@@ -7,7 +7,7 @@
 // stay on the live derivation in library/entries.ts, read only by entry detail
 // routes, which this index deliberately does not touch.
 
-import type {FactId} from "@/types";
+import type { FactId } from "@/types/facts";
 import type { LibEntry } from "@/lib/library/entries";
 import type { StrokeFallback } from "@/lib/lesson-roles";
 

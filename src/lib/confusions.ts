@@ -59,7 +59,9 @@
 // thing here that knows facts and entries are related at all.
 
 import { STANDING_RUN_WINDOW } from "@/lib/aggregate";
-import type { EntryId, FactId, HistoryFile, SessionStats } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { SessionStats } from "@/types/sky";
+import type { HistoryFile } from "@/types/store";
 
 /** Resolves a fact to the entry it belongs to — src/lib/facts.ts `entryOf`. */
 export type EntryOf = (fact: FactId) => EntryId;

@@ -42,7 +42,8 @@ import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { ItemGate } from "@/sky/components/item-card";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { componentEntry, skyAdder, skyItems, standingFor, type SkyItems } from "./learner";
 

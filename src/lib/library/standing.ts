@@ -57,7 +57,8 @@ import { accuracyOf } from "@/lib/accuracy";
 import type { Claims } from "@/lib/claims";
 import { effectiveState } from "@/lib/claims";
 import { status } from "@/lib/scoring";
-import type { FactAggregate, FactId } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { FactAggregate } from "@/types/store";
 
 export type Standing =
   | "not-seen"

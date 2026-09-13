@@ -89,7 +89,8 @@ import {
 import { type LessonRange } from "@/lib/lesson-sizing";
 import { advancePosition } from "@/lib/lesson-position";
 import type { CompositePosition, LessonPosition } from "@/lib/lesson-position";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 /** One item on a lesson card: a glyph, every role it plays, and what learning it
  * teaches. The spine's item, with the display and drill data joined on. */

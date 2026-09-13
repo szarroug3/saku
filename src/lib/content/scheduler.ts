@@ -32,7 +32,8 @@
 
 import { effectiveState } from "@/lib/claims";
 import { itemCost } from "./cost";
-import type { EntryId, FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";

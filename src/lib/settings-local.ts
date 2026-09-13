@@ -24,7 +24,8 @@
 // use-settings → provider → here cycle.
 
 import { CFG_KEY, PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
-import type { QuizConfig, SettingsFile } from "@/types";
+import type { QuizConfig } from "@/types/sky";
+import type { SettingsFile } from "@/types/store";
 
 /** The Storage surface both directions need. Injected so the whole map is
  * testable with a plain object and no DOM. */

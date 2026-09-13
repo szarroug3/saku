@@ -67,7 +67,7 @@
 // standing.ts, and it will not say "solid" on your say-so.
 
 import { SCORING, UNMET } from "@/lib/scoring";
-import type { FactState, HistoryFile } from "@/types";
+import type { FactState, HistoryFile } from "@/types/store";
 
 /** Fact → ms epoch the claim was made. Its own record, beside `sessions` and
  * `facts` in history.json.

@@ -61,7 +61,7 @@ import {
   VARIANT_INTRO,
 } from "@/data/track-intros";
 import { entryId } from "@/lib/fact-id";
-import type { EntryId } from "@/types";
+import type { EntryId } from "@/types/facts";
 
 /** The subject id, in the same shape as KANA_SUBJECT / MARK_SUBJECT. It is also
  * the URL kind segment (/library/term/jlpt) and the shelf's id. */

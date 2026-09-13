@@ -32,7 +32,8 @@ import {
   withBackfilledLearnedAt,
 } from "@/lib/history-ops";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
-import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 
 const fid = (s: string) => s as unknown as FactId;
 

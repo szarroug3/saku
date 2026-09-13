@@ -19,7 +19,8 @@ import { timedSync } from "@/lib/server-timing";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
 import { cutsOf, deckSize, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { all, SHELVES } from "./atlas";
 import { standingFor, touchedFacts } from "./learner";

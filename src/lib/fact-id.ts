@@ -25,7 +25,7 @@
 // `grammar:sou-appearance/production@adj-i`. `productionAspect` spells that one,
 // and its doc says why the primary host keeps the bare aspect.
 
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId } from "@/types/facts";
 
 /** Mint an entry id. `subject` names the kind ("kana", "kanji", "word", …);
  * `key` identifies it within that subject. */

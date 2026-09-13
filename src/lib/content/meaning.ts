@@ -35,7 +35,7 @@
 //      fact per meaning to drill. Same care CEJC took with legacyUnqualifiedReading.
 
 import REGISTRY from "@/data/generated/meaning-registry.json" with { type: "json" };
-import type { FactId } from "@/types";
+import type { FactId } from "@/types/facts";
 
 const ENTRY_BRAND: unique symbol = Symbol("MeaningId");
 

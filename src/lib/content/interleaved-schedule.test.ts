@@ -60,7 +60,8 @@ import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { TeachingUnit } from "./teach-unit.ts";
 import type { ContentItem } from "./item.ts";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 test("every glyph CURRICULUM_SEQUENCE declares produces at least one schedulable unit", () => {
   // The vocab track's own order — UNIT_TRACKS's actual "vocab" entry, straight

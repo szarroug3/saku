@@ -10,7 +10,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { emptyHistory } from "@/lib/history-ops";
-import type { FactId, HistoryFile } from "@/types";
+import type { FactId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { atlasFromHistory } from "./atlas";
 import { atlasCatalogue, atlasPayloadFor, splitAtlas } from "./atlas-catalogue";
