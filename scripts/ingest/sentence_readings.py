@@ -141,6 +141,13 @@ def build_krd(vocab):
 # spuriously resolve to a content word's keb.
 CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名詞")
 
+# The two 接続助詞 lemmas that belong to the word rather than to the sentence
+# (SAK-422). See analyze_sentence's docstring for why this is a lemma list and
+# not the 接続助詞 tag: て covers て / で / ちゃ / じゃ, ば covers the
+# conditional, and every other 接続助詞 (から, けど, ながら, ので, のに) joins
+# clauses and must stay outside the underline.
+INFLECTING_PARTICLE_LEMMAS = ("て", "ば")
+
 # Hand-corrected sentence readings (SAK-261): the rare case where
 # unidic-lite's tagger resolves a token to a real, dictionary-attested
 # reading that is simply the wrong ONE for this particular sentence, rather
@@ -153,6 +160,14 @@ CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名�
 #     language) -- a real reading of 仏, just not this one. The proverb's 仏
 #     is unambiguously the deity, kun'yomi ホトケ.
 #
+#   - id 138214, 太鼓判を押してくれた。 ("[they] gave it their seal of
+#     approval"): 太鼓判 is たいこばん, one word with rendaku on 判. Whether the
+#     tagger sees it that way depends on which unidic build is installed: one
+#     splits 太鼓判 into 太鼓 + 判 and reads the second half ハン, the plain
+#     on'yomi, which is a real reading of 判 and the wrong one here. Pinning it
+#     makes the committed file the same on either dictionary, which is what a
+#     regeneration has to be able to promise.
+#
 # Keyed by (Tatoeba sentence id, kanji character, 0-based occurrence of that
 # character among the sentence's kanji slots), so a second occurrence of the
 # same character elsewhere in the same sentence is untouched. A short, named
@@ -160,6 +175,7 @@ CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名�
 # human judgement call about sense, not something a rule can catch.
 SENTENCE_READING_OVERRIDES = {
     (10565801, "仏", 0): ("ほとけ", "ほとけ"),
+    (138214, "判", 0): ("ばん", "はん"),
 }
 
 
@@ -189,6 +205,20 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id):
     highlight 思っ and leave った bare, so once the content token is found,
     `end` extends through each immediately-following, contiguous 助動詞
     token -- the whole conjugated surface, not just its first morph.
+
+    TWO PARTICLES ARE PART OF THE FORM, NOT THE CLAUSE (SAK-422). The chain
+    above is not enough on its own, because UniDic tags the て of a て-form and
+    the ば of a conditional as 助詞/接続助詞, not 助動詞: 包んで is 包ん (動詞)
+    + で (接続助詞, lemma て), and the 助動詞-only chain stopped at 包ん, so the
+    page underlined 包ん and left で bare -- the same half-a-word the chain was
+    added to prevent. So the chain also absorbs a following 接続助詞 whose
+    LEMMA is て or ば. Lemma, not surface: it is what makes で (包んで),
+    ちゃ (眠らなくちゃ) and じゃ one entry -- they all lemmatise to て -- while
+    leaving every other 接続助詞 out. That exclusion is the point of matching
+    on those two lemmas rather than on the 接続助詞 tag: から (読んだから),
+    けど (急いでいるけど) and ながら (食べながら) are the same part of speech
+    and they join CLAUSES, so swallowing them would underline a sentence where
+    a word belongs.
     """
     toks = list(tagger(jp))
     offsets = []
@@ -233,8 +263,12 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id):
         end = offsets[i] + len(w.surface)
         j = i + 1
         while j < len(toks):
-            npos1 = getattr(toks[j].feature, "pos1", None) or ""
-            if npos1 != "助動詞":
+            nf = toks[j].feature
+            npos1 = getattr(nf, "pos1", None) or ""
+            npos2 = getattr(nf, "pos2", None) or ""
+            nlemma = getattr(nf, "lemma", None) or ""
+            inflecting = npos1 == "助動詞" or (npos1 == "助詞" and npos2 == "接続助詞" and nlemma in INFLECTING_PARTICLE_LEMMAS)
+            if not inflecting:
                 break
             end = offsets[j] + len(toks[j].surface)
             j += 1
