@@ -4476,7 +4476,7 @@ place rather than two.
 
 Four folds have a title row and take it: the home's Details bar, a lesson
 card's sections, the stroke chart's "All 29 strokes" line, and the "Why?"
-caption. The phone menu keeps its own button, and that is the one judgement
+caption. The phone menu keeps its own button, and that is the one judgment
 call here: the row it sits in belongs to the logo, the nav and the account, so
 there is no title row to make the target, and "Menu" is not a section's name.
 
@@ -4585,8 +4585,8 @@ a suffix. The reading fact is not anchored in 侯 at all: `reanchor` in
 this one off the generated file's 侯 onto 侯爵, so the card asks "what does 侯
 read in 侯爵" rather than asking about the character inside itself.
 
-はえ as 栄え: the row is JMdict's 栄え read はえ, glossed "glory, splendour,
-honour", and it is the only 栄え in the set. It is what anchors 栄's は, and
+はえ as 栄え: the row is JMdict's 栄え read はえ, glossed "glory, splendor,
+honor", and it is the only 栄え in the set. It is what anchors 栄's は, and
 nothing in our data reads 栄え さかえ, so there is no ambiguity for a card to
 fall into. The one thing left is a curation question rather than a data error,
 and it is Sam's: 侯 ranks 10,819th of 12,553 words and 栄え 10,547th, both of
