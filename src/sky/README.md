@@ -4980,3 +4980,86 @@ tests, 3,963 pass and 1 skipped, up eleven on the new manifest file.
 on both lists. No page changed, so no e2e. The archives themselves are not
 committed and never will be: `/scripts/ingest/raw/` is ignored, and one of them,
 CEJC, is licensed for research and education but not for redistribution.
+
+### A kana card takes how the sound is spelled in English (2026-09-13, SAK-435)
+
+From an outside audit Sam relayed: the card asks how あ is SAID, in English, and
+then accepts only "a". "a" is a letter. "ah" is the sound, and it is what an
+English speaker types when asked that question. Marking it wrong tells her that
+her own ear is wrong, which is the one thing a beginner has to trust. Every kana
+accepts the sound spelling beside its romaji now, and the romaji stays first
+everywhere it is shown, because it is what the lesson teaches and what a
+keyboard takes.
+
+**The rule is one line, so the table is generated and not typed.** The Hepburn
+consonant, then the English spelling of its vowel: a is ah, i is ee, u is oo, e
+is eh, o is oh. か takes "kah", し takes "shee", つ takes "tsoo", りょ takes
+"ryoh". `buildSoundSpellings` in src/data/characters.ts derives 216 of them, 102
+distinct across the two scripts, from the romaji the rows already carry, so a
+row added there is covered for free and the two cannot drift apart. Only the Hepburn form converts, which is
+the first of a row's accepted answers: "si" is a keyboard spelling of し, not a
+sound anybody hears, so it grows no "see".
+
+Three fixed forms the rule alone does not reach, all Sam's call. ぎ takes "gee"
+AND "ghee", since English spells this hard g both ways. を takes "woh" AND "oh",
+since it is written wo and said o. ん takes neither, having no vowel to convert,
+and keeps the "n" and "nn" it always had. Nothing is added for long vowels or
+the small っ, which are word-level and typed in kana. And "ay" is not accepted
+for え or for any kana in its row: it is the spelling an English speaker reaches
+for and it is the wrong sound, so accepting it would grade as right the exact
+mistake え's own lesson line warns about ("No glide. It's eh, not ay.").
+
+**The spellings sit beside `R` rather than inside it, because three readers of
+`R` must not see them.** src/lib/romaji.ts builds the typing box's romaji to
+kana index out of these same rows, so "ah" filed as an answer would type あ and
+"koh" would eat the ko of こひ. The Library prints a kana entry's `r` as its
+readings, and あ is not read "ah". And the grader's English layer fuzzes any
+candidate of four letters or more by one edit, which over these would accept
+"chee" for し, "soo" for つ and "kyoh" for きゃ, each of them a DIFFERENT kana's
+answer. So `soundSpellingsFor` publishes them separately and the kana question
+type adds them as exact alternates, in the answer key's `loose` list, which is
+matched by equality and never fuzzed.
+
+**The English matcher does not grade kana at all any more, and that turned out
+to be the older bug.** The card asked for a check that a sound spelling never
+collides with another kana's answers. It does not, but the synonym pool already
+did. That pool is built from WordNet and keyed by the answer string, so it read
+"sa", "ka" and "re" as English words and handed each kana everything they mean:
+210 of the 214 kana carried a pool, 1,762 strings in all. Most were only strange
+(さ took "cpp" and "grama", ど took "karate" and "answer"), but 38 were another
+kana's own answer, so the drill graded "re" right for ら, "ra" right for れ,
+"te" and "ti" right for し, "chee" right for つ, and "oo", which is now う's
+approved spelling, right for か. A kana's answer is a sound written in latin
+letters, not an English word, and あ does not mean anything, which is why
+`answerIsMeaning` is already false for every card in this subject. So the whole
+of what a kana card accepts is now its romaji and its sound spellings, compared
+after case and spacing, and `kanaJp2enKey` says the same thing to the browser.
+Nothing else uses kana's rules: they are the fallback for an unregistered
+subject, and all 214 facts that reach them are kana.
+
+**What the card says, so the box and the rule agree.** The typed box's
+placeholder on a kana reading card was "The reading, in romaji" and is "In
+romaji, or how it sounds". The listening card's instruction was "Listen, then
+type the reading in romaji." and is "Listen, then type the reading in romaji, or
+how it sounds." Those are the only two places a kana card said "in romaji" to a
+learner.
+
+**The lesson's own say lines were read and not changed.** Each mnemonic carries
+a `sound`, and 31 of the 92 disagree with the rule. Twenty-seven of them only
+repeat the romaji ("Say ka", "Say wa", を's "o"), which the drill accepts anyway,
+so they cost nothing. Four are worth Sam's eye and are named in the card's
+closing comment rather than edited here: す and ス say "sue" where the rule says
+"soo", ひ says "he" where the rule says "hee" and where "he" is へ's own romaji,
+and み says "me" where the rule says "mee" and where "me" is め's. The katakana
+twins of the last two already say "hee" and "mee", so each pair disagrees with
+itself as well as with the rule.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,968
+unit tests, 3,967 pass and 1 skipped, fifteen of them new and all in
+src/data/characters.test.ts, which types the approved list out glyph by glyph
+rather than deriving it the way the code does, and grades every string through
+both `checkTyped` and `answerKeyFor` so the two paths cannot disagree. 54 e2e
+pass, one of them new: the あ card answered "ah" in a real browser, which is the
+only proof that the spelling survives the trip from the server's key to the
+grading that happens without it. `scripts/unreachable.mjs --list` at zero, and
+`scripts/unused-exports.mjs` at zero on both lists.
