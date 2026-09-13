@@ -54,6 +54,9 @@ import { RADICALS, bushuName, radicalVariants } from "./radicals";
 import { etymologyOf } from "./kanji-etymology";
 import { exampleFor } from "./word-examples";
 
+import { conjugateAll, conjugateSuruNoun, formsFor } from "@/lib/conjugate";
+import { wordClassOf } from "@/lib/word-forms";
+
 // ---------------------------------------------------------------------------
 // KANJIDIC2, via generated/kanji.json.
 // ---------------------------------------------------------------------------
@@ -471,17 +474,68 @@ test("word-examples.json pins the example sentence shown on a word page", () => 
   assert.deepEqual(wrong.slice(0, 20), []);
 });
 
+/** How many leading characters two strings share. */
+function sharedPrefix(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
+  return i;
+}
+
+/**
+ * Every way this word can be written in a sentence, per the app's own
+ * conjugator: its dictionary form, plus every form the engine generates for its
+ * class, plus the する-compound forms for a noun that takes する (勉強して).
+ *
+ * This is the app's answer, not a second one. `wordClassOf` and `conjugateAll`
+ * are what the word page's Forms section shows, so a span the check below
+ * rejects is a span the learner could not match to anything the same page
+ * teaches.
+ */
+function surfacesOf(keb: string): string[] {
+  const w = vocabRow(keb);
+  if (!w) return [keb];
+  const out = [keb];
+  const cls = wordClassOf(w);
+  if (cls) out.push(...Object.values(conjugateAll(keb, cls).forms));
+  if (w.pos.some((p) => p.includes("takes the aux. verb suru"))) {
+    for (const form of formsFor("vs-i")) {
+      const r = conjugateSuruNoun(keb, form);
+      if (r.ok) out.push(r.value);
+    }
+  }
+  return out;
+}
+
 test("every example sentence highlights the word it is an example of", () => {
   // The span is what the page underlines. An off-by-one underlines the wrong
   // characters and nothing else would notice.
   //
-  // WordExample's own doc says the span is where the word's LITERAL written
-  // form appears, and is absent when the sentence inflects it. That is not what
-  // the file holds: 818 of the 2,990 spans cover an inflected surface
-  // instead (ある is underlined in ありません, いただく in いただきます). The
-  // underline is still on the right word, so this pins the weaker, true claim
-  // and the count, and the mismatch with the comment is written up in
-  // docs/content-review-2026-09.md rather than papered over here.
+  // THE RULE, AND WHY IT IS NOT "the span equals the word" (SAK-422). The span
+  // covers the word's surface AS THIS SENTENCE WRITES IT, which is the
+  // dictionary spelling for 2,172 of the 2,989 and an inflected form for the
+  // other 817: ある is underlined inside ありません, 包む inside 包んで. So the
+  // check below asks the only question that is true of all of them — is the
+  // underlined text a surface of THIS word — and answers it with the app's own
+  // conjugator, the same engine the Forms section on the word page is built
+  // from. Three ways to pass, in order of strength:
+  //
+  //   1. the span is the written form itself, or a form the engine generates;
+  //   2. the span starts with one of those and continues — the tokenizer
+  //      extends a span through the auxiliaries that follow the verb, so
+  //      呼ぶ's span in 呼ばなきゃ is longer than any single generated form;
+  //   3. the span agrees with a generated form further than the word's
+  //      invariant stem — the engine does not enumerate every colloquial or
+  //      composed surface (招かれた, the passive past; 脱いじゃえ), and a span
+  //      that matches 招かれる through 招かれ is inflecting the right verb.
+  //
+  // Clause 3 is the loose one, so it is anchored: the stem is the part every
+  // surface of the word shares with its dictionary form (守 for 守る), and
+  // agreement has to run PAST it. A span on a different word that happened to
+  // start with the same kanji does not pass.
+  //
+  // The three counts are pinned because the rule alone would not notice a
+  // regeneration that silently dropped half the spans.
+  const notThisWord: string[] = [];
   const bad: string[] = [];
   let spanned = 0;
   let literal = 0;
@@ -494,9 +548,24 @@ test("every example sentence highlights the word it is an example of", () => {
       bad.push(`${keb}: span [${start}, ${end}) is outside a sentence of ${ex.jp.length}.`);
       continue;
     }
-    if (ex.jp.slice(start, end) === keb) literal += 1;
+    const underlined = ex.jp.slice(start, end);
+    if (underlined === keb) {
+      literal += 1;
+      continue;
+    }
+    const surfaces = surfacesOf(keb);
+    let stem = keb.length;
+    for (const s of surfaces) stem = Math.min(stem, sharedPrefix(keb, s));
+    const inflected = surfaces.some(
+      (s) => underlined.startsWith(s) || sharedPrefix(underlined, s) > stem,
+    );
+    if (!inflected) {
+      notThisWord.push(`${keb}: "${underlined}" is underlined in ${ex.jp}, and is no form of it.`);
+    }
   }
   assert.deepEqual(bad.slice(0, 20), []);
-  assert.equal(spanned, 2990, "sentences that carry a highlight span");
+  assert.deepEqual(notThisWord.slice(0, 20), []);
+  assert.equal(spanned, 2989, "sentences that carry a highlight span");
   assert.equal(literal, 2172, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 817, "spans that cover an inflected surface of the word");
 });

@@ -140,14 +140,17 @@ describe("the generated artifact", () => {
     // the fixed idiom 大概にする, never the everyday adverb sense) and 英文 (its
     // only sentence is a stilted, machine-translation-flavoured sentence about a
     // translation, and doubles as the 〜として recipe's own example) are each a
-    // one-candidate word whose one candidate is now banned.
+    // one-candidate word whose one candidate is now banned. Then an eighth
+    // (SAK-422): かえる is the frog, and both of its candidates are a verb
+    // written the same way in kana (返る, 孵る), so banning both leaves the
+    // animal with no example rather than a sentence about coming back.
     const fullyExcluded = Object.entries(WRONG_SENSE_EXAMPLES).filter(([w, ids]) => {
       const c = index.get(w) ?? [];
       return c.length > 0 && c.every((ex) => ids.includes(ex.id));
     }).length;
-    assert.equal(fullyExcluded, 7);
+    assert.equal(fullyExcluded, 8);
     assert.equal(EXAMPLE_COUNT, covered - fullyExcluded);
-    assert.equal(EXAMPLE_COUNT, 2990);
+    assert.equal(EXAMPLE_COUNT, 2989);
   });
 
   test("covers most of the words a beginner meets first", () => {
