@@ -37,9 +37,3 @@ export function coverageSegments(counts: CoverageCounts, total: number): { segme
   const untouched = Math.max(0, size - seen);
   return { segments, untouched, overflow };
 }
-
-/** "31 of 2,104 known": the headline a bar pairs with. Known is solid or
- * claimed, the same bar as the Library's filter. */
-export function knownCount(counts: CoverageCounts): number {
-  return (counts.solid ?? 0) + (counts.claimed ?? 0);
-}

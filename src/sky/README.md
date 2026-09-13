@@ -66,12 +66,11 @@ glass is what the test checks them against. `/tokens` (gallery page removed 2026
 How an item is going is one of the app's six words (`src/sky/lib/standing.ts`,
 SAK-294): solid, getting there, shaky, slipping, claimed, not seen. Each has
 its own alias token (`bg-sky-solid`, `text-sky-slipping`) on the night palette,
-so a screen paints the word. `standingOf(evidence)` is the Sky's copy of the
-app's decision table; the caller runs the model and hands over showings, the
-model's verdict (teach, probe, quiet) and the last-ten-runs accuracy, and
-`standing.test.ts` proves the copy agrees with `src/lib/library/standing.ts`
-on a grid of scenarios (that test is the one place Sky code imports the app,
-and it goes at cutover). **A bare coloured mark never appears without its
+so a screen paints the word. The file held a copy of the app's decision table
+too, with a test proving the copy agreed with `src/lib/library/standing.ts` on
+a grid of scenarios; nothing in the Sky ever called it, since a standing
+reaches a surface already decided, on the catalogue or the payload, and it went
+on SAK-433. **A bare coloured mark never appears without its
 word:** the mark is not exported; `StandingChip` and `StandingLegend` in
 `src/sky/components/standing-legend.tsx` are the only ways to paint one, and a
 star fill or coverage bar sits beside a legend. Since SAK-338 the mark is the
@@ -177,7 +176,7 @@ brings and a remove with undo. Every number comes from `src/sky/lib/cart.ts`
 over the graph: `cartSummary` (per-pick `costOf`, total `pieceCount`, the two
 pinned equal), `pickState` (a part never locks; a headword or a kana row
 does, and the cart can supply it), `withoutPick` (removing a pick takes down
-what it held open), `pickBreakdown`. A kana row is a `group`: picked as one,
+what it held open). A kana row is a `group`: picked as one,
 locks what builds on it, drawn, but never a piece itself. The data comes from
 `src/app/.ts` (kana rows from the character sets, words in
 curriculum order, counting, grammar behind a plain-hiragana gate, verb pairs

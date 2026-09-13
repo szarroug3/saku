@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { cartSummary, isPickable, locksOn, pickBreakdown, pickState, withoutPick } from "@/sky/lib/cart";
+import { cartSummary, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -42,9 +42,8 @@ describe("the cart", () => {
     const learned = new Set(["雨", "田", "車"]);
     const s = cartSummary(graph, ["電車"], learned);
     assert.equal(s.pieces, 2); // 電 電車
-    const b = pickBreakdown(graph, s.lines[0]);
-    assert.deepEqual(b.brings, { kanji: 1 });
-    assert.deepEqual(new Set(b.free.map((f) => f.id)), new Set(["田", "車", "雨"]));
+    assert.deepEqual(new Set(s.lines[0].cost.pieces), new Set(["電", "電車"]));
+    assert.deepEqual(new Set(s.lines[0].cost.free), new Set(["田", "車", "雨"]));
   });
 
   it("warns past the cap and never blocks", () => {
@@ -55,9 +54,13 @@ describe("the cart", () => {
   });
 
   it("parts never lock; a headword or a row does, and the cart can open it", () => {
-    assert.deepEqual(locksOn(graph, "電車"), []);
-    assert.deepEqual(locksOn(graph, "pair:開"), ["開く"]);
-    assert.deepEqual(locksOn(graph, "row:ky"), ["row:k"]);
+    // What locks is read through pickState, which is the caller's question:
+    // a prerequisite picked as its own thing shows up in `needs`, and one
+    // that only rides along never does.
+    assert.deepEqual(pickState(graph, "電車", none, []).needs, [], "a kanji and its radicals ride along");
+    assert.equal(pickState(graph, "電車", none, []).available, true);
+    assert.deepEqual(pickState(graph, "row:k", none, []).needs, [], "a row's own five sounds are parts");
+    assert.deepEqual(pickState(graph, "row:ky", none, []).needs, ["row:k"], "a row built on a row locks on it");
     assert.equal(pickState(graph, "pair:開", none, []).available, false);
     assert.deepEqual(pickState(graph, "pair:開", none, []).needs, ["開く"]);
     assert.equal(pickState(graph, "pair:開", none, ["開く"]).available, true);
@@ -76,15 +79,6 @@ describe("the cart", () => {
     const s = cartSummary(graph, ["row:k"], new Set(["き", "こ"]));
     assert.equal(s.pieces, 3);
     assert.deepEqual(new Set(s.lines[0].cost.pieces), new Set(["か", "く", "け"]));
-    const b = pickBreakdown(graph, s.lines[0]);
-    assert.deepEqual(b.brings, { kana: 3 });
-    assert.deepEqual(new Set(b.free.map((f) => f.id)), new Set(["き", "こ"]));
-  });
-
-  it("knows what is picked as its own thing", () => {
-    assert.equal(isPickable(item("x", "word")), true);
-    assert.equal(isPickable(item("か", "kana")), false);
-    assert.equal(isPickable(item("row", "kana", { components: ["か"] })), true);
-    assert.equal(isPickable(item("雨", "radical")), false);
+    assert.deepEqual(new Set(s.lines[0].cost.free), new Set(["き", "こ"]));
   });
 });

@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { coverageSegments, knownCount } from "@/sky/lib/coverage";
+import { coverageSegments } from "@/sky/lib/coverage";
 
 describe("coverage segments", () => {
   it("draws against the whole collection, with the rest untouched", () => {
@@ -36,10 +36,5 @@ describe("coverage segments", () => {
     const { segments, untouched } = coverageSegments({ "not-seen": 50, solid: 1 }, 10);
     assert.deepEqual(segments.map((s) => s.standing), ["solid"]);
     assert.equal(untouched, 9);
-  });
-
-  it("known is solid or claimed", () => {
-    assert.equal(knownCount({ solid: 27, claimed: 2, shaky: 9 }), 29);
-    assert.equal(knownCount({}), 0);
   });
 });

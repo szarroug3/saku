@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { asteroidShape, bodyOf, hashUnit, isUndiscovered, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
+import { asteroidShape, bodyOf, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
@@ -218,8 +218,8 @@ describe("the paint", () => {
     // a picked or opened star is not fog, whatever its standing says
     assert.equal(linePaintFor(star("solid"), star("not-seen", { tonight: true }))?.opacity, 0.8);
     assert.equal(linePaintFor(star("solid"), star("not-seen", { lit: true }))?.opacity, 0.8);
-    assert.equal(isUndiscovered(star("not-seen")), true);
-    assert.equal(isUndiscovered(star("not-seen", { emphasis: true })), false);
+    // nor is one being shown: it takes the accent like any other emphasis
+    assert.equal(linePaintFor(star("solid"), star("not-seen", { emphasis: true }))?.stroke, "var(--sky-accent)");
   });
 
   it("gives the accent to a line at the star being shown, and muting beats it", () => {

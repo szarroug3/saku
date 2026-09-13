@@ -88,7 +88,7 @@ function clashes<T extends ScatterItem>(g: Grid<T>, x: number, y: number, size: 
 
 /** Places items in order into a w by h sky, keeping `pad` between boxes and
  * from the edges. Larger items should come first: they are the hardest to fit. */
-export function scatterLayout<T extends ScatterItem>(items: readonly T[], w: number, h: number, pad: number): Placed<T>[] {
+function scatterLayout<T extends ScatterItem>(items: readonly T[], w: number, h: number, pad: number): Placed<T>[] {
   const placed: Placed<T>[] = [];
   const biggest = items.reduce((n, i) => Math.max(n, i.size), 0);
   const g = makeGrid<T>(w, biggest + pad * 2);
@@ -137,7 +137,7 @@ const PACKING = 0.35;
  * `min`. Grows with what the learner has: a sky of thirty words fits the
  * minimum, a sky of five hundred gets the room it needs and is seen by
  * panning and zooming out, not by overlapping. Rounded to whole units. */
-export function worldFor(items: readonly ScatterItem[], pad: number, min: { width: number; height: number }): { width: number; height: number } {
+function worldFor(items: readonly ScatterItem[], pad: number, min: { width: number; height: number }): { width: number; height: number } {
   const needed = items.reduce((sum, b) => sum + (b.size + pad) ** 2, 0) / PACKING;
   const aspect = min.width / min.height;
   const width = Math.max(min.width, Math.ceil(Math.sqrt(needed * aspect)));
@@ -147,7 +147,7 @@ export function worldFor(items: readonly ScatterItem[], pad: number, min: { widt
 /** True when any two placed boxes overlap, allowing for the padding. Each
  * box is tested against the neighbourhood of those before it, so the answer
  * is the same as comparing every pair and the cost is not. */
-export function anyOverlap(placed: readonly Placed[], pad: number): boolean {
+function anyOverlap(placed: readonly Placed[], pad: number): boolean {
   let biggest = 0, width = 0;
   for (const p of placed) { biggest = Math.max(biggest, p.size); width = Math.max(width, p.x + p.size); }
   const g = makeGrid<ScatterItem>(width, biggest + pad * 2);
@@ -178,7 +178,3 @@ export function scatterInWorld<T extends ScatterItem>(items: readonly T[], min: 
   return { placed, world };
 }
 
-/** True when two placed boxes overlap, allowing for the padding. */
-export function overlaps(a: Placed, b: Placed, pad = 0): boolean {
-  return a.x < b.x + b.size + pad && a.x + a.size + pad > b.x && a.y < b.y + b.size + pad && a.y + a.size + pad > b.y;
-}

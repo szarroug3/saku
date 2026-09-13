@@ -10,7 +10,15 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { deflateSync, inflateSync } from "node:zlib";
 
-import { encodePngRgb, encodePngRgba } from "@/sky/lib/png-encode";
+import { encodePngRgb, pngDataUrl } from "@/sky/lib/png-encode";
+
+/** The RGBA encoder is reached the way the bake reaches it, through the data
+ * URL sky-wash.css stores; this unwraps that back to the bytes. */
+function pngFromDataUrl(url: string): Buffer {
+  const m = /^url\("data:image\/png;base64,([A-Za-z0-9+/=]+)"\)$/.exec(url);
+  assert.ok(m, "a data URL the stylesheet could hold");
+  return Buffer.from(m[1], "base64");
+}
 
 /** Reads back an 8-bit RGB or RGBA PNG written by this module. */
 function decode(png: Buffer): { w: number; h: number; channels: number; filters: number[]; pixels: Buffer } {
@@ -89,7 +97,7 @@ describe("the PNG encoder", () => {
     for (let i = 0; i < w * h; i++) {
       px[i * 4] = i % 256; px[i * 4 + 1] = (i * 7) % 256; px[i * 4 + 2] = 0; px[i * 4 + 3] = i % 3 === 0 ? 0 : 255;
     }
-    const back = decode(encodePngRgba(px, w, h));
+    const back = decode(pngFromDataUrl(pngDataUrl(px, w, h)));
     assert.equal(back.channels, 4);
     assert.deepEqual([...back.pixels], [...px]);
   });

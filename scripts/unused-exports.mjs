@@ -13,19 +13,29 @@
 //   node scripts/unused-exports.mjs                     the Sky and its routes
 //   node scripts/unused-exports.mjs src/lib             somewhere else
 //
-// TWO LISTS, and only the first is a failure.
+// TWO LISTS, and both are failures now.
 //
 // The first is a name nothing outside its own file imports at all. There is
 // nothing to weigh: either the module itself reads it, and the `export` comes
-// off, or nothing does, and the name goes. It exits non-zero on any of these,
-// so it can sit in a check.
+// off, or nothing does, and the name goes.
 //
-// The second is a name whose only importer is the test beside it. That is
-// worth knowing and is not automatically wrong: a lib module's unit test is a
-// real reader, and the exports it names are the surface it exists to check.
-// `NO_RUN` was in this list and deserved deleting, because it stood in for a
-// literal `null` and the test read better without it. Most of the rest are
-// the module's own tested surface. Read the list; do not clear it by reflex.
+// The second is a name whose only importer is the test beside it. This one
+// printed and did not fail for a round, on the argument that a lib module's
+// unit test is a real reader and the exports it names are the surface the
+// module exists to offer. Sam's review (SAK-433) settled it the other way, and
+// clearing the 27 it held showed why: `export` on a name only a test reaches
+// says nothing about the module's surface, only about where the test chose to
+// cut in. Nine of them were private helpers whose assertions read as well or
+// better through the function the app actually calls; eight were work no
+// caller had wanted for months (`standingOf`, the Sky's unused copy of the
+// app's standing decision, and the wash editor's preview, gone with its page).
+//
+// So a name here is a question with two answers and no third: the module reads
+// it, and the `export` comes off, or nothing does, and it goes. A test that
+// needs a private type can name it off an exported function
+// (`Parameters<typeof f>[0]`) rather than asking for the type itself.
+//
+// It exits non-zero on either list, so it can sit in a check.
 //
 // What it does NOT report, because the reader is not an import:
 //   - a Next.js route file's contract (`default`, `metadata`, `dynamic` and
@@ -169,5 +179,7 @@ for (const file of subjects.sort()) {
 console.log(`${unread.length} exports nothing outside their own file imports, over ${subjects.length} files`);
 for (const f of unread) console.log(`  ${f.file}:${f.line}  ${f.name}  ${f.inside ? "(drop the export)" : "(dead)"}`);
 console.log(`${testOnly.length} more whose only importer is the test beside them`);
-if (process.argv.includes("--list")) for (const f of testOnly) console.log(`  ${f.file}:${f.line}  ${f.name}`);
-process.exit(unread.length ? 1 : 0);
+// Printed whether or not --list is given, now that they fail: a check that
+// says a number and not a name cannot be acted on.
+for (const f of testOnly) console.log(`  ${f.file}:${f.line}  ${f.name}`);
+process.exit(unread.length || testOnly.length ? 1 : 0);

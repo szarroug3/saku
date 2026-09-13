@@ -4,37 +4,59 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { anyOverlap, overlaps, scatterInWorld, scatterLayout, worldFor } from "@/sky/lib/scatter";
+import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
 import { bySizeDesc, skyRoots, skyStars, tallyStandings } from "@/sky/lib/sky-scene";
 import type { SkyItem } from "@/sky/lib/types";
 
+/** The test's own overlap test, deliberately not the module's: a scatter that
+ * checked itself with the same predicate it places by would agree with itself
+ * whatever either of them did. This is the plain pairwise rectangle test. */
+const overlaps = (a: Placed, b: Placed, pad = 0): boolean =>
+  a.x < b.x + b.size + pad && a.x + a.size + pad > b.x && a.y < b.y + b.size + pad && a.y + a.size + pad > b.y;
+
+/** No two of them, over every pair. */
+function anyPairOverlaps(placed: readonly Placed[], pad: number): string | null {
+  for (let i = 0; i < placed.length; i++) {
+    for (let j = i + 1; j < placed.length; j++) {
+      if (overlaps(placed[i], placed[j], pad)) return `${placed[i].item.key} overlaps ${placed[j].item.key}`;
+    }
+  }
+  return null;
+}
+
 describe("scatter layout", () => {
   const twelve = Array.from({ length: 12 }, (_, i) => ({ key: `word${i}`, size: 60 + (i % 4) * 18 }));
+  const sky = { width: 1120, height: 460 };
 
   it("places the sample learner's twelve constellations with no overlaps", () => {
-    const placed = scatterLayout(twelve, 1120, 460, 26);
+    const { placed, world } = scatterInWorld(twelve, sky, 26);
     assert.equal(placed.length, 12);
-    for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.ok(!overlaps(placed[i], placed[j], 26), `${placed[i].item.key} overlaps ${placed[j].item.key}`);
-    for (const p of placed) assert.ok(p.x >= 26 && p.y >= 26 && p.x + p.size <= 1120 - 26 && p.y + p.size <= 460 - 26, "inside the sky");
+    assert.equal(anyPairOverlaps(placed, 26), null);
+    for (const p of placed) assert.ok(p.x >= 26 && p.y >= 26 && p.x + p.size <= world.width - 26 && p.y + p.size <= world.height - 26, "inside the sky");
   });
 
-  it("is seeded by the key: the same word lands in the same place, alone or first", () => {
-    const alone = scatterLayout([twelve[3]], 1120, 460, 26)[0];
-    const first = scatterLayout([twelve[3], ...twelve.slice(0, 3)], 1120, 460, 26)[0];
-    assert.deepEqual([alone.x, alone.y], [first.x, first.y]);
-    assert.deepEqual(scatterLayout(twelve, 1120, 460, 26), scatterLayout(twelve, 1120, 460, 26));
+  it("is seeded by the key: the same word lands in the same place twice over", () => {
+    const a = scatterInWorld(twelve, sky, 26);
+    const b = scatterInWorld(twelve, sky, 26);
+    assert.deepEqual(b.placed, a.placed);
+    assert.deepEqual(b.world, a.world);
   });
 
   it("gives up gracefully when the sky is full, rather than hanging or dropping anything", () => {
     const many = Array.from({ length: 40 }, (_, i) => ({ key: `w${i}`, size: 120 }));
-    const placed = scatterLayout(many, 400, 300, 10);
+    const { placed } = scatterInWorld(many, { width: 400, height: 300 }, 10);
     assert.equal(placed.length, 40);
     for (const p of placed) assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y));
   });
 
-  it("shrinks a box that could never fit the sky", () => {
-    const [p] = scatterLayout([{ key: "huge", size: 900 }], 300, 200, 10);
-    assert.equal(p.size, 180);
+  it("sizes the world to the box rather than shrinking the box", () => {
+    // The old test here reached scatterLayout directly and handed it a sky too
+    // small for its one box, to watch the box clamp. Through the only caller
+    // that cannot happen: the world is sized from the boxes first, so a box
+    // keeps the size it asked for and the sky grows around it (SAK-433).
+    const { placed, world } = scatterInWorld([{ key: "huge", size: 900 }], { width: 300, height: 200 }, 10);
+    assert.equal(placed[0].size, 900);
+    assert.ok(world.width >= 900 + 20 && world.height >= 900 + 20, "the sky opened up for it");
   });
 });
 
@@ -70,10 +92,10 @@ describe("a small sky", () => {
     const rows = ["kana-row:h-vowels", "kana-row:h-k", "kana-row:h-s"].map((key) => ({ key, size: 76 }));
     const min = { width: 340, height: 230 };
     const a = scatterInWorld(rows, min, 16);
-    assert.ok(!anyOverlap(a.placed, 16));
+    assert.equal(anyPairOverlaps(a.placed, 16), null);
     for (const order of [[rows[0], rows[2], rows[1]], [rows[2], rows[1], rows[0]]]) {
       const b = scatterInWorld(order, min, 16);
-      assert.ok(!anyOverlap(b.placed, 16));
+      assert.equal(anyPairOverlaps(b.placed, 16), null);
       assert.deepEqual(b.world, a.world);
       assert.deepEqual(b.placed.map((p) => [p.item.key, p.x, p.y]), a.placed.map((p) => [p.item.key, p.x, p.y]));
     }
@@ -86,16 +108,15 @@ describe("a small sky", () => {
   });
 });
 
-describe("worldFor", () => {
+describe("the world a scatter asks for", () => {
   it("keeps the minimum world for a small sky, and grows it to fit a large one", () => {
     const min = { width: 1120, height: 900 };
     const few = Array.from({ length: 30 }, (_, i) => ({ key: `w${i}`, size: 60 }));
-    assert.deepEqual(worldFor(few, 26, min), min);
+    assert.deepEqual(scatterInWorld(few, min, 26).world, min);
     const many = Array.from({ length: 500 }, (_, i) => ({ key: `w${i}`, size: 60 }));
-    const world = worldFor(many, 26, min);
+    const { placed, world } = scatterInWorld(many, min, 26);
     assert.ok(world.width > min.width && world.height > min.height);
     assert.ok(Math.abs(world.width / world.height - 1120 / 900) < 0.01, "keeps the shape");
-    const placed = scatterLayout(many, world.width, world.height, 26);
-    for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.ok(!overlaps(placed[i], placed[j], 26), `${placed[i].item.key} overlaps ${placed[j].item.key}`);
+    assert.equal(anyPairOverlaps(placed, 26), null);
   });
 });

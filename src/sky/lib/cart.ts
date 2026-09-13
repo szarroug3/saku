@@ -28,13 +28,13 @@ const PICKED_AS_OWN: ReadonlySet<SkyKind> = new Set(["word", "counter", "grammar
 /** True when an item is chosen on its own in the Planetarium, rather than
  * riding along under something else: every kind but the parts, plus a kana
  * row (a kana with components), but not a single kana. */
-export function isPickable(item: SkyItem): boolean {
+function isPickable(item: SkyItem): boolean {
   if (PICKED_AS_OWN.has(item.kind)) return true;
   return item.kind === "kana" && (item.components?.length ?? 0) > 0;
 }
 
 /** The direct prerequisites of `id` that lock it: those picked as their own thing. */
-export function locksOn(graph: PrerequisiteGraph, id: string): string[] {
+function locksOn(graph: PrerequisiteGraph, id: string): string[] {
   return graph.prerequisitesOf(id).filter((p) => { const it = graph.itemOf(p); return !!it && isPickable(it); });
 }
 
@@ -88,24 +88,4 @@ export function withoutPick(graph: PrerequisiteGraph, picks: readonly string[], 
     if (kept.length === next.length) return kept;
     next = kept;
   }
-}
-
-/** What a pick brings, by kind, not counting the pick itself: "1 kanji, 2
- * pieces under it". `free` are the learned prerequisites it would have
- * needed; `shared` the ones an earlier pick already brings. */
-interface PickBreakdown {
-  brings: Partial<Record<SkyKind, number>>;
-  free: SkyItem[];
-  shared: SkyItem[];
-}
-
-export function pickBreakdown(graph: PrerequisiteGraph, line: PickLine): PickBreakdown {
-  const brings: Partial<Record<SkyKind, number>> = {};
-  for (const p of line.cost.pieces) {
-    if (p === line.id) continue;
-    const kind = graph.itemOf(p)?.kind;
-    if (kind) brings[kind] = (brings[kind] ?? 0) + 1;
-  }
-  const items = (ids: readonly string[]) => ids.map((i) => graph.itemOf(i)).filter((x): x is SkyItem => !!x);
-  return { brings, free: items(line.cost.free), shared: items(line.cost.shared) };
 }

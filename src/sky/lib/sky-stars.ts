@@ -21,7 +21,7 @@ export interface StarSpec {
 
 /** The Milky Way's stars: a share (0 = none, 1 = the most), then the same
  * radius and opacity ranges. They follow the band's angle and shift. */
-export interface MilkyStars {
+interface MilkyStars {
   angle: number; // the band's angle, CSS degrees
   shift: number; // the band's shift along its gradient line, % (0 = as drawn)
   stars: number; // density share, 0 to 1
@@ -39,8 +39,8 @@ export const TILE_PX = TILE * 2;
 
 /** The Milky Way field is drawn for a 16:9 box and shown with cover, like the
  * baked bitmap, so in the baked mode the stars and the band always agree. */
-export const FIELD_W = 1600;
-export const FIELD_H = 900;
+const FIELD_W = 1600;
+const FIELD_H = 900;
 
 /** Where the band's centre sits along the gradient line before any shift, as
  * a share of the line: between the lilac (45%) and pink (53%) stops. */
@@ -52,7 +52,7 @@ interface Dot { x: number; y: number; r: number; a: number }
 
 /** The stardust's dots, in tile pixels (2x). Radii favour the small end, so
  * a field reads as a few bright stars among many faint ones. */
-export function stardustDots(spec: StarSpec): Dot[] {
+function stardustDots(spec: StarSpec): Dot[] {
   const rnd = seeded(spec.seed);
   const dots: Dot[] = [];
   for (let i = 0; i < Math.round(spec.density); i++) {
@@ -65,7 +65,7 @@ export function stardustDots(spec: StarSpec): Dot[] {
 }
 
 /** Draws white dots into a transparent RGBA buffer, anti-aliased by coverage. */
-export function rasterise(dots: Dot[], w: number, h: number): Uint8ClampedArray {
+function rasterise(dots: Dot[], w: number, h: number): Uint8ClampedArray {
   const px = new Uint8ClampedArray(w * h * 4);
   for (const d of dots) {
     const x0 = Math.max(0, Math.floor(d.x - d.r - 1)), x1 = Math.min(w - 1, Math.ceil(d.x + d.r + 1));
@@ -90,13 +90,13 @@ export function stardustPixels(spec: StarSpec): Uint8ClampedArray {
 }
 
 /** The direction a CSS linear-gradient angle runs, in screen coordinates. */
-export function gradientDirection(angleDeg: number): [number, number] {
+function gradientDirection(angleDeg: number): [number, number] {
   const a = (angleDeg * Math.PI) / 180;
   return [Math.sin(a), -Math.cos(a)];
 }
 
 /** The length of the gradient line for that angle over a w by h box. */
-export function gradientLength(angleDeg: number, w: number, h: number): number {
+function gradientLength(angleDeg: number, w: number, h: number): number {
   const a = (angleDeg * Math.PI) / 180;
   return Math.abs(w * Math.sin(a)) + Math.abs(h * Math.cos(a));
 }
@@ -104,7 +104,7 @@ export function gradientLength(angleDeg: number, w: number, h: number): number {
 /** Along the band runs perpendicular to the gradient, pointed so that
  * "further along" means down for a band that is mostly vertical and right
  * for one that is mostly horizontal: what a location slider should mean. */
-export function bandDirection(angleDeg: number): [number, number] {
+function bandDirection(angleDeg: number): [number, number] {
   const [dx, dy] = gradientDirection(angleDeg);
   let px = -dy, py = dx;
   if (Math.abs(py) >= Math.abs(px) ? py < 0 : px < 0) { px = -px; py = -py; }
@@ -115,7 +115,7 @@ export function bandDirection(angleDeg: number): [number, number] {
  * how far along the band direction the line runs before it leaves the frame
  * (from `from`, where it enters, to `to`, where it leaves; both 0 if the band
  * misses the frame). Location and reach are measured on this run. */
-export function bandSpan(m: { angle: number; shift: number }, w: number, h: number): { cx: number; cy: number; from: number; to: number } {
+function bandSpan(m: { angle: number; shift: number }, w: number, h: number): { cx: number; cy: number; from: number; to: number } {
   const [dx, dy] = gradientDirection(m.angle);
   const [px, py] = bandDirection(m.angle);
   const v = (MILKY_CENTRE + m.shift / 100 - 0.5) * gradientLength(m.angle, w, h);
@@ -132,7 +132,7 @@ export function bandSpan(m: { angle: number; shift: number }, w: number, h: numb
 /** The Milky Way's dots for a w by h box. They run the band's whole visible
  * length and cluster across it by starWidth (most near the centre line, a
  * few drifting out); starX then slides the whole field left or right. */
-export function milkyDots(m: MilkyStars, w = FIELD_W, h = FIELD_H, seed = 11): Dot[] {
+function milkyDots(m: MilkyStars, w = FIELD_W, h = FIELD_H, seed = 11): Dot[] {
   const count = Math.round(Math.max(0, Math.min(1, m.stars)) * 900);
   if (count === 0) return [];
   const rnd = seeded(seed);

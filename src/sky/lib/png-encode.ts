@@ -79,7 +79,7 @@ function encode(pixels: Uint8Array, w: number, h: number, bpp: number): Buffer {
 }
 
 /** Encodes w by h RGBA pixels (4 bytes each, row-major) as an 8-bit RGBA PNG. */
-export function encodePngRgba(pixels: Uint8ClampedArray | Uint8Array, w: number, h: number): Buffer {
+function encodePngRgba(pixels: Uint8ClampedArray | Uint8Array, w: number, h: number): Buffer {
   return encode(new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength), w, h, 4);
 }
 

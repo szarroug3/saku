@@ -2,11 +2,12 @@
 // means the same thing on the sky, in the Atlas, in the Planetarium and in
 // Practice. Tracked as SAK-294.
 //
-// The words are the app's own, from src/lib/library/standing.ts, and so is the
-// decision table: this file is the Sky's copy of it (the boundary forbids the
-// import), and sky/lib/standing.test.ts proves the copy agrees with the
-// original on every scenario. What the Sky does NOT copy is the scoring model
-// behind `recall`: the caller hands that reading in, already made.
+// The words are the app's own, from src/lib/library/standing.ts. The decision
+// that picks one of them is the app's too, and stays there: this file once
+// carried a copy of it, with a test proving the copy agreed on every scenario,
+// and nothing in the Sky ever called the copy. A standing reaches a Sky
+// surface already decided, on the catalogue or the payload, so what is left
+// here is the vocabulary and how it paints (SAK-433).
 //
 //   not seen       no showings, no claim ....... it has never asked you.
 //   claimed        met or claimed, untested .... opened in a lesson, or marked
@@ -33,10 +34,6 @@ export type Standing =
 /** The order every legend, filter and coverage bar shows them: best first,
  * then the two the app has no evidence for. */
 export const STANDING_ORDER: readonly Standing[] = ["solid", "getting-there", "shaky", "slipping", "claimed", "not-seen"];
-
-/** At least 60% of recent runs is "getting there"; at least 80% is solid. */
-const GETTING_THERE_PCT = 60;
-const SOLID_PCT = 80;
 
 /**
  * How each standing reads and paints. The classes are the `--sky-<standing>`
@@ -67,58 +64,3 @@ export function standingWord(standing: Standing): string {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-/** True when the app is willing to count it as known: proved, or claimed. The
- * same bar the current Library's "known" filter uses, per fact. */
-export function isKnown(standing: Standing): boolean {
-  return standing === "solid" || standing === "claimed";
-}
-
-/** What tonight's drill reaches for first: the two standings that say the
- * learner had it and is losing it, or never quite had it. */
-export function needsWork(standing: Standing): boolean {
-  return standing === "shaky" || standing === "slipping";
-}
-
-/**
- * Everything `standingOf` needs to know about one fact. The caller has
- * already run the app's model: `recall` is its reading of the fact's effective
- * state (history, claims and "quiz me" resolved, newest record winning) at the
- * moment in question, and `recentAccuracy` its score over the last ten runs.
- * Neither number is a prediction the UI could leak: one is an action word,
- * the other a count over a count.
- */
-export interface StandingEvidence {
-  /** Showings. 0 for anything never answered, including a claim, which
-   * records no counts on purpose. */
-  seen: number;
-  /** The model's verdict at `now`: teach (never met, or lost), probe (unsure),
-   * quiet (expects you to recall it right now). */
-  recall: "teach" | "probe" | "quiet";
-  /** Percent of the last ten runs that landed (or of all showings when there
-   * are no runs on record); null when there is nothing to score. */
-  recentAccuracy: number | null;
-  /** When the learner said "I already know this", if ever. */
-  claimedAt?: number;
-  /** When the fact was last really tested. */
-  lastTested?: number;
-}
-
-/** One word for how it is going. The same crossing the app makes: the model's
- * recency reading AND the learner's record, and "solid" needs both. */
-export function standingOf(e: StandingEvidence): Standing {
-  const seen = e.seen ?? 0;
-  const tested = e.lastTested ?? 0;
-  // A claim never tested gets its own word, checked before any arithmetic: it
-  // reports the act, not a finding. Once its belief has decayed to "teach" it
-  // reads "not seen", as untested material should.
-  if (!seen && e.claimedAt && e.recall !== "teach") return "claimed";
-  if (!seen) return "not-seen";
-  // A newer claim over tested material is the learner marking it known now;
-  // the next real test can still move it back out.
-  if (e.claimedAt && e.claimedAt > tested) return "solid";
-  // Showings behind it, lost to time: re-teach, not re-test.
-  if (e.recall === "teach") return "slipping";
-  const pct = e.recentAccuracy;
-  if (pct !== null && pct >= SOLID_PCT) return "solid";
-  return pct !== null && pct >= GETTING_THERE_PCT ? "getting-there" : "shaky";
-}

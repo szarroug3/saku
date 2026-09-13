@@ -296,7 +296,7 @@ export function paintFor(look: StarLook): Paint {
 
 /** Nothing has been opened or claimed here, and the lesson is not showing
  * it either: the sky's own word is "undiscovered". */
-export function isUndiscovered(look: StarLook): boolean {
+function isUndiscovered(look: StarLook): boolean {
   return !look.emphasis && !look.lit && !look.tonight && look.standing === "not-seen";
 }
 

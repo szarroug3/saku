@@ -3,10 +3,11 @@
 //
 // The file stays the source of truth and stays hand-editable: every layer is
 // a few named knobs, and the LAYERS block at the bottom is generated from them
-// by `renderWashFile`. The wash editor (/wash) parses the file with
-// `parseWashFile`, edits the model, previews it with `resolvedMesh`, and saves
-// it back through the dev API, which renders the file again. No React, no app
-// imports, so the test and the route can both use it.
+// by `renderWashFile`. The wash editor that used to live at /dev/sky/wash
+// parsed the file with `parseWashFile`, edited the model and saved it back
+// through the dev API, which renders the file again; it was removed on
+// 2026-09-04 and is a git restore away. No React, no app imports, so the test
+// and the bake script can both use this.
 
 // Relative, with the extension, so plain Node (the bake script) can load this file too.
 import { DEFAULT_STARS, milkyStarfield, type StarSpec } from "./sky-stars.ts";
@@ -63,7 +64,7 @@ const num = (s: string) => { const n = Number(s.replace(/%|deg$/, "")); if (Numb
 const fmt = (n: number) => String(Math.round(n * 1000) / 1000);
 
 /** Every `--sky-*` declaration in a stylesheet, in file order, comments ignored. */
-export function skyDeclarations(css: string): Array<[string, string]> {
+function skyDeclarations(css: string): Array<[string, string]> {
   const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const out: Array<[string, string]> = [];
   for (const m of code.matchAll(/--sky-([a-z0-9-]+):\s*([\s\S]*?);[ \t]*(?=\r?\n|$)/g)) out.push([m[1], m[2].trim()]);
@@ -111,51 +112,41 @@ export function parseWashFile(css: string): WashModel {
   return { zenith: need("zenith"), ground: need("ground"), ground2: need("ground-2"), sweepMid: num(need("sweep-mid")), stars, layers };
 }
 
-/** The CSS for one layer. With `resolve`, colours and strengths are literal
- * (for a live preview); without, they reference the layer's knobs. */
-export function layerCss(layer: WashLayer, resolve: boolean): string {
-  const c = (knob: string, colour: Rgb, alphaKnob: string, alpha: number, share = 1) =>
-    resolve ? `rgba(${colour.join(", ")}, ${fmt(alpha * share)})` : share === 1 ? `rgba(var(--sky-${knob}), var(--sky-${alphaKnob}))` : `rgba(var(--sky-${knob}), calc(var(--sky-${alphaKnob}) * ${share}))`;
+/**
+ * The CSS for one layer, every colour and stop referencing the layer's own
+ * knobs, which is what the LAYERS block at the bottom of sky-wash.css holds.
+ *
+ * This used to take a `resolve` flag as well, and with it wrote the same
+ * gradient with literal colours for the editor's live preview. The editor went
+ * to git on 2026-09-04 and `resolvedMesh`, the only caller that ever passed
+ * true, had no caller of its own left; both are gone (SAK-433). Restoring the
+ * editor means restoring them together, from the same commit as its page.
+ */
+function layerCss(layer: WashLayer): string {
+  const c = (knob: string, alphaKnob: string, share = 1) =>
+    share === 1 ? `rgba(var(--sky-${knob}), var(--sky-${alphaKnob}))` : `rgba(var(--sky-${knob}), calc(var(--sky-${alphaKnob}) * ${share}))`;
   if (layer.kind === "glow") {
     const k = `glow-${layer.id}`;
-    const size = resolve ? `${layer.size[0]}% ${layer.size[1]}%` : `var(--sky-${k}-size)`;
-    const at = resolve ? `${layer.at[0]}% ${layer.at[1]}%` : `var(--sky-${k}-at)`;
     const [t28, t52, t76, t92] = layer.tail;
-    return `radial-gradient(${size} at ${at}, ${c(k, layer.colour, `${k}-strength`, layer.strength)} 0%, ${c(k, layer.colour, `${k}-strength`, layer.strength, t28)} 28%, ${c(k, layer.colour, `${k}-strength`, layer.strength, t52)} 52%, ${c(k, layer.colour, `${k}-strength`, layer.strength, t76)} 76%, ${c(k, layer.colour, `${k}-strength`, layer.strength, t92)} 92%, transparent 100%)`;
+    return `radial-gradient(var(--sky-${k}-size) at var(--sky-${k}-at), ${c(k, `${k}-strength`)} 0%, ${c(k, `${k}-strength`, t28)} 28%, ${c(k, `${k}-strength`, t52)} 52%, ${c(k, `${k}-strength`, t76)} 76%, ${c(k, `${k}-strength`, t92)} 92%, transparent 100%)`;
   }
   if (layer.kind === "milky") {
-    const angle = resolve ? `${layer.angle}deg` : `var(--sky-milky-angle)`;
     // The band: a core from the lilac stop to the pink stop around the centre
     // (49%), fading out over `fade` on each side with an eased midway stop.
     // Softness sets the fade's width. Every stop slides together by the shift.
     const core = 4, fade = 4 + layer.softness * 40, centre = 49;
-    const at = (offset: number) => (resolve ? `${fmt(centre + offset + layer.shift)}%` : `calc(${fmt(centre + offset)}% + var(--sky-milky-shift))`);
-    const lilac = (share = 1) => c("milky-lilac", layer.lilac, "milky-strength", layer.strength, share);
-    const pink = (share = 1) => c("milky-pink", layer.pink, "milky-strength", layer.strength, 0.78 * share);
-    return `linear-gradient(${angle}, transparent ${at(-core - fade)}, ${lilac(0.3)} ${at(-core - fade * 0.45)}, ${lilac()} ${at(-core)}, ${pink()} ${at(core)}, ${pink(0.3)} ${at(core + fade * 0.45)}, transparent ${at(core + fade)})`;
+    const at = (offset: number) => `calc(${fmt(centre + offset)}% + var(--sky-milky-shift))`;
+    const lilac = (share = 1) => c("milky-lilac", "milky-strength", share);
+    const pink = (share = 1) => c("milky-pink", "milky-strength", 0.78 * share);
+    return `linear-gradient(var(--sky-milky-angle), transparent ${at(-core - fade)}, ${lilac(0.3)} ${at(-core - fade * 0.45)}, ${lilac()} ${at(-core)}, ${pink()} ${at(core)}, ${pink(0.3)} ${at(core + fade * 0.45)}, transparent ${at(core + fade)})`;
   }
-  const from = resolve ? `${layer.from}%` : `var(--sky-band-from)`;
-  return `linear-gradient(180deg, transparent ${from}, ${c("band-upper", layer.upper, "band-strength", layer.strength)} 70%, ${c("band-lower", layer.lower, "band-strength", layer.strength)} 100%)`;
-}
-
-/** The whole mesh, top layer first, with literal colours: what the editor
- * sets on the page for a live preview. `stardust` is the value of --sky-stardust. */
-export function resolvedMesh(model: WashModel, stardust = "var(--sky-stardust)"): string {
-  const sweep = `linear-gradient(180deg, ${model.zenith} 0%, ${model.ground} ${model.sweepMid}%, ${model.ground2} 100%)`;
-  return [stardust, ...model.layers.filter((l) => l.visible).map((l) => layerCss(l, true)), sweep].join(", ");
+  return `linear-gradient(180deg, transparent var(--sky-band-from), ${c("band-upper", "band-strength")} 70%, ${c("band-lower", "band-strength")} 100%)`;
 }
 
 /** The Milky Way's star field for a model: the visible band's, or "none". */
 export function resolvedStarfield(model: WashModel): string {
   const m = model.layers.find((l): l is MilkyLayer => l.kind === "milky" && l.visible);
   return m ? milkyStarfield(m) : "none";
-}
-
-/** A fresh id for a new glow that does not collide with the existing ones. */
-export function nextGlowId(model: WashModel): string {
-  const used = new Set(model.layers.filter((l): l is GlowLayer => l.kind === "glow").map((l) => l.id));
-  let n = 1; while (used.has(String(n))) n++;
-  return String(n);
 }
 
 /** Renders the complete sky-wash.css: the header, the knobs for every layer
@@ -213,7 +204,7 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
     }
   }
   const shown = model.layers.filter((l) => l.visible);
-  const layerList = shown.length ? shown.map((l) => "    " + layerCss(l, false)).join(",\n") : "    none";
+  const layerList = shown.length ? shown.map((l) => "    " + layerCss(l)).join(",\n") : "    none";
   return `/* ============================================================================
  * THE SKY WASH: the page background of the Sky redesign.
  *
