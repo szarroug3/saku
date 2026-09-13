@@ -45,7 +45,7 @@ export const BATCH_21: Readonly<Record<string, string>> = {
   鑑: "This glyph means a mirror, or to learn a lesson from. It uses the definition of 金 (metal) and the sound of 監 (かん).",
   己: "The original glyph looked like a silk cord for binding things. It was later borrowed to mean oneself.",
   匂: "The origin is unclear.",
-  匹: "The origin is uncertain. One reading: 八 (eight folds) and 匸 (concealing the ends), a rolled bolt of cloth.",
+  匹: "The origin is uncertain. One reading: 八 (eight folds) and 匸 (concealing the ends), a rolled bolt of cloth. Those eight folds are now drawn 儿, which is what the tiles show.",
   尻: "This glyph means the buttocks. It uses the definition of 尸 (body) and the sound of 九.",
   巧: "This glyph means skilled or ingenious. It uses the definition of 工 (craft) and the sound of 丂.",
   永: "The original glyph looked like a long river with branching tributaries, suggesting length and permanence.",

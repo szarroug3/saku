@@ -49,6 +49,8 @@ import kanjiComponentsJson from "./generated/kanji-components.json" with { type:
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import { primitiveStrokes } from "./components.ts";
 import { KANJI, KANJI_ORDER, kanjiRow, variantOriginal } from "./kanji.ts";
+import { etymologyOf } from "./kanji-etymology.ts";
+import { isExcludedVariant } from "./variant-forms.ts";
 
 /** KANJIDIC2 `rad_value`: kanji → Kangxi radical number (1–214). Authoritative. */
 const RADICAL_OF = radicalsJson as Record<string, number>;
@@ -249,6 +251,104 @@ describe("the 戌 / 戍 pair, which KanjiVG swaps in both directions (SAK-431)",
     assert.deepEqual(kanjiRow("蔑")?.comps, ["艹", "罒", "戍"]);
     assert.deepEqual(kanjiRow("歳")?.comps, ["止", "戌", "小"]);
     assert.deepEqual(kanjiRow("滅")?.comps, ["氵", "戌", "火"]);
+  });
+
+  // THE OTHER FOUR THE 威 SWEEP TURNED UP (SAK-433)
+  // ----------------------------------------------
+  // Comparing every kanji's parts against its Wiktionary record, restricted to
+  // the pairings the variant map refuses, left four more glyphs where the tiles
+  // draw one half of a refused pair and the record names the other: 匹 (record
+  // 八, tiles 儿), 在 (record 士, tiles 土), 巡 (record 川, tiles 巛) and 替
+  // (record 曰, tiles 日). None of them is 威's bug. 威 was the one case where
+  // the drawn strokes were NOT the labelled character; in all four of these the
+  // label matches the strokes, and the record is naming the ORIGIN of the shape,
+  // which is a different claim. So none of them is overridden, and each is
+  // pinned here with the reading that settled it, so that a later sweep does not
+  // reopen them.
+  //
+  //   匹 — s2 is a ㇒ and s3 a ㇟, which is 儿; 八 is ㇒ + ㇏. KanjiVG nests its
+  //        own 八 INSIDE the 儿 as kvg:variant, so it agrees the drawn shape is
+  //        儿 and 八 is where that shape came from.
+  //   在 — the bottom right is short-top, long-bottom, which is 土 and not 士,
+  //        and KANJIDIC2 files 在 under radical 32 (土). Wiktionary says so in
+  //        its own words: "*士 eventually corrupted into *土".
+  //   巡 — the three strokes are all ㇛, curved, which is 巛; 川 is ㇒ + ㇑ + ㇑.
+  //        KanjiVG writes no kvg:original here at all.
+  //   替 — the hardest of the four, because 日 and 曰 are the same four stroke
+  //        types and differ only in proportion, which a bottom component loses:
+  //        in KanjiVG's own drawings 普's 日 (radical 72) measures 1.13 wide to
+  //        tall and 曹's 曰 (radical 73) measures 1.14, so geometry cannot
+  //        separate them and 替's 1.30 proves nothing. What settles it is that
+  //        替 is one of a family. KanjiVG writes `日 original=曰` in 書 and 替
+  //        alike, the repo reads 日 in all of 替 書 曽 最 曹 普 春 昔 更 曲, and
+  //        correcting 替 alone would make it the only 曰 tile in the app while
+  //        leaving its five siblings as they are. That is the spread the 威 fix
+  //        was careful not to cause, pointed the other way.
+  // kanji, the glyph the record names, the tiles, the glyph the tiles draw, and
+  // the side of the pair the variant map lists (and refuses): for 匹, 在 and 替
+  // that is the drawn form, for 巡 it is the recorded one, since KanjiVG writes
+  // the collapse 川 → 巛 and not the other way round.
+  const REFUSED_PAIRS: readonly (readonly [
+    string,
+    string,
+    readonly string[],
+    string,
+    string,
+  ])[] = [
+    ["匹", "八", ["匸", "儿"], "儿", "儿"],
+    ["在", "士", ["亻", "土"], "土", "士"],
+    ["巡", "川", ["巛", "⻌"], "巛", "川"],
+    ["替", "曰", ["夫", "夫", "日"], "日", "日"],
+  ];
+
+  for (const [kanji, recorded, comps, drawn] of REFUSED_PAIRS) {
+    test(`${kanji} draws ${drawn}; ${recorded} is the origin the record names`, () => {
+      assert.deepEqual(kanjiRow(kanji)?.comps, comps);
+      assert.ok(kanjiRow(kanji)?.comps.includes(drawn));
+      assert.ok(!kanjiRow(kanji)?.comps.includes(recorded));
+      assert.ok(
+        WIKTIONARY[kanji]?.components.some((c) => c.glyph === recorded),
+        `${kanji}'s Wiktionary record should still name ${recorded}, or this pin is stale.`,
+      );
+    });
+  }
+
+  test("none of the four is overridden, so the ingest still speaks for them", () => {
+    // 在, 巡 and 替 are exactly what KanjiVG wrote. 匹 IS in COMPS_OVERRIDE, but
+    // only to collapse the 匸 enclosure KanjiVG emits once per arm, which is the
+    // same count-only correction the whole 匸 group above gets. No character in
+    // any of the four is changed.
+    assert.deepEqual(SOURCE["在"], ["亻", "土"]);
+    assert.deepEqual(SOURCE["巡"], ["巛", "⻌"]);
+    assert.deepEqual(SOURCE["替"], ["夫", "夫", "日"]);
+    assert.deepEqual(SOURCE["匹"], ["匸", "儿", "匸"]);
+    assert.deepEqual(kanjiRow("匹")?.comps, ["匸", "儿"], "count lowered, character kept");
+  });
+
+  test("the variant map refuses all four pairings, so nothing collapses", () => {
+    // Without this, a 儿 tile would resolve its meaning through 八 and print
+    // "eight" under a shape its own radical page calls "legs". variant-forms.ts
+    // holds the refusal; this is the reading of it these four depend on, and it
+    // is why leaving the tiles alone is safe rather than merely tidy.
+    for (const [, recorded, , drawn, listed] of REFUSED_PAIRS) {
+      const other = listed === drawn ? recorded : drawn;
+      assert.equal(variantOriginal(listed), other, "the raw map really does pair these.");
+      assert.ok(isExcludedVariant(listed), `${listed} → ${other} must stay refused.`);
+    }
+  });
+
+  test("the stories name those origins as origins, not as pieces", () => {
+    // etymology-components.test.ts checks this mechanically over all 2,136
+    // stories. These four are the ones where the distinction is the whole point,
+    // so each says in plain words that the shape moved on.
+    for (const kanji of ["匹", "在", "巡", "替"]) {
+      const story = etymologyOf(kanji)?.originText ?? "";
+      assert.match(
+        story,
+        /\bnow\b|\bwas\b|corrupted|on its own/,
+        `${kanji}'s story must say the recorded piece is not the drawn one.`,
+      );
+    }
   });
 });
 
