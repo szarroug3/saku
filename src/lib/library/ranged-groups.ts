@@ -130,7 +130,7 @@ export function wordClimbRank(entry: LibEntry): number {
 
 /**
  * `entries` ordered by `rank` (ascending, ties broken by input order so the cut
- * is stable), then chunked into consecutive ranges of `size`, each labelled by
+ * is stable), then chunked into consecutive ranges of `size`, each labeled by
  * the 1-based span it covers ("1–50", "51–100", and a short tail).
  *
  * Every entry lands in exactly one range and no range is empty, so the groups

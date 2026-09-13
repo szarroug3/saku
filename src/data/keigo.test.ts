@@ -174,7 +174,7 @@ describe("facts, glosses and lookups", () => {
   test("KEIGO_ENTRIES is exactly one entry per set", () => {
     assert.equal(KEIGO_ENTRIES.size, KEIGO_SETS.length);
     for (const set of KEIGO_SETS) {
-      assert.ok(KEIGO_ENTRIES.has(keigoSetEntry(set)), `${set.id} not labelled`);
+      assert.ok(KEIGO_ENTRIES.has(keigoSetEntry(set)), `${set.id} not labeled`);
     }
   });
 });

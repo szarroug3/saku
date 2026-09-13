@@ -155,7 +155,7 @@ describe("one grouping at a time — card, drill, card, drill", () => {
 });
 
 describe("the hook's brackets are notation, never characters", () => {
-  test("a bracketed consonant becomes an emphasised run", () => {
+  test("a bracketed consonant becomes an emphasized run", () => {
     assert.deepEqual(hookRuns("The [k]arate kick"), [
       { text: "The ", hit: false },
       { text: "k", hit: true },

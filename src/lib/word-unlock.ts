@@ -136,8 +136,8 @@ export function preferredAnchor(
  *
  * Pure: the same history yields the same map. The keys are the canonical reading
  * fact ids (anchored on the ingest's word); the values are the words to SHOW,
- * which may differ. Memoise a `known` lookup across the whole scan — a reading's
- * `words` list overlaps its neighbours', so the same word is asked about many
+ * which may differ. Memoize a `known` lookup across the whole scan — a reading's
+ * `words` list overlaps its neighbors', so the same word is asked about many
  * times.
  */
 export function readingAnchors(history: HistoryFile): Map<FactId, string> {

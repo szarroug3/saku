@@ -13,7 +13,7 @@
 // Splitting these two casts into a data-free module cuts that edge. Modules that
 // only restore key brands import from HERE and stay light; facts.ts re-exports
 // them so the registry-owning call sites are unchanged. This changes no
-// behaviour — the functions are byte-for-byte the same.
+// behavior — the functions are byte-for-byte the same.
 
 import type { EntryId, FactId } from "@/types/facts";
 

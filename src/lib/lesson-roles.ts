@@ -16,7 +16,7 @@
 // and the SECTIONS come from the roles. This module answers both questions as
 // plain functions, which is the only way either is testable: the view is a
 // client component with no renderer in the unit harness, and the previous
-// attempt at pinning its behaviour was a regex over its source.
+// attempt at pinning its behavior was a regex over its source.
 //
 // A STEP KEEPS ITS OWN TRACK'S ROLE. `characterRoles` is pure glyph membership,
 // so it says nothing about 学生: no radical row, no kanji row, no one-character
@@ -414,7 +414,7 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     // mappable pieces (人, 千, 中's flagpole) — the glyph-origin STORY alone
     // (`originText`), shown as prose with NO tiles. The story is a memory aid and
     // learning happens in the lesson, so it is taught here now, not kept
-    // reference-only; a no-pieces kanji stays a memorised whole (no piece
+    // reference-only; a no-pieces kanji stays a memorized whole (no piece
     // decomposition) and only gains the prose. The number kanji 一…十 render like
     // any other kanji now — 三/二 show their stacked-一 pieces, the rest show their
     // story alone — matching KanjiBuiltFrom.

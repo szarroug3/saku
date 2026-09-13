@@ -14,7 +14,7 @@
 // multiple-choice CARD is the same object every time — a prompt, a list of
 // choices, and exactly one of them correct — and the drill's MC control already
 // renders precisely that (a row of option buttons, graded by WHICH one). So
-// rather than teach the drill two new question types, this module NORMALISES
+// rather than teach the drill two new question types, this module NORMALIZES
 // both into one `GrammarMc`: the shape the existing MC path consumes. Reuse,
 // not a fork.
 //
@@ -131,7 +131,7 @@ function place(
   };
 }
 
-/** Normalise a built SelectionQuestion into a GrammarMc (choices shuffled). */
+/** Normalize a built SelectionQuestion into a GrammarMc (choices shuffled). */
 function fromSelection(q: SelectionQuestion, rng: Rng): GrammarMc {
   // The board offers PATTERNS, and a pattern's sense rides in its label so a
   // sense-bearing member (〜られる 可能) never reads as its bare-form sibling.
@@ -219,7 +219,7 @@ export function transitivityMc(
  * passes a readability gate (lib/grammar/readable.ts): a cloze in a sentence
  * whose words the learner does not know is not a grammar question. It takes an
  * Example rather than a GrammarMc because knownness is a property of the source
- * sentence's content lemmas, which the normalised card no longer carries — and
+ * sentence's content lemmas, which the normalized card no longer carries — and
  * because screening first means the refused sentences are never built.
  * Omitted → every selectable sentence, which is what the corpus tools and the
  * item-safety tests want.

@@ -112,7 +112,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
 
   return (
     <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" aside={resume && <ResumeLine run={resume.run} href={resume.href} />} height={height}>
-      {/* the box is the wash's colour with none of its stars (.sky-wash-clear),
+      {/* the box is the wash's color with none of its stars (.sky-wash-clear),
           so the learner's own stars are the only stars in it: with one or two
           discovered they were lost among the background's (Sam, 2026-09-06) */}
       <div className="sky-wash-clear relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">

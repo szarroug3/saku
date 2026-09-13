@@ -78,7 +78,7 @@ export function revalidationWins(issuedGeneration: number, currentGeneration: nu
  *
  * The provider's single call site for landing a read: it folds the staleness
  * guard, the replacement, and the pending-write overlay together so none can be
- * forgotten at one call site and honoured at another. A stale read (one a local
+ * forgotten at one call site and honored at another. A stale read (one a local
  * write or a newer read has overtaken) returns `prev` untouched; a current one
  * hands off to applyRevalidation, which is the sole authority on
  * server-vs-local-vs-nothing.

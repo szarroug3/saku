@@ -151,7 +151,7 @@ describe("every card says what it wants", () => {
   });
 
   test("transitivity and keigo fold the role into one clean question", () => {
-    // The grey sub-label under these cards is gone; the register/role now lives
+    // The gray sub-label under these cards is gone; the register/role now lives
     // in the answer options, so the instruction is a single pinned question.
     const trans = sideFactId(
       VERB_PAIRS.find(

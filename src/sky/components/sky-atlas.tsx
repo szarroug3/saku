@@ -1,6 +1,6 @@
 "use client";
 
-// The Atlas: everything Saku holds, labelled. Tracked as SAK-323 to SAK-328.
+// The Atlas: everything Saku holds, labeled. Tracked as SAK-323 to SAK-328.
 //
 // The sky is yours and it is a place; the Atlas is everything and it is a
 // tool. You arrive having met something in the wild, so it behaves like a
@@ -213,7 +213,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   // A handful of components in the data have no character of their own and
   // carry a catalogue name instead ("CDP-8BC4"). They are dropped: this cut is
   // for a piece you can SEE in the character in front of you, and a name you
-  // cannot recognise on sight can never be the one you reach for.
+  // cannot recognize on sight can never be the one you reach for.
   const parts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const it of data.items) if (it.kind === "kanji") for (const r of it.parts ?? []) counts.set(r, (counts.get(r) ?? 0) + 1);
@@ -455,7 +455,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   <Eyebrow size="md" className="shrink-0">{selection.ids.length} selected</Eyebrow>
                   <div className="mt-3 flex flex-wrap content-start gap-1.5">
                     {/* items-center, not items-baseline (SAK-415): a 16px glyph
-                        beside 11px text centres on the pill */}
+                        beside 11px text centers on the pill */}
                     {selectedItems.map((it) => (
                       <button key={it.id} type="button" onClick={() => selection.only(it.id)} title={it.english} className="inline-flex items-center gap-1.5 rounded-lg border border-sky-line px-2 py-1 text-left hover:border-sky-accent">
                         <Glyph glyph={it.glyph} standing={it.standing} size="text-[16px]" />

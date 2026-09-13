@@ -215,7 +215,7 @@ export const DEFECTIVE_WORDS: DefectiveRule[] = [
       "Applies to compounds too — である, ことがある, でもある. One honest caveat there: " +
       "the imperative であれ IS attested as a literary imperative (民主的であれ, 'be " +
       "democratic!'). It is gated not because it does not exist but because it is a " +
-      "register a beginner cannot place, and shown unlabelled beside everyday forms it " +
+      "register a beginner cannot place, and shown unlabeled beside everyday forms it " +
       "teaches the wrong Japanese. であれる / であられる / でありたい are simply not words.",
   },
   {

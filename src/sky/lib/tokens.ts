@@ -1,9 +1,9 @@
 // What a kind is called, in the Sky's own words.
 //
-// This file used to carry a colour per kind as well, pointing at the old
+// This file used to carry a color per kind as well, pointing at the old
 // app's sentence-part tokens, with a note saying the components using it drew
 // inside the old app's chrome. That app is gone, and nothing had read the map
-// for some time before it went (SAK-371). Standings, which do have colours,
+// for some time before it went (SAK-371). Standings, which do have colors,
 // live in src/sky/lib/standing.ts (SAK-294), and the Sky's palette is the
 // --sky-* tokens in globals.css (SAK-291).
 //

@@ -1,7 +1,7 @@
 // Plain-language etymology stories for the number kanji 一…十.
 //
 // These were held out of every automated pass (isNumberKanji excluded them) while
-// numbers were taught as pure memorised wholes with no Built-from. That is now
+// numbers were taught as pure memorized wholes with no Built-from. That is now
 // relaxed: the section shows for numbers too. It is safe because the etymology
 // layer only tiles GENUINE pieces — 三 = 一+一+一 and 二 = 一+一 (both drawn from
 // stacked 一) — and leaves the rest story-only, so the old misleading shape pieces

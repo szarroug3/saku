@@ -87,7 +87,7 @@ test("the deck is dealt: two quizzes of the same picks are not asked in the same
   expect(differed).toBe(true);
 });
 
-test("the quiz card is centred in the space the list leaves, and never cut off", async ({ page }) => {
+test("the quiz card is centered in the space the list leaves, and never cut off", async ({ page }) => {
   // SAK-396. 1024 is the tightest width the list opens beside the card at,
   // and the width the card used to be squeezed and clipped at.
   await page.setViewportSize({ width: 1024, height: 850 });
@@ -488,7 +488,7 @@ test("a word's page says what kind of word it is, and the chip opens the page th
   const kind = page.getByRole("button", { name: "る-verb", exact: true });
   await expect(kind).toBeVisible();
   await kind.click();
-  // the group's own page, which travelled with the word
+  // the group's own page, which traveled with the word
   await expect(page.getByText("Godan/ichidan")).toBeVisible();
 });
 
@@ -539,7 +539,7 @@ test("a short panel stops at its content instead of pinning its buttons to the p
 });
 
 test("about caps its prose and says when it changes the subject", async ({ page }) => {
-  // SAK-361. The acknowledgement ran the panel's whole width, eleven lines at
+  // SAK-361. The acknowledgment ran the panel's whole width, eleven lines at
   // about 200 characters, and the reading list was spliced on with no heading.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/about");
@@ -1056,7 +1056,7 @@ test("every line on the sky is the same line, and none of them is dashed", async
 });
 
 test("the legend's key draws the real stars, tonight among them", async ({ page }) => {
-  // SAK-338. The key used to be flat coloured dots beside the words, which
+  // SAK-338. The key used to be flat colored dots beside the words, which
   // said nothing about the glows and marks the sky actually draws.
   await page.goto("/?sample");
   // the mark opens on hover; a click would toggle it shut again

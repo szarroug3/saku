@@ -1,11 +1,11 @@
 "use client";
 
-// The standing legend and chip: the only two places a standing's colour is
+// The standing legend and chip: the only two places a standing's color is
 // painted on its own. Tracked as SAK-294.
 //
-// THE RULE: a bare coloured mark never appears without its word. That is why
+// THE RULE: a bare colored mark never appears without its word. That is why
 // the mark itself is not exported. A chip is a mark with its label, a legend
-// is every mark with its label, and anything else that wants to colour by
+// is every mark with its label, and anything else that wants to color by
 // standing (a star fill, a coverage bar segment) sits next to one of these.
 //
 // The mark is the STAR (SAK-338), not a flat dot: the same body, glow, halo
@@ -129,7 +129,7 @@ function StandingKey({ standings = STANDING_ORDER, className = "" }: { standings
 }
 
 /** Counts by standing as words: "12 solid, 3 shaky", numbers lined up on
- * the right, each word in its colour and so no dot. Only the standings
+ * the right, each word in its color and so no dot. Only the standings
  * that have any, in legend order. */
 export function StandingTally({ counts, standings = STANDING_ORDER, empty = "Nothing yet", className = "" }: { counts: CoverageCounts; standings?: readonly Standing[]; empty?: string; className?: string }) {
   const lines = standings.filter((s) => (counts[s] ?? 0) > 0);

@@ -2,7 +2,7 @@
 //
 // globals.css and sky-wash.css are the sources of the --sky-* tokens (SAK-291):
 // the palette in the first, the grounds and the page wash in the second. This
-// test parses those files rather than a copy of the values, so a colour tweak
+// test parses those files rather than a copy of the values, so a color tweak
 // that drops a text token under the floor fails here instead of in someone's
 // eyes, and a wash edit that breaks the CSS fails here instead of vanishing.
 
@@ -48,28 +48,28 @@ function resolve(value: string, depth = 0): string {
   });
   return /var\(--sky-/.test(withCalc) ? resolve(withCalc, depth + 1) : withCalc;
 }
-const COLOUR_TOKENS = ["ink", "muted", "faint", "star", "star-mid", "star-dim", "link", "gold", "gold-ink", "mint", "pale", "amber", "coral", "lilac", "card", "card-strong", "line"] as const;
-/** Colour knobs are whatever the wash file declares: one per glow, plus the bands'. */
+const COLOR_TOKENS = ["ink", "muted", "faint", "star", "star-mid", "star-dim", "link", "gold", "gold-ink", "mint", "pale", "amber", "coral", "lilac", "card", "card-strong", "line"] as const;
+/** Color knobs are whatever the wash file declares: one per glow, plus the bands'. */
 const CHANNEL_KNOBS = [...TOKENS.keys()].filter((n) => (/^glow-[a-z0-9-]+$/.test(n) && !/-(label|strength|at|size|tail|visible)$/.test(n)) || ["milky-lilac", "milky-pink", "band-upper", "band-lower"].includes(n));
 const STRENGTH_KNOBS = [...TOKENS.keys()].filter((n) => n.endsWith("-strength"));
 
-function colour(name: string): ParsedColor {
+function color(name: string): ParsedColor {
   const values = TOKENS.get(name);
   assert.ok(values, `--sky-${name} is missing from globals.css`);
   const parsed = parseColor(values[0]);
-  assert.ok(parsed, `--sky-${name} (${values[0]}) is not a colour this test can read`);
+  assert.ok(parsed, `--sky-${name} (${values[0]}) is not a color this test can read`);
   return parsed;
 }
 
 function opaque(name: string): Rgb {
-  const c = colour(name);
+  const c = color(name);
   assert.equal(c.alpha, 1, `--sky-${name} must be opaque to serve as a ground`);
   return c.rgb;
 }
 
 /** A translucent surface, as it looks over a given ground. */
 function surface(name: string, ground: Rgb): Rgb {
-  const c = colour(name);
+  const c = color(name);
   return composite(c.rgb, c.alpha, ground);
 }
 
@@ -80,7 +80,7 @@ const LINE_TOKENS = ["link"] as const;
 const DECORATIVE_ONLY = ["faint", "star-dim"] as const;
 
 describe("night theme tokens", () => {
-  it("defines every colour exactly once", () => {
+  it("defines every color exactly once", () => {
     for (const name of [...GROUNDS, ...TEXT_TOKENS, ...LINE_TOKENS, ...DECORATIVE_ONLY, "card", "card-strong", "line", "gold-ink"]) {
       const values = TOKENS.get(name);
       assert.ok(values, `--sky-${name} is missing`);
@@ -88,8 +88,8 @@ describe("night theme tokens", () => {
     }
   });
 
-  it("every colour token parses, and every colour knob is three channels", () => {
-    for (const name of [...GROUNDS, ...COLOUR_TOKENS]) {
+  it("every color token parses, and every color knob is three channels", () => {
+    for (const name of [...GROUNDS, ...COLOR_TOKENS]) {
       const v = TOKENS.get(name)?.[0] ?? "";
       assert.ok(parseColor(v), `--sky-${name} (${v}) does not parse`);
     }
@@ -135,7 +135,7 @@ describe("night theme tokens", () => {
       ];
       for (const [label, bg] of backdrops) {
         for (const name of TEXT_TOKENS) {
-          const ratio = contrastOn(colour(name), bg);
+          const ratio = contrastOn(color(name), bg);
           assert.ok(ratio >= 4.5, `--sky-${name} on ${label} is ${ratio.toFixed(2)}:1, below the 4.5:1 text floor`);
         }
       }
@@ -147,14 +147,14 @@ describe("night theme tokens", () => {
     assert.ok(ratio >= 4.5, `gold-ink on gold is ${ratio.toFixed(2)}:1`);
   });
 
-  it("the line colour reaches 3:1 on every ground", () => {
+  it("the line color reaches 3:1 on every ground", () => {
     for (const groundName of GROUNDS) {
-      const ratio = contrastOn(colour("line"), opaque(groundName));
+      const ratio = contrastOn(color("line"), opaque(groundName));
       // The line is translucent by design; what matters is that once it is
       // drawn on a ground it is still a visible line, not that it could carry text.
       assert.ok(ratio >= 1.15, `--sky-line on ${groundName} is ${ratio.toFixed(2)}:1, invisible`);
       for (const name of LINE_TOKENS) {
-        const link = contrastOn(colour(name), opaque(groundName));
+        const link = contrastOn(color(name), opaque(groundName));
         assert.ok(link >= 3, `--sky-${name} on ${groundName} is ${link.toFixed(2)}:1, below the 3:1 line floor`);
       }
     }
@@ -165,7 +165,7 @@ describe("night theme tokens", () => {
       const line = CSS.split("\n").find((l) => l.includes(`--sky-${name}:`));
       assert.ok(line, `--sky-${name} is missing`);
       assert.match(line, /decorative only/, `--sky-${name} sits under the text floor and must say so on its own line`);
-      const ratio = contrastOn(colour(name), opaque("ground"));
+      const ratio = contrastOn(color(name), opaque("ground"));
       assert.ok(ratio < 4.5, `--sky-${name} is ${ratio.toFixed(2)}:1 on the ground; if it now reads as text, promote it and drop the note`);
     }
   });
@@ -177,7 +177,7 @@ describe("night theme tokens", () => {
     assert.ok(/linear-gradient\(180deg, var\(--sky-zenith\)/.test(TOKENS.get("sweep")?.[0] ?? ""), "the sweep starts at the zenith");
     assert.ok(mesh.trim().endsWith("var(--sky-sweep)"), "the sweep is the bottom layer of the mesh");
     for (const part of ["mesh", "mesh-layers"]) {
-      assert.ok(!/#[0-9a-f]{3,8}/i.test(TOKENS.get(part)?.[0] ?? ""), `no raw colour in --sky-${part}; opaque stops come from ground tokens, glows are rgba knobs`);
+      assert.ok(!/#[0-9a-f]{3,8}/i.test(TOKENS.get(part)?.[0] ?? ""), `no raw color in --sky-${part}; opaque stops come from ground tokens, glows are rgba knobs`);
     }
     const stardust = TOKENS.get("stardust")?.[0] ?? "";
     assert.ok(stardust.startsWith('url("data:image/png;base64,'), "the stardust is an inline PNG (a bitmap the browser caches), not a fetched asset or an SVG");
@@ -193,14 +193,14 @@ describe("night theme tokens", () => {
     assert.ok(layers.length > 0);
   });
 
-  it("each standing has an alias token pointing at a text-safe colour, except not seen, which is decorative", () => {
+  it("each standing has an alias token pointing at a text-safe color, except not seen, which is decorative", () => {
     const ALIASES: Record<string, string> = { solid: "mint", "getting-there": "pale", shaky: "amber", slipping: "coral", claimed: "star-mid", "not-seen": "star-dim" };
     for (const [standing, target] of Object.entries(ALIASES)) {
       const values = TOKENS.get(standing);
       assert.ok(values && values.length === 1, `--sky-${standing} is defined once`);
-      assert.equal(values[0], `var(--sky-${target})`, `--sky-${standing} aliases the palette, it is not a colour of its own`);
+      assert.equal(values[0], `var(--sky-${target})`, `--sky-${standing} aliases the palette, it is not a color of its own`);
       if (standing === "not-seen") assert.ok((DECORATIVE_ONLY as readonly string[]).includes(target), "not seen paints a decorative dot and never text");
-      else assert.ok((TEXT_TOKENS as readonly string[]).includes(target), `--sky-${standing} must be a text-safe colour, since its chip label uses it`);
+      else assert.ok((TEXT_TOKENS as readonly string[]).includes(target), `--sky-${standing} must be a text-safe color, since its chip label uses it`);
       assert.ok(CSS_CODE.includes(`--color-sky-${standing}: var(--sky-${standing});`), `--sky-${standing} has a Tailwind name`);
     }
   });

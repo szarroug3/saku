@@ -726,7 +726,7 @@ export interface AssemblyTier {
    *
    * For every tier the prereqs are the patterns that describe the sentence
    * structure this tier practices, so the learner knows what the pattern means
-   * before they practise placing it — including the simple tier, whose は/が
+   * before they practice placing it — including the simple tier, whose は/が
    * are real grammar-track lessons now, not assumed-known structural markers.
    */
   readonly grammarPrereqs: readonly string[];

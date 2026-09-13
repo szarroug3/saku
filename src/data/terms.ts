@@ -126,7 +126,7 @@ export interface Term {
    * Other term pages worth a look from this one, by id — rendered as a "Related"
    * list of links at the foot of the page. A kanji reader who wants to know what
    * it is "assembled from" should be one tap from the radical page. Kept to
-   * genuine neighbours (the pieces one is built from, the two halves of a pair),
+   * genuine neighbors (the pieces one is built from, the two halves of a pair),
    * not a dump of every adjacent word.
    */
   readonly related?: readonly string[];
@@ -206,6 +206,11 @@ export const TERMS: readonly Term[] = [
       "Romaji is Japanese written out in the Latin letters used for English, like “sushi” for すし.",
       "It is a way in for people who cannot yet read kana. There is more than one system for spelling it, so the same word can turn up written more than one way.",
     ],
+    // The British spelling here is a SEARCH TERM, not one of our own words: a
+    // learner who types "romanisation" should reach this page. The SAK-433
+    // sweep collapsed it into a duplicate of the line before it, which is how
+    // it was found; it is listed again, and the spelling test allows it for the
+    // same reason it allows a quoted source.
     searchAlso: ["romaji", "rōmaji", "roman letters", "romanization", "romanisation"],
   },
   {

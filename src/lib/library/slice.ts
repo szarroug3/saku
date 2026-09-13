@@ -252,7 +252,7 @@ export interface SliceCount {
   /** SAK-157: facts `drillable` also leaves out, for the opposite reason from
    * `solid` — a decayed-but-once-seen ("slipping", standing.ts) fact is not
    * something the model is sure of, it is the thing this whole feature exists
-   * to stop mislabelling as unknown. `drillPlan` drops it from the Library's
+   * to stop mislabeling as unknown. `drillPlan` drops it from the Library's
    * teach/probe split entirely (see its doc comment) whether or not
    * `includeSolid` is set, so it is excluded here on the same terms — named,
    * not folded into `solid`, so the bar can say something TRUE about it
@@ -315,7 +315,7 @@ export function sliceCount(
  * it outright ("all 3 slipping, nothing to teach here") rather than reusing
  * the solid wording for a case that is not solid.
  *
- * An empty slice (no facts at all) returns "": there is nothing to summarise and
+ * An empty slice (no facts at all) returns "": there is nothing to summarize and
  * the surface it sits on already shows its own empty-shelf/empty-search message,
  * so the bar stays quiet rather than repeating "nothing here to drill".
  */

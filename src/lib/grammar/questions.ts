@@ -5,7 +5,7 @@
 //   NAMING THE TARGET DESTROYS THE AMBIGUITY. This is the whole trick. The
 //   hard problem in grammar is that a blank usually has several right answers;
 //   a named target has exactly one, always, because the recipe IS a function.
-//   No corpus needed, no distractors, no judgement.
+//   No corpus needed, no distractors, no judgment.
 //
 // SELECTION — "which pattern goes in this blank?"
 //   Needs the answer to be UNIQUELY determined, which is a much higher bar and
@@ -217,7 +217,7 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
  * "which particle goes here" is often unanswerable.
  *
  * The tap drill is safe for は/が specifically BECAUSE it is not a cloze: the
- * sentence is never blanked, so there is no competing-particle judgement call
+ * sentence is never blanked, so there is no competing-particle judgment call
  * to get wrong. "Which word does this が mark" has exactly one right answer in
  * an already-correct sentence, is/ga's cloze-ambiguity notwithstanding. See the
  * "は/が CLOZE IS DEAD" header — this set does not reopen it; it does not touch

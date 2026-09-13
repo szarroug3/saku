@@ -1,6 +1,6 @@
 // The adapter turns a real history into a sky: met entries are roots unless
 // they sit under another met entry, every part is present so constellations
-// draw whole, and a claim colours only the thing claimed.
+// draw whole, and a claim colors only the thing claimed.
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";

@@ -76,7 +76,7 @@ export function SkyCard({ className = "", children }: { className?: string; chil
 /** The small caps line over content: the kind of thing, a section's name,
  * a table's title. The ONE such label in the Sky (audit, 2026-09-05):
  * muted by default, in the accent when it names a thing being taught,
- * inheriting its colour when the caller colours it (a verdict).
+ * inheriting its color when the caller colors it (a verdict).
  *
  * `tight` is the eyebrow with nothing under it: a label on the same line as
  * what it names, or one whose parent already spaces the row. It is a PROP and
@@ -112,6 +112,6 @@ export function Eyebrow<C extends string>(props: EyebrowProps<C>) {
   // read off `props` rather than defaulted in the destructure: the prop's type
   // is the caller's own literal, and "" is not that literal
   const className: string = props.className ?? "";
-  const colour = tone === "muted" ? "text-sky-muted" : tone === "accent" ? "text-sky-accent" : "";
-  return <div className={`${tight ? "" : "mb-1"} font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${colour} ${className}`}>{children}</div>;
+  const color = tone === "muted" ? "text-sky-muted" : tone === "accent" ? "text-sky-accent" : "";
+  return <div className={`${tight ? "" : "mb-1"} font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${color} ${className}`}>{children}</div>;
 }

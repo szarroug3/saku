@@ -4,7 +4,7 @@
 // WHAT THESE TESTS ARE FOR
 // ========================
 // resolve() is the "What to drill" screen's one function, and two of its
-// behaviours are decisions a type-check cannot see:
+// behaviors are decisions a type-check cannot see:
 //
 //   1. An UN-NARROWED selection is everything you KNOW — the facts you've seen
 //      or claimed — not the whole ~21,000-entry dictionary. Untaught material is

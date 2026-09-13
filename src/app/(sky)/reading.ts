@@ -1,15 +1,17 @@
 // The reading pages' words, from the app's own data files, in the Sky's
 // shape. How Saku works from src/data/how-it-works.ts; where the data
 // comes from and the resources list from src/data/attribution.ts and
-// src/data/resources.ts. The copy lives once, there. Spelled the American
-// way here (Sam, 2026-09-06), since the app's data still says "licence".
+// src/data/resources.ts. The copy lives once, there.
+//
+// This file used to rewrite "licence" to "license" on its way to the screen,
+// because the page was American and the data was not (Sam, 2026-09-06). The
+// data is American now (SAK-433), so the rewrite is gone and the words reach
+// the page as they are written.
 
-import { LICENCE_HREF, LICENCE_NOTE, SOURCES } from "@/data/attribution";
+import { LICENSE_HREF, LICENSE_NOTE, SOURCES } from "@/data/attribution";
 import { HOW_IT_WORKS_SECTIONS } from "@/data/how-it-works";
 import { RESOURCE_SECTIONS } from "@/data/resources";
 import { accented, type ReadingPage, type ReadingSection } from "@/sky/lib/reading";
-
-const american = (text: string) => text.replace(/licence/g, "license").replace(/Licence/g, "License");
 
 export function howItWorksPage(): ReadingPage {
   return {
@@ -42,8 +44,8 @@ export function aboutPage(): ReadingPage {
     eyebrow: "About",
     title: "Where does the data come from?",
     sections: [
-      { id: "acknowledgement", title: "Acknowledgement", paragraphs: [accented(american(LICENCE_NOTE))], links: [{ name: "The EDRDG license in full", href: LICENCE_HREF }] },
-      { id: "files", title: "The files", links: SOURCES.map((s) => ({ name: s.name, href: s.href, blurb: s.what, note: `${s.holder} · ${american(s.licence)}` })) },
+      { id: "acknowledgment", title: "Acknowledgment", paragraphs: [accented(LICENSE_NOTE)], links: [{ name: "The EDRDG license in full", href: LICENSE_HREF }] },
+      { id: "files", title: "The files", links: SOURCES.map((s) => ({ name: s.name, href: s.href, blurb: s.what, note: `${s.holder} · ${s.license}` })) },
       { id: "share-alike", title: "Share-alike", paragraphs: SHARE_ALIKE.map((p) => accented(p)) },
       // The page changes subject here, from what Saku is built on to where
       // else to go, and used to do it with no warning (SAK-361).

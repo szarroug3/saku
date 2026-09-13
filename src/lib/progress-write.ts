@@ -54,7 +54,7 @@ export interface WriteDeps {
   /** Apply the same write to this browser's local store. Signed-out 401 only. */
   applyLocal: () => void;
   /** Is there a server account this write belongs to? See auth-mode.ts — this is
-   * `true` when unknown, so an uninitialised signal keeps data queued rather than
+   * `true` when unknown, so an uninitialized signal keeps data queued rather than
    * dropping it. */
   signedIn: boolean;
   /** Refresh the browser session (rotate to a fresh access token) before the

@@ -1,5 +1,5 @@
 // The surfaces on a sky page. `SkySurface` is the see-through box every
-// panel, card and rail sits in: the wash colours it and the dust shows
+// panel, card and rail sits in: the wash colors it and the dust shows
 // through, with no blur (measured to stutter). `SkyPanel` is that box with
 // a small caps title and, beside it, whatever sums the panel up: "How much
 // you've discovered" on the home, "Tonight" on the Observatory, a shelf's

@@ -146,7 +146,7 @@
 // the roles are pure membership, the same lookup `characterRole` does: is there
 // a radical row, is there a kanji row, is it a curriculum word.
 //
-// Two consequences the rest of this file exists to honour:
+// Two consequences the rest of this file exists to honor:
 //
 //   - A both-role character (人, 大, 乙, 火) is taught AS ITS KANJI, never as a
 //     separate radical item. It is a kanji, so it is a kanji prerequisite, and

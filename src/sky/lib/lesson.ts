@@ -31,7 +31,7 @@ export interface LessonTeach {
   /** Every meaning, the first being the name. */
   meanings?: readonly string[];
   /** The shape's story, for a kana or a piece: runs of text, the ones
-   * spoken as the sound marked to be coloured. */
+   * spoken as the sound marked to be colored. */
   story?: SoundLine;
   /** The say-it-like hook: "Sounds like the letter n." */
   hook?: SoundLine;
@@ -126,7 +126,7 @@ export interface TeachPage {
   link?: { href: string; label: string };
 }
 
-/** `runs` replaces `text` for a line with several parts to colour (a hook
+/** `runs` replaces `text` for a line with several parts to color (a hook
  * whose letters are the point). */
 export interface TeachParagraph { heading?: string; lead?: string; text: string; accent?: string; runs?: SoundLine }
 

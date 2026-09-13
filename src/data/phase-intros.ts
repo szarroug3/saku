@@ -94,7 +94,7 @@ export interface IntroPara {
   mark?: string;
   lead?: string;
   text: string;
-  /** A substring of `text` to render in the accent colour, in place, so a phrase
+  /** A substring of `text` to render in the accent color, in place, so a phrase
    * inside the sentence can be picked out (the adjective しずかな in しずかなへや,
    * so the eye sees which part is the adjective and which is the noun). First
    * occurrence only; ignored if it is not found in `text`. */
@@ -230,15 +230,15 @@ export interface PitchExampleGroup {
 /**
  * One piece of a construction row's "how it's built" equation. A piece is a run
  * of kana with an OPTIONAL numeric annotation shown in parentheses and the accent
- * colour: a numeric piece (じゅう, に, にひゃく) carries its VALUE ("10", "2",
+ * color: a numeric piece (じゅう, に, にひゃく) carries its VALUE ("10", "2",
  * "2 × 100"); a counter reading (ほん, にん) is a bare piece with no annotation.
- * Rendered by the count table in phase-intro-view.tsx: kana in text colour, the
+ * Rendered by the count table in phase-intro-view.tsx: kana in text color, the
  * "(value)" in accent.
  */
 export interface CountBuildPiece {
   /** The kana of the piece — "じゅう", "に", "ほん". */
   readonly kana: string;
-  /** The numeric annotation shown in parens, accent-coloured — "10", "2 × 10",
+  /** The numeric annotation shown in parens, accent-colored — "10", "2 × 10",
    * "11". Absent for a non-numeric piece such as a counter reading. */
   readonly value?: string;
   /** The operator joining this piece to the one before it. Defaults to "+"
@@ -276,7 +276,7 @@ export interface CountRow {
 /**
  * Whether a count group's "How it's built" column earns its place: true when SOME
  * row carries a real derivation (a non-empty `build`). An all-suppletive group —
- * 〜人's ひとり / ふたり / よにん, whose words are memorised, not built, so every row's
+ * 〜人's ひとり / ふたり / よにん, whose words are memorized, not built, so every row's
  * `build` is empty — returns false, and IntroCountTable drops the column (header
  * and cells) for it. A row's empty build is the suppletive flag; this is read off
  * the data, never off a counter's name, so any counter whose irregulars are all
@@ -315,9 +315,9 @@ export interface IntroCountGroup {
 /**
  * One row of a build table: a verb turned into a form by dropping a tail and
  * adding another, shown as the equation `かう − う + って → かって`. The view
- * greys the dropped kana and accents the added one, so the eye reads the change
+ * grays the dropped kana and accents the added one, so the eye reads the change
  * as a change. The optional `label` names the ending(s) the row covers (う・つ・る)
- * for a rule the reader should generalise, and is omitted for a one-off verb.
+ * for a rule the reader should generalize, and is omitted for a one-off verb.
  */
 export interface IntroBuildRule {
   /** The ending(s) this row covers, e.g. "う・つ・る". Omitted for a single verb. */
@@ -333,7 +333,7 @@ export interface IntroBuildRule {
   add?: string;
   /** The whole result, for an IRREGULAR verb that follows no drop/add rule
    * (する → して). When set, the row renders as `verb → to` and `drop`/`add` are
-   * ignored — the honest shape for a form you memorise rather than build. */
+   * ignored — the honest shape for a form you memorize rather than build. */
   to?: string;
   /** Highlight only this part of a whole-result row. `false` keeps the whole
    * equation neutral. When omitted, the whole result keeps the usual accent
@@ -461,7 +461,7 @@ export interface PhaseIntro {
   examplesAfterBodyIndex?: number;
   /**
    * A build table: the rule as a list of equations (`かう − う + って → かって`),
-   * the dropped kana greyed and the added one accented. Used by the grammar
+   * the dropped kana grayed and the added one accented. Used by the grammar
    * te-form pages, where "how to build it" reads best as the transformation
    * itself rather than a sentence describing it.
    */
@@ -1175,7 +1175,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
 };
 
 // COUNTER SOUND CHANGE — the h→p/b shift, presented the way the Writing rules
-// shelf presents dakuten: a rule with worked forms, not six memorised words. It
+// shelf presents dakuten: a rule with worked forms, not six memorized words. It
 // opens no track (that is track-counters, in track-intros.ts); it is the rule
 // card the counters track's phase 2 rides in on, word-gated in lesson-steps.ts
 // ahead of the first counted form whose reading shifts (本 or 匹). Script-neutral

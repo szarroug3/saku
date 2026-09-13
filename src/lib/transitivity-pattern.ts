@@ -11,7 +11,7 @@
 //
 // But the shapes ARE worth naming once both verbs are in front of you: most
 // pairs share a kanji and change only their kana tail, and that tail shift is
-// usually one of a small set. Naming it turns "two words to memorise" into "the
+// usually one of a small set. Naming it turns "two words to memorize" into "the
 // familiar -ある/-える swap again", which is a real aid to memory even though it
 // is no help at derivation. So this module DESCRIBES the tail shift for a pair
 // that already exists; it never PRODUCES a partner.

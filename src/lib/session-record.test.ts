@@ -276,7 +276,7 @@ test("sessionId carries through when the caller supplies one, and is absent othe
   assert.equal(standalone.sessionId, undefined);
 });
 
-test("every record carries a distinct id, so a retry can be recognised", () => {
+test("every record carries a distinct id, so a retry can be recognized", () => {
   const a = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000 })!;
   const b = buildSessionRecord(ROUND_2, { ...OPTS, ts: 1_000 })!;
   assert.ok(a.id, "an id is minted with the record");

@@ -98,9 +98,9 @@ interface RoundButtonProps {
  */
 const CHEVRON = "⌃";
 
-/** Where each glyph's ink has to move to land on the circle's centre.
+/** Where each glyph's ink has to move to land on the circle's center.
  *
- * Centring the BOX does not centre the INK, and it never did (SAK-413): Sam saw
+ * Centering the BOX does not center the INK, and it never did (SAK-413): Sam saw
  * the ⌃ riding high in its ring. Two things push it. The text baseline sits
  * `(ascent − descent) / 2` below the middle of any line box, which for the UI
  * font at 13px is 4.5px down; and then each glyph draws its ink its own
@@ -225,7 +225,7 @@ export function FoldRow({ label, open, controls, onClick, tail, inline = false, 
   );
 }
 
-/** A pill's colors, lit, unlit and greyed. Written here, once: `SkyChip`,
+/** A pill's colors, lit, unlit and grayed. Written here, once: `SkyChip`,
  * the menu chip and Settings' font chips all wear them. */
 export const CHIP_TONE = {
   on: "border-sky-accent bg-sky-accent text-sky-accent-ink",
@@ -239,7 +239,7 @@ interface SkyChipProps {
   onClick?: () => void;
   title?: string;
   current?: "page" | "step" | "true";
-  /** Greyed, with the reason in its title. */
+  /** Grayed, with the reason in its title. */
   disabled?: boolean;
   className?: string;
   children: ReactNode;

@@ -452,7 +452,7 @@ describe("a learner carrying progress from the old separate tracks", () => {
     // Pinned to a 6–12 budget: the thinning is only visible when the opening
     // lesson is big enough to overlap the old radical shapes. At the shipped 5–7
     // default the first lesson is too small to demonstrate it — the folding
-    // behaviour itself is unchanged and its siblings below cover it at 5–7.
+    // behavior itself is unchanged and its siblings below cover it at 5–7.
     const lesson = nextCurriculumLesson(priorProgress, { min: 6, max: 12 })!;
     assert.ok(
       lesson.cards.length < lesson.group.items.length,

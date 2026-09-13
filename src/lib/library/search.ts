@@ -114,7 +114,7 @@ const MATCH_RANK: Record<MatchKind, number> = Object.fromEntries(
 /**
  * Every entry that matches, one Hit each, UNSECTIONED — the shared first pass
  * both `search` (bucket by WHY) and `searchByType` (bucket by KIND) run before
- * they group. One walk of LIB_ENTRIES, honouring the kind restriction and the
+ * they group. One walk of LIB_ENTRIES, honoring the kind restriction and the
  * knowledge filter; the caller decides how to slice the result.
  */
 function collectHits(q: string, lower: string, opts: SearchOpts): Hit[] {

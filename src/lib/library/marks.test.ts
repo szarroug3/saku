@@ -138,7 +138,7 @@ describe("the shelf exists and is reachable", () => {
     assert.deepEqual(dakuten.meanings, ["Dakuten"]);
     assert.match(dakuten.sub, /voice/i);
     // NO READINGS: ゛ is not pronounced, and a romaji-shaped string here would be
-    // exact-matched by search and handed to a speech synthesiser.
+    // exact-matched by search and handed to a speech synthesizer.
     assert.deepEqual(dakuten.readings, []);
   });
 

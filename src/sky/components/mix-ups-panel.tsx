@@ -1,6 +1,6 @@
 // "Mix-ups": pairs that keep getting tangled, one line each. Tracked as
 // SAK-336. Just the two names, "日 day and 目 eye", each glyph in its
-// standing's colour, and how many runs it happened in. Sam's call
+// standing's color, and how many runs it happened in. Sam's call
 // (2026-09-04): no tiles, the names are enough. Every pair is listed; the
 // caller gives the panel a height and it scrolls. Practice shows the same
 // panel for its pool.

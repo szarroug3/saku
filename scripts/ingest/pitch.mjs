@@ -15,7 +15,7 @@
 // ========================================
 // Kanjium (github.com/mifunetoshiro/kanjium, data/source_files/raw/accents.txt)
 // is the pitch database Yomichan and Migaku ship, derived from the NHK 日本語発音
-// アクセント辞典 and 大辞林. It is CC BY-SA 4.0 — the same licence this project
+// アクセント辞典 and 大辞林. It is CC BY-SA 4.0 — the same license this project
 // carries — so it can be redistributed as a derivative under src/data/generated.
 // Attribution is recorded in src/data/generated/LICENSE / the app's NOTICE.
 //
@@ -23,7 +23,7 @@
 // is deliberately conservative. Each raw line is `word<TAB>reading<TAB>accent`.
 // A row contributes a pitch ONLY when ALL of these hold:
 //   - the accent field is a SINGLE integer. ~17k rows carry comma-separated
-//     alternatives (じゅうがつ「4,0」) or parenthesised part-of-speech splits
+//     alternatives (じゅうがつ「4,0」) or parenthesized part-of-speech splits
 //     (「(副)0,(名)3」). Those words genuinely have more than one accepted
 //     accent, so the honest thing is to store none rather than pick one.
 //   - the (word, reading) pair matches a vocab row on BOTH keb AND the reading

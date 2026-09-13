@@ -48,7 +48,7 @@
 // so there is no locality to exploit — but there is none to exploit anyway, as a
 // lesson walks kanji in teaching order, which no codepoint scheme tracks.
 //
-// LICENCE
+// LICENSE
 // =======
 // KanjiVG is CC BY-SA 3.0, © Ulrich Apel / KanjiVG contributors. The output is
 // a derivative, so it is share-alike and lives under the src/data/generated/
@@ -512,7 +512,7 @@ async function writeComponents(kept, got, jset) {
     const tree = got.get(g).tree;
     if (!tree) continue;
     // Depth-1 children, excluding the character itself (a pictograph whose only
-    // element is itself yields no row — matching the old behaviour).
+    // element is itself yields no row — matching the old behavior).
     const list = tree.comps.map((c) => c.element).filter((e) => e !== g);
     if (list.length) comps[g] = list;
     for (const c of tree.comps) {

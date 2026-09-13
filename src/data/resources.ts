@@ -1,10 +1,10 @@
 // The outside world — where to go for the Japanese this app doesn't teach.
 //
-// NOT A CREDITS PAGE. The attributions the licences REQUIRE live at /about/data
+// NOT A CREDITS PAGE. The attributions the licenses REQUIRE live at /about/data
 // (see src/data/attribution.ts), and they are a legal obligation, not a reading
 // list. Nothing here duplicates that page: EDRDG, KanjiVG and Tatoeba are debts,
-// and this file is recommendations. Keep them apart — a licence notice buried in
-// a list of study links is a licence notice nobody reads.
+// and this file is recommendations. Keep them apart — a license notice buried in
+// a list of study links is a license notice nobody reads.
 //
 // LINKS ARE A BET, same as the grammar clusters: every one is a wager on
 // someone else's site staying up and staying free. So `lastVerified` is data and
@@ -15,7 +15,7 @@
 // worse than an omission.
 //
 // LINK ONLY. Tofugu, Tae Kim, Bunpro and the rest are other people's work.
-// Linking carries no licence surface; copying, quoting or paraphrasing their
+// Linking carries no license surface; copying, quoting or paraphrasing their
 // content into this app would. We link.
 
 /** One outbound recommendation. `blurb` is one clause, not a paragraph. */

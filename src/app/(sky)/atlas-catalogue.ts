@@ -105,7 +105,7 @@ function countsOverTouched(shelfId: string, history: HistoryFile, now: number): 
 }
 
 /** The entries a shelf counts over, held for the life of the process: the
- * shelf's kinds are fixed and `all` is already memoised. */
+ * shelf's kinds are fixed and `all` is already memoized. */
 const byShelf = new Map<string, readonly LibEntry[]>();
 function shelvesByKind(shelfId: string): readonly LibEntry[] {
   const known = byShelf.get(shelfId);

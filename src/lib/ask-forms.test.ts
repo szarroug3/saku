@@ -487,7 +487,7 @@ describe("coverageQuestionCount is HISTORY-AWARE (SAK-210 round 2)", () => {
       "the ask must actually offer a listening card for this to be a real test of the drop",
     );
     // No collision yet (NOBODY has no claims): every enabled form survives —
-    // round 1's behaviour, still correct in the no-history-effect case.
+    // round 1's behavior, still correct in the no-history-effect case.
     assert.equal(
       coverageQuestionCount([hashiMeaning], audioMeaningAsk, NOBODY),
       forms.length,

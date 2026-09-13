@@ -78,7 +78,7 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
       // Speak that reading so TTS cannot choose an unintended kanji reading.
       return keigoWordInfo(info.id)?.word.reading ?? null;
     default:
-      // Grammar, and any subject we don't recognise: err toward silence.
+      // Grammar, and any subject we don't recognize: err toward silence.
       return null;
   }
 }

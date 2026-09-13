@@ -8,7 +8,7 @@
 // opens with jargon ("Ideogrammic compound: semantic 人 (man) + semantic 木
 // (tree) …") and trails long scholarly cross-references ("Compare 森…", "Shuowen
 // interprets…"). A learner wants one plain, memorable line. These hand-written
-// entries replace the raw text for the kanji processed so far, modelled on the
+// entries replace the raw text for the kanji processed so far, modeled on the
 // forest line — "doubled 木 (tree) to give the idea of many trees, thus a
 // forest": short, concrete, no jargon, no em dashes.
 //

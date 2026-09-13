@@ -2,7 +2,7 @@
 // deleteSessions / resetAll, specifically the split this ticket introduced:
 // `facts` now lives in its own per-row store (progress_facts), addressed and
 // mutated independently of the rest of a learner's history, with a fallback to
-// the original whole-document behaviour when that table has not been created
+// the original whole-document behavior when that table has not been created
 // yet (see store/supabase-store.ts's `migrated` flag).
 //
 // Mocks "@/lib/store/supabase-store" — the ONE seam history.ts and fact-store.ts

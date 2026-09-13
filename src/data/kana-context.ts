@@ -40,7 +40,7 @@ export interface ContextRule {
  * the rules that fill it in. Null for every kana that sounds the same wherever
  * it sits, which is almost all of them. */
 export interface ContextPronunciation {
-  /** DRAFT (for Sam to finalise) — one factual sentence naming the behaviour,
+  /** DRAFT (for Sam to finalize) — one factual sentence naming the behavior,
    * shown above the rules. */
   summary: string;
   rules: ContextRule[];
@@ -53,7 +53,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
   // before b/p/m that surprises every beginner) through to the bare nasal it is
   // when nothing follows.
   ん: {
-    // DRAFT: Sam to finalise.
+    // DRAFT: Sam to finalize.
     summary: "ん has no fixed sound of its own. It takes the place of the sound that follows it.",
     rules: [
       { when: "Before b, p, or m", sounds: "m", example: "しんぶん (shimbun), さんぽ (sampo)" },
@@ -70,7 +70,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
   // but never pronounced as "tsu"; the "sound" it makes is the pause and the
   // doubling.
   っ: {
-    // DRAFT: Sam to finalise.
+    // DRAFT: Sam to finalize.
     summary: "っ is a brief silent pause that doubles the consonant right after it.",
     rules: [
       {
@@ -82,7 +82,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
   },
 };
 
-// Katakana shares hiragana's rules — the behaviour is the sound's, not the
+// Katakana shares hiragana's rules — the behavior is the sound's, not the
 // script's. Point ン at ん and ッ at っ rather than restate them.
 CONTEXT["ン"] = CONTEXT["ん"];
 CONTEXT["ッ"] = CONTEXT["っ"];

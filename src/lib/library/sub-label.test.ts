@@ -5,10 +5,10 @@
 // =====================
 // The Library grid printed "—" under 42 kana — し ち つ ふ を ん じ ぢ づ and
 // every しゃ/ちゃ/じゃ combination — which is precisely the set whose
-// romanisation is NOT mechanical, the set a beginner most needs told. It was
+// romanization is NOT mechanical, the set a beginner most needs told. It was
 // not missing data: the entry page prints "shi · si" from the same rows. It was
 // a `readings.length === 1` guard, written to stop a nine-reading kanji being
-// summarised as one arbitrary reading, catching kana that carry two spellings
+// summarized as one arbitrary reading, catching kana that carry two spellings
 // of ONE sound and have no meanings to fall back on.
 //
 // So there are two properties here and they pull against each other, which is
@@ -52,7 +52,7 @@ describe("no entry prints a dash while it has something to say", () => {
     }
   });
 
-  test("the irregular kana show every romanisation, joined as the entry page joins it", () => {
+  test("the irregular kana show every romanization, joined as the entry page joins it", () => {
     // These nine and the しゃ/ちゃ/じゃ combos were the whole of the bug. Their
     // extra readings are Kunrei spellings of the SAME sound as the Hepburn one,
     // so showing both is the whole truth, not a pick among alternatives.
@@ -66,7 +66,7 @@ describe("no entry prints a dash while it has something to say", () => {
     assert.equal(subLabel(entryOf(KANA_SUBJECT, "シ")), `shi${READING_SEP}si`);
   });
 
-  test("a mechanical kana still shows its single romanisation, unchanged", () => {
+  test("a mechanical kana still shows its single romanization, unchanged", () => {
     assert.equal(subLabel(entryOf(KANA_SUBJECT, "か")), "ka");
   });
 });

@@ -7,7 +7,7 @@
 // fact-keys.ts.
 
 /**
- * Reorder `items` so that neighbours rarely share a key — the deck's "spread
+ * Reorder `items` so that neighbors rarely share a key — the deck's "spread
  * within a fact" rule. A word deals several cards that all name the SAME entry
  * (its reading and meaning cards, and for a multi-reading word like 日 also the
  * reading/meaning cards of each reading), and a plain shuffle can land two of
@@ -17,7 +17,7 @@
  * one fact — every group of same-entry cards benefits, not just words.
  *
  * SAK-206: an earlier version of this function reached its local "no two
- * neighbours share a key" guarantee with a GREEDY method — repeatedly emit one
+ * neighbors share a key" guarantee with a GREEDY method — repeatedly emit one
  * item from whichever remaining bucket was largest, skipping the key just
  * emitted. That greedy is provably correct for the local guarantee, but it has
  * an unstated GLOBAL bias: it always drains the CURRENTLY largest bucket, and a
@@ -84,8 +84,8 @@
  * entry (count mode over a single word) comes back with the few unavoidable
  * adjacencies and no more.
  *
- * RANDOMISED for variety, PURE otherwise. Each bucket's contents are shuffled,
- * and credit ties are broken by visiting keys in a randomised order each
+ * RANDOMIZED for variety, PURE otherwise. Each bucket's contents are shuffled,
+ * and credit ties are broken by visiting keys in a randomized order each
  * round, so repeated runs over the same deck give different (still-spread,
  * still-evenly-distributed) orders. `rand` defaults to Math.random so callers
  * need not thread one through; a test injects a deterministic source to pin
@@ -175,7 +175,7 @@ export function spread<T>(
     } else {
       // No key is in danger: free to let credit decide. The eligible key
       // (excluding the one just emitted) with the most credit gets this
-      // round. Visiting in a randomised order ties equal credit at random,
+      // round. Visiting in a randomized order ties equal credit at random,
       // same variety guarantee the old bucket-count ties had.
       let bestCredit = -Infinity;
       for (const k of shuf([...active])) {

@@ -92,7 +92,7 @@ describe("acceptableNumberReadings — branch alternates", () => {
 // the clean counters (枚/台), and the 〜人/〜つ irregulars.
 describe("counterReading — every counter, counts 1–10", () => {
   const TABLE: Record<CounterKind, readonly string[]> = {
-    // native series — pure memorisation, valid only 1–10
+    // native series — pure memorization, valid only 1–10
     tsu: ["ひとつ", "ふたつ", "みっつ", "よっつ", "いつつ", "むっつ", "ななつ", "やっつ", "ここのつ", "とお"],
     // people — 1/2/4 suppletive, rest plain + にん
     nin: ["ひとり", "ふたり", "さんにん", "よにん", "ごにん", "ろくにん", "しちにん", "はちにん", "きゅうにん", "じゅうにん"],

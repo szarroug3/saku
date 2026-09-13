@@ -18,7 +18,7 @@
 // Collapsing those two cases into one `readings.length === 1` guard is what
 // made 42 kana — し ち つ ふ を ん じ ぢ づ and every しゃ/ちゃ/じゃ combo —
 // show a dash. A kana carries no meanings to fall back to, so the guard sent
-// the ONE group of kana whose romanisation is not mechanical, the group a
+// the ONE group of kana whose romanization is not mechanical, the group a
 // beginner most needs told, to "—". They are told now.
 
 // SAK-104: KANJI_SUBJECT used to come from @/data/kanji, which imports the
@@ -44,7 +44,7 @@ export const MEANING_SEP = ", ";
  * its one reading for anything else with exactly one, its meaning for a kanji
  * with many — and a dash only when the entry genuinely has neither. */
 export function subLabel(entry: LibEntry): string {
-  // Kana first: every romanisation it carries, because they are spellings of
+  // Kana first: every romanization it carries, because they are spellings of
   // one sound rather than a choice among sounds.
   if (entry.kind === KANA_SUBJECT && entry.readings.length > 0) {
     return entry.readings.join(READING_SEP);

@@ -4,7 +4,7 @@
 // ==================================================
 // Nothing here invents an order or a boundary. `src/data/characters.ts` has
 // shipped kana as sections since the port — Vowels あ, K か, S さ, in Tofugu's
-// order, labelled — and every one of them is a real group of real characters.
+// order, labeled — and every one of them is a real group of real characters.
 // This file's whole job is to publish that shape as a CURRICULUM so the budget
 // can hand it out one group at a time, instead of drawing from a flat pool of
 // 214 and calling the result a lesson.

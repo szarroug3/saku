@@ -8,7 +8,7 @@
 //
 // So this grades the WHOLE CURRICULUM both ways. Every fact, both directions,
 // a battery of answers built from the fact itself (its right answer, its
-// answer mistyped, its romaji, a neighbour's answer, junk), through
+// answer mistyped, its romaji, a neighbor's answer, junk), through
 // `checkTyped` and through `matchesKey(answerKeyFor(...))`, and asserts the
 // two verdicts are the same every time. A change to a check that is not made
 // to its key fails here with the fact and the answer that split them.

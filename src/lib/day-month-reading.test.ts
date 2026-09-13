@@ -78,7 +78,7 @@ describe("out-of-range inputs", () => {
 });
 
 describe("isDayException — the ticket's named exceptions, PLUS the branch-digit ones it missed", () => {
-  test("the 1st-10th are a memorised tier, not exceptions to a rule", () => {
+  test("the 1st-10th are a memorized tier, not exceptions to a rule", () => {
     for (let n = 1; n <= 10; n++) assert.equal(isDayException(n), false, `day ${n}`);
   });
 

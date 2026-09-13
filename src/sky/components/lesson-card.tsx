@@ -87,7 +87,7 @@ export type HearComponent = ComponentType<{ glyph: string; downstep?: number; cl
 /** What each kind is, in the learner's terms.
  *
  * items-center, not items-baseline (SAK-415): an 18px glyph beside a 12.5px
- * gloss centres on the pill rather than hanging the gloss off the glyph's
+ * gloss centers on the pill rather than hanging the gloss off the glyph's
  * baseline, which left the pair sitting high. */
 function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
@@ -186,7 +186,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={`font-sky-display leading-none ${item.glyph === item.english ? "text-[28px] leading-tight" : "text-[52px]"} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
         {/* the reading and its hear button as one group, so the button
-            centres on the reading rather than on the glyph beside it */}
+            centers on the reading rather than on the glyph beside it */}
         <span className="inline-flex items-center gap-2">
           {reading && reading !== item.glyph && (
             Pitch && typeof teach?.pitch === "number"

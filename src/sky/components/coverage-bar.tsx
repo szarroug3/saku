@@ -5,7 +5,7 @@
 // Atlas shelf. It takes counts and the size of the whole collection, renders
 // proportionally, and carries no labels of its own: the caller pairs it with
 // a headline ("31 of 2,104 kanji known") and a StandingLegend with the same
-// counts, which is what keeps a coloured bar from being a bare coloured dot.
+// counts, which is what keeps a colored bar from being a bare colored dot.
 //
 // Always drawn against the whole collection (see src/sky/lib/coverage.ts).
 // A segment with a count is never lost: below one pixel it still draws at a

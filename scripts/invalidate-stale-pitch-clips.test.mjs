@@ -14,7 +14,7 @@
 // pairs recomputed independently from SAK_221_PREVIOUS_PITCH + VOCAB +
 // wrongDownstepFor, the guarantee that it never proposes a path
 // `pitchItems()` still enumerates, and the guarantee that adding a target
-// changed nothing about the default (SAK-217) behaviour.
+// changed nothing about the default (SAK-217) behavior.
 //
 // SAK-219 adds a third target (`sak-219`) covering the GENERAL (non-pitch)
 // audio clips — a different Storage namespace (`voiceObjectPath`, no
@@ -284,7 +284,7 @@ describe("stalePitchClips — SAK-219 general-audio target", () => {
     assert.ok(!firstClip.path.includes("/pitch-"), "sak-219 clips must never collide with the pitch cache's own sub-namespace");
   });
 
-  test("adding the sak-219 target changed nothing about the sak-217/sak-221 targets' own default behaviour", () => {
+  test("adding the sak-219 target changed nothing about the sak-217/sak-221 targets' own default behavior", () => {
     assert.deepEqual(stalePitchClips(), stalePitchClips(SAK_217_TARGET));
     assert.deepEqual(stalePitchItemsForReading("はち"), stalePitchItemsForReading("はち", SAK_217_TARGET));
   });

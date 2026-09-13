@@ -9,12 +9,12 @@
 // `placeConstellation` returns and asks for the lines only.
 //
 // THE STARS CARRY THE STATE AND THE LINES CARRY THE SHAPE (SAK-338). Every
-// line is one colour and one weight and is never dashed: it says two things
+// line is one color and one weight and is never dashed: it says two things
 // are joined, and nothing more. A star says how it is going, by its glow and
 // by the marks it wears. Which paint that is, is `paintFor` and
 // `linePaintFor` in src/sky/lib/constellation.ts, tested there; this file
-// only draws it. Colour is still by standing through the standing tokens, so
-// a star is the same colour as its chip.
+// only draws it. Color is still by standing through the standing tokens, so
+// a star is the same color as its chip.
 //
 // What each thing IS was settled first (Sam, 2026-09-05): a grammar pattern
 // or a sentence rule is a planet with a ring, a counter an asteroid, a verb
@@ -32,7 +32,7 @@ interface ConstellationProps {
   layout: ConstellationLayout;
   cx: number;
   cy: number;
-  /** The reach: how far the farthest star sits from the centre. */
+  /** The reach: how far the farthest star sits from the center. */
   r: number;
   /** What each star is and looks like. */
   lookOf: (id: string) => StarLook;
@@ -72,7 +72,7 @@ function bodyParts({ id, x, y, body, role, paint, glowOpacity, u }: BodyProps): 
     switch (body) {
       case "planet": {
         const r = PLANET.r * u, rx = PLANET.ring * u, ry = PLANET.ringDepth * u, w = 2 * u;
-        // the disc in its standing's colour with a shaded limb; the ring in
+        // the disc in its standing's color with a shaded limb; the ring in
         // starlight so it reads against any disc, its far half behind the
         // disc and its near half in front. No glow: it would swallow the ring.
         return [
@@ -125,7 +125,7 @@ function BodyFigure(props: BodyProps) {
   return <>{bodyParts(props)}</>;
 }
 
-/** The room a glyph needs round its centre: its body, plus the widest mark
+/** The room a glyph needs round its center: its body, plus the widest mark
  * any look can put on it, so every row of a key draws at one size and the
  * sizes are honest against each other. */
 function glyphReach(look: StarLook, paint: Paint): number {

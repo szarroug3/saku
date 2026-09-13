@@ -173,7 +173,7 @@ export interface CompositePosition {
   word: LessonPosition | null;
 }
 
-/** The nouns, singular and capitalised: a segment names a KIND of item, and the
+/** The nouns, singular and capitalized: a segment names a KIND of item, and the
  * count beside it says how many. "Kanji 5–8" reads the same for one or four. */
 const COMPOSITE_NOUNS: readonly (readonly [keyof CompositePosition, string])[] = [
   ["radical", "Radical"],

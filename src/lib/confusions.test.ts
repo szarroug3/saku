@@ -320,7 +320,7 @@ describe("analyzeRun reports the run against history", () => {
 // ---------- direction ----------
 
 describe("direction is read in entry space", () => {
-  test("a lopsided pair names the entry you don't recognise", () => {
+  test("a lopsided pair names the entry you don't recognize", () => {
     // 生 shown and answered as 先, four times, across BOTH of 生's readings —
     // one entry, two facts, one confusion.
     const runs = [

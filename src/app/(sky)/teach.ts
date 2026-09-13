@@ -68,7 +68,7 @@ function positionOf(v: { position?: { romaji: string; kana: string }; name: { ka
 }
 
 /** A hook with its letters in brackets ("The [k]arate [k]ick"), as runs
- * with those letters coloured instead (Sam, 2026-09-05). */
+ * with those letters colored instead (Sam, 2026-09-05). */
 function hookLine(hook: string): SkySoundLine {
   return hookRuns(hook).map((r) => ({ text: r.text, accent: r.hit }));
 }
@@ -327,7 +327,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
   const g = SENTENCE_ORDERING_GUIDES[tier];
   const labels = CHUNK_ROLE_LABELS[tier];
   const order = stepPartOrder(tier);
-  /** The sentence as runs: its parts labelled, the active one marked, the rest plain. */
+  /** The sentence as runs: its parts labeled, the active one marked, the rest plain. */
   const runs = (sentence: string, parts: readonly PositionedStepPart[], active: StepKey): PartedSentence => {
     const out: Array<{ text: string; label?: string; active?: boolean }> = [];
     let cursor = 0;
@@ -421,7 +421,7 @@ function ruleRow(r: IntroBuildRule, cols: RuleColumns): SkySoundLine[] {
 /** Which columns a rule table needs: the ending only when a row names one
  * (its label, or the kana it drops); the change only when a row is built
  * by a rule rather than given whole; meaning and note when any row has one.
- * So a list of memorised forms (たべる → たべて) is verb, result, meaning. */
+ * So a list of memorized forms (たべる → たべて) is verb, result, meaning. */
 interface RuleColumns { ending: boolean; change: boolean; gloss: boolean; note: boolean }
 
 function ruleTable(rules: readonly IntroBuildRule[], heads?: { label?: string; change?: string; note?: string; gloss?: string }, title?: string, extra: Partial<TeachTable> = {}): TeachTable {

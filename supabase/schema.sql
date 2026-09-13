@@ -107,7 +107,7 @@ create trigger on_auth_user_created
 -- ============================================================================
 -- THIS TABLE IS NOW REQUIRED. The app code used to tolerate it being absent:
 -- every query was wrapped to detect Postgres' "relation does not exist"
--- (42P01) and fall back to the original whole-document behaviour, so code
+-- (42P01) and fall back to the original whole-document behavior, so code
 -- could safely merge ahead of the SQL. That tolerance went in SAK-405, the
 -- migration window having long closed. A missing table is an error now, and
 -- the reads assemble a learner's facts from here and nowhere else.

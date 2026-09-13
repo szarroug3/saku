@@ -1,34 +1,34 @@
 // Where the dictionary data comes from, and what saying so requires.
 //
-// THIS IS A LICENCE OBLIGATION, NOT A CREDITS PAGE
+// THIS IS A LICENSE OBLIGATION, NOT A CREDITS PAGE
 // ================================================
 // Every kanji, reading, meaning and word in this app is derived from files
 // belonging to the Electronic Dictionary Research and Development Group
-// (EDRDG), used under CC BY-SA 4.0. The EDRDG licence is stricter than CC
-// BY-SA alone about WHERE the acknowledgement has to appear, and it is strict
+// (EDRDG), used under CC BY-SA 4.0. The EDRDG license is stricter than CC
+// BY-SA alone about WHERE the acknowledgment has to appear, and it is strict
 // in a way that lands on UI rather than on a LICENSE file:
 //
 //   - It is not enough to acknowledge in a README, an About box, or a startup
-//     screen. The licence rules those out by name.
-//   - For an application, the acknowledgement must either appear on each screen
+//     screen. The license rules those out by name.
+//   - For an application, the acknowledgment must either appear on each screen
 //     that displays the data, OR be reachable from each such screen — a menu
-//     item is the example the licence itself gives.
+//     item is the example the license itself gives.
 //
 // So the obligation is satisfiable two ways, and `SHORT` / `ATTRIBUTION_HREF`
 // below exist to satisfy the second, which is the cheaper one: a persistent
 // link in the chrome of every screen that shows dictionary data, pointing at a
-// dedicated screen that renders `SOURCES` and `LICENCE_NOTE` in full.
+// dedicated screen that renders `SOURCES` and `LICENSE_NOTE` in full.
 //
 // This module is the data half of that. It carries no UI on purpose — the
 // screen is a separate task — but it exists now, and it is exported now, so
 // that the obligation is a thing someone has to consciously delete rather than
 // a thing everyone forgets to add. Shipping the data and adding the notice
-// later is shipping a licence violation and hoping.
+// later is shipping a license violation and hoping.
 //
 // SHARE-ALIKE
 // ===========
 // CC BY-SA is share-alike: the generated files in src/data/generated/ are
-// adaptations of EDRDG's, so they carry the same licence. That is settled and
+// adaptations of EDRDG's, so they carry the same license. That is settled and
 // not optional — src/data/generated/LICENSE is where it is written down.
 //
 // It stops at that directory. This code reads those files; it is not derived
@@ -46,7 +46,7 @@ export interface Source {
   readonly name: string;
   readonly what: string;
   readonly holder: string;
-  readonly licence: string;
+  readonly license: string;
   readonly href: string;
 }
 
@@ -55,28 +55,28 @@ export const SOURCES: readonly Source[] = [
     name: "KANJIDIC2",
     what: "Kanji meanings, on/kun readings, stroke counts, school grades, and newspaper frequency ranks.",
     holder: "Electronic Dictionary Research and Development Group",
-    licence: "CC BY-SA 4.0",
+    license: "CC BY-SA 4.0",
     href: "https://www.edrdg.org/wiki/index.php/KANJIDIC_Project",
   },
   {
     name: "JMdict",
     what: "Everyday vocabulary: written forms, readings, English glosses, and part-of-speech tags.",
     holder: "Electronic Dictionary Research and Development Group",
-    licence: "CC BY-SA 4.0",
+    license: "CC BY-SA 4.0",
     href: "https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project",
   },
   {
     name: "KRADFILE",
     what: "The radical decomposition each kanji is built from, which drives parts-first ordering.",
     holder: "Electronic Dictionary Research and Development Group",
-    licence: "CC BY-SA 4.0",
+    license: "CC BY-SA 4.0",
     href: "https://www.edrdg.org/krad/kradinf.html",
   },
   {
     // NOT an EDRDG file, and the first source here that isn't. Two things
     // follow and neither is optional:
     //
-    //  - LICENCE, and why it's compatible. Tatoeba is CC BY 2.0 FR —
+    //  - LICENSE, and why it's compatible. Tatoeba is CC BY 2.0 FR —
     //    attribution, no share-alike. A BY work can be incorporated into a
     //    BY-SA one (the combination is BY-SA; that is the direction share-alike
     //    permits), so the mix is fine. It would NOT be fine in reverse, and it
@@ -92,11 +92,11 @@ export const SOURCES: readonly Source[] = [
     name: "Tatoeba",
     what: "Example sentences and their human English translations, used to show each grammar pattern in a real sentence.",
     holder: "The Tatoeba Project and its contributors",
-    licence: "CC BY 2.0 FR",
+    license: "CC BY 2.0 FR",
     href: "https://tatoeba.org/eng/downloads",
   },
   {
-    // The second non-EDRDG source, and the second licence in the mix. KanjiVG is
+    // The second non-EDRDG source, and the second license in the mix. KanjiVG is
     // CC BY-SA 3.0, one version behind everything else here, and that is fine in
     // the direction it needs to be: CC BY-SA 3.0 is upgrade-compatible with
     // 4.0 — a 3.0 work may be used in a 4.0 BY-SA adaptation — so the stroke data
@@ -107,13 +107,13 @@ export const SOURCES: readonly Source[] = [
     // any reasonable manner"; a credits screen reachable from every screen that
     // draws a stroke diagram is that. The inline credit that used to sit under
     // each diagram is gone BECAUSE this entry exists — delete this entry and the
-    // stroke data is uncredited, which is a licence violation, not a tidy-up.
+    // stroke data is uncredited, which is a license violation, not a tidy-up.
     // The guard test in attribution.test.ts is there to make that hard to do by
     // accident.
     name: "KanjiVG",
     what: "The stroke-order data behind every “how it’s written” diagram: each stroke as a path, in the order it is drawn.",
     holder: "© Ulrich Apel and contributors",
-    licence: "CC BY-SA 3.0",
+    license: "CC BY-SA 3.0",
     href: "https://kanjivg.tagaini.net/",
   },
   {
@@ -127,7 +127,7 @@ export const SOURCES: readonly Source[] = [
     name: "English Wiktionary",
     what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole. This covers both the crawled set (kanji-etymology.json) and a hand-authored layer (kanji-etymology-manual.json) that re-maps the same Wiktionary glyph-origin prose onto the visible modern glyph where the automated join could not, e.g. 時's phonetic, historically 之, now written 寺. Every hand-authored entry cites its source and stays CC BY-SA 4.0.",
     holder: "Wiktionary contributors",
-    licence: "CC BY-SA 4.0",
+    license: "CC BY-SA 4.0",
     href: "https://en.wiktionary.org/",
   },
   {
@@ -136,7 +136,7 @@ export const SOURCES: readonly Source[] = [
     // variant forms it is written with (水 → 氵, 氺). CC BY 4.0 — attribution, and
     // like Tatoeba it carries NO share-alike, so it sits inside the generated
     // CC BY-SA 4.0 collection without conflict (BY into BY-SA is the permitted
-    // direction). The variant glyphs are normalised to their CJK unified form
+    // direction). The variant glyphs are normalized to their CJK unified form
     // via Unicode's own equivalence table; the names and positions are Kanji
     // Alive's. radicals.mjs deferred this data for want of "a verified curated
     // source"; this is it, and the line earns its place so the credit is a thing
@@ -144,7 +144,7 @@ export const SOURCES: readonly Source[] = [
     name: "Kanji Alive (japanese-radicals.csv)",
     what: "Each Kangxi radical's Japanese bushu name (kana and romaji) and its positional variant forms.",
     holder: "Kanji Alive project",
-    licence: "CC BY 4.0",
+    license: "CC BY 4.0",
     href: "https://github.com/kanjialive/kanji-data-media",
   },
   // Secondary ordering sources for words CEJC does not observe. CEJC owns the
@@ -153,47 +153,47 @@ export const SOURCES: readonly Source[] = [
     name: "JLPT vocabulary lists (tanos.co.uk)",
     what: "One of two proficiency lists used only in the fallback ordering for words absent from CEJC.",
     holder: "Jonathan Waller (tanos.co.uk)",
-    licence: "CC BY",
+    license: "CC BY",
     href: "http://www.tanos.co.uk/jlpt/",
   },
   {
     name: "open-anki-jlpt-decks",
     what: "The second proficiency list used in the CEJC-unobserved fallback ordering.",
     holder: "jamsinclair and contributors",
-    licence: "MIT",
+    license: "MIT",
     href: "https://github.com/jamsinclair/open-anki-jlpt-decks",
   },
   {
     name: "FrequencyWords (OpenSubtitles 2018, Japanese)",
     what: "A secondary frequency source used to order Library words that CEJC does not observe.",
     holder: "Hermit Dave (hermitdave/FrequencyWords)",
-    licence: "CC BY-SA 4.0",
+    license: "CC BY-SA 4.0",
     href: "https://github.com/hermitdave/FrequencyWords",
   },
   {
     name: "Corpus of Everyday Japanese Conversation (CEJC)",
     what: "Observed lexical and pronunciation frequencies from 200 hours of everyday conversation. CEJC part of speech separates core vocabulary, conversational essentials, grammar and fillers; its counts order the word curriculum and interchangeable readings within each dictionary meaning.",
     holder: "National Institute for Japanese Language and Linguistics",
-    licence: "Free for research and education; raw redistribution prohibited",
+    license: "Free for research and education; raw redistribution prohibited",
     href: "https://www2.ninjal.ac.jp/conversation/cejc/cejc-wc.html",
   },
 ];
 
 /**
- * The acknowledgement itself, in the form that must be reachable from every
+ * The acknowledgment itself, in the form that must be reachable from every
  * screen showing dictionary data.
  */
-export const LICENCE_NOTE =
+export const LICENSE_NOTE =
   "This application uses dictionary files from the Electronic Dictionary " +
   "Research and Development Group (KANJIDIC2, JMdict and KRADFILE), used in " +
-  "conformance with the Group's licence. The files are made available under " +
-  "the Creative Commons Attribution-ShareAlike 4.0 International licence, and " +
+  "conformance with the Group's license. The files are made available under " +
+  "the Creative Commons Attribution-ShareAlike 4.0 International license, and " +
   "the data shown here is derived from them. Example sentences come from the " +
   "Tatoeba Project (tatoeba.org) and are used under the Creative Commons " +
-  "Attribution 2.0 France licence; they were written by Tatoeba's contributors, " +
+  "Attribution 2.0 France license; they were written by Tatoeba's contributors, " +
   "not by this application. The stroke-order diagrams are drawn from KanjiVG " +
   "(© Ulrich Apel and contributors), used under the Creative Commons " +
-  "Attribution-ShareAlike 3.0 licence. Word-track categories, teaching priority, " +
+  "Attribution-ShareAlike 3.0 license. Word-track categories, teaching priority, " +
   "reading preference and within-definition reading order are derived from the " +
   "Corpus of Everyday Japanese Conversation " +
   "(CEJC) short-unit vocabulary tables, version 2022.09, created by the National " +
@@ -204,20 +204,20 @@ export const LICENCE_NOTE =
   "for words CEJC does not observe. The glyph-origin notes, covering what each component of a " +
   "kanji contributes and how the parts make the whole, are derived from English " +
   "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
-  "ShareAlike 4.0 International licence and written by Wiktionary's contributors. " +
+  "ShareAlike 4.0 International license and written by Wiktionary's contributors. " +
   "The Japanese names of the classical radicals and their positional variant " +
   "forms are derived from Kanji Alive (github.com/kanjialive), used under the " +
-  "Creative Commons Attribution 4.0 International licence.";
+  "Creative Commons Attribution 4.0 International license.";
 
-/** The EDRDG licence in full — the authority for everything above. */
-export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";
+/** The EDRDG license in full — the authority for everything above. */
+export const LICENSE_HREF = "https://www.edrdg.org/edrdg/licence.html";
 
-/** Where the in-app acknowledgement screen lives. The link that has to be
+/** Where the in-app acknowledgment screen lives. The link that has to be
  * present in the chrome of every screen that renders dictionary data. */
 export const ATTRIBUTION_HREF = "/about";
 
 /** The persistent link's label. Short enough for a footer, explicit enough to
- * be the "easily accessible" route the licence asks for.
+ * be the "easily accessible" route the license asks for.
  *
  * IT NAMES WHAT IT COVERS. This used to read "Dictionary data: EDRDG (CC BY-SA
  * 4.0)", which was accurate when the dictionaries were the only borrowed thing
@@ -225,8 +225,8 @@ export const ATTRIBUTION_HREF = "/about";
  * sentences arrived behind the same link — a reader looking for the stroke
  * credit had no reason to think this was it. The kinds of data are named rather
  * than every holder, so the label stays footer-sized and still tells you what is
- * on the other end. EDRDG stays named outright: its licence is the strict one. */
-// A short, generic link label. The licence is satisfied by the acknowledgement
+ * on the other end. EDRDG stays named outright: its license is the strict one. */
+// A short, generic link label. The license is satisfied by the acknowledgment
 // being REACHABLE (a menu item is the example it gives), and /about/data carries
 // the full notice — naming every holder inline here is not required, so the label
 // stays a plain "Data sources" pointing at that page (owner's call).

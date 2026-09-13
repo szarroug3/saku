@@ -145,7 +145,7 @@ describe("session-aware vehicle dedup (SAK-203 round 2)", () => {
     const r = recipe("te-iru")!;
     const bucket = { kind: "class", cls: "v1" } as const;
     const first = pickVehicle(r, () => 0, "verb", undefined, bucket)!;
-    assert.equal(first.surface, "食べる"); // earliest-taught, unchanged behaviour
+    assert.equal(first.surface, "食べる"); // earliest-taught, unchanged behavior
     const usedInDeck = new Set([first.surface]);
     const second = pickVehicle(r, () => 0, "verb", undefined, bucket, usedInDeck);
     assert.notEqual(second!.surface, first.surface, "re-picked an already-used vehicle");
@@ -430,7 +430,7 @@ describe("a vehicle is pinned to the fact's HOST", () => {
     assert.deepEqual(all, split);
   });
 
-  test("pickVehicle honours the pin across the whole rng range", () => {
+  test("pickVehicle honors the pin across the whole rng range", () => {
     const r = recipe("tara")!;
     for (const x of [0, 0.17, 0.33, 0.5, 0.66, 0.83, 0.99]) {
       assert.equal(pickVehicle(r, seq([x]), "adj-i")!.host, "adj-i");

@@ -32,7 +32,7 @@
 // THE NUMBER KANJI CONTRIBUTE NOTHING HERE — SAK-148. 四…十's KanjiVG comps
 // (囗+儿, 二, 亠+八, …) are SHAPE-ONLY, the exact reason `builtFrom` in
 // entries.ts suppresses their own "Built from" section (see
-// src/data/number-kanji.ts): they are memorised wholes, not compositions, and
+// src/data/number-kanji.ts): they are memorized wholes, not compositions, and
 // showing 囗+儿 there would teach a learner a relationship the character does
 // not carry. Before this fix, THIS index still walked their raw comps
 // unfiltered, so 囗's own "Used as a part in" page named 四 as a user while

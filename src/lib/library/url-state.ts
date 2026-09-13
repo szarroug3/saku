@@ -47,7 +47,7 @@
 //                                 functionally the same "show everything"
 //                                 result as the empty default.
 //   a comma list ................. exactly those, each validated the same way
-//                                 a single value always was; an unrecognised
+//                                 a single value always was; an unrecognized
 //                                 token is dropped, and if NONE of them survive
 //                                 that the whole thing falls back to the empty
 //                                 default (garbage is not a deliberate
@@ -151,7 +151,7 @@ export const ALL_KINDS: ReadonlySet<Kind> = new Set(KINDS);
  * only so a pre-flip link still round-trips. The literal `all` token is every
  * kind explicitly checked. Anything else is read token by token, each
  * validated against KINDS the same way a single value always was — an
- * unrecognised token is dropped, and if the whole list turns out empty
+ * unrecognized token is dropped, and if the whole list turns out empty
  * (`?kind=banana`, `?kind=,,`) that is garbage, not a deliberate selection, so
  * it falls back to the same "no filter" default as an absent param.
  */
@@ -204,7 +204,7 @@ export const ALL_STATES: ReadonlySet<StatusFilter> = new Set(STATUS_VALUES);
  * accepted for back-compat) is the SAK-167 default — no status checked, read
  * as "no filter, every status passes" (see `isNoStateFilter` below) — the
  * literal `all` token is every status explicitly checked, a comma list is
- * read token by token with unrecognised tokens dropped, and an all-garbage
+ * read token by token with unrecognized tokens dropped, and an all-garbage
  * list falls back to the same "no filter" default as an absent param.
  */
 export function statesFromParams(
@@ -267,7 +267,7 @@ export function isNoStateFilter(states: ReadonlySet<StatusFilter>): boolean {
  * still round-trips — it writes the `all` token rather than being folded into
  * the same omission as empty — so a "select all" link keeps reading as
  * checked in the UI even though it shows the same entries the default does.
- * The two multi-select params serialise in KINDS/STATUS_VALUES order (not
+ * The two multi-select params serialize in KINDS/STATUS_VALUES order (not
  * selection order), so the same checked set always writes the same URL
  * regardless of the order the boxes were ticked in.
  */

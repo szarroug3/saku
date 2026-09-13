@@ -15,13 +15,13 @@
  * (--bg, --card, …) and its DARK palette on --dark-* mirrors. The two
  * "resolve to dark" blocks further down are the ONLY place the dark values
  * get promoted onto the real names, so the mode logic lives in exactly one
- * spot and each colour is written exactly once.
+ * spot and each color is written exactly once.
  * ======================================================================= */
 
 /* ---------- 1 · AIZOME — washi, sumi ink, indigo -------------------------
  * Light-first. Paper ground, ink-black type, one indigo. Nearly no radius,
  * zero shadow: cards are hairline rules, not boxes. Dark keeps the warm
- * bias — charcoal with a brown cast, never neutral grey. */
+ * bias — charcoal with a brown cast, never neutral gray. */
 [data-theme="aizome"] {
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --font-kana: "Hiragino Mincho ProN", "Yu Mincho", serif;
@@ -50,7 +50,7 @@
    * so a tree still reads as a tree in a palette with no other wood hue. */
   --trunk: #6b4423;
   /* SAK-231: --warning/--warning-bg used to be one hardcoded cyan shared
-   * verbatim by all four themes in both modes — the only status colour NOT
+   * verbatim by all four themes in both modes — the only status color NOT
    * re-tuned per theme like --danger/--success/--accent already are. Each
    * theme below now gets its own light+dark pair, deepened/lightened until it
    * clears the same ~4.5:1+ floor against that theme's own --card (and its
@@ -290,12 +290,12 @@
   --warning: #00697c;
   --warning-bg: rgba(0, 105, 124, 0.12);
   /* Opaque, unlike most of this theme's tokens: a translucent trunk over the
-   * mesh would read as a different colour at every point along a branch,
+   * mesh would read as a different color at every point along a branch,
    * the same reasoning as --arc below. Soft warm brown so it sits quietly
    * against the glass rather than competing with the cyan accent. */
   --trunk: #6b5541;
   /* Opaque track for the same reason the cards are: a translucent band over
-   * the mesh reads as a different colour at every point of the circle. */
+   * the mesh reads as a different color at every point of the circle. */
   --arc: #096b87;
   --arc-track: #dfe3ec;
   --shadow-card: none; /* EXPERIMENT: definition comes from the border + frost */
@@ -354,11 +354,11 @@
  *
  * Each block writes the same six tokens the theme blocks do, and nothing else:
  *
- *   --accent / --dark-accent .......... the colour AS TEXT (nav, chip labels,
+ *   --accent / --dark-accent .......... the color AS TEXT (nav, chip labels,
  *                                       links). This is the one with a 4.5:1
  *                                       floor, and the reason there are two
  *                                       values per accent rather than one.
- *   --arc / --dark-arc ................ the same colour AS A FILLED BAND, on
+ *   --arc / --dark-arc ................ the same color AS A FILLED BAND, on
  *                                       the accuracy ring. Deepened — see below.
  *   --accent-bg / --dark-accent-bg .... the soft fill behind selected chips and
  *                                       active nav. Derived, never authored:
@@ -366,14 +366,14 @@
  *                                       cannot drift out of sync with it.
  *
  * WHY EACH ACCENT NEEDS A LIGHT SIBLING AT ALL
- * A colour tuned to sing on near-black is invisible on paper. #67d4f5 on
+ * A color tuned to sing on near-black is invisible on paper. #67d4f5 on
  * kiri's white glass is 1.6:1 — not "a bit weak", unreadable. So every accent
  * is authored twice, exactly as all four themes already author theirs twice.
  * The light siblings keep the dark value's OKLCH hue (that is what makes it
- * recognisably the same accent) and drop lightness until the WORST of eight
+ * recognizably the same accent) and drop lightness until the WORST of eight
  * measurements — four themes x {on --card, on its own --accent-bg} — clears
  * 4.5:1. Independently derived, cyan landed on #00607d; the theme's own
- * hand-authored light cyan is #096b87. Two methods, one colour, which is the
+ * hand-authored light cyan is #096b87. Two methods, one color, which is the
  * best evidence available that the floor is being read the same way here as
  * it was there.
  *
@@ -438,7 +438,7 @@
 }
 
 /* No hue, so there is nothing to preserve between the modes and the pair is
- * just "bright grey" / "deep grey". Still needs both: #dbe2f0 is 1.15:1 on
+ * just "bright gray" / "deep gray". Still needs both: #dbe2f0 is 1.15:1 on
  * white. */
 [data-accent="pearl"] {
   --accent: #535965;
@@ -459,11 +459,11 @@
  * corners to #1d4144 over the teal blob at 88%/82% — and #1d4144 is bright
  * enough to take azure to 4.35:1, violet to 4.07, orchid 4.19, magenta 4.18.
  * All four fail, and they fail on a real pixel: at a viewport near the 1080px
- * content column the blob's centre is inside the card.
+ * content column the blob's center is inside the card.
  *
  * The four could have been lifted globally to clear kiri. They are not, and
  * that is the point of the feature: it would repaint magenta in graphite —
- * where it measures 6.89:1 and is exactly the approved colour — to fix a
+ * where it measures 6.89:1 and is exactly the approved color — to fix a
  * theme graphite has nothing to do with. The accent belongs to the theme, so
  * the correction does too. Only --dark-accent is restated; --dark-accent-bg
  * above is a color-mix OFF it, so it re-derives here for free.
@@ -734,13 +734,13 @@ html {
  * still belongs to the palette: the thumb is the same hairline the cards draw
  * their edges with, so it reads as part of the frame rather than as a control.
  * The track stays transparent so the page's own ground (and, in kiri, the mesh)
- * runs under it instead of being interrupted by a grey channel.
+ * runs under it instead of being interrupted by a gray channel.
  *
  * Standard properties only — no ::-webkit-scrollbar. Both engines this app is
  * aimed at support scrollbar-color/-width natively (Chrome 121+, Safari 18.2+),
  * and the webkit pseudo-elements OVERRIDE the standard property where they're
- * honoured, which would mean maintaining two scrollbars that must agree and
- * losing the OS's overlay/auto-hide behaviour to get nothing back.
+ * honored, which would mean maintaining two scrollbars that must agree and
+ * losing the OS's overlay/auto-hide behavior to get nothing back.
  *
  * Applies to the page and, via .kq-scroll, to any in-card scroller. */
 html,
@@ -809,7 +809,7 @@ body {
 }
 
 /* Stroke-order draw-along (src/components/lesson/stroke-order.tsx). Each stroke
- * path is normalised to pathLength=1, so one keyframe — undrawn to drawn —
+ * path is normalized to pathLength=1, so one keyframe — undrawn to drawn —
  * fits every stroke of every character. WHEN each stroke takes its turn inside
  * the shared cycle is the easing's job, not this rule's.
  *
@@ -825,7 +825,7 @@ body {
 
 /* Match-pairs mismatch flash — pairs' equivalent of the drill halo's red
  * pulse: a danger bloom that fades over the same 450ms as the shake, every
- * colour a token so it reads in all four themes. Lives here beside gshake
+ * color a token so it reads in all four themes. Lives here beside gshake
  * rather than in the component so the whole app's motion is in one place. */
 @keyframes kq-pairs-miss {
   0% {
@@ -1026,7 +1026,7 @@ body {
  * NOT a backdrop-filter. A live blur behind a scroll region re-blends every frame
  * in real browsers no matter how the content in front of it is layered, and that
  * was the last of the kiri scroll lag. It began life as a static tint on its own
- * compositor layer, so the panel rasterised ONCE and the scrolling tiles moved
+ * compositor layer, so the panel rasterized ONCE and the scrolling tiles moved
  * over a cached layer. The tint went with the outer box; the layer stayed, which
  * is where the smoothness always came from. Opaque themes leave it a no-op, so
  * their middle region is just the page ground. */
@@ -1084,7 +1084,7 @@ body {
  *
  *   A STICKY SURFACE MUST OCCLUDE. It therefore cannot inherit a token that is
  *   allowed to be transparent. It needs its own token, resolved per theme, and
- *   the resolution has to answer "what is the ground HERE?" — not "what colour
+ *   the resolution has to answer "what is the ground HERE?" — not "what color
  *   is a card?".
  *
  * The first fix for that reached for a heavy --bg tint, and it worked — in the
@@ -1097,8 +1097,8 @@ body {
  *
  * Not the page. THE CARD. That is the whole answer, and it is the step both
  * previous passes skipped — `bg-card` failed and the reflex was to invent a new
- * darker colour, when the failure was never that --card was the wrong COLOUR.
- * It is the right colour. It is just not, in kiri, an opaque one, and a sticky
+ * darker color, when the failure was never that --card was the wrong COLOR.
+ * It is the right color. It is just not, in kiri, an opaque one, and a sticky
  * surface must occlude. Those are two separate problems and the tint conflated
  * them into one wrong answer.
  *
@@ -1114,8 +1114,8 @@ body {
  *                           aizome section above) — so the surface under this
  *                           table really is the PAGE, and --card here would be a
  *                           washi band floating inside a card that has no fill.
- *                           --bg is not a substitute for the card's colour; in
- *                           this theme it IS the card's colour.
+ *                           --bg is not a substitute for the card's color; in
+ *                           this theme it IS the card's color.
  *   kiri .................. both. --card's fill over a damped --bg, with the
  *                           blur under them — the same three layers the card
  *                           itself is made of, restacked at the header.
@@ -1151,7 +1151,7 @@ body {
  * is `blur(18px) saturate(150%)`. "Blurring a soft gradient changes nothing" is
  * TRUE — measured: adding the blur back to the rebuild moves it by dE 0.07, i.e.
  * nothing. But the recipe reproduced the blur's non-effect and silently dropped
- * the SATURATE, and saturation is emphatically not a no-op on a coloured mesh.
+ * the SATURATE, and saturation is emphatically not a no-op on a colored mesh.
  * So the real card showed a MORE saturated mesh than its own header did, and the
  * header read as a duller rectangle sitting on a richer card. Measured, kiri
  * dark, header band vs the card's pixels at the same (x,y):
@@ -1185,7 +1185,7 @@ body {
  *                    It is applied to every layer (one value, not a list)
  *                    because --page-mesh is THREE gradients, and a two-value
  *                    list would cycle and land on the wrong layers. Harmless on
- *                    the fill: a solid colour is the same colour wherever it is
+ *                    the fill: a solid color is the same color wherever it is
  *                    anchored.
  *   --card ......... the card's own fill, on top, exactly as the card paints it
  *                    over the mesh. The layer the old rule was missing, and the
@@ -1239,9 +1239,9 @@ body {
  * worth it on a header nobody has reported; both are worse than the box.
  *
  * The fill is a background-IMAGE over a background-COLOR rather than two
- * elements or a color-mix: color-mix cannot composite a translucent colour onto
+ * elements or a color-mix: color-mix cannot composite a translucent color onto
  * an opaque one (mixing rgba(255,255,255,.055) with #070a14 gives a
- * half-transparent grey, not the card), while a gradient from one colour to
+ * half-transparent gray, not the card), while a gradient from one color to
  * itself is exactly "paint this fill over whatever is beneath". That is the same
  * operation the card performs against the page, expressed in one element.
  *
@@ -1425,7 +1425,7 @@ body {
 /* THE SCROLLING SHELF ON ITS OWN GPU LAYER (kiri only). This is what lets the
  * cards stay translucent without janking the scroll. `translateZ(0)` promotes
  * each shelf SECTION to a composited layer: the section and every translucent
- * tile inside it are rasterised once, and while scrolling the GPU just
+ * tile inside it are rasterized once, and while scrolling the GPU just
  * re-composites that layer (alpha and all) over the fixed mesh at the new offset
  * — no CPU repaint, which is the whole cost that made translucent-over-fixed-mesh
  * lag. Without a layer the tiles share a surface with the mesh behind them and
@@ -1533,7 +1533,7 @@ body {
   /* Viewport-anchored, exactly like body::before. One value, not a list: it has
    * to apply to every layer, and --page-mesh is three of them — a two-value
    * list would cycle and land on the wrong ones. Harmless on the fill, since a
-   * solid colour is the same colour wherever it is anchored. */
+   * solid color is the same color wherever it is anchored. */
   background-attachment: fixed;
   /* The rest of the card's frost. The blur is deliberately absent: it is
    * measurably identity on a mesh this soft (dE 0.07), and reproducing it would
@@ -1659,7 +1659,7 @@ body {
  *
  * That rule cuts BOTH ways, and the second half is the one that's easy to miss:
  * receding the resolved cards is not enough on its own. A resolved card carries
- * a HUE; bare --card does not, and colour out-pulls a faint neutral every time.
+ * a HUE; bare --card does not, and color out-pulls a faint neutral every time.
  * Recede the greens without raising the opens and the sheet still points at the
  * finished cards, just more politely. So the open card is raised too — it is
  * the sheet's firmest edge, its brightest glyph, and (in dark, where --card is
@@ -1672,7 +1672,7 @@ body {
  *   right  (correct, locked)   --success 12%  --success 52% success 35%   75%
  *   wrong  (spent, no retries) --danger 20%   --danger 52% danger 35%     75%
  *
- * (The glyph percentages are "x% state colour, remainder --text". The 75% is
+ * (The glyph percentages are "x% state color, remainder --text". The 75% is
  * the recede, and it is 75 and not the comp's 62 because 62 cannot hold the
  * 4.5:1 glyph floor in ANY theme — see --gcard-resolved.)
  *
@@ -1693,7 +1693,7 @@ body {
  *    card you most owe. `missed` is therefore full-presence red — still yours —
  *    and only the out-of-retries card recedes. Same hue, one beat apart.
  *
- * 3. Every state is a 1px border. Full stop. State is carried by colour and
+ * 3. Every state is a 1px border. Full stop. State is carried by color and
  *    opacity, never width: a width change also shifts layout, which is the same
  *    class of bug already fixed in pairs. There is no ring, no border-2, no
  *    outline anywhere in this section.
@@ -1728,12 +1728,12 @@ body {
    * reason is arithmetic, not tuning: `opacity` composites the glyph AND its
    * card toward the same ground, so it pulls the two together and the glyph's
    * contrast against its own card falls with it. Measured at 0.62 with the
-   * glyph mixed all the way to a pure --text — no state colour left at all,
+   * glyph mixed all the way to a pure --text — no state color left at all,
    * i.e. the most contrast this card can possibly have — the worst combo is
    * 4.36:1 (right) and 3.96:1 (wrong), both under the floor. There is nothing
    * left to spend; 0.62 and 4.5:1 cannot both be true.
    *
-   * The measured ceiling, per combo, for a glyph that is still 35% state colour
+   * The measured ceiling, per combo, for a glyph that is still 35% state color
    * (min opacity holding BOTH right and wrong at 4.5:1):
    *
    *     aizome light 0.72   aizome dark 0.73
@@ -1744,7 +1744,7 @@ body {
    * So 0.75: the tightest combo (momentum light) plus real margin, one number
    * for all eight rather than eight numbers drifting apart, and the floor held
    * with the glyph still carrying its hue. Trading the hue out to buy depth was
-   * the alternative and it is a bad trade — a colourless glyph only reaches
+   * the alternative and it is a bad trade — a colorless glyph only reaches
    * ~0.67, and the glyph's hue is what says "right" or "spent" at a glance.
    *
    * 0.75 still steps the card back hard, because the glyph is where the eye
@@ -1764,7 +1764,7 @@ body {
    * The ink is mixed toward --text rather than left as the raw --success /
    * --danger, and this is the one that has to self-correct: --text is near-black
    * in a light theme and near-white in a dark one, so the SAME expression
-   * deepens the glyph on pale tints and lifts it on dark ones. Raw state colours
+   * deepens the glyph on pale tints and lifts it on dark ones. Raw state colors
    * fail 4.5:1 as a glyph on their own tint in half the combos before you even
    * apply the recede; the recede then costs another ~0.6:1, because opacity
    * composites glyph and fill toward the same ground and pulls them together.
@@ -1885,7 +1885,7 @@ body {
  * descendant paints ABOVE its parent's background, never below it, so the damp
  * cannot be a child. That leaves the element's own two layers, and their order
  * is fixed by CSS: background-color is always beneath background-image. So the
- * damp takes the colour, and the state fill becomes an image.
+ * damp takes the color, and the state fill becomes an image.
  *
  * Which costs the 250ms state fade, because a gradient is not interpolable —
  * `right` would snap on instead of settling in. Registering the fill as a
@@ -1949,7 +1949,7 @@ body {
   outline: none;
 }
 /* A locked card's answer (show-answer reveals the romaji here) is information,
- * not a greyed-out control. Chromium leaves an explicit `color` alone on a
+ * not a grayed-out control. Chromium leaves an explicit `color` alone on a
  * disabled input — verified, this pair is a no-op there — but Safari overrides
  * it with its own -webkit-text-fill-color, and this app is aimed at a Mac
  * (every --font-kana is Hiragino). Pin both rather than ship a reveal that is
@@ -1966,7 +1966,7 @@ body {
   background: var(--gcard-scrim);
   -webkit-backdrop-filter: var(--gcard-scrim-filter);
   backdrop-filter: var(--gcard-scrim-filter);
-  /* Not a colour — a mask reads only the alpha channel, and black is simply
+  /* Not a color — a mask reads only the alpha channel, and black is simply
    * "keep". This is the piece that lets kiri's blur FADE: you cannot put a
    * gradient on backdrop-filter, but you can mask the element carrying it, and
    * the filter fades out with it. */
@@ -2034,7 +2034,7 @@ body {
  * bare --card tile swings 69.5 ΔE between the violet blob and the teal one,
  * against an 11.9 ΔE signal — noise 6x signal". 69.5 ΔE is the drift between the
  * sheet's OPPOSITE CORNERS, two cards a thousand pixels apart, which never share
- * a glance. Nothing reads a tint that way. Neighbour-to-neighbour — the only
+ * a glance. Nothing reads a tint that way. Neighbor-to-neighbor — the only
  * comparison a reader actually makes — the drift is 3–5 ΔE against a ~10 ΔE
  * open→right signal, panel or no panel. The panel was defending a ratio nobody
  * ever sees.)
@@ -2090,10 +2090,10 @@ body {
  *
  * `<input type="number">` ships two OS-drawn spinner arrows. They are the one
  * thing on the page no token reaches: they are UA chrome, they take their
- * colour from the platform and not from --text, and they sit inside a field
+ * color from the platform and not from --text, and they sit inside a field
  * that four palettes are otherwise painting completely. On any of the dark
- * themes they are near-invisible grey-on-grey; on aizome's warm washi they are
- * cold blue-grey. There is no property that themes them, so the honest choices
+ * themes they are near-invisible gray-on-gray; on aizome's warm washi they are
+ * cold blue-gray. There is no property that themes them, so the honest choices
  * are "remove" or "replace with real buttons".
  *
  * Removed, and typing is the interaction — because this field's range is 1–600.
@@ -2143,7 +2143,7 @@ body {
    * so a panel quiets the wash beneath it instead of brightening it */
   --sky-card: rgba(6, 6, 26, 0.62);
   --sky-card-strong: rgba(6, 6, 26, 0.74);
-  /* the panels over the sky: see-through enough for the wash to colour
+  /* the panels over the sky: see-through enough for the wash to color
    * them and the dust to show, opaque enough for muted text to clear 4.5:1
    * over the brightest of the band (measured 4.8:1 at 60%, 3.7:1 at 45%) */
   --sky-panel: color-mix(in srgb, var(--sky-ground-0) 60%, transparent);
@@ -2171,9 +2171,9 @@ body {
   --sky-coral: #ff9a8f;
   --sky-lilac: #c8acff;
   /* standings (SAK-294): one name per word, so a screen paints "solid" and
-   * never has to remember that solid is mint. Aliases, not new colours; the
+   * never has to remember that solid is mint. Aliases, not new colors; the
    * words and the decision table live in src/sky/lib/standing.ts. "not seen"
-   * points at a decorative token and is never a text colour: its chip label
+   * points at a decorative token and is never a text color: its chip label
    * uses muted. */
   --sky-solid: var(--sky-mint);
   --sky-getting-there: var(--sky-pale);

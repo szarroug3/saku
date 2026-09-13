@@ -283,7 +283,7 @@ describe("entryIsKnown — the knowledge filter's one boolean", () => {
   });
 
   test("a solid tested fact IS known — evidence works the same as a claim", () => {
-    // A real, well-stabilised test occasion: `quiet`, so the entry reads solid.
+    // A real, well-stabilized test occasion: `quiet`, so the entry reads solid.
     const state = claimedState(JUST_NOW); // same shape as a strong tested state
     const facts: Record<FactId, FactAggregate> = {};
     for (const f of factsOf(kana.id)) {

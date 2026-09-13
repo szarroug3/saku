@@ -94,7 +94,7 @@ describe("links are bets, and each is written down", () => {
   });
 
   test("only verified hosts appear", () => {
-    // Not a licence check — a scope check. A URL that isn't on this list has
+    // Not a license check — a scope check. A URL that isn't on this list has
     // not been verified by anyone, and an unverified link is a guess.
     const allowed = ["www.tofugu.com", "guidetojapanese.org"];
     for (const c of CLUSTERS) {

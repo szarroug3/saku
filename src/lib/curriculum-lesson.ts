@@ -8,7 +8,7 @@
 // once the kanji track had paid for it. Two cards, two position counters, two
 // answers to "what is next". The learner was doing one climb and reading two
 // odometers, and the words card spent most of its life saying "you are 12 kanji
-// away". That is a scheduler apologising for the other scheduler.
+// away". That is a scheduler apologizing for the other scheduler.
 //
 // curriculum-order.ts settled that: CURRICULUM_SEQUENCE is every radical, kanji
 // and word in the single order a learner meets them, prerequisites first. This
@@ -334,7 +334,7 @@ export function packUnits(
  *
  * The same one line of policy the kanji packer ran on, over the wider atom: add
  * each unit unless it would push the lesson over `max`, in which case close the
- * lesson and open the next one with it. `min` is honoured by construction, so it
+ * lesson and open the next one with it. `min` is honored by construction, so it
  * needs no code of its own: a lesson ends below it only when the next unit will
  * not fit or the material has run out, which are the two exceptions the range
  * promises.
@@ -418,7 +418,7 @@ function position(
 /**
  * The whole curriculum at one lesson length.
  *
- * Memoised on the range, because the packing is a pure function of the shipped
+ * Memoized on the range, because the packing is a pure function of the shipped
  * sequence and that one setting, and the home feed asks for it on every render.
  * One entry is enough in practice, since a range changes only when the user
  * drags a slider, so this is a cache of one and not a growing map.
@@ -460,7 +460,7 @@ export interface CurriculumLesson {
  * The frontier logic is `freshFacts` and `nextGroup` from budget.ts, unchanged
  * and not re-implemented: the first group with anything left in it is the next
  * lesson, and an item the learner already claimed drops off the card while its
- * neighbours stay.
+ * neighbors stay.
  *
  * The POSITION is the whole group's, not the remaining cards'. A claim removes
  * items from the middle of a run, and a span rebuilt from what is left would

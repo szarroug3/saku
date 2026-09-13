@@ -11,7 +11,7 @@
 // So the unit here is the ROW, not the kana. Five cards for hiragana — K→G,
 // S→Z, T→D, H→B, H→P — each teaching one transformation and showing the five
 // results together. The characters are still drilled individually (they are
-// still twenty-five separate things to recognise); it is the TEACHING that
+// still twenty-five separate things to recognize); it is the TEACHING that
 // collapses.
 //
 // PACING LIVES IN lesson.ts

@@ -108,7 +108,7 @@ export const SCORING = {
    *
    * Anything shorter is massed repetition: you saw it minutes ago, so getting
    * it right says nothing about your memory a week from now. The floor is NOT
-   * what neutralises massed repetition — the `(1-p)` gate in `review` already
+   * what neutralizes massed repetition — the `(1-p)` gate in `review` already
    * does that, by arithmetic, with no same-day branch anywhere. This floor is
    * the separate promise that stability can never decay to zero and take a fact
    * out of the model entirely: at 1 day a floored fact is back in the ranking
@@ -123,7 +123,7 @@ export const SCORING = {
    * this is the ceiling on what one correct answer can ever be worth.
    *
    * 2.3 is invented. It is roughly the ratio between successive intervals in
-   * the spacing schedules this app's users would recognise, which is a reason
+   * the spacing schedules this app's users would recognize, which is a reason
    * to pick it and not evidence that it is right.
    */
   gain: 2.3,

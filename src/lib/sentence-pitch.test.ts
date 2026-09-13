@@ -50,7 +50,7 @@ describe("matchPhraseReading — the textbook お菓子 case", () => {
     // Both words are verified individually (see pitch.test.ts / the ingest's
     // own conservatism), but they disagree on downstep for the SAME reading,
     // so the sentence-level index must refuse to pick one at length 4 — the
-    // exact behaviour a real dictionary-backed match must have. The trimming
+    // exact behavior a real dictionary-backed match must have. The trimming
     // loop is then free to try shorter prefixes (せんせ, せん, せ), and here
     // せん alone happens to be its own unambiguous word (千/先, downstep 1) —
     // an accepted, rare false positive of a best-effort heuristic, not a bug:

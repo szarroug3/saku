@@ -77,7 +77,7 @@ test("readingBasesOf prefers real aligned evidence over the raw fallback when bo
   assert.deepEqual(readingBasesOf("一"), aligned);
 });
 
-test("the subject pip splits kana by script and singularises words", () => {
+test("the subject pip splits kana by script and singularizes words", () => {
   // Kana is the whole point of the split: the same "Kana" shelf reads
   // "Hiragana" or "Katakana" in the header, decided by the character itself.
   assert.equal(subjectLabel(factInfo(kanaFact("し"))), "Hiragana");

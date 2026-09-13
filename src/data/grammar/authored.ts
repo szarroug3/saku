@@ -13,7 +13,7 @@
 // These are NOT Tatoeba sentences and must never be attributed as such. Their ids
 // are NEGATIVE — a Tatoeba id is always positive, so nothing can mistake one for a
 // permalink, and the app builds no per-sentence link from an id in any case
-// (attribution is one shared acknowledgement, see attribution-link.tsx). They are
+// (attribution is one shared acknowledgment, see attribution-link.tsx). They are
 // written by hand, verified by a human against the meaning of the pattern, and
 // picked to show わけだ landing as "so that's the conclusion" across host types —
 // which the verb-only production recipe deliberately cannot show (いい gives the

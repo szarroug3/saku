@@ -72,7 +72,7 @@ describe("DAY — three groups: memorized 1st-10th, then Regular/Irregular for 1
 
   test("a memorized 1st-10th row has no build equation; a regular/irregular row does", () => {
     for (const row of rowsOf(dayGroups(), "1st–10th (memorized)")) {
-      assert.deepEqual(row.build, [], `${row.word} is memorised, no equation`);
+      assert.deepEqual(row.build, [], `${row.word} is memorized, no equation`);
     }
     for (const row of rowsOf(dayGroups(), "Regular (11th–31st)")) {
       assert.ok(row.build.length > 0, `${row.word} builds additively`);

@@ -183,11 +183,11 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
-  test("千 has no piece tiles, but its origin story renders — memorised whole plus a memory aid", () => {
+  test("千 has no piece tiles, but its origin story renders — memorized whole plus a memory aid", () => {
     // NO PIECE DECOMPOSITION: 千 is 丿 + 十 by KanjiVG, but Wiktionary's glyph
     // origin assigns neither piece a semantic or phonetic role, so builtPieces is
     // empty — the lesson and the Library agree there are no TILES, 千 is a
-    // memorised whole. It does carry a glyph-origin STORY, though, and the lesson
+    // memorized whole. It does carry a glyph-origin STORY, though, and the lesson
     // now shows that prose (as the Library does) because it is a memory aid, so
     // the kanji-parts section is present via originText, not decomposition. 千 is
     // still the dictionary word せん, so it keeps the word-sense block too.
@@ -216,7 +216,7 @@ describe("lessonSections — a section per role, up the ladder", () => {
     // block under the "Kanji" heading has to have something in it, and the
     // definition is the thing the trim left standing. 乞's KanjiVG pieces (𠂉 + 乙)
     // carry no semantic or phonetic role in the etymology, so builtPieces is empty
-    // and it shows NO piece tiles — a memorised whole. It does carry a
+    // and it shows NO piece tiles — a memorized whole. It does carry a
     // glyph-origin STORY, so the lesson now also shows that prose (kanji-parts via
     // originText), alongside its meaning and its strokes.
     assert.equal(builtPieces("乞").length, 0, "乞 has no piece tiles");

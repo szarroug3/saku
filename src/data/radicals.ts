@@ -197,10 +197,10 @@ export function isRadicalTaughtAsKanji(num: number): boolean {
 // (禾 → のぎへん / nogihen) and the distinct positional forms it is written with
 // (水 → 氵, 氺; 人 → 亻; 心 → 忄; 手 → 扌; 刀 → 刂). Names, positions and the set of
 // variant forms are curated from Kanji Alive (CC BY 4.0); variant glyphs are its
-// radical-block codepoints normalised to their CJK unified ideograph. The data
+// radical-block codepoints normalized to their CJK unified ideograph. The data
 // is generated JSON keyed by Kangxi number — regenerate with
 // scripts/ingest/radical-enrichment.mjs. See src/data/attribution.ts for the
-// licence line this carries.
+// license line this carries.
 
 /** A radical name (bushu name) or a positional name (へん, つくり …). */
 export interface RadicalName {

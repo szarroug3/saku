@@ -78,7 +78,7 @@ describe("stardust", () => {
   it("brightness is the range it paints within, and every dot is white", () => {
     const spec = { density: 200, size: [0.5, 1.5] as [number, number], brightness: [0.2, 0.8] as [number, number], seed: 3 };
     const { alphas, allWhite } = tile(spec);
-    assert.ok(allWhite, "dots are white, and the colour comes from what is under them");
+    assert.ok(allWhite, "dots are white, and the color comes from what is under them");
     assert.ok(Math.max(...alphas) <= Math.ceil(0.8 * 255), "nothing brighter than the top of the range");
     assert.ok(Math.max(...alphas) >= 0.7 * 255, "something reaches near it");
     assert.ok(Math.max(...tile({ ...spec, brightness: [0.1, 0.3] }).alphas) < Math.max(...alphas), "a dimmer range is dimmer");
@@ -119,7 +119,7 @@ describe("the Milky Way's stars", () => {
       const L = gradientLength(m.angle, w, h);
       return mean(dots.map((d) => ((d.x - w / 2) * dx + (d.y - h / 2) * dy) / L + 0.5));
     };
-    assert.ok(Math.abs(meanT(MILKY) - 0.49) < 0.02, `centred on the band, got ${meanT(MILKY).toFixed(3)}`);
+    assert.ok(Math.abs(meanT(MILKY) - 0.49) < 0.02, `centered on the band, got ${meanT(MILKY).toFixed(3)}`);
     assert.ok(Math.abs(meanT({ ...MILKY, shift: 15 }) - 0.64) < 0.02, "a +15% shift moves the mean by 15% of the line");
   });
 

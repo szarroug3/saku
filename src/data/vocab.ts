@@ -17,7 +17,7 @@
 //    sits in band 25 (~12,000th) and 人 has no rank at all.
 //  - All-jōyō is what makes parts-first honest. A word with a non-jōyō kanji
 //    can never be built from taught components, so it could only ever be
-//    presented as a whole-word memorisation, which is the thing the component
+//    presented as a whole-word memorization, which is the thing the component
 //    graph exists to avoid.
 //
 // A UNION, NOT AN INTERSECTION — and it is not `ichi1` alone
@@ -26,13 +26,13 @@
 // and `news2` ⟺ nf25–48 are the same newspaper corpus, strictly nested;
 // intersecting them narrows nothing. `ichi1` is an independent hand-curated
 // list (25.2% of it carries no nf band at all). `spec1`/`spec2` are a separate
-// editorial judgement — "common no matter what the corpus says".
+// editorial judgment — "common no matter what the corpus says".
 //
 // 日本 is the proof. It is `spec1` + `news2`/`nf25` and carries NO `ichi1`, so
 // a filter on `ichi1` drops 日本 — and this comment used to cite 日本 as an
 // example of a word that filter kept. It never did. JMdict's editors reaching
 // for `spec1` is them overriding the corpus, and taking only `ichi1` threw
-// that judgement away.
+// that judgment away.
 //
 // `news1`/`nfXX` is deliberately NOT in the union: "common in a newspaper" is
 // not "common for a beginner", and no filter can fix that — it is a property

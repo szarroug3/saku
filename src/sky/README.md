@@ -21,7 +21,7 @@ This is enforced by lint, not by discipline: see the two `no-restricted-imports`
 blocks in `eslint.config.mjs`. If you hit that error, the answer is to bring a
 copy into `src/sky/`, not to add an exception.
 
-### Colour: the night theme, as tokens
+### Color: the night theme, as tokens
 
 The Sky is a single night theme by choice: a dark ground, warm stars, gold for
 actions, one palette for standings. It lives as `--sky-*` custom properties on
@@ -37,8 +37,8 @@ Two floors are enforced by `src/sky/lib/night-theme.test.ts`, which parses the
 stylesheet: text tokens reach 4.5:1 on every ground and card, lines reach 3:1.
 `--sky-faint` and `--sky-star-dim` are decorative only and never carry text.
 The sweep and the page wash live in `src/app/sky-wash.css` as an ordered list
-of layers, each a few named knobs (a glow's colour, strength, position, size,
-tail and visibility). `/wash` (gallery page removed 2026-09-04) is the editor: drag glows, pick colours,
+of layers, each a few named knobs (a glow's color, strength, position, size,
+tail and visibility). `/wash` (gallery page removed 2026-09-04) is the editor: drag glows, pick colors,
 add, hide, reorder or remove layers, then Save (rewrites the file through
 `/api/dev/sky-wash`) or Save + bake; Reset goes back to what the file last
 held. The editor only shows in the live CSS wash mode, the one it edits.
@@ -70,7 +70,7 @@ so a screen paints the word. The file held a copy of the app's decision table
 too, with a test proving the copy agreed with `src/lib/library/standing.ts` on
 a grid of scenarios; nothing in the Sky ever called it, since a standing
 reaches a surface already decided, on the catalogue or the payload, and it went
-on SAK-433. **A bare coloured mark never appears without its
+on SAK-433. **A bare colored mark never appears without its
 word:** the mark is not exported; `StandingChip` and `StandingLegend` in
 `src/sky/components/standing-legend.tsx` are the only ways to paint one, and a
 star fill or coverage bar sits beside a legend. Since SAK-338 the mark is the
@@ -102,9 +102,9 @@ and vocab tables (that dev route is exempt from the boundary).
 
 `src/sky/lib/constellation.ts` (SAK-296) turns the graph's shape into
 positions: `layoutConstellation(graph.constellationOf(id))` puts the root at
-the centre, its parts on a ring, their parts fanned out beyond (each level
+the center, its parts on a ring, their parts fanned out beyond (each level
 reaching a little less), a shared piece once, between the parents that share
-it, and normalises to the unit box. Every number hashes from the root's id
+it, and normalizes to the unit box. Every number hashes from the root's id
 (`hashUnit`, the prototype's function), never `Math.random`, so a word is the
 same shape on the home sky, in the Planetarium, in the lesson, on an Atlas
 tile and in Practice; `placeConstellation(layout, cx, cy, r)` is the only
@@ -112,14 +112,14 @@ thing that differs. Prerequisites + 1 stars, no more. `ConstellationFigure`
 (`src/sky/components/constellation.tsx`) draws a placed layout inside an
 `<svg>`: star size by role (`roleOf(kind)`: word, kanji, piece), body by kind
 (`bodyOf(kind)`: grammar and sentence rules are planets, counters asteroids,
-verb pairs binary stars, the rest stars), colour by
+verb pairs binary stars, the rest stars), color by
 standing through the standing tokens, and the state in the glow and marks
 the star wears (SAK-338, at the end of this file). Lines are structure only:
-one colour, one weight, never dashed, none into what is undiscovered. `lit`
+one color, one weight, never dashed, none into what is undiscovered. `lit`
 and `emphasis` take a star over and `tonight` is a halo on top of whatever
 it already is, and `dots={false}` draws lines only so the
 lesson can put its own clickable stars on the returned positions, in the same
-colours via `paintFor`. `/constellations` (gallery page removed 2026-09-04) shows all of it on real words.
+colors via `paintFor`. `/constellations` (gallery page removed 2026-09-04) shows all of it on real words.
 
 ### The coverage bar
 
@@ -238,7 +238,7 @@ one pill that is on or off (a pager's pages, the Atlas's "also found"
 counts); `SkyInput` (`sky-input.tsx`) is the one text box (the Atlas's
 search, the Quiz's answer); `SkyBox` (`sky-panel.tsx`) is the bordered box
 inside a card (a table, a worked example); `Eyebrow` (`sky-card.tsx`) is the
-one small caps label, in a tone (muted, accent, or the caller's colour) and
+one small caps label, in a tone (muted, accent, or the caller's color) and
 a size, wherever a label sits over content. Non-primary actions are the
 outline button; quiet is only for a step back. A raw `<button>` is for a
 thing that is selected (a tile, a row, a choice), never for an action. The
@@ -378,7 +378,7 @@ Kanji. Three things make the size affordable.
 
 **The scatter is no longer quadratic.** Every box is registered in the
 cells of a uniform grid it touches, so a clash test looks at its
-neighbourhood rather than at every box already down (`scatter.ts`). Fifteen
+neighborhood rather than at every box already down (`scatter.ts`). Fifteen
 thousand boxes went from 1.7 seconds to 44 milliseconds. Placements are
 byte-for-byte what they were: only the candidate list got shorter.
 
@@ -474,7 +474,7 @@ through, so a box that now holds kana grades exactly as it did.
 ### The deck as a list, not a strip of pips (2026-09-06, SAK-384)
 
 The Quiz's header carried one pip per card. At a couple of dozen that read
-as progress; at two hundred (a practice deck) it was three rows of grey
+as progress; at two hundred (a practice deck) it was three rows of gray
 lozenges, and finding a card meant hovering them one at a time for a
 title. `QuizQuestions` (`quiz-questions.tsx`) is a foldable list down the
 right instead: the number, what the card asks, and its grade once
@@ -589,7 +589,7 @@ is told otherwise, so the row overflowed and `overflow-clip` cropped the
 help bar off the right edge with no scrollbar and no warning. Plenty of
 empty page, a cut-off card.
 
-The card is centred in whatever space is left instead, and moves when the
+The card is centered in whatever space is left instead, and moves when the
 list does (Sam, 2026-09-06). The room is padding on the box the two share,
 so the only thing that moves the card is the same 200ms the list slides
 in; an absolutely positioned child sits against the padding box, so the
@@ -626,7 +626,7 @@ card, so it also works out what that card accepts and sends it along as an
 equality (a kana card asked the other way wants the glyph, and forgiving
 romaji there would grade the prompt as the answer). Produce, which is exact
 or a romaji spelling when the target is all kana, since あ can be typed "a"
-and 生 has no romaji at all. Loose, for English, compared after normalising
+and 生 has no romaji at all. Loose, for English, compared after normalizing
 case and spacing, carrying the glosses, the curated synonyms and the
 gloss's comma and parenthetical slices, all expanded on the server. And
 typo, the same English candidates allowed a length-scaled edit distance,
@@ -832,7 +832,7 @@ response header:
 `cache`, so a layout and the page inside it report into one place.
 
 The other thing that came out of reading this path: a signed-in request
-reads the same `progress` row more than once and never memoises it. The
+reads the same `progress` row more than once and never memoizes it. The
 root layout selects `history, settings, session, lists`; the page then
 selects `history` from the same row; the home selects `settings` on top of
 that. `sessionUserId` next door is wrapped in `cache` and these are not.
@@ -876,19 +876,19 @@ twelve times as long, the saving should be the same share of a much bigger
 number.
 
 The 755 ms is not answered yet, only made answerable. That one measurement
-covered making a database client, a query over the network, and normalising
+covered making a database client, a query over the network, and normalizing
 a whole record. Those want different fixes, so they report separately now:
-`db:client`, `db:query` and `db:normalise`, and the same for the shell's own
+`db:client`, `db:query` and `db:normalize`, and the same for the shell's own
 read of the row.
 
 ### Two round trips where one would do (2026-09-06, SAK-382)
 
 The split header answered the 755 ms. On a cold function it read
-`db:client 0.0, db:query 1240.5, db:normalise 309.5`. Making the client is
+`db:client 0.0, db:query 1240.5, db:normalize 309.5`. Making the client is
 free. The rest is the database, twice.
 
 `readHistoryRow` selected the learner's row, and then, buried inside
-normalising what came back, called `readFactsTable`: a second query to a
+normalizing what came back, called `readFactsTable`: a second query to a
 second table, one after the other. Nothing in the second depends on the
 first: the facts table is keyed by the learner, not by anything in the row.
 They run together now, and `normalizeHistory` split into `shapeHistory`,
@@ -1010,7 +1010,7 @@ roots genuinely need the graph, and what counts as met for the counters,
 grammar and keigo comes through the Observatory's offerings rather than
 straight off an entry. It is the largest number left on the server.
 
-Tried and reverted: memoising `offerings` per request, the way `standingFor`
+Tried and reverted: memoizing `offerings` per request, the way `standingFor`
 is. The home calls it once and the new Atlas path does not call it at all,
 so it bought nothing measurable, and an unmeasured cache with a subtle
 lifetime is worse than none.
@@ -1125,7 +1125,7 @@ order, `extras` included. They did on the first attempt, roots and all,
 because the direct route iterates the catalogue in the same order
 `skyItems` inserts.
 
-Tried and reverted: memoising `subjectTally`, which the discovery rows and
+Tried and reverted: memoizing `subjectTally`, which the discovery rows and
 the standing counts both call over the same subjects. One millisecond.
 
 ### Twenty requests nobody asked for (2026-09-07, SAK-382)
@@ -1204,10 +1204,10 @@ The Practice pages carry the timing meta now too, with a `practice` phase.
 
 With the Practice page's meta in place, the run page was the slowest thing
 left: 39 ms dealing a deck of nineteen cards, and 2 ms of every card was
-the word question's distractors. A word's distractors are its neighbours
+the word question's distractors. A word's distractors are its neighbors
 in rank, nearest first, and the way to find them was to filter and sort
 the whole vocabulary around the word, for every card. The vocabulary is in
-rank order once now, and the neighbours are found by walking out from the
+rank order once now, and the neighbors are found by walking out from the
 word's place in it, both ways at once, taking each distance's words as a
 group in the order the sort would have put them (length alike first, then
 the table's own order). 2 ms a card became 0.01, and the deck 59 ms to 19.
@@ -1489,7 +1489,7 @@ The Atlas component carried the Words shelf's streaming inline: which
 cuts had been fetched for which standing, which tiles were being fetched,
 the effect that asked the server. `useStreamedShelf` holds that now and
 hands the component `streamedCuts`, `streamKey` and `fetchTiles`; the
-component is layout again. No behaviour changed; the e2e that scrolls a
+component is layout again. No behavior changed; the e2e that scrolls a
 streamed shelf holds it.
 
 ### The verdict and the hint, apart from the quiz screen (2026-09-07, from the review)
@@ -1497,7 +1497,7 @@ streamed shelf holds it.
 The quiz screen rendered an answered card's verdict, the answer and the
 list of what was said inline, and the hint surface too. `QuizVerdict` and
 `QuizHint` hold those now (`quiz-verdict.tsx`); the screen is the card,
-its bar and the way on. No behaviour changed; the e2e that reads the said
+its bar and the way on. No behavior changed; the e2e that reads the said
 list and the reveal holds it. The audio button stays where it is: it
 needs the speech and quiz-config libraries, which `src/sky` may not
 import, and the route layer hands it in as a prop, which is right.
@@ -1726,9 +1726,9 @@ itself, under `auth.users`, is Sam's to delete in the Supabase dashboard.
 The baked wash was 611 KB, the second largest thing on any page, and the
 reason was one byte per row. A PNG row carries a filter type, and the bake
 wrote 0, none, on all nine hundred of them, so deflate saw absolute pixel
-values instead of differences between neighbours. The same pixels with the
+values instead of differences between neighbors. The same pixels with the
 Sub filter are 319 KB. Decoded they are byte for byte what they were: the
-same colours, the same stops, the same 4x4 dither, the same 1600x900.
+same colors, the same stops, the same 4x4 dither, the same 1600x900.
 
 Choosing a filter per row, which is what most encoders do, is worse here
 and was measured twice: the usual sum-of-absolute heuristic gives 436 KB
@@ -1826,7 +1826,7 @@ load stops moving a blob nobody opens.
 
 Nothing a learner sees changes. No Sky page could make, read or name a
 list; `app/(sky)/quiz.ts` already called `dueFacts` with an empty lists
-array; `postList` had no caller. The one real behaviour change is that a
+array; `postList` had no caller. The one real behavior change is that a
 signed-out browser still holding `saku-local-lists` from the old app
 stops replaying it into the dead column on sign-in, and stops clearing
 the key, so that copy is left alone rather than deleted. A stored
@@ -2209,7 +2209,7 @@ is now "Each round runs through the whole set of cards, not just what you
 got wrong last time."
 
 `src/app/(sky)/observatory.ts`: "the part you actually speak and read" to
-"the part you speak and read", and "memorising" to "memorizing", the only
+"the part you speak and read", and "memorizing" to "memorizing", the only
 British spelling left in a rendered string.
 
 `sky-rest.tsx`: "The real learning happens when you take a break and then
@@ -2275,7 +2275,7 @@ to the button on the Observatory: 204px before, 12px after.
 ### The reading pages get a measure and a warning (2026-09-08, SAK-361)
 
 `SkyReading` had no width on its prose, so on a wide window About's
-acknowledgement was one block eleven lines long at about 200 characters a
+acknowledgment was one block eleven lines long at about 200 characters a
 line. The column inside each panel is `max-w-[68ch]` now, next door to the
 lesson's `max-w-[64ch]`. The panel still takes the page's width; the words
 stop.
@@ -2286,7 +2286,7 @@ rest of the reading list. `src/app/(sky)/reading.ts` puts a section between
 them, "Other places to learn", with one line: "Saku does not teach
 everything. These are other people's sites and books, worth going to for
 what it leaves out." Kept on About rather than split into its own page,
-because a licence obligation pins About to the bar and a split would put
+because a license obligation pins About to the bar and a split would put
 the list one more click away.
 
 Two small ones on the same component. The "↗" after a link's name is inside
@@ -2334,7 +2334,7 @@ what to do:
 * The quiz's "Nothing is due..." now names Practice alongside the
   Observatory and the Atlas.
 
-`e2e/sky.spec.ts` gained a test for the one behaviour change: deleting a
+`e2e/sky.spec.ts` gained a test for the one behavior change: deleting a
 saved recipe asks, "Keep it" keeps it, "Delete it" deletes it.
 
 ### The visitor's finished quiz is in the browser before the next page (2026-09-08, SAK-406)
@@ -2604,7 +2604,7 @@ class attribute it emitted before, character for character.
 mix-ups panel and both of `UndoLine`'s.
 
 **A pill's colors.** `CHIP_TONE`, also in `sky-button.tsx`: lit, unlit and
-greyed, written once instead of inside `SkyChip`, again in
+grayed, written once instead of inside `SkyChip`, again in
 `sky-menu-chip.tsx` and again by hand for Settings' font chips, which
 need their own size and face but not their own colors.
 
@@ -2652,7 +2652,7 @@ went with them. With them go their imports: `currentUserId`,
 by nothing in three of those modules any more. `learnerHistory` stays,
 `actions.ts` being its reader.
 
-**A colour per kind.** `KIND_DOT` in `lib/tokens.ts` mapped each kind to
+**A color per kind.** `KIND_DOT` in `lib/tokens.ts` mapped each kind to
 one of the old app's `bg-sentence-*` tokens, and its header explained
 that the components using it drew inside the old app's chrome. That app
 went last night, and nothing had read the map for a while before that.
@@ -2682,10 +2682,10 @@ which went on SAK-368 an hour ago.
 Left where they are, and why. `Facet`'s `note` prop, the `chosen` that
 shadows `chosen`, and the stale header line about the page saying so at
 the top are all in `sky-practice.tsx`, which another session had open
-tonight. And the British spellings in identifiers and comments (`colour`
-in sky-card.tsx and through sky-wash-file.ts, "centre", "labelled",
-`licence` as a field name in attribution.ts) are Sam's call, as the card
-says: none of it renders, and renaming a field called `licence` moves the
+tonight. And the British spellings in identifiers and comments (`color`
+in sky-card.tsx and through sky-wash-file.ts, "center", "labeled",
+`license` as a field name in attribution.ts) are Sam's call, as the card
+says: none of it renders, and renaming a field called `license` moves the
 attribution data and its tests for a spelling nobody sees. New comments
 are American.
 
@@ -2751,7 +2751,7 @@ asks means asked every way. Everything empty says "Everything".
 
 The board was already the confusable set. `quizCards` builds it from the
 app's own `buildMcOptions`, which draws the flagged lookalike pairs, a
-kanji's own other readings, a word's neighbours in rank, a keigo set's
+kanji's own other readings, a word's neighbors in rank, a keigo set's
 opposite register, a verb pair's other side and another pattern on the
 same verb. What was missing was the naming: a distractor is the shape of a
 mistake you were about to make, and the reveal confirmed the answer without
@@ -2770,7 +2770,7 @@ actually check between the asked fact and the option, sharpest first:
 * a verb pair's other side: "the other verb of the pair"
 * a grammar production card that rolled a vehicle: "the same verb in another
   pattern"
-* a word's rank neighbour: "a word about as common as this one"
+* a word's rank neighbor: "a word about as common as this one"
 * the pitch card's wrong clip, set in `pitchCard`: on a real homophone pair
   "another word said the same way", else "the same reading, said with the
   other pitch"
@@ -3065,7 +3065,7 @@ pieces, so naming the second should narrow the answer, not widen it. The
 components are offered rarest first, because a common radical cuts almost
 nothing, and the counts are off the face of it. The few components with no
 character of their own, filed under a catalogue name like `CDP-8BC4`, are not
-offered: a name you cannot recognise on sight is never the one you reach for.
+offered: a name you cannot recognize on sight is never the one you reach for.
 Rarest-first does put 氵 and 口 at the very end of the grid; that is the order
 the card asked for, and it is one comparator to flip.
 
@@ -3079,7 +3079,7 @@ the two share columns instead of each measuring its own; the `ul` and `li` are
 `contents`, so the rows are cells of that grid while the list stays a list. A
 word's own readings are the same table.
 
-**The round button's glyph.** Centring the box does not centre the ink, and Sam
+**The round button's glyph.** Centering the box does not center the ink, and Sam
 saw the `⌃` riding high. Two things push it, and neither is visible to
 `place-items-center`. The text baseline sits `(ascent − descent) / 2` below the
 middle of any line box, 4.5px down for the UI font at 13px; and each glyph then
@@ -3090,7 +3090,7 @@ the font that actually renders it and rounded to the half pixel a 2x screen can
 draw. Re-measure them if the UI font or the button's font-size changes; nothing
 else moves them.
 
-**The old app's colours.** `why.tsx` came over in SAK-398 still wearing
+**The old app's colors.** `why.tsx` came over in SAK-398 still wearing
 `text-text-muted`, which on the night wash is a warm near-black a shade off the
 panel behind it: the fold opened onto text nobody could read. The opened
 paragraphs are the body of the fold, so they take `text-sky-ink`; the caption
@@ -3100,7 +3100,7 @@ classes: `stroke-order.tsx` twice, `pitch-mark.tsx` once, and `hear-button.tsx`,
 whose `text-accent` was reaching for the Sky's accent all along.
 
 **The gate.** 3,792 unit tests pass, 1 skipped, unchanged: none of this is model
-code. 43 e2e pass, from 41. The two new ones are the two behaviours worth
+code. 43 e2e pass, from 41. The two new ones are the two behaviors worth
 holding: the built-from control takes a second part from the keyboard alone and
 narrows to the kanji carrying both, and a readings table's three columns each
 have exactly one x. Before-and-after screenshots of all four went to Sam on the
@@ -3114,7 +3114,7 @@ from Sam said it could not be read. The reason was in one line of the
 drawing: a line took its fade AND its dash from the standing of the star it
 happened to point at, so the same edge between the same two stars read
 differently depending on which way round the layout drew it, and the sky's
-warmest colour, coral, was spent on "slipping".
+warmest color, coral, was spent on "slipping".
 
 Five rules, and the paint moved into `src/sky/lib/constellation.ts` so they
 can be held to in a unit test rather than only seen.
@@ -3143,17 +3143,17 @@ bare dim dot.
 **Tonight is a mark, not a state.** Picked for tonight is a wide soft halo in
 star-mid, three past the body at 0.14 (nine was five times a piece star's
 width, Sam, same day), drawn round whatever the star already
-is: a shaky pick is still shaky underneath, with its own colour and its own
+is: a shaky pick is still shaky underneath, with its own color and its own
 glow. `lit` and `emphasis` still take a star over completely, as they did.
 
 **The key is the drawing.** The legend's marks are stars now, drawn by
 `StarGlyph` through the same `paintFor` and the same `BodyFigure` the sky
 uses, at the same relative sizes, and the key behind the legend's "i" spells
-out tonight as a seventh row. A flat coloured dot said nothing about a glow
-or a ring, so reading the key told you a colour and left the rest of the
+out tonight as a seventh row. A flat colored dot said nothing about a glow
+or a ring, so reading the key told you a color and left the rest of the
 drawing unexplained.
 
-Unchanged on purpose: the wash, the standing colours, the bodies (planet,
+Unchanged on purpose: the wash, the standing colors, the bodies (planet,
 asteroid, binary), and every position. What did change beyond the rules is
 that a glow now scales with the constellation's `unit` the way the star's own
 radius always did; it used to be a fixed pixel count at every size.
@@ -3161,7 +3161,7 @@ radius always did; it used to be a fixed pixel count at every size.
 `constellation.test.ts` pins all of it: the glow per standing, no ring, the
 two halos, tonight over each standing, and the line rule from both ends.
 `e2e/sky.spec.ts` gained two, one that no line on the home sky is dashed or
-any colour but the link's, and one that the key draws seven stars.
+any color but the link's, and one that the key draws seven stars.
 
 One more from the same review: a two-member group no longer links its
 members to each other. Their parent already joins them, and the third line
@@ -3222,7 +3222,7 @@ SAK-413 had already found the round button's chevron riding above the middle of
 its ring. Two sightings of the same thing is a rule, not a pair of bugs: every
 button in the Sky draws what it holds on its own middle. The interesting part
 is that you cannot check that by reading the classes. `items-baseline` looks
-like alignment. `place-items-center` looks like centring. Both can leave the
+like alignment. `place-items-center` looks like centering. Both can leave the
 ink somewhere else, and only a measurement says so.
 
 **The gate is a measurement.** `scripts/button-centering.mjs` drives a
@@ -3235,20 +3235,20 @@ script exits non-zero.
 
 Three things are taken back out before comparing, and each is a case where an
 offset is right. A screen-reader-only child is not on the screen at all, and is
-recognised by the `clip: rect(0,0,0,0)` every such helper sets rather than by a
+recognized by the `clip: rect(0,0,0,0)` every such helper sets rather than by a
 class name. An out-of-flow child is placed by its own offsets and not by the
 container's alignment, which is how the top bar pins the current page's
 underline to the bottom of its entry and how an `ItemCard` bleeds its watermark
 off its own corner. And a measured ink shift is not a box that is off:
 `RoundButton` moves its glyph's SPAN so the glyph's INK lands on the ring's
-centre, so the shift is read back off the computed `translate` and undone. The
+center, so the shift is read back off the computed `translate` and undone. The
 first cut of the script had none of those three and reported 31 offenders, 27
 of which were the page being right.
 
 There are also two rules, not one. Children that all overlap vertically are a
-row, and each of them has to centre on the container. Children that do not
+row, and each of them has to center on the container. Children that do not
 overlap are a stack on purpose, an Atlas tile drawing a glyph over its name, so
-it is their union that has to centre, which is the same padding question one
+it is their union that has to center, which is the same padding question one
 level up.
 
 **What it found.** 1,378 button-like elements over the seven pages, 4 of them
@@ -3258,8 +3258,8 @@ screenshots of a chip, the top bar and a round button are identical files.
 
 **What moved.** The rail's row was `items-baseline`, and a row that holds two
 sizes at once hangs the smaller off the taller one's baseline and lifts the
-pair off the row's middle. It centres now. That exposed a second thing:
-centring a row centres each child's MARGIN box, and `Eyebrow` writes an `mb-1`
+pair off the row's middle. It centers now. That exposed a second thing:
+centering a row centers each child's MARGIN box, and `Eyebrow` writes an `mb-1`
 of its own, so the eyebrow was still two pixels high. The call site had asked
 for `mb-0` since the day it was written and had never once got it, because
 Tailwind orders `mb-0` before `mb-1` in the sheet and the component's default
@@ -3270,7 +3270,7 @@ position; that is its own ticket.
 
 Five more rows had the same baseline shape without being over the threshold:
 the Atlas's selected-item pills, a lesson card's star buttons, a session's row,
-and the quiz's card list and results list. They centre now too, on the rule
+and the quiz's card list and results list. They center now too, on the rule
 rather than on a number.
 
 **The gate.** The script at 0 over 1px, from 4. 3,801 unit tests pass, 1
@@ -3304,7 +3304,7 @@ app's own teaching walk, which is the thing that decides a kanji with readings
 puts Kun'yomi and on'yomi in play and a kanji with parts puts "How a kanji is
 built" in play. That walk was already running and its pages were already being
 built through `teach.ts`; all they gained is a one-word `why`, "term" or
-"intro", so a row can be labelled without reading the page. `lessonReferences`
+"intro", so a row can be labeled without reading the page. `lessonReferences`
 in `src/sky/lib/lesson.ts` assembles the two halves, drops a page whose star is
 not tonight's, and names each page once however many stars put it in play.
 
@@ -3319,7 +3319,7 @@ star reset the lesson to step one. Where the lesson stands is its own piece of
 state now, and only a step moves it.
 
 **One row, two lists.** Both lists draw `RailRow`, which is the row SAK-415
-measured and centred, with its `items-center` and its load-bearing `!mb-0` in
+measured and centered, with its `items-center` and its load-bearing `!mb-0` in
 one place instead of two. A star row is a glyph and a gloss, a page row is a
 name, and a reference row adds the eyebrow that says what it is: "Term",
 "Intro" or "In your sky". An empty References list is not a panel.
@@ -3385,7 +3385,7 @@ adds and removes out of the drag entirely, and the wheel from 18 slow frames
 to 15. It also fixed two older mistakes that came from reading the raw
 stored view where the clamped one is what is on screen: the first drag on a
 fresh sky did nothing at all, and the first zoom threw the sky to the
-world's top left corner instead of keeping the centre it opened on.
+world's top left corner instead of keeping the center it opened on.
 
 **A star that is one dot is one element.** Most of the sky is undiscovered,
 and an undiscovered star has no glow, no halo, no ring and full opacity, so
@@ -3495,7 +3495,7 @@ the row is the last thing on it.
 **One glyph named in a row.** Sessions and Practice each wrote out the same
 four classes and the same tooltip for a glyph sitting beside its English, and
 the Atlas a third variant in its "built from" line. `GlyphName` in `glyph.tsx`
-is that piece: the UI face rather than the display one, its standing's colour,
+is that piece: the UI face rather than the display one, its standing's color,
 the Japanese font the character wants, and the whole of it in the title when it
 has a column to fit in. `cut={false}` is the third case, a glyph named inside a
 sentence, which takes the sentence's size and hides nothing.
@@ -4606,3 +4606,186 @@ on its failing list, and `scripts/button-centering.mjs` measures 1,382 elements
 over seven pages with none more than a pixel out. Four screenshots on a build
 of this branch on a spare port: the Details bar shut and open, the References
 panel with every page reading TERM, and 面's readings with おもて dimmed.
+
+### Five leftovers from a review, and what each one turned out to be (2026-09-12, SAK-433)
+
+Sam's read of the In Review cards left five sweeps, each already decided. Four
+of them turned out to be smaller or larger than the card said, and saying which
+is most of what this section is for.
+
+**The four component mismatches were not bugs.** The 威 fix listed 匹, 在, 巡 and
+替 as glyphs whose component data disagrees with the glyph's Wiktionary record,
+in the four pairings the variant map refuses. Read one at a time, all four are
+the same thing and it is not 威's thing. 威 was a wrong character: KanjiVG drew
+戌 and wrote 戍 on it. In these four the label matches the strokes and the record
+is naming where the shape came from, which is a different claim.
+
+匹's strokes 2 and 3 are a ㇒ and a ㇟, which is 儿; 八 is ㇒ + ㇏, and KanjiVG
+nests its own 八 inside the 儿 as a variant, so it agrees. 在's bottom right is
+short on top and long underneath, which is 土, KANJIDIC2 files it under radical
+32, and Wiktionary says in its own words that "*士 eventually corrupted into
+*土". 巡's three strokes are all ㇛, curved, which is 巛; 川 is ㇒ + ㇑ + ㇑.
+
+替 was the hard one, because 日 and 曰 are the same four stroke types and differ
+only in proportion, which a bottom component loses. Measured off KanjiVG's own
+paths, 普's 日 (radical 72) is 1.13 wide to tall and 曹's 曰 (radical 73) is
+1.14, so geometry separates nothing and 替's 1.30 proves nothing. What settles it
+is the family: KanjiVG writes 日 with original 曰 in 書 as well as 替, the repo
+reads 日 in all of 替 書 曽 最 曹 普 春 昔 更 曲, and correcting 替 alone would
+leave it the only 曰 tile in the app with its five siblings untouched. So nothing
+is overridden, and the reading that settled each is pinned in the SAK-431 block
+with the numbers in it. 匹's and 替's stories named the recorded piece flatly,
+where 在's and 巡's already said the shape moved on; both now do too.
+
+**The cold-start tail was a stale premise and one unmeasured route.**
+`route_sizes.mjs` no longer names /dev/scheduling: that page went with the old
+app and the line went with it a round later, by hand, after the script had been
+failing on a manifest that could not exist. Fixing it by hand is the part worth
+not repeating, so the list is derived-checked now, every page.tsx under src/app
+mapping to a route and every route mapping back. The reverse case is what that
+caught: /login has had a page of its own and no budget at all, which made the
+one route a signed-out visitor always hits the one route nothing measured. It is
+0.34 MB, in line with every other reading page.
+
+The three modules the cold-start card left unbaked, measured as the median of
+seven fresh processes with everything they import already loaded, so the number
+is the module's own work:
+
+| | own load |
+| --- | --- |
+| `src/data/kanji.ts` | 38 ms |
+| `src/lib/facts.ts` | 11 ms |
+| `src/data/characters.ts` | 4 ms |
+
+The bar was 50 ms, so none of them is baked. (`src/data/facts.ts` does not
+exist; the facts module the card meant is `src/lib/facts.ts`, a thin join over
+ten tables that are loaded by then.) Inside kanji.ts's 38, by the same method
+with a mark on each top-level step: re-attesting and re-anchoring READINGS is 14
+ms, `buildAttesting` is 9, the facts are 4, building the 2,136 rows is 2, and
+the rest is under a millisecond each. Both of the big two are pure functions of
+the shipped tables and would bake the way the vocabulary and the vehicles did,
+so the option is open; at 23 ms for the pair it is not worth a generated file
+and a builder-equivalence test yet. `READINGS_BY_ANCHOR`, the line that made
+this module worth looking at at all (SAK-382, 993 ms to 306), is 1 ms.
+
+A note on the measuring, because the numbers were nearly wrong. Wall-clock
+readings ranged from 35 to 78 ms for the same module while other work ran on
+this laptop, which straddles the bar the decision turns on. The median of seven
+fresh processes is stable at 38. CPU time reads 103 ms for the same load,
+because V8 compiles on background threads, so it is the wrong meter here.
+
+**The twenty-eight test-only exports were nineteen helpers and nine dead
+functions.** SAK-419 printed the list and left it, on the argument that a lib
+module's unit test is a real reader and the names it imports are the module's
+surface. Reading all twenty-eight says otherwise: `export` on a name only a test
+reaches records where the test chose to cut in, and nothing else.
+
+Nineteen were private helpers, and each assertion moved to the function the app
+actually calls. `isPickable` and `locksOn` through `pickState`, which is the
+caller's question anyway. `isUndiscovered` through `linePaintFor`.
+`encodePngRgba` through `pngDataUrl`, the value sky-wash.css stores, unwrapped
+back to bytes. `skyDeclarations` and `layerCss` through `renderWashFile`, by
+reading the layer block back out of the rendered file. All ten of sky-stars'
+through `stardustPixels` and `milkyStarfield`, by counting the tile's lit pixels
+and parsing the circles out of the field's SVG.
+
+Two of those are better tests than what they replace. The scatter's no-overlap
+checks used to call the module's own `anyOverlap`, so a scatter was checking
+itself with the predicate it places by and would have agreed with itself
+whatever either of them did; the test brings its own pairwise rectangle test
+now. The sky-stars geometry is measured against the definition of a CSS gradient
+angle rather than against the module's reading of it, for the same reason. One
+test could not move and did not deserve to: it handed `scatterLayout` a sky too
+small for its one box, to watch the box clamp, and through `scatterInWorld`, the
+only caller, that cannot happen, because the world is sized from the boxes
+first. It says that instead.
+
+Nine were dead inside their own file too and went with their tests.
+`knownCount`, `pickBreakdown` and `overlaps` had lost their callers.
+`standingOf` is the one worth naming: the Sky's copy of the app's decision
+table, with `isKnown`, `needsWork`, `StandingEvidence` and a parity test against
+`src/lib/library/standing.ts` over two hundred scenarios, and nothing in the Sky
+ever called any of it, because a standing reaches a Sky surface already decided,
+on the catalogue or the payload. What is left in standing.ts is the vocabulary
+and how it paints. `resolvedMesh` and `nextGlowId` are the wash editor's, and
+the editor went to git on 2026-09-04; with `resolvedMesh` gone, `layerCss`'s
+`resolve` flag had no caller that ever passed true, so the literal-color half of
+it went too, restorable from the same commit as the editor's page.
+
+Where a test needed a type the module no longer exports it names it off an
+exported function (`Parameters<typeof milkyStarfield>[0]`), which is the same
+move one level up and does not put the name back on the list. The script's
+second list is part of its failing set now and prints its names whether or not
+`--list` is given: a check that reports a count and not a name cannot be acted
+on.
+
+**The types barrel is gone rather than thin.** SAK-407 split a 923-line
+src/types/index.ts into facts.ts, sky.ts and store.ts and re-exported all three
+from the same index, because two other lanes were editing and rewriting 194 call
+sites was not that card's work. 225 import statements across 223 files now name
+the file that owns each name, and a statement that reached for two or three of
+the files becomes two or three statements, ordered facts, sky, store, which is
+the order they depend on each other in. So the imports at the top of a file read
+as a sketch of where its shapes come from, which is the point of having split
+it: 143 sites name an identity, 113 a stored shape, 55 an in-flight one. Nothing
+outside src wanted the barrel either, so it is deleted; four spellings of it
+existed and all four are gone, including a test's inline
+`import("@/types").FactId` in a type position. The Sky's boundary rule lists
+"@/types" beside "@/types/*", so it stays loud if anyone writes a barrel again.
+
+**And American spelling, everywhere we write.** 841 spellings across 261 files,
+by the American form each became: 177 color, 78 license, 70 memorize, 63
+normalize, 58 behavior, 51 center, 50 labeled, and a long tail down to a single
+traveling. User-facing copy, comments, READMEs, docs, identifiers and data field
+names alike, so the `license` field on About's reading list, and the
+`LICENSE_NOTE` constant that carries its wording, are both spelled the American
+way now. The reward for that one is a deletion: `app/(sky)/reading.ts` carried a
+function called `american` that rewrote that word on the way to the screen,
+because the page was American and the data was not, and it is gone.
+
+What the sweep did not touch, and why. Nothing under src/data/generated: JMdict's
+glosses, Wiktionary's etymologies and WordNet's synonym pool are other people's
+words, and a British spelling in a dictionary definition is the dictionary's.
+Two strings in there are ours (a grammar-ingest reason, a generator header) and
+were converted by hand beside the scripts that write them. No CSS property name,
+and in fact no CSS at all outside comments. `catalogue` and `dialogue` stay,
+since Merriam-Webster gives both and the first is a file name, an API route and
+a build script here. `analysis` and `analyses` stay, being American already.
+
+Three things the sweep got wrong and the checks caught. It rewrote EDRDG's own
+URL, whose path is spelled the British way and is theirs to spell, which would
+have 404'd the one link the license obliges us to show; a diff of every URL in
+the change against every URL before it is how that was found, and it is
+restored. It collapsed the Romaji term's search
+aliases, where both spellings were listed on purpose so a learner typing either
+finds the page, into a duplicate; the equivalence test against the library index
+failed on it. And a stem like `realis` eats "realistic" if it is not guarded, so
+the -is stems only convert in front of a suffix that makes them the British verb,
+which is checked against a list of words that must not move: realistic,
+specialist, optimism, mechanism, organism, capitalist, finalist.
+
+`src/lib/no-british-spelling.test.ts` is the gate, beside the em-dash test and
+the same shape: it reads the files as text, over the union of the trees the two
+em-dash tests cover (src/data, src/app/(sky), src/sky, e2e and the two READMEs),
+minus src/data/generated. Its allowlist holds four lines, each a word that is
+someone else's rather than ours, and a second test fails if an allowance stops
+matching anything, so an allowance cannot outlive its line. The test lives in
+src/lib for the same reason the em-dash text test does not cover src/lib: that
+tree carries hundreds from before the rule, sweeping it is its own job, and this
+file is full of the spellings it exists to name.
+
+One place the American spelling reads worse and was left alone anyway: 階's
+story says "a story or stair", where the British spelling said which sense of
+the word it meant. Changing it to "floor" is a content edit, not a spelling one,
+and it is Sam's line to change.
+
+**The gates,** run before each of the five commits. `npx tsc --noEmit` and
+`npx eslint src e2e scripts` clean. 3,920 unit tests, 3,919 pass and 1 skipped,
+up six on the four new pins in the SAK-431 block and three in the spelling test,
+against eight assertions that went with the deleted functions. 52 e2e pass.
+`scripts/unreachable.mjs --list` at zero, and `scripts/unused-exports.mjs` at
+zero on both lists for the first time. The library index and the catalogues were
+rebuilt twice, after the component round and after the sweep, and a value-level
+walk of library-index.json, atlas-catalogue.json and sky-catalogue.json against
+their previous contents reports zero differences both times, which is the
+expected result when no decomposition and no shipped string changed.

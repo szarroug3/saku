@@ -29,7 +29,7 @@ const SENSEI_READING = wordReadingFactId("先生"); // せんせい
 
 test("a jp→en word meaning question yields several distinct options including the gloss", () => {
   const opts = buildMcOptions(SENSEI_MEANING);
-  // More than one — the old behaviour returned the answer alone, which the drill
+  // More than one — the old behavior returned the answer alone, which the drill
   // screen degraded to a free point.
   assert.ok(opts.length > 1, `expected multiple options, got ${opts.length}`);
   // The correct fact is on the board.
@@ -122,7 +122,7 @@ test("en→jp reading question shows the English gloss and reveals the reading",
   assert.equal(factInfo(SENSEI_READING)?.answers[0], "せんせい");
 });
 
-test("a word's neighbours by rank come out exactly as sorting the whole vocabulary did", () => {
+test("a word's neighbors by rank come out exactly as sorting the whole vocabulary did", () => {
   // The walk out from a word's rank replaced a sort of all twelve thousand
   // words for every card (SAK-382). This is the sort it replaced, kept here
   // as the reference; the two must agree on every word, both kinds of fact.

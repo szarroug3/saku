@@ -1,7 +1,7 @@
 // What a constellation says when you hover it. Tracked as SAK-335.
 //
-// Naming without labelling: the glyph in its standing's colour, its reading
-// and meaning, and the pieces it is built from, each in its own colour. A
+// Naming without labeling: the glyph in its standing's color, its reading
+// and meaning, and the pieces it is built from, each in its own color. A
 // thing not yet discovered shows only its glyph: no reading, no meaning
 // (Sam's call, 2026-09-04). The same card serves the home sky, the
 // Planetarium preview and the lesson; the lesson passes `brief` to show only
@@ -21,7 +21,7 @@ interface SkyTooltipProps {
   /** Only the English name. */
   brief?: boolean;
   /** Being learned tonight: not yet in the sky, but named in full, with the
-   * glyph in the ink rather than the undiscovered grey. */
+   * glyph in the ink rather than the undiscovered gray. */
   tonight?: boolean;
   className?: string;
 }

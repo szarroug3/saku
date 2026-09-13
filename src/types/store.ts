@@ -206,7 +206,7 @@ export interface QuizSessionRecord {
    * WRITTEN, NOT READ, AND THAT IS A KNOWN GAP. Results' Rerun resolves
    * `{session: ts}` instead, which reads `facts` — precisely the "smaller
    * session called the same one" this field was added to prevent. The two
-   * behaviours arrived on different branches and both have a case; the field
+   * behaviors arrived on different branches and both have a case; the field
    * is kept and correctly typed rather than deleted, because the argument
    * above is still right and the data is cheap. Whoever settles it should read
    * this comment and selection.resolve() together.

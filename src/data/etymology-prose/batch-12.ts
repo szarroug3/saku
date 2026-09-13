@@ -22,7 +22,7 @@ export const BATCH_12: Readonly<Record<string, string>> = {
   毒: "This glyph means poison. The parts drawn are 龶 and 毋. One account reads it as vegetation, 屮, with 毐 for the sound, a poisonous plant; another has a woman wearing a feathered ornament, so it is not settled.",
   則: "A knife (刀) carving marks into a bronze cauldron: a fixed rule or law. The cauldron was written 鼎, and it later flattened into the 貝 drawn now.",
   厚: "A cliff or cave (厂) above a heavy jug (𣆪): thick, deep, generous.",
-  型: "This glyph means mould or type. It uses the definition of 土 (earth) and the sound of 刑 (けい).",
+  型: "This glyph means mold or type. It uses the definition of 土 (earth) and the sound of 刑 (けい).",
   派: "This glyph means a branch or faction. It uses the definition of 水 (water, a branching stream) and the sound of 𠂢.",
   界: "This glyph means boundary. It uses the definition of 田 (field) and the sound of 介 (かい).",
   及: "A hand (又) reaching to grab a person from behind: to reach, to catch up to. The person was written 人 and is now the single stroke 丿.",

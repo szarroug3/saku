@@ -99,7 +99,7 @@ export interface CharacterWordReading {
    * not print again as if it were new). Computed via `isFactFresh` (the same
    * "no record at all" test the scheduler itself uses to decide dueness) when
    * `characterEntryPayload` is given a `history`; otherwise mirrors `taught`,
-   * which is the correct behaviour for every caller that has no learner
+   * which is the correct behavior for every caller that has no learner
    * history to check against (the Library route's cached, history-independent
    * payload, and /dev/views) — see `characterEntryPayload`'s own doc.
    */
@@ -194,11 +194,11 @@ export function characterEntryPayload(
   // is not what the character on the page is drawn with: 仁/仏/仕 are written
   // with 亻, 河 with 氵, 肝 with the flesh 月. Reading them raw printed the
   // canonical form for 882 of the 2,136 kanji (41%) — a learner looking at 仁
-  // was told it contains 人 and got no hint that the shape they must recognise
+  // was told it contains 人 and got no hint that the shape they must recognize
   // and write is 亻. It also printed the pieces `builtPieces` deliberately
   // DROPS: structural `form` shells, and pieces Wiktionary names but that the
   // drawn shape does not carry (服's 月 is a corruption of 舟 and matches
-  // neither of its components — labelling it "flesh" is the exact dishonesty
+  // neither of its components — labeling it "flesh" is the exact dishonesty
   // the etymology layer refuses). And it missed the pieces `builtPieces` ADDS:
   // its repeated-container expansion (森 → 木·木·木) and its hand-verified
   // overrides (二 → 一·一).

@@ -32,7 +32,7 @@ import { VOCAB, vocabRow, readingUnits } from "./vocab.ts";
 
 // The grade set jōyō actually uses. ingest.test.ts asserts the set EQUALS this;
 // here we use it as a range membership check on every row individually, which
-// localises a bad grade to a character.
+// localizes a bad grade to a character.
 const JOYO_GRADES = new Set([1, 2, 3, 4, 5, 6, 8]);
 
 test("every kanji row is structurally sound: grade, strokes, meanings, freq", () => {

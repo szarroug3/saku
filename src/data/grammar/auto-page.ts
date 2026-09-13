@@ -21,7 +21,7 @@ import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
 import type { IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
 /** The pattern's own worked sentence, straight from the Tatoeba corpus — the
- * SAME lookup grammar-entry-view.tsx used to do on its own; centralised here so
+ * SAME lookup grammar-entry-view.tsx used to do on its own; centralized here so
  * the teach walk and the Library page always show the identical sentence. Absent
  * for a pattern the corpus tagger has not signed (see authored.ts for that lane).
  *
@@ -29,7 +29,7 @@ import type { IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from
  * sentence whenever the pattern's HOST verb appears, even when the pattern
  * itself has since been further conjugated away — 〜ている past-tensed to
  * 〜ていた drops る, leaving a lone い in the highlighted span with no visible
- * "いる" for a learner to recognise, right after a build panel that just showed
+ * "いる" for a learner to recognize, right after a build panel that just showed
  * them て-form + いる. Any candidate whose sentence still contains the pattern's
  * own written form literally (てください, ている, …) reads as the SAME thing
  * the build panel just taught; one that doesn't is technically correct but

@@ -60,7 +60,7 @@ export function SkyInfo({ label, wide = false, className = "", children }: SkyIn
         onClick={() => (at ? close() : open())}
         className={`inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-sky-accent text-sky-accent hover:bg-sky-accent/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-accent ${at ? "bg-sky-accent/15" : ""}`}
       >
-        {/* the i is drawn, not typed, so it sits dead centre in the ring
+        {/* the i is drawn, not typed, so it sits dead center in the ring
             whatever the font's side bearings do */}
         <svg viewBox="0 0 10 10" aria-hidden className="size-[7px] fill-current">
           <circle cx="5" cy="1.6" r="1.15" />

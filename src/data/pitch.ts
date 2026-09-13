@@ -1,6 +1,6 @@
 // The pitch-accent lookup: one downstep position per word, keyed by written
 // form. Ingested from the Kanjium database — see scripts/ingest/pitch.mjs for
-// what it is, why only the unambiguous rows are kept, and the licence.
+// what it is, why only the unambiguous rows are kept, and the license.
 //
 // 8,682 of the 12,553 words (69.2%) carry a verified pitch. The rest have none,
 // and that is deliberate: a word whose accent Kanjium records more than one way,

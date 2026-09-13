@@ -1,7 +1,7 @@
 // Run:
 //   node --import ./src/lib/conjugate/test-hooks.mjs --test src/data/attribution.test.ts
 //
-// THE LICENCE GUARD. This test is not about code quality; it is about not
+// THE LICENSE GUARD. This test is not about code quality; it is about not
 // shipping a copyright violation.
 //
 // WHAT CHANGED, AND WHY THAT NEEDS A TEST
@@ -9,14 +9,14 @@
 // The dictionary data (EDRDG: KANJIDIC2, JMdict, KRADFILE) and the stroke-order
 // data (KanjiVG, CC BY-SA 3.0) must both be credited on, or reachable from,
 // every screen that shows them. README / About-box / startup-screen are ruled
-// out by name in the EDRDG licence, which is the stricter of the two.
+// out by name in the EDRDG license, which is the stricter of the two.
 //
-// The acknowledgement USED to ride each screen as a per-page <AttributionLink />
+// The acknowledgment USED to ride each screen as a per-page <AttributionLink />
 // dropped in the footer, and this test walked the component graph to prove every
 // stroke-drawing page reached one. That mechanism is gone. The link now lives
 // ONCE, as "About the data" in the global sidebar (src/components/sidebar.tsx),
 // which src/app/layout.tsx mounts alongside {children} for every route — so it is
-// reachable from every screen the way the licence's own "menu item" example is.
+// reachable from every screen the way the license's own "menu item" example is.
 //
 // So the obligation moved OFF the page and INTO the chrome, and the thing that
 // can now break it is different: someone removes the sidebar entry, or unmounts
@@ -40,7 +40,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
-import { SHORT, SOURCES, ATTRIBUTION_HREF, LICENCE_NOTE } from "./attribution.ts";
+import { SHORT, SOURCES, ATTRIBUTION_HREF, LICENSE_NOTE } from "./attribution.ts";
 
 /** src/, derived from this file's own location rather than the cwd — the test
  * has to hold wherever it is run from. */
@@ -99,14 +99,14 @@ describe("the credits link is carried by the global chrome", () => {
 
   test("the sidebar links to the credits page", () => {
     // The whole compliance mechanism in one line: the global nav carries a link
-    // whose href is the acknowledgement page. Remove the "About the data" entry
-    // and this fails — that is a licence violation, not a nav tidy-up.
+    // whose href is the acknowledgment page. Remove the "About the data" entry
+    // and this fails — that is a license violation, not a nav tidy-up.
     assert.ok(
       linksTo(TEXT.get(SIDEBAR) ?? "", ATTRIBUTION_HREF),
       `src/app/(sky)/shell-client.tsx has no link to ${ATTRIBUTION_HREF}. The data ` +
-        `acknowledgement (EDRDG dictionaries + KanjiVG stroke order) is reachable ` +
+        `acknowledgment (EDRDG dictionaries + KanjiVG stroke order) is reachable ` +
         `from every screen ONLY through the bar's "About" entry. ` +
-        `Restore it — this is a licence violation, not a style nit.`,
+        `Restore it — this is a license violation, not a style nit.`,
     );
   });
 
@@ -114,7 +114,7 @@ describe("the credits link is carried by the global chrome", () => {
     // The link is only "reachable from every screen" if the sidebar is actually
     // in the shell that wraps every route. The root layout renders <Sidebar> and
     // {children} in the same tree; drop the sidebar and the reachable-menu-item
-    // mechanism the licence relies on is gone from the whole app at once.
+    // mechanism the license relies on is gone from the whole app at once.
     const layout = TEXT.get(LAYOUT) ?? "";
     assert.ok(
       renders(LAYOUT, "SkyShellClient"),
@@ -142,28 +142,28 @@ describe("the credits link is carried by the global chrome", () => {
 });
 
 describe("the credits page names every borrowed source", () => {
-  test("KanjiVG is on it, with holder, licence and link", () => {
+  test("KanjiVG is on it, with holder, license and link", () => {
     const kanjivg = SOURCES.find((s) => s.name === "KanjiVG");
     assert.ok(kanjivg, "KanjiVG is missing from SOURCES — the stroke data is uncredited");
     assert.match(kanjivg.holder, /Ulrich Apel/);
-    assert.equal(kanjivg.licence, "CC BY-SA 3.0");
+    assert.equal(kanjivg.license, "CC BY-SA 3.0");
     assert.equal(kanjivg.href, "https://kanjivg.tagaini.net/");
-    assert.match(LICENCE_NOTE, /KanjiVG/);
+    assert.match(LICENSE_NOTE, /KanjiVG/);
   });
 
-  test("EDRDG is never dropped — its licence is the strict one", () => {
-    // The label is now a generic "Data sources"; EDRDG's acknowledgement lives on
-    // the reachable /about/data page (SOURCES + LICENCE_NOTE), which is what the
-    // licence requires. So this pins the PAGE names it, not the footer label.
+  test("EDRDG is never dropped — its license is the strict one", () => {
+    // The label is now a generic "Data sources"; EDRDG's acknowledgment lives on
+    // the reachable /about/data page (SOURCES + LICENSE_NOTE), which is what the
+    // license requires. So this pins the PAGE names it, not the footer label.
     assert.ok(SOURCES.some((s) => s.holder.includes("Electronic Dictionary")));
-    assert.match(LICENCE_NOTE, /Electronic Dictionary Research and Development Group/);
+    assert.match(LICENSE_NOTE, /Electronic Dictionary Research and Development Group/);
   });
 
   test("the link label is a non-empty pointer to the credits page", () => {
     // The obligation is satisfied by REACHABILITY: a persistent link, in the
     // global chrome of every screen, pointing at the page that acknowledges in full.
     assert.ok(SHORT.trim().length > 0);
-    // the Sky's About page carries the acknowledgement since cutover (2026-09-06)
+    // the Sky's About page carries the acknowledgment since cutover (2026-09-06)
     assert.equal(ATTRIBUTION_HREF, "/about");
   });
 });

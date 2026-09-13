@@ -9,13 +9,13 @@
 //
 // THE TWO ARRANGEMENTS
 //
-// Planetarium (`lead="english"`)   the English centred, and the Japanese ONLY as a
+// Planetarium (`lead="english"`)   the English centered, and the Japanese ONLY as a
 //                              ghost in the bottom-right corner. Nothing legible
 //                              in Japanese, because the whole point of the page
 //                              is that you pick what to learn before you can
 //                              read it. The ghost is texture, not information.
 //
-// Atlas (`lead="glyph"`)     the character centred, its meaning directly
+// Atlas (`lead="glyph"`)     the character centered, its meaning directly
 //                              underneath in the accent. No ghost: the glyph is
 //                              already the hero, so a second copy behind it
 //                              would just muddy the card.
@@ -24,8 +24,8 @@
 //
 // - The content type. The section the card sits in is already per type, so a
 //   "KANJI" label on every tile is the same word repeated twenty times.
-// - Status, in any form. A bare coloured dot means nothing without a legend
-//   beside it, and tinting the glyph instead just moves the same unlabelled
+// - Status, in any form. A bare colored dot means nothing without a legend
+//   beside it, and tinting the glyph instead just moves the same unlabeled
 //   signal somewhere more distracting. The Atlas carries status where it is
 //   worded: the coverage bar and the status filter.
 // - A locked state, in general. What cannot be picked yet is not shown at all
@@ -186,7 +186,7 @@ export function ItemCard({
         </>
       ) : (
         <>
-          {/* The meaning takes all the space left over and centres inside it, so
+          {/* The meaning takes all the space left over and centers inside it, so
               a name that wraps to two lines grows upward instead of shoving the
               cost line down. */}
           <span

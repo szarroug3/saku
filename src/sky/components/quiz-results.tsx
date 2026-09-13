@@ -26,7 +26,7 @@ import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, GRADES, tally, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
-/** The verdict colours, by grade; the Quiz's pips use the same. */
+/** The verdict colors, by grade; the Quiz's pips use the same. */
 export const VERDICT: Record<Grade, string> = {
   clean: "text-sky-solid",
   help: "text-sky-shaky",
@@ -154,7 +154,7 @@ function HowItWent({ cards, answers, list, save, ending: { back, onRetry, onSave
               return (
                 <li key={c.id}>
                   {/* items-center, not items-baseline (SAK-415): a 20px glyph
-                      beside 13px and 12px text centres on the row rather than
+                      beside 13px and 12px text centers on the row rather than
                       dragging the smaller two down to its own baseline */}
                   <button
                     type="button"

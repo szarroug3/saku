@@ -574,7 +574,7 @@ describe("SAK-192: a multi-host recipe's sibling facts are not left to chance", 
       assert.deepEqual(naive, [a, "solo:0" as FactId]); // premise: b is cut
 
       const kept = pairsKept(ranked, 2, syntheticHostGroupOf);
-      assert.equal(kept.length, 2, "the length cap is still honoured");
+      assert.equal(kept.length, 2, "the length cap is still honored");
       assert.ok(kept.includes(a));
       assert.ok(kept.includes(b), "the sibling must be swapped back in");
       assert.ok(!kept.includes("solo:0" as FactId), "a solo fact makes room instead");
@@ -677,7 +677,7 @@ describe("SAK-192: a multi-host recipe's sibling facts are not left to chance", 
     const h = history({ facts: facts as HistoryFile["facts"] });
     const rankCands = ids.map((id, i) => ({ id, state: probeState(i) }));
 
-    test("without hostGroupOf, planSession is unchanged (default behaviour)", () => {
+    test("without hostGroupOf, planSession is unchanged (default behavior)", () => {
       const plan = planSession({ candidates: ids, history: h, length: 5, now: NOW });
       const weakest = rank({ facts: rankCands, limit: 5 }, NOW);
       assert.deepEqual(plan.probe, weakest, "byte-for-byte the old ranked slice");
@@ -732,7 +732,7 @@ describe("SAK-192: a multi-host recipe's sibling facts are not left to chance", 
           hostGroupOf: syntheticHostGroupOf,
         });
         const picked = [...plan.teach, ...plan.probe];
-        assert.equal(picked.length, 3, "count still honoured");
+        assert.equal(picked.length, 3, "count still honored");
         assert.ok(picked.includes(a), `draw ${t}: missing host x`);
         assert.ok(picked.includes(b), `draw ${t}: missing host y`);
       }

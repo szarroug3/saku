@@ -38,7 +38,7 @@
 //
 // SPELLING: A LEMMA IS NOT A `keb`
 // ================================
-// Tatoeba's lemmas are whatever the tokeniser emitted — みる where the
+// Tatoeba's lemmas are whatever the tokenizer emitted — みる where the
 // vocabulary lists 見る, くる for 来る. Matching on `keb` alone marked 126
 // occurrences of みる unknown for a learner who had literally just been taught
 // 見る. So a lemma resolves against `keb` OR `reb`, and any vocabulary row it
@@ -152,9 +152,9 @@ export function lemmaKnown(lemma: string, history: HistoryFile): boolean {
  * Can the learner read this sentence — every content lemma known?
  *
  * `known` is injectable so a caller filtering hundreds of examples for one
- * pattern can memoise the per-lemma lookup across all of them (the same lemma
+ * pattern can memoize the per-lemma lookup across all of them (the same lemma
  * recurs constantly: する appears in 741 items). Callers with nothing to
- * memoise pass nothing.
+ * memoize pass nothing.
  *
  * A sentence with no content lemmas is readable — there is nothing unknown in
  * it — which matches `corpus.coverage`'s empty case.
@@ -168,7 +168,7 @@ export function readableBy(
   return ex.v.every(test);
 }
 
-/** A memoised `readableBy` predicate for one history — the shape the selection
+/** A memoized `readableBy` predicate for one history — the shape the selection
  * filter wants, built once per card rather than per example. */
 export function readerFor(history: HistoryFile): (ex: Example) => boolean {
   const cache = new Map<string, boolean>();

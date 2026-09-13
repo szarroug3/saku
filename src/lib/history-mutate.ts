@@ -91,7 +91,7 @@ export interface MutateHistoryResult {
  * writer clobbering it. Reports whether a write actually landed — see
  * `MutateHistoryResult`.
  *
- * The NO-OP CONTRACT is honoured and cheap: applySession / applyDeleteSessions
+ * The NO-OP CONTRACT is honored and cheap: applySession / applyDeleteSessions
  * (and their SAK-237 meta-only counterparts) return the SAME reference when
  * nothing changed (a duplicate session id, a delete that selected nothing),
  * and this writes nothing and contends for no row in that case — exactly what
@@ -108,7 +108,7 @@ export async function mutateHistoryWithRetryTracked(
     const current = await store.read(userId);
     const next = op(current.history);
     // Nothing changed: no write, no contention. Preserves the exact "bail before
-    // touching the row" behaviour the dedup and empty-delete paths rely on.
+    // touching the row" behavior the dedup and empty-delete paths rely on.
     if (next === current.history) return { history: next, wrote: false };
     if (await store.write(userId, next, current)) return { history: next, wrote: true };
     // Lost the CAS to an overlapping write. Pause briefly (see
@@ -122,7 +122,7 @@ export async function mutateHistoryWithRetryTracked(
 }
 
 /** The untracked form every caller used before SAK-237 needed the `wrote` bit
- * — a thin wrapper so existing behaviour (and its tests) are untouched. */
+ * — a thin wrapper so existing behavior (and its tests) are untouched. */
 export async function mutateHistoryWithRetry(
   store: HistoryStore,
   userId: string,

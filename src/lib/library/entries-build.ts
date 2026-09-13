@@ -203,7 +203,7 @@ export function buildEntries(): LibEntry[] {
   // called "dakuten", but that is its NAME, not how it is read: nothing in
   // Japanese pronounces a bare ゛, and `readings` is exact-matched by search and
   // spoken by the tile's 🔊. A romaji-shaped name in that field would make ゛ a
-  // hit for someone sounding out a kana and hand a synthesiser something to say.
+  // hit for someone sounding out a kana and hand a synthesizer something to say.
   for (const m of MARKS) {
     out.push({
       id: markEntry(m.id),
@@ -304,7 +304,7 @@ export function buildEntries(): LibEntry[] {
       weight: 1,
       // A construction page is a sound-shift RULE, read in prose, not a word —
       // its glyph is a tilde-prefixed plate (〜枚), not something to hand a
-      // synthesiser. This is the confirmed SAK-79 bug: these pages shared
+      // synthesizer. This is the confirmed SAK-79 bug: these pages shared
       // COUNTER_KIND's shelf and used to fall through `speakable()`'s kind
       // check unnoticed. See LibEntry.speakable.
       speakable: false,
@@ -544,7 +544,7 @@ export function buildEntries(): LibEntry[] {
   // ("one thing"). A counted form (一本) shows its reading (いっぽん), the sound
   // the shelf exists to teach — findable in search and printed under the glyph.
   COUNTER_CURRICULUM.forEach((f, i) => {
-    // SAK-172: 二十歳 (TAIL's one memorised form) no longer mints its own
+    // SAK-172: 二十歳 (TAIL's one memorized form) no longer mints its own
     // standalone Library page — はたち is now a real Irregular row on 〜歳's
     // construction page instead (number-construction.ts's `sai` CounterSpec),
     // the same treatment day-of-month's page gives 20日's suppletive はつか.

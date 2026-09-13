@@ -5,7 +5,7 @@
 // comment (scripts/build-library-index.mjs) for why this slice is safe to
 // ship: no search text, no glosses, ~3,500 fact-id -> fact-id[] proofs only.
 //
-// Behaviour is byte-identical to library-index.ts's own claimableFacts/
+// Behavior is byte-identical to library-index.ts's own claimableFacts/
 // quizzableFacts/isReadingFact — same source data, same logic, just read from
 // its own small file instead of the ~9.5MB index.
 

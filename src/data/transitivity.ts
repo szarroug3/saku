@@ -5,7 +5,7 @@
 // ========================================================================
 // Everything else here is GENERATED, on purpose: a deck can only hold 待つ→
 // 待って as a card, so you learn the card, while the conjugation engine derives
-// it from the verb class and there is nothing left to memorise.
+// it from the verb class and there is nothing left to memorize.
 //
 // This table is the one place that argument does not reach, for two reasons
 // that have to hold together:
@@ -22,12 +22,12 @@
 //    are carried as VERIFICATION -- every row was checked against them -- and
 //    never as the source of the pairing.
 //
-// So the pairing is memorised knowledge either way. The choice is whether it is
-// memorised accurately, once, here, or guessed at nightly by the user.
+// So the pairing is memorized knowledge either way. The choice is whether it is
+// memorized accurately, once, here, or guessed at nightly by the user.
 //
 // WHAT MAKES IT WORTH IT ANYWAY
 // =============================
-// English marks this distinction every single time, with no judgement call:
+// English marks this distinction every single time, with no judgment call:
 // "the door opened" and "I opened the door" are never in doubt. That is what
 // makes each row CHOOSABLE -- the prompt determines exactly one answer -- and
 // it is why a curated table pays for itself here and would not for, say,
@@ -68,7 +68,7 @@ import type { WordClass } from "../lib/conjugate/index.ts";
  * keyed on a READING, so 開ける/空ける/明ける share one entry and one reading,
  * あける. Union their senses and 開ける comes out vi+vt -- which is not
  * ambitransitivity, it is three verbs sharing a headword. `stagk` says which
- * spelling a sense belongs to, and honouring it is what makes 開ける read as a
+ * spelling a sense belongs to, and honoring it is what makes 開ける read as a
  * clean `vt`. See senses_for() in the ingest script.
  */
 export type JmdictTransitivity = "vi" | "vt" | "ambi" | "split";

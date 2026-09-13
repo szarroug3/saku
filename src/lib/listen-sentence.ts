@@ -69,7 +69,7 @@ const MIN_DISTRACTORS = 2;
  * second pass drops it when the tight window can't fill the board. */
 const LENGTH_WINDOW = 4;
 
-/** Normalise an English meaning for comparison: lower-case, strip surrounding
+/** Normalize an English meaning for comparison: lower-case, strip surrounding
  * quotes and terminal punctuation, collapse whitespace. */
 function normalize(s: string): string {
   return s
@@ -79,7 +79,7 @@ function normalize(s: string): string {
     .trim();
 }
 
-/** Content tokens of a normalised meaning — the set for overlap tests. */
+/** Content tokens of a normalized meaning — the set for overlap tests. */
 function tokenSet(s: string): Set<string> {
   return new Set(normalize(s).split(" ").filter(Boolean));
 }

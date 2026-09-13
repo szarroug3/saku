@@ -101,7 +101,7 @@ export function totalFor(history: CountsByFact, facts: FactId[]): FactCounts {
   return total;
 }
 
-/** Accuracy 0–100 — a real ratio — or null when never practised. */
+/** Accuracy 0–100 — a real ratio — or null when never practiced. */
 export function accuracyOf(
   agg: FactCounts,
 ): number | null {
@@ -111,7 +111,7 @@ export function accuracyOf(
 }
 
 /** Pooled accuracy 0–100 over a group of FACTS — a deck ring, a run — or null
- * when none of them has ever been practised. A ratio: safe to compare. */
+ * when none of them has ever been practiced. A ratio: safe to compare. */
 export function accuracyFor(
   history: CountsByFact,
   facts: FactId[],
@@ -127,11 +127,11 @@ export function accuracyFor(
  * type refuses to let it be divided by, summed, or mistaken for the output of
  * `accuracyOf`. Read it, render it, and do no arithmetic with it.
  *
- * Facts the user has never seen are left out: an unpractised reading is
+ * Facts the user has never seen are left out: an unpracticed reading is
  * unknown, not 0%, and averaging a 0 in for it would invent a weakness.
  */
 export interface EntrySummary {
-  /** Mean of the entry's practised facts' accuracies, 0–100. A SUMMARY. */
+  /** Mean of the entry's practiced facts' accuracies, 0–100. A SUMMARY. */
   readonly meanPct: number;
   /** How many facts that mean is over — 1 for a kana, up to ~11 for a kanji.
    * The honest caveat to print next to it. */

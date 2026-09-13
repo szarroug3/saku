@@ -15,9 +15,9 @@ export interface ParsedColor {
 }
 
 /**
- * Parses the colour syntaxes globals.css actually uses: 3, 4, 6 and 8 digit
+ * Parses the color syntaxes globals.css actually uses: 3, 4, 6 and 8 digit
  * hex, and rgb()/rgba() in either the comma or the space form. Anything else
- * (named colours, hsl, var()) returns null rather than guessing.
+ * (named colors, hsl, var()) returns null rather than guessing.
  */
 export function parseColor(value: string): ParsedColor | null {
   const v = value.trim().toLowerCase();
@@ -53,7 +53,7 @@ export function parseColor(value: string): ParsedColor | null {
   return null;
 }
 
-/** The colour you actually see when `fg` at `alpha` sits on an opaque `bg`. */
+/** The color you actually see when `fg` at `alpha` sits on an opaque `bg`. */
 export function composite(fg: Rgb, alpha: number, bg: Rgb): Rgb {
   const mix = (i: number) => Math.round(fg[i] * alpha + bg[i] * (1 - alpha));
   return [mix(0), mix(1), mix(2)];
@@ -68,7 +68,7 @@ function luminance([r, g, b]: Rgb): number {
   return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
 
-/** WCAG contrast ratio between two opaque colours, 1 to 21. */
+/** WCAG contrast ratio between two opaque colors, 1 to 21. */
 export function contrastRatio(a: Rgb, b: Rgb): number {
   const la = luminance(a);
   const lb = luminance(b);

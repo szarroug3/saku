@@ -10,7 +10,7 @@
 // into the eager client bundle. Importing from here instead stays light.
 //
 // engine/index.ts re-exports everything below, so existing `@/lib/engine`
-// consumers are unchanged. This changes no behaviour.
+// consumers are unchanged. This changes no behavior.
 
 import { factKeys } from "@/lib/fact-keys";
 import type { FactId } from "@/types/facts";

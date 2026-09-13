@@ -4,7 +4,7 @@
 // learner's status over the open collection, one of each picked at a time.
 // It hides whole on its own button (Sam's call, 2026-09-05), leaving the
 // page's opener to bring it back. No kind dots on the collections: Sam
-// found the colours confusing.
+// found the colors confusing.
 
 import type { ReactNode } from "react";
 

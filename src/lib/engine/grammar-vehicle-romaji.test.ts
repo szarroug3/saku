@@ -61,7 +61,7 @@ const ROMAJI: Record<string, string> = (() => {
       for (const ch of section.chars) {
         // The spelling that ROUND-TRIPS, not merely the first one listed. ず and
         // づ both romanize "zu", and the converter resolves that collision
-        // first-wins in favour of ず — so "zu" is not a way to type づ, and
+        // first-wins in favor of ず — so "zu" is not a way to type づ, and
         // "du" is, exactly as a real IME behaves. Asking the converter which
         // spelling actually reaches this kana keeps the test honest about what
         // a learner can type instead of asserting a spelling nobody can enter.

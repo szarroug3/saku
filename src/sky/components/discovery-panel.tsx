@@ -5,7 +5,7 @@
 // (Kana with Hiragana and Katakana under it, and so on). Sam's call
 // (2026-09-04): the breakdown by subject over the breakdown by standing,
 // because it says how much of the language the learner has really reached.
-// The bar itself is the standing breakdown, in the sky's colours against the
+// The bar itself is the standing breakdown, in the sky's colors against the
 // subject's total, and hovering it gives the numbers: "9 solid, 3 shaky".
 
 import { useState } from "react";

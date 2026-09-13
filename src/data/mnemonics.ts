@@ -46,7 +46,7 @@
 // it to that webp). No edit to this table or its test — the romaji and the
 // glyph's script already name the file.
 //
-// THE ACCENT COLOUR IS RESERVED FOR THE SOUND — WHEREVER IT IS SPOKEN
+// THE ACCENT COLOR IS RESERVED FOR THE SOUND — WHEREVER IT IS SPOKEN
 // ==================================================================
 // This is the rule the shape of `SoundLine` exists to serve. When a span is
 // accented, that span carries the KANA'S SOUND — never a word that describes
@@ -67,7 +67,7 @@ export type MnemonicKey = string;
 
 /**
  * One run of a line: a piece of text, accented or not. `accent: true` paints it
- * in the accent colour — and the accent colour is reserved for the sound, so an
+ * in the accent color — and the accent color is reserved for the sound, so an
  * accented span is one the kana's pronunciation is actually spoken in. A plain
  * span (no `accent`, or `accent: false`) is ordinary prose. Never author an
  * empty-text span.
@@ -76,7 +76,7 @@ export interface SoundSpan {
   /** The text of this run. Always non-empty. */
   text: string;
   /**
-   * `true` to render this run in the accent colour, meaning its letters are
+   * `true` to render this run in the accent color, meaning its letters are
    * PRONOUNCED as the kana's sound. Omit (or `false`) for ordinary prose — a
    * span that merely looks like the kana but sounds different stays plain.
    */
@@ -87,13 +87,13 @@ export interface SoundSpan {
    * point at a real explanation: ら's r-sound has no English equivalent, so the
    * prose sends the reader to a guide rather than pretending an analogy works.
    * A span may be BOTH `accent` and `href` — a linked run that is also spoken
-   * as the sound keeps the accent colour and becomes a link.
+   * as the sound keeps the accent color and becomes a link.
    */
   href?: string;
 }
 
 /**
- * A line of prose as an ordered array of spans. The accent colour lands on
+ * A line of prose as an ordered array of spans. The accent color lands on
  * EVERY span the sound is pronounced in — the phonetic cue, each in-word
  * instance (e.g. the "a" in f·a·ther split out as its own span), and any voiced
  * exclamation of it — and never on a shape word. A line with no sound to accent
@@ -123,7 +123,7 @@ export interface Mnemonic {
   romaji: string;
   /**
    * The accented SOUND token — the English sound the analogy calls out and the
-   * one the accent colour is reserved for, e.g. "ee" for い. The analogy always
+   * one the accent color is reserved for, e.g. "ee" for い. The analogy always
    * carries an accent span whose text contains this token (enforced by test);
    * it stays the invariant anchor across every re-segmentation of the prose.
    */
@@ -143,7 +143,7 @@ export interface Mnemonic {
    * The shape→picture hook: the one-scene story, as a span array, with the sound
    * accented wherever it is pronounced. MAY carry zero accent spans when the
    * story's words name only the shape and none is spoken as the sound. This is
-   * the memory hook, so it is rendered PROMINENT — full text colour, comfortable
+   * the memory hook, so it is rendered PROMINENT — full text color, comfortable
    * size — and the analogy is the muted secondary line.
    */
   mnemonic: SoundLine;

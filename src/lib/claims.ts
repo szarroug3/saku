@@ -33,7 +33,7 @@
 // A claim writes no COUNTS. This is the part worth defending: it would be easy
 // to record a claim as one seen + one correct, and then the app would report
 // "100% over 46 characters" about 46 characters you have never once answered.
-// Accuracy is the record of what you DID. You did nothing. So an unpractised,
+// Accuracy is the record of what you DID. You did nothing. So an unpracticed,
 // claimed fact still reads "—" on every accuracy surface in the app, and that is
 // not a gap — it is the truth, and the claim is stated in its own words next to
 // it (see standing.ts).

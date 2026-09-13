@@ -67,7 +67,7 @@ describe("known is the app's known, not a second one", () => {
   });
 
   test("a lemma resolves by reading as well as by spelling", () => {
-    // Tatoeba's tokeniser emits みる where the vocabulary lists 見る — 126
+    // Tatoeba's tokenizer emits みる where the vocabulary lists 見る — 126
     // occurrences of it. Learning 見る has to make みる readable, or the gate
     // marks a word she was taught this morning unknown.
     assert.equal(lemmaKnown("みる", claiming("見る")), true);
@@ -97,7 +97,7 @@ describe("the rule is ALL the content words, and there is no dial", () => {
     assert.equal(readableBy(example([]), NOBODY), true);
   });
 
-  test("the memoised reader agrees with the direct predicate", () => {
+  test("the memoized reader agrees with the direct predicate", () => {
     const h = claiming("水", "飲む");
     const reader = readerFor(h);
     for (const v of [["水"], ["水", "飲む"], ["水", "斯く斯く云々"], []]) {
@@ -157,7 +157,7 @@ describe("a selection board never shows the same label twice", () => {
 });
 
 describe("frames that are nothing but the blank are gone", () => {
-  test("isBlankOnly recognises the shape, punctuation aside", () => {
+  test("isBlankOnly recognizes the shape, punctuation aside", () => {
     assert.equal(isBlankOnly("＿＿＿。"), true);
     assert.equal(isBlankOnly("＿＿＿"), true);
     assert.equal(isBlankOnly("彼は＿＿＿。"), false);

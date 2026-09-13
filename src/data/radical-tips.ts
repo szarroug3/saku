@@ -18,7 +18,7 @@
 // The tip is written to read correctly from EITHER glyph's page — it names
 // both glyphs itself — so one row of prose serves both directions.
 //
-// RADICAL_TIPS is for a single radical with a recognisable ROLE (勹 wraps
+// RADICAL_TIPS is for a single radical with a recognizable ROLE (勹 wraps
 // around another radical almost every time) that has no specific lookalike
 // partner to contrast against. It has nowhere to go in a pair-based mechanism,
 // so it renders instead as a plain paragraph in the "As a radical" block.

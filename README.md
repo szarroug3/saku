@@ -255,6 +255,6 @@ Two licenses, split at one directory:
 
 [`NOTICE`](NOTICE) states the boundary: the code reads the data, it isn't derived
 from it, so the two ship as a collection and ShareAlike doesn't reach the code.
-The same acknowledgement is in the app at `/about/data`.
+The same acknowledgment is in the app at `/about/data`.
 </content>
 </invoke>

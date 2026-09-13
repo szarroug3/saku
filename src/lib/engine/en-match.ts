@@ -88,7 +88,7 @@ export function synonymCandidates(answers: readonly string[]): Set<string> {
 /**
  * Whether `given` matches any of `answers`, forgivingly but safely.
  *
- * Exact (case/space) against EVERY answer first — the unchanged base behaviour,
+ * Exact (case/space) against EVERY answer first — the unchanged base behavior,
  * and the only layer a Japanese reading answer ever reaches. Then, for the
  * English answers only, the parenthetical/comma candidates, their digit
  * variants, and finally a length-scaled typo tolerance against each candidate.

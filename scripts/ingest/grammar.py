@@ -38,7 +38,7 @@ made first, which is a strong independent signal they are real:
 And one split it CANNOT make, confirming the recipe note rather than
 contradicting it:
 
-  られる 彼に食べられた (passive) and 彼は食べられる (potential) tokenise
+  られる 彼に食べられた (passive) and 彼は食べられる (potential) tokenize
          IDENTICALLY. The ambiguity is in Japanese, not in the tagger and not
          in our list. No filter can fix it, so no SELECTION item may ask it.
 
@@ -99,7 +99,7 @@ except ImportError:
 
 
 def tok_fields(w):
-    """The features we match on, normalised to plain strings."""
+    """The features we match on, normalized to plain strings."""
     f = w.feature
     return {
         "surface": w.surface,
@@ -181,7 +181,7 @@ SIGNATURES = {
         "seq": [{"lemma": "て", "pos1": "助詞"}, {"lemma": "も"}, {"lemma_in": ("良い", "好い")}],
     },
     "te-prohibition": {
-        # てはいけない — "must not". いける's negative いけない tokenises as 行く
+        # てはいけない — "must not". いける's negative いけない tokenizes as 行く
         # (lemma) + ない, the SAME lemma として the ikenai family below (行ける is
         # derived from 行く) — verified directly against the tagger, not assumed:
         # 食べては{いけない,いけません} both give いけ = 行く/動詞, cForm varying with
@@ -564,13 +564,13 @@ NO_SIGNATURE = {
     "filters was どういう訳だ — the wrong sense. No safe contiguous signature; needs "
     "hand-authored examples.",
     "potential": "Morphologically identical to `passive` — 彼は食べられる and 彼に食べられた "
-    "tokenise the same. Cannot be labelled from the sentence.",
+    "tokenize the same. Cannot be labeled from the sentence.",
     "passive": "See `potential`.",
     "causative": "させる is distinguishable, but the corpus items would need a role filter "
     "to be usable; out of scope for this pass.",
     "causative-passive": "See `causative`.",
     "te-sequence": "Bare て has several context-dependent meanings, so assigning "
-    "one from tokens alone would be labelling at random.",
+    "one from tokens alone would be labeling at random.",
     "te-aru": "てある vs ている overlap in the tagger's 有る/居る split more than is safe.",
     "te-iku": "ていく's 行く collides with the ikenai signatures; needs disambiguation.",
     "te-kuru": "See `te-iku`.",
@@ -804,7 +804,7 @@ def main():
                     "e": offs[b],
                     # The host's dictionary form — the prompt word. UniDic's
                     # `orth` is the ORTHOGRAPHIC base (帰る), while `lemma` can
-                    # normalise the spelling to a different one entirely
+                    # normalize the spelling to a different one entirely
                     # (帰る's lemma is 返る). Showing the lemma would print a
                     # word the user is not looking at.
                     "h": toks[a]["orth"] or toks[a]["lemma"] if sig.get("host") else None,

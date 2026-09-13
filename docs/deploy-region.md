@@ -20,7 +20,7 @@ Measured on the deployed app, 2026-09-06, SAK-382:
 | phase | ms |
 | --- | --- |
 | `db:query`, one row by primary key, cold | 1240 |
-| `db:normalise`, including a second query to the facts table | 309 |
+| `db:normalize`, including a second query to the facts table | 309 |
 | `atlas`, building the page | 651 |
 | `session`, the auth refresh in the proxy | 99 |
 

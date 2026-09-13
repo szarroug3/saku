@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Codex and some terminals export NO_COLOR, while Playwright enables colour for
+// Codex and some terminals export NO_COLOR, while Playwright enables color for
 // its child processes. Node warns whenever both flags are present, even though
 // Playwright resolves the conflict consistently. Drop the inherited opt-out
 // before the web server and workers are spawned so test output stays quiet.

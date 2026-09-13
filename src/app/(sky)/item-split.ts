@@ -61,7 +61,7 @@ export function splitItems(items: readonly SkyItem[], catalogue: readonly SkyIte
 }
 
 /** The catalogue, written out once, ready to compare against. Held against
- * the catalogue itself: a request should not spend its time serialising
+ * the catalogue itself: a request should not spend its time serializing
  * fifteen thousand items that were the same on the last one. */
 const written = new WeakMap<readonly SkyItemBase[], Map<string, string>>();
 

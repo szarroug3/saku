@@ -164,7 +164,7 @@ test("the eight shipped drawings (a/e/i/ka/ku/sa/u/wa) resolve to files on disk"
 // THE EMPHASIS RULE, encoded.
 //
 // A SoundLine is an ordered array of spans; `accent: true` paints a span in the
-// accent colour, and the accent colour is reserved for the sound. There is no
+// accent color, and the accent color is reserved for the sound. There is no
 // "shape" emphasis to express. What the DATA must hold:
 //   • every line is a non-empty array of {text, accent?} spans, none empty;
 //   • the analogy carries at least one accent span whose text contains the

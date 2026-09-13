@@ -10,7 +10,7 @@
 // tell whether a blocking prerequisite is learned), and `isFactFresh` (dueness).
 //
 // This core takes those three as INJECTED DEPS instead. unit-scheduler.ts binds
-// them to the content-backed originals (unchanged behaviour, unchanged public API);
+// them to the content-backed originals (unchanged behavior, unchanged public API);
 // the /learn loader (learn-index.ts) binds them to a PRECOMPUTED index, so /learn
 // runs the exact same walk over the exact same numbers without importing the
 // dictionary. The control flow below is a verbatim port of the original
@@ -169,7 +169,7 @@ function isRegression<U extends SchedulableUnit>(
  * window this call is scanning. This is a PRIORITY change only. It does not
  * touch `order` itself, so a track that never has a regression (every
  * simulateLessons walk, which only ever advances history forward) sees
- * byte-identical behaviour.
+ * byte-identical behavior.
  *
  * THE BUG THIS FIXES (SAK-103): the walk used to fill a lesson from the FIRST
  * due units it met, front-to-back over `order`. That is invisible on a small,

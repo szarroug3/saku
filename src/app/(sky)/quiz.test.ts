@@ -206,7 +206,7 @@ describe("why each of the others was on the board (SAK-315)", () => {
     for (const o of others) assert.equal(o.why, "another reading of the same character", o.label);
   });
 
-  it("names a word's neighbour for what it is: about as common", () => {
+  it("names a word's neighbor for what it is: about as common", () => {
     const board = boardFor("word:明白/meaning");
     const others = board.options.filter((o) => o.id !== board.answerId);
     assert.ok(others.length > 0);

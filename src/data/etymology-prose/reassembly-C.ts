@@ -16,7 +16,7 @@ import type { EtymologyPiece } from "@/data/kanji-etymology";
 //   敵 / 滴 (啇 ← 啻): 啻 = ⿱帝口, a distinct character from 啇 with a different
 //     Old Chinese reading; the drop is not a variant of it and does not build it.
 //   星 (日 ← 晶): 晶 is three 日; a single 日 is a reduction, and reads sun/day —
-//     labelling it 晶 "stars" would overclaim. Story covers it.
+//     labeling it 晶 "stars" would overclaim. Story covers it.
 //   改 (己 ← 巳), 支 (十 ← 竹), 散 (月 ← 林), 旦 (一 ← 丁), 旨 (日 ← 甘),
 //   早 (十 ← 棗), 昔 (廾 ← 龷), 書 (日 ← 者), 替 (夫+夫 ← 竝), 最 (日 ← 宀),
 //   望 (王 ← 𡈼), 期 (月 ← 日), 正 (一 ← 丁), 武, 死 (匕 ← 尸), 殿, 毀,

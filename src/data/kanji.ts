@@ -65,7 +65,7 @@ export interface KanjiRow {
   readonly newspaperFreq: number | null;
   /** The DIRECT (depth-1) components — the "Made of" truth a learner is shown:
    * 休 = 亻 + 木, 時 = 日 + 寺. From KanjiVG's `kvg:element` hierarchy, NOT the old
-   * KRADFILE flat radical index, which mislabelled 亻 as 化 and flattened 時 to 寸
+   * KRADFILE flat radical index, which mislabeled 亻 as 化 and flattened 時 to 寸
    * + 土 + 日. Sourced from generated/kanji-components.json
    * (scripts/ingest/kanjivg.mjs), merged in below. Not all components are kanji:
    * 亻, 氵, 艹 are variant/bound forms with no KANJIDIC2 entry — see
@@ -80,7 +80,7 @@ export interface KanjiRow {
    * `comps` for anything a learner reads; `costParts` only for sizing a lesson. */
   readonly costParts: readonly string[];
   /**
-   * SAK-265: KANJIDIC2's RAW on'yomi, normalised (katakana folded to hiragana,
+   * SAK-265: KANJIDIC2's RAW on'yomi, normalized (katakana folded to hiragana,
    * trailing/leading `-` stripped) but otherwise untouched — every reading the
    * dictionary documents, not just the ones an everyday word's kana happens to
    * align to. From scripts/ingest/kanji-raw-readings.py.
@@ -97,7 +97,7 @@ export interface KanjiRow {
    * has an answer. See src/lib/library/character-entry-content.ts.
    */
   readonly on: readonly string[];
-  /** SAK-265: KANJIDIC2's raw kun'yomi, normalised (okurigana after `.`
+  /** SAK-265: KANJIDIC2's raw kun'yomi, normalized (okurigana after `.`
    * dropped, leading/trailing `-` stripped) — see `on` just above for why this
    * exists and how it must be used. */
   readonly kun: readonly string[];
@@ -119,7 +119,7 @@ export interface ReadingRow {
   readonly nWords: number;
   readonly words: readonly string[];
   /**
-   * KANJIDIC2's `r_type` for this reading, folded onto the normalised base.
+   * KANJIDIC2's `r_type` for this reading, folded onto the normalized base.
    *
    * "on"   — on'yomi: a pronunciation borrowed from Chinese when the character
    *          was. Turns up mostly inside compound words (一年 いちねん).

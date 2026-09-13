@@ -21,7 +21,7 @@
 // deterministic — same inputs, same file, byte for byte — so a rerun that
 // changes nothing produces no diff.
 //
-// LICENCE: the sentences are Tatoeba, CC BY 2.0 FR, and every row keeps its
+// LICENSE: the sentences are Tatoeba, CC BY 2.0 FR, and every row keeps its
 // Tatoeba id so the sentence on screen is traceable to the human who wrote it.
 // See src/data/attribution.ts.
 

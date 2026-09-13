@@ -46,7 +46,7 @@ test("startOfWeek / endOfWeek default to a Sunday-based week", () => {
   assert.equal(endOfWeek(NOW), at(2026, 0, 17, 23, 59, 59, 999));
 });
 
-test("startOfWeek honours a Monday week start", () => {
+test("startOfWeek honors a Monday week start", () => {
   assert.equal(startOfWeek(NOW, 1), at(2026, 0, 12));
 });
 

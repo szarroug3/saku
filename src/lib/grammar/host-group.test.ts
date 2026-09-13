@@ -134,7 +134,7 @@ describe("planSession keeps a 2-host recipe's due pair together (te-permission: 
     });
     assert.ok(paired.probe.includes(verbFact), "the verb host should still be in");
     assert.ok(paired.probe.includes(adjFact), "the adjective host should ride along");
-    assert.equal(paired.probe.length, length, "still honours the requested length");
+    assert.equal(paired.probe.length, length, "still honors the requested length");
   });
 
   test("only one host due: the fix does not force the other one in", () => {
@@ -174,7 +174,7 @@ describe("planSession keeps a 2-host recipe's due pair together (te-permission: 
   });
 });
 
-describe("planSession generalises past two hosts (te-sequence: verb + adj-i + adj-na)", () => {
+describe("planSession generalizes past two hosts (te-sequence: verb + adj-i + adj-na)", () => {
   const verbFact = classProductionFactId("te-sequence", "v5u");
   const adjIFact = patternProductionFactId("te-sequence", "adj-i");
   const adjNaFact = patternProductionFactId("te-sequence", "adj-na");

@@ -190,7 +190,7 @@ export function withTypes(sel: Selection, types: string[]): Selection {
  * is the set of type ids that resolve to at least one fact right now (the caller
  * computes it the same way the chips get their counts). Switching scope runs
  * this so the selection can never carry a type whose count is 0: a chip that
- * greys out to "0" in the new scope is also, in the same move, UNSELECTED — the
+ * grays out to "0" in the new scope is also, in the same move, UNSELECTED — the
  * footer and the drill both drop it, not just the styling. Returns the same
  * Selection untouched when every chosen type is still present, so a no-op switch
  * doesn't churn the object.
@@ -216,7 +216,7 @@ export function pruneEmptyTypes(
  * naming anything, scopeOf still reads "everything", the custom button never
  * lights, and the panel that lets them pick never opens, and the preset looks
  * broken. When the intent is custom and the selection has not yet grown a manual
- * narrowing, honour the intent so the panel opens. Any self-describing custom
+ * narrowing, honor the intent so the panel opens. Any self-describing custom
  * shape wins over a stale intent because it names its own scope.
  */
 export function effectiveScope(

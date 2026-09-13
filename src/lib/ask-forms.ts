@@ -11,7 +11,7 @@
 //                    (audio, above all) is ever left to a coin. This is the
 //                    task's headline: turning on Audio guarantees audio cards.
 //   Endless/Count  — rolls ONE of them per showing, uniformly, which reproduces
-//                    the old random direction/listen behaviour without a
+//                    the old random direction/listen behavior without a
 //                    separate code path.
 //
 // SUPPORTED, not merely enabled. A config may ask for Audio, but most non-word
@@ -428,7 +428,7 @@ export function buildCoverageDeck(
   for (const f of facts) {
     for (const form of enabledFormsFor(f, ask)) pairs.push({ f, form });
   }
-  // Shuffle FIRST (honouring the injected shuffle so tests can pin the input
+  // Shuffle FIRST (honoring the injected shuffle so tests can pin the input
   // order), THEN spread so no two cards of the same entry sit adjacent. A fact's
   // several forms all name one entry, so full coverage clumps them worse than a
   // plain deck; spreading on entryOf(pair.f) pulls them apart. Spread keeps the

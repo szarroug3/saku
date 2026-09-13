@@ -5,7 +5,7 @@
 // QuestionType, threading a per-showing vehicle in the PromptContext. These
 // tests drive that seam directly — prompt, check, distractors, option labels,
 // reveal — because that is what the drill calls and what the fixed-vehicle bug
-// lived in. The no-vehicle path must stay byte-for-byte the old behaviour.
+// lived in. The no-vehicle path must stay byte-for-byte the old behavior.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -124,7 +124,7 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     assert.equal(meaning, GRAMMAR_SUBJECT); // sanity: we asked a grammar fact
   });
 
-  test("an illegal ctx vehicle collapses to the fixed baked behaviour", () => {
+  test("an illegal ctx vehicle collapses to the fixed baked behavior", () => {
     // A noun can't take 〜たい. Threading one must not break the item — it falls
     // back to the class anchor rather than emitting a bad form.
     const bad = { grammarVehicle: { surface: "本", kana: "ほん", cls: null, known: true } };

@@ -7,7 +7,7 @@
 //   - a showing never answered right scores 0, NOT 100 (the legacy
 //     seen/(seen+missed) bug);
 //   - `missed` is never a denominator;
-//   - an entry's accuracy is a mean of its facts' accuracies, an unpractised
+//   - an entry's accuracy is a mean of its facts' accuracies, an unpracticed
 //     fact left OUT rather than counted as 0.
 
 import assert from "node:assert/strict";
@@ -72,7 +72,7 @@ describe("totalFor — pooling counts over facts (a real, larger population)", (
   });
 
   test("silently skips a fact with no counts", () => {
-    const t = totalFor(history, [fid("hira-a"), fid("never-practised")]);
+    const t = totalFor(history, [fid("hira-a"), fid("never-practiced")]);
     assert.equal(t.seen, 2);
   });
 
@@ -104,7 +104,7 @@ describe("accuracyFor / volumeFor — the pooled, comparable readings", () => {
     assert.equal(accuracyFor(history, [fid("hira-a"), fid("hira-i")]), 50);
   });
 
-  test("null when none of the facts was ever practised", () => {
+  test("null when none of the facts was ever practiced", () => {
     assert.equal(accuracyFor(history, [fid("nope")]), null);
   });
 

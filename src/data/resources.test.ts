@@ -3,7 +3,7 @@
 //
 // The rules the header of resources.ts promises, actually held: every link is
 // https, unique, dated, and the page is a reading list rather than a second
-// copy of the licence page.
+// copy of the license page.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -37,7 +37,7 @@ describe("resource links", () => {
     assert.equal(new Set(ids).size, ids.length);
   });
 
-  test("the licence sources stay on /about/data, not here", () => {
+  test("the license sources stay on /about/data, not here", () => {
     // Duplicating the attribution page was the bug this rewrite fixed.
     const banned = ["edrdg.org", "kanjivg", "tatoeba"];
     for (const r of ALL) {

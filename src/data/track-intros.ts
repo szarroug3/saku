@@ -141,7 +141,7 @@ export const KATAKANA_TRACK: PhaseIntro = {
 // src/lib/spine-intros.ts.
 //
 // THE RADICAL CARD HAS THE HARDEST JOB. The owner hit the confusion herself while
-// testing: 口 is labelled "Radical · Kanji · Word", and she asked how something
+// testing: 口 is labeled "Radical · Kanji · Word", and she asked how something
 // can be both a radical and a kanji. The answer the card has to land is that
 // "radical" describes what other kanji are built from and says nothing whatever
 // about whether the shape can stand alone. Some radicals are whole kanji (人, 大,

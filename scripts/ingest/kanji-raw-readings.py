@@ -13,8 +13,8 @@ real readings for it. 114 of 2,136 jouyou kanji (壱, 藩, 栃, 陛, ...) are th
 case, and their Library pages silently print no reading section at all.
 
 This script does not touch readings.json or the aligned-reading pipeline. It
-back-fills a SEPARATE, clearly-labelled pair of fields straight from KANJIDIC2
--- `on` and `kun`, the raw normalised reading list for every jouyou kanji --
+back-fills a SEPARATE, clearly-labeled pair of fields straight from KANJIDIC2
+-- `on` and `kun`, the raw normalized reading list for every jouyou kanji --
 onto kanji.json, exactly the way readingtype.py back-fills `type` onto
 readings.json without a full re-cut. src/lib/library/entries.ts and
 character-entry-content.ts read these as a FALLBACK ONLY, for the reading
@@ -22,7 +22,7 @@ groups the aligned data has nothing for -- never as a substitute for real
 evidence where real evidence exists, and never wired into anything gradeable
 (no anchor word, so no everyday word to ask "what does 壱 read in ___?" about).
 
-NORMALISATION MATCHES THE ALIGNER, ON PURPOSE
+NORMALIZATION MATCHES THE ALIGNER, ON PURPOSE
 ==============================================
 Reuses aligner.clean_kun / aligner.kata2hira -- the exact functions
 readingtype.py's `kinds_of` already builds its {base: kind} map with -- so a
@@ -47,7 +47,7 @@ OUT = os.path.join(
 
 
 def raw_readings_of(ch):
-    """(on, kun): ordered, deduped, normalised reading lists for one KANJIDIC2
+    """(on, kun): ordered, deduped, normalized reading lists for one KANJIDIC2
     <character> element, in the file's own order (primary reading first)."""
     on, kun, seen_on, seen_kun = [], [], set(), set()
     for r in ch.iter("reading"):

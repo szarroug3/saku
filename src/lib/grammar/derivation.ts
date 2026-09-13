@@ -70,7 +70,7 @@ function prefixLen(a: string, b: string): number {
  *
  * `whole` marks the WHOLE-WORD irregular rendering (いい → よくて) — `trim`
  * and `add` are absent then, because there is no rule to spell out, only a
- * word to memorise. Otherwise `trim`/`add` carry the drop/add pieces (either
+ * word to memorize. Otherwise `trim`/`add` carry the drop/add pieces (either
  * or both may be absent — a pure add has no trim, and vice versa), always
  * alongside `to`, the equation's actual result.
  *

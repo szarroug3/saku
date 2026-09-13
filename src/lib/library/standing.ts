@@ -188,7 +188,7 @@ export function standingFor(
  * How an entry is going — as a COUNT, and as an adjective only when it honestly
  * has one.
  *
- * THE REFUSAL IS THE FEATURE. A tile wants a colour and a row wants a chip, and
+ * THE REFUSAL IS THE FEATURE. A tile wants a color and a row wants a chip, and
  * the obvious way to get one for 生 is to average its nine readings. That is
  * forbidden, and not by taste: `decks.weakestEntries()` was DELETED for exactly
  * this, and its epitaph is the rule — "生 does not have a stability, it has

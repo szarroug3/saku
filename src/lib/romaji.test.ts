@@ -2,7 +2,7 @@
 //
 // The converter is the load-bearing part of romaji input: if it turns "sensei"
 // into anything but せんせい, a correct answer grades wrong. These pin the
-// behaviours a romaji typist actually relies on — the alternate romanizations,
+// behaviors a romaji typist actually relies on — the alternate romanizations,
 // ん in its several spellings, っ from a doubled consonant, the combos, and the
 // script/passthrough rules the grader leans on — as CLAIMS, not as a restated
 // table.

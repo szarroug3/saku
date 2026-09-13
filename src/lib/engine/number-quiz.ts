@@ -110,7 +110,7 @@ export interface NumberQuizConfig {
  *
  * day: the three exception SHAPES day-month-reading.ts names — よっか reuse
  * (14, 24), the suppletive はつか (20), and the branch digit (17, 19, 27, 29).
- * The memorised 1st-10th (isDayException() false for n ≤ 10) are not listed:
+ * The memorized 1st-10th (isDayException() false for n ≤ 10) are not listed:
  * they are a TIER, not exceptions to a rule in force for them, the same
  * reason `tsu`'s 1-10 count as the sampler above rather than derived shifts —
  * and they are already guaranteed coverage by counterMax capping a round at

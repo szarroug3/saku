@@ -1,11 +1,11 @@
 // Everything inside a button sits in its middle (SAK-415).
 //
 // The rule is one line long and it is not negotiable: whatever a button draws,
-// it draws on the button's own horizontal centre line. Sam saw a lesson rail
+// it draws on the button's own horizontal center line. Sam saw a lesson rail
 // row whose label rode high in its pill and a round expander whose chevron sat
 // above the middle of its ring, and both were invisible to a reading of the
 // classes: `items-baseline` looks like alignment, and `place-items-center`
-// looks like centring. Only a measurement tells you.
+// looks like centering. Only a measurement tells you.
 //
 // So this is the gate. It drives a PRODUCTION build with Playwright, finds
 // every button-like element on the Sky's pages, measures the container against
@@ -64,7 +64,7 @@ const PAGES = [
  * is here for completeness even though SAK-412 replaced the Sky's last
  * `<details>`. `[data-sky-chip]` catches `SkyMenuChip`, which is a pill made
  * of two buttons inside one bordered span, so the span is the container the
- * pill's contents have to centre in. The two anchor selectors catch the
+ * pill's contents have to center in. The two anchor selectors catch the
  * things that are buttons without being `<button>`: a `SkyButton` with an
  * `href` is an `<a>` carrying the same `inline-flex` base, and the top bar's
  * entries and the Atlas rail's are links in a `header` or a `nav`.
@@ -92,22 +92,22 @@ const SELECTOR = [
  * the union of the rects that range draws.
  *
  * Three things are deliberately taken back out before comparing. A
- * screen-reader-only child is not on the screen at all, and it is recognised
+ * screen-reader-only child is not on the screen at all, and it is recognized
  * by the `clip: rect(0,0,0,0)` every such helper sets rather than by a class
  * name. An out-of-flow child is placed by its own offsets and not by the
- * container's alignment, so it is not the container's to centre: the top bar
+ * container's alignment, so it is not the container's to center: the top bar
  * pins the current page's underline to the bottom of its entry, and an
  * `ItemCard` bleeds a watermark off its own corner, and both are right. And a
  * measured ink shift is not a box that is off: `RoundButton` moves its
- * glyph's SPAN so the glyph's INK lands on the ring's centre (SAK-413), so the
+ * glyph's SPAN so the glyph's INK lands on the ring's center (SAK-413), so the
  * shift is read back off the computed `translate` and `transform` and undone,
  * leaving the box where the layout put it.
  *
  * Then one of two rules applies. If every kept child overlaps every other one
- * vertically, the children are a ROW and each one has to centre on the
+ * vertically, the children are a ROW and each one has to center on the
  * container. If any two are disjoint, the container is a STACK on purpose (an
  * Atlas tile draws a glyph over its name), and it is the union of the children
- * that has to centre, which is the same padding question one level up.
+ * that has to center, which is the same padding question one level up.
  */
 function collect(selector, threshold) {
   const out = [];
@@ -177,7 +177,7 @@ function collect(selector, threshold) {
 
     const middle = box.top + box.height / 2;
     // Disjoint boxes mean the children are stacked, which is a layout choice,
-    // not a centring mistake; the union of them still has to sit in the middle.
+    // not a centering mistake; the union of them still has to sit in the middle.
     const stacked = kids.some((a) => kids.some((b) => a.bottom <= b.top || b.bottom <= a.top));
     const measured = stacked
       ? [{ top: Math.min(...kids.map((k) => k.top)), bottom: Math.max(...kids.map((k) => k.bottom)), label: `all ${kids.length} children, stacked` }]
@@ -198,7 +198,7 @@ async function main() {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, locale: "en-US", timezoneId: "UTC" });
 
-  // Grouped by the shape of the offence rather than by the element: a rail of
+  // Grouped by the shape of the offense rather than by the element: a rail of
   // forty rows is one mistake in one component, not forty.
   const groups = new Map();
   const counted = [];

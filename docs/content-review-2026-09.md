@@ -357,7 +357,7 @@ hits its rule.
 |---|---|---|---|---|---|
 | On'yomi rule template | "Standing alone as a word it takes a kun'yomi instead." | Shown on **354 reading rows over 332 kanji that KANJIDIC2 gives no kun'yomi at all** (樹, 徹, 派, 宴, 仁 …). 樹 standing alone is じゅ. It is also false for the numbers: the card for 一 = いち anchors it in 一 standing alone while telling the learner that standing alone takes a kun'yomi. | DBJG, on'yomi and kun'yomi; Jisho entries for the affected kanji | high | one |
 | Surface-shift note | "Inside 一杯 it voices, はい to ぱい. A part joined onto the back of a word often softens its first sound." | h to p is handakuten, not voicing, and it is a hardening rather than a softening. **29 of the 72 non-gemination shifts are this case** (敗, 杯, 歩, 波, 派, 表, 配, 髪 …). | Imabi, "Rendaku"; Tae Kim | high | one |
-| "Filed both ways" template | "The dictionary files い as an on'yomi and as a kun'yomi, for different senses, so there is no rule to lean on here." | For several of the 20 rows this is an artifact of stripping okurigana from KANJIDIC2's kun readings: 医's い.やす, 死's し.ぬ, 秘's ひ.める. い in 医者 is unambiguously the on'yomi, and telling a learner there is no rule here is worse than saying nothing. | KANJIDIC2 reading format; `scripts/ingest/readingtype.py`'s own note on this normalisation | medium | one |
+| "Filed both ways" template | "The dictionary files い as an on'yomi and as a kun'yomi, for different senses, so there is no rule to lean on here." | For several of the 20 rows this is an artifact of stripping okurigana from KANJIDIC2's kun readings: 医's い.やす, 死's し.ぬ, 秘's ひ.める. い in 医者 is unambiguously the on'yomi, and telling a learner there is no rule here is worse than saying nothing. | KANJIDIC2 reading format; `scripts/ingest/readingtype.py`'s own note on this normalization | medium | one |
 
 ### Words
 
@@ -693,7 +693,7 @@ frame, which is 戌. The decomposition was corrected rather than the wording, so
 | 届 | 凷 | 尸 由 | This glyph means to reach or arrive. It uses 尸 (a bent body) for its meaning and a sound piece (凷) below. |
 | 将 | ⺼ | ⺦ ⺤ 寸 | This glyph comes from 將. It showed meat (⺼) offered by a hand (寸) beside 爿 for the sound; from presenting offerings came the sense of one who leads, a commander. |
 | 稲 | 臼 | 禾 ⺤ 旧 | This glyph means the rice plant: the grain stalk (禾) gives the meaning, and 舀, a hand scooping grain from a mortar (旧 stands for 臼), gives the sound. |
-| 耗 | 禾 | 耒 毛 | This glyph means to consume or wear down. It uses 耒, a plough, for meaning and 毛 for the sound; it was first written 秏, with grain (禾). |
+| 耗 | 禾 | 耒 毛 | This glyph means to consume or wear down. It uses 耒, a plow, for meaning and 毛 for the sound; it was first written 秏, with grain (禾). |
 | 堕 | 隋 | 陏 土 | This glyph means to fall or degenerate. It uses the earth (土) one falls to for meaning and 陏 (隋) for the sound. |
 | 徳 | 直 | 彳 十 罒 心 | A straight line (直) over a heart (心), set on the road (彳): straight-hearted conduct, virtue. |
 | 壱 | 壺 | 士 冖 匕 | This is the formal, document form of the number one. It is the simplified 壹, a jar (壺) enclosing 吉 for the sound. |

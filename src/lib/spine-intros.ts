@@ -263,7 +263,7 @@ export function spineIntroPlan(
       if (!learned) continue;
       // Anything on this card that PLAYS the role, whichever role it is stepping
       // in. For the radical card that is the point: a learner whose 亅 was
-      // filtered out still has 人 in front of her, labelled "Radical · Kanji ·
+      // filtered out still has 人 in front of her, labeled "Radical · Kanji ·
       // Word", which is the label the card exists to explain.
       at = walk.findIndex((_, i) => itemAt(i)?.roles.includes(anchor.role));
     }

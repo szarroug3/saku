@@ -99,7 +99,7 @@ test("a kanji with real aligned evidence (人) never shows the raw fallback", ()
 //
 // Not a lookalike pair (that's ConfusionSection's `tip`, tested separately in
 // entries.test.ts/confusion-section) — this is the "As a radical" block's own
-// paragraph, for a radical with a recognisable role but no specific partner to
+// paragraph, for a radical with a recognizable role but no specific partner to
 // contrast against.
 
 test("勹's payload carries its own hand-authored recognition tip", () => {

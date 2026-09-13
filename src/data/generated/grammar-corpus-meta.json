@@ -162,7 +162,7 @@
     "nai-hou-ga-ii": "ないほうがいい: the ない host test collides with ta-hou-ga-ii.",
     "ni-iku": "に行く collides with the source/direction に; needs a motion-verb list.",
     "passive": "See `potential`.",
-    "potential": "Morphologically identical to `passive` — 彼は食べられる and 彼に食べられた tokenise the same. Cannot be labelled from the sentence.",
+    "potential": "Morphologically identical to `passive` — 彼は食べられる and 彼に食べられた tokenize the same. Cannot be labeled from the sentence.",
     "shi": "Bare し. Collides with the 連用形 of する.",
     "shika-nai": "しか〜ない spans arbitrary distance; not a contiguous signature.",
     "stem-form": "recipes.ts's pattern label is '〜(stem)', but the stem has no standalone written surface (かき/たべ only exist as the first half of a longer conjugated word) — no sentence contains the literal text '(stem)', so there is nothing here to match.",

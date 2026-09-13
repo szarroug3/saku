@@ -100,7 +100,7 @@ const REGULAR_VERB_CLASSES: readonly WordClass[] = [
  * learner has any business meeting as an UNLABELED filler. 25 keeps every
  * class inside a band that stays recognizably early: even v1 and v5s's 25th
  * member sits under beginnerRank ~2000 (立てる, 暮らす), the same
- * everyday-conversational neighbourhood the six thin classes' original single
+ * everyday-conversational neighborhood the six thin classes' original single
  * hand-picked member came from, not a corpus straggler.
  *
  * 25 is also comfortably past what dedup headroom needs. SAK-203's own

@@ -3,13 +3,13 @@
 //        --test src/lib/engine/spread.test.ts
 //
 // spread()'s two guarantees, each proven separately:
-//   1. LOCAL adjacency — no two neighbours share a key, whenever the input is
+//   1. LOCAL adjacency — no two neighbors share a key, whenever the input is
 //      feasible (no key's count exceeds ceil(n/2)); graceful degradation
 //      (minimal, not zero, collisions) when it is not.
 //   2. GLOBAL distribution — SAK-206: this is the property the OLD greedy
 //      algorithm silently lacked. A composition with a few large buckets and
 //      many small ones must not front-load the large buckets' category into
-//      the first portion of the output. Modelled on the ticket's own
+//      the first portion of the output. Modeled on the ticket's own
 //      synthetic composition and checked with the same kind of statistic the
 //      ticket's empirical proof used (fraction of the minority category
 //      landing in an early window), not just a single eyeballed run.
@@ -138,9 +138,9 @@ describe("spread — local adjacency", () => {
 
 describe("spread — global distribution (SAK-206)", () => {
   // Mirrors the ticket's own ad hoc simulation: 30 "grammar" buckets sized
-  // 5-15 each (a category of many multi-item buckets, modelling grammar
+  // 5-15 each (a category of many multi-item buckets, modeling grammar
   // production's one-fact-per-conjugation-class shape) against 80 "other"
-  // buckets mostly size 1-2 (modelling the mostly-singleton kana/word
+  // buckets mostly size 1-2 (modeling the mostly-singleton kana/word
   // entries they got mixed with in Sam's reported session).
   function buildComposition(rand: () => number): Tagged[] {
     const items: Tagged[] = [];

@@ -23,7 +23,7 @@ export const BATCH_02: Readonly<Record<string, string>> = {
   又: "The original glyph looked like a right hand.",
   取: "A hand (又) taking an ear (耳), from a hunter's rite of taking the ear of caught prey: to take.",
   事: "The original glyph showed a hand (又) holding a flag on its pole (中): to carry out one's work, a matter. The shape has since flattened, so the parts drawn are 口, ⺕ and 亅.",
-  力: "The original glyph looked like a flexed arm, or perhaps a plough: power, strength.",
+  力: "The original glyph looked like a flexed arm, or perhaps a plow: power, strength.",
   水: "The original glyph looked like flowing water.",
   木: "The original glyph looked like a tree, branches on top and roots below.",
   化: "Two people (人), one upright and one upside down: reversal, change.",

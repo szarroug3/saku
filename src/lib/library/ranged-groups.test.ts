@@ -55,11 +55,11 @@ function word(keb: string): LibEntry {
   return entry(`w:${keb}`, keb);
 }
 
-describe("rangedGroups chunks an ordered list into labelled ranges", () => {
+describe("rangedGroups chunks an ordered list into labeled ranges", () => {
   // Rank by a number embedded in the id, so the sort is observable.
   const byTail = (e: LibEntry) => Number(e.id.split("-")[1]);
 
-  test("full ranges are labelled by their 1-based span", () => {
+  test("full ranges are labeled by their 1-based span", () => {
     const groups = rangedGroups(entries("x", 120), byTail, 50);
     assert.deepEqual(
       groups.map((g) => g.label),

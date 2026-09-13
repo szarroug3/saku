@@ -1,11 +1,11 @@
-// The pure logic of the settings blob: normalise it, merge a partial write into
+// The pure logic of the settings blob: normalize it, merge a partial write into
 // it, and reconcile a server copy against a local cache. No fs, no Supabase, no
 // DOM — so the server file (settings.ts) and the tests share one definition of
 // what these operations MEAN. Same split as history-ops.ts vs history.ts.
 
 import type { PracticeFile, SettingsFile } from "@/types/store";
 
-/** The keys a SettingsFile carries, spelled once so normalise/merge/empty stay
+/** The keys a SettingsFile carries, spelled once so normalize/merge/empty stay
  * in step as fields are added. */
 const SETTINGS_KEYS = ["cfg", "practice"] as const;
 
@@ -16,7 +16,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * Coerce whatever came out of storage/the row into a SettingsFile, keeping only
- * the fields it recognises and dropping anything else. A blob written by an older
+ * the fields it recognizes and dropping anything else. A blob written by an older
  * build, or half-corrupted, reads as a usable (possibly empty) settings object
  * rather than crashing a read — the same tolerance the history/lists normalizers
  * apply. Deep validation of each field is left to the client readers, which

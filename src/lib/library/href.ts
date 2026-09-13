@@ -33,7 +33,7 @@
 // WHY ROMAJI FOR KANA AND ONLY FOR KANA
 // =====================================
 // Romaji reads better than a glyph for a thing that IS a sound: `/library/
-// hiragana/kya` says more than `/library/hiragana/きゃ`. It does not generalise.
+// hiragana/kya` says more than `/library/hiragana/きゃ`. It does not generalize.
 // Measured over the shipped data, 15.3% of words and 80.1% of kanji collide on
 // romaji — "kou" alone is 50 kanji — so romaji would turn most of the Library
 // into `kou-37`. Kana are ~unique: 204 of 214 have a unique first spelling, and

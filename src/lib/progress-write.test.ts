@@ -177,7 +177,7 @@ describe("auth-mode signal wiring", () => {
     resetAuthMode();
     assert.equal(isSignedIn(), true, "unknown must read as signed-in");
 
-    // Drive the real decision using the uninitialised signal: a 401 with a dead
+    // Drive the real decision using the uninitialized signal: a 401 with a dead
     // retry must come back ok:false and never write local — the safe default.
     const send = scriptedSend([UNAUTH, UNAUTH]);
     const s = spies();

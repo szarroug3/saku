@@ -147,7 +147,7 @@ export const ONE_WAY_SHARE = 0.75;
 export const DIRECTION_MIN = 3;
 
 export type PairDirection =
-  /** Lopsided: `shown` is the entry you don't recognise, and you fall back on
+  /** Lopsided: `shown` is the entry you don't recognize, and you fall back on
    * `readAs`, the one you do. Drill `shown`. */
   | { kind: "one-way"; shown: EntryId; readAs: EntryId; share: number }
   /** Neither shape is anchored — you're guessing between the two. */

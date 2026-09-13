@@ -2,12 +2,12 @@
 //
 // WHAT THIS PINS
 // ==============
-// The live accuracy pill used to punish you for practising. Its numerator was
+// The live accuracy pill used to punish you for practicing. Its numerator was
 // `firstTryCorrect === true ? 1 : 0` — one boolean per FACT, for the whole run
 // — over a denominator of `seen`, which counts SHOWINGS. Two units in one
 // ratio. A learner who answered perfectly every single time watched the number
 // fall 100% → 50% → 33% → 25% as one fact came round again, and endless mode
-// repeats facts by design, so the longer they practised the worse they looked.
+// repeats facts by design, so the longer they practiced the worse they looked.
 //
 // The first test below is that learner. It is the whole reason this file
 // exists, and the arithmetic was moved out of drill-screen.tsx so it could be
@@ -134,7 +134,7 @@ test("nothing answered yet is null, not 0%", () => {
 // ---------- the localStorage migration ----------
 //
 // The quiz snapshot is persisted to `saku-session` and restored with a bare
-// JSON.parse — no normalising pass — so a run started before `firstTryCount`
+// JSON.parse — no normalizing pass — so a run started before `firstTryCount`
 // existed comes back without the field. `undefined + 1` is NaN, and a NaN would
 // spread through every merge after it.
 

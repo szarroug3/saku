@@ -34,7 +34,7 @@
 //     two child groups is emitted once per side: 国 → [囗 玉 囗], 術 → [行 朮 行],
 //     衣-enclosures (衰 哀 裏 褒 …), 斎 → [斉 斉 示 斉]. The part is real but
 //     listed twice, so the "Made of" row can show a duplicate.
-//   - PARTIAL depth-1. KanjiVG names only one recognisable element and drops the
+//   - PARTIAL depth-1. KanjiVG names only one recognizable element and drops the
 //     rest: 先 → [儿], 鳥/馬 → [灬], 骨 → [月]. Incomplete, not false.
 // Neither is corrected here — comps is re-cut by scripts/ingest/kanjivg.mjs, so
 // a fix belongs at ingest or an override layer, not in the committed JSON. These
@@ -244,7 +244,7 @@ describe("the 戌 / 戍 pair, which KanjiVG swaps in both directions (SAK-431)",
     assert.deepEqual(SOURCE["威"], ["戍", "女", "戍"]);
   });
 
-  test("the four hosts KanjiVG labelled correctly are untouched", () => {
+  test("the four hosts KanjiVG labeled correctly are untouched", () => {
     // 幾 and 蔑 really are built on 戍 (to guard); 歳 and 滅 really are built on
     // 戌. Nothing here is overridden, and the fix must not spread to them.
     assert.deepEqual(kanjiRow("幾")?.comps, ["幺", "幺", "戍"]);
@@ -260,7 +260,7 @@ describe("the 戌 / 戍 pair, which KanjiVG swaps in both directions (SAK-431)",
   // draw one half of a refused pair and the record names the other: 匹 (record
   // 八, tiles 儿), 在 (record 士, tiles 土), 巡 (record 川, tiles 巛) and 替
   // (record 曰, tiles 日). None of them is 威's bug. 威 was the one case where
-  // the drawn strokes were NOT the labelled character; in all four of these the
+  // the drawn strokes were NOT the labeled character; in all four of these the
   // label matches the strokes, and the record is naming the ORIGIN of the shape,
   // which is a different claim. So none of them is overridden, and each is
   // pinned here with the reading that settled it, so that a later sweep does not

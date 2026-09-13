@@ -366,7 +366,7 @@ describe("EXACTLY ONE accepted order", () => {
       assert.ok(gradeAssembly(it, canon), `item ${it.id}: canonical order must be accepted`);
       // Every single adjacent swap is a DIFFERENT order (pieces are unique) and
       // must be rejected. Proving one accepted order means proving the near
-      // neighbours are not also accepted.
+      // neighbors are not also accepted.
       for (let i = 0; i + 1 < canon.length; i++) {
         const swapped = canon.slice();
         [swapped[i], swapped[i + 1]] = [swapped[i + 1], swapped[i]];

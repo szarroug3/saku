@@ -138,7 +138,7 @@ describe("the generated artifact", () => {
     // joins the banned list and is fully excluded too. Then +3 (SAK-283, L2-L4):
     // 脱出 (a caption fragment, no worked clause), 大概 (its only sentence teaches
     // the fixed idiom 大概にする, never the everyday adverb sense) and 英文 (its
-    // only sentence is a stilted, machine-translation-flavoured sentence about a
+    // only sentence is a stilted, machine-translation-flavored sentence about a
     // translation, and doubles as the 〜として recipe's own example) are each a
     // one-candidate word whose one candidate is now banned. Then an eighth
     // (SAK-422): かえる is the frog, and both of its candidates are a verb

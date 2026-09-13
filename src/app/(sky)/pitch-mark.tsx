@@ -2,10 +2,10 @@
 //
 // A line sits over the morae the voice stays HIGH on, and turns down at the
 // downstep, the same mark the NHK accent dictionary and OJAD print. It is DRAWN
-// with borders, not written with colour, so it reads the same to someone who
-// cannot tell the line's colour from the text's (the overline is a shape); the
+// with borders, not written with color, so it reads the same to someone who
+// cannot tell the line's color from the text's (the overline is a shape); the
 // pattern is also spelled out in an aria-label for a screen reader. It is
-// static, so prefers-reduced-motion has nothing to honour.
+// static, so prefers-reduced-motion has nothing to honor.
 //
 // The DISPLAY-ONLY rule lives above this component: the app shows pitch so a
 // learner does not set a wrong habit that is very hard to unlearn, but never
@@ -23,9 +23,9 @@ import { pitchPattern, accentName } from "@/lib/pitch";
  * where the voice falls. Heiban has an overline from the second mora to the end
  * and no closing fall, because the voice stays up into a following particle.
  *
- * `className` styles the reading text (size, colour) exactly as the plain
- * reading it replaces would have been; the overline inherits that colour via
- * `border-current`, so it never becomes a colour-only cue.
+ * `className` styles the reading text (size, color) exactly as the plain
+ * reading it replaces would have been; the overline inherits that color via
+ * `border-current`, so it never becomes a color-only cue.
  *
  * `wordMoraCount` (SAK-142 round 2) marks how many morae from the START of
  * `reading` belong to the word actually being taught. Set it when `reading`
@@ -33,7 +33,7 @@ import { pitchPattern, accentName } from "@/lib/pitch";
  * word's drop has something to land on (see `PitchExampleRow.followUp` in
  * src/data/phase-intros.ts). The trailing morae still take part in the
  * pattern (the overline must run through them to show the real drop) but
- * render in a visibly muted colour and are named separately in the
+ * render in a visibly muted color and are named separately in the
  * `aria-label`, so neither sight nor a screen reader mistakes the follow-up
  * for part of the word. Omitted (the common case) when `reading` already IS
  * the whole word.

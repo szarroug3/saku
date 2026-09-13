@@ -10,8 +10,8 @@
 //   "i don't expect the app to teach me when to say 'i'm happy' vs 'i'm
 //    ecstatic'. i expect it to teach me how to say 'i'm happy' and how to say
 //    'i'm ecstatic' and what 'happy' and 'ecstatic' mean...
-//    i don't need the app to teach me judgement. i need it to give me the
-//    skills to make judgement calls. the judgement part comes from experience."
+//    i don't need the app to teach me judgment. i need it to give me the
+//    skills to make judgment calls. the judgment part comes from experience."
 //
 // So a cluster page shows four things: the members, how each is BUILT (which
 // comes from recipes.ts and the conjugation engine, so it is generated and
@@ -22,7 +22,7 @@
 // SCORED. It is not a lesson and not an authority; it is a hint that exists so
 // the page isn't silent about the thing the user actually wonders about. If
 // you ever find yourself wanting to grade it, the answer is no — that is the
-// judgement the app has agreed not to teach.
+// judgment the app has agreed not to teach.
 //
 // WHERE IS は/が?
 // ==============
@@ -82,7 +82,7 @@
 //
 // And NC is not open source: CC BY-NC-SA is not OSI-approved, cannot coexist
 // with MIT/GPL, and every fork would inherit a commercial-use ban. So: we LINK
-// (which has no licence surface at all — linking is not copying) and we never
+// (which has no license surface at all — linking is not copying) and we never
 // bundle, quote, or paraphrase. The conditionals link below points at the
 // Grammar Guide because Tofugu has no equivalent page; it is a LINK, and that
 // is the only reason it is allowed to be there.
@@ -173,7 +173,7 @@ export const CLUSTERS: readonly Cluster[] = [
       "here you can spot just from the word's shape: 降りそう (stem, " +
       "'looks like rain') vs 降るそうだ (plain, 'I hear it'll rain'). The " +
       "rest differ by how direct the evidence is, and that ordering is " +
-      "exactly the judgement call this app does not make for you.",
+      "exactly the judgment call this app does not make for you.",
     link: null,
     noLinkReason:
       "No single verified link covers the family. Tofugu's そう/よう/らしい " +
@@ -217,7 +217,7 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "てから and たあとで",
     members: ["te-kara", "ta-ato-de"],
     feel:
-      "てから emphasises sequence (and that the first thing finished); あとで " +
+      "てから emphasizes sequence (and that the first thing finished); あとで " +
       "just places one event after another.",
     link: null,
     noLinkReason: "No verified link compares the two. Tofugu covers あとで alone.",

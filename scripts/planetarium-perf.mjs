@@ -190,7 +190,7 @@ async function wheelZoom(page, box) {
   return stopFrames(page);
 }
 
-/** Up to twenty star centres spread across what the window is showing.
+/** Up to twenty star centers spread across what the window is showing.
  * A hit circle when the sky still draws them, and the star's own dot when
  * it does not, which above a couple of thousand stars is every time. */
 async function starPoints(page) {

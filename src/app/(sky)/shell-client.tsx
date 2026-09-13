@@ -24,7 +24,7 @@ const ENTRIES: readonly ShellEntry[] = [
   { href: "/sessions", label: "Sessions" },
   { href: "/settings", label: "Settings" },
   { href: "/how-it-works", label: "How Saku works", quiet: true },
-  // a licence obligation, not a courtesy link: the acknowledgement must be
+  // a license obligation, not a courtesy link: the acknowledgment must be
   // reachable from every screen, and a menu item is EDRDG's own example
   { href: "/about", label: "About", quiet: true },
 ];

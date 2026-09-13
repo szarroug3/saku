@@ -60,7 +60,7 @@ def load_kanjidic(path):
                 [x.text for x in ch.iter("meaning") if x.get("m_lang") is None]),
             on=[r.text for r in ch.iter("reading") if r.get("r_type") == "ja_on"],
             kun=[r.text for r in ch.iter("reading") if r.get("r_type") == "ja_kun"],
-            # on/kun per NORMALISED base, so a reading fact can say whether it
+            # on/kun per NORMALIZED base, so a reading fact can say whether it
             # is a borrowed Chinese pronunciation or the native Japanese word.
             kinds=kinds_of(ch),
         )
@@ -297,7 +297,7 @@ def main():
     #   ichi1   9,552 entries, a hand-curated everyday list. 25.2% of it
     #           carries no nf band at all -- which is exactly the everyday
     #           vocabulary a newspaper corpus is worst at seeing.
-    #   spec1/2 a separate editorial judgement: "common no matter what the
+    #   spec1/2 a separate editorial judgment: "common no matter what the
     #           corpus says". 日本 lives here and ONLY here -- it is spec1 +
     #           news2/nf25, so `ichi1` misses it and even a `news1` filter
     #           would miss it. It was JMdict's editors overriding the corpus.

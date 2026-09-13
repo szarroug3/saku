@@ -72,9 +72,9 @@ interface SkyLessonProps {
  * items-center, not items-baseline (SAK-415). A row holds two sizes at
  * once, a 13px label with a 10.5px eyebrow or a 17px glyph with a 12.5px
  * gloss, and sharing a baseline hangs both of them off the taller one,
- * which left the whole row sitting high in its pill. Both parts centre on
+ * which left the whole row sitting high in its pill. Both parts center on
  * the row instead. One component for both lists so there is one row to
- * measure and one to keep centred. */
+ * measure and one to keep centered. */
 function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick }: {
   /** What the row is current for: a step of the order, or a reference. */
   current?: "step" | "true";
@@ -100,8 +100,8 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
         {label !== undefined && (
           <span className={glyph !== undefined ? "text-[12.5px] text-sky-muted" : `text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{label}</span>
         )}
-        {/* tight, and the margin it drops is load-bearing: centring a row
-            centres each child's MARGIN box, so the four pixels below the
+        {/* tight, and the margin it drops is load-bearing: centering a row
+            centers each child's MARGIN box, so the four pixels below the
             eyebrow lifted it two above the row's middle (SAK-415). This was
             `!mb-0` until the prop learned to refuse an `mb-` class outright
             (SAK-432); `tight` says the same thing without the bang. */}
@@ -266,7 +266,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
               />
             ) : (
               <SkyPanel title="Nothing to teach">
-                <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practise what you have.</p>
+                <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practice what you have.</p>
               </SkyPanel>
             )}
           </div>

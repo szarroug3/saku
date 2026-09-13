@@ -86,7 +86,7 @@ describe("edge cases the unconditional strip must not mishandle", () => {
   test("'doesn't' is a contraction, not the scaffold word 'does' + X", () => {
     // there-isn't-X's own gloss: "doesn't" must survive untouched because it is
     // not followed by a bare "X" — \bdoes\b would not even match inside it, but
-    // this pins the behaviour so a future regex tweak can't regress it quietly.
+    // this pins the behavior so a future regex tweak can't regress it quietly.
     assert.equal(
       dropDoScaffold("there isn't X / doesn't have X"),
       "there isn't X / doesn't have X",

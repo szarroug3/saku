@@ -151,7 +151,7 @@ describe("production answers that retain the whole vehicle", () => {
     // because the gates ask about the ATTACHMENT (form: "stem" is not trivial)
     // and this is a property of the WORD.
     //
-    // Whether that is still a fair question is a judgement call and not one this
+    // Whether that is still a fair question is a judgment call and not one this
     // file can make: a learner who over-applies な writes 静かなすぎる and is
     // wrong, so the item does discriminate — unlike 本 + だけ, where there is no
     // plausible other answer. It ships as a question on that argument.

@@ -172,7 +172,7 @@ INFLECTING_PARTICLE_LEMMAS = ("て", "ば")
 # character among the sentence's kanji slots), so a second occurrence of the
 # same character elsewhere in the same sentence is untouched. A short, named
 # list, same philosophy as word-example.ts's WRONG_SENSE_EXAMPLES: this is a
-# human judgement call about sense, not something a rule can catch.
+# human judgment call about sense, not something a rule can catch.
 SENTENCE_READING_OVERRIDES = {
     (10565801, "仏", 0): ("ほとけ", "ほとけ"),
     (138214, "判", 0): ("ばん", "はん"),

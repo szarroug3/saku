@@ -34,8 +34,8 @@
 // does not reason about which pattern blocks which verb; it BUILDS the recipe
 // on each candidate with apply() and keeps only the ones that both succeed and
 // transform. So the conjugation engine's own blocklist (行く→行って, ある's
-// defectiveness, class-defective forms) is honoured for free, exactly as the
-// fixed-vehicle path honours it.
+// defectiveness, class-defective forms) is honored for free, exactly as the
+// fixed-vehicle path honors it.
 //
 // WHERE THE POOL COMES FROM
 // =========================
@@ -160,7 +160,7 @@ const BAKED = vehiclesJson as unknown as BakedVehicles;
  *     it with no special-casing.
  *   - `recipeFormula`'s worked examples (formula.test.ts) take the first
  *     THREE vehicles with distinct 音便 classes to prove the pattern
- *     generalises — 行く, then 言う, then a THIRD class, which has always been
+ *     generalizes — 行く, then 言う, then a THIRD class, which has always been
  *     v1 (食べる). v1 leads `REGULAR_VERB_CLASSES` right after v5u so that
  *     stays true.
  *
@@ -274,7 +274,7 @@ export type Rng = () => number;
  * AND changes the word (a form that leaves the word untouched is typing, not a
  * question — the same guard example.ts and the production generator both use).
  * So every constraint the conjugation engine encodes (defectiveness, the 行く
- * irregular, host mismatch) is honoured without this module naming any of them.
+ * irregular, host mismatch) is honored without this module naming any of them.
  *
  * Empty is a real answer: a wrap, or a recipe no pooled word can host. A caller
  * with an empty list has no varied question to ask and falls back to the fixed

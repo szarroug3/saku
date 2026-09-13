@@ -17,7 +17,7 @@
 //   produce  the Japanese a card asks you to write: exact, plus a romaji
 //            spelling when the target is all kana, since あ can be typed "a"
 //            with no IME and 生 has no romaji at all.
-//   loose    English, compared after normalising case and spacing. Carries
+//   loose    English, compared after normalizing case and spacing. Carries
 //            the glosses, the curated synonyms and the gloss's own comma and
 //            parenthetical slices, all expanded on the server.
 //   typo     the English candidates again, this time allowed a length-scaled
@@ -38,9 +38,9 @@ export interface AnswerKey {
   strict?: readonly string[];
   /** Japanese to produce: exact, or a romaji spelling when it is all kana. */
   produce?: readonly string[];
-  /** Accepted once case and spacing are normalised. Stored normalised. */
+  /** Accepted once case and spacing are normalized. Stored normalized. */
   loose?: readonly string[];
-  /** As `loose`, and additionally within a typo or two. Stored normalised. */
+  /** As `loose`, and additionally within a typo or two. Stored normalized. */
   typo?: readonly string[];
   /** A count as digits, with full-width digits folded before comparing. */
   digits?: string;

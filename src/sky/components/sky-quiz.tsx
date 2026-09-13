@@ -3,12 +3,12 @@
 // The Quiz: the quiet room. Tracked as SAK-312 to SAK-317.
 //
 // The sky is dense and full of things to look at; the Quiz is the opposite
-// on purpose: one prompt, centred, nothing in the corners. The box keeps
+// on purpose: one prompt, centered, nothing in the corners. The box keeps
 // one size whatever the card shows, so the arrows never move; a missed
 // card's lesson opens under it.
 //
 // One call from the route, given the cards and a grader. A strip of pips
-// along the top, one per card, coloured by outcome; each is a button, so a
+// along the top, one per card, colored by outcome; each is a button, so a
 // card can be skipped and come back to (Sam, 2026-09-05). Every card
 // opens on a blank box. A right answer moves straight on. A wrong one gets
 // another try, the retries set on the bar plus one in all, before the card is missed and its answer
@@ -338,7 +338,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
   return (
     <SkyPageShell eyebrow="Quiz" title={title} aside={strip} height={height}>
     {/* The list slides in beside the card, and the card slides with it: it
-        is centred in whatever space is left, never held still and never
+        is centered in whatever space is left, never held still and never
         squeezed (Sam, 2026-09-06, SAK-396). The room for the list is the
         padding on this box, which is the only thing that moves the card,
         so the two animate together; an absolutely positioned child sits

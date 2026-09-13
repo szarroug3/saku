@@ -15,7 +15,7 @@ const meaningOf = (k: string) => kanjiRow(k)?.meanings?.slice(0, 3).join(", ") ?
 const onOf = (k: string) =>
   READINGS.filter((r) => r.k === k && (r.type === "on" || r.type === "both")).map((r) => r.base);
 
-// A partial: ≥1 labelled tile AND ≥1 dropped visible piece. We treat a kanji as
+// A partial: ≥1 labeled tile AND ≥1 dropped visible piece. We treat a kanji as
 // "already handled" if builtPieces has no dropped piece left (an override filled
 // it) — cheap and correct enough for slicing.
 const partials = KANJI.map((r) => r.c).filter((k) => {
@@ -23,11 +23,11 @@ const partials = KANJI.map((r) => r.c).filter((k) => {
   const comps = kanjiRow(k)?.comps ?? [];
   if (comps.length < 2) return false;
   const roles = builtFromRoles(k);
-  const labelled = roles.filter((r) => r).length;
+  const labeled = roles.filter((r) => r).length;
   const dropped = roles.filter((r) => !r).length;
-  if (!(labelled >= 1 && dropped >= 1)) return false;
+  if (!(labeled >= 1 && dropped >= 1)) return false;
   // If an override already supplies a full tile set (no dropped piece), skip.
-  return builtPieces(k).length <= labelled;
+  return builtPieces(k).length <= labeled;
 });
 
 console.log(`PARTIALS remaining: ${partials.length}`);

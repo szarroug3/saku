@@ -33,7 +33,7 @@ describe("the constellation layout", () => {
     assert.ok(hashUnit("x") >= 0 && hashUnit("x") < 1);
   });
 
-  it("has prerequisites + 1 stars, the root at the centre, everything inside the unit box", () => {
+  it("has prerequisites + 1 stars, the root at the center, everything inside the unit box", () => {
     const l = layoutConstellation(g.constellationOf("wordA"));
     assert.equal(l.stars.length, 6);
     assert.deepEqual([l.stars[0].id, l.stars[0].x, l.stars[0].y], ["wordA", 0, 0]);
@@ -64,7 +64,7 @@ describe("the constellation layout", () => {
     assert.ok(d(at("土"), at("寺")) < d(at("寺"), at("時")) + 1e-9 || d(at("寺"), at("時")) < d(at("時"), at("時間")), "reach shrinks with depth");
   });
 
-  it("a kanji-centred shape and a lone star for kana fall out of the same function", () => {
+  it("a kanji-centered shape and a lone star for kana fall out of the same function", () => {
     const k = layoutConstellation(g.constellationOf("kanjiA"));
     assert.deepEqual(k.stars.map((s) => s.id).sort(), ["kanjiA", "radA", "radB"]);
     assert.deepEqual([k.stars[0].id, k.stars[0].x, k.stars[0].y], ["kanjiA", 0, 0]);
@@ -82,17 +82,17 @@ describe("the constellation layout", () => {
       assert.ok(Math.abs((small[i].px - 50) * 10 - (big[i].px - 500)) < 0.1);
       assert.ok(Math.abs((small[i].py - 50) * 10 - (big[i].py - 300)) < 0.1);
     }
-    assert.deepEqual([small[0].px, small[0].py], [50, 50], "the root sits on the centre");
+    assert.deepEqual([small[0].px, small[0].py], [50, 50], "the root sits on the center");
   });
 
-  it("a group draws as its members alone, in a ring, with no star at the centre", () => {
+  it("a group draws as its members alone, in a ring, with no star at the center", () => {
     const row = buildGraph([...["か", "き", "く", "け", "こ"].map((k) => item(k, "kana")), { ...item("row:k", "kana", ["か", "き", "く", "け", "こ"]), group: true }]);
     const layout = layoutConstellation(row.constellationOf("row:k"));
     const root = layout.stars.find((s) => s.id === "row:k")!;
     assert.equal(root.group, true);
     assert.equal(layout.stars.filter((s) => !s.group).length, 5);
     const rootIndex = layout.stars.indexOf(root);
-    assert.ok(layout.lines.every(([a, b]) => a !== rootIndex && b !== rootIndex), "nothing points at the centre");
+    assert.ok(layout.lines.every(([a, b]) => a !== rootIndex && b !== rootIndex), "nothing points at the center");
     assert.equal(layout.lines.length, 5, "five members, five links round the ring");
   });
 

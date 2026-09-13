@@ -29,7 +29,7 @@ export interface Placed<T extends ScatterItem = ScatterItem> {
 
 const TRIES = 100;
 
-/* THE NEIGHBOURHOOD GRID
+/* THE NEIGHBORHOOD GRID
  *
  * A clash test asks "does this box hit anything already down". Asking every
  * box makes the scatter quadratic, which the sky felt the moment it held
@@ -145,7 +145,7 @@ function worldFor(items: readonly ScatterItem[], pad: number, min: { width: numb
 }
 
 /** True when any two placed boxes overlap, allowing for the padding. Each
- * box is tested against the neighbourhood of those before it, so the answer
+ * box is tested against the neighborhood of those before it, so the answer
  * is the same as comparing every pair and the cost is not. */
 function anyOverlap(placed: readonly Placed[], pad: number): boolean {
   let biggest = 0, width = 0;

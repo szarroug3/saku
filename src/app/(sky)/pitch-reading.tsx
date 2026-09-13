@@ -7,7 +7,7 @@
 import { PitchReading } from "./pitch-mark";
 
 export function PitchMark({ reading, downstep, className = "" }: { reading: string; downstep: number; className?: string }) {
-  // the marks are one-pixel borders in the reading's own colour; on the
+  // the marks are one-pixel borders in the reading's own color; on the
   // wash they need some weight to read, so that is restyled from outside
   return <PitchReading reading={reading} downstep={downstep} className={`${className} [&_span.border-t]:border-t-2 [&_span.border-r]:border-r-2`} />;
 }

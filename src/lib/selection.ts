@@ -147,7 +147,7 @@ function matchesText(fact: FactId, needle: string): boolean {
  * in `rank` — a weakness sort, "hardest first" — and on a custom-drill screen
  * that is an autopilot pitfall: the same worst items in the same order every
  * time. Shuffling instead means two drills of the same query meet the pool in a
- * different order, so nothing gets memorised as a running order.
+ * different order, so nothing gets memorized as a running order.
  *
  * It no longer TRUNCATES. "How many" used to be a second cap here (a random
  * sample of `n`), and there were then two controls that both capped a run — a
@@ -265,7 +265,7 @@ export function resolve(
   // The date window, read STRAIGHT off the stored learnedAt map — no derivation
   // here, because the normalizers (Part A) guarantee learnedAt is populated on
   // every history the app reads. A one-sided window (from-only / to-only) is
-  // honoured; an all-null window is treated as no filter.
+  // honored; an all-null window is treated as no filter.
   const learned =
     sel.learned && (sel.learned.from != null || sel.learned.to != null)
       ? sel.learned
@@ -409,7 +409,7 @@ export function stateWord(s: FactBand): string {
  * What you are about to drill, as a sentence.
  *
  * The count is passed in rather than derived, and it is the load-bearing half:
- * the names summarise and are allowed to blur, the number never is. Same
+ * the names summarize and are allowed to blur, the number never is. Same
  * contract the old whatSentence had, and the one thing worth keeping from it.
  *
  * Says "questions", not "facts" and not "characters". This is the run-facing

@@ -12,7 +12,7 @@
 // etymology one — which pieces carry the meaning or the sound — so this reads
 // `builtPieces` (src/data/kanji-etymology.ts, the same lookup the Library's and
 // the lesson's "Built from" render) and keeps the ones a learner can actually be
-// taught: a piece with a kanji card, or a radical. A memorised whole (a
+// taught: a piece with a kanji card, or a radical. A memorized whole (a
 // pictograph, the number kanji, a kanji Wiktionary can't usefully split) has no
 // pieces and yields null. This keeps the hint builder, the lesson and the Library
 // in agreement about what a kanji is made of, because all three read the one join.
@@ -77,7 +77,7 @@ export function teachablePieceMeaning(glyph: string): string | null {
 /**
  * A kanji's semantic + phonetic pieces (from `builtPieces`) that are themselves
  * teachable — the ones with a kanji card or a radical. Null when the kanji has no
- * etymology pieces at all (a memorised whole) or none of them is teachable, which
+ * etymology pieces at all (a memorized whole) or none of them is teachable, which
  * every caller reads as "there is nothing teachable to say here".
  *
  * A FILTER, not the old all-or-nothing pass, and deliberately so: `builtPieces`

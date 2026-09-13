@@ -118,7 +118,7 @@ describe("keigo register sample is correct verb → register → plain verb", ()
 
 describe("transitivity direction is consistent with the JMdict tags", () => {
   test("the happens side is never tagged vt, the doIt side never vi", () => {
-    // The pairing is memorised, but the DIRECTION must agree with the checked
+    // The pairing is memorized, but the DIRECTION must agree with the checked
     // tags: the side that HAPPENS cannot be purely transitive, and the side
     // someone DOES cannot be purely intransitive. `split`/`ambi` are allowed on
     // either side (they carry both), but a bare vt on happens or vi on doIt is a

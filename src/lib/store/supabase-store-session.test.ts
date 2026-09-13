@@ -15,7 +15,7 @@
 // they answered a card, and no other test in this repo would notice.
 //
 // Its own file rather than an addition to supabase-store.test.ts, for the
-// reason that file's neighbour already gives: two fake tables of very
+// reason that file's neighbor already gives: two fake tables of very
 // different shapes should not share one mock registration.
 //
 // Run with:

@@ -20,7 +20,7 @@ import type { FactSessionDetail } from "@/types/sky";
  * same unit as `seen`.
  *
  * MIGRATION. The whole quiz state is snapshotted to localStorage
- * (`saku-session`) and restored by a plain JSON.parse with no normalising
+ * (`saku-session`) and restored by a plain JSON.parse with no normalizing
  * pass, so a run started before `firstTryCount` existed comes back without it.
  * `undefined + 1` is NaN, and a NaN here would spread through every subsequent
  * merge and poison the pill for the rest of the run.

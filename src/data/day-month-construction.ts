@@ -4,7 +4,7 @@
 // WHY THIS EXISTS
 // ================
 // SAK-163 round 1 shipped DAYS and MONTHS (src/data/counters.ts) as 43 flat,
-// independent CounterForm entries — every one of them individually memorised,
+// independent CounterForm entries — every one of them individually memorized,
 // with no card anywhere saying that most of them actually follow a rule.
 // Review feedback (Changes Requested): a learner staring at 31 unrelated day
 // tiles has no way to see that 11th-31st is almost entirely "[number] + にち",
@@ -75,7 +75,7 @@ function monthForm(n: number): CounterForm {
 }
 
 /** DayMonthPart[] → CountBuildPiece[], the shape phase-intro-view's build
- * column renders. A single-piece result (a whole memorised/suppletive word,
+ * column renders. A single-piece result (a whole memorized/suppletive word,
  * such as 1st-10th or 20th) has no additive equation to show — the same "no
  * build" treatment counterRow gives 〜人's ひとり/ふたり/よにん — so it maps to
  * the empty array rather than a one-piece "equation" that would just repeat
@@ -119,7 +119,7 @@ function monthRow(n: number): CountRow {
 }
 
 // ---------------------------------------------------------------------------
-// DAY — three groups: the memorised 1st-10th (no rule, same tier as 〜つ),
+// DAY — three groups: the memorized 1st-10th (no rule, same tier as 〜つ),
 // then Regular / Irregular for 11th-31st, the grammar-style split every other
 // construction page uses for its 1-10 table.
 // ---------------------------------------------------------------------------
@@ -147,15 +147,15 @@ const DAY_IRREGULAR_GROUP: IntroCountGroup = {
 const DAY_BODY: IntroPara[] = [
   {
     lead: "The 1st through the 10th are their own words.",
-    text: "ついたち, ふつか, みっか, and so on through とおか are memorised outright, with no rule joining them to the number, the same way ひとつ through とお are for 〜つ.",
+    text: "ついたち, ふつか, みっか, and so on through とおか are memorized outright, with no rule joining them to the number, the same way ひとつ through とお are for 〜つ.",
   },
   {
     lead: "11th and up: put the number in front of にち.",
     text: "Every other day is the plain number said before にち: 十一日 is じゅういちにち and 十五日 is じゅうごにち.",
   },
   {
-    lead: "Three counts keep a memorised word instead.",
-    text: "十四日 and 二十四日 reuse よっか, the 4th's own memorised word, instead of よん/し plus にち. 二十日 is its own word, はつか, unrelated to にじゅう.",
+    lead: "Three counts keep a memorized word instead.",
+    text: "十四日 and 二十四日 reuse よっか, the 4th's own memorized word, instead of よん/し plus にち. 二十日 is its own word, はつか, unrelated to にじゅう.",
   },
   {
     lead: "Two more switch to the alternate reading of 7 and 9.",
@@ -190,7 +190,7 @@ export const DAY: NumberConstruction = {
 
 // ---------------------------------------------------------------------------
 // MONTH — two groups: Regular / Irregular, the same split every counter page
-// uses. There is no memorised tier the way DAYS has one — every month is
+// uses. There is no memorized tier the way DAYS has one — every month is
 // built from a number, even the three that read it differently.
 // ---------------------------------------------------------------------------
 

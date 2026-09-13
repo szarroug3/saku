@@ -8,10 +8,10 @@
 // guarding are the two the brief calls out:
 //
 //   1. A real join is LOST — 肝's 月 should read semantic (flesh), 河's 氵
-//      semantic (water). If the variant-form normalisation regresses (氵≠水,
-//      ⺼≠月≠肉), these silently go unlabelled and the feature empties out.
-//   2. A piece is MISLABELLED — 服's visible 月 is a corruption of 舟 that
-//      matches NEITHER Wiktionary component (凡, 𠬝). It must stay unlabelled.
+//      semantic (water). If the variant-form normalization regresses (氵≠水,
+//      ⺼≠月≠肉), these silently go unlabeled and the feature empties out.
+//   2. A piece is MISLABELED — 服's visible 月 is a corruption of 舟 that
+//      matches NEITHER Wiktionary component (凡, 𠬝). It must stay unlabeled.
 //      The moment a stray 月 on the page earns a "flesh" tag, the layer is
 //      lying, which is the one thing this codebase refuses to do.
 
@@ -63,7 +63,7 @@ test("明 — 日 and 月 are BOTH semantic, 月's sense is the moon", () => {
 
 test("河 — 氵 is semantic (water piece), 可 is phonetic and lends か", () => {
   const water = roleOf("河", "氵");
-  assert.ok(water, "河's 氵 piece got no role — 氵↔水 normalisation broke");
+  assert.ok(water, "河's 氵 piece got no role — 氵↔水 normalization broke");
   assert.equal(water.function, "semantic");
   // The best-aligned theory is 水 + 可 (可 present in the shape); the rival
   // 水 + 何 carries the "water" gloss but 何 is not in 河, so it loses. That
@@ -86,14 +86,14 @@ test("河 — 氵 is semantic (water piece), 可 is phonetic and lends か", () 
   );
 });
 
-test("服 — the visible 月 stays UNLABELLED (it matches neither 凡 nor 𠬝)", () => {
+test("服 — the visible 月 stays UNLABELED (it matches neither 凡 nor 𠬝)", () => {
   // 服 has an etymology, but its KanjiVG pieces (月, 卩, 又) align to none of
   // Wiktionary's components (凡, 𠬝). Every piece must be null — no guessing.
   assert.ok(hasEtymology("服"));
   const roles = builtFromRoles("服");
   assert.ok(
     roles.every((r) => r === null),
-    "a 服 shape piece was labelled despite matching no Wiktionary component",
+    "a 服 shape piece was labeled despite matching no Wiktionary component",
   );
   assert.equal(roleOf("服", "月") ?? null, null);
 });
@@ -118,7 +118,7 @@ test("林 — the doubled-tree explanation survives cleaning in plain voice", ()
   const etym = etymologyOf("林");
   assert.ok(etym, "林 has no etymology record");
   assert.equal(etym.type, "ideogrammic");
-  // Both 木 pieces labelled semantic (tree).
+  // Both 木 pieces labeled semantic (tree).
   const roles = builtFromRoles("林");
   assert.equal(roles.length, 2);
   assert.ok(roles.every((r) => r?.function === "semantic"));
@@ -196,13 +196,13 @@ test("誤 — hand-authored: 言 semantic (speech) + 呉 phonetic (ご)", () => 
   assert.equal(phoneticReading("誤", "呉"), "ご");
 });
 
-test("戻 — hand-authored ideogrammic: 戸 semantic (door); 大 stays unlabelled", () => {
+test("戻 — hand-authored ideogrammic: 戸 semantic (door); 大 stays unlabeled", () => {
   const to = roleOf("戻", "戸");
   assert.ok(to, "戻's 戸 got no role");
   assert.equal(to.function, "semantic");
   assert.match(to.sense ?? "", /door/i);
   // The lower piece is a late form of 犬 (dog) — it matches no listed component
-  // and must stay unlabelled, the same discipline 服's 月 keeps.
+  // and must stay unlabeled, the same discipline 服's 月 keeps.
   assert.equal(roleOf("戻", "大") ?? null, null);
   assert.equal(etymologyOf("戻")?.type, "ideogrammic");
 });
@@ -230,7 +230,7 @@ test("every hand-authored entry cites a source and lands on a real piece", () =>
     // KanjiVG piece receives — otherwise the entry does nothing.
     assert.ok(
       builtPieces(k).length > 0,
-      `${k} hand-authored entry produced no labelled piece`,
+      `${k} hand-authored entry produced no labeled piece`,
     );
   }
 });

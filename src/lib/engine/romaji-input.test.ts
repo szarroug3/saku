@@ -173,7 +173,7 @@ describe("no card can be answered by typing its own prompt", () => {
 
   /** What the learner's box would hold if she read the prompt and typed it
    * back. With conversion on, that is the prompt run through the converter —
-   * which is the whole reason this cannot be argued from the old behaviour. */
+   * which is the whole reason this cannot be argued from the old behavior. */
   function retyped(shown: string, converts: boolean): string {
     return converts ? toKana(shown) : shown;
   }
@@ -204,7 +204,7 @@ describe("no card can be answered by typing its own prompt", () => {
   test("and no card GAINS one: every card that converts is clean", () => {
     // Stated over the converting set rather than over a direction, because the
     // converting set is what this change actually decides. en2jp cards that
-    // convert are included, so this covers the old behaviour too.
+    // convert are included, so this covers the old behavior too.
     const bad = violations((c) => c.converts && c.dir === "jp2en");
     assert.deepEqual(bad, []);
   });

@@ -32,7 +32,7 @@
 //             synthesis path or cache namespace.
 //
 // A word resolves to the SAME mode every time (mode is a property of the
-// data, not randomised) — WHETHER a pitch question is offered at all for a
+// data, not randomized) — WHETHER a pitch question is offered at all for a
 // given showing, versus the fact's ordinary card form, is the caller's coin
 // flip (see PITCH_QUESTION_CHANCE), not this module's.
 //

@@ -4,7 +4,7 @@
 // The entry page's recipe card says "take any verb, put it in its て-form, add
 // から". That is a claim about EVERY verb, which is a much larger claim than the
 // cluster page's "here is 行く with から on it" — so these tests are about the
-// generalisation, not about the conjugation. conjugate.test.ts owns 音便 and
+// generalization, not about the conjugation. conjugate.test.ts owns 音便 and
 // build.test.ts owns the "− trim + add" spelling; what is checked here is the
 // part this file invented: that the parts come out separable, that the worked
 // examples really do span classes rather than repeating one, and that the
@@ -71,7 +71,7 @@ describe("worked examples are the engine, and they span classes", () => {
     // The vehicle pool lists 食べる, 見る and 起きる consecutively and all three
     // are v1. If this ever comes back as three い-dropping ichidan verbs, the
     // per-class de-duplication has stopped working and the card is claiming a
-    // generalisation it is no longer showing.
+    // generalization it is no longer showing.
     assert.deepEqual(
       worked.map((w) => `${w.from} → ${w.to}`),
       ["行く → 行ってから", "言う → 言ってから", "食べる → 食べてから"],

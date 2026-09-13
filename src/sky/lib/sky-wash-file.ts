@@ -19,7 +19,7 @@ interface GlowLayer {
   visible: boolean; // hidden layers keep their knobs but are left out of the mesh
   id: string; // the knob name part: --sky-glow-<id>-*
   label: string;
-  colour: Rgb;
+  color: Rgb;
   strength: number; // 0 to 1
   at: [number, number]; // x%, y%, may pass 100 to hang off an edge
   size: [number, number]; // ellipse width%, height% of the page
@@ -47,7 +47,7 @@ interface WashModel {
   zenith: string; // hex
   ground: string;
   ground2: string;
-  sweepMid: number; // % down the page where the ground colour sits
+  sweepMid: number; // % down the page where the ground color sits
   stars: StarSpec; // the general stardust tile
   layers: WashLayer[]; // top first; all sit above the sweep
 }
@@ -86,7 +86,7 @@ export function parseWashFile(css: string): WashModel {
       layers.push({
         kind: "glow", id, visible: get(`glow-${id}-visible`) !== "0",
         label: get(`glow-${id}-label`)?.replace(/^"|"$/g, "") ?? id,
-        colour: rgb(need(`glow-${id}`)), strength: num(need(`glow-${id}-strength`)),
+        color: rgb(need(`glow-${id}`)), strength: num(need(`glow-${id}-strength`)),
         at: pair(need(`glow-${id}-at`)), size: pair(need(`glow-${id}-size`)),
         tail: tail ? (tail.split(/\s+/).map(Number) as GlowLayer["tail"]) : [...DEFAULT_TAIL],
       });
@@ -113,11 +113,11 @@ export function parseWashFile(css: string): WashModel {
 }
 
 /**
- * The CSS for one layer, every colour and stop referencing the layer's own
+ * The CSS for one layer, every color and stop referencing the layer's own
  * knobs, which is what the LAYERS block at the bottom of sky-wash.css holds.
  *
  * This used to take a `resolve` flag as well, and with it wrote the same
- * gradient with literal colours for the editor's live preview. The editor went
+ * gradient with literal colors for the editor's live preview. The editor went
  * to git on 2026-09-04 and `resolvedMesh`, the only caller that ever passed
  * true, had no caller of its own left; both are gone (SAK-433). Restoring the
  * editor means restoring them together, from the same commit as its page.
@@ -131,11 +131,11 @@ function layerCss(layer: WashLayer): string {
     return `radial-gradient(var(--sky-${k}-size) at var(--sky-${k}-at), ${c(k, `${k}-strength`)} 0%, ${c(k, `${k}-strength`, t28)} 28%, ${c(k, `${k}-strength`, t52)} 52%, ${c(k, `${k}-strength`, t76)} 76%, ${c(k, `${k}-strength`, t92)} 92%, transparent 100%)`;
   }
   if (layer.kind === "milky") {
-    // The band: a core from the lilac stop to the pink stop around the centre
+    // The band: a core from the lilac stop to the pink stop around the center
     // (49%), fading out over `fade` on each side with an eased midway stop.
     // Softness sets the fade's width. Every stop slides together by the shift.
-    const core = 4, fade = 4 + layer.softness * 40, centre = 49;
-    const at = (offset: number) => `calc(${fmt(centre + offset)}% + var(--sky-milky-shift))`;
+    const core = 4, fade = 4 + layer.softness * 40, center = 49;
+    const at = (offset: number) => `calc(${fmt(center + offset)}% + var(--sky-milky-shift))`;
     const lilac = (share = 1) => c("milky-lilac", "milky-strength", share);
     const pink = (share = 1) => c("milky-pink", "milky-strength", 0.78 * share);
     return `linear-gradient(var(--sky-milky-angle), transparent ${at(-core - fade)}, ${lilac(0.3)} ${at(-core - fade * 0.45)}, ${lilac()} ${at(-core)}, ${pink()} ${at(core)}, ${pink(0.3)} ${at(core + fade * 0.45)}, transparent ${at(core + fade)})`;
@@ -155,7 +155,7 @@ export function resolvedStarfield(model: WashModel): string {
 export function renderWashFile(model: WashModel, stardust: string, trailing: string): string {
   const knobs: string[] = [];
   knobs.push(`  /* The sweep, top to bottom. Zenith is the very top of the page, ground is
-   * the page colour, ground-2 is where the sweep ends at the bottom. */
+   * the page color, ground-2 is where the sweep ends at the bottom. */
   --sky-zenith: ${model.zenith};
   --sky-ground: ${model.ground};
   --sky-ground-2: ${model.ground2};
@@ -170,7 +170,7 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
     if (layer.kind === "glow") {
       knobs.push(`  /* Glow: ${layer.label}. */
   --sky-glow-${layer.id}-label: "${layer.label.replace(/"/g, "'")}";
-  --sky-glow-${layer.id}: ${layer.colour.join(", ")};
+  --sky-glow-${layer.id}: ${layer.color.join(", ")};
   --sky-glow-${layer.id}-strength: ${fmt(layer.strength)};
   --sky-glow-${layer.id}-at: ${fmt(layer.at[0])}% ${fmt(layer.at[1])}%;
   --sky-glow-${layer.id}-size: ${fmt(layer.size[0])}% ${fmt(layer.size[1])}%;
@@ -210,7 +210,7 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
  *
  * THIS IS THE FILE TO EDIT when tuning the background, by hand or with the
  * editor that used to live at /dev/sky/wash (removed 2026-09-04; restore it
- * from git if the wash needs tuning again) (drag the glows, pick colours, add
+ * from git if the wash needs tuning again) (drag the glows, pick colors, add
  * or remove layers, then Save, which rewrites this file). Every value in the
  * KNOBS block is one thing to change. The LAYERS block is generated from the
  * knobs by src/sky/lib/sky-wash-file.ts; edit the knobs, not the layers.
@@ -221,7 +221,7 @@ export function renderWashFile(model: WashModel, stardust: string, trailing: str
  * one glow's six knobs under a new id and run the editor's Save, or
  * \`npm run bake:sky\`, to regenerate the layers.
  *
- * Colours are three channels ("240, 120, 205") so one colour can be used at
+ * Colors are three channels ("240, 120, 205") so one color can be used at
  * several strengths. Strength runs 0 (invisible) to 1 (solid). A position is
  * "x y" from the top left, and may pass 100% to hang a glow off the edge. A
  * size is an ellipse's width and height as a share of the page. A tail is the
@@ -244,7 +244,7 @@ ${knobs.join("\n\n")}
 
   /* A tiled field of tiny stars from the --sky-stars-* knobs, baked to a 960px
    * PNG (a 480px tile at 2x) and pasted as data. A bitmap, not an SVG, so the
-   * browser caches it once instead of re-rasterising the dots on every scroll
+   * browser caches it once instead of re-rasterizing the dots on every scroll
    * and resize. Regenerated by the editor's Save and by \`npm run bake:sky\`. */
   --sky-stardust: ${stardust};
 
@@ -278,7 +278,7 @@ export function trailingRules(css: string): string {
 /** Validation the dev API applies before writing anything. */
 export function validateModel(m: WashModel): string | null {
   const hex = /^#[0-9a-f]{6}$/i;
-  if (![m.zenith, m.ground, m.ground2].every((h) => hex.test(h))) return "sweep colours must be #rrggbb";
+  if (![m.zenith, m.ground, m.ground2].every((h) => hex.test(h))) return "sweep colors must be #rrggbb";
   if (!(m.sweepMid >= 0 && m.sweepMid <= 100)) return "sweep-mid must be 0 to 100";
   const okRgb = (c: Rgb) => c.length === 3 && c.every((n) => Number.isInteger(n) && n >= 0 && n <= 255);
   const ok01 = (n: number) => n >= 0 && n <= 1;
@@ -289,7 +289,7 @@ export function validateModel(m: WashModel): string | null {
     if (l.kind === "glow") {
       if (!/^[a-z0-9-]+$/.test(l.id) || ids.has(l.id)) return `bad or repeated glow id "${l.id}"`;
       ids.add(l.id);
-      if (!okRgb(l.colour) || !ok01(l.strength)) return `glow ${l.id}: colour or strength out of range`;
+      if (!okRgb(l.color) || !ok01(l.strength)) return `glow ${l.id}: color or strength out of range`;
       if (!l.at.every((n) => n >= -50 && n <= 150) || !l.size.every((n) => n > 0 && n <= 200)) return `glow ${l.id}: position or size out of range`;
       if (l.tail.length !== 4 || !l.tail.every(ok01)) return `glow ${l.id}: tail must be four shares 0 to 1`;
     } else if (l.kind === "milky") {

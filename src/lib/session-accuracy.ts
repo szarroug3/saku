@@ -12,7 +12,7 @@
 // screen; `firstTryCorrect` is one boolean for the whole run, so it could
 // contribute at most 1 however often the fact came round again. A learner who
 // answered perfectly every single time read 100%, then 50%, then 33%, then 25%
-// as one fact repeated — the number fell fastest for the behaviour the app most
+// as one fact repeated — the number fell fastest for the behavior the app most
 // wants. Endless mode repeats by design, so this was not an edge case.
 //
 // The fix is that the numerator is a COUNT: `firstTryCount`, incremented once

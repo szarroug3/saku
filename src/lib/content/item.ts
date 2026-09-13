@@ -15,7 +15,7 @@ import type { Fact } from "./fact";
  * "character" is a SINGLE Han glyph taught as ONE cohesive item across every role
  * it plays — radical AND kanji AND number/word (三 is the character three, the
  * kanji three, and the number さん, all one lesson). It carries the UNION of its
- * roles' facts and is labelled by `characterRoles`; a glyph is never split into a
+ * roles' facts and is labeled by `characterRoles`; a glyph is never split into a
  * kanji item and a number item that teach 三 twice. This mirrors the words/kanji
  * curriculum spine, where a glyph is one item with a roles set.
  *

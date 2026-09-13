@@ -75,7 +75,7 @@ function routesOnDisk(dir = APP_DIR, url = "") {
   const found = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      // A parenthesised segment is a route group: it organises files, not URLs.
+      // A parenthesized segment is a route group: it organizes files, not URLs.
       const segment = /^\(.*\)$/.test(entry.name) ? url : `${url}/${entry.name}`;
       found.push(...routesOnDisk(path.join(dir, entry.name), segment));
     } else if (entry.name === "page.tsx") {

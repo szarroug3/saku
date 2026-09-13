@@ -354,7 +354,7 @@ function cleanOriginText(raw) {
   s = s.replace(/\[\[([^\]]*)\]\]/g, "$1");
 
   // Reconstruction tokens: a leading * on a glyph is just noise (*森 → 森); a
-  // * on a romanised/IPA reconstruction (*ŋaʔ, *[b]ək) drops whole.
+  // * on a romanized/IPA reconstruction (*ŋaʔ, *[b]ək) drops whole.
   s = s.replace(/\*(?=\p{Script=Han})/gu, "");
   s = s.replace(/\*\[?[A-Za-zɑ-ʯˀ-ˑ][^\s,;.()]*/g, "");
   s = s.replace(/\/[^/\n]{1,40}\//g, ""); // /…/ IPA slashes

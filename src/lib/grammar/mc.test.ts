@@ -1,7 +1,7 @@
 // Run:
 //   node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/grammar/mc.test.ts
 //
-// The MC seam normalises two generators (selection, transitivity) into one
+// The MC seam normalizes two generators (selection, transitivity) into one
 // card. The invariant that matters, for both, is the one the drill's MC control
 // relies on: DISTINCT options, EXACTLY ONE correct, and a correctIndex that
 // actually points at it after the shuffle. If any of those slips, the drill

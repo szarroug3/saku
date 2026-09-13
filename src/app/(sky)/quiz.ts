@@ -77,7 +77,7 @@ export function quizFromHistory(history: HistoryFile, picks: readonly string[], 
  * app cannot say honestly (SAK-315).
  *
  * The board is already the confusable set: `buildMcOptions` draws it from the
- * lookalike tables, a kanji's own other readings, a word's neighbours in rank,
+ * lookalike tables, a kanji's own other readings, a word's neighbors in rank,
  * a keigo set's opposite register, a verb pair's other side, another pattern
  * on the same verb. A random distractor tests nothing, because you can throw
  * it out without knowing anything, and a distractor you cannot NAME teaches

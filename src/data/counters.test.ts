@@ -1,8 +1,8 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/data/counters.test.ts
 //
-// The counters track is FACTUAL DATA (the readings it still MEMORISES) plus one
+// The counters track is FACTUAL DATA (the readings it still MEMORIZES) plus one
 // piece of STRUCTURE (the track label and the generative categories). These tests
-// pin both: the memorised readings so a reorder cannot silently break a known
+// pin both: the memorized readings so a reorder cannot silently break a known
 // irregular, and the structure so the "〜つ first, kana-gated phase 1, then
 // generative categories" design holds. The regular counted readings (一本…, the
 // tens, …) are the ENGINE's to pin now (number-reading.test.ts); they are no
@@ -45,7 +45,7 @@ import { NUMBERS_COMPOSE } from "./phase-intros.ts";
 // byGlyph searches COUNTER_CURRICULUM (the scheduled/drilled forms) PLUS
 // DAYS/MONTHS (SAK-163 round 4: reference-only data, no longer in
 // COUNTER_CURRICULUM — see counters.ts's notes above DAYS/MONTHS) so the
-// "memorised readings are pinned" block below can still pin day/month's real
+// "memorized readings are pinned" block below can still pin day/month's real
 // shipped readings even though they are no longer individually scheduled.
 const byGlyph = (g: string): CounterForm =>
   [...COUNTER_CURRICULUM, ...DAYS, ...MONTHS].find((f) => f.glyph === g)!;
@@ -114,7 +114,7 @@ describe("the role note distinguishes a bare number from a counter", () => {
   });
 });
 
-describe("the memorised forms are kana phase-1, bar the one irregular tail reading", () => {
+describe("the memorized forms are kana phase-1, bar the one irregular tail reading", () => {
   test("every phase-1 form is kana and needs no kanji", () => {
     for (const f of COUNTER_CURRICULUM.filter((f) => f.phase === 1)) {
       assert.ok(isKanaForm(f), `${f.glyph} is phase 1 but not kana`);
@@ -137,7 +137,7 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
     assert.deepEqual(
       counted.map((f) => f.glyph),
       ["二十歳"],
-      "the only memorised counted form left is 二十歳",
+      "the only memorized counted form left is 二十歳",
     );
   });
 
@@ -354,7 +354,7 @@ describe("the generative categories", () => {
   });
 
   test("every system counter bar 〜つ, and every tail counter, has a category", () => {
-    // 〜つ is native memorisation, not a generative construction, so it has no
+    // 〜つ is native memorization, not a generative construction, so it has no
     // category; every other system counter (人 本 匹 枚) and every tail counter does.
     const kindByGlyph: Record<string, string> = {
       人: "nin", 本: "hon", 匹: "hiki", 枚: "mai",
@@ -382,10 +382,10 @@ describe("the generative categories", () => {
   });
 });
 
-// FACTUAL DATA — the readings this track still MEMORISES, pinned so a reorder
+// FACTUAL DATA — the readings this track still MEMORIZES, pinned so a reorder
 // cannot silently break a known irregular. The regular counted readings live in
 // the engine and are pinned in number-reading.test.ts.
-describe("the memorised readings are pinned", () => {
+describe("the memorized readings are pinned", () => {
   // The only rote reading left as a curriculum FORM is 二十歳 はたち — the one a
   // category cannot build. (〜人's ひとり/ふたり/よにん are pinned against the engine
   // above, since the category, not a rote form, now teaches them.)

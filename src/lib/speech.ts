@@ -40,14 +40,14 @@ export interface VoiceLike {
 }
 
 /**
- * macOS ships a set of multilingual NOVELTY voices that localise into ja-JP —
+ * macOS ships a set of multilingual NOVELTY voices that localize into ja-JP —
  * they read Japanese, they are jokes, and "Eddy" sorts first among ja-JP names,
  * which is exactly how "take the first voice" handed every learner Eddy over
  * Kyoko. These are the eight modern multilingual novelty names (Eddy, Flo,
  * Grandma, Grandpa, Reed, Rocko, Sandy, Shelley); the older classic novelty
  * voices (Albert, Bad News, Bubbles, Zarvox, ...) are English-only and would
  * not pass the ja-JP filter, but they are listed too so that if a future OS
- * localises one it is rejected here rather than shipped as a pronunciation
+ * localizes one it is rejected here rather than shipped as a pronunciation
  * model. Matched on the BASE name (parentheticals stripped, lower-cased), so
  * "Eddy (Japanese (Japan))" and "Eddy" are the same exclusion.
  */
@@ -200,7 +200,7 @@ const prefetched = new Set<string>();
  * If the CDN object is already there (every kana, or a word heard before) the
  * GET just fills the browser cache; if it is not (an on-demand word or
  * sentence) this hits /api/tts to synthesize and cache it, so the synthesis is
- * paid while the pointer is still travelling rather than on the click.
+ * paid while the pointer is still traveling rather than on the click.
  * Fire-and-forget, silent on failure, and a no-op unless the roster is
  * configured and `voiceName` names one of its voices.
  */
@@ -317,7 +317,7 @@ export function speak(text: string, voiceName: string): void {
   if (typeof window === "undefined") return;
   // Automation/e2e browsers set navigator.webdriver (Playwright does). No test
   // asserts speech actually plays — the listening specs only check the speaker
-  // button and hidden-glyph behaviour — so silencing it keeps unattended e2e
+  // button and hidden-glyph behavior — so silencing it keeps unattended e2e
   // runs quiet without affecting real users (real browsers leave webdriver false).
   if (typeof navigator !== "undefined" && navigator.webdriver) return;
   if (shouldSkipDuplicateSpeak(text, voiceName)) return;

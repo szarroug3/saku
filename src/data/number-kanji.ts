@@ -4,7 +4,7 @@
 // ===============================
 // These ten are ideographs / borrowed signs, not compositions. Only 二 (一+一)
 // and 三 (一+一+一) decompose into anything meaningful, and even they are learned
-// as "one more stroke than the last"; 四…十 are memorised wholes whose KanjiVG
+// as "one more stroke than the last"; 四…十 are memorized wholes whose KanjiVG
 // pieces (囗, 儿, 亠, 丿, 乙, the 八-shape inside 六) are SHAPE-ONLY — they imply a
 // meaning the character does not carry and mislead a learner into reading a
 // number as parts. 一 is atomic and taught first anyway, and 二/三 follow it.

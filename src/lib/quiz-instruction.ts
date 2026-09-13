@@ -109,7 +109,7 @@ export function quizInstruction(
 
   // A grammar PRODUCTION card shows a verb in the halo and asks for it rebuilt in
   // a named form (the 〜て form, the polite form…). The form name used to sit in a
-  // grey sub-label under the halo; it now rides INSIDE the instruction as one
+  // gray sub-label under the halo; it now rides INSIDE the instruction as one
   // sentence, and the sub-label is dropped (see the grammar prompt in
   // engine/question.ts). "word", not "pattern": the halo holds the vehicle verb,
   // which is the word being reshaped. `patternLabel` + " form" is exactly the
@@ -191,7 +191,7 @@ export function quizInstruction(
       : `Type how this ${noun} is said in the ${form}.`;
   }
 
-  // Transitivity and keigo fold the register/role that used to sit in a grey
+  // Transitivity and keigo fold the register/role that used to sit in a gray
   // sub-label INTO the answer options, so each card is one clean question. The
   // derived sentence below is close, but these two subjects pin the exact
   // approved copy: the verb-pair and keigo cards each ask ONE thing and the

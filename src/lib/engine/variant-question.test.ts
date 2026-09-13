@@ -38,13 +38,13 @@ test("the variant showing is a display variation of the SAME meaning fact", () =
   const v = variantPromptFor(HITO, "en2jp", always(0.9));
   const qt = questionsFor(HITO);
   const prompt = qt.prompt(HITO, "en2jp", { variant: v ?? undefined });
-  // The prompt shows the FORM, in a JP font. It carries NO grey sub-label: the
+  // The prompt shows the FORM, in a JP font. It carries NO gray sub-label: the
   // whole question rides the card's single instruction line ("Which of these is
   // this a form of?" in drill-screen.tsx), so the prompt context is dropped the
   // way the grammar form-name's sub-label was.
   assert.equal(prompt.glyph, "亻", "the prompt shows the variant form");
   assert.equal(prompt.jp, true, "the form is Japanese and gets the JP font");
-  assert.equal(prompt.context, null, "a variant prompt carries no grey sub-label");
+  assert.equal(prompt.context, null, "a variant prompt carries no gray sub-label");
 
   // Grading rides the base fact: 人 is right, another kanji is wrong. No new id.
   assert.equal(

@@ -6,14 +6,14 @@
 // pairPattern DESCRIBES a pair's ending swap; it must never over-claim. Two
 // guarantees matter:
 //
-//   RULE      — each labelled swap catches the shapes it is meant to and reports
+//   RULE      — each labeled swap catches the shapes it is meant to and reports
 //               the right tails, including the one reverse shape (-える → -く)
 //               and the same-column -す shapes that a naive romaji check misses.
 //   HONESTY   — a pair with no shared reading stem, or a tail shift outside the
 //               rule set, is marked an exception rather than forced into a rule.
 //
 // The whole-curriculum check pins the distribution so a future edit to the rules
-// or the pair table cannot silently start mislabelling cards.
+// or the pair table cannot silently start mislabeling cards.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";

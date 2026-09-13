@@ -37,7 +37,7 @@ export type LessonKind = "kana" | "radical" | "kanji" | "word" | "grammar" | "tr
 const KINDS: readonly LessonKind[] = ["kana", "radical", "kanji", "word", "grammar", "transitivity", "keigo"];
 
 /** A subject id from the registry, narrowed to a LessonKind; falls back to
- * "kana" for anything unrecognised so a stray fact renders as something rather
+ * "kana" for anything unrecognized so a stray fact renders as something rather
  * than crashing the walk. */
 function asKind(subject: string | undefined): LessonKind {
   return KINDS.includes(subject as LessonKind) ? (subject as LessonKind) : "kana";

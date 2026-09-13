@@ -48,7 +48,7 @@ export {
 } from "@/lib/engine/results";
 
 // The grammar MULTIPLE-CHOICE seam: selection ("which pattern?") and
-// transitivity ("which verb?") normalised into one options+correct-index card
+// transitivity ("which verb?") normalized into one options+correct-index card
 // the drill's MC control renders without a fork. See lib/grammar/mc.ts.
 export {
   nextGrammarMc,
@@ -131,7 +131,7 @@ export function answerKeyFor(
  * `deck` is the cards on screen this session; `known` is every fact the learner
  * has already LEARNED (claimed, asked to be quizzed on, or answered before —
  * the caller reads it off history). Together they are the search space, and the
- * union is the defence: a confusion is something the user could actually have
+ * union is the defense: a confusion is something the user could actually have
  * MEANT, so the only candidates are the things they are being shown now or have
  * demonstrably met before. Searching a prediction table (the confusable pairs)
  * or the whole dictionary instead lets a reading that a hundred kanji share, or

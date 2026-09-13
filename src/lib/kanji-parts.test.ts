@@ -11,9 +11,9 @@
 // decomposition. It returns the semantic + phonetic pieces `builtPieces` shows
 // (src/data/kanji-etymology.ts) that a learner can actually be taught — a piece
 // with a kanji card or a radical. So a bound form like 亻 (person) or 氵 (water)
-// now COUNTS, because it resolves to a taught character, and a memorised whole
+// now COUNTS, because it resolves to a taught character, and a memorized whole
 // (一, 人, 生) has no pieces. The pins below are the real join's output, verified
-// against builtPieces — not the old KanjiVG all-or-nothing behaviour.
+// against builtPieces — not the old KanjiVG all-or-nothing behavior.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -89,7 +89,7 @@ describe("teachableParts — the etymology pieces, resolved to teachable shapes"
   });
 });
 
-describe("teachableParts — a memorised whole has no pieces", () => {
+describe("teachableParts — a memorized whole has no pieces", () => {
   // No etymology role pieces at all → null → the lesson and hint show no
   // breakdown. Most numbers stay whole; 二 and 三 are the exceptions — genuine
   // stacked 一 — so they DO decompose.

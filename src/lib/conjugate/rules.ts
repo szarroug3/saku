@@ -15,7 +15,7 @@ import type { Form, Onbin, Row, StemKey, WordClass } from "./types";
 // ---------------------------------------------------------------------------
 // RULE MECHANISM #1 — the vowel-row shift.
 //
-// This ONE table, parameterised by the verb's final kana, serves NINE forms
+// This ONE table, parameterized by the verb's final kana, serves NINE forms
 // (masu, nai, potential, passive, causative, imperative, volitional, ba, tai).
 // It is the single highest-leverage object in the library.
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ export const VOWEL_ROWS: Record<string, Row> = {
 //
 // Five outcomes across nine endings. This is the only place godan verbs stop
 // being regular, and it's why 待つ->待って has to be *generated* rather than
-// memorised as a card.
+// memorized as a card.
 // ---------------------------------------------------------------------------
 
 /** Final kana of a godan verb -> its て/た forms (suffix replaces the kana). */

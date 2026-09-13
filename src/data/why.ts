@@ -220,7 +220,7 @@ export const WHY_TRACK: Record<string, Why> = {
     paras: [
       "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both feed into this track: kanji are the characters a word is written with, grammar is how you string words into a sentence.",
       "A word is only taught here once you know every kanji in it (電車 waits until you’ve learned both 電 and 車), because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
-      "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practise here are the kana-only ones.",
+      "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practice here are the kana-only ones.",
     ],
   },
   grammar: {

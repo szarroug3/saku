@@ -156,9 +156,9 @@ export interface AnswerKey {
   strict?: readonly string[];
   /** Japanese to produce: exact, or a romaji spelling when it is all kana. */
   produce?: readonly string[];
-  /** Accepted once case and spacing are normalised. Stored normalised. */
+  /** Accepted once case and spacing are normalized. Stored normalized. */
   loose?: readonly string[];
-  /** As `loose`, and additionally within a typo or two. Stored normalised. */
+  /** As `loose`, and additionally within a typo or two. Stored normalized. */
   typo?: readonly string[];
   /** A count as digits, with full-width digits folded before comparing. */
   digits?: string;
@@ -280,7 +280,7 @@ export function shuffleDeck(cards: readonly QuizCard[], random: () => number = M
 function spread(cards: QuizCard[]): QuizCard[] {
   for (let i = 1; i < cards.length; i++) {
     if (cards[i].item.id !== cards[i - 1].item.id) continue;
-    // what each neighbour of the two places would be after the trade
+    // what each neighbor of the two places would be after the trade
     const trade = (j: number) => {
       const at = (k: number) => (k === i ? cards[j] : k === j ? cards[i] : cards[k])?.item.id;
       if (at(i) === at(i - 1) || at(i) === at(i + 1) || at(j) === at(j - 1) || at(j) === at(j + 1)) return false;

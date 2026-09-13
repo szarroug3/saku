@@ -54,7 +54,7 @@ interface SkyFieldProps {
   /** The firmament: the sky that is already there before anything is
    * discovered. Every id here is drawn as the constellation it would become
    * (a kanji with its pieces, a kana alone), small and in its standing's
-   * colour, scattered with the rest. Discovery only changes colours. */
+   * color, scattered with the rest. Discovery only changes colors. */
   firmament?: readonly string[];
   /** A one-star firmament constellation's box; every star adds to it. */
   firmamentBase?: number;
@@ -210,7 +210,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const hoverTonight = !!hoverLook && !!(hoverLook.tonight || hoverLook.lit || hoverLook.emphasis);
   const hoverPieces = hover ? graph.closureOf(hover.id).map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x) : [];
   // Where every star on screen IS, and how near counts as hitting it.
-  // Memoised because it is the same walk over every drawn constellation
+  // Memoized because it is the same walk over every drawn constellation
   // that the drawing itself does, and hovering a star must not set that
   // walk going again (SAK-411).
   const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOf(graph.itemOf(s.id)?.kind ?? "word"), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 }))), [seen, layouts, baseLook, graph]);

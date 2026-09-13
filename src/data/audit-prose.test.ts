@@ -11,7 +11,7 @@
 // Scope is deliberately narrow: only the number/counter cards, whose examples
 // carry a numeral (`to` = "20", "1,000") or a kanji count (`from` = "一 + 本")
 // that maps cleanly onto the engine. Everything else in the prose is human
-// judgement and lives in the audit report, not here.
+// judgment and lives in the audit report, not here.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";

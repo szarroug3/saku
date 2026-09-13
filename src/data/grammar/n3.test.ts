@@ -9,7 +9,7 @@
 //
 // It does NOT — cannot — prove the grammar is correct Japanese. That is the
 // owner's verification pass; the glosses, hosts and example strings are quoted
-// in the build report for exactly that reason. What is mechanised here is the
+// in the build report for exactly that reason. What is mechanized here is the
 // part a machine can own: the forms build, they build the same way every time,
 // and the askability gates classify each row the way its design says.
 

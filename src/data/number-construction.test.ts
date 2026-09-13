@@ -164,7 +164,7 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
   });
 });
 
-describe("column 3 — the build equation, with accent-coloured numeric annotations", () => {
+describe("column 3 — the build equation, with accent-colored numeric annotations", () => {
   test("a tens row is the tens word (annotated) plus the ones word, then the total", () => {
     const eleven = rowsOf("tens", "Regular").find((r) => r.label === "11")!;
     assert.deepEqual(eleven.build, [

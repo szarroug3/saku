@@ -129,7 +129,7 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
   // 〜について ("about X") vs physical につく. The signature's not_after already
   // drops the 来る/行く/居る follow cases, but 席につく (take a seat), 位置について
   // (on your marks), テーブルについて (sit at the table) and "repeat/read after me"
-  // (follow) tokenise IDENTICALLY to the topic sense — see the header. The human
+  // (follow) tokenize IDENTICALLY to the topic sense — see the header. The human
   // translation is the only signal, so this confound reads ex.en (and a couple of
   // fixed JP position idioms). Blunt and erring toward dropping, per this file.
   "ni-tsuite": {

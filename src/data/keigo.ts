@@ -24,7 +24,7 @@
 // ===========================================
 // The track opens EARLY, the way grammar opens on known words: as soon as the
 // learner knows the plain verb a set replaces, they meet its keigo forms and are
-// asked to RECOGNISE them — shown 召し上がる, pick "eat / drink (honorific)".
+// asked to RECOGNIZE them — shown 召し上がる, pick "eat / drink (honorific)".
 // After that introduction, the same learned fact can be practiced in reverse:
 // type its stored kana reading or pick its written form from a precise
 // English/register cue. See src/lib/engine/question.ts for the two directions

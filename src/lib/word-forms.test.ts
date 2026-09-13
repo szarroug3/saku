@@ -239,7 +239,7 @@ test("an IRREGULAR verb/adjective class gets NO paradigm label — naming a rule
   // reveal instead.
   assert.equal(ruVerbKindOf("ある", "v5r-i"), null, "ある is an irregular godan-る");
   assert.equal(adjectiveKindOf("adj-ix"), null, "いい is an irregular い-adjective");
-  // The regular classes still get their label, so a plain 高い / 帰る stays labelled.
+  // The regular classes still get their label, so a plain 高い / 帰る stays labeled.
   assert.equal(ruVerbKindOf("帰る", "v5r"), "う-verb");
   assert.equal(adjectiveKindOf("adj-i"), "い-adjective");
   assert.equal(adjectiveKindOf("adj-na"), "な-adjective");

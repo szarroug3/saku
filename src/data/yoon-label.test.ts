@@ -21,7 +21,7 @@ describe("yōon replaces combo on every user-facing surface", () => {
     }
   });
 
-  test("the small-kana rows are labelled Yōon, and still count as extended", () => {
+  test("the small-kana rows are labeled Yōon, and still count as extended", () => {
     const yoon = SECTION_LABELS.filter((l) => l.startsWith("Yōon "));
     assert.equal(yoon.length, 24, "expected 12 yōon rows per script");
     for (const label of yoon) {

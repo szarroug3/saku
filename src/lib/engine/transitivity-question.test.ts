@@ -41,7 +41,7 @@ test("the prompt shows the English cue and no sub-label, not the verb", () => {
   const prompt = qt.prompt(HAPPENS, "en2jp");
   assert.equal(prompt.glyph, PAIR.happens.en);
   assert.equal(prompt.jp, false);
-  // The role/register now lives in the folded instruction line, not a grey
+  // The role/register now lives in the folded instruction line, not a gray
   // sub-label beneath the prompt.
   assert.equal(prompt.context, null);
 });

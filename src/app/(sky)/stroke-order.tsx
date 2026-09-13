@@ -8,7 +8,7 @@
 //
 //   1. An ANIMATED diagram, looping. The character draws itself stroke by
 //      stroke, in order, via an SVG stroke-dashoffset animation (each path
-//      normalised to pathLength=1 so one keyframe fits every stroke); the
+//      normalized to pathLength=1 so one keyframe fits every stroke); the
 //      finished glyph then holds for a beat before the cycle starts over, so
 //      you can watch it as many times as you need without a control to press.
 //      Under prefers-reduced-motion there is no animation at all: the finished
@@ -25,10 +25,10 @@
 //
 //   2. A STEP-BY-STEP numbered chart: the classic KanjiVG sequence. One small
 //      cell per stroke: cell i shows strokes 1..i with the newest stroke picked
-//      out in the accent colour and the ones before it faint, and the stroke's
+//      out in the accent color and the ones before it faint, and the stroke's
 //      ordinal under it. Reading left to right is watching the character built.
 //
-// COLOUR
+// COLOR
 // ======
 // Everything is drawn in theme tokens (var(--text) for drawn strokes,
 // var(--accent) for the stroke being introduced, var(--border) for the writing
@@ -343,7 +343,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           way to satisfy it. The link is global chrome now, not per-screen, so a
           new screen that renders this component inherits it automatically, and
           src/data/attribution.test.ts guards that the sidebar keeps carrying it,
-          and that failure is a licence violation, not a lint. */}
+          and that failure is a license violation, not a lint. */}
     </div>
   );
 }

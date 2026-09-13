@@ -114,7 +114,7 @@ export function projectSessionFacts(
       // which collapses a run to at most one correct showing — coarse, but it
       // never calls an unanswered fact right.
       //
-      // `||`, NOT `??`: newFactStat initialises correct to 0, so the nullish
+      // `||`, NOT `??`: newFactStat initializes correct to 0, so the nullish
       // operator would never fire and every grid/pairs fact would score 0%
       // forgiving. The only case `||` gets wrong is a real 0 with everCorrect
       // true, which can't happen — landing a card increments both. Delete this

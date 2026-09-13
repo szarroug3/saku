@@ -19,7 +19,7 @@
 //      within a level the patterns appear in curriculum order. The shelf is cut
 //      by FORM now, not by level (see grammar-shelf.test.ts for that cut), but a
 //      section still orders its patterns by this rank, so its within-level
-//      behaviour is what these tests pin.
+//      behavior is what these tests pin.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";

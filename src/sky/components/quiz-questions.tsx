@@ -5,7 +5,7 @@
 //
 // It replaces the strip of pips that used to sit in the page's header. At
 // a couple of dozen cards that strip read as progress; at two hundred it
-// was three rows of grey lozenges (Sam, 2026-09-06: "the pips at the top
+// was three rows of gray lozenges (Sam, 2026-09-06: "the pips at the top
 // look ugly"), and finding one card meant hovering them one at a time for
 // a title. A list says what each card IS, so it can be looked through, and
 // it folds away for anyone who wants the quiet room the Quiz is meant to
@@ -72,7 +72,7 @@ export function QuizQuestions({ cards, answers, at, open, onGo, onClose }: QuizQ
           return (
             <li key={card.id}>
               {/* items-center, not items-baseline (SAK-415): a row of three
-                  sizes centres all of them on the row rather than hanging
+                  sizes centers all of them on the row rather than hanging
                   them off the tallest one's baseline */}
               <button
                 type="button"

@@ -8,7 +8,7 @@
 // runner cannot load) trusts this function to deliver them:
 //
 //   1. The foundational form sections lead in teaching order (〜な, て/で, ない,
-//      た, stem), each labelled by its form and HEADED by its own form recipe;
+//      た, stem), each labeled by its form and HEADED by its own form recipe;
 //      "Particles" falls right after て/で, where the curriculum reaches it —
 //      the particles are taught right after the three foundation rows.
 //   2. "Other patterns" trails, holding the plain-form and no-verb-form patterns

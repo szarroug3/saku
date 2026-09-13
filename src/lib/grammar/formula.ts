@@ -299,7 +299,7 @@ function formulaFor(r: Recipe, a: Attachment, closing: boolean): Formula {
  * exactly as much as one and use up the space where a godan would have gone.
  * Taking the first vehicle of each distinct class instead gives 行く (v5k-s,
  * the irregular て), 食べる (v1) and 書く (v5k), which is three different 音便 in
- * one line and is the whole argument that the rule generalises.
+ * one line and is the whole argument that the rule generalizes.
  *
  * A wrap cannot be worked this way — apply() refuses a single word, correctly,
  * and handing back half a pattern is the bug that refusal exists to prevent. So

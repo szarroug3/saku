@@ -194,7 +194,7 @@ describe("the reveal is the answer, not merely something else", () => {
     // 受身, 〜から 理由 vs 起点), and an MC board offering both would put two
     // identical buttons up and grade the right one wrong. `optionLabel` has said
     // so since the sense work; the reveal simply agrees with the button it lights
-    // up, which is the behaviour a learner wants.
+    // up, which is the behavior a learner wants.
     //
     // So it is a DISPLAY suffix on a correct answer, not a wrong answer — pinned
     // by that shape rather than by count, so a seventh ambiguous pattern is fine

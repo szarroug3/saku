@@ -42,7 +42,7 @@ export interface ProgressSeedRow {
  * Split from the read so the two can be fetched at the same time (SAK-382).
  * They are independent — the facts table is keyed by the user, not by anything
  * in the row — but they used to run one after the other, because the second
- * was buried inside normalising the first. On a cold function that was two
+ * was buried inside normalizing the first. On a cold function that was two
  * sequential round trips to a database that answers in about a second.
  *
  * THE FACTS COME FROM THE TABLE, AND ONLY THE TABLE (SAK-405). The `facts`
@@ -84,7 +84,7 @@ function shapeHistory(raw: unknown, tableFacts: Record<FactId, FactAggregate>): 
  * The row and the facts table at the same time, not one after the other:
  * reading the history once measured 1550 ms on a cold function, a 1240 ms
  * query and then a second round trip to progress_facts hidden inside
- * normalising the first. Nothing in the second depends on the first.
+ * normalizing the first. Nothing in the second depends on the first.
  */
 const readProgress = cache(async (userId: string) => {
   const supabase = await timed("db:client", () => createSupabaseServerClient(), "making the database client");
@@ -237,7 +237,7 @@ export async function writeHistoryRowGuarded(
 // THE MIGRATION WINDOW IS OVER (SAK-405). Every primitive below used to catch
 // a Postgres 42P01 ("relation does not exist") and report it as
 // `migrated: false`, so history.ts could fall back to the pre-SAK-237
-// whole-document behaviour rather than erroring every save if this code
+// whole-document behavior rather than erroring every save if this code
 // shipped ahead of the SQL. It did not ship ahead of it: the table is there
 // and it has held every fold since. So the flag is gone, the fallbacks are
 // gone, and a missing table is what it should have become the day after the
@@ -547,7 +547,7 @@ export async function readSessionRow(userId: string): Promise<unknown> {
  * because two devices folding sessions onto the same blob must not clobber
  * each other, and a lost fold is lost progress. This column is the opposite
  * case: it holds ONE run, the last one touched, and last writer wins is the
- * behaviour you actually want, since the run you are answering right now is
+ * behavior you actually want, since the run you are answering right now is
  * the run you should come back to. Nothing is folded, so nothing can be lost
  * by being overwritten.
  *

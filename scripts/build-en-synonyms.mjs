@@ -398,7 +398,7 @@ async function candidatesFor(key) {
   // either, the whole result list decays in ~0.00003-per-step increments —
   // GAP_RATIO never trips, so the UNTAGGED_SAFETY_CAP fallback (tuned against
   // "yes"/"persimmon", both concrete/adjective single WORDS with a real if
-  // incomplete embedding neighbourhood) walks straight to its cap and accepts
+  // incomplete embedding neighborhood) walks straight to its cap and accepts
   // 7 candidates that are mostly unrelated negation phrases ("not that", "not
   // applicable", "no longer") or outright non-English ("nicht", German for
   // "not"). A second case, "make light of" (an idiom with likewise zero syn
@@ -407,7 +407,7 @@ async function candidatesFor(key) {
   // co-occurrence-adjacent, not synonymous. Neither failure was possible to
   // hit for a single WORD query in the original pass (every single-word
   // gloss checked either had real syn-tag grounding or was a concrete noun
-  // where the untagged neighbourhood, while imprecise, was still genuinely
+  // where the untagged neighborhood, while imprecise, was still genuinely
   // related). For a multi-word key specifically, "Datamuse has zero
   // syn-tagged relational data for this exact phrase" is itself a reliable
   // signal that the untagged tier is unmoored guessing, not a near-miss

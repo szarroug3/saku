@@ -84,7 +84,7 @@ function normalize(value: unknown): HistoryFile | null {
  * Null covers every failure the same way — no entry, unreadable storage, bad
  * JSON, a shape that is not a history, an envelope stamped with a different
  * account. All of those mean "paint nothing yet and wait for the server", which
- * is exactly the behaviour this cache is an optimization over.
+ * is exactly the behavior this cache is an optimization over.
  */
 export function readCachedHistory(userId: string): HistoryFile | null {
   const s = storage();

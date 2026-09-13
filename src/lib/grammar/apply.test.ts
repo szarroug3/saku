@@ -256,7 +256,7 @@ describe("the recipe table is well-formed", () => {
     eqWrap("hou-ga-yori", "本", null, "車", null, "本のほうが車より");
     // Different host per slot — the reason a closing half is a full Attachment.
     eqWrap("shika-nai", "本", null, "読む", "v5m", "本しか読まない");
-    // Order is honoured, not normalised. Where the order does not matter, that
+    // Order is honored, not normalized. Where the order does not matter, that
     // is a reason not to ASK — see isOrderFree — not to reorder the string.
     eqWrap("tari-tari", "読む", "v5m", "行く", "v5k-s", "読んだり行ったりする");
     eqWrap("tari-tari", "行く", "v5k-s", "読む", "v5m", "行ったり読んだりする");

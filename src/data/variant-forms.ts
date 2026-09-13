@@ -233,8 +233,8 @@ const NAME: Readonly<Record<string, string>> = {
  *      月 is the flesh radical on the left. This is the bug this table exists for.
  *
  *   2. FAMILIARITY. The earliest kanji in teaching order is often not the one a
- *      beginner recognises: 亻 derived to 化, and a learner meets 体 (body) long
- *      before they meet 化. So each form points at a common, recognisable kanji it
+ *      beginner recognizes: 亻 derived to 化, and a learner meets 体 (body) long
+ *      before they meet 化. So each form points at a common, recognizable kanji it
  *      genuinely appears in, chosen over the earliest.
  *
  * Covers the 21 SHOWN surface-#1 forms — those whose original is a taught

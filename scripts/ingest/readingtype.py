@@ -17,16 +17,16 @@ rewrites only the `type` field of src/data/generated/readings.json and touches
 nothing else. build.py imports `types_for` and emits the same field on a full
 re-cut, so the two paths cannot disagree.
 
-NORMALISATION MUST MATCH THE ALIGNER
+NORMALIZATION MUST MATCH THE ALIGNER
 ====================================
-`base` in readings.json is the aligner's normalised form — katakana folded to
+`base` in readings.json is the aligner's normalized form — katakana folded to
 hiragana, okurigana after the `.` dropped, leading/trailing `-` stripped. This
 module reuses aligner.clean_kun/kata2hira rather than reimplementing them, or
 イチ would never match いち and every on-reading would come back untyped.
 
 BOTH IS A REAL ANSWER, NOT A TIE TO BREAK
 =========================================
-The normalisation collapses distinct KANJIDIC2 entries: 生 lists せい as ja_on
+The normalization collapses distinct KANJIDIC2 entries: 生 lists せい as ja_on
 and (via い.きる etc.) a family of ja_kun, and 日 has readings that land on the
 same hiragana core from both lists. Picking one silently would state a fact the
 dictionary does not state. `both` is emitted instead and the UI says so.

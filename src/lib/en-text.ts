@@ -7,14 +7,14 @@
 // the strings a card accepts, already expanded, and only has to compare
 // (SAK-380).
 //
-// Everything here is pure and closed over its own tables: normalisation, the
+// Everything here is pure and closed over its own tables: normalization, the
 // parenthetical and comma slicing, the spelled-number digit forms, and the
 // length-scaled typo tolerance. Nothing reads a file.
 //
 // en-match.ts holds what needs the pool: `synonymCandidates`, and the
 // `matchesEnglish` that stacks all four layers together.
 
-/** Case- and whitespace-insensitive normalisation, shared by every comparison
+/** Case- and whitespace-insensitive normalization, shared by every comparison
  * here. Collapses internal runs of whitespace so "one  thing" === "one thing". */
 export function norm(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
@@ -183,7 +183,7 @@ export function digitVariants(fragment: string): string[] {
 }
 
 /**
- * Every normalised candidate one English gloss should accept, exact layer plus
+ * Every normalized candidate one English gloss should accept, exact layer plus
  * layers 1 and 2: the whole gloss, its paren-stripped form, each comma-separated
  * piece of that, and the digit variants of all of those. A Set, deduped.
  */

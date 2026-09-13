@@ -1,4 +1,4 @@
-// Standings: the one status vocabulary every Sky surface shares, so a colour
+// Standings: the one status vocabulary every Sky surface shares, so a color
 // means the same thing on the sky, in the Atlas, in the Planetarium and in
 // Practice. Tracked as SAK-294.
 //
@@ -39,7 +39,7 @@ export const STANDING_ORDER: readonly Standing[] = ["solid", "getting-there", "s
  * How each standing reads and paints. The classes are the `--sky-<standing>`
  * alias tokens in globals.css, so a screen never has to remember that mint
  * means solid. `text` is what a chip's label uses; for "not seen" that is
- * muted, because its dot colour (star-dim) is decorative and sits under the
+ * muted, because its dot color (star-dim) is decorative and sits under the
  * text floor on purpose.
  */
 export const STANDING: Record<Standing, { label: string; dot: string; text: string; border: string; meaning: string }> = {
@@ -57,7 +57,7 @@ export const STANDING: Record<Standing, { label: string; dot: string; text: stri
  * There" (SAK-363). `label` stays lowercase because it is also spoken inside
  * a sentence ("Hide getting there", a coverage bar's read-out); anything that
  * shows the word on its own uses this. CSS `capitalize` was doing it before,
- * and capitalised every word.
+ * and capitalized every word.
  */
 export function standingWord(standing: Standing): string {
   const label = STANDING[standing].label;

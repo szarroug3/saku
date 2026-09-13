@@ -74,7 +74,7 @@ function sec(
 //
 // The ぢ / づ note is also the app explaining its own romaji layer rather than
 // defending it: "ji" and "zi" both reach じ, and "di" is the only way to reach
-// ぢ. That is the standard IME behaviour, and it is only surprising if nobody
+// ぢ. That is the standard IME behavior, and it is only surprising if nobody
 // tells you the two characters genuinely sound the same.
 const NOTES: Record<string, string> = {
   は: 'Normally "ha", but read "wa" when it marks the topic of a sentence: 私は is "watashi wa".',
@@ -121,7 +121,7 @@ export function noteFor(c: string): string | null {
 // for a shape that only varies the way any two people's handwriting varies.
 //
 // Keyed by the hiragana glyph itself. The katakana forms are angular and
-// standardised and do not carry the same split, so they get no entry; the
+// standardized and do not carry the same split, so they get no entry; the
 // look-alike pairs (ソ/ン, シ/ツ) are DIFFERENT characters, not variants of one,
 // and already live in LOOKALIKES.
 const GLYPH_VARIANTS: Record<string, string> = {

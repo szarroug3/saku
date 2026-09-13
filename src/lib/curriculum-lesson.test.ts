@@ -223,7 +223,7 @@ describe("prerequisites lead, at every lesson length", () => {
   }
 });
 
-describe("the lesson length is a setting, and the packing honours it", () => {
+describe("the lesson length is a setting, and the packing honors it", () => {
   for (const range of RANGES) {
     describe(`at range {min:${range.min}, max:${range.max}}`, () => {
       const groups = packLessons(range);
@@ -646,7 +646,7 @@ describe("out-of-order Library claims never corrupt a position (SAK-13)", () => 
     assert.deepEqual(
       lesson.cards.map((c) => c.glyph),
       target.items.slice(1).map((c) => c.glyph),
-      "the item claimed out of order is off the card; its neighbours are not",
+      "the item claimed out of order is off the card; its neighbors are not",
     );
     // The position is the WHOLE group's — unaffected by which item inside it was
     // claimed early, or how long before the lesson was reached the claim happened.
@@ -720,7 +720,7 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
   });
 
   // SAK-52. Before the fix, finishSession claimed a taught session's material
-  // UNCONDITIONALLY (the block above modelled exactly that), and a "Quiz me"
+  // UNCONDITIONALLY (the block above modeled exactly that), and a "Quiz me"
   // run's start-time seen mark was never rolled back by anything but a discard.
   // Together those are the audit's two repros: either door left a batch that
   // was never confirmed known permanently off Learn's frontier. The fix makes
@@ -793,7 +793,7 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
 
     // END WITHOUT MARKING KNOWN: old finishSession claimed `session.teach`
     // (== the whole lesson for a taught session) here, unconditionally — that
-    // write is the one this fix deletes. Modelled by doing nothing further:
+    // write is the one this fix deletes. Modeled by doing nothing further:
     // no claim, and (unlike Quiz me) nothing to roll back either, since a
     // taught session's start never seeded a seen mark to begin with.
     assert.notDeepEqual(
@@ -817,7 +817,7 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
   test("mark known: choosing it claims sessionKnownClaimTarget, which advances the frontier permanently — like case 2, but on purpose", () => {
     const before = nextCurriculumLesson(EMPTY, RANGE)!;
     // The explicit choice claims the taught set via the SAME postClaim
-    // "I already know this" already uses — modelled here exactly as the
+    // "I already know this" already uses — modeled here exactly as the
     // pre-existing "completing keeps the advance" test above models it,
     // because sessionKnownClaimTarget(session) === session.teach whenever
     // teach is non-empty, and a taught session's teach is its whole facts set.

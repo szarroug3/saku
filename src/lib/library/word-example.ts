@@ -4,7 +4,7 @@
 // =================================================
 // The corpus lives in grammar-corpus.json, 1.8 MB, and nothing on the Library
 // entry page imports it today. Indexing it at runtime — however lazily, however
-// well memoised — would put all 1.8 MB into the client bundle of a page that
+// well memoized — would put all 1.8 MB into the client bundle of a page that
 // needs one sentence out of 9,654, on top of the 3 MB of vocab.json it already
 // carries. The build step in scripts/build-word-examples.ts runs the chooser
 // below once, offline, and emits src/data/generated/word-examples.json: the
@@ -108,7 +108,7 @@ export type RankOf = (lemma: string) => number | undefined;
  *           the corpus's own 〜として (to-shite) example — banning it here
  *           only drops it from 英文's word page, not from that recipe's much
  *           larger example pool.
- * These are named, not filtered by a rule: sense drift is a human judgement, and
+ * These are named, not filtered by a rule: sense drift is a human judgment, and
  * a short authored list is the honest tool. See task-20 item 3 for what is left.
  */
 export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> = {

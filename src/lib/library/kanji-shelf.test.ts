@@ -108,7 +108,7 @@ describe("kanjiCuts", () => {
     assert.equal(seen, TOTAL);
   });
 
-  test("grade keeps grade sections, relabelled, with no grade 7", () => {
+  test("grade keeps grade sections, relabeled, with no grade 7", () => {
     const cuts = kanjiCuts("grade");
     assert.deepEqual(
       cuts.map((c) => c.label),

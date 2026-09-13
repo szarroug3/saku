@@ -2,8 +2,8 @@
 //
 // The Built-from UX guard rail. It pins the values the KanjiBuiltFrom box shows
 // against the real etymology join, so a re-cut of the data (or a regression in
-// the variant-form normalisation) fails loudly instead of quietly emptying the
-// feature or mislabelling a piece. These are DATA TABLES, not fragile ifs: every
+// the variant-form normalization) fails loudly instead of quietly emptying the
+// feature or mislabeling a piece. These are DATA TABLES, not fragile ifs: every
 // expectation was read off builtPieces' actual output and pinned.
 
 import assert from "node:assert/strict";
@@ -160,7 +160,7 @@ describe("every jōyō kanji renders a Built-from section", () => {
 });
 
 describe("the on'yomi invariant Sam asked for", () => {
-  // A phonetic piece's reading is the on-reading it lends its host, so a labelled
+  // A phonetic piece's reading is the on-reading it lends its host, so a labeled
   // phonetic piece can ONLY sit on a kanji that HAS an on'yomi. If this ever fails,
   // the phonetic-reading join has started inventing readings on kanji that take
   // none — the exact dishonesty the etymology layer refuses.

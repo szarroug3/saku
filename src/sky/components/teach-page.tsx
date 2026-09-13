@@ -15,7 +15,7 @@ export function Sound({ line }: { line: SoundLine }) {
   return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent">{s.text}</span> : <span key={i}>{s.text}</span>))}</>;
 }
 
-/** A sentence with its parts coloured: the part being taught in the accent,
+/** A sentence with its parts colored: the part being taught in the accent,
  * everything else in the ink (nothing muted: Sam's call, 2026-09-05, the
  * examples were hard to read). */
 export function Parted({ line, className = "" }: { line: PartedSentence; className?: string }) {
@@ -28,7 +28,7 @@ export function Parted({ line, className = "" }: { line: PartedSentence; classNa
   );
 }
 
-/** The parts of a sentence as labelled boxes, in order: the role over the
+/** The parts of a sentence as labeled boxes, in order: the role over the
  * text, the one being taught in the accent. */
 function PartBoxes({ line }: { line: PartedSentence }) {
   const parts = line.filter((run) => run.label);

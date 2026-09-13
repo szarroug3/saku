@@ -64,7 +64,7 @@ export type AnswerStyle = "typed" | "mc";
 
 // ---------- how to ask, by SOURCE (task 30) ----------
 //
-// The "How to ask" panel is organised by the SOURCE of a card, not by an
+// The "How to ask" panel is organized by the SOURCE of a card, not by an
 // abstract direction. Three sources, each a set of multi-select chip rows, and
 // every field is a SET so "ask it both ways" is one selection rather than a
 // mode. Direction is INFERRED from these (see src/lib/ask-forms.ts), which is
@@ -209,7 +209,7 @@ export interface QuizConfig {
    * Clean runs needed to clear a confusion — after this, its old misses stop
    * feeding Patterns, Home's Confusions card, and Weakest 20. Counts only runs
    * that actually contained the pair's characters. Fast learners want this
-   * lower; it is a judgement call, not a fact, so it is yours to set.
+   * lower; it is a judgment call, not a fact, so it is yours to set.
    */
   graduateRuns: number;
 

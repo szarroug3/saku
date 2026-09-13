@@ -194,7 +194,7 @@ const HANDAKUTEN = "゜";
  *
  * So it lives here, on the page about the mechanism it shares, as one call-out
  * that says the thing worth knowing: you will meet these, they are loanwords,
- * recognise them rather than learn them as a set. If the app ever teaches the
+ * recognize them rather than learn them as a set. If the app ever teaches the
  * katakana extension row, this is the sentence that becomes a page.
  */
 const SMALL_VOWEL_NOTE =

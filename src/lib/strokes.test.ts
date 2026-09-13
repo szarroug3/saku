@@ -20,7 +20,7 @@
 //     split exists to protect.
 //
 // The lookup is read straight off the JSON here (the hook that wraps it is React
-// and untestable in this harness, exactly like lesson-prefs); the behaviour that
+// and untestable in this harness, exactly like lesson-prefs); the behavior that
 // matters lives in the data shape, and that is what this checks.
 
 import assert from "node:assert/strict";

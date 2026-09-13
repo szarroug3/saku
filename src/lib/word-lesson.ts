@@ -8,7 +8,7 @@
 // handed the next few teachable ones to a card of its own, with a lock card for
 // the very common case where the best word to teach was behind kanji the learner
 // did not have. That was a second scheduler running beside kanji's over the same
-// climb, and the lock was it apologising for the other one.
+// climb, and the lock was it apologizing for the other one.
 //
 // curriculum-order.ts folded both into ONE order: a word is placed after every
 // kanji it is written with, so "is this teachable yet" is answered by the

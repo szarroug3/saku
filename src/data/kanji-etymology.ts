@@ -13,17 +13,17 @@
 // 明, both 日 and 月 are semantic (sun, moon).
 //
 // This module joins the two. It does NOT replace `comps`; it annotates it. The
-// join is BY GLYPH, normalising the radical/variant forms so KanjiVG's 氵 meets
+// join is BY GLYPH, normalizing the radical/variant forms so KanjiVG's 氵 meets
 // Wiktionary's 水 and KanjiVG's flesh 月 meets Wiktionary's 肉/⺼. A shape piece
-// is labelled ONLY when it matches a Wiktionary component — the discipline this
-// whole codebase keeps: an unmatched piece is left unlabelled, never guessed.
+// is labeled ONLY when it matches a Wiktionary component — the discipline this
+// whole codebase keeps: an unmatched piece is left unlabeled, never guessed.
 //
 // The 服 case is the reason that rule is load-bearing. Wiktionary derives 服
 // from 凡 + 𠬝; its visible 月 is a late corruption of 舟, matching NEITHER
 // component. So 服's 月 gets no label here — the honest answer — rather than
-// being mislabelled "flesh" because a 月 happens to be on the page.
+// being mislabeled "flesh" because a 月 happens to be on the page.
 //
-// LICENCE: the DATA (generated/kanji-etymology.json) is CC BY-SA, derived from
+// LICENSE: the DATA (generated/kanji-etymology.json) is CC BY-SA, derived from
 // Wiktionary. This CODE is MIT like the rest of src/. See src/data/attribution.ts.
 
 import { readDataJson } from "@/lib/data-file";
@@ -180,8 +180,8 @@ export function etymologyOf(kanji: string): KanjiEtymology | undefined {
 /**
  * The role of each of a kanji's KanjiVG shape pieces, in the order `comps` lists
  * them. An entry is null when that piece did not match any Wiktionary component
- * (or matched one whose role Wiktionary leaves unstated) — the unlabelled pieces
- * the brief insists stay unlabelled rather than be guessed.
+ * (or matched one whose role Wiktionary leaves unstated) — the unlabeled pieces
+ * the brief insists stay unlabeled rather than be guessed.
  *
  * Matching is by canonical glyph, each Wiktionary component consumed at most
  * once so repeated pieces (林 = 木 + 木) each claim their own.
@@ -204,7 +204,7 @@ export function builtFromRoles(kanji: string): readonly (PieceRole | null)[] {
     const hit = remaining.find((r) => !r.used && r.canon === pc);
     if (!hit) return null;
     hit.used = true;
-    if (hit.fn === null) return null; // matched, but role unknown → leave unlabelled
+    if (hit.fn === null) return null; // matched, but role unknown → leave unlabeled
     return { piece, function: hit.fn, sense: hit.sense, matched: hit.canon };
   });
 }
@@ -299,7 +299,7 @@ const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly EtymologyPiece[]>>
  * component at most once and is 1:1 with the visible `comps`. That under-counts
  * a component Wiktionary records N times but that KanjiVG DRAWS with fewer top
  * pieces because copies are nested inside one shape: 森 = 木·木·木 in Wiktionary,
- * but drawn 木 + 林 (林 itself two 木), so two of the trees would go unlabelled
+ * but drawn 木 + 林 (林 itself two 木), so two of the trees would go unlabeled
  * and be dropped, leaving a lone 木. Here, for an unmatched visible piece that
  * itself decomposes (林 → 木 + 木), if EVERY one of its sub-pieces can claim a
  * still-unconsumed component of THIS host, the sub-pieces are drawn with those
@@ -307,7 +307,7 @@ const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly EtymologyPiece[]>>
  * components — never a guess: if any sub-piece finds no leftover component to
  * claim, the whole piece stays dropped, exactly as before (林's own two 木 both
  * match directly and never take this path; 嘆's coincidental 口 inside its
- * phonetic body is atomic, finds no container to expand, and stays unlabelled).
+ * phonetic body is atomic, finds no container to expand, and stays unlabeled).
  */
 export function builtPieces(kanji: string): readonly EtymologyPiece[] {
   const override = BUILT_PIECES_OVERRIDE[kanji];

@@ -132,7 +132,7 @@ describe("no recipe is served a vehicle it forbids", () => {
     // see vehicles.ts's MAX_POOL_PER_CLASS) rather than hand-typed one or two
     // per class, so the transitive share of that much larger pool is much
     // larger too — a pattern narrowed to one or two vehicles would be a
-    // pattern that cannot be practised, and the number is asserted rather
+    // pattern that cannot be practiced, and the number is asserted rather
     // than assumed so a future pool change that quietly starves this pattern
     // fails here, loudly, instead of shipping unnoticed.
     assert.equal(dealt.length, 136);

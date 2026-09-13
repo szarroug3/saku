@@ -10,7 +10,7 @@
 // defaults to seed a config — and by importing them from those modules it
 // dragged the whole ~3.6 MB kanji+vocab payload into the eager client bundle on
 // every route. Splitting the pure knobs out cuts that edge; the lesson modules
-// re-export them so their own call sites are unchanged. No behaviour changes.
+// re-export them so their own call sites are unchanged. No behavior changes.
 
 /**
  * How long a kanji lesson should be, in draw+assembly cost — the two numbers

@@ -1,5 +1,5 @@
 // A pretend learner with a real-shaped history, for the dev pages: dozens
-// of kana, kanji and words in every standing, so every colour shows on the
+// of kana, kanji and words in every standing, so every color shows on the
 // bars, plus a few recorded mix-ups. Built with the app's own record shapes
 // (claims, fact aggregates with recent runs, quiz sessions with confusions),
 // so the adapter treats it exactly like a real history file.

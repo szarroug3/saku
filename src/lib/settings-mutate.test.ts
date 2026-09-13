@@ -40,7 +40,7 @@ const cfg = (mode: string) => ({ mode }) as unknown as QuizConfig;
  * first row, only if none exists yet). `onRead` fires ONCE, right after a read
  * snapshots the state and before it returns — the hook a test uses to run a
  * competing writer "in between", which is how a real overlap is reproduced
- * deterministically. Modelled on lists-mutate.test.ts's CasStore.
+ * deterministically. Modeled on lists-mutate.test.ts's CasStore.
  */
 class CasStore implements SettingsStore {
   state: { settings: SettingsFile; version: string | null; exists: boolean };

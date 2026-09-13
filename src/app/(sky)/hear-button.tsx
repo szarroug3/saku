@@ -13,7 +13,7 @@
 // configured voice, so it doesn't need this either): omit it and get the
 // configured voice.
 //
-// ONE LOOK, EVERYWHERE. A bare accent-coloured speaker glyph, no pill/border:
+// ONE LOOK, EVERYWHERE. A bare accent-colored speaker glyph, no pill/border:
 // a dense list and an entry page used to render two different chips for the
 // same action, and a learner shouldn't have to notice a shape change to know
 // it's the same button.
@@ -51,7 +51,7 @@ import { DEFAULT_VOICE_ID, pitchApiUrl } from "@/lib/voice";
 
 /** The "hear the sound" speaker, as crisp inline SVG rather than the 🔊 emoji.
  *
- * `currentColor` so it takes the text colour of whatever it sits in, and a
+ * `currentColor` so it takes the text color of whatever it sits in, and a
  * `className` so each call site sizes it. Default ~1.05em reads a touch larger
  * and clearer than the old glyph, especially small. `aria-hidden` because every
  * call site already carries its own accessible label or "Hear it" text; the

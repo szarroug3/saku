@@ -82,7 +82,7 @@
 // back "the S row" because you dropped し would re-teach two things you still
 // know, and grouping the backlog would put a fact you lost in March behind
 // however many groups happen to sort before it. So the lost bucket keeps
-// exactly the behaviour it had — every lost fact, in candidate order, taught on
+// exactly the behavior it had — every lost fact, in candidate order, taught on
 // its own account. Only the new tail is grouped.
 //
 // The split is `lastTested`, and it is not a new question the model has to
@@ -287,7 +287,7 @@ export interface PlanQuery {
    * order since before there was a budget to read them).
    *
    * Absent = ungrouped, and every fact with no evidence is fair game. That is
-   * the old behaviour, kept for a caller with no curriculum to offer rather
+   * the old behavior, kept for a caller with no curriculum to offer rather
    * than for compatibility.
    */
   groups?: readonly (readonly FactId[])[];
@@ -321,7 +321,7 @@ export interface PlanQuery {
    * those siblings are invisible to this file's ranking and to the
    * `random` shuffle: a length cap or an unlucky shuffle can show you one
    * host's fact and never the other, even when both are due. Absent =
-   * "this pool has no such grouping", the old behaviour, unchanged.
+   * "this pool has no such grouping", the old behavior, unchanged.
    *
    * budget.ts does not know or care what a "recipe" or a "host" IS — see
    * src/lib/grammar/host-group.ts, which supplies the grammar-subject
@@ -430,7 +430,7 @@ export function planSession(query: PlanQuery): SessionPlan {
   }
 
   // Unlimited: everything that isn't quiet — except that "unlimited" was never
-  // a licence to hand over the whole curriculum at once. It caps the ASKING,
+  // a license to hand over the whole curriculum at once. It caps the ASKING,
   // and the lesson was already one group before it got here.
   if (length === null) {
     const probe = rank({ facts: probeCandidates }, now);

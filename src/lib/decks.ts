@@ -27,7 +27,7 @@
 //
 // The basic/extended split is PURE KANA — `isExtendedSection` regex-matches
 // section labels for Dakuten/Handakuten/Combo. It is left working for kana and
-// deliberately not generalised: what "extended" means for kanji or vocabulary
+// deliberately not generalized: what "extended" means for kanji or vocabulary
 // is unknown, and inventing an answer now would just have to be undone.
 //
 // Pure by contract: no React, no DOM, no fetch. Home renders these; it does
@@ -209,7 +209,7 @@ export interface Confusions {
   /** The facts to drill — every fact of every entry across `pairs`. */
   facts: FactId[];
   /** True when these are MEASURED mix-ups; false when they're the day-one
-   * LOOKALIKES fallback, which must be labelled "common lookalikes" rather
+   * LOOKALIKES fallback, which must be labeled "common lookalikes" rather
    * than claiming a count the user never produced. */
   fromHistory: boolean;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-// The Atlas's grid: a tile per entry, the glyph in its standing's colour
+// The Atlas's grid: a tile per entry, the glyph in its standing's color
 // with the meaning under it (no constellation: the Atlas is a grid to
 // scan), in cuts that mount their tiles only as they scroll into view, so
 // a shelf of twelve thousand words costs nothing until it is reached.

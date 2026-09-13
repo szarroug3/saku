@@ -2,7 +2,7 @@
 //
 // 先生 is not "せんせい". It is 先 saying せん and 生 saying せい, and the whole
 // point of the word page is that you can SEE that — because the moment you can,
-// 先 and 生 stop being shapes you memorised and start being things you can read
+// 先 and 生 stop being shapes you memorized and start being things you can read
 // a new word with. This module is the split, and the one claim the app is
 // willing to make about it.
 //
@@ -65,7 +65,7 @@ export type WordPiece =
        * Whether this run is the okurigana — the kana AFTER the last kanji.
        *
        * ONLY THE TRAILING RUN. お in お客様 is a polite prefix and っ in 引っ越す
-       * sits between two kanji; neither is okurigana, and labelling them so would
+       * sits between two kanji; neither is okurigana, and labeling them so would
        * teach a false rule about a word the learner is looking at. Those render
        * as plain kana with no claim attached, which is honest and costs nothing.
        *
@@ -155,7 +155,7 @@ function buildReadingTypes(): Map<string, "on" | "kun" | "both"> {
  * is usually read with both characters' borrowed Chinese sounds, and a kanji
  * standing alone or with a kana tail is usually read with its native Japanese
  * one. Once you have seen that stated over 先生, you have a guess for the next
- * compound you meet — which is the difference between memorising words and
+ * compound you meet — which is the difference between memorizing words and
  * reading them.
  *
  * KEYED ON THE BASE READING, NOT THE SURFACE — and this is the correction to the

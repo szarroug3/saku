@@ -45,7 +45,7 @@ interface CounterGroup {
 // The object counters (本, 匹, 枚, and the tail) are no longer rote-form sections:
 // each is a generative CATEGORY whose "How to build them" page (below) carries the
 // rule, so tiling 一本…十本 would only repeat what the page generates. The group
-// that remains is the MEMORISED material a page cannot build: the native 〜つ
+// that remains is the MEMORIZED material a page cannot build: the native 〜つ
 // escape hatch and the Sino numbers 1-10.
 //
 // SAK-172: 二十歳/はたち used to have its own "tail" tile group here (phase===3,

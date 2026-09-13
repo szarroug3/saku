@@ -3,7 +3,7 @@
 //
 // The LIVE seam for #51: a grammar MEANING fact asked as a fill-the-blank
 // SELECTION item. The generator (lib/grammar/questions.ts) and the card
-// normaliser (lib/grammar/mc.ts) already had their own tests and were reached
+// normalizer (lib/grammar/mc.ts) already had their own tests and were reached
 // by nothing; these drive the seam the DRILL calls — roll a showing, render the
 // prompt, label the options, grade a click, fold the session — because that is
 // where "it generates fine" and "it scores the right thing" are different
@@ -52,7 +52,7 @@ function seeded(seed: number): () => number {
  * otherwise every assertion here would pass vacuously on `null`. Claims rather
  * than fabricated session aggregates, because that is the cheapest record that
  * makes `effectiveState` say "known", and because it double-books as proof the
- * gate honours claims. The gate's own behaviour is tested in
+ * gate honors claims. The gate's own behavior is tested in
  * lib/grammar/readable.test.ts; here it is only being got out of the way.
  */
 /** A learner at the very beginning: nothing known, so the gate admits nothing. */
@@ -206,7 +206,7 @@ function labelOf(fact: FactId, dir: "jp2en" | "en2jp"): string {
 }
 
 describe("the fixed meaning card is a real question in both directions", () => {
-  /** Patterns worth sweeping: the one from the bug report, its 〜て neighbours,
+  /** Patterns worth sweeping: the one from the bug report, its 〜て neighbors,
    * and a spread of the rest. */
   const SWEEP = RECIPES.map((r) => patternMeaningFactId(r.id));
 
@@ -359,7 +359,7 @@ describe("answering moves the MEANING fact and nothing else", () => {
 
   test("the fact a selection answer moves is exactly patternMeaningFactId", () => {
     // Stated as an identity rather than inferred from a fold, because this is
-    // the modelling decision the whole task turns on.
+    // the modeling decision the whole task turns on.
     const sel = grammarSelectionFor(TE_KARA_MEANING, OMNISCIENT, seeded(7));
     assert.ok(sel);
     assert.equal(TE_KARA_MEANING, patternMeaningFactId(TE_KARA));

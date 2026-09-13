@@ -11,7 +11,7 @@
 //             quizzed on, by any of the facts that define it as known
 //   standing  the app's own word for the entry (src/lib/library/standing.ts).
 //             An entry with several facts gets the WORST of them, since a
-//             star needs one colour and "4 need work" is not a colour; the
+//             star needs one color and "4 need work" is not a color; the
 //             Library's refusal to pool stands there, this is the sky's rule
 //   items     every met entry, plus every part under it (met or not), so a
 //             constellation can be drawn whole
@@ -42,7 +42,7 @@ import type { HistoryFile } from "@/types/store";
 
 const GRADUATE_RUNS = 10;
 
-/** Worst first: the colour a multi-fact entry's star wears. */
+/** Worst first: the color a multi-fact entry's star wears. */
 const WORST: readonly AppStanding[] = ["slipping", "shaky", "getting-there", "claimed", "solid", "not-seen"];
 
 const KIND: Partial<Record<string, SkyKind>> = { [KANA_SUBJECT]: "kana", [RADICAL_SUBJECT]: "radical", [PRIMITIVE_SUBJECT]: "radical", [KANJI_SUBJECT]: "kanji", [VOCAB_SUBJECT]: "word" };

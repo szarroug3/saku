@@ -3,7 +3,7 @@
 // WHAT THIS IS, AND WHY IT IS ONE PAGE PER CATEGORY
 // ================================================
 // Past ten, and at every counter, a Japanese number is built rather than
-// memorised: a digit in front of じゅう, a digit in front of ひゃく, a number in
+// memorized: a digit in front of じゅう, a digit in front of ひゃく, a number in
 // front of 〜本. Each of those rules is its own thing to learn, so each gets its
 // own reference page — the tens, the big base words, and one page per counter —
 // exactly the way a lesson's rule cards are separate cards rather than one wall
@@ -113,7 +113,7 @@ function numberKanji(n: number): string {
 }
 
 /** One counter's whole page metadata: the glyph, the name, what it counts (for
- * the gloss), and its authored sound-behaviour paragraph(s). The attach
+ * the gloss), and its authored sound-behavior paragraph(s). The attach
  * paragraph and the example table are generated; the sound note is the copy. */
 interface CounterSpec {
   readonly kind: CounterKind;
@@ -123,7 +123,7 @@ interface CounterSpec {
   /** What one of them is, and what many of them are — the first column's noun
    * ("1 person" / "3 people", "1 long thin object" / "3 long thin objects"). */
   readonly noun: readonly [singular: string, plural: string];
-  /** The sound-behaviour paragraph(s), authored per counter. */
+  /** The sound-behavior paragraph(s), authored per counter. */
   readonly sound: readonly IntroPara[];
   /** Override the generated "how it attaches" paragraph (people, whose low
    * counts are irregular and cannot be shown as the plain rule). */
@@ -439,7 +439,7 @@ const TENS_GROUPS: readonly IntroCountGroup[] = [
 // (割 階 円), then SAK-171's 〜時 — none of which is an object counter, so none
 // belongs in SYSTEM_COUNTERS/TAIL_COUNTERS (counters.ts), but each gets the
 // identical rule-card-then-round treatment. 〜つ is deliberately absent: it is
-// native memorisation (ひとつ…とお), not a generative construction, so there is
+// native memorization (ひとつ…とお), not a generative construction, so there is
 // no rule to show and no round to launch.
 /** 二十歳's real shipped CounterForm (counters.ts's COUNTER_CURRICULUM/TAIL),
  * read once here so the sai spec below and extraIrregularRow never re-spell
@@ -773,7 +773,7 @@ export function numberConstructionRow(id: string): NumberConstruction | undefine
   return BY_ID.get(id);
 }
 
-// SAK-172: numberConstructionForCounterGlyph (SAK-35) used to let a memorised
+// SAK-172: numberConstructionForCounterGlyph (SAK-35) used to let a memorized
 // counted form's own standalone page (二十歳) link OUT to its counter's
 // construction page (〜歳), which already explained はたち's irregularity in
 // prose. That gap is closed differently now: はたち is a genuine Irregular row

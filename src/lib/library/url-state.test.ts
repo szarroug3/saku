@@ -104,7 +104,7 @@ describe("kindsFromParams — the Kind dropdown's checked set", () => {
     assert.ok(!got.has(KANA_SUBJECT));
   });
 
-  test("an unrecognised token in an otherwise-real list is dropped, not fatal", () => {
+  test("an unrecognized token in an otherwise-real list is dropped, not fatal", () => {
     const got = kindsFromParams(params("?kind=kanji,banana"));
     assert.equal(got.size, 1);
     assert.ok(got.has(KANJI_SUBJECT));
@@ -203,7 +203,7 @@ describe("libraryUrl", () => {
     assert.equal(queryFromParams(params(search)), "a&kind=kanji");
   });
 
-  test("every kind serialises in KINDS order, not selection order", () => {
+  test("every kind serializes in KINDS order, not selection order", () => {
     const url = libraryUrl({
       kinds: new Set([VOCAB_SUBJECT, KANA_SUBJECT]),
       query: "",
@@ -310,7 +310,7 @@ describe("statesFromParams — the Status dropdown's checked set", () => {
     assert.equal(got.size, 0);
   });
 
-  test("a hostile or all-unrecognised value falls back to no status checked, same as absent", () => {
+  test("a hostile or all-unrecognized value falls back to no status checked, same as absent", () => {
     assert.ok(isNoStateFilter(statesFromParams(params("?state=KNOWN"))));
     assert.ok(isNoStateFilter(statesFromParams(params("?state=banana"))));
     assert.ok(isNoStateFilter(statesFromParams(params("?state=__proto__"))));

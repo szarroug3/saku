@@ -12,8 +12,8 @@
 // That is why this file is data and not lessons. The app's job, in the user's
 // own words, is to hand you the inventory, not the taste:
 //
-//   "i don't need the app to teach me judgement. i need it to give me the
-//    skills to make judgement calls. the judgement part comes from experience."
+//   "i don't need the app to teach me judgment. i need it to give me the
+//    skills to make judgment calls. the judgment part comes from experience."
 //
 // So: `gloss` is a terse functional label, never an explanation. "after doing
 // X", not a paragraph about when あとで feels more final than てから. Feel is
@@ -58,7 +58,7 @@ import type { Form, WordClass } from "../../lib/conjugate/index.ts";
 
 /** JLPT level, as vendors reckon it. See the header: this is opinion, not fact.
  *
- * N3 is the DEPTH TIER. A learner who finishes N5+N4 recognises enormously and
+ * N3 is the DEPTH TIER. A learner who finishes N5+N4 recognizes enormously and
  * then hits the N3 wall — the structural grammar that real Japanese leans on
  * (〜わけだ, 〜に違いない, 〜において, the clause-level set). Most of it does NOT
  * fit the conjugate-a-vehicle production machinery: it hangs off a whole CLAUSE,
@@ -223,7 +223,7 @@ export interface Recipe {
  * Whether a verb is done TO something, or just happens.
  *
  * Named the way JMdict names it because it is JMdict's tag being carried, not a
- * new judgement. On screen it is never this word — see `TRANSITIVE_SLOT` in
+ * new judgment. On screen it is never this word — see `TRANSITIVE_SLOT` in
  * lib/grammar/formula.ts and `INTRANSITIVE_NOTE` in lib/word-forms.ts, which
  * both say it in the words a learner has.
  */
@@ -1028,7 +1028,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     // The stem itself — the connecting base — taught before the stem-patterns.
     // It has no standalone written shape (it "holds the verb ready"), so its glyph
-    // is a labelled placeholder; the build table carries the real forms (かき,
+    // is a labeled placeholder; the build table carries the real forms (かき,
     // たべ). Bare form, add "": its production is "make the stem".
     id: "stem-form",
     pattern: "〜(stem)",
@@ -1590,7 +1590,7 @@ export const RECIPES: readonly Recipe[] = [
   // =========================================================================
   // N3 — PAST THE N4 WALL.
   //
-  // A learner who finishes N5+N4 recognises enormously and then cannot read
+  // A learner who finishes N5+N4 recognizes enormously and then cannot read
   // real Japanese, and the wall is the N3 STRUCTURAL SET. Almost all of it is
   // RECOGNITION, not production, and the reason is structural, not editorial:
   // these patterns attach to a whole CLAUSE (行く + わけだ, 高い + に違いない),

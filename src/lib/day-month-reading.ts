@@ -1,6 +1,6 @@
 // day-month-reading.ts — the pure kana-reading engine for day-of-month (〜日)
 // and month-of-year (〜月). Originally SAK-163 round-2's "how it's built"
-// engine for a closed, memorised set; round 4 promotes day/month to a
+// engine for a closed, memorized set; round 4 promotes day/month to a
 // GENERATIVE category (one rule card, then a rolled round — see
 // counter-categories.ts and the "SAK-163 round 4" note below), and this
 // engine is now what number-quiz.ts rolls its counts through, exactly the
@@ -42,10 +42,10 @@
 //
 // THE RULE, AND THE EXCEPTIONS — VERIFIED AGAINST THE SHIPPED DATA
 // ====================================================================
-// DAYS: 1st-10th are memorised outright (ついたち…とおか), no rule — the same
+// DAYS: 1st-10th are memorized outright (ついたち…とおか), no rule — the same
 // treatment 〜つ's ひとつ…とお gets. 11th and up is the plain number plus にち,
 // EXCEPT:
-//   - 14th and 24th reuse the native よっか (the 4th's own memorised word)
+//   - 14th and 24th reuse the native よっか (the 4th's own memorized word)
 //     instead of よん/し + にち: 十四日 is じゅうよっか, not じゅうよんにち.
 //   - 20th is its own suppletive word, はつか, unrelated to にじゅう + か.
 //   - 17th, 19th, 27th and 29th still end in にち, but the ones digit switches
@@ -57,7 +57,7 @@
 // (and counters.test.ts's own pinned expectations) also read 17/19/27/29 with
 // the branch digit, exactly the way MONTHS reads 7月 as しちがつ rather than
 // なながつ. That is a genuine third exception SHAPE (branch-digit substitution),
-// distinct from both the memorised 1st-10th tier and the よっか/はつか
+// distinct from both the memorized 1st-10th tier and the よっか/はつか
 // suppletions, and this file names it rather than silently mis-deriving those
 // four readings.
 //
@@ -70,7 +70,7 @@ import { numberReading, ONES_BRANCH } from "./number-reading";
 
 /** One piece of a day/month reading's build — a run of kana, annotated with the
  * integer it represents when it is a number piece (absent for a fixed suffix
- * such as にち/がつ, or for a whole memorised word). Mirrors phase-intros.ts's
+ * such as にち/がつ, or for a whole memorized word). Mirrors phase-intros.ts's
  * CountBuildPiece shape (kana + optional numeric value) so
  * day-month-construction.ts can turn these straight into CountBuildPiece rows
  * with no re-shaping. */
@@ -79,7 +79,7 @@ export interface DayMonthPart {
   readonly value?: number;
 }
 
-/** The 1st through the 10th, memorised outright — no rule, the same shape as
+/** The 1st through the 10th, memorized outright — no rule, the same shape as
  * 〜つ's ひとつ…とお. Sourced to match counters.ts's DAYS 1-10 verbatim; kept
  * here (not imported from there) because this file must stay a plain reading
  * ENGINE with no data-file dependency, the same discipline number-reading.ts
@@ -101,7 +101,7 @@ const DAY_MEMORIZED: Readonly<Record<number, string>> = {
 /**
  * The build pieces of day n's reading (1-31), or null out of range.
  *
- * A single-piece result (n ≤ 10, or n === 20) is a whole memorised/suppletive
+ * A single-piece result (n ≤ 10, or n === 20) is a whole memorized/suppletive
  * word — there is no additive equation to show, the same "no build" treatment
  * counterRow gives 〜人's ひとり/ふたり/よにん. A two-piece result is the tens
  * part (annotated with its own value) plus a suffix piece: よっか for the two
@@ -135,7 +135,7 @@ export function dayReading(n: number): string | null {
 
 /**
  * Does day n (11-31) break the plain "[number] + にち" rule? False for the
- * 1st-10th (n ≤ 10): they are a memorised TIER, not exceptions to a rule that
+ * 1st-10th (n ≤ 10): they are a memorized TIER, not exceptions to a rule that
  * was never in force for them (the same reason 〜つ's ひとつ…とお carries no
  * "irregular" flag of its own). True for the three exception shapes named
  * above: 14/24 (よっか), 20 (はつか), and 17/19/27/29 (branch digit).
@@ -185,7 +185,7 @@ export function isMonthException(n: number): boolean {
  *
  * Unlike a sound-shifting counter (〜本 ↔ じゅっぽん/じっぽん), a day-of-month
  * reading carries no spelling alternate — every one of the three exception
- * shapes (the memorised 1st-10th, the よっか reuse at 14/24, はつか at 20, and
+ * shapes (the memorized 1st-10th, the よっか reuse at 14/24, はつか at 20, and
  * the branch digit at 17/19/27/29) is idiomatically fixed, and a plain -にち
  * count has no branch digit left to alternate (4/7/9 are already the
  * exceptions that consume it). So this is always the single canonical

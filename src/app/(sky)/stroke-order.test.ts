@@ -34,7 +34,7 @@
 //  1. THE GENERAL INVARIANT: every `@keyframes NAME` in globals.css is
 //     referenced from somewhere ELSE in globals.css, by an `animation:` /
 //     `animation-name:` declaration, or an `--animate-*` theme token. This is
-//     the one that generalises: it fails for ANY future keyframes wired up only
+//     the one that generalizes: it fails for ANY future keyframes wired up only
 //     from a JS style string, not just this one.
 //  2. The specific wiring for the draw-along still holds end to end: the
 //     keyframes exist, a `--animate-kvg-draw` token names them, and

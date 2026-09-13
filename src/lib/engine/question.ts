@@ -172,7 +172,7 @@ export interface PromptContext {
    * answer unique for any legal vehicle, so the drill picks one and grades by
    * re-running the recipe on it. Every subject but grammar ignores it, and a
    * grammar showing with none omits it and gets the fixed vehicle baked in the
-   * fact (行く) — the pre-variety behaviour, unchanged.
+   * fact (行く) — the pre-variety behavior, unchanged.
    */
   grammarVehicle?: GrammarVehicle;
   /**
@@ -518,7 +518,7 @@ function englishKey(answers: readonly string[]): AnswerKey {
     const n = norm(a);
     if (n) loose.add(n);
   }
-  // exact-only, never fuzzed: the pool is compared against a normalised
+  // exact-only, never fuzzed: the pool is compared against a normalized
   // answer by `.has`, so its entries go in as they are
   for (const syn of synonymCandidates(answers)) loose.add(syn);
   const typo = new Set<string>();
@@ -688,7 +688,7 @@ const kanaQuestions: QuestionType = {
   // alike, same GOJŪON ROW (`sec`) outranks the rest of the same script —
   // the fallback order the ticket asks for. An unseen lookalike still beats
   // the untouched same-set fill, preserving the old "shape signal always
-  // shown" behaviour for a brand-new learner with nothing known yet, whose
+  // shown" behavior for a brand-new learner with nothing known yet, whose
   // board should look close to what it always did (same-row, then same-set).
   //
   // SAK-186: LOOKALIKES used to also pair か with カ, や with ヤ, and six more
@@ -845,7 +845,7 @@ const kanjiQuestions: QuestionType = {
         // No sub-label. The whole question — "which character is 亻 a form of" —
         // rides in the ONE instruction line the card already shows (see the
         // variant branch in drill-screen.tsx), the way the grammar form-name was
-        // folded in and its grey sub-label dropped. A second grey line under the
+        // folded in and its gray sub-label dropped. A second gray line under the
         // instruction only repeated it.
         context: null,
         hint: null,
@@ -1101,11 +1101,11 @@ const wordQuestions: QuestionType = {
     return null;
   },
   distractors(fact, n) {
-    // A word has no confusable table, but it has neighbours: the other everyday
+    // A word has no confusable table, but it has neighbors: the other everyday
     // words at a similar level. Ordered by nearness in beginnerRank — so an
     // option is a word the learner is about as likely to know — then by a
     // similar written length, so it is not eliminable on shape alone. Each
-    // neighbour contributes the SAME KIND of fact as the one asked: a reading
+    // neighbor contributes the SAME KIND of fact as the one asked: a reading
     // question gets other readings (kana), a meaning question other glosses
     // (English). buildMcOptions drops any that share the answer, so two words
     // that gloss or read alike can never both sit on the board.
@@ -1129,7 +1129,7 @@ const wordQuestions: QuestionType = {
 };
 
 /** Every word in rank order, with its place in VOCAB, built once: the
- * neighbours of a word are found by walking out from it, not by sorting
+ * neighbors of a word are found by walking out from it, not by sorting
  * the whole vocabulary around it for every card (2 ms a card, and a deck
  * of twenty is forty; SAK-382). */
 let byRank: readonly { w: VocabRow; idx: number }[] | undefined;
@@ -1414,7 +1414,7 @@ export function scriptMismatch(
  *
  * Returns the ctx vehicle only when it actually builds on this recipe; anything
  * else (no ctx, an illegal pick, a re-cut of the data) collapses to null, and
- * every method below then falls back to the exact pre-variety behaviour —
+ * every method below then falls back to the exact pre-variety behavior —
  * glyph 行く, the fact's baked answers, the same-lemma distractors. So variety
  * is strictly additive: absent a legal vehicle, this file behaves as it did.
  */
@@ -1679,7 +1679,7 @@ const grammarQuestions: QuestionType = {
     // The HOST goes in the halo, because the blank swallowed the conjugated verb
     // and without its dictionary form the item is unanswerable rather than hard
     // — and because a whole sentence in the halo would shrink to the 15px floor
-    // and overflow the ring (see glyph-fit.ts). The frame is one short centred
+    // and overflow the ring (see glyph-fit.ts). The frame is one short centered
     // line, which is exactly what `context` already is; the English is the
     // second one. Nothing new gets invented: same halo, same option buttons.
     const sel = selectionShowing(fact, ctx);
@@ -1694,7 +1694,7 @@ const grammarQuestions: QuestionType = {
         note: sel.en,
       };
     }
-    // A meaning fact (or an unrecognised grammar fact) asked the FIXED way, and
+    // A meaning fact (or an unrecognized grammar fact) asked the FIXED way, and
     // the direction is not decoration here — it decides which half of the pair
     // is the question.
     //
@@ -1999,7 +1999,7 @@ const transitivityQuestions: QuestionType = {
 };
 
 /**
- * Keigo: RECOGNISE a politeness form — shown the honorific or humble verb, pick
+ * Keigo: RECOGNIZE a politeness form — shown the honorific or humble verb, pick
  * what it means and which register it is.
  *
  * RECOGNITION, NOT PRODUCTION, and that is the whole shape. The prompt is the

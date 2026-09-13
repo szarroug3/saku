@@ -3,14 +3,14 @@
 // and the Milky Way field), the same as the editor's Save used to.
 //
 // Reads the knobs from src/app/sky-wash.css, renders the same layers the CSS
-// would (ellipse radii, angled lines, premultiplied colour stops), dithers so
+// would (ellipse radii, angled lines, premultiplied color stops), dithers so
 // an 8-bit PNG shows no banding, and writes a 1600x900 RGB image. The dev
 // pages' wash switch shows it as "baked bitmap": the stardust tile drawn over
 // this image with background-size: cover. Re-run after editing the knobs:
 //
 //   npm run bake:sky
 //
-// Why a bitmap: CSS gradients are re-rasterised on every resize; a bitmap is
+// Why a bitmap: CSS gradients are re-rasterized on every resize; a bitmap is
 // decoded once and scaled by the GPU. Gradients have no fine detail, so a
 // 1600px image scaled to any viewport looks the same as the live CSS.
 //
@@ -48,14 +48,14 @@ const resolve = (v, d = 0) => {
   return /var\(--sky-/.test(out) ? resolve(out, d + 1) : out;
 };
 const splitTop = (s) => { const out = []; let depth = 0, cur = ""; for (const ch of s) { if (ch === "(") depth++; if (ch === ")") depth--; if (ch === "," && depth === 0) { out.push(cur.trim()); cur = ""; } else cur += ch; } out.push(cur.trim()); return out.filter(Boolean); };
-const colour = (s) => {
+const color = (s) => {
   s = s.trim();
   if (s === "transparent") return [0, 0, 0, 0];
   let m = /^#([0-9a-f]{6})$/i.exec(s); if (m) return [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16), 1];
   m = /^rgba?\(([^)]+)\)$/.exec(s); if (m) { const p = m[1].split(/[\s,\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; }
-  throw new Error("colour: " + s);
+  throw new Error("color: " + s);
 };
-const parseStops = (parts) => parts.map((p) => { const m = /^(.+?)\s+([\d.]+)%$/.exec(p.trim()); if (!m) throw new Error("stop: " + p); return { c: colour(m[1]), t: Number(m[2]) / 100 }; });
+const parseStops = (parts) => parts.map((p) => { const m = /^(.+?)\s+([\d.]+)%$/.exec(p.trim()); if (!m) throw new Error("stop: " + p); return { c: color(m[1]), t: Number(m[2]) / 100 }; });
 const parseLayer = (layer) => {
   let m = /^radial-gradient\(\s*([\d.]+)%\s+([\d.]+)%\s+at\s+([\d.]+)%\s+([\d.]+)%\s*,([\s\S]*)\)$/.exec(layer);
   if (m) return { kind: "radial", rx: (Number(m[1]) / 100) * W, ry: (Number(m[2]) / 100) * H, cx: (Number(m[3]) / 100) * W, cy: (Number(m[4]) / 100) * H, stops: parseStops(splitTop(m[5])) };
@@ -65,7 +65,7 @@ const parseLayer = (layer) => {
 };
 const layerList = resolve(tokens.get("mesh-layers"));
 const layers = [...(layerList.trim() === "none" ? [] : splitTop(layerList)), resolve(tokens.get("sweep"))].map(parseLayer);
-// colour at t along a stop list, interpolated premultiplied the way CSS does
+// color at t along a stop list, interpolated premultiplied the way CSS does
 const sample = (stops, t) => {
   if (t <= stops[0].t) return stops[0].c;
   for (let i = 1; i < stops.length; i++) {

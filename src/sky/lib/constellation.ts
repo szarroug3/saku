@@ -2,11 +2,11 @@
 // so a word looks the same on every screen. Tracked as SAK-296.
 //
 // Takes the graph's shape (src/sky/lib/graph.ts: every node once, its depth,
-// every edge) and gives back normalised positions in a unit box: the root at
-// the centre, its parts on a ring around it, their parts fanned out beyond,
+// every edge) and gives back normalized positions in a unit box: the root at
+// the center, its parts on a ring around it, their parts fanned out beyond,
 // and a shared piece placed once, between the parents that share it, with a
 // line from each. `placeConstellation` turns that into absolute positions for
-// a given centre and radius: the only thing that differs between the home sky,
+// a given center and radius: the only thing that differs between the home sky,
 // the Planetarium's preview, the lesson, an Atlas tile and the Practice pool
 // is the scale.
 //
@@ -31,7 +31,7 @@ export function hashUnit(seed: string): number {
 }
 
 /** How big a star draws, by what it is: the word (or anything word-like)
- * biggest, a kanji next, a piece smallest. Not by depth: a kanji-centred
+ * biggest, a kanji next, a piece smallest. Not by depth: a kanji-centered
  * tile still draws its kanji at kanji size. */
 export type StarRole = "word" | "kanji" | "piece";
 
@@ -44,7 +44,7 @@ export function roleOf(kind: SkyKind): StarRole {
 /** What kind of body a thing is drawn as (Sam's call, 2026-09-05): kana,
  * pieces, kanji and words are stars; a grammar pattern or a sentence rule
  * is a planet; a counter is an asteroid; a verb pair is a binary star, two
- * suns round one centre. Keigo are words, so stars. */
+ * suns round one center. Keigo are words, so stars. */
 export type Body = "star" | "planet" | "asteroid" | "binary";
 
 export function bodyOf(kind: SkyKind): Body {
@@ -57,7 +57,7 @@ export function bodyOf(kind: SkyKind): Body {
   }
 }
 
-/** How far a body reaches from its centre at unit scale: the hit area and
+/** How far a body reaches from its center at unit scale: the hit area and
  * the room it needs. A star's is its dot; a planet's is its ring. */
 export function bodyRadius(body: Body, role: StarRole): number {
   switch (body) {
@@ -74,7 +74,7 @@ export function bodyRadius(body: Body, role: StarRole): number {
 export const PLANET = { r: 16, ring: 30, ringDepth: 9.5, tilt: -24 };
 /** The asteroid: a lumpy shape of this many corners about this radius. */
 export const ASTEROID = { r: 11, corners: 7 };
-/** The binary: two suns, offset from the centre, far enough apart to read as two. */
+/** The binary: two suns, offset from the center, far enough apart to read as two. */
 export const BINARY = { a: { x: -8, y: -2.5, r: 7 }, b: { x: 8.5, y: 3.5, r: 5.2 } };
 
 /** The corners of an asteroid, seeded by its id so it is the same lump on
@@ -159,7 +159,7 @@ export function layoutConstellation(shape: Constellation): ConstellationLayout {
     }
   }
 
-  // normalise so the farthest star touches the unit box, and round: the
+  // normalize so the farthest star touches the unit box, and round: the
   // trigonometry above can differ in its last digit between the server and
   // the browser, and a coordinate that differs is a hydration mismatch
   const extent = Math.max(0.5, ...stars.map((s) => Math.max(Math.abs(s.x), Math.abs(s.y))));
@@ -196,7 +196,7 @@ interface PlacedStar extends Star {
 const round4 = (n: number) => Math.round(n * 1e4) / 1e4;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/** The same shape at a place and size: centre (cx, cy), reach r. Positions
+/** The same shape at a place and size: center (cx, cy), reach r. Positions
  * are rounded to hundredths, so the server and the browser agree exactly. */
 export function placeConstellation(layout: ConstellationLayout, cx: number, cy: number, r: number): readonly PlacedStar[] {
   return layout.stars.map((s) => ({ ...s, px: round2(cx + s.x * r), py: round2(cy + s.y * r) }));
@@ -216,7 +216,7 @@ export function sizeFor(starCount: number, base: number): number {
 // ---------------------------------------------------------------------------
 //
 // Two rules decide all of it. THE LINES CARRY THE SHAPE and nothing else, so
-// every line is one colour and one weight, and only two things change it: a
+// every line is one color and one weight, and only two things change it: a
 // line reaching into what has not been discovered fades to fog, and the
 // lesson's accent takes over a line at the star it is showing. THE STARS
 // CARRY THE STATE: how far a star's glow reaches says how well it is going,
@@ -303,12 +303,12 @@ function isUndiscovered(look: StarLook): boolean {
 /** How one line between two stars is drawn. */
 interface LinePaint { stroke: string; width: number; opacity: number }
 
-/** Every line is the same line: one colour, one weight, never dashed. A
+/** Every line is the same line: one color, one weight, never dashed. A
  * line to an undiscovered star is not drawn at all (Sam, 2026-09-08: solid
  * for anything discovered, nothing for anything not), except on a sky that
  * asks for `fog`: the lesson's, where the shape of what you are about to
  * learn is the point, so the line is there, faint, and turns solid the
- * moment the star is discovered. The accent is the only other colour, and
+ * moment the star is discovered. The accent is the only other color, and
  * something singled out elsewhere takes every other line right back. */
 const LINE = { stroke: "var(--sky-link)", width: 1.25, opacity: 0.8 } as const;
 const LINE_FOG = 0.35;
