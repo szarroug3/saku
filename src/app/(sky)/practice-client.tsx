@@ -26,7 +26,7 @@ import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, ty
 import { PitchMark } from "./pitch-reading";
 import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
 import { runHref, skyHref } from "./hrefs";
-import { SkyLoading, useLoaded, useWho } from "./local";
+import { useSkyData } from "./local";
 import { grade } from "./grade";
 import { keepRun, useRunAtOpen } from "./quiz-run-store";
 import { typeKana } from "./typing";
@@ -62,19 +62,24 @@ function write(key: string, value: unknown) {
 const NO_SAVED: readonly SavedRecipe[] = [];
 const NO_MISSES: PracticeMisses = {};
 
+// The headings, written once each: the loading screen draws the same eyebrow
+// and title the loaded page does, so the two renders are one page rather than
+// two (SAK-356), which only holds while both read the same string.
+const PICK_TITLE = "What would you like to practice?";
+const RUN_TITLE = "Your practice deck";
+
 export function PracticeClient({ collections, sample, signedIn, initialPreview }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null }) {
   const router = useRouter();
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
   const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
-  const who = useWho(sample, signedIn);
   const loadFirst = useCallback((w: Who) => practiceLookup(w, EMPTY_RECIPE, {}), []);
-  const preview = useLoaded(who, loadFirst, initialPreview);
+  const { who, data: preview, loading } = useSkyData({ sample, signedIn, load: loadFirst, initial: initialPreview, eyebrow: "Practice", title: PICK_TITLE });
   const lookup = useCallback((recipe: Recipe, m: PracticeMisses) => practiceLookup(who ?? {}, recipe, m), [who]);
-  if (!preview) return <SkyLoading eyebrow="Practice" title={"What would you like to practice?"} />;
+  if (!preview) return loading;
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(skyHref("/practice/run", { sample, recipe }));
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} height="100%" />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} />;
 }
 
 /** A practice run: the Quiz's screen, with answers kept as misses only. The
@@ -88,7 +93,6 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
 export function PracticeRunClient({ initial, named, sample, signedIn, recipe, accountRun = null }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe; accountRun?: SavedRun | null }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
-  const who = useWho(sample, signedIn);
   const source = useMemo<RunSource>(() => ({ ...(named.length ? { cards: named } : {}), recipe: recipeKey(recipe) }), [named, recipe]);
   const local = useRunAtOpen();
   const savedRun = sample ? null : (local ?? accountRun);
@@ -101,16 +105,16 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
   const deck = useMemo(() => (deckKey ? deckKey.split("\n") : null), [deckKey]);
   // the deck honors the same two Settings the lesson quiz does (SAK-426)
   const load = useCallback((w: Who) => deck ? loadQuiz(w, { cards: deck }) : named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe, { audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [deck, named, recipe, cfg.audioPrompts, cfg.pitchQuestions]);
-  const loaded = useLoaded(who, load, deck ? null : initial);
+  const { data: loaded, loading } = useSkyData({ sample, signedIn, load, initial: deck ? null : initial, eyebrow: "Quiz", title: RUN_TITLE });
   const cards = useMemo(() => (loaded && deck ? orderDeck(loaded, deck) : loaded), [loaded, deck]);
   const run = useMemo(() => (resume && cards ? trimRun(resume, cards.map((c) => c.id)) : null), [resume, cards]);
   // the browser has not been asked yet, so which deck this page deals is not
   // known; the heading is drawn while the rest catches up (SAK-356)
-  if (local === undefined) return <SkyLoading eyebrow="Quiz" title={"Your practice deck"} />;
+  if (local === undefined) return loading;
   if (clash && !replaced) {
-    return <ResumeAsk run={clash} href={runHref(clash.from, sample)} title="Your practice deck" height="100%" onStart={() => setReplaced(true)} onKeep={(href) => router.push(href)} />;
+    return <ResumeAsk run={clash} href={runHref(clash.from, sample)} title={RUN_TITLE} onStart={() => setReplaced(true)} onKeep={(href) => router.push(href)} />;
   }
-  if (!cards) return <SkyLoading eyebrow="Quiz" title={"Your practice deck"} />;
+  if (!cards) return loading;
   return <PracticeRun cards={cards} run={run} source={source} sample={sample} signedIn={signedIn} recipe={recipe} cfg={cfg} update={update} router={router} />;
 }
 
@@ -131,5 +135,5 @@ function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
   const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: noteMisses, onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title="Your practice deck" run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} height="100%" />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: noteMisses, onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title={RUN_TITLE} run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
 }

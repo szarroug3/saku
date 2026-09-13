@@ -16,8 +16,13 @@ import { lean, type Who } from "./who";
 
 /** Whose history this page reads, or null until the browser's copy has
  * been read. `full` keeps the sessions (the home's mix-ups, the sessions
- * page); everything else sends the lean copy. */
-export function useWho(sample: boolean, signedIn: boolean, full = false): Who | null {
+ * page); everything else sends the lean copy.
+ *
+ * The two halves below `useSkyData` is made of. Not exported since the Quiz
+ * and Practice came over to it (SAK-432) and left nothing calling them apart:
+ * a page that wants one of these wants both, in this order, and that is what
+ * `useSkyData` is. */
+function useWho(sample: boolean, signedIn: boolean, full = false): Who | null {
   const { history, loaded } = useHistory();
   return useMemo(() => {
     if (sample) return { sample: true };
@@ -30,7 +35,7 @@ export function useWho(sample: boolean, signedIn: boolean, full = false): Who | 
 /** A page's data: the route's own when it had a history to read (sample or
  * signed in), else loaded through `load` once the browser's copy is here,
  * and again whenever that copy changes. */
-export function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, initial: T | null): T | null {
+function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, initial: T | null): T | null {
   const [loaded, setLoaded] = useState<{ who: Who; data: T } | null>(null);
   useEffect(() => {
     if (initial !== null || !who) return;
@@ -45,7 +50,7 @@ export function useLoaded<T>(who: Who | null, load: (who: Who) => Promise<T>, in
 /** A page's whole client side: whose history it reads, its data, and what to
  * render until the data is here (SAK-368).
  *
- * Five clients wrote the same three lines. The caller decides when to give up
+ * Every client writes the same three lines. The caller decides when to give up
  * and show `loading`, because three of them wait on a cached catalogue as
  * well as their own data, and the Atlas needs `who` besides, to bind its
  * lookups to whose history they read. */

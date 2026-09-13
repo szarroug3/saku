@@ -39,7 +39,7 @@ import { grade } from "./grade";
 import { runHref, skyHref } from "./hrefs";
 import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
-import { SkyLoading, useLoaded, useWho } from "./local";
+import { SkyLoading, useSkyData } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { keepRun, useRunAtOpen } from "./quiz-run-store";
 import { useStored, writeStored } from "./stored";
@@ -70,7 +70,7 @@ export function QuizClient({ initial, picks, named, back, sample = false, signed
   // (SAK-356), rather than dealing one deck and swapping it for another.
   if (local === undefined) return <SkyLoading eyebrow="Quiz" title={TITLE} />;
   if (clash && !replaced) {
-    return <ResumeAsk run={clash} href={runHref(clash.from)} title={TITLE} height="100%" onStart={() => setReplaced(true)} onKeep={(href) => router.push(href)} />;
+    return <ResumeAsk run={clash} href={runHref(clash.from)} title={TITLE} onStart={() => setReplaced(true)} onKeep={(href) => router.push(href)} />;
   }
   return <QuizDeck resume={clash ? null : saved} source={source} initial={initial} picks={picks} named={named} back={back} sample={sample} signedIn={signedIn} rounds={rounds} router={router} />;
 }
@@ -79,7 +79,6 @@ export function QuizClient({ initial, picks, named, back, sample = false, signed
  * the one the route dealt. */
 function QuizDeck({ resume, source, initial, picks, named, back, sample, signedIn, rounds, router }: { resume: SavedRun | null; source: RunSource; initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; back: WayBack; sample: boolean; signedIn: boolean; rounds: number; router: ReturnType<typeof useRouter> }) {
   const { cfg, update } = useQuizConfig();
-  const who = useWho(sample, signedIn);
   // The deck as ONE STRING, and the array made from it. The run is rewritten
   // after every answer, so the saved object is a new one each time; taking
   // the deck straight off it would give `load` a new identity per answer and
@@ -87,14 +86,14 @@ function QuizDeck({ resume, source, initial, picks, named, back, sample, signedI
   const deckKey = resume ? resume.deck.join("\n") : "";
   const deck = useMemo(() => (deckKey ? deckKey.split("\n") : null), [deckKey]);
   const load = useCallback((w: Parameters<typeof loadQuiz>[0]) => loadQuiz(w, deck ? { cards: deck } : { picks, cards: named, audio: cfg.audioPrompts, pitch: cfg.pitchQuestions }), [deck, picks, named, cfg.audioPrompts, cfg.pitchQuestions]);
-  const loaded = useLoaded(who, load, deck ? null : initial);
+  const { data: loaded, loading } = useSkyData({ sample, signedIn, load, initial: deck ? null : initial, eyebrow: "Quiz", title: TITLE });
   // A named deck is dealt afresh (SAK-388), which is right for a retry and
   // wrong for a resume: the cards go back into the order they were asked in.
   const cards = useMemo(() => (loaded && deck ? orderDeck(loaded, deck) : loaded), [loaded, deck]);
   // and the run itself is trimmed to the cards that actually came back, since
   // the library moves under a run left overnight
   const run = useMemo(() => (resume && cards ? trimRun(resume, cards.map((c) => c.id)) : null), [resume, cards]);
-  if (!cards) return <SkyLoading eyebrow="Quiz" title={TITLE} />;
+  if (!cards) return loading;
   return <QuizRun cards={cards} run={run} source={source} back={back} sample={sample} signedIn={signedIn} rounds={rounds} cfg={cfg} update={update} router={router} />;
 }
 
@@ -153,11 +152,11 @@ function QuizRun({ cards, run, source, back, sample, signedIn, rounds, cfg, upda
     writeStored(REST_KEY, { ...rest, until: rest.startedAt + n * 60_000 } satisfies RestState);
   };
 
-  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} back={back} height="100%" />;
+  if (resting) return <SkyRest until={rest.until} nextRound={rest.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(rest.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} back={back} />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // Only round one picks a run up: a run is one pass over one deck, and the
   // rounds after it are dealt again on purpose.
   const from = run && round <= 1 ? run : null;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: finish, onRetry: retry, next }} run={{ at: from ? resumeAt(from) : 0, answers: from?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} height="100%" />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: finish, onRetry: retry, next }} run={{ at: from ? resumeAt(from) : 0, answers: from?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
 }
