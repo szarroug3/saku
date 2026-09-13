@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { kanjiRow } from "@/data/kanji";
 import { pitchFactId } from "@/data/pitch-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { factInfo, factsOf } from "@/lib/facts";
@@ -224,6 +225,24 @@ describe("why each of the others was on the board (SAK-315)", () => {
     const others = board.options.filter((o) => o.id !== board.answerId);
     assert.ok(others.length > 0);
     for (const o of others) assert.equal(o.why, "the same verb in another pattern", o.label);
+  });
+
+  it("names a piece of the very character being asked", () => {
+    // SAK-315's second example: 曜 is 日 beside 翟, and 翟 is 羽 over 隹, so an
+    // option that is one of those was never a stranger on the board. The
+    // engine does not aim for these and lands on them anyway: 分 is 八 and 刀,
+    // and both turn up among the meanings it fills the board from.
+    assert.equal(whyOf("kanji:分/meaning", "sword"), "a piece of 分");
+    assert.equal(whyOf("kanji:分/meaning", "eight"), "a piece of 分");
+    assert.equal(whyOf("kanji:動/meaning", "power"), "a piece of 動");
+    // and the line names the decomposition the card's own tiles draw
+    assert.deepEqual(kanjiRow("曜")?.comps, ["日", "翟"]);
+  });
+
+  it("says a piece before it says nothing, and after a flagged pair", () => {
+    // 借 is 亻 and 昔, and 昔 is also on its confusable list: the sharper of
+    // the two rungs wins, which is the order the rungs are written in
+    assert.equal(whyOf("kanji:借/meaning", "once upon a time"), "drawn almost the same");
   });
 
   it("says nothing at all rather than inventing a reason", () => {

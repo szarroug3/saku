@@ -22,7 +22,7 @@ import { isKatakana } from "@/lib/romaji";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import { KANJI_SUBJECT } from "@/data/kanji";
+import { kanjiRow, KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
@@ -107,6 +107,16 @@ function whyOption(fact: FactId, option: FactId, onAVehicle: boolean): string | 
   const a = libEntry(asked);
   const b = libEntry(other);
   if (a && b && (confusableWith(a).includes(other) || confusableWith(b).includes(asked))) return "drawn almost the same";
+  // A PIECE OF THE GLYPH BEING ASKED (SAK-315's second example, SAK-432). 曜 is
+  // 日 beside 翟, and 翟 is 羽 over 隹: an option that is one of those is not a
+  // stranger on the board, it is something you were just looking at inside the
+  // character. The engine does not aim for these, it fills a board from the
+  // subject at large and lands on one often: of the first 900 kanji, 120 of
+  // their meaning boards carry a piece of the very character they ask about,
+  // 分's offering 刀, 動's offering 力. Every one of them used to get no line.
+  // `comps` is the taught decomposition, the same one the card's "Made of"
+  // tiles draw, so the sentence is true of what the app itself shows.
+  if (a && b && (kanjiRow(a.glyph)?.comps ?? []).includes(b.glyph)) return `a piece of ${a.glyph}`;
   if (subject === KEIGO_SUBJECT) return "another polite verb";
   if (subject === TRANSITIVITY_SUBJECT) return "the other verb of the pair";
   if (subject === GRAMMAR_SUBJECT && onAVehicle) return "the same verb in another pattern";
