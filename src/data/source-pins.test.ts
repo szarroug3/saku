@@ -512,8 +512,8 @@ test("every example sentence highlights the word it is an example of", () => {
   //
   // THE RULE, AND WHY IT IS NOT "the span equals the word" (SAK-422). The span
   // covers the word's surface AS THIS SENTENCE WRITES IT, which is the
-  // dictionary spelling for 2,172 of the 2,989 and an inflected form for the
-  // other 817: ある is underlined inside ありません, 包む inside 包んで. So the
+  // dictionary spelling for 2,283 of the 2,989 and an inflected form for the
+  // other 706: ある is underlined inside ありません, 包む inside 包んで. So the
   // check below asks the only question true of all of them, whether the
   // underlined text is a surface of THIS word, and answers it with the app's own
   // conjugator, the same engine the Forms section on the word page is built
@@ -533,12 +533,24 @@ test("every example sentence highlights the word it is an example of", () => {
   // agreement has to run PAST it. A span on a different word that happened to
   // start with the same kanji does not pass.
   //
-  // The three counts are pinned because the rule alone would not notice a
+  // AND A WORD WITH NO FORMS UNDERLINES ITS SPELLING, FULL STOP (SAK-422). The
+  // three clauses above accept a span that is the written form plus a tail,
+  // because that is what an inflected verb is. For a word `wordClassOf` gives no
+  // class there is no such thing as an inflected form of it, so the tail can only
+  // be the copula, which belongs to the sentence: 仕事です is a noun and です,
+  // not a conjugated 仕事, and the underline stops at 仕事. That is checked first
+  // and separately, because clause 2 would happily accept 仕事です otherwise.
+  // na-adjectives are not in this group: they have a class, and です, な and に
+  // are their own forms (危険です, 大好きな), which is exactly the line UniDic
+  // cannot draw, since it files 危険 as 名詞 beside 仕事.
+  //
+  // The four counts are pinned because the rule alone would not notice a
   // regeneration that silently dropped half the spans.
   const notThisWord: string[] = [];
   const bad: string[] = [];
   let spanned = 0;
   let literal = 0;
+  let noForms = 0;
   for (const keb of Object.keys(wordExamplesJson as Record<string, unknown>)) {
     const ex = exampleFor(keb);
     if (!ex?.span) continue;
@@ -549,6 +561,16 @@ test("every example sentence highlights the word it is an example of", () => {
       continue;
     }
     const underlined = ex.jp.slice(start, end);
+    const row = vocabRow(keb);
+    if (row && !wordClassOf(row)) {
+      noForms += 1;
+      if (underlined !== keb) {
+        notThisWord.push(
+          `${keb}: "${underlined}" is underlined in ${ex.jp}, and ${keb} has no forms for the rest to be.`,
+        );
+        continue;
+      }
+    }
     if (underlined === keb) {
       literal += 1;
       continue;
@@ -566,6 +588,7 @@ test("every example sentence highlights the word it is an example of", () => {
   assert.deepEqual(bad.slice(0, 20), []);
   assert.deepEqual(notThisWord.slice(0, 20), []);
   assert.equal(spanned, 2989, "sentences that carry a highlight span");
-  assert.equal(literal, 2172, "spans that cover the word's dictionary spelling exactly");
-  assert.equal(spanned - literal, 817, "spans that cover an inflected surface of the word");
+  assert.equal(literal, 2283, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 706, "spans that cover an inflected surface of the word");
+  assert.equal(noForms, 2030, "spans on a word with no conjugation class, all of them its spelling");
 });

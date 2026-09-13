@@ -31,7 +31,10 @@ word's `keb` gives the span, at its real position in `jp` -- so 思う shown as
 だと思った highlights 思った, not nothing. No match (the tokenizer's lemma
 resolution disagrees with `keb`, or the word genuinely never occurs) leaves
 start/end null -- "absent, not wrong", the same refusal used for `kr`. Never a
-substring guess.
+substring guess. How far past the matched token the span runs depends on
+whether the word has forms at all: a verb or adjective keeps its whole
+conjugated surface, a word with no conjugation class stops at the word, so
+仕事です underlines 仕事 (SAK-422). See analyze_sentence and conjugating_kebs.
 
 WHY A SEPARATE PASS, NOT PART OF build-word-examples.ts
 =========================================================
@@ -93,6 +96,7 @@ wrong" -- it is documented here as a known reading-choice quirk, not a bug.
 """
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -100,6 +104,7 @@ sys.path.insert(0, HERE)
 from aligner import align, is_kanji, kata2hira  # noqa: E402
 
 GEN = os.path.join(HERE, "..", "..", "src", "data", "generated")
+WORD_FORMS_TS = os.path.join(HERE, "..", "..", "src", "lib", "word-forms.ts")
 
 try:
     import fugashi
@@ -148,6 +153,57 @@ CONTENT_POS = ("名詞", "動詞", "形容詞", "形状詞", "副詞", "代名�
 # clauses and must stay outside the underline.
 INFLECTING_PARTICLE_LEMMAS = ("て", "ば")
 
+def conjugating_kebs():
+    """Every `keb` the app gives a conjugation class, which is the one fact the
+    span rule needs and the tokenizer cannot supply (SAK-422).
+
+    THE RULE THE SET IS FOR. The copula is not part of the noun. 仕事です is a
+    noun and a copula, not an inflected 仕事, so the underline stops at 仕事; a
+    verb or adjective keeps its whole conjugated form, and that includes a
+    na-adjective, whose です, な and に ARE its own forms (危険です, 大好きな).
+    UniDic cannot draw that line, because it files 危険, 便利 and 冷静 as 名詞
+    right beside 仕事 and 写真. JMdict can, through the same POS_TO_CLASS the
+    word page's Forms section is built from, so the split is read off the app's
+    own class rather than guessed from a tag.
+
+    READ, NOT MIRRORED. The class names come out of src/lib/word-forms.ts's
+    POS_TO_CLASS at run time, and the rows out of vocab-runtime.json, the file
+    `VOCAB` itself is loaded from. Retyping the pos strings here is precisely
+    the mistake word-forms.ts's own header records twice: both earlier copies
+    covered the nine regular godan strings and silently dropped 行く, ある and
+    every other special class, and a verb with no class is indistinguishable
+    from a noun. A copy would have gone wrong the same way, one underline at a
+    time, so there is no copy: a map that moves fails loudly below instead.
+
+    Membership, not the code, is all this needs, so it takes the union of the
+    row's own pos and its senses' -- the same fall-through `wordClassOf` makes
+    for a spelling whose leading sense does not conjugate (ある, "a certain" /
+    "to exist") -- rather than reimplementing which of several codes wins.
+    """
+    src = open(WORD_FORMS_TS, encoding="utf-8").read()
+    head = src.find("export const POS_TO_CLASS")
+    tail = src.find("\n};", head)
+    body = src[head:tail] if head >= 0 and tail > head else ""
+    pos_names = {name for name, _cls in re.findall(r'"([^"]+)":\s*"([a-z0-9-]+)"', body)}
+    if len(pos_names) < 20:
+        sys.exit(
+            f"FATAL: read {len(pos_names)} pos strings out of POS_TO_CLASS in\n"
+            f"{WORD_FORMS_TS}; the map holds 22. It has moved, been renamed or\n"
+            "changed shape. Fix this reader rather than typing the strings in\n"
+            "here: a short list is how the class of 行く got lost twice before.\n"
+        )
+
+    rows = json.load(open(os.path.join(GEN, "vocab-runtime.json"), encoding="utf-8"))["rows"]
+    out = set()
+    for row in rows:
+        pos = list(row.get("pos") or [])
+        for sense in row.get("senses") or []:
+            pos.extend(sense.get("pos") or [])
+        if any(p in pos_names for p in pos):
+            out.add(row["keb"])
+    return out
+
+
 # Hand-corrected sentence readings (SAK-261): the rare case where
 # unidic-lite's tagger resolves a token to a real, dictionary-attested
 # reading that is simply the wrong ONE for this particular sentence, rather
@@ -179,7 +235,7 @@ SENTENCE_READING_OVERRIDES = {
 }
 
 
-def analyze_sentence(jp, tagger, krd, keb, entry_id):
+def analyze_sentence(jp, tagger, krd, keb, entry_id, conjugates):
     """One fugashi tokenization of `jp` produces both outputs this script
     fills in:
 
@@ -219,6 +275,14 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id):
     けど (急いでいるけど) and ながら (食べながら) are the same part of speech
     and they join CLAUSES, so swallowing them would underline a sentence where
     a word belongs.
+
+    AND THE CHAIN IS ONLY FOR WORDS THAT HAVE FORMS (SAK-422). `conjugates` is
+    whether the app gives this word a conjugation class (see
+    `conjugating_kebs`). When it does not, the span is the matched token and
+    nothing after it: 仕事です is 仕事 plus a copula, not an inflected 仕事, so
+    the underline stops at the noun. The chain above runs unchanged for a verb
+    or an adjective, na-adjectives included, where です, な and に are the
+    word's own forms and the Forms section shows them.
     """
     toks = list(tagger(jp))
     offsets = []
@@ -261,6 +325,8 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id):
             continue
         start = offsets[i]
         end = offsets[i] + len(w.surface)
+        if not conjugates:
+            break  # a noun's underline stops at the noun; the copula is not it
         j = i + 1
         while j < len(toks):
             nf = toks[j].feature
@@ -281,6 +347,9 @@ def main():
     krd = build_krd(vocab)
     print(f"reading-candidate table: {len(krd)} kanji, derived from vocab.json's own align data")
 
+    conjugating = conjugating_kebs()
+    print(f"words with a conjugation class: {len(conjugating)}, read from word-forms.ts's POS_TO_CLASS")
+
     examples_path = os.path.join(GEN, "word-examples.json")
     examples = json.load(open(examples_path, encoding="utf-8"))
     tagger = fugashi.Tagger()
@@ -294,7 +363,7 @@ def main():
         # start/end from row[3]/row[4] are ignored -- build-word-examples.ts
         # always emits them null (SAK-97); this pass is the single source of
         # truth for the span, computed below in the same tokenization as kr.
-        kr, start, end = analyze_sentence(jp, tagger, krd, keb, entry_id)
+        kr, start, end = analyze_sentence(jp, tagger, krd, keb, entry_id, keb in conjugating)
         n_kanji_tot += len(kr)
         n_kanji_ok += sum(1 for s in kr if s is not None)
         if start is not None:
