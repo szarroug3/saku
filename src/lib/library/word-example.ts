@@ -66,16 +66,16 @@ export type RankOf = (lemma: string) => number | undefined;
  *           N3 retag added あのビルが燃えてるに違いない, a correct 'building'
  *           sentence, so ビル now DOES get an example — these four stay banned.)
  *   - パー  is 'paper' (rock-paper-scissors); matched inside クリーパー (creeper).
+ *   - ホーム is 'platform'; matched inside ホームページ (homepage).
  *   - かえる is 'frog' (蛙); BOTH its candidates are a different word written
  *           the same way in kana. 11605895, 初心にかえりましょう。("Let's go
  *           back to the beginning"), is 返る, and 78506, 卵がかえる前に…
  *           ("Don't count your chickens before they are hatched"), is 孵る.
  *           Neither is the animal, and the tokenizer cannot tell: it resolves
  *           かえり to the surface base かえる and matches. Found by the span
- *           check in SAK-422 — the frog's example underlined a verb ending,
+ *           check in SAK-422: the frog's example underlined a verb ending,
  *           which is a shape no noun has. Banning both leaves 蛙 without an
- *           example, the same trade as タイ below.
- *   - ホーム is 'platform'; matched inside ホームページ (homepage).
+ *           example, the same trade as タイ above.
  *   - 分間  is 'a period of N minutes' (ふんかん); its only corpus sentence,
  *           十分間に合うと思います。, does not contain it at all — the corpus
  *           tokenizer mis-split 十分 ("enough", じゅうぶん) + the idiom 間に合う

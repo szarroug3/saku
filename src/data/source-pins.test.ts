@@ -514,17 +514,17 @@ test("every example sentence highlights the word it is an example of", () => {
   // covers the word's surface AS THIS SENTENCE WRITES IT, which is the
   // dictionary spelling for 2,172 of the 2,989 and an inflected form for the
   // other 817: ある is underlined inside ありません, 包む inside 包んで. So the
-  // check below asks the only question that is true of all of them — is the
-  // underlined text a surface of THIS word — and answers it with the app's own
+  // check below asks the only question true of all of them, whether the
+  // underlined text is a surface of THIS word, and answers it with the app's own
   // conjugator, the same engine the Forms section on the word page is built
   // from. Three ways to pass, in order of strength:
   //
   //   1. the span is the written form itself, or a form the engine generates;
-  //   2. the span starts with one of those and continues — the tokenizer
+  //   2. the span starts with one of those and continues, because the tokenizer
   //      extends a span through the auxiliaries that follow the verb, so
   //      呼ぶ's span in 呼ばなきゃ is longer than any single generated form;
   //   3. the span agrees with a generated form further than the word's
-  //      invariant stem — the engine does not enumerate every colloquial or
+  //      invariant stem, since the engine does not enumerate every colloquial or
   //      composed surface (招かれた, the passive past; 脱いじゃえ), and a span
   //      that matches 招かれる through 招かれ is inflecting the right verb.
   //
