@@ -18,14 +18,21 @@
 //
 // THE LIMIT, STATED PLAINLY
 // =========================
-// The raw upstream archives are not in this repo: scripts/ingest/build.py takes
-// kanjidic2.xml, JMdict_e and KRADFILE by --src, and grammar.py takes the
-// Tatoeba dump the same way. Nothing here can reach them. So the pin is to the
-// COMMITTED REDUCTION under src/data/generated, and it covers every step after
-// that reduction, which is where the app's own transforms, the hand-written
-// override tables and the merges live. The reduction itself stays unpinned, and
-// re-running an ingest against a newer upstream is still an unchecked step. See
-// docs/content-review-2026-09.md.
+// The raw upstream archives are not in this repo, so nothing in this file can
+// reach them. The pin here is to the COMMITTED REDUCTION under
+// src/data/generated, and it covers every step after that reduction, which is
+// where the app's own transforms, the hand-written override tables and the
+// merges live. See docs/content-review-2026-09.md.
+//
+// The step past the reduction is src/data/source-manifest.test.ts (SAK-434).
+// src/data/generated/sources.json records, per upstream archive, the URL, the
+// declared version and the SHA-256 of the file as downloaded; every ingest under
+// scripts/ingest checks those bytes before it reads them and stops when they
+// differ; and that test fails when a generated file goes on claiming an archive
+// it was not built from. What it does NOT cover, and says so itself, is the part
+// of the reduction cut before any of this existed: vocab.json, word-senses.json,
+// order.json and confusable-derived.json came from archives nobody recorded, and
+// are listed in the manifest's `unpinned` section with that said plainly.
 //
 // A FAILURE HERE IS A CONTENT BUG, NOT A TEST BUG. The fix is to make the app
 // serve what the source says, or to record the deliberate difference in the

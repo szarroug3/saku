@@ -12,9 +12,11 @@
 //   - The JSON is COMMITTED. `pnpm dev` and `pnpm build` read it straight off
 //     disk with no generation step, no dep, and no 78MB of sources in the repo.
 //     Git is the sync, and 2.7MB of it costs nothing that matters here.
-//   - Regenerating is explicit (`python3 scripts/ingest/build.py --src …`), so
-//     the dictionaries can be re-cut on an EDRDG release without anything
-//     silently drifting under a normal build.
+//   - Regenerating is explicit (`python3 scripts/ingest/build.py`, and since
+//     SAK-434 a re-cut against a newer EDRDG release also needs
+//     `--accept-source`), so the dictionaries cannot drift under a normal
+//     build, and src/data/generated/sources.json records which archive this
+//     file was cut from.
 //   - `resolveJsonModule` was already on, so the import is typed at the edge
 //     (see the `as` casts below, the one place the JSON's shape is asserted).
 //
