@@ -4789,3 +4789,50 @@ rebuilt twice, after the component round and after the sweep, and a value-level
 walk of library-index.json, atlas-catalogue.json and sky-catalogue.json against
 their previous contents reports zero differences both times, which is the
 expected result when no decomposition and no shipped string changed.
+
+### Two calls Sam made on the review, and what each cost (2026-09-13, SAK-422, SAK-433)
+
+Both sections above end with a line left open for Sam. She answered both, and
+the answers are one commit each.
+
+**The copula is not part of the noun.** The span builder extended a span through
+every trailing auxiliary, which is what an inflected verb needs and what a noun
+does not have, so 仕事です, 写真だ and 台風なら were underlined whole. The chain
+now runs only for a word the app gives a conjugation class; a word with no class
+underlines its spelling and stops. na-adjectives are on the conjugating side of
+that line, where they belong: です, な and に are their own forms (危険です,
+大好きな), which is exactly the distinction UniDic cannot make, since it files
+危険, 便利 and 冷静 as 名詞 right beside 仕事 and 写真.
+
+That class is JMdict's and lives in TypeScript, which is what left the question
+open the first time. `sentence_readings.py` reads it rather than repeating it:
+the pos strings come out of `POS_TO_CLASS` in src/lib/word-forms.ts at run time
+and the rows out of vocab-runtime.json, the file `VOCAB` itself loads, and a map
+that moves or shrinks exits the script with a message instead of quietly
+classing verbs as nouns. That failure mode is not hypothetical. word-forms.ts's
+own header records two earlier hand-copies of the same list, both of which
+covered the nine regular godan strings and dropped 行く, ある and every other
+special class, and a verb with no class is indistinguishable from a noun.
+
+**111 spans shrank**, which is the number the earlier reading predicted, and
+every one of them by a copula: だ 37, です 17, なら 16, な 9, でしょ 8, でしょう
+6, だった 5, and a tail down to a single じゃ. No span moved its start, no kanji
+reading changed, and a value-level walk of word-examples.json against its
+previous contents reports no other difference of any kind. 何しょん's 何しょ,
+the oddity the earlier section flagged in passing, is now 何. The check gained
+the clause that makes this a rule rather than a regeneration: a word with no
+conjugation class underlines its written form exactly, checked before the three
+surface clauses, since clause 2 would accept 仕事です on its own. All 2,030 such
+spans pass, and the pinned counts move with them, 2,283 literal and 706
+inflected.
+
+**階 is a floor.** "A story or stair" was the sweep's honest output and the wrong
+word in American English, where a story is a tale. It reads "a floor or stair"
+now. The spelling map is untouched: its rewrite of the British form is the right
+one everywhere that word is a spelling rather than a sense, and this line is the
+one place the sense was the point.
+
+**The gates,** run before each of the two commits. `npx tsc --noEmit` and
+`npx eslint src scripts` clean. 3,953 unit tests, 3,952 pass and 1 skipped, the
+same count as before: the span check gained a clause and a pin, not a test. No
+page changed, so no e2e run.
