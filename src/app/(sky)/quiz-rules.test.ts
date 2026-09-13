@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { READING_INDEX } from "@/data/kanji";
+import { markEntry, markFor } from "@/data/marks";
 import type { FactId } from "@/types";
 
 import { readingRuleFor } from "./quiz-rules";
@@ -79,6 +80,43 @@ describe("the rule a card exercises", () => {
     assert.equal(readingRuleFor("counter:tsu:1/reading" as FactId, counter)?.title, "Japanese counts twice over");
   });
 
+  // LONG VOWELS (SAK-432). A vowel held for two beats is one sound, and two of
+  // the five have two spellings of it: a long お is written with う in almost
+  // every word and with お in a handful, a long え with い and rarely with え.
+  // The pair belongs to the VOWEL, not to the literal おう: こう and しょう and
+  // とう are all the same long お.
+  const withBase = (base: string) => [...READING_INDEX.entries()].find(([, r]) => r.base === base)?.[0];
+  const proseFor = (base: string) => {
+    const fact = withBase(base);
+    assert.ok(fact, `no reading reads ${base}`);
+    return readingRuleFor(fact, kanji)!.prose;
+  };
+
+  it("names both spellings of a long お, whichever one the reading uses", () => {
+    assert.match(proseFor("こう"), /こう holds a long お, written with う here and with お in the other spelling of the same sound/);
+    assert.match(proseFor("おお"), /おお holds a long お, written with お here and with う in the other spelling of the same sound/);
+  });
+
+  it("names both spellings of a long え", () => {
+    assert.match(proseFor("せい"), /せい holds a long え, written with い here and with え in the other spelling of the same sound/);
+  });
+
+  it("offers no second spelling for a long う or a long い, because there is none", () => {
+    assert.match(proseFor("ちゅう"), /ちゅう holds a long う: the う is the kana before it held for another beat rather than a sound of its own/);
+    assert.doesNotMatch(proseFor("ちゅう"), /the other spelling/);
+  });
+
+  it("sends the learner to the mark's own page, by the name the Atlas gives it", () => {
+    const page = markFor(markEntry("long-vowel"))!.name;
+    assert.equal(page, "Chōon");
+    assert.ok(proseFor("こう").includes(`the Atlas's ${page} page`), "the rule does not name the page");
+  });
+
+  it("says nothing about a vowel that is not held", () => {
+    assert.doesNotMatch(proseFor("みず"), /holds a long/);
+    assert.doesNotMatch(proseFor("ひと"), /holds a long/);
+  });
+
   it("says nothing for a card that exercises no rule it can name", () => {
     // what a character MEANS is not a question about which reading applies
     assert.equal(ruleFor("kanji:一/meaning"), undefined);
@@ -99,11 +137,12 @@ describe("the prose is authored per rule, not per item", () => {
   });
 
   it("says the same sentences every time, with the character and the word filled in", () => {
-    // the wording with everything item-specific blanked out. Three rules,
-    // each with or without a sentence about what happens to the sound inside
-    // this particular word, is nine shapes at the outside; more than that
+    // The wording with everything item-specific blanked out. Three rules, each
+    // with or without a sentence about what happens to the sound inside this
+    // particular word, and each with no long vowel or one of the two long-vowel
+    // sentences (SAK-432), is eighteen shapes at the outside; more than that
     // would mean the prose had drifted per item.
     const shapes = new Set(rules.map((r) => `${r.title}|${r.prose.replace(/[぀-ヿ一-龯]+/g, "*")}`));
-    assert.ok(shapes.size <= 9, `${shapes.size} shapes:\n${[...shapes].join("\n\n")}`);
+    assert.ok(shapes.size <= 18, `${shapes.size} shapes:\n${[...shapes].join("\n\n")}`);
   });
 });

@@ -18,8 +18,10 @@
 // then shows what it always showed. That is the same bargain as SAK-315's
 // distractor lines: silence beats an invented explanation.
 
+import { SETS } from "@/data/characters";
 import { isConstructionFact } from "@/data/counter-categories";
 import { READING_INDEX, type ReadingRow } from "@/data/kanji";
+import { markEntry, markFor } from "@/data/marks";
 import type { QuizReading, QuizRule } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
 import type { FactId } from "@/types";
@@ -71,6 +73,84 @@ function breakdown(asked: ReadingRow): QuizReading[] {
   }));
 }
 
+/**
+ * THE LONG VOWELS, AND WHY THEY NEED A SENTENCE (SAK-316, SAK-432).
+ *
+ * A vowel held for two beats is one sound, and Japanese writes it by putting a
+ * second kana after the kana that carries it. Which second kana is the part
+ * that catches people out, because for two of the five vowels there are two
+ * spellings of the one sound: a long お is written with う in almost every word
+ * (とう, こう, しょう) and with お in a handful (とおい, おおきい), and a long え
+ * is written with い almost always (せい, えい) and with え in a few (ねえ).
+ * Long う and long い just double, with nothing to confuse them with.
+ *
+ * THE PAIR IS THE VOWEL'S, NOT THE SPELLING'S. It is not the literal おう:
+ * こう and とう and しょう are all the same long お, and a rule looking for the
+ * characters お then う would miss every one of them. So this reads the VOWEL
+ * each kana ends on, out of the kana tables the app already teaches from, and
+ * asks whether the kana after it is one of the two that hold that vowel.
+ */
+const LONG_VOWEL_PAGE = markFor(markEntry("long-vowel"))?.name ?? "Chōon";
+
+/** Which kana can hold each vowel for a second beat, commonest spelling first.
+ * A vowel with two of them has two spellings of one sound; one with a single
+ * entry has only itself doubled. あ is not here: ああ is rare enough in the
+ * readings this quizzes that a sentence about it would be a sentence about
+ * nothing. */
+const HOLDS: Record<string, readonly string[]> = {
+  o: ["う", "お"],
+  e: ["い", "え"],
+  u: ["う"],
+  i: ["い"],
+};
+
+/** The vowel itself, to name the sound being held: "a long お". */
+const VOWEL_KANA: Record<string, string> = { o: "お", e: "え", u: "う", i: "い" };
+
+/** The vowel a kana ends on: か is a, ん is none, and the small ゅ of ちゅう
+ * is u. Read off the kana tables rather than restated, so a kana and its vowel
+ * cannot drift apart.
+ *
+ * Keyed by the LAST character of each entry, which is what makes the small
+ * kana fall out for free: the tables hold きゅ as one entry read "kyu", and the
+ * last of those two characters is the one carrying the u. A reading is walked
+ * character by character, so ちゅう has to be able to ask about ゅ on its own. */
+let vowels: Map<string, string> | undefined;
+function vowelOf(kana: string): string | undefined {
+  if (!vowels) {
+    vowels = new Map();
+    for (const set of SETS) for (const section of set.sections) for (const ch of section.chars) {
+      const last = (ch.r[0] ?? "").slice(-1);
+      const tail = [...ch.c].pop();
+      if (tail && "aiueo".includes(last)) vowels.set(tail, last);
+    }
+  }
+  return vowels.get(kana);
+}
+
+/**
+ * The long-vowel sentence for a reading that holds one, or nothing.
+ *
+ * THE FIRST ONE ONLY. A kanji reading is a syllable or two and holds one of
+ * these at most; a sentence per run would turn a rule into a list.
+ */
+function longVowelNote(base: string): string {
+  const kana = [...base];
+  for (let i = 0; i < kana.length - 1; i++) {
+    const vowel = vowelOf(kana[i]);
+    const holds = vowel ? HOLDS[vowel] : undefined;
+    if (!holds) continue;
+    const here = kana[i + 1];
+    if (!holds.includes(here)) continue;
+    const there = holds.find((k) => k !== here);
+    const long = `a long ${VOWEL_KANA[vowel as string]}`;
+    return there
+      ? ` ${base} holds ${long}, written with ${here} here and with ${there} in the other spelling of the same sound, and the Atlas's ${LONG_VOWEL_PAGE} page sets the two out.`
+      : ` ${base} holds ${long}: the ${here} is the kana before it held for another beat rather than a sound of its own, and the Atlas's ${LONG_VOWEL_PAGE} page sets that out.`;
+  }
+  return "";
+}
+
 /** What happens to the reading inside THIS word, when something does.
  *
  * The reading index folds rendaku and gemination into one reading on purpose:
@@ -86,9 +166,14 @@ function surfaceNote(row: ReadingRow): string {
   return ` Inside ${row.anchor} it voices, ${row.base} to ${row.surface}. A part joined onto the back of a word often softens its first sound like that. It counts as the same reading.`;
 }
 
-/** The reading rule for a kanji reading fact. */
+/** The reading rule for a kanji reading fact.
+ *
+ * Two sentences can follow the rule's own: what happens to the sound inside
+ * this word, and, when the reading holds a vowel, which two spellings that one
+ * sound has. Both are about the reading the card just asked for, so both go
+ * after the rule rather than in front of it. */
 function kanjiReadingRule(row: ReadingRow): QuizRule {
-  const rest = surfaceNote(row);
+  const rest = `${surfaceNote(row)}${longVowelNote(row.base)}`;
   const readings = breakdown(row);
   if (row.type === "kun") {
     return {
@@ -125,10 +210,11 @@ const NUMBERS: QuizRule = {
  *
  * Nothing, deliberately, for a meaning card: what a character means is not a
  * question about which reading applies, and a rule attached to it would be a
- * rule about the wrong thing. Nothing for long vowels either, which the card
- * lists: おう against おお is a question about how a reading is WRITTEN, and the
- * tables carry no flag for it, so there is no honest way to tell the cases
- * apart here yet.
+ * rule about the wrong thing.
+ *
+ * Long vowels DO get a sentence now (SAK-432), and it hangs off the reading
+ * rather than off a flag in the tables: the reading itself says whether it
+ * holds one, because holding one is what おう and おお and えい ARE.
  */
 export function readingRuleFor(fact: FactId, item: SkyItem): QuizRule | undefined {
   const row = READING_INDEX.get(fact);
