@@ -148,7 +148,9 @@ themselves findings, in that nothing named them before:
   しち), 九 (く not きゅう).
 - **2,015 kanji** show a hand-written origin story rather than the file's text.
 - **818 of 2,990** example sentences underline an inflected surface rather than
-  the word's dictionary spelling.
+  the word's dictionary spelling. (Settled by SAK-422: the documentation was
+  wrong, not the data, and the pin is now a rule with no exceptions. See the
+  Words table below.)
 
 Two of those turned into real doubts and are in the list below (九 as く; the
 underline, which contradicts `WordExample`'s own documentation).
@@ -363,6 +365,19 @@ hits its rule.
 |---|---|---|---|---|---|
 | `word-contrast-notes.ts` いいえ / いや | "いや is casual and carries feeling: it usually means 'I don't want to' or 'I'd rather not'" | As the bare interjection contrasted with いいえ, いや is mostly just a casual "no" or a hesitation filler. "I don't want to" is いやだ, the na-adjective. | Jisho, いや | medium | both |
 | `word-examples.ts` documentation | The `span` field is documented as where the word's literal written form appears, absent when the sentence inflects it | 818 of 2,990 spans cover an inflected surface (ある underlined inside ありません). The underline is on the right word, so nothing is misteaching; the doc is wrong about the data, and anything trusting the doc would be wrong too. | the file's own `WordExample.span` comment | medium | one |
+
+That row is settled (**SAK-422**). The doc was the wrong side: the span has
+covered the inflected surface since SAK-97 moved it into the tokenizer pass,
+and `WordExample.span` was never updated to say so. Reading the 818 against
+their sentences turned up two things the count had hidden. 72 spans stopped one
+character short of the word, because UniDic tags the て of a て-form and the ば
+of a conditional as 接続助詞 rather than 助動詞, so 包んでください underlined
+包ん; the chain now absorbs those two lemmas and 218 spans grew. And かえる, the
+frog, was illustrated by 初心にかえりましょう, which is 返る: both of its
+candidates are a different word written the same way in kana, so both are
+banned and 蛙 has no example. The exception set is gone and the test now states
+the rule: every span is the word's dictionary spelling or a surface of it the
+app's own conjugator can account for.
 
 ---
 

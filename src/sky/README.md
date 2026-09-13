@@ -4257,3 +4257,66 @@ tests pass, 1 skipped, up four for the new block. The components test is at zero
 unlisted exceptions with its list one shorter: 威 came off it, and the count it
 pins went from 317 to 316, which is the first entry taken off that list since it
 was written. No page changed, so no e2e run.
+
+### The underline was right and the comment was wrong (2026-09-12, SAK-422)
+
+**What the 818 were.** `WordExample.span` said the span covers the word's
+literal written form and is absent when the sentence inflects it. The source
+pins found 818 of the 2,990 spans covering something else and had to record the
+whole set as a deliberate difference so the suite would pass. Reading them
+against their sentences: every one is the same word, written the way that
+sentence writes it. ある underlined inside ありません, いただく inside
+いただきます, 呼ぶ inside 呼ばなきゃ. The comment had simply never been updated
+when SAK-97 moved the span out of a substring search in the TypeScript builder
+and into `sentence_readings.py`, where a real tokenizer matches an inflected
+surface back to its dictionary entry. The data was right. The comment was four
+months stale and anything trusting it would have been wrong too.
+
+**Two things the count had hidden.** Checking the 818 against the app's own
+conjugator rather than against the comment separates "inflected" from "not this
+word", and two groups fell out.
+
+72 spans stopped one character short of the word. UniDic tags the て of a
+て-form and the ば of a conditional as 助詞/接続助詞, not 助動詞, and the span's
+auxiliary chain only absorbed 助動詞, so 包んでください underlined 包ん and left
+で bare, and 守らなければ underlined 守らなけれ. That is the same half-a-word the
+chain was added to prevent. The chain now also absorbs a following 接続助詞 whose
+LEMMA is て or ば: lemma, not surface, is what makes で, ちゃ and じゃ one entry,
+while leaving から, けど, ながら, ので and のに outside, where they join clauses
+rather than inflect a word. 218 spans grew, all of them by て, で, ば or ちゃ;
+none moved its start, and no kanji reading changed.
+
+And one span was on the wrong word entirely. かえる in the vocabulary is 蛙, the
+animal, and its example was 初心にかえりましょう, which is 返る. Its other
+candidate, 卵がかえる前に, is 孵る. The tokenizer cannot tell the three apart,
+because they all resolve to the surface base かえる, so a noun's page carried a
+verb ending, which is a shape no noun has. Both ids go in
+`WRONG_SENSE_EXAMPLES` and 蛙 has no example now, the same trade タイ and 脱出
+already make. `EXAMPLE_COUNT` goes 2,990 to 2,989.
+
+**The pin is a rule now.** `source-pins.test.ts` no longer records a count of
+exceptions. It asks whether the underlined text is a surface of that word, using
+`wordClassOf` and `conjugateAll`, the same engine the Forms section of the word
+page is built from, so a span it rejects is a span the learner could not match to
+anything the same page teaches. Three ways to pass: the span is the written form
+or a generated form; it starts with one and continues, since the tokenizer
+extends a span through trailing auxiliaries; or it agrees with a generated form
+further than the word's invariant stem, which is what admits the colloquial and
+composed surfaces the engine does not enumerate (招かれた, the passive past;
+脱いじゃえ). The third clause is the loose one, so it is anchored on the stem:
+a span on a different word that merely started with the same kanji does not
+pass. Checked by moving one span one character to the right, which the test
+catches. 2,172 literal, 817 inflected, zero neither.
+
+**One more thing a regeneration needed.** Rerunning `sentence_readings.py` here
+changed two kanji reading slots that had nothing to do with the span: some unidic
+builds split 太鼓判 into 太鼓 + 判 and read the second half はん, the plain
+on'yomi, where the committed file had ばん, which is correct, since 太鼓判 is
+たいこばん with rendaku. The committed file was depending on which dictionary the
+person rerunning happened to have. 判 is pinned in `SENTENCE_READING_OVERRIDES`,
+the table that already exists for a tagger that is confidently wrong rather than
+refusing, so the file is now the same on either build.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src scripts` clean. 3,913 unit
+tests pass, 1 skipped, the same count as before: the span test was rewritten
+rather than added to. No page changed, so no e2e run.
