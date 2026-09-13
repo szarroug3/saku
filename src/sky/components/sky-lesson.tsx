@@ -30,6 +30,7 @@ import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { isUnlocked, lessonSteps, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
+import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface SkyLessonData {
@@ -296,7 +297,15 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             </SkyPanel>
             {/* what tonight rests on. Nothing here is a step, so a row wears
                 no lock and opening one leaves "Step n of N" where it was. An
-                empty list is not a panel (SAK-416). */}
+                empty list is not a panel (SAK-416).
+
+                A page's eyebrow is the KIND word, the one the Atlas and the
+                Observatory use for the same thing (SAK-432). It used to be the
+                page's own name for itself, "Intro" or "Sound shift", so the
+                intro behind 電 read INTRO in the rail and sat under Terms in
+                the Atlas. Sam: "it should say term." A star already in the sky
+                is not a kind of thing but a reason to be in this list, so it
+                keeps saying so. */}
             {references.length > 0 && (
               <SkyPanel title="References" className="!p-4 shrink-0">
                 <ul className="mt-3 flex flex-col gap-1">
@@ -310,7 +319,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
                         lit={state === "lit" || state === "selected"}
                         glyph={it?.glyph}
                         label={it ? (it.english !== it.glyph ? it.english : undefined) : r.label}
-                        eyebrow={r.page ? r.page.kind : "In your sky"}
+                        eyebrow={r.page ? KIND_LABEL[r.kind] : "In your sky"}
                         onClick={() => open(r.id)}
                       />
                     );

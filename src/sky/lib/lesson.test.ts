@@ -23,12 +23,12 @@ const sky = new Set(["雨", "田", "車", "艹", "火"]);
 
 /** A page the app's walk put behind a star: a term it defines, an intro it
  * opens. `id` is what the page's own item is called. */
-const pageBehind = (before: string, kind: string, why: LessonPage["why"], id: string, english: string): LessonPage =>
-  ({ before, kind, why, item: item(id, "term", { english }), teach: {} });
+const pageBehind = (before: string, why: LessonPage["why"], id: string, english: string): LessonPage =>
+  ({ before, why, item: item(id, "term", { english }), teach: {} });
 
-const KANJI = pageBehind("電", "Term", "term", "term:kanji", "Kanji");
-const BUILT = pageBehind("電", "Intro", "intro", "page:built-from", "How a kanji is built");
-const PITCH = pageBehind("花火", "Term", "term", "term:pitch", "Pitch accent");
+const KANJI = pageBehind("電", "term", "term:kanji", "Kanji");
+const BUILT = pageBehind("電", "intro", "page:built-from", "How a kanji is built");
+const PITCH = pageBehind("花火", "term", "term:pitch", "Pitch accent");
 
 describe("the lesson", () => {
   it("teaches the pieces, then the character, then the word, skipping what is in the sky", () => {

@@ -286,6 +286,13 @@ test("the lesson's order holds only what it teaches, and the references what it 
   await expect(references.getByText("Kanji", { exact: true })).toBeVisible();
   await expect(references.getByText("How a kanji is built")).toBeVisible();
 
+  // Every page in the list wears its KIND word, the one the Atlas and the
+  // Observatory use for it (SAK-432). "How a kanji is built" is an intro and
+  // the Atlas files it under Terms, so the row reads "term", not "Intro".
+  await expect(references.getByText("Intro", { exact: true })).toHaveCount(0);
+  const intro = references.getByRole("listitem").filter({ hasText: "How a kanji is built" });
+  await expect(intro.getByText("term", { exact: true })).toBeVisible();
+
   // opening one shows it and leaves the lesson where it was
   await page.getByRole("button", { name: "Next" }).first().click();
   await expect(page.getByText("Step 2 of 4")).toBeVisible();

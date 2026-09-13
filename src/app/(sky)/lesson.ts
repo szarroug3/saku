@@ -98,7 +98,11 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
   const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
-  const push = (kind: string, why: LessonPage["why"], item: SkyItem | undefined, teach?: LessonTeach) => { if (item) pending.push({ kind, why, item, teach: teach ?? teachFor(item) }); };
+  // Each page says which of the two it is and nothing else. It used to carry a
+  // name for itself too ("Intro", "Sound shift"), which the rail printed as the
+  // row's eyebrow; the rail prints the KIND word now, the one the Atlas files
+  // the same page under (SAK-432), and nothing else ever read the name.
+  const push = (why: LessonPage["why"], item: SkyItem | undefined, teach?: LessonTeach) => { if (item) pending.push({ why, item, teach: teach ?? teachFor(item) }); };
   // a page belongs to the first of OUR stars not yet passed, not to the
   // app's next item: a piece with no facts of its own (艹) is a star here
   // but never an item there, and a page must not land after it
@@ -114,13 +118,13 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       pending = [];
       cursor = at + 1;
     } else if (step.type === "intro") {
-      if (step.intro.id === TSU_INTRO.id) { push("Counting rule", "intro", offer.offerPick(TSU_RULE)); continue; }
+      if (step.intro.id === TSU_INTRO.id) { push("intro", offer.offerPick(TSU_RULE)); continue; }
       // an intro with no entry of its own is a page to read, named the way
       // the app's own rail names it: a short name, else the eyebrow
       const name = step.intro.name ?? step.intro.eyebrow ?? step.intro.title;
-      push("Intro", "intro", { id: `page:${step.intro.id}`, kind: "term", glyph: name, english: name, standing: "not-seen" }, { pages: [pageFromIntro(step.intro)] });
+      push("intro", { id: `page:${step.intro.id}`, kind: "term", glyph: name, english: name, standing: "not-seen" }, { pages: [pageFromIntro(step.intro)] });
     } else if (step.type === "term") {
-      push("Term", "term", offer.offerPick(step.entry));
+      push("term", offer.offerPick(step.entry));
     } else if (step.type === "conversion") {
       // the mark's own page, kept to the one conversion being taught
       const term = TERMS.find((t) => t.name === (step.row.mark === "゜" ? "Handakuten" : "Dakuten"));
@@ -128,7 +132,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       if (!item) continue;
       const whole = teachFor(item);
       const title = `${step.row.from} to ${step.row.to}`;
-      push("Sound shift", "term", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
+      push("term", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
     }
   }
   return pages;

@@ -177,8 +177,6 @@ interface LessonStep {
 export interface LessonPage {
   /** The star this page stands behind: the one that puts it in play. */
   before: string;
-  /** "Intro", "Term", "Sound shift": what kind of page, for the rail. */
-  kind: string;
   /** Which of the two it is, in one word, for the references. */
   why: "term" | "intro";
   /** The thing the page is: a term, a counting rule, a mark. It is shown
