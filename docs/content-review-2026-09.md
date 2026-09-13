@@ -26,6 +26,18 @@ The reduction itself, and re-running an ingest against a newer upstream, remain
 unchecked. Committing a hash of each upstream archive beside its reduction would
 close that, and is a separate card.
 
+**Closed by SAK-434 (2026-09-13), in part.** `src/data/generated/sources.json`
+now records the URL, declared version and SHA-256 of nineteen upstream archives;
+every ingest checks those bytes before reading and stops unless
+`--accept-source` is passed; and `src/data/source-manifest.test.ts` fails when a
+generated file goes on claiming an archive it was not built from. The part still
+open is the reduction cut before any of that existed: `vocab.json`,
+`word-senses.json`, `order.json` and `confusable-derived.json` came from a
+JMdict, a KANJIDIC2 and a KRADFILE whose hashes nobody wrote down, and EDRDG
+keeps only the current build, so those archives cannot be recovered. They are
+listed in the manifest's `unpinned` section with that reason, and the pin
+arrives the next time they are deliberately re-cut.
+
 ---
 
 ## 1. Inventory

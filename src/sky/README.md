@@ -4846,3 +4846,137 @@ An outside reader of the app (2026-09-13) said the Kana section did not say what
 - Every kana page and lesson card carries "Written as a in romaji." under the glyph, so the letter beside the kana is named for a learner who has not met the word romaji. `lesson-card.tsx`, the kana branch of the head.
 
 Gates: tsc, eslint, the spelling and em-dash tests, the unit suite, the e2e run in the batch's final gate.
+
+### The pins reach the dictionaries now, and three of them had moved (2026-09-13, SAK-434)
+
+`src/data/source-pins.test.ts` proves the app teaches what the committed
+reduction under `src/data/generated` says, and its own header admits where that
+stops: the upstream archives are not in this repo, so an ingest re-run against a
+different JMdict, a newer KANJIDIC2 or a KanjiVG release nobody chose would
+rewrite the reduction and all nineteen pins would keep passing. The pins reached
+the file. Nothing reached past it.
+
+`src/data/generated/sources.json` is what reaches past it. **Nineteen upstream
+archives**, each with the URL it came from, the version or date the archive
+itself declares, and the SHA-256 of the file as downloaded: JMdict, KANJIDIC2,
+KRADFILE, KanjiVG, Kanjium, the three Tatoeba exports, two Unicode Character
+Database files, the Kanji Alive radical CSV, the CEJC workbook, and the seven
+JLPT and frequency snapshots committed under `scripts/ingest/sources`. Every
+ingest under `scripts/ingest` now checks the bytes it is about to read against
+that record and stops with a plain message when they differ. `--accept-source`
+is the one flag that records a new archive and builds from it, so an intentional
+upgrade is one word on a command line and a silent change is a stop.
+
+**The manifest is keyed by PASS, not by file, and that is the part that catches
+the real failure.** Several passes write one file: `build.py` cuts `kanji.json`
+from KANJIDIC2 and KRADFILE and JMdict, and `kanji-raw-readings.py` then
+back-fills `on`/`kun` onto it from KANJIDIC2 alone. Keyed by file, the second
+pass would overwrite the first pass's record and the file would claim an input
+history it does not have. Keyed by pass, each records only what it read and what
+it touched, and the interesting failure becomes visible: accept a newer
+KANJIDIC2 while running `readingtype.py`, and `readings.json` is re-cut while
+`kanji.json` and `radicals.json` still carry the old dictionary's hash. The
+archives section says one thing, those passes say another, and the reduction is
+a mixture of two dictionaries with nothing to say so.
+`src/data/source-manifest.test.ts` fails on exactly that, naming the pass to
+re-run. Nine passes are recorded, covering sixty-one of the eighty-nine files
+under `src/data/generated`.
+
+**The other twenty-eight are named too, with a reason each.** `unpinned` is not
+a gap in the record, it is the record of the gap: thirty-one entries, each
+saying which script writes the file and why no archive pin reaches it. Three of
+them are partial rather than absent, and say which half is pinned:
+`beginnerRank` in `vocab.json`, `on`/`kun` in `kanji.json` and `type` in
+`readings.json` all reproduce byte for byte, while the rest of each row came
+from `build.py`'s unrecorded archives. A new generated file with no provenance
+fails the test rather than slipping in unremarked.
+
+**The end-to-end run.** 161MB of archives into the ignored
+`scripts/ingest/raw`, then every pass that could be run, run. `pitch.json`,
+`radicals.json`, `kanji-radicals.json`, `radical-enrichment.json`, all fifty
+stroke files and their generated chunk index, `kanji-components.json`, `readings.json`, `kanji.json` and
+`vocab.json`'s `beginnerRank` all came back byte for byte identical, which is
+the result that says the wiring changed nothing. Three did not, and each one is
+a finding.
+
+**Kanji Alive renamed a column and the bushu names would have vanished.** The
+radical enrichment ingest reads `japanese-radicals.csv` from that project's
+`master` branch. On 2026-08-30 the file was recut with different columns:
+`Reading-J` is now `Reading`, and the `Radical ID#` column the script's header
+describes at length is gone. The script reads `r["Reading-J"]`, which is now
+undefined, so a run against `master` today drops **the kana half of all 214
+bushu names** and writes the file back with only the romaji. Nothing would have
+failed. The test suite has no assertion that a radical has a kana name, the
+ingest reports no error, and the result is a Library page that says `nogihen`
+where it used to say のぎへん. The manifest is pinned to commit
+`55b1bb97` of 2026-08-27, the last revision with the columns the script reads,
+and against that revision the file reproduces byte for byte. This is the whole
+case for the card in one example: the pin is not bureaucracy, it is the only
+thing standing between a silent upstream schema change and the data a learner
+reads.
+
+**KanjiVG had no version at all, and now has one.** `kanjivg.mjs` used to fetch
+2,228 files one at a time from the `master` branch, which gave the shipped
+stroke data no version to name: `master` is whatever it was on the day of the
+run, and two runs a week apart could disagree with nothing to say so. It reads a
+release archive now, unpacked in memory by a small dependency-free zip reader in
+`scripts/ingest/sources.mjs`. Picking the release was itself a check: the
+GitHub API's "latest" points at `r20250816`, and against that archive
+`kanji-components.json` moved, 乞 losing 𠂉, 右 losing 丆, and 愉 諭 輸 changing
+their phonetic from 俞 to 兪, plus one stroke path of 悠. Those are upstream
+edits made after r20250816, which means the committed data is NEWER than the
+release the API calls latest. `r20260714` is the release that actually matches,
+and against it all fifty stroke files, the chunk index and the components file
+reproduce byte for byte. The parse is unaffected by the switch: the only textual difference
+between a release SVG and its `master` counterpart is an `xmlns:kvg` attribute
+on the `<svg>` element, which nothing here reads.
+
+**CEJC is pinned but its output is stale against a committed input.**
+`cejc-reading-frequency.json` records its own archive hash, and that hash is
+exactly the CEJC workbook downloaded today, so the archive itself has not
+budged. Re-running the pass still moves three numbers: ちち from 50 to 684,
+ちゃん from 4268 to 4273, and one `core` category count from 2 to 7. The cause
+is not CEJC. The pass also reads `word-definitions.json`, which was refreshed
+against a newer JMdict on 2026-08-29, after this file was last cut, so more
+observed pronunciations now map to a dictionary reading. The manifest records
+the pass with that note attached. Regenerating is a content decision about what
+the app teaches, and is Sam's to make.
+
+**JMdict is pinned to an archive that cannot be downloaded again, on purpose.**
+EDRDG rebuilds JMdict daily and keeps only the current build. `word-definitions.json`
+carries the SHA-256 of the JMdict it was cut from, and that is what the manifest
+pins, rather than whatever the URL serves this morning: the manifest's job is to
+say what the shipped reduction was built from, not to be trivially satisfiable.
+So every JMdict pass stops today, which is the right answer, because a JMdict
+re-cut is always deliberate. Against the JMdict of 2026-09-13 the definitions
+file gains two words (かみそり, 公平) and changes nine (と, なり, 大小, 大気,
+寂しい, 最後, 発電, 硬い, 進む), every one of them an upstream sense edit and
+none of them a defect in the ingest. `build.py`'s own outputs are older still
+and their archives were never recorded at all, so `vocab.json`, `word-senses.json`,
+`order.json` and `confusable-derived.json` sit in `unpinned` with that said
+plainly. The pin arrives the next time they are deliberately re-cut, which now
+takes the flag.
+
+**Two facts that stay single-source, recorded here so nobody has to rediscover
+it.** There is **no JMdict furigana reduction in this repository**, and none of
+the ingest inputs carries one, so which reading a kanji takes inside a word has
+no second source to diff against. What the app has instead is
+`scripts/ingest/aligner.py`, a cost-ranked search over KANJIDIC2's readings with
+rules for rendaku, gemination and handakuten, and the strongest check available
+is the one SAK-418 already made: every per-kanji base reading the app shows is a
+reading KANJIDIC2 lists for that kanji, zero exceptions across 10,147 aligned
+words. The split and the surface remain heuristic, and 866 alignment slots
+across 821 words claim a sound change the aligner inferred rather than read
+anywhere. **Pitch is single-source Kanjium**, itself derived from the NHK accent
+dictionary and Daijirin, with no hand-overrides and no second offline source
+here, so the 8,684 stored downsteps are unverified against anything but Kanjium.
+Both stay single-source unless a second source is added, and the hash in the
+manifest is now the honest limit of the claim: not "this is right", but "this is
+exactly what that file said".
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src scripts` clean. 3,964 unit
+tests, 3,963 pass and 1 skipped, up eleven on the new manifest file.
+`scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at zero
+on both lists. No page changed, so no e2e. The archives themselves are not
+committed and never will be: `/scripts/ingest/raw/` is ignored, and one of them,
+CEJC, is licensed for research and education but not for redistribution.
