@@ -198,7 +198,15 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
           )}
         </span>
       </div>
-      {/* a kana's name is its sound, already beside the glyph; a rule's name is its glyph */}
+      {/* a kana's name is its sound, beside the glyph above; the line says in
+          words what that letter is (Sam, 2026-09-13), for a learner who has
+          not yet met the word romaji */}
+      {item.kind === "kana" && reading && reading !== item.glyph && (
+        <p className="mt-3 text-[15px] leading-relaxed text-sky-muted">
+          Written as <span className="font-semibold text-sky-ink">{reading}</span> in romaji.
+        </p>
+      )}
+      {/* a rule's name is its glyph */}
       {item.kind !== "kana" && meanings[0] !== item.glyph && (
         <p className="mt-3 text-[15px] leading-relaxed">
           <span className="font-semibold">{meanings[0]}</span>

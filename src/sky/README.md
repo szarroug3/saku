@@ -4836,3 +4836,13 @@ one place the sense was the point.
 `npx eslint src scripts` clean. 3,953 unit tests, 3,952 pass and 1 skipped, the
 same count as before: the span check gained a clause and a pin, not a test. No
 page changed, so no e2e run.
+
+## Kana orientation: what kana are, the three scripts, and how a kana is written in romaji (SAK-436)
+
+An outside reader of the app (2026-09-13) said the Kana section did not say what kana are, and that a first-time learner had nowhere to read that there are two sets, where kanji fit, or what romaji is. Sam wrote the copy.
+
+- The Observatory's Kana section now says what kana are, in one breath: the sounds of Japanese written down, like an alphabet except each character is a whole syllable (か is "ka", not "k" and "a"), two sets that spell the same 46 sounds, learned first because they unlock everything else. `COPY.kana` in src/app/(sky)/observatory.ts.
+- How Saku works opens with a new section, "The three scripts": hiragana for grammar, endings and words with no kanji; katakana for borrowed words, names and emphasis, the way English uses italics; kanji from Chinese, each with a meaning and readings; and romaji, which is not a script Japanese uses. The four names are accented. src/data/how-it-works.ts, first entry.
+- Every kana page and lesson card carries "Written as a in romaji." under the glyph, so the letter beside the kana is named for a learner who has not met the word romaji. `lesson-card.tsx`, the kana branch of the head.
+
+Gates: tsc, eslint, the spelling and em-dash tests, the unit suite, the e2e run in the batch's final gate.

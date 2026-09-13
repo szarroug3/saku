@@ -56,8 +56,8 @@ export const TSU_RULE = "counter-rule:tsu";
 /** What each track is and when to start it. Short, in the learner's terms. */
 const COPY = {
   kana: {
-    intro: "Kana are the sounds of Japanese. Each one is a syllable, and together they tell you how to pronounce anything that is written.",
-    when: "Learn these first. Once you know them you can read, and everything else opens.",
+    intro: "Kana are the sounds of Japanese written down. They work like an alphabet, except each character is a whole syllable: か is \"ka\", not \"k\" and \"a\". There are two sets, hiragana and katakana, and they spell the same 46 sounds.",
+    when: "You learn these first because they unlock everything else.",
   },
   words: {
     intro: "Words are the part you speak and read. A word brings its kanji and the pieces they are built from, so you assemble it instead of memorizing it whole.",

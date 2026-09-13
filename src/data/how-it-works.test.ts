@@ -23,9 +23,9 @@ function allText(): string[] {
 }
 
 describe("how-it-works section order", () => {
-  test("SRS, then the claim buttons, then progress words, per the owner's review", () => {
+  test("the three scripts first (SAK-436), then SRS, the claim buttons and progress words, per the owner's reviews", () => {
     const ids = HOW_IT_WORKS_SECTIONS.map((s) => s.id);
-    assert.deepEqual(ids.slice(0, 3), ["srs", "already-know", "progress-words"]);
+    assert.deepEqual(ids.slice(0, 4), ["scripts", "srs", "already-know", "progress-words"]);
   });
 
   test("rounds/breaks and pause-vs-end come after the required three, and every id is unique", () => {
