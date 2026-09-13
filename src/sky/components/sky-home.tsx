@@ -20,7 +20,7 @@ import { SkyField } from "@/sky/components/sky-field";
 import { bodyOf, type Body } from "@/sky/lib/constellation";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SURFACE } from "@/sky/components/sky-panel";
-import { RoundButton, SkyButton } from "@/sky/components/sky-button";
+import { FoldRow, SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyWarning, StandingLegend } from "@/sky/components/standing-legend";
 import { useSkyFilter } from "@/sky/components/use-sky-filter";
@@ -139,23 +139,19 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
       />
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
-        {/* the round button is the only way to open this, as it is for every
-            fold in the Sky (SAK-412); the words beside it are the section's
-            name and its count, which no glyph can say */}
-        <div className={`${SURFACE} flex w-full shrink-0 items-center justify-between gap-4 px-5 py-3 text-left`}>
-          <Eyebrow size="md" className="mb-0">Details</Eyebrow>
-          <span className="flex items-center gap-3 text-[13px] tabular-nums text-sky-muted">
-            {totals.total > 0 && <span>{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
-            <RoundButton
-              label={details ? "Hide the details" : "Show the details"}
-              expanded={details}
-              controls="sky-home-details"
-              onClick={() => setDetails((d) => !d)}
-            >
-              ⌃
-            </RoundButton>
-          </span>
-        </div>
+        {/* the whole bar opens it, not just the chevron at its end (SAK-432);
+            the words are the section's name and its count, which no glyph can
+            say, and they ride inside the target rather than beside it */}
+        <FoldRow
+          label={details ? "Hide the details" : "Show the details"}
+          open={details}
+          controls="sky-home-details"
+          onClick={() => setDetails((d) => !d)}
+          className={`${SURFACE} w-full shrink-0 justify-between gap-4 px-5 py-3`}
+          tail={totals.total > 0 && <span className="text-[13px] tabular-nums text-sky-muted">{totals.discovered.toLocaleString()} of {totals.total.toLocaleString()} Discovered</span>}
+        >
+          <Eyebrow size="md" tight>Details</Eyebrow>
+        </FoldRow>
         {details && (
           <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
             <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />

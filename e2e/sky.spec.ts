@@ -828,21 +828,25 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
 // what it opens. None
 // of these folds had a test before, so each gets one: open it, see the content,
 // close it, see it gone.
+//
+// And the WHOLE TITLE ROW opens it (SAK-432), not just the ring at its end, so
+// each of these clicks the far left of the row rather than the chevron.
 
-test("the home's details fold opens and closes on its round button", async ({ page }) => {
+test("the home's details fold opens and closes anywhere along its bar", async ({ page }) => {
   await page.goto("/?sample");
   const fold = page.getByRole("button", { name: "Show the details" });
   await expect(fold).toHaveAttribute("aria-expanded", "false");
   await expect(page.locator("#sky-home-details")).toHaveCount(0);
 
-  await fold.click();
+  // the left end of the bar, a long way from the chevron: the bar IS the button
+  await fold.click({ position: { x: 6, y: 6 } });
   await expect(page.locator("#sky-home-details")).toBeVisible();
 
-  await page.getByRole("button", { name: "Hide the details" }).click();
+  await page.getByRole("button", { name: "Hide the details" }).click({ position: { x: 6, y: 6 } });
   await expect(page.locator("#sky-home-details")).toHaveCount(0);
 });
 
-test("a lesson card's sections fold and unfold on their round buttons", async ({ page }) => {
+test("a lesson card's sections fold and unfold on their title rows", async ({ page }) => {
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
   const open = page.getByRole("button", { name: "Open Readings" });
   await expect(open).toHaveAttribute("aria-expanded", "false");
@@ -850,11 +854,12 @@ test("a lesson card's sections fold and unfold on their round buttons", async ({
   const panel = page.locator(`[id="${await open.getAttribute("aria-controls")}"]`);
   await expect(panel).toHaveCount(0);
 
-  await open.click();
+  // on the word "Readings" itself, which is the left end of the row
+  await open.click({ position: { x: 6, y: 6 } });
   await expect(panel).toBeVisible();
   await expect(panel).not.toBeEmpty();
 
-  await page.getByRole("button", { name: "Close Readings" }).click();
+  await page.getByRole("button", { name: "Close Readings" }).click({ position: { x: 6, y: 6 } });
   await expect(panel).toHaveCount(0);
 });
 
@@ -864,7 +869,8 @@ test("the why behind writing early folds open under the card that raises it", as
   const why = page.getByRole("button", { name: "Show the reason why" }).first();
   await expect(why).toHaveAttribute("aria-expanded", "false");
 
-  await why.click();
+  // on the word "Why?" rather than the chevron beside it (SAK-432)
+  await why.click({ position: { x: 6, y: 6 } });
   await expect(page.getByRole("button", { name: "Hide the reason why" }).first()).toBeVisible();
   await expect(page.getByText("People don’t do much handwriting").first()).toBeVisible();
 
@@ -904,7 +910,8 @@ test("the stroke chart shows all its frames and folds them back", async ({ page 
   await expect(all).toBeVisible();
   await expect(all).toHaveAttribute("aria-expanded", "false");
 
-  await all.click();
+  // on the words that carry the count, at the left end of the row (SAK-432)
+  await all.click({ position: { x: 6, y: 6 } });
   const back = page.getByRole("button", { name: /Fold the \d+ strokes back/ });
   await expect(back).toBeVisible();
 

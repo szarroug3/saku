@@ -128,6 +128,20 @@ const INK_SHIFT: Record<string, string> = {
  * that way for whatever `⌃` re-measures to. */
 const FLIPPED_CHEVRON = "rotate-180 translate-y-[-2.5px]";
 
+/** The ring itself: the hairline circle and the glyph inside it, with the
+ * ink where SAK-413 measured it. Written once because it is drawn two ways.
+ * When the ring IS the control it is a `<button>` (`RoundButton`); when the
+ * control is a whole title row it is a `<span>` inside that row's button
+ * (`FoldRow`), since one button cannot hold another. */
+const RING = "grid h-7 w-7 shrink-0 place-items-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted";
+
+/** Where the glyph's ink has to go, given which glyph it is and whether the
+ * fold it belongs to is shut. */
+function inkShift(glyph: ReactNode, expanded?: boolean): string {
+  if (typeof glyph !== "string") return "";
+  return glyph === CHEVRON && expanded === false ? FLIPPED_CHEVRON : INK_SHIFT[glyph] ?? "";
+}
+
 /** A small round control: a glyph in a hairline ring that takes the accent on
  * hover. Every fold in the Sky opens with one of these (SAK-412): ‹ › for a
  * panel that slides aside, and ⌃ for content that folds down, upright while it
@@ -135,8 +149,6 @@ const FLIPPED_CHEVRON = "rotate-180 translate-y-[-2.5px]";
  * says whether the fold is open; which way it points is this file's business.
  * ‹ and › are already each other turned over, so they are left alone. */
 export function RoundButton({ label, onClick, pressed, expanded, controls, className = "", children }: RoundButtonProps) {
-  const flipped = children === CHEVRON && expanded === false;
-  const shift = typeof children === "string" ? (flipped ? FLIPPED_CHEVRON : INK_SHIFT[children] ?? "") : "";
   return (
     <button
       type="button"
@@ -145,10 +157,70 @@ export function RoundButton({ label, onClick, pressed, expanded, controls, class
       aria-pressed={pressed}
       aria-expanded={expanded}
       aria-controls={controls}
-      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted hover:border-sky-accent hover:text-sky-ink ${className}`}
+      className={`${RING} hover:border-sky-accent hover:text-sky-ink ${className}`}
     >
-      <span aria-hidden className={`block leading-none ${shift}`}>{children}</span>
+      <span aria-hidden className={`block leading-none ${inkShift(children, expanded)}`}>{children}</span>
       <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+interface FoldRowProps {
+  /** What it does, for the title and for assistive tech: "Show the details".
+   * It is the row's whole accessible name, so it has to carry the words the
+   * row shows: "Open Readings", not "Open". */
+  label: string;
+  /** Whether the fold is open, for `aria-expanded` and for the chevron. */
+  open: boolean;
+  /** The id of what it opens, for `aria-controls`. */
+  controls: string;
+  onClick: () => void;
+  /** What sits at the right end, beside the chevron: the home bar's count. */
+  tail?: ReactNode;
+  /** A row that sits inside a line of prose rather than owning its own line:
+   * the "Why?" caption. It takes `inline-flex` so the sentence closes around
+   * it, and the two display classes are decided here rather than left to
+   * whichever of them Tailwind's sheet happens to write last. */
+  inline?: boolean;
+  className?: string;
+  /** The row's words: the section's name. */
+  children: ReactNode;
+}
+
+/**
+ * A fold's title row, as one button (SAK-432).
+ *
+ * SAK-412 made the round chevron the Sky's one expander and left the words
+ * beside it outside the click target, so the home's Details bar was a bar with
+ * a 28px target at one end of it. Sam: "i prefer that the full bar be clickable
+ * to expand/collapse." So wherever a fold has a title row, the ROW is the
+ * button and the ring is drawn inside it as a glyph.
+ *
+ * The ring keeps its hover: `group-hover` on it, `group` on the row, so
+ * pointing anywhere along the row lights the chevron and says what the row
+ * will do. `aria-label` rather than an `sr-only` word, because the row already
+ * reads its own words aloud and a name appended to them would say the section
+ * twice. Every label names the section, so the visible words are inside the
+ * name (WCAG 2.5.3).
+ */
+export function FoldRow({ label, open, controls, onClick, tail, inline = false, className = "", children }: FoldRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-expanded={open}
+      aria-controls={controls}
+      className={`group ${inline ? "inline-flex" : "flex"} items-center text-left ${className}`}
+    >
+      {children}
+      <span className="flex items-center gap-3">
+        {tail}
+        <span aria-hidden className={`${RING} group-hover:border-sky-accent group-hover:text-sky-ink`}>
+          <span className={`block leading-none ${inkShift(CHEVRON, open)}`}>{CHEVRON}</span>
+        </span>
+      </span>
     </button>
   );
 }

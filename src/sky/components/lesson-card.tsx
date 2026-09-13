@@ -17,7 +17,7 @@ import { useId, useState, type ComponentType, type ReactNode } from "react";
 
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { Glyph } from "@/sky/components/glyph";
-import { RoundButton, SkyChip } from "@/sky/components/sky-button";
+import { FoldRow, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
@@ -99,19 +99,19 @@ function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; on
   );
 }
 
-/** A section of the card that folds. The round button is the Sky's one way to
+/** A section of the card that folds. The round chevron is the Sky's one way to
  * open and close things (SAK-412), so this is no longer a `<details>` with the
- * browser's own triangle; the title stays beside the button, because the words
- * are what the section is called. */
+ * browser's own triangle; the title row IS the button (SAK-432), with the
+ * chevron drawn at its end, because the words are what the section is called
+ * and reaching for them should open it. */
 function Fold({ title, open: from = false, children }: { title: string; open?: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(from);
   const id = useId();
   return (
     <div className="border-t border-sky-line py-2.5 text-[13.5px] text-sky-muted">
-      <div className="flex items-center justify-between gap-3">
+      <FoldRow label={open ? `Close ${title}` : `Open ${title}`} open={open} controls={id} onClick={() => setOpen(!open)} className="w-full justify-between gap-3">
         <span className="font-semibold text-sky-ink">{title}</span>
-        <RoundButton label={open ? `Close ${title}` : `Open ${title}`} expanded={open} controls={id} onClick={() => setOpen(!open)}>⌃</RoundButton>
-      </div>
+      </FoldRow>
       {open && <div id={id} className="mt-2.5">{children}</div>}
     </div>
   );

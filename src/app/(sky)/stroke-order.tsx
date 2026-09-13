@@ -61,7 +61,7 @@ import {
 } from "react";
 
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
-import { RoundButton } from "@/sky/components/sky-button";
+import { FoldRow } from "@/sky/components/sky-button";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -316,20 +316,19 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
               dialog puts a dismissal between the reader and the thing they came
               for, and costs them reading the strokes and the mnemonic together,
               which is the pairing the page is arranged around. */}
-          {/* The Sky's one expander (SAK-412). The words stay beside it because
-              they carry a count no glyph can say: how many frames are folded. */}
+          {/* The Sky's one expander (SAK-412), and the whole line opens it
+              (SAK-432). The words stay because they carry a count no glyph can
+              say: how many frames are folded. */}
           {clipped || open ? (
-            <div className="mt-1.5 flex items-center gap-2">
+            <FoldRow
+              label={open ? `Fold the ${strokes.length} strokes back` : `Show all ${strokes.length} strokes`}
+              open={open}
+              controls={framesId}
+              onClick={() => setOpen(!open)}
+              className="mt-1.5 gap-2"
+            >
               <span className="text-[11px] text-sky-muted">All {strokes.length} strokes</span>
-              <RoundButton
-                label={open ? `Fold the ${strokes.length} strokes back` : `Show all ${strokes.length} strokes`}
-                expanded={open}
-                controls={framesId}
-                onClick={() => setOpen(!open)}
-              >
-                ⌃
-              </RoundButton>
-            </div>
+            </FoldRow>
           ) : null}
         </div>
       </div>
