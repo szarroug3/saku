@@ -100,12 +100,12 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
         {label !== undefined && (
           <span className={glyph !== undefined ? "text-[12.5px] text-sky-muted" : `text-[13px] ${lit ? "text-sky-ink" : "text-sky-muted"}`}>{label}</span>
         )}
-        {/* !mb-0, and the bang is load-bearing: `Eyebrow` writes its own
-            mb-1 into the same class list, and Tailwind orders mb-1 after
-            mb-0, so a plain mb-0 here loses. Centring a row centres each
-            child's MARGIN box, so those four pixels below the eyebrow
-            lifted it two above the row's middle (SAK-415). */}
-        {eyebrow && <Eyebrow className="ml-auto !mb-0 font-normal">{eyebrow}</Eyebrow>}
+        {/* tight, and the margin it drops is load-bearing: centring a row
+            centres each child's MARGIN box, so the four pixels below the
+            eyebrow lifted it two above the row's middle (SAK-415). This was
+            `!mb-0` until the prop learned to refuse an `mb-` class outright
+            (SAK-432); `tight` says the same thing without the bang. */}
+        {eyebrow && <Eyebrow tight className="ml-auto font-normal">{eyebrow}</Eyebrow>}
       </button>
     </li>
   );

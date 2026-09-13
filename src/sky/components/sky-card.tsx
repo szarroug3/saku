@@ -86,8 +86,32 @@ export function SkyCard({ className = "", children }: { className?: string; chil
  * won every time and every one of those eyebrows kept a margin its author had
  * asked it to drop. Two callers had found `!mb-0` and worked. Asking for the
  * margin or not is now a question the component answers, so there is nothing
- * for two classes to argue about. */
-export function Eyebrow({ tone = "muted", size = "sm", tight = false, className = "", children }: { tone?: "muted" | "accent" | "inherit"; size?: "sm" | "md"; tight?: boolean; className?: string; children: ReactNode }) {
+ * for two classes to argue about.
+ *
+ * AND THE CLASS CANNOT COME BACK (SAK-432). One `mb-0` outlived that sweep, on
+ * the home's Details bar, doing nothing there for months. The prop refuses the
+ * whole family now: a `className` carrying any `mb-` resolves to the sentence
+ * below rather than to itself, so the only shape of the props a caller can
+ * satisfy is the one that also passes `tight`, and the compiler says so. A
+ * tight eyebrow may still set its own margin, because with the component's own
+ * `mb-1` gone there is nothing left for the caller's class to lose to. It
+ * catches what it can see: a class written out, which is what every call site
+ * in the Sky writes. */
+type NoMargin<C extends string> = C extends `${string}mb-${string}`
+  ? "Eyebrow writes its own mb-1: pass tight to drop it, and only then may a className set a margin"
+  : C;
+
+type EyebrowProps<C extends string> = {
+  tone?: "muted" | "accent" | "inherit";
+  size?: "sm" | "md";
+  children: ReactNode;
+} & ({ tight: true; className?: C } | { tight?: false; className?: C & NoMargin<C> });
+
+export function Eyebrow<C extends string>(props: EyebrowProps<C>) {
+  const { tone = "muted", size = "sm", tight = false, children } = props;
+  // read off `props` rather than defaulted in the destructure: the prop's type
+  // is the caller's own literal, and "" is not that literal
+  const className: string = props.className ?? "";
   const colour = tone === "muted" ? "text-sky-muted" : tone === "accent" ? "text-sky-accent" : "";
   return <div className={`${tight ? "" : "mb-1"} font-semibold uppercase tracking-[0.12em] ${size === "sm" ? "text-[10.5px]" : "text-[12px]"} ${colour} ${className}`}>{children}</div>;
 }

@@ -54,7 +54,10 @@ export function AtlasRail({ collections, open, onOpen, counts, total, status, on
       </div>
       {counts && (
         <div>
-          <Eyebrow className="mb-1.5">Your status</Eyebrow>
+          {/* tight, and then its own margin: the component's `mb-1` is what a
+              caller's margin used to lose to (SAK-417), so a caller that wants
+              a different one drops that first (SAK-432) */}
+          <Eyebrow tight className="mb-1.5">Your status</Eyebrow>
           <RailRow on={status === null} dot={dot("border border-sky-line")} label="Everything" count={total} onClick={() => onStatus(null)} />
           {STANDING_ORDER.map((s) => (
             <RailRow key={s} on={status === s} dot={dot(STANDING[s].dot)} label={standingWord(s)} count={counts[s]} onClick={() => onStatus(status === s ? null : s)} />
