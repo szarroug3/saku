@@ -4458,3 +4458,152 @@ at the engine and at the grading seam, the じ paradigm and its two spellings
 agreeing, the page line, and the ずる note read back off the same `teach`
 payload the reveal renders. Unreachable and unused exports both at zero. The
 Sky's e2e spec passes.
+
+### Nine leftovers from Sam's review of the In Review cards (2026-09-12, SAK-432)
+
+Nine small things, each named on an earlier card and left there. The decisions
+were already made; this is what each one turned out to be.
+
+**A fold's whole title row opens it.** SAK-412 made the round chevron the Sky's
+one expander and left the words beside it outside the click target, so the
+home's Details bar was a bar the width of the page with a 28px target at one
+end of it. Sam: "i prefer that the full bar be clickable to expand/collapse."
+`FoldRow` in `sky-button.tsx` is that row: one button spanning it, carrying
+`aria-expanded` and `aria-controls`, with the ring drawn inside it as a span,
+since one button cannot hold another. The ring itself is written once now and
+worn two ways, as the button in `RoundButton` and as a glyph in a row, so
+SAK-413's measured ink shift and SAK-414's turned-over chevron stay in one
+place rather than two.
+
+Four folds have a title row and take it: the home's Details bar, a lesson
+card's sections, the stroke chart's "All 29 strokes" line, and the "Why?"
+caption. The phone menu keeps its own button, and that is the one judgement
+call here: the row it sits in belongs to the logo, the nav and the account, so
+there is no title row to make the target, and "Menu" is not a section's name.
+
+The name is an `aria-label` rather than an `sr-only` word, because the row
+already reads its own words aloud and a name appended to them would say the
+section twice. Every label names its section ("Show the details", "Open
+Readings"), so the visible words are inside the accessible name, which is what
+WCAG 2.5.3 asks and what the existing e2e tests look the folds up by. The
+ring's hover moved to `group-hover`, so pointing anywhere along the row lights
+the chevron.
+
+**A reference row wears the kind word.** The lesson rail's References panel
+printed each page's own name for itself, "Intro" over "How a kanji is built"
+and "Sound shift" over a dakuten page, while the Atlas files both under Terms.
+The same page had two names depending on which screen you read it from. Sam:
+"it should say term." The row reads `KIND_LABEL` now, the map the Atlas and the
+Observatory read, where a mark and a concept both come out as "term".
+`LessonReference` already carried the page's kind, so nothing new had to be
+computed, and the name the walk wrote on each page had no other reader: it is
+gone, and `push` takes one word instead of two. A star already in the sky keeps
+"In your sky", because that is not a kind of thing but the reason the row is in
+the list at all.
+
+**An eyebrow refuses a margin it would only ignore.** SAK-417 gave `Eyebrow` a
+`tight` prop and converted sixteen callers that passed a `mb-0` the component's
+own `mb-1` beat; one survived on the home's Details bar, where it had been
+doing nothing since it was written, and two more had found `!mb-0` and worked
+by force. All three are `tight` now, and the prop refuses the class: a
+`className` carrying any `mb-` only typechecks alongside `tight`, which is the
+one arrangement where the caller's margin is the only margin there is. The
+compiler catches a class written out; `sky-card.test.ts` reads the call sites
+for the ones assembled at runtime, which the types cannot see, and it counts
+braces rather than stopping at the first `>` because one call site's className
+holds a `>` of its own.
+
+**A reading nothing teaches yet says so.** The readings table gives each
+reading three columns: hear it, the reading, the words it is read that way in.
+Six of the 3,496 reading rows reach the third column with nothing to put there,
+because every word that once attested the reading was dropped when the
+vocabulary said it no longer takes it: 面's おもて, 開's ひら, 仏's ふつ, 埋's
+うず, 畳's じょう, 背's せい. Those rows are dimmed now and the third column
+reads "no word taught yet", which is also what the quiz gate says about them: a
+reading is asked only once a word carrying it has been met, and there is no
+such word to meet. The empty word list is the mark, so there is no second flag
+to keep in step, and the test pins all six.
+
+**A distractor that is a piece of the character gets its line.** SAK-315 gave
+every wrong choice a sentence saying why it was on the board and left one of
+its own examples unsaid: 曜 is 日 beside 翟, 翟 is 羽 over 隹, and an option
+that is one of those is something you were just looking at inside the
+character. The engine does not aim for these, it fills a board from the subject
+at large and lands on one often: of the first 900 kanji, 120 of their meaning
+boards carry a piece of the very character they ask about. The rung reads
+`comps`, the taught decomposition the card's own "Made of" tiles draw, so the
+line is true of what the app itself shows, and it sits below the flagged pairs,
+since 借 is built on 昔 and is also drawn almost the same as it.
+
+One thing the card asked for is not testable as written: 曜's OWN boards never
+draw a piece of 曜. Its meaning board is filled from nearby meanings (spit,
+daughter, flour) and its reading board from other readings, so the test pins
+the rung on boards that do exercise it, 分's offering 刀 and 八 and 動's
+offering 力, and pins 曜's decomposition beside them. The app's decomposition
+also stops at 翟 rather than splitting it into 羽 and 隹, so the line on a 曜
+board would read "a piece of 曜" about 日 or 翟, which is the same sentence
+about the pieces the app actually teaches.
+
+**The reveal says when two spellings are one long vowel.** SAK-316 left long
+vowels out with a note saying the tables carry no flag for them. They do not
+need one: holding a vowel for two beats is what おう and えい ARE, so the
+reading itself says whether it holds one, and 443 of the 3,496 reading rows do.
+The pair belongs to the VOWEL and not to a pair of characters, which is the
+part worth writing down: こう and しょう and とう are all the same long お, and
+a rule looking for the literal おう would have missed every one of them. So the
+sentence reads the vowel each kana ends on, out of the kana tables the app
+already teaches from, and asks whether the kana after it is one of the two that
+can hold that vowel, う or お for a long お and い or え for a long え. The
+vowel map is keyed by each table entry's LAST character, which is what makes
+the small kana fall out for free: きゅ is one entry read "kyu", so ゅ is u, and
+ちゅう can be walked character by character. A long う and a long い have one
+spelling each, so their sentence offers no second one rather than inventing a
+pair. It names the mark's Atlas page by reading the mark, so the page and the
+sentence cannot drift apart.
+
+**The last two clients read their data through the shared hook.** SAK-368
+gathered "whose history, then its data, then the heading to draw while it
+comes" into `useSkyData` and moved five clients onto it; the Quiz and Practice
+were still writing the three lines out, and their loading screens repeated the
+page's own title by hand. Both are on the hook now, the two practice headings
+are constants, and `useWho` and `useLoaded` are no longer exported, since a
+page that wants one of them wants both in that order. The six `height="100%"`
+those two files passed are gone too: `SkyPageShell` has defaulted to it since
+SAK-368, so every one of them was saying what would have happened anyway.
+
+**And a prop nothing ever passed.** `Facet` in `sky-practice.tsx` carried an
+optional `note` under its chips with a paragraph waiting to render it, and not
+one of the five call sites passed one. SAK-371 found it and left it; it is
+gone.
+
+**U12, the two words the manual QA list doubted, and what the data says.**
+Both entries are right, and neither needs a change.
+
+こう as 侯: the vocabulary row is JMdict's own, 侯 read こう, glossed "marquis"
+and "second highest rank of the five ranks of nobility", filed as a noun and as
+a suffix. The reading fact is not anchored in 侯 at all: `reanchor` in
+`kanji.ts` re-picks the earliest word attesting a reading at load, and it moves
+this one off the generated file's 侯 onto 侯爵, so the card asks "what does 侯
+read in 侯爵" rather than asking about the character inside itself.
+
+はえ as 栄え: the row is JMdict's 栄え read はえ, glossed "glory, splendour,
+honour", and it is the only 栄え in the set. It is what anchors 栄's は, and
+nothing in our data reads 栄え さかえ, so there is no ambiguity for a card to
+fall into. The one thing left is a curation question rather than a data error,
+and it is Sam's: 侯 ranks 10,819th of 12,553 words and 栄え 10,547th, both of
+them tails that a learner meets only by asking for them, and whether words like
+these belong in the learner-facing set at all is a decision about the shelf,
+not about the row.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,926
+unit tests pass, 1 skipped, up twelve: the Eyebrow call-site sweep, the six
+untaught readings, the piece-of rung and the long vowels. 53 e2e pass, up two:
+one opens 面's readings and finds the row that says no word teaches it, and one
+checks that the intro behind 電 reads "term" in the References panel. Every
+fold's e2e test now clicks the far left of its row rather than the chevron,
+which is the half that proves the row is the button.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on its failing list, and `scripts/button-centering.mjs` measures 1,382 elements
+over seven pages with none more than a pixel out. Four screenshots on a build
+of this branch on a spare port: the Details bar shut and open, the References
+panel with every page reading TERM, and 面's readings with おもて dimmed.
