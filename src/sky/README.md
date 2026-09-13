@@ -4332,3 +4332,129 @@ Left on the card for Sam.
 **The gates.** `npx tsc --noEmit` and `npx eslint src scripts` clean. 3,913 unit
 tests pass, 1 skipped, the same count as before: the span test was rewritten
 rather than added to. No page changed, so no e2e run.
+
+### Two forms the app was sure about, decided (2026-09-12, SAK-423)
+
+The second conjugator (SAK-418) agreed with the app on 170,017 forms out of
+171,872 and disagreed on 1,855. Two things account for 1,593 of those, and
+neither was a bug on either side. They were choices nobody had made. Sam made
+them.
+
+**The causative-passive of an う-verb. Teach the long form, accept the short
+one.** 泳がせられる is the regular derivation: build the causative, make that
+passive, which is exactly the two steps the page already lays out. 泳がされる is
+what people say. Both are right, and an app that pins one string and marks the
+other wrong is teaching a learner that the Japanese she will actually hear is a
+mistake.
+
+So the tables did not change and the grader did.
+`conjugate("泳ぐ", "v5g", "causativePassive")` still returns 泳がせられる, alone,
+because a drill that pins two strings pins neither and a build table with two
+cells in it teaches a choice rather than a rule. Beside it there is now
+`alternateForms`, which answers the other question: what else would a speaker
+say. It is empty for every form of every word except this one, and its whole
+body is a class lookup and one `DerivedFormRule`
+(`CAUSATIVE_PASSIVE_CONTRACTION`, せる off, される on) run through the same
+`derive` the ordinary derived forms go through. Running it through that rather
+than through a second copy of the trim-and-append is what makes defectiveness
+free: ある has no causative, so it has no contracted causative-passive either,
+and nothing in the alternate path had to be told.
+
+The class list is in `policy.ts` and not in `rules.ts`, because which form the
+app teaches is a teaching decision and so is which other form it accepts. It is
+written out as ten named classes rather than as "godan, except v5s". The
+predicate would be true today and would quietly enroll the next class somebody
+adds, which is the shape of bug `POS_TO_CLASS` in `lib/word-forms.ts` has its
+own header about getting wrong twice. **す-verbs are the exclusion that matters**:
+話さされる is not a word, 話させられる is the only way to say it, and accepting a
+contraction there would grade a non-word right, which is the same failure as
+teaching one.
+
+From the engine it travels one hop at a time. `apply` carries an optional
+`alternates` beside its `value`, built by putting each alternate through the
+recipe's own trim and add, so a pattern that hangs off the causative-passive
+gets the alternate for free and a pattern whose trim the alternate will not take
+simply drops it. `builtOn` in `lib/engine/question.ts` collects them from both
+scripts and hands them to three places: `check`, which runs them through the
+same `checkProduces` the taught spellings go through, so the accepted set grew
+and the romaji forgiveness rule did not; `answerKey`, which is the browser's
+twin of `check` and the surface that actually runs, so a key without them would
+mark a learner wrong on the one path that matters; and the distractor filter,
+which now refuses any wrong answer landing on a string the grader would accept.
+`value` is untouched throughout, which is why the prompt, the reveal and the
+option buttons needed no change at all: this is a second thing to accept, never
+a second answer.
+
+And the page says so. The causative-passive form page carries one more line
+under its build tables, and the reveal mounts the same lesson card on the same
+payload, so it is a line the learner sees after answering: "People usually say
+およがされる; the long form is the regular one. す-verbs have no short form:
+はなさせられる is the only way to say it." It is およがされる and not 泳がされる
+because every example on these pages is kana and the table one row up says
+およぐ. The す-verb half is there for the same reason the class list excludes
+them: a learner told that う-verbs have a short form will invent one.
+
+**The ずる verbs. The stem is じ everywhere now.** 演ずる used to keep two cells
+on the older spelling, the ば form (演ずれば) and the literary passive
+(演ぜられる). Both are real; both are the shape that has been leaving the
+language. Modern usage is 演じれば and 演じられる, Jisho leads with 演じる, and the
+second conjugator disagreed with the app on exactly those two cells for all ten
+of these verbs. `VZ_FORMS` is now the plain ichidan table on a じ stem, and the
+class stays a `paradigm` rather than becoming `ichidan` because 演ずる is not an
+ichidan surface: drop its る and you get 演ず, not 演じ.
+
+The paradigm grew a third variant, じる, listed between ずる and the bare ず. A
+じる headword carrying the vz tag must build the same forms as its ずる twin
+rather than be refused as malformed, and now the two spellings cannot disagree
+about any form, which is asserted rather than assumed.
+
+**The headword is not rewritten, and that is the one place this lands short of
+the card.** The card asked for the dictionary form shown to become the じる
+spelling wherever JMdict lists both. JMdict lists both for all ten, and the app
+already carries both: 演じる and 演ずる are two separate entries with two
+sequence numbers, two rows in `vocab.json`, two weights in the library index and
+two sets of facts a learner has her own progress against. Rewriting 演ずる's
+`keb` would not rename an entry. It would mint a duplicate of one that exists.
+So the ずる entry keeps the spelling the dictionary gives it, the じる entry is
+the one that teaches the modern spelling as it always was, and what was actually
+missing is the sentence saying they are one verb.
+
+That sentence is a `WORD_CONTRAST_PAIRS` row, which is the table that already
+exists for two words a learner can answer correctly forever without ever
+learning why there are two of them (いいえ and いや, SAK-229). Ten pairs, one
+note each, written to read correctly from either side because the mechanism
+resolves from either side: "演じる and 演ずる are the same verb, written two
+ways. 演じる is the modern spelling and the one to use; 演ずる is the older one,
+and you still meet it in print. The forms are the じ ones either way: 演じます,
+演じられる, 演じれば." The three sample forms are read off the engine rather than
+typed out, because the note's whole claim is that the forms are the じ ones and
+a hand-written list could go on claiming it after somebody changed the table.
+The note reaches the word's own page and the quiz reveal through `teach.notes`,
+which is one field feeding both.
+
+**The second conjugator's header was updated and its code was not.** Its ずる
+note now records that the passive and ば disagreement was settled its way and
+those 20 rows are gone from the diff; its dictionary-form rewrite stays listed
+as its own bug, still open, because the entry keeps its own headword. Its
+causative-passive branch keeps emitting the contraction, with a note saying the
+1,573 rows stay in the diff as a teaching choice rather than an error on either
+side. Patching it to match would turn the second derivation into a copy of the
+first, and the whole value of the thing is that the two were written apart.
+
+**No clip changed, and that is a finding rather than a shortcut.** The local
+VOICEVOX container was started and `.env.local` copied in for it. Then every one
+of the fourteen seed sets was dumped and read: the ずる verbs are spoken only as
+their dictionary readings (えんずる, えんじる, both already cached), no set speaks
+a conjugated vz form, the one ずれば in the whole corpus is a proverb sentence
+and not something the engine builds, and the only causative-passive the app
+speaks is たべさせられる, which is ichidan and has no contraction. The read-only
+Storage audit agrees: 0 of 372,996 clips missing across all six voices, so 0
+clips were seeded and 0 invalidated. `scripts/list-speakable.mjs` reports
+nothing uncovered.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,934
+unit tests pass, 1 skipped, up 21 from 3,913: the causative-passive contraction
+at the engine and at the grading seam, the じ paradigm and its two spellings
+agreeing, the page line, and the ずる note read back off the same `teach`
+payload the reveal renders. Unreachable and unused exports both at zero. The
+Sky's e2e spec passes.

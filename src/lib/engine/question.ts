@@ -1481,11 +1481,23 @@ function productionFactOn(recipeId: string, v: GrammarVehicle): FactId | null {
 function builtOn(
   r: import("@/data/grammar/recipes").Recipe,
   v: GrammarVehicle,
-): { form: string; kanaForm: string } | null {
+): { form: string; kanaForm: string; alternates: readonly string[] } | null {
   const surface = apply(r, v.surface, v.cls);
   if (!surface.ok || surface.value === v.surface) return null;
   const kana = apply(r, v.kana, v.cls);
-  return { form: surface.value, kanaForm: kana.ok ? kana.value : surface.value };
+  const form = surface.value;
+  const kanaForm = kana.ok ? kana.value : surface.value;
+  // A SECOND SPELLING TO ACCEPT, NEVER A SECOND ANSWER (SAK-423). `form` and
+  // `kanaForm` are untouched, so the prompt, the reveal, the MC options and the
+  // distractor comparison all still run on the one string the app teaches. Both
+  // scripts contribute, for the same reason the two of them are accepted in the
+  // first place: a learner may type either. Deduped against the taught pair so
+  // an alternate that coincides with it is not offered twice.
+  const taught = [form, kanaForm];
+  const alternates = [
+    ...new Set([...(surface.alternates ?? []), ...(kana.ok ? (kana.alternates ?? []) : [])]),
+  ].filter((a) => !taught.includes(a));
+  return { form, kanaForm, alternates };
 }
 
 /**
@@ -1735,8 +1747,14 @@ const grammarQuestions: QuestionType = {
           // let romaji reach a kanji-bearing target, so `form` (食べてください)
           // stays exact-match and only `kanaForm` (たべてください) forgives a
           // spelling — the same asymmetry every other subject already has.
+          // The alternates ride the SAME checkProduces every taught spelling
+          // goes through, so およがされる is exact-match as a kanji-bearing
+          // string and forgiving of romaji when it is all kana. The accepted
+          // set grew, the forgiveness rule did not.
           return (
-            checkProduces(built.form, given) || checkProduces(built.kanaForm, given)
+            checkProduces(built.form, given) ||
+            checkProduces(built.kanaForm, given) ||
+            built.alternates.some((a) => checkProduces(a, given))
           );
         }
       }
@@ -1766,7 +1784,10 @@ const grammarQuestions: QuestionType = {
       const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
       if (v) {
         const built = builtOn(prod.recipe, v);
-        if (built) return { produce: [built.form, built.kanaForm] };
+        // The browser's twin of `check` above, so the alternates go in the key
+        // too. A key that omitted them would grade a learner's answer wrong on
+        // the one surface that actually runs (see the AnswerKey note above).
+        if (built) return { produce: [built.form, built.kanaForm, ...built.alternates] };
       }
     }
     if (dir === "en2jp") {
@@ -1790,7 +1811,13 @@ const grammarQuestions: QuestionType = {
         // with the answer in the shown script would be a second right option.
         const shown = (b: { form: string; kanaForm: string }) =>
           v.known ? b.form : b.kanaForm;
-        const answerShown = answer ? shown(answer) : null;
+        // Everything the grader would mark RIGHT, not just the string on the
+        // button. An alternate spelling is accepted (SAK-423), so a distractor
+        // that lands on one is a second right option exactly as a distractor
+        // landing on the taught form is.
+        const answerAccepts = answer
+          ? new Set([shown(answer), ...answer.alternates])
+          : null;
         for (const r of RECIPES) {
           if (r.id === prod.recipe.id || !isProducible(r)) continue;
           // A plausible wrong answer is ANOTHER pattern built on the SAME
@@ -1798,7 +1825,7 @@ const grammarQuestions: QuestionType = {
           // vehicle and land on a different string — a distractor that coincides
           // with the answer would be a second right option.
           const d = builtOn(r, v);
-          if (!d || (answerShown && shown(d) === answerShown)) continue;
+          if (!d || (answerAccepts && answerAccepts.has(shown(d)))) continue;
           // The distractor's fact is the one for THIS vehicle's host, and it has
           // to be a fact that exists. Offering an unregistered host id would put
           // an option on the board that resolves to nothing; a fact for another

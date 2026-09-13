@@ -16,6 +16,7 @@
 
 import {
   ADJ_I_POLITE,
+  CAUSATIVE_PASSIVE_CONTRACTION,
   CLASSES,
   DERIVED_FORMS,
   FORM_RULES,
@@ -28,6 +29,7 @@ import {
 import {
   ARCHAIC_CLASSES,
   CLASS_PATCHES,
+  CONTRACTED_CAUSATIVE_PASSIVE_CLASSES,
   DEFECTIVE_BY_CLASS,
   DEFECTIVE_WORDS,
   FORMS_BY_CLASS,
@@ -307,27 +309,82 @@ export function conjugate(word: string, rawClass: string, form: Form): Conjugate
 
   const derivation = derivationFor(cls, form);
   if (!derivation) return fail("form-not-in-class", `No rule builds ${form} for ${cls}.`);
+  return derive(word, rawClass, derivation, form);
+}
 
-  // Recursing through conjugate() rather than buildDirect() is deliberate: it
-  // means defectiveness propagates for free. ある has no causative, so it also
-  // has no causative-passive, without that being stated twice.
-  const base = conjugate(word, rawClass, derivation.from);
+/**
+ * Run one DERIVED_FORMS rule: build the form it hangs off, trim, append.
+ *
+ * Lifted out of `conjugate` so `alternateForms` can run a rule that is NOT in
+ * the DERIVED_FORMS table (the causative-passive contraction, which is a second
+ * spelling rather than a form of its own) through the same arithmetic. A second
+ * copy of the trim/append would be a second place for the trim guard to go
+ * missing.
+ *
+ * Recursing through conjugate() rather than buildDirect() is deliberate: it
+ * means defectiveness propagates for free. ある has no causative, so it also has
+ * no causative-passive, without that being stated twice.
+ *
+ * `label` names the form in a refusal message and is the derivation's own
+ * `from` when the rule builds a spelling nobody named.
+ */
+function derive(
+  word: string,
+  rawClass: string,
+  rule: DerivedFormRule,
+  label: string = rule.from,
+): ConjugateResult {
+  const base = conjugate(word, rawClass, rule.from);
   if (!base.ok) return base;
 
-  if (derivation.trim) {
-    if (!base.value.endsWith(derivation.trim)) {
+  if (rule.trim) {
+    if (!base.value.endsWith(rule.trim)) {
       return fail(
         "malformed",
-        `Can't build ${form}: ${derivation.from} of '${word}' is '${base.value}', ` +
-          `which doesn't end with '${derivation.trim}'.`,
+        `Can't build ${label}: ${rule.from} of '${word}' is '${base.value}', ` +
+          `which doesn't end with '${rule.trim}'.`,
       );
     }
     return {
       ok: true,
-      value: base.value.slice(0, base.value.length - derivation.trim.length) + derivation.add,
+      value: base.value.slice(0, base.value.length - rule.trim.length) + rule.add,
     };
   }
-  return { ok: true, value: base.value + derivation.add };
+  return { ok: true, value: base.value + rule.add };
+}
+
+/**
+ * Other spellings of `form` that are also right, and that the app does not
+ * teach. Empty for almost everything (SAK-423).
+ *
+ * THE DIFFERENCE BETWEEN THIS AND `conjugate`. `conjugate` answers "what does
+ * the app show", and there has to be exactly one answer to that: a drill that
+ * pins two strings pins neither, and a build table with two cells in it teaches
+ * a choice rather than a rule. This answers the other question, "what else
+ * would a speaker say", and its caller is the GRADER. A learner who types the
+ * form people actually use has not made a mistake.
+ *
+ * One entry today: the contracted causative-passive of a godan verb
+ * (およがされる beside およがせられる). See CAUSATIVE_PASSIVE_CONTRACTION in
+ * rules.ts for the arithmetic and CONTRACTED_CAUSATIVE_PASSIVE_CLASSES in
+ * policy.ts for who gets it.
+ *
+ * Refusals are inherited rather than restated: an alternate is built through
+ * `conjugate`, so a word with no causative (ある) has no contracted
+ * causative-passive either, and nothing here has to know that.
+ */
+export function alternateForms(word: string, rawClass: string, form: Form): string[] {
+  if (form !== "causativePassive") return [];
+  const resolved = resolveClass(word, rawClass);
+  if (!resolved.ok) return [];
+  if (!CONTRACTED_CAUSATIVE_PASSIVE_CLASSES.has(resolved.value)) return [];
+  // The pinned form has to exist before an alternate to it can: this is the
+  // same defectiveness gate the long form goes through, asked once.
+  const pinned = conjugate(word, rawClass, form);
+  if (!pinned.ok) return [];
+  const built = derive(word, rawClass, CAUSATIVE_PASSIVE_CONTRACTION);
+  if (!built.ok || built.value === pinned.value) return [];
+  return [built.value];
 }
 
 export interface ConjugateAllResult {

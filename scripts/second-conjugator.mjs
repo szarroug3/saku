@@ -32,9 +32,12 @@
 //          godan す verbs (愛さない, 愛せる, 愛そう), not like する. 210 of the
 //          diff's rows are this file being wrong and the app being right.
 //   vz     演ずる's DICTIONARY form. This file rewrites it to 演じる, which is a
-//          real word but not the entry's own spelling. 20 rows, this file's bug.
-//          (Its passive and ba forms are a genuine disagreement, not a bug: see
-//          the report.)
+//          real word but not the entry's own spelling. 20 rows, this file's bug,
+//          and still open: the entry keeps its own headword.
+//          (Its passive and ba forms WERE a genuine disagreement, and SAK-423
+//          settled it this file's way. The app taught 演ぜられる and 演ずれば;
+//          both are the older shape, modern usage is 演じられる and 演じれば, and
+//          the app now teaches those. Those 20 rows are gone from the diff.)
 //   v5r-i  ある in compounds. である's negative is でない, not ない; this file
 //          applies the bare suppletion and loses the prefix. 12 rows.
 //
@@ -311,6 +314,14 @@ function godanForm(word, form, special) {
       // The contraction せられる -> される applies to every godan verb EXCEPT
       // the す-ending ones, where it would collide with the passive
       // (話さされる is not a word; 話させられる is). DBJG, "causative passive".
+      //
+      // SAK-423 settled the disagreement this produced, and NOT by changing
+      // this line. The app teaches and pins the long form, because that is the
+      // regular derivation and what a textbook shows first; it now ACCEPTS this
+      // one when a learner types it, and says so on the causative-passive page.
+      // So the 1,573 rows here stay in the diff as a teaching choice rather
+      // than as an error on either side. Leave this as the contraction: the
+      // value of a second derivation is that it was written apart.
       return ending === "す" ? godanStem(word, A, "せられる") : godanStem(word, A, "される");
     case "volitional":
       return godanStem(word, O, "う");

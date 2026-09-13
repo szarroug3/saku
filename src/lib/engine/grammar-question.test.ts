@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { questionsFor, grammarVehicleFor, type GrammarVehicle } from "./question";
-import { buildMcOptions, checkTyped } from "./index";
+import { answerKeyFor, buildMcOptions, checkTyped } from "./index";
 import {
   classProductionFactId,
   patternProductionFactId,
@@ -388,5 +388,80 @@ describe("grammarVehicleFor is session-aware across DIFFERENT recipes (SAK-203 r
     const withNone = grammarVehicleFor(TAI, ALL_VEHICLES, () => 0.3);
     const withEmpty = grammarVehicleFor(TAI, ALL_VEHICLES, () => 0.3, new Set());
     assert.equal(withEmpty?.surface, withNone?.surface);
+  });
+});
+
+// ===========================================================================
+// SAK-423: the contracted causative-passive, at the grading seam.
+//
+// The app teaches and pins 泳がせられる. 泳がされる is what people usually say,
+// and a learner who types it has not made a mistake. So the accepted set grew
+// and nothing else did: the prompt, the reveal, the options and the distractors
+// all still run on the one taught string.
+// ===========================================================================
+
+describe("the causative-passive accepts the contraction", () => {
+  const CP_G = classProductionFactId("causative-passive", "v5g");
+  const CP_S = classProductionFactId("causative-passive", "v5s");
+  const CP_1 = classProductionFactId("causative-passive", "v1");
+  const OYOGU: GrammarVehicle = { surface: "泳ぐ", kana: "およぐ", cls: "v5g", known: true };
+  const HANASU: GrammarVehicle = { surface: "話す", kana: "はなす", cls: "v5s", known: true };
+  const TABERU_CP: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1", known: true };
+
+  test("both the long form and the contraction grade correct, in both scripts", () => {
+    const ctx = { grammarVehicle: OYOGU };
+    assert.ok(checkTyped(CP_G, "泳がせられる", "en2jp", ctx), "the taught form was refused");
+    assert.ok(checkTyped(CP_G, "およがせられる", "en2jp", ctx));
+    assert.ok(checkTyped(CP_G, "泳がされる", "en2jp", ctx), "the contraction was refused");
+    assert.ok(checkTyped(CP_G, "およがされる", "en2jp", ctx));
+    // Still not a free pass: a form of a different pattern stays wrong.
+    assert.ok(!checkTyped(CP_G, "泳がせる", "en2jp", ctx));
+    assert.ok(!checkTyped(CP_G, "泳がれる", "en2jp", ctx));
+  });
+
+  test("a す-verb takes the long form ONLY", () => {
+    const ctx = { grammarVehicle: HANASU };
+    assert.ok(checkTyped(CP_S, "話させられる", "en2jp", ctx));
+    // 話さされる is not a word. Accepting it would grade a non-word right.
+    assert.ok(!checkTyped(CP_S, "話さされる", "en2jp", ctx), "a non-word was accepted");
+  });
+
+  test("an ichidan verb takes the long form only too", () => {
+    const ctx = { grammarVehicle: TABERU_CP };
+    assert.ok(checkTyped(CP_1, "食べさせられる", "en2jp", ctx));
+    assert.ok(!checkTyped(CP_1, "食べさされる", "en2jp", ctx));
+  });
+
+  test("the answer key carries the contraction, so the browser agrees", () => {
+    const key = answerKeyFor(CP_G, "en2jp", { grammarVehicle: OYOGU });
+    assert.ok(key.produce?.includes("泳がせられる"), "the taught form left the key");
+    assert.ok(key.produce?.includes("泳がされる"), "the contraction is not in the key");
+    assert.deepEqual(
+      answerKeyFor(CP_S, "en2jp", { grammarVehicle: HANASU }).produce?.filter((p) =>
+        p.includes("さされる"),
+      ),
+      [],
+      "a す-verb key grew a contraction",
+    );
+  });
+
+  test("the reveal still shows the LONG form alone", () => {
+    const qt = questionsFor(CP_G);
+    const reveal = qt.answerReveal?.(CP_G, "en2jp", { grammarVehicle: OYOGU }) ?? "";
+    assert.ok(reveal.includes("泳がせられる"), "the reveal lost the taught form");
+    assert.ok(!reveal.includes("泳がされる"), "the reveal showed two answers");
+  });
+
+  test("no distractor lands on a spelling the grader would accept", () => {
+    const ctx = { grammarVehicle: OYOGU };
+    const qt = questionsFor(CP_G);
+    for (const opt of qt.distractors(CP_G, 5, ctx)) {
+      const label = qt.optionLabel?.(opt, "en2jp", ctx);
+      assert.ok(label, "a varied distractor has no label");
+      assert.ok(
+        !checkTyped(CP_G, label, "en2jp", ctx),
+        `${label} is offered as a wrong answer and grades right`,
+      );
+    }
   });
 });

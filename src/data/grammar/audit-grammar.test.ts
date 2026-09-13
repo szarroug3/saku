@@ -186,8 +186,18 @@ const ENGINE_CASES: readonly EngineCase[] = [
   {
     word: "演ずる",
     cls: "vz",
-    // じ stem everywhere except ば (演ずれば) and literary passive (演ぜられる).
-    forms: { masu: "演じます", te: "演じて", nai: "演じない", passive: "演ぜられる", ba: "演ずれば", imperative: "演じろ" },
+    // SAK-423: the じ stem EVERYWHERE. ば and the passive used to sit on ず/ぜ
+    // (演ずれば, 演ぜられる) and both are the older shape; modern usage is 演じれば
+    // and 演じられる, which is what the app now teaches.
+    forms: { masu: "演じます", te: "演じて", nai: "演じない", passive: "演じられる", ba: "演じれば", imperative: "演じろ" },
+  },
+  {
+    // The じる SPELLING of the same verb, carrying the vz tag. It builds the
+    // same paradigm as its ずる twin rather than being refused as malformed,
+    // which is what lets the two entries agree on every form.
+    word: "演じる",
+    cls: "vz",
+    forms: { masu: "演じます", te: "演じて", nai: "演じない", passive: "演じられる", ba: "演じれば", imperative: "演じろ" },
   },
 
   // --- adjectives + copula ------------------------------------------------
@@ -302,7 +312,7 @@ const RECIPE_CASES: readonly RecipeCase[] = [
 
   // potential/passive/causative as recipes agree with the engine.
   { id: "potential", word: "する", cls: "vs-i", expected: "できる" },
-  { id: "passive", word: "演ずる", cls: "vz", expected: "演ぜられる" },
+  { id: "passive", word: "演ずる", cls: "vz", expected: "演じられる" }, // SAK-423: じ, not ぜ
   { id: "causative", word: "食べる", cls: "v1", expected: "食べさせる" },
   { id: "volitional-form", word: "書く", cls: "v5k", expected: "書こう" },
   { id: "ba", word: "いい", cls: "adj-ix", expected: "よければ" },

@@ -11,7 +11,12 @@
 // does not apply to 高い — and callers enumerating thousands of (recipe, word)
 // pairs must not need a try/catch.
 
-import { conjugate, type ConjugateResult, type WordClass } from "../conjugate/index.ts";
+import {
+  alternateForms,
+  conjugate,
+  type ConjugateResult,
+  type WordClass,
+} from "../conjugate/index.ts";
 import type { Attachment, Host, Recipe } from "../../data/grammar/recipes.ts";
 
 /** Why a recipe would not apply. */
@@ -35,7 +40,21 @@ export type ApplyRefusal =
   | "wrap-needs-two";
 
 export type ApplyResult =
-  | { ok: true; value: string }
+  | {
+      ok: true;
+      value: string;
+      /**
+       * The pattern built on a spelling of the form that is ALSO right and that
+       * the app does not teach: the engine's `alternateForms`, carried through
+       * this recipe's own trim/add (SAK-423).
+       *
+       * Absent almost always, and the caller that ignores it is not wrong: this
+       * is not a second answer, it is a second thing to ACCEPT. `value` stays
+       * the one string the app shows, so display, MC options and distractors
+       * need no change at all. The grader is the caller that wants this.
+       */
+      alternates?: readonly string[];
+    }
   | { ok: false; reason: ApplyRefusal; detail: string };
 
 /**
@@ -143,17 +162,31 @@ function buildHalf(
       ? (at.kanaAdd ?? exceptionOrAdd)
       : exceptionOrAdd;
 
-  if (at.trim) {
-    if (!base.value.endsWith(at.trim)) {
-      return {
-        ok: false,
-        reason: "trim-mismatch",
-        detail: `${at.form} of ${word} is '${base.value}', which doesn't end with '${at.trim}'.`,
-      };
-    }
-    return { ok: true, value: base.value.slice(0, -at.trim.length) + add };
+  // The same trim/add the pinned form goes through, applied to every alternate
+  // spelling of it. A recipe with a `trim` the alternate does not end with
+  // drops that alternate rather than refusing the whole build: the pinned form
+  // is what the answer IS, and an alternate that will not take the suffix is
+  // simply not an extra thing to accept.
+  const join = (form: string): string | null => {
+    if (!at.trim) return form + add;
+    if (!form.endsWith(at.trim)) return null;
+    return form.slice(0, -at.trim.length) + add;
+  };
+  const alternates = alternateForms(word, cls, at.form)
+    .map(join)
+    .filter((v): v is string => v !== null);
+
+  const built = join(base.value);
+  if (built === null) {
+    return {
+      ok: false,
+      reason: "trim-mismatch",
+      detail: `${at.form} of ${word} is '${base.value}', which doesn't end with '${at.trim}'.`,
+    };
   }
-  return { ok: true, value: base.value + add };
+  return alternates.length
+    ? { ok: true, value: built, alternates }
+    : { ok: true, value: built };
 }
 
 /**

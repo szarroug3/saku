@@ -13,7 +13,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { classFromTags, conjugate, conjugateAll, conjugateSuruNoun } from "./index";
+import {
+  alternateForms,
+  classFromTags,
+  conjugate,
+  conjugateAll,
+  conjugateSuruNoun,
+} from "./index";
 import { DEFECTIVE_WORDS } from "./policy";
 import type { Form } from "./types";
 
@@ -279,6 +285,69 @@ describe("prototype bug 1: causative-passive collapsed on ichidan", () => {
   test("godan takes せられる", () => {
     eq("読む", "v5m", "causativePassive", "読ませられる");
     eq("書く", "v5k", "causativePassive", "書かせられる");
+  });
+});
+
+// ===========================================================================
+// SAK-423: the contracted causative-passive, accepted and never taught
+// ===========================================================================
+
+describe("the contracted causative-passive (泳がされる)", () => {
+  // The long form is what the app teaches and pins; the contraction is what
+  // people usually say. Both are right, so the grader takes both and the
+  // tables take one. `conjugate` must keep answering the taught question.
+  test("conjugate() still returns the LONG form, alone", () => {
+    eq("泳ぐ", "v5g", "causativePassive", "泳がせられる");
+    eq("運ぶ", "v5b", "causativePassive", "運ばせられる");
+    eq("読む", "v5m", "causativePassive", "読ませられる");
+  });
+
+  test("every godan class offers the contraction as an alternate", () => {
+    assert.deepEqual(alternateForms("泳ぐ", "v5g", "causativePassive"), ["泳がされる"]);
+    assert.deepEqual(alternateForms("運ぶ", "v5b", "causativePassive"), ["運ばされる"]);
+    assert.deepEqual(alternateForms("買う", "v5u", "causativePassive"), ["買わされる"]);
+    assert.deepEqual(alternateForms("待つ", "v5t", "causativePassive"), ["待たされる"]);
+    assert.deepEqual(alternateForms("取る", "v5r", "causativePassive"), ["取らされる"]);
+    // The two irregular godan classes are irregular in their 音便 only, so the
+    // あ-row this form is built on is perfectly regular for both.
+    assert.deepEqual(alternateForms("行く", "v5k-s", "causativePassive"), ["行かされる"]);
+    assert.deepEqual(alternateForms("問う", "v5u-s", "causativePassive"), ["問わされる"]);
+  });
+
+  // THE EXCLUSION THAT MATTERS. 話さされる is not a word; 話させられる is the
+  // only way to say it. Accepting a contraction here would grade a non-word
+  // right, which is the same failure as teaching one.
+  test("す-verbs have NO contraction", () => {
+    assert.deepEqual(alternateForms("話す", "v5s", "causativePassive"), []);
+    eq("話す", "v5s", "causativePassive", "話させられる");
+  });
+
+  test("ichidan and the suppletive paradigms have none either", () => {
+    assert.deepEqual(alternateForms("食べる", "v1", "causativePassive"), []);
+    assert.deepEqual(alternateForms("見る", "v1", "causativePassive"), []);
+    assert.deepEqual(alternateForms("する", "vs-i", "causativePassive"), []);
+    assert.deepEqual(alternateForms("来る", "vk", "causativePassive"), []);
+    assert.deepEqual(alternateForms("演ずる", "vz", "causativePassive"), []);
+  });
+
+  test("no other form has an alternate at all", () => {
+    const forms = Object.keys(conjugateAll("泳ぐ", "v5g").forms) as Form[];
+    assert.ok(forms.length > 1, "泳ぐ should build more than one form");
+    for (const form of forms) {
+      if (form === "causativePassive") continue;
+      assert.deepEqual(
+        alternateForms("泳ぐ", "v5g", form),
+        [],
+        `${form} grew an alternate nobody authored`,
+      );
+    }
+  });
+
+  // Defectiveness is inherited, not restated: a word with no causative-passive
+  // has no contracted one either, and nothing in the alternate path knows that.
+  test("a defective causative-passive has no alternate", () => {
+    refused("ある", "v5r-i", "causativePassive", "defective");
+    assert.deepEqual(alternateForms("ある", "v5r-i", "causativePassive"), []);
   });
 });
 
@@ -666,13 +735,38 @@ describe("愛する (vs-s) conjugates on a さ/せ stem, not a し one", () => {
 });
 
 describe("演ずる (vz)", () => {
-  test("the じ stem, with ば and the literary passive on ず/ぜ", () => {
+  // SAK-423. ば and the passive used to be the two cells that stayed on ず/ぜ
+  // (演ずれば, 演ぜられる). Both are real and both are the OLDER shape; modern
+  // usage has gone to じ across the paradigm, and an independent conjugator run
+  // over the whole vocabulary disagreed with the app on exactly those two cells
+  // for all ten of these verbs (SAK-418). Sam's call: teach the じ forms.
+  test("the じ stem EVERYWHERE, ば and passive included", () => {
     eq("演ずる", "vz", "masu", "演じます");
     eq("演ずる", "vz", "te", "演じて");
     eq("演ずる", "vz", "nai", "演じない");
-    eq("演ずる", "vz", "ba", "演ずれば"); // ず, not じ
-    eq("演ずる", "vz", "passive", "演ぜられる"); // ぜ
+    eq("演ずる", "vz", "ba", "演じれば"); // じ, not ず
+    eq("演ずる", "vz", "passive", "演じられる"); // じ, not ぜ
     eq("重んずる", "vz", "te", "重んじて");
+  });
+
+  test("the older ず/ぜ cells are gone, not merely unpreferred", () => {
+    const all = conjugateAll("演ずる", "vz");
+    const stale = Object.entries(all.forms).filter(
+      ([, v]) => v === "演ずれば" || v === "演ぜられる",
+    );
+    assert.deepEqual(stale, [], `演ずる still builds ${JSON.stringify(stale)}`);
+  });
+
+  test("the じる spelling builds the same paradigm as its ずる twin", () => {
+    // 演じる is its own JMdict entry, tagged v1 there. Tagged vz it must still
+    // conjugate rather than be refused for not ending in ずる. The two
+    // spellings are one verb and must not disagree about any form.
+    for (const form of ["masu", "te", "nai", "passive", "ba", "imperative"] as const) {
+      const zuru = conjugate("演ずる", "vz", form);
+      const jiru = conjugate("演じる", "vz", form);
+      assert.ok(zuru.ok && jiru.ok, `${form} refused`);
+      assert.equal(jiru.ok && jiru.value, zuru.ok && zuru.value);
+    }
   });
 
   test("禁ず — the bare ず citation form", () => {

@@ -119,6 +119,38 @@ export const DERIVED_FORMS: Partial<Record<Form, DerivedFormRule>> = {
 };
 
 // ---------------------------------------------------------------------------
+// ALTERNATE FORMS: a second spelling that is also right.
+//
+// A form the app TEACHES is one string: the tables above pick it and the drill
+// pins it. That is not the same claim as "nothing else is correct", and where
+// the two come apart the difference belongs in the grader rather than in a
+// learner's score.
+// ---------------------------------------------------------------------------
+
+/**
+ * The CONTRACTED causative-passive of a godan verb: およがされる beside
+ * およがせられる, はこばされる beside はこばせられる.
+ *
+ * Both are real. The long form is the regular derivation (causative, then
+ * passive, which is what `causativePassive` above spells out), and it is what a
+ * textbook shows first, so it stays the form the app teaches and pins. The
+ * contraction is what people usually say, so a learner who types it has not
+ * made a mistake and must not be marked down for it. See `alternateForms` in
+ * index.ts, and CONTRACTED_CAUSATIVE_PASSIVE_CLASSES in policy.ts for which
+ * classes take it (SAK-423).
+ *
+ * NOT FOR す-VERBS, and that is not a policy choice but a fact about the words:
+ * はなす contracts to はなさされる, which collides with the passive-of-causative
+ * reading nobody means and which no speaker says. はなさせられる has no short
+ * form at all. The class list is where that exclusion lives.
+ */
+export const CAUSATIVE_PASSIVE_CONTRACTION: DerivedFormRule = {
+  from: "causative",
+  trim: "せる",
+  add: "される",
+};
+
+// ---------------------------------------------------------------------------
 // CLASS TABLE — which mechanism each class uses, and its exceptions.
 // ---------------------------------------------------------------------------
 
@@ -226,8 +258,21 @@ const KURU_KANJI_FORMS: Partial<Record<Form, string>> = {
 };
 
 /**
- * 演ずる / 重んずる / 禁ず. An ichidan verb wearing a ずる ending: the stem is
- * じ everywhere except ば (演ずれば) and the literary passive (演ぜられる).
+ * 演ずる / 演じる / 重んずる / 禁ず. An ichidan verb wearing a ずる ending, and
+ * the stem is じ EVERYWHERE (SAK-423).
+ *
+ * It used to be じ everywhere except two cells: ば was ずれば and the passive
+ * was ぜられる. Both are real, and both are the OLDER shape. Modern usage has
+ * gone to じ across the paradigm (演じれば, 演じられる), and an independent
+ * conjugator run over the whole vocabulary disagreed with the app on exactly
+ * those two cells for every one of these verbs (SAK-418). Sam's call: teach the
+ * じ forms, and show ずる as the older spelling rather than as the paradigm.
+ *
+ * With that, the table is the plain ichidan one on a じ stem, which is why the
+ * じる HEADWORD spelling can share it: 演じる and 演ずる are the same verb
+ * written twice, and they now build the same forms rather than two sets. The
+ * class stays a `paradigm` and not `ichidan` because 演ずる itself is not an
+ * ichidan SURFACE: dropping its る gives 演ず, not 演じ.
  */
 const VZ_FORMS: Partial<Record<Form, string>> = {
   masu: "じます",
@@ -235,11 +280,11 @@ const VZ_FORMS: Partial<Record<Form, string>> = {
   ta: "じた",
   nai: "じない",
   potential: "じられる",
-  passive: "ぜられる", // ぜ, not じ
+  passive: "じられる",
   causative: "じさせる",
   imperative: "じろ",
   volitional: "じよう",
-  ba: "ずれば", // ず, not じ
+  ba: "じれば",
   tai: "じたい",
 };
 
@@ -382,8 +427,8 @@ export const CLASSES: Record<WordClass, ClassDef> = {
     ],
   },
 
-  // 演ずる / 重んずる. An ichidan verb wearing a ずる ending; the stem is じ
-  // except in ば (演ずれば) and the literary passive (演ぜられる).
+  // 演ずる / 演じる / 重んずる. An ichidan verb wearing a ずる ending; the stem
+  // is じ throughout. See VZ_FORMS.
   vz: {
     kind: "paradigm",
     variants: [
@@ -391,6 +436,12 @@ export const CLASSES: Record<WordClass, ClassDef> = {
         match: "ずる",
         forms: VZ_FORMS,
       },
+      // 演じる, the じる spelling, which is what the app teaches and what
+      // JMdict lists alongside ずる for most of these verbs. It reaches here
+      // because a じる headword carrying the vz tag must build the same forms
+      // as its ずる twin rather than be refused as malformed. Listed BEFORE ず
+      // so 演じる matches whole and never as a ず-ending with a stray る.
+      { match: "じる", forms: VZ_FORMS },
       // 禁ず — the bare ず citation form. Same paradigm, shorter ending.
       { match: "ず", forms: VZ_FORMS },
     ],

@@ -349,6 +349,51 @@ export const DEFECTIVE_BY_CLASS: Partial<Record<WordClass, Form[]>> = {
 };
 
 // ---------------------------------------------------------------------------
+// ALTERNATES: a second spelling the app does not teach and will not mark wrong.
+//
+// Policy, not rules, for the reason this file's header gives: which form the
+// app TEACHES is a teaching decision, and so is which other form it accepts.
+// The arithmetic that builds the alternate is one line in rules.ts; the
+// judgement about who gets it is here.
+// ---------------------------------------------------------------------------
+
+/**
+ * The classes whose causative-passive also accepts the CONTRACTION:
+ * およがされる for およがせられる (SAK-423).
+ *
+ * WHY A LIST AND NOT "every godan class". It nearly is: the contraction is a
+ * godan fact, and every godan class is here except v5s. But "godan minus す" is
+ * a sentence about Japanese, and the failure mode of writing it as a predicate
+ * (`kind === "godan" && cls !== "v5s"`) is that a class added later joins
+ * silently, the exact shape of bug POS_TO_CLASS in lib/word-forms.ts records
+ * getting twice. So the members are named, and a new class gets its line here
+ * on purpose or not at all.
+ *
+ * v5s IS ABSENT ON PURPOSE. はなさせられる has no short form: はなさされる is
+ * not what anyone says, so accepting it would be grading a non-word right.
+ *
+ * v5aru and v5r-i are absent for a different reason and cost nothing either
+ * way: their causative-passive is already refused (DEFECTIVE_BY_CLASS above,
+ * and ある's own rule), so there is no long form for a contraction to sit
+ * beside. Listing them would be claiming they have one.
+ *
+ * The ichidan and paradigm classes are not here at all: たべさせられる and
+ * させられる do not contract, and 見さされる is not a word.
+ */
+export const CONTRACTED_CAUSATIVE_PASSIVE_CLASSES: ReadonlySet<WordClass> = new Set<WordClass>([
+  "v5u", // かう → かわせられる / かわされる
+  "v5k", // かく → かかせられる / かかされる
+  "v5g", // およぐ → およがせられる / およがされる
+  "v5t", // まつ → またせられる / またされる
+  "v5n", // しぬ → しなせられる / しなされる
+  "v5b", // あそぶ → あそばせられる / あそばされる
+  "v5m", // のむ → のませられる / のまされる
+  "v5r", // とる → とらせられる / とらされる
+  "v5k-s", // いく → いかせられる / いかされる. Its irregularity is 音便 only.
+  "v5u-s", // とう → とわせられる / とわされる. Same: 音便 only.
+]);
+
+// ---------------------------------------------------------------------------
 // Which forms each class HAS. Verbs have no `prenominal`; adjectives have no
 // `imperative`. Asking for one is refused as `form-not-in-class`.
 // ---------------------------------------------------------------------------

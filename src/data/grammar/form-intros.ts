@@ -346,9 +346,26 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
         text: 'たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
       },
     ],
-    buildSections: formBuildSections("causative-passive", [{
-      text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; a る-verb in 〜させられる.",
-    }]),
+    buildSections: formBuildSections("causative-passive", [
+      {
+        text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; a る-verb in 〜させられる.",
+      },
+      // SAK-423. An う-verb's causative-passive has a short form, 〜される, and
+      // it is the one people reach for. The app still teaches and pins the long
+      // one, because it is what the two steps above actually produce and what a
+      // textbook shows first; the quiz accepts both (see `alternateForms` in
+      // lib/conjugate). This line is the difference between the two being a
+      // thing the learner is told and a thing she finds out by being marked
+      // wrong in a conversation. Spelled およがされる rather than 泳がされる
+      // because every example on these pages is kana, and the table one row up
+      // says およぐ.
+      //
+      // NOT FOR す-VERBS, and not mentioned for them either: はなさせられる has
+      // no short form, so naming one here would teach a word that is not one.
+      {
+        text: "People usually say およがされる; the long form is the regular one. す-verbs have no short form: はなさせられる is the only way to say it.",
+      },
+    ]),
   },
 ];
 
