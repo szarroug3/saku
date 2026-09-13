@@ -290,12 +290,14 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   );
 }
 
-function Facet({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+/** One row of the recipe: its name over its chips. It carried a `note` under
+ * the chips that no caller ever passed, so no reader ever saw one (SAK-371);
+ * a facet that needs a line under it can have one back. */
+function Facet({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-6 first:mt-3">
       <Eyebrow>{title}</Eyebrow>
       <ChipRow>{children}</ChipRow>
-      {note && <p className="mt-2 text-[12px] text-sky-muted">{note}</p>}
     </div>
   );
 }
