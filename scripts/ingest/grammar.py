@@ -2,12 +2,19 @@
 """
 Ingest the Tatoeba jpn-eng corpus into example sentences for grammar patterns.
 
-    python3 scripts/ingest/grammar.py --src /path/to/tatoeba
+    python3 scripts/ingest/grammar.py
+    python3 scripts/ingest/grammar.py --accept-source   (record newer exports)
 
-Reads (from --src):
+Reads the three Tatoeba exports pinned by hash in
+src/data/generated/sources.json and downloaded to the ignored
+scripts/ingest/raw directory, straight out of their .bz2 (SAK-434):
     jpn_sentences_detailed.tsv   id, lang, text, owner, added, modified
     eng_sentences.tsv            id, lang, text
     jpn-eng_links.tsv            jpn_id, eng_id
+
+A changed export stops the run. Tatoeba grows every day, so re-cutting the
+corpus is always a deliberate act: it re-selects every pattern from different
+sentences and moves the pinned post-audit counts.
 
 Writes src/data/generated/grammar-corpus.json, which IS COMMITTED, for the
 same reason build.py's output is: the artifact is the data, not the pipeline.
@@ -69,8 +76,26 @@ import os
 import sys
 from collections import Counter, defaultdict
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive_text,
+    record_build,
+    verify_source,
+)
+
 OUT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated"
+)
+
+# The three exports every Tatoeba pass reads, by their manifest id. Shared with
+# grammar_augment.py and grammar_augment_te_prohibition.py, which read exactly
+# these three.
+TATOEBA_IDS = (
+    "tatoeba-jpn-sentences",
+    "tatoeba-eng-sentences",
+    "tatoeba-jpn-eng-links",
 )
 
 # ---------------------------------------------------------------------------
@@ -707,10 +732,10 @@ def content_lemmas(toks):
 # ---------------------------------------------------------------------------
 
 
-def load_sentences_detailed(path):
+def load_sentences_detailed(stream):
     rows = {}
     owners = Counter()
-    with open(path, encoding="utf-8") as fh:
+    with stream as fh:
         for line in fh:
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 4:
@@ -722,9 +747,9 @@ def load_sentences_detailed(path):
     return rows, owners
 
 
-def load_eng(path):
+def load_eng(stream):
     rows = {}
-    with open(path, encoding="utf-8") as fh:
+    with stream as fh:
         for line in fh:
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 3:
@@ -733,9 +758,9 @@ def load_eng(path):
     return rows
 
 
-def load_links(path):
+def load_links(stream):
     links = defaultdict(list)
-    with open(path, encoding="utf-8") as fh:
+    with stream as fh:
         for line in fh:
             parts = line.rstrip("\n").split("\t")
             if len(parts) < 2:
@@ -746,18 +771,22 @@ def load_links(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True)
     ap.add_argument("--limit", type=int, default=0, help="debug: stop after N sentences")
     ap.add_argument("--stats-only", action="store_true")
+    add_source_args(ap)
     args = ap.parse_args()
+
+    for archive_id in TATOEBA_IDS:
+        ensure_archive(archive_id)
+        verify_source(archive_id, accept=args.accept_source)
 
     import fugashi
 
     tagger = fugashi.Tagger()
 
-    jpn, owners = load_sentences_detailed(os.path.join(args.src, "jpn_sentences_detailed.tsv"))
-    eng = load_eng(os.path.join(args.src, "eng_sentences.tsv"))
-    links = load_links(os.path.join(args.src, "jpn-eng_links.tsv"))
+    jpn, owners = load_sentences_detailed(open_archive_text("tatoeba-jpn-sentences"))
+    eng = load_eng(open_archive_text("tatoeba-eng-sentences"))
+    links = load_links(open_archive_text("tatoeba-jpn-eng-links"))
 
     stats = Counter()
     stats["jpn_total"] = len(jpn)
@@ -905,6 +934,11 @@ def main():
             indent=2,
         )
     print(f"wrote {meta}")
+    record_build(
+        "scripts/ingest/grammar.py",
+        ["grammar-corpus.json", "grammar-corpus-meta.json"],
+        list(TATOEBA_IDS),
+    )
     # THIS OUTPUT IS NOT SHIPPABLE ON ITS OWN. Six signatures here match a token
     # run that a different, real pattern also produces — ので also matches んじゃ,
     # 仮定形+ば also matches the ば inside なければならない — and the tokens cannot

@@ -11,7 +11,13 @@ has to be back-fillable onto the shipped file WITHOUT a full re-cut: a re-cut
 against a newer JMdict would re-key the reading facts, and a reading fact's id
 is what the user's study history is stored under. So:
 
-    python3 scripts/ingest/readingtype.py --kanjidic /path/to/kanjidic2.xml
+    python3 scripts/ingest/readingtype.py
+    python3 scripts/ingest/readingtype.py --accept-source   (record a newer KANJIDIC2)
+
+KANJIDIC2 is downloaded to the ignored scripts/ingest/raw directory and checked
+against the hash in src/data/generated/sources.json before it is read, so this
+back-fill cannot quietly run against a different dictionary than the one
+kanji.json and readings.json were cut from (SAK-434).
 
 rewrites only the `type` field of src/data/generated/readings.json and touches
 nothing else. build.py imports `types_for` and emits the same field on a full
@@ -41,6 +47,13 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import clean_kun, kata2hira  # noqa: E402
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive,
+    record_build,
+    verify_source,
+)
 
 OUT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated"
@@ -104,9 +117,9 @@ def kinds_of(ch):
     return kinds
 
 
-def load_reading_types(path):
+def load_reading_types(stream):
     """kanji -> {base: 'on' | 'kun' | 'both'} straight off KANJIDIC2."""
-    root = ET.parse(path).getroot()
+    root = ET.parse(stream).getroot()
     return {ch.findtext("literal"): kinds_of(ch) for ch in root.findall("character")}
 
 
@@ -120,10 +133,13 @@ def types_for(kinds, base):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kanjidic", required=True, help="path to kanjidic2.xml")
+    add_source_args(ap)
     args = ap.parse_args()
 
-    types = load_reading_types(args.kanjidic)
+    ensure_archive("kanjidic2")
+    verify_source("kanjidic2", accept=args.accept_source)
+    with open_archive("kanjidic2") as fh:
+        types = load_reading_types(fh)
     p = os.path.join(OUT, "readings.json")
     rows = json.load(open(p, encoding="utf-8"))
 
@@ -138,6 +154,7 @@ def main():
 
     with open(p, "w", encoding="utf-8") as fh:
         json.dump(rows, fh, ensure_ascii=False, separators=(",", ":"))
+    record_build("scripts/ingest/readingtype.py", ["readings.json"], ["kanjidic2"])
     print(
         f"readings.json: {len(rows)} rows -> on={tally['on']} kun={tally['kun']} "
         f"both={tally['both']} untyped={tally[None]}"

@@ -2,7 +2,12 @@
 """
 Propose transitive/intransitive verb PAIRS from JMdict, for hand-curation.
 
-    python3 scripts/ingest/transitivity.py --src /path/to/dicts
+    python3 scripts/ingest/transitivity.py
+    python3 scripts/ingest/transitivity.py --accept-source  (record a newer JMdict)
+
+JMdict comes from the archive pinned by hash in src/data/generated/sources.json
+(SAK-434), so the candidate list a human curates from is traceable to a named
+dictionary rather than to whatever was on disk that day.
 
 Writes a candidate list to stdout. It does NOT write src/data. The shipped
 table (src/data/transitivity.ts) is hand-curated FROM this output, because the
@@ -33,6 +38,15 @@ import argparse, os, re, sys
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive,
+    read_archive_text,
+    verify_source,
+)
+
 # The hand-curated commonness tags. Same union as the vocab ingest: `news1` is
 # a newspaper survey and is deliberately not here.
 CURATED = {"ichi1", "spec1", "spec2"}
@@ -48,18 +62,18 @@ MODERN = {
 KANJI = lambda c: "一" <= c <= "鿿"
 
 
-def entity_map(path):
+def entity_map():
     """prose -> code, read from the DTD JMdict ships in its own header."""
-    with open(path, encoding="utf-8") as fh:
-        head = fh.read(200_000)
+    head = read_archive_text("jmdict")[:200_000]
     return {v: k for k, v in re.findall(r'<!ENTITY\s+(\S+)\s+"([^"]*)">', head)}
 
 
-def load(path):
-    E2C = entity_map(path)
+def load():
+    E2C = entity_map()
     code = lambda s: E2C.get(s, s)
     out = []
-    for _, el in ET.iterparse(path, events=("end",)):
+    stream = open_archive("jmdict")
+    for _, el in ET.iterparse(stream, events=("end",)):
         if el.tag != "entry":
             continue
         pri = set()
@@ -147,10 +161,12 @@ def stem(keb):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True)
+    add_source_args(ap)
     args = ap.parse_args()
 
-    W = load(os.path.join(args.src, "JMdict_e"))
+    ensure_archive("jmdict")
+    verify_source("jmdict", accept=args.accept_source)
+    W = load()
     print(f"jmdict entries with a kanji headword + sense: {len(W)}", file=sys.stderr)
 
     verbs = []

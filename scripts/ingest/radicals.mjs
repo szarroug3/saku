@@ -1,6 +1,9 @@
 // Ingest the 214 classical Kangxi radicals and each jōyō kanji's radical.
 //
-// SOURCES (fetched, not committed -- same policy as build.py's dictionaries):
+// SOURCES (fetched, not committed -- same policy as build.py's dictionaries).
+// Both are pinned by hash in src/data/generated/sources.json and downloaded to
+// the ignored scripts/ingest/raw directory, so this script reads the exact bytes
+// that record names or stops (SAK-434):
 //   UnicodeData.txt   Unicode Character Database, https://www.unicode.org/Public/UCD/latest/ucd/
 //                     The Kangxi Radicals block (U+2F00..U+2FD5) is the 214
 //                     radicals in order; each name is the radical's meaning and
@@ -18,7 +21,8 @@
 // re-cutting the 78MB dictionary ingest and risking drift in unrelated data.
 //
 // Run:
-//   node scripts/ingest/radicals.mjs --src <dir with UnicodeData.txt + kanjidic2.xml>
+//   node scripts/ingest/radicals.mjs
+//   node scripts/ingest/radicals.mjs --accept-source   (record newer archives)
 //
 // NOTHING HERE INVENTS DATA. Variant radical forms (氵 for 水) and Japanese
 // bushu names (さんずい) are deliberately absent: Unicode's variant block mixes
@@ -29,6 +33,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  acceptSource,
+  ensureArchive,
+  readArchiveText,
+  recordBuild,
+  verifySource,
+} from "./sources.mjs";
+
 // The two radicals whose Kangxi glyph is the traditional form; Japan uses the
 // shinjitai. KANJIDIC2 has no stroke count for the traditional glyph, which is
 // how these two were found. Remapped to the form a Japanese learner reads.
@@ -37,13 +49,8 @@ const JP_GLYPH = new Map([
   ["靑", "青"], // 174 blue
 ]);
 
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  return i >= 0 ? process.argv[i + 1] : def;
-}
-
-function loadUnicodeRadicals(udPath) {
-  const lines = fs.readFileSync(udPath, "utf8").split("\n");
+function loadUnicodeRadicals(text) {
+  const lines = text.split("\n");
   const rads = [];
   for (const line of lines) {
     const f = line.split(";");
@@ -62,8 +69,7 @@ function loadUnicodeRadicals(udPath) {
   return rads;
 }
 
-function loadKanjidic(kdPath) {
-  const xml = fs.readFileSync(kdPath, "utf8");
+function loadKanjidic(xml) {
   const chars = xml.split("<character>").slice(1);
   const radOf = new Map();
   const strokeOf = new Map();
@@ -78,17 +84,18 @@ function loadKanjidic(kdPath) {
   return { radOf, strokeOf };
 }
 
-function main() {
-  const src = arg("--src");
-  if (!src) {
-    console.error("usage: node scripts/ingest/radicals.mjs --src <dir>");
-    process.exit(1);
-  }
+async function main() {
   const here = path.dirname(new URL(import.meta.url).pathname);
   const outDir = path.resolve(here, "../../src/data/generated");
 
-  const rads = loadUnicodeRadicals(path.join(src, "UnicodeData.txt"));
-  const { radOf, strokeOf } = loadKanjidic(path.join(src, "kanjidic2.xml"));
+  const accept = acceptSource();
+  for (const id of ["unicode-data", "kanjidic2"]) {
+    await ensureArchive(id);
+    verifySource(id, { accept });
+  }
+
+  const rads = loadUnicodeRadicals(readArchiveText("unicode-data"));
+  const { radOf, strokeOf } = loadKanjidic(readArchiveText("kanjidic2"));
 
   const table = rads.map((r) => {
     const strokes = strokeOf.get(r.glyph);
@@ -122,10 +129,16 @@ function main() {
     JSON.stringify(kanjiRad) + "\n",
   );
 
+  recordBuild(
+    "scripts/ingest/radicals.mjs",
+    ["radicals.json", "kanji-radicals.json"],
+    ["unicode-data", "kanjidic2"],
+  );
+
   const used = new Set(Object.values(kanjiRad));
   const orphans = table.filter((r) => !used.has(r.num)).map((r) => r.num);
   console.log(`radicals: ${table.length}  kanji mapped: ${Object.keys(kanjiRad).length}`);
   console.log(`radicals with a jōyō consumer: ${used.size}  orphans: ${orphans.length} (${orphans.join(" ")})`);
 }
 
-main();
+await main();

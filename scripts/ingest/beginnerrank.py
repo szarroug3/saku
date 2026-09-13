@@ -67,10 +67,33 @@ function to the already-emitted generated/vocab.json so the field can be
 refreshed without a full dictionary re-cut. Neither hand-edits the JSON.
 """
 
-import argparse, csv, glob, json, math, os, re
+import argparse, csv, glob, json, math, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from sources import (  # noqa: E402
+    add_source_args,
+    record_build,
+    verify_source,
+)
+
 SOURCES = os.path.join(HERE, "sources")
+
+# The three committed inputs, by their manifest id. They live in the repo rather
+# than being downloaded, so the version control history already pins them; the
+# manifest entries exist so that every input to a generated file has one, and so
+# a hand-edit to a committed snapshot is caught the same way a changed download
+# is (SAK-434).
+SOURCE_IDS = (
+    "opensubtitles-ja-2018",
+    "jlpt-tanos",
+    *(f"jlpt-anki-n{n}" for n in (1, 2, 3, 4, 5)),
+)
+
+
+def verify_sources(accept=False):
+    for archive_id in SOURCE_IDS:
+        verify_source(archive_id, accept=accept)
 VOCAB_JSON = os.path.join(HERE, "..", "..", "src", "data", "generated", "vocab.json")
 
 # score = meanJlptLevel*K - log(subRank). K=10 ~= the maximum within-band log
@@ -235,8 +258,10 @@ def main():
     ap.add_argument("--check", action="store_true",
                     help="print the money-shot and stats, write nothing")
     ap.add_argument("--vocab", default=VOCAB_JSON)
+    add_source_args(ap)
     args = ap.parse_args()
 
+    verify_sources(accept=args.accept_source)
     before = os.path.getsize(args.vocab)
     rows = json.load(open(args.vocab, encoding="utf-8"))
     stats = compute_beginner_ranks(rows)
@@ -263,6 +288,7 @@ def main():
         print("\n--check: nothing written.")
         return
     _emit(args.vocab, rows)
+    record_build("scripts/ingest/beginnerrank.py", ["vocab.json"], list(SOURCE_IDS))
     after = os.path.getsize(args.vocab)
     print(f"\nwrote {args.vocab}  {before/1024:.0f} KB -> {after/1024:.0f} KB "
           f"(+{(after-before)/1024:.0f} KB)")

@@ -2,14 +2,21 @@
 """
 Ingest KANJIDIC2 + JMdict + KRADFILE into the app's entry/fact model.
 
-    python3 scripts/ingest/build.py --src /path/to/dicts
+    python3 scripts/ingest/build.py
+    python3 scripts/ingest/build.py --accept-source   (record newer archives)
 
-Reads (from --src):
-    kanjidic2.xml    KANJIDIC2, CC BY-SA 4.0 (EDRDG)
-    JMdict_e         JMdict English, CC BY-SA 4.0 (EDRDG)
-    kradfile.utf8    KRADFILE, CC BY-SA 4.0 (EDRDG) -- the UTF-8 conversion.
-                     The distributed `kradfile` is EUC-JP; `kradfile2.gz` on
-                     the mirror is a 404 HTML page, not data.
+Reads, from the archives pinned by hash in src/data/generated/sources.json and
+downloaded to the ignored scripts/ingest/raw directory (SAK-434):
+    kanjidic2.xml.gz  KANJIDIC2, CC BY-SA 4.0 (EDRDG)
+    JMdict_e.gz       JMdict English, CC BY-SA 4.0 (EDRDG)
+    kradzip.zip       KRADFILE, CC BY-SA 4.0 (EDRDG). The `kradfile` member is
+                      EUC-JP and is decoded here rather than kept as a second,
+                      unpinned .utf8 copy on disk; `kradfile2.gz` on the mirror
+                      is a 404 HTML page, not data.
+
+A changed archive stops the run. That matters most here: this script cuts the
+whole vocabulary, and a fact id is what a learner's study history is stored
+under, so a re-cut against a JMdict nobody chose would silently re-key history.
 
 Writes src/data/generated/*.json, which IS COMMITTED. See src/data/kanji.ts for
 why the generated JSON is the artifact and this script is not run at build time.
@@ -28,8 +35,37 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import align, is_kanji  # noqa: E402
-from beginnerrank import SOURCES, compute_beginner_ranks, load_anki, load_tanos  # noqa: E402
+from beginnerrank import (  # noqa: E402
+    SOURCE_IDS,
+    SOURCES,
+    compute_beginner_ranks,
+    load_anki,
+    load_tanos,
+    verify_sources,
+)
 from readingtype import clean_meanings, kinds_of, types_for  # noqa: E402
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive,
+    read_archive_text,
+    record_build,
+    verify_source,
+)
+
+# Everything this script writes, so the manifest entry says what one run of it
+# covers. kanji.json and readings.json are written again afterwards by the two
+# back-fill passes (kanji-raw-readings.py, readingtype.py), which record their
+# own entries; see scripts/ingest/sources.mjs for why the manifest is keyed by
+# pass and not by file.
+OUTPUTS = [
+    "kanji.json",
+    "vocab.json",
+    "word-senses.json",
+    "readings.json",
+    "order.json",
+    "confusable-derived.json",
+]
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated")
 
@@ -41,8 +77,8 @@ PRIM_STROKES = {"ノ": 1, "｜": 1, "ハ": 2, "マ": 2, "ユ": 2, "ヨ": 3}
 
 # ---------------------------------------------------------------- load
 
-def load_kanjidic(path):
-    root = ET.parse(path).getroot()
+def load_kanjidic(stream):
+    root = ET.parse(stream).getroot()
     K = {}
     for ch in root.findall("character"):
         lit = ch.findtext("literal")
@@ -67,14 +103,13 @@ def load_kanjidic(path):
     return K
 
 
-def load_kradfile(path):
+def load_kradfile(text):
     KR = {}
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            if line.startswith("#") or ":" not in line:
-                continue
-            k, r = line.split(":", 1)
-            KR[k.strip()] = r.split()
+    for line in text.splitlines():
+        if line.startswith("#") or ":" not in line:
+            continue
+        k, r = line.split(":", 1)
+        KR[k.strip()] = r.split()
     return KR
 
 
@@ -90,7 +125,7 @@ CURATED = {"ichi1", "spec1", "spec2"}
 UK = "word usually written using kana alone"
 
 
-def load_jmdict(path):
+def load_jmdict(stream):
     """Every entry, keyed on the form JMdict says the word is actually written in.
 
     A JMdict entry records commonness on the HEADWORD, and a word's headword is
@@ -109,7 +144,7 @@ def load_jmdict(path):
     than being judged on 此 -- a non-jouyou kanji nobody writes.
     """
     W = []
-    for _, el in ET.iterparse(path, events=("end",)):
+    for _, el in ET.iterparse(stream, events=("end",)):
         if el.tag != "entry":
             continue
         kels = [(ke.findtext("keb"), {x.text for x in ke.findall("ke_pri")})
@@ -263,17 +298,26 @@ def novel_strokes(k, KR, K, seen):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True, help="directory holding the raw dictionaries")
     ap.add_argument("--cache", default=None, help="optional pickle cache dir for reruns")
+    add_source_args(ap)
     args = ap.parse_args()
+
+    for archive_id in ("kanjidic2", "kradfile", "jmdict"):
+        ensure_archive(archive_id)
+        verify_source(archive_id, accept=args.accept_source)
+    verify_sources(accept=args.accept_source)
 
     cache = os.path.join(args.cache, "ingest_raw.pkl") if args.cache else None
     if cache and os.path.exists(cache):
         K, KR, W = pickle.load(open(cache, "rb"))
     else:
-        K = load_kanjidic(os.path.join(args.src, "kanjidic2.xml"))
-        KR = load_kradfile(os.path.join(args.src, "kradfile.utf8"))
-        W = load_jmdict(os.path.join(args.src, "JMdict_e"))
+        with open_archive("kanjidic2") as fh:
+            K = load_kanjidic(fh)
+        KR = load_kradfile(
+            read_archive_text("kradfile", encoding="euc-jp", zip_member="kradfile")
+        )
+        with open_archive("jmdict") as fh:
+            W = load_jmdict(fh)
         if cache:
             pickle.dump((K, KR, W), open(cache, "wb"))
     print(f"loaded  kanjidic={len(K)}  kradfile={len(KR)}  jmdict(kanji+pri)={len(W)}")
@@ -545,6 +589,12 @@ def main():
     derived = sorted([sorted(v) for v in groups.values() if len(v) > 1])
     dump("confusable-derived.json", derived)
     print(f"KRADFILE-derived confusable groups: {len(derived)}")
+
+    record_build(
+        "scripts/ingest/build.py",
+        OUTPUTS,
+        ["kanjidic2", "kradfile", "jmdict", *SOURCE_IDS],
+    )
 
     # The primitive stroke map is NO LONGER emitted here. It must cover exactly
     # the non-jōyō components the "Made of" decomposition uses, and that

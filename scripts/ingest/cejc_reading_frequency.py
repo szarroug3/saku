@@ -10,8 +10,9 @@ ordered, then scheduled with the approved five-response bootstrap and 30:4
 cadence. Every matched word is retained, including words for which CEJC observed
 only one reading.
 
-    python3 scripts/ingest/cejc_reading_frequency.py --download
+    python3 scripts/ingest/cejc_reading_frequency.py
     python3 scripts/ingest/cejc_reading_frequency.py --check
+    python3 scripts/ingest/cejc_reading_frequency.py --accept-source
 
 Source: Corpus of Everyday Japanese Conversation (CEJC), short-unit vocabulary
 and word-count tables, version 2022.09, National Institute for Japanese Language
@@ -19,21 +20,27 @@ and Linguistics. Research/educational use is free; raw redistribution is not.
 """
 
 import argparse
-import hashlib
 import io
 import json
 import os
 import re
-import urllib.request
+import sys
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import Counter, defaultdict
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sources import (  # noqa: E402
+    add_source_args,
+    archive_path,
+    ensure_archive,
+    record_build,
+    verify_source,
+)
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..", "..")
-RAW_DIR = os.path.join(HERE, "raw", "cejc")
-RAW_ZIP = os.path.join(RAW_DIR, "CEJC-reading-frequency-ver202209.zip")
 VOCAB = os.path.join(ROOT, "src", "data", "generated", "vocab.json")
 SENSES = os.path.join(ROOT, "src", "data", "generated", "word-senses.json")
 DEFINITIONS = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
@@ -53,12 +60,6 @@ URL = (
     "ver202209.zip"
 )
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-
-
-def download():
-    os.makedirs(RAW_DIR, exist_ok=True)
-    print(f"downloading CEJC {VERSION} -> {RAW_ZIP}")
-    urllib.request.urlretrieve(URL, RAW_ZIP)
 
 
 def hiragana(text):
@@ -299,7 +300,7 @@ def nested_workbook(archive):
         return io.BytesIO(outer.read(member))
 
 
-def reduce(archive):
+def reduce(archive, digest):
     vocab_rows = json.load(open(VOCAB, encoding="utf-8"))
     senses = json.load(open(SENSES, encoding="utf-8"))
     definitions = json.load(open(DEFINITIONS, encoding="utf-8"))["words"]
@@ -393,7 +394,6 @@ def reduce(archive):
         keb: dict(sorted(readings.items(), key=lambda p: (-p[1], p[0])))
         for keb, readings in sorted(counts.items())
     }
-    digest = hashlib.sha256(open(archive, "rb").read()).hexdigest()
     teaching = scheduled_teaching_rows(category_counts, family_counts, candidates)
     return {
         "source": {
@@ -420,14 +420,12 @@ def encoded(data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--download", action="store_true")
     parser.add_argument("--check", action="store_true")
+    add_source_args(parser)
     args = parser.parse_args()
-    if args.download or not os.path.exists(RAW_ZIP):
-        if not args.download:
-            raise SystemExit(f"missing ignored CEJC archive: {RAW_ZIP}; rerun with --download")
-        download()
-    result = encoded(reduce(RAW_ZIP))
+    ensure_archive("cejc")
+    digest = verify_source("cejc", accept=args.accept_source)
+    result = encoded(reduce(archive_path("cejc"), digest))
     if args.check:
         current = open(OUT, "rb").read() if os.path.exists(OUT) else b""
         if current != result:
@@ -437,6 +435,11 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "wb") as fh:
         fh.write(result)
+    record_build(
+        "scripts/ingest/cejc_reading_frequency.py",
+        ["cejc-reading-frequency.json"],
+        ["cejc"],
+    )
     print(f"wrote {OUT} ({len(json.loads(result)['words'])} covered words)")
 
 

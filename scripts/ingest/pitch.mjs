@@ -43,22 +43,29 @@
 // RUN
 // ===
 //   node scripts/ingest/pitch.mjs
-// Fetches accents.txt from the Kanjium master branch (raw.githubusercontent.com,
-// the same host scripts/ingest/kanjivg.mjs uses) and writes the JSON. Network
-// access required; it is one file, so it is quick.
+//   node scripts/ingest/pitch.mjs --accept-source
+// Downloads accents.txt to the ignored scripts/ingest/raw directory if it is not
+// already there, checks it against the hash recorded in
+// src/data/generated/sources.json, and writes the JSON. A changed archive stops
+// the run unless --accept-source records it (SAK-434). Network access required
+// the first time; it is one file, so it is quick.
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { moraCount } from "./mora.mjs";
+import {
+  acceptSource,
+  archivePath,
+  ensureArchive,
+  recordBuild,
+  verifySource,
+} from "./sources.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const GENDIR = resolve(REPO, "src/data/generated");
-
-const ACCENTS_URL =
-  "https://raw.githubusercontent.com/mifunetoshiro/kanjium/master/data/source_files/raw/accents.txt";
 
 /** Parse the raw accent file into a (word\treading) → downstep map, keeping only
  * rows whose accent is a single clean integer and that no other row disagrees
@@ -173,12 +180,9 @@ function verifyRegressionSample(rawText, vocab, senses, out) {
 }
 
 async function main() {
-  process.stderr.write(`Fetching ${ACCENTS_URL}\n`);
-  const res = await fetch(ACCENTS_URL);
-  if (!res.ok) {
-    throw new Error(`fetch failed: ${res.status} ${res.statusText}`);
-  }
-  const text = await res.text();
+  await ensureArchive("kanjium");
+  verifySource("kanjium", { accept: acceptSource() });
+  const text = await readFile(archivePath("kanjium"), "utf8");
 
   const { clean, stats } = parseAccents(text);
 
@@ -242,6 +246,7 @@ async function main() {
 
   const path = resolve(GENDIR, "pitch.json");
   await writeFile(path, `${JSON.stringify(sorted)}\n`);
+  recordBuild("scripts/ingest/pitch.mjs", ["pitch.json"], ["kanjium"]);
 
   const pct = ((100 * matched) / vocab.length).toFixed(1);
   process.stderr.write(

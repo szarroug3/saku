@@ -72,21 +72,29 @@
 // table. Rows that cannot be resolved to a Kangxi number, or whose glyph cannot
 // be represented, are dropped and listed — never guessed.
 //
+// Both sources are pinned by hash in src/data/generated/sources.json and
+// downloaded to the ignored scripts/ingest/raw directory, so this script reads
+// the exact bytes that record names or stops (SAK-434).
+//
 // Run:
-//   node scripts/ingest/radical-enrichment.mjs --src <dir with japanese-radicals.csv + EquivalentUnifiedIdeograph.txt>
+//   node scripts/ingest/radical-enrichment.mjs
+//   node scripts/ingest/radical-enrichment.mjs --accept-source   (record newer archives)
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  acceptSource,
+  ensureArchive,
+  readArchiveText,
+  recordBuild,
+  verifySource,
+} from "./sources.mjs";
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, "..", "..");
 const GEN = path.join(REPO, "src", "data", "generated");
-
-function arg(name, def) {
-  const i = process.argv.indexOf(name);
-  return i >= 0 ? process.argv[i + 1] : def;
-}
 
 // ---- tiny CSV reader (quoted fields with embedded commas) ------------------
 function parseCsv(text) {
@@ -115,9 +123,9 @@ function parseCsv(text) {
 }
 
 // ---- Unicode equivalent-unified-ideograph map ------------------------------
-function loadEquiv(p) {
+function loadEquiv(text) {
   const map = new Map();
-  for (const raw of fs.readFileSync(p, "utf8").split("\n")) {
+  for (const raw of text.split("\n")) {
     const line = raw.split("#")[0].trim();
     if (!line) continue;
     const [a, b] = line.split(";").map((x) => x.trim());
@@ -171,10 +179,14 @@ const EXPLICIT = new Map([
   ["kemonohen beast", { role: "variant", num: 94 }],
 ]);
 
-function main() {
-  const src = arg("--src", ".");
-  const rows = parseCsv(fs.readFileSync(path.join(src, "japanese-radicals.csv"), "utf8"));
-  const equiv = loadEquiv(path.join(src, "EquivalentUnifiedIdeograph.txt"));
+async function main() {
+  const accept = acceptSource();
+  for (const id of ["kanjialive-radicals", "unicode-equivalent-unified-ideograph"]) {
+    await ensureArchive(id);
+    verifySource(id, { accept });
+  }
+  const rows = parseCsv(readArchiveText("kanjialive-radicals"));
+  const equiv = loadEquiv(readArchiveText("unicode-equivalent-unified-ideograph"));
 
   // Our 214: Kangxi number → glyph, and glyph → number.
   const RADICALS = JSON.parse(fs.readFileSync(path.join(GEN, "radicals.json"), "utf8"));
@@ -303,9 +315,15 @@ function main() {
     JSON.stringify(payload, null, 1) + "\n",
   );
 
+  recordBuild(
+    "scripts/ingest/radical-enrichment.mjs",
+    ["radical-enrichment.json"],
+    ["kanjialive-radicals", "unicode-equivalent-unified-ideograph"],
+  );
+
   console.log(`wrote radical-enrichment.json: 214 names, ${withVariants} radicals carry variants, ${totalVariants} variant forms total.`);
   console.log(`dropped ${dropped.length} rows (PUA/positional-only/non-radical):`);
   for (const d of dropped) console.log("  ", JSON.stringify(d));
 }
 
-main();
+await main();

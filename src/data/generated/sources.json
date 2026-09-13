@@ -1,0 +1,557 @@
+{
+  "archives": {
+    "cejc": {
+      "bytes": 89890897,
+      "license": "National Institute for Japanese Language and Linguistics. Free for research and education; redistribution of the raw archive is not permitted",
+      "name": "CEJC short-unit vocabulary tables",
+      "path": "scripts/ingest/raw/cejc/CEJC-reading-frequency-ver202209.zip",
+      "recordedAt": "2026-09-13",
+      "sha256": "aa9532faae25a382db3b4a730b58f4adfe13d3e39b0dc18089e74720fbd3ef56",
+      "url": "https://www2.ninjal.ac.jp/conversation/cejc/data/CEJC%E7%9F%AD%E5%8D%98%E4%BD%8D%E8%AA%9E%E5%BD%99%E8%A1%A8_%E6%9B%B8%E5%AD%97%E5%BD%A2%E5%88%A5_%E7%99%BA%E9%9F%B3%E5%BD%A2%E5%88%A5_ver202209.zip",
+      "version": "2022.09",
+      "versionFrom": "the version in the archive's own file name"
+    },
+    "jlpt-anki-n1": {
+      "bytes": 191444,
+      "committed": true,
+      "license": "MIT, jamsinclair and contributors",
+      "name": "open-anki-jlpt-decks N1",
+      "path": "scripts/ingest/sources/jlpt-anki-n1.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "120911636c019899552aa6d7bd64b036ecef4bedfe272a744f75735c46aae5cd",
+      "url": "https://github.com/jamsinclair/open-anki-jlpt-decks",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jlpt-anki-n2": {
+      "bytes": 135869,
+      "committed": true,
+      "license": "MIT, jamsinclair and contributors",
+      "name": "open-anki-jlpt-decks N2",
+      "path": "scripts/ingest/sources/jlpt-anki-n2.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "2d0f1ddd6222881cd9fc2ca701db74300af99b3f1f84d5ac3c18411c20f0c055",
+      "url": "https://github.com/jamsinclair/open-anki-jlpt-decks",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jlpt-anki-n3": {
+      "bytes": 167423,
+      "committed": true,
+      "license": "MIT, jamsinclair and contributors",
+      "name": "open-anki-jlpt-decks N3",
+      "path": "scripts/ingest/sources/jlpt-anki-n3.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "ba071571d344e60b0e1fd11cd2e98a6aaa04515361653ca45147129460531297",
+      "url": "https://github.com/jamsinclair/open-anki-jlpt-decks",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jlpt-anki-n4": {
+      "bytes": 49627,
+      "committed": true,
+      "license": "MIT, jamsinclair and contributors",
+      "name": "open-anki-jlpt-decks N4",
+      "path": "scripts/ingest/sources/jlpt-anki-n4.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "0e835f40a8d2a1f191d7aa499076002756fa099b95634758376f43c73793e9f6",
+      "url": "https://github.com/jamsinclair/open-anki-jlpt-decks",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jlpt-anki-n5": {
+      "bytes": 63965,
+      "committed": true,
+      "license": "MIT, jamsinclair and contributors",
+      "name": "open-anki-jlpt-decks N5",
+      "path": "scripts/ingest/sources/jlpt-anki-n5.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "f89abc86b391c4f2b551bbf8910b0de6cd600973b3a9f8d98347513921929ebe",
+      "url": "https://github.com/jamsinclair/open-anki-jlpt-decks",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jlpt-tanos": {
+      "bytes": 885636,
+      "committed": true,
+      "license": "CC BY, Jonathan Waller",
+      "name": "tanos.co.uk JLPT vocabulary",
+      "path": "scripts/ingest/sources/jlpt-tanos.json",
+      "recordedAt": "2026-09-13",
+      "sha256": "7cccbbc9559d056526f122dff17c24dc80cfc4c607bdd1b26db0dc5238baabca",
+      "url": "http://www.tanos.co.uk/jlpt/",
+      "version": "committed snapshot",
+      "versionFrom": "committed in this repo, so git pins it; the file declares no version"
+    },
+    "jmdict": {
+      "bytes": null,
+      "license": "CC BY-SA 4.0, Electronic Dictionary Research and Development Group",
+      "name": "JMdict (English)",
+      "note": "This is the hash src/data/generated/word-definitions.json records for the JMdict it was cut from, not the hash of what the URL serves today. EDRDG rebuilds JMdict daily and keeps only the current build, so this exact archive cannot be downloaded again. Every JMdict ingest therefore stops today, which is the intent: a JMdict re-cut is always a deliberate upgrade, never something to let happen by accident. Rerun with --accept-source to record the current build and cut against it, and expect the reduction to move.",
+      "path": "scripts/ingest/raw/jmdict/JMdict_e.gz",
+      "recordedAt": "2026-09-13",
+      "sha256": "935276ced947b1dc4b9e5fce70401f926f30ec512941a616a3da796c131633d1",
+      "url": "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz",
+      "version": "unrecorded; fetched 2026-08-29",
+      "versionFrom": "the date word-definitions.json was last refreshed (commit 7f7cc3d8); the archive's own creation date was not written down at the time"
+    },
+    "kanjialive-radicals": {
+      "bytes": 16270,
+      "license": "CC BY 4.0, Harvard University and Kanji Alive",
+      "name": "Kanji Alive japanese-radicals.csv",
+      "path": "scripts/ingest/raw/kanjialive/japanese-radicals.csv",
+      "recordedAt": "2026-09-13",
+      "sha256": "fb625ec34ee9bc79928a9bee375b222b4292b4660a52f8741bb92f5ae36f235e",
+      "url": "https://raw.githubusercontent.com/kanjialive/kanji-data-media/55b1bb9794509881c842c157bb16a9664ff6fdb1/language-data/japanese-radicals.csv",
+      "version": "55b1bb9794509881c842c157bb16a9664ff6fdb1 (2026-08-27)",
+      "versionFrom": "the commit this URL pins; the CSV declares no version of its own"
+    },
+    "kanjidic2": {
+      "bytes": 1488576,
+      "license": "CC BY-SA 4.0, Electronic Dictionary Research and Development Group",
+      "name": "KANJIDIC2",
+      "path": "scripts/ingest/raw/kanjidic/kanjidic2.xml.gz",
+      "recordedAt": "2026-09-13",
+      "sha256": "56f31c9c586d0a228ff44738bc6ec65e2caafa6667bce351c00d5f3b4be5f3f1",
+      "url": "http://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+      "version": "2026-256",
+      "versionFrom": "the file's own header database_version, date_of_creation 2026-09-13"
+    },
+    "kanjium": {
+      "bytes": 3226405,
+      "license": "CC BY-SA 4.0, mifunetoshiro and contributors",
+      "name": "Kanjium pitch accents",
+      "path": "scripts/ingest/raw/kanjium/accents.txt",
+      "recordedAt": "2026-09-13",
+      "sha256": "8bd0dd127dab32ceec94cb03ab1ba6b68858ea73421dfa1731af2f373deb4f20",
+      "url": "https://raw.githubusercontent.com/mifunetoshiro/kanjium/master/data/source_files/raw/accents.txt",
+      "version": "685d4d723d6d20bf9beb169103aeac188eb067ad (2024-06-16)",
+      "versionFrom": "the last commit to touch the file; accents.txt declares no version"
+    },
+    "kanjivg": {
+      "bytes": 22674264,
+      "license": "CC BY-SA 3.0, Ulrich Apel and contributors",
+      "name": "KanjiVG",
+      "path": "scripts/ingest/raw/kanjivg/kanjivg-20260714-all.zip",
+      "recordedAt": "2026-09-13",
+      "sha256": "534bd222052f4960747ff624014e426b08052164a837b15044f58517e85e4db5",
+      "url": "https://github.com/KanjiVG/kanjivg/releases/download/r20260714/kanjivg-20260714-all.zip",
+      "version": "r20260714",
+      "versionFrom": "the release tag"
+    },
+    "kradfile": {
+      "bytes": 285669,
+      "license": "CC BY-SA 4.0, Electronic Dictionary Research and Development Group",
+      "name": "KRADFILE",
+      "path": "scripts/ingest/raw/kradfile/kradzip.zip",
+      "recordedAt": "2026-09-13",
+      "sha256": "e2df44c07ed557fe9867709a051f1f134cd33c750598112d85ba56eb86fc3c8c",
+      "url": "https://www.edrdg.org/pub/Nihongo/kradzip.zip",
+      "version": "2023-08-09",
+      "versionFrom": "the zip member timestamp; KRADFILE declares no version of its own"
+    },
+    "opensubtitles-ja-2018": {
+      "bytes": 402792,
+      "committed": true,
+      "license": "CC BY-SA 4.0, Hermit Dave",
+      "name": "OpenSubtitles 2018 Japanese frequency list",
+      "path": "scripts/ingest/sources/opensubtitles-ja-2018.txt",
+      "recordedAt": "2026-09-13",
+      "sha256": "581dd106a134ff9f2706e23cde9fe95cd24d96ead6357cd3bd3bba9e166a764e",
+      "url": "https://github.com/hermitdave/FrequencyWords/blob/master/content/2018/ja/ja_full.txt",
+      "version": "2018",
+      "versionFrom": "the corpus year in the upstream path; committed in this repo, so git pins it"
+    },
+    "tatoeba-eng-sentences": {
+      "bytes": 24873473,
+      "license": "CC BY 2.0 FR, Tatoeba contributors",
+      "name": "Tatoeba eng_sentences",
+      "path": "scripts/ingest/raw/tatoeba/eng_sentences.tsv.bz2",
+      "recordedAt": "2026-09-13",
+      "sha256": "7c46287a9146d8090ea26b6b2eaadc759b92a550e865e32388077806f584ee62",
+      "url": "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences.tsv.bz2",
+      "version": "2026-09-12",
+      "versionFrom": "the export's Last-Modified; the dump declares no version"
+    },
+    "tatoeba-jpn-eng-links": {
+      "bytes": 1454878,
+      "license": "CC BY 2.0 FR, Tatoeba contributors",
+      "name": "Tatoeba jpn-eng_links",
+      "path": "scripts/ingest/raw/tatoeba/jpn-eng_links.tsv.bz2",
+      "recordedAt": "2026-09-13",
+      "sha256": "256b14b7cbf8a49b91af18fe8f35f4f7a8ab142d70c5b310c9d5a21535fe1649",
+      "url": "https://downloads.tatoeba.org/exports/per_language/jpn/jpn-eng_links.tsv.bz2",
+      "version": "2026-09-12",
+      "versionFrom": "the export's Last-Modified; the dump declares no version"
+    },
+    "tatoeba-jpn-sentences": {
+      "bytes": 4460889,
+      "license": "CC BY 2.0 FR, Tatoeba contributors",
+      "name": "Tatoeba jpn_sentences_detailed",
+      "path": "scripts/ingest/raw/tatoeba/jpn_sentences_detailed.tsv.bz2",
+      "recordedAt": "2026-09-13",
+      "sha256": "22507d7f514fc6e600958c5e97403364af0ae755d53ed01397bce3d83ece1510",
+      "url": "https://downloads.tatoeba.org/exports/per_language/jpn/jpn_sentences_detailed.tsv.bz2",
+      "version": "2026-09-12",
+      "versionFrom": "the export's Last-Modified; the dump declares no version"
+    },
+    "unicode-data": {
+      "bytes": 2198209,
+      "license": "Unicode License v3",
+      "name": "Unicode Character Database, UnicodeData.txt",
+      "path": "scripts/ingest/raw/unicode/UnicodeData.txt",
+      "recordedAt": "2026-09-13",
+      "sha256": "2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c",
+      "url": "https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt",
+      "version": "17.0.0",
+      "versionFrom": "the UCD ReadMe for the release this directory served; UnicodeData.txt carries no header"
+    },
+    "unicode-equivalent-unified-ideograph": {
+      "bytes": 18371,
+      "license": "Unicode License v3",
+      "name": "Unicode Character Database, EquivalentUnifiedIdeograph.txt",
+      "path": "scripts/ingest/raw/unicode/EquivalentUnifiedIdeograph.txt",
+      "recordedAt": "2026-09-13",
+      "sha256": "38619c05a17e771554000fe604afee92e10eb49e0616ecf0c87af3c1eb0f4320",
+      "url": "https://www.unicode.org/Public/UCD/latest/ucd/EquivalentUnifiedIdeograph.txt",
+      "version": "17.0.0",
+      "versionFrom": "the file's own first line, dated 2025-08-01"
+    }
+  },
+  "builtFrom": {
+    "scripts/ingest/beginnerrank.py": {
+      "archives": {
+        "jlpt-anki-n1": "120911636c019899552aa6d7bd64b036ecef4bedfe272a744f75735c46aae5cd",
+        "jlpt-anki-n2": "2d0f1ddd6222881cd9fc2ca701db74300af99b3f1f84d5ac3c18411c20f0c055",
+        "jlpt-anki-n3": "ba071571d344e60b0e1fd11cd2e98a6aaa04515361653ca45147129460531297",
+        "jlpt-anki-n4": "0e835f40a8d2a1f191d7aa499076002756fa099b95634758376f43c73793e9f6",
+        "jlpt-anki-n5": "f89abc86b391c4f2b551bbf8910b0de6cd600973b3a9f8d98347513921929ebe",
+        "jlpt-tanos": "7cccbbc9559d056526f122dff17c24dc80cfc4c607bdd1b26db0dc5238baabca",
+        "opensubtitles-ja-2018": "581dd106a134ff9f2706e23cde9fe95cd24d96ead6357cd3bd3bba9e166a764e"
+      },
+      "outputs": [
+        "vocab.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/cejc_reading_frequency.py": {
+      "archives": {
+        "cejc": "aa9532faae25a382db3b4a730b58f4adfe13d3e39b0dc18089e74720fbd3ef56"
+      },
+      "note": "The CEJC archive on disk is the one this file records for itself, byte for byte. Re-running the pass today still moves three counts (ちち 50 to 684, ちゃん 4268 to 4273, one core category count 2 to 7), because the pass also reads word-definitions.json and that was refreshed on 2026-08-29, after this file was last cut. The archive is pinned; the staleness is against a committed input, not against CEJC.",
+      "outputs": [
+        "cejc-reading-frequency.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/jmdict_word_definitions.py": {
+      "archives": {
+        "jmdict": "935276ced947b1dc4b9e5fce70401f926f30ec512941a616a3da796c131633d1"
+      },
+      "note": "Read off the source block word-definitions.json carries, not stamped by a run: the pinned JMdict is no longer downloadable, so this pass stops today. Against the JMdict of 2026-09-13 the reduction gains 2 words (かみそり, 公平) and changes 9 (と, なり, 大小, 大気, 寂しい, 最後, 発電, 硬い, 進む), all of them upstream sense edits, none of them a defect in the ingest.",
+      "outputs": [
+        "word-definitions.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/kanji-raw-readings.py": {
+      "archives": {
+        "kanjidic2": "56f31c9c586d0a228ff44738bc6ec65e2caafa6667bce351c00d5f3b4be5f3f1"
+      },
+      "outputs": [
+        "kanji.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/kanjivg.mjs": {
+      "archives": {
+        "kanjivg": "534bd222052f4960747ff624014e426b08052164a837b15044f58517e85e4db5"
+      },
+      "outputs": [
+        "kanji-components.json",
+        "strokes/hiragana.json",
+        "strokes/kanji-00.json",
+        "strokes/kanji-01.json",
+        "strokes/kanji-02.json",
+        "strokes/kanji-03.json",
+        "strokes/kanji-04.json",
+        "strokes/kanji-05.json",
+        "strokes/kanji-06.json",
+        "strokes/kanji-07.json",
+        "strokes/kanji-08.json",
+        "strokes/kanji-09.json",
+        "strokes/kanji-10.json",
+        "strokes/kanji-11.json",
+        "strokes/kanji-12.json",
+        "strokes/kanji-13.json",
+        "strokes/kanji-14.json",
+        "strokes/kanji-15.json",
+        "strokes/kanji-16.json",
+        "strokes/kanji-17.json",
+        "strokes/kanji-18.json",
+        "strokes/kanji-19.json",
+        "strokes/kanji-20.json",
+        "strokes/kanji-21.json",
+        "strokes/kanji-22.json",
+        "strokes/kanji-23.json",
+        "strokes/kanji-24.json",
+        "strokes/kanji-25.json",
+        "strokes/kanji-26.json",
+        "strokes/kanji-27.json",
+        "strokes/kanji-28.json",
+        "strokes/kanji-29.json",
+        "strokes/kanji-30.json",
+        "strokes/kanji-31.json",
+        "strokes/kanji-32.json",
+        "strokes/kanji-33.json",
+        "strokes/kanji-34.json",
+        "strokes/kanji-35.json",
+        "strokes/kanji-36.json",
+        "strokes/kanji-37.json",
+        "strokes/kanji-38.json",
+        "strokes/kanji-39.json",
+        "strokes/kanji-40.json",
+        "strokes/kanji-41.json",
+        "strokes/kanji-42.json",
+        "strokes/kanji-43.json",
+        "strokes/kanji-44.json",
+        "strokes/kanji-45.json",
+        "strokes/kanji-46.json",
+        "strokes/kanji-47.json",
+        "strokes/kanji-index.ts",
+        "strokes/katakana.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/pitch.mjs": {
+      "archives": {
+        "kanjium": "8bd0dd127dab32ceec94cb03ab1ba6b68858ea73421dfa1731af2f373deb4f20"
+      },
+      "outputs": [
+        "pitch.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/radical-enrichment.mjs": {
+      "archives": {
+        "kanjialive-radicals": "fb625ec34ee9bc79928a9bee375b222b4292b4660a52f8741bb92f5ae36f235e",
+        "unicode-equivalent-unified-ideograph": "38619c05a17e771554000fe604afee92e10eb49e0616ecf0c87af3c1eb0f4320"
+      },
+      "outputs": [
+        "radical-enrichment.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/radicals.mjs": {
+      "archives": {
+        "kanjidic2": "56f31c9c586d0a228ff44738bc6ec65e2caafa6667bce351c00d5f3b4be5f3f1",
+        "unicode-data": "2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c"
+      },
+      "outputs": [
+        "kanji-radicals.json",
+        "radicals.json"
+      ],
+      "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/readingtype.py": {
+      "archives": {
+        "kanjidic2": "56f31c9c586d0a228ff44738bc6ec65e2caafa6667bce351c00d5f3b4be5f3f1"
+      },
+      "outputs": [
+        "readings.json"
+      ],
+      "recordedAt": "2026-09-13"
+    }
+  },
+  "noUpstreamArchive": {},
+  "note": "Which upstream archive each ingest under scripts/ingest reads, and the exact bytes it read. archives is the pin; builtFrom is one entry per ingest pass; unpinned names every generated file the pin does not reach and says why. See scripts/ingest/sources.mjs for the mechanism and src/data/source-manifest.test.ts for what is enforced.",
+  "unpinned": {
+    "assembly-corpus-meta.json": {
+      "archives": [],
+      "script": "scripts/ingest/assembly.py",
+      "why": "no upstream archive: built from committed data by scripts/ingest/assembly.py."
+    },
+    "assembly-corpus.json": {
+      "archives": [],
+      "script": "scripts/ingest/assembly.py",
+      "why": "no upstream archive: built from committed data by scripts/ingest/assembly.py."
+    },
+    "atlas-catalogue.json": {
+      "archives": [],
+      "script": "scripts/build-catalogues.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-catalogues.mjs."
+    },
+    "confusable-derived.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Cut from a JMdict, a KANJIDIC2 and a KRADFILE whose hashes nobody wrote down at the time, and EDRDG serves only the current build, so those exact archives cannot be recovered. Re-cutting against today's JMdict would move the word set, the ranks and the fact ids a learner's study history is stored under, which is a content decision and not this one. The pin arrives the next time the file is deliberately re-cut, which now takes --accept-source."
+    },
+    "curriculum-meta.json": {
+      "archives": [],
+      "script": "scripts/build-learn-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-learn-index.mjs."
+    },
+    "curriculum-sequence.json": {
+      "archives": [],
+      "script": "scripts/build-curriculum-sequence.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-curriculum-sequence.mjs."
+    },
+    "en-synonyms-attempted.json": {
+      "archives": [],
+      "script": "scripts/build-en-synonyms.mjs",
+      "why": "Filtered from live Datamuse API responses, cached under the ignored scripts/.cache. An API is not an archive and Datamuse publishes no dated dump, so there is nothing to hash."
+    },
+    "en-synonyms.json": {
+      "archives": [],
+      "script": "scripts/build-en-synonyms.mjs",
+      "why": "Filtered from live Datamuse API responses, cached under the ignored scripts/.cache. An API is not an archive and Datamuse publishes no dated dump, so there is nothing to hash."
+    },
+    "grammar-corpus-dropped.json": {
+      "archives": [],
+      "script": "scripts/audit-corpus.ts",
+      "why": "no upstream archive: built from committed data by scripts/audit-corpus.ts, which removes the confounded sentences from the committed corpus and records what it removed."
+    },
+    "grammar-corpus-meta.json": {
+      "archives": [
+        "tatoeba-jpn-sentences",
+        "tatoeba-eng-sentences",
+        "tatoeba-jpn-eng-links"
+      ],
+      "script": "scripts/ingest/grammar.py",
+      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded."
+    },
+    "grammar-corpus.json": {
+      "archives": [
+        "tatoeba-jpn-sentences",
+        "tatoeba-eng-sentences",
+        "tatoeba-jpn-eng-links"
+      ],
+      "script": "scripts/ingest/grammar.py",
+      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded."
+    },
+    "kanji-etymology-manual.json": {
+      "archives": [],
+      "script": "scripts/etymology-research-range.mts",
+      "why": "Hand-written and hand-reviewed overrides for the 23 records Wiktionary gets wrong or leaves empty. Not derived from any archive, by design."
+    },
+    "kanji-etymology.json": {
+      "archives": [],
+      "script": "scripts/ingest/kanji-etymology.mjs",
+      "why": "Parsed from English Wiktionary page by page over the live API, throttled and cached. There is no archive to hash: the upstream is 2,136 pages, each with its own revision, and Wiktionary publishes no dump this ingest reads. Pinning it means recording a revision id per page, which is its own piece of work."
+    },
+    "kanji.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Partly pinned. The on/kun fields are re-cut by scripts/ingest/kanji-raw-readings.py against the pinned KANJIDIC2 and reproduce byte for byte; the rest of the row (meanings, grade, strokes, newspaper rank, comps) came from build.py's unrecorded archives. Same reason as vocab.json."
+    },
+    "learn-index.json": {
+      "archives": [],
+      "script": "scripts/build-learn-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-learn-index.mjs."
+    },
+    "library-index.json": {
+      "archives": [],
+      "script": "scripts/build-library-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-library-index.mjs."
+    },
+    "meaning-registry.candidates.json": {
+      "archives": [],
+      "script": "scripts/build-library-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-library-index.mjs."
+    },
+    "meaning-registry.json": {
+      "archives": [],
+      "script": "scripts/build-library-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-library-index.mjs."
+    },
+    "order.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Cut from a JMdict, a KANJIDIC2 and a KRADFILE whose hashes nobody wrote down at the time, and EDRDG serves only the current build, so those exact archives cannot be recovered. Re-cutting against today's JMdict would move the word set, the ranks and the fact ids a learner's study history is stored under, which is a content decision and not this one. The pin arrives the next time the file is deliberately re-cut, which now takes --accept-source."
+    },
+    "pitch-pairs.json": {
+      "archives": [],
+      "script": "scripts/ingest/pitch-pairs.mjs",
+      "why": "no upstream archive: built from committed data by scripts/ingest/pitch-pairs.mjs."
+    },
+    "reading-proof-facts.json": {
+      "archives": [],
+      "script": "scripts/build-library-index.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-library-index.mjs."
+    },
+    "readings.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Partly pinned. The type field is re-cut by scripts/ingest/readingtype.py against the pinned KANJIDIC2 and reproduces byte for byte; the aligned reading rows themselves came from build.py's unrecorded archives. Same reason as vocab.json."
+    },
+    "scheduling-preview.json": {
+      "archives": [],
+      "script": "scripts/build-scheduling-preview.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-scheduling-preview.mjs."
+    },
+    "sky-catalogue-base.json": {
+      "archives": [],
+      "script": "scripts/build-catalogues.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-catalogues.mjs."
+    },
+    "sky-catalogue.json": {
+      "archives": [],
+      "script": "scripts/build-catalogues.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-catalogues.mjs."
+    },
+    "vehicles.json": {
+      "archives": [],
+      "script": "scripts/build-vehicles.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-vehicles.mjs."
+    },
+    "vocab-runtime.json": {
+      "archives": [],
+      "script": "scripts/build-vocab-runtime.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-vocab-runtime.mjs."
+    },
+    "vocab.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Partly pinned. beginnerRank is re-cut by scripts/ingest/beginnerrank.py from the three committed JLPT and frequency snapshots and reproduces byte for byte; every other field came from build.py's unrecorded archives, which cannot be recovered."
+    },
+    "word-examples.json": {
+      "archives": [],
+      "script": "scripts/build-word-examples.ts",
+      "why": "no upstream archive: built from committed data by scripts/build-word-examples.ts."
+    },
+    "word-rank.json": {
+      "archives": [],
+      "script": "scripts/build-word-rank.mjs",
+      "why": "no upstream archive: built from committed data by scripts/build-word-rank.mjs."
+    },
+    "word-senses.json": {
+      "archives": [
+        "jmdict",
+        "kanjidic2",
+        "kradfile"
+      ],
+      "script": "scripts/ingest/build.py",
+      "why": "Cut from a JMdict, a KANJIDIC2 and a KRADFILE whose hashes nobody wrote down at the time, and EDRDG serves only the current build, so those exact archives cannot be recovered. Re-cutting against today's JMdict would move the word set, the ranks and the fact ids a learner's study history is stored under, which is a content decision and not this one. The pin arrives the next time the file is deliberately re-cut, which now takes --accept-source."
+    }
+  }
+}

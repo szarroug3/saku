@@ -59,9 +59,10 @@ HOW A READING IS RESOLVED
    segmentation `VocabRow.align` already uses -- against a reading-candidate
    table built from vocab.json's OWN attested (kanji -> base reading) pairs
    (see build_krd). This is not raw KANJIDIC2 on/kun/nanori data: that XML is
-   not committed to this repo, and scripts/ingest/build.py needs a `--src`
-   pointing at a local copy to regenerate vocab.json itself, so it cannot be
-   re-run here. Every reading in vocab.json's `align` field is nonetheless
+   not committed to this repo, and scripts/ingest/build.py downloads it to the
+   ignored scripts/ingest/raw directory and checks it against the hash in
+   src/data/generated/sources.json before it will regenerate vocab.json, so it
+   cannot be re-run here. Every reading in vocab.json's `align` field is nonetheless
    real KANJIDIC2 data -- it was produced by this SAME aligner.align() against
    the real dictionary when vocab.json was last built -- so reusing it as the
    candidate table is a legitimate (if smaller and un-refreshed-since) subset

@@ -6,29 +6,41 @@ reading. This sidecar restores source sense identity without re-cutting word
 ranks. Multiple English gloss nodes inside one JMdict <sense> stay together;
 separate senses never merge because their English happens to look similar.
 
-    python3 scripts/ingest/jmdict_word_definitions.py --download
+    python3 scripts/ingest/jmdict_word_definitions.py
     python3 scripts/ingest/jmdict_word_definitions.py --check
+    python3 scripts/ingest/jmdict_word_definitions.py --accept-source
+
+The archive is downloaded to the ignored scripts/ingest/raw directory the first
+time and checked against the hash in src/data/generated/sources.json before it
+is read, so a newer JMdict stops the run instead of silently re-cutting the
+shipped definitions (SAK-434). --accept-source records the new archive and
+builds from it.
 """
 
 import argparse
-import gzip
-import hashlib
 import json
 import os
+import sys
 import unicodedata
-import urllib.request
 import xml.etree.ElementTree as ET
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive,
+    read_manifest,
+    record_build,
+    verify_source,
+)
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..", "..")
-RAW_DIR = os.path.join(HERE, "raw", "jmdict")
-RAW_GZ = os.path.join(RAW_DIR, "JMdict_e.gz")
 VOCAB = os.path.join(ROOT, "src", "data", "generated", "vocab.json")
 SENSES = os.path.join(ROOT, "src", "data", "generated", "word-senses.json")
 ALTERNATES = os.path.join(ROOT, "src", "data", "number-word-alternates.json")
 OUT = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
-URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
 UK = "word usually written using kana alone"
 CURATED = {"ichi1", "spec1", "spec2"}
 
@@ -90,12 +102,6 @@ def pronunciation_key(reading):
     return "".join(out)
 
 
-def download():
-    os.makedirs(RAW_DIR, exist_ok=True)
-    print(f"downloading JMdict -> {RAW_GZ}")
-    urllib.request.urlretrieve(URL, RAW_GZ)
-
-
 def targets():
     vocab = json.load(open(VOCAB, encoding="utf-8"))
     senses = json.load(open(SENSES, encoding="utf-8"))
@@ -113,10 +119,10 @@ def targets():
     return readings
 
 
-def reduce(path):
+def reduce(digest):
     wanted = targets()
     collected = {keb: [] for keb in wanted}
-    with gzip.open(path, "rb") as source:
+    with open_archive("jmdict") as source:
         for _, entry in ET.iterparse(source, events=("end",)):
             if entry.tag != "entry":
                 continue
@@ -230,9 +236,14 @@ def reduce(path):
         ):
             words[keb] = unique
 
-    digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
+    entry = read_manifest()["archives"]["jmdict"]
     return {
-        "source": {"name": "JMdict", "url": URL, "rawSha256": digest},
+        "source": {
+            "name": "JMdict",
+            "url": entry["url"],
+            "version": entry["version"],
+            "rawSha256": digest,
+        },
         "words": dict(sorted(words.items())),
     }
 
@@ -243,14 +254,12 @@ def encoded(data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--download", action="store_true")
     parser.add_argument("--check", action="store_true")
+    add_source_args(parser)
     args = parser.parse_args()
-    if args.download or not os.path.exists(RAW_GZ):
-        if not args.download:
-            raise SystemExit(f"missing ignored JMdict archive: {RAW_GZ}; rerun with --download")
-        download()
-    result = encoded(reduce(RAW_GZ))
+    ensure_archive("jmdict")
+    digest = verify_source("jmdict", accept=args.accept_source)
+    result = encoded(reduce(digest))
     if args.check:
         current = open(OUT, "rb").read() if os.path.exists(OUT) else b""
         if current != result:
@@ -259,6 +268,11 @@ def main():
         return
     with open(OUT, "wb") as fh:
         fh.write(result)
+    record_build(
+        "scripts/ingest/jmdict_word_definitions.py",
+        ["word-definitions.json"],
+        ["jmdict"],
+    )
     print(f"wrote {OUT} ({len(json.loads(result)['words'])} words)")
 
 

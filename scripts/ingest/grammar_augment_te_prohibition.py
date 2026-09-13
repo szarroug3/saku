@@ -5,9 +5,10 @@ Tatoeba example sentences and MERGE them into the committed grammar corpus,
 WITHOUT re-cutting the sentences the corpus already ships.
 
     uv run --with fugashi --with unidic-lite \
-        scripts/ingest/grammar_augment_te_prohibition.py --src /path/to/tatoeba
+        scripts/ingest/grammar_augment_te_prohibition.py
 
-Reads (from --src, same three files grammar.py reads):
+Reads the same three Tatoeba exports grammar.py reads, from the archives pinned
+by hash in src/data/generated/sources.json (SAK-434):
     jpn_sentences_detailed.tsv, eng_sentences.tsv, jpn-eng_links.tsv
 Reads and REWRITES:
     src/data/generated/grammar-corpus.json       (existing rows kept byte-identical)
@@ -47,6 +48,7 @@ from collections import Counter, defaultdict
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import grammar as G  # noqa: E402  the tagger, its signatures, and its filters
+import sources as S  # noqa: E402  the archive pins and the --accept-source flag
 
 GEN = os.path.join(HERE, "..", "..", "src", "data", "generated")
 
@@ -55,8 +57,12 @@ AUGMENT_IDS = ["te-prohibition"]
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", required=True)
+    S.add_source_args(ap)
     args = ap.parse_args()
+
+    for archive_id in G.TATOEBA_IDS:
+        S.ensure_archive(archive_id)
+        S.verify_source(archive_id, accept=args.accept_source)
 
     import fugashi
 
@@ -73,10 +79,10 @@ def main():
     existing_ids = {row["id"] for row in corpus}
 
     jpn, owners = G.load_sentences_detailed(
-        os.path.join(args.src, "jpn_sentences_detailed.tsv")
+        S.open_archive_text("tatoeba-jpn-sentences")
     )
-    eng = G.load_eng(os.path.join(args.src, "eng_sentences.tsv"))
-    links = G.load_links(os.path.join(args.src, "jpn-eng_links.tsv"))
+    eng = G.load_eng(S.open_archive_text("tatoeba-eng-sentences"))
+    links = G.load_links(S.open_archive_text("tatoeba-jpn-eng-links"))
 
     linked = []
     for sid, (text, owner) in jpn.items():
@@ -195,6 +201,11 @@ def main():
     with open(meta_path, "w", encoding="utf-8") as fh:
         json.dump(meta, fh, ensure_ascii=False, indent=2)
     print(f"wrote {meta_path}")
+    S.record_build(
+        "scripts/ingest/grammar_augment_te_prohibition.py",
+        ["grammar-corpus.json", "grammar-corpus-meta.json"],
+        list(G.TATOEBA_IDS),
+    )
 
     print(
         "\nNOT DONE. Now, in order:\n"

@@ -59,15 +59,35 @@
 // RUN
 // ===
 //   node scripts/ingest/kanjivg.mjs
-// Fetches from the KanjiVG `master` branch (raw.githubusercontent.com), parses,
-// and writes the JSON. Network access required; it fetches 2,228 small files at
-// CONCURRENCY at a time, so it takes a few minutes. A character KanjiVG has no
-// usable SVG for is REPORTED and SKIPPED, not written as an empty entry — the
-// section falls back for it exactly as it does for a glyph never ingested.
+//   node scripts/ingest/kanjivg.mjs --accept-source   (record a newer release)
+// Reads the pinned KanjiVG RELEASE ARCHIVE, parses, and writes the JSON. The
+// archive is downloaded once to the ignored scripts/ingest/raw directory and
+// checked against the hash in src/data/generated/sources.json before a single
+// glyph is parsed (SAK-434); a changed archive stops the run.
+//
+// This used to fetch 2,228 files one at a time from the `master` branch, which
+// gave the shipped stroke data no version at all: master is whatever it was on
+// the day of the run, and two runs a week apart could disagree with nothing to
+// say so. A release is a file with a tag, a date and a hash. The parse is
+// unaffected, the SVGs being the same files: the only textual difference
+// between a release SVG and its master counterpart is an xmlns:kvg attribute on
+// the <svg> element, which nothing here reads.
+//
+// A character KanjiVG has no usable SVG for is REPORTED and SKIPPED, not
+// written as an empty entry — the section falls back for it exactly as it does
+// for a glyph never ingested.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  acceptSource,
+  ensureArchive,
+  openArchiveZip,
+  recordBuild,
+  verifySource,
+} from "./sources.mjs";
 
 // SAK-72 Part A: the 50 dakuten/handakuten glyphs (が…ぽ, ガ…ポ) are each their
 // own precomposed codepoint in KanjiVG, fully and correctly digitized (が = か's
@@ -100,10 +120,6 @@ function dakutenGlyphs(setId) {
  * generated index this script writes rather than typed out in both places. */
 const KANJI_CHUNKS = 48;
 
-/** Parallel fetches. KanjiVG is a volunteer project served off raw.github; 8 in
- * flight is brisk without being rude. */
-const CONCURRENCY = 8;
-
 /** One output file per kana script: the 46 base glyphs of each, in gojūon order
  * (vowels, K/S/T/N/H/M/Y/R/W rows, ん/ン), THEN the 25 dakuten/handakuten glyphs
  * DAKUTEN_ROWS teaches for that script. New glyphs are APPENDED, never
@@ -129,7 +145,8 @@ const SETS = [
   },
 ];
 
-const RAW = "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji";
+/** The opened release archive, set once by main() before any glyph is read. */
+let ARCHIVE = null;
 
 /** Ordered stroke `d` strings for a glyph, from the KanjiVG SVG text. The paths
  * appear in drawing order in the file; each id ends in `-s<n>`. We sort by that
@@ -224,20 +241,21 @@ function parseNumbers(svg) {
   return nums.map(({ x, y }) => [x, y]);
 }
 
-/** Fetch and parse one glyph. Throws rather than emitting a partial entry — a
- * glyph KanjiVG lacks must fail the run, not silently vanish from the asset.
- * (For kanji the caller catches, records and skips; see ingestKanji.)
+/** Read and parse one glyph out of the release archive. Throws rather than
+ * emitting a partial entry — a glyph KanjiVG lacks must fail the run, not
+ * silently vanish from the asset. (For kanji the caller catches, records and
+ * skips; see ingestKanji.)
  *
- * The filename is the zero-padded lowercase codepoint hex — 日 is 065e5.svg.
- * KanjiVG also ships VARIANT files for many characters (065e5-Kaisho.svg,
- * -Insatsu, -MidFude …), which are different typefaces' takes on the same
- * character; the unsuffixed file is the standard one and the only one we want,
- * and naming it exactly is already how we skip them. */
-async function ingestGlyph(g) {
+ * The member name is the zero-padded lowercase codepoint hex — 日 is
+ * kanji/065e5.svg. KanjiVG also ships VARIANT files for many characters
+ * (065e5-Kaisho.svg, -Insatsu, -MidFude …), which are different typefaces' takes
+ * on the same character; the unsuffixed file is the standard one and the only
+ * one we want, and naming it exactly is already how we skip them. */
+function ingestGlyph(g) {
   const cp = g.codePointAt(0).toString(16).padStart(5, "0");
-  const res = await fetch(`${RAW}/${cp}.svg`);
-  if (!res.ok) throw new Error(`fetch failed: HTTP ${res.status}`);
-  const svg = await res.text();
+  const name = `kanji/${cp}.svg`;
+  if (!ARCHIVE.has(name)) throw new Error(`the archive has no ${name}`);
+  const svg = ARCHIVE.read(name).toString("utf8");
   const strokes = parseStrokes(svg);
   if (!strokes.length) throw new Error("no strokes parsed from the SVG");
   const numbers = parseNumbers(svg);
@@ -248,21 +266,6 @@ async function ingestGlyph(g) {
   // rides on the same fetch as the strokes so the two can never disagree about a
   // character — they come from one file.
   return { strokes, numbers, tree: parseComponents(svg) };
-}
-
-/** Run `task` over `items` with at most CONCURRENCY in flight. A plain pool: N
- * workers pulling from one shared cursor, so a slow fetch doesn't stall the
- * others the way fixed batches would. */
-async function pool(items, task) {
-  let next = 0;
-  const workers = Array.from({ length: CONCURRENCY }, async () => {
-    for (;;) {
-      const i = next++;
-      if (i >= items.length) return;
-      await task(items[i], i);
-    }
-  });
-  await Promise.all(workers);
 }
 
 /** Which chunk a glyph's data lives in. Codepoint alone decides — see the header
@@ -360,24 +363,31 @@ ${thunks}
 }
 
 async function main() {
+  await ensureArchive("kanjivg");
+  verifySource("kanjivg", { accept: acceptSource() });
+  ARCHIVE = openArchiveZip("kanjivg");
+
   await mkdir(OUTDIR, { recursive: true });
+  const written = [];
   for (const { name, glyphs } of SETS) {
     const out = {};
     for (const g of glyphs) {
       // Kana carry no component hierarchy worth keeping; drop `tree` so the kana
       // asset stays exactly {strokes, numbers}.
-      const { strokes, numbers } = await ingestGlyph(g);
+      const { strokes, numbers } = ingestGlyph(g);
       out[g] = { strokes, numbers };
     }
     // Keys in gojūon order for a stable diff; the data is the payload.
     const json = JSON.stringify(out) + "\n";
     const file = resolve(OUTDIR, `${name}.json`);
     await writeFile(file, json);
+    written.push(`strokes/${name}.json`);
     console.log(
       `wrote ${file} — ${glyphs.length} glyphs, ${Buffer.byteLength(json)} bytes`,
     );
   }
-  await ingestKanji();
+  written.push(...(await ingestKanji()));
+  recordBuild("scripts/ingest/kanjivg.mjs", written, ["kanjivg"]);
 }
 
 async function ingestKanji() {
@@ -386,30 +396,21 @@ async function ingestKanji() {
   // Radical/variant glyphs the jōyō pass doesn't already cover (禾, 氵, 亻 …).
   // They ride in the SAME cp%N chunks as the kanji — one codepoint-keyed scheme.
   const extraRadicals = (await radicalGlyphs()).filter((g) => !jSet.has(g));
-  const toFetch = [...jGlyphs, ...extraRadicals];
+  const wanted = [...jGlyphs, ...extraRadicals];
   console.log(
     `kanji: ${jGlyphs.length} jōyō + ${extraRadicals.length} non-jōyō radical/variant ` +
-      `glyphs, ${CONCURRENCY} fetches in flight…`,
+      `glyphs, read from the pinned archive…`,
   );
 
   const got = new Map();
   const failed = [];
-  let done = 0;
-  await pool(toFetch, async (g) => {
-    // One retry: raw.github occasionally resets a connection under a pool, and
-    // dropping a glyph over a transport blip would be silly.
-    for (let attempt = 0; ; attempt++) {
-      try {
-        got.set(g, await ingestGlyph(g));
-        break;
-      } catch (e) {
-        if (attempt < 1) continue;
-        failed.push({ g, reason: e.message });
-        break;
-      }
+  for (const g of wanted) {
+    try {
+      got.set(g, ingestGlyph(g));
+    } catch (e) {
+      failed.push({ g, reason: e.message });
     }
-    if (++done % 200 === 0) console.log(`  …${done}/${toFetch.length}`);
-  });
+  }
 
   // Sort by codepoint so a re-run diffs cleanly, then bucket. The stroke chunks
   // keep only {strokes, numbers} — the component `tree` is written separately.
@@ -458,6 +459,11 @@ async function ingestKanji() {
       console.log(`  ${g} (${g.codePointAt(0).toString(16)}): ${reason}`);
     }
   }
+  return [
+    ...Array.from({ length: KANJI_CHUNKS }, (_, n) => `strokes/${chunkName(n)}.json`),
+    "strokes/kanji-index.ts",
+    "kanji-components.json",
+  ];
 }
 
 // COMPONENTS: src/data/generated/kanji-components.json

@@ -29,7 +29,13 @@ readingtype.py's `kinds_of` already builds its {base: kind} map with -- so a
 kanji's raw fallback base and its aligned base are the same string whenever
 both exist, and the two data sources can never quietly disagree on spelling.
 
-    python3 scripts/ingest/kanji-raw-readings.py --kanjidic /path/to/kanjidic2.xml
+    python3 scripts/ingest/kanji-raw-readings.py
+    python3 scripts/ingest/kanji-raw-readings.py --accept-source  (newer KANJIDIC2)
+
+KANJIDIC2 is downloaded to the ignored scripts/ingest/raw directory and checked
+against the hash in src/data/generated/sources.json before it is read, so this
+back-fill cannot quietly run against a different dictionary than the one
+kanji.json was cut from (SAK-434).
 """
 
 import argparse
@@ -40,6 +46,13 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import clean_kun, kata2hira  # noqa: E402
+from sources import (  # noqa: E402
+    add_source_args,
+    ensure_archive,
+    open_archive,
+    record_build,
+    verify_source,
+)
 
 OUT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated"
@@ -65,9 +78,9 @@ def raw_readings_of(ch):
     return on, kun
 
 
-def load_raw_readings(path):
+def load_raw_readings(stream):
     """literal -> (on, kun) for every <character> KANJIDIC2 documents."""
-    root = ET.parse(path).getroot()
+    root = ET.parse(stream).getroot()
     out = {}
     for ch in root.findall("character"):
         lit = ch.findtext("literal")
@@ -77,10 +90,13 @@ def load_raw_readings(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kanjidic", required=True, help="path to kanjidic2.xml")
+    add_source_args(ap)
     args = ap.parse_args()
 
-    raw = load_raw_readings(args.kanjidic)
+    ensure_archive("kanjidic2")
+    verify_source("kanjidic2", accept=args.accept_source)
+    with open_archive("kanjidic2") as fh:
+        raw = load_raw_readings(fh)
     p = os.path.join(OUT, "kanji.json")
     rows = json.load(open(p, encoding="utf-8"))
 
@@ -107,6 +123,7 @@ def main():
 
     with open(p, "w", encoding="utf-8") as fh:
         json.dump(rows, fh, ensure_ascii=False, separators=(",", ":"))
+    record_build("scripts/ingest/kanji-raw-readings.py", ["kanji.json"], ["kanjidic2"])
     print(
         f"kanji.json: back-filled on/kun for {len(rows)} kanji "
         f"({both_empty} with neither -- KANJIDIC2 itself documents no reading)"
