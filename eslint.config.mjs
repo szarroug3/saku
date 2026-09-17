@@ -179,6 +179,8 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".next-e2e/**",
+    // the same build with the dev surfaces off (SAK-445)
+    ".next-e2e-off/**",
     // a production build made somewhere else, so `next build` never rewrites
     // the tree a dev server is running from (NEXT_DIST_DIR=.next-prod)
     ".next-prod/**",

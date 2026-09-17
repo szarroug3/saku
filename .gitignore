@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /.next-e2e/
+# the off-state build (playwright.dev-surfaces-off.config.ts), which runs
+# beside the e2e one and must not overwrite it
+/.next-e2e-off/
 /.next-prod/
 /out/
 
