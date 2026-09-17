@@ -11,11 +11,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { grammarConceptEntry } from "@/data/grammar-concepts";
+import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { emptyHistory } from "@/lib/history-ops";
 import { libEntry } from "@/lib/library/entries";
 import type { EntryId } from "@/types/facts";
 
 import { atlasEntryFromHistory } from "./atlas";
+import { pageFromIntro } from "./teach";
 
 const NOW = Date.UTC(2026, 8, 8);
 const VERBS = grammarConceptEntry("verb-classes");
@@ -206,5 +208,64 @@ describe("a kanji reading with no word behind it", () => {
       if (find(glyph, reading)?.words.length === 0) empty.push(`${glyph}/${reading}`);
     }
     assert.deepEqual(empty, ["仏/ふつ", "埋/うず", "畳/じょう", "背/せい", "開/ひら", "面/おもて"]);
+  });
+});
+
+// ===========================================================================
+// SAK-455: a rule's table says what kind of word its rows hold.
+//
+// The 〜な rule put "Verb" over たかい and しずか. Every table the quiz reveal
+// and the grammar pages draw goes through the same builder, so the headings
+// are read off every page the app can teach, not off the one that was wrong.
+// ===========================================================================
+
+/** Every table on every page of every grammar lesson, with where it is. */
+function everyGrammarTable(): { lesson: string; card: string; title: string; heads: readonly string[] }[] {
+  const out: { lesson: string; card: string; title: string; heads: readonly string[] }[] = [];
+  for (const lesson of CURRICULUM_LESSONS) {
+    for (const page of lesson.pages) {
+      if (page.kind !== "teach") continue;
+      for (const table of pageFromIntro(page.card).tables ?? []) {
+        out.push({ lesson: lesson.id, card: page.card.id, title: table.title ?? "", heads: table.heads ?? [] });
+      }
+    }
+  }
+  return out;
+}
+
+describe("a rule's table heads its column of words with the kind of word it holds", () => {
+  it("says Adjective over the 〜な rule's adjectives", () => {
+    const [table, ...rest] = everyGrammarTable().filter((t) => t.card === "gl-prenominal-form");
+    assert.ok(table, "the 〜な rule has no table");
+    assert.equal(rest.length, 0, "the 〜な rule grew a second table");
+    assert.deepEqual(table.heads, ["Type", "Adjective", "Result"]);
+  });
+
+  it("says Adjective on every other table of adjectives, and never Verb", () => {
+    const adjectives = everyGrammarTable().filter((t) => /adjective/i.test(t.title));
+    assert.ok(adjectives.length >= 6, `only ${adjectives.length} adjective tables were found`);
+    for (const t of adjectives) {
+      const where = `${t.lesson} · ${t.card} · ${t.title}`;
+      assert.ok(t.heads.includes("Adjective"), `${where} does not name its adjectives`);
+      assert.ok(!t.heads.includes("Verb"), `${where} calls its adjectives verbs`);
+    }
+  });
+
+  it("still says Verb over verbs", () => {
+    const verbs = everyGrammarTable().filter((t) => /verb/i.test(t.title) && !/adjective/i.test(t.title));
+    assert.ok(verbs.length >= 6, `only ${verbs.length} verb tables were found`);
+    for (const t of verbs) {
+      assert.ok(t.heads.includes("Verb"), `${t.lesson} · ${t.card} · ${t.title} lost its Verb column`);
+    }
+  });
+
+  it("says Noun over the rules that work on nouns", () => {
+    const nouns = everyGrammarTable().filter((t) => /noun/i.test(t.title));
+    assert.ok(nouns.length >= 6, `only ${nouns.length} noun tables were found`);
+    for (const t of nouns) {
+      const where = `${t.lesson} · ${t.card} · ${t.title}`;
+      assert.ok(t.heads.includes("Noun"), `${where} does not name its nouns`);
+      assert.ok(!t.heads.includes("Verb"), `${where} calls its nouns verbs`);
+    }
   });
 });

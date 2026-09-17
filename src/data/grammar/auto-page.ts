@@ -11,14 +11,14 @@
 // pattern only ever shows verbs it is real Japanese for.
 
 import { conjugate, type Form, type WordClass } from "@/lib/conjugate";
-import { apply } from "@/lib/grammar/apply";
+import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor } from "@/data/grammar/corpus";
 import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
-import type { IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
+import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
 /** The pattern's own worked sentence, straight from the Tatoeba corpus — the
  * SAME lookup grammar-entry-view.tsx used to do on its own; centralized here so
@@ -131,6 +131,16 @@ const HOST_COLUMN_TITLE: Record<Host, string> = {
   "adj-na": "Adjective",
   noun: "Noun",
 };
+
+/** What the column of words is called over a table's rows, given the classes
+ * of the words in it (SAK-455): "Adjective" over たかい and しずか, "Verb" over
+ * かう and たべる. The two adjective classes share one heading, since both
+ * rows hold an adjective. A table that ever mixed kinds would say the only
+ * thing true of all of them. */
+export function wordColumn(classes: readonly WordClass[]): string {
+  const named = new Set(classes.map((cls) => HOST_COLUMN_TITLE[hostOfClass(cls)]));
+  return named.size === 1 ? [...named][0] : "Word";
+}
 
 const HOST_FORMULA_LABEL: Record<Host, string> = {
   verb: "verb",
@@ -439,10 +449,13 @@ const PATTERN_TABLE_GROUPS: {
  * caller falls back to the derivation table. */
 function patternRuleTables(
   r: Recipe,
-): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
-  const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
+): { title: string; rules: IntroBuildRule[]; heads: BuildHeads }[] {
+  const tables: { title: string; rules: IntroBuildRule[]; heads: BuildHeads }[] = [];
   for (const g of PATTERN_TABLE_GROUPS) {
     const rules: IntroBuildRule[] = [];
+    // the classes of the rows the group KEEPS, which is what its word column
+    // is named after: a group can lose rows to the recipe (SAK-455)
+    const classes: WordClass[] = [];
     for (const v of g.verbs) {
       if (!recipeAllows(r, v.word)) continue;
       const built = apply(r, v.word, v.cls);
@@ -461,8 +474,9 @@ function patternRuleTables(
         note: v.note,
         gloss: WORD_GLOSS[v.word],
       });
+      classes.push(v.cls);
     }
-    if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
+    if (rules.length) tables.push({ title: g.title, rules, heads: { ...g.heads, word: wordColumn(classes) } });
   }
   return tables;
 }

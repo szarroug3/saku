@@ -5927,3 +5927,44 @@ count and that no tile is marked. `scripts/unreachable.mjs --list` at zero,
 `scripts/button-centering.mjs` at 0 over 1px: its Observatory page now picks a
 card first, so the picks' own buttons are among the 36 it measures there
 rather than 32 it never saw.
+
+## A rule's table says what kind of word its rows hold (2026-09-17, SAK-455)
+
+Sam, on the quiz reveal for a 〜な card: the rule's table had the columns TYPE,
+VERB, RESULT, and the rows under VERB were adjectives (たかい (expensive) +
+みせ (shop), しずか (quiet) + な + みせ (shop)). "Verb" is not a heading the
+learner can read past: it says the wrong thing about every row under it.
+
+**Where the word came from.** `ruleTable` in `src/app/(sky)/teach.ts` builds
+every build table the app draws, on the grammar pages and in the quiz reveal
+alike, and it wrote the string "Verb" over the second column with no way for a
+page to say otherwise. Only the DERIVATION tables could name that column, and
+they already named it right. So the heading is now `BuildHeads.word`, which
+defaults to "Verb" and is set by the kind of word the rows hold.
+
+**Set from the word class, not typed in.** `wordColumn(classes)` in
+`src/data/grammar/auto-page.ts` maps the classes of the rows a table KEPT
+through the recipe's own filtering to the heading over them: "Verb",
+"Adjective" or "Noun", with the two adjective classes sharing one word, since
+an い-adjective and a な-adjective are both adjectives. The two generators
+that build grouped tables (`patternRuleTables` and form-intros'
+`formRuleTables`) pass the classes of the rows they kept, and the two
+hand-authored adjective tables in `src/data/grammar/lessons.ts` (the 〜な rule
+and the て-form's adjectives) call the same function rather than writing the
+word out.
+
+Fourteen tables changed and no other: the 〜な rule now reads TYPE ·
+ADJECTIVE · RESULT, and the adjective tables under 〜た, て/で, 〜ば and 〜たら
+say Adjective too. Every verb table is untouched, and the noun rules were
+already right, since they are derivation tables.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean.
+4,089 unit tests, 4,088 pass and 1 is skipped, from 4,085: four new in
+`src/app/(sky)/teach.test.ts`, which reads the headings off every table of
+every grammar lesson the app can teach rather than off the one card that was
+wrong. The 〜な rule's table is pinned whole; every table of adjectives has to
+name its adjectives and must not say Verb; every table of verbs still says
+Verb; every table of nouns says Noun. Each of the four counts what it found
+first, so none of them can pass by matching nothing. 64 e2e pass,
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on both lists, `scripts/button-centering.mjs` at 0 over 1px.

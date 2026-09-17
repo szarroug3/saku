@@ -24,7 +24,7 @@ import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
 import { RECIPES, type Recipe } from "@/data/grammar/recipes";
-import type { CountBuildPiece, IntroBuildRule, IntroCountGroup, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import type { BuildHeads, CountBuildPiece, IntroBuildRule, IntroCountGroup, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
@@ -427,7 +427,7 @@ function ruleRow(r: IntroBuildRule, cols: RuleColumns): SkySoundLine[] {
  * So a list of memorized forms (たべる → たべて) is verb, result, meaning. */
 interface RuleColumns { ending: boolean; change: boolean; gloss: boolean; note: boolean }
 
-function ruleTable(rules: readonly IntroBuildRule[], heads?: { label?: string; change?: string; note?: string; gloss?: string }, title?: string, extra: Partial<TeachTable> = {}): TeachTable {
+function ruleTable(rules: readonly IntroBuildRule[], heads?: BuildHeads, title?: string, extra: Partial<TeachTable> = {}): TeachTable {
   const cols: RuleColumns = {
     ending: rules.some((r) => r.label || r.drop),
     change: rules.some((r) => !r.to && (r.drop || r.add)),
@@ -436,7 +436,9 @@ function ruleTable(rules: readonly IntroBuildRule[], heads?: { label?: string; c
   };
   const head = [
     ...(cols.ending ? [heads?.label ?? "Ending"] : []),
-    "Verb",
+    // what the rows are built from, named for the kind of word it is: a table
+    // of adjectives reads "Adjective" (SAK-455)
+    heads?.word ?? "Verb",
     ...(cols.change ? [heads?.change ?? "Change"] : []),
     "Result",
     ...(cols.gloss ? [heads?.gloss ?? "Meaning"] : []),

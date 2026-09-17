@@ -354,6 +354,25 @@ export interface IntroBuildRule {
 }
 
 /**
+ * The headings over a build table's columns.
+ *
+ * `label` names the first column (endings on one page, adjective types on
+ * another) and so has no sensible default. `word` names the column the rows
+ * are built from, and says which kind of word that is: "Verb", "Adjective" or
+ * "Noun" (SAK-455). It used to read "Verb" on every table, so the 〜な rule
+ * put "Verb" over たかい and しずか, which is the wrong thing to say about
+ * every row under it. `change`, `note` and `gloss` default to "Change",
+ * "Note" and "Meaning".
+ */
+export interface BuildHeads {
+  label?: string;
+  word?: string;
+  change?: string;
+  note?: string;
+  gloss?: string;
+}
+
+/**
  * One row of a pattern derivation table: the dictionary verb, the form the
  * pattern attaches to, the finished pattern, and what the finished pattern
  * MEANS (かく · かき · かきにいく · "go in order to write") — the meaning is the
@@ -473,12 +492,8 @@ export interface PhaseIntro {
    * beneath the prose in place of the single inline examples list.
    */
   countTables?: readonly IntroCountGroup[];
-  /**
-   * Column headings for a build table's heading row. `label` names the first
-   * column (endings on one page, verb types on another) and so has no sensible
-   * default; `change` and `note` default to "Change" and "Note".
-   */
-  buildHeads?: { label?: string; change?: string; note?: string; gloss?: string };
+  /** Column headings for a build table's heading row. */
+  buildHeads?: BuildHeads;
   /**
    * SEVERAL titled build tables on one page, when a single table would lump
    * distinct groups together. The て-form's build page uses this: a Godan table,
@@ -489,7 +504,7 @@ export interface PhaseIntro {
   buildTables?: readonly {
     readonly title: string;
     readonly rules: readonly IntroBuildRule[];
-    readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+    readonly heads?: BuildHeads;
   }[];
   /** Build material grouped by the kind of word it applies to. Every grammar
    * table is presented through one of these sections: accented heading,
@@ -502,11 +517,11 @@ export interface PhaseIntro {
     readonly body: readonly IntroPara[];
     readonly formula?: { base: string; add?: string; trim?: string };
     readonly rules?: readonly IntroBuildRule[];
-    readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+    readonly heads?: BuildHeads;
     readonly tables?: readonly {
       readonly title: string;
       readonly rules: readonly IntroBuildRule[];
-      readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+      readonly heads?: BuildHeads;
     }[];
     readonly footer?: { chain: string; gloss: string };
   }[];
@@ -528,7 +543,9 @@ export interface PhaseIntro {
    */
   deriveRules?: readonly IntroDeriveRow[];
   /** Column headings for a derivation table. `form` names the middle column
-   * (て-form, stem, …); `verb`/`pattern` default to "Verb"/"Pattern". */
+   * (て-form, stem, …); `verb`/`pattern` default to "Verb"/"Pattern". `verb`
+   * is the derivation table's own name for what `BuildHeads.word` names on a
+   * build table, and a page over adjectives or nouns has always set it. */
   deriveHeads?: { verb?: string; form?: string; pattern?: string };
   /** Several host-specific derivation tables on one page. A pattern that works
    * with both verbs and adjectives keeps those rules in separate titled

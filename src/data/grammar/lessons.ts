@@ -33,7 +33,7 @@ import {
   type Level,
   type Recipe,
 } from "@/data/grammar/recipes";
-import { autoPatternPage, WORD_GLOSS } from "@/data/grammar/auto-page";
+import { autoPatternPage, WORD_GLOSS, wordColumn } from "@/data/grammar/auto-page";
 import {
   BA_FORM_PAGES,
   CAUSATIVE_FORM_PAGES,
@@ -212,7 +212,8 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         heading: "Before a noun",
         text: "An い-adjective does not change, while a な-adjective adds な.",
       }],
-      heads: { label: "Type", change: "Change" },
+      // the rows are adjectives, so the column of words says so (SAK-455)
+      heads: { label: "Type", change: "Change", word: wordColumn(["adj-i", "adj-na"]) },
       rules: [
           {
             label: "い-adjective",
@@ -348,7 +349,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
           { label: "い-adjective", verb: "たかい", drop: "い", add: "くて", gloss: WORD_GLOSS["たかい"] },
           { label: "な-adjective", verb: "しずか", drop: "", add: "で", gloss: WORD_GLOSS["しずか"] },
         ],
-        heads: { label: "Type" },
+        heads: { label: "Type", word: wordColumn(["adj-i", "adj-na"]) },
       },
       {
         title: "Irregular adjectives",
@@ -360,7 +361,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
             gloss: WORD_GLOSS["いい"],
           },
         ],
-        heads: { label: "" },
+        heads: { label: "", word: wordColumn(["adj-ix"]) },
       },
       ],
     }],

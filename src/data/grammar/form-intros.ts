@@ -12,8 +12,8 @@ import type { WordClass } from "@/lib/conjugate";
 import { apply } from "@/lib/grammar/apply";
 import { recipe } from "@/data/grammar/recipes";
 import { recipeAllows } from "@/lib/grammar/vehicles";
-import { WORD_GLOSS } from "@/data/grammar/auto-page";
-import type { IntroBuildRule, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import { WORD_GLOSS, wordColumn } from "@/data/grammar/auto-page";
+import type { BuildHeads, IntroBuildRule, IntroPara, PhaseIntro } from "@/data/phase-intros";
 
 // ---------------------------------------------------------------------------
 // GENERATED FORM TABLES — shared by every foundational form page. They are built
@@ -93,12 +93,15 @@ function prefixLen(a: string, b: string): number {
  * prefix (drop the tail, add the new one). Irregulars (する, くる) are shown whole. */
 function formRuleTables(
   recipeId: string,
-): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
+): { title: string; rules: IntroBuildRule[]; heads: BuildHeads }[] {
   const r = recipe(recipeId);
   if (!r) return [];
-  const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
+  const tables: { title: string; rules: IntroBuildRule[]; heads: BuildHeads }[] = [];
   for (const g of FORM_TABLE_VERBS) {
     const rules: IntroBuildRule[] = [];
+    // the classes of the rows the group KEEPS, which is what its word column
+    // is named after: a group can lose rows to the form (SAK-455)
+    const classes: WordClass[] = [];
     for (const v of g.verbs) {
       // apply (not raw conjugate) so the recipe's OWN attachments decide which
       // rows exist: 〜ば conjugates い-adjectives (高ければ) but not な (静か uses なら,
@@ -117,6 +120,7 @@ function formRuleTables(
       const p = prefixLen(v.word, c.value);
       const note = FORM_RULE_NOTES[`${recipeId}:${v.cls}`];
       const gloss = WORD_GLOSS[v.word];
+      classes.push(v.cls);
       if (g.irregular || p === 0) {
         rules.push({ label: v.label || "Irregular", verb: v.word, to: c.value, note, gloss });
       } else {
@@ -130,7 +134,7 @@ function formRuleTables(
         });
       }
     }
-    if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
+    if (rules.length) tables.push({ title: g.title, rules, heads: { ...g.heads, word: wordColumn(classes) } });
   }
   return tables;
 }
