@@ -453,12 +453,15 @@ test("deleting a saved recipe asks first, and Keep it keeps it", async ({ page }
   await expect(page.getByRole("button", { name: "Saved as Evening drill" })).toBeVisible();
 
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await expect(page.getByText("This recipe goes for good.")).toBeVisible();
+  // SAK-443: the verb says the whole of it, so the sentence that used to sit
+  // beside it is gone
+  await expect(page.getByRole("button", { name: "Delete it forever" })).toBeVisible();
+  await expect(page.getByText("This recipe goes for good.")).toHaveCount(0);
   await page.getByRole("button", { name: "Keep it" }).click();
   await expect(page.getByRole("button", { name: "Saved as Evening drill" })).toBeVisible();
 
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await page.getByRole("button", { name: "Delete it" }).click();
+  await page.getByRole("button", { name: "Delete it forever" }).click();
   await expect(page.getByRole("button", { name: "Save this recipe" })).toBeVisible();
 });
 
@@ -968,9 +971,12 @@ test("a reading with no word behind it says so instead of showing a blank cell",
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:面")}`);
   await page.getByRole("button", { name: "Open Readings" }).click();
   const row = page.getByRole("listitem").filter({ hasText: "おもて" });
-  await expect(row.getByText("no word taught yet")).toBeVisible();
+  // SAK-443: it says whose limit it is. "no word taught yet" read as a gap in
+  // the learner's own progress, and the learner has nothing to do with it.
+  await expect(row.getByText("No word in Saku uses this reading.")).toBeVisible();
+  await expect(page.getByText("no word taught yet")).toHaveCount(0);
   // and the reading beside it keeps its words and its ink
-  await expect(page.getByRole("listitem").filter({ hasText: "no word taught yet" })).toHaveCount(1);
+  await expect(page.getByRole("listitem").filter({ hasText: "No word in Saku uses this reading." })).toHaveCount(1);
 });
 
 test("a word's example sentence underlines the word itself", async ({ page }) => {

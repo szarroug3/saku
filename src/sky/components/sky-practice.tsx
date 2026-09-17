@@ -167,7 +167,9 @@ export function SkyPractice({ collections, lookup, initial, saved, onSaved, onSt
                 ) : dropping ? (
                   // it asks now, like every other thing that cannot be got
                   // back (SAK-364); it used to delete on the click
-                  <InlineAsk className="w-full" what="This recipe goes for good." confirm="Delete it" onConfirm={() => { remove(); setDropping(false); }} onKeep={() => setDropping(false)} />
+                  // the verb says the whole of it, so there is no sentence
+                  // beside it saying it again (SAK-443)
+                  <InlineAsk className="w-full" confirm="Delete it forever" onConfirm={() => { remove(); setDropping(false); }} onKeep={() => setDropping(false)} />
                 ) : (
                   <span className="flex w-full gap-3 text-[12px] text-sky-muted">
                     <button type="button" className="underline hover:text-sky-ink" onClick={() => setRenaming(chosen.name)}>Rename</button>
