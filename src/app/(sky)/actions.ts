@@ -23,7 +23,7 @@ import { buildSessionRecord } from "@/lib/session-record";
 import { loadSettings } from "@/lib/settings";
 import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
-import { readRun, type SavedRun } from "@/sky/lib/quiz-run";
+import { NO_PLACE, placeDoc, readPlace, type SavedPlace } from "@/sky/lib/place";
 import type { FactId } from "@/types/facts";
 import type { SessionStats } from "@/types/sky";
 import type { HistoryFile, QuizSessionRecord } from "@/types/store";
@@ -176,31 +176,34 @@ export async function atlasSections(caller: Who, shelfId: string, status: Standi
 }
 
 /**
- * The run this learner left part way through, off their account (SAK-404).
+ * Where this learner was when they left, off their account (SAK-404, and the
+ * lesson beside the quiz since SAK-444).
  *
- * Null for anyone not signed in, and that is not a gap: a visitor's run is in
- * their browser, which the server cannot see, and the page reads it there.
- * Read on its own rather than with the seed row, since one page in the app
- * wants it.
+ * Empty for anyone not signed in, and that is not a gap: a visitor's place is
+ * in their browser, which the server cannot see, and the page reads it there.
+ * Read on its own rather than with the seed row, since a few pages in the app
+ * want it and nothing else does.
  *
  * The stored value is whatever was last written, so it is read through the
- * Sky's own `readRun`: an envelope of an older shape, or a run whose every
- * card has since been answered, reads as no run at all.
+ * Sky's own `readPlace`: a document from before SAK-444 is a bare run and
+ * reads as a place holding that quiz, and a run whose every card has since
+ * been answered reads as no quiz at all.
  */
-export async function loadQuizRun(): Promise<SavedRun | null> {
+export async function loadPlace(): Promise<SavedPlace> {
   const userId = await currentUserId();
-  if (!userId) return null;
-  return readRun(await readSessionRow(userId));
+  if (!userId) return NO_PLACE;
+  return readPlace(await readSessionRow(userId));
 }
 
-/** The run as it stands, or null to clear it. A visitor never reaches here:
- * their run is written to their browser and nowhere else. Validated on the
- * way in as well as on the way out, so the column only ever holds a shape
- * this app can read back. */
-export async function saveQuizRun(run: SavedRun | null): Promise<void> {
+/** The place as it stands. A visitor never reaches here: their place is
+ * written to their browser and nowhere else. Validated on the way in as well
+ * as on the way out, so the column only ever holds a shape this app can read
+ * back, and a place with nothing in it clears the column rather than writing
+ * an empty document into it. */
+export async function savePlace(place: SavedPlace): Promise<void> {
   const userId = await currentUserId();
   if (!userId) return;
-  await writeSessionRow(userId, run ? readRun(run) : null);
+  await writeSessionRow(userId, placeDoc(readPlace(placeDoc(place))));
 }
 
 export async function loadSessions(caller: Who): Promise<SkySession[]> {

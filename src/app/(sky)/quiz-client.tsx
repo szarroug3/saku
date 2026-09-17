@@ -18,7 +18,11 @@
 // when this page opens. A page opened on the same ask the run came from
 // resumes it: the saved deck, in the order it was dealt, with the answers
 // already given and the card it was left on. A page opened on a DIFFERENT
-// ask asks first, since only one run is kept.
+// ask deals its own cards and asks first before it replaces the saved run,
+// since only one quiz is kept (SAK-444). A lesson's own drill is one of
+// those different asks, so it never resumes a run that came from somewhere
+// else: it asks, and whichever way the learner answers, the deck it deals is
+// its own.
 
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -29,6 +33,7 @@ import { ResumeAsk } from "@/sky/components/quiz-resume";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";
 import { shuffleDeck, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
+import { hasPlace, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 import { seeded } from "@/sky/lib/random";
 import { restMinutes, type RestState } from "@/sky/lib/rest";
@@ -41,7 +46,7 @@ import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
 import { SkyLoading, useSkyData } from "./local";
 import { PitchMark } from "./pitch-reading";
-import { keepRun, useRunAtOpen } from "./quiz-run-store";
+import { keepRun, reportRun, usePlaceAtOpen } from "./quiz-run-store";
 import { useStored, writeStored } from "./stored";
 import { recordAnswers } from "./writes";
 
@@ -50,7 +55,7 @@ const NO_REST: RestState | null = null;
 
 const TITLE = "Tonight's drill";
 
-export function QuizClient({ initial, picks, named, back, sample = false, signedIn, rounds = 1, accountRun = null }: { initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; back: WayBack; sample?: boolean; signedIn: boolean; rounds?: number; accountRun?: SavedRun | null }) {
+export function QuizClient({ initial, picks, named, back, sample = false, signedIn, rounds = 1, accountPlace = NO_PLACE }: { initial: readonly QuizCard[] | null; picks: readonly string[]; named: readonly string[]; back: WayBack; sample?: boolean; signedIn: boolean; rounds?: number; accountPlace?: SavedPlace }) {
   const router = useRouter();
   // What this page was asked for, in the same words a run records. Nothing
   // named at all is "what is due", which is a source like any other, so a
@@ -60,10 +65,10 @@ export function QuizClient({ initial, picks, named, back, sample = false, signed
   // is what the route read on the server, and stands in when this browser has
   // none (a cleared browser, another machine). The sample records nothing and
   // so leaves nothing.
-  const local = useRunAtOpen();
-  const saved = sample ? null : (local ?? accountRun);
+  const local = usePlaceAtOpen();
+  const saved = sample || !local ? null : (hasPlace(local) ? local : accountPlace).quiz;
   const [replaced, setReplaced] = useState(false);
-  // a run of a different deck: only one is kept, so it is asked about once
+  // a run of a different deck: only one quiz is kept, so it is asked about once
   const clash = saved && !sameSource(saved.from, source) ? saved : null;
   // The browser has not been asked yet, so which deck this page deals is not
   // known. The heading is, and it is drawn while the rest catches up
@@ -136,7 +141,7 @@ function QuizRun({ cards, run, source, back, sample, signedIn, rounds, cfg, upda
   // at all. The rest itself already survives a reload on its own key.
   const progress = (at: number, answers: readonly QuizAnswer[]) => {
     if (sample || round > 1) return;
-    keepRun(runToKeep(asked.map((c) => c.id), at, answers, source, Date.now()), signedIn);
+    reportRun(runToKeep(asked.map((c) => c.id), at, answers, source, Date.now()), signedIn);
   };
   const takeRest = () => {
     const startedAt = Date.now();

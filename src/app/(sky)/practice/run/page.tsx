@@ -5,7 +5,7 @@
 
 import { EMPTY_RECIPE, type Recipe } from "@/sky/lib/practice";
 
-import { loadPracticeCards, loadQuiz, loadQuizRun } from "../../actions";
+import { loadPlace, loadPracticeCards, loadQuiz } from "../../actions";
 import { idsFrom } from "../../hrefs";
 import { initialFor, whoFor } from "../../page-data";
 import { ServerTimingMeta } from "../../server-timing-meta";
@@ -21,15 +21,15 @@ export default async function SkyPracticeRunPage({ searchParams }: { searchParam
   let recipe: Recipe = EMPTY_RECIPE;
   try { recipe = { ...EMPTY_RECIPE, ...(JSON.parse(String(params.recipe ?? "{}")) as Partial<Recipe>) }; } catch { /* a bad recipe runs as everything */ }
   const named = idsFrom(params.cards);
-  // the deck and the run left part way through at the same time (SAK-404);
-  // a visitor's run is in their browser, so there is nothing to read here
-  const [initial, accountRun] = await Promise.all([
+  // the deck and what was left part way through at the same time (SAK-404);
+  // a visitor's place is in their browser, so there is nothing to read here
+  const [initial, accountPlace] = await Promise.all([
     initialFor(who, (w) => (named.length ? loadQuiz(w, { cards: named }) : loadPracticeCards(w, recipe))),
-    sample || !signedIn ? null : loadQuizRun(),
+    sample || !signedIn ? undefined : loadPlace(),
   ]);
   return (
     <>
-      <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={signedIn} recipe={recipe} accountRun={accountRun} />
+      <PracticeRunClient initial={initial} named={named} sample={sample} signedIn={signedIn} recipe={recipe} accountPlace={accountPlace} />
       <ServerTimingMeta />
     </>
   );

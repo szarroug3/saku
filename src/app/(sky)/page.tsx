@@ -7,7 +7,7 @@
 
 import { preload } from "react-dom";
 
-import { loadQuizRun, loadSky } from "./actions";
+import { loadPlace, loadSky } from "./actions";
 import { initialFor, whoFor } from "./page-data";
 import { ServerTimingMeta } from "./server-timing-meta";
 import { skyCatalogue } from "./catalogue";
@@ -21,12 +21,12 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   // from /api/sky-catalogue, cached (SAK-381). It reads the learner's bar for
   // clearing a mix-up itself, alongside the history rather than before it
   // (SAK-382), so the page does not wait for one database answer to ask for
-  // the next. The run left part way through comes back beside it for the same
-  // reason (SAK-404); a visitor's own run is read in their browser, so there
-  // is nothing to fetch here for them.
-  const [initial, accountRun] = await Promise.all([
+  // the next. What was left part way through comes back beside it for the
+  // same reason (SAK-404, SAK-444); a visitor's own place is read in their
+  // browser, so there is nothing to fetch here for them.
+  const [initial, accountPlace] = await Promise.all([
     initialFor(who, loadSky),
-    sample ? null : loadQuizRun(),
+    sample ? undefined : loadPlace(),
   ]);
   // Start the stars downloading with the HTML instead of after hydration.
   // The version is the same for every learner, so the page knows it without
@@ -35,7 +35,7 @@ export default async function SkyPlanetariumPage({ searchParams }: { searchParam
   return (
     <>
       <ServerTimingMeta />
-      <PlanetariumClient sample={sample} signedIn={signedIn} initial={initial} accountRun={accountRun} />
+      <PlanetariumClient sample={sample} signedIn={signedIn} initial={initial} accountPlace={accountPlace} />
     </>
   );
 }

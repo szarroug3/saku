@@ -62,6 +62,17 @@ interface SkyLessonProps {
   pitch?: PitchComponent;
   /** A star opened for the first time this lesson: it enters rotation now. */
   onOpen?: (id: string) => void;
+  /** Where a lesson left part way through is picked up (SAK-444): the star
+   * the learner was on. A star the order no longer holds -- one opened last
+   * time, which is in the sky now and so is not taught again -- opens the
+   * lesson where it would have opened anyway, on the first step. */
+  startAt?: string;
+  /** Where the lesson stands, after every step. The step, how many steps the
+   * order holds, and which star that step is; null when the lesson is over
+   * and there is nothing to come back to. Not called for the step the lesson
+   * opens on, which is not a move and would otherwise write over the very
+   * place that sent the learner here. */
+  onPlace?: (place: { at: number; steps: number; star: string } | null) => void;
   height?: string;
 }
 
@@ -111,18 +122,23 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
   );
 }
 
-export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, onPlace, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
   const references = useMemo(() => data.references ?? [], [data.references]);
   const referenceOf = useMemo(() => new Map(references.map((r) => [r.id, r])), [references]);
-  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.length ? [steps[0].id] : []));
-  const [selected, setSelected] = useState<string | null>(steps[0]?.id ?? null);
+  // Which step the lesson opens on: the one it was left on, when the order
+  // still holds it, else the first. Everything up to it counts as opened,
+  // since a step unlocks the one after it and a lesson resumed on step four
+  // with three locked steps behind it could not be walked back through.
+  const from = Math.max(0, startAt ? steps.findIndex((s) => s.id === startAt) : 0);
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.slice(0, from + 1).map((s) => s.id)));
+  const [selected, setSelected] = useState<string | null>(steps[from]?.id ?? null);
   // where the lesson stands. Apart from `selected` because a reference is
   // shown without being stepped to: reading one used to reset "Step n of N"
   // to the first step, since the count was read off whatever was showing.
-  const [stepAt, setStepAt] = useState<string | null>(steps[0]?.id ?? null);
+  const [stepAt, setStepAt] = useState<string | null>(steps[from]?.id ?? null);
   // which page of the selected star is showing, for a star taught over several
   const [page, setPage] = useState(0);
   const stepIndex = Math.max(0, steps.findIndex((s) => s.id === stepAt));
@@ -157,6 +173,24 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const rail = useRef<HTMLOListElement>(null);
   useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); }, [selected, page]);
   useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
+
+  // Where the lesson stands, written down after every step (SAK-444), so the
+  // one Continue button can offer the lesson back the way it offers a quiz.
+  // The step the lesson OPENS on is not a move, and reporting it would be
+  // wrong twice over: on a lesson opened fresh it would keep a lesson nobody
+  // has walked, and on one resumed it would write over the very place that
+  // sent the learner here, with a step number worked out from an order that
+  // is shorter now than it was (the stars they opened last time are in their
+  // sky, so the lesson does not teach them again). So the ref holds the star
+  // last reported and starts as the one the lesson opened on: what is
+  // reported is a MOVE rather than a render, and an effect that re-ran
+  // because the data was fetched again has nothing new to say.
+  const reported = useRef(steps[from]?.id ?? null);
+  useEffect(() => {
+    if (!stepAt || stepAt === reported.current) return;
+    reported.current = stepAt;
+    onPlace?.({ at: Math.max(0, steps.findIndex((s) => s.id === stepAt)), steps: steps.length, star: stepAt });
+  }, [stepAt, steps, onPlace]);
 
   // a reference that is a page has no star and no item, so it carries its
   // own card; a reference that is a known star is an item like any other
@@ -215,7 +249,9 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
       <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
       {last && drillHref ? (
-        <SkyButton href={drillHref}>Drill</SkyButton>
+        // the lesson is over the moment its drill is opened, so there is
+        // nothing left to come back to (SAK-444)
+        <SkyButton href={drillHref} onClick={() => onPlace?.(null)}>Drill</SkyButton>
       ) : (
         <SkyButton disabled={last} onClick={next}>Next</SkyButton>
       )}

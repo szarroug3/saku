@@ -81,15 +81,15 @@ describe("a saved run, read back", () => {
 
 describe("how far in a run is", () => {
   it("counts the answers against the deck", () => {
-    assert.equal(runNote(run()), "4 cards, 2 answered");
+    assert.equal(runNote(run()), "2 of 4");
   });
 
   it("does not count an answer to a card no longer in the deck", () => {
-    assert.equal(runNote(run({ deck: ["c", "d"] })), "2 cards, 0 answered");
+    assert.equal(runNote(run({ deck: ["c", "d"] })), "0 of 2");
   });
 
-  it("says card once for one", () => {
-    assert.equal(runNote(run({ deck: ["a"], answers: [] })), "1 card, 0 answered");
+  it("is the short form the offer, the ask and the row all carry (SAK-444)", () => {
+    assert.equal(runNote(run({ deck: ["a"], answers: [] })), "0 of 1");
   });
 });
 

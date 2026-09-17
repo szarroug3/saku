@@ -25,6 +25,10 @@ interface SkyButtonProps {
   variant?: SkyButtonVariant;
   /** A link, styled as the button. */
   href?: string;
+  /** What the press does. A link can carry one too, for the thing that has
+   * to happen on the way out: the lesson's Drill lets the lesson go as it
+   * opens the quiz (SAK-444). It runs before the walk, and a link with no
+   * handler behaves exactly as it did. */
   onClick?: () => void;
   disabled?: boolean;
   /** Full width, for a button that closes a panel. */
@@ -52,8 +56,8 @@ export function SkyButton({ variant = "solid", href, onClick, disabled = false, 
   // it fetches the page again anyway (SAK-382).
   if (href && !disabled) {
     return isInternal(href)
-      ? <Link href={href} prefetch={false} title={title} className={cls}>{children}</Link>
-      : <a href={href} title={title} className={cls}>{children}</a>;
+      ? <Link href={href} prefetch={false} onClick={onClick} title={title} className={cls}>{children}</Link>
+      : <a href={href} onClick={onClick} title={title} className={cls}>{children}</a>;
   }
   if (href) return <span aria-disabled title={title} className={cls}>{children}</span>;
   return <button type="button" onClick={onClick} disabled={disabled} title={title} className={cls}>{children}</button>;

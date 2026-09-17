@@ -10,7 +10,7 @@ import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
 import { canonicalRecipe, recipeKey } from "@/sky/lib/practice";
 
-import { idsFrom, runHref, skyHref } from "./hrefs";
+import { idsFrom, placeHref, runHref, skyHref } from "./hrefs";
 
 const IDS = ["kanji:日", "kana:あ"];
 const JOINED = "kanji%3A%E6%97%A5%2Ckana%3A%E3%81%82";
@@ -105,5 +105,19 @@ describe("where a saved run is answered (SAK-404)", () => {
 
   it("is the quiz when the recipe is of a shape we no longer write", () => {
     assert.equal(runHref({ recipe: "not json" }), "/quiz");
+  });
+});
+
+describe("where anything left part way through is continued (SAK-444)", () => {
+  const run = { deck: ["a", "b"], at: 1, answers: [], from: { picks: IDS }, leftAt: 1 };
+
+  it("sends a quiz wherever its own run is answered", () => {
+    assert.equal(placeHref({ kind: "quiz", run }), `/quiz?picks=${JOINED}`);
+  });
+
+  it("sends a lesson back to its own picks", () => {
+    const lesson = { picks: IDS, at: 1, steps: 4, star: IDS[0], leftAt: 1 };
+    assert.equal(placeHref({ kind: "lesson", lesson }), `/lesson?picks=${JOINED}`);
+    assert.equal(placeHref({ kind: "lesson", lesson }, true), `/lesson?sample&picks=${JOINED}`);
   });
 });

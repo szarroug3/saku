@@ -11,6 +11,7 @@
 // with. Both forms of the old encoding split the same, so a link written
 // before this still opens.
 
+import type { PlaceEntry } from "@/sky/lib/place";
 import type { Recipe } from "@/sky/lib/practice";
 import type { RunSource } from "@/sky/lib/quiz-run";
 
@@ -66,6 +67,14 @@ export function runHref(from: RunSource, sample = false): string {
     }
   }
   return skyHref("/quiz", { sample, picks: from.picks, cards: from.cards });
+}
+
+/** Where one thing left part way through is continued (SAK-444): a quiz
+ * wherever its run is answered, a lesson at its own picks. One place decides
+ * this, so the Continue button beside a heading and the Unfinished row in
+ * Sessions can never send a learner to two different pages. */
+export function placeHref(entry: PlaceEntry, sample = false): string {
+  return entry.kind === "quiz" ? runHref(entry.run.from, sample) : skyHref("/lesson", { sample, picks: entry.lesson.picks });
 }
 
 /** The ids in a `picks=` or `cards=`, however Next handed the value over.

@@ -3,6 +3,14 @@
 // Recent sessions: what you have done, newest first, and one opened as
 // the cards it asked with how each went (SAK-347). The list on the left,
 // the session on the right, in the quiz's own grades and colors.
+//
+// AND WHAT IS NOT DONE YET, above all of it (SAK-444). A quiz or a lesson
+// left part way through is not a session -- nothing about it is recorded, and
+// it has no grades to tally -- but this is the page a learner comes to for
+// "what have I been doing", and the one Continue button beside a heading can
+// only carry the newest of them. So the rest wait here, each as one row that
+// says what it is and how far in, with the way back to it and a way to let it
+// go. Forgetting one is not undoable, so it asks first (SAK-364).
 
 import { useState } from "react";
 
@@ -13,12 +21,58 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
+import { PLACE_KIND, placeNote, type PlaceEntry } from "@/sky/lib/place";
 import { GRADE, GRADES } from "@/sky/lib/quiz";
 import { formatWhen, sessionLabel, tallySession, type SkySession } from "@/sky/lib/sessions";
 import { useMounted } from "@/sky/components/use-mounted";
 
+/** One thing left part way through, with the route's way back to it. */
+export interface UnfinishedRow {
+  entry: PlaceEntry;
+  /** Where it is continued. The route's, since only it knows what a Sky URL
+   * looks like (SAK-367). */
+  href: string;
+  /** Lets it go. Absent leaves the row with only its way back. */
+  onForget?: () => void;
+}
+
+/** What is not finished, above the sessions. Each row is its kind, how far
+ * in, and the two things you can do with it. */
+function Unfinished({ rows }: { rows: readonly UnfinishedRow[] }) {
+  const [asking, setAsking] = useState<string | null>(null);
+  return (
+    <SkyPanel title="Unfinished" className="mb-4 shrink-0 !p-4">
+      <ul className="mt-3 flex flex-col gap-1.5">
+        {rows.map(({ entry, href, onForget }) => (
+          <li key={entry.kind} className="flex flex-wrap items-center gap-2 rounded-lg bg-sky-card px-3 py-2">
+            <span className="flex-1 text-[13.5px] text-sky-ink">
+              {PLACE_KIND[entry.kind]}<span className="text-sky-muted"> · {placeNote(entry)}</span>
+            </span>
+            {onForget && asking === entry.kind ? (
+              <InlineAsk
+                what={entry.kind === "quiz" ? "The answers you gave are not recorded." : "The lesson starts from the beginning next time."}
+                confirm="Forget it"
+                onConfirm={() => { onForget(); setAsking(null); }}
+                onKeep={() => setAsking(null)}
+              />
+            ) : (
+              <>
+                <SkyButton href={href}>Continue</SkyButton>
+                {onForget && <SkyButton variant="outline" onClick={() => setAsking(entry.kind)}>Forget</SkyButton>}
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </SkyPanel>
+  );
+}
+
 interface SkySessionsProps {
   sessions: readonly SkySession[];
+  /** What is left part way through and is not already on a Continue button
+   * (SAK-444), newest first. */
+  unfinished?: readonly UnfinishedRow[];
   /** Runs the same cards again. */
   onRerun?: (cardIds: readonly string[]) => void;
   /** Forgets a session: its evidence leaves the schedule. */
@@ -42,7 +96,7 @@ function When({ ts }: { ts: number }) {
   return <time dateTime={new Date(ts).toISOString()}>{mounted ? formatWhen(ts) : ""}</time>;
 }
 
-export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessionsProps) {
+export function SkySessions({ sessions, unfinished = [], onRerun, onDelete, height }: SkySessionsProps) {
   const [openId, setOpenId] = useState<string | null>(sessions[0]?.id ?? null);
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,6 +110,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
 
   return (
     <SkyPageShell eyebrow="Sessions" title="What have you done lately?" height={height}>
+      {unfinished.length > 0 && <Unfinished rows={unfinished} />}
       {sessions.length === 0 ? (
         <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every run you finish is kept here, a quiz or a practice deck. Take one from the Observatory, or drill something in Practice.</p></SkyPanel>
       ) : (

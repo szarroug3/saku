@@ -17,7 +17,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ItemCard, type ItemGate } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
-import { ResumeLine } from "@/sky/components/quiz-resume";
+import { ContinueButton } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -26,7 +26,7 @@ import { UndoLine } from "@/sky/components/undo-line";
 import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import { KIND_LABEL } from "@/sky/lib/tokens";
-import type { SavedRun } from "@/sky/lib/quiz-run";
+import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface ObservatorySection {
@@ -88,9 +88,10 @@ interface SkyObservatoryProps {
    * history to write to (a sample, a visitor): the claim then holds for the
    * visit only, so the page still behaves. */
   onClaim?: (ids: readonly string[]) => Promise<void>;
-  /** A quiz left part way through, offered back beside the heading
-   * (SAK-404). The href is the route's (SAK-367). */
-  resume?: { run: SavedRun; href: string };
+  /** The newest thing left part way through, lesson or quiz, offered back
+   * beside the heading (SAK-404, SAK-444). The href is the route's
+   * (SAK-367). */
+  resume?: { entry: PlaceEntry; href: string };
   initialPicks?: readonly string[];
 }
 
@@ -166,7 +167,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
   const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
   return (
-    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ResumeLine run={resume.run} href={resume.href} />} height={height}>
+    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} />} height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
           {data.sections.filter((section) => !section.gate && !section.complete).map((section) => {

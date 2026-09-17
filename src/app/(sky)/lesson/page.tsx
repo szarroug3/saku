@@ -8,7 +8,7 @@
 
 import { emptyHistory } from "@/lib/history-ops";
 
-import { loadLesson } from "../actions";
+import { loadLesson, loadPlace } from "../actions";
 import { devFlag } from "../caller";
 import { idsFrom } from "../hrefs";
 import { initialFor, whoFor } from "../page-data";
@@ -24,6 +24,12 @@ export default async function SkyLessonPage({ searchParams }: { searchParams: Pr
   const showcase = devFlag(params, "showcase");
   const { sample, signedIn, who } = await whoFor(params, showcase);
   const picks = showcase ? showcasePicks() : idsFrom(params.picks);
-  const initial = showcase ? lessonFromPicks(emptyHistory(), picks) : await initialFor(who, (w) => loadLesson(w, picks));
-  return <LessonClient sample={sample} showcase={showcase} signedIn={signedIn} initial={initial} picks={picks} />;
+  // the lesson and the place it may be resumed from at the same time, not one
+  // after the other (SAK-382's rule, SAK-444's read); a visitor's place is in
+  // their browser, so there is nothing to read here for them
+  const [initial, accountPlace] = await Promise.all([
+    showcase ? lessonFromPicks(emptyHistory(), picks) : initialFor(who, (w) => loadLesson(w, picks)),
+    sample || showcase || !signedIn ? undefined : loadPlace(),
+  ]);
+  return <LessonClient sample={sample} showcase={showcase} signedIn={signedIn} initial={initial} picks={picks} accountPlace={accountPlace} />;
 }

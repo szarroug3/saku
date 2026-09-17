@@ -890,12 +890,13 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await expect(count).toHaveText("3 of 10");
-  // and the run really is in the browser by then, not only on the screen
+  // and the run really is in the browser by then, not only on the screen.
+  // Under the same key, in the quiz slot of the document SAK-444 made of it.
   await expect
     .poll(() => page.evaluate(() => {
       try {
         const raw = window.localStorage.getItem("sky:quiz:run");
-        return raw ? (JSON.parse(raw).answers?.length ?? 0) : 0;
+        return raw ? (JSON.parse(raw).quiz?.answers?.length ?? 0) : 0;
       } catch {
         return 0;
       }
@@ -908,11 +909,12 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
   await expect(page.getByRole("button", { name: "I don't know" })).toBeVisible();
 
   // the two places a learner lands offer it back, and the offer walks
+  // (one button since SAK-444, saying what it goes back to and how far in)
   await page.goto("/");
-  const offer = page.getByRole("link", { name: "10 cards, 2 answered" });
-  await expect(page.getByText("Continue where you left off?")).toBeVisible();
+  const offer = page.getByRole("link", { name: "Continue your quiz (2 of 10)" });
+  await expect(offer).toBeVisible();
   await page.goto("/observatory");
-  await expect(page.getByText("Continue where you left off?")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue your quiz (2 of 10)" })).toBeVisible();
   await offer.click();
   await expect(count).toHaveText("3 of 10");
 
@@ -923,7 +925,69 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
     .poll(() => page.evaluate(() => window.localStorage.getItem("sky:quiz:run")))
     .toBe(null);
   await page.goto("/");
-  await expect(page.getByText("Continue where you left off?")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Continue your/ })).toHaveCount(0);
+});
+
+test("an unfinished quiz does not get in the way of a lesson (SAK-444)", async ({ page }) => {
+  // Sam's own sequence: a quiz left part way through, then a lesson started,
+  // walked into and left. The one Continue button used to know only the quiz,
+  // and the lesson's own place was kept nowhere, so there was no way back into
+  // the lesson at all.
+  await page.goto("/quiz?picks=kana-row:h-vowels");
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole("button", { name: "I don't know" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+  }
+  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("3 of 10");
+
+  // a lesson of different picks, walked two steps in and left
+  await page.goto("/lesson?picks=kana-row:h-w");
+  const step = page.getByText(/^Step \d+ of \d+$/);
+  await expect(step).toHaveText(/^Step 1 of \d+$/);
+  for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(step).toHaveText(/^Step 3 of \d+$/);
+
+  // the home offers the LESSON, because it is the newer of the two, and
+  // walking back in opens the lesson rather than the quiz
+  await page.goto("/");
+  const back = page.getByRole("link", { name: /^Continue your lesson \(step 3 of \d+\)$/ });
+  await expect(back).toBeVisible();
+  await back.click();
+  await expect(page.getByRole("heading", { name: "Tonight's lesson" })).toBeVisible();
+  // and it is walkable from there. Which step it opens on is not pinned: the
+  // lesson teaches what is LEFT, and the stars opened last time are in the
+  // learner's sky by now, so the order it comes back to is shorter than the
+  // one that was left behind.
+  await expect(step).toHaveText(/^Step \d+ of \d+$/);
+  const opened = await step.innerText();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(step).not.toHaveText(opened);
+
+  // the quiz is not lost: it waits in Sessions, and continues from there
+  await page.goto("/sessions");
+  await expect(page.getByRole("heading", { name: "Unfinished" })).toBeVisible();
+  await expect(page.getByText("Quiz · 2 of 10")).toBeVisible();
+  await page.getByRole("link", { name: "Continue", exact: true }).click();
+  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("3 of 10");
+});
+
+test("forgetting an unfinished quiz from Sessions asks first (SAK-444)", async ({ page }) => {
+  await page.goto("/quiz?picks=kana-row:h-vowels");
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.goto("/sessions");
+  await expect(page.getByText("Quiz · 1 of 10")).toBeVisible();
+  await page.getByRole("button", { name: "Forget", exact: true }).click();
+  // the ask, then backing out of it leaves the quiz where it was
+  await expect(page.getByText("The answers you gave are not recorded.")).toBeVisible();
+  await page.getByRole("button", { name: "Keep it" }).click();
+  await expect(page.getByText("Quiz · 1 of 10")).toBeVisible();
+  // and going through with it takes the row away
+  await page.getByRole("button", { name: "Forget", exact: true }).click();
+  await page.getByRole("button", { name: "Forget it" }).click();
+  await expect(page.getByRole("heading", { name: "Unfinished" })).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: /^Continue your/ })).toHaveCount(0);
 });
 
 // ONE WAY TO OPEN AND CLOSE THINGS (SAK-412). Every fold in the Sky is now the

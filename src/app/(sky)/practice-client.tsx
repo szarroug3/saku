@@ -20,6 +20,7 @@ import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { EMPTY_RECIPE, recipeKey, sameRecipe, type PracticeCollection, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
+import { hasPlace, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 
 import { PitchMark } from "./pitch-reading";
@@ -27,7 +28,7 @@ import { loadPracticeCards, loadQuiz, practiceLookup } from "./actions";
 import { runHref, skyHref } from "./hrefs";
 import { useSkyData } from "./local";
 import { grade } from "./grade";
-import { keepRun, useRunAtOpen } from "./quiz-run-store";
+import { keepRun, reportRun, usePlaceAtOpen } from "./quiz-run-store";
 import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
 import { useStored, writeStored } from "./stored";
@@ -74,14 +75,14 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
  *
  * A practice deck is a run like any other, so it is written down and picked
  * up the same way (SAK-404). What it was asked from is its recipe, as the key
- * `recipeKey` makes of it, which is what sends the "Continue where you left
- * off?" line back here rather than to the quiz. */
-export function PracticeRunClient({ initial, named, sample, signedIn, recipe, accountRun = null }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe; accountRun?: SavedRun | null }) {
+ * `recipeKey` makes of it, which is what sends the Continue button back here
+ * rather than to the quiz. */
+export function PracticeRunClient({ initial, named, sample, signedIn, recipe, accountPlace = NO_PLACE }: { initial: readonly QuizCard[] | null; named: readonly string[]; sample: boolean; signedIn: boolean; recipe: Recipe; accountPlace?: SavedPlace }) {
   const router = useRouter();
   const { cfg, update } = useQuizConfig();
   const source = useMemo<RunSource>(() => ({ ...(named.length ? { cards: named } : {}), recipe: recipeKey(recipe) }), [named, recipe]);
-  const local = useRunAtOpen();
-  const savedRun = sample ? null : (local ?? accountRun);
+  const local = usePlaceAtOpen();
+  const savedRun = sample || !local ? null : (hasPlace(local) ? local : accountPlace).quiz;
   const [replaced, setReplaced] = useState(false);
   const clash = savedRun && !sameSource(savedRun.from, source) ? savedRun : null;
   const resume = clash ? null : savedRun;
@@ -121,7 +122,7 @@ function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update
   };
   const progress = (at: number, answers: readonly QuizAnswer[]) => {
     if (sample) return;
-    keepRun(runToKeep(cards.map((c) => c.id), at, answers, source, Date.now()), signedIn);
+    reportRun(runToKeep(cards.map((c) => c.id), at, answers, source, Date.now()), signedIn);
   };
   const retry = (ids: readonly string[]) => router.push(skyHref("/practice/run", { sample, recipe, cards: ids }));
   // Saved here, on the results, rather than by navigating back to Practice

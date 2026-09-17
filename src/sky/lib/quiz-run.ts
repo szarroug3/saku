@@ -112,10 +112,15 @@ function runProgress(run: SavedRun): { answered: number; total: number } {
   return { answered: run.answers.filter((a) => have.has(a.cardId)).length, total: run.deck.length };
 }
 
-/** How far in, in the app's words: "12 cards, 5 answered." */
+/** How far in, in the app's words: "5 of 12".
+ *
+ * It used to read "12 cards, 5 answered", which was its own sentence and
+ * could only go in one. Since SAK-444 the same number rides in an offer
+ * ("Continue your quiz (5 of 12)"), in an ask and in a row of its own beside
+ * a lesson's "step 3 of 7", so it is the short form all three can carry. */
 export function runNote(run: SavedRun): string {
   const { answered, total } = runProgress(run);
-  return `${total} ${total === 1 ? "card" : "cards"}, ${answered} answered`;
+  return `${answered} of ${total}`;
 }
 
 /** Whether two runs were asked for in the same words.

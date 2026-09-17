@@ -8,8 +8,9 @@
 // pair comes back the next time the two get swapped.
 //
 // The shape is always the same: a line saying what happens, the verb in
-// coral, and "Keep it" beside it. Sam's wording from the sessions page, which
-// was the one that read best.
+// coral, and the way out beside it. Sam's wording from the sessions page,
+// which was the one that read best, and "Keep it" unless the caller has a
+// better name for backing out.
 //
 // THE LINE IS OPTIONAL (SAK-443). A verb that says the whole thing by itself,
 // "Delete it forever", leaves the sentence beside it with nothing to add, and
@@ -30,17 +31,23 @@ interface InlineAskProps {
   busyLabel?: string;
   busy?: boolean;
   onConfirm: () => void;
-  /** Backs out. The other button always says "Keep it". */
+  /** Backs out. */
   onKeep: () => void;
+  /** What backing out is called, when "Keep it" is not what it does. The one
+   * ask that needs this is the quiz's (SAK-444): backing out of starting a
+   * new run means going back to the one you had, and "Keep it" beside "Start
+   * and replace" reads as keeping the new one. Everything else keeps the
+   * default, which is the wording SAK-364 settled on. */
+  keepLabel?: string;
   className?: string;
 }
 
-export function InlineAsk({ what, confirm, busyLabel, busy = false, onConfirm, onKeep, className = "" }: InlineAskProps) {
+export function InlineAsk({ what, confirm, busyLabel, busy = false, onConfirm, onKeep, keepLabel = "Keep it", className = "" }: InlineAskProps) {
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`.trim()}>
       {what && <span className="text-[13px] text-sky-ink/90">{what}</span>}
       <SkyButton variant="coral" disabled={busy} onClick={onConfirm}>{busy && busyLabel ? busyLabel : confirm}</SkyButton>
-      <SkyButton variant="outline" disabled={busy} onClick={onKeep}>Keep it</SkyButton>
+      <SkyButton variant="outline" disabled={busy} onClick={onKeep}>{keepLabel}</SkyButton>
     </div>
   );
 }
