@@ -5584,3 +5584,7 @@ five hiragana vowels are ten cards now, so the visitor's reload test reads
 "1 of 10" and "3 of 10" and the offer to come back reads "10 cards, 2 answered".
 `scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at
 zero on both lists.
+
+## Forgetting a session asks with the button alone (SAK-449)
+
+Same pattern as the saved recipe's delete (SAK-443): the confirm in Sessions lost its sentence ("Its answers leave your schedule.") and the destructive button says what it does for good, "Forget it forever", beside "Keep it". `InlineAsk`'s line has been optional since SAK-443.

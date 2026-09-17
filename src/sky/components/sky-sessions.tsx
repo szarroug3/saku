@@ -103,8 +103,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
               {onDelete && asking ? (
                 <InlineAsk
                   className="mt-3 shrink-0"
-                  what="Its answers leave your schedule."
-                  confirm="Forget it"
+                  confirm="Forget it forever"
                   busyLabel="Forgetting…"
                   busy={busy}
                   onConfirm={remove}
