@@ -15,13 +15,16 @@ import {
   EXTRA_EXAMPLES,
   UNRANKED,
   WRONG_SENSE_EXAMPLES,
+  candidatesByWord,
   chooseExample,
   hardestRank,
   indexByWord,
 } from "./word-example";
+import type { CandidateFile } from "./word-example";
 import type { Example } from "../../data/grammar/corpus";
 import { corpus } from "../../data/grammar/corpus";
 import { VOCAB } from "../../data/vocab";
+import candidatesJson from "../../data/generated/word-example-candidates.json" with { type: "json" };
 import { EXAMPLE_COUNT, exampleFor } from "../../data/word-examples";
 
 function ex(id: number, v: readonly string[], n = v.length): Example {
@@ -111,6 +114,19 @@ describe("chooseExample", () => {
 
 describe("the generated artifact", () => {
   const index = indexByWord(corpus());
+  const wider = candidatesByWord(candidatesJson as unknown as CandidateFile);
+  const vocabRank = new Map(VOCAB.map((w) => [w.keb, w.beginnerRank]));
+  const rankOfVocab = (lemma: string) => vocabRank.get(lemma);
+
+  /** The candidate list scripts/build-word-examples.ts hands the chooser for
+   * this word: the corpus pool plus its EXTRA_EXAMPLES supplement, and the
+   * wider Tatoeba pool ONLY when that comes to nothing (SAK-461). Mirrored
+   * here rather than imported because the script's whole job is those three
+   * lines, and a test that imported them could not catch them changing. */
+  function candidatesFor(keb: string): readonly Example[] {
+    const corpusPool = [...(index.get(keb) ?? []), ...(EXTRA_EXAMPLES[keb] ?? [])];
+    return corpusPool.length > 0 ? corpusPool : (wider.get(keb) ?? []);
+  }
 
   test("covers exactly the words the corpus can cover", () => {
     const covered = VOCAB.filter((w) => index.has(w.keb)).length;
@@ -149,8 +165,39 @@ describe("the generated artifact", () => {
       return c.length > 0 && c.every((ex) => ids.includes(ex.id));
     }).length;
     assert.equal(fullyExcluded, 8);
-    assert.equal(EXAMPLE_COUNT, covered - fullyExcluded);
-    assert.equal(EXAMPLE_COUNT, 2989);
+    // The corpus half of the artifact, unchanged by SAK-461 and checked here
+    // as the same arithmetic it always was: every word the corpus reaches,
+    // less the eight whose every corpus candidate is banned, plus the one word
+    // that has only an EXTRA_EXAMPLES row (いただきます, whose set phrase no
+    // automatic filter can reach; see that table's own comment).
+    const fromCorpus = [...VOCAB].filter((w) => {
+      const pool = [...(index.get(w.keb) ?? []), ...(EXTRA_EXAMPLES[w.keb] ?? [])];
+      return pool.length > 0 && chooseExample(pool, w.keb, rankOfVocab) !== null;
+    }).length;
+    assert.equal(fromCorpus, covered - fullyExcluded + 1);
+    assert.equal(fromCorpus, 2990);
+  });
+
+  test("the wider Tatoeba pool fills the words the corpus never reached (SAK-461)", () => {
+    // The second pool, and the whole of what this card added. It is only ever
+    // read for a word the corpus pool cannot answer, so every row it supplies
+    // is a word that had NO "In a sentence" section before: 9,566 of the
+    // 12,555 words were in that state, set phrases like いただきます among them.
+    let widened = 0;
+    let overruled = 0;
+    for (const w of VOCAB) {
+      const ids = new Set((wider.get(w.keb) ?? []).map((ex) => ex.id));
+      const got = exampleFor(w.keb);
+      if (!got || !ids.has(got.id)) continue;
+      widened += 1;
+      // A word the corpus reaches keeps the corpus's answer, including its
+      // refusal. If this ever counts, the fallback has become a competitor.
+      const corpusPool = [...(index.get(w.keb) ?? []), ...(EXTRA_EXAMPLES[w.keb] ?? [])];
+      if (corpusPool.length > 0) overruled += 1;
+    }
+    assert.equal(overruled, 0, "the wider pool answered for a word the corpus had covered");
+    assert.equal(widened, 2815, "words that gained a sentence from the wider pool");
+    assert.equal(EXAMPLE_COUNT, 5805);
   });
 
   test("covers most of the words a beginner meets first", () => {
@@ -162,14 +209,22 @@ describe("the generated artifact", () => {
     // SAK-174 pulled だ/です/ね/も/よ/って/と/ない out of CEJC_HEAD (they categorize
     // as grammar now, see cejc-reading-frequency.json), shifting every word
     // behind them up one beginnerRank slot and moving one more word into the
-    // first 500 with a corpus sentence of its own.
-    assert.equal(first500.filter((w) => exampleFor(w.keb) !== null).length, 430);
+    // first 500 with a corpus sentence of its own. Then 484 (was 430) when
+    // SAK-461's wider pool filled 54 more of the first 500: this is the band
+    // the card cares about most, and it is now 96.8%.
+    assert.equal(first500.filter((w) => exampleFor(w.keb) !== null).length, 484);
   });
 
-  test("a word with no corpus sentence yields null", () => {
-    // 沿う has no sentence spelling it 沿う; the corpus only has そう, which is
-    // deliberately not matched — see the module header.
-    assert.equal(exampleFor("沿う"), null);
+  test("a word neither pool can answer yields null", () => {
+    // 沿う used to be the example here: the corpus only had そう, which is
+    // deliberately not matched. The wider pool has 彼は川に沿って歩いた。for it,
+    // so the case had to move to a word nothing answers.
+    //
+    // 要する is the shape worth keeping a test on: it HAS candidates in the
+    // wider pool and both are banned by WRONG_SENSE_EXAMPLES (one is the
+    // frozen adverb 要するに, the other a proverb), so the artifact must omit
+    // it rather than carry a banned row.
+    assert.equal(exampleFor("要する"), null);
     assert.equal(exampleFor("この単語は存在しない"), null);
   });
 
@@ -223,22 +278,24 @@ describe("the generated artifact", () => {
     // one (literal) row entirely when their one corpus candidate is banned
     // (L2-L4); 自分's fallback, after its own pick (自分らしくあれ。) leaves the
     // corpus on the same ticket's L1 fix, lands on another literal sentence, so
-    // it does not move this count. Net -3.
-    assert.equal(literal, 2435);
+    // it does not move this count. Net -3. Then 5023 (was 2435, SAK-461): the
+    // wider pool added 2,816 rows and 2,588 of them spell their word
+    // literally, a higher share (91.9%) than the corpus rows manage (81.5%).
+    // That is the expected shape rather than a surprise: over half of what the
+    // wider pool filled is a noun or a set phrase, which has no other spelling
+    // to appear in.
+    assert.equal(literal, 5023);
   });
 
   test("agrees with the chooser it was generated by", () => {
-    const rank = new Map(VOCAB.map((w) => [w.keb, w.beginnerRank]));
     for (const w of VOCAB) {
-      // Mirrors scripts/build-word-examples.ts's candidate assembly exactly:
-      // corpus candidates plus this word's EXTRA_EXAMPLES supplement, if any.
-      const candidates = [...(index.get(w.keb) ?? []), ...(EXTRA_EXAMPLES[w.keb] ?? [])];
+      const candidates = candidatesFor(w.keb);
       const got = exampleFor(w.keb);
       if (candidates.length === 0) {
         assert.equal(got, null, `${w.keb}: row with no candidates`);
         continue;
       }
-      const want = chooseExample(candidates, w.keb, (l) => rank.get(l));
+      const want = chooseExample(candidates, w.keb, rankOfVocab);
       // A word all of whose candidates are wrong-sense-banned has candidates but
       // no legal pick — the artifact must omit it, not carry a banned row.
       if (!want) {

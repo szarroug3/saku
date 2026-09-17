@@ -35,6 +35,9 @@ substring guess. How far past the matched token the span runs depends on
 whether the word has forms at all: a verb or adjective keeps its whole
 conjugated surface, a word with no conjugation class stops at the word, so
 仕事です underlines 仕事 (SAK-422). See analyze_sentence and conjugating_kebs.
+A set phrase written in kana is the one case the token match cannot reach at
+all, and kana_phrase_span is the narrow, boundary-anchored answer for it
+(SAK-461).
 
 WHY A SEPARATE PASS, NOT PART OF build-word-examples.ts
 =========================================================
@@ -340,7 +343,39 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id, conjugates):
             end = offsets[j] + len(toks[j].surface)
             j += 1
         break  # first match wins, consistent with chooseExample's ordering
+
+    if start is None and not any(is_kanji(c) for c in keb):
+        start, end = kana_phrase_span(jp, toks, offsets, keb)
     return slots, start, end
+
+
+def kana_phrase_span(jp, toks, offsets, keb):
+    """The span of a kana set phrase, or (None, None).
+
+    THE SAME RULE THE CANDIDATE PASS MATCHES ON (SAK-461). UniDic does not file
+    いただきます, おはよう or ごちそうさま as one content token -- いただきます is
+    いただき + ます off the verb いただく, おはよう is an 感動詞 -- so the loop
+    above cannot see a set phrase at all, and the word whose absence started
+    SAK-461 would come back with a sentence and no underline under it. So for a
+    word written in kana with no kanji in it, and only when no token resolved
+    to it, the span is the word's literal text where it STARTS at a token start
+    and ENDS at a token end.
+
+    Both boundaries are required and that is what keeps this from being the
+    substring guess the rest of this script refuses: a run of characters
+    spanning the middle of two words is not a match, and a short kana word
+    inside a longer one (ある in あるく, one token) has no token end to finish
+    at. The span is the phrase and nothing after it, for the same reason a
+    noun's stops at the noun: what follows a set phrase is the sentence, never
+    a form of the phrase.
+    """
+    starts = set(offsets)
+    ends = {offsets[i] + len(toks[i].surface) for i in range(len(toks))}
+    for start in sorted(starts):
+        end = start + len(keb)
+        if end in ends and jp[start:end] == keb:
+            return start, end
+    return None, None
 
 
 def main():

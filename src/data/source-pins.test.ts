@@ -52,9 +52,10 @@ import radicalEnrichmentJson from "./generated/radical-enrichment.json" with { t
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
 import wordExamplesJson from "./generated/word-examples.json" with { type: "json" };
+import candidatesJson from "./generated/word-example-candidates.json" with { type: "json" };
 
 import { KANJI, READINGS } from "./kanji";
-import { VOCAB, vocabRow } from "./vocab";
+import { VOCAB, readingUnits, vocabRow } from "./vocab";
 import { wordPitch } from "./pitch";
 import { pitchPairsFor } from "./pitch-pairs";
 import { RADICALS, bushuName, radicalVariants } from "./radicals";
@@ -594,8 +595,121 @@ test("every example sentence highlights the word it is an example of", () => {
   }
   assert.deepEqual(bad.slice(0, 20), []);
   assert.deepEqual(notThisWord.slice(0, 20), []);
-  assert.equal(spanned, 2989, "sentences that carry a highlight span");
-  assert.equal(literal, 2283, "spans that cover the word's dictionary spelling exactly");
-  assert.equal(spanned - literal, 706, "spans that cover an inflected surface of the word");
-  assert.equal(noForms, 2030, "spans on a word with no conjugation class, all of them its spelling");
+  // SAK-461 took these from 2,989 / 2,283 / 706 / 2,030, by filling 2,816 of
+  // the words the grammar corpus never reached out of the whole Tatoeba
+  // export. Every row still carries a span, which is the number worth reading
+  // twice: the wider pool matches a word on its dictionary form AND its
+  // reading, at a token boundary, so a candidate the span pass then cannot
+  // find in the sentence would be a disagreement between two tokenizations of
+  // the same text, and there are none.
+  assert.equal(spanned, 5805, "sentences that carry a highlight span");
+  assert.equal(literal, 4726, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 1079, "spans that cover an inflected surface of the word");
+  assert.equal(noForms, 4265, "spans on a word with no conjugation class, all of them its spelling");
+});
+
+/** Words that are never what a Japanese word MEANS, only how a meaning is
+ * written. Dropped from the meaning side of the comparison below, never from
+ * the sentence side. */
+const NOT_A_MEANING = new Set(
+  ("a an the to of in on at by for with from into and or but not no nor so than " +
+    "then that this these those there here i me my mine you your he him his she " +
+    "her it its we us our they them their who whom whose which what where when " +
+    "why how be am is are was were been being do does did done have has had " +
+    "having will would shall should can could may might must let one ones s t " +
+    "etc eg ie usu something someone somebody oneself itself").split(" "),
+);
+
+/** Words in an English string, lowercased. */
+function englishWords(text: string): string[] {
+  return text.toLowerCase().split(/[^a-z]+/).filter((word) => word.length > 0);
+}
+
+/** Do these two English words plausibly share a root? Prefix agreement, not a
+ * stemmer: "boring" and "bored" agree on "bor", "say" and "saying" on "say". */
+function sameRoot(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a.length < 3 || b.length < 3) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
+  return i >= 3;
+}
+
+/** The meanings the word page shows, as the page shows them. */
+function meaningsShown(keb: string): string[] {
+  const row = vocabRow(keb);
+  if (!row) return [];
+  return readingUnits(row).flatMap((unit) => unit.glosses);
+}
+
+/**
+ * Rows from the wider pool whose translation matches a meaning only through
+ * English morphology this test does not do, with the pair that matches.
+ *
+ * The ingest stems both sides and knows sixty irregular English verbs, so it
+ * accepts "ran" for a word meaning "to run". This test is deliberately a
+ * cruder matcher and not a second copy of that one: a test that reimplements
+ * the code it checks passes whenever the code is wrong in the same way. The
+ * price of being cruder is this list, which is short enough to read and says
+ * what each row matched on.
+ */
+const MATCHED_THROUGH_ENGLISH_MORPHOLOGY: Readonly<Record<string, string>> = {
+  される: "are / be",
+  だろう: "thought / think",
+  において: "in / at",
+  ぶつかる: "ran / run",
+  もたらす: "brought / bring",
+  ハマる: "got / get",
+  勝ち: "won / win",
+  売れる: "sold / sell",
+  奪う: "stole / steal",
+  引き取る: "took / take",
+  引き受ける: "took / take",
+  手当: "paid / pay",
+  更ける: "wore / wear",
+  有料: "pay / paid",
+  立ち去る: "left / leave",
+  立ち直る: "got / get",
+  腰掛ける: "sat / sit",
+  贈る: "gave / give",
+  食い止める: "held / hold",
+  駆け足: "ran / running",
+};
+
+test("every sentence from the wider pool says in English what the word means", () => {
+  // SAK-461's central filter, checked on the artifact rather than in the
+  // ingest that applied it. A sentence whose translation shares no word with
+  // the meanings on the page is the 一人歩き case: real Japanese, real
+  // translation, and a learner reading the page would take the wrong meaning
+  // away from it. The 2,989 corpus rows are NOT in scope, because they were
+  // chosen before this filter existed and some of them would fail it.
+  const pool = candidatesJson as unknown as {
+    readonly sentences: readonly (readonly [number, string, string, number, readonly string[]])[];
+    readonly byWord: Readonly<Record<string, readonly number[]>>;
+  };
+  const fromPool = new Map<string, Set<number>>();
+  for (const [keb, slots] of Object.entries(pool.byWord)) {
+    fromPool.set(keb, new Set(slots.map((slot) => pool.sentences[slot]![0])));
+  }
+  const missing: string[] = [];
+  let checked = 0;
+  for (const [keb, ids] of fromPool) {
+    const ex = exampleFor(keb);
+    if (!ex || !ids.has(ex.id)) continue;
+    checked += 1;
+    const said = englishWords(ex.en);
+    const all = meaningsShown(keb).flatMap((meaning) => englishWords(meaning));
+    // The meaning side drops the words that are never a meaning, and falls
+    // back to keeping them when that leaves nothing, the same two tiers the
+    // ingest uses: いいえ means "no" and nothing else, so for that word "no"
+    // has to count.
+    const strong = all.filter((word) => !NOT_A_MEANING.has(word));
+    const wanted = strong.length > 0 ? strong : all;
+    const shared = wanted.some((word) => said.some((heard) => sameRoot(word, heard)));
+    if (!shared && !(keb in MATCHED_THROUGH_ENGLISH_MORPHOLOGY)) {
+      missing.push(`${keb}: "${ex.en}" says none of ${meaningsShown(keb).join("; ")}`);
+    }
+  }
+  assert.deepEqual(missing.slice(0, 20), []);
+  assert.equal(checked, 2815, "rows the wider Tatoeba pool supplied");
 });

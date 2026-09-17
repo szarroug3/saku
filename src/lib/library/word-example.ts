@@ -28,6 +28,19 @@
 // whose whole job is to be checkable against reality, so reading matches are
 // not admitted. This costs 1.0 percentage point of coverage; see
 // word-example.test.ts, which pins both numbers.
+//
+// THE SECOND POOL, FOR THE WORDS THE CORPUS NEVER REACHED
+// =======================================================
+// The paragraph above is about `Example.v`, and `Example.v` is a list of
+// written forms with the readings already thrown away, which is why a reading
+// cannot be checked against it. scripts/ingest/word_example_candidates.py has
+// the sentences themselves in front of it and a tokenizer in hand, so it
+// matches on the written form AND the reading and keeps only what agrees with
+// both: 後 is あと in this vocabulary, so a 後 read ご is a different word there
+// and never becomes a candidate. That pool arrives here as `candidatesByWord`
+// below, and scripts/build-word-examples.ts reaches for it ONLY for a word the
+// corpus pool gives no answer for, so the corpus's picks and its refusals both
+// stand (SAK-461).
 
 import type { Example } from "../../data/grammar/corpus.ts";
 
@@ -108,6 +121,39 @@ export type RankOf = (lemma: string) => number | undefined;
  *           the corpus's own 〜として (to-shite) example — banning it here
  *           only drops it from 英文's word page, not from that recipe's much
  *           larger example pool.
+ * SAK-461 adds seven words, the first entries banned out of the WIDER Tatoeba
+ * pool rather than out of the corpus. Six of them are the 顔 case again, a
+ * sentence that contains the word and teaches nothing about it, and every one
+ * was found by reading 150 of the new rows; each has a better sibling in the
+ * same pool that chooseExample lands on once the bad one is out of the way:
+ *   - その    209748, その時はその時さ。glossed "I'll just cross that bridge
+ *             when I come to it" is an English idiom with no "that" in it and
+ *             no second clause matching the Japanese. そのことは全然思わなかった。
+ *             ("I didn't think about that at all") is in the same pool.
+ *   - やれやれ  3508006 is やれやれ・・・。, an interjection and an ellipsis typed
+ *             as three katakana middle dots. Nothing to read.
+ *   - 本人    11570855, 本人がロシア人だって言ってたよ。("He said he was
+ *             Russian"), passed the meaning check only because JMdict writes
+ *             one of 本人's meanings as "said person" and the translation
+ *             happens to contain "said". The English never says which person.
+ *   - 楽器    10612324 is マヨネーズは楽器？("Is mayonnaise an instrument?"), a
+ *             joke, against six plain sentences about playing one.
+ *   - 南      2458802, 南駅はどこですか？("Where is the South Station?"), names
+ *             a station that does not exist, in a pool that also has
+ *             ブラジルは南アメリカにあります。
+ *   - 新人    772450, おい、今度の新人かわいいらしいぜ。("Hey, the new recruit
+ *             this time seems really cute"), is a man sizing up a colleague.
+ * And one word where the ban leaves nothing, which is the point:
+ *   - 要する is the verb 'to require'. Both of its candidates in the whole
+ *           export are unusable and there is no third. 78821, 要するに金が必要
+ *           なんだ。("In brief, I need money"), is the frozen adverb 要するに
+ *           ('in short'), which is not the verb at all, and its translation
+ *           says "need" only because 必要 is also in the sentence, so the
+ *           meaning check passed for a reason that has nothing to do with the
+ *           underlined word. 77829, 良酒は看板を要せず。("Good wine needs no
+ *           bush"), is a proverb in an archaic negative, glossed with an
+ *           English idiom almost nobody knows. Banning both leaves 要する
+ *           without an example, the same trade as タイ and 大概.
  * These are named, not filtered by a rule: sense drift is a human judgment, and
  * a short authored list is the honest tool. See task-20 item 3 for what is left.
  */
@@ -123,6 +169,13 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
   脱出: [484243],
   大概: [76037],
   英文: [10068011],
+  その: [209748],
+  やれやれ: [3508006],
+  本人: [11570855],
+  楽器: [10612324],
+  南: [2458802],
+  新人: [772450],
+  要する: [77829, 78821],
 };
 
 /**
@@ -157,8 +210,39 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
  *     sentence using the everyday sense; it also outscores 878460 on its own
  *     merits (日曜日/する are common, 加法/実数 are not), so chooseExample picks
  *     it over 878460 without needing a WRONG_SENSE_EXAMPLES ban.
+ *
+ *   - いただきます (SAK-461): the word Sam noticed had no sentence, and the one
+ *     word the wider Tatoeba pool cannot answer either. Written out, the set
+ *     phrase said before a meal is character for character the polite form of
+ *     the humble verb いただく ("to receive"), so almost every sentence in the
+ *     export that contains those six characters is somebody receiving or being
+ *     allowed to do something, not anybody sitting down to eat: the pool's one
+ *     survivor was この段階で関与することは遠慮させていただきます。("I'd prefer
+ *     not to get involved at this stage, thank you"), which teaches the word
+ *     nothing like what the page says it means. No tokenizer rule can tell the
+ *     two apart, because there is nothing to tell apart: the strings are
+ *     identical.
+ *
+ *     Sentence 1131390 is the one that shows the phrase AS the phrase, by
+ *     naming it: ご飯を食べる前には、「いただきます」を言ってから食べるのがマナー
+ *     だからね。("It's polite to say "itadakimasu" before eating one's meal.")
+ *     It is 19 real tokens, over the 14 the automatic filters allow, and that
+ *     is the deliberate exception: a sentence that says the phrase in quotes
+ *     and then explains when to say it cannot be short, and a set phrase with
+ *     no sentence at all was the problem being fixed.
  */
 export const EXTRA_EXAMPLES: Readonly<Record<string, readonly Example[]>> = {
+  いただきます: [
+    {
+      id: 1131390,
+      jp: "ご飯を食べる前には、「いただきます」を言ってから食べるのがマナーだからね。",
+      en: 'It\'s polite to say "itadakimasu" before eating one\'s meal.',
+      n: 19,
+      v: ["いただく", "ご飯", "マナー", "前", "言う", "食べる"],
+      p: [],
+      sp: {},
+    },
+  ],
   集合: [
     {
       id: 122155,
@@ -238,6 +322,44 @@ export function chooseExample(
     if (ex.id < best.id) best = ex;
   }
   return best;
+}
+
+/**
+ * The candidate pool cut from the WHOLE Tatoeba export for the words the
+ * grammar corpus never reached (SAK-461), as
+ * src/data/generated/word-example-candidates.json holds it.
+ *
+ * Tuple-packed and sentence-deduplicated on disk, because a sentence is a
+ * candidate for several words at once and the file is committed: `sentences`
+ * holds each one once as [id, jp, en, tokenCount, contentLemmas], and `byWord`
+ * points a written form at its own rows by index.
+ */
+export interface CandidateFile {
+  readonly sentences: readonly (readonly [number, string, string, number, readonly string[]])[];
+  readonly byWord: Readonly<Record<string, readonly number[]>>;
+}
+
+/**
+ * That file, unpacked into the same `Example` shape chooseExample already
+ * takes, so the wider pool and the corpus pool are the same kind of thing to
+ * the chooser.
+ *
+ * `p` and `sp` are empty: these rows are never added to CORPUS or AUTHORED and
+ * never enter grammar-pattern drilling, exactly like EXTRA_EXAMPLES's rows.
+ * They exist only as chooseExample candidates for the word named by the key.
+ */
+export function candidatesByWord(file: CandidateFile): Map<string, Example[]> {
+  const map = new Map<string, Example[]>();
+  for (const [keb, slots] of Object.entries(file.byWord)) {
+    map.set(
+      keb,
+      slots.map((slot) => {
+        const [id, jp, en, n, v] = file.sentences[slot]!;
+        return { id, jp, en, n, v, p: [], sp: {} };
+      }),
+    );
+  }
+  return map;
 }
 
 /** Every sentence containing each written form, keyed by that form. Built once,
