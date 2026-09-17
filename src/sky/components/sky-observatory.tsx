@@ -162,7 +162,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
     : over
       ? `That's ${summary.over} past a comfortable lesson.`
       : summary.pieces === cap
-        ? "A full lesson, right at the line."
+        ? "A full lesson, right at the limit."
         : `${cap - summary.pieces} more ${cap - summary.pieces === 1 ? "piece" : "pieces"} before this lesson gets uncomfortably large.`;
   const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
@@ -213,7 +213,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
 
           <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} fit className="!p-4">
             {picks.length === 0 ? (
-              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Choose something to learn and it lands here.</p>
+              <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Choose something to learn and it shows up here.</p>
             ) : (
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
                 {summary.lines.map((line) => (

@@ -641,7 +641,7 @@ export const DAKUTEN_H: PhaseIntro = {
   body: [
     {
       mark: "゛",
-      text: "Two short strokes, like a little pair of apostrophes, sit at the top right of a kana and change how it starts: か ka becomes が ga, さ sa becomes ざ za, た ta becomes だ da, は ha becomes ば ba. The kana underneath is the one you already know. Only the first sound changes, from a hard k, s, t or h to one that hums. Put a finger on your throat and say ka, then ga: the second one buzzes.",
+      text: "Two short strokes, like a little pair of apostrophes, go at the top right of a kana and change how it starts: か ka becomes が ga, さ sa becomes ざ za, た ta becomes だ da, は ha becomes ば ba. The kana underneath is the one you already know. Only the first sound changes, from a hard k, s, t or h to one that hums. Put a finger on your throat and say ka, then ga: the second one buzzes.",
     },
     {
       mark: "゜",
@@ -870,7 +870,7 @@ export const SOKUON_K: PhaseIntro = {
     },
     {
       lead: "Borrowed words are full of it,",
-      text: "because the languages Japanese borrows from are full of consonants that land hard. If a loanword stops short in the middle, expect a ッ there.",
+      text: "because the languages Japanese borrows from are full of consonants that sound hard. If a loanword stops short in the middle, expect a ッ there.",
     },
   ],
   examples: [
@@ -983,11 +983,11 @@ export const ITERATION_MARK: PhaseIntro = {
     },
     {
       lead: "It stands in for the character before it.",
-      text: "人々 is 人 written twice, and you read it as though it were written out. The second half usually picks up the same voicing as dakuten, so it is ひとびと, hito-bito, not hito-hito.",
+      text: "人々 is 人 written twice, and you read it as though it were written out. The second half usually takes the same voicing as dakuten, so it is ひとびと, hito-bito, not hito-hito.",
     },
     {
       lead: "It shows up in compounds.",
-      text: "Repeating a noun this way often reads as a plural or as “various”. It is a habit of particular words, not the general way Japanese marks number.",
+      text: "Repeating a noun this way often reads as a plural or as “various”. It happens with certain words only, not the general way Japanese makes a plural.",
     },
   ],
   examples: [
@@ -1022,7 +1022,7 @@ export const RENDAKU: PhaseIntro = {
   body: [
     {
       lead: "Rendaku:",
-      text: "when two elements form a compound, the first consonant of the second element often picks up a dakuten sound.",
+      text: "when two words join into a compound, the first consonant of the second word often gets a dakuten sound.",
     },
     {
       lead: "The kanji does not change, only the sound.",
@@ -1106,7 +1106,7 @@ export const OKURIGANA_MOVING: PhaseIntro = {
     },
     {
       lead: "Not every tail moves.",
-      text: "Plenty of words have okurigana that never changes. 答え is just 答え: the え sits on the end and stays put, no matter how the word is used.",
+      text: "Plenty of words have okurigana that never changes. 答え is just 答え: the え is on the end and stays put, no matter how the word is used.",
       examples: [
         { from: "答 + え", accentFrom: "え", to: "答え", accentTo: "え", reading: "こたえ", gloss: "answer", say: "答え" },
       ],
@@ -1146,7 +1146,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
     },
   ],
   calloutTip:
-    "The sentence itself can hint at which one it is. が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to lean on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
+    "The sentence itself can hint at which one it is. が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to rely on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
   examples: [
     { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "まる → める (The class started. → I started the class.)" },
     { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "る → す (It got fixed. → I fixed it.)" },
@@ -1193,11 +1193,11 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
   body: [
     {
       lead: "After 1, 6, 8 and 10, an h-sound counter hardens.",
-      text: "本 is ほん on its own, but 一本 is いっぽん and 六本 is ろっぽん. The same shift lands on 匹: 一匹 is いっぴき, 六匹 is ろっぴき.",
+      text: "本 is ほん on its own, but 一本 is いっぽん and 六本 is ろっぽん. The same shift happens to 匹: 一匹 is いっぴき, 六匹 is ろっぴき.",
     },
     {
       lead: "After 3, it voices instead.",
-      text: "三本 is さんぼん and 三匹 is さんびき. That is the dakuten sound you already know, arriving at the seam between the number and the counter.",
+      text: "三本 is さんぼん and 三匹 is さんびき. That is the dakuten sound you already know, happening where the number and the counter join.",
     },
     {
       lead: "Not every counter does this.",
@@ -1229,7 +1229,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
   body: [
     {
       lead: "The tens are a digit in front of じゅう.",
-      text: "じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. There are no new words the way English jumps to “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
+      text: "じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. There are no new words the way English does with “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
     },
     {
       lead: "For the numbers between, add a ones digit on the end.",
@@ -1237,7 +1237,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
     },
     {
       lead: "Three of the digits read two ways.",
-      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting leans on the first of each (よん, なな, きゅう), but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
+      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting mostly uses the first of each (よん, なな, きゅう), but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
     },
   ],
   examples: [
@@ -1270,7 +1270,7 @@ export const NUMBERS_BIG: PhaseIntro = {
     },
     {
       lead: "A few of them shift sound, like the counters do.",
-      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you met on 本 and 匹, landing at the seam before ひゃく and せん.",
+      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you saw on 本 and 匹, happening where the number joins ひゃく and せん.",
     },
     {
       lead: "Japanese counts in ten-thousands, not thousands.",
@@ -1320,11 +1320,11 @@ export const PITCH_INTRO: PhaseIntro = {
   name: "Pitch accent",
   setId: NO_SCRIPT,
   eyebrow: "What pitch accent is",
-  title: "A word carries a tune: some morae are said high, some low.",
+  title: "A word has a tune: some beats are said high, some low.",
   body: [
     {
       lead: "Pitch accent is the rise and fall across a word.",
-      text: "Japanese does not stress a syllable the way English does. Instead the voice sits high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
+      text: "Japanese does not stress a syllable the way English does. Instead the voice is high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
     },
     {
       lead: "A flat line means the pitch never drops.",
@@ -1336,7 +1336,7 @@ export const PITCH_INTRO: PhaseIntro = {
     },
     {
       lead: "The line only appears where the data supports it.",
-      text: "Pitch data isn't available for every word, but where it exists, the line reflects it. A quiz may or may not follow, since some audio clips are too close to another homophone's to tell apart reliably.",
+      text: "Pitch data isn't available for every word, but where it exists, the line reflects it. A quiz may or may not follow, since some words sound the same and their clips are too close to tell apart reliably.",
     },
   ],
   pitchExamples: [
@@ -1389,7 +1389,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
   name: "Kun’yomi and on’yomi",
   setId: NO_SCRIPT,
   eyebrow: "Kun’yomi and on’yomi",
-  title: "A kanji can carry a native Japanese reading and a borrowed Chinese reading.",
+  title: "A kanji can have a native Japanese reading and a borrowed Chinese reading.",
   body: [
     {
       lead: "Kun’yomi is the native Japanese reading.",
@@ -1401,7 +1401,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
     },
     {
       lead: "Use that pattern as a clue, not a guarantee.",
-      text: "Japanese has many exceptions and mixed-reading words, so the word itself always wins. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
+      text: "Japanese has many exceptions and mixed-reading words, so the word's own reading is what counts. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
     },
   ],
 };
@@ -1423,11 +1423,11 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Some pieces are a clue to the meaning.",
-      text: "河 (river) is 氵 next to 可. The 氵 is the water piece, and it tells you what 河 is about: something to do with water. A piece that works this way carries the idea of the kanji, and the box tags it “meaning”.",
+      text: "河 (river) is 氵 next to 可. The 氵 is the water piece, and it tells you what 河 is about: something to do with water. A piece that works this way gives the idea of the kanji, and the box tags it “meaning”.",
     },
     {
       lead: "Some pieces are only there for the sound.",
-      text: "The 可 in 河 says nothing about rivers. It is there because it lends 河 its on'yomi, か: the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it lends, with a word where you can hear it.",
+      text: "The 可 in 河 says nothing about rivers. It is there because it gives 河 its on'yomi, か: the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it gives, with a word where you can hear it.",
     },
     {
       lead: "A kanji can be all meaning, too.",
@@ -1435,7 +1435,7 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
     },
     {
       lead: "And some pieces are just shape.",
-      text: "A few strokes are only there to make the character look the way it does, carrying neither a meaning nor a sound worth learning. The box leaves those out, so what it shows you is always doing one of the two real jobs.",
+      text: "A few strokes are only there to make the character look the way it does, with no meaning and no sound worth learning. The box leaves those out, so what it shows you is always doing one of the two real jobs.",
     },
   ],
 };

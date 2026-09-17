@@ -384,7 +384,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                     <div className="mt-2"><TileGrid items={itemsOf(here.shown)} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} /></div>
                   ) : (
                     <p className="mt-3 text-[13.5px] text-sky-muted">
-                      {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas holds {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${filter ? " with that status" : ""}.`}
+                      {found.length === 0 ? <>Nothing matches &ldquo;{result.query}&rdquo;. The Atlas has {holdsLine}. Try a meaning in English, the character itself, or its romaji reading.</> : `Nothing in ${shelf?.title ?? "this collection"} matches${filter ? " with that status" : ""}.`}
                     </p>
                   )}
                   {elsewhere.length > 0 && (

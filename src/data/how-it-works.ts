@@ -71,7 +71,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "scripts",
     title: "The three scripts",
     paragraphs: [
-      "Japanese is written with three scripts at once. Hiragana is the everyday one: grammar, word endings, and any word with no kanji. Katakana spells the same sounds and is used for words borrowed from other languages, names, and emphasis, the way English uses italics. Kanji are the characters borrowed from Chinese; each carries a meaning and one or more readings, and most words are written with them. Romaji is Japanese spelled in the Latin alphabet. It is not a script Japanese uses.",
+      "Japanese is written with three scripts at once. Hiragana is the everyday one: grammar, word endings, and any word with no kanji. Katakana spells the same sounds and is used for words borrowed from other languages, names, and emphasis, the way English uses italics. Kanji are the characters borrowed from Chinese; each has a meaning and one or more readings, and most words are written with them. Romaji is Japanese spelled in the Latin alphabet. It is not a script Japanese uses.",
     ],
     paragraphAccents: [["Hiragana", "Katakana", "Kanji", "Romaji"]],
   },
@@ -94,7 +94,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     bullets: [
       {
         label: "I know these",
-        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unblocks anything waiting on it (a later lesson gated on a kanji or word you just claimed, for example), and it doesn't fabricate a test record: it stays untested until you're asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
+        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unlocks anything that was waiting on it (a later lesson that needed a kanji or word you just claimed, for example), and it doesn't make up a test record: it stays untested until you're asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
       },
       {
         label: "I don't know these",
@@ -102,46 +102,46 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       },
       {
         label: "Quiz me",
-        body: "Skips the teaching and drops you straight into being asked about what you selected.",
+        body: "Skips the teaching and takes you straight to being asked about what you selected.",
       },
     ],
     afterBullets: [
-      "Either way, a claim only holds until you answer something. If you claim an item and then miss it later, the miss overrides the claim.",
+      "Either way, a claim only lasts until you answer something. If you claim an item and then miss it later, the miss overrides the claim.",
     ],
   },
   {
     id: "progress-words",
     title: "What the standings mean",
     paragraphs: [
-      "Every star in your sky has a standing, and it is the star's color: on the sky, in the Atlas, in Practice. Here's what each one is claiming:",
+      "Every star in your sky has a standing, and it is the star's color: on the sky, in the Atlas, in Practice. Here's what each one means:",
     ],
     bullets: [
       { label: "Undiscovered", body: "You haven't opened this in a lesson yet, and haven't claimed it. It isn't in your sky." },
       {
         label: "Untested",
-        body: "It's in your sky, but Saku has nothing to go on yet. Either you opened it in a lesson, which puts it in rotation from that moment, or you said you already know it with \"I know these\". It stays untested: no quiz results are behind it, so Saku can't call it solid. From your first answer on, its standing comes from your answers alone.",
+        body: "It's in your sky, but Saku has nothing to go on yet. Either you opened it in a lesson, which means Saku starts asking you about it from that moment, or you said you already know it with \"I know these\". It stays untested: there are no quiz results for it yet, so Saku can't call it solid. From your first answer on, its standing comes from your answers alone.",
       },
       {
         label: "Solid",
-        body: "You've been tested recently, and it's gone well: at least 8 of your last 10 real attempts landed. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
+        body: "You've been tested recently, and it's gone well: at least 8 of your last 10 real attempts were right. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
         bodyAccents: ["8 of your last 10"],
       },
       {
         label: "Getting there",
-        body: "At least 6 of your last 10 attempts landed. On the way, not there yet.",
+        body: "At least 6 of your last 10 attempts were right. On the way, not there yet.",
       },
-      { label: "Shaky", body: "Fewer than 6 of your last 10 attempts landed." },
+      { label: "Shaky", body: "Fewer than 6 of your last 10 attempts were right." },
       {
         label: "Slipping",
-        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. Different from shaky: shaky is struggling right now, slipping is something you once had that's fading from disuse. It stays met either way: it is never put back on the list of things to learn, and you drill it in Practice when you choose.",
+        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. Different from shaky: shaky is struggling right now, slipping is something you once had that's fading because you haven't used it. It stays learned either way: it is never put back on the list of things to learn, and you drill it in Practice when you choose.",
       },
       {
         label: "Mix-ups",
-        body: "A separate thing from all of the above. This flags two things you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner. A mix-up clears itself once you've kept the two apart for enough runs in a row; how many is yours to set in Settings.",
+        body: "A separate thing from all of the above. This marks two things you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner. A mix-up clears itself once you've kept the two apart for enough runs in a row; how many is yours to set in Settings.",
       },
     ],
     afterBullets: [
-      "A word's standing is the worst of its facts: it isn't solid until both its meaning and its reading are. Words with a verified pitch carry a pitch fact too, asked by ear, which has a standing of its own and never holds the word back.",
+      "A word's standing is the worse of its meaning and its reading: it isn't solid until both of them are. A word with a verified pitch is also asked its pitch, by ear, and that has a standing of its own that never holds the word back.",
     ],
   },
   {

@@ -66,7 +66,7 @@ export function SkyAccount({ signedIn, name, email, onSignIn, onSignOut, onWipe,
           </SkyPanel>
         ) : (
           <SkyPanel title="Sign in">
-            <p className="mt-2 text-[14px] leading-relaxed text-sky-ink/90">Until you sign in, your progress lives in this browser only. Signing in is only to remember it across devices. Saku never emails you anything.</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-sky-ink/90">Until you sign in, your progress is kept in this browser only. Signing in is only to remember it across devices. Saku never emails you anything.</p>
             <div className="mt-4">
               {onSignIn
                 ? <SkyButton variant="outline" disabled={busy !== null} onClick={signIn}><GoogleMark />{busy === "in" ? "Redirecting…" : "Continue with Google"}</SkyButton>

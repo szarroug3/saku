@@ -260,7 +260,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     buildSections: [{
       title: "Connector example",
       body: [{
-        text: "Each connector stays in the て/で-form. The final predicate carries the tense and politeness.",
+        text: "Each connector stays in the て/で-form. The final predicate has the tense and politeness.",
       }],
       rules: [
         { verb: "たべる", to: "たべて", gloss: "eat" },

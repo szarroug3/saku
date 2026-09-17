@@ -117,7 +117,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
           so the learner's own stars are the only stars in it: with one or two
           discovered they were lost among the background's (Sam, 2026-09-06) */}
       <div className="sky-wash-clear relative flex min-h-[160px] flex-1 overflow-hidden rounded-2xl border border-sky-line">
-        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation the sky holds, scattered across it, lit as you learn them" />
+        <SkyField items={data.items} roots={data.roots} firmament={data.firmament} focus={1120} openOn={openOn} graph={graph} interactive fill lookOf={lookOf} label="Every constellation in the sky, scattered across it, lit as you learn them" />
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>

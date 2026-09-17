@@ -151,7 +151,7 @@ export const CLUSTERS: readonly Cluster[] = [
     feel:
       "All seven are ない-form + a fixed ending, and all seven mean 'must'. " +
       "なくちゃ / なきゃ are spoken contractions of なくては / なければ. " +
-      "〜ならない and 〜いけない are interchangeable in nearly every frame.",
+      "〜ならない and 〜いけない are interchangeable in nearly every sentence.",
     link: null,
     // `noLinkReason` is no longer rendered (see the header), but it is still
     // written for a reader rather than for us: keep it free of source-file
@@ -169,7 +169,7 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "how sure you are, and how you know",
     members: ["sou-appearance", "sou-hearsay", "you-da", "rashii", "kamoshirenai", "deshou"], //
     feel:
-      "そう splits by what it attaches to, and that's the one difference " +
+      "そう divides in two by what it attaches to, and that's the one difference " +
       "here you can spot just from the word's shape: 降りそう (stem, " +
       "'looks like rain') vs 降るそうだ (plain, 'I hear it'll rain'). The " +
       "rest differ by how direct the evidence is, and that ordering is " +
@@ -186,7 +186,7 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["ba", "tara", "to-conditional", "nara"],
     feel:
       "と is the most mechanical (whenever X, Y follows); たら is the most " +
-      "general; ば leans hypothetical; なら picks up a topic someone just " +
+      "general; ば is usually hypothetical; なら responds to a topic someone just " +
       "raised. The overlap is large and real.",
     link: {
       url: "https://guidetojapanese.org/learn/grammar/conditionals",
@@ -200,9 +200,9 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "から and ので",
     members: ["kara-reason", "node"],
     feel:
-      "ので is softer and more deferential; から states a reason more baldly " +
+      "ので is softer and more deferential; から states a reason more bluntly " +
       "and reads as more final when it ends the sentence, though ので can " +
-      "trail a sentence the same way, just with less of that snap. Note から " +
+      "end a sentence the same way, just less sharply. Note から " +
       "has a second, unrelated job, 東京から, 'from Tokyo', which has nothing " +
       "to do with reasons.",
     link: {
@@ -228,8 +228,8 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "たばかり and たところ",
     members: ["ta-bakari", "ta-tokoro"],
     feel:
-      "たところ is clock-time just (it happened moments ago); たばかり is " +
-      "felt-time just (it can be months, if it still feels recent).",
+      "たところ is just by the clock (it happened moments ago); たばかり is " +
+      "just by feel (it can be months, if it still feels recent).",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -240,8 +240,8 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["koto-ga-dekiru", "potential"],
     feel:
       "ことができる is longer and more formal; the potential form is what " +
-      "people say. Note 〜られる is ALSO the passive, and for every ichidan " +
-      "verb the two are the same string (食べられる). That ambiguity is in " +
+      "people say. Note 〜られる is ALSO the passive, and for every る-verb " +
+      "the two are written the same (食べられる). That ambiguity is in " +
       "Japanese itself, not in this list.",
     link: null,
     noLinkReason: "No verified link compares the two.",
@@ -253,8 +253,8 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["nikui", "zurai"],
     feel:
       "にくい is about the thing (this pen is hard to write with); づらい " +
-      "leans on the doer's discomfort (this is hard for me to say). Both are " +
-      "V-stem + a fixed string.",
+      "is about how hard it is for the person doing it (this is hard for me to " +
+      "say). Both are V-stem plus a fixed ending.",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -265,7 +265,7 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["wa-yori", "hou-ga-yori"],
     feel:
       "Same comparison, different emphasis: は〜より states it plainly, while " +
-      "のほうが foregrounds the one that comes out ahead.",
+      "のほうが puts the focus on the one that comes out ahead.",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -288,7 +288,7 @@ export const CLUSTERS: readonly Cluster[] = [
     feel:
       "は marks what the sentence is about; が marks who or what is doing the " +
       "verb. There is no rule for choosing between them: plenty of sentences " +
-      "take either one, the difference often doesn't survive into English, and " +
+      "take either one, the difference often does not show up in English, and " +
       "which one fits a given sentence is something that comes with time and " +
       "exposure, not from a lesson.",
     link: {
@@ -303,9 +303,9 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "where something is vs where something happens",
     members: ["ni", "de"],
     feel:
-      "Roughly: に marks existence and destination, で marks the site of an " +
-      "action. There is no rule for choosing between them: which one a sentence " +
-      "wants comes with time and exposure, not from a lesson.",
+      "Roughly: に marks existence and destination, で marks where an " +
+      "action happens. There is no rule for choosing between them: which one a sentence " +
+      "takes comes with time and exposure, not from a lesson.",
     link: {
       url: "https://www.tofugu.com/japanese/ni-vs-de/",
       label: "Tofugu: に vs で",
@@ -331,7 +331,7 @@ export const CLUSTERS: readonly Cluster[] = [
     members: [],
     feel:
       "Japanese pairs most verbs: one you do to something (を), one that just " +
-      "happens (が). The pairing is lexical, not a rule you can derive.",
+      "happens (が). The pairing is learned word by word, not a rule you can work out.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/transitivity/",
       label: "Tofugu: Transitivity",

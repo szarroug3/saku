@@ -510,7 +510,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It doubles after 1, 6, 8 and 10.",
-        text: "A small っ lands before 個 there, so 一個 is いっこ and 六個 is ろっこ. There is no voicing after 3, so 三個 stays さんこ. 冊, 回 and 歳 double the same way.",
+        text: "A small っ goes before 個 there, so 一個 is いっこ and 六個 is ろっこ. There is no voicing after 3, so 三個 stays さんこ. 冊, 回 and 歳 double the same way.",
       },
     ],
   },
@@ -534,7 +534,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It doubles after 1, 8 and 10.",
-        text: "A small っ lands before 冊 there, so 一冊 is いっさつ and 八冊 is はっさつ. 六冊 stays regular at ろくさつ, and there is no voicing after 3.",
+        text: "A small っ goes before 冊 there, so 一冊 is いっさつ and 八冊 is はっさつ. 六冊 stays regular at ろくさつ, and there is no voicing after 3.",
       },
     ],
   },
@@ -558,7 +558,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It doubles after 1, 6, 8 and 10.",
-        text: "A small っ lands before 回 there, so 一回 is いっかい and 六回 is ろっかい. There is no voicing after 3, so 三回 stays さんかい.",
+        text: "A small っ goes before 回 there, so 一回 is いっかい and 六回 is ろっかい. There is no voicing after 3, so 三回 stays さんかい.",
       },
     ],
   },
@@ -575,7 +575,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It doubles after 1, 8 and 10.",
-        text: "A small っ lands before 歳 there, so 一歳 is いっさい and 八歳 is はっさい. 六歳 stays regular at ろくさい, and there is no voicing after 3.",
+        text: "A small っ goes before 歳 there, so 一歳 is いっさい and 八歳 is はっさい. 六歳 stays regular at ろくさい, and there is no voicing after 3.",
       },
     ],
   },

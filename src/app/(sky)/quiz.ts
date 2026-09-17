@@ -159,7 +159,7 @@ function whyOption(fact: FactId, option: FactId, onAVehicle: boolean): string | 
     // 生 in 人生 against 生 in 先生: the same character, and which reading
     // applies is the whole question
     if (reading(fact) && reading(option)) return "another reading of the same character";
-    if (subject === KEIGO_SUBJECT) return "the same verb in the other register";
+    if (subject === KEIGO_SUBJECT) return "the same verb in its other polite form";
   }
   // the flagged pairs: kana's look groups, CONFUSABLE_WITH for kanji, the
   // hand-authored radical pairs. Either way round, since which side carries

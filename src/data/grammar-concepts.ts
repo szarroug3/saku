@@ -107,9 +107,9 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "Japanese has politeness levels.",
     body: [
-      { text: "You can say the same thing at different levels of politeness, and Japanese has three registers for it." },
-      { lead: "Polite (ていねい)", text: "is the neutral courteous layer, です and ます, the one everyone learns first." },
-      { lead: "Honorific (そんけい) and humble (けんじょう)", text: "sit on top of it, and each swaps in a different verb depending on whose action it is." },
+      { text: "You can say the same thing at different levels of politeness, and Japanese has three of them." },
+      { lead: "Polite (ていねい)", text: "is the neutral courteous level, です and ます, the one everyone learns first." },
+      { lead: "Honorific (そんけい) and humble (けんじょう)", text: "are above it, and each swaps in a different verb depending on whose action it is." },
     ],
   },
   {
@@ -117,7 +117,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "Honorific raises the other person.",
     body: [
-      { text: "The honorific register raises the person you are speaking about, to show respect for what they do. For their eating, たべる becomes めしあがる." },
+      { text: "The honorific form raises the person you are speaking about, to show respect for what they do. For their eating, たべる becomes めしあがる." },
       { text: "You use it for the other person's actions, never your own. Raising yourself would be the opposite of respectful." },
     ],
   },
@@ -126,7 +126,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "Humble lowers your own action.",
     body: [
-      { text: "The humble register lowers your own action, to defer to the person you are speaking with. For your own eating, たべる becomes いただく." },
+      { text: "The humble form lowers your own action, to defer to the person you are speaking with. For your own eating, たべる becomes いただく." },
       { text: "You use it for what you do, so that the other person is left standing higher by comparison." },
     ],
   },
@@ -182,10 +182,10 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     id: "adjective-types",
     name: "Keiyōshi/keiyōdōshi",
     summary:
-      "い-adjectives conjugate themselves; な-adjectives take な and lean on です for tense and connection.",
+      "い-adjectives conjugate themselves; な-adjectives take な and use です for tense and connection.",
     body: [
       "Japanese adjectives come in two kinds. い-adjectives usually end in い and conjugate themselves. な-adjectives have no reliable kana ending; the な in their name is what they add before a noun.",
-      "Spelling is only a clue. Common な-adjectives such as きれい and きらい end in い, so an adjective's class is learned with the word.",
+      "Spelling is only a clue. Common な-adjectives such as きれい and きらい end in い, so an adjective's kind is learned with the word.",
     ],
     searchAlso: [
       "い-adjectives and な-adjectives",
@@ -203,10 +203,10 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     id: "keigo-registers",
     name: "Keigo",
     summary:
-      "Three registers: polite, honorific for the other person, humble for yourself.",
+      "Three levels: polite, honorific for the other person, humble for yourself.",
     body: [
-      "Japanese has politeness levels. There are three registers: polite (です and ます, the neutral courteous layer), honorific (which raises the other person's action), and humble (which lowers your own).",
-      "Which one you reach for is decided by whose action it is: honorific for someone else, humble for yourself. Using a humble form for someone else lowers them, which is a real mistake.",
+      "Japanese has politeness levels. There are three: polite (です and ます, the neutral courteous level), honorific (which raises the other person's action), and humble (which lowers your own).",
+      "Which one you use is decided by whose action it is: honorific for someone else, humble for yourself. Using a humble form for someone else lowers them, which is a real mistake.",
     ],
     searchAlso: [
       "keigo: the politeness levels",

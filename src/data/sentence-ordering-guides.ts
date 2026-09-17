@@ -267,7 +267,7 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
     hook: "Think: whose side → who does what for whom → giving or receiving ending.",
   },
   reported: {
-    eyebrow: "Stance and reported meaning",
+    eyebrow: "Speaker's view and reported meaning",
     title: "Japanese puts the basic statement before words like “I think” or “might.”",
     body: [
       {
@@ -286,7 +286,7 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
     hook: "Think: who, what, or when → basic statement → speaker's view.",
   },
   contrast: {
-    eyebrow: "Marked-clause ordering",
+    eyebrow: "Setup and result ordering",
     title: "Japanese puts the first situation before the main thing that happened.",
     body: [
       {

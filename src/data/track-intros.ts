@@ -174,7 +174,7 @@ export const RADICAL_TRACK: PhaseIntro = {
       // filters lessonOnly paragraphs; the teach walk keeps them.
       lessonOnly: true,
       lead: "Each piece turns up just before the character that needs it.",
-      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you every part it plays.",
+      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you every job it does.",
     },
   ],
 };
@@ -209,12 +209,12 @@ export const WORD_TRACK: PhaseIntro = {
       text: "先生 (teacher), 電車 (train), たべる (to eat). Radicals build kanji, kanji spell words, and the word is the thing you say. Grammar is how you join them into a sentence.",
     },
     {
-      lead: "A word arrives once you know the kanji it is written with.",
+      lead: "A word is taught once you know the kanji it is written with.",
       text: "電車 waits until both 電 and 車 are learned, so when it turns up you can assemble it instead of memorizing it whole. Words with no kanji in them, like これ and もう, have nothing to wait for.",
     },
     {
       lead: "Expect these in bursts.",
-      text: "Nothing for a stretch, then several at once, as the kanji they need come in. Learning a word is also what settles which reading its kanji take, so this is where those characters get their real pronunciation.",
+      text: "Nothing for a stretch, then several at once, as you learn the kanji they need. Learning a word is also what decides which reading its kanji take, so this is where those characters get their real pronunciation.",
     },
   ],
 };
@@ -236,11 +236,11 @@ export const VARIANT_INTRO: PhaseIntro = {
   name: "Radical alternate forms",
   setId: "",
   eyebrow: "What a variant form is",
-  title: "A character changes shape depending on where it sits inside a kanji.",
+  title: "A character changes shape depending on where it is inside a kanji.",
   body: [
     {
       lead: "The character is the same; only its drawing changes.",
-      text: "人 is written 亻 when it stands on the left of a kanji, as in 体. It is still 人, it still means person, and it is still the character you learned. A piece is just redrawn to make room for what sits beside it.",
+      text: "人 is written 亻 when it stands on the left of a kanji, as in 体. It is still 人, it still means person, and it is still the character you learned. A piece is just redrawn to make room for what is beside it.",
     },
     {
       lead: "So a form is one less shape to learn, not one more.",
@@ -248,7 +248,7 @@ export const VARIANT_INTRO: PhaseIntro = {
     },
     {
       lead: "Where a form appears is a clue to which character it is.",
-      text: "A form keeps to a position: 亻 on the left, ⺗ underneath, 辶 wrapping the bottom. When a lesson meets one, it tells you the character it belongs to and where it sits, so you are never left to guess.",
+      text: "A form keeps to a position: 亻 on the left, ⺗ underneath, 辶 wrapping the bottom. When a lesson has one, it tells you the character it belongs to and where it is, so you are never left to guess.",
     },
   ],
   examples: [
@@ -275,7 +275,7 @@ export const GRAMMAR_TRACK: PhaseIntro = {
     },
     {
       lead: "You do not need a large vocabulary to start.",
-      text: "Each pattern is taught on words you have already learned, so it opens as soon as the first ones are in hand. Kanji unlocks words; grammar is what you do with them.",
+      text: "Each pattern is taught on words you have already learned, so it opens as soon as you know the first ones. Kanji unlocks words; grammar is what you do with them.",
     },
   ],
 };
@@ -345,7 +345,7 @@ export const KEIGO_TRACK: PhaseIntro = {
     },
     {
       lead: "Some kanji come before the verbs that use them.",
-      text: "A keigo verb is often written with kanji you have not met. Before the verb, the lesson teaches those kanji and the smaller radicals they are built from, so the verb reads as pieces you already know rather than a set of new shapes. These pieces are not keigo themselves; they are just what this particular verb is spelled with.",
+      text: "A keigo verb is often written with kanji you have not learned. Before the verb, the lesson teaches those kanji and the smaller radicals they are built from, so the verb reads as pieces you already know rather than a set of new shapes. These pieces are not keigo themselves; they are just what this particular verb is spelled with.",
     },
   ],
 };

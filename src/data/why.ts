@@ -82,7 +82,7 @@ export const WHY_STROKE_ORDER: Why = {
     strong: "Stroke order is worth learning with each character.",
   },
   paras: [
-    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
+    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to come out lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
   ],
 };
 
@@ -181,7 +181,7 @@ export const WHY_TRACK: Record<string, Why> = {
     },
     paras: [
       "A radical is a small shape that recurs inside many kanji, and it usually hints at what those kanji mean. The water radical 氵 turns up in kanji about water and liquids: 海 (sea), 泳 (swim), 湖 (lake). The tree radical 木 turns up in kanji about trees and wood: 林 (woods), 森 (forest). So spotting a familiar radical gives you a head start on what a brand-new kanji means, not just how it is drawn. It is a strong hint rather than a promise, since some radicals are only structural.",
-      "A radical is usually not a word you speak, it’s a component. This track only asks you for its meaning, because that meaning is what you bring to the kanji that use it.",
+      "A radical is usually not a word you speak, it’s a component. This track only asks you for its meaning, because that meaning is what helps with the kanji that use it.",
       "We teach a radical just before the first kanji that needs it. Once you know that radical’s meaning, the kanji that uses it unlocks. A handful of radicals appear in no common kanji; those are taught at the very end, for completeness.",
     ],
   },
@@ -193,7 +193,7 @@ export const WHY_TRACK: Record<string, Why> = {
     paras: [
       "Kanji are reused across many words, so learning one can open up several at once. That makes the pace uneven. Some days you will have a pile of new words, some days none, because you are still collecting the kanji they need.",
       "Each kanji is built around a smaller shape called a radical, and the radical often hints at the meaning: the water shape 氵 shows up in 海 (sea) and 泳 (swim). Most radicals are themselves kanji you learn on their own. A handful are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile here, marked as a radical, taught just before the kanji that needs them, so a kanji is never broken into a piece you have not seen.",
-      "Each kanji can also have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context. The most common kanji come first.",
+      "Each kanji can also have multiple readings, and words are what decide which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context. The most common kanji come first.",
     ],
   },
   // THE ONE CURRICULUM CARD. Radicals, kanji and words are taught in a single
@@ -203,13 +203,13 @@ export const WHY_TRACK: Record<string, Why> = {
   // and the track intros still speak about one kind of thing at a time.
   curriculum: {
     lede: {
-      strong: "Radicals, kanji and words are one climb, so they arrive in one order.",
-      rest: "Each lesson teaches whatever comes next, and nothing arrives before the pieces it is built from.",
+      strong: "Radicals, kanji and words build on each other, so they are taught in one order.",
+      rest: "Each lesson teaches whatever comes next, and nothing is taught before the pieces it is built from.",
     },
     paras: [
-      "A word is what you actually speak and read, and most words are written with kanji. A kanji is built around smaller shapes called radicals. So the three are a chain, and we teach them in the order that chain runs: the shapes a kanji is made of, then the kanji, then the words those kanji spell.",
-      "That is why a lesson can look mixed. Some sittings are two kanji and the shape they share; some are a handful of words your last few kanji just paid for. The pace is uneven on purpose, because kanji are reused across many words and learning one can open several at once.",
-      "A few shapes are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile, marked as a radical, and they always sit just before the kanji that needs them. Words written with no kanji at all (これ, もう, とても) have nothing to wait for, so they turn up early.",
+      "A word is what you actually speak and read, and most words are written with kanji. A kanji is built around smaller shapes called radicals. So the three build on each other, and we teach them in that order: the shapes a kanji is made of, then the kanji, then the words those kanji spell.",
+      "That is why a lesson can look mixed. Some sittings are two kanji and the shape they share; some are a handful of words your last few kanji just unlocked. The pace is uneven on purpose, because kanji are reused across many words and learning one can open several at once.",
+      "A few shapes are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile, marked as a radical, and they always come just before the kanji that needs them. Words written with no kanji at all (これ, もう, とても) have nothing to wait for, so they turn up early.",
     ],
   },
   words: {
@@ -218,7 +218,7 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "Most are made of kanji, so they unlock as you learn those.",
     },
     paras: [
-      "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both feed into this track: kanji are the characters a word is written with, grammar is how you string words into a sentence.",
+      "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both build up to this track: kanji are the characters a word is written with, grammar is how you join words into a sentence.",
       "A word is only taught here once you know every kanji in it (電車 waits until you’ve learned both 電 and 車), because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
       "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practice here are the kana-only ones.",
     ],
@@ -231,7 +231,7 @@ export const WHY_TRACK: Record<string, Why> = {
     paras: [
       "Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji. It's a rule for combining, not another item to memorize.",
       "You don’t need a big vocabulary before you start because a pattern is taught with words you already know. Kanji unlocks words; grammar is what you do with those words once you know them.",
-      "Patterns are taught starting with the easiest ones first so early grammar leans on the simple verbs and words you’re already learning in the other tracks.",
+      "Patterns are taught starting with the easiest ones first so early grammar uses the simple verbs and words you’re already learning in the other tracks.",
     ],
   },
   // DRAFT COPY, to be rewritten in the owner's voice — the same status as the
@@ -245,7 +245,7 @@ export const WHY_TRACK: Record<string, Why> = {
     },
     paras: [
       "To count things you pair a number with a counter: 本 for long thin objects, 人 for people, 枚 for flat things. 三本 is three long thin objects, 三人 is three people. The counter depends on the shape or kind of what you are counting, and a few of them change sound as the number in front of them changes.",
-      "〜つ is taught first because it is the one you can reach for when you do not know the right counter. ひとつ, ふたつ, みっつ count almost anything up to ten, and you will still be understood.",
+      "〜つ is taught first because it is the one to use when you do not know the right counter. ひとつ, ふたつ, みっつ count almost anything up to ten, and you will still be understood.",
       "The first counters need only kana, so they open right after hiragana. The ones written with a number kanji wait until that kanji is learned, the same way a word waits for its kanji.",
     ],
   },

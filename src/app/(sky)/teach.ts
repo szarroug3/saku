@@ -174,11 +174,11 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     // on'yomi are written in katakana, kun'yomi in hiragana, the dictionary's own convention
     t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, kind: /[\u30a0-\u30ff]/.test(r.base) ? "on" as const : "kun" as const, words: r.words.slice(0, 4) }));
     // what each piece does in it, the app's "Built from" labels: a phonetic
-    // piece lends its sound, a semantic one its sense (or its own meaning)
+    // piece gives its sound, a semantic one its sense (or its own meaning)
     const parts = builtPieces(glyph).map((p) => ({
       glyph: p.glyph,
       role: p.role,
-      sense: p.role === "phonetic" ? (p.label ? `lends ${p.label}` : "lends its sound") : (p.label ?? teachablePieceMeaning(p.glyph) ?? ""),
+      sense: p.role === "phonetic" ? (p.label ? `gives ${p.label}` : "gives its sound") : (p.label ?? teachablePieceMeaning(p.glyph) ?? ""),
     }));
     if (parts.length) t.parts = parts;
     return t;
@@ -389,7 +389,7 @@ function grammarPages(recipe: Recipe): TeachPage[] {
     pages.push({
       eyebrow: "Family",
       title: "Ways to say this",
-      paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are its near neighbors, and how each is built." }],
+      paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are the closest ones, and how each is built." }],
       tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, ...(family.feel ? { note: family.feel } : {}) }],
       ...(family.link ? { link: { href: family.link.url, label: family.link.label } } : {}),
     });

@@ -215,7 +215,7 @@ test("the home draws its sky from a cached catalogue, not from its own response"
   page.on("request", (r) => { if (r.url().includes("/api/sky-catalogue/")) asked.push(r.url()); });
 
   await page.goto("/?sample");
-  const sky = page.getByLabel("Every constellation the sky holds, scattered across it, lit as you learn them");
+  const sky = page.getByLabel("Every constellation in the sky, scattered across it, lit as you learn them");
   await expect(sky).toBeVisible();
   // the sky is really drawn: stars, and something to aim at
   await expect(sky.locator("circle[data-hit]").first()).toBeVisible();
@@ -664,7 +664,7 @@ test("a short panel stops at its content instead of pinning its buttons to the p
   // Start lesson at the very bottom of the page.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/observatory?sample");
-  const empty = page.getByText("Nothing picked. Choose something to learn and it lands here.");
+  const empty = page.getByText("Nothing picked. Choose something to learn and it shows up here.");
   await expect(empty).toBeVisible();
   const line = await empty.boundingBox();
   const start = await page.getByText("Start lesson", { exact: true }).boundingBox();
@@ -859,7 +859,7 @@ test("the reveal explains which reading applies, and why", async ({ page }) => {
   await page.getByRole("button", { name: "I don't know" }).click();
   await expect(page.getByText("On'yomi: the borrowed reading")).toBeVisible();
   await expect(page.getByText(/すい is an on'yomi/)).toBeVisible();
-  await expect(page.getByText(/Same character, and the company it keeps decides\./)).toBeVisible();
+  await expect(page.getByText(/Same character, and the word it is in decides\./)).toBeVisible();
   // and the breakdown, so the reading that applies is read against the one
   // that did not: すい marked on'yomi, みず beside it as the kun'yomi
   await expect(page.getByText("on'yomi", { exact: true })).toHaveCount(1);
@@ -871,7 +871,7 @@ test("the reveal explains which reading applies, and why", async ({ page }) => {
   await page.getByRole("button", { name: "I don't know" }).click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await expect(page.getByText(/is an on'yomi, a pronunciation borrowed/)).toHaveCount(0);
-  await expect(page.getByText(/Same character, and the company it keeps decides/)).toHaveCount(0);
+  await expect(page.getByText(/Same character, and the word it is in decides/)).toHaveCount(0);
 });
 
 test("a card answered after a retry still shows what was said before it was right", async ({ page }) => {
@@ -1391,7 +1391,7 @@ test("a pan moves the sky without rebuilding it", async ({ page }) => {
   // holds that: the group moves, the group is the same element it was, and
   // not one node is added to it or taken out of it while the drag runs.
   await page.goto("/?sample");
-  const sky = page.getByLabel("Every constellation the sky holds, scattered across it, lit as you learn them");
+  const sky = page.getByLabel("Every constellation in the sky, scattered across it, lit as you learn them");
   await expect(sky).toBeVisible();
   await expect(sky.locator("circle[data-hit]").first()).toBeVisible();
   const box = await sky.boundingBox();

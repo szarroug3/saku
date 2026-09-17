@@ -24,7 +24,7 @@ describe("the rule a card exercises", () => {
     assert.equal(rule.title, "On'yomi: the borrowed reading");
     assert.match(rule.prose, /すい is an on'yomi/);
     assert.match(rule.prose, /joined to other kanji/);
-    assert.match(rule.prose, /Same character, and the company it keeps decides\./);
+    assert.match(rule.prose, /Same character, and the word it is in decides\./);
   });
 
   it("marks the reading that applies against the ones that did not", () => {
@@ -72,7 +72,7 @@ describe("the rule a card exercises", () => {
     const both = [...READING_INDEX.entries()].find(([, r]) => r.type === "both")!;
     const rule = readingRuleFor(both[0], kanji)!;
     assert.equal(rule.title, "Filed both ways");
-    assert.match(rule.prose, /no rule to lean on/);
+    assert.match(rule.prose, /no rule decides it here/);
   });
 
   it("names the two sets of numbers on a counting card", () => {

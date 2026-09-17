@@ -161,7 +161,7 @@ export const TERMS: readonly Term[] = [
     summary: "Japanese's sound characters: each one is a syllable, not a meaning.",
     body: [
       "Kana are the characters Japanese uses for sounds. Each kana stands for one syllable, like a, ka or shi, rather than for a meaning, and together they can spell any Japanese word.",
-      "There are two matching sets of them, hiragana and katakana, and you will meet each in turn.",
+      "There are two matching sets of them, hiragana and katakana, and you will learn each in turn.",
     ],
     searchAlso: ["kana", "syllabary", "syllabaries"],
     related: ["hiragana", "katakana"],
@@ -216,9 +216,9 @@ export const TERMS: readonly Term[] = [
   {
     id: "kanji",
     name: "Kanji",
-    summary: "Characters borrowed from Chinese, each carrying a meaning.",
+    summary: "Characters borrowed from Chinese, each with a meaning.",
     body: [
-      "Kanji are the characters Japanese borrowed from Chinese. Each one carries a meaning, and usually has more than one reading depending on the word it sits in.",
+      "Kanji are the characters Japanese borrowed from Chinese. Each one has a meaning, and usually has more than one reading depending on the word it is in.",
       "Ordinary Japanese writing mixes kanji with kana.",
     ],
     searchAlso: ["kanji", "chinese characters", "han characters"],
@@ -231,7 +231,7 @@ export const TERMS: readonly Term[] = [
     summary: "The native Japanese and borrowed Chinese readings of a kanji.",
     body: [
       "Kun’yomi are native Japanese words matched to kanji, while on’yomi are readings borrowed from Chinese.",
-      "A kanji used by itself or with a hiragana tail usually takes kun’yomi, while several kanji linked into a vocabulary word usually take on’yomi, though the word itself always wins when there is an exception.",
+      "A kanji used by itself or with a hiragana tail usually takes kun’yomi, while several kanji linked into a vocabulary word usually take on’yomi, though the word's own reading is what counts when there is an exception.",
     ],
     searchAlso: [
       "kunyomi",
@@ -338,7 +338,7 @@ export const TERMS: readonly Term[] = [
     name: "Okurigana",
     summary: "The kana tail written after a kanji, like the る in 見る.",
     body: [
-      "Okurigana are the kana written after a kanji to finish a word and show its ending. In 見る “to see”, the kanji 見 carries the meaning and the okurigana る is the part that changes when the word does.",
+      "Okurigana are the kana written after a kanji to finish a word and show its ending. In 見る “to see”, the kanji 見 has the meaning and the okurigana る is the part that changes when the word does.",
       "They are how a verb or adjective shows its grammar while the kanji stays fixed.",
     ],
     searchAlso: ["okurigana", "kana tail", "kana ending"],
@@ -387,8 +387,8 @@ export const TERMS: readonly Term[] = [
     name: "Keigo",
     summary: "Polite Japanese, split into honorific language and humble language.",
     body: [
-      "Keigo is the polite speech used to show respect. It comes in two registers: honorific language, which raises the person you are speaking about, and humble language, which lowers yourself to the same effect.",
-      "Choosing between them turns on who is doing the action, you or the other person.",
+      "Keigo is the polite speech used to show respect. It comes in two kinds: honorific language, which raises the person you are speaking about, and humble language, which lowers yourself to the same effect.",
+      "Choosing between them depends on who is doing the action, you or the other person.",
     ],
     searchAlso: ["keigo", "honorific", "humble", "sonkeigo", "kenjougo", "kenjogo", "polite speech", "politeness"],
     cards: [KEIGO_TRACK],

@@ -171,7 +171,7 @@ describe("what it attaches to", () => {
     // missing half is the ない at the far end.
     assert.equal(
       attachesTo(byId("shika-nai")),
-      "wraps around a phrase: opens on a noun, closes on a verb",
+      "goes around a phrase: starts on a noun, ends on a verb",
     );
   });
 

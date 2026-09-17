@@ -39,7 +39,7 @@ export const RADICAL_CONFUSABLE_PAIRS: readonly RadicalConfusablePair[] = [
   {
     a: "口", // mouth (Kangxi 30) — also the jōyō kanji 口, taught as that kanji card
     b: "囗", // enclosure (Kangxi 31) — radical-only, no jōyō kanji of its own
-    tip: "口 (mouth) is a mouth on its own. 囗 (enclosure) is never on its own: it's a wall built around something else, like 国 (country) wrapping 玉 (jewel) inside it, or 回 (turn) wrapping a spiral. If the box has a whole kanji living inside it, it's the enclosure, not the mouth.",
+    tip: "口 (mouth) is a mouth on its own. 囗 (enclosure) is never on its own: it's a wall built around something else, like 国 (country) wrapping 玉 (jewel) inside it, or 回 (turn) wrapping a spiral. If the box has a whole kanji inside it, it's the enclosure, not the mouth.",
   },
   {
     a: "日", // sun (Kangxi 72) — also the jōyō kanji 日, taught as that kanji card

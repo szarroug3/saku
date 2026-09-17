@@ -29,7 +29,7 @@ export const DEFAULT_RETRIES = 2;
 
 /** What each grade means, and what it does to the schedule. */
 export const GRADE: Record<Grade, { label: string; meaning: string; consequence: string }> = {
-  clean: { label: "Perfect", meaning: "You got it right without any help.", consequence: "Recalled cold: the interval stretches furthest." },
+  clean: { label: "Perfect", meaning: "You got it right without any help.", consequence: "It waits the longest before it comes back." },
   help: { label: "With help", meaning: "You got it after a retry, hint, or multiple choice.", consequence: "Counted as weaker than perfect: it comes back sooner." },
   missed: { label: "Missed", meaning: "You ran out of tries, or gave it up.", consequence: "Back tomorrow, and its look-alike comes with it." },
 };

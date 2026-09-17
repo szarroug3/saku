@@ -161,7 +161,7 @@ function longVowelNote(base: string): string {
 function surfaceNote(row: ReadingRow): string {
   if (row.surface === row.base) return "";
   if (row.surface.endsWith("っ")) {
-    return ` Inside ${row.anchor} it clips short, ${row.base} to ${row.surface}, to sit against the sound that follows. It counts as the same reading.`;
+    return ` Inside ${row.anchor} it clips short, ${row.base} to ${row.surface}, to fit the sound that follows. It counts as the same reading.`;
   }
   return ` Inside ${row.anchor} it voices, ${row.base} to ${row.surface}. A part joined onto the back of a word often softens its first sound like that. It counts as the same reading.`;
 }
@@ -181,20 +181,20 @@ function kanjiReadingRule(row: ReadingRow): QuizRule {
       // NOT "the character standing alone", flatly: 一 is ひと in 一人, which
       // is a compound and still native. Kun'yomi go with native words, and
       // that is the line the sentence has to draw.
-      prose: `${row.base} is a kun'yomi, the native Japanese word ${row.k} was assigned to. A kun'yomi is what the character takes standing alone, carrying okurigana after it, or inside a word built out of native words. Joined into a borrowed compound it usually swaps to an on'yomi instead. Same character, and the company it keeps decides.${rest}`,
+      prose: `${row.base} is a kun'yomi, the native Japanese word ${row.k} was assigned to. A kun'yomi is what the character takes standing alone, with okurigana after it, or inside a word built out of native words. Joined into a borrowed compound it usually swaps to an on'yomi instead. Same character, and the word it is in decides.${rest}`,
       readings,
     };
   }
   if (row.type === "both") {
     return {
       title: "Filed both ways",
-      prose: `The dictionary files ${row.base} as an on'yomi and as a kun'yomi, for different senses, so there is no rule to lean on here. Twenty readings in the whole set are like this one. It is learned word by word.${rest}`,
+      prose: `The dictionary files ${row.base} as an on'yomi and as a kun'yomi, for different senses, so no rule decides it here. Twenty readings in the whole set are like this one. It is learned word by word.${rest}`,
       readings,
     };
   }
   return {
     title: "On'yomi: the borrowed reading",
-    prose: `${row.base} is an on'yomi, a pronunciation borrowed from Chinese along with the character. An on'yomi is what ${row.k} usually takes once it is joined to other kanji. Standing alone as a word it takes a kun'yomi instead. Same character, and the company it keeps decides.${rest}`,
+    prose: `${row.base} is an on'yomi, a pronunciation borrowed from Chinese along with the character. An on'yomi is what ${row.k} usually takes once it is joined to other kanji. Standing alone as a word it takes a kun'yomi instead. Same character, and the word it is in decides.${rest}`,
     readings,
   };
 }
@@ -203,7 +203,7 @@ function kanjiReadingRule(row: ReadingRow): QuizRule {
  * rule rather than remembered per word. */
 const NUMBERS: QuizRule = {
   title: "Japanese counts twice over",
-  prose: "ひとつ, ふたつ, みっつ are the native numbers. いち, に, さん are the ones borrowed from Chinese, and they are what almost every counter takes. Which set a counter wants belongs to the counter itself, so it is learned along with it rather than worked out.",
+  prose: "ひとつ, ふたつ, みっつ are the native numbers. いち, に, さん are the ones borrowed from Chinese, and they are what almost every counter takes. Which set a counter uses belongs to the counter itself, so it is learned along with it rather than worked out.",
 };
 
 /** The rule a card exercises, or nothing when there is none to name.

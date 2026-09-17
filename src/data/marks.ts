@@ -225,7 +225,7 @@ const RAW_MARKS: readonly Mark[] = [
     id: "handakuten",
     name: "Handakuten",
     glyph: HANDAKUTEN,
-    summary: "A small circle that turns h into p, and lands on no other row.",
+    summary: "A small circle that turns h into p, and goes on no other row.",
     searchAlso: [HANDAKUTEN, "handakuten", "maru", "small circle", "p sounds"],
     intros: [DAKUTEN_H, DAKUTEN_K],
     rows: DAKUTEN_ROWS.filter((r) => r.mark === HANDAKUTEN),

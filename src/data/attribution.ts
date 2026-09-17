@@ -60,7 +60,7 @@ export const SOURCES: readonly Source[] = [
   },
   {
     name: "JMdict",
-    what: "Everyday vocabulary: written forms, readings, English glosses, and part-of-speech tags.",
+    what: "Everyday vocabulary: written forms, readings, English meanings, and part-of-speech tags.",
     holder: "Electronic Dictionary Research and Development Group",
     license: "CC BY-SA 4.0",
     href: "https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project",

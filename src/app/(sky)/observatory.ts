@@ -60,7 +60,7 @@ const COPY = {
     when: "You learn these first because they unlock everything else.",
   },
   words: {
-    intro: "Words are the part you speak and read. A word brings its kanji and the pieces they are built from, so you assemble it instead of memorizing it whole.",
+    intro: "Words are the part you speak and read. A word comes with its kanji and the pieces they are built from, so you assemble it instead of memorizing it whole.",
     when: "Start as soon as kana is done. This is the main track, and it keeps going.",
   },
   counting: {

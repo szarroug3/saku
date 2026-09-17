@@ -343,7 +343,7 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
     title: "Be made to do something.",
     body: [
       {
-        text: 'たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
+        text: 'たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive combined.',
       },
     ],
     buildSections: formBuildSections("causative-passive", [

@@ -318,7 +318,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             />
           ) : (
             <SkyPanel title="Nothing to teach">
-              <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practice what you have.</p>
+              <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to give you, so pick something new, or practice what you have.</p>
             </SkyPanel>
           )}
         </div>

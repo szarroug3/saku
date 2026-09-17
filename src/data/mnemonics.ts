@@ -2098,7 +2098,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "a!”" },
     ],
     example: { word: "ヲタク", reading: "otaku", gloss: "otaku", hitIndex: 0 },
-    approximate: "Written wo in romanization, but pronounced exactly like オ in modern Japanese.",
+    approximate: "Written wo in romaji, but pronounced exactly like オ in modern Japanese.",
   },
 
   ん: {

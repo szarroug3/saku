@@ -360,7 +360,7 @@ export function attachesTo(r: Recipe): string {
   const close = listHosts(r.wrap?.close ?? []);
   if (!open) return "";
   if (!close) return `attaches to ${open}`;
-  return `wraps around a phrase: opens on ${open}, closes on ${close}`;
+  return `goes around a phrase: starts on ${open}, ends on ${close}`;
 }
 
 /** "a verb, an い-adjective or a な-adjective" — distinct hosts, in order, with
