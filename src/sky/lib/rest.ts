@@ -3,6 +3,12 @@
 // the rest is a timestamp written once when a round ends, so a reload or
 // a closed tab loses nothing. The app's rule, copied: the first rest is
 // one number of minutes, every rest after it another, both from Settings.
+//
+// WHERE THE TIMESTAMP LIVES. It used to have a browser key of its own,
+// `sky:quiz:rest`, which knew only this tab and this deck. Since SAK-444 the
+// break is one part of the lesson's saved place (lib/place.ts), beside the
+// steps and the rounds, so the one Continue button can offer a break back
+// the way it offers a step or a card, and the account keeps it too.
 
 /** How many rounds a lesson's quiz runs. A quiz of what is due runs one. */
 export const LESSON_ROUNDS = 3;
@@ -28,16 +34,4 @@ export function formatCountdown(ms: number): string {
 /** "3:47 PM": when the rest ends, on the wall clock. */
 export function formatReturnTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-/** Where a lesson's quiz stands between rounds, kept in the browser. */
-export interface RestState {
-  /** The cards the rounds run over, as one key. */
-  deck: string;
-  /** The round that just ended. */
-  round: number;
-  /** When the rest began, so a changed length re-counts from the same start. */
-  startedAt: number;
-  /** When the rest ends. */
-  until: number;
 }

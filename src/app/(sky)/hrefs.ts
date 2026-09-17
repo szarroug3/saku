@@ -70,11 +70,20 @@ export function runHref(from: RunSource, sample = false): string {
 }
 
 /** Where one thing left part way through is continued (SAK-444): a quiz
- * wherever its run is answered, a lesson at its own picks. One place decides
- * this, so the Continue button beside a heading and the Unfinished row in
- * Sessions can never send a learner to two different pages. */
+ * wherever its run is answered, a lesson wherever the sitting was left. One
+ * place decides this, so the Continue button beside a heading and the
+ * Unfinished row in Sessions can never send a learner to two different pages.
+ *
+ * A lesson is one sitting of steps, rounds and breaks, and the rounds and the
+ * breaks both live on the drill's page, so only the steps go to the lesson.
+ * `from=observatory` is the drill's own way back, the same one the Drill
+ * button writes, so a round picked up from the Planetarium leaves the same
+ * way as one walked into. */
 export function placeHref(entry: PlaceEntry, sample = false): string {
-  return entry.kind === "quiz" ? runHref(entry.run.from, sample) : skyHref("/lesson", { sample, picks: entry.lesson.picks });
+  if (entry.kind === "quiz") return runHref(entry.run.from, sample);
+  const { picks, part } = entry.lesson;
+  if (part.kind === "steps") return skyHref("/lesson", { sample, picks });
+  return skyHref("/quiz", { sample, from: "observatory", picks });
 }
 
 /** The ids in a `picks=` or `cards=`, however Next handed the value over.

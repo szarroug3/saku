@@ -3,7 +3,7 @@
 // A value kept in the browser, read the way React likes an outside store
 // read: nothing on the server, the stored text on the client, re-read when
 // it is written from anywhere on the page. Shared by practice (its saved
-// recipes) and the quiz (the rest between rounds).
+// recipes) and by where the learner left off (quiz-run-store.ts).
 
 import { useMemo, useSyncExternalStore } from "react";
 

@@ -36,12 +36,15 @@ test("the keys of features that are gone are removed", () => {
     "saku-pending-records": "[]",
     // practice's own miss counts, which nothing has read since SAK-441
     "sky:practice:misses": "{}",
+    // the break between a lesson's rounds, which is part of the saved place
+    // now and so is read from nowhere (SAK-444)
+    "sky:quiz:rest": "{}",
     "saku-intro-track-kanji": "shown",
     "saku-intro-pitch": "shown",
     "kanaquiz-cfg": "{}",
     "kanaquiz-anything-at-all": "x",
   });
-  assert.equal(sweepDeadKeys(store), 14);
+  assert.equal(sweepDeadKeys(store), 15);
   assert.deepEqual(store.data, {});
 });
 
@@ -53,7 +56,9 @@ test("the keys the app still uses are left alone", () => {
     "saku-local-lists": "{}",
     "saku-history-cache:u1": "{}",
     "sky:practice:recipes": "[]",
-    "sky:quiz:rest": "0",
+    // where the learner left off, one document for a quiz and a lesson alike
+    // (SAK-404, SAK-444)
+    "sky:quiz:run": "{}",
   };
   const store = fakeStore(live);
   assert.equal(sweepDeadKeys(store), 0);

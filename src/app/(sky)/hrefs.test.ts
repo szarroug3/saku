@@ -115,9 +115,16 @@ describe("where anything left part way through is continued (SAK-444)", () => {
     assert.equal(placeHref({ kind: "quiz", run }), `/quiz?picks=${JOINED}`);
   });
 
-  it("sends a lesson back to its own picks", () => {
-    const lesson = { picks: IDS, at: 1, steps: 4, star: IDS[0], leftAt: 1 };
+  it("sends a lesson on its steps back to its own picks", () => {
+    const lesson = { picks: IDS, part: { kind: "steps", at: 1, steps: 4, star: IDS[0] }, leftAt: 1 } as const;
     assert.equal(placeHref({ kind: "lesson", lesson }), `/lesson?picks=${JOINED}`);
     assert.equal(placeHref({ kind: "lesson", lesson }, true), `/lesson?sample&picks=${JOINED}`);
+  });
+
+  it("sends a lesson in a round or a break to the drill, the way the lesson does", () => {
+    const round = { picks: IDS, part: { kind: "round", round: 2, run }, leftAt: 1 } as const;
+    const pause = { picks: IDS, part: { kind: "break", round: 1, startedAt: 0, until: 60_000 }, leftAt: 1 } as const;
+    assert.equal(placeHref({ kind: "lesson", lesson: round }), `/quiz?from=observatory&picks=${JOINED}`);
+    assert.equal(placeHref({ kind: "lesson", lesson: pause }), `/quiz?from=observatory&picks=${JOINED}`);
   });
 });

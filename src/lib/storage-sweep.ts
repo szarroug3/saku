@@ -24,10 +24,13 @@
 //   saku-cfg, sky:practice:recipes: live settings.
 //   saku-local-history, saku-local-lists: a signed-out visitor's own progress
 //     and lists, still written by store/local-progress.ts.
-//   saku-history-cache:*, sky:quiz:rest: live caches.
-//   sky:quiz:run: the quiz run left part way through, so it is there when the
-//     learner comes back (SAK-404). Live, and NOT the old `saku-session` below,
-//     which is the dead envelope of a quiz that could never be resumed.
+//   saku-history-cache:*: live caches.
+//   sky:quiz:run: where the learner left off, so it is there when they come
+//     back (SAK-404, SAK-444). Live, and NOT the old `saku-session` below,
+//     which is the dead envelope of a quiz that could never be resumed. The
+//     name is SAK-404's and the document under it has grown past a quiz; it is
+//     kept because the document migrates itself and renaming the key would
+//     throw away every run left open on the day a rename shipped.
 //   saku-server-lookup-cache: an IndexedDB database, not a Storage key, so it is
 //     out of this sweep's reach. Its module went with the old app; the database
 //     is the owner's to drop.
@@ -57,6 +60,9 @@ export const DEAD_KEYS: readonly string[] = [
   // practice's own count of what had been missed: practice records now, so
   // the history answers that question and nothing reads this (SAK-441)
   "sky:practice:misses",
+  // the break between a lesson's rounds, which was this tab's alone: the
+  // break is part of the saved place now, so nothing reads this (SAK-444)
+  "sky:quiz:rest",
 ];
 
 /** Keys of features that are gone, by prefix: every once-ever concept card's
