@@ -159,7 +159,12 @@ export function standingOf(
   // uses this). The next real test can still move it back out of solid.
   if (claimedAt && claimedAt > testedAt) return { standing: "solid", seen };
 
-  // A fact with showings behind it, lost to time: re-teach, not re-test.
+  // A fact with showings behind it, lost to time. The word is the whole of
+  // it: "slipping" is a STANDING, not an instruction to teach the thing over.
+  // A thing the learner has met stays met, and the Observatory offers only
+  // what is not met, so this never puts anything back on the list of things
+  // to learn; it colors the star and fills Practice's "slipping" cut, and the
+  // learner drills it when they choose (SAK-442).
   if (s === "teach") return { standing: "slipping", seen };
 
   const pct = recentRunAccuracy(agg);

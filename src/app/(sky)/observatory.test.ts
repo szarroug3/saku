@@ -7,12 +7,16 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { emptyHistory } from "@/lib/history-ops";
-import type { HistoryFile } from "@/types/store";
+import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
+import type { FactAggregate, HistoryFile } from "@/types/store";
 import { pickState } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
+import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
 import { all, SHELVES } from "./atlas";
+import { standingFor } from "./learner";
 import { hasOffer, offerings, offerPicker } from "./observatory";
+import { practicePreview } from "./practice";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -122,5 +126,59 @@ describe("the sentence rules on offer", () => {
     assert.ok(s.started, "a learner part way through the track has started it");
     assert.ok(!items.some((it) => o.learned.has(it.id)), "nothing already learned is offered again");
     assert.ok(s.items.every((id) => !!o.items.get(id)), "every offered id was built");
+  });
+});
+
+// SAK-442. A thing the learner has met stays met. Missing it over and over,
+// and letting it go cold, makes it slipping, and slipping is a standing:
+// something to practice when the learner chooses, never something the
+// Observatory puts back on the list of things to learn. Sam has asked for
+// this several times, so it is held here rather than only described.
+describe("a met item that has slipped", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  /** The first word a new learner is offered: a real pick, at the front of
+   * the words section, so its absence later means something. */
+  const firstOffered = (): string => offerings(emptyHistory(), NOW).sections.find((s) => s.id === "words")!.items[0];
+
+  const entryOfId = (id: string): LibEntry => {
+    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    assert.ok(entry, `${id} is a library entry`);
+    return entry;
+  };
+
+  /** Every fact of an entry: answered a dozen times, missed every one of
+   * them, and last asked two months ago. Met by the counts, gone by the
+   * model, which is the case Sam keeps describing. */
+  const missedAndCold = (id: string): HistoryFile => {
+    const history = emptyHistory();
+    const agg: FactAggregate = {
+      seen: 12, missed: 12, firstTry: 0, correct: 0,
+      stability: 1, lastTested: NOW - 60 * DAY,
+      recentRuns: Array.from({ length: 10 }, () => ({ firstTry: false, eventually: false })),
+    };
+    for (const f of knownFactsOf(entryOfId(id))) history.facts[f] = { ...agg };
+    return history;
+  };
+
+  it("stays met, and its standing is slipping", () => {
+    const id = firstOffered();
+    const state = standingFor(entryOfId(id), missedAndCold(id), NOW);
+    assert.equal(state.met, true, "answering it, even badly, is meeting it");
+    assert.equal(state.standing, "slipping");
+  });
+
+  it("is never offered to be learned again, by any section", () => {
+    const id = firstOffered();
+    const o = offerings(missedAndCold(id), NOW);
+    for (const section of o.sections) assert.ok(!section.items.includes(id), `${section.id} offers it again`);
+    assert.ok(o.learned.has(id), "it counts as learned, so nothing downstream asks for it either");
+  });
+
+  it("is drilled in Practice, cut to slipping", () => {
+    const id = firstOffered();
+    const recipe = { ...EMPTY_RECIPE, collections: ["words"], statuses: ["slipping" as const], size: "all" as const };
+    const preview = practicePreview(missedAndCold(id), recipe, {}, NOW);
+    assert.ok(preview.items.some((p) => p.item.id === id), "the slipping word is in the pool");
   });
 });

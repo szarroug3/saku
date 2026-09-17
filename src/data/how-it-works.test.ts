@@ -61,11 +61,27 @@ describe("fact-checked claims stay in the copy", () => {
     assert.match(text, /SRS/);
   });
 
-  test("the slipping claim survives (it is TRUE — standing.ts + budget.ts)", () => {
+  // SAK-442, Sam: "i do not want the lesson to reteach it. i want it to appear
+  // in the practice as 'slipping' so people can practice it but not be forced
+  // to relearn it." The page said the opposite, and the app never did it, so
+  // the page is what changed. The rule itself is held by "a met item that has
+  // slipped" in src/app/(sky)/observatory.test.ts.
+  test("the slipping claim says what the app does: a standing, not a lesson over again", () => {
     const srs = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "srs")!;
     const text = srs.paragraphs.join(" ");
     assert.match(text, /slipped/i);
-    assert.match(text, /re-teaches/i);
+    assert.match(text, /Slipping/);
+    assert.match(text, /doesn't send you back through its lesson/i);
+    for (const promise of [/re-?teach/i, /learn(ed)? again/i, /relearn/i]) {
+      assert.ok(!promise.test(text), `the SRS section promises to teach a slipped thing again: ${promise}`);
+    }
+  });
+
+  test("the Slipping standing says it is never put back on the list of things to learn", () => {
+    const progress = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "progress-words")!;
+    const slipping = progress.bullets!.find((b) => b.label === "Slipping")!;
+    assert.match(slipping.body, /never put back on the list of things to learn/i);
+    assert.match(slipping.body, /Practice/);
   });
 
   test("the Untested bullet is factual, not framed as Saku trusting the learner", () => {

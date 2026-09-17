@@ -13,10 +13,13 @@
 //
 // EVERY FACTUAL CLAIM HERE IS CHECKED AGAINST CODE, not aspirational copy:
 //   - the "slipping" claim (SRS section) is standingOf() in
-//     src/lib/library/standing.ts, crossed with the `teach` bucket
-//     planSession() in src/lib/budget.ts routes lapsed items into — shown with
-//     their answer, then drilled, never quizzed cold. See standing.ts's own
-//     header comment for the model this narrates.
+//     src/lib/library/standing.ts: a fact with showings behind it that the
+//     model has lost. It is a STANDING and nothing else. A thing the learner
+//     has met stays met, the Observatory's sections offer only what is not
+//     met (src/app/(sky)/observatory.ts), so a slipped item is never put back
+//     on the list of things to learn; Practice's standing cut is where it is
+//     drilled. Held by "a met item that has slipped" in
+//     src/app/(sky)/observatory.test.ts (SAK-442).
 //   - the progress words are STANDING_LABEL / SOLID_PCT / GETTING_THERE_PCT in
 //     the same file: solid is >= 80% of the last 10 real attempts, getting there
 //     is >= 60%, claimed is untested by construction (a claim writes no counts).
@@ -78,9 +81,9 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     paragraphs: [
       "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, but not on a fixed schedule.",
       "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's unsure, it asks again.",
-      "And if something's clearly slipped, Saku doesn't keep grinding on it as a \"hard\" item: a missed card opens its lesson right there under the quiz, and the Observatory offers it to be learned again, because testing you on something you don't know isn't teaching. It re-teaches it.",
+      "And if something's clearly slipped, Saku doesn't send you back through its lesson. It shows up as Slipping, in your sky, in the Atlas and in Practice, so you can drill it when you choose. A missed card still opens its page under the quiz, so the explanation is right there.",
     ],
-    paragraphAccents: [["spaced repetition (SRS)"], [], []],
+    paragraphAccents: [["spaced repetition (SRS)"], [], ["Slipping"]],
   },
   {
     id: "already-know",
@@ -130,7 +133,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       { label: "Shaky", body: "Fewer than 6 of your last 10 attempts landed." },
       {
         label: "Slipping",
-        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. Different from shaky: shaky is struggling right now, slipping is something you once had that's fading from disuse.",
+        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. Different from shaky: shaky is struggling right now, slipping is something you once had that's fading from disuse. It stays met either way: it is never put back on the list of things to learn, and you drill it in Practice when you choose.",
       },
       {
         label: "Mix-ups",

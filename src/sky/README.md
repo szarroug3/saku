@@ -5212,3 +5212,60 @@ back to its reveal shows "ah" with "Written a in romaji." under it, and typing
 straight on, so both step back to the card the way SAK-425's test does.
 `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
 on both lists, and `scripts/button-centering.mjs` at 0 elements over 1px.
+
+## Something that slipped is not taught again (2026-09-16, SAK-442)
+
+Sam, quoting How Saku works back at itself ("a missed card opens its lesson
+right there under the quiz, and the Observatory offers it to be learned again
+... It re-teaches it."): "i've mentioned this before multiple times. i do not
+want the lesson to reteach it. i want it to appear in the practice as
+'slipping' so people can practice it but not be forced to relearn it."
+
+**The rule.** A thing the learner has met stays met. Missing it makes it
+slipping, which is a standing and nothing else: the star wears the slipping
+color in the sky and in the Atlas, the entry fills Practice's "Only things that
+are: slipping" cut, and the learner drills it when they choose. It is never put
+back in the Observatory as something to learn, it never re-enters a lesson on
+its own, and nothing forces a re-read. The page under a missed quiz card stays,
+because that is the answer's explanation, not a lesson starting over.
+
+**The behavior was already right; only the page said otherwise.** Sam had
+raised this several times, so the first thing here was a test rather than an
+edit, and the test passed on its first run. `met` in `workOutStanding`
+(`src/app/(sky)/learner.ts`) is a count question, not a belief one: a fact with
+a showing, a claim or a lesson opening behind it is met, and no amount of
+missing takes any of those away. Every Observatory section filters on that same
+`met` (words, counting, the sentence rules, verb pairs, keigo, and a kana row
+on whether all of its kana are met), so a slipped entry falls out of the offer
+on the same test that put it there. The lesson is built from picks the learner
+makes. Nothing reaches the old scheduler's relearn path. The one place
+"re-teach" survived in code was a comment beside the `slipping` line in
+`src/lib/library/standing.ts`, which is now the rule instead.
+
+**The test bites.** "A met item that has slipped" in
+`src/app/(sky)/observatory.test.ts` takes the FIRST word a new learner is
+offered, which is by construction a thing the words section lists, then answers
+it a dozen times, misses every one, and leaves it for two months. Three checks:
+it is still met and reads slipping; no section of `offerings` lists it and
+`learned` holds it; and a practice recipe cut to slipping over the words
+collection has it in the pool. Had `met` been the belief rather than the count,
+the first word on the list would have reappeared at the top of it.
+
+**The copy.** The SRS section's third paragraph is Sam's own sentence now: "And
+if something's clearly slipped, Saku doesn't send you back through its lesson.
+It shows up as Slipping, in your sky, in the Atlas and in Practice, so you can
+drill it when you choose. A missed card still opens its page under the quiz, so
+the explanation is right there." The Slipping standing says the same thing in
+both places it is defined, the reference page's bullet and the legend's key
+(`src/sky/lib/standing.ts`), so a learner who never opens How Saku works still
+meets the rule. The how-it-works test that pinned "re-teaches" now pins the
+opposite, and refuses "re-teach", "learn again" and "relearn" in that section
+outright. The "I don't know these" bullet keeps its "offered to be learned
+again", because that one is true and it is the learner asking: withdrawing a
+claim removes the only thing that made the item met.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,000
+unit tests, 3,999 pass and 1 skipped, four of them new: three on the rule and
+one on the Slipping standing's wording. 56 e2e pass, unchanged, since nothing
+on a page moved. `scripts/unreachable.mjs --list` at zero and
+`scripts/unused-exports.mjs` at zero on both lists.
