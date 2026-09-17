@@ -143,6 +143,24 @@ export type RankOf = (lemma: string) => number | undefined;
  *             ブラジルは南アメリカにあります。
  *   - 新人    772450, おい、今度の新人かわいいらしいぜ。("Hey, the new recruit
  *             this time seems really cute"), is a man sizing up a colleague.
+ * Sam's review of that read sent back three more, and these are not sense
+ * drift: each is a real sentence about the right word that no beginner should
+ * be handed. Two of them have nothing behind them, which is the answer.
+ *   - おっと  10932453, おっといけない。, is the word's ONLY candidate in the
+ *             whole export, and its translation, "Sorry, it's not good.", is
+ *             a reading of おっといけない that says neither "oops" nor what is
+ *             not good. Banning it leaves おっと without an example.
+ *   - 悔い    74731 and 4291598 are the same famous line, 我が生涯に一片の悔い
+ *             なし。("I regret nothing of my life"), one ending in 。and one
+ *             in ・・・. 我が and なし are both classical, and the
+ *             classical-auxiliary filter in the candidate pass cannot see なし
+ *             because UniDic files it as an adjective rather than an
+ *             auxiliary. Both banned, and 悔い has nothing else.
+ *   - 表す    75956, 正規表現で空白はどのように表されるのでしょうか？, is
+ *             correct and clear and about regular expressions. 126861,
+ *             地図の青い線は川を表す。("The blue lines on the map represent
+ *             rivers"), is eight tokens of everyday words and teaches exactly
+ *             the meaning the page shows, so the ban swaps one for the other.
  * And one word where the ban leaves nothing, which is the point:
  *   - 要する is the verb 'to require'. Both of its candidates in the whole
  *           export are unusable and there is no third. 78821, 要するに金が必要
@@ -176,6 +194,9 @@ export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> =
   南: [2458802],
   新人: [772450],
   要する: [77829, 78821],
+  おっと: [10932453],
+  悔い: [74731, 4291598],
+  表す: [75956],
 };
 
 /**

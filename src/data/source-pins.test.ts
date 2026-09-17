@@ -595,17 +595,17 @@ test("every example sentence highlights the word it is an example of", () => {
   }
   assert.deepEqual(bad.slice(0, 20), []);
   assert.deepEqual(notThisWord.slice(0, 20), []);
-  // SAK-461 took these from 2,989 / 2,283 / 706 / 2,030, by filling 2,816 of
+  // SAK-461 took these from 2,989 / 2,283 / 706 / 2,030, by filling 2,814 of
   // the words the grammar corpus never reached out of the whole Tatoeba
   // export. Every row still carries a span, which is the number worth reading
   // twice: the wider pool matches a word on its dictionary form AND its
   // reading, at a token boundary, so a candidate the span pass then cannot
   // find in the sentence would be a disagreement between two tokenizations of
   // the same text, and there are none.
-  assert.equal(spanned, 5805, "sentences that carry a highlight span");
-  assert.equal(literal, 4726, "spans that cover the word's dictionary spelling exactly");
-  assert.equal(spanned - literal, 1079, "spans that cover an inflected surface of the word");
-  assert.equal(noForms, 4265, "spans on a word with no conjugation class, all of them its spelling");
+  assert.equal(spanned, 5803, "sentences that carry a highlight span");
+  assert.equal(literal, 4725, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 1078, "spans that cover an inflected surface of the word");
+  assert.equal(noForms, 4263, "spans on a word with no conjugation class, all of them its spelling");
 });
 
 /** Words that are never what a Japanese word MEANS, only how a meaning is
@@ -711,5 +711,5 @@ test("every sentence from the wider pool says in English what the word means", (
     }
   }
   assert.deepEqual(missing.slice(0, 20), []);
-  assert.equal(checked, 2815, "rows the wider Tatoeba pool supplied");
+  assert.equal(checked, 2813, "rows the wider Tatoeba pool supplied");
 });
