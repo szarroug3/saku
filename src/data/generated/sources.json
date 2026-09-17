@@ -361,6 +361,17 @@
         "readings.json"
       ],
       "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/word_example_candidates.py": {
+      "archives": {
+        "tatoeba-eng-sentences": "7c46287a9146d8090ea26b6b2eaadc759b92a550e865e32388077806f584ee62",
+        "tatoeba-jpn-eng-links": "256b14b7cbf8a49b91af18fe8f35f4f7a8ab142d70c5b310c9d5a21535fe1649",
+        "tatoeba-jpn-sentences": "22507d7f514fc6e600958c5e97403364af0ae755d53ed01397bce3d83ece1510"
+      },
+      "outputs": [
+        "word-example-candidates.json"
+      ],
+      "recordedAt": "2026-09-17"
     }
   },
   "noUpstreamArchive": {},
@@ -537,7 +548,7 @@
     "word-examples.json": {
       "archives": [],
       "script": "scripts/build-word-examples.ts",
-      "why": "no upstream archive: built from committed data by scripts/build-word-examples.ts."
+      "why": "no upstream archive: built from committed data by scripts/build-word-examples.ts, which chooses out of grammar-corpus.json and word-example-candidates.json. Both of those are pinned to the three Tatoeba exports above by the passes that write them, so the sentences in here do trace back to hashed bytes, one file further along than this entry can say."
     },
     "word-rank.json": {
       "archives": [],
