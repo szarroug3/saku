@@ -12,6 +12,7 @@
 // (wrong after the last try, or given up). Opening on choices is not help.
 // Cards can be skipped and come back to; the grades are per card.
 
+import { isJapanese } from "./japanese";
 import { shuffled } from "./random";
 import type { LessonTeach } from "./lesson";
 import type { SkyItem } from "./types";
@@ -254,6 +255,55 @@ export function tally(answers: readonly QuizAnswer[]): Record<Grade, number> {
 export function triedBefore(answer: QuizAnswer): readonly string[] {
   if (answer.grade === "missed") return [];
   return (answer.said ?? []).slice(0, -1);
+}
+
+/** What the reveal draws large, and the muted line under it (SAK-440).
+ *
+ * A kana card takes the sound spelled in English beside the romaji (SAK-435),
+ * so "ah" answers あ. The reveal printed the card's own answer regardless, so
+ * a learner who typed "ah" was told PERFECT over the word "a", which is an
+ * answer they did not give, and nothing on the screen said whether "ah" had
+ * counted or whether they had been let off.
+ *
+ * It shows what they typed instead, and names the card's own form underneath,
+ * so the credit and the spelling to learn are both on the screen. The muted
+ * line comes apart into three pieces because its middle is the form itself and
+ * may be Japanese, and Japanese is drawn in the Japanese face.
+ */
+interface AnswerLine {
+  /** The big line: what was typed when that was an accepted spelling of its
+   * own, and the card's answer otherwise. */
+  said: string;
+  /** The line under it. Absent when the big line IS the card's answer, which
+   * is every card that was answered the way the card writes it. */
+  note?: { before: string; form: string; after: string };
+}
+
+/** Case and spacing, the way the grader compares English (`norm` in
+ * src/lib/en-text.ts). Two spellings that differ by nothing but these are the
+ * same spelling, so "A" for あ is not worth a line. */
+const same = (a: string, b: string) => a.trim().toLowerCase().replace(/\s+/g, " ") === b.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Which sentence names the card's own form. A meaning card's answer is
+ * English and the alternate is a synonym, so it reads as one; a reading typed
+ * in romaji is written in romaji; a reading that is Japanese is written, not
+ * spelled. */
+function noteFor(card: QuizCard): AnswerLine["note"] {
+  if (card.answerIs === "meaning") return { before: "Also: ", form: card.answer, after: "" };
+  if (isJapanese(card.answer)) return { before: "Also written ", form: card.answer, after: "." };
+  return { before: "Written ", form: card.answer, after: " in romaji." };
+}
+
+export function answerLine(card: QuizCard, answer: QuizAnswer): AnswerLine {
+  // A missed card already shows what was said, struck through, under the right
+  // answer (SAK-387), and an ordering card says itself in pieces.
+  if (answer.grade === "missed" || card.order) return { said: card.answer };
+  const said = answer.said?.[answer.said.length - 1];
+  if (!said || same(said, card.answer)) return { said: card.answer };
+  // Picked, not typed: what is on a tile is the card's own wording either way,
+  // so a board can never put a second spelling on the screen.
+  if (card.options.some((o) => o.label === said)) return { said: card.answer };
+  return { said, note: noteFor(card) };
 }
 
 /** How far ahead the spread looks for a card to trade with, so a deck of

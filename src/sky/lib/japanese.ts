@@ -6,10 +6,16 @@
 
 const JAPANESE = /[぀-ヿ㐀-䶿一-鿿ｦ-ﾟ]/;
 
+/** Whether the text has any Japanese in it: which face it is drawn in, and
+ * which sentence names it (the reveal's muted line, SAK-440). */
+export function isJapanese(text: string): boolean {
+  return JAPANESE.test(text);
+}
+
 /** `font-kana` when the text contains Japanese, so it renders in the theme's
  * Japanese face rather than the UI face. Empty string otherwise. */
 export function japaneseFont(text: string): string {
-  return JAPANESE.test(text) ? "font-kana" : "";
+  return isJapanese(text) ? "font-kana" : "";
 }
 
 /**

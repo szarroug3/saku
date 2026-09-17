@@ -71,6 +71,28 @@ test("the quiz takes how the sound is spelled in English, not only the romaji", 
   await box.fill("ah");
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("Perfect", { exact: true })).toBeVisible();
+  // and the reveal answers in the spelling that was typed, with the card's own
+  // romaji named under it (SAK-440): it used to print "a" over a PERFECT, an
+  // answer the learner never gave. A right answer moves straight on, so the
+  // reveal is reached by stepping back to the card (SAK-425).
+  await page.getByRole("button", { name: "Back a card" }).click();
+  // the big line itself, not the card under the sky, which also spells the
+  // sound out
+  await expect(page.getByRole("paragraph").filter({ hasText: /^ah$/ })).toBeVisible();
+  await expect(page.getByText("Written a in romaji.")).toBeVisible();
+});
+
+test("the reveal answers in the card's own spelling when that is what was typed", async ({ page }) => {
+  // SAK-440's other half: "a" is あ's own answer, so there is no second
+  // spelling to name and the muted line is not there at all.
+  await page.goto("/quiz?sample");
+  await page.getByPlaceholder("In romaji, or how it sounds").fill("a");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.getByText("Perfect", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back a card" }).click();
+  // the reveal is open, and carries no second spelling
+  await expect(page.getByText("You got it right without any help.")).toBeVisible();
+  await expect(page.getByText("Written a in romaji.")).toHaveCount(0);
 });
 
 test("a lesson's quiz rests between rounds", async ({ page }) => {

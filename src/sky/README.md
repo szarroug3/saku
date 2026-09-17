@@ -5160,3 +5160,55 @@ pointer near it opens it and sets `aria-expanded`.
 `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
 on both lists, and `scripts/button-centering.mjs` at 0 elements over 1px over
 the 1,383 it measures, the new one among them.
+
+## The reveal answers in the spelling the learner typed (2026-09-16, SAK-440)
+
+Sam, on a screenshot of the あ card marked PERFECT over the word "a": "i typed
+ah in this second screenshot, not a." Since SAK-435 a kana card takes how the
+sound is spelled in English beside the romaji, and the reveal went on printing
+the card's own answer, so the learner was congratulated over an answer they had
+not given and had no way of telling whether "ah" had counted or whether they had
+been let off.
+
+**`answerLine` decides, `QuizVerdict` draws.** The card and the answer go in,
+the big line and an optional muted line come out, and the decision is a function
+in `lib/quiz.ts` with eleven tests rather than a condition inside the component.
+The last of `said` is the answer on a card that was answered (SAK-387,
+SAK-425), so the whole rule is: when that differs from the card's answer by more
+than case and spacing, which is what the grader forgives, it is what the learner
+typed and it is what the reveal says, with the card's own form named under it.
+
+**Three sentences, because the form is three different kinds of thing.** A
+reading spelled in latin letters reads "Written a in romaji.", and the same for
+a Kunrei spelling: "si", then "Written shi in romaji." A reading that is
+Japanese is not spelled in romaji at all, so 九 answered く where the card was
+minted for きゅう reads "Also written きゅう." A meaning card's alternate is a
+synonym, so it reads "Also: quick". One line either way, never a list of every
+alternate the key holds. The line comes back in three pieces, because its middle
+is the form itself and may be Japanese, and Japanese is drawn in the Japanese
+face.
+
+**What is left alone.** A picked answer: a tile carries the card's own wording,
+so a board can never put a second spelling on the screen, and the check is
+against the option labels rather than against a flag the answer does not carry.
+A missed card: it already lists everything said, struck through, under the right
+answer. An ordering card, whose attempt is the pieces joined by spaces and whose
+answer is the sentence written without any. The results list, which is per row
+and shows the canonical answer, is untouched. And the pitch: a pitch belongs to
+the card's reading, so it is drawn over that reading and never over a learner's
+spelling of it.
+
+`japaneseFont` grew `isJapanese` beside it, since which face a string is drawn
+in and which sentence names it are the same question asked twice.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,996
+unit tests, 3,995 pass and 1 skipped, eleven of them new and all on
+`answerLine`: the sound spelling, the Kunrei spelling, the card's own spelling,
+case and spacing, the synonym, the Japanese reading, the picked answer, the miss,
+the ordering card, a card that recorded nothing, and a retry that ends on what
+counted. 56 e2e pass, two of them new: typing "ah" on the あ card and stepping
+back to its reveal shows "ah" with "Written a in romaji." under it, and typing
+"a" shows the reveal with no such line anywhere on it. A right answer moves
+straight on, so both step back to the card the way SAK-425's test does.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on both lists, and `scripts/button-centering.mjs` at 0 elements over 1px.

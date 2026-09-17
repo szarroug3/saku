@@ -393,7 +393,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                 </div>
               )}
 
-              {answered && <QuizVerdict answered={answered} answer={card.answer} answerPitch={card.answerPitch} pitch={pitch} />}
+              {answered && <QuizVerdict answered={answered} card={card} pitch={pitch} />}
               {/* which reading applies, and why: the rule, not the answer
                   again (SAK-316) */}
               {answered && card.rule && <QuizRuleBlock rule={card.rule} />}

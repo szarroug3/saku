@@ -1,12 +1,13 @@
 // The deck's order (SAK-388): dealt, not asked in the order the facts came
 // out of the tables, and a word's own cards moved apart. And how many goes a
-// card gets, which the quiz screen used to work out inline (SAK-370).
+// card gets, which the quiz screen used to work out inline (SAK-370). And
+// which spelling the reveal draws large (SAK-440).
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { seeded } from "./random";
-import { maxTriesFor, shuffleDeck, triedBefore, triesNote, type QuizAnswer, type QuizCard, type QuizOption } from "./quiz";
+import { answerLine, maxTriesFor, shuffleDeck, triedBefore, triesNote, type QuizAnswer, type QuizCard, type QuizOption } from "./quiz";
 import type { SkyItem } from "./types";
 
 const item = (id: string): SkyItem => ({ id, kind: "word", glyph: id, english: id } as SkyItem);
@@ -148,5 +149,74 @@ describe("what was said before the right answer", () => {
 
   it("is nothing when the card recorded no attempt at all", () => {
     assert.deepEqual(triedBefore(answer({ grade: "help", tries: 2 })), []);
+  });
+});
+
+describe("which spelling the reveal draws large (SAK-440)", () => {
+  /** A card with an answer and, when it has a board, the labels on it. */
+  const asked = (over: Partial<QuizCard>): QuizCard =>
+    ({ ...card("a", 0), typed: true, options: [], answerId: "o0", answerIs: "reading", ...over }) as QuizCard;
+  const gave = (said: readonly string[], over: Partial<QuizAnswer> = {}): QuizAnswer =>
+    ({ cardId: "a0", grade: "clean", tries: 1, narrowed: false, hinted: false, said, ...over });
+
+  it("shows the sound spelling that was typed, and names the romaji under it", () => {
+    // あ, answered "ah", which SAK-435 accepts and the reveal used to answer
+    // with the word "a"
+    const line = answerLine(asked({ answer: "a" }), gave(["ah"]));
+    assert.equal(line.said, "ah");
+    assert.deepEqual(line.note, { before: "Written ", form: "a", after: " in romaji." });
+  });
+
+  it("does the same for a Kunrei spelling", () => {
+    const line = answerLine(asked({ answer: "shi" }), gave(["si"]));
+    assert.equal(line.said, "si");
+    assert.deepEqual(line.note, { before: "Written ", form: "shi", after: " in romaji." });
+  });
+
+  it("says nothing extra when the card's own spelling was typed", () => {
+    assert.deepEqual(answerLine(asked({ answer: "a" }), gave(["a"])), { said: "a" });
+  });
+
+  it("counts case and spacing as the same spelling, the way the grader does", () => {
+    assert.deepEqual(answerLine(asked({ answer: "a" }), gave([" A "])), { said: "a" });
+    assert.deepEqual(answerLine(asked({ answer: "hot spring" }), gave(["Hot  Spring"])), { said: "hot spring" });
+  });
+
+  it("calls a meaning's alternate a synonym rather than a spelling", () => {
+    const line = answerLine(asked({ answer: "quick", answerIs: "meaning" }), gave(["fast"]));
+    assert.equal(line.said, "fast");
+    assert.deepEqual(line.note, { before: "Also: ", form: "quick", after: "" });
+  });
+
+  it("names a Japanese reading as written, since it is not spelled in romaji", () => {
+    // 九 is read きゅう and く, and both answer the card (SAK-393)
+    const line = answerLine(asked({ answer: "きゅう" }), gave(["く"]));
+    assert.equal(line.said, "く");
+    assert.deepEqual(line.note, { before: "Also written ", form: "きゅう", after: "." });
+  });
+
+  it("leaves a picked answer alone: a tile carries the card's own wording", () => {
+    const board = asked({ answer: "a", typed: false, options: [{ id: "o0", label: "a", jp: false }, { id: "o1", label: "e", jp: false }] });
+    assert.deepEqual(answerLine(board, gave(["a"], { grade: "help", narrowed: true })), { said: "a" });
+  });
+
+  it("leaves a missed card alone: it lists what was said under the answer", () => {
+    assert.deepEqual(answerLine(asked({ answer: "a" }), gave(["ah", "eh"], { grade: "missed", tries: 3 })), { said: "a" });
+  });
+
+  it("leaves an ordering card alone, whose attempt is the pieces as placed", () => {
+    // the pieces are joined with spaces to record them, and the sentence is
+    // written without any, so the two differ on every ordering card there is
+    const ordering = asked({ answer: "ねこがいる", typed: false, order: { pieces: ["ねこ", "が", "いる"], answer: ["ねこ", "が", "いる"] } });
+    assert.deepEqual(answerLine(ordering, gave(["ねこ が いる"])), { said: "ねこがいる" });
+  });
+
+  it("falls back to the card's answer when nothing was recorded", () => {
+    assert.deepEqual(answerLine(asked({ answer: "a" }), gave([])), { said: "a" });
+  });
+
+  it("reads the last attempt, not the first: a retry ends on what counted", () => {
+    const line = answerLine(asked({ answer: "a" }), gave(["e", "ah"], { grade: "help", tries: 2 }));
+    assert.equal(line.said, "ah");
   });
 });

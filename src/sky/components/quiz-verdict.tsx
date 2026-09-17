@@ -12,6 +12,11 @@
 // ABOVE it, struck through: the last thing said on that card IS the answer and
 // is already drawn large, and what a card answered after a retry was missing
 // was everything before it.
+//
+// And the line drawn large is the learner's own spelling when they gave one
+// (SAK-440): `answerLine` decides between it and the card's form, and the
+// muted line under it names the form. The decision is in src/sky/lib/quiz.ts
+// with its tests; this file draws what comes back.
 
 import { Fragment } from "react";
 
@@ -20,7 +25,7 @@ import type { PitchComponent } from "@/sky/components/lesson-card";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { GRADE, triedBefore, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
+import { answerLine, GRADE, triedBefore, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
 
 /** The attempts as a sentence: "A", "A, then B", "A, B, then C". Struck
  * through when they are the wrong ones on the way to a right answer. */
@@ -37,10 +42,9 @@ function Attempts({ said, wrong = false }: { said: readonly string[]; wrong?: bo
   );
 }
 
-export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
+export function QuizVerdict({ answered, card, pitch: Pitch }: {
   answered: QuizAnswer;
-  answer: string;
-  answerPitch?: number;
+  card: QuizCard;
   pitch?: PitchComponent;
 }) {
   // What was said before the right answer (SAK-425). A card answered after a
@@ -49,6 +53,11 @@ export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
   // which is the part of that card worth looking at. It goes ABOVE the answer,
   // struck through, so the two read in the order they happened.
   const before = triedBefore(answered);
+  // And the big line is what was typed when that was a spelling of its own
+  // (SAK-440), with the card's form named under it. The pitch is drawn over
+  // the card's own reading only: a pitch belongs to the reading, not to a
+  // learner's spelling of it.
+  const line = answerLine(card, answered);
   return (
     <div className="mt-4 flex flex-col gap-2">
       <div className="text-center">
@@ -60,7 +69,16 @@ export function QuizVerdict({ answered, answer, answerPitch, pitch: Pitch }: {
           You said <Attempts said={before} wrong /> before this.
         </p>
       )}
-      <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(answer)}`}>{answerPitch !== undefined && Pitch ? <Pitch reading={answer} downstep={answerPitch} /> : answer}</p>
+      <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(line.said)}`}>
+        {card.answerPitch !== undefined && Pitch && !line.note ? <Pitch reading={line.said} downstep={card.answerPitch} /> : line.said}
+      </p>
+      {line.note && (
+        <p className="text-center text-[13px] text-sky-muted">
+          {line.note.before}
+          <span className={japaneseFont(line.note.form)}>{line.note.form}</span>
+          {line.note.after}
+        </p>
+      )}
       {answered.grade === "missed" && !!answered.said?.length && (
         <p className="text-center text-[13px] text-sky-muted">
           You said <Attempts said={answered.said} />.
