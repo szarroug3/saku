@@ -376,9 +376,10 @@ test("what tonight teaches is settled when the lesson starts, and holds", async 
   // nothing tonight teaches is listed as something the learner already has
   await expect(references.getByText("In your sky")).toHaveCount(0);
 
-  // and a reload does not move any of it either
+  // and a reload does not move any of it either: the same five, opened on
+  // the step that was left (SAK-444 keeps the lesson's place)
   await page.reload();
-  await expect(page.getByText("Step 1 of 5")).toBeVisible();
+  await expect(page.getByText("Step 2 of 5")).toBeVisible();
   await expect(order.getByRole("listitem")).toHaveCount(5);
   await expect(references.getByRole("listitem")).toHaveCount(rested);
   await expect(references.getByText("In your sky")).toHaveCount(0);
@@ -1052,14 +1053,11 @@ test("an unfinished quiz does not get in the way of a lesson (SAK-444)", async (
   await expect(back).toBeVisible();
   await back.click();
   await expect(page.getByRole("heading", { name: "Tonight's lesson" })).toBeVisible();
-  // and it is walkable from there. Which step it opens on is not pinned: the
-  // lesson teaches what is LEFT, and the stars opened last time are in the
-  // learner's sky by now, so the order it comes back to is shorter than the
-  // one that was left behind.
-  await expect(step).toHaveText(/^Step \d+ of \d+$/);
-  const opened = await step.innerText();
+  // it opens on the step that was left, and is walkable from there (the
+  // order no longer shrinks as stars are opened, SAK-446)
+  await expect(step).toHaveText(/^Step 3 of \d+$/);
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(step).not.toHaveText(opened);
+  await expect(step).toHaveText(/^Step 4 of \d+$/);
 
   // the quiz is not lost: it waits in Sessions, and continues from there
   await page.goto("/sessions");

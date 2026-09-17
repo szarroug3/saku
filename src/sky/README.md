@@ -5652,14 +5652,12 @@ very place that sent the learner here. Pressing Drill clears it, because the
 lesson is over the moment its quiz is open; `SkyButton` now passes an `onClick`
 through to a link so that can happen on the way out.
 
-The thing it cannot put back is the order itself. A star opened is marked seen
-there and then, and the lesson does not teach what is already in the sky, so the
-lesson a learner comes back to is the stars that are LEFT: "Step 1 of 6" where
-they left "step 3 of 8". Both numbers are true about their own moment, and the
-one the page shows is the truth about the lesson as it now stands rather than a
-lesson starting over. The star is looked up by id on the way in, so a star read
-but not stepped past is opened again; a star that has since joined the sky opens
-the lesson where it would have opened anyway.
+When this was written the order itself could not be put back: a star opened
+was marked seen, which took it out of what the lesson teaches, so "step 3 of 8"
+came back as "Step 1 of 6". SAK-446 ended that. Opening a star no longer moves
+it out of the order, so a lesson comes back on the step it was left on, with the
+same count. The star is still looked up by id on the way in; if it is ever not
+in the order, the lesson opens where it would have opened anyway.
 
 **One button, the newest wins.** `ResumeLine` is gone. The Planetarium and the
 Observatory carry one `ContinueButton` beside the heading, saying what it goes

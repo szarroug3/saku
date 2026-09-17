@@ -164,12 +164,12 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     paragraphs: [
       "Walk away from a quiz or a lesson and Saku keeps your place. One Continue button, on the Planetarium and the Observatory, offers whichever you left last: your lesson at the step you were on, or your quiz at the card you were on, with the answers you already gave still counted. Anything else you left waits on the Sessions page, under Unfinished, with the same way back and a way to let it go.",
       "Saku keeps one quiz and one lesson. Starting a second quiz while one is unfinished asks you first, and starting a lesson never asks: it is always the lesson you picked, and its drill always deals its own cards.",
-      "A lesson you come back to teaches what is left. Stars you already opened are in your sky by then, so the lesson does not teach them again and the step count is shorter than it was.",
+      "A lesson you come back to opens on the step you left, with the same steps in the same order.",
     ],
     paragraphAccents: [
       ["Continue"],
       ["one quiz and one lesson"],
-      ["what is left"],
+      ["the step you left"],
     ],
     bullets: [
       {

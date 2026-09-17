@@ -13,14 +13,10 @@
 // looks at the quiz and never asks about it, because starting a lesson is
 // not something that has to replace anything.
 //
-// WHAT COMING BACK CANNOT PUT BACK. A star opened is marked seen there and
-// then, which puts it in the learner's sky, and the lesson does not teach
-// what is already in the sky. So the order a resumed lesson walks is the
-// stars that are LEFT: shorter than the one that was left behind, and its
-// "Step 1 of 6" is the truth about the lesson as it now stands rather than a
-// lesson starting over. The star the learner was on is opened again when it
-// is still in the order (a star read but not stepped past), and otherwise
-// the lesson opens where it would have anyway.
+// COMING BACK OPENS THE SAME STEP. Opening a star does not move it out of
+// the order (SAK-446), so the order a resumed lesson walks is the one that
+// was left, and the star the learner was on is opened again by id. If it is
+// ever not in the order, the lesson opens where it would have anyway.
 
 import { useCallback } from "react";
 
