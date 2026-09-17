@@ -22,6 +22,7 @@ import { Fragment } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
 import type { PitchComponent } from "@/sky/components/lesson-card";
+import { Mixed } from "@/sky/components/mixed-text";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -178,9 +179,11 @@ export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
       )}
       {(hint.text || steps.length > 0) && (
         <div className="flex min-w-0 flex-col gap-1">
-          {hint.text?.split("\n").map((line, i) => <span key={i} className={japaneseFont(line)}>{line}</span>)}
+          {/* the wording is a sentence that names Japanese inside it, so each
+              run is drawn in its own face (SAK-443) */}
+          {hint.text?.split("\n").map((line, i) => <span key={i}><Mixed text={line} /></span>)}
           {steps.map((step) => (
-            <span key={step} className={`text-[17px] leading-snug text-sky-ink ${japaneseFont(step)}`}>{step}</span>
+            <span key={step} className="text-[17px] leading-snug text-sky-ink"><Mixed text={step} /></span>
           ))}
         </div>
       )}

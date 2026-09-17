@@ -6,13 +6,18 @@
 
 import { SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
+import { Mixed } from "@/sky/components/mixed-text";
 import { SkyBox } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, TeachParagraph, TeachTable } from "@/sky/lib/lesson";
 
-/** Prose with the runs spoken as the sound in the accent. */
+/** Prose with the runs spoken as the sound in the accent.
+ *
+ * Each run is drawn run by run itself (SAK-443): a table cell reading
+ * "きて → きって (kite → kitte)" is one string with both faces in it, and the
+ * one class its cell used to carry drew the romaji as Japanese. */
 export function Sound({ line }: { line: SoundLine }) {
-  return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent">{s.text}</span> : <span key={i}>{s.text}</span>))}</>;
+  return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent"><Mixed text={s.text} /></span> : <Mixed key={i} text={s.text} />))}</>;
 }
 
 /** A sentence with its parts colored: the part being taught in the accent,
@@ -70,12 +75,12 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
 function Paragraph({ para }: { para: TeachParagraph }) {
   const at = para.accent ? para.text.indexOf(para.accent) : -1;
   const text = para.runs ? <Sound line={para.runs} /> : at >= 0 && para.accent
-    ? <>{para.text.slice(0, at)}<span className={`font-semibold text-sky-accent ${japaneseFont(para.accent)}`}>{para.accent}</span>{para.text.slice(at + para.accent.length)}</>
-    : para.text;
+    ? <><Mixed text={para.text.slice(0, at)} /><span className="font-semibold text-sky-accent"><Mixed text={para.accent} /></span><Mixed text={para.text.slice(at + para.accent.length)} /></>
+    : <Mixed text={para.text} />;
   return (
     <div>
       {para.heading && <Eyebrow size="md" className="mt-1">{para.heading}</Eyebrow>}
-      <p>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className={`text-sky-ink/90 ${japaneseFont(para.text)}`}>{text}</span></p>
+      <p>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className="text-sky-ink/90">{text}</span></p>
     </div>
   );
 }
@@ -112,14 +117,14 @@ export function Table({ table }: { table: TeachTable }) {
                   const plain = cell.map((x) => x.text).join("");
                   // short cells hold their line and the table scrolls sideways in
                   // a narrow panel; a long note wraps at a readable measure
-                  return <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"} ${japaneseFont(plain)}`}><Sound line={cell} /></td>;
+                  return <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}`}><Sound line={cell} /></td>;
                 })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {table.footer && <p className={`mt-2 text-[13.5px] ${japaneseFont(table.footer)}`}>{table.footer}</p>}
+      {table.footer && <p className="mt-2 text-[13.5px]"><Mixed text={table.footer} /></p>}
       {table.note && <p className="mt-2 text-[12.5px] leading-relaxed text-sky-muted">{table.note}</p>}
     </SkyBox>
   );

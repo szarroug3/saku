@@ -13,9 +13,60 @@ export function isJapanese(text: string): boolean {
 }
 
 /** `font-kana` when the text contains Japanese, so it renders in the theme's
- * Japanese face rather than the UI face. Empty string otherwise. */
+ * Japanese face rather than the UI face. Empty string otherwise.
+ *
+ * ONE ANSWER FOR A WHOLE STRING, which is right for a glyph, a reading or a
+ * list of words and wrong for a sentence that mixes the two. Use `mixedRuns`
+ * for prose. */
 export function japaneseFont(text: string): string {
   return isJapanese(text) ? "font-kana" : "";
+}
+
+/** One stretch of a sentence, and which face it is drawn in. */
+interface TextRun {
+  readonly text: string;
+  readonly japanese: boolean;
+}
+
+/** The characters that make a run Japanese: kana, kanji, the iteration mark,
+ * halfwidth katakana. Wider than `JAPANESE` on purpose, since 々 belongs to
+ * the run around it. */
+const JAPANESE_RUN = /[々぀-ヿ㐀-䶿一-鿿ｦ-ﾟ]/;
+
+/** Neither face's own: spaces, commas, quotes, 。and 、. */
+const NEUTRAL = /[^\p{L}\p{N}]/u;
+
+/**
+ * A sentence split into its Japanese and non-Japanese runs (SAK-443).
+ *
+ * いいえ's contrast note is English prose with two Japanese words in it, and
+ * one `japaneseFont` class on the paragraph drew the English in the Japanese
+ * face as well, so the note read in a different type from the page around it.
+ * The face belongs to a run, not to a paragraph.
+ *
+ * PUNCTUATION JOINS THE RUN IT FOLLOWS rather than starting one of its own.
+ * Neither face owns a comma or a space, and a run per character would draw
+ * “no” in three pieces and put 。in the UI face at the end of a Japanese
+ * sentence. Leading punctuation joins the first run that has a face.
+ */
+export function mixedRuns(text: string): readonly TextRun[] {
+  const runs: TextRun[] = [];
+  let held = "";
+  for (const ch of text) {
+    const japanese = JAPANESE_RUN.test(ch) ? true : NEUTRAL.test(ch) ? null : false;
+    if (japanese === null) { held += ch; continue; }
+    const last = runs[runs.length - 1];
+    if (last && last.japanese === japanese) runs[runs.length - 1] = { text: last.text + held + ch, japanese };
+    else if (last) { runs[runs.length - 1] = { text: last.text + held, japanese: last.japanese }; runs.push({ text: ch, japanese }); }
+    else runs.push({ text: held + ch, japanese });
+    held = "";
+  }
+  if (held) {
+    const last = runs[runs.length - 1];
+    if (last) runs[runs.length - 1] = { text: last.text + held, japanese: last.japanese };
+    else runs.push({ text: held, japanese: false });
+  }
+  return runs;
 }
 
 /**

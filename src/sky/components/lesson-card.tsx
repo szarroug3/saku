@@ -17,6 +17,7 @@ import { useId, useState, type ComponentType, type ReactNode } from "react";
 
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { Glyph } from "@/sky/components/glyph";
+import { Mixed } from "@/sky/components/mixed-text";
 import { FoldRow, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
@@ -232,7 +233,9 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
 
       {/* the notes are about the thing itself (a term's definition, a
           counter's role); they read before its pages, not after them */}
-      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"} ${japaneseFont(note)}`}>{note}</p>)}
+      {/* a note is prose, so its Japanese words are drawn in the Japanese face
+          and its English in the UI face, run by run (SAK-443) */}
+      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"}`}><Mixed text={note} /></p>)}
       {pages.length > 0 && (
         <>
           {pages.length > 1 && <Pager pages={pages} page={at} onPage={turnTo} />}

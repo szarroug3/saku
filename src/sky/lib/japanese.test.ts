@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { optionSize, promptSize } from "@/sky/lib/japanese";
+import { mixedRuns, optionSize, promptSize } from "@/sky/lib/japanese";
 
 describe("promptSize", () => {
   it("draws every short prompt at the same size", () => {
@@ -71,5 +71,72 @@ describe("optionSize", () => {
 
   it("is smaller than a prompt, since a tile is smaller than a card", () => {
     assert.ok(optionSize("食べる") < promptSize("食べる"));
+  });
+});
+
+describe("mixedRuns (SAK-443)", () => {
+  const joined = (text: string) => mixedRuns(text).map((r) => r.text).join("");
+
+  it("keeps a sentence of one face as one run", () => {
+    assert.deepEqual(mixedRuns("いいえ"), [{ text: "いいえ", japanese: true }]);
+    assert.deepEqual(mixedRuns("Not at all"), [{ text: "Not at all", japanese: false }]);
+  });
+
+  it("splits a note at the face it changes to", () => {
+    // the case from the card: the whole note was drawn in the Japanese face
+    assert.deepEqual(mixedRuns("いいえ and いや both mean no"), [
+      { text: "いいえ ", japanese: true },
+      { text: "and ", japanese: false },
+      { text: "いや ", japanese: true },
+      { text: "both mean no", japanese: false },
+    ]);
+  });
+
+  it("gives the punctuation to the run it follows", () => {
+    // the 。 belongs to the Japanese sentence in front of it, not to the
+    // English that comes after
+    assert.deepEqual(mixedRuns("今から仕事ですよ。 Time for work."), [
+      { text: "今から仕事ですよ。 ", japanese: true },
+      { text: "Time for work.", japanese: false },
+    ]);
+  });
+
+  it("gives leading punctuation to the first run that has a face", () => {
+    assert.deepEqual(mixedRuns("「いや」"), [{ text: "「いや」", japanese: true }]);
+  });
+
+  it("counts the iteration mark as Japanese, since it stands for the character before it", () => {
+    assert.deepEqual(mixedRuns("時々"), [{ text: "時々", japanese: true }]);
+  });
+
+  it("reads romaji in parentheses as the English it is", () => {
+    // the bracket goes with the run in front of it, which is the rule for
+    // every mark: only the letters inside it decide a face
+    assert.deepEqual(mixedRuns("きって (kitte)"), [
+      { text: "きって (", japanese: true },
+      { text: "kitte)", japanese: false },
+    ]);
+  });
+
+  it("loses nothing: the runs joined are the sentence", () => {
+    for (const text of [
+      "いいえ and いや both mean “no” but they aren't interchangeable.",
+      "演じる and 演ずる are the same verb, written two ways.",
+      "The forms are the じ ones either way: 演じます, 演じられる, 演じれば.",
+      "ひらがな",
+      "",
+      "   ",
+      "42 は number",
+    ]) {
+      assert.equal(joined(text), text, `runs lost characters of: ${text}`);
+    }
+  });
+
+  it("has nothing to draw for an empty string", () => {
+    assert.deepEqual(mixedRuns(""), []);
+  });
+
+  it("draws punctuation on its own in the UI face when nothing else is there", () => {
+    assert.deepEqual(mixedRuns("..."), [{ text: "...", japanese: false }]);
   });
 });
