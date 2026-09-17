@@ -5,18 +5,20 @@
 //
 // One call from the route, given the items, what is learned, the picks and
 // what each star teaches. The heading stays put with "Step n of N" and the
-// fixed Back and Next beside it; under it the lesson sky, then the card for
-// the selected star, "Tonight, in order" and, under that, "References".
-// Stars are the navigation: a step opens once the one before it has been
-// opened, a known star is open from the start for reference, and a star
-// opened stays lit. Order and locking come from src/sky/lib/lesson.ts over
-// the graph.
+// fixed Back and Next beside it; under it a two by two (SAK-446): the lesson
+// sky with References beside it, and under those the card for the selected
+// star with "Tonight, in order" beside it. Stars are the navigation: a step
+// opens once the one before it has been opened, a known star is open from
+// the start for reference, and a star opened stays lit. Order and locking
+// come from src/sky/lib/lesson.ts over the graph.
 //
 // The order is what tonight TEACHES. What it rests on is the references
 // (SAK-416): the stars already in the sky under tonight's items, and the
 // terms and intros that apply to what is in the order. A reference opens
 // on the constellation the way a taught star does and never moves the
-// lesson on, because it is not one of the steps.
+// lesson on, because it is not one of the steps. Which of the two a star is
+// in is settled when the lesson is built and does not change while it is
+// open: see `beforeTonight` in src/app/(sky)/lesson.ts.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -168,10 +170,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   };
 
   // the card scrolls back to its top for each star and each page, and the
-  // order keeps the selected row in view
+  // order keeps the selected row in view. Which box is the one that scrolls
+  // depends on the width: the card's own cell beside the order, or, once the
+  // four cells are a stack, the body around all of them (SAK-446).
+  const body = useRef<HTMLDivElement>(null);
   const cardBox = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLOListElement>(null);
-  useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); }, [selected, page]);
+  useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); body.current?.scrollTo({ top: 0 }); }, [selected, page]);
   useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
 
   // Where the lesson stands, written down after every step (SAK-444), so the
@@ -260,8 +265,18 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
 
   return (
     <SkyPageShell eyebrow="Lesson" title="Tonight's lesson" aside={nav} height={height}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px]">
+      {/* The two by two (SAK-446). The sky and References across the top, the
+          card and "Tonight, in order" under them, in ONE grid with two rows,
+          so each row's two panels are exactly as tall as each other rather
+          than two columns agreeing by eye. The cells are placed by row and
+          column, which leaves the DOM in the order the narrow stack wants:
+          sky, details, Tonight, References. Below lg the grid is off, the
+          four are that stack, and the body scrolls (it used to clip, so on a
+          narrow window References was drawn past the bottom edge with no way
+          to reach it). */}
+      <div ref={body} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-[minmax(180px,42%)_minmax(0,1fr)] lg:overflow-hidden">
+        {/* nothing to rest on leaves no hole: the sky takes the whole top row */}
+        <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"}`}>
           <SkyField
             items={data.items}
             roots={taught}
@@ -280,91 +295,94 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             label="Tonight's constellations, with a star for every piece, character and word"
           />
         </div>
-        <div className="grid min-h-0 flex-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div ref={cardBox} className="min-h-0 self-stretch overflow-y-auto pr-1">
-            {openPage ? (
-              // a page is the same card a star gets (Sam, 2026-09-05), with
-              // nothing under it and nothing to hear of its own
-              <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
-            ) : current ? (
-              <LessonCard
-                className="min-h-full"
-                item={current}
-                teach={data.teach[current.id]}
-                madeOf={itemsOf(graph.prerequisitesOf(current.id))}
-                partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
-                written={written?.[current.id]}
-                hear={hear}
-                pitch={pitch}
-                page={page}
-                onPage={setPage}
-                onSelect={open}
-              />
-            ) : (
-              <SkyPanel title="Nothing to teach">
-                <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practice what you have.</p>
-              </SkyPanel>
-            )}
-          </div>
-          {/* one scroller for both lists, not one inside each: two panels
-              each scrolling in its own third of the column hid the end of
-              the order behind a list of references (SAK-416). Each panel is
-              as tall as its content, as SAK-359 left it. */}
-          <div className="flex min-h-0 flex-col gap-4 self-stretch overflow-y-auto pr-1">
-            <SkyPanel title="Tonight, in order" className="!p-4 shrink-0">
-              <p className="mt-1 text-[12px] text-sky-muted">Pieces first, then the character, then the word.</p>
-              <ol ref={rail} className="mt-3 flex flex-col gap-1">
-                {steps.map((s, i) => {
-                  const it = graph.itemOf(s.id);
-                  const state = stateOf(s.id);
+        {/* bottom left: the card, which scrolls inside its own cell beside
+            the order. Below lg it is as tall as it is and the body scrolls. */}
+        <div data-lesson-cell="card" ref={cardBox} className="min-h-0 shrink-0 lg:col-start-1 lg:row-start-2 lg:shrink lg:overflow-y-auto lg:pr-1">
+          {openPage ? (
+            // a page is the same card a star gets (Sam, 2026-09-05), with
+            // nothing under it and nothing to hear of its own
+            <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
+          ) : current ? (
+            <LessonCard
+              className="min-h-full"
+              item={current}
+              teach={data.teach[current.id]}
+              madeOf={itemsOf(graph.prerequisitesOf(current.id))}
+              partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
+              written={written?.[current.id]}
+              hear={hear}
+              pitch={pitch}
+              page={page}
+              onPage={setPage}
+              onSelect={open}
+            />
+          ) : (
+            <SkyPanel title="Nothing to teach">
+              <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to walk through, so pick something new, or practice what you have.</p>
+            </SkyPanel>
+          )}
+        </div>
+        {/* bottom right: the order, as tall as the card beside it. Each panel
+            scrolls inside itself now that each owns a cell of its own; the
+            column that used to scroll them both (SAK-416) is gone with the
+            column. */}
+        <div data-lesson-cell="order" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-2 lg:shrink">
+          <SkyPanel title="Tonight, in order" className="flex h-full min-h-0 w-full flex-col !p-4">
+            <p className="mt-1 shrink-0 text-[12px] text-sky-muted">Pieces first, then the character, then the word.</p>
+            <ol ref={rail} className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto lg:pr-1">
+              {steps.map((s, i) => {
+                const it = graph.itemOf(s.id);
+                const state = stateOf(s.id);
+                return (
+                  <RailRow
+                    key={s.id}
+                    current={state === "selected" ? "step" : undefined}
+                    locked={!isUnlocked(steps, i, opened)}
+                    lit={state === "lit" || state === "selected"}
+                    glyph={it?.glyph}
+                    label={it?.english !== it?.glyph ? it?.english : undefined}
+                    onClick={() => open(s.id)}
+                  />
+                );
+              })}
+            </ol>
+          </SkyPanel>
+        </div>
+        {/* top right, beside the sky and exactly as tall as it: what tonight
+            rests on. Nothing here is a step, so a row wears no lock and
+            opening one leaves "Step n of N" where it was. An empty list is
+            not a panel (SAK-416) and not a cell either (SAK-446).
+
+            A page's eyebrow is the KIND word, the one the Atlas and the
+            Observatory use for the same thing (SAK-432). It used to be the
+            page's own name for itself, "Intro" or "Sound shift", so the
+            intro behind 電 read INTRO in the rail and sat under Terms in
+            the Atlas. Sam: "it should say term." A star already in the sky
+            is not a kind of thing but a reason to be in this list, so it
+            keeps saying so. */}
+        {references.length > 0 && (
+          <div data-lesson-cell="references" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-1 lg:shrink">
+            <SkyPanel title="References" className="flex h-full min-h-0 w-full flex-col !p-4">
+              <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto lg:pr-1">
+                {references.map((r) => {
+                  const it = r.page ? undefined : graph.itemOf(r.id);
+                  const state = stateOf(r.id);
                   return (
                     <RailRow
-                      key={s.id}
-                      current={state === "selected" ? "step" : undefined}
-                      locked={!isUnlocked(steps, i, opened)}
+                      key={r.id}
+                      current={state === "selected" ? "true" : undefined}
                       lit={state === "lit" || state === "selected"}
                       glyph={it?.glyph}
-                      label={it?.english !== it?.glyph ? it?.english : undefined}
-                      onClick={() => open(s.id)}
+                      label={it ? (it.english !== it.glyph ? it.english : undefined) : r.label}
+                      eyebrow={r.page ? KIND_LABEL[r.kind] : "In your sky"}
+                      onClick={() => open(r.id)}
                     />
                   );
                 })}
-              </ol>
+              </ul>
             </SkyPanel>
-            {/* what tonight rests on. Nothing here is a step, so a row wears
-                no lock and opening one leaves "Step n of N" where it was. An
-                empty list is not a panel (SAK-416).
-
-                A page's eyebrow is the KIND word, the one the Atlas and the
-                Observatory use for the same thing (SAK-432). It used to be the
-                page's own name for itself, "Intro" or "Sound shift", so the
-                intro behind 電 read INTRO in the rail and sat under Terms in
-                the Atlas. Sam: "it should say term." A star already in the sky
-                is not a kind of thing but a reason to be in this list, so it
-                keeps saying so. */}
-            {references.length > 0 && (
-              <SkyPanel title="References" className="!p-4 shrink-0">
-                <ul className="mt-3 flex flex-col gap-1">
-                  {references.map((r) => {
-                    const it = r.page ? undefined : graph.itemOf(r.id);
-                    const state = stateOf(r.id);
-                    return (
-                      <RailRow
-                        key={r.id}
-                        current={state === "selected" ? "true" : undefined}
-                        lit={state === "lit" || state === "selected"}
-                        glyph={it?.glyph}
-                        label={it ? (it.english !== it.glyph ? it.english : undefined) : r.label}
-                        eyebrow={r.page ? KIND_LABEL[r.kind] : "In your sky"}
-                        onClick={() => open(r.id)}
-                      />
-                    );
-                  })}
-                </ul>
-              </SkyPanel>
-            )}
           </div>
-        </div>
+        )}
       </div>
     </SkyPageShell>
   );

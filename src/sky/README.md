@@ -5703,3 +5703,96 @@ both lists, and `scripts/button-centering.mjs` at 0 elements over 1px.
 The suite was run on a port of its own through a throwaway config, deleted
 afterwards: another lane's run took 3249 out from under this one mid-suite, and
 seventeen tests failed on a server that was no longer there.
+
+## The lesson holds still, and reads as a two by two (2026-09-16, SAK-446)
+
+Sam, on the lesson page: "once i open something in the lesson, it should not
+move to the references section, it should stay in the tonight, in order
+section." And, on the header: "step 1 of 8" turning into "step 1 of 7" every
+time she pressed Next.
+
+**One cause, three symptoms.** Opening a star in a lesson marks its facts seen
+(`seeId`), which is what puts it into rotation. Seen is also what makes a star
+one the learner already has, and the rail's split reads exactly that: what
+tonight teaches is what is NOT already in the sky (SAK-416). So the lesson
+rebuilt itself under the learner's feet. Signed out, on a row of five kana, one
+press of Next read "Step 1 of 4": い had left "Tonight, in order" and was
+sitting under References marked IN YOUR SKY, the step total had lost a step
+while `n` stayed put, and the three terms that had been under References were
+gone too, because the app's own teaching walk stops offering a term once it has
+seen the learner meet the star behind it. A reload put none of it back, because
+the server rebuilt from the same changed history.
+
+**The fix is upstream of all three.** `beforeTonight` in
+`src/app/(sky)/lesson.ts` hands the whole build a history with the bare seen
+marks on tonight's picks and everything under them dropped: the picks and their
+closure come from `offerPicker` (only the picks are built, not the whole sky),
+their facts from `pickFacts`, and `applyDropSeen` takes the marks off. The
+steps, the references and the walk then all read a learner who has not opened
+tonight's stars yet, so they answer the same on every render and after a
+reload, however many of tonight's stars have been opened. Nothing downstream
+knows: `lessonSteps`, `lessonReferences` and `SkyLesson` are untouched, and the
+page still computes the order from the payload the way it always did.
+
+The two candidates the card offered were this and holding the order the first
+payload gave, in the client. The client one cannot survive a reload, and the
+card asked for a reload to be safe too, so it was this one.
+
+**What a bare seen mark is, is the whole of the rule.** A star drilled or
+claimed is met by its own answers (`facts[f].seen`) or its claim, and this
+touches neither, so it stays a reference. Only a star whose entire history is
+"it was shown to me in a lesson" counts as untaught. That is tonight's own
+stars, and it is also the deliberate trade: a card read on some earlier night
+and never practiced is taught again rather than listed as something the learner
+has. Reading a card once is not learning it.
+
+The header was left alone otherwise. N counts the prerequisites tonight
+teaches, so nine picks really can read "Step 1 of 18", and N is always the
+number of rows in "Tonight, in order", which is now pinned by a test.
+
+**The layout is one grid with two rows.** Sam: "let's move the references
+section to be to the right of the constellation panel above the tonight, in
+order section. make it the same height as the constellation panel. make the
+tonight in order panel the same height as the details panel." The lesson was a
+sky across the top, the card under it, and one rail at the right holding both
+lists in a single scroller. It is a two by two now: the sky and References
+across the top, the card and "Tonight, in order" under them. One grid, two rows
+(`minmax(180px,42%)` and `minmax(0,1fr)`), so each row's two panels are exactly
+as tall as each other rather than two columns agreeing by eye: measured at 1440
+wide, the sky and References are both 310px and the card and the order both
+412px, to the pixel.
+
+The four cells are placed by row and column rather than by their order in the
+markup, which leaves the DOM reading sky, details, Tonight, References. That is
+the stack a narrow window wants, so below `lg` the grid is simply off and the
+four are that stack. The body scrolls there now: it used to clip, so at 760
+wide References was drawn past the bottom edge with nothing that could reach
+it. Each panel owns a cell and scrolls inside itself, which is what SAK-416's
+one-scroller-for-both was working around when the two shared a column.
+
+A lesson that rests on nothing leaves no hole: with no references the sky spans
+the whole top row (`lg:col-span-2`), and the empty panel is not drawn, the way
+SAK-416 left it. The sample learner picking a piece on its own is such a
+lesson, and it is what the test and one of the screenshots use.
+
+The cells carry `data-lesson-cell` ("sky", "card", "order", "references"),
+which is what the e2e test measures the four boxes by, since two of them are
+not panels and none of them is addressable by its text.
+
+There are no hide-rail or hide-cards buttons on the lesson to keep working:
+"Hide the rail" is the Atlas's and "Hide the cards" is the Quiz's.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,002
+unit tests, 4,001 pass and 1 skipped, from 3,996: six new on
+`lessonFromPicks`, all in `src/app/(sky)/lesson.test.ts` (a fresh learner is
+taught the whole row; one of tonight's stars marked seen changes neither the
+order nor the references; every star of the lesson opened changes neither; the
+terms and intros behind tonight stay; a claimed star is still a reference and
+still out of the order; a piece picked on its own rests on nothing at all).
+58 e2e pass, from 56: one walks a signed-out lesson, presses Next, waits for
+the seen mark to land in the browser's copy and checks that N, the rows and
+the references are all where they were, then reloads and checks again; the
+other measures the four cells at 1440 and at 760. `scripts/unreachable.mjs
+--list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at 0 elements over 1px, 17 measured on the
+lesson.

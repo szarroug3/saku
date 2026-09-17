@@ -384,6 +384,59 @@ test("what tonight teaches is settled when the lesson starts, and holds", async 
   await expect(references.getByText("In your sky")).toHaveCount(0);
 });
 
+test("the lesson is a two by two, and each row's two panels are one height", async ({ page }) => {
+  // SAK-446. References sits beside the constellation and the order beside
+  // the card, in one grid with two rows, so the heights agree exactly rather
+  // than by eye.
+  const cell = async (name: string) => {
+    const box = await page.locator(`[data-lesson-cell="${name}"]`).boundingBox();
+    if (!box) throw new Error(`no ${name} cell`);
+    return box;
+  };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("word:電車")}`);
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
+  const sky = await cell("sky");
+  const references = await cell("references");
+  const card = await cell("card");
+  const order = await cell("order");
+  // top right, beside the sky and level with it
+  expect(references.x).toBeGreaterThanOrEqual(sky.x + sky.width);
+  expect(Math.abs(references.y - sky.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(references.height - sky.height)).toBeLessThanOrEqual(1);
+  // bottom right, beside the card and as tall
+  expect(order.x).toBeGreaterThanOrEqual(card.x + card.width);
+  expect(order.y).toBeGreaterThanOrEqual(sky.y + sky.height);
+  expect(Math.abs(order.height - card.height)).toBeLessThanOrEqual(1);
+  // the right column keeps the rail's width
+  expect(Math.abs(references.width - order.width)).toBeLessThanOrEqual(1);
+
+  // a lesson that rests on nothing leaves no hole: the sky takes the whole
+  // top row rather than sitting beside an empty cell
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("primitive:圭")}`);
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.locator('[data-lesson-cell="references"]')).toHaveCount(0);
+  const whole = await cell("sky");
+  const alone = await cell("order");
+  expect(whole.width).toBeGreaterThan(sky.width);
+  expect(whole.x + whole.width).toBeGreaterThanOrEqual(alone.x + alone.width - 1);
+
+  // narrow, the four are a stack in the order they are read: the sky, the
+  // details, Tonight, References, and the body scrolls to the end of it
+  await page.setViewportSize({ width: 760, height: 900 });
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("word:電車")}`);
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
+  const stack = [await cell("sky"), await cell("card"), await cell("order"), await cell("references")];
+  for (let i = 1; i < stack.length; i++) {
+    expect(stack[i].y).toBeGreaterThanOrEqual(stack[i - 1].y + stack[i - 1].height);
+    expect(Math.abs(stack[i].x - stack[0].x)).toBeLessThanOrEqual(1);
+  }
+  const heading = page.getByRole("heading", { name: "References", exact: true });
+  await heading.scrollIntoViewIfNeeded();
+  const seen = await heading.boundingBox();
+  expect(seen && seen.y).toBeLessThan(900);
+});
+
 test("a button that is a link walks there instead of reloading the page", async ({ page }) => {
   // SAK-362. SkyButton with an href rendered a plain anchor, so every one of
   // them threw the loaded app away and fetched the whole page again.
