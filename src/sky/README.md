@@ -5069,3 +5069,58 @@ grading that happens without it. `scripts/unreachable.mjs --list` at zero, and
 SAK-435 let a kana card take how its sound is spelled in English, and its closing note named the lesson lines that disagreed. す and ス told the learner to say "sue", which the card does not accept; ひ said "he" and み said "me", which are the romaji of へ and め. Sam approved changing them: す and ス say "soo", ひ says "hee", み says "mee", as their katakana twins ヒ and ミ already did. `src/data/mnemonics.ts`, the `sound` field and the accented span of each `analogy`.
 
 A test in `mnemonics.test.ts` now holds every kana's say-it spelling to what its own card accepts: its romaji, the other ways the table writes it (を is "wo" and "o"), or its sound spellings. It found nothing else.
+
+### "Limited 30" is thirty questions (2026-09-16, SAK-437)
+
+Sam set "Limited 30" on a 106-item recipe, read "30 items, about 66 questions,
+drawn at random from the 106 below", and said what the number was always
+supposed to mean: "the limited count should be the number of questions, not
+items so if i say 30, i mean i want 30 questions out of the 106 items in this
+case." SAK-428 had already made the second count visible; this makes it the one
+she sets.
+
+**The draw counts questions as it walks.** It shuffles the pool exactly as
+before and then takes items until the questions taken reach the number asked
+for: an item's facts go in whole while they fit, and the single item that would
+overshoot gives up only as many of its facts as are still wanted, chosen at
+random among its own so a word does not always surrender the same question. The
+deck is therefore exactly the number asked for whenever the pool holds that
+many, and at most one item is ever split. "All of them" is the pool in its own
+order, untouched, and the cards are still shuffled after the draw (SAK-388).
+
+**`Recipe.size` keeps its name and changes its meaning.** It is the stored
+field, so renaming it would strand every saved recipe; its doc comment now says
+it counts questions, and a saved "Limited 10" deals ten questions, which is what
+that recipe was asking for all along. `deckSize(recipe, pool)` is
+`deckQuestions(recipe, questions)`, `shortfall` is counted in questions too, and
+the summary a saved recipe's chip carries reads "10 questions" rather than
+"10 of them", which could only be read as ten items.
+
+**The panel lost its estimate, because there is nothing left to estimate.** A
+limited draw used to multiply the pool's rate of questions per item over the
+items it would take, which is why it said "about". The number is exact now:
+"30 questions, drawn at random from the 12,457 items below", and the "drawn at
+random" half appears only when something is actually left behind. "All of them"
+still says both counts, "12,457 items, 31,609 questions", because both are
+exact and both are worth knowing. A pool shorter than the number asked for
+reads "Only 18 questions match, so the deck is shorter than the 30 you asked
+for." The stepper says "questions" beside its box and to a screen reader, where
+it said only "How many" and left the unit to be guessed.
+
+**A retry and a resume were already safe.** Both hand `loadQuiz` the cards by
+name rather than drawing again, so neither goes near this path; the e2e that
+reloads a half-finished quiz holds that.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,984
+unit tests, 3,983 pass and 1 skipped, five of them new and all in
+`src/app/(sky)/practice.test.ts`: they draw over the verb pairs, where every
+item carries exactly two facts, so an odd number of questions can only be
+reached by splitting one item and the assertion has somewhere to bite. They
+check that the deck is exactly the number asked for, that the split item is one
+and no more, that a pool with too few questions is short rather than wrong, that
+"all of them" is unchanged, and that the cards dealt are one per question. 54
+e2e pass, the practice step now reading "questions, drawn at random from the N
+items below". `scripts/unreachable.mjs --list` at zero,
+`scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at 0 elements over 1px over the 1,382 it
+measures, since the stepper grew a unit beside it.
