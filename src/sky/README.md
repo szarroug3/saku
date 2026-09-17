@@ -5588,3 +5588,13 @@ zero on both lists.
 ## Forgetting a session asks with the button alone (SAK-449)
 
 Same pattern as the saved recipe's delete (SAK-443): the confirm in Sessions lost its sentence ("Its answers leave your schedule.") and the destructive button says what it does for good, "Forget it forever", beside "Keep it". `InlineAsk`'s line has been optional since SAK-443.
+
+## The hint says how a word is said, and never shows the answer (2026-09-17, SAK-453, SAK-454)
+
+Two things Sam said about the quiz hint, fixed together because they are the same few lines.
+
+**The reading is a sentence (SAK-453).** The hint for a kanji word used to be the bare kana on a line of its own. It now reads "This is said as でる." with the kana in the accent color. The card carries it as `hint.reading`, apart from `hint.text`, so the component draws the sentence and the data stays a plain reading. Whether a reading is a hint at all is still `readingIsAHint` (SAK-448).
+
+**The grammar hint names the kind of word and the form, nothing more (SAK-454).** Sam, on a hint whose last line was "げんきな + みせ → げんきなみせ": "this hint shows the answer. it should only give hints saying things like this is a na adjective." The last line of a derivation is the answer, so the equations are no longer part of the hint. The engine's derivation hint keeps its class line in `text` (the engine tests pin that) and adds the form line as `form`; the quiz joins the two into `hint.text`. The derivation itself goes on the card as `built` and is drawn only after the answer, under "How it is built" (`QuizBuilt` in `quiz-verdict.tsx`).
+
+Tests: a card with a derivation has every `built` line as an equation, and its hint has no arrow and does not contain the answer; the SAK-429 and SAK-448 reading tests read `hint.reading`, and 先生 keeps "先 is before, 生 is life" as its `hint.text`.

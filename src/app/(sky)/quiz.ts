@@ -256,6 +256,20 @@ function readingIsAHint(fact: FactId, glyph: string): boolean {
   return /[一-龯]/.test(glyph);
 }
 
+/** The card's hint, from the engine's and the reading a kanji word hides.
+ * A grammar card's hint is the kind of word and the form it uses; a card with
+ * neither has no hint at all rather than an empty one, so no Hint button is
+ * drawn that would open onto nothing. */
+function hintFields(hint: ReturnType<typeof hintFor>, reading: string): { hint?: NonNullable<QuizCard["hint"]> } {
+  const out: NonNullable<QuizCard["hint"]> = {
+    ...(hint?.kind === "image" ? { image: hint.src } : {}),
+    ...(hint?.kind === "text" ? { text: hint.text } : {}),
+    ...(hint?.kind === "derivation" && (hint.text || hint.form) ? { text: [hint.text, hint.form].filter(Boolean).join(". ") } : {}),
+    ...(reading ? { reading } : {}),
+  };
+  return Object.keys(out).length ? { hint: out } : {};
+}
+
 /** The cards for some facts, in order. With `audio`, a card that has a
  * sound to ask by becomes a listening card half the time. */
 export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
@@ -318,7 +332,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // it and neither was given it, so a grammar card could say only "This is
     // the 〜てはいけない pattern" and "said in the 〜てはいけない form": the
     // pattern twice, and never which kind of word was on the card.
-    let hint = hintFor(fact, dir, undefined, false, vehicle ?? undefined);
+    const hint = hintFor(fact, dir, undefined, false, vehicle ?? undefined);
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
     // In a lesson's quiz the sound is a card of its own, dealt after this
@@ -331,7 +345,6 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // hint is already the written form. When the card has a hint of its own
     // (the component breakdown), the reading goes first, on its own line.
     const readingHint = !listenIt && prompt.context && !anchored && readingIsAHint(fact, prompt.glyph) ? prompt.context : "";
-    if (readingHint) hint = { kind: "text", text: hint?.kind === "text" ? `${readingHint}\n${hint.text}` : readingHint };
     // The box types kana for any card whose answer is Japanese, which is
     // every reading but a kana's: asked あ you say "a", and there is no
     // romaji for a meaning. A rolled counting card is read aloud, so it
@@ -362,7 +375,13 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       item,
       prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored && !readingHint ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
       ...(instruction ? { instruction } : {}),
-      ...(hint ? { hint: hint.kind === "image" ? { image: hint.src } : hint.kind === "text" ? { text: hint.text } : hint.kind === "derivation" ? { ...(hint.text ? { text: hint.text } : {}), steps: derivationLines(hint.derivation) } : {} } : {}),
+      // A hint nudges, it does not answer (SAK-454): a grammar card's hint is
+      // the kind of word and the form it uses, and the arithmetic, whose last
+      // line is the answer, waits for the reveal as `built`. A kanji word's
+      // reading is a field of its own so the hint can say it in a sentence
+      // (SAK-453).
+      ...hintFields(hint, readingHint),
+      ...(hint?.kind === "derivation" ? { built: derivationLines(hint.derivation) } : {}),
       answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
       typed: typedCard,
       ...(inKana ? { answerInKana: isKatakana(answer) ? "katakana" as const : "hiragana" as const } : {}),

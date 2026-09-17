@@ -104,7 +104,13 @@ export interface QuizCard {
    * line, already written out ("たかい − い + くて → たかくて"). It arrives as
    * strings because the Sky does not import the engine that builds it, and it
    * is drawn under `text` in the Japanese face rather than as prose. */
-  hint?: { text?: string; image?: string; steps?: readonly string[] };
+  /** `reading` is how a kanji word is said, kept apart from `text` so the
+   * hint can say it in a sentence with the reading in the accent (SAK-453). */
+  hint?: { text?: string; image?: string; reading?: string };
+  /** How the answer is built, an equation to the line ("げんき + な →
+   * げんきな"). Shown under the answer once the card is answered, never in
+   * the hint: its last line IS the answer (SAK-454). */
+  built?: readonly string[];
   /** What kind of answer is wanted, for the box's placeholder. */
   answerIs: "reading" | "meaning" | "other";
   /** Opens on the box; false opens on the options (a card only ever asked

@@ -28,7 +28,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { QuizChoices, QuizOrder, QuizPrompt } from "@/sky/components/quiz-board";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
-import { QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
+import { QuizBuilt, QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { QuizResults, type QuizEnding } from "@/sky/components/quiz-results";
 import { useNarrow } from "@/sky/components/use-narrow";
@@ -397,6 +397,9 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
               {/* which reading applies, and why: the rule, not the answer
                   again (SAK-316) */}
               {answered && card.rule && <QuizRuleBlock rule={card.rule} />}
+              {/* how a grammar answer is built: after the answer, never in the
+                  hint, because its last line is the answer (SAK-454) */}
+              {answered && card.built && <QuizBuilt lines={card.built} />}
               {/* why the others were there, but only when they were: naming
                   choices that were never on screen is noise (SAK-315) */}
               {answered && (!card.typed || answered.narrowed) && <QuizWhy card={card} pitch={pitch} />}

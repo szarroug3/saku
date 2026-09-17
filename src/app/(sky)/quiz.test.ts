@@ -128,15 +128,18 @@ describe("the verb a grammar card is drilled on", () => {
     }
   });
 
-  it("shows the arithmetic under the class line, one equation to the line", () => {
-    // SAK-194's derivation reaches the Sky at last: grammarHint returns it and
-    // the card mapper used to keep only `image` and `text`, so the steps fell
-    // out on the way. Never the whole answer as a single word: each line is an
-    // equation ending in an arrow.
-    const derived = fresh.filter((c) => c.hint?.steps?.length);
-    assert.ok(derived.length > 0, "no card carried a derivation");
+  it("keeps the arithmetic out of the hint, and hands it to the reveal (SAK-454)", () => {
+    // Sam, on a hint ending "げんきな + みせ → げんきなみせ": "this hint shows the
+    // answer. it should only give hints saying things like this is a na
+    // adjective." The equations' last line IS the answer, so they wait for the
+    // reveal as `built`; the hint names the kind of word and the form.
+    const derived = fresh.filter((c) => c.built?.length);
+    assert.ok(derived.length > 0, "no card carried a derivation for its reveal");
     for (const card of derived) {
-      for (const step of card.hint!.steps!) assert.match(step, / → /, card.id);
+      for (const line of card.built!) assert.match(line, / → /, card.id);
+      const hint = card.hint?.text ?? "";
+      assert.ok(!hint.includes("→"), `${card.id} hinted an equation: ${hint}`);
+      assert.ok(!hint.includes(card.answer), `${card.id} hinted its own answer: ${hint}`);
     }
   });
 
@@ -464,33 +467,34 @@ describe("the kana under a word she is supposed to know (SAK-429)", () => {
     // one showing that has never been asked still prints it.
     const card = cardFor(emptyHistory(), "word:行く/meaning");
     assert.equal(card.prompt.context, undefined);
-    assert.equal(card.hint?.text, "いく");
+    assert.equal(card.hint?.reading, "いく");
   });
 
   it("takes it away once she has been asked, and puts it behind Hint", () => {
     // Sam, 2026-09-08: the kana answers half of "what does 行く mean" for free.
     const card = cardFor(asked("word:行く/meaning"), "word:行く/meaning");
     assert.equal(card.prompt.context, undefined);
-    assert.equal(card.hint?.text, "いく");
+    assert.equal(card.hint?.reading, "いく");
   });
 
   it("treats a claimed word the same, since she said she knows it", () => {
     const card = cardFor(claimed("word:行く/meaning"), "word:行く/meaning");
     assert.equal(card.prompt.context, undefined);
-    assert.equal(card.hint?.text, "いく");
+    assert.equal(card.hint?.reading, "いく");
   });
 
   it("puts the reading first when the card already had a hint of its own", () => {
     // 先生 breaks down into 先 and 生, and that breakdown keeps its place.
     const card = cardFor(asked("word:先生/meaning"), "word:先生/meaning");
     assert.equal(card.prompt.context, undefined);
-    assert.equal(card.hint?.text, "せんせい\n先 is before, 生 is life");
+    assert.equal(card.hint?.reading, "せんせい");
+    assert.equal(card.hint?.text, "先 is before, 生 is life");
   });
 
   it("leaves a kana word alone, since it never had a reading to hide", () => {
     const card = cardFor(asked("word:これ/meaning"), "word:これ/meaning");
     assert.equal(card.prompt.context, undefined);
-    assert.ok(!card.hint?.text, "and there is nothing to hint at");
+    assert.ok(!card.hint?.text && !card.hint?.reading, "and there is nothing to hint at");
   });
 
   it("leaves a reading card its glosses, which are what tells its readings apart", () => {

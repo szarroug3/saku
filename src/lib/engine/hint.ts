@@ -87,7 +87,9 @@ export type Hint =
   // rather than a first equation because it is a sentence in the UI face, not
   // arithmetic in the Japanese one, and the renderer draws the two differently.
   // Absent for a word whose class has no name (a noun host).
-  | { kind: "derivation"; derivation: Derivation; text?: string }
+  // `form` is the form nudge ("uses the て-form") for a caller that shows the
+  // class and the form but keeps the arithmetic for after the answer (SAK-454).
+  | { kind: "derivation"; derivation: Derivation; text?: string; form?: string }
   // The WRITTEN FORM of the word, shown big enough to READ. Only a listening
   // MEANING card produces this: the audio played the word and hid its glyph, so
   // the honest nudge is to reveal WHICH word was heard (電話), not to gloss its
@@ -401,7 +403,8 @@ function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
       const word = vehicle.known ? vehicle.surface : vehicle.kana;
       const derivation = deriveProduction(prod.recipe, prod.host, word, vehicle.cls);
       if (derivation) {
-        return { kind: "derivation", derivation, ...(classText ? { text: classText } : {}) };
+        const form = formHintText(prod);
+        return { kind: "derivation", derivation, ...(classText ? { text: classText } : {}), ...(form ? { form } : {}) };
       }
     }
     // NOTHING TO DERIVE, so name the step instead. The FORM nudge is "uses the

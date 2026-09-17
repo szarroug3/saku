@@ -169,24 +169,41 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
  * Down the page rather than across, so the equations line up on their left
  * edges and the second reads as the first one continued. */
 export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
-  const steps = hint.steps ?? [];
-  if (!hint.image && !hint.text && !steps.length) return null;
+  if (!hint.image && !hint.text && !hint.reading) return null;
   return (
     <SkySurface className="flex max-h-[40vh] shrink-0 items-center gap-4 overflow-y-auto text-[14px] text-sky-ink/90">
       {hint.image && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={hint.image} alt="" className="size-[96px] rounded-md object-contain" />
       )}
-      {(hint.text || steps.length > 0) && (
+      {(hint.text || hint.reading) && (
         <div className="flex min-w-0 flex-col gap-1">
+          {/* how a kanji word is said, as a sentence with the reading in the
+              accent rather than the bare kana (SAK-453) */}
+          {hint.reading && (
+            <span>This is said as <span className={`font-semibold text-sky-accent ${japaneseFont(hint.reading)}`}>{hint.reading}</span>.</span>
+          )}
           {/* the wording is a sentence that names Japanese inside it, so each
               run is drawn in its own face (SAK-443) */}
           {hint.text?.split("\n").map((line, i) => <span key={i}><Mixed text={line} /></span>)}
-          {steps.map((step) => (
-            <span key={step} className="text-[17px] leading-snug text-sky-ink"><Mixed text={step} /></span>
-          ))}
         </div>
       )}
     </SkySurface>
+  );
+}
+
+/** How the answer is built, under the answer once the card is answered
+ * (SAK-454). It used to be the second half of the hint, where its last line
+ * gave the answer away; here it explains the answer instead. One equation to
+ * the line, down the page, so the second reads as the first one continued. */
+export function QuizBuilt({ lines }: { lines: readonly string[] }) {
+  if (!lines.length) return null;
+  return (
+    <div className="mt-4 text-left">
+      <Eyebrow>How it is built</Eyebrow>
+      <div className="flex flex-col gap-1">
+        {lines.map((line) => <span key={line} className="text-[17px] leading-snug text-sky-ink"><Mixed text={line} /></span>)}
+      </div>
+    </div>
   );
 }
