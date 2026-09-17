@@ -72,7 +72,7 @@ describe("recipeKey", () => {
 
 describe("recipeSummary", () => {
   it("says everything when nothing is narrowed", () => {
-    assert.equal(recipeSummary(EMPTY_RECIPE, COLLECTIONS), "Everything, 10 of them");
+    assert.equal(recipeSummary(EMPTY_RECIPE, COLLECTIONS), "Everything, 10 questions");
   });
 
   it("names the collections in the order they are offered, with their cuts", () => {
@@ -82,18 +82,18 @@ describe("recipeSummary", () => {
 
   it("leaves out a clause that says nothing, and keeps the ones that do", () => {
     const r = recipe({ collections: ["kanji"], statuses: ["shaky"], asks: ["meaning", "reading"], size: 10 });
-    assert.equal(recipeSummary(r, COLLECTIONS), "Kanji, only shaky, asked for the meaning and the reading, 10 of them");
+    assert.equal(recipeSummary(r, COLLECTIONS), "Kanji, only shaky, asked for the meaning and the reading, 10 questions");
   });
 
   it("counts what was left out by hand, since a saved recipe keeps it", () => {
     const r = recipe({ collections: ["kanji"], excluded: ["kanji:一"] });
-    assert.equal(recipeSummary(r, COLLECTIONS), "Kanji, 10 of them, less one left out by hand");
+    assert.equal(recipeSummary(r, COLLECTIONS), "Kanji, 10 questions, less one left out by hand");
     const more = recipe({ collections: ["kanji"], excluded: ["kanji:一", "kanji:二"] });
-    assert.equal(recipeSummary(more, COLLECTIONS), "Kanji, 10 of them, less 2 left out by hand");
+    assert.equal(recipeSummary(more, COLLECTIONS), "Kanji, 10 questions, less 2 left out by hand");
   });
 
   it("puts three of anything in a list with commas", () => {
     const r = recipe({ collections: ["kana", "kanji", "words"] });
-    assert.equal(recipeSummary(r, COLLECTIONS), "Kana, Kanji and Words, 10 of them");
+    assert.equal(recipeSummary(r, COLLECTIONS), "Kana, Kanji and Words, 10 questions");
   });
 });

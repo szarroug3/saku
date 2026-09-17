@@ -9,10 +9,10 @@ test("practice builds a deck from a collection and starts it", async ({ page }) 
   await page.goto("/practice?sample");
   await expect(page.getByRole("heading", { name: "What would you like to practice?" })).toBeVisible();
   await page.getByRole("button", { name: "Kana", exact: true }).click();
-  // items and questions are two different counts and the panel says both
-  // (SAK-428): a limited draw is "10 items, about 19 questions, drawn at
-  // random from the 106 below"
-  await expect(page.getByText(/[\d,]+ items, about [\d,]+ questions, drawn at random from the [\d,]+ below/)).toBeVisible();
+  // items and questions are two different counts (SAK-428), and the number
+  // a limited draw is set to counts questions (SAK-437): "10 questions,
+  // drawn at random from the 106 items below"
+  await expect(page.getByText(/[\d,]+ questions, drawn at random from the [\d,]+ items below/)).toBeVisible();
   const start = page.getByRole("button", { name: "Start" });
   await expect(start).toBeEnabled();
   await start.click();

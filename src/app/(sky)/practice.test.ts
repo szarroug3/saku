@@ -60,7 +60,9 @@ describe("practicePreview", () => {
     assert.equal(after.questions, before.questions - gone.facts.length);
   });
 
-  it("draws the size asked for at random from the pool, less what is left out", () => {
+  // a kana carries one fact, so five questions are five of them; the split
+  // a longer item forces is the suite below
+  it("draws at random from the pool, less what is left out", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: 5 as const };
     const pool = practicePreview(history, recipe, {}, NOW).items;
     const excluded = [pool[0].item.id];
@@ -74,6 +76,53 @@ describe("practicePreview", () => {
     assert.ok(!drawn.some((d) => excluded.includes(d.item.id)));
     const again = practiceDraw(history, left, {}, NOW, () => 0.5);
     assert.notDeepEqual(drawn.map((d) => d.item.id), again.map((d) => d.item.id));
+  });
+});
+
+// Sam, 2026-09-16, on "Limited 30" over a 106-item recipe: "the limited
+// count should be the number of questions, not items so if i say 30, i mean
+// i want 30 questions out of the 106 items in this case."
+describe("a limited deck is counted in questions (SAK-437)", () => {
+  const history = sampleHistory(NOW);
+  // every verb pair carries exactly two facts, so any odd number of
+  // questions can only be reached by splitting one item, and the whole pool
+  // sits under the preview's cap
+  const pairs = { ...EMPTY_RECIPE, collections: ["verb-pairs"] };
+  const dice = () => { let seed = 7; return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; };
+  const asked = (drawn: readonly { facts: readonly string[] }[]) => drawn.reduce((n, d) => n + d.facts.length, 0);
+
+  it("deals exactly the number asked for when the pool holds that many", () => {
+    for (const size of [1, 5, 30, 133]) assert.equal(asked(practiceDraw(history, { ...pairs, size }, {}, NOW, dice())), size, `asked for ${size}`);
+  });
+
+  it("splits the one item that would overshoot and no other", () => {
+    const whole = new Map(practicePreview(history, { ...pairs, size: "all" }, {}, NOW).items.map((p) => [p.item.id, p.facts.length]));
+    const drawn = practiceDraw(history, { ...pairs, size: 7 }, {}, NOW, dice());
+    // three pairs whole and a half of a fourth
+    assert.equal(drawn.length, 4);
+    assert.deepEqual(drawn.map((d) => d.facts.length), [2, 2, 2, 1]);
+    assert.equal(drawn.filter((d) => d.facts.length < whole.get(d.item.id)!).length, 1);
+    // an even number needs no split at all
+    assert.ok(practiceDraw(history, { ...pairs, size: 8 }, {}, NOW, dice()).every((d) => d.facts.length === whole.get(d.item.id)));
+  });
+
+  it("is shorter than asked only when the pool runs out of questions", () => {
+    const keigo = { ...EMPTY_RECIPE, collections: ["keigo"], size: 500 as const };
+    const pool = practicePreview(history, { ...keigo, size: "all" }, {}, NOW);
+    assert.ok(pool.questions > 0 && pool.questions < 500);
+    assert.equal(asked(practiceDraw(history, keigo, {}, NOW, dice())), pool.questions);
+  });
+
+  it("leaves all of them alone", () => {
+    const all = { ...pairs, size: "all" as const };
+    const pool = practicePreview(history, all, {}, NOW);
+    const drawn = practiceDraw(history, all, {}, NOW, dice());
+    assert.equal(drawn.length, pool.matched);
+    assert.equal(asked(drawn), pool.questions);
+  });
+
+  it("deals one card per question asked for", () => {
+    assert.equal(withRandom(0.1, () => practiceCards(history, { ...pairs, size: 9 }, {}, NOW)).length, 9);
   });
 });
 

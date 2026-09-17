@@ -20,7 +20,8 @@ export const ASK: Record<Ask, { label: string; meaning: string }> = {
   pick: { label: "Picking from choices", meaning: "The things only ever asked by recognition: patterns, verb pairs, keigo, and a word's pitch." },
 };
 
-/** How many the deck holds: a number the learner types, or all of them. */
+/** How many questions the deck holds: a number the learner types, or all
+ * of them. */
 export type DeckSize = number | "all";
 export const DEFAULT_SIZE = 10;
 
@@ -35,6 +36,11 @@ export interface Recipe {
   /** Standings to keep; empty keeps every standing. */
   statuses: readonly Standing[];
   asks: readonly Ask[];
+  /** How many QUESTIONS the deck holds, not how many items (SAK-437): a
+   * deck is one card per fact, so 30 items were about 66 questions and 30
+   * is what Sam means by 30. The field keeps its name so a saved recipe
+   * keeps working; a saved "Limited 10" now deals 10 questions, which is
+   * what it was always asking for. */
   size: DeckSize;
   /** Items left out by hand, by id. Part of the recipe, so a saved one
    * keeps them (Sam, 2026-09-06). */
@@ -124,7 +130,7 @@ const listed = (parts: readonly string[]): string =>
  * all five asks means asked every way.
  *
  * "Kana (Hiragana and Yōon) and Words, only shaky, asked for the meaning and
- * the reading, 10 of them" */
+ * the reading, 10 questions" */
 export function recipeSummary(recipe: Recipe, collections: readonly PracticeCollection[]): string {
   const drawn = recipe.collections.length === 0
     ? "Everything"
@@ -141,7 +147,9 @@ export function recipeSummary(recipe: Recipe, collections: readonly PracticeColl
   const clauses = [drawn];
   if (recipe.statuses.length) clauses.push(`only ${listed(STANDING_ORDER.filter((s) => recipe.statuses.includes(s)).map((s) => STANDING[s].label))}`);
   if (ASKS.some((a) => !recipe.asks.includes(a))) clauses.push(`asked for ${listed(ASKS.filter((a) => recipe.asks.includes(a)).map((a) => ASK[a].label.toLowerCase()))}`);
-  clauses.push(recipe.size === "all" ? "all of them" : `${recipe.size.toLocaleString()} of them`);
+  // the number counts questions, so the chip says questions rather than
+  // "10 of them", which read as ten items (SAK-437)
+  clauses.push(recipe.size === "all" ? "all of them" : `${recipe.size.toLocaleString()} ${recipe.size === 1 ? "question" : "questions"}`);
   const left = recipe.excluded?.length ?? 0;
   if (left) clauses.push(`less ${left === 1 ? "one" : left.toLocaleString()} left out by hand`);
   return clauses.join(", ");
@@ -176,10 +184,10 @@ export interface PracticePreview {
 /** Misses kept by practice itself, per fact: signal only, never the schedule. */
 export type PracticeMisses = Readonly<Record<string, number>>;
 
-/** How many the deck will hold: the size asked for, or the whole pool when
- * that is smaller or "all" was asked. */
-export function deckSize(recipe: Recipe, pool: number): number {
-  return recipe.size === "all" ? pool : Math.min(recipe.size, pool);
+/** How many questions the deck will hold: the number asked for, or every
+ * question the pool holds when that is fewer or "all" was asked. */
+export function deckQuestions(recipe: Recipe, questions: number): number {
+  return recipe.size === "all" ? questions : Math.min(recipe.size, questions);
 }
 
 /** Why a deck cannot start, in the words the page shows, or null when it can. */
@@ -190,8 +198,9 @@ export function cannotStart(recipe: Recipe, preview: PracticePreview | null): st
   return null;
 }
 
-/** "Only 6 items match, so the deck is shorter than the 10 you asked for." */
-export function shortfall(recipe: Recipe, pool: number): string | null {
-  if (recipe.size === "all" || pool === 0 || pool >= recipe.size) return null;
-  return `Only ${pool} ${pool === 1 ? "item matches" : "items match"}, so the deck is shorter than the ${recipe.size} you asked for.`;
+/** "Only 22 questions match, so the deck is shorter than the 30 you asked
+ * for." Counted in questions, like the number she asked for (SAK-437). */
+export function shortfall(recipe: Recipe, questions: number): string | null {
+  if (recipe.size === "all" || questions === 0 || questions >= recipe.size) return null;
+  return `Only ${questions} ${questions === 1 ? "question matches" : "questions match"}, so the deck is shorter than the ${recipe.size} you asked for.`;
 }

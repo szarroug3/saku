@@ -17,7 +17,7 @@ import { isReadingFact, provenReadingFacts, quizzable } from "@/lib/library/read
 import { shelfSections } from "@/lib/library/shelf-sections";
 import { timedSync } from "@/lib/server-timing";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
-import { cutsOf, deckSize, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
+import { cutsOf, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
@@ -329,15 +329,35 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
   return { items: timedSync("practice:items", () => items(pool.slice(0, PREVIEW_CAP))), matched: pool.length, questions, asksAvailable };
 }
 
-/** The deck's draw: a random draw of the size asked for from the pool
- * (Sam, 2026-09-06: not the first ten, a draw from all of them). "All of
- * them" is the pool in its own order. */
+/** The deck's draw: a random draw from the pool of as many QUESTIONS as
+ * were asked for (Sam, 2026-09-16: "if i say 30, i mean i want 30 questions
+ * out of the 106 items"), not that many items. Shuffled first (Sam,
+ * 2026-09-06: not the first ten, a draw from all of them), then walked:
+ * an item's facts go in whole while they fit, and the one item that would
+ * overshoot gives up only as many of its facts as are still wanted, taken
+ * at random among its own, so the deck is exactly the number asked for
+ * whenever the pool holds that many. "All of them" is the pool in its own
+ * order, untouched. */
 function draw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number, random: () => number): { drawn: Candidate[]; items: Resolved["items"] } {
   const { pool, items } = resolve(history, recipe, practiceMisses, now);
   if (recipe.size === "all") return { drawn: pool, items };
-  const drawn = [...pool];
-  for (let i = drawn.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [drawn[i], drawn[j]] = [drawn[j], drawn[i]]; }
-  return { drawn: drawn.slice(0, deckSize(recipe, pool.length)), items };
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+  const wanted = recipe.size;
+  const drawn: Candidate[] = [];
+  let taken = 0;
+  for (const c of shuffled) {
+    if (taken >= wanted) break;
+    const room = wanted - taken;
+    if (c.facts.length <= room) { drawn.push(c); taken += c.facts.length; continue; }
+    // the one item that overshoots: which of its facts are asked is a draw
+    // of its own, so a word does not always give up the same question
+    const facts = [...c.facts];
+    for (let i = facts.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [facts[i], facts[j]] = [facts[j], facts[i]]; }
+    drawn.push({ ...c, facts: facts.slice(0, room) });
+    taken = wanted;
+  }
+  return { drawn, items };
 }
 
 /** The deck's items. */
@@ -347,7 +367,7 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
 }
 
 /** The cards for a deck: the drawn items' facts, shuffled. The draw is
- * already random, but it draws ITEMS, and a drawn word's facts came out
+ * already random, but it walks ITEMS, and a drawn word's facts come out
  * together, so its meaning and its reading were always asked back to back
  * (SAK-388). A deck of "all of them" was not shuffled at all.
  *

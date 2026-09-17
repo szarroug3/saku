@@ -30,7 +30,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { UndoLine } from "@/sky/components/undo-line";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, cutsOf, deckSize, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, cutsOf, deckQuestions, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
 
 interface SkyPracticeProps {
@@ -119,14 +119,16 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
   // takes its own facts out of the count with it
   const questions = shown.questions - shown.items.reduce((n, p) => n + (excluded.includes(p.item.id) ? p.facts.length : 0), 0);
   const unseen = shown.matched - shown.items.length;
-  const size = deckSize(recipe, pool);
-  const limited = recipe.size !== "all" && pool > size;
-  // a whole pool asks every question in it; a limited draw asks the pool's
-  // rate over as many items as it takes, which is why it says "about"
-  const willAsk = limited ? (pool > 0 ? Math.round((size * questions) / pool) : 0) : questions;
+  // the number she types counts questions (SAK-437), so the deck's length is
+  // exact and the "about" the estimate needed is gone
+  const willAsk = deckQuestions(recipe, questions);
+  const limited = recipe.size !== "all";
+  // a share of the pool rather than the whole of it: the line says where the
+  // questions are drawn from only when something is left behind
+  const partial = limited && questions > willAsk;
   const preview: PracticePreview = { ...shown, items: kept, matched: pool, questions };
   const blocked = cannotStart(recipe, preview);
-  const short = shortfall(recipe, pool);
+  const short = shortfall(recipe, questions);
   const chosen = (loaded && saved.find((d) => d.name === loaded)) || saved.find((d) => same(d.recipe, recipe));
   const changed = !!chosen && !same(chosen.recipe, recipe);
 
@@ -212,7 +214,10 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
           <Facet title="How many">
             <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: count })}>Limited</SkyChip>
             <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
-            {recipe.size !== "all" && <SkyStepper value={recipe.size} onChange={(n) => { setCount(n); set({ size: n }); }} label="How many" />}
+            {/* the number is questions, so the box says so beside itself and
+                to a screen reader, rather than leaving "How many" to be read
+                as items (SAK-437) */}
+            {recipe.size !== "all" && <SkyStepper value={recipe.size} onChange={(n) => { setCount(n); set({ size: n }); }} label="Questions" unit="questions" />}
           </Facet>
           <div className="mt-8 flex flex-wrap items-center gap-2">
             {saving ? (
@@ -232,15 +237,25 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
         <SkyPanel title="What you would get" fit>
           {/* a deck is one card per fact, so a pool of items is a longer run
               of questions than it looks (Sam, 2026-09-08: her 106 items were
-              202 questions). A limited draw takes a random share of the pool,
-              so its question count is a rate rather than a total, and it says
-              "about" for exactly that reason. */}
+              202 questions). "All of them" says both counts, since it asks
+              every question the pool holds. A limited draw is counted in
+              questions and nothing else (SAK-437): 30 means 30 questions,
+              drawn from however many items it takes to reach them. */}
           <p className="mt-2 shrink-0 text-[14px]">
-            <span className="font-semibold text-sky-ink">{size.toLocaleString()}</span>{" "}
-            {size === 1 ? "item" : "items"}, {limited ? "about " : ""}
-            <span className="font-semibold text-sky-ink">{willAsk.toLocaleString()}</span>{" "}
-            {willAsk === 1 ? "question" : "questions"}
-            {limited && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} below</span>}
+            {limited ? (
+              <>
+                <span className="font-semibold text-sky-ink">{willAsk.toLocaleString()}</span>{" "}
+                {willAsk === 1 ? "question" : "questions"}
+                {partial && <span className="text-sky-muted">, drawn at random from the {pool.toLocaleString()} {pool === 1 ? "item" : "items"} below</span>}
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-sky-ink">{pool.toLocaleString()}</span>{" "}
+                {pool === 1 ? "item" : "items"},{" "}
+                <span className="font-semibold text-sky-ink">{questions.toLocaleString()}</span>{" "}
+                {questions === 1 ? "question" : "questions"}
+              </>
+            )}
           </p>
           {short && <p className="mt-1 shrink-0 text-[13px] text-sky-shaky">{short}</p>}
           {blocked && !loading && <p className="mt-1 shrink-0 text-[13px] text-sky-slipping">{blocked}</p>}
