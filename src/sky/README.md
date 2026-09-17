@@ -5794,3 +5794,76 @@ other measures the four cells at 1440 and at 760. `scripts/unreachable.mjs
 --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and
 `scripts/button-centering.mjs` at 0 elements over 1px, 17 measured on the
 lesson.
+
+## Plain words everywhere a learner reads (2026-09-17, SAK-452)
+
+Sam: "look for jargon like 'meet', 'met', 'gloss', etc in the app and then
+let's replace them", then "'land' and 'sits' are also jargon". She does not
+speak Japanese and she is the app's only reader so far, so a word that is
+exact to a linguist and opaque to her is simply a wrong word.
+
+**The rule.** Everything a learner can read says the literal thing in everyday
+words.
+
+- No linguist's or programmer's term unless the app teaches that term on its
+  own page, and then only after it has been introduced. Out: gloss, lemma,
+  morae (say "beats"; the Terms page for mora is where the word is taught),
+  register (say "level", "kind" or "form"), paradigm, surface form, "facts" of
+  a word (say "its meaning and its reading"), string, frame, ichidan, clock-
+  time, felt-time. The FIELD may keep its name; the sentence may not, which is
+  how `gloss` walked into copy in the first place.
+- No figurative verb where a plain one works. Out: meet/met a word (see, learn),
+  land as, lands on, landed (be, sound, go on, was right), sits (is, goes),
+  carries (has), leans on (uses, relies on), lends (gives), lives (is kept),
+  arrives (is taught), wins (is what counts), picks up (takes), flags (marks),
+  drops you into (takes you to), foregrounds (puts the focus on), holds (has,
+  lasts). "Strokes can meet at a slightly different place" is literal and
+  stays, and so is every mnemonic: a cup that sits steaming is a picture, not
+  a figure of speech.
+- The product words Sam chose stay: standing, Solid / Getting there / Shaky /
+  Slipping / Untested / Undiscovered, claim, recipe, deck, Planetarium,
+  Observatory, Atlas, constellation, star.
+
+**Read, do not grep.** The word list is examples; the rule is the point. The
+round swept the copy file by file with a TypeScript walk that prints every
+string, template part and JSX text a file can put on screen, then read those
+sentences. 117 sentences changed across 29 files, every one of them at the
+sentence level so the other lanes editing the same files still merge. A
+handful were caught only by reading: "Here's what each one is claiming" used
+the product's own word "claim" to mean "assert"; "a later lesson gated on a
+kanji" was programmer's English; and "A word's standing is the worst of its
+facts" needed the facts naming rather than renaming, so it now reads "the
+worse of its meaning and its reading".
+
+**The gate bans only what reading cannot miss.** SAK-443's
+`no-jargon-in-learner-copy.test.ts` already walked src/sky, src/app/(sky) and
+word-contrast-notes.ts for "gloss". It now walks the authored prose under
+src/data too, named file by file rather than as a tree, because recipes.ts and
+corpus.ts keep engineering notes in string fields where "lemma" is the exact
+word. The banned list is gloss, lemma, morae, paradigm, surface form, "land
+as", "meet it" / "have met" / "you will meet", register and distractor: each
+one is a word Sam named, each one now appears nowhere, and each one carries
+the sentence it was found in and what to say instead. "sits" and "carries" are
+deliberately NOT banned. A rule that cannot tell a cup sitting on a nun's lap
+from a reading sitting in a word would be worse than no rule, and those were
+fixed by reading. Four allowlist entries cover the places a banned word is
+right, all of them ids or search keywords rather than prose, and a third test
+fails on an allowlist entry that no longer matches anything, so a stale
+exception cannot quietly widen the gate.
+
+`library-index.json` bakes each term's summary, so the kanji term page went
+stale the moment its summary changed and `src/lib/library/terms.test.ts`
+caught it. `npm run build:library-index` is part of changing a term.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean.
+4,075 unit tests pass, 1 skipped, from 4,074: one new test on the jargon gate
+(every banned word offers a replacement, and no allowlist entry is stale), and
+the existing gate rewritten from one word to a list. 62 e2e pass: five
+assertions in `e2e/sky.spec.ts` follow reworded copy (the Observatory's empty
+picks line, the reading reveal's "Same character, and the word it is in
+decides", and the sky's own label, which two tests find the sky by), and three
+in `src/app/(sky)/quiz-rules.test.ts` and `src/lib/grammar/formula.test.ts` do
+the same. A label a test locates an element by is copy like any other, and the
+suite says so within a minute.
+`scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at
+zero on both lists.
