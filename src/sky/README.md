@@ -5598,3 +5598,108 @@ Two things Sam said about the quiz hint, fixed together because they are the sam
 **The grammar hint names the kind of word and the form, nothing more (SAK-454).** Sam, on a hint whose last line was "げんきな + みせ → げんきなみせ": "this hint shows the answer. it should only give hints saying things like this is a na adjective." The last line of a derivation is the answer, so the equations are no longer part of the hint. The engine's derivation hint keeps its class line in `text` (the engine tests pin that) and adds the form line as `form`; the quiz joins the two into `hint.text`. The derivation itself goes on the card as `built` and is drawn only after the answer, under "How it is built" (`QuizBuilt` in `quiz-verdict.tsx`).
 
 Tests: a card with a derivation has every `built` line as an equation, and its hint has no arrow and does not contain the answer; the SAK-429 and SAK-448 reading tests read `hint.reading`, and 先生 keeps "先 is before, 生 is life" as its `hint.text`.
+
+## An unfinished quiz no longer gets in the way of a lesson (2026-09-16, SAK-444)
+
+Sam, on SAK-404: "it works but if i start a lesson after that and then leave the
+lesson, it doesn't let me proceed with the lesson."
+
+**What was actually blocking it**, driven in a production build before anything
+was changed. Two cards answered on `/quiz?picks=kana-row:h-vowels`, then
+`/lesson?picks=kana-row:h-w` walked to step 3 of 8 and left:
+
+1. The one offer knew only the quiz. The home and the Observatory carried
+   "Continue where you left off? 5 cards, 2 answered", linking to
+   `/quiz?picks=kana-row:h-vowels`. Nothing anywhere offered the lesson, so
+   there was no way back into it at all.
+2. The lesson's own place was kept nowhere. Opening `/lesson?picks=kana-row:h-w`
+   again put the learner on "Step 1 of 6", not on step 3, and the 8 had become 6
+   because opening a star marks it seen, which puts it in the learner's sky,
+   which takes it out of what the lesson teaches.
+3. The lesson's drill landed on the old run's ask. Pressing Drill went to
+   `/quiz?from=observatory&picks=kana-row:h-w` and got "You left a quiz part way
+   through: 5 cards, 2 answered. Only one run is kept, so starting this one lets
+   that one go" -- the lesson's own quiz could not be reached without giving up
+   a run from somewhere else.
+4. And Sessions said nothing about any of it.
+
+All three of the card's guesses, and the fourth is the reason the card asked for
+a row in Sessions.
+
+**A place, not a run.** `src/sky/lib/place.ts` is the model: one document with
+two slots, the quiz left part way through and the lesson left part way through,
+one of each and never two of either. The document says which version it is, and
+a document with NO version is SAK-404's bare run, read as a place holding that
+quiz and no lesson. That migration is the whole reason the version is there: a
+learner who was halfway through a run on the day this shipped keeps it, in their
+browser and in their `session` column alike. The key is SAK-404's, deliberately:
+renaming it would have thrown away exactly the runs the migration exists for.
+
+**One quiz, and why not two.** The column is last-writer-wins over one document,
+and a list of unfinished runs needs a rule for how long a run stays in it and a
+way to throw the oldest one out. One of each kind needs neither. So starting a
+second quiz while one is unfinished still asks first, in the card's own words:
+"You have an unfinished quiz (12 of 30). Starting this one replaces it", with
+"Start and replace" and "Go back to it". `InlineAsk` grew an optional
+`keepLabel` for that one case, because "Keep it" beside "Start and replace"
+reads as keeping the new one; everything else keeps SAK-364's wording.
+
+**What the lesson keeps, and what coming back cannot put back.** A lesson writes
+its picks, the star it is on, that star's place in the order and how long the
+order was, after every step. Not on the step it OPENS on: that is not a move,
+and reporting it would either keep a lesson nobody has walked or write over the
+very place that sent the learner here. Pressing Drill clears it, because the
+lesson is over the moment its quiz is open; `SkyButton` now passes an `onClick`
+through to a link so that can happen on the way out.
+
+The thing it cannot put back is the order itself. A star opened is marked seen
+there and then, and the lesson does not teach what is already in the sky, so the
+lesson a learner comes back to is the stars that are LEFT: "Step 1 of 6" where
+they left "step 3 of 8". Both numbers are true about their own moment, and the
+one the page shows is the truth about the lesson as it now stands rather than a
+lesson starting over. The star is looked up by id on the way in, so a star read
+but not stepped past is opened again; a star that has since joined the sky opens
+the lesson where it would have opened anyway.
+
+**One button, the newest wins.** `ResumeLine` is gone. The Planetarium and the
+Observatory carry one `ContinueButton` beside the heading, saying what it goes
+back to and how far in: "Continue your lesson (step 3 of 7)", "Continue your
+quiz (12 of 30)". Two Continues side by side is a question rather than an offer,
+so the other one waits under "Unfinished" at the top of Sessions, as a row with
+Continue and Forget, and Forget asks first. A quiz is listed there whether or not
+it is the one on the button, since Sessions is where letting a quiz go belongs;
+a lesson is listed only when the button is not already offering it. `runNote`
+went from "12 cards, 5 answered" to "5 of 12" for the same reason: it used to be
+its own sentence and now it rides in three different places.
+
+**Nothing blocks starting.** "Start lesson" has always started the lesson picked
+and still does. The lesson page never reads the quiz slot, never asks about it,
+and a lesson's drill is a different ask from whatever run was saved, so it deals
+its own cards whichever way the learner answers.
+
+**Two writers, one document.** `keepRun` and `keepLesson` each start from the
+place this page load is holding and change one slot, so the quiz writing itself
+down after every answer cannot clear the lesson. The guard that keeps a quiz
+screen's opening report from wiping the column moved out of `keepRun` and into
+`reportRun`, which is what the quiz calls after every answer: `keepRun(null)`
+now means it, which is what a Forget from Sessions needs. The lesson has no such
+guard and needs none, since it reports only when the learner steps.
+
+**The gate.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,019
+unit tests, 4,018 pass and 1 skipped, from 3,996: twenty-one new ones on the
+place, over the shape, the migration off SAK-404's bare run, what is worth
+keeping after a step, which lesson a place belongs to and what Continue offers,
+and two on where each kind is continued. The signed-in half rides the store's
+two primitives against a fake `progress` table, the way SAK-404 left them, since
+auth is off in the e2e build. 58 e2e pass, two of them new: Sam's own sequence
+end to end (an unfinished quiz, a lesson started, left, continued from the home,
+and the quiz found again in Sessions and continued), and the Forget ask on an
+unfinished row, backed out of and then gone through with. SAK-404's own test
+needed one line changed, which is the migration seen from the other side: the
+run is under the same key, in the quiz slot of the document now.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on
+both lists, and `scripts/button-centering.mjs` at 0 elements over 1px.
+
+The suite was run on a port of its own through a throwaway config, deleted
+afterwards: another lane's run took 3249 out from under this one mid-suite, and
+seventeen tests failed on a server that was no longer there.
