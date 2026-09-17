@@ -17,6 +17,11 @@
 // (SAK-440): `answerLine` decides between it and the card's form, and the
 // muted line under it names the form. The decision is in src/sky/lib/quiz.ts
 // with its tests; this file draws what comes back.
+//
+// A card that hid the kana under a word read more than one way takes the
+// meaning of any of its readings (SAK-459), and lists them all under the
+// answer with the one it asked about first, so the card still teaches which
+// reading means which.
 
 import { Fragment } from "react";
 
@@ -78,6 +83,14 @@ export function QuizVerdict({ answered, card, pitch: Pitch }: {
           {line.note.before}
           <span className={japaneseFont(line.note.form)}>{line.note.form}</span>
           {line.note.after}
+        </p>
+      )}
+      {/* which reading means which, on a card that hid the kana and so took
+          the meaning of any of them (SAK-459). Kana and English in one line,
+          so each run is drawn in its own face. */}
+      {card.readings && (
+        <p className="text-center text-[13px] text-sky-muted">
+          <Mixed text={card.readings} />
         </p>
       )}
       {answered.grade === "missed" && !!answered.said?.length && (

@@ -5968,3 +5968,23 @@ Verb; every table of nouns says Noun. Each of the four counts what it found
 first, so none of them can pass by matching nothing. 64 e2e pass,
 `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
 on both lists, `scripts/button-centering.mjs` at 0 over 1px.
+
+## A word read several ways that mean different things takes any of them (2026-09-17, SAK-459)
+
+Since SAK-429 a kanji word's meaning card hides its kana, so the card shows 後 on its own and asks what the word means. But 後 is read あと, behind, and ご, after, and with the kana hidden the card never said which of the two it meant. A learner who read the glyph as ご and typed "after" was marked wrong for a right answer to the question on her screen. Sam approved the fix on 2026-09-17: accept the meaning of any of the word's readings.
+
+**64 words, 135 cards.** The vocabulary holds 89 words written with kanji and read more than one way, and 64 of them are read ways that mean different things (the card was written expecting 69; 64 is what the data says today, counted the way `readingsMeaningDifferently` counts). Between them those 64 mint 135 meaning cards, and every one of them now takes what any of the word's readings means. A word whose readings all mean the same thing is not ambiguous and is left alone: 九 is きゅう and く and both are nine, which `interchangeableReadings` already knew (SAK-393).
+
+**Only the card that hid the reading.** A card whose reading is on the screen or in the ear asked about a reading the learner could see, so it keeps its own key: a listening card, a kanji's reading anchored in a word, a word written in kana. The widening hangs off the same `readingHint` the hidden kana hangs off, so the two can never disagree. A lesson's quiz deals the written card and the same card asked by ear, and the card asked by ear is built from the written one before it is widened, so あと played aloud takes "behind" and not "after".
+
+**The reading cards were already fine.** A word reading card shows the meanings of the reading it asks about as its context (後 over "behind, rear" against 後 over "after"), so it says which reading it wants and never had this problem. They are untouched, and あと's card still refuses ご.
+
+**The reveal says which is which.** `QuizCard.readings` is the line "あと: behind · ご: after", the reading the card asked about first, drawn under the answer by `Mixed` so the kana are in the Japanese face and the English is in the page's. It replaces the "Also:" line on these cards rather than sitting beside it: `answerLine` names an alternate spelling a synonym, and "Also: behind" over the word "after" would call two different meanings the same thing.
+
+**The board never offers another reading's meaning.** The card takes "after" typed, so offering "after" as a wrong choice would mark a right answer wrong. Any choice whose wording is one of the other readings' meanings is dropped from the board. Nothing was ever dropped in practice over all 135 cards, because the choices are drawn from words of about the same rank and rarely say the same thing, and no board ever came down to one choice.
+
+**And 後 is asked once.** With the kana hidden, its two meaning cards show the same glyph, ask the same words and take the same answers, which is SAK-393's test for two cards being one question, so the deck keeps one of them. 日's two reading cards are still two, because those say which meaning they ask about.
+
+`cardsFor` also got shorter on the way past: a card named `fact#listen` is now dealt by asking `quizCards` for the pair and taking the one by ear, rather than rebuilding the twin a second way, so what such a card accepts is decided in one place.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,085 unit tests pass, 1 skipped: eight new ones in `src/app/(sky)/quiz.test.ts` (後 takes behind, rear and after; the readings line and its order; no other reading's meaning on any board over all 64 words; every meaning of every reading accepted over all 135 cards; the one card; 九 left alone; the reading cards left alone; the card by ear left alone), one in `src/sky/lib/quiz.test.ts` for the "Also:" line, and the SAK-393 test for 日 now counts its reading cards and its one meaning card. 62 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at zero on both lists. Button centering: 0 shapes over 1px across 7 pages.

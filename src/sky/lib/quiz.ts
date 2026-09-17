@@ -126,6 +126,15 @@ export interface QuizCard {
   answerId: string;
   /** The answer as the reveal shows it. */
   answer: string;
+  /** Every way the written word is read and what each way means, the one the
+   * card asked about first: "あと: behind · ご: after" (SAK-459).
+   *
+   * Only a card that hid the kana carries this, and only when the readings
+   * mean different things. Such a card shows 後 and asks what it means
+   * without saying which reading it meant, so it takes the meaning of any of
+   * them, and this line is how the reveal says which was which. It is
+   * Japanese and English in one string, so it is drawn run by run. */
+  readings?: string;
   /** The answer is a reading to draw with this pitch (a pitch card). */
   answerPitch?: number;
   /** A listening card (SAK-345): what is played, in kana, with the glyph
@@ -306,6 +315,12 @@ export function answerLine(card: QuizCard, answer: QuizAnswer): AnswerLine {
   if (answer.grade === "missed" || card.order) return { said: card.answer };
   const said = answer.said?.[answer.said.length - 1];
   if (!said || same(said, card.answer)) return { said: card.answer };
+  // A card that hid the kana takes the meaning of any of the word's readings
+  // (SAK-459), so what was typed can be a different reading's meaning rather
+  // than another wording of this one, and "Also: behind" over the word "after"
+  // would call them the same thing. The readings line under the answer says
+  // which meaning belongs to which reading, which is the true version of it.
+  if (card.readings) return { said };
   // Picked, not typed: what is on a tile is the card's own wording either way,
   // so a board can never put a second spelling on the screen.
   if (card.options.some((o) => o.label === said)) return { said: card.answer };

@@ -8,7 +8,8 @@ import { describe, it } from "node:test";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { kanjiRow } from "@/data/kanji";
 import { pitchFactId } from "@/data/pitch-facts";
-import { VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, wordUnitFacts } from "@/data/vocab";
+import { interchangeableReadings } from "@/lib/engine/question";
 import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
 import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
@@ -179,9 +180,11 @@ describe("a word read two ways (SAK-393)", () => {
 
   it("leaves 日 alone, because にち and ひ are different things to know", () => {
     const cards = deckFor("word:日");
-    assert.equal(cards.length, 4, cards.map((c) => c.id).join(", "));
     const readings = cards.filter((c) => c.id.includes("/reading"));
-    assert.equal(readings.length, 2);
+    assert.equal(readings.length, 2, cards.map((c) => c.id).join(", "));
+    // and one meaning card, because that one hides the kana and so asks the
+    // same question of both readings (SAK-459)
+    assert.equal(cards.filter((c) => c.id.includes("/meaning")).length, 1);
     for (const card of readings) {
       const other = card.id.includes("にち") ? "ひ" : "にち";
       assert.ok(!matchesKey(card.key, other), `${card.id} should not take ${other}`);
@@ -501,5 +504,112 @@ describe("the kana under a word she is supposed to know (SAK-429)", () => {
     const card = cardFor(asked("word:行く/reading"), "word:行く/reading");
     assert.match(card.prompt.context ?? "", /to go/);
     assert.ok(!card.hint?.text);
+  });
+});
+
+describe("a word read several ways that mean different things (SAK-459)", () => {
+  const cardsOf = (facts: readonly string[], opts = {}) => quizCards(emptyHistory(), facts as FactId[], NOW, opts);
+  const meaningCard = (keb: string) => cardsOf(wordUnitFacts(keb).map((u) => u.meaning))[0];
+
+  /** Every word written one way and read several ways that mean different
+   * things: 後 is あと, behind, and ご, after. The walk the widening has to
+   * hold for, and the measurement the card asked for. */
+  const spread = VOCAB.filter((w) => {
+    const units = wordUnitFacts(w.keb);
+    return units.length > 1 && units.some((u) => {
+      const sameSense = new Set(interchangeableReadings(u.meaning));
+      return units.some((v) => v.unit.reb !== u.unit.reb && !sameSense.has(v.unit.reb));
+    });
+  });
+
+  it("takes what any of 後's readings mean, since the card hid which one it asked", () => {
+    // Sam approved this on 2026-09-17. With the kana behind the Hint button
+    // the card shows 後 and asks what it means, so a learner who reads it as
+    // ご and types "after" gave a right answer to the question on the screen.
+    const card = meaningCard("後");
+    for (const meaning of ["behind", "rear", "after"]) {
+      assert.ok(matchesKey(card.key, meaning), `後 should take ${meaning}`);
+    }
+    assert.ok(!matchesKey(card.key, "before"), "and a wrong answer is still wrong");
+  });
+
+  it("says which reading means which, the one it asked about first", () => {
+    const card = meaningCard("後");
+    assert.equal(card.answer, "behind");
+    assert.equal(card.readings, "あと: behind · ご: after");
+  });
+
+  it("never offers another reading's meaning as a wrong choice", () => {
+    // It would be a right answer marked wrong: the card takes "after" typed.
+    for (const word of spread) {
+      for (const unit of wordUnitFacts(word.keb)) {
+        const card = cardsOf([unit.meaning])[0];
+        if (!card) continue;
+        const elsewhere = new Set(
+          wordUnitFacts(word.keb)
+            .filter((u) => u.unit.reb !== unit.unit.reb)
+            .flatMap((u) => u.unit.glosses.map((g) => g.toLowerCase())),
+        );
+        for (const option of card.options) {
+          if (option.id === unit.meaning) continue;
+          assert.ok(!elsewhere.has(option.label.toLowerCase()), `${unit.meaning} offered ${option.label}`);
+        }
+        // and the board is still a board
+        assert.ok(card.options.length > 1, `${unit.meaning} was left one choice`);
+      }
+    }
+  });
+
+  it("takes every one of them on every word that is read more than one way", () => {
+    // 64 words in the vocabulary, 135 meaning cards between them.
+    assert.equal(spread.length, 64, "words written one way and read several ways that differ");
+    let cards = 0;
+    for (const word of spread) {
+      for (const unit of wordUnitFacts(word.keb)) {
+        const card = cardsOf([unit.meaning])[0];
+        if (!card) continue;
+        cards++;
+        assert.ok(card.readings, `${unit.meaning} kept its own key`);
+        for (const other of wordUnitFacts(word.keb)) {
+          for (const meaning of other.unit.glosses) {
+            assert.ok(matchesKey(card.key, meaning), `${unit.meaning} rejected ${meaning}`);
+          }
+        }
+      }
+    }
+    assert.equal(cards, 135);
+  });
+
+  it("asks it once, since with the kana hidden the cards are the same question", () => {
+    // 後's two meaning cards show the same glyph, ask the same words and take
+    // the same answers, so the deck keeps one of them (SAK-393's rule).
+    const cards = cardsOf(wordUnitFacts("後").map((u) => u.meaning));
+    assert.equal(cards.length, 1, cards.map((c) => c.id).join(", "));
+  });
+
+  it("leaves 九 alone, whose readings mean the same thing", () => {
+    const card = meaningCard("九");
+    assert.equal(card.readings, undefined);
+    assert.ok(!matchesKey(card.key, "after"));
+  });
+
+  it("leaves the reading cards alone, since they show the meaning they ask about", () => {
+    const cards = cardsOf(wordUnitFacts("後").map((u) => u.reading!).filter(Boolean));
+    assert.equal(cards.length, 2);
+    for (const card of cards) {
+      assert.equal(card.readings, undefined);
+      assert.ok(card.prompt.context, `${card.id} asked 後 with no meaning on it`);
+    }
+    const ato = cards.find((c) => c.answer === "あと")!;
+    assert.ok(!matchesKey(ato.key, "ご"), "あと's card is not answered by ご");
+  });
+
+  it("leaves a card asked by ear alone, since the reading it asks about is played", () => {
+    const heard = cardsOf([wordUnitFacts("後")[0].meaning], { audio: true, everyWay: true })
+      .find((c) => c.listen)!;
+    assert.equal(heard.listen, "あと");
+    assert.equal(heard.readings, undefined);
+    assert.ok(matchesKey(heard.key, "behind"));
+    assert.ok(!matchesKey(heard.key, "after"), "it played あと, so あと is what it asked about");
   });
 });

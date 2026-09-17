@@ -26,7 +26,8 @@ import { kanjiRow, KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { RADICAL_SUBJECT } from "@/data/radicals";
-import { isWordReadingFact, VOCAB, VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
+import { isWordReadingFact, VOCAB, VOCAB_SUBJECT, vocabRow, wordReadingUnit, wordUnitFacts, type WordUnitFacts } from "@/data/vocab";
+import { norm } from "@/lib/en-text";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, type Kind } from "@/lib/library/entries";
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
@@ -226,6 +227,61 @@ function withReadings(key: AnswerKey, readings: readonly string[]): AnswerKey {
   return { ...key, produce: takes, loose: takes, typo: [] };
 }
 
+/**
+ * The ways a word is read when they mean DIFFERENT things, the one the card
+ * asked about first, or nothing (SAK-459).
+ *
+ * Since SAK-429 a kanji word's meaning card hides its kana, so 後 is shown on
+ * its own and the card asks what it means. But 後 is あと, behind, and ご,
+ * after, and with the kana hidden the card never said which of them it meant:
+ * a learner who reads the glyph as ご and types "after" on the あと card is
+ * marked wrong for a right answer. 64 words in the vocabulary are written one
+ * way and read several ways that mean different things.
+ *
+ * So such a card takes the meaning of ANY of the word's readings, and the
+ * reveal lists them with their meanings so it still teaches which is which.
+ * A word whose readings all mean the same thing (九 is きゅう and く, both
+ * nine) is not ambiguous and is left alone: `interchangeableReadings` is the
+ * engine's own answer to which readings share a sense (SAK-393).
+ */
+function readingsMeaningDifferently(fact: FactId): readonly WordUnitFacts[] {
+  const asked = wordReadingUnit(fact);
+  if (!asked) return [];
+  const units = wordUnitFacts(asked.keb);
+  if (units.length < 2) return [];
+  const sameSense = new Set(interchangeableReadings(fact));
+  if (units.every((u) => sameSense.has(u.unit.reb))) return [];
+  // the asked reading first, so the reveal opens on the one the card meant
+  return [
+    ...units.filter((u) => u.unit.reb === asked.unit.reb),
+    ...units.filter((u) => u.unit.reb !== asked.unit.reb),
+  ];
+}
+
+/** A key that also takes what the word's other readings mean (SAK-459). Each
+ * reading's own key, unioned, so every card accepts exactly what the card for
+ * that reading would have accepted, synonyms and typos and all. */
+function withMeanings(key: AnswerKey, units: readonly WordUnitFacts[]): AnswerKey {
+  const loose = new Set(key.loose ?? []);
+  const typo = new Set(key.typo ?? []);
+  const produce = new Set(key.produce ?? []);
+  for (const unit of units) {
+    const other = answerKeyFor(unit.meaning, "jp2en");
+    for (const a of other.loose ?? []) loose.add(a);
+    for (const a of other.typo ?? []) typo.add(a);
+    for (const a of other.produce ?? []) produce.add(a);
+  }
+  return { ...key, loose: [...loose], typo: [...typo], produce: [...produce] };
+}
+
+/** The readings and their meanings as the reveal says them: "あと: behind ·
+ * ご: after", the asked one first. One meaning each, the one the card itself
+ * would have revealed, because every meaning of every reading on one line is
+ * a paragraph rather than a line. */
+function readingsLine(units: readonly WordUnitFacts[]): string {
+  return units.map((u) => `${u.unit.reb}: ${u.unit.glosses[0]}`).join(" · ");
+}
+
 /** What a card asks, for telling two cards that ask it apart from two that do
  * not: the thing it is about, the direction, and what it will accept. Two
  * facts of one entry that take the same answers are one question. */
@@ -360,8 +416,23 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       ? construction.reading
       : alsoRead.length > 1 ? alsoRead.join(" · ") : revealFor(fact, dir, ctx);
     const inKana = typedCard && (!!construction || answerIsJapanese(fact, dir));
-    const key = alsoRead.length > 1 ? withReadings(answerKeyFor(fact, dir, ctx), alsoRead) : answerKeyFor(fact, dir, ctx);
-    const question = questionAsked(entryOf(fact), dir, key);
+    const ownKey = alsoRead.length > 1 ? withReadings(answerKeyFor(fact, dir, ctx), alsoRead) : answerKeyFor(fact, dir, ctx);
+    // And a card with the kana hidden takes the meaning of any of the word's
+    // readings (SAK-459), since it never said which of them it was asking
+    // about. Only that card: one whose reading is on the screen or in the ear
+    // (a listening card, a kanji's reading anchored in a word, a kana word)
+    // asked about a reading the learner can see, so it keeps its own key.
+    const spread = readingHint ? readingsMeaningDifferently(fact) : [];
+    const wideKey = spread.length ? withMeanings(ownKey, spread) : ownKey;
+    // Nor does its board offer another reading's meaning as a wrong choice:
+    // the card would take it typed and mark it wrong picked.
+    const elsewhere = new Set(spread.slice(1).flatMap((u) => u.unit.glosses.map(norm)));
+    const board = elsewhere.size ? options.filter((op) => op.id === fact || !elsewhere.has(norm(op.label))) : options;
+    // The widened key is what the deck tells two cards apart by, so 後's two
+    // meaning cards are one question now and the deck asks it once (SAK-393's
+    // rule): with the kana hidden they show the same glyph, ask the same
+    // words and take the same answers.
+    const question = questionAsked(entryOf(fact), dir, wideKey);
     if (asked.has(question)) continue;
     asked.add(question);
     const rule = readingRuleFor(fact, item);
@@ -401,7 +472,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // What answers this card, worked out here so the browser can grade
       // without the engine and its tables (SAK-380). It is the key for THIS
       // showing: the rolled count, or the verb the pattern was built on.
-      key,
+      key: ownKey,
       // the vehicle rides back with the answer, so the recorder knows the
       // verb the pattern was asked on
       meta: {
@@ -410,7 +481,10 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
         ...(vehicle ? { vehicle: vehicle.surface, vehicleKana: vehicle.kana, vehicleCls: vehicle.cls ?? "", vehicleKnown: vehicle.known ? "1" : "" } : {}),
       },
     };
-    cards.push(card);
+    // The card as written takes any of the readings' meanings and says which
+    // is which (SAK-459); the twin asked by ear plays the reading, so it asks
+    // about that one reading and is the card above, own key and all.
+    cards.push(spread.length ? { ...card, key: wideKey, readings: readingsLine(spread), options: board } : card);
     if (opts.everyWay && listen !== undefined) cards.push(heardTwin(card, listen));
   }
   return cards;
@@ -576,10 +650,13 @@ export function cardsFor(history: HistoryFile, ids: readonly string[], now = Dat
     }
     const heard = /^(.+)#listen$/.exec(id);
     if (heard) {
-      const fact = heard[1] as FactId;
-      const [written] = quizCards(history, [fact], now);
-      const listen = written ? listenTextFor(fact, written.item) : undefined;
-      if (written && listen !== undefined) out.push(heardTwin(written, listen));
+      // Dealt the way a lesson deals it, and the one by ear taken out of the
+      // pair, rather than built a second way here: a card asked by ear is the
+      // written card with its sound, and what the written card takes is
+      // decided in one place (SAK-459).
+      const deck = quizCards(history, [heard[1] as FactId], now, { audio: true, everyWay: true });
+      const twin = deck.find((c) => c.id === id);
+      if (twin) out.push(twin);
       continue;
     }
     out.push(...quizCards(history, [id as FactId], now));

@@ -195,6 +195,14 @@ describe("which spelling the reveal draws large (SAK-440)", () => {
     assert.deepEqual(line.note, { before: "Also written ", form: "きゅう", after: "." });
   });
 
+  it("calls nothing a synonym on a card that took another reading's meaning", () => {
+    // 後 is あと, behind, and ご, after, and with the kana hidden the card
+    // takes either (SAK-459). "Also: behind" over the word "after" would call
+    // them the same thing; the readings line under it says which is which.
+    const line = answerLine(asked({ answer: "behind", answerIs: "meaning", readings: "あと: behind · ご: after" }), gave(["after"]));
+    assert.deepEqual(line, { said: "after" });
+  });
+
   it("leaves a picked answer alone: a tile carries the card's own wording", () => {
     const board = asked({ answer: "a", typed: false, options: [{ id: "o0", label: "a", jp: false }, { id: "o1", label: "e", jp: false }] });
     assert.deepEqual(answerLine(board, gave(["a"], { grade: "help", narrowed: true })), { said: "a" });
