@@ -45,311 +45,84 @@
 // the two callers).
 
 import { pitchPatternForLength } from "@/lib/pitch";
-import { toKatakana } from "@/lib/romaji";
 import {
   correctSentencePitch,
   type AccentPhraseLike,
 } from "@/lib/sentence-pitch";
+import speechOverrides from "@/data/generated/speech-overrides.json" with { type: "json" };
 
-// Individual WORD readings (as opposed to the single bare kana glyph below)
-// where VOICEVOX's own text analyzer (OpenJTalk) mis-segments the hiragana
-// reading, confirmed live (SAK-215). This is NOT applied blanket to every
-// reading that passes through this path — an early version of this fix tried
-// exactly that (unconditional hiragana→katakana for every reading) and it
-// was WRONG: こんにちは/こんばんは are genuinely, correctly read コンニチワ/
-// コンバンワ by OpenJTalk's hiragana-mode analysis (は as a fossilized topic
-// particle is really pronounced わ there), and forcing katakana input breaks
-// them (コンニチハ literal, verified live). A blanket rule can't tell "OpenJTalk
-// is wrong" (八/はち) apart from "OpenJTalk is right about a real exception"
-// (こんにちは) from the mora text alone — both LOOK like a は→わ "mismatch."
+// WHAT TEXT ACTUALLY REACHES THE ENGINE, AND WHY IT IS NOT ALWAYS THE READING
+// ============================================================================
+// The app speaks a word from its kana reading, and bare kana is the input
+// VOICEVOX's text analyzer (OpenJTalk) is worst at. It reads a は or へ inside
+// a reading as a particle (はちがつ comes out ワチガツ), drops a consonant
+// outright (しひ comes out シイ), cuts a word short (せんえんさつ comes out
+// センエンサッ), and leaves a long vowel literal or smooths one that should
+// stay (せんせい comes out センセイ where a speaker says センセエ; かこう comes
+// out カコオ where 囲う's う is the verb's own ending).
 //
-// The mechanical test that DOES tell them apart: does the SAME word, spelled
-// with its real KANJI and dropped into a trivial sentence (`{keb}です`), still
-// analyze the target syllable as わ/え? A kanji spelling anchors OpenJTalk's
-// dictionary lookup, so context reliably resolves ordinary words to their
-// correct reading (verified live: これは八です → コレワハチデス, はちです →
-// ハチデス — even bare hiragana + a trailing copula is enough once there's
-// SOME context) — it's only the fully bare, context-free 2-character reading
-// `synthesizeAtDownstep` actually sends that OpenJTalk mis-segments. A
-// genuine lexicalized exception stays わ/え even WITH context (実は → verified
-// live ジツワイソガシイデス "実は忙しいです"; 願わくは → ネガワクワハレテホシイ
-// "願わくは晴れてほしい" — both still わ), because their わ-pronunciation is a
-// fact about that word, not an artifact of missing context.
+// So the reading is not always what gets sent. `speech-overrides.json` says,
+// for each reading that needs one, the text to send instead: a katakana twin,
+// a form with the long vowel spelled out, or the word's kanji. It is generated
+// by scripts/build-speech-overrides.mjs, which asks the engine what it will say
+// before it says it (POST /audio_query reports the exact moras) and keeps only
+// a text the engine gets right. That script's own header explains how the
+// expected sounds are worked out and what it refuses to guess; this file just
+// applies the answer.
 //
-// So the actual process for every entry below: pulled every reading in the
-// actually-seeded pitch word set (scripts/seed-voice-audio.mjs's
-// pitchItems(), ~8,000 distinct readings) where a bare hiragana query and a
-// bare katakana query disagree AND the disagreement is specifically a は→わ
-// or へ→え swap (the same class of error BARE_KANA_PARTICLE_MISREADING below
-// already fixes for a single bare glyph); EXCLUDED anything with no kanji
-// spelling (keb === reb — nothing here qualifies, but that's the line a
-// legitimate こんにちは-type exception would need to cross to even be
-// considered); then ran the `{keb}です` context test on every remaining
-// candidate. 実は and 願わくは kept わ under context and were dropped as
-// genuine exceptions. 栄え (はえ, a rarer reading of 栄える-family kanji) was
-// dropped as UNVERIFIABLE — its context test resolved to a different, more
-// common reading of the same kanji (さかえ) entirely, not a confirmation or
-// denial of the はえ reading this app actually wants, so there is no honest
-// mechanical answer for it either way; it is left unfixed rather than guessed.
-// Every reading below held its は/へ under context and is a confirmed bug.
+// THIS IS NOT A BLANKET HIRAGANA-TO-KATAKANA SWAP
+// ================================================
+// An early version of this fix (SAK-215) tried exactly that, and it was WRONG:
+// こんにちは/こんばんは are genuinely, correctly read コンニチワ/コンバンワ by
+// OpenJTalk's hiragana-mode analysis (は as a fossilized topic particle really
+// is pronounced わ there), and forcing katakana input breaks them (コンニチハ
+// literal, verified live). A blanket rule cannot tell "OpenJTalk is wrong"
+// (八/はち) apart from "OpenJTalk is right about a real exception" (こんにちは)
+// from the mora text alone, because both LOOK like a は→わ mismatch.
+//
+// The mechanical test that DOES tell them apart, and that the generator is
+// built on: does the SAME word, spelled with its real KANJI, still analyze the
+// target syllable as わ/え? A kanji spelling anchors OpenJTalk's dictionary
+// lookup, so context resolves ordinary words to their correct reading, while a
+// genuine lexicalized exception stays わ even with the kanji there (実は →
+// ジツワ, verified live) because its わ is a fact about that word. こんにちは
+// has no kanji spelling in the corpus at all, so nothing ever overrules the
+// engine's own reading of it, and it keeps コンニチワ.
+//
+// WHAT THE GENERATED TABLE REPLACED
+// ==================================
+// SAK-215/218/219/243 built this list by hand, one reading at a time, and got
+// to 95 entries across four passes: the は/へ misreadings, a word-final mora
+// coming out voiceless (さつ), う-ending verbs read with an あ vowel, and 57
+// long-vowel merges. Two clusters were written off there as unfixable, and the
+// generated table fixes both. The へ+い words (へいえき, へいれつ, せいへき),
+// where the old katakana swap dropped the ヘ and only a spelled-out long vowel
+// or the kanji keeps it, and the eight う-ending verbs (囲う, 沿う, 問う …),
+// where only the kanji spelling keeps the ending. Every one of those 95
+// hand-verified readings is still overridden, and tts-synth.test.ts pins them.
+//
+// Nineteen of the 95 now send a different text than the hand list did, for the
+// same sounds: a katakana twin that made the engine break the word into two
+// accent phrases (ホントウ comes out ホン + トオ, a pause in the middle of
+// 本当) loses to a spelling that keeps the word in one piece.
+//
 // Exported (SAK-217) so scripts/invalidate-stale-pitch-clips.mjs can compute
-// exactly which already-cached Storage clips were synthesized under the old,
-// broken pronunciation and need to be deleted before a re-seed can fix them —
-// re-typing this list a second time in the cleanup script would risk it
-// silently drifting from the one this file actually applies.
-//
-// SAK-218 generalized this same mechanical test PAST the は/へ pattern: for
-// every distinct reading in the seeded pitch word set with a kanji spelling
-// (scripts/seed-voice-audio.mjs's pitchItems(), cross-referenced against
-// VOCAB for keb !== reb, same field-level check as above), compared the bare
-// reading's own hiragana analysis against BOTH (a) that reading's bare
-// KATAKANA analysis (toKatakana(reading) — a literal, no-particle-guessing
-// per-character reading, same oracle BARE_KANA_PARTICLE_MISREADING already
-// trusts below) and (b) the `{keb}です` context analysis, with no pre-filter
-// to any specific character. 7,880 distinct readings tested; 893 showed ANY
-// disagreement between bare-hiragana and kanji-context. The overwhelming
-// majority of those 893 were noise: 76 were the context template picking a
-// different, unintended reading of an ambiguous kanji spelling entirely
-// (e.g. この頃 resolving to コノコロデス instead of コノゴロデス — 頃 genuinely
-// has both readings; not a bare-reading bug) — unverifiable by this method
-// and left alone, same discipline as 栄え below. The rest — roughly 800 —
-// were long-vowel realization noise (おう/えい sequences alternating between
-// their literal moras and a merged long vowel, e.g. あっとう vs アットオ):
-// checked directly against the engine's own vowel-phoneme field (not just
-// mora text) and confirmed REAL at the phoneme level for several samples,
-// but the merge/no-merge direction flips inconsistently per word — some
-// words merge in hiragana bare and not katakana, others the reverse
-// (えいきょう vs めんどう, verified live) — with no reliable "hiragana is
-// wrong" story the way は/へ has one, and no way to confirm audibility
-// without literally listening. Left unfixed as unverified noise, matching
-// this ticket's own instruction not to count every disagreement as a bug.
-//
-// What was left after both filters: exactly 8 new confirmed bugs, all one
-// shared failure mode — a word-final bare mora that should carry a real
-// vowel comes out either voiceless/dropped (っ with no vowel: さつ-family)
-// or with the WRONG vowel quality entirely (う-ending verbs read with an
-// あ-vowel: つかう/あらう) — verified via BOTH toKatakana AND `{keb}です`
-// agreeing on the correct reading against the broken bare hiragana one,
-// same two-witness confirmation は/へ below already relies on:
-//   さつ 冊/札 (also 銃殺/毒殺/入札/分冊/競争入札, all share this exact
-//     failure): bare "さつ" analyzes as ["サ","ッ"] — a geminate stop with NO
-//     vowel, i.e. the word gets truncated/cut off; toKatakana("サツ") and
-//     "冊です" both correctly analyze as ["サ","ツ"]. Two different VOCAB
-//     words (冊 counter, 札 "bill") share this exact reading+downstep slot
-//     (pitchItems() dedup) — no conflict, both want サツ, neither has any
-//     reason to want the truncated form.
-//   つかう 使う "to use": bare analyzes as ["ツ","カ","ア"] — the dictionary-
-//     form verb ending う is read as あ, not う. toKatakana("ツカウ") and
-//     "使うです" both correctly give ["ツ","カ","ウ"].
-//   あらう 洗う "to wash": same failure as つかう, same fix (アラア → アラウ,
-//     confirmed via both toKatakana and "洗うです").
-// Every entry below held its bug under BOTH the katakana oracle and kanji
-// context — the same double-confirmation は/へ's 26 entries already use.
-//
-// SAK-243 re-ran this exact three-signal test (bare hiragana vs. toKatakana
-// vs. `{keb}です`) live against the actually-seeded pitch reading set
-// (scripts/seed-voice-audio.mjs's pitchItems(), same population as SAK-218),
-// this time specifically targeting the "long-vowel realization noise" SAK-218
-// left unfixed: cases where bare hiragana keeps an おう/よう sequence literal
-// while BOTH toKatakana and kanji-context agree it should merge to a long
-// vowel (おうこく "should" sound オオコク, not the literal オウコク bare hiragana
-// sends) — or, for a handful of words, the reverse: bare hiragana wrongly
-// merges a sequence toKatakana/context both keep literal (こうり "retail" as
-// コウリ, not the merged コオリ that sounds like 氷 "ice"). 57 readings held
-// this exact two-witness confirmation with no conflicting sense.
-//
-// Two more were found holding this same shape but were DROPPED rather than
-// added, because each reading is shared by more than one VOCAB sense that
-// want OPPOSITE pronunciations — the same conflict SAK-243's audit already
-// flagged for かこう (囲う vs. 下降/加工/河口) and left unresolved rather than
-// guessed:
-//   やとう: 野党 "opposition party" wants the merged ヤトオ (confirmed via
-//     toKatakana + context); 雇う "to employ" is a godan verb and wants the
-//     literal ヤトウ (confirmed via three separate real sentences: 雇うです,
-//     彼を雇う, 人を雇うことにした — all ヤトウ, zero exceptions). One shared
-//     reading string can't satisfy both; fixing one regresses the other, so
-//     both are left exactly as bare hiragana already renders them (today's
-//     literal ヤトウ happens to already match the verb, at the noun's expense
-//     — no regression either way from leaving it alone).
-//   よう: 用 "business/task" wants the merged ヨオ; 酔う "to get drunk" is
-//     another godan verb and wants the literal ヨウ (same three-sentence
-//     confirmation as 雇う above). Same conflict, same call: left untouched.
-//
-// A separate cluster SAK-243's audit also confirmed live — bare へ+い words
-// (へいき, へいや, かくへいき, せいへき, へいえき, へいれつ, and one more) —
-// is NOT included below despite being flagged as a confirmed bug, because
-// THIS FILE'S OWN FIX MECHANISM CANNOT CORRECT IT: the only tool this map has
-// is swapping in toKatakana(reading), but audio_query on ANY katakana or
-// katakana-like spelling of these words (toKatakana's plain output, or even a
-// hand-typed katakana string with the intended long vowel already spelled
-// out, e.g. "ヘエキ") independently confirmed to drop the ヘ consonant
-// entirely (audio_query("ヘエキ") → エ,エ,キ, verified live) — worse than
-// today's unfixed bare-hiragana behavior, which at least keeps the correct
-// consonant (へいき bare → ヘ,イ,キ; only the vowel is left non-naturalized,
-// the same open naturalization question as the separate 628-word pending
-// bucket this audit flagged as a product decision, not a bug). Only kanji-in-
-// context input produces the fully correct ヘ,エ,キ, and this synthesis path
-// only ever sends a bare reading, never kanji, to keep the mora count this
-// code's pitch-pattern overlay depends on from drifting off the word's own
-// taught reb (see this file's synthesizeWordWav doc comment). Left unfixed;
-// needs either a different fix mechanism or a product call, not a listing
-// here. 栄え(はえ) is excluded from this batch too, per the separate
-// still-open "こう and はえ" word-identity ticket referenced by SAK-243.
-export const CONFIRMED_BAD_READINGS: readonly string[] = [
-  "はち", // 八 "eight" (SAK-215's reported bug), also 鉢 "bowl" / 蜂 "bee".
-  "は", // 歯 "tooth", also 葉 "leaf".
-  "はは", // 母 "mother".
-  "はで", // 派手 "flashy".
-  "はば", // 幅 "width".
-  "はだ", // 肌 "skin".
-  "はてる", // 果てる "to come to an end".
-  "はやす", // 生やす "to grow (hair/beard)".
-  "はやめる", // 早める "to hasten".
-  "はきょく", // 破局 "breakup/catastrophe".
-  "はいこう", // 廃坑 "abandoned mine".
-  "はくがく", // 博学 "erudition".
-  "はきもの", // 履物 "footwear".
-  "はたいろ", // 旗色 "how the battle is going".
-  "はなしごえ", // 話し声 "the sound of talking".
-  "はみがき", // 歯磨き "toothbrushing".
-  "はブラシ", // 歯ブラシ "toothbrush".
-  "はっしょう", // 発症 "onset (of symptoms)".
-  "しはい", // 支配 "control/domination".
-  "このは", // 木の葉 "leaves of a tree".
-  "たいはいてき", // 退廃的 "decadent".
-  "へいはつ", // 併発 "co-occurrence (of symptoms)".
-  "へいこう", // 平衡 "equilibrium".
-  "へいきんてき", // 平均的 "average".
-  "いどうへいきん", // 移動平均 "moving average".
-  "ふこうへい", // 不公平 "unfairness".
-  // SAK-218's new confirmed bugs (see this comment block's header for the
-  // broader method):
-  "さつ", // 冊 "counter for bound volumes", also 札 "bill/note".
-  "つかう", // 使う "to use".
-  "じゅうさつ", // 銃殺 "shooting to death" — same さつ-final failure.
-  "あらう", // 洗う "to wash".
-  "どくさつ", // 毒殺 "poisoning to death" — same さつ-final failure.
-  "にゅうさつ", // 入札 "bid/tender" — same さつ-final failure.
-  "ぶんさつ", // 分冊 "separate volume" — same さつ-final failure.
-  "きょうそうにゅうさつ", // 競争入札 "competitive bidding" — same さつ-final failure.
-  // SAK-243's new confirmed bugs (see this comment block's header for the
-  // broader method) — long-vowel merges that bare hiragana gets literal and
-  // both toKatakana and kanji-context agree should merge, unless noted:
-  "バベルのとう", // バベルの塔 "Tower of Babel".
-  "あっとう", // 圧倒 "to overwhelm".
-  "いちょう", // 胃腸 "stomach and intestines".
-  "おうだんほどう", // 横断歩道 "pedestrian crossing".
-  "おうじゃ", // 王者 "king/monarch".
-  "おうこく", // 王国 "kingdom".
-  "おうじょ", // 王女 "princess".
-  "おうさま", // 王様 "king".
-  "かんようく", // 慣用句 "idiom".
-  "きっちょう", // 吉兆 "lucky omen".
-  "ぎゃくこうか", // 逆効果 "opposite effect".
-  "ぐうぞう", // 偶像 "idol/image".
-  "げきどう", // 激動 "violent shock/turmoil".
-  "けんこうてき", // 健康的 "healthy".
-  "こうきょうきょく", // 交響曲 "symphony".
-  "さいしょうげん", // 最小限 "minimum".
-  "しつぎょう", // 失業 "unemployment".
-  "しゃこうてき", // 社交的 "sociable".
-  "しょうきょくてき", // 消極的 "negative/passive".
-  "しょうひしゃ", // 消費者 "consumer".
-  "ぞう", // 象 "elephant", also 臓 "viscera" — both senses agree, verified.
-  "せんとう", // 戦闘 "battle", also 銭湯 "public bath" / 先頭 "front" — all
-  // three senses agree, verified.
-  "せんとうき", // 戦闘機 "fighter aircraft".
-  "そうおう", // 相応 "suitable".
-  "ぞうり", // 草履 "zori sandals".
-  "ちょう", // 兆 "trillion", also 庁 "government office" / 腸 "intestine" /
-  // 超 "super-" — all four senses agree, verified.
-  "ちょうみりょう", // 調味料 "seasoning".
-  "ちょうとっきゅう", // 超特急 "super express".
-  "でんわちょう", // 電話帳 "phone book".
-  "とうおう", // 東欧 "Eastern Europe".
-  "とうざい", // 東西 "east and west".
-  "とうわく", // 当惑 "bewilderment".
-  "どうぞう", // 銅像 "bronze statue".
-  "のうどうてき", // 能動的 "active".
-  "はっしょうち", // 発祥地 "birthplace/cradle".
-  "ひろうえん", // 披露宴 "wedding reception".
-  "ひょうざん", // 氷山 "iceberg".
-  "ひょうてんか", // 氷点下 "below freezing".
-  "ただよう", // 漂う "to drift" — a godan verb, but this one's own literal
-  // vowel IS the bug (bare merges it away); toKatakana/context both keep it.
-  "ひょうちゃく", // 漂着 "drifting ashore".
-  "ひょうり", // 表裏 "front and back".
-  "ふけんこう", // 不健康 "poor health".
-  "ふそうおう", // 不相応 "unsuited".
-  "ふとう", // 不当 "unfair".
-  "ふへんふとう", // 不偏不党 "impartiality".
-  "ふうとう", // 封筒 "envelope".
-  "ほくほくとう", // 北北東 "north-northeast".
-  "ほんとう", // 本当 "truth/reality".
-  "むじんぞう", // 無尽蔵 "inexhaustible supply".
-  "めんどう", // 面倒 "trouble/bother".
-  "よびこう", // 予備校 "cram school".
-  "ようしゅ", // 洋酒 "Western liquor".
-  "なんとう", // 南東 "southeast".
-  "こうり", // 小売 "retail" — reversed direction: bare wrongly MERGES to
-  // コオリ (sounds like 氷 "ice"); toKatakana/context both keep it literal.
-  "ほうれんそう", // ほうれん草 "spinach".
-  "ちょうほんにん", // 張本人 "ringleader".
-  "メモちょう", // メモ帳 "memo pad".
-  // Godan verbs whose dictionary-form ending is wrongly merged into the
-  // preceding vowel by BOTH bare hiragana and toKatakana; only kanji-context
-  // (confirmed via real sentences, not just {keb}です) keeps the literal
-  // ending real verb morphology requires — the "majority" of two witnesses is
-  // the wrong one here, unlike every other entry in this file. Live-verified
-  // that the katakana swap every OTHER entry uses is a no-op for these four
-  // specifically (audio_query("アラソウ") still comes back
-  // ["ア","ラ","ソ","オ"], byte-identical to the bare-hiragana bug) — see
-  // VERB_KANJI_OVERRIDE below for the fix that actually works for them:
-  "あらそう", // 争う "to compete".
-  "さそう", // 誘う "to invite".
-  "つくろう", // 繕う "to mend".
-  "のろう", // 呪う "to curse".
-];
+// exactly which already-cached Storage clips were synthesized under the old
+// pronunciation and need deleting before a re-seed can fix them. Re-typing
+// this list a second time in the cleanup script would risk it silently
+// drifting from the one this file actually applies.
+export const CONFIRMED_BAD_READINGS: readonly string[] = Object.keys(speechOverrides);
 
-// The four godan-verb entries just above whose katakana form is a
-// live-verified no-op (VOICEVOX's own long-vowel normalization still merges
-// the ending even when the input is already katakana). Their real kanji
-// spelling is what finally produces the correct ending — live-verified:
-// audio_query("争う") returns ["ア","ラ","ソ","ウ"], the correct 4 morae, the
-// SAME mora count synthesizeAtDownstep already expects for this reading (its
-// downstep in the pitch dataset was computed against that count), so this
-// doesn't disturb the pitch-pattern-by-mora-index overlay. Each of these four
-// has exactly one common kanji spelling — none of the heteronym risk a
-// general kana→kanji substitution would carry for most readings, which is
-// why this file otherwise never sends kanji (see readingForMisreadingFix's
-// own comment on that general rule).
-const VERB_KANJI_OVERRIDE: ReadonlyMap<string, string> = new Map([
-  ["あらそう", "争う"],
-  ["さそう", "誘う"],
-  ["つくろう", "繕う"],
-  ["のろう", "呪う"],
-]);
-
-// Each bad reading's corrected form is DERIVED rather than hand-typed a
-// second time, so the fix stays exactly what was verified live: its katakana
-// twin via toKatakana for the general case (feed the SAME reading back in
-// katakana), or its kanji spelling via VERB_KANJI_OVERRIDE for the four
-// entries above where katakana alone doesn't fix it. Adding a newly-confirmed
-// bad reading only ever means adding one string to the list above (plus, in
-// the rare VERB_KANJI_OVERRIDE-style case, one entry to that map).
 const WORD_READING_MISREADING: ReadonlyMap<string, string> = new Map(
-  CONFIRMED_BAD_READINGS.map((reading) => [
-    reading,
-    VERB_KANJI_OVERRIDE.get(reading) ?? toKatakana(reading),
-  ]),
+  Object.entries(speechOverrides),
 );
 
-/** Swap an EXACT, individually-confirmed-bad word reading for its katakana
- * form before it reaches VOICEVOX. Never a blanket hiragana→katakana
- * conversion (see WORD_READING_MISREADING's comment for why that broke
- * こんにちは-type words) — only the specific readings verified live to be
- * mis-segmented by OpenJTalk get swapped; everything else passes through
- * exactly as VOICEVOX's own hiragana-mode analysis already handles it.
+/** Swap an EXACT word reading for the text that makes VOICEVOX say it right.
+ * Never a blanket hiragana→katakana conversion (see the comment above for why
+ * that broke こんにちは-type words). Only the readings the generator proved
+ * against the live engine get swapped, each for whatever spelling that reading
+ * needs; everything else passes through exactly as VOICEVOX's own hiragana-mode
+ * analysis already handles it.
  *
  * Exported (SAK-219) so every OTHER synthesis path that can send one of these
  * confirmed-bad readings bare and standalone — scripts/seed-voice-audio.mjs's general
@@ -400,7 +173,7 @@ function textForBareKanaFix(text: string): string {
  * one map) keeps each fix's own scope exactly as narrow as it always was:
  * `textForBareKanaFix` only ever matches a single bare は/へ, and
  * `readingForMisreadingFix` is a plain `Map.get` — an EXACT, whole-string
- * match against one of the 34 confirmed-bad readings only, NEVER a substring
+ * match against one of the overridden readings only, NEVER a substring
  * match inside a longer sentence. That distinction matters here specifically:
  * `synthesizeSentenceWav` receives arbitrary text — a full sentence, mixed
  * kanji and kana, or a bare single word — and a real sentence merely
@@ -585,7 +358,7 @@ export async function synthesizeSentenceWav(
   // katakana conversion would get wrong (こんにちは → コンニチワ is a real,
   // correct, lexicalized は→わ exception; forcing katakana input renders it
   // コンニチハ, verified live). Only the bare-glyph case (a Hear button on a
-  // single は/へ) and the 34 confirmed-bad readings matched WHOLE-STRING (a
+  // single は/へ) and the overridden readings matched WHOLE-STRING (a
   // Hear button on exactly one of them, standalone) are unambiguous enough to
   // fix blindly; everything else here is left for OpenJTalk's own judgment,
   // same as before.

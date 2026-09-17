@@ -234,7 +234,7 @@ export const SAK_217_TARGET = Object.freeze({
 // SAK-219 extended SAK-215/218's exact-match katakana fix past the pitch-only
 // path to seed-voice-audio.mjs's general `synthesizeText` AND
 // synthesizeSentenceWav's live /api/tts fallback (src/lib/tts-synth.ts) — so
-// any of the 34 CONFIRMED_BAD_READINGS already bulk-seeded under the general
+// any of the CONFIRMED_BAD_READINGS already bulk-seeded under the general
 // `words`/`sentences`/`kana`/`yomi`/`word-examples`/`grammar-derive` sets (or
 // ever lazily synthesized live through /api/tts's cache-miss fallback) were
 // seeded/cached under the OLD, broken pronunciation — the exact same

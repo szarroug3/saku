@@ -67,8 +67,19 @@ test("a CONFIRMED-bad reading (はち, 八's reported bug) is converted to katak
 
 test("an ORDINARY reading not on the exception list reaches audio_query unchanged, still hiragana", async () => {
   const { queried } = mockVoicevox();
-  await synthesizeWordWav("せんせい", 3, 9002);
-  assert.deepEqual(queried, ["おはようございます", "せんせい"]);
+  await synthesizeWordWav("たべる", 2, 9002);
+  assert.deepEqual(queried, ["おはようございます", "たべる"]);
+});
+
+test("SAK-275: a reading whose long vowel the engine leaves literal (せんせい) is sent with it spelled out", async () => {
+  // Bare せんせい comes back センセイ from the real engine, where a speaker says
+  // センセエ. せんせー is the form the generator found that says it right, and
+  // the katakana twin センセー is NOT: it comes back センセイ, same as the
+  // hiragana. Nothing about this is derivable from the reading's spelling,
+  // which is why the table is generated against the engine rather than by rule.
+  const { queried } = mockVoicevox();
+  await synthesizeWordWav("せんせい", 3, 9014);
+  assert.deepEqual(queried, ["おはようございます", "せんせー"]);
 });
 
 test("another CONFIRMED-bad reading (はは, 母) is also converted; a merely SIMILAR reading (はな) is not", async () => {
@@ -89,9 +100,13 @@ test("SAK-218: a newly-confirmed bad reading (さつ, 冊/札's shared word-fina
 });
 
 test("SAK-218: another newly-confirmed bad reading (つかう, 使う's dictionary-form verb ending misread as あ) is converted; a merely SIMILAR reading (つかれる) is not", async () => {
+  // SAK-275 moved this one from the katakana twin to the kanji: ツカウ does say
+  // the right moras, but the engine breaks it into ツカ + ウ, two accent
+  // phrases, which puts a pause before the verb's own ending. 使う keeps it in
+  // one piece.
   const { queried: q1 } = mockVoicevox();
   await synthesizeWordWav("つかう", 0, 9007);
-  assert.deepEqual(q1, ["おはようございます", "ツカウ"]);
+  assert.deepEqual(q1, ["おはようございます", "使う"]);
 
   mock.restoreAll();
   const { queried: q2 } = mockVoicevox();
@@ -166,7 +181,7 @@ test("SAK-219: a bare CONFIRMED-bad reading (はち) sent to synthesizeSentenceW
 test("SAK-219: another bare CONFIRMED-bad reading (つかう) is converted; an ordinary bare reading (つかれる) is not", async () => {
   const { queried: q1 } = mockVoicevox();
   await synthesizeSentenceWav("つかう", 9010);
-  assert.deepEqual(q1, ["おはようございます", "ツカウ"]);
+  assert.deepEqual(q1, ["おはようございます", "使う"]);
 
   mock.restoreAll();
   const { queried: q2 } = mockVoicevox();

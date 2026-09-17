@@ -578,7 +578,7 @@ async function synthesize(base, speakerId, query) {
  * applies for the pitch path — this general path called `audioQuery` with no
  * correction of any kind before this fix, so any of `words`/`sentences`/
  * `kana`/`yomi`/`word-examples`/`grammar-derive`'s items that happen to be an
- * EXACT match on one of the 34 confirmed-bad readings (はち, つかう, ...) hit
+ * EXACT match on one of the overridden readings (はち, つかう, ...) hit
  * the identical OpenJTalk mis-segmentation bug SAK-215 fixed for the pitch
  * path — confirmed live: `audio_query` on bare "はち" here returns "ワチ",
  * same as it did before SAK-215. `readingForMisreadingFix` is an exact
