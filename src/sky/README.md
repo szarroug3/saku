@@ -5063,3 +5063,9 @@ pass, one of them new: the あ card answered "ah" in a real browser, which is th
 only proof that the spelling survives the trip from the server's key to the
 grading that happens without it. `scripts/unreachable.mjs --list` at zero, and
 `scripts/unused-exports.mjs` at zero on both lists.
+
+## Three say-it lines that the quiz would have marked wrong (SAK-438)
+
+SAK-435 let a kana card take how its sound is spelled in English, and its closing note named the lesson lines that disagreed. す and ス told the learner to say "sue", which the card does not accept; ひ said "he" and み said "me", which are the romaji of へ and め. Sam approved changing them: す and ス say "soo", ひ says "hee", み says "mee", as their katakana twins ヒ and ミ already did. `src/data/mnemonics.ts`, the `sound` field and the accented span of each `analogy`.
+
+A test in `mnemonics.test.ts` now holds every kana's say-it spelling to what its own card accepts: its romaji, the other ways the table writes it (を is "wo" and "o"), or its sound spellings. It found nothing else.

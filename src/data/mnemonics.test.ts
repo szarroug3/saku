@@ -20,6 +20,7 @@ import {existsSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import test from "node:test";
 
+import { CHAR_INDEX, soundSpellingsFor } from "./characters.ts";
 import { MNEMONICS, getMnemonic, kanaScript, type SoundLine } from "./mnemonics.ts";
 
 // All 46 base hiragana — the full set this table now covers.
@@ -283,4 +284,20 @@ test("hiragana を teaches /o/, and its prominent pronunciation never says wo", 
   // `approximate` field, which never fit a character pronounced exactly like お.
   assert.match(m.usage ?? "", /object particle/);
   assert.match(m.usage ?? "", /お/);
+});
+
+// SAK-438: the line that tells a learner how to say a kana must spell the sound
+// the way the quiz will take it. す said "sue", which was marked wrong, and ひ
+// and み said "he" and "me", which are the romaji of two OTHER kana.
+test("a kana's say-it spelling is one its own card accepts", () => {
+  const bad: string[] = [];
+  for (const m of Object.values(MNEMONICS)) {
+    // everything the card takes: the romaji it teaches, the other ways of
+    // writing it (を is "wo" and "o", since it is said like お), and the
+    // sound spellings. Another kana's romaji is never among them, so "he" for
+    // ひ fails here without a second check.
+    const accepted = new Set([m.romaji, ...(CHAR_INDEX[m.glyph]?.r ?? []), ...soundSpellingsFor(m.glyph)]);
+    if (!accepted.has(m.sound)) bad.push(`${m.glyph} says "${m.sound}", which its card does not accept`);
+  }
+  assert.deepEqual(bad, []);
 });

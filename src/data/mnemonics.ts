@@ -719,11 +719,11 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
   す: {
     glyph: "す",
     romaji: "su",
-    sound: "sue",
+    sound: "soo",
     object: "soup",
     analogy: [
       { text: "Say “" },
-      { text: "sue", accent: true },
+      { text: "soo", accent: true },
       { text: "” as in " },
       { text: "sou", accent: true },
       { text: "p." },
@@ -739,11 +739,11 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
   ス: {
     glyph: "ス",
     romaji: "su",
-    sound: "sue",
+    sound: "soo",
     object: "superhero",
     analogy: [
       { text: "Say “" },
-      { text: "sue", accent: true },
+      { text: "soo", accent: true },
       { text: "” as in " },
       { text: "su", accent: true },
       { text: "perhero." },
@@ -1302,11 +1302,11 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
   ひ: {
     glyph: "ひ",
     romaji: "hi",
-    sound: "he",
+    sound: "hee",
     object: "heel",
     analogy: [
       { text: "Say “" },
-      { text: "he", accent: true },
+      { text: "hee", accent: true },
       { text: "” as in " },
       { text: "hee", accent: true },
       { text: "l." },
@@ -1512,11 +1512,11 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
   み: {
     glyph: "み",
     romaji: "mi",
-    sound: "me",
+    sound: "mee",
     object: "musical note, mi",
     analogy: [
       { text: "Say “" },
-      { text: "me", accent: true },
+      { text: "mee", accent: true },
       { text: "” as in do, re, " },
       { text: "mi", accent: true },
       { text: "." },
