@@ -973,6 +973,34 @@ test("a reading with no word behind it says so instead of showing a blank cell",
   await expect(page.getByRole("listitem").filter({ hasText: "no word taught yet" })).toHaveCount(1);
 });
 
+test("a word's example sentence underlines the word itself", async ({ page }) => {
+  // SAK-443. 仕事's sentence, 今から仕事ですよ。, printed plain: the fold said
+  // "In a sentence" and then left the learner to find the word in it. The span
+  // is in the data and the payload used to drop it.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:仕事")}`);
+  await page.getByRole("button", { name: "Open In a sentence" }).click();
+
+  const underlined = page.locator("span.underline").filter({ hasText: "仕事" });
+  await expect(underlined).toHaveCount(1);
+  await expect(underlined).toHaveText("仕事");
+  // the whole sentence is still there around it
+  await expect(page.getByText("今から仕事ですよ。")).toBeVisible();
+
+  // drawn in the accent, the color Sam keeps for the word being pointed at,
+  // and really underlined rather than only carrying the class
+  const drawn = await underlined.evaluate((el) => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--sky-accent)";
+    el.parentElement!.appendChild(probe);
+    const accent = getComputedStyle(probe).color;
+    probe.remove();
+    const style = getComputedStyle(el);
+    return { color: style.color, accent, line: style.textDecorationLine };
+  });
+  expect(drawn.color).toBe(drawn.accent);
+  expect(drawn.line).toContain("underline");
+});
+
 test("the why behind writing early folds open under the card that raises it", async ({ page }) => {
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
   await page.getByRole("button", { name: "Open How it's written" }).click();

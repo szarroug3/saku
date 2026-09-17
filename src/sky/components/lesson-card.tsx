@@ -374,7 +374,9 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
         )}
         {teach?.example && (
           <Fold title="In a sentence">
-            <p className={`font-sky-display text-[17px] text-sky-ink ${japaneseFont(teach.example.jp)}`}>{teach.example.jp}</p>
+            <p className={`font-sky-display text-[17px] text-sky-ink ${japaneseFont(teach.example.jp)}`}>
+              <ExampleSentence jp={teach.example.jp} span={teach.example.span} />
+            </p>
             <p className="mt-1">{teach.example.en}</p>
           </Fold>
         )}
@@ -389,6 +391,24 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
       </div>
 
     </DetailFrame>
+  );
+}
+
+/** The word's own sentence, with the word underlined in the accent (SAK-443).
+ *
+ * The sentence is there to show the word at work, and until now it showed it
+ * hidden: 今から仕事ですよ。printed plain leaves the learner to find 仕事 in
+ * it. The span is the data's, so the underline follows the word as the
+ * sentence inflects it rather than looking for the dictionary spelling, and a
+ * sentence whose word could not be found is still printed, just plain. */
+function ExampleSentence({ jp, span }: { jp: string; span?: readonly [number, number] }) {
+  if (!span || span[0] >= span[1] || span[1] > jp.length) return <>{jp}</>;
+  return (
+    <>
+      {jp.slice(0, span[0])}
+      <span className="text-sky-accent underline underline-offset-4">{jp.slice(span[0], span[1])}</span>
+      {jp.slice(span[1])}
+    </>
   );
 }
 

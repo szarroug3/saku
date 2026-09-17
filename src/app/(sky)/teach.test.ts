@@ -130,6 +130,46 @@ describe("a ずる verb says it is the older spelling", () => {
   });
 });
 
+// THE WORD'S OWN SENTENCE, AND WHERE THE WORD IS IN IT (SAK-443). The payload
+// carried the sentence and dropped the span, so 今から仕事ですよ。printed with
+// nothing marked and the learner had to find 仕事 in it. The span is the data's
+// own (SAK-422 checked every one of them against its word), so all the payload
+// has to do is carry it across.
+describe("a word's example sentence says where the word is", () => {
+  const exampleOf = (glyph: string) => atlasEntryFromHistory(emptyHistory(), `word:${glyph}`, NOW)?.teach?.example;
+
+  it("carries the span beside the sentence", () => {
+    const ex = exampleOf("仕事");
+    assert.ok(ex, "仕事 has no example sentence");
+    assert.ok(ex.span, "仕事's sentence came across without its span");
+    assert.equal(ex.jp.slice(ex.span[0], ex.span[1]), "仕事");
+  });
+
+  it("points at the word as the sentence writes it, however that is inflected", () => {
+    // 2,172 of the spans are the dictionary spelling and 817 are a form of it
+    // (SAK-422), so the underline has to be allowed to be neither the whole
+    // sentence nor exactly the headword
+    const marked = ["仕事", "食べる", "行く", "ある", "包む", "新しい"]
+      .map((glyph) => ({ glyph, ex: exampleOf(glyph) }))
+      .filter(({ ex }) => ex?.span);
+    assert.ok(marked.length > 0, "not one of the sample words came back with a span");
+    for (const { glyph, ex } of marked) {
+      const [a, b] = ex!.span!;
+      assert.ok(a >= 0 && b > a && b <= ex!.jp.length, `${glyph}'s span falls outside its own sentence`);
+      assert.notEqual(ex!.jp.slice(a, b), ex!.jp, `${glyph} underlines the whole sentence`);
+    }
+  });
+
+  it("carries the sentence, its English and the span, and nothing else", () => {
+    // a sentence whose word could not be found carries no span at all rather
+    // than a guessed one, so the key is optional and the card prints such a
+    // sentence plain
+    const ex = exampleOf("仕事");
+    assert.ok(ex);
+    assert.deepEqual(Object.keys(ex).sort(), ["en", "jp", "span"]);
+  });
+});
+
 // A READING NOTHING TEACHES YET (SAK-295, SAK-432). The readings table on a
 // kanji's card has three columns: hear it, the reading, the words it is read
 // that way in. Six rows in the whole set reach the third column with nothing

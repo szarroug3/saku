@@ -201,8 +201,11 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
       const kind = wordFormKind(row);
       if (kind) t.wordKind = { label: kind, readAbout: grammarConceptEntry(kind.endsWith("adjective") ? "adjective-types" : "verb-classes") };
     }
+    // the span comes across with the sentence (SAK-443): the payload used to
+    // drop it, so the card had no way to underline the word it is showing the
+    // learner and printed the sentence plain
     const ex = exampleFor(glyph);
-    if (ex) t.example = { jp: ex.jp, en: ex.en };
+    if (ex) t.example = { jp: ex.jp, en: ex.en, ...(ex.span ? { span: ex.span } : {}) };
     t.pitch = wordPitch(glyph);
     // how it differs from the word it is weighed against, and every form
     // it takes, grouped as the app's word page groups them

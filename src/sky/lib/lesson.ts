@@ -57,8 +57,14 @@ export interface LessonTeach {
   wordKind?: { label: string; readAbout: string };
   /** A word's kanji and how each is read in this word. */
   writtenWith?: ReadonlyArray<{ kanji: string; reading: string }>;
-  /** An example sentence for a word. */
-  example?: { jp: string; en: string };
+  /** An example sentence for a word, and where the word itself is written in
+   * it: `[start, end)` into `jp`, so the card can underline it (SAK-443).
+   *
+   * The sentence writes the word as it is inflected there, so the span is
+   * often not the dictionary spelling: くすぐる is underlined inside
+   * くすぐらないで. Absent when nothing in the sentence resolved to the word,
+   * which is the data's own answer and never a guess. */
+  example?: { jp: string; en: string; span?: readonly [number, number] };
   /** A word's pitch pattern, when known. */
   pitch?: number | null;
   /** How many strokes a character takes. */
