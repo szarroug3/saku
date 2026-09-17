@@ -11,6 +11,12 @@
 // only carry the newest of them. So the rest wait here, each as one row that
 // says what it is and how far in, with the way back to it and a way to let it
 // go. Forgetting one is not undoable, so it asks first (SAK-364).
+//
+// THE ASK IS THE SAME ASK AS EVERY OTHER DELETE (Sam, 2026-09-17): "Forget it
+// forever" and "Keep it", with no sentence beside it, because the verb says
+// the whole thing (SAK-443). The sentence used to be the only place the row
+// admitted the thing was still running, so the row says that itself now, as a
+// small tag that stays put while the ask is open.
 
 import { useState } from "react";
 
@@ -25,6 +31,7 @@ import { PLACE_KIND, placeNote, type PlaceEntry } from "@/sky/lib/place";
 import { GRADE, GRADES } from "@/sky/lib/quiz";
 import { formatWhen, sessionLabel, tallySession, type SkySession } from "@/sky/lib/sessions";
 import { useMounted } from "@/sky/components/use-mounted";
+import { useNow } from "@/sky/components/use-now";
 
 /** One thing left part way through, with the route's way back to it. */
 export interface UnfinishedRow {
@@ -37,21 +44,25 @@ export interface UnfinishedRow {
 }
 
 /** What is not finished, above the sessions. Each row is its kind, how far
- * in, and the two things you can do with it. */
+ * in, the tag that says it is still running, and the two things you can do
+ * with it. */
 function Unfinished({ rows }: { rows: readonly UnfinishedRow[] }) {
   const [asking, setAsking] = useState<string | null>(null);
+  // a break counts down, so its row says how much is left only once there is a
+  // browser whose clock to read (see `placeNote`)
+  const now = useNow(30_000);
   return (
     <SkyPanel title="Unfinished" className="mb-4 shrink-0 !p-4">
       <ul className="mt-3 flex flex-col gap-1.5">
         {rows.map(({ entry, href, onForget }) => (
           <li key={entry.kind} className="flex flex-wrap items-center gap-2 rounded-lg bg-sky-card px-3 py-2">
-            <span className="flex-1 text-[13.5px] text-sky-ink">
-              {PLACE_KIND[entry.kind]}<span className="text-sky-muted"> · {placeNote(entry)}</span>
+            <span className="flex flex-1 flex-wrap items-center gap-2 text-[13.5px] text-sky-ink">
+              <span>{PLACE_KIND[entry.kind]}<span className="text-sky-muted"> · {placeNote(entry, now)}</span></span>
+              <Eyebrow tone="accent" tight>In progress</Eyebrow>
             </span>
             {onForget && asking === entry.kind ? (
               <InlineAsk
-                what={entry.kind === "quiz" ? "The answers you gave are not recorded." : "The lesson starts from the beginning next time."}
-                confirm="Forget it"
+                confirm="Forget it forever"
                 onConfirm={() => { onForget(); setAsking(null); }}
                 onKeep={() => setAsking(null)}
               />
