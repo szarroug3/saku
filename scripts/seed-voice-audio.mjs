@@ -511,6 +511,9 @@ function parseArgs() {
     voiceIds,
     concurrency: Number(args.concurrency ?? 4),
     dryRun: !!args["dry-run"],
+    // Make again, and write over, every clip whose text now has a speech
+    // override (SAK-275). See seedOneWithRetry.
+    refreshOverridden: !!args["refresh-overridden"],
     // Caps each set's item list to its first N (pre-dedup order) — not for
     // production runs, but so a slice of a new/changed set can be proven
     // against real Storage (a real synth + upload + list-back) without
@@ -660,12 +663,21 @@ export async function loadExistingKeys(supabase, bucket, voiceIds) {
  * about text vs. pitch. */
 async function seedOneWithRetry(
   { voiceId, raw },
-  { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys },
+  { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys, refreshed },
 ) {
   const path = setDef.path(raw, voiceId);
   const file = path.slice(path.lastIndexOf("/") + 1);
 
-  if (existingKeys.get(voiceId)?.has(file)) return "skipped";
+  // --refresh-overridden (SAK-275): a clip whose text is sent to the engine
+  // as something else now (speech-overrides.json) is wrong AT ITS OWN PATH,
+  // and the skip below would leave it there for good. With the flag, such a
+  // clip is made again and written over the old one (the upload is an
+  // upsert), once per path per run, so nothing has to be deleted first and
+  // no learner meets a gap while the run is under way.
+  const spoken = raw.text ?? raw.reading;
+  const stale = refreshed && typeof spoken === "string" && readingForMisreadingFix(spoken) !== spoken && !refreshed.has(path);
+  if (!stale && existingKeys.get(voiceId)?.has(file)) return "skipped";
+  if (stale) refreshed.add(path);
   if (dryRun) return "ok";
 
   const speakerId = speakerOf[voiceId];
@@ -692,7 +704,8 @@ async function seedOneWithRetry(
 }
 
 async function main() {
-  const { setNames, voiceIds, concurrency, dryRun, limit } = parseArgs();
+  const { setNames, voiceIds, concurrency, dryRun, limit, refreshOverridden } = parseArgs();
+  const refreshed = refreshOverridden ? new Set() : null;
 
   const base = (process.env.VOICEVOX_ENGINE_URL ?? "http://localhost:50021").replace(/\/$/, "");
   // tts-synth.ts (the pitch set's synth path — synthesizeWordWav) reads
@@ -768,7 +781,7 @@ async function main() {
     const { ok, skipped, failed } = await runPool(
       items,
       concurrency,
-      (item) => seedOneWithRetry(item, { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys }),
+      (item) => seedOneWithRetry(item, { setDef, base, bucket, supabase, speakerOf, dryRun, existingKeys, refreshed }),
       (progress) => {
         state.done = progress.done;
         state.ok = progress.ok;
