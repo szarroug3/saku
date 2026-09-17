@@ -55,7 +55,7 @@ test("a kanji meaning hints with its teachable components, never the gloss", () 
 test("a word asked for its meaning hints with its kanji's meanings", () => {
   assert.equal(
     textOf(hintFor(wordMeaningFactId("先生"), "jp2en"), "先生's meaning"),
-    "先 is before, 生 is life",
+    "先 is before, 生 is life.",
   );
 });
 
@@ -65,7 +65,7 @@ test("電話 (a 2-kanji word) meaning hints with its components, not the gloss",
   // multi-kanji word, so its meaning card names 電 and 話, and the English answer
   // ("phone call") never appears in the nudge.
   const text = textOf(hintFor(wordMeaningFactId("電話"), "jp2en"), "電話's meaning");
-  assert.equal(text, "電 is electricity, 話 is tale");
+  assert.equal(text, "電 is electricity, 話 is tale.");
   assert.ok(!/phone|call/i.test(text), "the component hint must not state the gloss");
   // ...and never en2jp, where naming the kanji IS how you write the answer.
   assert.equal(hintFor(wordMeaningFactId("電話"), "en2jp"), null);
@@ -81,7 +81,7 @@ test("a LISTENING meaning card for 電話 hints with the written form AND its pa
   const text = hint.kind === "written" ? hint.text : "";
   const parts = hint.kind === "written" ? (hint.parts ?? "") : "";
   assert.equal(text, "電話", "the written word the learner just heard");
-  assert.equal(parts, "電 is electricity, 話 is tale", "plus the component meanings");
+  assert.equal(parts, "電 is electricity, 話 is tale.", "plus the component meanings");
   // Never the English answer — neither the word nor its breakdown states the gloss.
   assert.ok(
     !/phone|call|telephone/i.test(text + " " + parts),
@@ -94,11 +94,11 @@ test("a NON-listening meaning card for 電話 is unchanged — components only, 
   // component breakdown alone — a plain text hint, no written form.
   const hint = hintFor(wordMeaningFactId("電話"), "jp2en");
   assert.equal(hint?.kind, "text");
-  assert.equal(textOf(hint, "電話 visual"), "電 is electricity, 話 is tale");
+  assert.equal(textOf(hint, "電話 visual"), "電 is electricity, 話 is tale.");
   // Passing listen=false explicitly is the same as the default.
   assert.equal(
     textOf(hintFor(wordMeaningFactId("電話"), "jp2en", undefined, false), "電話 listen=false"),
-    "電 is electricity, 話 is tale",
+    "電 is electricity, 話 is tale.",
   );
 });
 
@@ -137,14 +137,14 @@ test("a listening READING card still gets no hint — the reading is the answer"
 test("a grammar meaning hints with what the pattern attaches to", () => {
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "jp2en"), "〜てから's meaning"),
-    "attaches to a verb",
+    "It attaches to a verb.",
   );
 });
 
 test("with no vehicle, a grammar production hints with the form it builds on", () => {
   // Never the built answer: knowing 〜てから takes the て-form does not tell you
   // 買ってから. te-kara's production is per-ending now, so this asks its te-utsu
-  // fact, and the hint is the same "uses the て-form" for every ending.
+  // fact, and the hint is the same "Use the て-form." for every ending.
   //
   // The pattern-name line that used to lead this sentence is gone (SAK-427).
   // Sam, on a card hinted "This is the 〜てはいけない pattern. uses the て-form":
@@ -155,24 +155,24 @@ test("with no vehicle, a grammar production hints with the form it builds on", (
     hintFor(classProductionFactId("te-kara", "v5u"), "jp2en"),
     "〜てから's production",
   );
-  assert.equal(text, "uses the て-form");
+  assert.equal(text, "Use the て-form.");
   assert.ok(!text.includes("買"), "the hint must not contain the built form");
 });
 
 test("the pattern name is the LAST thing said, not the first (SAK-427)", () => {
   // te-sequence IS the て-form. On a card asking the learner to BUILD the
-  // て-form, "uses the て-form" is the prompt restated, not a nudge — the same
+  // て-form, "Use the て-form." is the prompt restated, not a nudge — the same
   // tautology the dictionary-form guard refuses, so formHintText stays silent.
   // With no vehicle either there is no class to name, and the pattern name is
   // what is left. It no longer LEADS a hint that has something better to say,
   // which was the complaint; it is still better than nothing at all.
   assert.deepEqual(
     hintFor(classProductionFactId("te-sequence", "v5u"), "jp2en"),
-    { kind: "text", text: "This is the 〜て pattern" },
+    { kind: "text", text: "This is the 〜て pattern." },
   );
   assert.deepEqual(
     hintFor(specialVerbProductionFactId("te-sequence", "iku"), "jp2en"),
-    { kind: "text", text: "This is the 〜て pattern" },
+    { kind: "text", text: "This is the 〜て pattern." },
   );
 });
 
@@ -193,7 +193,7 @@ test("the class line leads every production hint, irregulars included (SAK-427)"
   assert.ok(hint);
   assert.equal(hint.kind, "derivation");
   assert.ok(hint.kind === "derivation");
-  assert.equal(hint.text, "行く is an irregular verb");
+  assert.equal(hint.text, "行く is an irregular verb.");
 });
 
 test("a KNOWN う-verb's hint names its class, then derives (SAK-427)", () => {
@@ -204,7 +204,7 @@ test("a KNOWN う-verb's hint names its class, then derives (SAK-427)", () => {
   const hint = hintFor(classProductionFactId("te-prohibition", "v5r"), "en2jp", undefined, false, SHIRU);
   assert.ok(hint);
   assert.ok(hint.kind === "derivation");
-  assert.equal(hint.text, "知る is an う-verb");
+  assert.equal(hint.text, "知る is an う-verb.");
   assert.equal(hint.derivation.word, "知る");
 });
 
@@ -215,7 +215,7 @@ test("an UNKNOWN vehicle's class line reads in the kana the card draws it in", (
   const hint = hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN);
   assert.ok(hint);
   assert.ok(hint.kind === "derivation");
-  assert.equal(hint.text, "たべる is a る-verb");
+  assert.equal(hint.text, "たべる is a る-verb.");
 });
 
 // SAK-194: given a VEHICLE, a production hint now tries the structured
@@ -343,7 +343,7 @@ test("the wrap recipe (shika-nai) has no derivation, so a vehicle still falls ba
       hintFor(classProductionFactId("shika-nai", "v1"), "en2jp", undefined, false, KNOWN),
       "shika-nai + known 食べる",
     ),
-    "食べる is a る-verb",
+    "食べる is a る-verb.",
   );
 });
 
@@ -485,7 +485,7 @@ test("a grammar hint that names neither gloss nor output is offered both ways", 
   // the reading section and the meaning-side test above.)
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "en2jp"), "〜てから, en2jp"),
-    "attaches to a verb",
+    "It attaches to a verb.",
   );
 });
 

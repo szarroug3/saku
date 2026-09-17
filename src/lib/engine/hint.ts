@@ -296,7 +296,7 @@ function componentMeanings(glyph: string): string | null {
     if (!m) return null;
     said.push(`${c} is ${m}`);
   }
-  return said.length ? said.join(", ") : null;
+  return said.length ? `${said.join(", ")}.` : null;
 }
 
 // ---------- grammar ----------
@@ -331,7 +331,8 @@ function formHintText(
   const f = recipeFormula(prod.recipe).opening.find((o) => o.host === prod.host);
   const label = f?.formLabel;
   if (!label || label === FORM_LABEL.dictionary) return null;
-  return label.startsWith("the ") ? `uses ${label}` : `uses the ${label}`;
+  // A whole sentence, spoken to the learner (SAK-457): "Use the て-form."
+  return label.startsWith("the ") ? `Use ${label}.` : `Use the ${label}.`;
 }
 
 /**
@@ -370,7 +371,7 @@ function vehicleClassLine(vehicle?: GrammarVehicle): string | null {
   if (!vehicle) return null;
   const kind = wordKindOf(vehicle.cls);
   if (!kind) return null;
-  return `${vehicle.known ? vehicle.surface : vehicle.kana} is ${CLASS_ARTICLE[kind]} ${kind}`;
+  return `${vehicle.known ? vehicle.surface : vehicle.kana} is ${CLASS_ARTICLE[kind]} ${kind}.`;
 }
 
 function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
@@ -423,11 +424,12 @@ function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
     const said = [classText, formText].filter(Boolean);
     return {
       kind: "text",
-      text: said.length ? said.join(". ") : `This is the ${prod.recipe.pattern} pattern`,
+      text: said.length ? said.join(" ") : `This is the ${prod.recipe.pattern} pattern.`,
     };
   }
   const mean = grammarMeaning(fact);
   if (!mean) return null;
   const text = attachesTo(mean.recipe);
-  return text ? { kind: "text", text } : null;
+  // a whole sentence, like every other hint line (SAK-457)
+  return text ? { kind: "text", text: `It ${text}.` } : null;
 }

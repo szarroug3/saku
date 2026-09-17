@@ -264,7 +264,7 @@ function hintFields(hint: ReturnType<typeof hintFor>, reading: string): { hint?:
   const out: NonNullable<QuizCard["hint"]> = {
     ...(hint?.kind === "image" ? { image: hint.src } : {}),
     ...(hint?.kind === "text" ? { text: hint.text } : {}),
-    ...(hint?.kind === "derivation" && (hint.text || hint.form) ? { text: [hint.text, hint.form].filter(Boolean).join(". ") } : {}),
+    ...(hint?.kind === "derivation" && (hint.text || hint.form) ? { text: [hint.text, hint.form].filter(Boolean).join(" ") } : {}),
     ...(reading ? { reading } : {}),
   };
   return Object.keys(out).length ? { hint: out } : {};

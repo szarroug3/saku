@@ -488,7 +488,7 @@ describe("the kana under a word she is supposed to know (SAK-429)", () => {
     const card = cardFor(asked("word:先生/meaning"), "word:先生/meaning");
     assert.equal(card.prompt.context, undefined);
     assert.equal(card.hint?.reading, "せんせい");
-    assert.equal(card.hint?.text, "先 is before, 生 is life");
+    assert.equal(card.hint?.text, "先 is before, 生 is life.");
   });
 
   it("leaves a kana word alone, since it never had a reading to hide", () => {

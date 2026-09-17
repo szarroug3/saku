@@ -5871,3 +5871,7 @@ zero on both lists.
 ## How Saku works: the rounds and breaks are part of SRS, and the page says so (2026-09-17, SAK-456)
 
 Sam: "those rounds/breaks are intended to be a form of SRS. the two are connected." The SRS section has a new third paragraph: the spacing starts inside the lesson's own quiz (three rounds, a break of 5 and then 10 minutes), and the gap gets longer after that each time the answer is right. The first paragraph of "Rounds and breaks" names spaced repetition (SRS) back. A test in `src/data/how-it-works.test.ts` holds both.
+
+## Hint lines are whole sentences (2026-09-17, SAK-457)
+
+Sam, on "べんり is a な-adjective. uses the form it takes before a noun": say "Use", and end with a period. Every line `src/lib/engine/hint.ts` produces is now a sentence with its period: the kind line, the form line ("Use the て-form."), the kanji meanings line, the pattern line and the attaches-to line ("It attaches to a verb."). Lines are joined with a space, in the engine and in `hintFields` in `src/app/(sky)/quiz.ts`.
