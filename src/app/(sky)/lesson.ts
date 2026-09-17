@@ -4,6 +4,10 @@
 // teaches comes from ./teach, and the pages behind the stars (a track's
 // intro, a term, a sound shift) from the app's own lesson walk. Those
 // pages, with the stars already in the sky, are the order's references.
+//
+// The whole build reads the learner as they were BEFORE tonight opened
+// anything (SAK-446, `beforeTonight` below), so what tonight teaches is
+// decided once and does not move while the lesson is open.
 
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
@@ -13,6 +17,7 @@ import { pairEntry } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { TERMS, termEntry } from "@/data/terms";
 import { TSU_INTRO } from "@/data/track-intros";
+import { applyDropSeen } from "@/lib/history-ops";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES_BY_KIND, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
@@ -21,7 +26,7 @@ import { lessonReferences, lessonSteps, type LessonPage, type LessonTeach } from
 import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types/store";
 
-import { offerings, TSU_RULE, type Offerings } from "./observatory";
+import { offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 import { pageFromIntro, teachFor } from "./teach";
 
 /** One of everything, for a look at every kind of card: a plain kana row,
@@ -44,8 +49,56 @@ export function showcasePicks(): string[] {
   ].filter((id): id is string => !!id);
 }
 
+/**
+ * The learner as they were before tonight opened anything (SAK-446).
+ *
+ * Opening a star in a lesson marks its facts seen (`seeId`), which is what
+ * puts it into rotation. But seen is also what makes a star one the learner
+ * already has, and the rail's split reads exactly that: what tonight teaches
+ * is what is NOT already in the sky (SAK-416). So the lesson rebuilt itself
+ * under the learner's feet. Sam pressed Next on a row of five kana and read
+ * "Step 1 of 4", with い gone from "Tonight, in order" and sitting under
+ * References marked IN YOUR SKY, and the three terms that had been under
+ * References gone too, because the app's teaching walk also stops offering a
+ * term it has seen the learner meet. A reload did not put any of it back.
+ *
+ * The fix is one line of intent: the whole lesson is built against a history
+ * with the bare seen marks on tonight's picks and everything under them
+ * dropped. Nothing downstream has to know: the steps, the references and the
+ * walk all read a learner who has not opened tonight's stars yet, so they
+ * answer the same on every render and after a reload, however many of
+ * tonight's stars have been opened.
+ *
+ * What a bare seen mark is, is the whole of the rule: a star DRILLED or
+ * claimed is met by its own answers (`facts[f].seen`) or its claim, neither
+ * of which this touches, so it stays a reference. Only a star whose entire
+ * history is "it was shown to me in a lesson" counts as untaught, which is
+ * what tonight's own stars are, and what an abandoned lesson's stars are too.
+ * That is the deliberate trade: a star opened on some earlier night and never
+ * answered is taught again rather than referenced, which is the honest
+ * reading of a card read once and never practiced.
+ */
+function beforeTonight(history: HistoryFile, picks: readonly string[], now: number): HistoryFile {
+  // a learner who has never opened anything has nothing to take back off
+  if (!history.seen || Object.keys(history.seen).length === 0) return history;
+  // only the picks and what is under them are built here, not the whole sky
+  const picker = offerPicker(history, now);
+  const built = picks.filter((p) => !!picker.offerPick(p));
+  if (!built.length) return history;
+  const graph = buildGraph([...picker.items.values()]);
+  const under = new Set<string>();
+  for (const pick of built) for (const id of graph.orderOf(pick)) under.add(id);
+  const marks = pickFacts([...under]).filter((f) => history.seen?.[f] !== undefined);
+  // the same object back when there is nothing to drop, so the standings
+  // already worked out for this history are not thrown away with the clone
+  return marks.length ? applyDropSeen(history, marks) : history;
+}
+
 export function lessonFromPicks(history: HistoryFile, picks: readonly string[], now = Date.now()): SkyLessonData {
-  const offer = offerings(history, now);
+  // everything below reads the learner as they were before tonight, so the
+  // split between the order and the references is decided once (SAK-446)
+  const before = beforeTonight(history, picks, now);
+  const offer = offerings(before, now);
   // every pick is built, whether or not its section had it on its first page
   const known = picks.filter((p) => !!offer.offerPick(p));
   const items = [...offer.items.values()];
@@ -66,7 +119,7 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   const seen = new Set<string>();
   const readings = new Map<string, string>();
   const pages = known
-    .flatMap((pick) => walkFor(stars.filter((s) => s.pick === pick).map((s) => s.id), history, offer, readings))
+    .flatMap((pick) => walkFor(stars.filter((s) => s.pick === pick).map((s) => s.id), before, offer, readings))
     .filter((page) => { if (seen.has(page.item.id)) return false; seen.add(page.item.id); return true; });
   for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id) }); }
   // what tonight rests on and does not teach: the stars already in the sky

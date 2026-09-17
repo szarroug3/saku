@@ -339,6 +339,51 @@ test("the lesson's order holds only what it teaches, and the references what it 
   await expect(page.getByText("Step 2 of 4")).toBeVisible();
 });
 
+test("what tonight teaches is settled when the lesson starts, and holds", async ({ page }) => {
+  // SAK-446. Opening a star marks its facts seen, and seen is also what makes
+  // a star one the learner already has, so the star just opened jumped out of
+  // "Tonight, in order" into References and "Step 1 of 5" became "Step 1 of
+  // 4". Signed out, because that is where the write and the rebuild both
+  // happen: the sample learner's lesson never writes anything.
+  await page.goto("/lesson?picks=kana-row:h-vowels");
+  const order = page.getByRole("list").first();
+  const references = page.getByRole("list").nth(1);
+  await expect(page.getByText("Step 1 of 5")).toBeVisible();
+  // N is the number of rows in the order, always
+  await expect(order.getByRole("listitem")).toHaveCount(5);
+  const rested = await references.getByRole("listitem").count();
+  expect(rested).toBeGreaterThan(0);
+
+  // Next advances n and leaves N alone
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Step 2 of 5")).toBeVisible();
+  // the mark is a round trip through a server action and back into the
+  // browser's copy, so this waits for the write rather than for a paint: the
+  // rail used to move when it landed, not when the button was pressed
+  await expect
+    .poll(() => page.evaluate(() => {
+      try {
+        const raw = window.localStorage.getItem("saku-local-history");
+        return raw ? Object.keys(JSON.parse(raw).seen ?? {}).length : 0;
+      } catch {
+        return 0;
+      }
+    }))
+    .toBeGreaterThan(0);
+  await expect(page.getByText("Step 2 of 5")).toBeVisible();
+  await expect(order.getByRole("listitem")).toHaveCount(5);
+  await expect(references.getByRole("listitem")).toHaveCount(rested);
+  // nothing tonight teaches is listed as something the learner already has
+  await expect(references.getByText("In your sky")).toHaveCount(0);
+
+  // and a reload does not move any of it either
+  await page.reload();
+  await expect(page.getByText("Step 1 of 5")).toBeVisible();
+  await expect(order.getByRole("listitem")).toHaveCount(5);
+  await expect(references.getByRole("listitem")).toHaveCount(rested);
+  await expect(references.getByText("In your sky")).toHaveCount(0);
+});
+
 test("a button that is a link walks there instead of reloading the page", async ({ page }) => {
   // SAK-362. SkyButton with an href rendered a plain anchor, so every one of
   // them threw the loaded app away and fetched the whole page again.
