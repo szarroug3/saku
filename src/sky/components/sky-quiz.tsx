@@ -422,9 +422,9 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                 ? <SkyButton block onClick={() => allAnswered(pass, cards) ? finish(pass) : advance(pass)}>{allAnswered(pass, cards) ? "Finish" : "Next"}</SkyButton>
                 : help.map((h) => <SkyButton key={h.label} variant="outline" block onClick={h.run}>{h.label}</SkyButton>)}
               {onRetries && !answered && (
-                <div className="mt-auto pt-3">
+                <div className="mt-auto w-full pt-3">
                   <Eyebrow>Retries</Eyebrow>
-                  <SkyStepper value={retries} onChange={onRetries} label="Retries after a wrong answer" min={0} max={9} />
+                  <SkyStepper fill value={retries} onChange={onRetries} label="Retries after a wrong answer" min={0} max={9} />
                 </div>
               )}
             </div>

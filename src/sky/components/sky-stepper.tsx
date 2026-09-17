@@ -17,10 +17,13 @@ interface SkyStepperProps {
   max?: number;
   /** What the number is of, after the box: "minutes". */
   unit?: string;
+  /** Fill the width it is given: the quiz's help column, where the control
+   * sits under full-width buttons and looked stranded at its own width. */
+  fill?: boolean;
   className?: string;
 }
 
-export function SkyStepper({ value, onChange, label, min = 1, max = Number.POSITIVE_INFINITY, unit, className = "" }: SkyStepperProps) {
+export function SkyStepper({ value, onChange, label, min = 1, max = Number.POSITIVE_INFINITY, unit, fill = false, className = "" }: SkyStepperProps) {
   // what is being typed, and the value it was typed over: once the value
   // moves on (a step, a recipe loaded) the box shows the value again
   const [edit, setEdit] = useState<{ over: number; text: string } | null>(null);
@@ -28,15 +31,15 @@ export function SkyStepper({ value, onChange, label, min = 1, max = Number.POSIT
   const clamp = (n: number) => Math.min(max, Math.max(min, n));
   const commit = (n: number) => { if (Number.isFinite(n)) onChange(clamp(n)); };
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="inline-flex h-[26px] items-stretch overflow-hidden rounded-full border border-sky-line text-[12px] font-semibold">
+    <span className={`${fill ? "flex w-full" : "inline-flex"} items-center gap-2 ${className}`}>
+      <span className={`${fill ? "flex w-full" : "inline-flex"} h-[26px] items-stretch overflow-hidden rounded-full border border-sky-line text-[12px] font-semibold`}>
         <button type="button" aria-label={`Fewer ${label}`} disabled={value <= min} onClick={() => commit(value - 1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink disabled:cursor-not-allowed disabled:opacity-40">−</button>
         <SkyInput
           type="number" min={min} max={Number.isFinite(max) ? max : undefined} step={1} inputMode="numeric" aria-label={label}
           value={text}
           onChange={(e) => { setEdit({ over: value, text: e.target.value }); const n = parseInt(e.target.value, 10); if (n >= min) commit(n); }}
           onBlur={() => setEdit(null)}
-          className="w-11 !rounded-none !border-x !border-y-0 !border-sky-line !bg-transparent !px-1 !py-0 text-center !text-[12px] font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className={`${fill ? "min-w-0 flex-1" : "w-11"} !rounded-none !border-x !border-y-0 !border-sky-line !bg-transparent !px-1 !py-0 text-center !text-[12px] font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
         />
         <button type="button" aria-label={`More ${label}`} disabled={value >= max} onClick={() => commit(value + 1)} className="px-2.5 text-sky-muted hover:bg-sky-card hover:text-sky-ink disabled:cursor-not-allowed disabled:opacity-40">+</button>
       </span>

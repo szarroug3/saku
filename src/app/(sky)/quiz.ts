@@ -164,16 +164,16 @@ function questionAsked(entry: string | undefined, dir: Direction, key: AnswerKey
  * place the first time the word is asked, where the quiz is still teaching
  * the two halves together, and not after.
  *
- * So a word meaning card written with kanji hides the reading once the
- * learner has been asked the fact before, or has claimed she knows it. A
+ * So a word meaning card written with kanji always hides the reading and
+ * offers it as the hint, the first time too (SAK-448): the lesson taught it a
+ * minute ago, and printing it under the glyph gives half the word away. A
  * reading card keeps its context either way, because there the glosses are
  * what tells a word's two readings apart, and a kana-only word never had a
  * reading to print.
  */
-function readingIsAHint(fact: FactId, glyph: string, history: HistoryFile): boolean {
+function readingIsAHint(fact: FactId, glyph: string): boolean {
   if (factInfo(fact)?.subject !== VOCAB_SUBJECT || !(fact as string).includes("/meaning")) return false;
-  if (!/[一-龯]/.test(glyph)) return false;
-  return (history.facts?.[fact]?.seen ?? 0) > 0 || history.claims?.[fact] !== undefined;
+  return /[一-龯]/.test(glyph);
 }
 
 /** The cards for some facts, in order. With `audio`, a card that has a
@@ -246,7 +246,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     // listening card is left alone, since its glyph is off screen and its
     // hint is already the written form. When the card has a hint of its own
     // (the component breakdown), the reading goes first, on its own line.
-    const readingHint = !listenIt && prompt.context && !anchored && readingIsAHint(fact, prompt.glyph, history) ? prompt.context : "";
+    const readingHint = !listenIt && prompt.context && !anchored && readingIsAHint(fact, prompt.glyph) ? prompt.context : "";
     if (readingHint) hint = { kind: "text", text: hint?.kind === "text" ? `${readingHint}\n${hint.text}` : readingHint };
     // The box types kana for any card whose answer is Japanese, which is
     // every reading but a kana's: asked あ you say "a", and there is no

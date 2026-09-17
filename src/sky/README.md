@@ -5329,3 +5329,9 @@ empty misses. 57 e2e pass, one of them new: signed out, a kana deck saved as
 session, `/sessions` shows "Practice: Evening drill · 1 card" with "Run it
 again" on it, and the home says one star is Discovered. `scripts/unreachable.mjs
 --list` at zero, `scripts/unused-exports.mjs` at zero on both lists.
+
+## The reading is always behind Hint, and the retries control fills its column (SAK-448)
+
+SAK-429 hid a kanji word's reading on a meaning card only once the learner had been asked the fact before, and kept it under the glyph on a first sight. Sam's rule is simpler: the lesson taught the word a minute ago, so the quiz does not print half of it. `readingIsAHint` in `src/app/(sky)/quiz.ts` no longer looks at the history: every meaning card for a word written with kanji drops the reading from under the glyph and offers it as the hint (first in the hint, above a breakdown when the card has one). Kana-only words, reading cards and listening cards are as they were.
+
+`SkyStepper` takes `fill`, and the quiz's help column passes it: the retries control is as wide as the buttons above it, with the number centered between the minus and the plus, instead of sitting at its own narrow width under them.

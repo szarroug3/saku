@@ -313,12 +313,12 @@ describe("the kana under a word she is supposed to know (SAK-429)", () => {
   const claimed = (fact: string): HistoryFile => ({ ...emptyHistory(), claims: { [fact as FactId]: NOW } });
   const cardFor = (history: HistoryFile, fact: string) => quizCards(history, [fact as FactId], NOW)[0];
 
-  it("keeps いく under 行く the first time the meaning is asked", () => {
+  it("hides いく the first time too, since the lesson just taught it (SAK-448)", () => {
     // A lesson's first quiz teaches the reading alongside the meaning, so the
     // one showing that has never been asked still prints it.
     const card = cardFor(emptyHistory(), "word:行く/meaning");
-    assert.equal(card.prompt.context, "いく");
-    assert.ok(!card.hint?.text, "and it is not doubled into the hint");
+    assert.equal(card.prompt.context, undefined);
+    assert.equal(card.hint?.text, "いく");
   });
 
   it("takes it away once she has been asked, and puts it behind Hint", () => {
