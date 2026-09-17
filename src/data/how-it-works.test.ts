@@ -61,6 +61,17 @@ describe("fact-checked claims stay in the copy", () => {
     assert.match(text, /SRS/);
   });
 
+  // SAK-456, Sam: "those rounds/breaks are intended to be a form of SRS. the
+  // two are connected." Each section says so about the other.
+  test("the SRS section talks about the rounds and breaks, and the rounds section names SRS", () => {
+    const srs = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "srs")!.paragraphs.join(" ");
+    assert.match(srs, /three rounds/);
+    assert.match(srs, /break/);
+    assert.match(srs, /5 minutes and then 10/);
+    const rounds = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "rounds-breaks")!.paragraphs.join(" ");
+    assert.match(rounds, /spaced repetition \(SRS\)/);
+  });
+
   // SAK-442, Sam: "i do not want the lesson to reteach it. i want it to appear
   // in the practice as 'slipping' so people can practice it but not be forced
   // to relearn it." The page said the opposite, and the app never did it, so
