@@ -175,7 +175,8 @@ describe("a word's example sentence says where the word is", () => {
 // that way in. Six rows in the whole set reach the third column with nothing
 // to put in it, because every word that used to attest the reading was dropped
 // when the vocabulary said it no longer takes it. The card dims such a row and
-// writes "no word taught yet" where the words would be, and the empty list is
+// writes "No word in Saku uses this reading." where the words would be
+// (SAK-443, which is what that row says now), and the empty list is
 // what it reads to decide: there is no separate flag to keep in step with it.
 describe("a kanji reading with no word behind it", () => {
   const readingsOf = (glyph: string) => atlasEntryFromHistory(emptyHistory(), `kanji:${glyph}`, NOW)?.teach?.readings ?? [];

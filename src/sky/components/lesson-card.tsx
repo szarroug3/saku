@@ -161,6 +161,11 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
   // to meet. Printed as a blank cell it read as a bug; dimmed, with the reason
   // in the column that would have held the words, it reads as the fact it is.
   // The empty list IS the mark: there is no second flag to keep in step.
+  //
+  // AND THE REASON SAYS WHOSE IT IS (SAK-443). "no word taught yet" reads as
+  // a gap in the learner's own progress, something they have not got to, and
+  // Sam read it that way on 面. It is the app's limit, not theirs: there is no
+  // word in Saku that uses the reading, so there is nothing to have reached.
   const readingRows = (rows: typeof on) => (
     <ul className="contents">
       {rows.map((r) => {
@@ -170,7 +175,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
             {Hear && <Hear glyph={r.reading} />}
             <span className={`font-sky-display text-[16px] ${untaught ? "text-sky-muted" : "text-sky-ink"} ${japaneseFont(r.reading)}`}>{r.reading}</span>
             {untaught
-              ? <span className="text-sky-muted">no word taught yet</span>
+              ? <span className="text-sky-muted">No word in Saku uses this reading.</span>
               : <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
           </li>
         );
