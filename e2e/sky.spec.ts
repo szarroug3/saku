@@ -578,13 +578,25 @@ test("about caps its prose and says when it changes the subject", async ({ page 
   await page.goto("/about");
   await expect(page.getByRole("heading", { name: "Where does the data come from?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Other places to learn" })).toBeVisible();
-  const measured = await page.evaluate(() => {
+  const measure = () => page.evaluate(() => {
     const p = document.querySelector("main section p") as HTMLElement;
-    return { line: Math.round(p.getBoundingClientRect().width), panel: Math.round((p.closest("section") as HTMLElement).clientWidth) };
+    const panels = [...document.querySelectorAll("main section")].map((el) => Math.round(el.getBoundingClientRect().left));
+    return { line: Math.round(p.getBoundingClientRect().width), panel: Math.round((p.closest("section") as HTMLElement).clientWidth), columns: new Set(panels).size };
   });
-  // the words stop well short of the panel they sit in
-  expect(measured.line).toBeLessThan(600);
-  expect(measured.panel).toBeGreaterThan(measured.line + 200);
+  // On a wide window the sections flow in two columns (SAK-450): the line is
+  // short because its panel is, and the words fill the panel they are in
+  // rather than stopping half way across it.
+  const wide = await measure();
+  expect(wide.columns).toBe(2);
+  expect(wide.line).toBeLessThan(720);
+  expect(wide.panel - wide.line).toBeLessThan(80);
+  // Below that width it is one column, and the 68 character cap is what keeps
+  // the line short, well inside its panel.
+  await page.setViewportSize({ width: 900, height: 900 });
+  const narrow = await measure();
+  expect(narrow.columns).toBe(1);
+  expect(narrow.line).toBeLessThan(600);
+  expect(narrow.panel).toBeGreaterThan(narrow.line + 200);
 });
 
 test("the account page, signed out, offers to keep the sky", async ({ page }) => {
