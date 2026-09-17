@@ -1080,6 +1080,28 @@ test("the legend's key draws the real stars, tonight among them", async ({ page 
   await expect(key.getByText("Undiscovered", { exact: true })).toBeVisible();
 });
 
+test("what showing more of the sky costs is behind a warning mark, not written out", async ({ page }) => {
+  // SAK-439. It was a sentence under the legend, which is a lot of room for
+  // something you read once. It is the info mark's behavior in a warning tone
+  // now: hover it or focus it and the sentence is there.
+  await page.goto("/?sample");
+  const mark = page.getByRole("button", { name: "Why showing more is slower" });
+  await expect(mark).toBeVisible();
+  const note = page.getByText("Showing more at once makes the sky slower to draw.");
+  await expect(note).toHaveCount(0);
+
+  await mark.hover();
+  await expect(note).toBeVisible();
+  // off it again, and it is gone
+  await page.mouse.move(0, 0);
+  await expect(note).toHaveCount(0);
+
+  // and the keyboard reaches it without a pointer anywhere near it
+  await mark.focus();
+  await expect(note).toBeVisible();
+  await expect(mark).toHaveAttribute("aria-expanded", "true");
+});
+
 /** What the pan test hangs on the window while it watches one drag. */
 interface PanWatch { changes: number; was: string | null; group: Element; watch: MutationObserver }
 

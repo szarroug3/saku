@@ -66,7 +66,8 @@ interface StandingLegendProps {
    * constellation out of the sky. */
   groups?: readonly LegendGroup[];
   onGroup?: (id: string) => void;
-  /** A line under the rows: what showing more of the sky at once costs. */
+  /** A mark at the end of the collections: what showing more of the sky at
+   * once costs, beside the chips that show more of it (SAK-439). */
   note?: ReactNode;
   className?: string;
 }
@@ -80,26 +81,16 @@ interface LegendGroup {
   on: boolean;
 }
 
-/** The mark on a note that warns, drawn rather than typed so it sits with
- * the text whatever the font does (the app's own mark, like the legend's "i"). */
-function WarnMark({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 14 13" aria-hidden className={`size-3.5 shrink-0 ${className}`}>
-      <path d="M7 1.2 13 12H1Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <rect x="6.35" y="5" width="1.3" height="3.7" rx="0.65" fill="currentColor" />
-      <circle cx="7" cy="10.2" r="0.78" fill="currentColor" />
-    </svg>
-  );
-}
-
-/** A quiet warning line: the mark in the shaky amber, the words muted. */
-export function SkyWarning({ children }: { children: ReactNode }) {
-  return (
-    <p className="inline-flex items-center gap-1.5 font-sky-ui text-[12px] text-sky-muted">
-      <WarnMark className="text-sky-shaky" />
-      {children}
-    </p>
-  );
+/** A standing piece of advice, behind a warning mark (SAK-439).
+ *
+ * It used to be the sentence itself, in the shaky amber with the words muted,
+ * sitting on the page under the legend. Sam asked for the info mark's
+ * behavior: a mark you hover or focus, and the sentence in the same tooltip.
+ * So this is `SkyInfo` in its warning tone and nothing else, which is how the
+ * two marks stay one mark. `label` is the gist, for anyone who meets the mark
+ * without opening it. */
+export function SkyWarning({ label, children }: { label: string; children: ReactNode }) {
+  return <SkyInfo tone="warning" label={label}>{children}</SkyInfo>;
 }
 
 /** What each standing means, one line per standing and then one for tonight:
@@ -202,7 +193,10 @@ export function StandingLegend({ standings = STANDING_ORDER, counts, onHover, ho
           ))}
         </>
       )}
-      {note && <><span aria-hidden className="basis-full" />{note}</>}
+      {/* the mark rides at the end of the collections rather than on a row of
+          its own: it warns about those chips, and a row holding one 14px mark
+          is a row of nothing (SAK-439) */}
+      {note}
     </dl>
   );
 }

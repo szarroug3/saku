@@ -5124,3 +5124,39 @@ items below". `scripts/unreachable.mjs --list` at zero,
 `scripts/unused-exports.mjs` at zero on both lists, and
 `scripts/button-centering.mjs` at 0 elements over 1px over the 1,382 it
 measures, since the stepper grew a unit beside it.
+
+## The sky's one warning is a mark now, not a sentence (2026-09-16, SAK-439)
+
+Sam, on a screenshot of the Planetarium's line "Showing more at once makes the
+sky slower to draw.": "move this to be a tooltip that shows when you hover a
+warning symbol similar to the info symbol." It is a thing you read once and
+then read past forever, and it was taking a row of the page to say so.
+
+**One mark, two tones.** `SkyInfo` grew `tone`, and that is the whole of the
+difference: `info` is the drawn "i" in a ring of the accent, `warning` is the
+triangle in the shaky amber, and the two share the placement, the open on hover
+and on focus, the close on leave, Escape, a scroll and a resize, the aria
+wiring, and the card the note is drawn in. `SkyWarning` is four lines over it
+rather than a second copy of any of that, which matters because the last time
+this app had two tooltips they were made to look alike by hand and behaved
+differently anyway (SAK-366, the section above). It takes a `label` now, the
+gist for anyone who meets the mark without opening it: "Why showing more is
+slower". The accent stays where it belongs, on the hear buttons and the "Why?"
+labels; a warning warns in the color it has always warned in.
+
+**Where it sits.** At the end of the collections row, beside the chips that put
+more of the sky on the screen, rather than on a row of its own under them: the
+sentence needed a row, a 14px mark does not, and the thing it warns about is
+right there. The standings above it end in the info mark, so the two rows now
+end the same way, one in each tone. `WarnMark` moved out of
+`standing-legend.tsx` into `sky-info.tsx` with nothing else left behind.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,985
+unit tests, 3,984 pass and 1 skipped, unchanged: nothing here is a function to
+pin, and the behavior is held end to end instead. 55 e2e pass, one of them new:
+the home shows the mark, the sentence is nowhere on the page until the mark is
+hovered, it goes again when the pointer leaves, and focusing the mark with no
+pointer near it opens it and sets `aria-expanded`.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on both lists, and `scripts/button-centering.mjs` at 0 elements over 1px over
+the 1,383 it measures, the new one among them.

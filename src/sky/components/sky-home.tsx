@@ -135,7 +135,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
         info
         groups={groupRows}
         onGroup={(id) => toggleGroup(id as SkyGroup)}
-        note={<SkyWarning>Showing more at once makes the sky slower to draw.</SkyWarning>}
+        note={<SkyWarning label="Why showing more is slower">Showing more at once makes the sky slower to draw.</SkyWarning>}
       />
 
       <div className="mt-4 flex max-h-[60%] shrink-0 flex-col">
