@@ -28,12 +28,11 @@ describe("how-it-works section order", () => {
     assert.deepEqual(ids.slice(0, 4), ["scripts", "srs", "already-know", "progress-words"]);
   });
 
-  test("rounds/breaks and pause-vs-end come after the required three, and every id is unique", () => {
+  test("pause-vs-end comes after the required three, every id is unique, and rounds and breaks are part of SRS (SAK-456)", () => {
     const ids = HOW_IT_WORKS_SECTIONS.map((s) => s.id);
     assert.equal(new Set(ids).size, ids.length);
-    assert.ok(ids.includes("rounds-breaks"));
+    assert.ok(!ids.includes("rounds-breaks"), "the rounds and breaks are told once, inside the SRS section");
     assert.ok(ids.includes("pause-end"));
-    assert.ok(ids.indexOf("rounds-breaks") > ids.indexOf("progress-words"));
     assert.ok(ids.indexOf("pause-end") > ids.indexOf("progress-words"));
   });
 
@@ -62,14 +61,13 @@ describe("fact-checked claims stay in the copy", () => {
   });
 
   // SAK-456, Sam: "those rounds/breaks are intended to be a form of SRS. the
-  // two are connected." Each section says so about the other.
-  test("the SRS section talks about the rounds and breaks, and the rounds section names SRS", () => {
+  // two are connected", then, once both sections said so: "now the how saku
+  // works sections are a bit redundant. maybe merge them into one section?"
+  test("the SRS section is where the rounds and breaks are told", () => {
     const srs = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "srs")!.paragraphs.join(" ");
     assert.match(srs, /three rounds/);
-    assert.match(srs, /break/);
-    assert.match(srs, /5 minutes and then 10/);
-    const rounds = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "rounds-breaks")!.paragraphs.join(" ");
-    assert.match(rounds, /spaced repetition \(SRS\)/);
+    assert.match(srs, /During a break, Saku shows you nothing/);
+    assert.match(srs, /days, then weeks/);
   });
 
   // SAK-442, Sam: "i do not want the lesson to reteach it. i want it to appear
@@ -113,7 +111,7 @@ describe("fact-checked claims stay in the copy", () => {
   });
 
   test("the break-time claim is present (confirmed true: the rest screen carries the stepper)", () => {
-    const rounds = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "rounds-breaks")!;
+    const rounds = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "srs")!;
     const text = rounds.paragraphs.join(" ");
     assert.match(text, /5 minutes before round 2/);
     assert.match(text, /10 minutes before round 3/);

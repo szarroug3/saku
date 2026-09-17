@@ -4,8 +4,9 @@
 //
 // SECTION ORDER IS A REQUIREMENT, NOT A STYLE CHOICE. The owner's review (Linear
 // SAK-27): "in the reference page, let's put them in this order: srs then i
-// already know button then progress word definitions." Rounds/breaks and
-// pause-vs-end session come after those three. how-it-works.test.ts pins this
+// already know button then progress word definitions." Pause-vs-end session
+// comes after those three; the rounds and breaks are told inside the SRS
+// section since SAK-456, because they are SRS. how-it-works.test.ts pins this
 // order — do not reshuffle it without her sign-off.
 //
 // NO EM DASHES ANYWHERE IN THIS FILE. The owner's explicit instruction, checked
@@ -79,12 +80,19 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "srs",
     title: "Why things come back (SRS)",
     paragraphs: [
-      "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, but not on a fixed schedule.",
-      "Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's unsure, it asks again.",
-      "The spacing starts inside your first lesson. A lesson's quiz runs in three rounds with a break between them, 5 minutes and then 10 unless you change them, so the first few times something comes back are minutes apart. That is spaced repetition on a small scale. After the lesson, the gap gets longer each time you get it right: days, then weeks.",
+      "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, with the gaps getting longer as you get it right.",
+      "It starts inside the lesson. A lesson's quiz runs in three rounds, and each round goes through the whole set of cards, not just what you got wrong last time. Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, where you'd want to change it, and it's remembered. A quiz of what's due, and a practice deck, run once.",
+      "During a break, Saku shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
+      "After the lesson the gaps are days, then weeks, and not on a fixed schedule. Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's unsure, it asks again.",
       "And if something's clearly slipped, Saku doesn't send you back through its lesson. It shows up as Slipping, in your sky, in the Atlas and in Practice, so you can drill it when you choose. A missed card still opens its page under the quiz, so the explanation is right there.",
     ],
-    paragraphAccents: [["spaced repetition (SRS)"], [], ["three rounds with a break between them"], ["Slipping"]],
+    paragraphAccents: [
+      ["spaced repetition (SRS)"],
+      ["three rounds", "5 minutes before round 2", "10 minutes before round 3", "adjustable on the break screen itself"],
+      [],
+      [],
+      ["Slipping"],
+    ],
   },
   {
     id: "already-know",
@@ -143,20 +151,6 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     ],
     afterBullets: [
       "A word's standing is the worse of its meaning and its reading: it isn't solid until both of them are. A word with a verified pitch is also asked its pitch, by ear, and that has a standing of its own that never holds the word back.",
-    ],
-  },
-  {
-    id: "rounds-breaks",
-    title: "Rounds and breaks",
-    paragraphs: [
-      "A lesson's quiz runs in three rounds. The rounds and the breaks between them are spaced repetition (SRS) at its smallest: you see each card again after a few minutes, before Saku starts spacing it out over days. Each round runs through the whole set of cards, not just what you got wrong last time. A quiz of what's due, and a practice deck, run once.",
-      "Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, where you'd want to change it, and it's remembered.",
-      "During a break, Saku shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
-    ],
-    paragraphAccents: [
-      ["three rounds", "spaced repetition (SRS)"],
-      ["5 minutes before round 2", "10 minutes before round 3", "adjustable on the break screen itself"],
-      [],
     ],
   },
   {

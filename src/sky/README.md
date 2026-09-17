@@ -5870,7 +5870,9 @@ zero on both lists.
 
 ## How Saku works: the rounds and breaks are part of SRS, and the page says so (2026-09-17, SAK-456)
 
-Sam: "those rounds/breaks are intended to be a form of SRS. the two are connected." The SRS section has a new third paragraph: the spacing starts inside the lesson's own quiz (three rounds, a break of 5 and then 10 minutes), and the gap gets longer after that each time the answer is right. The first paragraph of "Rounds and breaks" names spaced repetition (SRS) back. A test in `src/data/how-it-works.test.ts` holds both.
+Sam: "those rounds/breaks are intended to be a form of SRS. the two are connected." The SRS section has a new third paragraph: the spacing starts inside the lesson's own quiz (three rounds, a break of 5 and then 10 minutes), and the gap gets longer after that each time the answer is right. The first paragraph of "Rounds and breaks" named spaced repetition (SRS) back.
+
+Then Sam: "now the how saku works sections are a bit redundant. maybe merge them into one section?" So "Rounds and breaks" is gone as a section and the SRS section tells it once, in order: what SRS is, the three rounds and the breaks inside a lesson, what a break shows, the longer gaps after the lesson, and Slipping. `src/data/how-it-works.test.ts` checks that the section id `rounds-breaks` does not come back and that the break lengths are still stated.
 
 ## Hint lines are whole sentences (2026-09-17, SAK-457)
 
