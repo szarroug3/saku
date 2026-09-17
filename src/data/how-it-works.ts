@@ -157,19 +157,21 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "pause-end",
     title: "Leaving a quiz",
     paragraphs: [
-      "Walk away from a quiz or a lesson and Saku keeps your place. One Continue button, on the Planetarium and the Observatory, offers whichever you left last: your lesson at the step you were on, or your quiz at the card you were on, with the answers you already gave still counted. Anything else you left waits on the Sessions page, under Unfinished, with the same way back and a way to let it go.",
+      "Walk away and Saku keeps your place. One Continue button, on the Planetarium and the Observatory, offers whichever you left last: your lesson, or a quiz at the card you were on with the answers you already gave still counted. Anything else you left waits on the Sessions page, under Unfinished, with the same way back and a way to let it go.",
+      "A lesson is one sitting: the steps, round 1, a break, round 2, a break, round 3. From the moment you open it until its last round is over, Continue takes you back to wherever you were in it, and says where that is: \"step 3 of 9\", \"round 1, card 4 of 18\", \"break before round 2 of 3, 3 min left\". Opening the drill does not end the lesson; finishing the last round does.",
       "Saku keeps one quiz and one lesson. Starting a second quiz while one is unfinished asks you first, and starting a lesson never asks: it is always the lesson you picked, and its drill always deals its own cards.",
       "A lesson you come back to opens on the step you left, with the same steps in the same order.",
     ],
     paragraphAccents: [
       ["Continue"],
+      ["one sitting", "wherever you were in it"],
       ["one quiz and one lesson"],
       ["the step you left"],
     ],
     bullets: [
       {
         label: "End the quiz",
-        body: "Finishes it early. Whatever you've answered is recorded and shown on the results; the cards you didn't reach are left out, not marked wrong. Once a quiz is finished there is nothing to come back to, so Continue stops offering it.",
+        body: "Finishes the round early. Whatever you've answered is recorded and shown on the results; the cards you didn't reach are left out, not marked wrong. End the last round and the sitting is over, so Continue stops offering it.",
       },
       {
         label: "Back to the observatory",
