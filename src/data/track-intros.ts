@@ -188,7 +188,7 @@ export const KANJI_TRACK: PhaseIntro = {
   body: [
     {
       lead: "A kanji stands for a meaning or an idea, not a fixed sound.",
-      text: "Kana spells sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと as a word by itself, じん in the word 外国人, にん in the word 三人. One character, one meaning, several pronunciations.",
+      text: "Kana stand for sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと as a word by itself, じん in the word 外国人, にん in the word 三人. One character, one meaning, several pronunciations.",
     },
     {
       lead: "A kanji is not one shape to memorize.",

@@ -56,7 +56,7 @@ export const TSU_RULE = "counter-rule:tsu";
 /** What each track is and when to start it. Short, in the learner's terms. */
 const COPY = {
   kana: {
-    intro: "Kana are the sounds of Japanese written down. They work like an alphabet, except each character is a whole syllable: か is \"ka\", not \"k\" and \"a\". There are two sets, hiragana and katakana, and they spell the same 46 sounds.",
+    intro: "Kana are the Japanese alphabet: characters that stand for sounds, not meanings. Unlike English letters, most kana are a consonant and a vowel together in one character: か is \"ka\", not \"k\" and \"a\". There are two sets, hiragana and katakana, and they represent the same 46 sounds.",
     when: "You learn these first because they unlock everything else.",
   },
   words: {

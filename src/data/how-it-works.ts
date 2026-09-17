@@ -72,7 +72,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "scripts",
     title: "The three scripts",
     paragraphs: [
-      "Japanese is written with three scripts at once. Hiragana is the everyday one: grammar, word endings, and any word with no kanji. Katakana spells the same sounds and is used for words borrowed from other languages, names, and emphasis, the way English uses italics. Kanji are the characters borrowed from Chinese; each has a meaning and one or more readings, and most words are written with them. Romaji is Japanese spelled in the Latin alphabet. It is not a script Japanese uses.",
+      "Japanese is written with three scripts at once. Hiragana is the everyday one: grammar, word endings, and any word with no kanji. Katakana represents the same sounds and is used for words borrowed from other languages, names, and emphasis, the way English uses italics. Kanji are the characters borrowed from Chinese; each has a meaning and one or more readings, and most words are written with them. Romaji is Japanese spelled in the Latin alphabet. It is not a script Japanese uses.",
     ],
     paragraphAccents: [["Hiragana", "Katakana", "Kanji", "Romaji"]],
   },
