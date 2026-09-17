@@ -5502,5 +5502,85 @@ unit tests, 4,014 pass and 1 skipped, nineteen of them new: the switch and its
 two rules, `trustedWho` and `devFlag` on and off, `whoFor` on and off with the
 account read mocked, and an action called with a forged `{ sample: true }` both
 ways. 56 e2e pass unchanged, and 6 more in the off-state run.
+
+## A lesson's quiz asks about everything it taught, every way it can (2026-09-16, SAK-447)
+
+Sam, on a night of nine words: "when i did a 9 item lesson, i got an 8 item
+quiz instead", and then the sharper half of it: "it's including prerequisites
+but then the quiz isn't including quizzing the prerequisites so even though i
+learned 18 things, i got quizzed on 8". Then, on a screenshot of a seven card
+quiz that was six "Listen" cards and one written one: "the lesson quizzes
+should ask each type of question available for each taught thing."
+
+**The basket of eight was never a lesson's.** `QUIZ_CAP` is SAK-311's daily
+review: what is due, cut to something a person will actually sit through. It
+was applied to a lesson's own picks too, `slice(0, QUIZ_CAP)` on the way out of
+`quizFacts`, which is why a lesson of nine words ended in a quiz of eight
+cards. A lesson's quiz is not a basket. It is the lesson, asked back, so it is
+as long as the lesson was. The cap stays exactly where it belongs, on the
+branch with no picks.
+
+**A lesson teaches more than its picks, and now the quiz knows it.** The picks
+branch gathered `pickFacts` of the picks and nothing else, while the lesson had
+walked the learner through `graph.orderOf(pick)`: the pieces, then the
+character, then the word. Nine words are sixteen stars. `taughtStars` walks the
+same order over the same items, through `offerPicker` rather than the whole
+Observatory, so the quiz can only ask about what the lesson put on the screen,
+and the test asserts exactly that: the set of entries behind the cards equals
+the set of steps `lessonSteps` would deal that have a quizzable fact.
+
+**"Taught tonight" is a fact with nothing recorded against it.** Not the graph's
+`learned`, because opening a star in a lesson marks it SEEN, and seen is not
+tested. So a prerequisite is asked when `history.facts[f].seen` is absent or
+zero and there is no claim, and a prerequisite the learner already had a record
+for is a reference under tonight's words rather than a step, and is left alone.
+A pick is asked because it was picked. `quizzable` still gates a kanji's
+readings, so a kanji taught tonight is asked what it means, and how it is said
+only inside a word that proves the reading, which tonight has not proved yet.
+
+**The sound is a card beside the writing, not instead of it.** This is Sam's
+second screenshot, and it was one line: `listenIt` chose between the written
+card and the listening one on a coin flip, so a fact was asked one way or the
+other and a short deck could lose that flip six times running. In a lesson's
+quiz `everyWay` turns the flip off: the written card is always dealt, and where
+the fact has something to play, `heardTwin` deals it again by ear under the
+`#listen` id the sample already used, which the recorder strips back to the
+fact so both count for the one thing they ask about. The pitch card is
+unchanged (SAK-344). The daily review and Practice keep the coin flip, since
+there one fact is one card by design, and a due deck of eight drawn from
+hundreds cannot come out all by ear the way a lesson of one word can.
+
+**The two cards of one fact never sit together,** because the written one would
+give the heard one away. Nothing new was needed: `shuffleDeck`'s spread already
+moves a word's own cards apart (SAK-388), and the two cards of a fact are two
+cards of its item. The test deals the nine word lesson twenty times over and
+walks every pair.
+
+**What a resumed run had quietly been dropping.** A saved run and a retry name
+their cards by id, and `cardsFor` knew a fact and a word's pitch card and
+nothing else, so every `#listen` id it was handed dealt nothing at all: a
+lesson quiz reloaded halfway came back five cards shorter than it went away.
+It deals that card now, which the e2e reload test holds end to end.
+
+**The numbers, for the nine words Sam's lesson opened with.** Sixteen stars
+taught. Before: eight cards, all of them picks. After, with audio prompts and
+pitch questions off: eighteen cards, one for every star with something
+quizzable behind it, the seven prerequisites among them (一, 丁, 口, 可, 何 and
+言 asked what they mean, and the radical 亅). With both settings on, as Sam has
+them: thirty one, eleven of them the same facts asked by ear and two of them
+pitch. No copy needed bringing in line: neither How Saku works nor the lesson's
+own way into the quiz ever said how many cards it would be.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,006
+unit tests, 4,005 pass and 1 skipped, ten of them new and all in
+`src/app/(sky)/quiz.test.ts`: five on what a lesson asks about (every star the
+lesson teaches, no cap over it, a kanji asked its meaning, a prerequisite with a
+record left alone, the daily review still cut to eight) and five on how it asks
+(the written card, the same card by ear and the pitch card, nothing by ear with
+audio off, the two cards of one fact never adjacent over twenty deals, a card
+asked by ear dealt again when a run is resumed, and the coin flip left to the
+daily review). 56 e2e pass, four expectations moved rather than loosened: the
+five hiragana vowels are ten cards now, so the visitor's reload test reads
+"1 of 10" and "3 of 10" and the offer to come back reads "10 cards, 2 answered".
 `scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at
 zero on both lists.

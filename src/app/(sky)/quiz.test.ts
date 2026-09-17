@@ -11,16 +11,26 @@ import { pitchFactId } from "@/data/pitch-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
-import { knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
+import { entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
+import { quizzableFacts } from "@/lib/library/reading-proof-facts";
+import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
+import { buildGraph } from "@/sky/lib/graph";
+import { lessonSteps } from "@/sky/lib/lesson";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { matchesKey } from "@/lib/answer-key";
 import { grade } from "./grade";
-import { quizCards, quizFromHistory, sampleCards } from "./quiz";
+import { lessonFromPicks } from "./lesson";
+import { pickFacts } from "./observatory";
+import { cardsFor, quizCards, quizFromHistory, sampleCards } from "./quiz";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
+
+/** A month on from the sample learner's last session, so her schedule has
+ * something to hand a daily review. */
+const DUE_DAY = NOW + 30 * 24 * 60 * 60 * 1000;
 
 describe("the sample quiz", () => {
   const cards = sampleCards(sampleHistory(NOW), NOW);
@@ -304,6 +314,142 @@ function withRandom<T>(value: number, fn: () => T): T {
   Math.random = () => value;
   try { return fn(); } finally { Math.random = real; }
 }
+
+/** The first nine words of the curriculum, the shape of the lesson Sam
+ * quizzed: nine picks that bring their kanji and those kanji's pieces. */
+function nineWords(): string[] {
+  const out: string[] = [];
+  for (const keb of CURRICULUM_KEBS_ORDERED) {
+    const id = entryForGlyph(VOCAB_SUBJECT, keb);
+    if (id) out.push(id);
+    if (out.length === 9) break;
+  }
+  return out;
+}
+
+describe("a lesson's quiz asks about everything the lesson taught (SAK-447)", () => {
+  // Sam, 2026-09-16: "it's including prerequisites but then the quiz isn't
+  // including quizzing the prerequisites so even though i learned 18 things,
+  // i got quizzed on 8". Two things were wrong at once: the basket of eight,
+  // which belongs to the daily review, was cut over a lesson's own picks, and
+  // the picks were all the quiz ever looked at, while the lesson had walked
+  // her through their kanji and the pieces those are drawn from.
+  const PICKS = nineWords();
+
+  /** The stars tonight teaches, the lesson's own answer, and the ones the
+   * quiz has anything to ask about. */
+  const stepsOf = (history: HistoryFile) => {
+    const data = lessonFromPicks(history, PICKS, NOW);
+    const steps = lessonSteps(buildGraph(data.items), data.picks, new Set(data.learned));
+    return steps.map((s) => s.id).filter((id) => quizzableFacts(pickFacts([id]), history).length > 0);
+  };
+
+  it("asks about every star the lesson teaches, not only the nine picked", () => {
+    const history = emptyHistory();
+    const taught = stepsOf(history);
+    assert.equal(PICKS.length, 9);
+    assert.ok(taught.length > 9, `nine words teach ${taught.length} stars`);
+    const cards = quizFromHistory(history, PICKS, NOW, { audio: false, pitch: false });
+    assert.deepEqual(new Set(cards.map((c) => c.item.id)), new Set(taught));
+  });
+
+  it("is as long as the lesson was, with no basket of eight over it", () => {
+    const cards = quizFromHistory(emptyHistory(), PICKS, NOW, { audio: false, pitch: false });
+    assert.ok(cards.length > 8, `a nine word lesson asked ${cards.length} cards`);
+  });
+
+  it("asks a kanji taught tonight what it means", () => {
+    const cards = quizFromHistory(emptyHistory(), PICKS, NOW, { audio: false, pitch: false });
+    const kanji = cards.filter((c) => c.id.startsWith("kanji:"));
+    assert.ok(kanji.length > 0, "no kanji was asked about");
+    // a kanji is never asked how it is said on its own: a reading waits for a
+    // word that proves it, and tonight has proved none yet
+    for (const card of kanji) assert.ok(card.id.includes("/meaning"), card.id);
+  });
+
+  it("leaves a prerequisite the learner already had a record for alone", () => {
+    // Opening a star in a lesson marks it seen, not tested, so "taught
+    // tonight" is a fact with nothing recorded against it. One she has
+    // answered before is a reference under tonight's words, not a step.
+    const fresh = quizFromHistory(emptyHistory(), PICKS, NOW, { audio: false, pitch: false });
+    const prerequisite = fresh.find((c) => c.id.startsWith("kanji:"))!;
+    const history: HistoryFile = {
+      ...emptyHistory(),
+      facts: { [prerequisite.id as FactId]: { seen: 3, missed: 0, firstTry: 3, correct: 3 } } as HistoryFile["facts"],
+    };
+    const again = quizFromHistory(history, PICKS, NOW, { audio: false, pitch: false });
+    assert.ok(!again.some((c) => c.id === prerequisite.id), `${prerequisite.id} was asked again`);
+    // and the picks are still every one of them, since they were picked
+    for (const pick of PICKS) assert.ok(again.some((c) => c.item.id === pick), pick);
+  });
+
+  it("keeps the basket of eight on the daily review, which has no picks", () => {
+    const due = quizFromHistory(sampleHistory(NOW), [], DUE_DAY, { audio: false, pitch: false });
+    assert.equal(due.length, 8);
+  });
+});
+
+describe("a lesson's quiz asks every way it can (SAK-447)", () => {
+  // Sam, 2026-09-16, on a seven card quiz that was six "Listen" cards: "the
+  // lesson quizzes should ask each type of question available for each taught
+  // thing." A listening card used to REPLACE the written one on a coin flip,
+  // so a short deck could come out almost entirely by ear.
+  const word = (LIB_ENTRIES_BY_KIND.get(VOCAB_SUBJECT) ?? [])
+    .find((e) => factInfo(pitchFactId(e.glyph)) && knownFactsOf(e).some((f) => (f as string).includes("/reading")))!;
+  const deck = (opts: { audio: boolean; pitch: boolean }) => withRandom(0.1, () => quizFromHistory(emptyHistory(), [word.id], NOW, opts));
+
+  it("asks the written card, the same card by ear, and the pitch card", () => {
+    const cards = deck({ audio: true, pitch: true });
+    // the word's own cards; its kanji are taught tonight too and have no
+    // sound of their own to play
+    const written = cards.filter((c) => c.item.id === word.id && !c.listen && !c.id.endsWith("/pitch"));
+    assert.ok(written.some((c) => c.id.includes("/meaning")), "no written meaning card");
+    assert.ok(written.some((c) => c.id.includes("/reading")), "no written reading card");
+    assert.ok(cards.some((c) => c.id.endsWith("/pitch")), "no pitch card");
+    // one by ear for every written card that has a sound to play, and each
+    // under its own id, so both are recorded against the one fact
+    for (const card of written) {
+      assert.ok(cards.some((c) => c.id === `${card.id}#listen`), `${card.id} was never asked by ear`);
+    }
+    assert.equal(new Set(cards.map((c) => c.id)).size, cards.length);
+  });
+
+  it("asks nothing by ear with audio prompts off", () => {
+    assert.ok(!deck({ audio: false, pitch: true }).some((c) => c.listen));
+  });
+
+  it("never deals the two cards of one fact back to back", () => {
+    // the written card would give the listening one away, and the deck's own
+    // spread already moves a word's cards apart (SAK-388)
+    const history = emptyHistory();
+    for (let run = 0; run < 20; run++) {
+      const cards = quizFromHistory(history, nineWords(), NOW, { audio: true, pitch: true });
+      for (let i = 1; i < cards.length; i++) {
+        const before = cards[i - 1].id.replace(/#listen$/, "");
+        assert.notEqual(cards[i].id.replace(/#listen$/, ""), before, `${cards[i].id} sat beside ${cards[i - 1].id}`);
+      }
+    }
+  });
+
+  it("deals a card asked by ear again when a run is resumed or retried", () => {
+    // A saved run and a retry name their cards, and one of a lesson's cards
+    // is now a fact asked by ear. Named by id it used to deal nothing at all,
+    // so a lesson quiz reloaded halfway came back short every card it had
+    // asked by ear.
+    const heard = deck({ audio: true, pitch: true }).find((c) => c.listen)!;
+    const again = cardsFor(emptyHistory(), [heard.id], NOW);
+    assert.equal(again.length, 1);
+    assert.equal(again[0].id, heard.id);
+    assert.equal(again[0].listen, heard.listen);
+  });
+
+  it("leaves the coin flip to the daily review and to practice", () => {
+    // a deck with no picks is what is due, and there one fact is one card
+    const due = quizFromHistory(sampleHistory(NOW), [], DUE_DAY, { audio: true, pitch: true });
+    assert.ok(!due.some((c) => c.id.endsWith("#listen")));
+    assert.equal(due.length, 8);
+  });
+});
 
 describe("the kana under a word she is supposed to know (SAK-429)", () => {
   const asked = (fact: string): HistoryFile => ({

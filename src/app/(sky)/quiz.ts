@@ -31,6 +31,7 @@ import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntr
 import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
+import { buildGraph } from "@/sky/lib/graph";
 import { shuffleDeck, type AnswerKey, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
 import type { EntryId, FactId } from "@/types/facts";
@@ -41,25 +42,79 @@ import { offerPicker, pickFacts } from "./observatory";
 import { readingRuleFor } from "./quiz-rules";
 import { teachFor } from "./teach";
 
-/** The basket: how many cards a session asks (SAK-311's cap). */
+/** The basket: how many cards a session asks (SAK-311's cap). It is the
+ * daily review's, and only the daily review's. A lesson's quiz asks about
+ * what the lesson taught, however much that is (SAK-447): a night of nine
+ * words teaches eighteen stars, and a quiz that stopped at eight left ten
+ * of them taught and never asked. */
 const QUIZ_CAP = 8;
 
-/** The facts a session asks: the picks' quizzable facts when picks are
- * named, else what is due, capped. */
 /** What the learner's settings allow a quiz to ask: pitch cards, and
- * listening cards (SAK-345). */
+ * listening cards (SAK-345). `everyWay` is not a setting: it is a lesson's
+ * quiz saying it wants every question type a taught thing has, rather than
+ * one card a fact (SAK-447). */
 export interface QuizOptions {
   pitch?: boolean;
   audio?: boolean;
+  everyWay?: boolean;
 }
 
+/** Whether a fact has never been put to the learner: nothing recorded
+ * against it and no claim. Opening a star in a lesson marks it seen, which
+ * is not the same as being asked, so this is what tells a prerequisite the
+ * lesson TAUGHT tonight from one the lesson merely rests on. */
+function untested(fact: FactId, history: HistoryFile): boolean {
+  return !(history.facts?.[fact]?.seen ?? 0) && history.claims?.[fact] === undefined;
+}
+
+/** A word's pitch as a fact of its own (SAK-344), where the app has one. */
+function pitchFactsOf(id: string): FactId[] {
+  const entry = libEntry(id as never);
+  if (entry?.kind !== VOCAB_SUBJECT) return [];
+  const fact = pitchFactId(entry.glyph);
+  return factInfo(fact) ? [fact] : [];
+}
+
+/** Every star a lesson of these picks teaches, in the lesson's own order:
+ * each pick and the prerequisites taught under it. The lesson walks
+ * `graph.orderOf(pick)` over the items the Observatory offers
+ * (src/sky/lib/lesson.ts's `lessonSteps`, through ./lesson.ts), so this
+ * walks the same order over the same items and the quiz can only ask about
+ * what the lesson put on the screen. `offerPicker` builds the picks and
+ * what is under them rather than the whole sky, which is all the walk
+ * reads (SAK-382). A group (a kana row, the 〜つ rule) is a place rather
+ * than a star, and `pickFacts` already knows what each one holds, so it
+ * rides along and its members dedupe against it. */
+function taughtStars(history: HistoryFile, picks: readonly string[], now: number): string[] {
+  const offer = offerPicker(history, now);
+  const built = picks.filter((id) => !!offer.offerPick(id));
+  const graph = buildGraph([...offer.items.values()]);
+  const stars: string[] = [];
+  const seen = new Set<string>();
+  for (const pick of built) for (const id of graph.orderOf(pick)) { if (!seen.has(id)) { seen.add(id); stars.push(id); } }
+  return stars;
+}
+
+/** The facts a session asks: everything a lesson taught when picks are
+ * named, else what is due, capped.
+ *
+ * A lesson teaches more than its picks. Nine words bring their kanji and
+ * the pieces those are drawn from, and every one of them is a star the
+ * learner was walked through tonight, so every one of them is asked
+ * (SAK-447). A prerequisite that already had a record before tonight is a
+ * reference rather than a step, and is left alone; a pick is asked because
+ * it was picked. `quizzable` still gates a kanji's readings, so a kanji
+ * taught tonight is asked what it means, and how it is said only inside a
+ * word that proves the reading. */
 function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.now(), pitch = true): FactId[] {
   if (picks.length) {
-    const facts = picks.flatMap((id) => quizzableFacts(pickFacts([id]), history));
-    // a word's pitch is asked in its lesson too, as its own fact (SAK-344),
-    // while pitch questions are on in Settings
-    if (pitch) for (const id of picks) { const e = libEntry(id as never); if (e?.kind === VOCAB_SUBJECT) { const pf = pitchFactId(e.glyph); if (factInfo(pf)) facts.push(pf); } }
-    return [...new Set(facts)].slice(0, QUIZ_CAP);
+    const chosen = new Set(picks);
+    const facts: FactId[] = [];
+    for (const id of taughtStars(history, picks, now)) {
+      const own = [...pickFacts([id]), ...(pitch ? pitchFactsOf(id) : [])];
+      facts.push(...quizzableFacts(chosen.has(id) ? own : own.filter((f) => untested(f, history)), history));
+    }
+    return [...new Set(facts)];
   }
   return dueFacts(history, now).filter((f) => pitch || factInfo(f)?.subject !== PITCH_SUBJECT).slice(0, QUIZ_CAP);
 }
@@ -70,7 +125,10 @@ function quizFacts(history: HistoryFile, picks: readonly string[], now = Date.no
  * to the cap first, and the order that survives is the one nobody chose
  * (SAK-388). */
 export function quizFromHistory(history: HistoryFile, picks: readonly string[], now = Date.now(), options: QuizOptions = {}): QuizCard[] {
-  return shuffleDeck(quizCards(history, quizFacts(history, picks, now, options.pitch ?? true), now, options));
+  const facts = quizFacts(history, picks, now, options.pitch ?? true);
+  // a lesson's quiz asks every way it can (SAK-447); the daily review keeps
+  // one card to a fact
+  return shuffleDeck(quizCards(history, facts, now, { ...options, ...(picks.length ? { everyWay: true } : {}) }));
 }
 
 /** Why a wrong choice was on the board, in a few words, or nothing when the
@@ -135,6 +193,28 @@ function listenTextFor(fact: FactId, item: SkyItem): string | undefined {
   if (item.kind === "kana") return item.glyph;
   if (item.kind === "word" && (id.includes("/meaning") || id.includes("/reading"))) return wordReadingAsked(fact, item);
   return undefined;
+}
+
+/** What a card asked by ear asks for: a kana's sound in romaji, a reading
+ * transcribed, or what the word means. */
+function listenInstruction(fact: FactId, item: SkyItem): string {
+  if (item.kind === "kana") return "Listen, then type the reading in romaji, or how it sounds.";
+  return (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.";
+}
+
+/** The same card again, asked by ear (SAK-447). A lesson asks every question
+ * type a taught thing has, so the sound is a card BESIDE the writing rather
+ * than instead of it: Sam's seven-card lesson quiz came out as six "Listen"
+ * cards and one written one, because a coin flip chose between the two and
+ * a short deck can lose that flip six times.
+ *
+ * It carries an id of its own, the `#listen` shape the sample already used,
+ * which the recorder strips back to the fact (actions.ts), so both cards
+ * count for the one thing they ask about and the run knows which was heard.
+ * The writing stays hidden until the card is answered or the hint is asked
+ * (sky-quiz.tsx), so the twin gives nothing away. */
+function heardTwin(card: QuizCard, listen: string): QuizCard {
+  return { ...card, id: `${card.id}#listen`, listen, instruction: listenInstruction(card.id as FactId, card.item) };
 }
 
 /** A key that also takes these readings, for a word read more than one way
@@ -241,7 +321,11 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     let hint = hintFor(fact, dir, undefined, false, vehicle ?? undefined);
     const agg = history.facts?.[fact];
     const listen = opts.audio && typed ? listenTextFor(fact, item) : undefined;
-    const listenIt = listen !== undefined && Math.random() < 0.5 ? listen : undefined;
+    // In a lesson's quiz the sound is a card of its own, dealt after this
+    // one, so the written question is always asked (SAK-447). Everywhere
+    // else one fact is one card, and the sound replaces the writing on a
+    // coin flip.
+    const listenIt = listen !== undefined && !opts.everyWay && Math.random() < 0.5 ? listen : undefined;
     // SAK-429: the kana under a known word moves behind the Hint button. A
     // listening card is left alone, since its glyph is off screen and its
     // hint is already the written form. When the card has a hint of its own
@@ -269,11 +353,11 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     asked.add(question);
     const rule = readingRuleFor(fact, item);
     const instruction = listenIt
-      ? (item.kind === "kana" ? "Listen, then type the reading in romaji, or how it sounds." : (fact as string).includes("/reading") ? "Listen, then type the reading." : "Listen, then type what it means.")
+      ? listenInstruction(fact, item)
       : construction
         ? (construction.kind === "counter" ? "Type how you say this many." : "Type how this number is said.")
         : quizInstruction(fact, dir, typed ? "typed" : "mc", vehicle ?? undefined);
-    cards.push({
+    const card: QuizCard = {
       id: fact,
       item,
       prompt: { glyph: prompt.glyph, jp: prompt.jp, ...(prompt.context && !anchored && !readingHint ? { context: prompt.context } : {}), ...(anchored ? { within: anchored[2] } : {}) },
@@ -306,7 +390,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
         ...(construction ? { accept: construction.accept.join("|") } : {}),
         ...(vehicle ? { vehicle: vehicle.surface, vehicleKana: vehicle.kana, vehicleCls: vehicle.cls ?? "", vehicleKnown: vehicle.known ? "1" : "" } : {}),
       },
-    });
+    };
+    cards.push(card);
+    if (opts.everyWay && listen !== undefined) cards.push(heardTwin(card, listen));
   }
   return cards;
 }
@@ -355,10 +441,8 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
   // and one listening card: a word's meaning, asked by ear
   const spoken = facts.find((f) => (f as string).startsWith("word:") && (f as string).includes("/meaning"));
   const spokenCard = spoken ? cards.find((c) => c.id === spoken) : undefined;
-  if (spoken && spokenCard) {
-    const heard: QuizCard = { ...spokenCard, id: `${spoken}#listen`, listen: wordReadingAsked(spoken, spokenCard.item), instruction: "Listen, then type what it means." };
-    cards.splice(cards.indexOf(spokenCard) + 1, 0, heard);
-  }
+  const heardText = spokenCard ? wordReadingAsked(spoken!, spokenCard.item) : undefined;
+  if (spokenCard && heardText) cards.splice(cards.indexOf(spokenCard) + 1, 0, heardTwin(spokenCard, heardText));
   // the pitch card sits with the word cards: a real homophone pair when
   // the curriculum has one (悪 and 開く share あく), else a mispitched twin
   const questions = VOCAB.map((w) => [w.keb, rollPitchQuestion(w.keb)] as const).filter((x) => x[1]);
@@ -454,8 +538,13 @@ function wordReadingAsked(fact: FactId, item: SkyItem): string | undefined {
   return m ? m[1] : vocabRow(item.glyph)?.reb;
 }
 
-/** The cards some ids name, in that order: a fact each, or a word's pitch
- * card (`word:X/pitch`). What a retry from the results asks. */
+/** The cards some ids name, in that order: a fact each, a word's pitch card
+ * (`word:X/pitch`), or a fact asked by ear (`fact#listen`). What a retry
+ * from the results asks, and what a half-finished run comes back to. A
+ * lesson's deck holds a card of each kind for one fact now (SAK-447), so an
+ * id that ends in `#listen` has to deal the card it named rather than
+ * nothing: a resumed lesson quiz came back five cards shorter than it went
+ * away, having quietly dropped every card it had asked by ear. */
 export function cardsFor(history: HistoryFile, ids: readonly string[], now = Date.now()): QuizCard[] {
   const out: QuizCard[] = [];
   for (const id of ids) {
@@ -464,6 +553,14 @@ export function cardsFor(history: HistoryFile, ids: readonly string[], now = Dat
       const keb = libEntry(pitch[1] as EntryId)?.glyph;
       const card = keb ? pitchCard(history, keb, now) : undefined;
       if (card) out.push(card);
+      continue;
+    }
+    const heard = /^(.+)#listen$/.exec(id);
+    if (heard) {
+      const fact = heard[1] as FactId;
+      const [written] = quizCards(history, [fact], now);
+      const listen = written ? listenTextFor(fact, written.item) : undefined;
+      if (written && listen !== undefined) out.push(heardTwin(written, listen));
       continue;
     }
     out.push(...quizCards(history, [id as FactId], now));

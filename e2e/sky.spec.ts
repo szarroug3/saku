@@ -106,8 +106,10 @@ test("a lesson's quiz rests between rounds", async ({ page }) => {
 });
 
 test("the deck is dealt: two quizzes of the same picks are not asked in the same order", async ({ page }) => {
-  // SAK-388. Five cards deal 120 ways, so a run that never differs across
-  // four loads is the fixed order coming back, not a coincidence.
+  // SAK-388. The five vowels are ten cards now, written and by ear (SAK-447),
+  // and ten cards deal more ways than four loads could ever land on twice, so
+  // a run that never differs is the fixed order coming back, not a
+  // coincidence.
   const orderNow = async () => {
     await page.goto("/quiz?sample&picks=kana-row:h-vowels");
     const list = page.getByRole("complementary", { name: "The cards" }).getByRole("listitem");
@@ -880,14 +882,14 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
   // and the card that was next.
   await page.goto("/quiz?picks=kana-row:h-vowels");
   const count = page.getByText(/^\d+ of \d+$/);
-  await expect(count).toHaveText("1 of 5");
+  await expect(count).toHaveText("1 of 10");
 
   // two cards answered, so the third is the one waiting
   for (let i = 0; i < 2; i++) {
     await page.getByRole("button", { name: "I don't know" }).click();
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
-  await expect(count).toHaveText("3 of 5");
+  await expect(count).toHaveText("3 of 10");
   // and the run really is in the browser by then, not only on the screen
   await expect
     .poll(() => page.evaluate(() => {
@@ -902,17 +904,17 @@ test("a visitor's quiz is where they left it after a reload", async ({ page }) =
 
   await page.reload();
   // the third card, open, with the two answers still counted against the deck
-  await expect(count).toHaveText("3 of 5");
+  await expect(count).toHaveText("3 of 10");
   await expect(page.getByRole("button", { name: "I don't know" })).toBeVisible();
 
   // the two places a learner lands offer it back, and the offer walks
   await page.goto("/");
-  const offer = page.getByRole("link", { name: "5 cards, 2 answered" });
+  const offer = page.getByRole("link", { name: "10 cards, 2 answered" });
   await expect(page.getByText("Continue where you left off?")).toBeVisible();
   await page.goto("/observatory");
   await expect(page.getByText("Continue where you left off?")).toBeVisible();
   await offer.click();
-  await expect(count).toHaveText("3 of 5");
+  await expect(count).toHaveText("3 of 10");
 
   // and finishing it clears the run: there is nothing left to come back to
   await page.getByRole("button", { name: "End the quiz" }).click();
