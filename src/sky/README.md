@@ -5343,3 +5343,78 @@ SAK-361 capped a reading page's lines at 68 characters, which is right for readi
 ## The browser suite's port can be chosen (SAK-451)
 
 `playwright.config.ts` reads `SAKU_E2E_PORT` (default 3249). Several worktrees running the suite on one hard-coded port took each other's web servers down part-way, which showed up as a run of connection-refused failures in tests with nothing wrong with them. A gate run that shares the machine with lanes sets its own port: `SAKU_E2E_PORT=3291 npx playwright test e2e/sky.spec.ts`.
+
+## The word page reads like the page around it (2026-09-16, SAK-443)
+
+Sam's review of the Atlas word page: a note in the wrong type and in a
+linguist's words, an example sentence that never showed which word it was an
+example of, a reading row that sounded like a scolding, and a delete that said
+the same thing twice.
+
+**A face belongs to a run, not to a paragraph.** `japaneseFont(text)` asks one
+question about a whole string, which is exactly right for a glyph, a reading
+or a list of words and wrong for a sentence with both languages in it. いいえ's
+contrast note is English prose with two Japanese words in it, and one class on
+the paragraph drew the English in the Japanese face too, so the note sat there
+in a different type from everything around it. `mixedRuns` splits a sentence
+and `Mixed` draws each run in its own face. Punctuation joins the run in front
+of it: neither face owns a comma, and a run per character would put 。in the
+UI face at the end of a Japanese sentence and draw “no” in three pieces. It is
+used wherever the Sky draws authored prose, which is more places than the note:
+the quiz reveal's hint and its steps, and a teach page's paragraphs, table
+cells and footers, where a cell reading "きて → きって (kite → kitte)" had its
+romaji in the Japanese face for the same reason. `japaneseFont` keeps every
+other call site, because those strings really are one face.
+
+**"Gloss" is what a dictionary editor says.** Sam: "'gloss' is jargon. say
+'mean' instead ... same with 'land'. maybe say 'be blunt or childish'. same
+with 'meet'. say 'you might still see it in print'". いいえ's note now opens
+"both mean “no” but they aren't interchangeable", without the comma that read
+oddly inside the quotes, and closes "so it can be blunt or childish somewhere
+formal"; the ten ずる notes close "you might still see it in print". The facts
+are the same ones. The word was in the copy because it is everywhere in the
+code around it, a vocabulary row having `glosses` and a mnemonic's example a
+`gloss`, so `src/lib/no-jargon-in-learner-copy.test.ts` reads
+word-contrast-notes.ts, `src/sky` and `src/app/(sky)` through the TypeScript
+parser and fails on the word inside a string, a template or JSX text. A field
+of that name is untouched, which is the whole point: the name is exact and the
+sentence was not.
+
+**The sentence shows the word, so it points at it.** 仕事's fold said "In a
+sentence" and printed 今から仕事ですよ。with nothing marked. The span was never
+missing: `exampleFor` has carried it since SAK-422, and `teach.ts` built
+`{ jp, en }` and dropped it on the way out. It rides on the payload now and
+the card draws that stretch in the accent with an underline under it, in the
+Atlas, the lesson and the quiz's reveal, since those are one card. The span is
+the sentence's own, so the underline follows the word as the sentence inflects
+it (くすぐる underlined inside くすぐらないで) rather than hunting for the
+dictionary spelling, and a sentence whose word could not be found keeps its
+place and is printed plain.
+
+**Whose limit it is.** 面's おもて row read "no word taught yet", which reads as
+a gap in the learner's own progress, something they have not reached. They have
+nothing to do with it: the dictionary lists the reading and no word in the
+app's vocabulary takes it. Six rows in the whole set are like that, and they
+now read "No word in Saku uses this reading." and stay dimmed. The empty word
+list is still the one thing the row reads to decide.
+
+**One verb, said once.** Practice's delete ask read "This recipe goes for
+good." over a button saying "Delete it". The button says "Delete it forever"
+and the sentence is gone; "Keep it" is unchanged. `InlineAsk`'s line is
+optional from here, and stays wherever it carries something the verb cannot:
+what leaves with the thing, how much of it there is.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,010
+unit tests, 4,009 pass and 1 skipped, fourteen of them new: nine on `mixedRuns`
+(one face, two faces, where the punctuation goes, the iteration mark, romaji in
+brackets, and that the runs joined are the sentence again), two on the jargon
+gate, including one that holds it to telling a string from a field of the same
+name, and three on the example payload, that the span comes across, that it
+lands on the word as the sentence writes it, and that it is all the payload
+carries. 57 e2e pass, one of them new: 仕事's fold opens and the one underlined
+span is 仕事, drawn in the color a probe reads off `--sky-accent` and really
+carrying an underline. 面's row and Practice's ask are held by the two specs
+that already covered them. `scripts/unreachable.mjs --list` at zero,
+`scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at 0 elements over 1px over the 1,383 it
+measures.
