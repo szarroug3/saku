@@ -52,7 +52,13 @@ const PAGES = [
   { path: "/practice?sample", name: "practice", reveal: [{ role: "button", name: /^Kana/ }] },
   { path: "/settings", name: "settings", reveal: [] },
   { path: "/sessions?sample", name: "sessions", reveal: [{ role: "button", name: /Quiz · / }] },
-  { path: "/observatory?sample", name: "observatory", reveal: [] },
+  {
+    path: "/observatory?sample",
+    name: "observatory",
+    // a card picked, which is what puts the picks' own buttons on the page:
+    // "Unselect all" and "I already know these" (SAK-458)
+    reveal: [{ role: "button", name: /^marks the topic/ }],
+  },
 ];
 
 /**

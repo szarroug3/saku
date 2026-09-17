@@ -1458,3 +1458,52 @@ test("sentence rules end on the sentence type they lead to, and it opens a lesso
   // and the type's own walk is what it teaches: the guide's intro and its steps
   await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Intro" })).toBeVisible();
 });
+
+test("the observatory takes every pick back out in one press", async ({ page }) => {
+  // SAK-458. The only way to empty the picks was to take them out one at a
+  // time, from the list or by clicking each card again.
+  await page.goto("/observatory?sample");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const unselect = page.getByRole("button", { name: "Unselect all" });
+  // with nothing picked there is no button to press
+  await expect(cards.first()).toBeVisible();
+  await expect(unselect).toHaveCount(0);
+
+  await cards.nth(0).click();
+  await cards.nth(1).click();
+  await expect(page.getByText(/^2 Picks · /)).toBeVisible();
+  await expect(cards.nth(0)).toHaveAttribute("aria-pressed", "true");
+  await expect(cards.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(unselect).toBeVisible();
+
+  await unselect.click();
+  // the count is gone, no card is marked as picked, and the panel is back to
+  // its empty state with the Start lesson that cannot be pressed
+  await expect(page.getByText(/^\d+ Picks? · /)).toHaveCount(0);
+  await expect(page.getByText("Nothing yet")).toBeVisible();
+  await expect(page.getByText("Nothing picked. Choose something to learn and it shows up here.")).toBeVisible();
+  await expect(cards.nth(0)).toHaveAttribute("aria-pressed", "false");
+  await expect(cards.nth(1)).toHaveAttribute("aria-pressed", "false");
+  await expect(unselect).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Start lesson" })).toHaveCount(0);
+  await expect(page.getByText("Start lesson", { exact: true })).toBeVisible();
+});
+
+test("the atlas unselects everything in one press", async ({ page }) => {
+  // SAK-458, the same press on the other page that picks things.
+  await page.goto("/atlas?sample");
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  const tiles = page.locator("div[class*='gap-1.5'] > button[aria-pressed]");
+  const picked = page.locator("div[class*='gap-1.5'] > button[aria-pressed='true']");
+  await expect(tiles.first()).toBeVisible();
+  await tiles.nth(0).click();
+  await tiles.nth(1).click({ modifiers: ["Shift"] });
+  await expect(page.getByText("2 selected", { exact: true })).toBeVisible();
+  await expect(picked).toHaveCount(2);
+
+  const unselect = page.getByRole("button", { name: "Unselect all" });
+  await unselect.click();
+  await expect(page.getByText(/^\d+ selected$/)).toHaveCount(0);
+  await expect(picked).toHaveCount(0);
+  await expect(unselect).toHaveCount(0);
+});

@@ -5877,3 +5877,53 @@ Then Sam: "now the how saku works sections are a bit redundant. maybe merge them
 ## Hint lines are whole sentences (2026-09-17, SAK-457)
 
 Sam, on "べんり is a な-adjective. uses the form it takes before a noun": say "Use", and end with a period. Every line `src/lib/engine/hint.ts` produces is now a sentence with its period: the kind line, the form line ("Use the て-form."), the kanji meanings line, the pattern line and the attaches-to line ("It attaches to a verb."). Lines are joined with a space, in the engine and in `hintFields` in `src/app/(sky)/quiz.ts`.
+
+## Unselect all, on both pages that pick things (2026-09-17, SAK-458)
+
+Sam: "add an unselect all to the observatory and atlas pages." Until now the
+only way to empty a selection was to take it apart one thing at a time: click
+each card again, or press the × beside each line of tonight's picks.
+
+**One button, the same on both pages.** An outline `SkyButton` reading
+"Unselect all", beside the selection's count and the other things that can be
+done to it: in the Observatory's "Tonight" panel, above "I already know these"
+and "Start lesson"; in the Atlas's panel for several entries, after "Quiz me".
+It is drawn only when something is picked, and it asks nothing first, because
+nothing is lost that another click cannot put back.
+
+The Atlas's single entry keeps the × it has always had and gets no button: one
+thing open is a reference card about that thing, not a selection with a count
+and actions on it, and "Unselect all" over one entry would be a strange way to
+say "close this".
+
+**What one press takes out.** Everything, not only what is on screen. The
+Atlas keeps ONE selection across its shelves, its cuts and its search results,
+so a tile picked on a shelf nobody is looking at goes with the rest; neither
+page writes its picks to the URL or to storage, so there is nothing else to
+clear (`?picks=` is read once, when the Observatory opens). The anchor goes
+too: it is the tile a shift-click draws its range from, and leaving it behind
+meant the next shift-click could stretch back to something nobody had picked
+since. On the Observatory the line offering the last single removal back goes
+as well, since there is no longer a pick for it to return to.
+
+**The rules of picking are now plain functions.** `src/sky/lib/select.ts`
+holds a selection as data (`ids` and `anchor`) with `afterPick`, `justThis`
+and `NOTHING`; `useSelection` is the same hook over those functions, and the
+Observatory's own picks, which follow the cart's rules, take `NOTHING` for
+the clearing. A hook cannot be unit tested in this harness (the suite is plain
+`node --test` over `.ts`, with no renderer), so moving the rules out is what
+gives the clearing a test at all.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean.
+4,085 unit tests, 4,084 pass and 1 is skipped, from 4,077: eight new in
+`src/sky/lib/select.test.ts` (a plain click, a toggle, a range in both
+directions, and four on unselecting: nothing is left, ids that are not on
+screen go, the anchor goes, and the page is back where it started). 64 e2e
+pass, from 62: one picks two sentence rules on the Observatory, presses the
+button and checks the count, the cards, the empty line and the Start lesson
+that cannot be pressed; the other picks two tiles on the Atlas and checks the
+count and that no tile is marked. `scripts/unreachable.mjs --list` at zero,
+`scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at 0 over 1px: its Observatory page now picks a
+card first, so the picks' own buttons are among the 36 it measures there
+rather than 32 it never saw.

@@ -25,6 +25,7 @@ import { SkyPanel } from "@/sky/components/sky-panel";
 import { UndoLine } from "@/sky/components/undo-line";
 import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
+import { NOTHING } from "@/sky/lib/select";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
@@ -134,6 +135,15 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
       setPicks([...picks, id]);
     }
   };
+  /** Everything picked, taken back out at once (SAK-458): the picks, the
+   * tile a shift-click would draw its range from, and the line offering the
+   * last single removal back. Nothing is lost that a click cannot put back,
+   * so it asks nothing first. */
+  const unselectAll = () => {
+    setPicks(NOTHING.ids);
+    setAnchor(NOTHING.anchor);
+    setUndo(null);
+  };
   /** What a section lays out: what can be taken now and, in its place, what
    * the section says is shut for a reason. */
   const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, section.show ?? SHOWN);
@@ -227,12 +237,15 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
             )}
             {undo && <UndoLine className="mt-2 shrink-0" what={`Removed ${nameOf(undo.removed)}`} onUndo={() => { setPicks(undo.before); setUndo(null); }} />}
             {picks.length > 0 && (
+              <SkyButton variant="outline" block onClick={unselectAll} className="mt-3 shrink-0 py-2.5">Unselect all</SkyButton>
+            )}
+            {picks.length > 0 && (
               <SkyButton
                 variant="outline"
                 block
                 disabled={claiming}
                 onClick={() => startClaim(async () => { if (onClaim) await onClaim(picks); setClaimed((c) => [...c, ...picks]); setPicks([]); setUndo(null); })}
-                className="mt-3 shrink-0 py-2.5"
+                className="mt-2 shrink-0 py-2.5"
               >
                 {claiming ? "Claiming…" : "I already know these"}
               </SkyButton>

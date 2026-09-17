@@ -449,6 +449,10 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                       {selectedItems.some(unknown) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, true)}>{marking ? "Marking…" : "I know these"}</SkyButton>}
                       {selectedItems.some((it) => !unknown(it)) && <SkyButton variant="outline" disabled={marking} onClick={() => mark(selection.ids, false)}>{marking ? "Marking…" : "I don't know these"}</SkyButton>}
                       {quizHref && <SkyButton variant="outline" href={quizHref(selection.ids)}>Quiz me</SkyButton>}
+                      {/* Takes every pick out at once, on this shelf and on
+                          the ones behind it (SAK-458). Nothing is lost that a
+                          click cannot put back, so it asks nothing first. */}
+                      <SkyButton variant="outline" onClick={selection.clear}>Unselect all</SkyButton>
                     </>
                   }
                 >

@@ -9,13 +9,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import { japaneseFont } from "@/sky/lib/japanese";
+import type { PickHow } from "@/sky/lib/select";
 import { STANDING } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
 
-/** How a tile was clicked: plain opens it alone, cmd or ctrl adds it to
- * the selection, shift takes the run from the last one clicked to it. */
-interface Pick { toggle: boolean; range: boolean }
-export type OnPick = (id: string, pick: Pick) => void;
+/** A tile clicked: plain opens it alone, cmd or ctrl adds it to the
+ * selection, shift takes the run from the last one clicked to it. */
+export type OnPick = (id: string, how: PickHow) => void;
 
 interface TileGridProps {
   items: readonly SkyItem[];
