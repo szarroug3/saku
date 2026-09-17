@@ -5418,3 +5418,89 @@ that already covered them. `scripts/unreachable.mjs --list` at zero,
 `scripts/unused-exports.mjs` at zero on both lists, and
 `scripts/button-centering.mjs` at 0 elements over 1px over the 1,383 it
 measures.
+
+## The pretend learner is a dev surface now, and production has none (2026-09-16, SAK-445)
+
+Sam: "the ?sample and other dev pages should not be sent to prod." She was
+right that they were. `/?sample` answered 200 on the live site and served a
+made-up history to anybody who typed the word, and the same flag rode every
+Sky page, every link and every server action. The lesson's `?showcase` was the
+second one: a lesson built on an empty history to show one of every kind of
+card.
+
+**One switch, read in one place, at request time.** `devSurfacesOn()` in
+`src/lib/dev-surfaces.ts` is on when `SAKU_DEV_SURFACES=1` or when this is not
+a production build, and off otherwise. It is deliberately not
+`NEXT_PUBLIC_`: the browser never decides this. It is read per request rather
+than baked in, because the e2e suite runs a PRODUCTION build and still wants
+the pretend learner, so `NODE_ENV` alone could not tell the e2e server and
+Vercel apart. `playwright.config.ts` sets the variable in its webServer env,
+beside `SAKU_DISABLE_AUTH`, and that one line is what keeps every `?sample`
+step in `e2e/sky.spec.ts` working exactly as it did.
+
+**Two doors, because a flag arrives two ways.** `devFlag(params, key)` is the
+page's: `?sample` and `?showcase` count as present only when the switch is on,
+so with it off the page renders as if the word had never been typed. Every Sky
+page reads `?sample` through `whoFor`, which is the only caller that matters,
+and the lesson reads `?showcase` the same way. `trustedWho(who)` is the
+action's, and it is the one that was load bearing: a server action is handed
+its `Who` in a POST body, so the claim to be the pretend learner can arrive at
+one whatever page it says it came from. With the switch off that claim is
+dropped and what is left is the real caller, their own browser copy when they
+sent one and their own account otherwise. Never an error and never a redirect,
+because a forged flag should look exactly like no flag.
+
+**The type is what makes the second door hard to forget.** `historyFor`,
+`graduateRunsFor` and `extrasFor` take `TrustedWho`, which only `trustedWho`
+mints, so an action that skipped the check would not compile. There are twelve
+reads in `actions.ts` and every one of them now starts by naming its parameter
+`caller` and turning it into a `who`. The mark is a type and never a value, so
+nothing crosses the wire and nobody can send one.
+
+**The pretend learner's module is loaded on the branch that wants it.** It was
+a static import at the top of `actions.ts`, which put `sample-learner.ts` in
+every Sky route's server bundle and ran it on the first request that asked.
+`historyFor` reaches it through `await import("./sample-learner")` now, so with
+the switch off the branch is unreachable and a production server never
+evaluates a line of it. What that does not do is take it out of the build:
+Turbopack gives it a chunk of its own (3.5 KB, its own file in
+`server/chunks/ssr/`) and Next's file tracing still lists that chunk beside
+each route, which is what a dynamic import can honestly promise. Nothing is
+imported from it by any other path, and `scripts/unreachable.mjs` counts the
+dynamic import as an edge, so the file is still reached and still checked.
+
+**Proved against a real production build, not only in unit tests.**
+`playwright.dev-surfaces-off.config.ts` builds the app the way the main suite
+does and starts it WITHOUT the variable, on its own port and its own output
+directory so it can run beside the main suite:
+
+    npx playwright test --config=playwright.dev-surfaces-off.config.ts
+
+Six tests in `e2e/dev-surfaces-off.spec.ts`. `/?sample` is a 200 with the
+visitor's own empty sky on it ("You haven't discovered anything yet.", 0 of
+23,973 Discovered) and the flag does not survive into the page's own links.
+`/atlas?sample` says 0 of 214 Kana Known. `/quiz?sample` says "Nothing to
+quiz", where with the switch on the same URL deals one of every kind of card.
+`/sessions?sample` says "Nothing yet". `/lesson?showcase` says "Nothing to
+teach". And the sixth is the one no URL can reach: it takes the real POST the
+sessions page makes, with its real action id, and sends it again with
+`{"sample":true}` in place of the caller. The answer carries none of the
+pretend learner's sessions, which are minted as `sample-<ts>`, and it is byte
+for byte the answer the same call gets with no claim at all.
+
+The spec belongs to that config and to nothing else, and `playwright.config.ts`
+ignores it by name, because under a server started with the variable all six
+assertions are false. That was checked on purpose: the same build, started once
+with `SAKU_DEV_SURFACES=1`, fails all six. A test that passes either way would
+have proved nothing.
+
+**Vercel must not carry the variable.** That is the whole of the deployment
+side, and it is in the root README's environment table now.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,015
+unit tests, 4,014 pass and 1 skipped, nineteen of them new: the switch and its
+two rules, `trustedWho` and `devFlag` on and off, `whoFor` on and off with the
+account read mocked, and an action called with a forged `{ sample: true }` both
+ways. 56 e2e pass unchanged, and 6 more in the off-state run.
+`scripts/unreachable.mjs --list` at zero and `scripts/unused-exports.mjs` at
+zero on both lists.

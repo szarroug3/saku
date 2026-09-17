@@ -206,6 +206,7 @@ for local development to stay on the file store with no auth.
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL. Required for the `supabase` backend and for auth. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key. Safe to expose to the browser (RLS protects the data). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Optional, server-only. Not needed for normal use; only for a future admin/maintenance script that must bypass RLS. Never expose it to the browser. |
+| `SAKU_DEV_SURFACES` | `1` turns on the dev surfaces: the pretend learner (`?sample`) and the lesson's `?showcase`. Server-only, read per request in `src/lib/dev-surfaces.ts`. `next dev` has them on without it; the e2e suite sets it because it runs a production build. **Never set it on Vercel**: with it unset, a production server ignores both, and no forged server-action argument can ask for the pretend learner's history either. |
 
 The `NEXT_PUBLIC_*` values are baked in at build time, so a change to them needs a
 rebuild, not just a restart.
