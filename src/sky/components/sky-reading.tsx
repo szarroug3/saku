@@ -12,12 +12,18 @@ export function SkyReading({ page, height }: { page: ReadingPage; height?: strin
   return (
     <SkyPageShell eyebrow={page.eyebrow} title={page.title} height={height}>
       <SkyPageBody>
+        {/* Two columns from the lg breakpoint up (SAK-450). The lines stay short
+            (SAK-361 capped them at 68 characters, because a paragraph the
+            panel's whole width is 200 characters a line), but a full-width
+            panel around half-width text left the right half of every section
+            empty. So the sections flow down one column and then the next, each
+            panel as wide as its column and never split across the two. The
+            wrapper is a block of its own: multi-column does not lay out a flex
+            container's children, and the body above is one. */}
+        <div className="gap-4 lg:columns-2 [&>*]:mb-4 [&>*]:break-inside-avoid">
         {page.sections.map((s) => (
           <SkyPanel key={s.id} title={s.title}>
-            {/* 68 characters, the way the lesson's page caps itself at 64
-                (SAK-361). A paragraph used to run the panel's whole width,
-                which on a wide window is 200 characters a line. */}
-            <div className="mt-2 flex max-w-[68ch] flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90">
+            <div className="mt-2 flex max-w-[68ch] flex-col gap-3 text-[14px] leading-relaxed text-sky-ink/90 lg:max-w-none">
               {s.paragraphs?.map((p, i) => <p key={i}><Sound line={p} /></p>)}
               {s.bullets && (
                 <ul className="flex flex-col gap-2.5">
@@ -46,6 +52,7 @@ export function SkyReading({ page, height }: { page: ReadingPage; height?: strin
             </div>
           </SkyPanel>
         ))}
+        </div>
       </SkyPageBody>
     </SkyPageShell>
   );
