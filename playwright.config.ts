@@ -26,6 +26,11 @@ const PORT = Number(process.env.SAKU_E2E_PORT ?? 3249);
 
 export default defineConfig({
   testDir: "./e2e",
+  // The off-state spec drives a server started WITHOUT SAKU_DEV_SURFACES, so
+  // it belongs to playwright.dev-surfaces-off.config.ts and to nothing else
+  // (SAK-445). It lives beside the others because this is where a browser test
+  // in this repository lives.
+  testIgnore: "dev-surfaces-off.spec.ts",
   // The old app's specs, archived with its pages at cutover (2026-09-06).
   // Run separate spec files concurrently. Tests within one file remain ordered,
   // while each worker still gets Playwright's isolated browser context and its
@@ -104,6 +109,11 @@ export default defineConfig({
     // visitor the deterministic signed-out user these specs drive.
     env: {
       SAKU_DISABLE_AUTH: "1",
+      // The suite drives the pretend learner (`?sample`), which is a dev
+      // surface and is off in production (SAK-445). This is what keeps it on
+      // for a build the suite starts itself. playwright.dev-surfaces-off.config.ts
+      // is the same build without this line.
+      SAKU_DEV_SURFACES: "1",
       // Do not let `next build` overwrite a concurrently running dev server's
       // `.next` artifacts. Both `build` and `start` read this through
       // next.config.ts, so the E2E server owns an isolated output directory.

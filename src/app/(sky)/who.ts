@@ -3,6 +3,10 @@
 // neither, the signed-in account's. Sign-in is preferred, never required
 // (Sam, 2026-09-06): a visitor's sky is real, kept in the browser and
 // carried up on sign-in, the way the app has always done it.
+//
+// This is what the CALLER says, which is not the same as what is true: it
+// arrives in a POST body. `caller.ts` turns one of these into the `TrustedWho`
+// the actions read, and drops `sample` unless the dev surfaces are on.
 
 import type { HistoryFile } from "@/types/store";
 

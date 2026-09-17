@@ -8,9 +8,14 @@
 // signed-out visitor's history is in their browser, which the server cannot
 // see, so the page arrives with nothing and the client loads it (see
 // local.tsx).
+//
+// `?sample` is a dev surface, so it is read through `devFlag` and means
+// nothing at all with the switch off (SAK-445). Every page the flag reaches
+// reads it from here, so that is the whole of the page half of the gate.
 
 import { currentUserId } from "@/lib/auth";
 
+import { devFlag } from "./caller";
 import type { Who } from "./who";
 
 /** A route's query, as Next hands it over. */
@@ -23,7 +28,7 @@ type SkyParams = Record<string, string | string[] | undefined>;
  * sample it asks nobody's account, and like a signed-in page it has its data
  * already, so it says signed in and the client never loads anything. */
 export async function whoFor(params: SkyParams, pretend = false): Promise<{ sample: boolean; signedIn: boolean; who: Who | null }> {
-  const sample = params.sample !== undefined;
+  const sample = devFlag(params, "sample");
   const userId = sample || pretend ? null : await currentUserId();
   return { sample, signedIn: pretend || userId !== null, who: sample ? { sample: true } : userId ? {} : null };
 }

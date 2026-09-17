@@ -6,6 +6,12 @@
 // happen on the client through the app's own progress calls, which land
 // on the account when signed in and in the browser when not, so a visitor's
 // sky is kept and carried up on sign-in. Dev-only, like the adapters.
+//
+// WHO THE CALLER SAYS THEY ARE IS NOT WHO THEY ARE (SAK-445). The `Who` an
+// action is handed is a POST body, so every read here starts by putting it
+// through `trustedWho`, which drops a claim to be the pretend learner unless
+// the dev surfaces are on. The reads below take `TrustedWho` and nothing
+// else, so an action that forgot the check would not compile.
 
 import { timedSync } from "@/lib/server-timing";
 import { currentUserId } from "@/lib/auth";
@@ -33,18 +39,24 @@ import type { SkyItem } from "@/sky/lib/types";
 import { atlasEntryFromHistory, atlasSearchFromHistory, atlasSectionsFromHistory, atlasTilesFromHistory, learnerHistory } from "./atlas";
 import { atlasPayloadFor } from "./atlas-catalogue";
 import type { AtlasPayload } from "./atlas-payload";
+import { trustedWho, type TrustedWho } from "./caller";
 import { skyPayloadFor } from "./catalogue";
 import { lessonFromPicks } from "./lesson";
 import { beyondWords, observatoryFromHistory, pickFacts } from "./observatory";
 import { practiceCards, practicePreview } from "./practice";
 import { cardsFor, quizFromHistory, sampleCards } from "./quiz";
-import { sampleHistory } from "./sample-learner";
 import { sessionsFromHistory } from "./sessions";
 import type { Who } from "./who";
 
-/** The history the caller names: the sample's, the browser's, or the account's. */
-async function historyFor(who: Who): Promise<HistoryFile> {
-  if (who.sample) return sampleHistory();
+/** The history the trusted caller names: the sample's, the browser's, or the
+ * account's.
+ *
+ * The pretend learner's module is loaded here, on the branch that wants it,
+ * rather than imported at the top of this file: with the dev surfaces off that
+ * branch is unreachable, so a production server never runs a line of it and
+ * never builds the made-up history at all (SAK-445). */
+async function historyFor(who: TrustedWho): Promise<HistoryFile> {
+  if (who.sample) return (await import("./sample-learner")).sampleHistory();
   if (who.local) return who.local;
   return learnerHistory();
 }
@@ -55,7 +67,8 @@ async function historyFor(who: Who): Promise<HistoryFile> {
  * standings, the constellations and the panels, without the fifteen thousand
  * stars that are the same for everyone. The browser fetches those once from
  * /api/sky-catalogue and puts the two back together with `joinSky`. */
-export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPayload> {
+export async function loadSky(caller: Who, graduateRuns?: number): Promise<SkyPayload> {
+  const who = trustedWho(caller);
   // The history and the settings at the same time (SAK-382). The page used to
   // read the settings, wait, and then call this, which read the history and
   // waited again: two round trips to the same database, queued, for two
@@ -68,26 +81,27 @@ export async function loadSky(who: Who, graduateRuns?: number): Promise<SkyPaylo
 
 /** The learner's own bar for clearing a mix-up. Undefined for anyone whose
  * settings are the browser's, which is everyone not signed in. */
-async function graduateRunsFor(who: Who): Promise<number | undefined> {
+async function graduateRunsFor(who: TrustedWho): Promise<number | undefined> {
   if (who.sample || who.local) return undefined;
   const userId = await currentUserId();
   if (!userId) return undefined;
   return (await loadSettings(userId)).cfg?.graduateRuns ?? undefined;
 }
 
-export async function loadObservatory(who: Who): Promise<SkyObservatoryData> {
-  return observatoryFromHistory(await historyFor(who));
+export async function loadObservatory(caller: Who): Promise<SkyObservatoryData> {
+  return observatoryFromHistory(await historyFor(trustedWho(caller)));
 }
 
-export async function loadLesson(who: Who, picks: readonly string[]): Promise<SkyLessonData> {
-  return lessonFromPicks(await historyFor(who), picks);
+export async function loadLesson(caller: Who, picks: readonly string[]): Promise<SkyLessonData> {
+  return lessonFromPicks(await historyFor(trustedWho(caller)), picks);
 }
 
 /** The quiz's cards: the named ones (a retry), else the picks' (a lesson),
  * else what is due; the sample with no picks deals every kind. Which extra
  * cards the learner allows come from Settings when signed in, or from the
  * browser's config, handed in, when not. */
-export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards?: readonly string[]; audio?: boolean; pitch?: boolean }): Promise<QuizCard[]> {
+export async function loadQuiz(caller: Who, ask: { picks?: readonly string[]; cards?: readonly string[]; audio?: boolean; pitch?: boolean }): Promise<QuizCard[]> {
+  const who = trustedWho(caller);
   const history = await historyFor(who);
   const picks = ask.picks ?? [];
   const named = ask.cards ?? [];
@@ -103,7 +117,7 @@ export async function loadQuiz(who: Who, ask: { picks?: readonly string[]; cards
  * caller handed in (the browser's own config), else the account's saved
  * Settings, else on. Both the lesson quiz and a practice deck read them the
  * same way (SAK-426). */
-async function extrasFor(who: Who, ask: { audio?: boolean; pitch?: boolean }): Promise<{ audio: boolean; pitch: boolean }> {
+async function extrasFor(who: TrustedWho, ask: { audio?: boolean; pitch?: boolean }): Promise<{ audio: boolean; pitch: boolean }> {
   let { audio, pitch } = ask;
   if (!who.sample && !who.local && (audio === undefined || pitch === undefined)) {
     const userId = await currentUserId();
@@ -117,7 +131,8 @@ async function extrasFor(who: Who, ask: { audio?: boolean; pitch?: boolean }): P
 /** A practice deck's cards. The learner's audio and pitch settings reach it
  * the way the quiz's do, so a deck asks by ear and by pitch when Settings
  * say so (SAK-426). */
-export async function loadPracticeCards(who: Who, recipe: Recipe, ask: { audio?: boolean; pitch?: boolean } = {}): Promise<QuizCard[]> {
+export async function loadPracticeCards(caller: Who, recipe: Recipe, ask: { audio?: boolean; pitch?: boolean } = {}): Promise<QuizCard[]> {
+  const who = trustedWho(caller);
   const history = await historyFor(who);
   const extras = await extrasFor(who, ask);
   return timedSync("practice", () => practiceCards(history, recipe, Date.now(), extras), "dealing the deck");
@@ -125,39 +140,39 @@ export async function loadPracticeCards(who: Who, recipe: Recipe, ask: { audio?:
 
 /** Practice's live preview: the recipe resolved against the learner, whose
  * history is where the shakiest-first order comes from (SAK-441). */
-export async function practiceLookup(who: Who, recipe: Recipe): Promise<PracticePreview> {
-  const history = await historyFor(who);
+export async function practiceLookup(caller: Who, recipe: Recipe): Promise<PracticePreview> {
+  const history = await historyFor(trustedWho(caller));
   return timedSync("practice", () => practicePreview(history, recipe), "resolving the recipe");
 }
 
 /** The learner's Atlas as its difference from the catalogue (SAK-381): the
  * standings and the shelves' counts, without the 2,815 tiles and ten shelves
  * of sections that are the same for everyone. */
-export async function loadAtlas(who: Who): Promise<AtlasPayload> {
-  const history = await historyFor(who);
+export async function loadAtlas(caller: Who): Promise<AtlasPayload> {
+  const history = await historyFor(trustedWho(caller));
   return timedSync("atlas", () => atlasPayloadFor(history), "working out the atlas");
 }
 
 /** The Atlas's search, over the app's own index. */
-export async function atlasSearch(who: Who, query: string): Promise<AtlasSearchResult> {
-  return atlasSearchFromHistory(await historyFor(who), query);
+export async function atlasSearch(caller: Who, query: string): Promise<AtlasSearchResult> {
+  return atlasSearchFromHistory(await historyFor(trustedWho(caller)), query);
 }
 
 /** One Atlas entry, opened: the card's teaching and what relates to it. */
-export async function atlasEntry(who: Who, id: string): Promise<AtlasEntry> {
-  const entry = atlasEntryFromHistory(await historyFor(who), id);
+export async function atlasEntry(caller: Who, id: string): Promise<AtlasEntry> {
+  const entry = atlasEntryFromHistory(await historyFor(trustedWho(caller)), id);
   if (!entry) throw new Error(`No Atlas entry: ${id}`);
   return entry;
 }
 
 /** A streamed shelf's tiles, for the ids of a cut that scrolled near. */
-export async function atlasTiles(who: Who, ids: readonly string[]): Promise<SkyItem[]> {
-  return atlasTilesFromHistory(await historyFor(who), ids);
+export async function atlasTiles(caller: Who, ids: readonly string[]): Promise<SkyItem[]> {
+  return atlasTilesFromHistory(await historyFor(trustedWho(caller)), ids);
 }
 
 /** A streamed shelf's cuts, kept to one standing. */
-export async function atlasSections(who: Who, shelfId: string, status: Standing): Promise<AtlasSection[]> {
-  return atlasSectionsFromHistory(await historyFor(who), shelfId, status);
+export async function atlasSections(caller: Who, shelfId: string, status: Standing): Promise<AtlasSection[]> {
+  return atlasSectionsFromHistory(await historyFor(trustedWho(caller)), shelfId, status);
 }
 
 /**
@@ -188,8 +203,8 @@ export async function saveQuizRun(run: SavedRun | null): Promise<void> {
   await writeSessionRow(userId, run ? readRun(run) : null);
 }
 
-export async function loadSessions(who: Who): Promise<SkySession[]> {
-  const history = await historyFor(who);
+export async function loadSessions(caller: Who): Promise<SkySession[]> {
+  const history = await historyFor(trustedWho(caller));
   return timedSync("sessions", () => sessionsFromHistory(history), "listing the sessions");
 }
 
