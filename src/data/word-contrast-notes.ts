@@ -103,8 +103,8 @@ function zuruPair(zuru: string): WordContrastPair {
     b: zuru,
     note:
       `${jiru} and ${zuru} are the same verb, written two ways. ${jiru} is the modern ` +
-      `spelling and the one to use; ${zuru} is the older one, and you still meet it in ` +
-      `print.${examples}`,
+      `spelling and the one to use; ${zuru} is the older one, and you might still see it ` +
+      `in print.${examples}`,
   };
 }
 
@@ -118,7 +118,7 @@ export const WORD_CONTRAST_PAIRS: readonly WordContrastPair[] = [
     // already demonstrates the reluctance sense; this note is what makes that
     // connection explicit rather than leaving it for the learner to infer.
     note:
-      "いいえ and いや both gloss as “no,” but they aren't interchangeable. いいえ is the neutral, all-purpose no: plain and safe in any setting, including polite conversation, and it's also how you wave off a compliment (“not at all”). いや is casual and carries feeling: it usually means “I don't want to” or “I'd rather not,” a personal refusal more than a flat fact, so it can land as blunt or childish somewhere formal.",
+      "いいえ and いや both mean “no” but they aren't interchangeable. いいえ is the neutral, all-purpose no: plain and safe in any setting, including polite conversation, and it's also how you wave off a compliment (“not at all”). いや is casual and carries feeling: it usually means “I don't want to” or “I'd rather not,” a personal refusal more than a flat fact, so it can be blunt or childish somewhere formal.",
   },
 ];
 
