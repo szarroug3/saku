@@ -2,10 +2,12 @@
 //
 // The BUTTON is what the Planetarium and the Observatory show, because those
 // are where a learner lands. One button, beside the heading, saying what it
-// goes back to and how far in: "Continue your lesson (step 3 of 7)", or
-// "Continue your quiz (12 of 30)". It is there only when there is something
-// to continue: a page that says "Continue where you left off?" when there is
-// nothing to continue is worse than a page that says nothing.
+// goes back to and how far in: "Continue your lesson (step 3 of 7)",
+// "Continue your lesson (round 1, card 4 of 18)", "Continue your lesson
+// (break before round 2 of 3, 3 min left)", or "Continue your quiz (12 of
+// 30)". It is there only when there is something to continue: a page that
+// says "Continue where you left off?" when there is nothing to continue is
+// worse than a page that says nothing.
 //
 // ONE BUTTON, THE NEWEST WINS. A learner can have both a quiz and a lesson
 // part way through, and two Continue buttons side by side is a question
@@ -21,14 +23,23 @@ import { InlineAsk } from "@/sky/components/inline-ask";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
+import { useNow } from "@/sky/components/use-now";
 import { placeLabel, type PlaceEntry } from "@/sky/lib/place";
 import { runNote, type SavedRun } from "@/sky/lib/quiz-run";
 
 /** The one button, on a page that is neither the quiz nor the lesson. The
  * href is the route's, since only it knows what a Sky URL looks like
- * (SAK-367). */
+ * (SAK-367).
+ *
+ * The clock is the reader's, not the server's. A signed-in learner's button is
+ * rendered on the server from the account's place, and a break counted there
+ * would be counted against the server's minute; so the break says which break
+ * it is until this is a browser, and gains the minutes left after (SAK-355,
+ * the same trade the sessions list makes for its timestamps). */
 export function ContinueButton({ entry, href, className = "" }: { entry: PlaceEntry; href: string; className?: string }) {
-  return <SkyButton variant="outline" href={href} className={className}>{placeLabel(entry)}</SkyButton>;
+  // every half minute, which is as fine as "3 min left" ever needs
+  const now = useNow(30_000);
+  return <SkyButton variant="outline" href={href} className={className}>{placeLabel(entry, now)}</SkyButton>;
 }
 
 /** The ask, in place of a quiz that would replace the quiz you have. */

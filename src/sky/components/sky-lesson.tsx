@@ -69,12 +69,12 @@ interface SkyLessonProps {
    * time, which is in the sky now and so is not taught again -- opens the
    * lesson where it would have opened anyway, on the first step. */
   startAt?: string;
-  /** Where the lesson stands, after every step. The step, how many steps the
-   * order holds, and which star that step is; null when the lesson is over
-   * and there is nothing to come back to. Not called for the step the lesson
-   * opens on, which is not a move and would otherwise write over the very
-   * place that sent the learner here. */
-  onPlace?: (place: { at: number; steps: number; star: string } | null) => void;
+  /** Where the lesson stands: the step, how many steps the order holds, and
+   * which star that step is. Said the moment the lesson opens and after every
+   * step, because a lesson opened and left is a lesson to come back to (Sam,
+   * 2026-09-17). Nothing here ever ends the lesson: the sitting runs on into
+   * the drill's rounds, and the drill is what keeps it from there. */
+  onPlace?: (place: { at: number; steps: number; star: string }) => void;
   height?: string;
 }
 
@@ -179,18 +179,18 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); body.current?.scrollTo({ top: 0 }); }, [selected, page]);
   useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
 
-  // Where the lesson stands, written down after every step (SAK-444), so the
-  // one Continue button can offer the lesson back the way it offers a quiz.
-  // The step the lesson OPENS on is not a move, and reporting it would be
-  // wrong twice over: on a lesson opened fresh it would keep a lesson nobody
-  // has walked, and on one resumed it would write over the very place that
-  // sent the learner here, with a step number worked out from an order that
-  // is shorter now than it was (the stars they opened last time are in their
-  // sky, so the lesson does not teach them again). So the ref holds the star
-  // last reported and starts as the one the lesson opened on: what is
-  // reported is a MOVE rather than a render, and an effect that re-ran
-  // because the data was fetched again has nothing new to say.
-  const reported = useRef(steps[from]?.id ?? null);
+  // Where the lesson stands, written down the moment it opens and after every
+  // step (SAK-444), so the one Continue button can offer the lesson back the
+  // way it offers a quiz. The OPENING step is reported too: a lesson opened
+  // and left on step one is a lesson that was started, and leaving it out was
+  // the reason such a lesson offered nothing at all (Sam, 2026-09-17). It is
+  // safe to report now because the order no longer shrinks as stars are
+  // opened (SAK-446), so a resumed lesson reports the same step of the same
+  // order that sent the learner here rather than writing a shorter one over
+  // it. The ref holds the star last reported, so what is reported is a MOVE
+  // rather than a render, and an effect that re-ran because the data was
+  // fetched again has nothing new to say.
+  const reported = useRef<string | null>(null);
   useEffect(() => {
     if (!stepAt || stepAt === reported.current) return;
     reported.current = stepAt;
@@ -254,9 +254,11 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
       <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
       <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
       {last && drillHref ? (
-        // the lesson is over the moment its drill is opened, so there is
-        // nothing left to come back to (SAK-444)
-        <SkyButton href={drillHref} onClick={() => onPlace?.(null)}>Drill</SkyButton>
+        // The drill is the next part of the same sitting, not the end of it
+        // (SAK-444). Opening it used to throw the lesson away, which is what
+        // left a learner mid-round with nothing to come back to; the drill
+        // keeps the sitting from here.
+        <SkyButton href={drillHref}>Drill</SkyButton>
       ) : (
         <SkyButton disabled={last} onClick={next}>Next</SkyButton>
       )}

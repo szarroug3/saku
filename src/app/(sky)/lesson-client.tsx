@@ -5,13 +5,20 @@
 // own call, so it is in rotation signed in or not.
 //
 // AND A LESSON YOU LEAVE IS HERE WHEN YOU COME BACK (SAK-444). Where the
-// learner is in the order is written down after every step, beside the quiz
-// left part way through and in the same document (quiz-run-store.ts), so the
-// one Continue button can offer whichever of the two is newer. A lesson only
-// picks up a place of its own: the same picks, in the same order, the way a
-// quiz only picks up a run from the same source. Opening this page never
-// looks at the quiz and never asks about it, because starting a lesson is
-// not something that has to replace anything.
+// learner is in the order is written down the moment the lesson opens and
+// after every step, beside the quiz left part way through and in the same
+// document (quiz-run-store.ts), so the one Continue button can offer
+// whichever of the two is newer. A lesson only picks up a place of its own:
+// the same picks, in the same order, the way a quiz only picks up a run from
+// the same source. Opening this page never looks at the quiz and never asks
+// about it, because starting a lesson is not something that has to replace
+// anything.
+//
+// THE STEPS ARE THE FIRST PART OF A SITTING, NOT THE WHOLE OF IT. The same
+// slot carries the rounds and the breaks that follow, and the drill writes
+// those (quiz-client.tsx). This page only ever writes the steps, and it
+// writes them whenever the learner is here: walking back into the lesson from
+// a round is a real move back to the steps.
 //
 // COMING BACK OPENS THE SAME STEP. Opening a star does not move it out of
 // the order (SAK-446), so the order a resumed lesson walks is the one that
@@ -22,7 +29,7 @@ import { useCallback } from "react";
 
 import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
-import { hasPlace, lessonToKeep, NO_PLACE, samePicks, type SavedPlace } from "@/sky/lib/place";
+import { hasPlace, lessonAt, lessonFor, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
 
 import { loadLesson } from "./actions";
 import { skyHref } from "./hrefs";
@@ -40,12 +47,15 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
   // resumes from underneath the learner. The pretend learner and the showcase
   // keep nothing, the way they record nothing.
   const local = usePlaceAtOpen();
-  const kept = sample || showcase || !local ? null : (hasPlace(local) ? local : accountPlace).lesson;
-  const mine = kept && samePicks(kept.picks, picks) ? kept : null;
+  const kept = sample || showcase || !local ? null : lessonFor(hasPlace(local) ? local : accountPlace, picks);
+  // the star to open on, which only the steps know: a sitting left in a round
+  // or a break has no step of its own, so walking back here opens the lesson
+  // where it would open anyway
+  const startAt = kept?.part.kind === "steps" ? kept.part.star : undefined;
   const onPlace = useCallback(
-    (place: { at: number; steps: number; star: string } | null) => {
+    (place: { at: number; steps: number; star: string }) => {
       if (sample || showcase) return;
-      keepLesson(place && lessonToKeep(picks, place.at, place.steps, place.star, Date.now()), signedIn);
+      keepLesson(lessonAt(picks, { kind: "steps", ...place }, Date.now()), signedIn);
     },
     [sample, showcase, picks, signedIn],
   );
@@ -72,7 +82,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
       hear={HearButton}
       pitch={PitchMark}
       onOpen={sample || showcase ? undefined : seeId}
-      startAt={mine?.star}
+      startAt={startAt}
       onPlace={sample || showcase ? undefined : onPlace}
     />
   );
