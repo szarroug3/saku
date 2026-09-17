@@ -53,7 +53,7 @@ export async function loadSettings(userId: string): Promise<SettingsFile> {
 /**
  * Merge a partial settings patch into the stored blob and persist it, safe
  * against a concurrent writer. So a POST that saves one practice recipe leaves
- * cfg and the misses exactly as they were. AND, if another device's write to a
+ * cfg exactly as it was. AND, if another device's write to a
  * different field lands in between, that field survives too instead of being
  * overwritten by this write's stale copy of it.
  */

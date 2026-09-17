@@ -68,6 +68,10 @@ export interface RecordOptions {
   /** Links this round's record to every other round of the SAME multi-round
    * session — see QuizSessionRecord.sessionId. */
   sessionId?: string;
+  /** The run came from Practice, with the recipe's name when it has one
+   * (SAK-441). It marks the record; it changes nothing about what is counted
+   * or folded, because a practice run counts exactly as a quiz does. */
+  practice?: { name?: string };
 }
 
 /**
@@ -181,5 +185,6 @@ export function buildSessionRecord(
     ...(opts.planned ? { planned: opts.planned } : {}),
     ...(opts.rounds !== undefined ? { rounds: opts.rounds } : {}),
     ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),
+    ...(opts.practice ? { practice: opts.practice } : {}),
   };
 }

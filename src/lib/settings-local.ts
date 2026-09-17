@@ -14,16 +14,15 @@
 //   applyServerSettings(store, s)     — DOWN. Write the server's copy back into
 //                                       the individual keys, so the readers that
 //                                       consult localStorage directly (Practice,
-//                                       whose saved recipes and misses live there
-//                                       and nowhere else) see the source of
-//                                       truth.
+//                                       whose saved recipes live there and
+//                                       nowhere else) see the source of truth.
 //
 // Two fields, since the old app's screens went (SAK-374): the config the Settings
 // page writes, and Practice's keepsakes. The keys come from settings-keys.ts.
 // Nothing here imports the React providers, which is what keeps it out of the
 // use-settings → provider → here cycle.
 
-import { CFG_KEY, PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { CFG_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import type { QuizConfig } from "@/types/sky";
 import type { SettingsFile } from "@/types/store";
 
@@ -62,15 +61,9 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
     const cfg = parse(store.getItem(CFG_KEY));
     if (isPlainObject(cfg)) out.cfg = cfg as unknown as QuizConfig;
 
-    // practice's keepsakes (SAK-342): only when either is set
+    // practice's keepsakes (SAK-342): the saved recipes, when there are any
     const saved = parse(store.getItem(PRACTICE_SAVED_KEY));
-    const misses = parse(store.getItem(PRACTICE_MISSES_KEY));
-    if (Array.isArray(saved) || isPlainObject(misses)) {
-      out.practice = {
-        ...(Array.isArray(saved) ? { saved: saved as { name: string; recipe: unknown }[] } : {}),
-        ...(isPlainObject(misses) ? { misses: misses as Record<string, number> } : {}),
-      };
-    }
+    if (Array.isArray(saved)) out.practice = { saved: saved as { name: string; recipe: unknown }[] };
   } catch {
     // a throwing store — return what we have (the safe, partial answer)
   }
@@ -103,8 +96,5 @@ export function applyServerSettings(
 
   if (settings.cfg !== undefined) set(store, CFG_KEY, JSON.stringify(settings.cfg));
 
-  if (settings.practice !== undefined) {
-    if (settings.practice.saved !== undefined) set(store, PRACTICE_SAVED_KEY, JSON.stringify(settings.practice.saved));
-    if (settings.practice.misses !== undefined) set(store, PRACTICE_MISSES_KEY, JSON.stringify(settings.practice.misses));
-  }
+  if (settings.practice?.saved !== undefined) set(store, PRACTICE_SAVED_KEY, JSON.stringify(settings.practice.saved));
 }

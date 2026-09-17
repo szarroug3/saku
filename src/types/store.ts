@@ -241,6 +241,19 @@ export interface QuizSessionRecord {
    * what they always were.
    */
   sessionId?: string;
+  /**
+   * This run came from Practice (SAK-441), and the name of the recipe it was
+   * dealt from when that recipe has one.
+   *
+   * A practice run is recorded exactly as a quiz is: the same grades, the same
+   * fold, the same schedule. This field changes nothing about any of that. It
+   * is here so the Sessions list can say which screen asked, the way it already
+   * says whether a record was a drill or a sentence ordering, and so a row can
+   * carry "Evening drill" when that is what the learner called the deck.
+   *
+   * Absent on every quiz record and on everything written before SAK-441.
+   */
+  practice?: { name?: string };
 }
 
 export interface HistoryFile {
@@ -376,14 +389,16 @@ export interface HistoryFile {
 export interface SettingsFile {
   /** Quiz configuration — the whole QuizConfig, same shape the client holds. */
   cfg?: QuizConfig;
-  /** Practice's own keepsakes (SAK-342): the saved recipes, and the misses
-   * practice notes for its own ordering. Never the schedule's business; kept
-   * here so they follow the learner across devices like every setting. The
-   * recipe's shape is the Sky's (`src/sky/lib/practice.ts`), opaque here. */
+  /** Practice's own keepsakes (SAK-342): the recipes the learner saved, kept
+   * here so they follow them across devices like every setting. The recipe's
+   * shape is the Sky's (`src/sky/lib/practice.ts`), opaque here.
+   *
+   * It used to carry a second half, the misses practice counted for its own
+   * ordering. Practice records now (SAK-441), so the history answers that
+   * question and the half is gone. */
   practice?: PracticeFile;
 }
 
 export interface PracticeFile {
   saved?: { name: string; recipe: unknown }[];
-  misses?: Record<string, number>;
 }

@@ -25,7 +25,7 @@ import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/componen
 import type { SkyPayload } from "./sky-payload";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import type { SkyObservatoryData } from "@/sky/components/sky-observatory";
-import type { PracticeMisses, PracticePreview, Recipe } from "@/sky/lib/practice";
+import type { PracticePreview, Recipe } from "@/sky/lib/practice";
 import type { SkySession } from "@/sky/lib/sessions";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem } from "@/sky/lib/types";
@@ -120,14 +120,14 @@ async function extrasFor(who: Who, ask: { audio?: boolean; pitch?: boolean }): P
 export async function loadPracticeCards(who: Who, recipe: Recipe, ask: { audio?: boolean; pitch?: boolean } = {}): Promise<QuizCard[]> {
   const history = await historyFor(who);
   const extras = await extrasFor(who, ask);
-  return timedSync("practice", () => practiceCards(history, recipe, {}, Date.now(), extras), "dealing the deck");
+  return timedSync("practice", () => practiceCards(history, recipe, Date.now(), extras), "dealing the deck");
 }
 
-/** Practice's live preview: the recipe resolved against the learner. Reads
- * only; practice never writes the schedule. */
-export async function practiceLookup(who: Who, recipe: Recipe, misses: PracticeMisses): Promise<PracticePreview> {
+/** Practice's live preview: the recipe resolved against the learner, whose
+ * history is where the shakiest-first order comes from (SAK-441). */
+export async function practiceLookup(who: Who, recipe: Recipe): Promise<PracticePreview> {
   const history = await historyFor(who);
-  return timedSync("practice", () => practicePreview(history, recipe, misses), "resolving the recipe");
+  return timedSync("practice", () => practicePreview(history, recipe), "resolving the recipe");
 }
 
 /** The learner's Atlas as its difference from the catalogue (SAK-381): the
@@ -206,8 +206,13 @@ export async function factsOfPicks(ids: readonly string[]): Promise<FactId[]> {
  * ear) and, when ordering cards were answered, an assembly session of
  * their sentences' pattern facts, which is what marks a tier done. The
  * three grades map onto the model's two: perfect is a hit; with help is
- * right but not a first-try hit; missed is a miss. */
-export async function quizRecords(answers: readonly QuizAnswer[]): Promise<QuizSessionRecord[]> {
+ * right but not a first-try hit; missed is a miss.
+ *
+ * A practice run comes through here too, and comes through unchanged
+ * (SAK-441): `practice` only marks the records it makes, so Sessions can
+ * name the row. What is counted, and what it does to the schedule, is the
+ * same work by the same path. */
+export async function quizRecords(answers: readonly QuizAnswer[], practice?: { name?: string }): Promise<QuizSessionRecord[]> {
   if (answers.length === 0) return [];
   const stats: SessionStats = {};
   const assembly: SessionStats = {};
@@ -230,7 +235,8 @@ export async function quizRecords(answers: readonly QuizAnswer[]): Promise<QuizS
     if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
   }
   const ts = Date.now();
-  const drill = buildSessionRecord(stats, { mode: "drill", redrill: false, ts, planned: answers.filter((a) => !isSentenceTierMarkerFact(a.cardId as FactId)).map((a) => a.cardId.replace(/#listen$/, "") as FactId) });
-  const ordered = buildSessionRecord(assembly, { mode: "assembly", redrill: false, ts: ts + 1, planned: Object.keys(assembly) as FactId[] });
+  const from = practice ? { practice } : {};
+  const drill = buildSessionRecord(stats, { mode: "drill", redrill: false, ts, planned: answers.filter((a) => !isSentenceTierMarkerFact(a.cardId as FactId)).map((a) => a.cardId.replace(/#listen$/, "") as FactId), ...from });
+  const ordered = buildSessionRecord(assembly, { mode: "assembly", redrill: false, ts: ts + 1, planned: Object.keys(assembly) as FactId[], ...from });
   return [drill, ordered].filter((r): r is QuizSessionRecord => !!r);
 }

@@ -111,14 +111,14 @@ describe("two devices changing different settings in the same window (SAK-258)",
       await save(store, { cfg: cfg("drill") });
     };
 
-    const result = await save(store, { practice: { misses: { a: 1 } } });
+    const result = await save(store, { practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
 
     assert.deepEqual(
       result,
-      { cfg: cfg("drill"), practice: { misses: { a: 1 } } },
+      { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } },
       "the resolved file holds both devices' fields",
     );
-    assert.deepEqual(store.state.settings, { cfg: cfg("drill"), practice: { misses: { a: 1 } } });
+    assert.deepEqual(store.state.settings, { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
     assert.ok(store.conflicts >= 1, "device A lost the CAS at least once and retried");
   });
 
@@ -128,14 +128,15 @@ describe("two devices changing different settings in the same window (SAK-258)",
       await save(store, { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
     };
 
-    const result = await save(store, { cfg: cfg("drill"), practice: { misses: { a: 1 } } });
+    const result = await save(store, { cfg: cfg("drill") });
 
     // Both devices asked for the same cfg here, so there is no real conflict to
-    // observe on that field. The point is B's saved recipes and A's misses both
-    // surviving regardless of who touched the config.
+    // observe on that field. The point is B's saved recipes surviving a write
+    // from A that never mentioned them. (A's own practice half went with
+    // SAK-441: practice records now, so there are no two halves to keep apart.)
     assert.deepEqual(result, {
       cfg: cfg("drill"),
-      practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: { a: 1 } },
+      practice: { saved: [{ name: "Kanji drill", recipe: {} }] },
     });
   });
 
@@ -171,10 +172,10 @@ describe("two devices changing different settings in the same window (SAK-258)",
       settings: { cfg: cfg("drill") },
       version: "seed",
     });
-    const result = await save(store, { practice: { misses: { a: 1 } } });
+    const result = await save(store, { practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
     assert.deepEqual(result, {
       cfg: cfg("drill"),
-      practice: { misses: { a: 1 } },
+      practice: { saved: [{ name: "Kanji drill", recipe: {} }] },
     });
   });
 });

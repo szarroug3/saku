@@ -1,8 +1,8 @@
 // Practice from the app's tables: a recipe resolved against the Atlas's
 // collections, the learner's standings and misses, and the engine's facts.
-// Server-side and dev-only, like the adapters beside it. Nothing here
-// touches the schedule: a practice run's answers never reach recordQuiz
-// (SAK-318); the run's misses are kept by the client as signal only.
+// Server-side and dev-only, like the adapters beside it. The misses are the
+// history's own: a practice run is recorded like any quiz (SAK-441), so what
+// was missed in practice is what puts a card first here next time.
 
 import { isConstructionFact } from "@/data/counter-categories";
 import { isPitchFact } from "@/data/pitch";
@@ -17,7 +17,7 @@ import { isReadingFact, provenReadingFacts, quizzable } from "@/lib/library/read
 import { shelfSections } from "@/lib/library/shelf-sections";
 import { timedSync } from "@/lib/server-timing";
 import { fixedDirOf, mcOnlyIn } from "@/lib/engine/question";
-import { cutsOf, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticeMisses, type PracticePreview, type Recipe } from "@/sky/lib/practice";
+import { cutsOf, PREVIEW_CAP, type Ask, type PracticeCollection, type PracticeCut, type PracticeItem, type PracticePreview, type Recipe } from "@/sky/lib/practice";
 import type { SkyItem } from "@/sky/lib/types";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
@@ -241,8 +241,8 @@ function baseFor(recipe: Recipe): Base {
 }
 
 /** The recipe's whole pool, shakiest first, and which asks it could carry. */
-function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number): Resolved {
-  const missesOf = (f: FactId) => (history.facts?.[f]?.missed ?? 0) + (practiceMisses[f as string] ?? 0);
+function resolve(history: HistoryFile, recipe: Recipe, now: number): Resolved {
+  const missesOf = (f: FactId) => history.facts?.[f]?.missed ?? 0;
   let pool: Candidate[];
   let asksAvailable: Record<Ask, boolean>;
   if (recipe.statuses.length) {
@@ -284,14 +284,12 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
       return c;
     };
     for (const idx of opened) candidate(idx);
-    const missed = new Set<string>(touchedFacts(history) as readonly string[]);
-    for (const f of Object.keys(practiceMisses)) missed.add(f);
-    for (const f of missed) {
-      const m = missesOf(f as FactId);
+    for (const f of touchedFacts(history)) {
+      const m = missesOf(f);
       if (!m) continue;
-      for (const idx of base.keptBy.get(f) ?? []) {
+      for (const idx of base.keptBy.get(f as string) ?? []) {
         const c = candidate(idx);
-        if (c.facts.includes(f as FactId)) c.misses += m;
+        if (c.facts.includes(f)) c.misses += m;
       }
     }
     // shakiest first, ties in the shelf's order: the ones with misses sorted
@@ -321,8 +319,8 @@ function resolve(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeM
 /** The recipe, resolved now: the pool the deck is drawn from (shakiest
  * first, the first PREVIEW_CAP of it), how many match in all, how many
  * questions they hold between them, and which asks the pool could carry. */
-export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses = {}, now = Date.now()): PracticePreview {
-  const { pool, asksAvailable, items } = timedSync("practice:resolve", () => resolve(history, recipe, practiceMisses, now));
+export function practicePreview(history: HistoryFile, recipe: Recipe, now = Date.now()): PracticePreview {
+  const { pool, asksAvailable, items } = timedSync("practice:resolve", () => resolve(history, recipe, now));
   // the questions are counted over the WHOLE pool, not over the capped items:
   // a deck is one card per fact, and the panel says how many that is
   const questions = pool.reduce((n, c) => n + c.facts.length, 0);
@@ -338,8 +336,8 @@ export function practicePreview(history: HistoryFile, recipe: Recipe, practiceMi
  * at random among its own, so the deck is exactly the number asked for
  * whenever the pool holds that many. "All of them" is the pool in its own
  * order, untouched. */
-function draw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now: number, random: () => number): { drawn: Candidate[]; items: Resolved["items"] } {
-  const { pool, items } = resolve(history, recipe, practiceMisses, now);
+function draw(history: HistoryFile, recipe: Recipe, now: number, random: () => number): { drawn: Candidate[]; items: Resolved["items"] } {
+  const { pool, items } = resolve(history, recipe, now);
   if (recipe.size === "all") return { drawn: pool, items };
   const shuffled = [...pool];
   for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
@@ -361,8 +359,8 @@ function draw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMiss
 }
 
 /** The deck's items. */
-export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), random = Math.random): PracticeItem[] {
-  const { drawn, items } = draw(history, recipe, practiceMisses, now, random);
+export function practiceDraw(history: HistoryFile, recipe: Recipe, now = Date.now(), random = Math.random): PracticeItem[] {
+  const { drawn, items } = draw(history, recipe, now, random);
   return items(drawn);
 }
 
@@ -376,11 +374,11 @@ export function practiceDraw(history: HistoryFile, recipe: Recipe, practiceMisse
  * by becomes a listening card half the time, and with `pitch` off the
  * words' pitch facts are dropped before any card is built. Both default to
  * on, as Settings do. */
-export function practiceCards(history: HistoryFile, recipe: Recipe, practiceMisses: PracticeMisses, now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
+export function practiceCards(history: HistoryFile, recipe: Recipe, now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
   const audio = opts.audio ?? true;
   const pitch = opts.pitch ?? true;
   // the cards want the facts alone, so the drawn items are never built
-  const drawn = draw(history, recipe, practiceMisses, now, Math.random).drawn.flatMap((p) => p.facts);
+  const drawn = draw(history, recipe, now, Math.random).drawn.flatMap((p) => p.facts);
   const facts = pitch ? drawn : drawn.filter((f) => !isPitchFact(f as string));
   return shuffleDeck(quizCards(history, facts, now, { audio, pitch }));
 }

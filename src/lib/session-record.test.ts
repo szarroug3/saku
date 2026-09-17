@@ -288,3 +288,26 @@ test("every record carries a distinct id, so a retry can be recognized", () => {
     "fixed",
   );
 });
+
+// SAK-441 reverses SAK-318: a practice run is recorded exactly as a quiz is,
+// and the mark is the only difference between the two records. It says which
+// screen asked, so Sessions can name the row "Practice", and it carries the
+// recipe's name when the learner has saved one.
+test("a practice run's mark rides the record, and changes nothing that is counted", () => {
+  const quiz = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, id: "fixed" })!;
+  const practice = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, id: "fixed", practice: { name: "Evening drill" } })!;
+  assert.deepEqual(practice.practice, { name: "Evening drill" });
+  assert.equal(quiz.practice, undefined);
+  assert.deepEqual({ ...practice, practice: undefined }, { ...quiz, practice: undefined });
+});
+
+test("a practice run with no saved name still marks the record", () => {
+  const r = buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, practice: {} })!;
+  assert.deepEqual(r.practice, {});
+});
+
+test("what a practice run does to the aggregate is what a quiz does", () => {
+  const quiz = foldAll([buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, id: "fixed" })!]);
+  const practice = foldAll([buildSessionRecord(ROUND_1, { ...OPTS, ts: 1_000, id: "fixed", practice: { name: "Evening drill" } })!]);
+  assert.deepEqual(practice, quiz);
+});

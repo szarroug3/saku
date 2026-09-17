@@ -250,8 +250,8 @@ export function SettingsProvider({
     [userId, queueWrite],
   );
 
-  // Register save() as the bridge the plain writers (Practice's recipes and
-  // misses) push through.
+  // Register save() as the bridge the plain writer (Practice's saved recipes)
+  // pushes through.
   useEffect(() => {
     registerSettingsPusher(save);
     return () => unregisterSettingsPusher(save);

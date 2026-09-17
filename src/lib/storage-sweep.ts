@@ -21,7 +21,7 @@
 // (a cookie is not in Storage and is cleared by expiring it).
 //
 // WHAT IS NOT HERE, and why:
-//   saku-cfg, sky:practice:recipes, sky:practice:misses: live settings.
+//   saku-cfg, sky:practice:recipes: live settings.
 //   saku-local-history, saku-local-lists: a signed-out visitor's own progress
 //     and lists, still written by store/local-progress.ts.
 //   saku-history-cache:*, sky:quiz:rest: live caches.
@@ -54,6 +54,9 @@ export const DEAD_KEYS: readonly string[] = [
   "saku-session-sync",
   // the unsent-record outbox, whose module went with the old app
   "saku-pending-records",
+  // practice's own count of what had been missed: practice records now, so
+  // the history answers that question and nothing reads this (SAK-441)
+  "sky:practice:misses",
 ];
 
 /** Keys of features that are gone, by prefix: every once-ever concept card's

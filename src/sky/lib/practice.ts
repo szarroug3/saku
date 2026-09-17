@@ -1,8 +1,8 @@
 // Practice's model: a recipe that describes a deck rather than assembling
 // it (SAK-319), the preview it resolves to (SAK-320), and a saved recipe,
-// which is the recipe under a name (SAK-321). Practice never writes to
-// the review schedule (SAK-318): a run's answers go to whoever the route
-// hands in, and that is never the recorder the Quiz uses.
+// which is the recipe under a name (SAK-321). A practice run's answers go
+// to the same recorder the Quiz's do (SAK-441), so a deck drilled here
+// moves the schedule and the standings like any other.
 
 import { STANDING, STANDING_ORDER, type Standing } from "./standing";
 import type { SkyItem } from "./types";
@@ -155,7 +155,8 @@ export function recipeSummary(recipe: Recipe, collections: readonly PracticeColl
   return clauses.join(", ");
 }
 
-/** An item in the preview, with what it has been missed. */
+/** An item in the preview, with how often it has been missed: the learner's
+ * own history, practice runs and quizzes alike (SAK-441). */
 export interface PracticeItem {
   item: SkyItem;
   misses: number;
@@ -180,9 +181,6 @@ export interface PracticePreview {
   /** Which asks the pool could support, before the recipe's own asks cut it. */
   asksAvailable: Readonly<Record<Ask, boolean>>;
 }
-
-/** Misses kept by practice itself, per fact: signal only, never the schedule. */
-export type PracticeMisses = Readonly<Record<string, number>>;
 
 /** How many questions the deck will hold: the number asked for, or every
  * question the pool holds when that is fewer or "all" was asked. */

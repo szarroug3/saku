@@ -25,9 +25,14 @@ import { factsOfPicks, quizRecords } from "./actions";
  * So the window is closed at the other end instead: the results screen says
  * "Saving this run." and holds its way back until this resolves (SAK-410, see
  * SaveState in sky/components/quiz-results.tsx). Nobody leaves inside it.
+ *
+ * A PRACTICE RUN COMES HERE TOO (SAK-441). It hands in `practice`, which marks
+ * the records with the screen they came from and the recipe's name, and is
+ * otherwise this exact path: the same grades, the same records, the same
+ * schedule.
  */
-export async function recordAnswers(answers: readonly QuizAnswer[]): Promise<void> {
-  for (const record of await quizRecords(answers)) {
+export async function recordAnswers(answers: readonly QuizAnswer[], practice?: { name?: string }): Promise<void> {
+  for (const record of await quizRecords(answers, practice)) {
     const r = await postSession(record);
     if (!r.ok) throw new Error("not recorded");
   }

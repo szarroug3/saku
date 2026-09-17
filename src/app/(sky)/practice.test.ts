@@ -17,20 +17,20 @@ describe("practicePreview", () => {
   const history = sampleHistory(NOW);
 
   it("lights the reading-in-a-word ask once a kanji's word has been met", () => {
-    const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kanji"], size: "all" }, {}, NOW);
+    const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kanji"], size: "all" }, NOW);
     assert.equal(preview.asksAvailable["reading-in-word"], true);
     const inWord = preview.items.flatMap((p) => p.facts).filter((f) => /^kanji:.\/reading@../.test(f));
     assert.ok(inWord.length > 0);
   });
 
   it("never asks a kanji how it is said on its own", () => {
-    const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kanji"], asks: ["reading"], size: "all" }, {}, NOW);
+    const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kanji"], asks: ["reading"], size: "all" }, NOW);
     assert.equal(preview.asksAvailable.reading, false);
     assert.equal(preview.matched, 0);
   });
 
   it("previews the whole pool, shakiest first, up to the cap", () => {
-    const preview = practicePreview(history, { ...EMPTY_RECIPE, size: 5 }, {}, NOW);
+    const preview = practicePreview(history, { ...EMPTY_RECIPE, size: 5 }, NOW);
     assert.ok(preview.items.length > 5);
     assert.ok(preview.matched >= preview.items.length);
     const misses = preview.items.map((p) => p.misses);
@@ -42,11 +42,11 @@ describe("practicePreview", () => {
   // count is over the WHOLE pool, so a pool past the preview's cap still says
   // how long it is.
   it("counts the questions the whole pool holds, not the ones it sends", () => {
-    const all = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kana"], size: "all" }, {}, NOW);
+    const all = practicePreview(history, { ...EMPTY_RECIPE, collections: ["kana"], size: "all" }, NOW);
     assert.equal(all.items.length, all.matched, "this recipe should fit under the cap");
     assert.equal(all.questions, all.items.reduce((n, p) => n + p.facts.length, 0));
 
-    const capped = practicePreview(history, { ...EMPTY_RECIPE, size: "all" }, {}, NOW);
+    const capped = practicePreview(history, { ...EMPTY_RECIPE, size: "all" }, NOW);
     assert.equal(capped.items.length, PREVIEW_CAP, "this recipe should run past the cap");
     assert.ok(capped.matched > capped.items.length);
     assert.ok(capped.questions > capped.items.reduce((n, p) => n + p.facts.length, 0));
@@ -54,9 +54,9 @@ describe("practicePreview", () => {
 
   it("takes an item's own questions out with it when it is left out by hand", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: "all" as const };
-    const before = practicePreview(history, recipe, {}, NOW);
+    const before = practicePreview(history, recipe, NOW);
     const gone = before.items[0];
-    const after = practicePreview(history, { ...recipe, excluded: [gone.item.id] }, {}, NOW);
+    const after = practicePreview(history, { ...recipe, excluded: [gone.item.id] }, NOW);
     assert.equal(after.questions, before.questions - gone.facts.length);
   });
 
@@ -64,17 +64,17 @@ describe("practicePreview", () => {
   // a longer item forces is the suite below
   it("draws at random from the pool, less what is left out", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["kana"], size: 5 as const };
-    const pool = practicePreview(history, recipe, {}, NOW).items;
+    const pool = practicePreview(history, recipe, NOW).items;
     const excluded = [pool[0].item.id];
     const left = { ...recipe, excluded };
-    assert.equal(practicePreview(history, left, {}, NOW).matched, pool.length - 1);
+    assert.equal(practicePreview(history, left, NOW).matched, pool.length - 1);
     let seed = 7;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const drawn = practiceDraw(history, left, {}, NOW, random);
+    const drawn = practiceDraw(history, left, NOW, random);
     assert.equal(drawn.length, 5);
     assert.ok(drawn.every((d) => pool.some((p) => p.item.id === d.item.id)));
     assert.ok(!drawn.some((d) => excluded.includes(d.item.id)));
-    const again = practiceDraw(history, left, {}, NOW, () => 0.5);
+    const again = practiceDraw(history, left, NOW, () => 0.5);
     assert.notDeepEqual(drawn.map((d) => d.item.id), again.map((d) => d.item.id));
   });
 });
@@ -92,37 +92,37 @@ describe("a limited deck is counted in questions (SAK-437)", () => {
   const asked = (drawn: readonly { facts: readonly string[] }[]) => drawn.reduce((n, d) => n + d.facts.length, 0);
 
   it("deals exactly the number asked for when the pool holds that many", () => {
-    for (const size of [1, 5, 30, 133]) assert.equal(asked(practiceDraw(history, { ...pairs, size }, {}, NOW, dice())), size, `asked for ${size}`);
+    for (const size of [1, 5, 30, 133]) assert.equal(asked(practiceDraw(history, { ...pairs, size }, NOW, dice())), size, `asked for ${size}`);
   });
 
   it("splits the one item that would overshoot and no other", () => {
-    const whole = new Map(practicePreview(history, { ...pairs, size: "all" }, {}, NOW).items.map((p) => [p.item.id, p.facts.length]));
-    const drawn = practiceDraw(history, { ...pairs, size: 7 }, {}, NOW, dice());
+    const whole = new Map(practicePreview(history, { ...pairs, size: "all" }, NOW).items.map((p) => [p.item.id, p.facts.length]));
+    const drawn = practiceDraw(history, { ...pairs, size: 7 }, NOW, dice());
     // three pairs whole and a half of a fourth
     assert.equal(drawn.length, 4);
     assert.deepEqual(drawn.map((d) => d.facts.length), [2, 2, 2, 1]);
     assert.equal(drawn.filter((d) => d.facts.length < whole.get(d.item.id)!).length, 1);
     // an even number needs no split at all
-    assert.ok(practiceDraw(history, { ...pairs, size: 8 }, {}, NOW, dice()).every((d) => d.facts.length === whole.get(d.item.id)));
+    assert.ok(practiceDraw(history, { ...pairs, size: 8 }, NOW, dice()).every((d) => d.facts.length === whole.get(d.item.id)));
   });
 
   it("is shorter than asked only when the pool runs out of questions", () => {
     const keigo = { ...EMPTY_RECIPE, collections: ["keigo"], size: 500 as const };
-    const pool = practicePreview(history, { ...keigo, size: "all" }, {}, NOW);
+    const pool = practicePreview(history, { ...keigo, size: "all" }, NOW);
     assert.ok(pool.questions > 0 && pool.questions < 500);
-    assert.equal(asked(practiceDraw(history, keigo, {}, NOW, dice())), pool.questions);
+    assert.equal(asked(practiceDraw(history, keigo, NOW, dice())), pool.questions);
   });
 
   it("leaves all of them alone", () => {
     const all = { ...pairs, size: "all" as const };
-    const pool = practicePreview(history, all, {}, NOW);
-    const drawn = practiceDraw(history, all, {}, NOW, dice());
+    const pool = practicePreview(history, all, NOW);
+    const drawn = practiceDraw(history, all, NOW, dice());
     assert.equal(drawn.length, pool.matched);
     assert.equal(asked(drawn), pool.questions);
   });
 
   it("deals one card per question asked for", () => {
-    assert.equal(withRandom(0.1, () => practiceCards(history, { ...pairs, size: 9 }, {}, NOW)).length, 9);
+    assert.equal(withRandom(0.1, () => practiceCards(history, { ...pairs, size: 9 }, NOW)).length, 9);
   });
 });
 
@@ -139,7 +139,7 @@ describe("the cuts within a collection", () => {
   });
 
   it("combines a script with a row type, and widens within a group", () => {
-    const at = (kept: readonly string[]) => practicePreview(history, { ...EMPTY_RECIPE, collections: ["kana"], cuts: { kana: kept }, size: "all" }, {}, NOW);
+    const at = (kept: readonly string[]) => practicePreview(history, { ...EMPTY_RECIPE, collections: ["kana"], cuts: { kana: kept }, size: "all" }, NOW);
     const glyphs = (kept: readonly string[]) => at(kept).items.map((p) => p.item.glyph);
     const katakanaYoon = glyphs(["katakana", "yoon"]);
     assert.ok(katakanaYoon.length > 0 && katakanaYoon.every((g) => /^[ァ-ヺ]+$/.test(g) && g.length === 2), katakanaYoon.join(""));
@@ -148,10 +148,10 @@ describe("the cuts within a collection", () => {
   });
 
   it("holds the counting rules and the numbers on the counting shelf, asked as readings", () => {
-    const rules = practicePreview(history, { ...EMPTY_RECIPE, collections: ["counting"], cuts: { counting: ["counters-constructions"] }, size: "all" }, {}, NOW);
+    const rules = practicePreview(history, { ...EMPTY_RECIPE, collections: ["counting"], cuts: { counting: ["counters-constructions"] }, size: "all" }, NOW);
     assert.ok(rules.matched > 0);
     assert.ok(rules.items.every((p) => p.facts.every((f) => askOf(f as never) === "reading")));
-    const whole = practicePreview(history, { ...EMPTY_RECIPE, collections: ["counting"], size: "all" }, {}, NOW);
+    const whole = practicePreview(history, { ...EMPTY_RECIPE, collections: ["counting"], size: "all" }, NOW);
     assert.ok(whole.matched > rules.matched + 10);
   });
 });
@@ -163,7 +163,7 @@ describe("the pool's items are built for the ones sent", () => {
     // nothing in a pool comes back empty from the Observatory's offerPick.
     const history = sampleHistory();
     for (const c of practiceCollections()) {
-      const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: [c.id], size: "all" }, {}, NOW);
+      const preview = practicePreview(history, { ...EMPTY_RECIPE, collections: [c.id], size: "all" }, NOW);
       assert.equal(preview.items.length, Math.min(preview.matched, PREVIEW_CAP), `${c.id}: ${preview.items.length} items for ${preview.matched} matched`);
     }
   });
@@ -176,23 +176,23 @@ describe("a deck asks by ear and by pitch when Settings say so (SAK-426)", () =>
   const words = { ...EMPTY_RECIPE, collections: ["words"], asks: ["meaning", "pick"] as const, size: 20 as const };
 
   it("keeps a word's pitch in the pool, which is where it was missing", () => {
-    const preview = practicePreview(history, { ...words, size: "all" }, {}, NOW);
+    const preview = practicePreview(history, { ...words, size: "all" }, NOW);
     const pitch = preview.items.flatMap((p) => p.facts).filter((f) => (f as string).endsWith("/pitch"));
     assert.ok(pitch.length > 0, "the pool carries pitch facts");
     assert.ok(pitch.every((f) => askOf(f as never) === "pick"));
   });
 
   it("asks by ear only with audio prompts on", () => {
-    const heard = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: true }));
+    const heard = withRandom(0.1, () => practiceCards(history, words, NOW, { audio: true, pitch: true }));
     assert.ok(heard.some((c) => c.listen), "a listening card");
-    const read = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: false, pitch: true }));
+    const read = withRandom(0.1, () => practiceCards(history, words, NOW, { audio: false, pitch: true }));
     assert.ok(!read.some((c) => c.listen), "none by ear with audio off");
   });
 
   it("asks a word's pitch only with pitch questions on", () => {
-    const asked = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: true }));
+    const asked = withRandom(0.1, () => practiceCards(history, words, NOW, { audio: true, pitch: true }));
     assert.ok(asked.some((c) => c.id.endsWith("/pitch")), "a pitch card");
-    const without = withRandom(0.1, () => practiceCards(history, words, {}, NOW, { audio: true, pitch: false }));
+    const without = withRandom(0.1, () => practiceCards(history, words, NOW, { audio: true, pitch: false }));
     assert.ok(!without.some((c) => c.id.endsWith("/pitch")));
   });
 });

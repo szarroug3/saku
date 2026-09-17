@@ -1,10 +1,9 @@
 "use client";
 
-// Practice's client side: the recipe page with its saved recipes and its own
-// misses, kept in the browser and pushed up as the `practice` field of the
-// learner's settings (SAK-342), so they follow the learner across devices
-// and stay nowhere near the schedule (SAK-318); the run is the Quiz's own
-// screen with a recorder that only notes misses.
+// Practice's client side: the recipe page with its saved recipes, kept in the
+// browser and pushed up as the `practice` field of the learner's settings
+// (SAK-342), so they follow the learner across devices; the run is the Quiz's
+// own screen, with the Quiz's own recorder behind it (SAK-441).
 // A server component cannot pass a function to a client one, so the route
 // hands in a bound lookup and this file does the navigating.
 
@@ -14,12 +13,12 @@ import { useCallback, useMemo, useState } from "react";
 
 import { HearButton } from "./hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { ResumeAsk } from "@/sky/components/quiz-resume";
 import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
-import { EMPTY_RECIPE, recipeKey, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { EMPTY_RECIPE, recipeKey, sameRecipe, type PracticeCollection, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 
@@ -31,36 +30,25 @@ import { grade } from "./grade";
 import { keepRun, useRunAtOpen } from "./quiz-run-store";
 import { typeKana } from "./typing";
 import { retriesOf, retriesPatch } from "./retries";
-import { readStored as read, useStored, writeStored } from "./stored";
+import { useStored, writeStored } from "./stored";
+import { recordAnswers } from "./writes";
 import type { Who } from "./who";
 
 const SAVED_KEY = PRACTICE_SAVED_KEY;
-const MISSES_KEY = PRACTICE_MISSES_KEY;
 
-/**
- * Writes the browser's copy, then pushes UP THE HALF THAT CHANGED (SAK-377).
+/** Writes the browser's copy of the saved recipes, then pushes it up.
  *
- * It used to push both halves every time, from this browser's own copies, and
- * the merge on the way in replaced the pair whole. So a laptop renaming a
- * recipe sent its own misses too, and if the phone had recorded some since
- * this laptop last synced, they were gone. The comment here claimed the
- * opposite; sending both was exactly what caused it.
- *
- * Saving a recipe now says only what it saved, and recording a miss says only
- * what it missed. `mergeSettings` keeps the other half and takes the larger
- * count per card.
- */
-function write(key: string, value: unknown) {
-  writeStored(key, value);
-  pushSettings({
-    practice: key === SAVED_KEY
-      ? { saved: read<{ name: string; recipe: unknown }[]>(SAVED_KEY, []) }
-      : { misses: read<Record<string, number>>(MISSES_KEY, {}) },
-  });
+ * Practice used to keep a second thing here, its own count of what had been
+ * missed, and the two halves were written at different moments by whichever
+ * device was in front of the learner (SAK-377). A practice run is recorded
+ * now (SAK-441), so the history holds the misses and this is one value again:
+ * the recipes, written whole, last write winning like every other setting. */
+function saveRecipes(next: readonly SavedRecipe[]) {
+  writeStored(SAVED_KEY, next);
+  pushSettings({ practice: { saved: [...next] } });
 }
 
 const NO_SAVED: readonly SavedRecipe[] = [];
-const NO_MISSES: PracticeMisses = {};
 
 // The headings, written once each: the loading screen draws the same eyebrow
 // and title the loaded page does, so the two renders are one page rather than
@@ -71,20 +59,18 @@ const RUN_TITLE = "Your practice deck";
 export function PracticeClient({ collections, sample, signedIn, initialPreview }: { collections: readonly PracticeCollection[]; sample: boolean; signedIn: boolean; initialPreview: PracticePreview | null }) {
   const router = useRouter();
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
-  const misses = useStored<PracticeMisses>(MISSES_KEY, NO_MISSES);
-  const loadFirst = useCallback((w: Who) => practiceLookup(w, EMPTY_RECIPE, {}), []);
+  const loadFirst = useCallback((w: Who) => practiceLookup(w, EMPTY_RECIPE), []);
   const { who, data: preview, loading } = useSkyData({ sample, signedIn, load: loadFirst, initial: initialPreview, eyebrow: "Practice", title: PICK_TITLE });
-  const lookup = useCallback((recipe: Recipe, m: PracticeMisses) => practiceLookup(who ?? {}, recipe, m), [who]);
+  const lookup = useCallback((recipe: Recipe) => practiceLookup(who ?? {}, recipe), [who]);
   if (!preview) return loading;
   const initial = { recipe: EMPTY_RECIPE, preview };
-  const onSaved = (next: readonly SavedRecipe[]) => write(SAVED_KEY, next);
   const onStart = (recipe: Recipe) => router.push(skyHref("/practice/run", { sample, recipe }));
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} misses={misses} saved={saved} onSaved={onSaved} onStart={onStart} />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} saved={saved} onSaved={saveRecipes} onStart={onStart} />;
 }
 
-/** A practice run: the Quiz's screen, with answers kept as misses only. The
- * recorder is a plain client function, so there is no path from here to the
- * schedule at all.
+/** A practice run: the Quiz's screen, and the Quiz's recorder behind it
+ * (SAK-441). Every answer goes through `recordAnswers`, so a practice deck
+ * moves the schedule and the standings exactly as a quiz does.
  *
  * A practice deck is a run like any other, so it is written down and picked
  * up the same way (SAK-404). What it was asked from is its recipe, as the key
@@ -121,11 +107,17 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
 function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update, router }: { cards: readonly QuizCard[]; run: SavedRun | null; source: RunSource; sample: boolean; signedIn: boolean; recipe: Recipe; cfg: ReturnType<typeof useQuizConfig>["cfg"]; update: ReturnType<typeof useQuizConfig>["update"]; router: ReturnType<typeof useRouter> }) {
   const back = { href: skyHref("/practice", { sample }), label: "Back to practice" };
   const saved = useStored<readonly SavedRecipe[]>(SAVED_KEY, NO_SAVED);
-  const noteMisses = async (answers: readonly QuizAnswer[]) => {
-    if (!sample) keepRun(null, signedIn);
-    const misses = { ...read<Record<string, number>>(MISSES_KEY, {}) };
-    for (const a of answers) if (a.grade === "missed") misses[a.cardId] = (misses[a.cardId] ?? 0) + 1;
-    write(MISSES_KEY, misses);
+  // what this deck is called, when the learner has called it something: the
+  // saved recipe it matches, so the row under Sessions says "Evening drill"
+  const named = saved.find((d) => sameRecipe(d.recipe, recipe))?.name;
+  // The sample records nothing, the way it records nothing everywhere else,
+  // and the results screen stays quiet about saving rather than claiming a
+  // run that went nowhere.
+  const finish = sample ? undefined : async (answers: readonly QuizAnswer[]) => {
+    // the run is over the moment the answers go to the recorder: nothing to
+    // come back to, so nothing kept (SAK-404)
+    keepRun(null, signedIn);
+    await recordAnswers(answers, named ? { name: named } : {});
   };
   const progress = (at: number, answers: readonly QuizAnswer[]) => {
     if (sample) return;
@@ -134,6 +126,6 @@ function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update
   const retry = (ids: readonly string[]) => router.push(skyHref("/practice/run", { sample, recipe, cards: ids }));
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
-  const save = (name: string) => write(SAVED_KEY, [...saved.filter((d) => d.name !== name), { name, recipe }]);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, onFinish: noteMisses, onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title={RUN_TITLE} run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
+  const save = (name: string) => saveRecipes([...saved.filter((d) => d.name !== name), { name, recipe }]);
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, ...(finish ? { onFinish: finish } : {}), onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title={RUN_TITLE} run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
 }

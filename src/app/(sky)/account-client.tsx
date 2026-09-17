@@ -7,7 +7,7 @@
 import { useRouter } from "next/navigation";
 
 import { postDelete } from "@/lib/progress-fetch";
-import { PRACTICE_MISSES_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import { pushSettings } from "@/lib/settings-sync";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { SkyAccount } from "@/sky/components/sky-account";
@@ -31,8 +31,7 @@ export function AccountClient({ signedIn, name, email, authEnabled }: { signedIn
   const wipe = async () => {
     await postDelete({ reset: true });
     writeStored(PRACTICE_SAVED_KEY, []);
-    writeStored(PRACTICE_MISSES_KEY, {});
-    pushSettings({ practice: { saved: [], misses: {} } });
+    pushSettings({ practice: { saved: [] } });
     router.refresh();
   };
   return (

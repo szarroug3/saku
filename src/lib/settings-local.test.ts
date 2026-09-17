@@ -3,7 +3,6 @@ import { test } from "node:test";
 
 import {
   CFG_KEY,
-  PRACTICE_MISSES_KEY,
   PRACTICE_SAVED_KEY,
 } from "./settings-keys";
 import {
@@ -51,27 +50,29 @@ test("applyServerSettings: writes present fields into the individual keys", () =
 
 test("applyServerSettings: a field the server did not send leaves the local key alone", () => {
   const store = fakeStore({ [CFG_KEY]: JSON.stringify({ mode: "drill" }) });
-  applyServerSettings(store, { practice: { misses: { a: 1 } } });
+  applyServerSettings(store, { practice: { saved: [{ name: "Tonight", recipe: {} }] } });
   assert.equal(store.data[CFG_KEY], JSON.stringify({ mode: "drill" }));
-  assert.equal(store.data[PRACTICE_MISSES_KEY], JSON.stringify({ a: 1 }));
+  assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify([{ name: "Tonight", recipe: {} }]));
 });
 
 test("round trip: applyServerSettings then readLocalSettings recovers the blob", () => {
   const store = fakeStore();
   const settings = {
     cfg: { mode: "drill" } as never,
-    practice: { saved: [{ name: "Tonight", recipe: {} }], misses: { "kana:あ/reading": 2 } },
+    practice: { saved: [{ name: "Tonight", recipe: {} }] },
   };
   applyServerSettings(store, settings);
   assert.deepEqual(readLocalSettings(store), settings);
 });
 
-test("practice (SAK-342): the saved recipes and misses ride the blob both ways", () => {
+// SAK-342, less its second half: practice used to keep its own count of what
+// had been missed beside the recipes, and it rode the blob the same way. That
+// store is gone with SAK-441, which records a practice run like any quiz.
+test("practice (SAK-342): the saved recipes ride the blob both ways", () => {
   const store = fakeStore();
-  const practice = { saved: [{ name: "Tonight", recipe: { collections: ["kana"] } }], misses: { "kana:あ/reading": 2 } };
+  const practice = { saved: [{ name: "Tonight", recipe: { collections: ["kana"] } }] };
   applyServerSettings(store, { practice });
   assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify(practice.saved));
-  assert.equal(store.data[PRACTICE_MISSES_KEY], JSON.stringify(practice.misses));
   assert.deepEqual(readLocalSettings(store).practice, practice);
   // a blob without practice leaves the keys alone
   applyServerSettings(store, { cfg: { mode: "drill" } as never });

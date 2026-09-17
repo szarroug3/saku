@@ -642,6 +642,52 @@ test("a visitor's quiz is kept in the browser and shows up under sessions", asyn
   await expect(page.getByText(/1 of [\d,]+ Discovered/)).toBeVisible();
 });
 
+test("a visitor's practice run is recorded, and lands under sessions as practice", async ({ page }) => {
+  // SAK-441, which reverses SAK-318. Practice used to keep its answers in the
+  // browser as miss counts and nothing else; a run now goes through the same
+  // recorder a quiz uses, so it moves the schedule, moves a standing, and gets
+  // a row of its own. Signed out, so the writes land in this browser's copy
+  // and nowhere near an account.
+  await page.goto("/practice");
+  await expect(page.getByRole("heading", { name: "What would you like to practice?" })).toBeVisible();
+  await page.getByRole("button", { name: "Kana", exact: true }).click();
+
+  // named, so the row can say what the learner called the deck
+  await page.getByRole("button", { name: "Save this recipe" }).click();
+  await page.getByPlaceholder("A name for this recipe").fill("Evening drill");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Saved as Evening drill" })).toBeVisible();
+
+  await page.getByRole("button", { name: /^Start/ }).click();
+  await expect(page).toHaveURL(/\/practice\/run/);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "End the quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+
+  // the record is a separate event from the paint (SAK-406), so wait on the
+  // store itself rather than on the heading
+  await expect
+    .poll(() => page.evaluate(() => {
+      try {
+        const raw = window.localStorage.getItem("saku-local-history");
+        return raw ? (JSON.parse(raw).sessions?.length ?? 0) : 0;
+      } catch {
+        return 0;
+      }
+    }))
+    .toBeGreaterThan(0);
+
+  await page.goto("/sessions");
+  await expect(page.getByText(/Practice: Evening drill · 1 card/).first()).toBeVisible();
+  // and a practice run runs again like any quiz
+  await expect(page.getByRole("button", { name: "Run it again" })).toBeVisible();
+
+  // the schedule moved: the card answered in practice is discovered now
+  await page.goto("/");
+  await expect(page.getByText(/1 of [\d,]+ Discovered/)).toBeVisible();
+});
+
 test("a saved recipe stays saved when the same chips are clicked in another order", async ({ page }) => {
   // SAK-372. Recipes were compared by JSON.stringify, and the recipe is built
   // by appending, so turning a collection off and back on put it at the end of

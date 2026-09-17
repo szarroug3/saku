@@ -21,8 +21,9 @@
 // ---------- quiz config (src/lib/quiz-config.tsx) ----------
 export const CFG_KEY = "saku-cfg";
 
-// Practice's saved recipes and its own misses (SAK-342). The Sky's practice
-// page reads and writes these two keys directly (src/app/(sky)/practice-client.tsx)
-// and pushes them up as the `practice` field of the settings blob.
+// Practice's saved recipes (SAK-342). The Sky's practice page reads and writes
+// this key directly (src/app/(sky)/practice-client.tsx) and pushes it up as the
+// `practice` field of the settings blob. There was a second key beside it,
+// practice's own count of what had been missed; practice records now (SAK-441),
+// so the history answers that and the key is swept (lib/storage-sweep.ts).
 export const PRACTICE_SAVED_KEY = "sky:practice:recipes";
-export const PRACTICE_MISSES_KEY = "sky:practice:misses";

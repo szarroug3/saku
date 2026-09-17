@@ -60,9 +60,9 @@ export interface QuizEnding {
   /** Where this quiz came from, and what to call it (SAK-353). The empty
    * deck's one button is this too: there is nothing else to do there. */
   back: WayBack;
-  /** Where the answers go: the schedule, or practice's own note of a miss.
-   * A deck nobody records (the sample) has none, and this screen stays quiet
-   * about saving rather than claiming anything. */
+  /** Where the answers go: the schedule, whether they were asked by the quiz
+   * or by practice (SAK-441). A deck nobody records (the sample) has none, and
+   * this screen stays quiet about saving rather than claiming anything. */
   onFinish?: (answers: readonly QuizAnswer[]) => Promise<void>;
   /** Starts a new quiz of just the cards picked here. */
   onRetry?: (cardIds: readonly string[]) => void;

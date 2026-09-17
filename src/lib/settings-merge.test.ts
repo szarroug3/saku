@@ -28,9 +28,9 @@ test("normalizeSettings: keeps known fields, drops unknown ones", () => {
 });
 
 test("mergeSettings: a present field replaces, an absent field is untouched", () => {
-  const prev: SettingsFile = { cfg: cfg("drill"), practice: { misses: { a: 1 } } };
+  const prev: SettingsFile = { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } };
   const next = mergeSettings(prev, { cfg: cfg("pairs") });
-  assert.deepEqual(next, { cfg: cfg("pairs"), practice: { misses: { a: 1 } } });
+  assert.deepEqual(next, { cfg: cfg("pairs"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
 });
 
 test("mergeSettings: undefined in the patch means 'not sent', not 'clear'", () => {
@@ -63,44 +63,26 @@ test("isEmptySettings: true only when every field is absent", () => {
   assert.equal(isEmptySettings({ practice: {} }), false);
 });
 
-test("practice halves: a laptop saving a recipe does not carry its stale misses over a phone's", () => {
-  // the phone recorded a miss; this laptop last synced before that
-  const server: SettingsFile = { practice: { saved: [], misses: { "kana:あ/reading": 3 } } };
-  // the laptop saves a recipe, and says only that
-  const after = mergeSettings(server, { practice: { saved: [{ name: "Kanji drill", recipe: {} }] } });
-  assert.deepEqual(after.practice?.misses, { "kana:あ/reading": 3 });
-  assert.equal(after.practice?.saved?.length, 1);
+// Practice used to carry two halves, the saved recipes and its own count of
+// what had been missed, and they were merged one level deeper so that a laptop
+// saving a recipe did not carry its stale misses over a phone's (SAK-377). A
+// practice run is recorded now (SAK-441), so the misses are the history's, and
+// practice is one value the last writer owns, like every other field.
+test("practice: the saved recipes are replaced whole, and a device can empty its own", () => {
+  const server: SettingsFile = { practice: { saved: [{ name: "Kanji drill", recipe: {} }] } };
+  assert.deepEqual(mergeSettings(server, { practice: { saved: [] } }).practice, { saved: [] });
+  const renamed = mergeSettings(server, { practice: { saved: [{ name: "Evening drill", recipe: {} }] } });
+  assert.deepEqual(renamed.practice?.saved?.map((d) => d.name), ["Evening drill"]);
 });
 
-test("practice halves: a phone recording a miss does not drop the recipes saved elsewhere", () => {
-  const server: SettingsFile = { practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: {} } };
-  const after = mergeSettings(server, { practice: { misses: { "kana:い/reading": 1 } } });
-  assert.equal(after.practice?.saved?.length, 1);
-  assert.deepEqual(after.practice?.misses, { "kana:い/reading": 1 });
-});
-
-test("practice halves: takes the larger count per card, since a miss only ever happens again", () => {
-  const server: SettingsFile = { practice: { misses: { a: 5, b: 1 } } };
-  const after = mergeSettings(server, { practice: { misses: { a: 2, b: 4, c: 1 } } });
-  assert.deepEqual(after.practice?.misses, { a: 5, b: 4, c: 1 });
-});
-
-test("practice halves: ignores a count that is not a number, rather than storing it", () => {
-  const server: SettingsFile = { practice: { misses: { a: 2 } } };
-  const after = mergeSettings(server, { practice: { misses: { a: "many", b: NaN } as never } });
-  assert.deepEqual(after.practice?.misses, { a: 2 });
-});
-
-test("practice halves: still lets a device empty its own saved recipes", () => {
-  const server: SettingsFile = { practice: { saved: [{ name: "Kanji drill", recipe: {} }], misses: { a: 1 } } };
-  const after = mergeSettings(server, { practice: { saved: [] } });
-  assert.deepEqual(after.practice?.saved, []);
-  assert.deepEqual(after.practice?.misses, { a: 1 });
-});
-
-test("practice halves: leaves every other field replaced whole, which is right for a single choice", () => {
-  const server: SettingsFile = { cfg: cfg("drill"), practice: { misses: { a: 1 } } };
+test("practice: a write to another field leaves the recipes alone", () => {
+  const server: SettingsFile = { cfg: cfg("drill"), practice: { saved: [{ name: "Kanji drill", recipe: {} }] } };
   const after = mergeSettings(server, { cfg: cfg("pairs") });
   assert.deepEqual(after.cfg, cfg("pairs"));
-  assert.deepEqual(after.practice?.misses, { a: 1 });
+  assert.equal(after.practice?.saved?.length, 1);
+});
+
+test("practice: nothing carries a misses half any more", () => {
+  const server = mergeSettings({}, { practice: { saved: [] } });
+  assert.deepEqual(Object.keys(server.practice ?? {}), ["saved"]);
 });

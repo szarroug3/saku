@@ -6,9 +6,9 @@
 import type { Grade } from "./quiz";
 import type { SkyItem } from "./types";
 
-export type SessionKind = "quiz" | "ordering" | "other";
+export type SessionKind = "quiz" | "practice" | "ordering" | "other";
 
-export const SESSION_KIND: Record<SessionKind, string> = { quiz: "Quiz", ordering: "Sentence ordering", other: "Session" };
+const SESSION_KIND: Record<SessionKind, string> = { quiz: "Quiz", practice: "Practice", ordering: "Sentence ordering", other: "Session" };
 
 interface SessionCard {
   /** The fact asked. */
@@ -23,7 +23,17 @@ export interface SkySession {
   id: string;
   when: number;
   kind: SessionKind;
+  /** What the learner called the deck, when they called it something: a
+   * practice run dealt from a saved recipe carries its name (SAK-441). */
+  name?: string;
   cards: readonly SessionCard[];
+}
+
+/** What a row calls itself: the kind, and the deck's own name after it when
+ * it has one. "Practice: Evening drill". */
+export function sessionLabel(session: SkySession): string {
+  const kind = SESSION_KIND[session.kind];
+  return session.name ? `${kind}: ${session.name}` : kind;
 }
 
 /** How a session went: the grades, counted. */

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function SkyPracticePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const { sample, signedIn, who } = await whoFor(params);
-  const initialPreview = await initialFor(who, (w) => practiceLookup(w, EMPTY_RECIPE, {}));
+  const initialPreview = await initialFor(who, (w) => practiceLookup(w, EMPTY_RECIPE));
   return (
     <>
       <PracticeClient collections={practiceCollections()} sample={sample} signedIn={signedIn} initialPreview={initialPreview} />

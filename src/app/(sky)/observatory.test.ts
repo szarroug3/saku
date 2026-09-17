@@ -178,7 +178,7 @@ describe("a met item that has slipped", () => {
   it("is drilled in Practice, cut to slipping", () => {
     const id = firstOffered();
     const recipe = { ...EMPTY_RECIPE, collections: ["words"], statuses: ["slipping" as const], size: "all" as const };
-    const preview = practicePreview(missedAndCold(id), recipe, {}, NOW);
+    const preview = practicePreview(missedAndCold(id), recipe, NOW);
     assert.ok(preview.items.some((p) => p.item.id === id), "the slipping word is in the pool");
   });
 });

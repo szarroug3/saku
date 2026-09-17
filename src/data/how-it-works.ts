@@ -184,9 +184,9 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
   },
   {
     id: "practice",
-    title: "Practice is never recorded",
+    title: "Practice counts",
     paragraphs: [
-      "Practice is for drilling whatever you like, however you like: a collection or a part of one, a standing, a size, a saved recipe. It uses the same cards the quiz does, and nothing you do there touches your schedule. Miss everything in practice and not one standing moves. Practice keeps its own note of what you miss, only to put those first next time.",
+      "Practice is for drilling whatever you like, however you like: a collection or a part of one, a standing, a size, a saved recipe. It uses the same cards the quiz does, and it counts the same way. What you get right and wrong there moves your standings and your schedule exactly as a quiz would, the run shows up under Sessions, and what you keep missing comes back first the next time you practice it.",
     ],
   },
 ];

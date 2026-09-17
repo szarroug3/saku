@@ -14,7 +14,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
 import { GRADE, GRADES } from "@/sky/lib/quiz";
-import { formatWhen, SESSION_KIND, tallySession, type SkySession } from "@/sky/lib/sessions";
+import { formatWhen, sessionLabel, tallySession, type SkySession } from "@/sky/lib/sessions";
 import { useMounted } from "@/sky/components/use-mounted";
 
 interface SkySessionsProps {
@@ -57,7 +57,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
   return (
     <SkyPageShell eyebrow="Sessions" title="What have you done lately?" height={height}>
       {sessions.length === 0 ? (
-        <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every quiz you finish is kept here. Take one from the Observatory, or drill something in Practice.</p></SkyPanel>
+        <SkyPanel title="Nothing yet"><p className="mt-2 text-[14px] text-sky-ink/90">Every run you finish is kept here, a quiz or a practice deck. Take one from the Observatory, or drill something in Practice.</p></SkyPanel>
       ) : (
         <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <SkyPanel title="Newest first" fit>
@@ -71,7 +71,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                         sizes centers both on the row rather than hanging them
                         off the taller one's baseline */}
                     <button type="button" onClick={() => { setOpenId(s.id); setAsking(false); }} aria-current={on ? "true" : undefined} className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-3 rounded-lg border px-3 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}>
-                      <span className="text-[13.5px] text-sky-ink"><When ts={s.when} /><span className="text-sky-muted"> · {SESSION_KIND[s.kind]} · {s.cards.length} {s.cards.length === 1 ? "card" : "cards"}</span></span>
+                      <span className="text-[13.5px] text-sky-ink"><When ts={s.when} /><span className="text-sky-muted"> · {sessionLabel(s)} · {s.cards.length} {s.cards.length === 1 ? "card" : "cards"}</span></span>
                       <span className="flex gap-2 text-[12px] tabular-nums">
                         {GRADES.map((g) => <span key={g} className={VERDICT[g]}>{t[g]}</span>)}
                       </span>
@@ -82,7 +82,7 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
             </ul>
           </SkyPanel>
           {open && counts && (
-            <SkyPanel title={<><When ts={open.when} /> · {SESSION_KIND[open.kind]}</>} fit>
+            <SkyPanel title={<><When ts={open.when} /> · {sessionLabel(open)}</>} fit>
               <dl className="mt-2 grid shrink-0 grid-cols-3 gap-x-6 text-center">
                 {GRADES.map((g) => (
                   <div key={g}>
@@ -112,7 +112,9 @@ export function SkySessions({ sessions, onRerun, onDelete, height }: SkySessions
                 />
               ) : (
                 <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2">
-                  {onRerun && open.kind === "quiz" && <SkyButton onClick={() => onRerun(open.cards.map((c) => c.id))}>Run it again</SkyButton>}
+                  {/* a practice run deals cards like any quiz, so it runs again like
+                      any quiz (SAK-441) */}
+                  {onRerun && (open.kind === "quiz" || open.kind === "practice") && <SkyButton onClick={() => onRerun(open.cards.map((c) => c.id))}>Run it again</SkyButton>}
                   {onDelete && <SkyButton variant="outline" onClick={() => setAsking(true)}>Forget this session</SkyButton>}
                 </div>
               )}

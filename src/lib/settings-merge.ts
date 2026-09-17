@@ -3,7 +3,7 @@
 // DOM — so the server file (settings.ts) and the tests share one definition of
 // what these operations MEAN. Same split as history-ops.ts vs history.ts.
 
-import type { PracticeFile, SettingsFile } from "@/types/store";
+import type { SettingsFile } from "@/types/store";
 
 /** The keys a SettingsFile carries, spelled once so normalize/merge/empty stay
  * in step as fields are added. */
@@ -38,10 +38,14 @@ export function normalizeSettings(raw: unknown): SettingsFile {
 
 /**
  * Merge a partial write into the stored settings — field-level replace, not a
- * deep merge. Each field is a whole value the client owns (the entire cfg), so a
- * present field in `patch` REPLACES the stored one and an absent field leaves the
- * stored one untouched. `practice` is the one exception, a level deeper; see
- * mergePractice.
+ * deep merge. Each field is a whole value the client owns (the entire cfg, the
+ * whole list of saved recipes), so a present field in `patch` REPLACES the
+ * stored one and an absent field leaves the stored one untouched.
+ *
+ * `practice` used to be the one exception, merged a level deeper because it
+ * carried two things written at different moments: the saved recipes, and
+ * practice's own count of what had been missed (SAK-377). Practice records now
+ * (SAK-441), the misses are the history's, and one field is one value again.
  *
  * `undefined` in the patch is treated as "not sent" (skipped), never as "clear
  * this field" — a caller that means to clear a boolean sends `false`, and one
@@ -53,53 +57,9 @@ export function mergeSettings(prev: SettingsFile, patch: SettingsFile): Settings
   for (const key of SETTINGS_KEYS) {
     const v = patch[key];
     if (v === undefined) continue;
-    if (key === "practice") {
-      next.practice = mergePractice(base.practice, v as PracticeFile);
-      continue;
-    }
     (next as Record<string, unknown>)[key] = v;
   }
   return next;
-}
-
-/**
- * Practice, one level deeper than the rest (SAK-377).
- *
- * Every other field is one thing a learner set on one device, so the last
- * write winning is right. Practice is two: the recipes they saved, and how
- * often each card has been missed. They are written at different moments by
- * whichever device is in front of them, and replacing the pair whole meant a
- * laptop renaming a recipe carried its own stale misses over the ones a phone
- * had just recorded, and the phone's were gone.
- *
- * So each half is taken only when the patch actually speaks to it, and the
- * misses are merged by the LARGER count per card. That is safe because a miss
- * count only ever goes up: `noteMisses` in practice-client.tsx adds one, and
- * nothing anywhere subtracts or clears. If that ever stops being true this has
- * to be rethought, because max would resurrect what was cleared.
- */
-function mergePractice(prev: PracticeFile | undefined, patch: PracticeFile): PracticeFile {
-  const before: PracticeFile = isPlainObject(prev) ? prev : {};
-  const now: PracticeFile = isPlainObject(patch) ? patch : {};
-  const out: PracticeFile = { ...before };
-  if (now.saved !== undefined) out.saved = now.saved;
-  if (now.misses !== undefined) out.misses = mergeMisses(before.misses, now.misses);
-  return out;
-}
-
-/** The larger count per card, since a miss only ever happens again. */
-function mergeMisses(
-  prev: Record<string, number> | undefined,
-  patch: Record<string, number>,
-): Record<string, number> {
-  const out: Record<string, number> = isPlainObject(prev) ? { ...(prev as Record<string, number>) } : {};
-  if (!isPlainObject(patch)) return out;
-  for (const [id, count] of Object.entries(patch)) {
-    if (typeof count !== "number" || !Number.isFinite(count)) continue;
-    const had = typeof out[id] === "number" ? out[id] : 0;
-    out[id] = Math.max(had, count);
-  }
-  return out;
 }
 
 /**

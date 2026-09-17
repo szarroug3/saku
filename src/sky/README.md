@@ -5269,3 +5269,63 @@ unit tests, 3,999 pass and 1 skipped, four of them new: three on the rule and
 one on the Slipping standing's wording. 56 e2e pass, unchanged, since nothing
 on a page moved. `scripts/unreachable.mjs --list` at zero and
 `scripts/unused-exports.mjs` at zero on both lists.
+
+## Practice counts (2026-09-16, SAK-441)
+
+Sam, reading "How Saku works" on the practice section: "i also mentioned this
+multiple times. practice should be recorded. that's the point." This reverses
+SAK-318, which guaranteed the opposite and wrote that guarantee into four file
+headers, a settings field, a localStorage key and a page of copy.
+
+**One recorder, one path.** `PracticeRun` used to hand the quiz `noteMisses`, a
+client function that counted the misses and stopped. It hands it `recordAnswers`
+now, the same function `/quiz` hands it, so a practice run goes through
+`quizRecords` into `postSession` and lands on the account, or in the browser
+when there is no account, exactly the way a quiz does. The grades are the same
+three, the unanswered cards record nothing the same way, a pitch card and a
+listening card record as they do in the lesson quiz, and an item nobody had met
+gets a first record and is discovered by it. Nothing about the recorder knows
+which screen asked.
+
+**What tells the two apart is one optional field.** `QuizSessionRecord.practice`
+is the mark a practice run leaves, with the recipe's name when the deck was
+dealt from a saved one. It rides through `RecordOptions` into
+`buildSessionRecord`, which is the one place a record is projected, and it
+changes nothing that is counted: the tests fold the same round both ways and
+compare the aggregates. `sessionsFromHistory` reads it as the session's kind, so
+Sessions lists "Practice: Evening drill · 30 cards" beside "Quiz · 12 cards",
+and "Run it again" is offered on a practice row because dealing those cards
+again is the same act either way.
+
+**The separate miss store is gone.** Practice kept its own count of what had
+been missed, per fact, under `sky:practice:misses`, pushed up as the second half
+of the settings blob and merged card by card by the larger count (SAK-377). The
+history answers that question now, and answers it better: `resolve` in
+`app/(sky)/practice.ts` reads `history.facts[f].missed` alone for the
+shakiest-first order and the "missed 14 times" column, which means a miss in a
+quiz and a miss in practice weigh the same, as they should. So the key joins the
+storage sweep, `PracticeFile` is one field again, `mergeSettings` loses the
+one-level-deeper exception it existed for, and `practicePreview`,
+`practiceDraw`, `practiceCards` and `practiceLookup` lose the argument they
+threaded it through.
+
+**The copy.** "Practice is never recorded" is now "Practice counts", and says
+so: the same cards as the quiz, counted the same way, the run under Sessions,
+what you keep missing coming back first. The results screen's saving line was
+already there and now tells the truth on this screen too; the sample is the one
+deck that still records nothing, and it stays quiet about saving rather than
+claiming a run that went nowhere.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 3,999
+unit tests, 3,998 pass and 1 skipped: three new on the practice mark (it rides
+the record, an unnamed run still marks it, and the fold is identical to a
+quiz's), three new in `app/(sky)/sessions.test.ts` on the kind and the name, and
+the old assertions replaced rather than dropped, which is the settings suite's
+five "practice halves" tests becoming three about one value, the sweep's live-key
+list handing `sky:practice:misses` to its dead-key list, and every
+`practicePreview(history, recipe, {}, NOW)` in `practice.test.ts` losing its
+empty misses. 57 e2e pass, one of them new: signed out, a kana deck saved as
+"Evening drill" is run, one card is answered, the browser's copy grows a
+session, `/sessions` shows "Practice: Evening drill · 1 card" with "Run it
+again" on it, and the home says one star is Discovered. `scripts/unreachable.mjs
+--list` at zero, `scripts/unused-exports.mjs` at zero on both lists.

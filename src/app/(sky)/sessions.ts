@@ -12,7 +12,11 @@ import { offerPicker } from "./observatory";
 
 const MOST = 100;
 
+/** Which screen a record came from. Practice first, because a practice run
+ * is recorded as a drill like any quiz (SAK-441) and the only thing that
+ * tells the two apart is the mark the run put on it. */
 function kindOf(record: QuizSessionRecord): SessionKind {
+  if (record.practice) return "practice";
   return record.mode === "drill" ? "quiz" : record.mode === "assembly" ? "ordering" : "other";
 }
 
@@ -29,7 +33,8 @@ export function sessionsFromHistory(history: HistoryFile, now = Date.now()): Sky
       cards.push({ id: fact as string, item: lean as SkyItem, grade: gradeFromCounts(counts), seen: counts.seen });
     }
     if (!cards.length) continue;
-    out.push({ id: record.id ?? String(record.ts), when: record.ts, kind: kindOf(record), cards });
+    const name = record.practice?.name;
+    out.push({ id: record.id ?? String(record.ts), when: record.ts, kind: kindOf(record), ...(name ? { name } : {}), cards });
   }
   return out;
 }

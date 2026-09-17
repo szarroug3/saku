@@ -10,9 +10,9 @@
 // a name, so a saved one changes as the learner does; they show only once
 // there are any. The right column is the deck the recipe resolves to now
 // (SAK-320), shakiest first, with every item droppable and every edge case
-// said out loud. Nothing here touches the review schedule (SAK-318): the
-// run's answers go to whoever the route hands in, and the page says so at
-// the top.
+// said out loud. A run counts (SAK-441): its answers go to whoever the route
+// hands in, and that is the same recorder a quiz uses, so what is missed here
+// comes back in the shakiest-first order and in the schedule.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -30,17 +30,15 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { UndoLine } from "@/sky/components/undo-line";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { ASK, ASKS, cannotStart, cutsOf, deckQuestions, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticeMisses, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
+import { ASK, ASKS, cannotStart, cutsOf, deckQuestions, DEFAULT_SIZE, recipeKey, recipeSummary, sameRecipe, shortfall, type PracticeCollection, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import { STANDING, STANDING_ORDER, standingWord } from "@/sky/lib/standing";
 
 interface SkyPracticeProps {
   collections: readonly PracticeCollection[];
   /** The recipe resolved, now. */
-  lookup: (recipe: Recipe, misses: PracticeMisses) => Promise<PracticePreview>;
+  lookup: (recipe: Recipe) => Promise<PracticePreview>;
   /** The page's first preview, for the recipe it opens on. */
   initial: { recipe: Recipe; preview: PracticePreview };
-  /** Practice's own misses, kept by the route (never the schedule). */
-  misses: PracticeMisses;
   /** The learner's saved recipes, and how to change them. */
   saved: readonly SavedRecipe[];
   onSaved: (saved: readonly SavedRecipe[]) => void;
@@ -57,7 +55,7 @@ const LOOKUP_DELAY = 150;
 // lib/practice.ts, with the reason written out there.
 const same = sameRecipe;
 
-export function SkyPractice({ collections, lookup, initial, misses, saved, onSaved, onStart, height }: SkyPracticeProps) {
+export function SkyPractice({ collections, lookup, initial, saved, onSaved, onStart, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
@@ -92,9 +90,9 @@ export function SkyPractice({ collections, lookup, initial, misses, saved, onSav
     const wanted = JSON.parse(baseKey) as Recipe;
     if (same(wanted, initial.recipe)) return;
     const n = ++asked.current;
-    const t = setTimeout(() => { lookup(wanted, misses).then((p) => { if (n === asked.current) setFetched({ recipe: wanted, preview: p }); }); }, LOOKUP_DELAY);
+    const t = setTimeout(() => { lookup(wanted).then((p) => { if (n === asked.current) setFetched({ recipe: wanted, preview: p }); }); }, LOOKUP_DELAY);
     return () => clearTimeout(t);
-  }, [baseKey, misses, lookup, initial]);
+  }, [baseKey, lookup, initial]);
 
   const set = (change: Partial<Recipe>) => { setRecipe({ ...recipe, ...change }); setUndo(null); };
   const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter((y) => y !== x) : [...list, x]);
