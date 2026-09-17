@@ -19,7 +19,10 @@ delete process.env.NO_COLOR;
  * through the app's own pages, isolated automatically by Playwright's per-test
  * browser context.
  */
-const PORT = 3249;
+// SAKU_E2E_PORT picks another port for a run that shares the machine with
+// other runs (SAK-451): several worktrees on one hard-coded port knocked each
+// other's web servers over and failed tests that had nothing wrong with them.
+const PORT = Number(process.env.SAKU_E2E_PORT ?? 3249);
 
 export default defineConfig({
   testDir: "./e2e",

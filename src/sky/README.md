@@ -5338,4 +5338,8 @@ SAK-429 hid a kanji word's reading on a meaning card only once the learner had b
 
 ## The reading pages flow in two columns on a wide window (SAK-450)
 
-SAK-361 capped a reading page's lines at 68 characters, which is right for reading and left every full-width panel half empty on a wide window. `SkyReading` now lays its sections out with CSS multi-column from the `xl` breakpoint: two columns, each panel as wide as its column and never split across them (`break-inside-avoid`), read down the left and then the right. Below that width it is one column with the 68 character cap, as before. The columns live on a block wrapper inside `SkyPageBody`, because multi-column does not lay out the children of a flex container. Both How Saku works and About use the component.
+SAK-361 capped a reading page's lines at 68 characters, which is right for reading and left every full-width panel half empty on a wide window. `SkyReading` now lays its sections out with CSS multi-column from the `lg` breakpoint: two columns, each panel as wide as its column and never split across them (`break-inside-avoid`), read down the left and then the right. Below that width it is one column with the 68 character cap, as before. The columns live on a block wrapper inside `SkyPageBody`, because multi-column does not lay out the children of a flex container. Both How Saku works and About use the component.
+
+## The browser suite's port can be chosen (SAK-451)
+
+`playwright.config.ts` reads `SAKU_E2E_PORT` (default 3249). Several worktrees running the suite on one hard-coded port took each other's web servers down part-way, which showed up as a run of connection-refused failures in tests with nothing wrong with them. A gate run that shares the machine with lanes sets its own port: `SAKU_E2E_PORT=3291 npx playwright test e2e/sky.spec.ts`.
