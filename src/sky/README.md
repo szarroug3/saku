@@ -6170,3 +6170,9 @@ The Library's Particle term was two sentences about what a particle is, a few in
 **Two things worth knowing about the rows.** まで and までに show the same sentence, because that is the sentence each of their own pages shows. から, と, しか〜ない and って carry the recipe's own X placeholder in their meaning line ("from X"), which is the wording the rest of the app uses for them.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,144 unit tests, 4,143 pass and 1 skipped, with eleven new ones: six on the list itself and five on the page. 67 e2e pass, one of them new. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7 pages, plus the seventeen row links measured at 0.12px off their own center.
+
+## The track's start line reads on the wash, and none of them says "opens once" (2026-09-17, SAK-469)
+
+Sam, on "Each set opens once you know the plain verb it replaces." under Keigo: "the gray here is hard to read". The line under a section's intro was in the muted color on the purple wash at the top of the Observatory. It is the intro's own ink now, one step lighter (`text-sky-ink/80`, item-section.tsx). The two lines that said a thing "opens once you know" (verb pairs, keigo) are advice like the other four: "Start once you know a few verbs. Each pair is built on one of them." and "Start once you know some plain verbs. Each polite verb replaces one of them."
+
+**The Continue button is the width of the column under it (SAK-469).** Sam: "this button looks awkwardly sized here. can you make it the same size as the your sky tonight". On the Observatory the button in the heading is `lg:w-[340px]`, the right column's own width, so its edges line up with "Your sky tonight" below it. The Planetarium has no such column and keeps the button at its own width.

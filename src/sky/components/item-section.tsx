@@ -39,7 +39,8 @@ export function ItemSection({ title, intro, when, start, children }: ItemSection
         <div className="mt-2.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="max-w-[70ch]">
             {intro && <p className="text-[13.5px] leading-relaxed text-sky-ink">{intro}</p>}
-            {when && <p className={`text-[12.5px] leading-relaxed text-sky-muted ${intro ? "mt-1" : ""}`}>{when}</p>}
+            {/* the intro's own ink, a step lighter: the muted color did not read on the purple wash (Sam, SAK-469) */}
+            {when && <p className={`text-[12.5px] leading-relaxed text-sky-ink/80 ${intro ? "mt-1" : ""}`}>{when}</p>}
           </div>
           {start && <SkyButton onClick={start.onClick} className="shrink-0">{start.label}</SkyButton>}
         </div>

@@ -79,11 +79,11 @@ const COPY = {
   },
   verbPairs: {
     intro: "Many verbs come in pairs: one for what happens on its own, one for someone doing it. The door opens; I open the door.",
-    when: "Each pair opens once you know its plain verb.",
+    when: "Start once you know a few verbs. Each pair is built on one of them.",
   },
   keigo: {
     intro: "Japanese changes a verb by who you are speaking to. A polite verb replaces the plain one outright: a separate word, not an ending.",
-    when: "Each set opens once you know the plain verb it replaces.",
+    when: "Start once you know some plain verbs. Each polite verb replaces one of them.",
   },
 } as const;
 
