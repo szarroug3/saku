@@ -233,6 +233,39 @@ function everyGrammarTable(): { lesson: string; card: string; title: string; hea
   return out;
 }
 
+// SAK-464. The 〜は card said "marks the topic" as its meaning and then
+// "〜は: Marks the topic." as the heading of the page under it. Sam: drop the
+// repeat. The generated pattern page's heading is always the pattern and its
+// meaning, which is the card's own glyph and its own meaning line, so it
+// carries nothing; an authored page's heading is its own and stays.
+describe("a pattern's page does not say again what the card says above it", () => {
+  const teachOf = (id: string) => atlasEntryFromHistory(emptyHistory(), id as EntryId, NOW)?.teach;
+
+  it("drops the generated heading and keeps the meaning line", () => {
+    const teach = teachOf("grammar:wa");
+    assert.deepEqual(teach?.meanings, ["marks the topic"]);
+    assert.equal(teach?.pages?.[0]?.title, "", "the heading is gone");
+    // and the page still teaches the build, which for 〜は is its table's
+    // instruction rather than a paragraph
+    assert.deepEqual(teach?.pages?.[0]?.tables?.map((t) => t.instruction), ["Take a noun, just as it is, and add は."]);
+  });
+
+  it("keeps a heading of its own", () => {
+    const family = teachOf("grammar:wa")?.pages?.find((p) => p.eyebrow === "Family");
+    assert.equal(family?.title, "Ways to say this");
+  });
+
+  it("leaves every other pattern's page with either a heading or something to say", () => {
+    for (const id of ["grammar:ga", "grammar:te-iru", "grammar:tara"]) {
+      const pages = teachOf(id)?.pages ?? [];
+      assert.ok(pages.length > 0, `${id} has no pages`);
+      for (const page of pages) {
+        assert.ok(page.title || page.paragraphs.length || page.tables?.length, `${id} has an empty page`);
+      }
+    }
+  });
+});
+
 describe("a rule's table heads its column of words with the kind of word it holds", () => {
   it("says Adjective over the 〜な rule's adjectives", () => {
     const [table, ...rest] = everyGrammarTable().filter((t) => t.card === "gl-prenominal-form");

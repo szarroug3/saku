@@ -241,7 +241,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     // sentence) and its family, page by page, the way the app's grammar page
     // shows them (Sam's call, 2026-09-05: keep that richness)
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
-    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = grammarPages(recipe); return t; }
+    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = withoutRepeatedTitle(grammarPages(recipe), recipe.pattern, recipe.gloss); return t; }
     return t;
   }
   if (item.kind === "sentence") {
@@ -367,6 +367,32 @@ function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
       examples: l.examples.map(({ example, activePart }) => threeWays(example, activePart)),
     })),
   ];
+}
+
+/** The letters of a line, for comparing two of them: case, spacing and the
+ * full stop a heading adds are not a difference. */
+const bareWords = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/**
+ * A pattern page whose heading only says again what the card says above it,
+ * with that heading dropped (SAK-464).
+ *
+ * The generated pattern page leads with "〜は: Marks the topic.", which is
+ * the pattern (the card's own glyph, in the size a card leads with) and its
+ * meaning (the line right under it) and nothing else, so 〜は told the
+ * learner "marks the topic" twice. Sam, 2026-09-17: drop the repeat.
+ *
+ * Only a heading that adds nothing goes. A pattern whose heading says more
+ * than its meaning line keeps it, and so does every authored page, whose
+ * heading is its own ("The て/で-form", "Ways to say this").
+ */
+function withoutRepeatedTitle(pages: TeachPage[], pattern: string, meaning: string): TeachPage[] {
+  return pages.map((page) => {
+    const at = page.title.indexOf(": ");
+    if (at < 0 || page.title.slice(0, at) !== pattern) return page;
+    const rest = bareWords(page.title.slice(at + 2)), said = bareWords(meaning);
+    return rest && said && (rest.includes(said) || said.includes(rest)) ? { ...page, title: "" } : page;
+  });
 }
 
 /** A grammar pattern's pages: the app's own teaching (a form's authored
